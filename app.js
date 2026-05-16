@@ -3290,34 +3290,39 @@ async function extractPdfLines(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const text = await page.getTextContent();
-    const rows = [];
-    text.items
-      .map((item) => ({ x: item.transform[4], y: item.transform[5], text: item.str }))
-      .filter((item) => String(item.text || "").trim())
-      .sort((a, b) => b.y - a.y || a.x - b.x)
-      .forEach((item) => {
-        const row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= 2.5);
-        if (row) {
-          row.items.push(item);
-          row.y = (row.y + item.y) / 2;
-        } else {
-          rows.push({ y: item.y, items: [item] });
-        }
-      });
-    rows
-      .sort((a, b) => b.y - a.y)
-      .forEach((row) => {
-        const line = row
-          .items
-          .sort((a, b) => a.x - b.x)
-          .map((item) => item.text)
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim();
-        if (line) lines.push(line);
-      });
+    lines.push(...extractPdfLinesFromItems(text.items, 2.5));
+    const looseLines = extractPdfLinesFromItems(text.items, 7);
+    looseLines.forEach((line) => {
+      if (!lines.includes(line)) lines.push(line);
+    });
   }
   return lines;
+}
+
+function extractPdfLinesFromItems(items, tolerance = 2.5) {
+  const rows = [];
+  items
+    .map((item) => ({ x: item.transform[4], y: item.transform[5], text: item.str }))
+    .filter((item) => String(item.text || "").trim())
+    .sort((a, b) => b.y - a.y || a.x - b.x)
+    .forEach((item) => {
+      const row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= tolerance);
+      if (row) {
+        row.items.push(item);
+        row.y = (row.y * (row.items.length - 1) + item.y) / row.items.length;
+      } else {
+        rows.push({ y: item.y, items: [item] });
+      }
+    });
+  return rows
+    .sort((a, b) => b.y - a.y)
+    .map((row) => row.items
+      .sort((a, b) => a.x - b.x)
+      .map((item) => item.text)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim())
+    .filter(Boolean);
 }
 
 function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
@@ -3339,6 +3344,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const heatPattern = /^s.{1,2}rie:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
   const swimmerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
   const speakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
+  const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
 
   lines.forEach((rawLine) => {
     const line = rawLine.replace(/\s+/g, " ").trim();
@@ -3474,7 +3480,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       relayMatch = line.match(/^(\d+)\s+(.+?)\s+(?:(?<cat>[FHX][A-Z0-9+]+)\s+)?(?:\*\s+)?(?<club>[A-Z0-9]+)\s+(?<time>[0-9:.]+)(?<full>.*)$/);
     }
     const swimmerMatch = line.match(swimmerPattern);
-    const speakerMatch = line.match(speakerPattern);
+    const speakerMatch = line.match(speakerPattern) || line.match(tolerantSpeakerPattern);
     let lastName = "";
     let firstName = "";
     let birthYear = "";
@@ -3563,6 +3569,13 @@ async function importSeriesPdf(file) {
       window.alert("Je n'ai pas réussi à retrouver les séries dans ce PDF. Vérifie que c'est bien un PDF de séries speaker.");
       renderDataStatus();
       return;
+    }
+    if (parsed.series.length < 50) {
+      const ok = window.confirm(`Je n'ai reconnu que ${parsed.series.length} lignes pour ${parsed.program.length} courses. Ce résultat semble incomplet. Publier quand même ?`);
+      if (!ok) {
+        renderDataStatus("Import annulé : le PDF n'a pas été reconnu complètement.");
+        return;
+      }
     }
     const nextData = normalizeData({
       ...data,
