@@ -301,6 +301,14 @@ function alertsCollection() {
     .collection("alerts");
 }
 
+function historyArchivesCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("historyArchives");
+}
+
 function liveDataDocument() {
   if (!firestoreDb) return null;
   return firestoreDb
@@ -530,6 +538,7 @@ function renderRoleCodesModal() {
           </label>
         `).join("")}
       </div>
+      <button class="ghost-button compact subtle-admin-link" type="button" data-open-history-archives>Archives historiques</button>
       <div class="decision-modal-actions">
         <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
         ${active ? `<button class="ghost-button danger-button" type="button" data-disable-role-codes>Désactiver les codes</button>` : ""}
@@ -539,16 +548,20 @@ function renderRoleCodesModal() {
   `;
 }
 
-function renderRoleCodesAdminModal() {
+function renderRoleCodesAdminModal(action = "codes") {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
+  const title = action === "reset" ? "Confirmer le RAZ" : "Code administrateur";
+  const help = action === "reset"
+    ? "Entre le code administrateur pour archiver puis remettre l'historique à zéro."
+    : "Entre le code administrateur pour modifier les codes des consoles.";
   roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Code admin">
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
       <div class="decision-modal-head">
         <div>
           <span>Sécurité</span>
-          <h2>Code admin</h2>
-          <p>Entre le code admin pour modifier les codes des consoles.</p>
+          <h2>${escapeHtml(title)}</h2>
+          <p>${escapeHtml(help)}</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
@@ -558,11 +571,84 @@ function renderRoleCodesAdminModal() {
       </label>
       <div class="decision-modal-actions">
         <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        <button class="primary-button" type="button" data-confirm-role-code-admin>Continuer</button>
+        <button class="primary-button" type="button" data-confirm-role-code-admin="${escapeHtml(action)}">Continuer</button>
       </div>
     </div>
   `;
   roleCodesModal.querySelector("#roleCodeAdminInput")?.focus();
+}
+
+function renderResetHistoryModal() {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ historique">
+      <div class="decision-modal-head">
+        <div>
+          <span>Historique</span>
+          <h2>Confirmer le RAZ</h2>
+          <p>Écris RAZ pour archiver l'historique actif puis le remettre à zéro.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <label class="role-code-admin-field">
+        Confirmation
+        <input id="resetHistoryInput" type="text" maxlength="3" autocomplete="off">
+      </label>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
+        <button class="primary-button danger-button" type="button" data-confirm-reset-history>Archiver et remettre à zéro</button>
+      </div>
+    </div>
+  `;
+  roleCodesModal.querySelector("#resetHistoryInput")?.focus();
+}
+
+async function renderHistoryArchivesModal() {
+  if (!roleCodesModal) return;
+  const collection = historyArchivesCollection();
+  let archives = [];
+  if (collection) {
+    try {
+      const snapshot = await collection.orderBy("createdAt", "desc").limit(20).get();
+      archives = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Lecture des archives impossible", error);
+      window.alert("Impossible de lire les archives historiques.");
+      return;
+    }
+  }
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog history-archives-dialog" role="dialog" aria-modal="true" aria-label="Archives historiques">
+      <div class="decision-modal-head">
+        <div>
+          <span>Administration</span>
+          <h2>Archives historiques</h2>
+          <p>Archives créées automatiquement avant un RAZ historique.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <div class="archive-list">
+        ${archives.length ? archives.map((archive) => `
+          <div class="archive-item" data-archive-id="${escapeHtml(archive.id)}">
+            <div>
+              <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
+              <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes archivées</span>
+            </div>
+            <div class="archive-actions">
+              <button class="ghost-button compact" type="button" data-print-archive="${escapeHtml(archive.id)}">PDF</button>
+              <button class="ghost-button compact danger-button" type="button" data-delete-archive="${escapeHtml(archive.id)}">Supprimer</button>
+            </div>
+          </div>
+        `).join("") : `<p class="panel-subtitle">Aucune archive enregistrée.</p>`}
+      </div>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+        <button class="primary-button" type="button" data-role-codes-close>Fermer</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderRolePinModal(role) {
@@ -715,11 +801,43 @@ function saveLiveDismissedAlerts() {
   localStorage.setItem(LIVE_DISMISSED_ALERTS_KEY, JSON.stringify(liveDismissedAlertIds));
 }
 
+async function archiveCurrentHistory() {
+  const rows = dsqReportRows();
+  if (!rows.length) return null;
+  const collection = historyArchivesCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour archiver l'historique.");
+  const now = new Date();
+  const archive = {
+    id: `${now.getTime()}-${Math.random().toString(16).slice(2)}`,
+    createdAt: now.toISOString(),
+    createdLabel: now.toLocaleString("fr-FR"),
+    meet: data.meet || {},
+    count: rows.length,
+    alerts: rows.map(sanitizeAlertForFirestore)
+  };
+  await collection.doc(archive.id).set(sanitizeAlertForFirestore(archive));
+  return archive;
+}
+
 async function resetHistory() {
-  const ok = window.confirm("Effacer tout l'historique DSQ, forfaits, abandons et requalifications pour toutes les consoles ? Cette action est irréversible.");
+  const ok = window.confirm("Archiver puis effacer l'historique actif DSQ, forfaits, abandons et requalifications ?");
   if (!ok) return;
-  const confirmation = window.prompt('Pour confirmer, écris RAZ en majuscules.');
-  if (confirmation !== "RAZ") {
+  renderResetHistoryModal();
+}
+
+async function performResetHistoryWithArchive() {
+  let archive = null;
+  try {
+    archive = await archiveCurrentHistory();
+  } catch (error) {
+    console.warn("Archivage impossible", error);
+    window.alert(`RAZ annulée : impossible d'archiver l'historique. ${error?.message || ""}`);
+    return;
+  }
+  const confirmation = window.confirm(archive
+    ? `Historique archivé (${archive.count} lignes). Confirmer la remise à zéro ?`
+    : "Aucun historique à archiver. Confirmer la remise à zéro ?");
+  if (!confirmation) {
     window.alert("RAZ annulée.");
     return;
   }
@@ -733,6 +851,7 @@ async function resetHistory() {
     window.alert("L'historique local est remis à zéro, mais Firebase n'a pas pu être vidé. Vérifie ta connexion.");
   }
   render();
+  window.alert(archive ? "Historique archivé puis remis à zéro." : "Historique remis à zéro.");
 }
 
 function dismissLiveAlert(alertId) {
@@ -3639,7 +3758,10 @@ function dsqReportRows() {
 }
 
 function buildDsqReportHtml() {
-  const rows = dsqReportRows();
+  return buildDsqReportHtmlFromRows(dsqReportRows(), "Historique DSQ");
+}
+
+function buildDsqReportHtmlFromRows(rows, title = "Historique DSQ") {
   const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   const meetName = `${data.meet?.name || "Compétition"}${data.meet?.city ? ` - ${data.meet.city}` : ""}`;
   const body = rows.length ? rows.map((alert, index) => {
@@ -3682,7 +3804,7 @@ function buildDsqReportHtml() {
 </head>
 <body>
   <div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>
-  <h1>Historique DSQ</h1>
+  <h1>${escapeHtml(title)}</h1>
   <p>${escapeHtml(meetName)} - généré le ${escapeHtml(generatedAt)} - ${rows.length} DSQ</p>
   <table>
     <thead>
@@ -3694,17 +3816,21 @@ function buildDsqReportHtml() {
 </html>`;
 }
 
-function exportDsqPdf() {
+function printDsqRows(rows, title = "Historique DSQ") {
   const reportWindow = window.open("", "_blank");
   if (!reportWindow) {
     window.alert("La fenêtre PDF a été bloquée par le navigateur.");
     return;
   }
   reportWindow.document.open();
-  reportWindow.document.write(buildDsqReportHtml());
+  reportWindow.document.write(buildDsqReportHtmlFromRows(rows, title));
   reportWindow.document.close();
   reportWindow.focus();
   setTimeout(() => reportWindow.print(), 250);
+}
+
+function exportDsqPdf() {
+  printDsqRows(dsqReportRows(), "Historique DSQ");
 }
 
 function escapeHtml(value) {
@@ -3866,6 +3992,48 @@ roleCodesModal?.addEventListener("click", async (event) => {
     closeRoleCodesModal();
     return;
   }
+  if (event.target.closest("[data-open-history-archives]")) {
+    await renderHistoryArchivesModal();
+    return;
+  }
+  if (event.target.closest("[data-role-codes-back]")) {
+    renderRoleCodesModal();
+    return;
+  }
+  if (event.target.closest("[data-confirm-reset-history]")) {
+    const confirmation = String(roleCodesModal.querySelector("#resetHistoryInput")?.value || "").trim().toUpperCase();
+    if (confirmation !== "RAZ") {
+      window.alert("RAZ annulée : il faut écrire RAZ.");
+      return;
+    }
+    closeRoleCodesModal();
+    await performResetHistoryWithArchive();
+    return;
+  }
+  const printArchiveButton = event.target.closest("[data-print-archive]");
+  if (printArchiveButton) {
+    const id = printArchiveButton.dataset.printArchive;
+    const collection = historyArchivesCollection();
+    if (!collection) return;
+    const snapshot = await collection.doc(id).get();
+    if (!snapshot.exists) {
+      window.alert("Archive introuvable.");
+      return;
+    }
+    const archive = snapshot.data();
+    printDsqRows(Array.isArray(archive.alerts) ? archive.alerts : [], `Archive DSQ - ${archive.createdLabel || id}`);
+    return;
+  }
+  const deleteArchiveButton = event.target.closest("[data-delete-archive]");
+  if (deleteArchiveButton) {
+    const ok = window.confirm("Supprimer définitivement cette archive ?");
+    if (!ok) return;
+    const collection = historyArchivesCollection();
+    if (!collection) return;
+    await collection.doc(deleteArchiveButton.dataset.deleteArchive).delete();
+    await renderHistoryArchivesModal();
+    return;
+  }
   if (event.target.closest("[data-role-pin-cancel]")) {
     finishRolePin(false);
     return;
@@ -3874,6 +4042,12 @@ roleCodesModal?.addEventListener("click", async (event) => {
     const code = String(roleCodesModal.querySelector("#roleCodeAdminInput")?.value || "").trim();
     if (code !== ADMIN_PIN) {
       window.alert("Code admin incorrect.");
+      return;
+    }
+    const action = event.target.closest("[data-confirm-role-code-admin]")?.dataset.confirmRoleCodeAdmin || "codes";
+    if (action === "reset") {
+      closeRoleCodesModal();
+      await performResetHistoryWithArchive();
       return;
     }
     renderRoleCodesModal();
@@ -3911,6 +4085,10 @@ roleCodesModal?.addEventListener("input", (event) => {
   }
   if (event.target?.matches("#roleCodeAdminInput, #rolePinInput")) {
     event.target.value = String(event.target.value || "").replace(/[^0-9!]/g, "").slice(0, 5);
+    return;
+  }
+  if (event.target?.matches("#resetHistoryInput")) {
+    event.target.value = String(event.target.value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
   }
 });
 
@@ -3926,6 +4104,12 @@ roleCodesModal?.addEventListener("keydown", (event) => {
   if (pinInput) {
     event.preventDefault();
     roleCodesModal.querySelector("[data-confirm-role-pin]")?.click();
+    return;
+  }
+  const resetInput = event.target?.closest("#resetHistoryInput");
+  if (resetInput) {
+    event.preventDefault();
+    roleCodesModal.querySelector("[data-confirm-reset-history]")?.click();
   }
 });
 

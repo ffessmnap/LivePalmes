@@ -1186,6 +1186,51 @@ textarea {
   text-align: center;
 }
 
+.subtle-admin-link {
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  opacity: 0.72;
+}
+
+.archive-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.archive-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
+.archive-item div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.archive-item span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.archive-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .program-list {
   display: grid;
   gap: 8px;
@@ -2973,6 +3018,18 @@ tbody tr:hover,
   .role-code-grid label {
     grid-template-columns: 1fr;
     gap: 5px;
+  }
+
+  .archive-item {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-actions {
+    justify-content: stretch;
+  }
+
+  .archive-actions button {
+    flex: 1 1 auto;
   }
 
   .length-stepper {
