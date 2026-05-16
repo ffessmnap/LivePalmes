@@ -2914,10 +2914,16 @@ function personKeyFromSheet(row, sex = "") {
 }
 
 async function fetchSpeakerSheetRows(sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${SPEAKER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`onglet ${sheetName} inaccessible`);
-  return parseDelimitedRows(await response.text());
+  const url = `https://docs.google.com/spreadsheets/d/${SPEAKER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cache=${Date.now()}`;
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`onglet ${sheetName} inaccessible (${response.status})`);
+  const text = await response.text();
+  if (/^\s*</.test(text)) {
+    throw new Error(`Google n'a pas renvoyé le CSV de l'onglet ${sheetName}. Vérifie que le fichier est bien partagé en lecture avec le lien.`);
+  }
+  const rows = parseDelimitedRows(text);
+  if (!rows.length) throw new Error(`onglet ${sheetName} vide ou non lisible`);
+  return rows;
 }
 
 function parseTopSheet(rows) {
@@ -3101,6 +3107,11 @@ function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
 }
 
 async function updateSpeakerInfoFromGoogleSheet() {
+  const button = document.querySelector("#updateSpeakerInfoBtn");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Mise à jour...";
+  }
   renderDataStatus("Mise à jour des infos speaker depuis Google Sheets...");
   try {
     const [
@@ -3145,8 +3156,13 @@ async function updateSpeakerInfoFromGoogleSheet() {
     window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
   } catch (error) {
     console.error(error);
-    renderDataStatus("Impossible de lire le Google Sheet. Vérifie le partage en lecture publique.");
+    renderDataStatus(`Impossible de lire le Google Sheet : ${error?.message || error}`);
     window.alert(`Mise à jour impossible : ${error?.message || error}. Vérifie que le Google Sheet est partagé en lecture avec le lien.`);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Infos speaker";
+    }
   }
 }
 
