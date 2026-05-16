@@ -203,6 +203,8 @@ let expandedHistories = {
 };
 let isFullscreenMode = Boolean(document.fullscreenElement);
 let refereeTabletMode = false;
+let videoTabletMode = false;
+let computerTabletMode = false;
 let firestoreDb = null;
 let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
@@ -637,7 +639,7 @@ async function renderHistoryArchivesModal() {
           <div class="archive-item" data-archive-id="${escapeHtml(archive.id)}">
             <div>
               <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
-              <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes archivées</span>
+              <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes du journal</span>
             </div>
             <div class="archive-actions">
               <button class="ghost-button compact" type="button" data-print-archive="${escapeHtml(archive.id)}">PDF</button>
@@ -1482,6 +1484,8 @@ function render() {
   document.body.classList.toggle("role-video", state.role === "video");
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("referee-tablet-mode", state.role === "referee" && refereeTabletMode);
+  document.body.classList.toggle("video-tablet-mode", state.role === "video" && videoTabletMode);
+  document.body.classList.toggle("computer-tablet-mode", state.role === "computer" && computerTabletMode);
   syncProgramButtonPlacement();
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
@@ -1530,7 +1534,9 @@ function render() {
 function syncProgramButtonPlacement() {
   if (!programBtn || !roleSwitch || !sidebar) return;
   const compactReferee = state.role === "referee" && refereeTabletMode;
-  if (compactReferee) {
+  const compactVideo = state.role === "video" && videoTabletMode;
+  const compactComputer = state.role === "computer" && computerTabletMode;
+  if (compactReferee || compactVideo || compactComputer) {
     if (programBtn.parentElement !== roleSwitch) {
       roleSwitch.appendChild(programBtn);
     }
@@ -3756,15 +3762,15 @@ function downloadJson() {
 
 function dsqReportRows() {
   return alerts
-    .filter((alert) => isDsqAlert(alert) && !alert.originalAlertId)
+    .filter((alert) => alert.roleSource === "referee" || alert.originalAlertId || isRequalificationAlert(alert))
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
 }
 
 function buildDsqReportHtml() {
-  return buildDsqReportHtmlFromRows(dsqReportRows(), "Historique DSQ");
+  return buildDsqReportHtmlFromRows(dsqReportRows(), "Journal d'arbitrage");
 }
 
-function buildDsqReportHtmlFromRows(rows, title = "Historique DSQ") {
+function buildDsqReportHtmlFromRows(rows, title = "Journal d'arbitrage") {
   const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   const meetName = `${data.meet?.name || "Compétition"}${data.meet?.city ? ` - ${data.meet.city}` : ""}`;
   const body = rows.length ? rows.map((alert, index) => {
@@ -3783,12 +3789,12 @@ function buildDsqReportHtmlFromRows(rows, title = "Historique DSQ") {
         <td>${escapeHtml(timeline || "-")}</td>
       </tr>
     `;
-  }).join("") : `<tr><td colspan="5" class="empty">Aucune DSQ enregistrée.</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">Aucune action d'arbitrage enregistrée.</td></tr>`;
   return `<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Historique DSQ</title>
+  <title>Journal d'arbitrage</title>
   <style>
     @page { margin: 12mm; }
     body { font-family: Arial, sans-serif; color: #15232d; font-size: 11px; }
@@ -3808,10 +3814,10 @@ function buildDsqReportHtmlFromRows(rows, title = "Historique DSQ") {
 <body>
   <div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>
   <h1>${escapeHtml(title)}</h1>
-  <p>${escapeHtml(meetName)} - généré le ${escapeHtml(generatedAt)} - ${rows.length} DSQ</p>
+  <p>${escapeHtml(meetName)} - généré le ${escapeHtml(generatedAt)} - ${rows.length} lignes</p>
   <table>
     <thead>
-      <tr><th>#</th><th>Course / session</th><th>Nageur / relais</th><th>Décision</th><th>Vie de la DSQ</th></tr>
+      <tr><th>#</th><th>Course / session</th><th>Nageur / relais</th><th>Décision / action</th><th>Vie de la décision</th></tr>
     </thead>
     <tbody>${body}</tbody>
   </table>
@@ -3819,7 +3825,7 @@ function buildDsqReportHtmlFromRows(rows, title = "Historique DSQ") {
 </html>`;
 }
 
-function printDsqRows(rows, title = "Historique DSQ") {
+function printDsqRows(rows, title = "Journal d'arbitrage") {
   const reportWindow = window.open("", "_blank");
   if (!reportWindow) {
     window.alert("La fenêtre PDF a été bloquée par le navigateur.");
@@ -3832,8 +3838,14 @@ function printDsqRows(rows, title = "Historique DSQ") {
   setTimeout(() => reportWindow.print(), 250);
 }
 
-function exportDsqPdf() {
-  printDsqRows(dsqReportRows(), "Historique DSQ");
+async function exportDsqPdf() {
+  try {
+    await archiveCurrentHistory();
+  } catch (error) {
+    const ok = window.confirm(`Impossible d'archiver le journal avant export. Continuer quand même l'export PDF ?`);
+    if (!ok) return;
+  }
+  printDsqRows(dsqReportRows(), "Journal d'arbitrage");
 }
 
 function escapeHtml(value) {
@@ -3879,6 +3891,16 @@ document.querySelectorAll(".role-chip").forEach((button) => {
     const nextRole = button.dataset.role || "speaker";
     if (nextRole === "referee" && state.role === "referee") {
       refereeTabletMode = !refereeTabletMode;
+      render();
+      return;
+    }
+    if (nextRole === "video" && state.role === "video") {
+      videoTabletMode = !videoTabletMode;
+      render();
+      return;
+    }
+    if (nextRole === "computer" && state.role === "computer") {
+      computerTabletMode = !computerTabletMode;
       render();
       return;
     }
@@ -4024,7 +4046,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
       return;
     }
     const archive = snapshot.data();
-    printDsqRows(Array.isArray(archive.alerts) ? archive.alerts : [], `Archive DSQ - ${archive.createdLabel || id}`);
+    printDsqRows(Array.isArray(archive.alerts) ? archive.alerts : [], `Archive journal d'arbitrage - ${archive.createdLabel || id}`);
     return;
   }
   const deleteArchiveButton = event.target.closest("[data-delete-archive]");
