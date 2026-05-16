@@ -3399,7 +3399,10 @@ async function extractPdfLines(file) {
     extractPdfLinesByFlow(text.items).forEach(appendPageLine);
     extractPdfLinesFromItems(text.items, 2.5).forEach(appendPageLine);
     extractPdfLinesFromItems(text.items, 7).forEach(appendPageLine);
-    lines.push(...pageLines);
+    const isSessionHeaderLine = (line) => /\bSession\s*\d+\b/i.test(line) || line.includes("Session du") || line.includes("Session de l");
+    const sessionHeaderLines = pageLines.filter(isSessionHeaderLine);
+    const bodyLines = pageLines.filter((line) => !isSessionHeaderLine(line));
+    lines.push(...sessionHeaderLines, ...bodyLines);
   }
   return lines;
 }
