@@ -1,8 +1,19 @@
 ﻿const STORAGE_KEY = "napSpeakerFrance2026:v15";
 const ALERTS_KEY = "napSpeakerFrance2026:alerts:v1";
 const LIVE_DISMISSED_ALERTS_KEY = "napSpeakerFrance2026:live-dismissed-alerts:v1";
+const UNLOCKED_ROLES_KEY = "napSpeakerFrance2026:unlocked-roles:v1";
+const CLIENT_ID_KEY = "napSpeakerFrance2026:client-id:v1";
 const FIRESTORE_COMPETITION_ID = "france-2026-limoges";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
+const ADMIN_PIN = "2216!";
+const ROLE_PINS = {
+  speaker: "0001",
+  referee: "0002",
+  video: "0003",
+  computer: "0004"
+};
+const LOCK_DURATION_MS = 120000;
+const LOCK_HEARTBEAT_MS = 30000;
 const SPEAKER_INFO_SHEETS = {
   france: "France N-1",
   records: "Records",
@@ -78,6 +89,7 @@ const fallbackData = {
 const sampleData = window.SPEAKER_DATA || fallbackData;
 
 let data = loadData();
+let unlockedRoles = loadUnlockedRoles();
 function createRoleState(role = "speaker") {
   const initial = initialProgramPosition();
   return {
@@ -100,12 +112,64 @@ function cloneRoleState(nextState) {
   return { ...nextState, search: "", selectedSwimmerId: "", selectedRecordKey: "" };
 }
 
+function loadUnlockedRoles() {
+  const saved = localStorage.getItem(UNLOCKED_ROLES_KEY);
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUnlockedRoles() {
+  localStorage.setItem(UNLOCKED_ROLES_KEY, JSON.stringify(unlockedRoles));
+}
+
+function pinLockEnabled() {
+  return data.notes?.pinLockEnabled === true;
+}
+
+function currentRolePins() {
+  return {
+    ...ROLE_PINS,
+    ...(data.notes?.rolePins || {})
+  };
+}
+
+function unlockRole(role) {
+  unlockedRoles = [role];
+  saveUnlockedRoles();
+}
+
+function roleIsUnlocked(role) {
+  return role === "live" || !pinLockEnabled() || unlockedRoles.includes(role);
+}
+
+function requestRoleAccess(role) {
+  if (roleIsUnlocked(role)) return true;
+  return false;
+}
+
 function saveCurrentRoleState() {
   roleStates[state.role] = cloneRoleState(state);
 }
 
-function switchRole(nextRole) {
-  if (!ROLE_LABELS[nextRole]) return;
+function currentClientId() {
+  let id = localStorage.getItem(CLIENT_ID_KEY);
+  if (!id) {
+    id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(CLIENT_ID_KEY, id);
+  }
+  return id;
+}
+
+function protectedRole(role) {
+  return ["speaker", "referee", "video", "computer"].includes(role);
+}
+
+function switchRoleUnlocked(nextRole) {
   saveCurrentRoleState();
   state = cloneRoleState(roleStates[nextRole] || createRoleState(nextRole));
   state.role = nextRole;
@@ -114,6 +178,11 @@ function switchRole(nextRole) {
   }
   state.selectedSwimmerId = "";
   state.selectedRecordKey = "";
+}
+
+function switchRole(nextRole) {
+  if (!ROLE_LABELS[nextRole]) return;
+  switchRoleUnlocked(nextRole);
 }
 
 let state = createRoleState("live");
@@ -140,6 +209,8 @@ let liveDataUnsubscribe = null;
 let firestoreReady = false;
 let firebaseStatus = "connecting";
 let applyingRemoteData = false;
+let rolePinResolver = null;
+let activeRoleLock = null;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -183,11 +254,13 @@ const decisionModal = document.querySelector("#decisionModal");
 const alertDetailModal = document.querySelector("#alertDetailModal");
 const programModal = document.querySelector("#programModal");
 const adminSeriesModal = document.querySelector("#adminSeriesModal");
+const roleCodesModal = document.querySelector("#roleCodesModal");
 const roleQueue = document.querySelector("#roleQueue");
 const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
+const roleLockBtn = document.querySelector("#roleLockBtn");
 const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
 const dataDiagnosticBtn = document.querySelector("#dataDiagnosticBtn");
 const jsonInput = document.querySelector("#jsonInput");
@@ -235,6 +308,15 @@ function liveDataDocument() {
     .doc(FIRESTORE_COMPETITION_ID)
     .collection("liveData")
     .doc("current");
+}
+
+function roleLockDocument(role) {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("roleLocks")
+    .doc(role);
 }
 
 function sanitizeAlertForFirestore(alert) {
@@ -294,6 +376,102 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
   firebaseStatus = "connected";
 }
 
+function lockExpired(lock) {
+  return !lock?.expiresAt || Date.parse(lock.expiresAt) <= Date.now();
+}
+
+async function releaseRoleLock(role = activeRoleLock?.role) {
+  if (!role || !activeRoleLock || activeRoleLock.role !== role) return;
+  if (activeRoleLock.adminBypass) {
+    activeRoleLock = null;
+    return;
+  }
+  const doc = roleLockDocument(role);
+  if (!doc) return;
+  const clientId = currentClientId();
+  try {
+    const snapshot = await doc.get();
+    if (snapshot.exists && snapshot.data()?.clientId === clientId) {
+      await doc.delete();
+    }
+  } catch (error) {
+    console.warn("Libération du verrou impossible", error);
+  } finally {
+    if (activeRoleLock?.role === role) activeRoleLock = null;
+  }
+}
+
+async function acquireRoleLock(role, options = {}) {
+  if (!protectedRole(role) || !pinLockEnabled()) {
+    await releaseRoleLock();
+    return true;
+  }
+  if (options.adminBypass) {
+    await releaseRoleLock();
+    activeRoleLock = { role, adminBypass: true };
+    return true;
+  }
+  const doc = roleLockDocument(role);
+  if (!doc || !firestoreDb) {
+    activeRoleLock = { role, adminBypass: false };
+    return true;
+  }
+  const clientId = currentClientId();
+  const now = new Date();
+  const payload = {
+    role,
+    clientId,
+    roleLabel: ROLE_LABELS[role] || role,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + LOCK_DURATION_MS).toISOString()
+  };
+  try {
+    const allowed = await firestoreDb.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(doc);
+      const lock = snapshot.exists ? snapshot.data() : null;
+      if (lock && lock.clientId !== clientId && !lockExpired(lock)) return false;
+      transaction.set(doc, payload);
+      return true;
+    });
+    if (!allowed) {
+      window.alert(`La console ${ROLE_LABELS[role] || role} est déjà utilisée sur un autre appareil.`);
+      return false;
+    }
+    if (activeRoleLock?.role && activeRoleLock.role !== role) {
+      await releaseRoleLock(activeRoleLock.role);
+    }
+    activeRoleLock = { role, adminBypass: false };
+    return true;
+  } catch (error) {
+    console.warn("Réservation de console impossible", error);
+    window.alert("Impossible de vérifier si cette console est déjà utilisée. L'accès est autorisé sur cet appareil.");
+    activeRoleLock = { role, adminBypass: false };
+    return true;
+  }
+}
+
+async function heartbeatRoleLock() {
+  if (!activeRoleLock || activeRoleLock.adminBypass || !protectedRole(activeRoleLock.role) || !pinLockEnabled()) return;
+  const doc = roleLockDocument(activeRoleLock.role);
+  if (!doc) return;
+  const clientId = currentClientId();
+  const now = new Date();
+  try {
+    const snapshot = await doc.get();
+    if (!snapshot.exists || snapshot.data()?.clientId !== clientId) {
+      activeRoleLock = null;
+      return;
+    }
+    await doc.set({
+      updatedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + LOCK_DURATION_MS).toISOString()
+    }, { merge: true });
+  } catch (error) {
+    console.warn("Maintien de la réservation impossible", error);
+  }
+}
+
 function mergeRemoteLiveData(remoteData) {
   return normalizeData({
     ...data,
@@ -319,9 +497,165 @@ function mergeRemoteLiveData(remoteData) {
 
 function applyRemoteLiveData(remoteData) {
   if (!remoteData) return;
+  const wasLocked = pinLockEnabled();
   applyingRemoteData = true;
   applyFreshData(mergeRemoteLiveData(remoteData), true);
   applyingRemoteData = false;
+  if (wasLocked && !pinLockEnabled()) {
+    unlockedRoles = [];
+    saveUnlockedRoles();
+  }
+}
+
+function renderRoleCodesModal() {
+  if (!roleCodesModal) return;
+  const pins = currentRolePins();
+  const active = pinLockEnabled();
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Codes d'accès">
+      <div class="decision-modal-head">
+        <div>
+          <span>Sécurité</span>
+          <h2>Codes des consoles</h2>
+          <p>Chaque code doit contenir exactement 4 chiffres. Live reste libre.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <div class="role-code-grid">
+        ${["speaker", "referee", "video", "computer"].map((role) => `
+          <label>
+            <span>${escapeHtml(ROLE_LABELS[role])}</span>
+            <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(role)}" value="${escapeHtml(pins[role] || "")}">
+          </label>
+        `).join("")}
+      </div>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
+        ${active ? `<button class="ghost-button danger-button" type="button" data-disable-role-codes>Désactiver les codes</button>` : ""}
+        <button class="primary-button" type="button" data-save-role-codes="${active ? "keep" : "enable"}">${active ? "Enregistrer les codes" : "Enregistrer et activer"}</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRoleCodesAdminModal() {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Code admin">
+      <div class="decision-modal-head">
+        <div>
+          <span>Sécurité</span>
+          <h2>Code admin</h2>
+          <p>Entre le code admin pour modifier les codes des consoles.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <label class="role-code-admin-field">
+        Code admin
+        <input id="roleCodeAdminInput" type="password" inputmode="text" maxlength="5" autocomplete="off">
+      </label>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
+        <button class="primary-button" type="button" data-confirm-role-code-admin>Continuer</button>
+      </div>
+    </div>
+  `;
+  roleCodesModal.querySelector("#roleCodeAdminInput")?.focus();
+}
+
+function renderRolePinModal(role) {
+  if (!roleCodesModal) return;
+  const label = ROLE_LABELS[role] || "Console";
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Code d'accès">
+      <div class="decision-modal-head">
+        <div>
+          <span>Accès console</span>
+          <h2>${escapeHtml(label)}</h2>
+          <p>Entre le code de cette console ou le code administrateur.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-pin-cancel aria-label="Fermer">×</button>
+      </div>
+      <label class="role-code-admin-field">
+        Code
+        <input id="rolePinInput" type="password" inputmode="text" maxlength="5" autocomplete="off" data-role-pin-input="${escapeHtml(role)}">
+      </label>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-pin-cancel>Annuler</button>
+        <button class="primary-button" type="button" data-confirm-role-pin="${escapeHtml(role)}">Ouvrir</button>
+      </div>
+    </div>
+  `;
+  roleCodesModal.querySelector("#rolePinInput")?.focus();
+}
+
+function askRolePin(role) {
+  if (roleIsUnlocked(role)) return Promise.resolve({ allowed: true, adminBypass: false });
+  renderRolePinModal(role);
+  return new Promise((resolve) => {
+    rolePinResolver = resolve;
+  });
+}
+
+function finishRolePin(result) {
+  if (rolePinResolver) {
+    rolePinResolver(result);
+    rolePinResolver = null;
+  }
+  closeRoleCodesModal();
+}
+
+function closeRoleCodesModal() {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = true;
+  roleCodesModal.innerHTML = "";
+}
+
+async function saveRoleCodesFromModal(enableLock) {
+  if (!roleCodesModal) return;
+  const pins = {};
+  roleCodesModal.querySelectorAll("[data-role-code]").forEach((input) => {
+    pins[input.dataset.roleCode] = String(input.value || "").trim();
+  });
+  const invalid = Object.entries(pins).find(([, value]) => !/^\d{4}$/.test(value));
+  if (invalid) {
+    window.alert("Chaque code doit contenir exactement 4 chiffres.");
+    return;
+  }
+  const nextData = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      rolePins: pins,
+      pinLockEnabled: enableLock,
+      pinLockUpdatedAt: new Date().toISOString()
+    },
+    sourceVersion: `lock-${Date.now()}`
+  });
+  data = nextData;
+  if (enableLock) {
+    unlockedRoles = ["computer"];
+  } else {
+    unlockedRoles = [];
+  }
+  saveUnlockedRoles();
+  saveData();
+  closeRoleCodesModal();
+  render();
+  try {
+    await publishLiveDataToFirestore(nextData, enableLock ? "Codes activés" : "Codes désactivés");
+  } catch {
+    window.alert("Les codes ont été modifiés sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
+    return;
+  }
+  window.alert(enableLock ? "Codes enregistrés et actifs." : "Codes désactivés.");
+}
+
+async function toggleRoleLock() {
+  renderRoleCodesAdminModal();
 }
 
 function initFirebaseSync() {
@@ -418,7 +752,7 @@ function normalizeData(nextData) {
     program: Array.isArray(nextData.program) ? nextData.program : [],
     qualifications: Array.isArray(nextData.qualifications) ? nextData.qualifications : [],
     top2025: Array.isArray(nextData.top2025) ? nextData.top2025 : [],
-    records: Array.isArray(nextData.records) ? nextData.records : [],
+    records: Array.isArray(nextData.records) ? nextData.records.filter(shouldKeepRecord) : [],
     edfMembers: Array.isArray(nextData.edfMembers) ? nextData.edfMembers : (sampleData.edfMembers || []),
     internationalMedals: Array.isArray(nextData.internationalMedals) ? nextData.internationalMedals : (sampleData.internationalMedals || []),
     sourceVersion: nextData.sourceVersion || sampleData.sourceVersion || "",
@@ -1035,6 +1369,12 @@ function render() {
     fullscreenBtn.hidden = state.role === "referee";
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
   }
+  if (roleLockBtn) {
+    roleLockBtn.textContent = pinLockEnabled() ? "🔒" : "🔓";
+    roleLockBtn.title = pinLockEnabled() ? "Codes actifs" : "Codes inactifs";
+    roleLockBtn.setAttribute("aria-label", pinLockEnabled() ? "Codes actifs" : "Codes inactifs");
+    roleLockBtn.classList.toggle("confirm-button", pinLockEnabled());
+  }
   if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
   if (!data.events.length) {
     data.events = structuredClone(sampleData.events);
@@ -1328,7 +1668,7 @@ function renderRolePanels() {
 
 function renderOfficialAlerts() {
   if (!officialAlerts) return;
-  const showVideoInfo = ["live", "speaker"].includes(state.role);
+  const showVideoInfo = ["live", "speaker", "computer"].includes(state.role);
   if (!isSpeakerView() && !showVideoInfo) {
     officialAlerts.hidden = true;
     officialAlerts.innerHTML = "";
@@ -1339,9 +1679,11 @@ function renderOfficialAlerts() {
       .filter((alert) => !alert.cancelledAt && alert.requiresVideo && alert.videoStatus === "pending")
       .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
     : [];
-  const official = alerts
-    .filter(currentRoleAlertFilter)
-    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const official = isSpeakerView()
+    ? alerts
+      .filter(currentRoleAlertFilter)
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
+    : [];
   if (!official.length && !videoInfos.length) {
     officialAlerts.hidden = true;
     officialAlerts.innerHTML = "";
@@ -1991,6 +2333,7 @@ function renderDataStatus(message = "") {
     dataStatus.innerHTML = `
       <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
       <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
+      <span><strong>Codes</strong> ${pinLockEnabled() ? "actifs" : "inactifs"}</span>
       <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
       <span>${escapeHtml(String(entrantTotal))} engagements</span>
       <span>${escapeHtml(String(seriesCount))} lignes de séries</span>
@@ -2565,6 +2908,21 @@ function isRelayEntrant(entrant) {
   return /^\d+x/i.test(String(entrant.eventId || ""));
 }
 
+function isNationalTeamRelayRecord(record) {
+  if (!isRelayEntrant(record)) return false;
+  const values = [record.club, record.holder]
+    .map((value) => String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase());
+  return values.some((value) => value === "EDF" || value === "EDFJ" || value === "EQUIPEDEFRANCE");
+}
+
+function shouldKeepRecord(record) {
+  return !isNationalTeamRelayRecord(record);
+}
+
 function isBestClubRelayEntry(entrant) {
   if (!isRelayEntrant(entrant) || !entrant.clubCode) return false;
   const sameClubEntries = data.entrants.filter((row) => (
@@ -2580,6 +2938,7 @@ function findRelayClubRecords(entrant) {
   if (!isBestClubRelayEntry(entrant)) return [];
   const clubCode = String(entrant.clubCode || "").toUpperCase();
   return data.records.filter((record) => (
+    shouldKeepRecord(record) &&
     record.eventId === entrant.eventId &&
     record.sex === entrant.sex &&
     sameCategory(record.category, entrant.category) &&
@@ -2593,6 +2952,7 @@ function findRecordsHeldByEntrant(entrant) {
   }
   const entrantName = normalizePersonName(formatName(entrant));
   return data.records.filter((record) => (
+    shouldKeepRecord(record) &&
     record.eventId === entrant.eventId &&
     record.sex === entrant.sex &&
     normalizePersonName(record.holder) === entrantName
@@ -2796,6 +3156,7 @@ function currentRecordRows() {
     ? new Set(data.entrants.filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))
     : null;
   return data.records
+    .filter(shouldKeepRecord)
     .filter(matchesRace)
     .filter((record) => !relayCategories || relayCategories.has(record.category))
     .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
@@ -3051,7 +3412,7 @@ function parseRecordsSheet(rows) {
       date: rowValue(row, ["date", "annee", "année"]),
       place: rowValue(row, ["lieu", "place"])
     };
-  }).filter((row) => row.eventId && row.sex && row.category && row.time);
+  }).filter((row) => row.eventId && row.sex && row.category && row.time && shouldKeepRecord(row));
   if (directRows.length) return directRows;
 
   const records = [];
@@ -3071,7 +3432,7 @@ function parseRecordsSheet(rows) {
     const eventId = sheetEventId(first);
     const parsedTime = sheetTime(time);
     if (!eventId || !parsedTime) return;
-    if (eventId.includes("x") && /^edf\.?j?$/i.test(String(club).replace(/\s+/g, ""))) return;
+    if (!shouldKeepRecord({ eventId, club, holder })) return;
     records.push({
       eventId,
       sex: context.sex,
@@ -3385,14 +3746,31 @@ sessionControls?.addEventListener("click", (event) => {
 });
 
 document.querySelectorAll(".role-chip").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     const nextRole = button.dataset.role || "speaker";
     if (nextRole === "referee" && state.role === "referee") {
       refereeTabletMode = !refereeTabletMode;
       render();
       return;
     }
-    switchRole(nextRole);
+    if (!requestRoleAccess(nextRole)) {
+      const access = await askRolePin(nextRole);
+      if (!access?.allowed) return;
+      const reserved = await acquireRoleLock(nextRole, { adminBypass: access.adminBypass });
+      if (!reserved) {
+        unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+        saveUnlockedRoles();
+        return;
+      }
+    } else {
+      const reserved = await acquireRoleLock(nextRole, { adminBypass: false });
+      if (!reserved) {
+        unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+        saveUnlockedRoles();
+        return;
+      }
+    }
+    switchRoleUnlocked(nextRole);
     render();
   });
 });
@@ -3481,6 +3859,74 @@ adminSeriesModal?.addEventListener("change", async (event) => {
   if (!window.confirm(message)) return;
   closeAdminSeriesModal();
   await importSeriesPdf(file, mode, forcedSession);
+});
+
+roleCodesModal?.addEventListener("click", async (event) => {
+  if (event.target === roleCodesModal || event.target.closest("[data-role-codes-close]")) {
+    closeRoleCodesModal();
+    return;
+  }
+  if (event.target.closest("[data-role-pin-cancel]")) {
+    finishRolePin(false);
+    return;
+  }
+  if (event.target.closest("[data-confirm-role-code-admin]")) {
+    const code = String(roleCodesModal.querySelector("#roleCodeAdminInput")?.value || "").trim();
+    if (code !== ADMIN_PIN) {
+      window.alert("Code admin incorrect.");
+      return;
+    }
+    renderRoleCodesModal();
+    return;
+  }
+  const pinButton = event.target.closest("[data-confirm-role-pin]");
+  if (pinButton) {
+    const role = pinButton.dataset.confirmRolePin;
+    const code = String(roleCodesModal.querySelector("#rolePinInput")?.value || "").trim();
+    if (code === ADMIN_PIN) {
+      finishRolePin({ allowed: true, adminBypass: true });
+    } else if (code === currentRolePins()[role]) {
+      unlockRole(role);
+      finishRolePin({ allowed: true, adminBypass: false });
+    } else {
+      window.alert("Code incorrect.");
+    }
+    return;
+  }
+  const saveButton = event.target.closest("[data-save-role-codes]");
+  if (saveButton) {
+    await saveRoleCodesFromModal(true);
+    return;
+  }
+  if (event.target.closest("[data-disable-role-codes]")) {
+    const ok = window.confirm("Désactiver les codes pour toutes les consoles ?");
+    if (ok) await saveRoleCodesFromModal(false);
+  }
+});
+
+roleCodesModal?.addEventListener("input", (event) => {
+  if (event.target?.matches("[data-role-code]")) {
+    event.target.value = String(event.target.value || "").replace(/\D/g, "").slice(0, 4);
+    return;
+  }
+  if (event.target?.matches("#roleCodeAdminInput, #rolePinInput")) {
+    event.target.value = String(event.target.value || "").replace(/[^0-9!]/g, "").slice(0, 5);
+  }
+});
+
+roleCodesModal?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  const adminInput = event.target?.closest("#roleCodeAdminInput");
+  if (adminInput) {
+    event.preventDefault();
+    roleCodesModal.querySelector("[data-confirm-role-code-admin]")?.click();
+    return;
+  }
+  const pinInput = event.target?.closest("#rolePinInput");
+  if (pinInput) {
+    event.preventDefault();
+    roleCodesModal.querySelector("[data-confirm-role-pin]")?.click();
+  }
 });
 
 officialAlerts?.addEventListener("click", (event) => {
@@ -4570,8 +5016,13 @@ async function checkForGeneratedUpdates() {
 }
 
 document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
+roleLockBtn?.addEventListener("click", toggleRoleLock);
 dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
 setInterval(checkForGeneratedUpdates, 5000);
+setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
+window.addEventListener("pagehide", () => {
+  releaseRoleLock();
+});
 
 jsonInput?.addEventListener("change", async () => {
   const file = jsonInput.files[0];

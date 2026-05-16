@@ -204,7 +204,32 @@ body.role-referee.referee-tablet-mode .role-chip[data-role="referee"]::after {
 }
 
 .footer-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 0 12px 12px;
+}
+
+.footer-status .data-status {
+  flex: 1 1 auto;
+}
+
+.footer-lock-button {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d6e5ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.footer-lock-button.confirm-button {
+  border-color: #93c5a5;
+  background: #eefaf1;
+  color: #176232;
 }
 
 body.fullscreen-mode .footer-status {
@@ -1106,6 +1131,59 @@ textarea {
 .program-dialog {
   width: min(860px, 100%);
   max-height: min(86vh, 760px);
+}
+
+.role-codes-dialog {
+  width: min(520px, 100%);
+}
+
+.role-code-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.role-code-grid label {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.role-code-grid input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfdce1;
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.role-code-admin-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.role-code-admin-field input {
+  width: min(170px, 100%);
+  padding: 12px;
+  border: 1px solid #cfdce1;
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-align: center;
 }
 
 .program-list {
@@ -2326,12 +2404,12 @@ tbody tr:hover,
 .ranking-columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 7px;
 }
 
 .ranking-list {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -2339,14 +2417,15 @@ tbody tr:hover,
 .ranking-list.cat-junior,
 .ranking-list.cat-senior,
 .ranking-list.cat-other {
-  border-left: 5px solid var(--cat-color);
+  border-left: 3px solid var(--cat-color);
 }
 
 .ranking-list h4 {
   margin: 0;
-  padding: 10px 12px;
+  padding: 5px 8px;
   background: #f8fafb;
-  font-size: 0.88rem;
+  font-size: 0.74rem;
+  line-height: 1.1;
 }
 
 .ranking-list.cat-cadet h4,
@@ -2365,21 +2444,39 @@ tbody tr:hover,
 
 .ranking-list li {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
-  gap: 8px;
-  padding: 10px 12px;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 5px;
+  min-height: 26px;
+  padding: 4px 7px;
   border-top: 1px solid var(--line);
   align-items: center;
+  font-size: 0.74rem;
+  line-height: 1.15;
 }
 
 .rank {
   color: var(--muted);
+  font-size: 0.72rem;
   font-weight: 850;
+}
+
+.ranking-list strong {
+  font-size: 0.76rem;
+}
+
+.ranking-list .muted-text {
+  display: inline;
+  margin-left: 4px;
+  font-size: 0.66rem;
+}
+
+.ranking-list .time {
+  font-size: 0.74rem;
 }
 
 .empty {
   color: var(--muted);
-  padding: 18px;
+  padding: 8px;
   text-align: center;
 }
 
@@ -2871,6 +2968,11 @@ tbody tr:hover,
     min-height: 38px;
     padding: 7px 9px;
     font-size: 0.82rem;
+  }
+
+  .role-code-grid label {
+    grid-template-columns: 1fr;
+    gap: 5px;
   }
 
   .length-stepper {
