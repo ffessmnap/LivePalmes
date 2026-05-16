@@ -2,6 +2,16 @@
 const ALERTS_KEY = "napSpeakerFrance2026:alerts:v1";
 const LIVE_DISMISSED_ALERTS_KEY = "napSpeakerFrance2026:live-dismissed-alerts:v1";
 const FIRESTORE_COMPETITION_ID = "france-2026-limoges";
+const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
+const SPEAKER_INFO_SHEETS = {
+  france: "France N-1",
+  records: "Records",
+  edf: "EDF",
+  international: "International",
+  qualifications: "Qualifs EDF",
+  clubs: "Club",
+  seedSources: "Lieux temps"
+};
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
   authDomain: "livepalmes.firebaseapp.com",
@@ -259,6 +269,11 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     entrants: payload.entrants,
     series: payload.series,
     program: payload.program,
+    qualifications: payload.qualifications,
+    top2025: payload.top2025,
+    records: payload.records,
+    edfMembers: payload.edfMembers,
+    internationalMedals: payload.internationalMedals,
     sourceVersion: payload.sourceVersion,
     notes: {
       ...(payload.notes || {}),
@@ -281,6 +296,11 @@ function mergeRemoteLiveData(remoteData) {
     entrants: Array.isArray(remoteData.entrants) ? remoteData.entrants : data.entrants,
     series: Array.isArray(remoteData.series) ? remoteData.series : data.series,
     program: Array.isArray(remoteData.program) ? remoteData.program : data.program,
+    qualifications: Array.isArray(remoteData.qualifications) ? remoteData.qualifications : data.qualifications,
+    top2025: Array.isArray(remoteData.top2025) ? remoteData.top2025 : data.top2025,
+    records: Array.isArray(remoteData.records) ? remoteData.records : data.records,
+    edfMembers: Array.isArray(remoteData.edfMembers) ? remoteData.edfMembers : data.edfMembers,
+    internationalMedals: Array.isArray(remoteData.internationalMedals) ? remoteData.internationalMedals : data.internationalMedals,
     sourceVersion: remoteData.sourceVersion || data.sourceVersion,
     notes: {
       ...(data.notes || {}),
@@ -425,6 +445,13 @@ function formatName(swimmer) {
 
 function formatDisplayName(entrant) {
   return isRelayEntrant(entrant) ? (entrant.club || entrant.lastName || "Relais") : formatName(entrant);
+}
+
+function formatSeriesDisplayName(entrant) {
+  if (isRelayEntrant(entrant)) return formatDisplayName(entrant);
+  const lastName = String(entrant.lastName || "").trim().toLocaleUpperCase("fr-FR");
+  const firstName = String(entrant.firstName || "").trim();
+  return [lastName, firstName].filter(Boolean).join(" ") || formatDisplayName(entrant);
 }
 
 function clearSearch() {
@@ -2303,7 +2330,7 @@ function renderEntrants() {
     const clubLabel = state.role === "referee" ? shortClubName(entrant) : (entrant.club || "-");
     const displayName = state.role === "referee" && isRelayEntrant(entrant)
       ? (shortClubName(entrant) || formatDisplayName(entrant))
-      : formatDisplayName(entrant);
+      : formatSeriesDisplayName(entrant);
     const lineAlerts = activeLineAlertsForEntrant(entrant);
     const alertBadges = renderLineAlertBadges(lineAlerts);
     return `
@@ -2773,6 +2800,354 @@ function parseCsv(text) {
       note: row.note || ""
     };
   });
+}
+
+function parseDelimitedRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const source = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const separator = source.split("\n")[0]?.includes(";") ? ";" : ",";
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === '"') {
+      if (quoted && source[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === separator && !quoted) {
+      row.push(cell.trim());
+      cell = "";
+    } else if (char === "\n" && !quoted) {
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows.map((cells) => (cells.length === 1 && cells[0].includes(";") ? cells[0].split(";").map((item) => item.trim()) : cells));
+}
+
+function normalizeSheetHeader(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function sheetObjects(rows) {
+  if (!rows.length) return [];
+  const headerIndex = rows.findIndex((row) => row.some((cell) => normalizeSheetHeader(cell)));
+  if (headerIndex < 0) return [];
+  const headers = rows[headerIndex].map(normalizeSheetHeader);
+  return rows.slice(headerIndex + 1).map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""])));
+}
+
+function rowValue(row, names) {
+  return names.map((name) => row[normalizeSheetHeader(name)]).find((value) => String(value || "").trim()) || "";
+}
+
+function sheetEventId(value) {
+  const normalized = normalizePdfLabel(value);
+  return importedEventId(value) || (data.events || []).find((event) => event.id === normalized)?.id || normalized;
+}
+
+function sheetTime(value) {
+  const clean = String(value || "").trim().replace(",", ".").replace(/\s+/g, "");
+  if (!clean || clean === ":." || clean === "00.00" || clean === "00:00") return "";
+  if (/^\d{6}$/.test(clean)) {
+    return `${clean.slice(0, 2)}:${clean.slice(2, 4)}.${clean.slice(4, 6)}`;
+  }
+  if (/^\d{5}$/.test(clean)) {
+    return `00:${clean.slice(1, 3)}.${clean.slice(3, 5)}`;
+  }
+  return importedSeriesTime(clean);
+}
+
+function seedSourceTimeKey(value) {
+  const ms = timeToMs(value);
+  if (Number.isFinite(ms)) return String(ms);
+  return String(value || "").trim().replace(",", ".").replace(/^00:/, "");
+}
+
+function sheetSex(value) {
+  const text = normalizeSheetHeader(value);
+  if (["f", "femme", "femmes"].includes(text)) return "F";
+  if (["h", "homme", "hommes", "m"].includes(text)) return "M";
+  if (["x", "mixte"].includes(text)) return "X";
+  return String(value || "").trim();
+}
+
+function splitRawTimingCells(cells) {
+  if (String(cells?.[0] || "").includes(";")) {
+    return String(cells[0]).split(";").map((item) => fixPdfEncoding(item).trim());
+  }
+  return (cells || []).map((item) => fixPdfEncoding(item).trim());
+}
+
+function displayNameFromParts(firstName, lastName, fallback = "") {
+  return [firstName, lastName].filter(Boolean).join(" ").trim() || fallback;
+}
+
+function categoryFromCodeOrText(value) {
+  const text = String(value || "").toUpperCase();
+  if (text.includes("CA") || text.includes("CADET")) return "Cadet";
+  if (text.includes("JU") || text.includes("JUNIOR")) return "Junior";
+  if (text.includes("SE") || text.includes("SENIOR")) return "Senior";
+  return value || "";
+}
+
+function personKeyFromSheet(row, sex = "") {
+  const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
+  const lastName = rowValue(row, ["nom", "lastName"]);
+  const fullName = rowValue(row, ["nom_prenom", "nom prenom", "detenteur", "détenteur", "name"]);
+  return `${sheetSex(sex || rowValue(row, ["sexe", "sex"]) || "")}|${normalizePersonName(displayNameFromParts(firstName, lastName, fullName))}`;
+}
+
+async function fetchSpeakerSheetRows(sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${SPEAKER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`onglet ${sheetName} inaccessible`);
+  return parseDelimitedRows(await response.text());
+}
+
+function parseTopSheet(rows) {
+  return sheetObjects(rows).map((row) => {
+    const firstName = rowValue(row, ["prenom", "prénom"]);
+    const lastName = rowValue(row, ["nom"]);
+    return {
+      eventId: rowValue(row, ["course_id", "eventId"]).toLowerCase(),
+      sex: rowValue(row, ["sexe", "sex"]),
+      category: categoryFromCodeOrText(rowValue(row, ["categorie", "catégorie", "category"])),
+      rank: Number(rowValue(row, ["rang", "rank"])) || "",
+      name: displayNameFromParts(firstName, lastName, rowValue(row, ["nom_prenom", "name"])),
+      birthDate: rowValue(row, ["annee_naissance", "naissance", "birthDate"]),
+      clubCode: rowValue(row, ["club_code", "code_club"]),
+      club: rowValue(row, ["club", "club_nom_complet"]),
+      time: importedSeriesTime(rowValue(row, ["temps", "time"]))
+    };
+  }).filter((row) => row.eventId && row.sex && row.category && row.name && row.time);
+}
+
+function parseRecordsSheet(rows) {
+  const directRows = sheetObjects(rows).map((row) => {
+    const category = categoryFromCodeOrText(rowValue(row, ["categorie", "catégorie", "category"]));
+    const type = rowValue(row, ["type", "label"]);
+    return {
+      eventId: sheetEventId(rowValue(row, ["course_id", "eventId", "epreuve", "épreuve"])),
+      sex: rowValue(row, ["sexe", "sex"]),
+      category,
+      label: type || (sameCategory(category, "Cadet") ? "Meilleure performance" : `Record de France ${category}`),
+      holder: rowValue(row, ["detenteur", "détenteur", "holder", "nom_prenom", "nom"]),
+      club: rowValue(row, ["club_code", "club"]),
+      time: sheetTime(rowValue(row, ["temps", "time"])),
+      date: rowValue(row, ["date", "annee", "année"]),
+      place: rowValue(row, ["lieu", "place"])
+    };
+  }).filter((row) => row.eventId && row.sex && row.category && row.time);
+  if (directRows.length) return directRows;
+
+  const records = [];
+  let context = null;
+  rows.forEach((cells) => {
+    const [first = "", time = "", holder = "", club = "", date = "", place = ""] = cells.map((cell) => fixPdfEncoding(cell).trim());
+    const title = normalizeSheetHeader(first);
+    if (!first) return;
+    if (title.includes("jeunes_hommes")) context = { sex: "M", category: "Junior", label: "Record de France junior" };
+    else if (title.includes("jeunes_femmes")) context = { sex: "F", category: "Junior", label: "Record de France junior" };
+    else if (title.includes("toutes_categories_hommes")) context = { sex: "M", category: "Senior", label: "Record de France senior" };
+    else if (title.includes("toutes_categories_femmes")) context = { sex: "F", category: "Senior", label: "Record de France senior" };
+    else if (title.includes("mpf_cadets")) context = { sex: "M", category: "Cadet", label: "Meilleure performance cadet" };
+    else if (title.includes("mpf_cadettes")) context = { sex: "F", category: "Cadet", label: "Meilleure performance cadette" };
+    if (!context) return;
+    if (/^(epreuve|surface|immersion|apnee|apnée|bi palmes|relais)$/i.test(first)) return;
+    const eventId = sheetEventId(first);
+    const parsedTime = sheetTime(time);
+    if (!eventId || !parsedTime) return;
+    if (eventId.includes("x") && /^edf\.?j?$/i.test(String(club).replace(/\s+/g, ""))) return;
+    records.push({
+      eventId,
+      sex: context.sex,
+      category: context.category,
+      label: context.label,
+      holder,
+      club,
+      time: parsedTime,
+      date,
+      place
+    });
+  });
+  return records;
+}
+
+function parseEdfSheet(rows) {
+  const members = [];
+  sheetObjects(rows).forEach((row) => {
+    const edf = rowValue(row, ["edf", "equipe", "équipe", "selection", "sélection"]);
+    const base = { personKey: personKeyFromSheet(row), label: edf || "Equipe de France" };
+    const senior = rowValue(row, ["edf_senior_2025", "senior", "s"]) || (/edf\s*s/i.test(edf) ? edf : "");
+    const junior = rowValue(row, ["edf_junior_2026", "junior", "j"]) || (/edf\s*j/i.test(edf) ? edf : "");
+    if (/oui|x|1|s/i.test(senior)) members.push({ ...base, team: "S", label: "EDF senior 2025" });
+    if (/oui|x|1|j/i.test(junior)) members.push({ ...base, team: "J", label: "EDF junior 2026" });
+  });
+  return members.filter((row) => row.personKey !== "|");
+}
+
+function parseInternationalSheet(rows) {
+  return sheetObjects(rows).map((row) => ({
+    personKey: personKeyFromSheet(row, rowValue(row, ["sexe", "sex"])),
+    eventId: rowValue(row, ["course_id", "eventId"]).toLowerCase(),
+    sex: rowValue(row, ["sexe", "sex"]),
+    eventLabel: rowValue(row, ["course_libelle", "course"]),
+    medal: rowValue(row, ["medaille", "médaille"]),
+    time: importedSeriesTime(rowValue(row, ["temps", "time"])),
+    championship: [rowValue(row, ["championnat"]), rowValue(row, ["annee", "année"])].filter(Boolean).join(" "),
+    place: rowValue(row, ["lieu", "place"])
+  })).filter((row) => row.personKey !== "|" && row.eventId);
+}
+
+function parseQualificationsSheet(rows) {
+  const objects = sheetObjects(rows);
+  const directRows = objects.map((row) => ({
+    eventId: sheetEventId(rowValue(row, ["course_id", "eventId", "epreuve", "épreuve", "course"])),
+    sex: rowValue(row, ["sexe", "sex"]),
+    label: rowValue(row, ["type", "label"]),
+    time: sheetTime(rowValue(row, ["temps", "time"])),
+    category: rowValue(row, ["categorie_concernee", "catégorie", "category"])
+  })).filter((row) => row.eventId && row.sex && row.label && row.time);
+  if (directRows.length) return directRows;
+
+  const qualifications = [];
+  rows.forEach((cells) => {
+    const sexText = String(cells[0] || "").trim();
+    const eventText = String(cells[1] || "").trim();
+    if (!/^(femmes|hommes)$/i.test(sexText) || !eventText) return;
+    const sex = /^femmes$/i.test(sexText) ? "F" : "M";
+    const eventId = sheetEventId(eventText);
+    const tsp = sheetTime(cells[2]);
+    const trp = sheetTime(cells[3]);
+    if (eventId && tsp) qualifications.push({ eventId, sex, label: "TSP", time: tsp, category: "Senior" });
+    if (eventId && trp) qualifications.push({ eventId, sex, label: "TRP", time: trp, category: "Relève" });
+  });
+  return qualifications;
+}
+
+function parseClubSheet(rows) {
+  const clubs = new Map();
+  sheetObjects(rows).forEach((row) => {
+    const code = rowValue(row, ["club_code", "code_club"]).toUpperCase();
+    const name = rowValue(row, ["club_nom_complet", "club", "nom"]);
+    if (code && name) clubs.set(code, name);
+  });
+  return clubs;
+}
+
+function seedSourceNameFromRen(cells) {
+  const date = cells[1] || "";
+  const year = (date.match(/\b(20\d{2})\b/) || date.match(/\b(\d{2})$/))?.[1] || "";
+  const normalizedYear = year.length === 2 ? `20${year}` : year;
+  const place = fixPdfEncoding(cells[3] || "").replace(/,\s*France$/i, "").trim();
+  return [place, normalizedYear].filter(Boolean).join(" ");
+}
+
+function parseSeedSourceSheet(rows) {
+  const sourceByKey = new Map();
+  let currentSource = "";
+  rows.forEach((cells) => {
+    cells = splitRawTimingCells(cells);
+    if (!cells.length) return;
+    if (cells[0] === "REN") {
+      currentSource = seedSourceNameFromRen(cells);
+      return;
+    }
+    if (cells[0] !== "NAG" || !currentSource) return;
+    const lastName = fixPdfEncoding(cells[1] || "").trim();
+    const firstName = fixPdfEncoding(cells[2] || "").trim();
+    const birthDate = cells[3] || "";
+    const birthYear = (birthDate.match(/\d{4}$/) || [])[0] || "";
+    const sex = cells[4] || "";
+    const clubCode = String(cells[5] || "").trim().toUpperCase();
+    const eventId = normalizePdfLabel(cells[7] || "").toLowerCase();
+    const times = [sheetTime(cells[15] || ""), sheetTime(cells[8] || "")]
+      .filter((time, index, list) => time && time !== "00:00" && time !== "00.00" && list.indexOf(time) === index);
+    if (!lastName || !firstName || !eventId || !times.length) return;
+    times.forEach((time) => {
+      const row = { eventId, sex, seedTime: time, swimmerId: `${lastName.toLowerCase()}|${firstName.toLowerCase()}|${birthYear}|${sex}`, clubCode, firstName, lastName };
+      seedSourceLookupKeys(row).forEach((key) => sourceByKey.set(key, currentSource));
+    });
+  });
+  return sourceByKey;
+}
+
+function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
+  return entrants.map((entrant) => {
+    const seedSource = seedSourceLookupKeys(entrant).map((key) => seedSources.get(key)).find(Boolean);
+    const clubName = clubs.get(String(entrant.clubCode || "").toUpperCase());
+    return {
+      ...entrant,
+      seedSource: seedSource || entrant.seedSource || "",
+      club: clubName || entrant.club
+    };
+  });
+}
+
+async function updateSpeakerInfoFromGoogleSheet() {
+  renderDataStatus("Mise à jour des infos speaker depuis Google Sheets...");
+  try {
+    const [
+      franceRows,
+      recordRows,
+      edfRows,
+      internationalRows,
+      qualificationRows,
+      clubRows,
+      seedRows
+    ] = await Promise.all([
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.records),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.edf),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.clubs),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources)
+    ]);
+    const clubs = parseClubSheet(clubRows);
+    const seedSources = parseSeedSourceSheet(seedRows);
+    const entrantsWithSpeakerInfo = applySpeakerInfoToEntrants(data.entrants || [], seedSources, clubs);
+    const attachedSeedSources = entrantsWithSpeakerInfo.filter((entrant) => entrant.seedSource).length;
+    const nextData = normalizeData({
+      ...data,
+      top2025: parseTopSheet(franceRows),
+      records: parseRecordsSheet(recordRows),
+      edfMembers: parseEdfSheet(edfRows),
+      internationalMedals: parseInternationalSheet(internationalRows),
+      qualifications: parseQualificationsSheet(qualificationRows),
+      entrants: entrantsWithSpeakerInfo,
+      sourceVersion: `speaker-info-${Date.now()}`,
+      notes: {
+        ...(data.notes || {}),
+        sourceMode: data.notes?.sourceMode || "series-live",
+        speakerInfoSource: "Google Sheets",
+        speakerInfoUpdatedAt: new Date().toLocaleString("fr-FR")
+      }
+    });
+    applyFreshData(nextData, true);
+    await publishLiveDataToFirestore(nextData, "Infos speaker Google Sheets");
+    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
+  } catch (error) {
+    console.error(error);
+    renderDataStatus("Impossible de lire le Google Sheet. Vérifie le partage en lecture publique.");
+    window.alert(`Mise à jour impossible : ${error?.message || error}. Vérifie que le Google Sheet est partagé en lecture avec le lien.`);
+  }
 }
 
 function downloadJson() {
@@ -3278,6 +3653,7 @@ swimmerDetails.addEventListener("click", (event) => {
 document.querySelector("#printBtn")?.addEventListener("click", () => window.print());
 document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
 document.querySelector("#exportDsqPdfBtn")?.addEventListener("click", exportDsqPdf);
+document.querySelector("#updateSpeakerInfoBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
 
 const PDF_EVENT_ALIASES = {
   "50mapnee": "50ap",
@@ -3352,6 +3728,7 @@ function fixPdfEncoding(value) {
   Object.entries(replacements).forEach(([bad, good]) => {
     text = text.replaceAll(bad, good);
   });
+  text = text.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])Î([A-Za-zÀ-ÖØ-öø-ÿ])/g, "$1ï$2");
   return text.normalize("NFC");
 }
 
@@ -3871,6 +4248,38 @@ function applyImportedSessionOverride(parsed, sessionNumber) {
   };
 }
 
+function seedSourceLookupKeys(row) {
+  const eventId = row.eventId || "";
+  const sex = row.sex || "";
+  const seedTime = seedSourceTimeKey(row.seedTime || "");
+  const swimmerId = row.swimmerId || "";
+  const name = normalizePersonName(formatName(row));
+  return [
+    `${eventId}|${sex}|${swimmerId}|${seedTime}`,
+    `${eventId}|${sex}|${name}|${seedTime}`
+  ].filter((key) => !key.includes("undefined"));
+}
+
+function inheritImportedSeedSources(parsed) {
+  const sourceByKey = new Map();
+  [...(sampleData.entrants || []), ...(data.entrants || [])].forEach((row) => {
+    if (!row.seedSource) return;
+    seedSourceLookupKeys(row).forEach((key) => {
+      if (!sourceByKey.has(key)) sourceByKey.set(key, row.seedSource);
+    });
+  });
+  return {
+    ...parsed,
+    entrants: (parsed.entrants || []).map((row) => {
+      if (row.seedSource) return row;
+      const inheritedSource = seedSourceLookupKeys(row)
+        .map((key) => sourceByKey.get(key))
+        .find(Boolean);
+      return inheritedSource ? { ...row, seedSource: inheritedSource } : row;
+    })
+  };
+}
+
 function mergeImportedSeriesData(parsed, mode = "session") {
   if (mode === "full") {
     return {
@@ -3919,7 +4328,7 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
   renderDataStatus("Lecture du PDF des séries...");
   try {
     const lines = await extractPdfLines(file);
-    const parsed = applyImportedSessionOverride(parseImportedSeriesLines(lines, file.name), forcedSession);
+    const parsed = inheritImportedSeedSources(applyImportedSessionOverride(parseImportedSeriesLines(lines, file.name), forcedSession));
     if (!parsed.series.length || !parsed.program.length) {
       showPdfImportDebug(parsed, lines);
       renderDataStatus();
