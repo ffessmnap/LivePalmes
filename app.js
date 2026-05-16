@@ -3351,7 +3351,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     const clean = String(line || "").replace(/\s+/g, " ").trim();
     if (!clean) return;
     normalizedLines.push(clean);
-    const embeddedHeatIndex = clean.search(/\bs.{1,2}rie:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i);
+    const embeddedHeatIndex = clean.search(/\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i);
     if (embeddedHeatIndex > 0) {
       normalizedLines.push(clean.slice(0, embeddedHeatIndex).trim());
       normalizedLines.push(clean.slice(embeddedHeatIndex).trim());
@@ -3372,7 +3372,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
   const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif : (\d{2}:\d{2})(?: \((\d+)\))?/i;
   const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: Meilleure série.*)?$/i;
-  const heatPattern = /^s.{1,2}rie:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
+  const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
   const swimmerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
   const speakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
   const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
@@ -3586,8 +3586,17 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     entrants,
     series: seriesRows,
     program,
-    sourceFile: fileName
+    sourceFile: fileName,
+    debugLines: normalizedLines.slice(0, 80)
   };
+}
+
+function showPdfImportDebug(parsed, lines) {
+  const samples = (parsed?.debugLines?.length ? parsed.debugLines : lines)
+    .slice(0, 18)
+    .map((line, index) => `${index + 1}. ${line}`)
+    .join("\n");
+  window.alert(`Import PDF non reconnu.\n\nLignes lues dans le PDF :\n${samples || "Aucune ligne lue."}`);
 }
 
 async function importSeriesPdf(file) {
@@ -3597,7 +3606,7 @@ async function importSeriesPdf(file) {
     const lines = await extractPdfLines(file);
     const parsed = parseImportedSeriesLines(lines, file.name);
     if (!parsed.series.length || !parsed.program.length) {
-      window.alert("Je n'ai pas réussi à retrouver les séries dans ce PDF. Vérifie que c'est bien un PDF de séries speaker.");
+      showPdfImportDebug(parsed, lines);
       renderDataStatus();
       return;
     }
