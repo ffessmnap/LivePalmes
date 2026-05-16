@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Speaker Nage avec Palmes - France 2026 Limoges</title>
+    <link rel="stylesheet" href="styles.css?v=20260516-ergo">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p id="meetEyebrow" class="eyebrow">Championnat de France 2026 - Limoges</p>
+        <h1>LivePalmes</h1>
+      </div>
+      <div class="top-session-field">
+        <span>Sessions</span>
+        <div id="sessionControls" class="session-controls"></div>
+      </div>
+      <div class="role-switch" aria-label="Console">
+        <button class="role-chip active" type="button" data-role="live">Live</button>
+        <button class="role-chip" type="button" data-role="speaker">Speaker</button>
+        <button class="role-chip" type="button" data-role="referee">Juge arbitre</button>
+        <button class="role-chip" type="button" data-role="video">Juge vid&eacute;o</button>
+        <button class="role-chip" type="button" data-role="computer">Informatique</button>
+      </div>
+      <div class="top-actions">
+        <button id="fullscreenBtn" class="ghost-button compact" type="button">Plein &eacute;cran</button>
+        <button id="exportDsqPdfBtn" class="ghost-button compact admin-only" type="button">Export DSQ</button>
+        <button id="resetHistoryBtn" class="ghost-button compact computer-only danger-button" type="button">RAZ historique</button>
+        <button id="reloadDataBtn" class="ghost-button">R&eacute;g&eacute;n&eacute;rer les donn&eacute;es</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Choix de la course">
+        <div class="field">
+          <label for="eventSelect">Course</label>
+          <select id="eventSelect"></select>
+        </div>
+        <div class="field series-field">
+          <label>S&eacute;ries</label>
+          <div id="seriesControls" class="series-controls"></div>
+          <div class="series-nav">
+            <button id="previousSeriesBtn" class="ghost-button compact" type="button">S&eacute;rie pr&eacute;c&eacute;dente</button>
+            <button id="nextSeriesBtn" class="ghost-button compact" type="button">S&eacute;rie suivante</button>
+          </div>
+        </div>
+        <button id="programBtn" class="ghost-button program-button" type="button">Programme</button>
+        <button id="refereeTabletModeBtn" class="ghost-button compact referee-tablet-toggle" type="button">Affichage smartphone</button>
+        <div class="field category-field">
+          <label for="categorySelect">Cat&eacute;gorie</label>
+          <select id="categorySelect"></select>
+        </div>
+      </aside>
+
+      <section class="race-panel">
+        <div id="officialAlerts" class="alert-strip" hidden></div>
+        <div class="race-header">
+          <div>
+            <div class="race-meta-line">
+              <p id="raceMeta" class="eyebrow">Toutes cat&eacute;gories</p>
+              <div class="race-stats">
+                <span class="entry-count-stat"><strong id="entrantCount">0</strong> <span id="entrantCountLabel">engag&eacute;s</span></span>
+                <span class="best-entry-stat"><small class="stat-label">meilleur engagement :</small> <strong id="bestEntry">--</strong> <small id="bestEntryName"></small></span>
+              </div>
+            </div>
+            <h2 id="raceTitle">Course</h2>
+            <div id="headerRefs" class="header-refs speaker-only"></div>
+            <div id="headerRefDetails" class="header-ref-details speaker-only" hidden></div>
+          </div>
+          <div class="badge-row">
+            <span id="raceSexBadge" class="badge">Femmes</span>
+            <span id="roleBadge" class="badge muted">Speaker</span>
+          </div>
+        </div>
+
+        <div class="grid-two">
+          <article class="panel entrants-panel">
+            <div class="panel-title">
+              <div class="entrant-heading">
+                <h3 id="entrantsTitle">Engag&eacute;s 2026</h3>
+                <p id="entrantsSubtitle" class="panel-subtitle"></p>
+              </div>
+              <div class="panel-actions">
+                <button id="previousSeriesInlineBtn" class="ghost-button compact" type="button">S&eacute;rie pr&eacute;c&eacute;dente</button>
+                <button id="nextSeriesInlineBtn" class="ghost-button compact" type="button">S&eacute;rie suivante</button>
+                <button id="lineOrderBtn" class="line-order-button" type="button" title="Inverser l'ordre des lignes">Lignes 1-8</button>
+                <span id="filteredCount" class="soft-count">0 affich&eacute;s</span>
+              </div>
+            </div>
+            <div class="entrants-layout">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th id="rankHeader">Rang</th>
+                      <th id="swimmerHeader">Nageur</th>
+                      <th>Cat.</th>
+                      <th>Temps</th>
+                      <th>Rep&egrave;re</th>
+                    </tr>
+                  </thead>
+                  <tbody id="entrantsBody"></tbody>
+                </table>
+              </div>
+              <div id="swimmerDetails" class="swimmer-details" hidden></div>
+            </div>
+          </article>
+        </div>
+
+        <section id="decisionPanel" class="panel decision-panel" hidden></section>
+        <section id="roleQueue" class="panel role-queue" hidden></section>
+        <section id="roleHistory" class="panel role-history" hidden></section>
+
+        <div class="reference-grid single-reference speaker-only">
+          <article class="panel">
+            <div class="panel-title">
+              <h3>Top 5 Championnat de France 2025</h3>
+            </div>
+            <div id="top2025Box" class="ranking-columns"></div>
+          </article>
+        </div>
+
+        <section id="speakerHistory" class="panel speaker-history speaker-only" hidden></section>
+      </section>
+    </main>
+
+    <footer class="footer-status">
+      <div id="dataStatus" class="data-status" hidden></div>
+    </footer>
+
+    <div class="floating-series-nav">
+      <button id="previousSeriesFloatBtn" class="floating-next floating-previous" type="button">S&eacute;rie pr&eacute;c&eacute;dente</button>
+      <button id="programFloatBtn" class="floating-next floating-program" type="button">Programme</button>
+      <button id="nextSeriesFloatBtn" class="floating-next" type="button">S&eacute;rie suivante</button>
+    </div>
+    <div id="antoineOverlay" class="antoine-overlay" hidden>
+      <div>Vive Antoine Fauveau</div>
+    </div>
+    <div id="decisionModal" class="decision-modal" hidden></div>
+    <div id="alertDetailModal" class="decision-modal alert-detail-modal" hidden></div>
+    <div id="programModal" class="decision-modal program-modal" hidden></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="data.generated.js?v=20260516-firebase"></script>
+    <script src="app.js?v=20260516-firebase"></script>
+  </body>
+</html>
