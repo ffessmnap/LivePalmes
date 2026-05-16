@@ -1186,13 +1186,28 @@ textarea {
   text-align: center;
 }
 
-.subtle-admin-link {
-  width: fit-content;
-  min-height: 28px;
-  padding: 0 8px;
+.admin-extra-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  border: 1px dashed #cfdce1;
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
+.admin-extra-zone span {
   color: var(--muted);
   font-size: 0.72rem;
-  opacity: 0.72;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.admin-extra-zone button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 0.76rem;
 }
 
 .archive-list {
@@ -3030,6 +3045,11 @@ tbody tr:hover,
 
   .archive-actions button {
     flex: 1 1 auto;
+  }
+
+  .admin-extra-zone {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .length-stepper {
