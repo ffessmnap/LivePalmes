@@ -4,13 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LivePalmes version BETA</title>
-    <link rel="stylesheet" href="styles.css?v=20260516-sheet-online">
+    <link rel="stylesheet" href="styles.css?v=20260516-ja-dsq-by-discipline">
   </head>
   <body>
     <header class="topbar">
       <div>
-        <p id="meetEyebrow" class="eyebrow">Championnat de France 2026 - Limoges</p>
-        <h1>LivePalmes</h1>
+        <p class="eyebrow app-name">
+          <span class="livepalmes-logo" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false">
+              <rect class="logo-card" x="3.5" y="9" width="17" height="14" rx="3.2"/>
+              <path class="logo-card-line" d="M8 14h7.8M8 18h5.2"/>
+              <circle class="logo-live-dot" cx="21.5" cy="10.2" r="3.2"/>
+              <path class="logo-wave" d="M23.9 16c1.5.8 2.7 2 3.4 3.5M25.6 12.5c2.5 1.2 4.4 3.2 5.4 5.8"/>
+            </svg>
+          </span>
+          LivePalmes
+        </p>
+        <h1 id="meetTitle">Championnat de France 2026 - Limoges</h1>
       </div>
       <div class="top-session-field">
         <span>Sessions</span>
@@ -25,6 +35,7 @@
       </div>
       <div class="top-actions">
         <button id="fullscreenBtn" class="ghost-button compact" type="button">Plein &eacute;cran</button>
+        <button id="dataDiagnosticBtn" class="ghost-button compact computer-only" type="button">Diagnostic</button>
         <button id="updateSpeakerInfoBtn" class="ghost-button compact computer-only" type="button">Infos speaker</button>
         <button id="adminSeriesBtn" class="ghost-button compact admin-import-button" type="button">Admin s&eacute;ries</button>
         <button id="exportDsqPdfBtn" class="ghost-button compact admin-only" type="button">Export DSQ</button>
@@ -144,7 +155,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="data.generated.js?v=20260516-sheet-online"></script>
-    <script src="app.js?v=20260516-sheet-online"></script>
+    <script src="data.generated.js?v=20260516-ja-dsq-by-discipline"></script>
+    <script src="app.js?v=20260516-ja-dsq-by-discipline"></script>
   </body>
 </html>

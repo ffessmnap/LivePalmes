@@ -165,6 +165,34 @@ body.role-referee.referee-tablet-mode .role-chip[data-role="referee"]::after {
   border: 1px solid #dce7ee;
 }
 
+.data-status .status-history {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+  border-radius: 6px;
+  color: #52616b;
+  font-weight: 750;
+}
+
+.firebase-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #f59f00;
+}
+
+.firebase-dot.ok {
+  background: #2f9e44;
+}
+
+.firebase-dot.error {
+  background: #c92a2a;
+}
+
+.firebase-dot.pending {
+  background: #f59f00;
+}
+
 .data-status.warning {
   border-color: #f2c94c;
   background: #fff8db;
@@ -206,6 +234,52 @@ body.fullscreen-mode .top-actions .ghost-button:not(#fullscreenBtn) {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0;
+}
+
+.app-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #60717c;
+}
+
+.livepalmes-logo {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  color: var(--role-accent);
+}
+
+.livepalmes-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-card {
+  fill: #ffffff;
+  stroke: color-mix(in srgb, var(--role-accent) 82%, #1b8f6a);
+  stroke-width: 2.2;
+}
+
+.logo-card-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--role-accent) 70%, #1f7a9b);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.logo-live-dot {
+  fill: #c92a2a;
+  stroke: #ffffff;
+  stroke-width: 1.4;
+}
+
+.logo-wave {
+  fill: none;
+  stroke: #1f7a9b;
+  stroke-width: 2.1;
+  stroke-linecap: round;
 }
 
 h1,
@@ -882,6 +956,33 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
+}
+
+.decision-existing {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #efb5ad;
+  border-radius: 8px;
+  background: #fff5f4;
+}
+
+.decision-existing > strong {
+  color: #9f1d16;
+  font-size: 0.82rem;
+}
+
+.decision-existing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.decision-existing-row span {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 900;
 }
 
 .decision-choice,
@@ -1671,8 +1772,12 @@ td {
 
 .series-table .name-cell,
 .series-table .time-cell,
-.series-table td:nth-child(5) {
+.series-table .name-cell {
   overflow: hidden;
+}
+
+.series-table td:nth-child(5) {
+  overflow: visible;
 }
 
 .series-table .swimmer-button,
@@ -1689,15 +1794,20 @@ td {
 }
 
 .series-table .reference-badges {
-  flex-wrap: nowrap;
-  overflow: hidden;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 3px;
+  overflow: visible;
 }
 
 .series-table .badge {
-  min-height: 24px;
-  padding: 0 7px;
-  font-size: 0.72rem;
-  white-space: nowrap;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 1px 5px;
+  font-size: clamp(0.58rem, 0.92vw, 0.68rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .floating-next {
@@ -2126,14 +2236,17 @@ tbody tr:hover,
 .record-gap {
   display: block;
   width: fit-content;
+  max-width: 100%;
   margin-top: 3px;
   padding: 2px 5px;
   border-radius: 5px;
   background: #fff3c4;
   color: #755100;
-  font-size: 0.7rem;
+  font-size: clamp(0.58rem, 0.9vw, 0.68rem);
   font-weight: 900;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .record-gap.under-record {
@@ -2685,31 +2798,114 @@ tbody tr:hover,
 
   .decision-dialog {
     width: 100%;
-    max-height: 94vh;
-    padding: 13px;
+    max-height: 96vh;
+    gap: 8px;
+    padding: 10px;
     border-radius: 12px 12px 8px 8px;
   }
 
+  .decision-modal-head {
+    gap: 8px;
+  }
+
+  .decision-modal-head span,
+  .decision-comment,
+  .decision-length-input {
+    font-size: 0.64rem;
+  }
+
   .decision-modal-head h2 {
-    font-size: 1.08rem;
+    font-size: 1rem;
+  }
+
+  .decision-modal-head p {
+    margin-top: 2px;
+    font-size: 0.74rem;
+  }
+
+  .decision-modal-head .decision-race-info {
+    font-size: 0.72rem;
   }
 
   .decision-choice-grid {
     grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .decision-existing-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .decision-choice {
-    min-height: 50px;
-    font-size: 0.88rem;
+    min-height: 36px;
+    padding: 7px 9px;
+    font-size: 0.8rem;
+    border-radius: 7px;
+  }
+
+  .decision-existing,
+  .decision-extra {
+    gap: 6px;
+    padding: 8px;
+    border-radius: 7px;
+  }
+
+  .decision-extra p {
+    font-size: 0.78rem;
+  }
+
+  .decision-extra-buttons {
+    gap: 6px;
   }
 
   .decision-extra-button {
     min-width: calc(50% - 4px);
+    min-height: 34px;
+    padding: 7px 8px;
+    font-size: 0.78rem;
+    border-radius: 7px;
+  }
+
+  .decision-comment textarea {
+    min-height: 38px;
+    padding: 7px 9px;
+    font-size: 0.82rem;
+  }
+
+  .length-stepper {
+    grid-template-columns: 36px 70px 36px;
+    gap: 5px;
+  }
+
+  .stepper-button {
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+  }
+
+  .decision-length-input input {
+    max-width: 70px;
+    padding: 7px 9px;
+    font-size: 0.9rem;
   }
 
   .decision-modal-actions {
+    position: sticky;
+    bottom: -10px;
     display: grid;
     grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 0 -10px -10px;
+    padding: 8px 10px 10px;
+    border-top: 1px solid #d7e7eb;
+    background: #ffffff;
+    box-shadow: 0 -8px 18px rgba(255, 255, 255, 0.94);
+  }
+
+  .decision-modal-actions button {
+    min-height: 38px;
+    padding: 7px 10px;
   }
 
   .alert-detail-grid,
