@@ -3314,7 +3314,7 @@ function fixPdfEncoding(value) {
   Object.entries(replacements).forEach(([bad, good]) => {
     text = text.replaceAll(bad, good);
   });
-  return text;
+  return text.normalize("NFC");
 }
 
 function importedEventId(label) {
@@ -3391,14 +3391,15 @@ async function extractPdfLines(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const text = await page.getTextContent();
-    extractPdfLinesByFlow(text.items).forEach((line) => {
-      if (!lines.includes(line)) lines.push(line);
-    });
-    lines.push(...extractPdfLinesFromItems(text.items, 2.5));
-    const looseLines = extractPdfLinesFromItems(text.items, 7);
-    looseLines.forEach((line) => {
-      if (!lines.includes(line)) lines.push(line);
-    });
+    const pageLines = [];
+    const appendPageLine = (line) => {
+      const clean = String(line || "").replace(/\s+/g, " ").trim();
+      if (clean && !pageLines.includes(clean)) pageLines.push(clean);
+    };
+    extractPdfLinesByFlow(text.items).forEach(appendPageLine);
+    extractPdfLinesFromItems(text.items, 2.5).forEach(appendPageLine);
+    extractPdfLinesFromItems(text.items, 7).forEach(appendPageLine);
+    lines.push(...pageLines);
   }
   return lines;
 }
@@ -3459,16 +3460,17 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const eventsById = new Map(data.events.map((event) => [event.id, event]));
   const seenProgram = new Set();
   const seenEntrants = new Set();
+  const seenSeriesRows = new Set();
   let currentSession = { number: "", label: "" };
   let current = null;
   let pendingFinal = null;
   let order = 0;
   const meet = parseImportedMeetMetadata(normalizedLines);
 
-  const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: Meilleure série.*))?$/i;
+  const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: Meilleure s[eé]rie.*))?$/i;
   const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
   const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif : (\d{2}:\d{2})(?: \((\d+)\))?/i;
-  const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: Meilleure série.*)?$/i;
+  const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: Meilleure s[eé]rie.*)?$/i;
   const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
   const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
   const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
@@ -3554,6 +3556,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       const event = importedEventInfo(eventId, label);
       eventsById.set(eventId, event);
       const sex = { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText];
+      const stage = /Meilleure s[eé]rie/i.test(line) ? "meilleure-serie" : "series";
       const programKeyValue = `${eventId}|${sex}|${currentSession.number}|series`;
       if (!seenProgram.has(programKeyValue)) {
         order += 1;
@@ -3562,10 +3565,10 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
           eventId,
           sex,
           order,
-          label: event.label,
+          label: stage === "meilleure-serie" ? `${event.label} - Meilleure série` : event.label,
           session: currentSession.number,
           sessionLabel: currentSession.label,
-          stage: "series",
+          stage,
           hasEntrants: true
         });
       }
@@ -3579,7 +3582,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         isRelay: isImportedRelayEvent(eventId),
         session: currentSession.number,
         sessionLabel: currentSession.label,
-        stage: "series"
+        stage
       };
       return;
     }
@@ -3665,19 +3668,31 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         note: ""
       });
     }
-    seriesRows.push({
-      eventId: current.eventId,
-      sex: current.sex,
-      swimmerId,
-      series: current.series,
-      seriesCount: current.seriesCount,
-      line: Number(lane),
-      startTime: current.startTime,
-      heatOrder: current.heatOrder,
-      session: current.session,
-      sessionLabel: current.sessionLabel,
-      stage: current.stage
-    });
+    const seriesKeyValue = [
+      current.eventId,
+      current.sex,
+      current.session,
+      current.stage,
+      current.series,
+      lane,
+      swimmerId
+    ].join("|");
+    if (!seenSeriesRows.has(seriesKeyValue)) {
+      seenSeriesRows.add(seriesKeyValue);
+      seriesRows.push({
+        eventId: current.eventId,
+        sex: current.sex,
+        swimmerId,
+        series: current.series,
+        seriesCount: current.seriesCount,
+        line: Number(lane),
+        startTime: current.startTime,
+        heatOrder: current.heatOrder,
+        session: current.session,
+        sessionLabel: current.sessionLabel,
+        stage: current.stage
+      });
+    }
   });
 
   return {
@@ -3845,7 +3860,12 @@ async function importSeriesPdf(file, mode = "session") {
     applyFreshData(nextData, true);
     try {
       await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
-      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.`);
+      const sessionList = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b))
+        .map((session) => `S${session}`)
+        .join(", ");
+      const sessionText = sessionList ? ` Sessions détectées : ${sessionList}.` : "";
+      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}`);
     } catch {
       window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
     }
