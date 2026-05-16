@@ -3209,11 +3209,52 @@ const PDF_EVENT_ALIASES = {
 };
 
 function normalizePdfLabel(value) {
-  return String(value || "")
+  return fixPdfEncoding(value)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "")
     .toLowerCase();
+}
+
+function fixPdfEncoding(value) {
+  let text = String(value || "");
+  const replacements = {
+    "Ã©": "é",
+    "Ã¨": "è",
+    "Ãª": "ê",
+    "Ã«": "ë",
+    "Ã ": "à",
+    "Ã¢": "â",
+    "Ã¤": "ä",
+    "Ã®": "î",
+    "Ã¯": "ï",
+    "Ã´": "ô",
+    "Ã¶": "ö",
+    "Ã¹": "ù",
+    "Ã»": "û",
+    "Ã¼": "ü",
+    "Ã§": "ç",
+    "Ã‰": "É",
+    "Ãˆ": "È",
+    "ÃŠ": "Ê",
+    "Ã‹": "Ë",
+    "Ã€": "À",
+    "Ã‚": "Â",
+    "ÃŽ": "Î",
+    "Ã”": "Ô",
+    "Ã™": "Ù",
+    "Ã‡": "Ç",
+    "Å“": "œ",
+    "Å’": "Œ",
+    "â€™": "’",
+    "â€˜": "‘",
+    "â€“": "-",
+    "â€”": "-"
+  };
+  Object.entries(replacements).forEach(([bad, good]) => {
+    text = text.replaceAll(bad, good);
+  });
+  return text;
 }
 
 function importedEventId(label) {
@@ -3261,7 +3302,7 @@ function importedSeriesTime(value) {
 }
 
 function splitImportedPersonName(value) {
-  const tokens = String(value || "").trim().split(/\s+/).filter(Boolean);
+  const tokens = fixPdfEncoding(value).trim().split(/\s+/).filter(Boolean);
   let firstIndex = Math.max(0, tokens.length - 1);
   for (let index = 0; index < tokens.length; index += 1) {
     const letters = tokens[index].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
@@ -3348,14 +3389,9 @@ function extractPdfLinesFromItems(items, tolerance = 2.5) {
 function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const normalizedLines = [];
   lines.forEach((line) => {
-    const clean = String(line || "").replace(/\s+/g, " ").trim();
+    const clean = fixPdfEncoding(line).replace(/\s+/g, " ").trim();
     if (!clean) return;
-    normalizedLines.push(clean);
-    const embeddedHeatIndex = clean.search(/\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i);
-    if (embeddedHeatIndex > 0) {
-      normalizedLines.push(clean.slice(0, embeddedHeatIndex).trim());
-      normalizedLines.push(clean.slice(embeddedHeatIndex).trim());
-    }
+    splitEmbeddedPdfLines(clean).forEach((part) => normalizedLines.push(part));
   });
   const entrants = [];
   const seriesRows = [];
@@ -3385,13 +3421,14 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       return;
     }
     if (line.includes("Session du") || line.includes("Session de l")) {
-      currentSession = { ...currentSession, label: line };
+      currentSession = { ...currentSession, label: fixPdfEncoding(line) };
       return;
     }
 
     const finalTitleMatch = line.match(finalTitlePattern);
     if (finalTitleMatch) {
-      const [, label, sexText, startTime] = finalTitleMatch;
+      const [, rawLabel, sexText, startTime] = finalTitleMatch;
+      const label = fixPdfEncoding(rawLabel);
       const eventId = importedEventId(label);
       if (eventId) {
         const event = importedEventInfo(eventId, label);
@@ -3442,7 +3479,8 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     const titleMatch = line.match(titlePattern) || line.match(relayTitlePattern);
     if (titleMatch) {
       pendingFinal = null;
-      const [, label, sexText] = titleMatch;
+      const [, rawLabel, sexText] = titleMatch;
+      const label = fixPdfEncoding(rawLabel);
       if (/Finale/i.test(line)) {
         current = null;
         return;
@@ -3518,22 +3556,22 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     let swimmerId = "";
     if (relayMatch) {
       lane = relayMatch[1];
-      rawName = relayMatch[2].trim();
+      rawName = fixPdfEncoding(relayMatch[2].trim());
       catCode = relayMatch.groups.cat || (current.sex === "X" ? "XSE" : (current.sex === "F" ? "FSE" : "HSE"));
       club = relayMatch.groups.club;
       seedTime = relayMatch.groups.time;
-      fullClub = relayMatch.groups.full.trim() || rawName;
+      fullClub = fixPdfEncoding(relayMatch.groups.full.trim() || rawName);
       lastName = rawName;
       swimmerId = `relay|${current.eventId}|${current.sex}|${club.toLowerCase()}|${lane}|${current.series}`;
     } else if (swimmerMatch || speakerMatch) {
       const match = swimmerMatch || speakerMatch;
       lane = match[1];
-      rawName = match[2];
+      rawName = fixPdfEncoding(match[2]);
       birth = match[3];
       catCode = match[4];
       club = match[5];
       seedTime = match[6];
-      fullClub = speakerMatch ? (match[7].trim() || club) : club;
+      fullClub = speakerMatch ? fixPdfEncoding(match[7].trim() || club) : club;
       const split = splitImportedPersonName(rawName);
       lastName = split.lastName;
       firstName = split.firstName;
@@ -3589,6 +3627,34 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     sourceFile: fileName,
     debugLines: normalizedLines.slice(0, 80)
   };
+}
+
+function splitEmbeddedPdfLines(line) {
+  const parts = [];
+  const markers = [
+    /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i,
+    /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i
+  ];
+  const queue = [line];
+  while (queue.length) {
+    const currentLine = queue.shift().trim();
+    if (!currentLine) continue;
+    let splitIndex = -1;
+    for (const marker of markers) {
+      const match = marker.exec(currentLine);
+      if (match && match.index > 0) {
+        splitIndex = match.index;
+        break;
+      }
+    }
+    if (splitIndex > 0) {
+      queue.unshift(currentLine.slice(splitIndex).trim());
+      queue.unshift(currentLine.slice(0, splitIndex).trim());
+    } else {
+      parts.push(currentLine);
+    }
+  }
+  return parts;
 }
 
 function showPdfImportDebug(parsed, lines) {
