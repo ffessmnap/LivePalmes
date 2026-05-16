@@ -3403,6 +3403,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   let current = null;
   let pendingFinal = null;
   let order = 0;
+  const meet = parseImportedMeetMetadata(normalizedLines);
 
   const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: Meilleure série.*))?$/i;
   const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
@@ -3620,12 +3621,45 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   });
 
   return {
+    meet,
     events: [...eventsById.values()],
     entrants,
     series: seriesRows,
     program,
     sourceFile: fileName,
     debugLines: normalizedLines.slice(0, 80)
+  };
+}
+
+function parseImportedMeetMetadata(lines) {
+  const firstUseful = lines.find((line) => /^FFESSM\s+/i.test(line)) || "";
+  const secondUseful = lines.find((line) => /\b20\d{2}\b/.test(line) && !/^FFESSM\s+/i.test(line)) || "";
+  let name = "";
+  let city = "";
+  let year = "";
+  if (firstUseful) {
+    const cleaned = firstUseful.replace(/^FFESSM\s+/i, "").trim();
+    const match = cleaned.match(/(.+?)\s+CNNP\s*([A-Za-zÀ-ÖØ-öø-ÿ' -]+)?/i);
+    if (match) {
+      name = match[1].trim();
+      city = (match[2] || "").trim();
+    } else {
+      name = cleaned.replace(/\s+CNNP.*$/i, "").trim();
+    }
+  }
+  const combined = `${firstUseful} ${secondUseful}`;
+  const yearMatch = combined.match(/\b(20\d{2})\b/);
+  if (yearMatch) year = yearMatch[1];
+  if (!city && secondUseful) {
+    city = secondUseful.split(/\s+-\s+/)[0].trim();
+  }
+  if (year && name && !name.includes(year)) {
+    name = `${name} ${year}`;
+  }
+  return {
+    name: name || "Séries importées",
+    city,
+    year
   };
 }
 
@@ -3721,6 +3755,7 @@ async function importSeriesPdf(file) {
     const mergedSeriesData = mergeImportedSeriesData(parsed);
     const nextData = normalizeData({
       ...data,
+      meet: parsed.meet || data.meet,
       events: mergedSeriesData.events,
       entrants: mergedSeriesData.entrants,
       series: mergedSeriesData.series,
