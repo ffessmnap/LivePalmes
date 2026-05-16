@@ -14,6 +14,7 @@ const ROLE_PINS = {
 };
 const LOCK_DURATION_MS = 120000;
 const LOCK_HEARTBEAT_MS = 30000;
+const FIREBASE_CONNECTION_CHECK_MS = 15000;
 const SPEAKER_INFO_SHEETS = {
   france: "France N-1",
   records: "Records",
@@ -208,11 +209,15 @@ let computerTabletMode = false;
 let firestoreDb = null;
 let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
+let resultsUnsubscribe = null;
 let firestoreReady = false;
 let firebaseStatus = "connecting";
+let firebaseConnectionCheckRunning = false;
 let applyingRemoteData = false;
 let rolePinResolver = null;
 let activeRoleLock = null;
+let raceResults = [];
+let currentResultImportRow = null;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -257,8 +262,10 @@ const decisionModal = document.querySelector("#decisionModal");
 const alertDetailModal = document.querySelector("#alertDetailModal");
 const programModal = document.querySelector("#programModal");
 const adminSeriesModal = document.querySelector("#adminSeriesModal");
+const resultImportModal = document.querySelector("#resultImportModal");
 const roleCodesModal = document.querySelector("#roleCodesModal");
 const roleQueue = document.querySelector("#roleQueue");
+const resultsAdminPanel = document.querySelector("#resultsAdminPanel");
 const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
@@ -310,6 +317,14 @@ function historyArchivesCollection() {
     .collection("competitions")
     .doc(FIRESTORE_COMPETITION_ID)
     .collection("historyArchives");
+}
+
+function resultsCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("results");
 }
 
 function liveDataDocument() {
@@ -763,6 +778,7 @@ function initFirebaseSync() {
     firestoreDb = window.firebase.firestore();
     firestoreUnsubscribe?.();
     liveDataUnsubscribe?.();
+    resultsUnsubscribe?.();
     firestoreUnsubscribe = alertsCollection()
       .orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
@@ -779,16 +795,51 @@ function initFirebaseSync() {
     liveDataUnsubscribe = liveDataDocument().onSnapshot((snapshot) => {
       if (!snapshot.exists) return;
       const remote = snapshot.data()?.data;
+      firebaseStatus = "connected";
       if (!remote?.sourceVersion || remote.sourceVersion === data.sourceVersion) return;
       applyRemoteLiveData(remote);
     }, (error) => {
       console.warn("Lecture des données live Firebase impossible", error);
       firebaseStatus = "error";
+      renderDataStatus();
     });
+    resultsUnsubscribe = resultsCollection()
+      .orderBy("updatedAt", "desc")
+      .onSnapshot((snapshot) => {
+        raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        renderResultsAdminPanel();
+      }, (error) => {
+        console.warn("Lecture des résultats Firebase impossible", error);
+      });
   } catch (error) {
     console.warn("Initialisation Firebase impossible", error);
     firebaseStatus = "error";
     renderDataStatus("Firebase n'est pas configuré correctement. Les alertes restent locales sur cet appareil.");
+  }
+}
+
+async function checkFirebaseConnection() {
+  if (firebaseConnectionCheckRunning) return;
+  if (!window.navigator.onLine) {
+    firebaseStatus = "offline";
+    renderDataStatus();
+    return;
+  }
+  const doc = liveDataDocument();
+  if (!doc) {
+    firebaseStatus = "local";
+    renderDataStatus();
+    return;
+  }
+  firebaseConnectionCheckRunning = true;
+  try {
+    await doc.get({ source: "server" });
+    firebaseStatus = "connected";
+  } catch (error) {
+    firebaseStatus = window.navigator.onLine ? "error" : "offline";
+  } finally {
+    firebaseConnectionCheckRunning = false;
+    renderDataStatus();
   }
 }
 
@@ -1790,9 +1841,97 @@ function renderVideoInfoCard(alert) {
 function renderRolePanels() {
   renderOfficialAlerts();
   renderDecisionPanel();
+  renderResultsAdminPanel();
   renderRoleQueue();
   renderRoleHistory();
   renderSpeakerHistory();
+}
+
+function resultIdForProgramRow(row) {
+  return `result-${raceOptionKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
+}
+
+function resultForProgramRow(row) {
+  const raceKey = raceOptionKey(row.eventId, row.sex);
+  return raceResults.find((result) => result.raceKey === raceKey) || null;
+}
+
+function isLastProgramPartForRace(row) {
+  const raceRows = (data.program || [])
+    .filter((item) => item.eventId === row.eventId && item.sex === row.sex && item.stage !== "finalA" && item.stage !== "finalB")
+    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
+  if (!raceRows.length) return true;
+  return programKey(raceRows[raceRows.length - 1]) === programKey(row);
+}
+
+function resultProgramRows() {
+  const seen = new Set();
+  return (data.program || [])
+    .filter((row) => row.eventId && row.sex && row.stage !== "finalA" && row.stage !== "finalB")
+    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999))
+    .filter((row) => {
+      const raceKey = raceOptionKey(row.eventId, row.sex);
+      if (!isLastProgramPartForRace(row) && !resultForProgramRow(row)) return true;
+      if (seen.has(raceKey)) return false;
+      seen.add(raceKey);
+      return true;
+    });
+}
+
+function resultStatusForProgramRow(row) {
+  const result = resultForProgramRow(row);
+  if (result) {
+    if (result.hasFinal && result.finalistsAnnouncedAt) return "Finalistes annoncés";
+    if (result.hasFinal) return "Finalistes à annoncer";
+    return "Publié";
+  }
+  if (isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row)) {
+    return "En attente de la série rapide";
+  }
+  return "À importer";
+}
+
+function renderResultsAdminPanel() {
+  if (!resultsAdminPanel) return;
+  if (state.role !== "computer") {
+    resultsAdminPanel.hidden = true;
+    resultsAdminPanel.innerHTML = "";
+    return;
+  }
+  const rows = resultProgramRows();
+  resultsAdminPanel.hidden = false;
+  resultsAdminPanel.innerHTML = `
+    <div class="panel-title">
+      <div>
+        <h3>Résultats à publier</h3>
+        <p class="panel-subtitle">Prototype V2 - import PDF résultat et détection des finalistes.</p>
+      </div>
+      <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
+    </div>
+    <div class="results-admin-list">
+      ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
+    </div>
+  `;
+}
+
+function renderResultProgramRow(row) {
+  const result = resultForProgramRow(row);
+  const status = resultStatusForProgramRow(row);
+  const event = data.events.find((item) => item.id === row.eventId);
+  const waitingFastSeries = status === "En attente de la série rapide";
+  const finalistCount = (result?.finalists?.a?.length || 0) + (result?.finalists?.b?.length || 0);
+  return `
+    <div class="result-admin-row ${result ? "published" : ""} ${waitingFastSeries ? "waiting" : ""}">
+      <div>
+        <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</strong>
+        <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
+        ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
+      </div>
+      <button class="ghost-button compact ${waitingFastSeries ? "" : "confirm-button"}" type="button" data-result-import="${escapeHtml(programKey(row))}">
+        ${result ? "Remplacer" : (waitingFastSeries ? "Importer partiel" : "Importer résultat")}
+      </button>
+    </div>
+  `;
 }
 
 function renderOfficialAlerts() {
@@ -2485,6 +2624,9 @@ function firebaseStatusMeta() {
   if (firebaseStatus === "error") {
     return { label: "Erreur", className: "error" };
   }
+  if (firebaseStatus === "offline") {
+    return { label: "Hors ligne", className: "error" };
+  }
   if (firebaseStatus === "local") {
     return { label: "Local", className: "pending" };
   }
@@ -2518,9 +2660,8 @@ function showDataDiagnostic() {
   const programCount = data.program?.length || 0;
   const entrantCount = data.entrants?.length || 0;
   const locations = (data.entrants || []).filter((entrant) => entrant.seedSource).length;
-  const firebaseLabel = firebaseStatus === "connected"
-    ? "connecté"
-    : (firebaseStatus === "error" ? "erreur" : (firebaseStatus === "local" ? "local seulement" : "connexion en cours"));
+  const firebaseMeta = firebaseStatusMeta();
+  const firebaseLabel = firebaseStatus === "local" ? "local seulement" : firebaseMeta.label.toLowerCase();
   window.alert([
     "Diagnostic LivePalmes",
     "",
@@ -2771,6 +2912,124 @@ function closeAdminSeriesModal() {
   if (!adminSeriesModal) return;
   adminSeriesModal.hidden = true;
   adminSeriesModal.innerHTML = "";
+}
+
+function openResultImportModal(row) {
+  if (!resultImportModal || !row) return;
+  currentResultImportRow = row;
+  const event = data.events.find((item) => item.id === row.eventId);
+  resultImportModal.hidden = false;
+  resultImportModal.innerHTML = `
+    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer un résultat">
+      <div class="decision-modal-head">
+        <div>
+          <span>Résultat de course</span>
+          <h2>${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</h2>
+          <p>${escapeHtml([row.session ? `Session ${row.session}` : "", row.startTime || ""].filter(Boolean).join(" - ") || "Importer le PDF résultat")}</p>
+        </div>
+        <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
+      </div>
+      <div class="admin-series-options">
+        <label class="admin-series-option">
+          <input type="radio" name="resultFinalMode" value="no" checked>
+          <strong>Sans finale</strong>
+          <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="resultFinalMode" value="yes">
+          <strong>Avec finale</strong>
+          <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
+        </label>
+      </div>
+      <label class="file-button admin-series-file">
+        Choisir le PDF résultat
+        <input id="resultPdfInput" type="file" accept="application/pdf" hidden>
+      </label>
+      <p class="panel-subtitle">Prototype : le PDF est stocké dans Firebase pour la page publique. Taille conseillée : 200 ko maximum.</p>
+    </div>
+  `;
+}
+
+function closeResultImportModal() {
+  if (!resultImportModal) return;
+  resultImportModal.hidden = true;
+  resultImportModal.innerHTML = "";
+  currentResultImportRow = null;
+}
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Lecture du fichier impossible."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function parseResultRow(line) {
+  const match = String(line || "").match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?\s*$/i);
+  if (!match) return null;
+  const split = splitImportedPersonName(fixPdfEncoding(match[2]));
+  return {
+    rank: Number(match[1]),
+    lastName: split.lastName,
+    firstName: split.firstName,
+    displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
+    birthYear: `20${match[3]}`,
+    club: match[4],
+    time: importedSeriesTime(match[6]) || match[6],
+    qualified: Boolean(match[5])
+  };
+}
+
+function parseFinalistsFromResultLines(lines) {
+  const ranking = lines.map(parseResultRow).filter(Boolean);
+  const qualified = ranking.filter((row) => row.qualified);
+  return {
+    ranking,
+    finalists: {
+      a: qualified.slice(0, 8),
+      b: qualified.slice(8, 16)
+    }
+  };
+}
+
+async function publishResultPdf(file, row, hasFinal) {
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
+  const now = new Date().toISOString();
+  const event = data.events.find((item) => item.id === row.eventId);
+  const pdfDataUrl = await fileToDataUrl(file);
+  let parsedFinals = { ranking: [], finalists: { a: [], b: [] } };
+  if (hasFinal) {
+    const lines = await extractPdfLines(file);
+    parsedFinals = parseFinalistsFromResultLines(lines);
+    if (!parsedFinals.finalists.a.length) {
+      throw new Error("Aucun finaliste détecté dans ce PDF. Vérifie que les lignes contiennent bien la mention finale.");
+    }
+  }
+  const result = {
+    id: resultIdForProgramRow(row),
+    raceKey: raceOptionKey(row.eventId, row.sex),
+    programKey: programKey(row),
+    eventId: row.eventId,
+    eventLabel: event?.label || row.label || row.eventId,
+    sex: row.sex,
+    sexLabel: sexDisplayLabel(row.sex),
+    session: row.session || "",
+    startTime: row.startTime || "",
+    hasFinal,
+    finalists: parsedFinals.finalists,
+    ranking: parsedFinals.ranking,
+    pdfName: file.name,
+    pdfSize: file.size,
+    pdfDataUrl,
+    createdAt: resultForProgramRow(row)?.createdAt || now,
+    updatedAt: now,
+    status: hasFinal ? "finalists_pending_speaker" : "published"
+  };
+  await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
+  return result;
 }
 
 function renderCategorySelect() {
@@ -4000,9 +4259,50 @@ programModal?.addEventListener("click", (event) => {
 
 adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
 
+resultsAdminPanel?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-result-import]");
+  if (!button) return;
+  const row = (data.program || []).find((item) => programKey(item) === button.dataset.resultImport);
+  if (!row) return;
+  openResultImportModal(row);
+});
+
 adminSeriesModal?.addEventListener("click", (event) => {
   if (event.target === adminSeriesModal || event.target.closest("[data-admin-series-close]")) {
     closeAdminSeriesModal();
+  }
+});
+
+resultImportModal?.addEventListener("click", (event) => {
+  if (event.target === resultImportModal || event.target.closest("[data-result-import-close]")) {
+    closeResultImportModal();
+  }
+});
+
+resultImportModal?.addEventListener("change", async (event) => {
+  if (event.target?.id !== "resultPdfInput") return;
+  const file = event.target.files?.[0];
+  if (!file || !currentResultImportRow) return;
+  const hasFinal = resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes";
+  const message = hasFinal
+    ? "Publier ce résultat et détecter les finalistes ?"
+    : "Publier ce résultat sans finale ?";
+  if (!window.confirm(message)) return;
+  try {
+    renderDataStatus("Publication du résultat en cours...");
+    const result = await publishResultPdf(file, currentResultImportRow, hasFinal);
+    closeResultImportModal();
+    renderDataStatus();
+    const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
+    window.alert(hasFinal
+      ? `Résultat publié : ${finalistCount} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}.`
+      : "Résultat publié sur la page publique.");
+  } catch (error) {
+    console.error(error);
+    window.alert(`Publication impossible : ${error?.message || error}`);
+    renderDataStatus();
+  } finally {
+    event.target.value = "";
   }
 });
 
@@ -5250,6 +5550,12 @@ roleLockBtn?.addEventListener("click", toggleRoleLock);
 dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
 setInterval(checkForGeneratedUpdates, 5000);
 setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
+setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
+window.addEventListener("online", checkFirebaseConnection);
+window.addEventListener("offline", () => {
+  firebaseStatus = "offline";
+  renderDataStatus();
+});
 window.addEventListener("pagehide", () => {
   releaseRoleLock();
 });
@@ -5278,4 +5584,5 @@ document.querySelector("#importCsvBtn")?.addEventListener("click", () => {
 render();
 initFirebaseSync();
 checkForGeneratedUpdates();
+checkFirebaseConnection();
 
