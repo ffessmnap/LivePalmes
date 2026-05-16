@@ -250,6 +250,7 @@ const headerRefs = document.querySelector("#headerRefs");
 const headerRefDetails = document.querySelector("#headerRefDetails");
 const top2025Box = document.querySelector("#top2025Box");
 const dataStatus = document.querySelector("#dataStatus");
+const firebaseHeaderStatus = document.querySelector("#firebaseHeaderStatus");
 const officialAlerts = document.querySelector("#officialAlerts");
 const decisionPanel = document.querySelector("#decisionPanel");
 const decisionModal = document.querySelector("#decisionModal");
@@ -2433,6 +2434,7 @@ function cancelDecision(alertId, cancelledBy = "referee") {
 
 function renderDataStatus(message = "") {
   if (!dataStatus) return;
+  renderFirebaseHeaderStatus();
   dataStatus.classList.remove("warning", "source");
   if (message) {
     dataStatus.hidden = false;
@@ -2446,10 +2448,9 @@ function renderDataStatus(message = "") {
     const speakerSource = data.notes?.speakerInfoSource
       ? `${data.notes.speakerInfoSource}${data.notes.speakerInfoUpdatedAt ? ` - ${data.notes.speakerInfoUpdatedAt}` : ""}`
       : "non mis à jour";
-    const firebaseLabel = firebaseStatus === "connected"
-      ? "connecté"
-      : (firebaseStatus === "error" ? "erreur" : (firebaseStatus === "local" ? "local seulement" : "connexion..."));
-    const firebaseClass = firebaseStatus === "connected" ? "ok" : (firebaseStatus === "error" ? "error" : "pending");
+    const firebaseMeta = firebaseStatusMeta();
+    const firebaseLabel = firebaseStatus === "local" ? "local seulement" : firebaseMeta.label.toLowerCase();
+    const firebaseClass = firebaseMeta.className;
     const generatedAt = data.notes?.generatedAt || "";
     const seriesCount = data.notes?.seriesLineCount || data.series?.length || 0;
     const entrantTotal = data.notes?.entrantCount || data.entrants?.length || 0;
@@ -2475,6 +2476,26 @@ function renderDataStatus(message = "") {
   dataStatus.hidden = false;
   dataStatus.textContent = "Données officielles non chargées. Sur GitHub Pages, vérifie que data.generated.js et donnees-speaker-france-2026.json sont bien publiés.";
   dataStatus.classList.add("warning");
+}
+
+function firebaseStatusMeta() {
+  if (firebaseStatus === "connected") {
+    return { label: "Connecté", className: "ok" };
+  }
+  if (firebaseStatus === "error") {
+    return { label: "Erreur", className: "error" };
+  }
+  if (firebaseStatus === "local") {
+    return { label: "Local", className: "pending" };
+  }
+  return { label: "Connexion", className: "pending" };
+}
+
+function renderFirebaseHeaderStatus() {
+  if (!firebaseHeaderStatus) return;
+  const meta = firebaseStatusMeta();
+  firebaseHeaderStatus.className = `firebase-header-status ${meta.className}`;
+  firebaseHeaderStatus.innerHTML = `<i class="firebase-dot ${meta.className}" aria-hidden="true"></i>${escapeHtml(meta.label)}`;
 }
 
 function shortStatusDate() {
