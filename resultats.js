@@ -58,7 +58,7 @@ function renderResult(result) {
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml([result.session ? `Session ${result.session}` : "", result.startTime || "", updated].filter(Boolean).join(" - "))}</p>
         </div>
-        <a class="ghost-button compact confirm-button" href="${escapeHtml(result.pdfDataUrl || "#")}" target="_blank" rel="noopener" download="${escapeHtml(result.pdfName || "resultat.pdf")}">PDF</a>
+        <a class="ghost-button compact confirm-button" href="resultat-pdf.html?id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">PDF</a>
       </div>
       ${result.hasFinal ? `
         <div class="public-finalists-summary">

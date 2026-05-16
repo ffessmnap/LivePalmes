@@ -676,6 +676,37 @@ body.role-referee #fullscreenBtn {
   font-weight: 850;
 }
 
+.pdf-viewer-page {
+  overflow: hidden;
+}
+
+.pdf-viewer-shell {
+  display: grid;
+  gap: 8px;
+  height: calc(100vh - 86px);
+  padding: 10px;
+}
+
+.pdf-frame {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.pdf-fallback {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 8px;
+}
+
+.pdf-fallback[hidden] {
+  display: none;
+}
+
 .primary-button {
   background: var(--accent);
   color: #ffffff;
