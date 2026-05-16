@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260516-header-connection">
+    <link rel="stylesheet" href="styles.css?v=20260517-results-prototype">
   </head>
   <body>
     <header class="topbar">
@@ -133,6 +133,7 @@
         </div>
 
         <section id="decisionPanel" class="panel decision-panel" hidden></section>
+        <section id="resultsAdminPanel" class="panel results-admin-panel computer-only" hidden></section>
         <section id="roleQueue" class="panel role-queue" hidden></section>
         <section id="roleHistory" class="panel role-history" hidden></section>
 
@@ -166,11 +167,12 @@
     <div id="alertDetailModal" class="decision-modal alert-detail-modal" hidden></div>
     <div id="programModal" class="decision-modal program-modal" hidden></div>
     <div id="adminSeriesModal" class="decision-modal admin-series-modal" hidden></div>
+    <div id="resultImportModal" class="decision-modal result-import-modal" hidden></div>
     <div id="roleCodesModal" class="decision-modal role-codes-modal" hidden></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260516-connection-check"></script>
+    <script src="app.js?v=20260517-results-prototype"></script>
   </body>
 </html>
