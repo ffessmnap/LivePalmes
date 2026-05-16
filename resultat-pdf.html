@@ -3,12 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Résultats - LivePalmes v2 prototype</title>
-    <meta name="description" content="Résultats publiés et finalistes de la compétition LivePalmes.">
+    <title>PDF résultat - LivePalmes</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
     <link rel="stylesheet" href="styles.css?v=20260517-result-pdf-viewer">
   </head>
-  <body class="public-results-page">
+  <body class="public-results-page pdf-viewer-page">
     <header class="public-results-header">
       <div>
         <p class="eyebrow app-name">
@@ -22,30 +21,21 @@
           </span>
           LivePalmes
         </p>
-        <h1>Résultats & finalistes</h1>
+        <h1 id="pdfTitle">Résultat</h1>
       </div>
-      <span id="publicResultsStatus" class="firebase-header-status pending">
-        <i class="firebase-dot pending" aria-hidden="true"></i>
-        Connexion
-      </span>
+      <a class="ghost-button compact" href="resultats.html">Retour</a>
     </header>
 
-    <main class="public-results-shell">
-      <section class="panel">
-        <div class="panel-title">
-          <div>
-            <h2>Résultats publiés</h2>
-            <p class="panel-subtitle">Consultation uniquement. Les informations sont publiées par le juge informatique.</p>
-          </div>
-        </div>
-        <div id="publicResultsList" class="public-results-list">
-          <p class="panel-subtitle">Chargement des résultats...</p>
-        </div>
-      </section>
+    <main class="pdf-viewer-shell">
+      <div id="pdfViewerStatus" class="panel">
+        <p class="panel-subtitle">Chargement du PDF...</p>
+      </div>
+      <iframe id="pdfFrame" class="pdf-frame" title="PDF résultat" hidden></iframe>
+      <div id="pdfFallback" class="panel pdf-fallback" hidden></div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="resultats.js?v=20260517-result-pdf-viewer"></script>
+    <script src="resultat-pdf.js?v=20260517-result-pdf-viewer"></script>
   </body>
 </html>
