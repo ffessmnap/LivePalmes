@@ -538,7 +538,10 @@ function renderRoleCodesModal() {
           </label>
         `).join("")}
       </div>
-      <button class="ghost-button compact subtle-admin-link" type="button" data-open-history-archives>Archives historiques</button>
+      <div class="admin-extra-zone">
+        <span>Administration avancée</span>
+        <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
+      </div>
       <div class="decision-modal-actions">
         <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
         ${active ? `<button class="ghost-button danger-button" type="button" data-disable-role-codes>Désactiver les codes</button>` : ""}
