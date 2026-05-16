@@ -2990,7 +2990,8 @@ function parseFinalistsFromResultLines(lines) {
     finalists: {
       a: qualified.slice(0, 8),
       b: qualified.slice(8, 16)
-    }
+    },
+    nextUnqualified: ranking.filter((row) => !row.qualified).slice(0, 8)
   };
 }
 
@@ -3000,7 +3001,7 @@ async function publishResultPdf(file, row, hasFinal) {
   const now = new Date().toISOString();
   const event = data.events.find((item) => item.id === row.eventId);
   const pdfDataUrl = await fileToDataUrl(file);
-  let parsedFinals = { ranking: [], finalists: { a: [], b: [] } };
+  let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
   if (hasFinal) {
     const lines = await extractPdfLines(file);
     parsedFinals = parseFinalistsFromResultLines(lines);
@@ -3020,6 +3021,7 @@ async function publishResultPdf(file, row, hasFinal) {
     startTime: row.startTime || "",
     hasFinal,
     finalists: parsedFinals.finalists,
+    nextUnqualified: parsedFinals.nextUnqualified,
     ranking: parsedFinals.ranking,
     pdfName: file.name,
     pdfSize: file.size,
