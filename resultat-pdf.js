@@ -68,6 +68,7 @@ async function init() {
     showMessage("Le PDF n'a pas pu être chargé.");
     return;
   }
+  window.location.replace(blobUrl);
   if (statusBox) statusBox.hidden = true;
   if (pdfFrame) {
     pdfFrame.hidden = false;
