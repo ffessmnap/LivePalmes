@@ -47,6 +47,24 @@ function renderFinalists(title, rows) {
   `;
 }
 
+function renderNextUnqualified(rows) {
+  if (!rows?.length) return "";
+  return `
+    <div class="public-unqualified-block">
+      <h3>Non qualifiés suivants</h3>
+      <ol>
+        ${rows.slice(0, 8).map((row) => `
+          <li>
+            <strong>${escapeHtml(finalistName(row))}</strong>
+            <span>${escapeHtml(row.time || "")}</span>
+          </li>
+        `).join("")}
+      </ol>
+      <p>...</p>
+    </div>
+  `;
+}
+
 function renderResult(result) {
   const title = `${result.eventLabel || result.eventId || "Course"} ${result.sexLabel || result.sex || ""}`;
   const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
@@ -69,6 +87,7 @@ function renderResult(result) {
           ${renderFinalists("Finale A", result.finalists?.a || [])}
           ${renderFinalists("Finale B", result.finalists?.b || [])}
         </div>
+        ${renderNextUnqualified(result.nextUnqualified || [])}
       ` : `<p class="panel-subtitle">Résultat publié sans finale.</p>`}
     </article>
   `;

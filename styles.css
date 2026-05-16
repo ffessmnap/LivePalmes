@@ -652,28 +652,55 @@ body.role-referee #fullscreenBtn {
   background: #fbfdfe;
 }
 
-.public-finalists-block h3 {
+.public-unqualified-block {
+  padding: 9px;
+  border: 1px dashed #d0d8de;
+  border-radius: 8px;
+  background: #f7f9fa;
+  opacity: 0.88;
+}
+
+.public-finalists-block h3,
+.public-unqualified-block h3 {
   margin: 0 0 6px;
   color: var(--accent-dark);
   font-size: 0.9rem;
 }
 
-.public-finalists-block ol {
+.public-unqualified-block h3 {
+  color: #6b7c86;
+}
+
+.public-finalists-block ol,
+.public-unqualified-block ol {
   display: grid;
   gap: 4px;
   margin: 0;
   padding-left: 22px;
 }
 
-.public-finalists-block li {
+.public-finalists-block li,
+.public-unqualified-block li {
   color: var(--ink);
   font-size: 0.82rem;
 }
 
-.public-finalists-block li span {
+.public-finalists-block li span,
+.public-unqualified-block li span {
   margin-left: 6px;
   color: var(--muted);
   font-weight: 850;
+}
+
+.public-unqualified-block li,
+.public-unqualified-block li span {
+  color: #7b8790;
+}
+
+.public-unqualified-block p {
+  margin: 4px 0 0 22px;
+  color: #7b8790;
+  font-weight: 900;
 }
 
 .pdf-viewer-page {
