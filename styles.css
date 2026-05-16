@@ -280,6 +280,43 @@ body.fullscreen-mode .top-actions .ghost-button:not(#fullscreenBtn) {
   color: #60717c;
 }
 
+.firebase-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+  padding: 0 7px;
+  border: 1px solid #c9d8e5;
+  border-radius: 999px;
+  background: #f5f9fc;
+  color: #52616b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.firebase-header-status.ok {
+  border-color: #b7dfc0;
+  background: #eefaf1;
+  color: #2b7a3b;
+}
+
+.firebase-header-status.error {
+  border-color: #ffc9c9;
+  background: #fff0f0;
+  color: #c92a2a;
+}
+
+.firebase-header-status.pending {
+  border-color: #ffe3a3;
+  background: #fff8db;
+  color: #8a6200;
+}
+
+.firebase-header-status .firebase-dot {
+  margin-right: 0;
+}
+
 .livepalmes-logo {
   display: inline-flex;
   width: 22px;
