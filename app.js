@@ -3409,9 +3409,9 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif : (\d{2}:\d{2})(?: \((\d+)\))?/i;
   const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: Meilleure série.*)?$/i;
   const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
-  const swimmerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
-  const speakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
-  const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
+  const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
+  const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
+  const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
 
   normalizedLines.forEach((rawLine) => {
     const line = rawLine.replace(/\s+/g, " ").trim();
@@ -3665,6 +3665,41 @@ function showPdfImportDebug(parsed, lines) {
   window.alert(`Import PDF non reconnu.\n\nLignes lues dans le PDF :\n${samples || "Aucune ligne lue."}`);
 }
 
+function mergeImportedSeriesData(parsed) {
+  const sessions = [...new Set([
+    ...parsed.entrants.map((row) => row.session).filter(Boolean),
+    ...parsed.series.map((row) => row.session).filter(Boolean),
+    ...parsed.program.map((row) => row.session).filter(Boolean)
+  ])];
+  const sessionSet = new Set(sessions);
+  if (!sessionSet.size) {
+    return {
+      events: parsed.events,
+      entrants: parsed.entrants,
+      series: parsed.series,
+      program: parsed.program
+    };
+  }
+  const importedEventIds = new Set(parsed.events.map((event) => event.id));
+  const eventMap = new Map(data.events.map((event) => [event.id, event]));
+  parsed.events.forEach((event) => eventMap.set(event.id, event));
+  return {
+    events: [...eventMap.values()].filter((event) => importedEventIds.has(event.id) || availableSexesForEvent(event.id).length),
+    entrants: [
+      ...data.entrants.filter((row) => !sessionSet.has(row.session || "")),
+      ...parsed.entrants
+    ],
+    series: [
+      ...data.series.filter((row) => !sessionSet.has(row.session || "")),
+      ...parsed.series
+    ],
+    program: [
+      ...data.program.filter((row) => !sessionSet.has(row.session || "")),
+      ...parsed.program
+    ].sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999))
+  };
+}
+
 async function importSeriesPdf(file) {
   if (!file) return;
   renderDataStatus("Lecture du PDF des séries...");
@@ -3683,21 +3718,23 @@ async function importSeriesPdf(file) {
         return;
       }
     }
+    const mergedSeriesData = mergeImportedSeriesData(parsed);
     const nextData = normalizeData({
       ...data,
-      events: parsed.events,
-      entrants: parsed.entrants,
-      series: parsed.series,
-      program: parsed.program,
+      events: mergedSeriesData.events,
+      entrants: mergedSeriesData.entrants,
+      series: mergedSeriesData.series,
+      program: mergedSeriesData.program,
       sourceVersion: `live-${Date.now()}`,
       notes: {
         ...(data.notes || {}),
         sourceMode: "series-live",
         sourceLabel: "Séries importées depuis LivePalmes",
         sourceFile: parsed.sourceFile,
-        seriesLineCount: parsed.series.length,
-        entrantCount: parsed.entrants.length,
-        programCount: parsed.program.length,
+        seriesLineCount: mergedSeriesData.series.length,
+        entrantCount: mergedSeriesData.entrants.length,
+        programCount: mergedSeriesData.program.length,
+        lastImportedSessions: [...new Set(parsed.program.map((row) => row.session).filter(Boolean))].join(", "),
         generatedAt: new Date().toLocaleString("fr-FR")
       }
     });
