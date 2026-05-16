@@ -3290,12 +3290,32 @@ async function extractPdfLines(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const text = await page.getTextContent();
+    extractPdfLinesByFlow(text.items).forEach((line) => {
+      if (!lines.includes(line)) lines.push(line);
+    });
     lines.push(...extractPdfLinesFromItems(text.items, 2.5));
     const looseLines = extractPdfLinesFromItems(text.items, 7);
     looseLines.forEach((line) => {
       if (!lines.includes(line)) lines.push(line);
     });
   }
+  return lines;
+}
+
+function extractPdfLinesByFlow(items) {
+  const lines = [];
+  let current = "";
+  items.forEach((item) => {
+    const text = String(item.str || "").trim();
+    if (text) {
+      current = `${current} ${text}`.replace(/\s+/g, " ").trim();
+    }
+    if (item.hasEOL) {
+      if (current) lines.push(current);
+      current = "";
+    }
+  });
+  if (current) lines.push(current);
   return lines;
 }
 
@@ -3326,6 +3346,17 @@ function extractPdfLinesFromItems(items, tolerance = 2.5) {
 }
 
 function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
+  const normalizedLines = [];
+  lines.forEach((line) => {
+    const clean = String(line || "").replace(/\s+/g, " ").trim();
+    if (!clean) return;
+    normalizedLines.push(clean);
+    const embeddedHeatIndex = clean.search(/\bs.{1,2}rie:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i);
+    if (embeddedHeatIndex > 0) {
+      normalizedLines.push(clean.slice(0, embeddedHeatIndex).trim());
+      normalizedLines.push(clean.slice(embeddedHeatIndex).trim());
+    }
+  });
   const entrants = [];
   const seriesRows = [];
   const program = [];
@@ -3346,7 +3377,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const speakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
   const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
 
-  lines.forEach((rawLine) => {
+  normalizedLines.forEach((rawLine) => {
     const line = rawLine.replace(/\s+/g, " ").trim();
     const sessionMatch = line.match(/\bSession\s*(\d+)\b/i);
     if (sessionMatch) {
