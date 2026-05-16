@@ -289,6 +289,18 @@ body.role-referee .referee-tablet-toggle {
   color: #ffffff;
 }
 
+.hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-import-button {
+  border: 1px solid color-mix(in srgb, var(--role-accent) 24%, #d8e0e5);
+}
+
 .primary-button {
   background: var(--accent);
   color: #ffffff;

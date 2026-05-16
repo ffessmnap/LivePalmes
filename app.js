@@ -126,7 +126,9 @@ let isFullscreenMode = Boolean(document.fullscreenElement);
 let refereeTabletMode = false;
 let firestoreDb = null;
 let firestoreUnsubscribe = null;
+let liveDataUnsubscribe = null;
 let firestoreReady = false;
+let applyingRemoteData = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -172,6 +174,7 @@ const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
+const seriesPdfInput = document.querySelector("#seriesPdfInput");
 const jsonInput = document.querySelector("#jsonInput");
 const csvInput = document.querySelector("#csvInput");
 const swimmerDetails = document.querySelector("#swimmerDetails");
@@ -210,6 +213,15 @@ function alertsCollection() {
     .collection("alerts");
 }
 
+function liveDataDocument() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("liveData")
+    .doc("current");
+}
+
 function sanitizeAlertForFirestore(alert) {
   return JSON.parse(JSON.stringify(alert || {}));
 }
@@ -234,6 +246,29 @@ async function clearFirestoreAlerts() {
   await batch.commit();
 }
 
+async function publishLiveDataToFirestore(nextData, source = "Import PDF séries") {
+  const doc = liveDataDocument();
+  if (!doc) return;
+  const payload = normalizeData(nextData);
+  payload.notes = {
+    ...(payload.notes || {}),
+    livePublishedAt: new Date().toISOString(),
+    liveSource: source
+  };
+  await doc.set({
+    data: sanitizeAlertForFirestore(payload),
+    updatedAt: payload.notes.livePublishedAt,
+    source
+  });
+}
+
+function applyRemoteLiveData(remoteData) {
+  if (!remoteData) return;
+  applyingRemoteData = true;
+  applyFreshData(remoteData, true);
+  applyingRemoteData = false;
+}
+
 function initFirebaseSync() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     renderDataStatus("Firebase n'est pas chargé. Les alertes restent locales sur cet appareil.");
@@ -245,6 +280,7 @@ function initFirebaseSync() {
     }
     firestoreDb = window.firebase.firestore();
     firestoreUnsubscribe?.();
+    liveDataUnsubscribe?.();
     firestoreUnsubscribe = alertsCollection()
       .orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
@@ -254,8 +290,16 @@ function initFirebaseSync() {
         render();
       }, (error) => {
         console.warn("Lecture Firebase impossible", error);
-        renderDataStatus("Firebase n'est pas joignable. Les alertes restent locales sur cet appareil.");
+          renderDataStatus("Firebase n'est pas joignable. Les alertes restent locales sur cet appareil.");
       });
+    liveDataUnsubscribe = liveDataDocument().onSnapshot((snapshot) => {
+      if (!snapshot.exists) return;
+      const remote = snapshot.data()?.data;
+      if (!remote?.sourceVersion || remote.sourceVersion === data.sourceVersion) return;
+      applyRemoteLiveData(remote);
+    }, (error) => {
+      console.warn("Lecture des données live Firebase impossible", error);
+    });
   } catch (error) {
     console.warn("Initialisation Firebase impossible", error);
     renderDataStatus("Firebase n'est pas configuré correctement. Les alertes restent locales sur cet appareil.");
@@ -3115,6 +3159,410 @@ document.querySelector("#printBtn")?.addEventListener("click", () => window.prin
 document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
 document.querySelector("#exportDsqPdfBtn")?.addEventListener("click", exportDsqPdf);
 
+const PDF_EVENT_ALIASES = {
+  "50mapnee": "50ap",
+  "50mapnée": "50ap",
+  "50msurface": "50sf",
+  "100msurface": "100sf",
+  "200msurface": "200sf",
+  "400msurface": "400sf",
+  "800msurface": "800sf",
+  "1500msurface": "1500sf",
+  "100mimmersion": "100is",
+  "200mimmersion": "200is",
+  "400mimmersion": "400is",
+  "50mbipalmes": "50bi",
+  "100mbipalmes": "100bi",
+  "200mbipalmes": "200bi",
+  "400mbipalmes": "400bi",
+  "4x50msurface": "4x50sf",
+  "4x100msurface": "4x100sf",
+  "4x200msurface": "4x200sf",
+  "4x100mbipalmes": "4x100bix",
+  "4x100msb": "4x100sb"
+};
+
+function normalizePdfLabel(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function importedEventId(label) {
+  const normalized = normalizePdfLabel(label);
+  const known = PDF_EVENT_ALIASES[normalized];
+  if (known) return known;
+  const event = data.events.find((item) => normalizePdfLabel(item.label) === normalized);
+  return event?.id || "";
+}
+
+function importedEventInfo(eventId, fallbackLabel = "") {
+  const existing = data.events.find((event) => event.id === eventId);
+  if (existing) return existing;
+  const label = fallbackLabel || eventId;
+  const distance = label.match(/^\d+x?\d*\s*m/i)?.[0] || "";
+  return {
+    id: eventId,
+    label,
+    distance,
+    discipline: label.replace(distance, "").trim() || label
+  };
+}
+
+function importedCategoryLabel(code) {
+  const clean = String(code || "").toUpperCase();
+  if (clean.includes("CA")) return "Cadet";
+  if (clean.includes("JU")) return "Junior";
+  if (clean.includes("SE")) return "Senior";
+  return clean || "";
+}
+
+function importedBirthYear(twoDigits) {
+  const value = Number.parseInt(twoDigits, 10);
+  if (!Number.isFinite(value)) return "";
+  return String(value <= 35 ? 2000 + value : 1900 + value);
+}
+
+function importedSeriesTime(value) {
+  const clean = String(value || "").trim().replace(",", ".");
+  if (!clean) return "";
+  const parts = clean.split(":");
+  if (parts.length === 3) return `${parts[0]}:${parts[1].padStart(2, "0")}.${parts[2].padStart(2, "0")}`;
+  if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+  return clean;
+}
+
+function splitImportedPersonName(value) {
+  const tokens = String(value || "").trim().split(/\s+/).filter(Boolean);
+  let firstIndex = Math.max(0, tokens.length - 1);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const letters = tokens[index].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
+    if (letters && letters !== letters.toUpperCase()) {
+      firstIndex = index;
+      break;
+    }
+  }
+  const titleCase = (text) => text.toLowerCase().replace(/(^|\s|-)([a-zà-öø-ÿ])/g, (match) => match.toUpperCase());
+  return {
+    lastName: titleCase(tokens.slice(0, firstIndex).join(" ")),
+    firstName: tokens.slice(firstIndex).join(" ")
+  };
+}
+
+function isImportedRelayEvent(eventId) {
+  return String(eventId || "").includes("x");
+}
+
+async function extractPdfLines(file) {
+  const pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs";
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+  const lines = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const text = await page.getTextContent();
+    const grouped = new Map();
+    text.items.forEach((item) => {
+      const y = Math.round(item.transform[5]);
+      const key = String(y);
+      const row = grouped.get(key) || [];
+      row.push({ x: item.transform[4], text: item.str });
+      grouped.set(key, row);
+    });
+    [...grouped.entries()]
+      .sort((a, b) => Number(b[0]) - Number(a[0]))
+      .forEach(([, row]) => {
+        const line = row
+          .sort((a, b) => a.x - b.x)
+          .map((item) => item.text)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (line) lines.push(line);
+      });
+  }
+  return lines;
+}
+
+function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
+  const entrants = [];
+  const seriesRows = [];
+  const program = [];
+  const eventsById = new Map(data.events.map((event) => [event.id, event]));
+  const seenProgram = new Set();
+  const seenEntrants = new Set();
+  let currentSession = { number: "", label: "" };
+  let current = null;
+  let pendingFinal = null;
+  let order = 0;
+
+  const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: Meilleure série.*))?$/i;
+  const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
+  const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif : (\d{2}:\d{2})(?: \((\d+)\))?/i;
+  const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: Meilleure série.*)?$/i;
+  const heatPattern = /^s.{1,2}rie:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
+  const swimmerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
+  const speakerPattern = /^(\d+)\s+(.+?)\s+(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    const sessionMatch = line.match(/\bSession\s*(\d+)\b/i);
+    if (sessionMatch) {
+      currentSession = { ...currentSession, number: sessionMatch[1] };
+      return;
+    }
+    if (line.includes("Session du") || line.includes("Session de l")) {
+      currentSession = { ...currentSession, label: line };
+      return;
+    }
+
+    const finalTitleMatch = line.match(finalTitlePattern);
+    if (finalTitleMatch) {
+      const [, label, sexText, startTime] = finalTitleMatch;
+      const eventId = importedEventId(label);
+      if (eventId) {
+        const event = importedEventInfo(eventId, label);
+        eventsById.set(eventId, event);
+        pendingFinal = {
+          eventId,
+          sex: { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText],
+          baseLabel: event.label,
+          startTime: startTime || ""
+        };
+      }
+      current = null;
+      return;
+    }
+
+    const finalHeatMatch = line.match(finalHeatPattern);
+    if (finalHeatMatch && pendingFinal) {
+      const [, letter, startTime, heatOrder] = finalHeatMatch;
+      order += 1;
+      const stage = `finale-${letter.toUpperCase()}`;
+      program.push({
+        eventId: pendingFinal.eventId,
+        sex: pendingFinal.sex,
+        order,
+        label: `${pendingFinal.baseLabel} - Finale ${letter.toUpperCase()}`,
+        session: currentSession.number,
+        sessionLabel: currentSession.label,
+        stage,
+        startTime,
+        hasEntrants: true
+      });
+      current = {
+        eventId: pendingFinal.eventId,
+        sex: pendingFinal.sex,
+        series: letter.toUpperCase() === "A" ? 1 : 2,
+        seriesCount: 1,
+        heatOrder: Number(heatOrder || order),
+        startTime,
+        isRelay: isImportedRelayEvent(pendingFinal.eventId),
+        session: currentSession.number,
+        sessionLabel: currentSession.label,
+        stage
+      };
+      pendingFinal = null;
+      return;
+    }
+
+    const titleMatch = line.match(titlePattern) || line.match(relayTitlePattern);
+    if (titleMatch) {
+      pendingFinal = null;
+      const [, label, sexText] = titleMatch;
+      if (/Finale/i.test(line)) {
+        current = null;
+        return;
+      }
+      const eventId = importedEventId(label);
+      if (!eventId) {
+        current = null;
+        return;
+      }
+      const event = importedEventInfo(eventId, label);
+      eventsById.set(eventId, event);
+      const sex = { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText];
+      const programKeyValue = `${eventId}|${sex}|${currentSession.number}|series`;
+      if (!seenProgram.has(programKeyValue)) {
+        order += 1;
+        seenProgram.add(programKeyValue);
+        program.push({
+          eventId,
+          sex,
+          order,
+          label: event.label,
+          session: currentSession.number,
+          sessionLabel: currentSession.label,
+          stage: "series",
+          hasEntrants: true
+        });
+      }
+      current = {
+        eventId,
+        sex,
+        series: null,
+        seriesCount: null,
+        heatOrder: null,
+        startTime: "",
+        isRelay: isImportedRelayEvent(eventId),
+        session: currentSession.number,
+        sessionLabel: currentSession.label,
+        stage: "series"
+      };
+      return;
+    }
+
+    const heatMatch = line.match(heatPattern);
+    if (heatMatch && current) {
+      const [, number, total, startTime, heatOrder] = heatMatch;
+      current = {
+        ...current,
+        series: Number(number),
+        seriesCount: Number(total),
+        startTime,
+        heatOrder: Number(heatOrder || seriesRows.length + 1)
+      };
+      return;
+    }
+
+    if (!current?.series) return;
+    let lane = "";
+    let rawName = "";
+    let birth = "";
+    let catCode = "";
+    let club = "";
+    let seedTime = "";
+    let fullClub = "";
+    let relayMatch = null;
+    if (current.isRelay) {
+      relayMatch = line.match(/^(\d+)\s+(.+?)\s+(?:(?<cat>[FHX][A-Z0-9+]+)\s+)?(?:\*\s+)?(?<club>[A-Z0-9]+)\s+(?<time>[0-9:.]+)(?<full>.*)$/);
+    }
+    const swimmerMatch = line.match(swimmerPattern);
+    const speakerMatch = line.match(speakerPattern);
+    let lastName = "";
+    let firstName = "";
+    let birthYear = "";
+    let swimmerId = "";
+    if (relayMatch) {
+      lane = relayMatch[1];
+      rawName = relayMatch[2].trim();
+      catCode = relayMatch.groups.cat || (current.sex === "X" ? "XSE" : (current.sex === "F" ? "FSE" : "HSE"));
+      club = relayMatch.groups.club;
+      seedTime = relayMatch.groups.time;
+      fullClub = relayMatch.groups.full.trim() || rawName;
+      lastName = rawName;
+      swimmerId = `relay|${current.eventId}|${current.sex}|${club.toLowerCase()}|${lane}|${current.series}`;
+    } else if (swimmerMatch || speakerMatch) {
+      const match = swimmerMatch || speakerMatch;
+      lane = match[1];
+      rawName = match[2];
+      birth = match[3];
+      catCode = match[4];
+      club = match[5];
+      seedTime = match[6];
+      fullClub = speakerMatch ? (match[7].trim() || club) : club;
+      const split = splitImportedPersonName(rawName);
+      lastName = split.lastName;
+      firstName = split.firstName;
+      birthYear = importedBirthYear(birth);
+      swimmerId = `${lastName.toLowerCase()}|${firstName.toLowerCase()}|${birthYear}|${current.sex}`;
+    } else {
+      return;
+    }
+
+    seedTime = importedSeriesTime(seedTime);
+    const entrantKeyValue = `${current.eventId}|${current.sex}|${current.session}|${swimmerId}`;
+    if (!seenEntrants.has(entrantKeyValue)) {
+      seenEntrants.add(entrantKeyValue);
+      entrants.push({
+        eventId: current.eventId,
+        sex: current.sex,
+        lane: Number(lane),
+        lastName,
+        firstName,
+        birthDate: birthYear,
+        swimmerId,
+        club: fullClub,
+        clubCode: club,
+        category: importedCategoryLabel(catCode),
+        categoryCode: catCode,
+        seedTime,
+        seedSource: "",
+        session: current.session,
+        sessionLabel: current.sessionLabel,
+        note: ""
+      });
+    }
+    seriesRows.push({
+      eventId: current.eventId,
+      sex: current.sex,
+      swimmerId,
+      series: current.series,
+      seriesCount: current.seriesCount,
+      line: Number(lane),
+      startTime: current.startTime,
+      heatOrder: current.heatOrder,
+      session: current.session,
+      sessionLabel: current.sessionLabel,
+      stage: current.stage
+    });
+  });
+
+  return {
+    events: [...eventsById.values()],
+    entrants,
+    series: seriesRows,
+    program,
+    sourceFile: fileName
+  };
+}
+
+async function importSeriesPdf(file) {
+  if (!file) return;
+  renderDataStatus("Lecture du PDF des séries...");
+  try {
+    const lines = await extractPdfLines(file);
+    const parsed = parseImportedSeriesLines(lines, file.name);
+    if (!parsed.series.length || !parsed.program.length) {
+      window.alert("Je n'ai pas réussi à retrouver les séries dans ce PDF. Vérifie que c'est bien un PDF de séries speaker.");
+      renderDataStatus();
+      return;
+    }
+    const nextData = normalizeData({
+      ...data,
+      events: parsed.events,
+      entrants: parsed.entrants,
+      series: parsed.series,
+      program: parsed.program,
+      sourceVersion: `live-${Date.now()}`,
+      notes: {
+        ...(data.notes || {}),
+        sourceMode: "series-live",
+        sourceLabel: "Séries importées depuis LivePalmes",
+        sourceFile: parsed.sourceFile,
+        seriesLineCount: parsed.series.length,
+        entrantCount: parsed.entrants.length,
+        programCount: parsed.program.length,
+        generatedAt: new Date().toLocaleString("fr-FR")
+      }
+    });
+    applyFreshData(nextData, true);
+    try {
+      await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
+      window.alert(`Séries publiées : ${parsed.program.length} courses, ${parsed.series.length} lignes.`);
+    } catch {
+      window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
+    }
+  } catch (error) {
+    console.error(error);
+    window.alert("Import impossible pour ce PDF. On gardera la méthode actuelle si ce format n'est pas reconnu.");
+    renderDataStatus();
+  }
+}
+
 async function fetchGeneratedData() {
   try {
     const response = await fetch(`donnees-speaker-france-2026.json?v=${Date.now()}`);
@@ -3183,6 +3631,10 @@ async function reloadBaseData() {
 }
 
 async function checkForGeneratedUpdates() {
+  if (data.notes?.sourceMode === "series-live") {
+    renderDataStatus();
+    return;
+  }
   const freshData = await fetchGeneratedData();
   if (!freshData?.sourceVersion) return;
   if (freshData.sourceVersion === data.sourceVersion) {
@@ -3195,6 +3647,11 @@ async function checkForGeneratedUpdates() {
 document.querySelector("#reloadDataBtn")?.addEventListener("click", reloadBaseData);
 document.querySelector("#loadSampleBtn")?.addEventListener("click", reloadBaseData);
 document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
+seriesPdfInput?.addEventListener("change", async () => {
+  const file = seriesPdfInput.files?.[0];
+  seriesPdfInput.value = "";
+  await importSeriesPdf(file);
+});
 setInterval(checkForGeneratedUpdates, 5000);
 
 jsonInput?.addEventListener("change", async () => {
