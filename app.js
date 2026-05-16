@@ -135,6 +135,8 @@ const searchInput = document.querySelector("#searchInput");
 const categorySelect = document.querySelector("#categorySelect");
 const sessionControls = document.querySelector("#sessionControls");
 const seriesControls = document.querySelector("#seriesControls");
+const roleSwitch = document.querySelector(".role-switch");
+const sidebar = document.querySelector(".sidebar");
 const previousSeriesBtn = document.querySelector("#previousSeriesBtn");
 const nextSeriesBtn = document.querySelector("#nextSeriesBtn");
 const previousSeriesInlineBtn = document.querySelector("#previousSeriesInlineBtn");
@@ -143,7 +145,7 @@ const previousSeriesFloatBtn = document.querySelector("#previousSeriesFloatBtn")
 const nextSeriesFloatBtn = document.querySelector("#nextSeriesFloatBtn");
 const programBtn = document.querySelector("#programBtn");
 const programFloatBtn = document.querySelector("#programFloatBtn");
-const refereeTabletModeBtn = document.querySelector("#refereeTabletModeBtn");
+const categoryField = document.querySelector(".category-field");
 const lineOrderBtn = document.querySelector("#lineOrderBtn");
 const entrantsBody = document.querySelector("#entrantsBody");
 const entrantCount = document.querySelector("#entrantCount");
@@ -976,15 +978,16 @@ function render() {
   document.body.classList.toggle("role-video", state.role === "video");
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("referee-tablet-mode", state.role === "referee" && refereeTabletMode);
+  syncProgramButtonPlacement();
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
   });
   if (roleBadge) roleBadge.textContent = ROLE_LABELS[state.role] || "Console";
-  if (fullscreenBtn) fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
-  if (refereeTabletModeBtn) {
-    refereeTabletModeBtn.classList.toggle("active", refereeTabletMode);
-    refereeTabletModeBtn.textContent = refereeTabletMode ? "Affichage normal" : "Affichage smartphone";
+  if (fullscreenBtn) {
+    fullscreenBtn.hidden = state.role === "referee";
+    fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
   }
+  if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
   if (!data.events.length) {
     data.events = structuredClone(sampleData.events);
     state.eventId = data.events[0].id;
@@ -1012,6 +1015,20 @@ function render() {
   renderRolePanels();
   renderDataStatus();
   saveCurrentRoleState();
+}
+
+function syncProgramButtonPlacement() {
+  if (!programBtn || !roleSwitch || !sidebar) return;
+  const compactReferee = state.role === "referee" && refereeTabletMode;
+  if (compactReferee) {
+    if (programBtn.parentElement !== roleSwitch) {
+      roleSwitch.appendChild(programBtn);
+    }
+    return;
+  }
+  if (programBtn.parentElement !== sidebar) {
+    sidebar.insertBefore(programBtn, categoryField || null);
+  }
 }
 
 function renderSessionControls() {
@@ -2129,6 +2146,10 @@ function openAdminSeriesModal() {
           <span>Remplace uniquement la ou les sessions présentes dans le PDF, par exemple la session 2 avec finales.</span>
         </label>
       </div>
+      <label class="admin-session-field" hidden>
+        <span>Session à remplacer</span>
+        <input id="seriesSessionOverride" type="number" min="1" max="20" inputmode="numeric" placeholder="ex. 2">
+      </label>
       <label class="ghost-button admin-series-file" for="seriesPdfInput">Choisir le PDF</label>
       <input id="seriesPdfInput" class="hidden-file-input" type="file" accept="application/pdf">
     </div>
@@ -2882,6 +2903,11 @@ sessionControls?.addEventListener("click", (event) => {
 document.querySelectorAll(".role-chip").forEach((button) => {
   button.addEventListener("click", () => {
     const nextRole = button.dataset.role || "speaker";
+    if (nextRole === "referee" && state.role === "referee") {
+      refereeTabletMode = !refereeTabletMode;
+      render();
+      return;
+    }
     switchRole(nextRole);
     render();
   });
@@ -2909,11 +2935,6 @@ seriesControls.addEventListener("click", (event) => {
 });
 
 programBtn?.addEventListener("click", openProgramModal);
-refereeTabletModeBtn?.addEventListener("click", () => {
-  refereeTabletMode = !refereeTabletMode;
-  render();
-});
-
 programModal?.addEventListener("click", (event) => {
   if (event.target === programModal || event.target.closest("[data-program-close]")) {
     closeProgramModal();
@@ -2952,17 +2973,30 @@ adminSeriesModal?.addEventListener("click", (event) => {
 });
 
 adminSeriesModal?.addEventListener("change", async (event) => {
+  if (event.target?.name === "seriesImportMode") {
+    const mode = adminSeriesModal.querySelector("input[name='seriesImportMode']:checked")?.value || "full";
+    const sessionField = adminSeriesModal.querySelector(".admin-session-field");
+    if (sessionField) sessionField.hidden = mode !== "session";
+    return;
+  }
   if (event.target?.id !== "seriesPdfInput") return;
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
   const mode = adminSeriesModal.querySelector("input[name='seriesImportMode']:checked")?.value || "session";
+  const forcedSession = mode === "session"
+    ? String(adminSeriesModal.querySelector("#seriesSessionOverride")?.value || "").trim()
+    : "";
+  if (mode === "session" && !forcedSession) {
+    window.alert("Indique le numéro de la session à remplacer avant de choisir le PDF.");
+    return;
+  }
   const message = mode === "full"
     ? "Confirmer l'import comme PDF général ? Cela remplace toutes les séries actuellement publiées."
-    : "Confirmer l'import comme mise à jour de session ? Seules les sessions présentes dans le PDF seront remplacées.";
+    : `Confirmer l'import comme mise à jour de la session ${forcedSession} ? Cette session sera remplacée par le PDF choisi.`;
   if (!window.confirm(message)) return;
   closeAdminSeriesModal();
-  await importSeriesPdf(file, mode);
+  await importSeriesPdf(file, mode, forcedSession);
 });
 
 officialAlerts?.addEventListener("click", (event) => {
@@ -3818,6 +3852,25 @@ function showPdfImportDebug(parsed, lines) {
   window.alert(`Import PDF non reconnu.\n\nLignes lues dans le PDF :\n${samples || "Aucune ligne lue."}`);
 }
 
+function applyImportedSessionOverride(parsed, sessionNumber) {
+  const cleanSession = String(sessionNumber || "").trim();
+  if (!cleanSession) return parsed;
+  const existingLabel = [...parsed.program, ...parsed.series, ...parsed.entrants]
+    .map((row) => row.sessionLabel)
+    .find(Boolean) || `Session ${cleanSession}`;
+  const forceRows = (rows) => rows.map((row) => ({
+    ...row,
+    session: cleanSession,
+    sessionLabel: existingLabel
+  }));
+  return {
+    ...parsed,
+    entrants: forceRows(parsed.entrants || []),
+    series: forceRows(parsed.series || []),
+    program: forceRows(parsed.program || [])
+  };
+}
+
 function mergeImportedSeriesData(parsed, mode = "session") {
   if (mode === "full") {
     return {
@@ -3861,12 +3914,12 @@ function mergeImportedSeriesData(parsed, mode = "session") {
   };
 }
 
-async function importSeriesPdf(file, mode = "session") {
+async function importSeriesPdf(file, mode = "session", forcedSession = "") {
   if (!file) return;
   renderDataStatus("Lecture du PDF des séries...");
   try {
     const lines = await extractPdfLines(file);
-    const parsed = parseImportedSeriesLines(lines, file.name);
+    const parsed = applyImportedSessionOverride(parseImportedSeriesLines(lines, file.name), forcedSession);
     if (!parsed.series.length || !parsed.program.length) {
       showPdfImportDebug(parsed, lines);
       renderDataStatus();
@@ -3966,27 +4019,6 @@ function applyFreshData(freshData, resetView = false) {
   render();
 }
 
-async function reloadBaseData() {
-  renderDataStatus("Régénération des données en cours...");
-  let regenerateOk = true;
-  try {
-    const response = await fetch("regenerate", { method: "POST" });
-    if (!response.ok) {
-      regenerateOk = false;
-      renderDataStatus("La régénération automatique n'est pas disponible ici. En local, lance la console avec Demarrer la console.bat.");
-    }
-  } catch {
-    regenerateOk = false;
-    renderDataStatus("La régénération automatique n'est pas disponible ici. En local, lance la console avec Demarrer la console.bat.");
-  }
-  const freshData = await fetchGeneratedData();
-  if (freshData?.sourceVersion) {
-    applyFreshData(freshData, true);
-  } else if (regenerateOk) {
-    renderDataStatus("Les données n'ont pas pu être rechargées. Vérifie que donnees-speaker-france-2026.json existe bien.");
-  }
-}
-
 async function checkForGeneratedUpdates() {
   if (data.notes?.sourceMode === "series-live") {
     renderDataStatus();
@@ -4001,8 +4033,6 @@ async function checkForGeneratedUpdates() {
   applyFreshData(freshData, false);
 }
 
-document.querySelector("#reloadDataBtn")?.addEventListener("click", reloadBaseData);
-document.querySelector("#loadSampleBtn")?.addEventListener("click", reloadBaseData);
 document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
 setInterval(checkForGeneratedUpdates, 5000);
 

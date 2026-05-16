@@ -27,6 +27,10 @@ body {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body.role-live {
   --role-accent: #0b7285;
   --role-accent-soft: #e7f5f7;
@@ -120,6 +124,16 @@ button,
 .role-chip.active {
   background: var(--role-accent);
   color: #ffffff;
+}
+
+body.role-referee.referee-tablet-mode .role-chip:not([data-role="referee"]) {
+  display: none;
+}
+
+body.role-referee.referee-tablet-mode .role-chip[data-role="referee"]::after {
+  content: "📱";
+  margin-left: 6px;
+  font-size: 0.9em;
 }
 
 .data-status {
@@ -273,20 +287,8 @@ h3 {
   color: var(--role-accent);
 }
 
-.referee-tablet-toggle {
+body.role-referee #fullscreenBtn {
   display: none;
-}
-
-body.role-referee .referee-tablet-toggle {
-  display: inline-flex;
-  border: 1px solid color-mix(in srgb, var(--role-accent) 28%, #d8e0e5);
-  background: var(--role-accent-soft);
-  color: var(--role-accent);
-}
-
-.referee-tablet-toggle.active {
-  background: var(--role-accent);
-  color: #ffffff;
 }
 
 .hidden-file-input {
@@ -334,6 +336,26 @@ body.role-referee .referee-tablet-toggle {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 750;
+}
+
+.admin-session-field {
+  display: grid;
+  gap: 6px;
+  width: min(220px, 100%);
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-session-field input {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
+  color: var(--text);
+  background: #ffffff;
 }
 
 .admin-series-file {
@@ -1236,7 +1258,8 @@ body:not(.role-speaker):not(.role-live) .badge-row .badge.muted {
 }
 
 .role-speaker .admin-only,
-.role-live .admin-only {
+.role-live .admin-only,
+.role-referee .admin-only {
   display: none !important;
 }
 
@@ -2792,13 +2815,26 @@ tbody tr:hover,
   }
 
   .role-referee.referee-tablet-mode .topbar > div:first-child,
-  .role-referee.referee-tablet-mode .top-actions,
   .role-referee.referee-tablet-mode .top-session-field {
     display: none;
   }
 
+  .role-referee.referee-tablet-mode .top-actions {
+    margin-left: auto;
+  }
+
   .role-referee.referee-tablet-mode .role-switch {
     width: 100%;
+  }
+
+  .role-referee.referee-tablet-mode .role-switch .program-button {
+    display: inline-flex;
+    width: auto;
+    min-height: 30px;
+    margin: 0 0 0 4px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+    order: 2;
   }
 
   .role-referee.referee-tablet-mode .app-shell {
