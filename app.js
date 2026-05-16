@@ -3476,6 +3476,26 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
   const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
 
+  const updateSessionFromLabel = (label) => {
+    const cleanLabel = fixPdfEncoding(label);
+    const normalizedLabel = cleanLabel
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    const currentNumber = Number(currentSession.number || 0);
+    let inferredNumber = "";
+    if (/apres\s*-?\s*midi/.test(normalizedLabel) && currentNumber && currentNumber % 2 === 1) {
+      inferredNumber = String(currentNumber + 1);
+    } else if (normalizedLabel.includes("matin") && currentNumber && currentNumber % 2 === 0) {
+      inferredNumber = String(currentNumber + 1);
+    }
+    currentSession = {
+      ...currentSession,
+      number: inferredNumber || currentSession.number,
+      label: cleanLabel
+    };
+  };
+
   normalizedLines.forEach((rawLine) => {
     const line = rawLine.replace(/\s+/g, " ").trim();
     const sessionMatch = line.match(/\bSession\s*(\d+)\b/i);
@@ -3484,7 +3504,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       return;
     }
     if (line.includes("Session du") || line.includes("Session de l")) {
-      currentSession = { ...currentSession, label: fixPdfEncoding(line) };
+      updateSessionFromLabel(line);
       return;
     }
 
