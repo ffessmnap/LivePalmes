@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LivePalmes version BETA</title>
-    <link rel="stylesheet" href="styles.css?v=20260516-ja-dsq-by-discipline">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
+    <link rel="stylesheet" href="styles.css?v=20260516-console-reservations">
   </head>
   <body>
     <header class="topbar">
@@ -138,6 +139,7 @@
 
     <footer class="footer-status">
       <div id="dataStatus" class="data-status" hidden></div>
+      <button id="roleLockBtn" class="footer-lock-button computer-only" type="button" title="Gérer les codes" aria-label="Gérer les codes">🔓</button>
     </footer>
 
     <div class="floating-series-nav">
@@ -152,10 +154,11 @@
     <div id="alertDetailModal" class="decision-modal alert-detail-modal" hidden></div>
     <div id="programModal" class="decision-modal program-modal" hidden></div>
     <div id="adminSeriesModal" class="decision-modal admin-series-modal" hidden></div>
+    <div id="roleCodesModal" class="decision-modal role-codes-modal" hidden></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="data.generated.js?v=20260516-ja-dsq-by-discipline"></script>
-    <script src="app.js?v=20260516-ja-dsq-by-discipline"></script>
+    <script src="data.generated.js?v=20260516-console-reservations"></script>
+    <script src="app.js?v=20260516-console-reservations"></script>
   </body>
 </html>
