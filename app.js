@@ -250,22 +250,48 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
   const doc = liveDataDocument();
   if (!doc) return;
   const payload = normalizeData(nextData);
-  payload.notes = {
-    ...(payload.notes || {}),
-    livePublishedAt: new Date().toISOString(),
-    liveSource: source
+  const livePayload = {
+    meet: payload.meet,
+    events: payload.events,
+    entrants: payload.entrants,
+    series: payload.series,
+    program: payload.program,
+    sourceVersion: payload.sourceVersion,
+    notes: {
+      ...(payload.notes || {}),
+      livePublishedAt: new Date().toISOString(),
+      liveSource: source
+    }
   };
   await doc.set({
-    data: sanitizeAlertForFirestore(payload),
-    updatedAt: payload.notes.livePublishedAt,
+    data: sanitizeAlertForFirestore(livePayload),
+    updatedAt: livePayload.notes.livePublishedAt,
     source
+  });
+}
+
+function mergeRemoteLiveData(remoteData) {
+  return normalizeData({
+    ...data,
+    meet: remoteData.meet || data.meet,
+    events: Array.isArray(remoteData.events) ? remoteData.events : data.events,
+    entrants: Array.isArray(remoteData.entrants) ? remoteData.entrants : data.entrants,
+    series: Array.isArray(remoteData.series) ? remoteData.series : data.series,
+    program: Array.isArray(remoteData.program) ? remoteData.program : data.program,
+    sourceVersion: remoteData.sourceVersion || data.sourceVersion,
+    notes: {
+      ...(data.notes || {}),
+      ...(remoteData.notes || {}),
+      sourceMode: remoteData.notes?.sourceMode || "series-live",
+      sourceLabel: remoteData.notes?.sourceLabel || "Séries importées depuis LivePalmes"
+    }
   });
 }
 
 function applyRemoteLiveData(remoteData) {
   if (!remoteData) return;
   applyingRemoteData = true;
-  applyFreshData(remoteData, true);
+  applyFreshData(mergeRemoteLiveData(remoteData), true);
   applyingRemoteData = false;
 }
 
@@ -3264,18 +3290,25 @@ async function extractPdfLines(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const text = await page.getTextContent();
-    const grouped = new Map();
-    text.items.forEach((item) => {
-      const y = Math.round(item.transform[5]);
-      const key = String(y);
-      const row = grouped.get(key) || [];
-      row.push({ x: item.transform[4], text: item.str });
-      grouped.set(key, row);
-    });
-    [...grouped.entries()]
-      .sort((a, b) => Number(b[0]) - Number(a[0]))
-      .forEach(([, row]) => {
+    const rows = [];
+    text.items
+      .map((item) => ({ x: item.transform[4], y: item.transform[5], text: item.str }))
+      .filter((item) => String(item.text || "").trim())
+      .sort((a, b) => b.y - a.y || a.x - b.x)
+      .forEach((item) => {
+        const row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= 2.5);
+        if (row) {
+          row.items.push(item);
+          row.y = (row.y + item.y) / 2;
+        } else {
+          rows.push({ y: item.y, items: [item] });
+        }
+      });
+    rows
+      .sort((a, b) => b.y - a.y)
+      .forEach((row) => {
         const line = row
+          .items
           .sort((a, b) => a.x - b.x)
           .map((item) => item.text)
           .join(" ")
