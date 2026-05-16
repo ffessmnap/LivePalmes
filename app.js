@@ -138,6 +138,7 @@ let firestoreDb = null;
 let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
 let firestoreReady = false;
+let firebaseStatus = "connecting";
 let applyingRemoteData = false;
 
 const eventSelect = document.querySelector("#eventSelect");
@@ -188,10 +189,11 @@ const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
+const dataDiagnosticBtn = document.querySelector("#dataDiagnosticBtn");
 const jsonInput = document.querySelector("#jsonInput");
 const csvInput = document.querySelector("#csvInput");
 const swimmerDetails = document.querySelector("#swimmerDetails");
-const meetEyebrow = document.querySelector("#meetEyebrow");
+const meetTitle = document.querySelector("#meetTitle");
 const antoineOverlay = document.querySelector("#antoineOverlay");
 
 function loadData() {
@@ -261,7 +263,10 @@ async function clearFirestoreAlerts() {
 
 async function publishLiveDataToFirestore(nextData, source = "Import PDF séries") {
   const doc = liveDataDocument();
-  if (!doc) return;
+  if (!doc) {
+    firebaseStatus = "local";
+    return;
+  }
   const payload = normalizeData(nextData);
   const livePayload = {
     meet: payload.meet,
@@ -286,6 +291,7 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     updatedAt: livePayload.notes.livePublishedAt,
     source
   });
+  firebaseStatus = "connected";
 }
 
 function mergeRemoteLiveData(remoteData) {
@@ -320,6 +326,7 @@ function applyRemoteLiveData(remoteData) {
 
 function initFirebaseSync() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
+    firebaseStatus = "local";
     renderDataStatus("Firebase n'est pas chargé. Les alertes restent locales sur cet appareil.");
     return;
   }
@@ -334,12 +341,14 @@ function initFirebaseSync() {
       .orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
         firestoreReady = true;
+        firebaseStatus = "connected";
         alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         saveAlerts();
         render();
       }, (error) => {
         console.warn("Lecture Firebase impossible", error);
-          renderDataStatus("Firebase n'est pas joignable. Les alertes restent locales sur cet appareil.");
+        firebaseStatus = "error";
+        renderDataStatus("Firebase n'est pas joignable. Les alertes restent locales sur cet appareil.");
       });
     liveDataUnsubscribe = liveDataDocument().onSnapshot((snapshot) => {
       if (!snapshot.exists) return;
@@ -348,9 +357,11 @@ function initFirebaseSync() {
       applyRemoteLiveData(remote);
     }, (error) => {
       console.warn("Lecture des données live Firebase impossible", error);
+      firebaseStatus = "error";
     });
   } catch (error) {
     console.warn("Initialisation Firebase impossible", error);
+    firebaseStatus = "error";
     renderDataStatus("Firebase n'est pas configuré correctement. Les alertes restent locales sur cet appareil.");
   }
 }
@@ -730,6 +741,16 @@ function firstSessionNumber() {
   return sessionRows()[0]?.number || "all";
 }
 
+function preferredInitialSession() {
+  const sessions = sessionRows();
+  if (!sessions.length) return "all";
+  const updatedSession = String(data.notes?.lastUpdatedSession || "");
+  if (data.notes?.lastImportedMode === "Mise à jour session" && sessions.some((session) => session.number === updatedSession)) {
+    return updatedSession;
+  }
+  return sessions.find((session) => session.number === "1")?.number || sessions[0].number;
+}
+
 function firstProgramRowForSession(sessionNumber) {
   const rows = (data.program || [])
     .filter((row) => !sessionNumber || sessionNumber === "all" || row.session === sessionNumber)
@@ -752,7 +773,7 @@ function firstSeriesForRace(eventId, sex, sessionNumber) {
 }
 
 function initialProgramPosition() {
-  const session = firstSessionNumber();
+  const session = preferredInitialSession();
   const row = firstProgramRowForSession(session);
   if (!row) {
     return {
@@ -778,9 +799,9 @@ function normalizeLivePosition() {
     state.session = "all";
     return;
   }
-  if (state.session === "all" || !sessions.some((session) => session.number === state.session)) {
-    const initial = initialProgramPosition();
-    state.session = initial.session;
+    if (state.session === "all" || !sessions.some((session) => session.number === state.session)) {
+      const initial = initialProgramPosition();
+      state.session = initial.session;
     state.eventId = initial.eventId;
     state.sex = initial.sex;
     state.programKey = initial.programKey;
@@ -1028,8 +1049,8 @@ function render() {
     state.sex = availableSexes[0];
   }
 
-  if (meetEyebrow) {
-    meetEyebrow.textContent = [data.meet?.name, data.meet?.city].filter(Boolean).join(" - ");
+  if (meetTitle) {
+    meetTitle.textContent = [data.meet?.name, data.meet?.city].filter(Boolean).join(" - ") || "Compétition à charger";
   }
   updateEventSelect();
   renderSessionControls();
@@ -1069,7 +1090,7 @@ function renderSessionControls() {
   }
   sessionControls.closest(".top-session-field")?.removeAttribute("hidden");
   if (state.session === "all" || !sessions.some((session) => session.number === state.session)) {
-    state.session = sessions[0].number;
+    state.session = preferredInitialSession();
   }
   sessionControls.innerHTML = sessions.map((session) => `
       <button class="session-chip ${state.session === session.number ? "active" : ""}" type="button" data-session="${escapeHtml(session.number)}" title="${escapeHtml(session.label)}">
@@ -1548,8 +1569,8 @@ function renderRoleHistory() {
     title = "Historique vidéo";
     rows = alerts.filter((alert) => isDsqAlert(alert));
   } else if (state.role === "computer") {
-    title = "Historique informatique";
-    rows = alerts.filter((alert) => alert.informaticsStatus === "done" && !isRequalificationAlert(alert));
+    title = "Journal d'arbitrage";
+    rows = alerts.filter((alert) => alert.roleSource === "referee");
   }
   rows = rows
     .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
@@ -1603,13 +1624,19 @@ function relayLegCount(entrant) {
 
 function decisionOptionsForEntrant(entrant) {
   const relay = isRelayEntrant(entrant);
+  const event = data.events.find((item) => item.id === entrant.eventId);
+  const discipline = String(event?.discipline || event?.label || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const forbidsUnderwaterAndImmersion = discipline.includes("apnee") || discipline.includes("immersion");
   return [
     ["forfait", "Forfait"],
     ["abandon", "Abandon"],
     ["false_start", "DSQ - faux départ"],
     ...(relay ? [["relay_early_start", "DSQ - départ anticipé"]] : []),
-    ["underwater_15m", "DSQ - coulée supérieure à 15 m"],
-    ["immersion", "DSQ - passage en immersion"],
+    ...(!forbidsUnderwaterAndImmersion ? [["underwater_15m", "DSQ - coulée supérieure à 15 m"]] : []),
+    ...(!forbidsUnderwaterAndImmersion ? [["immersion", "DSQ - passage en immersion"]] : []),
     ["interference", "DSQ - gêne d'un concurrent"],
     ["other_dsq", "DSQ - autre motif"]
   ];
@@ -1703,6 +1730,18 @@ function renderDecisionModal() {
     : `Série ${row?.series || (state.series === "all" ? "-" : state.series)}`;
   const modalLineLabel = row?.line || entrant.lane || entrant.seriesInfo?.line || "-";
   const modalRaceInfo = `${event?.label || entrant.eventId} ${sexLabel} - ${modalSeriesLabel} - Ligne ${modalLineLabel}`;
+  const activeDecisions = activeDsqAlertsForEntrant(entrant);
+  const activeDecisionActions = activeDecisions.length ? `
+    <div class="decision-existing">
+      <strong>Décision déjà saisie sur cette ligne</strong>
+      ${activeDecisions.map((alert) => `
+        <div class="decision-existing-row">
+          <span>${escapeHtml(decisionMotifLabel(alert))}</span>
+          <button class="ghost-button compact danger-button" type="button" data-cancel-active-decision="${escapeHtml(alert.id)}">Annuler cette DSQ</button>
+        </div>
+      `).join("")}
+    </div>
+  ` : "";
   const options = decisionOptionsForEntrant(entrant)
     .map(([value, label]) => `
       <button class="decision-choice ${decisionDraft.type === value ? "active" : ""}" type="button" data-decision-type="${escapeHtml(value)}">
@@ -1755,6 +1794,7 @@ function renderDecisionModal() {
         </div>
         <button class="icon-button decision-close" type="button" data-close-decision aria-label="Fermer">×</button>
       </div>
+      ${activeDecisionActions}
       <div class="decision-choice-grid">${options}</div>
       ${extra}
       <label class="decision-comment">
@@ -1931,21 +1971,32 @@ function renderDataStatus(message = "") {
     return;
   }
   if (data.sourceVersion) {
-    const sourceLabel = data.notes?.sourceLabel || "Données officielles chargées";
+    const seriesSource = data.notes?.sourceLabel || "Données officielles chargées";
     const sourceFile = data.notes?.sourceFile || "";
-    const results = data.notes?.resultFiles?.length
-      ? `${data.notes.resultFiles.length} fichier${data.notes.resultFiles.length > 1 ? "s" : ""} résultats`
-      : "aucun fichier résultats";
+    const speakerSource = data.notes?.speakerInfoSource
+      ? `${data.notes.speakerInfoSource}${data.notes.speakerInfoUpdatedAt ? ` - ${data.notes.speakerInfoUpdatedAt}` : ""}`
+      : "non mis à jour";
+    const firebaseLabel = firebaseStatus === "connected"
+      ? "connecté"
+      : (firebaseStatus === "error" ? "erreur" : (firebaseStatus === "local" ? "local seulement" : "connexion..."));
+    const firebaseClass = firebaseStatus === "connected" ? "ok" : (firebaseStatus === "error" ? "error" : "pending");
     const generatedAt = data.notes?.generatedAt || "";
     const seriesCount = data.notes?.seriesLineCount || data.series?.length || 0;
     const entrantTotal = data.notes?.entrantCount || data.entrants?.length || 0;
+    const updatedSession = data.notes?.lastImportedMode === "Mise à jour session" && data.notes?.lastUpdatedSession
+      ? `session ouverte par défaut : S${data.notes.lastUpdatedSession}`
+      : "session ouverte par défaut : S1";
+    const history = Array.isArray(data.notes?.importHistory) ? data.notes.importHistory.slice(-4).reverse() : [];
     dataStatus.hidden = false;
     dataStatus.innerHTML = `
-      <span><strong>Source active</strong> ${escapeHtml(sourceLabel)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
+      <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
+      <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
+      <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
       <span>${escapeHtml(String(entrantTotal))} engagements</span>
       <span>${escapeHtml(String(seriesCount))} lignes de séries</span>
-      <span>${escapeHtml(results)}</span>
+      <span>${escapeHtml(updatedSession)}</span>
       ${generatedAt ? `<span>mise à jour ${escapeHtml(generatedAt)}</span>` : ""}
+      ${history.length ? `<span class="status-history"><strong>Historique</strong> ${history.map((item) => escapeHtml(item)).join(" | ")}</span>` : ""}
     `;
     dataStatus.classList.add("source");
     return;
@@ -1953,6 +2004,47 @@ function renderDataStatus(message = "") {
   dataStatus.hidden = false;
   dataStatus.textContent = "Données officielles non chargées. Sur GitHub Pages, vérifie que data.generated.js et donnees-speaker-france-2026.json sont bien publiés.";
   dataStatus.classList.add("warning");
+}
+
+function shortStatusDate() {
+  return new Date().toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function appendImportHistory(notes, label) {
+  const history = Array.isArray(notes?.importHistory) ? notes.importHistory.slice(-7) : [];
+  return [...history, `${shortStatusDate()} - ${label}`].slice(-8);
+}
+
+function showDataDiagnostic() {
+  const sessions = sessionRows().map((session) => `S${session.number}`).join(", ") || "aucune";
+  const seriesCount = data.series?.length || 0;
+  const programCount = data.program?.length || 0;
+  const entrantCount = data.entrants?.length || 0;
+  const locations = (data.entrants || []).filter((entrant) => entrant.seedSource).length;
+  const firebaseLabel = firebaseStatus === "connected"
+    ? "connecté"
+    : (firebaseStatus === "error" ? "erreur" : (firebaseStatus === "local" ? "local seulement" : "connexion en cours"));
+  window.alert([
+    "Diagnostic LivePalmes",
+    "",
+    `Firebase : ${firebaseLabel}`,
+    `Sessions : ${sessions}`,
+    `Programme : ${programCount} courses`,
+    `Séries : ${seriesCount} lignes`,
+    `Engagés : ${entrantCount}`,
+    `Records : ${data.records?.length || 0}`,
+    `Qualifs EDF : ${data.qualifications?.length || 0}`,
+    `Membres EDF : ${data.edfMembers?.length || 0}`,
+    `France N-1 : ${data.top2025?.length || 0}`,
+    `Lieux rattachés : ${locations}`,
+    `Dernière mise à jour session : ${data.notes?.lastUpdatedSession ? `S${data.notes.lastUpdatedSession}` : "aucune"}`,
+    `Infos speaker : ${data.notes?.speakerInfoUpdatedAt || "non mises à jour"}`
+  ].join("\n"));
 }
 
 function renderSeriesControls() {
@@ -3148,7 +3240,8 @@ async function updateSpeakerInfoFromGoogleSheet() {
         ...(data.notes || {}),
         sourceMode: data.notes?.sourceMode || "series-live",
         speakerInfoSource: "Google Sheets",
-        speakerInfoUpdatedAt: new Date().toLocaleString("fr-FR")
+        speakerInfoUpdatedAt: new Date().toLocaleString("fr-FR"),
+        importHistory: appendImportHistory(data.notes || {}, "infos speaker Google Sheet")
       }
     });
     applyFreshData(nextData, true);
@@ -3417,6 +3510,15 @@ decisionModal?.addEventListener("click", (event) => {
   }
   const entrant = selectedEntrant();
   if (!entrant) return;
+  const cancelButton = event.target.closest("[data-cancel-active-decision]");
+  if (cancelButton) {
+    const ok = window.confirm("Annuler cette DSQ ? Une alerte sera envoyée si le speaker ou l'informatique doit corriger l'information.");
+    if (ok) {
+      closeDecisionModal();
+      cancelDecision(cancelButton.dataset.cancelActiveDecision, "referee");
+    }
+    return;
+  }
   const typeButton = event.target.closest("[data-decision-type]");
   if (typeButton) {
     decisionDraft.comment = document.querySelector("#modalDecisionComment")?.value || decisionDraft.comment;
@@ -4358,6 +4460,12 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
       }
     }
     const mergedSeriesData = mergeImportedSeriesData(parsed, mode);
+    const importedSessions = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
+      .sort((a, b) => Number(a) - Number(b));
+    const updatedSession = mode === "full" ? "" : (forcedSession || importedSessions[0] || "");
+    const importHistoryLabel = mode === "full"
+      ? `PDF général ${file.name}`
+      : `mise à jour S${updatedSession || "?"} ${file.name}`;
     const nextData = normalizeData({
       ...data,
       meet: parsed.meet || data.meet,
@@ -4375,7 +4483,10 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
         entrantCount: mergedSeriesData.entrants.length,
         programCount: mergedSeriesData.program.length,
         lastImportedMode: mode === "full" ? "PDF général" : "Mise à jour session",
-        lastImportedSessions: [...new Set(parsed.program.map((row) => row.session).filter(Boolean))].join(", "),
+        lastImportedSessions: importedSessions.join(", "),
+        lastUpdatedSession: updatedSession,
+        lastUpdatedSessionAt: updatedSession ? new Date().toISOString() : "",
+        importHistory: appendImportHistory(data.notes || {}, importHistoryLabel),
         generatedAt: new Date().toLocaleString("fr-FR")
       }
     });
@@ -4459,6 +4570,7 @@ async function checkForGeneratedUpdates() {
 }
 
 document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
+dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
 setInterval(checkForGeneratedUpdates, 5000);
 
 jsonInput?.addEventListener("change", async () => {
