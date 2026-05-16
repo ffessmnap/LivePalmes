@@ -169,12 +169,13 @@ const decisionPanel = document.querySelector("#decisionPanel");
 const decisionModal = document.querySelector("#decisionModal");
 const alertDetailModal = document.querySelector("#alertDetailModal");
 const programModal = document.querySelector("#programModal");
+const adminSeriesModal = document.querySelector("#adminSeriesModal");
 const roleQueue = document.querySelector("#roleQueue");
 const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
-const seriesPdfInput = document.querySelector("#seriesPdfInput");
+const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
 const jsonInput = document.querySelector("#jsonInput");
 const csvInput = document.querySelector("#csvInput");
 const swimmerDetails = document.querySelector("#swimmerDetails");
@@ -2103,6 +2104,43 @@ function closeProgramModal() {
   programModal.innerHTML = "";
 }
 
+function openAdminSeriesModal() {
+  if (!adminSeriesModal) return;
+  adminSeriesModal.hidden = false;
+  adminSeriesModal.innerHTML = `
+    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Administration des séries">
+      <div class="decision-modal-head">
+        <div>
+          <span>Administration</span>
+          <h2>Importer des séries PDF</h2>
+          <p>Choisis si le PDF remplace toute la compétition ou seulement une session déjà publiée.</p>
+        </div>
+        <button class="decision-close" type="button" data-admin-series-close aria-label="Fermer">×</button>
+      </div>
+      <div class="admin-series-options">
+        <label class="admin-series-option">
+          <input type="radio" name="seriesImportMode" value="full" checked>
+          <strong>PDF général de la compétition</strong>
+          <span>Remplace toutes les séries, le programme, le titre de compétition et les engagés.</span>
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="seriesImportMode" value="session">
+          <strong>PDF de mise à jour d'une session</strong>
+          <span>Remplace uniquement la ou les sessions présentes dans le PDF, par exemple la session 2 avec finales.</span>
+        </label>
+      </div>
+      <label class="ghost-button admin-series-file" for="seriesPdfInput">Choisir le PDF</label>
+      <input id="seriesPdfInput" class="hidden-file-input" type="file" accept="application/pdf">
+    </div>
+  `;
+}
+
+function closeAdminSeriesModal() {
+  if (!adminSeriesModal) return;
+  adminSeriesModal.hidden = true;
+  adminSeriesModal.innerHTML = "";
+}
+
 function renderCategorySelect() {
   const categories = [...new Set(data.entrants.filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))];
   const preferred = ["Cadet", "Junior", "Senior"];
@@ -2905,6 +2943,28 @@ programModal?.addEventListener("click", (event) => {
   render();
 });
 
+adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
+
+adminSeriesModal?.addEventListener("click", (event) => {
+  if (event.target === adminSeriesModal || event.target.closest("[data-admin-series-close]")) {
+    closeAdminSeriesModal();
+  }
+});
+
+adminSeriesModal?.addEventListener("change", async (event) => {
+  if (event.target?.id !== "seriesPdfInput") return;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  const mode = adminSeriesModal.querySelector("input[name='seriesImportMode']:checked")?.value || "session";
+  const message = mode === "full"
+    ? "Confirmer l'import comme PDF général ? Cela remplace toutes les séries actuellement publiées."
+    : "Confirmer l'import comme mise à jour de session ? Seules les sessions présentes dans le PDF seront remplacées.";
+  if (!window.confirm(message)) return;
+  closeAdminSeriesModal();
+  await importSeriesPdf(file, mode);
+});
+
 officialAlerts?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-alert-action]");
   const card = event.target.closest("[data-alert-id]");
@@ -3699,7 +3759,15 @@ function showPdfImportDebug(parsed, lines) {
   window.alert(`Import PDF non reconnu.\n\nLignes lues dans le PDF :\n${samples || "Aucune ligne lue."}`);
 }
 
-function mergeImportedSeriesData(parsed) {
+function mergeImportedSeriesData(parsed, mode = "session") {
+  if (mode === "full") {
+    return {
+      events: parsed.events,
+      entrants: parsed.entrants,
+      series: parsed.series,
+      program: parsed.program
+    };
+  }
   const sessions = [...new Set([
     ...parsed.entrants.map((row) => row.session).filter(Boolean),
     ...parsed.series.map((row) => row.session).filter(Boolean),
@@ -3734,7 +3802,7 @@ function mergeImportedSeriesData(parsed) {
   };
 }
 
-async function importSeriesPdf(file) {
+async function importSeriesPdf(file, mode = "session") {
   if (!file) return;
   renderDataStatus("Lecture du PDF des séries...");
   try {
@@ -3752,7 +3820,7 @@ async function importSeriesPdf(file) {
         return;
       }
     }
-    const mergedSeriesData = mergeImportedSeriesData(parsed);
+    const mergedSeriesData = mergeImportedSeriesData(parsed, mode);
     const nextData = normalizeData({
       ...data,
       meet: parsed.meet || data.meet,
@@ -3764,11 +3832,12 @@ async function importSeriesPdf(file) {
       notes: {
         ...(data.notes || {}),
         sourceMode: "series-live",
-        sourceLabel: "Séries importées depuis LivePalmes",
+        sourceLabel: mode === "full" ? "PDF général importé depuis LivePalmes" : "Session mise à jour depuis LivePalmes",
         sourceFile: parsed.sourceFile,
         seriesLineCount: mergedSeriesData.series.length,
         entrantCount: mergedSeriesData.entrants.length,
         programCount: mergedSeriesData.program.length,
+        lastImportedMode: mode === "full" ? "PDF général" : "Mise à jour session",
         lastImportedSessions: [...new Set(parsed.program.map((row) => row.session).filter(Boolean))].join(", "),
         generatedAt: new Date().toLocaleString("fr-FR")
       }
@@ -3776,7 +3845,7 @@ async function importSeriesPdf(file) {
     applyFreshData(nextData, true);
     try {
       await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
-      window.alert(`Séries publiées : ${parsed.program.length} courses, ${parsed.series.length} lignes.`);
+      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.`);
     } catch {
       window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
     }
@@ -3871,11 +3940,6 @@ async function checkForGeneratedUpdates() {
 document.querySelector("#reloadDataBtn")?.addEventListener("click", reloadBaseData);
 document.querySelector("#loadSampleBtn")?.addEventListener("click", reloadBaseData);
 document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
-seriesPdfInput?.addEventListener("change", async () => {
-  const file = seriesPdfInput.files?.[0];
-  seriesPdfInput.value = "";
-  await importSeriesPdf(file);
-});
 setInterval(checkForGeneratedUpdates, 5000);
 
 jsonInput?.addEventListener("change", async () => {

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8">
@@ -25,8 +25,7 @@
       </div>
       <div class="top-actions">
         <button id="fullscreenBtn" class="ghost-button compact" type="button">Plein &eacute;cran</button>
-        <label class="ghost-button compact admin-import-button" for="seriesPdfInput">Importer séries PDF</label>
-        <input id="seriesPdfInput" class="hidden-file-input" type="file" accept="application/pdf">
+        <button id="adminSeriesBtn" class="ghost-button compact admin-import-button" type="button">Admin s&eacute;ries</button>
         <button id="exportDsqPdfBtn" class="ghost-button compact admin-only" type="button">Export DSQ</button>
         <button id="resetHistoryBtn" class="ghost-button compact computer-only danger-button" type="button">RAZ historique</button>
         <button id="reloadDataBtn" class="ghost-button">R&eacute;g&eacute;n&eacute;rer les donn&eacute;es</button>
@@ -142,6 +141,7 @@
     <div id="decisionModal" class="decision-modal" hidden></div>
     <div id="alertDetailModal" class="decision-modal alert-detail-modal" hidden></div>
     <div id="programModal" class="decision-modal program-modal" hidden></div>
+    <div id="adminSeriesModal" class="decision-modal admin-series-modal" hidden></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -149,3 +149,6 @@
     <script src="app.js?v=20260516-import-debug"></script>
   </body>
 </html>
+
+
+

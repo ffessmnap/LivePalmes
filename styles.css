@@ -301,6 +301,45 @@ body.role-referee .referee-tablet-toggle {
   border: 1px solid color-mix(in srgb, var(--role-accent) 24%, #d8e0e5);
 }
 
+.admin-series-dialog {
+  width: min(640px, 100%);
+}
+
+.admin-series-options {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-series-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfe;
+  cursor: pointer;
+}
+
+.admin-series-option input {
+  grid-row: 1 / 3;
+  margin-top: 3px;
+}
+
+.admin-series-option strong {
+  font-size: 0.9rem;
+}
+
+.admin-series-option span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.admin-series-file {
+  width: fit-content;
+}
+
 .primary-button {
   background: var(--accent);
   color: #ffffff;
