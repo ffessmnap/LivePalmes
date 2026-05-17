@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Résultats - LivePalmes v2 prototype</title>
-    <meta name="description" content="Résultats publiés et finalistes de la compétition LivePalmes.">
+    <title>R&eacute;sultats - LivePalmes</title>
+    <meta name="description" content="R&eacute;sultats publi&eacute;s et finalistes de la comp&eacute;tition LivePalmes.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-final-composition">
+    <link rel="stylesheet" href="styles.css?v=20260517-competition-polish">
   </head>
   <body class="public-results-page">
     <header class="public-results-header">
@@ -22,7 +22,8 @@
           </span>
           LivePalmes
         </p>
-        <h1 id="publicMeetTitle">Résultats & finalistes</h1>
+        <h1 id="publicMeetTitle">R&eacute;sultats & finalistes</h1>
+        <p id="publicMeetMeta" class="public-meet-meta"></p>
       </div>
       <span id="publicResultsStatus" class="firebase-header-status pending">
         <i class="firebase-dot pending" aria-hidden="true"></i>
@@ -34,19 +35,20 @@
       <section class="panel">
         <div class="panel-title">
           <div>
-            <h2>Résultats publics</h2>
-            <p class="panel-subtitle">Les résultats sont publiés par le bureau des performances.</p>
+            <h2>R&eacute;sultats publics</h2>
+            <p class="panel-subtitle">Les r&eacute;sultats sont publi&eacute;s par le bureau des performances.</p>
           </div>
+          <button id="collapsePublicDetailsBtn" class="ghost-button compact" type="button">Tout replier</button>
         </div>
         <div id="publicSessionControls" class="session-controls public-session-controls"></div>
         <div id="publicResultsList" class="public-results-list">
-          <p class="panel-subtitle">Chargement des résultats...</p>
+          <p class="panel-subtitle">Chargement des r&eacute;sultats...</p>
         </div>
       </section>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="resultats.js?v=20260517-replacement-withdrawal"></script>
+    <script src="resultats.js?v=20260517-competition-polish"></script>
   </body>
 </html>
