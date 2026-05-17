@@ -18,6 +18,7 @@ const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
 
 let publicProgram = [];
 let publicEvents = [];
+let publicSeries = [];
 let publicMeet = {};
 let publicResults = [];
 let publicIndexUpdatedAt = "";
@@ -99,7 +100,8 @@ function resultForRow(row) {
 }
 
 function isFinalStage(stage) {
-  return ["finalA", "finalB"].includes(stage);
+  const value = String(stage || "");
+  return value === "finalA" || value === "finalB" || value.startsWith("finale");
 }
 
 function isLastProgramPartForRace(row) {
@@ -108,6 +110,49 @@ function isLastProgramPartForRace(row) {
     .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
   if (!rows.length) return true;
   return programKey(rows[rows.length - 1]) === programKey(row);
+}
+
+function raceProgramRows(eventId, sex) {
+  return publicProgram
+    .filter((row) => row.eventId === eventId && row.sex === sex)
+    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
+}
+
+function finalProgramRows(eventId, sex) {
+  const seen = new Set();
+  return raceProgramRows(eventId, sex)
+    .filter((row) => isFinalStage(row.stage))
+    .filter((row) => {
+      const key = row.stage || programKey(row);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function seriesNumbersForRace(row) {
+  const rows = publicSeries
+    .filter((item) => item.eventId === row.eventId && item.sex === row.sex)
+    .filter((item) => !isFinalStage(item.stage))
+    .filter((item) => !row.session || !item.session || item.session === row.session);
+  return [...new Set(rows.map((item) => Number(item.series)).filter(Number.isFinite))].sort((a, b) => a - b);
+}
+
+function publicRacePhaseLabel(row) {
+  const finals = finalProgramRows(row.eventId, row.sex);
+  if (isFinalStage(row.stage)) {
+    return finals.length > 1 ? "finales" : "finale";
+  }
+  const regularRows = raceProgramRows(row.eventId, row.sex).filter((item) => !isFinalStage(item.stage));
+  const hasSplitSeries = regularRows.length > 1;
+  const seriesNumbers = seriesNumbersForRace(row);
+  if (!finals.length && hasSplitSeries && isLastProgramPartForRace(row)) {
+    return "meilleure série";
+  }
+  if (seriesNumbers.length > 1 || hasSplitSeries) {
+    return "séries";
+  }
+  return "série";
 }
 
 function rowsForSession(session) {
@@ -265,7 +310,7 @@ function renderRow(row) {
     <article class="public-result-card ${result ? "published" : "not-published"} ${sexClass}">
       <div class="public-result-head">
         <div>
-          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span></h2>
+          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span> <span class="public-phase-label">${escapeHtml(publicRacePhaseLabel(row))}</span></h2>
           <p>${escapeHtml(updated)}</p>
         </div>
         <span class="public-result-status ${status.className}">${escapeHtml(status.label)}</span>
@@ -338,6 +383,7 @@ async function loadPublicResultsIndex() {
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
+  publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicIndexUpdatedAt = index.updatedAt || "";
   setStatus("Connecté", "ok");
@@ -353,6 +399,7 @@ async function loadPublicResultsFallback(competition) {
   publicMeet = remote.meet || {};
   publicProgram = Array.isArray(remote.program) ? remote.program : [];
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
+  publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
