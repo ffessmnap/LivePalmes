@@ -1110,6 +1110,14 @@ function matchesRace(item) {
     item.sex === state.sex;
 }
 
+function recordMatchesRace(record, eventId = state.eventId, sex = state.sex) {
+  if (record.eventId !== eventId) return false;
+  if (sex === "X" && isRelayEntrant({ eventId })) {
+    return ["F", "M", "X"].includes(sheetSex(record.sex));
+  }
+  return sheetSex(record.sex) === sex;
+}
+
 function isFinalStage(stage) {
   return String(stage || "").startsWith("finale");
 }
@@ -4537,7 +4545,7 @@ function findRelayClubRecords(entrant) {
   return data.records.filter((record) => (
     shouldKeepRecord(record) &&
     record.eventId === entrant.eventId &&
-    record.sex === entrant.sex &&
+    recordMatchesRace(record, entrant.eventId, entrant.sex) &&
     sameCategory(record.category, entrant.category) &&
     String(record.club || "").toUpperCase() === clubCode
   ));
@@ -4754,7 +4762,7 @@ function currentRecordRows() {
     : null;
   return data.records
     .filter(shouldKeepRecord)
-    .filter(matchesRace)
+    .filter(recordMatchesRace)
     .filter((record) => !relayCategories || relayCategories.has(record.category))
     .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
 }
@@ -5000,7 +5008,7 @@ function parseRecordsSheet(rows) {
     const type = rowValue(row, ["type", "label"]);
     return {
       eventId: sheetEventId(rowValue(row, ["course_id", "eventId", "epreuve", "épreuve"])),
-      sex: rowValue(row, ["sexe", "sex"]),
+      sex: sheetSex(rowValue(row, ["sexe", "sex"])),
       category,
       label: type || (sameCategory(category, "Cadet") ? "Meilleure performance" : `Record de France ${category}`),
       holder: rowValue(row, ["detenteur", "détenteur", "holder", "nom_prenom", "nom"]),
