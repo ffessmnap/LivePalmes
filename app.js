@@ -4,6 +4,7 @@ const LIVE_DISMISSED_ALERTS_KEY = "napSpeakerFrance2026:live-dismissed-alerts:v1
 const UNLOCKED_ROLES_KEY = "napSpeakerFrance2026:unlocked-roles:v1";
 const CLIENT_ID_KEY = "napSpeakerFrance2026:client-id:v1";
 const ACTIVE_VIEW_KEY = "napSpeakerFrance2026:active-view:v1";
+const ROLE_STATES_KEY = "napSpeakerFrance2026:role-states:v1";
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
@@ -115,6 +116,44 @@ function cloneRoleState(nextState) {
   return { ...nextState, search: "", selectedSwimmerId: "", selectedRecordKey: "" };
 }
 
+function defaultRoleStates() {
+  return {
+    speaker: createRoleState("speaker"),
+    live: createRoleState("live"),
+    referee: createRoleState("referee"),
+    video: createRoleState("video"),
+    computer: createRoleState("computer"),
+    secretary: createRoleState("secretary")
+  };
+}
+
+function normalizeRoleState(role, savedState, fallbackState) {
+  const nextState = cloneRoleState({ ...fallbackState, ...(savedState || {}), role });
+  if (nextState.eventId && !data.events.some((event) => event.id === nextState.eventId)) {
+    return cloneRoleState(fallbackState);
+  }
+  return nextState;
+}
+
+function loadRoleStates() {
+  const defaults = defaultRoleStates();
+  const saved = localStorage.getItem(ROLE_STATES_KEY);
+  if (!saved) return defaults;
+  try {
+    const parsed = JSON.parse(saved);
+    return Object.fromEntries(Object.keys(defaults).map((role) => [
+      role,
+      normalizeRoleState(role, parsed?.[role], defaults[role])
+    ]));
+  } catch {
+    return defaults;
+  }
+}
+
+function saveRoleStates() {
+  localStorage.setItem(ROLE_STATES_KEY, JSON.stringify(roleStates));
+}
+
 function loadUnlockedRoles() {
   const saved = localStorage.getItem(UNLOCKED_ROLES_KEY);
   if (!saved) return [];
@@ -186,6 +225,7 @@ function requestRoleAccess(role) {
 
 function saveCurrentRoleState() {
   roleStates[state.role] = cloneRoleState(state);
+  saveRoleStates();
 }
 
 function currentClientId() {
@@ -220,14 +260,7 @@ function switchRole(nextRole) {
 const initialView = loadActiveView();
 const initialRole = knownRole(initialView.role) ? initialView.role : "live";
 let state = createRoleState(initialRole);
-let roleStates = {
-  speaker: createRoleState("speaker"),
-  live: createRoleState("live"),
-  referee: createRoleState("referee"),
-  video: createRoleState("video"),
-  computer: createRoleState("computer"),
-  secretary: createRoleState("secretary")
-};
+let roleStates = loadRoleStates();
 state = cloneRoleState(roleStates[initialRole] || roleStates.live);
 state.role = initialRole;
 
@@ -6911,14 +6944,7 @@ function applyFreshData(freshData, resetView = false) {
   data = normalizeData(freshData || sampleData);
   if (resetView) {
     const currentRole = state.role;
-    roleStates = {
-      speaker: createRoleState("speaker"),
-      live: createRoleState("live"),
-      referee: createRoleState("referee"),
-      video: createRoleState("video"),
-      computer: createRoleState("computer"),
-      secretary: createRoleState("secretary")
-    };
+    roleStates = defaultRoleStates();
     state = cloneRoleState(roleStates[currentRole] || roleStates.speaker);
     state.role = currentRole;
     if (!isSpeakerView()) {
@@ -6961,6 +6987,7 @@ window.addEventListener("offline", () => {
   renderDataStatus();
 });
 window.addEventListener("pagehide", () => {
+  saveCurrentRoleState();
   releaseRoleLock();
 });
 
