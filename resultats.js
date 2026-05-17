@@ -273,7 +273,7 @@ function renderRow(row) {
       <div class="public-result-head">
         <div>
           <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span></h2>
-          <p>${escapeHtml([row.startTime || "", updated].filter(Boolean).join(" - "))}</p>
+          <p>${escapeHtml(updated)}</p>
         </div>
         <span class="public-result-status ${status.className}">${escapeHtml(status.label)}</span>
       </div>
