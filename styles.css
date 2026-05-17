@@ -1275,6 +1275,13 @@ body.role-referee #fullscreenBtn {
   gap: 10px;
 }
 
+.public-finalists-group {
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
 .public-finalists-block {
   padding: 9px;
   border: 1px solid var(--line);
@@ -1290,7 +1297,8 @@ body.role-referee #fullscreenBtn {
   opacity: 0.88;
 }
 
-.public-finalists-block summary,
+.public-finalists-group summary,
+.public-finalists-title,
 .public-unqualified-block summary,
 .public-unqualified-more summary {
   margin: 0 0 6px;
@@ -1299,7 +1307,11 @@ body.role-referee #fullscreenBtn {
   font-weight: 950;
 }
 
-.public-finalists-block summary,
+.public-finalists-title {
+  display: block;
+}
+
+.public-finalists-group summary,
 .public-unqualified-block summary,
 .public-unqualified-more summary {
   cursor: pointer;
@@ -1310,11 +1322,11 @@ body.role-referee #fullscreenBtn {
   color: #6b7c86;
 }
 
-.public-finalists-block:not([open]) {
+.public-finalists-group:not([open]) {
   padding-bottom: 7px;
 }
 
-.public-finalists-block:not([open]) summary {
+.public-finalists-group:not([open]) summary {
   margin-bottom: 0;
 }
 
@@ -3305,6 +3317,19 @@ tbody tr:hover,
   margin-left: 7px;
   vertical-align: middle;
   opacity: 1;
+}
+
+.line-time-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.line-time-status strong {
+  font-weight: 950;
+  color: #5b2b2b;
 }
 
 .line-alert-badge {

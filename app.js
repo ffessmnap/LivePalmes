@@ -789,7 +789,7 @@ async function renderHistoryArchivesModal() {
               <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes du journal</span>
             </div>
             <div class="archive-actions">
-              <button class="ghost-button compact" type="button" data-print-archive="${escapeHtml(archive.id)}">PDF</button>
+              <button class="ghost-button compact" type="button" data-open-archive="${escapeHtml(archive.id)}">Ouvrir</button>
               <button class="ghost-button compact danger-button" type="button" data-delete-archive="${escapeHtml(archive.id)}">Supprimer</button>
             </div>
           </div>
@@ -805,7 +805,7 @@ async function renderHistoryArchivesModal() {
               <span>${escapeHtml(String(archive.count || 0))} résultats archivés${archive.reason ? ` - ${escapeHtml(archive.reason)}` : ""}</span>
             </div>
             <div class="archive-actions">
-              <button class="ghost-button compact" type="button" data-print-result-archive="${escapeHtml(archive.id)}">Voir</button>
+              <button class="ghost-button compact" type="button" data-open-result-archive="${escapeHtml(archive.id)}">Ouvrir</button>
               <button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>
             </div>
           </div>
@@ -1881,6 +1881,7 @@ function currentRoleAlertFilter(alert) {
     return alert.informaticsStatus === "pending";
   }
   if (state.role === "secretary") {
+    if (alert.type === "forfait" && alert.secretaryStatus === "pending") return true;
     return alert.speakerStatus === "pending" &&
       (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement");
   }
@@ -2043,6 +2044,12 @@ function renderLineAlertBadges(lineAlerts) {
   `;
 }
 
+function terminalLineStatus(lineAlerts) {
+  return lineAlerts
+    .filter((alert) => alert.type === "forfait" || alert.type === "abandon")
+    .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0] || null;
+}
+
 function importedLineStatusLabel(entrant) {
   if (entrant.importedStatus === "forfait") return "Forfait déclaré";
   return "";
@@ -2052,6 +2059,19 @@ function renderImportedLineStatusBadge(entrant) {
   const label = importedLineStatusLabel(entrant);
   if (!label) return "";
   return `<span class="line-alert-badges imported-status-badges" title="${escapeHtml(label)}"><span class="line-alert-badge abs-line-badge">ABS</span><span class="line-alert-reasons">${escapeHtml(label)}</span></span>`;
+}
+
+function renderLineTimeStatus(entrant, lineAlerts) {
+  const terminalStatus = terminalLineStatus(lineAlerts);
+  if (terminalStatus) {
+    const isAbandon = terminalStatus.type === "abandon";
+    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon déclaré" : "Forfait déclaré"}</strong></span>`;
+  }
+  const importedLabel = importedLineStatusLabel(entrant);
+  if (importedLabel) {
+    return `<span class="line-time-status"><span class="line-alert-badge abs-line-badge">ABS</span><strong>${escapeHtml(importedLabel)}</strong></span>`;
+  }
+  return "";
 }
 
 function finalistRowName(row) {
@@ -2533,6 +2553,8 @@ function alertStatusLabel(alert) {
   if (alert.type === "final_composition_ready") {
     return alert.informaticsStatus === "done" ? "Composition vérifiée" : "Info à vérifier";
   }
+  if (alert.type === "finalists_announcement" && alert.speakerStatus === "done") return "Finalistes annoncés";
+  if (alert.type === "finalist_replacement_announcement" && alert.speakerStatus === "done") return "Repêchage annoncé";
   if (alert.cancelledAt) {
     const time = formatAlertTime(alert.cancelledAt);
     const suffix = time ? ` à ${time}` : "";
@@ -2540,6 +2562,8 @@ function alertStatusLabel(alert) {
   }
   if (alert.requiresVideo && alert.videoStatus === "pending") return "En attente vidéo";
   if (alert.videoStatus === "rejected") return "Invalidée vidéo";
+  if (alert.type === "forfait" && alert.secretaryStatus === "pending" && alert.informaticsStatus === "pending") return "Secrétariat / bureau à traiter";
+  if (alert.type === "forfait" && alert.secretaryStatus === "pending") return "À prendre en note secrétariat";
   if (alert.speakerStatus === "pending" && alert.informaticsStatus === "pending") return "À annoncer / à traiter";
   if (alert.speakerStatus === "pending") return "À annoncer";
   if (alert.informaticsStatus === "pending") return "À traiter bureau des performances";
@@ -2554,16 +2578,22 @@ function alertStatusClass(alert) {
   if (alert.cancelledAt) return "status-rejected";
   if (alert.requiresVideo && alert.videoStatus === "pending") return "status-video";
   if (alert.videoStatus === "rejected") return "status-rejected";
-  if (alert.speakerStatus === "pending" || alert.informaticsStatus === "pending") return "status-pending";
-  if (alert.speakerStatus === "done" || alert.informaticsStatus === "done") return "status-done";
+  if (alert.speakerStatus === "pending" || alert.informaticsStatus === "pending" || alert.secretaryStatus === "pending") return "status-pending";
+  if (alert.speakerStatus === "done" || alert.informaticsStatus === "done" || alert.secretaryStatus === "done") return "status-done";
   return "status-sent";
 }
 
 function alertTimeline(alert) {
+  const firstLabel = alert.type === "finalists_announcement"
+    ? "Demande annonce"
+    : alert.type === "finalist_replacement_announcement"
+    ? "Demande repêchage"
+    : "JA";
   const items = [
-    ["JA", alert.createdAt],
+    [firstLabel, alert.createdAt],
     ["Vidéo confirmée", alert.videoConfirmedAt],
     ["Vidéo invalidée", alert.videoRejectedAt],
+    ["Secrétariat", alert.secretaryDoneAt],
     ["Speaker", alert.speakerAnnouncedAt],
     ["Bureau des performances", alert.informaticsDoneAt],
     [alert.cancelledBy === "delegate" ? "Délégué" : "Annulation", alert.cancelledAt]
@@ -2575,10 +2605,16 @@ function alertTimelineItems(alert) {
   const related = alerts
     .filter((item) => item.originalAlertId === alert.id)
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const firstLabel = alert.type === "finalists_announcement"
+    ? "Demande annonce finalistes"
+    : alert.type === "finalist_replacement_announcement"
+    ? "Demande annonce repêchage"
+    : "Créée par le JA";
   const items = [
-    ["Créée par le JA", alert.createdAt],
+    [firstLabel, alert.createdAt],
     ["Vidéo confirmée", alert.videoConfirmedAt],
     ["Vidéo invalidée", alert.videoRejectedAt],
+    ["Pris en note secrétariat", alert.secretaryDoneAt],
     ["Annonce speaker", alert.speakerAnnouncedAt],
     ["Traitée bureau des performances", alert.informaticsDoneAt],
     [alert.cancelledBy === "delegate" ? "Annulée par le délégué" : "Annulée par le JA", alert.cancelledAt]
@@ -2597,16 +2633,23 @@ function renderHistoryItem(alert, options = {}) {
   const timeline = alertTimeline(alert);
   const event = data.events.find((item) => item.id === alert.eventId);
   const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
+  const isFinalAnnouncement = alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement";
   const seriesLabel = alert.type === "final_composition_ready"
+    ? "Finales"
+    : isFinalAnnouncement
     ? "Finales"
     : alert.stage && isFinalStage(alert.stage)
     ? finalStageLabel(alert.stage)
     : `Série ${alert.series || "-"}`;
   const courseLine = alert.type === "final_composition_ready"
     ? `${alert.eventLabel || event?.label || alert.eventId} ${alert.sexLabel || sexLabel} - Composition finale`
+    : isFinalAnnouncement
+    ? `${alert.eventLabel || event?.label || alert.eventId} ${alert.sexLabel || sexLabel} - ${seriesLabel}`
     : `${event?.label || alert.eventId} ${sexLabel} - ${seriesLabel} - Ligne ${alert.line || "-"}`;
   const motif = decisionMotifLabel(alert);
-  const identity = options.showIdentity ? fullAlertIdentityLabel(alert) : alertIdentityLabel(alert);
+  const identity = alert.type === "finalists_announcement"
+    ? `${alert.finalistCount || 0} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`
+    : options.showIdentity ? fullAlertIdentityLabel(alert) : alertIdentityLabel(alert);
   const action = historyActionForAlert(alert);
   return `
     <div class="history-item ${alertStatusClass(alert)} ${options.compact ? "compact-history-item" : ""}" data-history-alert-id="${escapeHtml(alert.id)}">
@@ -2625,6 +2668,10 @@ function openAlertDetail(alertId) {
   if (!clickedAlert || !alertDetailModal) return;
   if (clickedAlert.type === "final_composition_ready") {
     openFinalCompositionModal(clickedAlert.id, { fromHistory: true });
+    return;
+  }
+  if (clickedAlert.type === "finalists_announcement") {
+    openFinalistsAnnouncementModal(clickedAlert.id);
     return;
   }
   const alert = clickedAlert.originalAlertId
@@ -2689,6 +2736,7 @@ function closeAlertDetail() {
 function openFinalistsAnnouncementModal(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   if (!alert || !alertDetailModal) return;
+  const canMarkAnnounced = state.role === "speaker" && alert.speakerStatus === "pending";
   const hasFinalB = Boolean(alert.finalists?.b?.length);
   const finalLabel = hasFinalB ? "les finales" : "la finale";
   const speakerText = `Votre attention s'il vous plait, sont qualifiés pour ${finalLabel} du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)} :`;
@@ -2710,7 +2758,7 @@ function openFinalistsAnnouncementModal(alertId) {
       ${renderFinalistsAlertList(alert)}
       <div class="decision-actions">
         <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
-        <button class="primary-button" type="button" data-finalists-announced="${escapeHtml(alert.id)}">Annoncé</button>
+        ${canMarkAnnounced ? `<button class="primary-button" type="button" data-finalists-announced="${escapeHtml(alert.id)}">Annoncé</button>` : ""}
       </div>
     </div>
   `;
@@ -2735,7 +2783,7 @@ function renderSpeakerHistory() {
     return;
   }
   const doneAlerts = alerts
-    .filter((alert) => !isRequalificationAlert(alert) && alert.type !== "finalists_announcement")
+    .filter((alert) => !isRequalificationAlert(alert))
     .filter((alert) => alert.speakerStatus === "done" || (alert.cancelledAt && alert.speakerAnnouncedAt))
     .sort((a, b) => String(b.speakerAnnouncedAt || b.updatedAt).localeCompare(String(a.speakerAnnouncedAt || a.updatedAt)));
   if (!doneAlerts.length) {
@@ -2773,11 +2821,17 @@ function renderRoleHistory() {
     title = "Historique vidéo";
     rows = alerts.filter((alert) => isDsqAlert(alert));
   } else if (state.role === "computer") {
-    title = "Journal d'arbitrage";
-    rows = alerts.filter((alert) => alert.roleSource === "referee");
+    title = "Journal d'arbitrage et annonces";
+    rows = alerts.filter((alert) => alert.roleSource === "referee" || (
+      (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") &&
+      alert.speakerStatus === "done"
+    ));
   } else if (state.role === "secretary") {
-    title = "Journal d'arbitrage";
-    rows = alerts.filter((alert) => alert.roleSource === "referee");
+    title = "Journal d'arbitrage et annonces";
+    rows = alerts.filter((alert) => alert.roleSource === "referee" || (
+      (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") &&
+      alert.speakerStatus === "done"
+    ));
   }
   rows = rows
     .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
@@ -2799,7 +2853,7 @@ function renderRoleHistory() {
           ${historyActions}
         </div>
       </div>
-      <p class="panel-subtitle">Aucune action du juge arbitre pour le moment.</p>
+      <p class="panel-subtitle">Aucune action à afficher pour le moment.</p>
     `;
     return;
   }
@@ -3075,6 +3129,7 @@ function createDecisionAlert(decision) {
     requiresVideo: route === "video",
     videoStatus: route === "video" ? "pending" : "none",
     speakerStatus: route === "official" ? "pending" : "none",
+    secretaryStatus: type === "forfait" ? "pending" : "none",
     informaticsStatus: route === "computer" || route === "official" ? "pending" : "none",
     createdAt: now,
     updatedAt: now
@@ -3107,6 +3162,21 @@ function renderRoleQueue() {
 }
 
 function renderQueueItem(alert) {
+  if (state.role === "secretary" && alert.type === "forfait" && alert.secretaryStatus === "pending") {
+    const detail = alertCommentLabel(alert);
+    return `
+      <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
+        <div>
+          <strong class="alert-title"><span aria-hidden="true">!</span> Forfait à prendre en note <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
+          <strong>${escapeHtml(alertRaceLabel(alert))}</strong>
+          <span>${escapeHtml(`${alertSwimmerLabel(alert)}${detail ? ` - ${detail}` : ""}`)}</span>
+        </div>
+        <div class="queue-actions">
+          <button class="ghost-button compact confirm-button" type="button" data-queue-action="done-secretary">Pris note</button>
+        </div>
+      </div>
+    `;
+  }
   if (state.role === "secretary" && (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement")) {
     const label = alert.type === "finalist_replacement_announcement"
       ? "Repêchage en attente d'annonce speaker"
@@ -3204,7 +3274,8 @@ function cancelDecision(alertId, cancelledBy = "referee") {
     cancelledAt: now,
     cancelledBy,
     speakerStatus: source.speakerStatus === "pending" ? "none" : source.speakerStatus,
-    informaticsStatus: source.informaticsStatus === "pending" ? "none" : source.informaticsStatus
+    informaticsStatus: source.informaticsStatus === "pending" ? "none" : source.informaticsStatus,
+    secretaryStatus: source.secretaryStatus === "pending" ? "none" : source.secretaryStatus
   };
   const updatedSource = { ...source, ...updates, updatedAt: now };
   alerts[index] = updatedSource;
@@ -4067,7 +4138,6 @@ function openFinalWithdrawalsModal(resultId, options = {}) {
           <span>Secrétariat</span>
           <h2>Forfaits finales</h2>
           <p>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}</p>
-          <p class="decision-race-info">Chaque nageur a 30 minutes après l'annonce de son nom.</p>
         </div>
         <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
       </div>
@@ -4644,7 +4714,8 @@ function renderEntrants() {
       : formatSeriesDisplayName(entrant);
     const lineAlerts = activeLineAlertsForEntrant(entrant);
     const importedStatusBadge = renderImportedLineStatusBadge(entrant);
-    const alertBadges = renderLineAlertBadges(lineAlerts) || importedStatusBadge;
+    const lineTimeStatus = renderLineTimeStatus(entrant, lineAlerts);
+    const alertBadges = lineTimeStatus ? "" : (renderLineAlertBadges(lineAlerts) || importedStatusBadge);
     const rowDisabled = lineAlerts.length || entrant.importedStatus === "forfait";
     return `
       <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${entrant.importedStatus === "forfait" ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}">
@@ -4655,12 +4726,13 @@ function renderEntrants() {
         </td>
         <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
         <td class="time-cell">
-          ${state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")
-            ? alertBadges
+          ${lineTimeStatus
+            ? lineTimeStatus
+            : state.role === "referee" && refereeTabletMode && lineAlerts.length
+            ? renderLineAlertBadges(lineAlerts)
             : `<span class="time">${escapeHtml(entrant.seedTime || "-")}</span>`}
-          ${entrant.importedStatus === "forfait" && !(state.role === "referee" && refereeTabletMode) ? `<span class="seed-source imported-status-label">Forfait déclaré</span>` : ""}
-          ${!(state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")) && isSpeakerView() && entrant.importedStatus !== "forfait" ? renderRecordGapAlert(entrant) : ""}
-          ${!(state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")) && isSpeakerView() && entrant.seedSource && entrant.importedStatus !== "forfait" ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
+          ${!lineTimeStatus && !(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
+          ${!lineTimeStatus && !(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
         </td>
         <td>${reference}</td>
       </tr>
@@ -5534,7 +5606,8 @@ function buildDsqReportHtml() {
   return buildDsqReportHtmlFromRows(dsqReportRows(), "Journal d'arbitrage");
 }
 
-function buildDsqReportHtmlFromRows(rows, title = "Journal d'arbitrage") {
+function buildDsqReportHtmlFromRows(rows, title = "Journal d'arbitrage", options = {}) {
+  const includePrint = options.includePrint !== false;
   const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   const meetName = `${data.meet?.name || "Compétition"}${data.meet?.city ? ` - ${data.meet.city}` : ""}`;
   const body = rows.length ? rows.map((alert, index) => {
@@ -5576,7 +5649,7 @@ function buildDsqReportHtmlFromRows(rows, title = "Journal d'arbitrage") {
   </style>
 </head>
 <body>
-  <div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>
+  ${includePrint ? `<div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>` : ""}
   <h1>${escapeHtml(title)}</h1>
   <p>${escapeHtml(meetName)} - généré le ${escapeHtml(generatedAt)} - ${rows.length} lignes</p>
   <table>
@@ -5602,7 +5675,20 @@ function printDsqRows(rows, title = "Journal d'arbitrage") {
   setTimeout(() => reportWindow.print(), 250);
 }
 
-function buildResultArchiveHtmlFromRows(rows, archive = {}) {
+function openDsqRows(rows, title = "Journal d'arbitrage") {
+  const reportWindow = window.open("", "_blank");
+  if (!reportWindow) {
+    window.alert("La fenêtre d'archive a été bloquée par le navigateur.");
+    return;
+  }
+  reportWindow.document.open();
+  reportWindow.document.write(buildDsqReportHtmlFromRows(rows, title, { includePrint: false }));
+  reportWindow.document.close();
+  reportWindow.focus();
+}
+
+function buildResultArchiveHtmlFromRows(rows, archive = {}, options = {}) {
+  const includePrint = options.includePrint !== false;
   const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   const meet = archive.meet || data.meet || {};
   const meetName = `${meet.name || "Compétition"}${meet.city ? ` - ${meet.city}` : ""}`;
@@ -5648,7 +5734,7 @@ function buildResultArchiveHtmlFromRows(rows, archive = {}) {
   </style>
 </head>
 <body>
-  <div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>
+  ${includePrint ? `<div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>` : ""}
   <h1>Archive résultats publics</h1>
   <p>${escapeHtml(meetName)} - archive du ${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || "-")} - généré le ${escapeHtml(generatedAt)} - ${rows.length} résultats</p>
   <table>
@@ -5672,6 +5758,18 @@ function printResultArchiveRows(rows, archive = {}) {
   reportWindow.document.close();
   reportWindow.focus();
   setTimeout(() => reportWindow.print(), 250);
+}
+
+function openResultArchiveRows(rows, archive = {}) {
+  const reportWindow = window.open("", "_blank");
+  if (!reportWindow) {
+    window.alert("La fenêtre d'archive a été bloquée par le navigateur.");
+    return;
+  }
+  reportWindow.document.open();
+  reportWindow.document.write(buildResultArchiveHtmlFromRows(rows, archive, { includePrint: false }));
+  reportWindow.document.close();
+  reportWindow.focus();
 }
 
 async function exportDsqPdf() {
@@ -5997,9 +6095,9 @@ roleCodesModal?.addEventListener("click", async (event) => {
     await performResetHistoryWithArchive();
     return;
   }
-  const printArchiveButton = event.target.closest("[data-print-archive]");
-  if (printArchiveButton) {
-    const id = printArchiveButton.dataset.printArchive;
+  const openArchiveButton = event.target.closest("[data-open-archive]");
+  if (openArchiveButton) {
+    const id = openArchiveButton.dataset.openArchive;
     const collection = historyArchivesCollection();
     if (!collection) return;
     const snapshot = await collection.doc(id).get();
@@ -6008,7 +6106,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
       return;
     }
     const archive = snapshot.data();
-    printDsqRows(Array.isArray(archive.alerts) ? archive.alerts : [], `Archive journal d'arbitrage - ${archive.createdLabel || id}`);
+    openDsqRows(Array.isArray(archive.alerts) ? archive.alerts : [], `Archive journal d'arbitrage - ${archive.createdLabel || id}`);
     return;
   }
   const deleteArchiveButton = event.target.closest("[data-delete-archive]");
@@ -6021,9 +6119,9 @@ roleCodesModal?.addEventListener("click", async (event) => {
     await renderHistoryArchivesModal();
     return;
   }
-  const printResultArchiveButton = event.target.closest("[data-print-result-archive]");
-  if (printResultArchiveButton) {
-    const id = printResultArchiveButton.dataset.printResultArchive;
+  const openResultArchiveButton = event.target.closest("[data-open-result-archive]");
+  if (openResultArchiveButton) {
+    const id = openResultArchiveButton.dataset.openResultArchive;
     const collection = resultArchivesCollection();
     if (!collection) return;
     const archiveSnapshot = await collection.doc(id).get();
@@ -6033,7 +6131,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
     }
     const itemSnapshot = await collection.doc(id).collection("items").get();
     const rows = itemSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    printResultArchiveRows(rows, archiveSnapshot.data());
+    openResultArchiveRows(rows, archiveSnapshot.data());
     return;
   }
   const deleteResultArchiveButton = event.target.closest("[data-delete-result-archive]");
@@ -6310,6 +6408,8 @@ roleQueue?.addEventListener("click", (event) => {
     updateAlert(id, { videoStatus: "rejected", videoRejectedAt: new Date().toISOString(), speakerStatus: "none", informaticsStatus: "none" });
   } else if (button.dataset.queueAction === "done-computer") {
     updateAlert(id, { informaticsStatus: "done", informaticsDoneAt: new Date().toISOString() });
+  } else if (button.dataset.queueAction === "done-secretary") {
+    updateAlert(id, { secretaryStatus: "done", secretaryDoneAt: new Date().toISOString() });
   }
 });
 

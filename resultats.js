@@ -180,11 +180,11 @@ function finalistWithdrawalLabel(row, result) {
   return `forfait possible jusqu'à ${formatDeadlineTime(limit)}`;
 }
 
-function renderFinalists(title, rows, result) {
+function renderFinalistRows(title, rows, result) {
   if (!rows?.length) return "";
   return `
-    <details class="public-finalists-block">
-      <summary>${escapeHtml(title)}</summary>
+    <div class="public-finalists-block">
+      <strong class="public-finalists-title">${escapeHtml(title)}</strong>
       <ol>
         ${rows.map((row) => {
           const withdrawalLabel = finalistWithdrawalLabel(row, result);
@@ -198,14 +198,12 @@ function renderFinalists(title, rows, result) {
         `;
         }).join("")}
       </ol>
-    </details>
+    </div>
   `;
 }
 
 function renderNextUnqualified(rows) {
   if (!rows?.length) return "";
-  const visibleRows = rows.slice(0, 8);
-  const hiddenRows = rows.slice(8);
   const renderRows = (items) => items.map((row) => `
     <li value="${escapeHtml(row.rank || "")}">
       <strong>${escapeHtml(finalistName(row))}</strong>
@@ -216,16 +214,8 @@ function renderNextUnqualified(rows) {
     <details class="public-unqualified-block">
       <summary>Non qualifiés suivants</summary>
       <ol>
-        ${renderRows(visibleRows)}
+        ${renderRows(rows)}
       </ol>
-      ${hiddenRows.length ? `
-        <details class="public-unqualified-more">
-          <summary>Voir la suite jusqu'au dernier</summary>
-          <ol>
-            ${renderRows(hiddenRows)}
-          </ol>
-        </details>
-      ` : ""}
     </details>
   `;
 }
@@ -253,10 +243,13 @@ function renderResultDetails(result) {
       <div class="public-finalists-summary">
         <strong>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</strong>
       </div>
-      <div class="public-finalists-grid">
-        ${renderFinalists("Finale A", result.finalists?.a || [], result)}
-        ${renderFinalists("Finale B", result.finalists?.b || [], result)}
-      </div>
+      <details class="public-finalists-group">
+        <summary>${(result.finalists?.b || []).length ? "Finales A et B" : "Finale A"}</summary>
+        <div class="public-finalists-grid">
+          ${renderFinalistRows("Finale A", result.finalists?.a || [], result)}
+          ${renderFinalistRows("Finale B", result.finalists?.b || [], result)}
+        </div>
+      </details>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
   `;
