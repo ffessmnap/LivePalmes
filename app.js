@@ -908,6 +908,7 @@ function initFirebaseSync() {
       firebaseStatus = "connected";
       if (!remote?.sourceVersion || remote.sourceVersion === data.sourceVersion) return;
       applyRemoteLiveData(remote);
+      if (state.role === "computer") publishPublicResultsIndex({ silent: true });
     }, (error) => {
       console.warn("Lecture des données live Firebase impossible", error);
       firebaseStatus = "error";
