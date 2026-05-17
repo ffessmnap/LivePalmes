@@ -1232,8 +1232,21 @@ function matchesRace(item) {
     item.sex === state.sex;
 }
 
+function comparableEventId(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function recordEventMatches(recordEventId, eventId) {
+  const recordId = comparableEventId(recordEventId);
+  const raceId = comparableEventId(eventId);
+  if (recordId === raceId) return true;
+  if (/^(\d+x)/i.test(raceId) && raceId.endsWith("x") && recordId === raceId.slice(0, -1)) return true;
+  if (/^(\d+x)/i.test(recordId) && recordId.endsWith("x") && raceId === recordId.slice(0, -1)) return true;
+  return false;
+}
+
 function recordMatchesRace(record, eventId = state.eventId, sex = state.sex) {
-  if (record.eventId !== eventId) return false;
+  if (!recordEventMatches(record.eventId, eventId)) return false;
   if (sex === "X" && isRelayEntrant({ eventId })) {
     return ["F", "M", "X"].includes(sheetSex(record.sex));
   }
@@ -1575,7 +1588,7 @@ function isLastSeriesOfCurrentSession() {
 
 function isSplitRaceAcrossSessions(eventId = state.eventId, sex = state.sex) {
   const sessions = new Set((data.series || [])
-    .filter((row) => row.eventId === eventId && row.sex === sex && row.session)
+    .filter((row) => row.eventId === eventId && row.sex === sex && row.session && !isFinalStage(row.stage))
     .map((row) => row.session));
   return sessions.size > 1;
 }
@@ -3669,7 +3682,7 @@ async function fileToDataUrl(file) {
 }
 
 function parseResultRow(line) {
-  const match = String(line || "").match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?\s*$/i);
+  const match = String(line || "").match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -3942,6 +3955,10 @@ function availableReplacementForResult(result, finalists) {
   return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row)) && !isFinalPreWithdrawn(result, row)) || null;
 }
 
+function firstActiveFinalistIndex(rows = []) {
+  return rows.findIndex((row) => row && !row.withdrawnAt);
+}
+
 function finalCompositionRows(result) {
   const finalRows = ["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) => ({
     ...row,
@@ -4183,16 +4200,35 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
     ...row,
     withdrawnAt: now
   };
-  const replacement = availableReplacementForResult(result, finalists);
+  let promoted = null;
+  let replacement = null;
+  let replacementFinalKey = finalKey;
+  let replacementReference = row;
+  if (finalKey === "a" && finalists.b.length) {
+    const promotedIndex = firstActiveFinalistIndex(finalists.b);
+    if (promotedIndex !== -1) {
+      promoted = finalists.b.splice(promotedIndex, 1)[0];
+      finalists.a.push({
+        ...promoted,
+        promotedFromFinal: "B",
+        promotedAt: now,
+        replacesRank: row.rank || "",
+        replacesName: finalistRowName(row)
+      });
+      replacementFinalKey = "b";
+      replacementReference = promoted;
+    }
+  }
+  replacement = availableReplacementForResult(result, finalists);
   if (replacement) {
-    finalists[finalKey].push({
+    finalists[replacementFinalKey].push({
       ...replacement,
       qualified: true,
       repechaged: true,
       repechageAt: now,
       repechageAnnouncedAt: "",
-      replacesRank: row.rank || "",
-      replacesName: finalistRowName(row)
+      replacesRank: replacementReference.rank || "",
+      replacesName: finalistRowName(replacementReference)
     });
   }
   const finalWithdrawals = [
@@ -4207,10 +4243,19 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
         time: row.time || ""
       },
       replacement: replacement ? {
+        final: replacementFinalKey.toUpperCase(),
         rank: replacement.rank || "",
         name: finalistRowName(replacement),
         club: replacement.club || "",
         time: replacement.time || ""
+      } : null,
+      promoted: promoted ? {
+        fromFinal: "B",
+        toFinal: "A",
+        rank: promoted.rank || "",
+        name: finalistRowName(promoted),
+        club: promoted.club || "",
+        time: promoted.time || ""
       } : null
     }
   ];
@@ -4257,12 +4302,13 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
     .reverse()
     .find((item) => item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt);
   const replacementName = withdrawal?.replacement?.name || "";
+  const replacementReferenceName = withdrawal?.promoted?.name || finalistRowName(row);
   if (replacementName) {
     for (const key of ["a", "b"]) {
       const replacementIndex = finalists[key].findIndex((item) =>
         item.repechaged &&
         finalistRowName(item) === replacementName &&
-        String(item.replacesName || "") === finalistRowName(row)
+        String(item.replacesName || "") === replacementReferenceName
       );
       if (replacementIndex !== -1) {
         const replacement = finalists[key][replacementIndex];
@@ -4271,6 +4317,23 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
         }
         finalists[key].splice(replacementIndex, 1);
       }
+    }
+  }
+  const promotedName = withdrawal?.promoted?.name || "";
+  if (promotedName) {
+    const promotedIndex = finalists.a.findIndex((item) =>
+      item.promotedFromFinal === "B" &&
+      finalistRowName(item) === promotedName &&
+      String(item.replacesName || "") === finalistRowName(row)
+    );
+    if (promotedIndex !== -1) {
+      const promoted = { ...finalists.a[promotedIndex] };
+      delete promoted.promotedFromFinal;
+      delete promoted.promotedAt;
+      delete promoted.replacesRank;
+      delete promoted.replacesName;
+      finalists.a.splice(promotedIndex, 1);
+      finalists.b.push(promoted);
     }
   }
   const finalWithdrawals = (result.finalWithdrawals || []).map((item) => {
@@ -4587,7 +4650,7 @@ function renderEntrants() {
       <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${entrant.importedStatus === "forfait" ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}">
         <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
         <td class="name-cell">
-          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
+          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
           ${!isRelayEntrant(entrant) || state.role === "referee" ? `<span class="club-name">${escapeHtml(clubLabel || "-")}</span>` : ""}
         </td>
         <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
@@ -4687,6 +4750,12 @@ function renderEdfBadges(entrant) {
   return memberships.map((member) => (
     `<span class="edf-badge" title="${escapeHtml(member.label || "Equipe de France")}">${escapeHtml(member.team || "E")}</span>`
   )).join("");
+}
+
+function renderNonSelectableBadge(entrant) {
+  return entrant?.nonSelectable && isSpeakerView()
+    ? `<span class="non-selectable-label" title="Non sélectionnable">NS</span>`
+    : "";
 }
 
 function findEdfMemberships(entrant) {
@@ -5127,7 +5196,11 @@ function rowValue(row, names) {
 
 function sheetEventId(value) {
   const normalized = normalizePdfLabel(value);
-  return importedEventId(value) || (data.events || []).find((event) => event.id === normalized)?.id || normalized;
+  const compact = normalized.replace(/[^a-z0-9]+/g, "");
+  return importedEventId(value) ||
+    (data.events || []).find((event) => event.id === normalized || event.id === compact)?.id ||
+    compact ||
+    normalized;
 }
 
 function sheetTime(value) {
@@ -6698,7 +6771,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif : (\d{2}:\d{2})(?: \((\d+)\))?/i;
   const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: M\s*eilleure s[eé]rie.*)?$/i;
   const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(\d{2}:\d{2})(?:\s+\((\d+)\))?/i;
-  const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
+  const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+(IN|NS))?$/i;
   const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
   const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
   const forfaitLinePattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+FORFAIT\s+([0-9:.]+)(.*)$/i;
@@ -6865,6 +6938,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     const speakerMatch = line.match(speakerPattern) || line.match(tolerantSpeakerPattern);
     const forfaitMatch = line.match(forfaitLinePattern);
     let importedStatus = "";
+    let nonSelectable = false;
     let lastName = "";
     let firstName = "";
     let birthYear = "";
@@ -6888,8 +6962,11 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       seedTime = match[6];
       const trailingText = fixPdfEncoding(String(match[7] || "").trim());
       const trailingIsForfait = /\bFORFAIT\b/i.test(trailingText);
+      const trailingIsNonSelectable = /\bNS\b/i.test(trailingText);
+      const trailingClubText = trailingText.replace(/\b(FORFAIT|NS|IN)\b/gi, "").replace(/\s+/g, " ").trim();
       importedStatus = forfaitMatch || trailingIsForfait ? "forfait" : "";
-      fullClub = (speakerMatch || forfaitMatch) && trailingText && !trailingIsForfait ? trailingText : club;
+      nonSelectable = trailingIsNonSelectable;
+      fullClub = (speakerMatch || forfaitMatch) && trailingClubText ? trailingClubText : club;
       const split = splitImportedPersonName(rawName);
       lastName = split.lastName;
       firstName = split.firstName;
@@ -6918,6 +6995,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         seedTime,
         seedSource: "",
         importedStatus,
+        nonSelectable,
         session: current.session,
         sessionLabel: current.sessionLabel,
         note: ""
@@ -6944,6 +7022,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         startTime: current.startTime,
         heatOrder: current.heatOrder,
         importedStatus,
+        nonSelectable,
         session: current.session,
         sessionLabel: current.sessionLabel,
         stage: current.stage
