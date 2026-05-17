@@ -118,6 +118,56 @@ service cloud.firestore {
         allow delete: if isLivePalmesCompetition(competitionId);
       }
 
+      match /resultArchives/{archiveId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "createdAt",
+            "createdLabel",
+            "reason",
+            "meet",
+            "count",
+            "publicIndex"
+          ])
+          && request.resource.data.id == archiveId
+          && validText(archiveId, 160)
+          && validText(request.resource.data.createdAt, 40)
+          && validOptionalText("createdLabel", 80)
+          && validOptionalText("reason", 160)
+          && request.resource.data.meet is map
+          && request.resource.data.count is int
+          && request.resource.data.publicIndex is map;
+        allow delete: if isLivePalmesCompetition(competitionId);
+
+        match /items/{resultId} {
+          allow read: if isLivePalmesCompetition(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
+            && request.resource.data.keys().hasAll([
+              "id",
+              "raceKey",
+              "eventId",
+              "eventLabel",
+              "sex",
+              "hasFinal",
+              "pdfName",
+              "pdfDataUrl",
+              "updatedAt"
+            ])
+            && request.resource.data.id == resultId
+            && validText(resultId, 180)
+            && validText(request.resource.data.raceKey, 120)
+            && validText(request.resource.data.eventId, 120)
+            && validText(request.resource.data.eventLabel, 160)
+            && validText(request.resource.data.sex, 10)
+            && request.resource.data.hasFinal is bool
+            && validText(request.resource.data.pdfName, 220)
+            && validText(request.resource.data.pdfDataUrl, 900000)
+            && validText(request.resource.data.updatedAt, 40);
+          allow delete: if isLivePalmesCompetition(competitionId);
+        }
+      }
+
       match /results/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
