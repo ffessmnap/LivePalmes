@@ -5618,6 +5618,28 @@ function parseCompetitionStatPerson(value) {
   };
 }
 
+function ageFromFrenchDate(value, referenceDate = new Date()) {
+  const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return "";
+  const birthDate = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  if (Number.isNaN(birthDate.getTime())) return "";
+  let age = referenceDate.getFullYear() - birthDate.getFullYear();
+  const birthdayThisYear = new Date(referenceDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+  if (referenceDate < birthdayThisYear) age -= 1;
+  return age >= 0 ? `${age} ans` : "";
+}
+
+function frenchDateMatchesToday(value, referenceDate = new Date()) {
+  const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return false;
+  return Number(match[1]) === referenceDate.getDate() && Number(match[2]) === referenceDate.getMonth() + 1;
+}
+
+function competitionStatAgeLabel(type, birthDate) {
+  if (!String(type || "").startsWith("youngest") && !String(type || "").startsWith("oldest")) return "";
+  return ageFromFrenchDate(birthDate);
+}
+
 function parseCompetitionStatsSheet(rows) {
   const objectStats = sheetObjects(rows).map((row) => {
     const label = rowValue(row, ["type", "repere", "repère", "stat", "categorie", "catégorie"]);
@@ -5636,10 +5658,13 @@ function parseCompetitionStatsSheet(rows) {
       extra: rowValue(row, ["info", "extra", "commentaire"])
     };
     const sex = sheetSex(rowValue(row, ["sexe", "sex"])) || currentType.sex || "";
-    const detailParts = [currentType.label, person.birthDate, person.clubCode, person.extra].filter(Boolean);
+    const ageLabel = competitionStatAgeLabel(currentType.type, person.birthDate);
+    if (currentType.type === "birthday" && !frenchDateMatchesToday(person.birthDate)) return null;
+    const detailParts = [currentType.label, ageLabel, person.birthDate, person.clubCode, person.extra].filter(Boolean);
     return {
       ...currentType,
       ...person,
+      ageLabel,
       sex,
       detail: detailParts.join(" - ")
     };
@@ -5659,10 +5684,13 @@ function parseCompetitionStatsSheet(rows) {
     if (!currentType) return;
     const person = parseCompetitionStatPerson(first);
     if (!person) return;
-    const detailParts = [currentType.label, person.birthDate, person.clubCode, person.extra].filter(Boolean);
+    const ageLabel = competitionStatAgeLabel(currentType.type, person.birthDate);
+    if (currentType.type === "birthday" && !frenchDateMatchesToday(person.birthDate)) return;
+    const detailParts = [currentType.label, ageLabel, person.birthDate, person.clubCode, person.extra].filter(Boolean);
     stats.push({
       ...currentType,
       ...person,
+      ageLabel,
       detail: detailParts.join(" - ")
     });
   });
