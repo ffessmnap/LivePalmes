@@ -143,18 +143,43 @@ function finalistName(row) {
   return [cleanText(row.displayName), row.birthYear ? `(${row.birthYear})` : "", row.club].filter(Boolean).join(" ");
 }
 
-function renderFinalists(title, rows) {
+function formatDeadlineTime(date) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+}
+
+function finalistAnnouncedAt(row, result) {
+  if (row?.repechaged) return row.repechageAnnouncedAt || "";
+  return row?.announcedAt || result?.finalistsAnnouncedAt || "";
+}
+
+function finalistWithdrawalLabel(row, result) {
+  if (row?.withdrawnAt) return "";
+  const announcedAt = finalistAnnouncedAt(row, result);
+  if (!announcedAt) return row?.repechaged ? "forfait possible après annonce speaker" : "";
+  const limit = new Date(new Date(announcedAt).getTime() + 30 * 60 * 1000);
+  if (Number.isNaN(limit.getTime())) return "";
+  if (new Date() > limit) return "forfait fermé";
+  return `forfait possible jusqu'à ${formatDeadlineTime(limit)}`;
+}
+
+function renderFinalists(title, rows, result) {
   if (!rows?.length) return "";
   return `
     <details class="public-finalists-block">
       <summary>${escapeHtml(title)}</summary>
       <ol>
-        ${rows.map((row) => `
-          <li value="${escapeHtml(row.rank || "")}">
+        ${rows.map((row) => {
+          const withdrawalLabel = finalistWithdrawalLabel(row, result);
+          return `
+          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "public-finalist-withdrawn" : ""}">
             <strong>${escapeHtml(finalistName(row))}</strong>
-            <span>${escapeHtml(row.time || "")}</span>
+            <span>${escapeHtml(row.time || "")}${withdrawalLabel ? ` <small>${escapeHtml(withdrawalLabel)}</small>` : ""}</span>
+            ${row.withdrawnAt ? `<mark class="public-finalist-badge withdrawn">Forfait</mark>` : ""}
+            ${row.repechaged ? `<mark class="public-finalist-badge repechaged">Repêché${result?.sex === "F" ? "e" : ""}</mark>` : ""}
           </li>
-        `).join("")}
+        `;
+        }).join("")}
       </ol>
     </details>
   `;
@@ -191,13 +216,7 @@ function renderNextUnqualified(rows) {
 function renderResultDetails(result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
-  const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
-  const withdrawalLimit = result.finalistsAnnouncedAt
-    ? new Date(new Date(result.finalistsAnnouncedAt).getTime() + 30 * 60 * 1000)
-    : null;
-  const withdrawalLimitLabel = withdrawalLimit && !Number.isNaN(withdrawalLimit.getTime())
-    ? withdrawalLimit.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-    : "";
+  const finalistCount = ["a", "b"].reduce((count, key) => count + (result.finalists?.[key] || []).filter((row) => !row.withdrawnAt).length, 0);
   const nextUnqualified = result.nextUnqualified?.length > 8
     ? result.nextUnqualified
     : (result.ranking || []).filter((row) => !row.qualified);
@@ -210,11 +229,10 @@ function renderResultDetails(result) {
     ${result.hasFinal && publicFinalistsVisible ? `
       <div class="public-finalists-summary">
         <strong>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</strong>
-        <span class="withdrawal-limit">Forfait possible jusqu'à : ${escapeHtml(withdrawalLimitLabel || "en attente")}</span>
       </div>
       <div class="public-finalists-grid">
-        ${renderFinalists("Finale A", result.finalists?.a || [])}
-        ${renderFinalists("Finale B", result.finalists?.b || [])}
+        ${renderFinalists("Finale A", result.finalists?.a || [], result)}
+        ${renderFinalists("Finale B", result.finalists?.b || [], result)}
       </div>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
