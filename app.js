@@ -25,7 +25,8 @@ const SPEAKER_INFO_SHEETS = {
   international: "International",
   qualifications: "Qualifs EDF",
   clubs: "Club",
-  seedSources: "Lieux temps"
+  seedSources: "Lieux temps",
+  competitionStats: "stat compet"
 };
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
@@ -484,6 +485,7 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     records: payload.records,
     edfMembers: payload.edfMembers,
     internationalMedals: payload.internationalMedals,
+    competitionStats: payload.competitionStats,
     sourceVersion: payload.sourceVersion,
     notes: {
       ...(payload.notes || {}),
@@ -629,6 +631,7 @@ function mergeRemoteLiveData(remoteData) {
     records: Array.isArray(remoteData.records) ? remoteData.records : data.records,
     edfMembers: Array.isArray(remoteData.edfMembers) ? remoteData.edfMembers : data.edfMembers,
     internationalMedals: Array.isArray(remoteData.internationalMedals) ? remoteData.internationalMedals : data.internationalMedals,
+    competitionStats: Array.isArray(remoteData.competitionStats) ? remoteData.competitionStats : data.competitionStats,
     sourceVersion: remoteData.sourceVersion || data.sourceVersion,
     notes: {
       ...(data.notes || {}),
@@ -1122,6 +1125,7 @@ function normalizeData(nextData) {
     records: Array.isArray(nextData.records) ? nextData.records.filter(shouldKeepRecord) : [],
     edfMembers: Array.isArray(nextData.edfMembers) ? nextData.edfMembers : (sampleData.edfMembers || []),
     internationalMedals: Array.isArray(nextData.internationalMedals) ? nextData.internationalMedals : (sampleData.internationalMedals || []),
+    competitionStats: Array.isArray(nextData.competitionStats) ? nextData.competitionStats : [],
     sourceVersion: nextData.sourceVersion || sampleData.sourceVersion || "",
     notes: nextData.notes || {}
   };
@@ -1258,6 +1262,8 @@ function recordEventMatches(recordEventId, eventId) {
   const recordSignature = eventSignature(recordEventId);
   const raceSignature = eventSignature(eventId);
   if (recordSignature && raceSignature && recordSignature === raceSignature) return true;
+  if (recordSignature && raceId && recordSignature === raceId) return true;
+  if (raceSignature && recordId && raceSignature === recordId) return true;
   if (/^(\d+x)/i.test(raceId) && raceId.endsWith("x") && recordId === raceId.slice(0, -1)) return true;
   if (/^(\d+x)/i.test(recordId) && recordId.endsWith("x") && raceId === recordId.slice(0, -1)) return true;
   return false;
@@ -1957,6 +1963,7 @@ function decisionMotifLabel(alert) {
   if (alert.type === "final_composition_ready") return "Composition finale définitive";
   if (alert.type === "requalification") return "Requalification - décision du délégué";
   if (alert.type === "ja_cancellation") return "Requalification - annulation par le JA";
+  if (alert.type === "forfait") return "Forfait non déclaré";
   const motif = DECISION_LABELS[alert.type] || alert.type;
   const detail = alertDetailLabel(alert);
   return detail ? `${motif} - ${detail}` : motif;
@@ -1971,7 +1978,7 @@ function speakerAlertSentence(alert) {
   }
   if (alert.type === "finalist_replacement_announcement") {
     return {
-      text: `Suite au forfait de ${alert.withdrawnName || "un finaliste"}, ${alert.replacementName || "un nageur"} est repêché${alert.sex === "F" ? "e" : ""} pour la finale du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)}.`,
+      text: `Suite à un forfait en finale, ${alert.replacementName || "un nageur"} est qualifié${alert.sex === "F" ? "e" : ""} en finale du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)}.`,
       identity: alert.replacementClub ? `${alert.replacementName || "Concurrent"} - ${alert.replacementClub}` : (alert.replacementName || "Concurrent")
     };
   }
@@ -2083,7 +2090,7 @@ function renderLineTimeStatus(entrant, lineAlerts) {
   const terminalStatus = terminalLineStatus(lineAlerts);
   if (terminalStatus) {
     const isAbandon = terminalStatus.type === "abandon";
-    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon déclaré" : "Forfait déclaré"}</strong></span>`;
+    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon déclaré" : "Forfait non déclaré"}</strong></span>`;
   }
   const importedLabel = importedLineStatusLabel(entrant);
   if (importedLabel) {
@@ -2096,21 +2103,28 @@ function finalistRowName(row) {
   return formatPersonNameParts(row?.firstName, row?.lastName, row?.name) || "Concurrent";
 }
 
+function finalRowsForAnnouncementAlert(alert) {
+  const result = alert?.resultId ? raceResults.find((item) => item.id === alert.resultId) : null;
+  return result?.finalists || alert?.finalists || {};
+}
+
 function renderFinalistsAlertList(alert) {
   const renderRows = (title, rows = []) => rows.length ? `
     <div class="finalists-alert-group">
       <strong>${escapeHtml(title)}</strong>
       <ol>
         ${rows.map((row) => `
-          <li value="${escapeHtml(row.rank || "")}">
+          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
             <span>${escapeHtml(finalistRowName(row))}</span>
             <em>${escapeHtml(row.time || "")}</em>
+            ${row.withdrawnAt ? `<small class="finalist-status withdrawn">Forfait</small>` : ""}
+            ${row.repechaged ? `<small class="finalist-status repechaged">Repêché${alert.sex === "F" ? "e" : ""}</small>` : ""}
           </li>
         `).join("")}
       </ol>
     </div>
   ` : "";
-  const finals = alert.finalists || {};
+  const finals = finalRowsForAnnouncementAlert(alert);
   return `
     <div class="finalists-alert-list">
       ${renderRows("Finale A", finals.a || [])}
@@ -2755,7 +2769,8 @@ function openFinalistsAnnouncementModal(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   if (!alert || !alertDetailModal) return;
   const canMarkAnnounced = state.role === "speaker" && alert.speakerStatus === "pending";
-  const hasFinalB = Boolean(alert.finalists?.b?.length);
+  const finalists = finalRowsForAnnouncementAlert(alert);
+  const hasFinalB = Boolean(finalists?.b?.length);
   const finalLabel = hasFinalB ? "les finales" : "la finale";
   const speakerText = `Votre attention s'il vous plait, sont qualifiés pour ${finalLabel} du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)} :`;
   alertDetailModal.hidden = false;
@@ -3185,7 +3200,7 @@ function renderQueueItem(alert) {
     return `
       <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
         <div>
-          <strong class="alert-title"><span aria-hidden="true">!</span> Forfait à prendre en note <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
+          <strong class="alert-title"><span aria-hidden="true">!</span> Forfait non déclaré à prendre en note <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
           <strong>${escapeHtml(alertRaceLabel(alert))}</strong>
           <span>${escapeHtml(`${alertSwimmerLabel(alert)}${detail ? ` - ${detail}` : ""}`)}</span>
         </div>
@@ -4721,8 +4736,9 @@ function renderEntrants() {
   }
 
   entrantsBody.innerHTML = visibleEntrants.length ? visibleEntrants.map((entrant, index) => {
+    const importedForfait = entrant.importedStatus === "forfait";
     const reference = state.role === "referee"
-      ? `<span class="badge muted">Cliquer pour décider</span>`
+      ? (importedForfait ? `<span class="badge muted">Forfait déclaré</span>` : `<span class="badge muted">Cliquer pour décider</span>`)
       : (isSpeakerView() ? getEntrantReference(entrant) : "");
     const swimmerId = entrant.swimmerId || entrantKey(entrant);
     const lineLabel = hasSeriesFilter ? (entrant.seriesInfo?.line || "-") : index + 1;
@@ -4734,12 +4750,12 @@ function renderEntrants() {
     const importedStatusBadge = renderImportedLineStatusBadge(entrant);
     const lineTimeStatus = renderLineTimeStatus(entrant, lineAlerts);
     const alertBadges = lineTimeStatus ? "" : (renderLineAlertBadges(lineAlerts) || importedStatusBadge);
-    const rowDisabled = lineAlerts.length || entrant.importedStatus === "forfait";
+    const rowDisabled = lineAlerts.length || importedForfait;
     return `
-      <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${entrant.importedStatus === "forfait" ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}">
+      <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${importedForfait ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}" data-imported-forfait="${importedForfait ? "1" : "0"}">
         <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
         <td class="name-cell">
-          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
+          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}${renderCompetitionStatBadges(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
           ${!isRelayEntrant(entrant) || state.role === "referee" ? `<span class="club-name">${escapeHtml(clubLabel || "-")}</span>` : ""}
         </td>
         <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
@@ -4842,6 +4858,13 @@ function renderEdfBadges(entrant) {
   )).join("");
 }
 
+function renderCompetitionStatBadges(entrant) {
+  if (!isSpeakerView()) return "";
+  return findCompetitionStatsForEntrant(entrant).map((item) => (
+    `<span class="stat-badge ${escapeHtml(item.type || "")}" title="${escapeHtml(item.detail || item.label || "Repère compétition")}">${escapeHtml(item.icon || "*")}</span>`
+  )).join("");
+}
+
 function renderNonSelectableBadge(entrant) {
   return entrant?.nonSelectable && isSpeakerView()
     ? `<span class="non-selectable-label" title="Non sélectionnable">NS</span>`
@@ -4851,6 +4874,19 @@ function renderNonSelectableBadge(entrant) {
 function findEdfMemberships(entrant) {
   const key = entrantPersonKey(entrant);
   return (data.edfMembers || []).filter((member) => member.personKey === key);
+}
+
+function findCompetitionStatsForEntrant(entrant) {
+  if (isRelayEntrant(entrant)) return [];
+  const entrantName = normalizePersonName(formatName(entrant));
+  const entrantYear = getBirthYearLabel(entrant.birthDate);
+  const entrantSex = sheetSex(entrant.sex);
+  return (data.competitionStats || []).filter((item) => {
+    if (!item.name || normalizePersonName(item.name) !== entrantName) return false;
+    if (item.sex && entrantSex && item.sex !== entrantSex) return false;
+    if (item.birthYear && entrantYear !== "----" && String(item.birthYear) !== String(entrantYear)) return false;
+    return true;
+  });
 }
 
 function findInternationalMedals(entrant) {
@@ -5025,12 +5061,18 @@ function renderSwimmerDetails() {
   const france2025 = findFrance2025Results(swimmer);
   const internationalMedals = findInternationalMedals(swimmer);
   const heldRecords = findAllRecordsHeldByEntrant(swimmer);
+  const competitionStats = findCompetitionStatsForEntrant(swimmer);
   swimmerDetails.hidden = false;
   swimmerDetails.innerHTML = `
     <div class="details-title">
       <div class="swimmer-identity">
-        <h4>${escapeHtml(formatName(swimmer))} ${renderEdfBadges(swimmer)}</h4>
+        <h4>${escapeHtml(formatName(swimmer))} ${renderCompetitionStatBadges(swimmer)} ${renderEdfBadges(swimmer)}</h4>
         <span>${escapeHtml(swimmer.club || "")} - ${escapeHtml(categoryLabel(swimmer.category, swimmer.sex))} - ${escapeHtml(getBirthYearLabel(swimmer.birthDate))}</span>
+        ${competitionStats.length ? `
+          <div class="stat-detail-list">
+            ${competitionStats.map((item) => `<strong>${escapeHtml(item.icon || "*")} ${escapeHtml(item.detail || item.label || "Repère compétition")}</strong>`).join("")}
+          </div>
+        ` : ""}
       </div>
       <div class="compact-program" aria-label="Courses engagées du weekend">
         ${entries.map((entry) => `
@@ -5442,6 +5484,55 @@ function parseEdfSheet(rows) {
   return members.filter((row) => row.personKey !== "|");
 }
 
+function statTypeFromLabel(label) {
+  const text = normalizeSheetHeader(label);
+  if (text.includes("anniversaire") && text.includes("nageur")) return { type: "birthday", icon: "🎂", label: "Anniversaire aujourd'hui" };
+  if (text.includes("plus_jeune") && text.includes("nageuse")) return { type: "youngest-female", icon: "👶", label: "Plus jeune nageuse de la compétition", sex: "F" };
+  if (text.includes("plus_jeune") && text.includes("nageur")) return { type: "youngest-male", icon: "👶", label: "Plus jeune nageur de la compétition", sex: "M" };
+  if (text.includes("doyenne")) return { type: "oldest-female", icon: "★", label: "Doyenne de la rencontre", sex: "F" };
+  if (text.includes("doyen")) return { type: "oldest-male", icon: "★", label: "Doyen de la rencontre", sex: "M" };
+  return null;
+}
+
+function parseCompetitionStatPerson(value) {
+  const text = fixPdfEncoding(value).replace(/\s+/g, " ").trim();
+  const match = text.match(/^(.+?)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([A-Z0-9]+))?(?:\s+\(([^)]+)\))?$/i);
+  if (!match) return null;
+  const [, name, birthDate, clubCode = "", extra = ""] = match;
+  return {
+    name: name.trim(),
+    birthDate,
+    birthYear: (birthDate.match(/\d{4}$/) || [])[0] || "",
+    clubCode: clubCode.toUpperCase(),
+    extra: extra.trim()
+  };
+}
+
+function parseCompetitionStatsSheet(rows) {
+  const stats = [];
+  let currentType = null;
+  rows.forEach((cells) => {
+    const first = fixPdfEncoding(cells?.[0] || "").trim();
+    if (!first) return;
+    const type = statTypeFromLabel(first);
+    if (type) {
+      currentType = type;
+      return;
+    }
+    if (!currentType) return;
+    const person = parseCompetitionStatPerson(first);
+    if (!person) return;
+    const detailParts = [currentType.label, person.birthDate, person.clubCode, person.extra].filter(Boolean);
+    stats.push({
+      ...currentType,
+      ...person,
+      detail: detailParts.join(" - ")
+    });
+    currentType = null;
+  });
+  return stats;
+}
+
 function parseInternationalSheet(rows) {
   return sheetObjects(rows).map((row) => ({
     personKey: personKeyFromSheet(row, rowValue(row, ["sexe", "sex"])),
@@ -5561,7 +5652,8 @@ async function updateSpeakerInfoFromGoogleSheet() {
       internationalRows,
       qualificationRows,
       clubRows,
-      seedRows
+      seedRows,
+      competitionStatRows
     ] = await Promise.all([
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.records),
@@ -5569,7 +5661,8 @@ async function updateSpeakerInfoFromGoogleSheet() {
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.clubs),
-      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources)
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.competitionStats)
     ]);
     const clubs = parseClubSheet(clubRows);
     const seedSources = parseSeedSourceSheet(seedRows);
@@ -5581,6 +5674,7 @@ async function updateSpeakerInfoFromGoogleSheet() {
       records: parseRecordsSheet(recordRows),
       edfMembers: parseEdfSheet(edfRows),
       internationalMedals: parseInternationalSheet(internationalRows),
+      competitionStats: parseCompetitionStatsSheet(competitionStatRows),
       qualifications: parseQualificationsSheet(qualificationRows),
       entrants: entrantsWithSpeakerInfo,
       sourceVersion: `speaker-info-${Date.now()}`,
@@ -5594,7 +5688,7 @@ async function updateSpeakerInfoFromGoogleSheet() {
     });
     applyFreshData(nextData, true);
     await publishLiveDataToFirestore(nextData, "Infos speaker Google Sheets");
-    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
+    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.competitionStats.length} stats compétition, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
   } catch (error) {
     console.error(error);
     renderDataStatus(`Impossible de lire le Google Sheet : ${error?.message || error}`);
@@ -6623,6 +6717,7 @@ categorySelect.addEventListener("change", () => {
 entrantsBody.addEventListener("click", (event) => {
   const row = event.target.closest("tr[data-swimmer-id]");
   if (!row) return;
+  if (state.role === "referee" && row.dataset.importedForfait === "1") return;
   state.selectedSwimmerId = row.dataset.swimmerId;
   renderEntrants();
   renderRolePanels();
@@ -6883,6 +6978,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   let currentSession = { number: "", label: "" };
   let current = null;
   let pendingFinal = null;
+  let activeFinalContext = null;
   let order = 0;
   const meet = parseImportedMeetMetadata(normalizedLines);
 
@@ -6944,21 +7040,23 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
           baseLabel: event.label,
           startTime: startTime || ""
         };
+        activeFinalContext = pendingFinal;
       }
       current = null;
       return;
     }
 
     const finalHeatMatch = line.match(finalHeatPattern);
-    if (finalHeatMatch && pendingFinal) {
+    const finalContext = pendingFinal || activeFinalContext;
+    if (finalHeatMatch && finalContext) {
       const [, letter, startTime, heatOrder] = finalHeatMatch;
       order += 1;
       const stage = `finale-${letter.toUpperCase()}`;
       program.push({
-        eventId: pendingFinal.eventId,
-        sex: pendingFinal.sex,
+        eventId: finalContext.eventId,
+        sex: finalContext.sex,
         order,
-        label: `${pendingFinal.baseLabel} - Finale ${letter.toUpperCase()}`,
+        label: `${finalContext.baseLabel} - Finale ${letter.toUpperCase()}`,
         session: currentSession.number,
         sessionLabel: currentSession.label,
         stage,
@@ -6966,13 +7064,13 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         hasEntrants: true
       });
       current = {
-        eventId: pendingFinal.eventId,
-        sex: pendingFinal.sex,
+        eventId: finalContext.eventId,
+        sex: finalContext.sex,
         series: letter.toUpperCase() === "A" ? 1 : 2,
         seriesCount: 1,
         heatOrder: Number(heatOrder || order),
         startTime,
-        isRelay: isImportedRelayEvent(pendingFinal.eventId),
+        isRelay: isImportedRelayEvent(finalContext.eventId),
         session: currentSession.number,
         sessionLabel: currentSession.label,
         stage
@@ -6984,6 +7082,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     const titleMatch = line.match(titlePattern) || line.match(relayTitlePattern);
     if (titleMatch) {
       pendingFinal = null;
+      activeFinalContext = null;
       const [, rawLabel, sexText] = titleMatch;
       const label = fixPdfEncoding(rawLabel);
       if (/Finale/i.test(line)) {
