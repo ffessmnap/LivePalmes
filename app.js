@@ -1081,6 +1081,20 @@ async function performResetHistoryWithArchive() {
   window.alert(archive ? "Historique archivé puis remis à zéro." : "Historique remis à zéro.");
 }
 
+async function clearHistoryAndAlertsForFullImport() {
+  const archive = await archiveCurrentHistory();
+  const clearedAlerts = alerts.length;
+  await clearFirestoreAlerts();
+  alerts = [];
+  liveDismissedAlertIds = [];
+  saveAlerts();
+  saveLiveDismissedAlerts();
+  return {
+    archivedCount: archive?.count || 0,
+    clearedAlerts
+  };
+}
+
 function dismissLiveAlert(alertId) {
   if (!liveDismissedAlertIds.includes(alertId)) {
     liveDismissedAlertIds.push(alertId);
@@ -7106,6 +7120,15 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
       .sort((a, b) => Number(a) - Number(b));
     const updatedSession = mode === "full" ? "" : (forcedSession || importedSessions[0] || "");
     let clearedResultsCount = 0;
+    let clearedAlertsCount = 0;
+    let archivedHistoryCount = 0;
+    if (mode === "full" && alerts.length) {
+      renderDataStatus("Archivage du journal et remise à zéro des alertes...");
+      const historyReset = await clearHistoryAndAlertsForFullImport();
+      clearedAlertsCount = historyReset.clearedAlerts;
+      archivedHistoryCount = historyReset.archivedCount;
+      renderDataStatus("Journal archivé et alertes remises à zéro.");
+    }
     if (mode === "full" && raceResults.length) {
       const clearResults = window.confirm([
         "Tu importes un PDF général de compétition.",
@@ -7156,7 +7179,10 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
         .join(", ");
       const sessionText = sessionList ? ` Sessions détectées : ${sessionList}.` : "";
       const clearedText = clearedResultsCount ? ` ${clearedResultsCount} résultat${clearedResultsCount > 1 ? "s" : ""} public${clearedResultsCount > 1 ? "s" : ""} supprimé${clearedResultsCount > 1 ? "s" : ""}.` : "";
-      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}`);
+      const historyText = clearedAlertsCount
+        ? ` Journal archivé (${archivedHistoryCount} ligne${archivedHistoryCount > 1 ? "s" : ""}) et ${clearedAlertsCount} alerte${clearedAlertsCount > 1 ? "s" : ""} supprimée${clearedAlertsCount > 1 ? "s" : ""}.`
+        : "";
+      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}${historyText}`);
     } catch {
       window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
     }
