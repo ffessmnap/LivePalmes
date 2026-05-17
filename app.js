@@ -1644,6 +1644,7 @@ function renderSessionControls() {
 }
 
 function currentRoleAlertFilter(alert) {
+  if (alert.type === "final_composition_ready") return false;
   if (alert.cancelledAt) return false;
   if (state.role === "live") {
     if (alert.type === "finalists_announcement") return false;
@@ -1666,6 +1667,9 @@ function isRequalificationAlert(alert) {
 }
 
 function alertRaceLabel(alert) {
+  if (alert.type === "final_composition_ready") {
+    return `${alert.eventLabel || alert.eventId} - ${alert.sexLabel || sexDisplayLabel(alert.sex)}`;
+  }
   const event = data.events.find((item) => item.id === alert.eventId);
   const sex = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
   const series = alert.stage && isFinalStage(alert.stage)
@@ -1706,6 +1710,7 @@ function alertCommentLabel(alert) {
 function decisionMotifLabel(alert) {
   if (alert.type === "finalists_announcement") return "Finalistes à annoncer";
   if (alert.type === "finalist_replacement_announcement") return "Repêchage finale à annoncer";
+  if (alert.type === "final_composition_ready") return "Composition finale définitive";
   if (alert.type === "requalification") return "Requalification - décision du délégué";
   if (alert.type === "ja_cancellation") return "Requalification - annulation par le JA";
   const motif = DECISION_LABELS[alert.type] || alert.type;
@@ -2064,6 +2069,9 @@ function renderResultProgramRow(row) {
   const status = resultStatusForProgramRow(row);
   const event = data.events.find((item) => item.id === row.eventId);
   const finalistCount = (result?.finalists?.a?.length || 0) + (result?.finalists?.b?.length || 0);
+  const compositionLabel = result?.hasFinal
+    ? (finalCompositionIsDefinitive(result) ? "Finalistes définitifs" : "Finalistes provisoires")
+    : "";
   return `
     <div class="result-admin-row ${result ? "published" : ""}">
       <div>
@@ -2078,6 +2086,11 @@ function renderResultProgramRow(row) {
         ${result ? `
           <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(result.id)}">
             Supprimer
+          </button>
+        ` : ""}
+        ${result?.hasFinal ? `
+          <button class="ghost-button compact" type="button" data-final-composition-result="${escapeHtml(result.id)}">
+            ${escapeHtml(compositionLabel)}
           </button>
         ` : ""}
       </div>
@@ -2116,6 +2129,10 @@ function canWithdrawFinalist(row, result, now = new Date()) {
 
 function hasFinalWithdrawalDeadline(row, result) {
   return Boolean(finalWithdrawalLimitDate(row, result));
+}
+
+function canWithdrawBeforeReplacementAnnouncement(row) {
+  return Boolean(row?.repechaged && !row.repechageAnnouncedAt && !row.withdrawnAt);
 }
 
 function isFinalWithdrawalDeadlineExpired(row, result, now = new Date()) {
@@ -2213,6 +2230,9 @@ function formatAlertDateTime(value) {
 }
 
 function alertStatusLabel(alert) {
+  if (alert.type === "final_composition_ready") {
+    return alert.informaticsStatus === "done" ? "Composition vérifiée" : "Info à vérifier";
+  }
   if (alert.cancelledAt) {
     const time = formatAlertTime(alert.cancelledAt);
     const suffix = time ? ` à ${time}` : "";
@@ -2228,6 +2248,9 @@ function alertStatusLabel(alert) {
 }
 
 function alertStatusClass(alert) {
+  if (alert.type === "final_composition_ready") {
+    return alert.informaticsStatus === "done" ? "status-done" : "status-sent";
+  }
   if (alert.cancelledAt) return "status-rejected";
   if (alert.requiresVideo && alert.videoStatus === "pending") return "status-video";
   if (alert.videoStatus === "rejected") return "status-rejected";
@@ -2274,10 +2297,14 @@ function renderHistoryItem(alert, options = {}) {
   const timeline = alertTimeline(alert);
   const event = data.events.find((item) => item.id === alert.eventId);
   const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
-  const seriesLabel = alert.stage && isFinalStage(alert.stage)
+  const seriesLabel = alert.type === "final_composition_ready"
+    ? "Finales"
+    : alert.stage && isFinalStage(alert.stage)
     ? finalStageLabel(alert.stage)
     : `Série ${alert.series || "-"}`;
-  const courseLine = `${event?.label || alert.eventId} ${sexLabel} - ${seriesLabel} - Ligne ${alert.line || "-"}`;
+  const courseLine = alert.type === "final_composition_ready"
+    ? `${alert.eventLabel || event?.label || alert.eventId} ${alert.sexLabel || sexLabel} - Composition finale`
+    : `${event?.label || alert.eventId} ${sexLabel} - ${seriesLabel} - Ligne ${alert.line || "-"}`;
   const motif = decisionMotifLabel(alert);
   const identity = options.showIdentity ? fullAlertIdentityLabel(alert) : alertIdentityLabel(alert);
   const action = historyActionForAlert(alert);
@@ -2296,6 +2323,10 @@ function renderHistoryItem(alert, options = {}) {
 function openAlertDetail(alertId) {
   const clickedAlert = alerts.find((item) => item.id === alertId);
   if (!clickedAlert || !alertDetailModal) return;
+  if (clickedAlert.type === "final_composition_ready") {
+    openFinalCompositionModal(clickedAlert.id, { fromHistory: true });
+    return;
+  }
   const alert = clickedAlert.originalAlertId
     ? (alerts.find((item) => item.id === clickedAlert.originalAlertId) || clickedAlert)
     : clickedAlert;
@@ -2738,7 +2769,7 @@ function renderRoleQueue() {
   const rows = alerts
     .filter(currentRoleAlertFilter)
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
-  const title = state.role === "video" ? "Demandes vidéo à vérifier" : "Décisions à saisir";
+  const title = state.role === "video" ? "Demandes vidéo à vérifier" : "Décisions et informations";
   roleQueue.hidden = false;
   roleQueue.innerHTML = `
     <h3>${title}</h3>
@@ -2749,6 +2780,20 @@ function renderRoleQueue() {
 }
 
 function renderQueueItem(alert) {
+  if (alert.type === "final_composition_ready") {
+    return `
+      <div class="queue-item final-composition-item" data-alert-id="${escapeHtml(alert.id)}">
+        <div>
+          <strong class="alert-title"><span aria-hidden="true">i</span> Composition finale définitive <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
+          <strong>${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</strong>
+          <span>La composition de la ou des finales est définitive.</span>
+        </div>
+        <div class="queue-actions">
+          <button class="ghost-button compact confirm-button" type="button" data-final-composition-open="${escapeHtml(alert.id)}">Voir les qualifiés et forfaits</button>
+        </div>
+      </div>
+    `;
+  }
   const videoActions = state.role === "video"
     ? `<button class="ghost-button compact confirm-button" type="button" data-queue-action="confirm-video">Confirmer DSQ</button>
        <button class="ghost-button compact danger-button" type="button" data-queue-action="reject-video">Invalider</button>`
@@ -3182,6 +3227,12 @@ function openResultImportModal(row) {
   currentResultImportRow = row;
   const event = data.events.find((item) => item.id === row.eventId);
   const defaultPartial = isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row);
+  const existingResult = resultForProgramRow(row);
+  const protectedFinalists = Boolean(existingResult?.hasFinal && (
+    existingResult.finalistsAnnouncedAt ||
+    (existingResult.finalWithdrawals || []).length ||
+    ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
+  ));
   resultImportModal.hidden = false;
   resultImportModal.innerHTML = `
     <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer un résultat">
@@ -3194,26 +3245,39 @@ function openResultImportModal(row) {
         <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
       </div>
       <div class="admin-series-options">
-        <label class="admin-series-option">
-          <input type="radio" name="resultCompletionMode" value="complete" ${defaultPartial ? "" : "checked"}>
-          <strong>Résultat complet</strong>
-          <span>La course est terminée et le résultat peut être considéré comme officiel pour cette phase.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="resultCompletionMode" value="partial" ${defaultPartial ? "checked" : ""}>
-          <strong>Résultat partiel</strong>
-          <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="resultFinalMode" value="no" checked>
-          <strong>Sans finale</strong>
-          <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="resultFinalMode" value="yes">
-          <strong>Avec finale</strong>
-          <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
-        </label>
+        ${protectedFinalists ? `
+          <label class="admin-series-option warning-option">
+            <input type="radio" name="resultFinalListMode" value="preserve" checked>
+            <strong>Conserver les finalistes déjà annoncés</strong>
+            <span>Remplace seulement le PDF résultat. Les forfaits, repêchages et délais restent inchangés.</span>
+          </label>
+          <label class="admin-series-option warning-option">
+            <input type="radio" name="resultFinalListMode" value="overwrite">
+            <strong>Écraser la liste des finalistes</strong>
+            <span>Attention : relit le PDF et remplace la liste des finalistes, forfaits et repêchages.</span>
+          </label>
+        ` : `
+          <label class="admin-series-option">
+            <input type="radio" name="resultCompletionMode" value="complete" ${defaultPartial ? "" : "checked"}>
+            <strong>Résultat complet</strong>
+            <span>La course est terminée et le résultat peut être considéré comme officiel pour cette phase.</span>
+          </label>
+          <label class="admin-series-option">
+            <input type="radio" name="resultCompletionMode" value="partial" ${defaultPartial ? "checked" : ""}>
+            <strong>Résultat partiel</strong>
+            <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
+          </label>
+          <label class="admin-series-option">
+            <input type="radio" name="resultFinalMode" value="no" checked>
+            <strong>Sans finale</strong>
+            <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
+          </label>
+          <label class="admin-series-option">
+            <input type="radio" name="resultFinalMode" value="yes">
+            <strong>Avec finale</strong>
+            <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
+          </label>
+        `}
       </div>
       <label class="file-button admin-series-file">
         Choisir le PDF résultat
@@ -3269,14 +3333,23 @@ function parseFinalistsFromResultLines(lines) {
   };
 }
 
-async function publishResultPdf(file, row, hasFinal, isPartial = false) {
+async function publishResultPdf(file, row, hasFinal, isPartial = false, options = {}) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
   const now = new Date().toISOString();
   const event = data.events.find((item) => item.id === row.eventId);
   const pdfDataUrl = await fileToDataUrl(file);
+  const existingResult = resultForProgramRow(row);
+  const preserveFinalists = Boolean(options.preserveFinalists && existingResult?.hasFinal);
   let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
-  if (hasFinal) {
+  if (preserveFinalists) {
+    parsedFinals = {
+      ranking: existingResult.ranking || [],
+      finalists: existingResult.finalists || { a: [], b: [] },
+      nextUnqualified: existingResult.nextUnqualified || []
+    };
+    hasFinal = true;
+  } else if (hasFinal) {
     const lines = await extractPdfLines(file);
     parsedFinals = parseFinalistsFromResultLines(lines);
     if (!parsedFinals.finalists.a.length) {
@@ -3300,13 +3373,17 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false) {
     pdfName: file.name,
     pdfSize: file.size,
     pdfDataUrl,
-    createdAt: resultForProgramRow(row)?.createdAt || now,
+    createdAt: existingResult?.createdAt || now,
     updatedAt: now,
     isPartial: Boolean(isPartial),
-    status: hasFinal ? "finalists_pending_speaker" : "published"
+    status: preserveFinalists ? (existingResult.status || "published") : (hasFinal ? "finalists_pending_speaker" : "published")
   };
+  if (preserveFinalists) {
+    result.finalistsAnnouncedAt = existingResult.finalistsAnnouncedAt || "";
+    result.finalWithdrawals = existingResult.finalWithdrawals || [];
+  }
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
-  if (hasFinal) {
+  if (hasFinal && !preserveFinalists) {
     await createFinalistsSpeakerAlert(result);
   }
   return result;
@@ -3447,6 +3524,30 @@ function availableReplacementForResult(result, finalists) {
   return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row))) || null;
 }
 
+function finalCompositionRows(result) {
+  const finalRows = ["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) => ({
+    ...row,
+    finalLabel: key.toUpperCase()
+  })));
+  return finalRows;
+}
+
+function finalCompositionKey(result) {
+  return finalCompositionRows(result)
+    .map((row) => [row.finalLabel, row.rank, finalistRowName(row), row.time, row.withdrawnAt ? "F" : "Q", row.repechaged ? "R" : ""].join("|"))
+    .join(";");
+}
+
+function finalCompositionIsDefinitive(result, now = new Date()) {
+  if (!result?.hasFinal || !result.finalistsAnnouncedAt) return false;
+  const activeRows = finalCompositionRows(result).filter((row) => !row.withdrawnAt);
+  if (!activeRows.length) return false;
+  return activeRows.every((row) => {
+    const limit = finalWithdrawalLimitDate(row, result);
+    return Boolean(limit) && now > limit;
+  });
+}
+
 function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
   if (!rows.length) return "";
   const now = new Date();
@@ -3458,10 +3559,11 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
           const limit = finalWithdrawalLimitLabel(row, result);
           const canWithdraw = canWithdrawFinalist(row, result, now);
           const hasDeadline = hasFinalWithdrawalDeadline(row, result);
+          const canWithdrawUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
           const expired = isFinalWithdrawalDeadlineExpired(row, result, now);
           const status = row.withdrawnAt
             ? `Forfait ${formatDeadlineTime(new Date(row.withdrawnAt))}`
-            : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : "En attente annonce speaker");
+            : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : (canWithdrawUnannouncedReplacement ? "Repêchage non annoncé" : "En attente annonce speaker"));
           return `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}">
             <div>
@@ -3470,8 +3572,12 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
               <small>${escapeHtml(status)}</small>
               ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
-            ${row.withdrawnAt ? "" : `
-              <button class="ghost-button compact danger-button" type="button" data-final-withdraw="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-expired="${expired ? "1" : "0"}" ${hasDeadline ? "" : "disabled"}>
+            ${row.withdrawnAt ? `
+              <button class="ghost-button compact confirm-button" type="button" data-final-reinstate="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}">
+                Réintégrer
+              </button>
+            ` : `
+              <button class="ghost-button compact danger-button" type="button" data-final-withdraw="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-expired="${expired ? "1" : "0"}" ${hasDeadline || canWithdrawUnannouncedReplacement ? "" : "disabled"}>
                 Forfait
               </button>
             `}
@@ -3509,6 +3615,64 @@ function openFinalWithdrawalsModal(resultId) {
   `;
 }
 
+function renderFinalCompositionList(result) {
+  const renderRows = (title, rows = []) => rows.length ? `
+    <div class="final-withdrawal-group">
+      <strong>${escapeHtml(title)}</strong>
+      <ol>
+        ${rows.map((row) => `
+          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
+            <div>
+              <span>${escapeHtml(finalistRowName(row))}</span>
+              <em>${escapeHtml([row.time, row.club].filter(Boolean).join(" - "))}</em>
+              ${row.withdrawnAt ? `<small>Forfait ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
+              ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
+            </div>
+          </li>
+        `).join("")}
+      </ol>
+    </div>
+  ` : "";
+  return `
+    <div class="final-withdrawal-list">
+      ${renderRows("Finale A", result.finalists?.a || [])}
+      ${renderRows("Finale B", result.finalists?.b || [])}
+    </div>
+  `;
+}
+
+function openFinalCompositionResultModal(resultId) {
+  const result = raceResults.find((item) => item.id === resultId);
+  if (!result || !alertDetailModal) return;
+  const definitive = finalCompositionIsDefinitive(result);
+  alertDetailModal.hidden = false;
+  alertDetailModal.innerHTML = `
+    <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Composition finale">
+      <div class="decision-modal-head">
+        <div>
+          <span>Bureau des performances</span>
+          <h2>${definitive ? "Finalistes définitifs" : "Finalistes provisoires"}</h2>
+          <p>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}</p>
+        </div>
+        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
+      </div>
+      <div class="alert-detail-note">
+        <span>Info</span>
+        <strong>${definitive ? "Tous les délais de forfait sont passés." : "Des délais de forfait sont encore ouverts."} Voici les qualifiés, repêchés et forfaits.</strong>
+      </div>
+      ${renderFinalCompositionList(result)}
+      <div class="decision-actions">
+        <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
+      </div>
+    </div>
+  `;
+}
+
+function openFinalCompositionModal(alertId) {
+  const alert = alerts.find((item) => item.id === alertId);
+  if (alert?.resultId) openFinalCompositionResultModal(alert.resultId);
+}
+
 async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpired = false } = {}) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour gérer les forfaits.");
@@ -3516,10 +3680,11 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
   const result = raceResults[resultIndex];
   const row = result?.finalists?.[finalKey]?.[Number(finalIndex)];
   if (resultIndex === -1 || !row) throw new Error("Finaliste introuvable.");
-  if (!hasFinalWithdrawalDeadline(row, result)) {
+  const isUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
+  if (!hasFinalWithdrawalDeadline(row, result) && !isUnannouncedReplacement) {
     throw new Error("Le délai de ce finaliste n'a pas encore démarré.");
   }
-  if (!allowExpired && !canWithdrawFinalist(row, result)) {
+  if (!isUnannouncedReplacement && !allowExpired && !canWithdrawFinalist(row, result)) {
     throw new Error("Le délai de forfait de ce finaliste est terminé.");
   }
   const now = new Date().toISOString();
@@ -3574,9 +3739,69 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
     updatedAt: now
   });
   raceResults[resultIndex] = updated;
+  if (isUnannouncedReplacement) {
+    await cancelPendingReplacementSpeakerAlert(result, row, now);
+  }
   if (replacement) {
     await createFinalistReplacementSpeakerAlert(updated, row, replacement, now);
   }
+  render();
+  openFinalWithdrawalsModal(result.id);
+}
+
+async function reinstateFinalist(resultId, finalKey, finalIndex) {
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour réintégrer ce finaliste.");
+  const resultIndex = raceResults.findIndex((item) => item.id === resultId);
+  const result = raceResults[resultIndex];
+  const row = result?.finalists?.[finalKey]?.[Number(finalIndex)];
+  if (resultIndex === -1 || !row?.withdrawnAt) throw new Error("Finaliste forfait introuvable.");
+  const now = new Date().toISOString();
+  const finalists = {
+    a: (result.finalists?.a || []).map((item) => ({ ...item })),
+    b: (result.finalists?.b || []).map((item) => ({ ...item }))
+  };
+  const reinstated = { ...row };
+  delete reinstated.withdrawnAt;
+  reinstated.reinstatedAt = now;
+  finalists[finalKey][Number(finalIndex)] = reinstated;
+  const withdrawal = [...(result.finalWithdrawals || [])]
+    .reverse()
+    .find((item) => item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt);
+  const replacementName = withdrawal?.replacement?.name || "";
+  if (replacementName) {
+    for (const key of ["a", "b"]) {
+      const replacementIndex = finalists[key].findIndex((item) =>
+        item.repechaged &&
+        finalistRowName(item) === replacementName &&
+        String(item.replacesName || "") === finalistRowName(row)
+      );
+      if (replacementIndex !== -1) {
+        const replacement = finalists[key][replacementIndex];
+        if (!replacement.repechageAnnouncedAt) {
+          await cancelPendingReplacementSpeakerAlert(result, replacement, now);
+        }
+        finalists[key].splice(replacementIndex, 1);
+      }
+    }
+  }
+  const finalWithdrawals = (result.finalWithdrawals || []).map((item) => {
+    if (item === withdrawal || (item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt && item.at === withdrawal?.at)) {
+      return { ...item, reinstatedAt: now };
+    }
+    return item;
+  });
+  await collection.doc(result.id).update({
+    finalists,
+    finalWithdrawals,
+    updatedAt: now
+  });
+  raceResults[resultIndex] = {
+    ...result,
+    finalists,
+    finalWithdrawals,
+    updatedAt: now
+  };
   render();
   openFinalWithdrawalsModal(result.id);
 }
@@ -3609,6 +3834,22 @@ async function createFinalistReplacementSpeakerAlert(result, withdrawn, replacem
   alerts.unshift(alert);
   saveAlerts();
   await syncAlertToFirestore(alert);
+}
+
+async function cancelPendingReplacementSpeakerAlert(result, row, now = new Date().toISOString()) {
+  const pending = alerts.filter((alert) =>
+    replacementAlertMatches(alert, result, row) &&
+    alert.speakerStatus === "pending"
+  );
+  for (const alert of pending) {
+    alert.speakerStatus = "none";
+    alert.cancelledAt = now;
+    alert.updatedAt = now;
+    await syncAlertToFirestore(alert);
+  }
+  if (pending.length) {
+    saveAlerts();
+  }
 }
 
 async function updateReplacementRowAnnouncement(resultId, matcher, announcedAt) {
@@ -4939,6 +5180,11 @@ programModal?.addEventListener("click", (event) => {
 adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
 
 resultsAdminPanel?.addEventListener("click", (event) => {
+  const compositionButton = event.target.closest("[data-final-composition-result]");
+  if (compositionButton) {
+    openFinalCompositionResultModal(compositionButton.dataset.finalCompositionResult);
+    return;
+  }
   const deleteButton = event.target.closest("[data-result-delete]");
   if (deleteButton) {
     const result = raceResults.find((item) => item.id === deleteButton.dataset.resultDelete);
@@ -4990,15 +5236,25 @@ resultImportModal?.addEventListener("change", async (event) => {
   if (event.target?.id !== "resultPdfInput") return;
   const file = event.target.files?.[0];
   if (!file || !currentResultImportRow) return;
-  const hasFinal = resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes";
-  const isPartial = resultImportModal.querySelector("input[name='resultCompletionMode']:checked")?.value === "partial";
-  const message = hasFinal
-    ? `Publier ce résultat ${isPartial ? "partiel" : "complet"} et détecter les finalistes ?`
-    : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`;
+  const existingResult = resultForProgramRow(currentResultImportRow);
+  const finalListMode = resultImportModal.querySelector("input[name='resultFinalListMode']:checked")?.value || "";
+  const preserveFinalists = Boolean(existingResult?.hasFinal && finalListMode === "preserve");
+  const overwriteFinalists = Boolean(existingResult?.hasFinal && finalListMode === "overwrite");
+  const hasFinal = overwriteFinalists || (!preserveFinalists && resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes");
+  const isPartial = preserveFinalists
+    ? Boolean(existingResult?.isPartial)
+    : resultImportModal.querySelector("input[name='resultCompletionMode']:checked")?.value === "partial";
+  const message = preserveFinalists
+    ? "Remplacer le PDF résultat en conservant la liste des finalistes déjà annoncés, les forfaits et les repêchages ?"
+    : (overwriteFinalists
+      ? "ATTENTION : relire ce PDF et écraser la liste des finalistes déjà annoncés, les forfaits et les repêchages ?"
+    : (hasFinal
+      ? `Publier ce résultat ${isPartial ? "partiel" : "complet"} et détecter les finalistes ?`
+      : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`));
   if (!window.confirm(message)) return;
   try {
     renderDataStatus("Publication du résultat en cours...");
-    const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial);
+    const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial, { preserveFinalists });
     closeResultImportModal();
     renderDataStatus();
     const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
@@ -5223,6 +5479,29 @@ alertDetailModal?.addEventListener("click", (event) => {
     });
     return;
   }
+  const reinstateButton = event.target.closest("[data-final-reinstate]");
+  if (reinstateButton) {
+    const ok = window.confirm("Réintégrer ce nageur dans la finale ? Si le repêchage n'a pas encore été annoncé, l'alerte speaker sera annulée.");
+    if (!ok) return;
+    reinstateFinalist(
+      reinstateButton.dataset.finalReinstate,
+      reinstateButton.dataset.finalKey,
+      reinstateButton.dataset.finalIndex
+    ).catch((error) => {
+      console.error(error);
+      window.alert(`Réintégration impossible : ${error?.message || error}`);
+    });
+    return;
+  }
+  const compositionDoneButton = event.target.closest("[data-final-composition-done]");
+  if (compositionDoneButton) {
+    updateAlert(compositionDoneButton.dataset.finalCompositionDone, {
+      informaticsStatus: "done",
+      informaticsDoneAt: new Date().toISOString()
+    });
+    closeAlertDetail();
+    return;
+  }
   if (event.target === alertDetailModal || event.target.closest("[data-close-alert-detail]")) {
     closeAlertDetail();
   }
@@ -5294,6 +5573,11 @@ decisionModal?.addEventListener("input", (event) => {
 });
 
 roleQueue?.addEventListener("click", (event) => {
+  const compositionButton = event.target.closest("[data-final-composition-open]");
+  if (compositionButton) {
+    openFinalCompositionModal(compositionButton.dataset.finalCompositionOpen);
+    return;
+  }
   const button = event.target.closest("[data-queue-action]");
   const item = event.target.closest("[data-alert-id]");
   if (!item) return;

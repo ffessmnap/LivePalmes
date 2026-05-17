@@ -627,6 +627,15 @@ body.role-referee #fullscreenBtn {
   font-weight: 750;
 }
 
+.admin-series-option.warning-option {
+  border-color: #ffd8a8;
+  background: #fff9ef;
+}
+
+.admin-series-option.warning-option strong {
+  color: #9a5b00;
+}
+
 .admin-session-field {
   display: grid;
   gap: 6px;
@@ -921,6 +930,20 @@ body.role-referee #fullscreenBtn {
   color: #9a5b00;
 }
 
+.final-composition-item {
+  border-color: #cce8ee;
+  border-left-color: #0b7285;
+  background: #f2fbfd;
+}
+
+.final-composition-item .alert-title {
+  color: #075866;
+}
+
+.final-composition-item .alert-title span {
+  background: #0b7285;
+}
+
 .final-withdrawal-group li span,
 .final-withdrawal-group li em,
 .final-withdrawal-group li small {
@@ -1151,7 +1174,7 @@ body.role-referee #fullscreenBtn {
 }
 
 .public-finalists-block summary,
-.public-unqualified-block h3,
+.public-unqualified-block summary,
 .public-unqualified-more summary {
   margin: 0 0 6px;
   color: var(--accent-dark);
@@ -1160,11 +1183,12 @@ body.role-referee #fullscreenBtn {
 }
 
 .public-finalists-block summary,
+.public-unqualified-block summary,
 .public-unqualified-more summary {
   cursor: pointer;
 }
 
-.public-unqualified-block h3,
+.public-unqualified-block summary,
 .public-unqualified-more summary {
   color: #6b7c86;
 }
@@ -1174,6 +1198,14 @@ body.role-referee #fullscreenBtn {
 }
 
 .public-finalists-block:not([open]) summary {
+  margin-bottom: 0;
+}
+
+.public-unqualified-block:not([open]) {
+  padding-bottom: 7px;
+}
+
+.public-unqualified-block:not([open]) summary {
   margin-bottom: 0;
 }
 

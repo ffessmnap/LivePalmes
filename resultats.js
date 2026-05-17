@@ -196,8 +196,8 @@ function renderNextUnqualified(rows) {
     </li>
   `).join("");
   return `
-    <div class="public-unqualified-block">
-      <h3>Non qualifiés suivants</h3>
+    <details class="public-unqualified-block">
+      <summary>Non qualifiés suivants</summary>
       <ol>
         ${renderRows(visibleRows)}
       </ol>
@@ -209,7 +209,7 @@ function renderNextUnqualified(rows) {
           </ol>
         </details>
       ` : ""}
-    </div>
+    </details>
   `;
 }
 
