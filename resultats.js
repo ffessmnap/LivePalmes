@@ -9,9 +9,11 @@ const FIREBASE_CONFIG = {
 };
 
 const meetTitle = document.querySelector("#publicMeetTitle");
+const meetMeta = document.querySelector("#publicMeetMeta");
 const list = document.querySelector("#publicResultsList");
 const sessionControls = document.querySelector("#publicSessionControls");
 const statusBadge = document.querySelector("#publicResultsStatus");
+const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -46,6 +48,12 @@ function cleanText(value) {
     .replace(/\bapn\s+e\b/gi, "apnée")
     .replace(/\br\s+sultats\b/gi, "résultats")
     .replace(/\bcomp\s+tition\b/gi, "compétition");
+}
+
+function formatPersonNameParts(firstName, lastName, fallback = "") {
+  const last = cleanText(lastName).trim().toLocaleUpperCase("fr-FR");
+  const first = cleanText(firstName).trim();
+  return [last, first].filter(Boolean).join(" ").trim() || cleanText(fallback);
 }
 
 function setStatus(label, className = "pending") {
@@ -140,7 +148,8 @@ function resultStatus(row, result) {
 }
 
 function finalistName(row) {
-  return [cleanText(row.displayName), row.birthYear ? `(${row.birthYear})` : "", row.club].filter(Boolean).join(" ");
+  const name = formatPersonNameParts(row.firstName, row.lastName, row.displayName);
+  return [name, row.birthYear ? `(${row.birthYear})` : "", row.club].filter(Boolean).join(" ");
 }
 
 function formatDeadlineTime(date) {
@@ -277,6 +286,16 @@ function renderMeetTitle() {
   if (!meetTitle) return;
   const title = [publicMeet.name, publicMeet.city, publicMeet.year].filter(Boolean).join(" - ");
   meetTitle.textContent = cleanText(title || "Résultats & finalistes");
+  if (meetMeta) {
+    const lastUpdate = publicResults
+      .map((result) => result.updatedAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+    meetMeta.textContent = lastUpdate
+      ? `Dernière mise à jour : ${new Date(lastUpdate).toLocaleString("fr-FR")}`
+      : "En attente de publication des premiers résultats";
+  }
 }
 
 function renderResults() {
@@ -335,6 +354,12 @@ sessionControls?.addEventListener("click", (event) => {
   activeSession = button.dataset.publicSession;
   activeSessionChosen = true;
   renderResults();
+});
+
+collapseDetailsBtn?.addEventListener("click", () => {
+  document.querySelectorAll(".public-results-list details[open]").forEach((details) => {
+    details.open = false;
+  });
 });
 
 init();

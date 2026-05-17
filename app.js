@@ -3,6 +3,7 @@ const ALERTS_KEY = "napSpeakerFrance2026:alerts:v1";
 const LIVE_DISMISSED_ALERTS_KEY = "napSpeakerFrance2026:live-dismissed-alerts:v1";
 const UNLOCKED_ROLES_KEY = "napSpeakerFrance2026:unlocked-roles:v1";
 const CLIENT_ID_KEY = "napSpeakerFrance2026:client-id:v1";
+const ACTIVE_VIEW_KEY = "napSpeakerFrance2026:active-view:v1";
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
@@ -133,11 +134,40 @@ function pinLockEnabled() {
   return data.notes?.pinLockEnabled === true;
 }
 
+function competitionModeEnabled() {
+  return data.notes?.competitionMode === true;
+}
+
 function currentRolePins() {
   return {
     ...ROLE_PINS,
     ...(data.notes?.rolePins || {})
   };
+}
+
+function knownRole(role) {
+  return ["live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
+}
+
+function loadActiveView() {
+  const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
+  if (!saved) return { role: "live", profileHomeActive: true };
+  try {
+    const parsed = JSON.parse(saved);
+    return {
+      role: knownRole(parsed?.role) ? parsed.role : "live",
+      profileHomeActive: parsed?.profileHomeActive !== false
+    };
+  } catch {
+    return { role: "live", profileHomeActive: true };
+  }
+}
+
+function saveActiveView() {
+  localStorage.setItem(ACTIVE_VIEW_KEY, JSON.stringify({
+    role: state.role,
+    profileHomeActive
+  }));
 }
 
 function unlockRole(role) {
@@ -187,15 +217,19 @@ function switchRole(nextRole) {
   switchRoleUnlocked(nextRole);
 }
 
-let state = createRoleState("live");
+const initialView = loadActiveView();
+const initialRole = knownRole(initialView.role) ? initialView.role : "live";
+let state = createRoleState(initialRole);
 let roleStates = {
   speaker: createRoleState("speaker"),
-  live: cloneRoleState(state),
+  live: createRoleState("live"),
   referee: createRoleState("referee"),
   video: createRoleState("video"),
   computer: createRoleState("computer"),
   secretary: createRoleState("secretary")
 };
+state = cloneRoleState(roleStates[initialRole] || roleStates.live);
+state.role = initialRole;
 
 let alerts = loadAlerts();
 let liveDismissedAlertIds = loadLiveDismissedAlerts();
@@ -208,7 +242,7 @@ let isFullscreenMode = Boolean(document.fullscreenElement);
 let refereeTabletMode = false;
 let videoTabletMode = false;
 let computerTabletMode = false;
-let profileHomeActive = true;
+let profileHomeActive = initialView.profileHomeActive;
 let firestoreDb = null;
 let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
@@ -266,6 +300,7 @@ const headerRefDetails = document.querySelector("#headerRefDetails");
 const top2025Box = document.querySelector("#top2025Box");
 const dataStatus = document.querySelector("#dataStatus");
 const firebaseHeaderStatus = document.querySelector("#firebaseHeaderStatus");
+const appConsoleTitle = document.querySelector("#appConsoleTitle");
 const officialAlerts = document.querySelector("#officialAlerts");
 const decisionPanel = document.querySelector("#decisionPanel");
 const decisionModal = document.querySelector("#decisionModal");
@@ -281,6 +316,7 @@ const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
+const viewModeBtn = document.querySelector("#viewModeBtn");
 const roleLockBtn = document.querySelector("#roleLockBtn");
 const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
 const dataDiagnosticBtn = document.querySelector("#dataDiagnosticBtn");
@@ -411,6 +447,26 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     source
   });
   firebaseStatus = "connected";
+}
+
+async function updateLiveNotes(label, notePatch = {}) {
+  const nextData = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      ...notePatch,
+      importHistory: label ? appendImportHistory(data.notes || {}, label) : (data.notes?.importHistory || [])
+    },
+    sourceVersion: `notes-${Date.now()}`
+  });
+  data = nextData;
+  saveData();
+  renderDataStatus();
+  try {
+    await publishLiveDataToFirestore(nextData, label || "Mise à jour LivePalmes");
+  } catch (error) {
+    console.warn("Publication des notes impossible", error);
+  }
 }
 
 function lockExpired(lock) {
@@ -971,9 +1027,14 @@ function timeToMs(value) {
   return Math.round((minutes * 60 + seconds) * 1000);
 }
 
+function formatPersonNameParts(firstName, lastName, fallback = "") {
+  const last = String(lastName || "").trim().toLocaleUpperCase("fr-FR");
+  const first = String(firstName || "").trim();
+  return [last, first].filter(Boolean).join(" ").trim() || fallback;
+}
+
 function formatName(swimmer) {
-  return `${swimmer.firstName || ""} ${swimmer.lastName || ""}`.trim()
-    || swimmer.name
+  return formatPersonNameParts(swimmer.firstName, swimmer.lastName, swimmer.name)
     || (isFemaleContext(swimmer.sex) ? "Nageuse à renseigner" : "Nageur à renseigner");
 }
 
@@ -983,9 +1044,7 @@ function formatDisplayName(entrant) {
 
 function formatSeriesDisplayName(entrant) {
   if (isRelayEntrant(entrant)) return formatDisplayName(entrant);
-  const lastName = String(entrant.lastName || "").trim().toLocaleUpperCase("fr-FR");
-  const firstName = String(entrant.firstName || "").trim();
-  return [lastName, firstName].filter(Boolean).join(" ") || formatDisplayName(entrant);
+  return formatName(entrant);
 }
 
 function clearSearch() {
@@ -998,7 +1057,7 @@ const ROLE_LABELS = {
   live: "Live",
   referee: "Juge arbitre",
   video: "Juge vidéo",
-  computer: "Informatique",
+  computer: "Bureau des performances",
   secretary: "Secrétariat"
 };
 
@@ -1557,6 +1616,11 @@ function render() {
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
   if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
+  if (appConsoleTitle) {
+    appConsoleTitle.textContent = profileHomeActive
+      ? "LivePalmes"
+      : `LivePalmes - ${ROLE_LABELS[state.role] || "Console"}`;
+  }
   syncProgramButtonPlacement();
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
@@ -1565,6 +1629,18 @@ function render() {
   if (fullscreenBtn) {
     fullscreenBtn.hidden = state.role === "referee";
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
+  }
+  if (viewModeBtn) {
+    const canUseSmartphoneMode = ["referee", "video", "computer"].includes(state.role);
+    const isSmartphoneMode = (
+      (state.role === "referee" && refereeTabletMode) ||
+      (state.role === "video" && videoTabletMode) ||
+      (state.role === "computer" && computerTabletMode)
+    );
+    viewModeBtn.hidden = !canUseSmartphoneMode;
+    viewModeBtn.textContent = isSmartphoneMode ? "🖥" : "📱";
+    viewModeBtn.title = isSmartphoneMode ? "Revenir à l'affichage classique" : "Passer en affichage smartphone";
+    viewModeBtn.setAttribute("aria-label", viewModeBtn.title);
   }
   if (roleLockBtn) {
     roleLockBtn.textContent = pinLockEnabled() ? "🔒" : "🔓";
@@ -1592,6 +1668,7 @@ function render() {
   updateEventSelect();
   renderSessionControls();
   renderSeriesControls();
+  renderProgramButtons();
   renderCategorySelect();
   renderHeader();
   renderHeaderReferences();
@@ -1600,6 +1677,7 @@ function render() {
   renderRolePanels();
   renderDataStatus();
   saveCurrentRoleState();
+  saveActiveView();
 }
 
 function syncProgramButtonPlacement() {
@@ -1647,7 +1725,7 @@ function currentRoleAlertFilter(alert) {
   if (alert.type === "final_composition_ready") return false;
   if (alert.cancelledAt) return false;
   if (state.role === "live") {
-    if (alert.type === "finalists_announcement") return false;
+    if (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") return false;
     return alert.speakerStatus !== "none" && !liveDismissedAlertIds.includes(alert.id);
   }
   if (state.role === "speaker") {
@@ -1658,6 +1736,10 @@ function currentRoleAlertFilter(alert) {
   }
   if (state.role === "computer") {
     return alert.informaticsStatus === "pending";
+  }
+  if (state.role === "secretary") {
+    return alert.speakerStatus === "pending" &&
+      (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement");
   }
   return false;
 }
@@ -1819,7 +1901,7 @@ function renderLineAlertBadges(lineAlerts) {
 }
 
 function finalistRowName(row) {
-  return row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ") || "Concurrent";
+  return formatPersonNameParts(row?.firstName, row?.lastName, row?.name) || "Concurrent";
 }
 
 function renderFinalistsAlertList(alert) {
@@ -2021,7 +2103,7 @@ function resultStatusForProgramRow(row) {
   const result = resultForProgramRow(row);
   if (result) {
     if (result.hasFinal && result.finalistsAnnouncedAt) return "Finalistes annoncés";
-    if (result.hasFinal) return "Finalistes à annoncer";
+    if (result.hasFinal) return "En attente annonce speaker";
     return "Publié";
   }
   return "À importer";
@@ -2037,24 +2119,29 @@ function renderResultsAdminPanel() {
   const sessions = resultSessions();
   const activeSession = ensureResultsAdminSession();
   const rows = resultProgramRows(activeSession);
+  const competitionMode = competitionModeEnabled();
   resultsAdminPanel.hidden = false;
   resultsAdminPanel.innerHTML = `
     <div class="panel-title">
       <div>
-        <h3>Résultats à publier</h3>
-        <p class="panel-subtitle">Prototype V2 - import PDF résultat et détection des finalistes.</p>
+        <h3>Publication des résultats</h3>
+        <p class="panel-subtitle">Import PDF, publication publique et suivi des finalistes.</p>
       </div>
       <div class="results-admin-actions">
         ${sessions.length ? `
           <label class="results-session-select">
             <span>Session</span>
-            <select id="resultsAdminSessionSelect" aria-label="Session des résultats à publier">
+            <select id="resultsAdminSessionSelect" aria-label="Session des résultats">
               ${sessions.map((session) => `
                 <option value="${escapeHtml(session.number)}" ${activeSession === session.number ? "selected" : ""}>S${escapeHtml(session.number)}</option>
               `).join("")}
             </select>
           </label>
         ` : ""}
+        <button class="ghost-button compact ${competitionMode ? "confirm-button" : ""}" type="button" data-competition-mode>
+          ${competitionMode ? "Mode compétition actif" : "Mode compétition"}
+        </button>
+        ${competitionMode ? "" : `<button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>`}
         <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
@@ -2072,12 +2159,14 @@ function renderResultProgramRow(row) {
   const compositionLabel = result?.hasFinal
     ? (finalCompositionIsDefinitive(result) ? "Finalistes définitifs" : "Finalistes provisoires")
     : "";
+  const publicVisible = Boolean(result && (!result.hasFinal || result.finalistsAnnouncedAt));
   return `
-    <div class="result-admin-row ${result ? "published" : ""}">
+    <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""}">
       <div>
         <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</strong>
         <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
         ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
+        ${result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
       </div>
       <div class="result-admin-row-actions">
         <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
@@ -2093,6 +2182,9 @@ function renderResultProgramRow(row) {
             ${escapeHtml(compositionLabel)}
           </button>
         ` : ""}
+        ${publicVisible ? `
+          <a class="ghost-button compact" href="resultat-pdf.html?id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir public</a>
+        ` : (result ? `<span class="result-public-waiting">Public après annonce</span>` : "")}
       </div>
     </div>
   `;
@@ -2242,7 +2334,7 @@ function alertStatusLabel(alert) {
   if (alert.videoStatus === "rejected") return "Invalidée vidéo";
   if (alert.speakerStatus === "pending" && alert.informaticsStatus === "pending") return "À annoncer / à traiter";
   if (alert.speakerStatus === "pending") return "À annoncer";
-  if (alert.informaticsStatus === "pending") return "À traiter informatique";
+  if (alert.informaticsStatus === "pending") return "À traiter bureau des performances";
   if (alert.speakerStatus === "done" || alert.informaticsStatus === "done") return "Terminée";
   return "Envoyée";
 }
@@ -2265,7 +2357,7 @@ function alertTimeline(alert) {
     ["Vidéo confirmée", alert.videoConfirmedAt],
     ["Vidéo invalidée", alert.videoRejectedAt],
     ["Speaker", alert.speakerAnnouncedAt],
-    ["Informatique", alert.informaticsDoneAt],
+    ["Bureau des performances", alert.informaticsDoneAt],
     [alert.cancelledBy === "delegate" ? "Délégué" : "Annulation", alert.cancelledAt]
   ].filter(([, value]) => value);
   return items.map(([label, value]) => `${label} ${formatAlertTime(value)}`).join(" - ");
@@ -2280,14 +2372,14 @@ function alertTimelineItems(alert) {
     ["Vidéo confirmée", alert.videoConfirmedAt],
     ["Vidéo invalidée", alert.videoRejectedAt],
     ["Annonce speaker", alert.speakerAnnouncedAt],
-    ["Traitée informatique", alert.informaticsDoneAt],
+    ["Traitée bureau des performances", alert.informaticsDoneAt],
     [alert.cancelledBy === "delegate" ? "Annulée par le délégué" : "Annulée par le JA", alert.cancelledAt]
   ].filter(([, value]) => value);
   related.forEach((item) => {
     const source = item.type === "requalification" ? "délégué" : "JA";
     items.push([`Alerte requalification créée (${source})`, item.createdAt]);
     if (item.speakerAnnouncedAt) items.push(["Requalification annoncée speaker", item.speakerAnnouncedAt]);
-    if (item.informaticsDoneAt) items.push(["Requalification traitée informatique", item.informaticsDoneAt]);
+    if (item.informaticsDoneAt) items.push(["Requalification traitée bureau des performances", item.informaticsDoneAt]);
   });
   return items;
 }
@@ -2446,7 +2538,7 @@ function renderSpeakerHistory() {
   speakerHistory.hidden = false;
   speakerHistory.innerHTML = `
     <div class="panel-title">
-      <h3>Disqualifications annoncées</h3>
+      <h3>Journal des annonces</h3>
       ${historyToggleButton("speaker", doneAlerts.length)}
     </div>
     <div class="history-list ${expandedHistories.speaker ? "expanded" : "compact-scroll"}">
@@ -2475,19 +2567,46 @@ function renderRoleHistory() {
   } else if (state.role === "computer") {
     title = "Journal d'arbitrage";
     rows = alerts.filter((alert) => alert.roleSource === "referee");
+  } else if (state.role === "secretary") {
+    title = "Journal d'arbitrage";
+    rows = alerts.filter((alert) => alert.roleSource === "referee");
   }
   rows = rows
     .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
   if (!rows.length) {
-    roleHistory.hidden = true;
-    roleHistory.innerHTML = "";
+    if (!["computer", "secretary"].includes(state.role)) {
+      roleHistory.hidden = true;
+      roleHistory.innerHTML = "";
+      return;
+    }
+    roleHistory.hidden = false;
+    const historyActions = state.role === "computer" ? `
+      <button class="history-toggle" type="button" data-history-export-pdf>Export journal</button>
+      ${competitionModeEnabled() ? "" : `<button class="history-toggle danger-history-action" type="button" data-history-reset>RAZ</button>`}
+    ` : "";
+    roleHistory.innerHTML = `
+      <div class="panel-title">
+        <h3>${escapeHtml(title)}</h3>
+        <div class="history-actions">
+          ${historyActions}
+        </div>
+      </div>
+      <p class="panel-subtitle">Aucune action du juge arbitre pour le moment.</p>
+    `;
     return;
   }
   roleHistory.hidden = false;
+  const computerHistoryActions = state.role === "computer" ? `
+    <button class="history-toggle" type="button" data-history-export-pdf>Export journal</button>
+    ${competitionModeEnabled() ? "" : `<button class="history-toggle danger-history-action" type="button" data-history-reset>RAZ</button>`}
+  ` : "";
   roleHistory.innerHTML = `
     <div class="panel-title">
       <h3>${escapeHtml(title)}</h3>
-      ${historyToggleButton("role", rows.length)}
+      <div class="history-actions">
+        ${historyToggleButton("role", rows.length)}
+        ${computerHistoryActions}
+      </div>
     </div>
     <div class="history-list ${expandedHistories.role ? "expanded" : "compact-scroll"}">
       ${rows.map((alert) => renderHistoryItem(alert, { timeValue: alert.cancelledAt || alert.createdAt, showIdentity: state.role === "video" })).join("")}
@@ -2769,17 +2888,34 @@ function renderRoleQueue() {
   const rows = alerts
     .filter(currentRoleAlertFilter)
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
-  const title = state.role === "video" ? "Demandes vidéo à vérifier" : "Décisions et informations";
+  const title = state.role === "video" ? "Demandes vidéo à vérifier" : "Informations";
   roleQueue.hidden = false;
   roleQueue.innerHTML = `
     <h3>${title}</h3>
     <div class="queue-list">
-      ${rows.length ? rows.map(renderQueueItem).join("") : `<p class="panel-subtitle">Aucune alerte en attente.</p>`}
+      ${rows.length ? rows.map(renderQueueItem).join("") : `<p class="panel-subtitle">Aucune information en attente.</p>`}
     </div>
   `;
 }
 
 function renderQueueItem(alert) {
+  if (state.role === "secretary" && (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement")) {
+    const label = alert.type === "finalist_replacement_announcement"
+      ? "Repêchage en attente d'annonce speaker"
+      : "Finalistes en attente d'annonce speaker";
+    const detail = alert.type === "finalist_replacement_announcement" && alert.replacementName
+      ? `Repêché(e) : ${alert.replacementName}${alert.replacementClub ? ` - ${alert.replacementClub}` : ""}`
+      : "Le secrétariat peut relancer le speaker si l'annonce tarde.";
+    return `
+      <div class="queue-item video-info-card" data-alert-id="${escapeHtml(alert.id)}">
+        <div>
+          <strong class="alert-title secretary-info-title"><span aria-hidden="true">i</span> ${escapeHtml(label)} <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
+          <strong class="secretary-info-race">${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</strong>
+          <span class="secretary-info-detail">${escapeHtml(detail)}</span>
+        </div>
+      </div>
+    `;
+  }
   if (alert.type === "final_composition_ready") {
     return `
       <div class="queue-item final-composition-item" data-alert-id="${escapeHtml(alert.id)}">
@@ -2804,7 +2940,7 @@ function renderQueueItem(alert) {
   const title = state.role === "video" ? "Demande arbitrage vidéo à traiter" : "Décision à saisir";
   const detail = alertCommentLabel(alert);
   const identityLine = state.role === "video"
-    ? "Concurrent non affiché"
+    ? ""
     : `${alertSwimmerLabel(alert)}${detail ? ` - ${detail}` : ""}`;
   return `
     <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
@@ -2812,7 +2948,7 @@ function renderQueueItem(alert) {
         <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(title)} <small>${escapeHtml([formatAlertTime(alert.createdAt)].filter(Boolean).join(""))}</small></strong>
         <strong>${escapeHtml(decisionMotifLabel(alert))}</strong>
         <span>${escapeHtml(alertRaceLabel(alert))}</span>
-        <span>${escapeHtml(identityLine)}</span>
+        ${identityLine ? `<span>${escapeHtml(identityLine)}</span>` : ""}
       </div>
       <div class="queue-actions">${videoActions}${computerActions}</div>
     </div>
@@ -2882,6 +3018,11 @@ function cancelDecision(alertId, cancelledBy = "referee") {
 function renderDataStatus(message = "") {
   if (!dataStatus) return;
   renderFirebaseHeaderStatus();
+  if (state.role !== "computer") {
+    dataStatus.hidden = true;
+    dataStatus.innerHTML = "";
+    return;
+  }
   dataStatus.classList.remove("warning", "source");
   if (message) {
     dataStatus.hidden = false;
@@ -2909,6 +3050,7 @@ function renderDataStatus(message = "") {
     dataStatus.innerHTML = `
       <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
       <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
+      <span><strong>Mode</strong> ${competitionModeEnabled() ? "compétition" : "préparation"}</span>
       <span><strong>Codes</strong> ${pinLockEnabled() ? "actifs" : "inactifs"}</span>
       <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
       <span>${escapeHtml(String(entrantTotal))} engagements</span>
@@ -2930,10 +3072,10 @@ function firebaseStatusMeta() {
     return { label: "Connecté", className: "ok" };
   }
   if (firebaseStatus === "error") {
-    return { label: "Erreur", className: "error" };
+    return { label: "Connexion interrompue", className: "error" };
   }
   if (firebaseStatus === "offline") {
-    return { label: "Hors ligne", className: "error" };
+    return { label: "Connexion interrompue", className: "error" };
   }
   if (firebaseStatus === "local") {
     return { label: "Local", className: "pending" };
@@ -2946,6 +3088,9 @@ function renderFirebaseHeaderStatus() {
   const meta = firebaseStatusMeta();
   firebaseHeaderStatus.className = `firebase-header-status ${meta.className}`;
   firebaseHeaderStatus.innerHTML = `<i class="firebase-dot ${meta.className}" aria-hidden="true"></i>${escapeHtml(meta.label)}`;
+  firebaseHeaderStatus.title = firebaseStatus === "error" || firebaseStatus === "offline"
+    ? "Connexion interrompue - les actions peuvent ne pas être synchronisées."
+    : meta.label;
 }
 
 function shortStatusDate() {
@@ -3055,12 +3200,25 @@ function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, next
   [previousSeriesBtn, previousSeriesInlineBtn, previousSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = previousDisabled;
-    button.textContent = previousLabel;
+    button.textContent = "←";
+    button.title = previousLabel;
+    button.setAttribute("aria-label", previousLabel);
   });
   [nextSeriesBtn, nextSeriesInlineBtn, nextSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = nextDisabled;
-    button.textContent = nextLabel;
+    button.textContent = "→";
+    button.title = nextLabel;
+    button.setAttribute("aria-label", nextLabel);
+  });
+}
+
+function renderProgramButtons() {
+  [programBtn, programFloatBtn].forEach((button) => {
+    if (!button) return;
+    button.textContent = "P";
+    button.title = "Programme";
+    button.setAttribute("aria-label", "Programme");
   });
 }
 
@@ -3206,6 +3364,11 @@ function openAdminSeriesModal() {
           <span>Remplace uniquement la ou les sessions présentes dans le PDF, par exemple la session 2 avec finales.</span>
         </label>
       </div>
+      <div class="admin-series-help">
+        <strong>Repère rapide</strong>
+        <span>PDF général : à utiliser au début de la compétition.</span>
+        <span>Mise à jour session : remplace seulement la session choisie.</span>
+      </div>
       <label class="admin-session-field" hidden>
         <span>Session à remplacer</span>
         <input id="seriesSessionOverride" type="number" min="1" max="20" inputmode="numeric" placeholder="ex. 2">
@@ -3231,6 +3394,7 @@ function openResultImportModal(row) {
   const protectedFinalists = Boolean(existingResult?.hasFinal && (
     existingResult.finalistsAnnouncedAt ||
     (existingResult.finalWithdrawals || []).length ||
+    (existingResult.finalPreWithdrawals || []).length ||
     ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
   ));
   resultImportModal.hidden = false;
@@ -3381,6 +3545,7 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   if (preserveFinalists) {
     result.finalistsAnnouncedAt = existingResult.finalistsAnnouncedAt || "";
     result.finalWithdrawals = existingResult.finalWithdrawals || [];
+    result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
   }
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
   if (hasFinal && !preserveFinalists) {
@@ -3448,14 +3613,48 @@ async function ensurePendingFinalistsSpeakerAlerts() {
 function replacementAlertMatches(alert, result, row) {
   if (alert.type !== "finalist_replacement_announcement") return false;
   if (alert.resultId !== result.id) return false;
+  if (alert.replacementRowKey && finalRowKey(row) === alert.replacementRowKey) return true;
   const sameName = String(alert.replacementName || "") === finalistRowName(row);
   const sameRank = !alert.replacementRank || String(alert.replacementRank || "") === String(row.rank || "");
   const sameTime = !alert.replacementTime || String(alert.replacementTime || "") === String(row.time || "");
   return sameName && sameRank && sameTime;
 }
 
+function replacementAlertKey(alert) {
+  return [
+    alert.resultId || "",
+    alert.replacementRowKey || "",
+    alert.replacementRank || "",
+    String(alert.replacementName || "").toLocaleUpperCase("fr-FR"),
+    alert.replacementTime || ""
+  ].join("|");
+}
+
+async function dedupePendingReplacementAlerts() {
+  const pending = alerts
+    .filter((alert) => alert.type === "finalist_replacement_announcement" && alert.speakerStatus === "pending")
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const seen = new Set();
+  let changed = false;
+  const now = new Date().toISOString();
+  for (const alert of pending) {
+    const key = replacementAlertKey(alert);
+    if (!key || !seen.has(key)) {
+      seen.add(key);
+      continue;
+    }
+    alert.speakerStatus = "none";
+    alert.cancelledAt = alert.cancelledAt || now;
+    alert.updatedAt = now;
+    changed = true;
+    await syncAlertToFirestore(alert);
+  }
+  if (changed) saveAlerts();
+}
+
 async function ensurePendingReplacementSpeakerAlerts() {
   if (replacementAlertRepairRunning) return;
+  await dedupePendingReplacementAlerts();
   const missing = [];
   for (const result of raceResults) {
     for (const finalKey of ["a", "b"]) {
@@ -3519,9 +3718,22 @@ function finalRowKey(row) {
   return String(row?.rowKey || [row?.rank, row?.displayName || finalistRowName(row), row?.time].filter(Boolean).join("|"));
 }
 
+function activeFinalPreWithdrawals(result) {
+  return (result?.finalPreWithdrawals || []).filter((item) => !item.cancelledAt);
+}
+
+function finalPreWithdrawalForRow(result, row) {
+  const key = finalRowKey(row);
+  return activeFinalPreWithdrawals(result).find((item) => item.rowKey === key);
+}
+
+function isFinalPreWithdrawn(result, row) {
+  return Boolean(finalPreWithdrawalForRow(result, row));
+}
+
 function availableReplacementForResult(result, finalists) {
   const used = new Set(["a", "b"].flatMap((finalKey) => (finalists?.[finalKey] || []).map(finalRowKey)));
-  return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row))) || null;
+  return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row)) && !isFinalPreWithdrawn(result, row)) || null;
 }
 
 function finalCompositionRows(result) {
@@ -3567,8 +3779,7 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
           return `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}">
             <div>
-              <span>${escapeHtml(finalistRowName(row))}</span>
-              <em>${escapeHtml([row.time, row.club].filter(Boolean).join(" - "))}</em>
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
               <small>${escapeHtml(status)}</small>
               ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
@@ -3589,7 +3800,40 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
   `;
 }
 
-function openFinalWithdrawalsModal(resultId) {
+function nextUnqualifiedRowsForSecretary(result) {
+  const used = new Set(["a", "b"].flatMap((finalKey) => (result.finalists?.[finalKey] || []).map(finalRowKey)));
+  return (result.nextUnqualified || []).filter((row) => !used.has(finalRowKey(row)));
+}
+
+function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false } = {}) {
+  const rows = nextUnqualifiedRowsForSecretary(result);
+  if (!rows.length) return "";
+  return `
+    <details class="final-withdrawal-group final-unqualified-group" ${open ? "open" : ""}>
+      <summary>Non qualifiés suivants (${escapeHtml(String(rows.length))})</summary>
+      <ol>
+        ${rows.map((row) => {
+          const preWithdrawal = finalPreWithdrawalForRow(result, row);
+          return `
+          <li value="${escapeHtml(row.rank || "")}" class="closed ${preWithdrawal ? "prewithdrawn" : ""}">
+            <div>
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
+              <small>${preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : `Non qualifié${result.sex === "F" ? "e" : ""}`}</small>
+            </div>
+            ${actions ? `
+              <button class="ghost-button compact ${preWithdrawal ? "confirm-button" : ""}" type="button" data-final-prewithdraw="${escapeHtml(result.id)}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
+                ${preWithdrawal ? "Annuler pré-forfait" : "Pré-forfait si repêché"}
+              </button>
+            ` : ""}
+          </li>
+        `;
+        }).join("")}
+      </ol>
+    </details>
+  `;
+}
+
+function openFinalWithdrawalsModal(resultId, options = {}) {
   const result = raceResults.find((item) => item.id === resultId);
   if (!result || !alertDetailModal) return;
   alertDetailModal.hidden = false;
@@ -3607,12 +3851,49 @@ function openFinalWithdrawalsModal(resultId) {
       <div class="final-withdrawal-list">
         ${renderFinalWithdrawalGroup("Finale A", result, "a", result.finalists?.a || [])}
         ${renderFinalWithdrawalGroup("Finale B", result, "b", result.finalists?.b || [])}
+        ${renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })}
       </div>
       <div class="decision-actions">
         <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
       </div>
     </div>
   `;
+}
+
+async function toggleFinalPreWithdrawal(resultId, rowKey) {
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour gérer ce pré-forfait.");
+  const resultIndex = raceResults.findIndex((item) => item.id === resultId);
+  const result = raceResults[resultIndex];
+  if (resultIndex === -1 || !result) throw new Error("Résultat introuvable.");
+  const row = (result.nextUnqualified || []).find((item) => finalRowKey(item) === rowKey);
+  if (!row) throw new Error("Nageur non qualifié introuvable.");
+  const now = new Date().toISOString();
+  const active = finalPreWithdrawalForRow(result, row);
+  const finalPreWithdrawals = active
+    ? (result.finalPreWithdrawals || []).map((item) => item.rowKey === rowKey && !item.cancelledAt ? { ...item, cancelledAt: now } : item)
+    : [
+      ...(result.finalPreWithdrawals || []),
+      {
+        rowKey,
+        rank: row.rank || "",
+        name: finalistRowName(row),
+        club: row.club || "",
+        time: row.time || "",
+        at: now
+      }
+    ];
+  await collection.doc(result.id).update({
+    finalPreWithdrawals,
+    updatedAt: now
+  });
+  raceResults[resultIndex] = {
+    ...result,
+    finalPreWithdrawals,
+    updatedAt: now
+  };
+  render();
+  openFinalWithdrawalsModal(result.id, { openUnqualified: true });
 }
 
 function renderFinalCompositionList(result) {
@@ -3623,9 +3904,8 @@ function renderFinalCompositionList(result) {
         ${rows.map((row) => `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
             <div>
-              <span>${escapeHtml(finalistRowName(row))}</span>
-              <em>${escapeHtml([row.time, row.club].filter(Boolean).join(" - "))}</em>
-              ${row.withdrawnAt ? `<small>Forfait ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
+              ${row.withdrawnAt ? `<small>Forfait à ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
               ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
           </li>
@@ -3637,6 +3917,7 @@ function renderFinalCompositionList(result) {
     <div class="final-withdrawal-list">
       ${renderRows("Finale A", result.finalists?.a || [])}
       ${renderRows("Finale B", result.finalists?.b || [])}
+      ${renderSecretaryUnqualifiedGroup(result, { actions: false })}
     </div>
   `;
 }
@@ -3807,8 +4088,14 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
 }
 
 async function createFinalistReplacementSpeakerAlert(result, withdrawn, replacement, now = new Date().toISOString()) {
+  const existing = alerts.find((alert) =>
+    replacementAlertMatches(alert, result, replacement) &&
+    alert.speakerStatus === "pending"
+  );
+  if (existing) return existing;
+  const replacementRowKey = finalRowKey(replacement);
   const alert = {
-    id: `replacement-${result.id}-${Date.now()}`,
+    id: `replacement-${result.id}-${replacementRowKey.replace(/[^a-z0-9_-]+/gi, "-").slice(0, 80)}`,
     type: "finalist_replacement_announcement",
     roleSource: "secretary",
     resultId: result.id,
@@ -3822,6 +4109,7 @@ async function createFinalistReplacementSpeakerAlert(result, withdrawn, replacem
     withdrawnClub: withdrawn.club || "",
     replacementName: finalistRowName(replacement),
     replacementClub: replacement.club || "",
+    replacementRowKey,
     replacementRank: replacement.rank || "",
     replacementTime: replacement.time || "",
     requiresVideo: false,
@@ -4657,7 +4945,7 @@ function splitRawTimingCells(cells) {
 }
 
 function displayNameFromParts(firstName, lastName, fallback = "") {
-  return [firstName, lastName].filter(Boolean).join(" ").trim() || fallback;
+  return formatPersonNameParts(firstName, lastName, fallback);
 }
 
 function categoryFromCodeOrText(value) {
@@ -4869,11 +5157,17 @@ function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
 }
 
 async function updateSpeakerInfoFromGoogleSheet() {
-  const button = document.querySelector("#updateSpeakerInfoBtn");
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Mise à jour...";
-  }
+  const buttons = [
+    document.querySelector("#updateSpeakerInfoBtn"),
+    document.querySelector("#updateSpeakerInfoPanelBtn")
+  ].filter(Boolean);
+  const setButtons = (disabled, label) => {
+    buttons.forEach((button) => {
+      button.disabled = disabled;
+      button.textContent = label;
+    });
+  };
+  setButtons(true, "Mise à jour...");
   renderDataStatus("Mise à jour des infos speaker depuis Google Sheets...");
   try {
     const [
@@ -4922,10 +5216,7 @@ async function updateSpeakerInfoFromGoogleSheet() {
     renderDataStatus(`Impossible de lire le Google Sheet : ${error?.message || error}`);
     window.alert(`Mise à jour impossible : ${error?.message || error}. Vérifie que le Google Sheet est partagé en lecture avec le lien.`);
   } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Infos speaker";
-    }
+    setButtons(false, "MAJ repères");
   }
 }
 
@@ -5180,6 +5471,20 @@ programModal?.addEventListener("click", (event) => {
 adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
 
 resultsAdminPanel?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-competition-mode]")) {
+    const enabled = !competitionModeEnabled();
+    updateLiveNotes(enabled ? "Mode compétition activé" : "Mode compétition désactivé", {
+      competitionMode: enabled,
+      competitionModeUpdatedAt: new Date().toISOString()
+    }).then(() => {
+      render();
+    });
+    return;
+  }
+  if (event.target.closest("[data-computer-admin-series]")) {
+    openAdminSeriesModal();
+    return;
+  }
   const compositionButton = event.target.closest("[data-final-composition-result]");
   if (compositionButton) {
     openFinalCompositionResultModal(compositionButton.dataset.finalCompositionResult);
@@ -5192,7 +5497,9 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     const ok = window.confirm(`Supprimer le PDF publié pour ${label} ?\n\nIl disparaîtra aussi de la page publique.`);
     if (!ok) return;
     deleteResultPdf(deleteButton.dataset.resultDelete)
-      .then(() => {
+      .then(async () => {
+        await updateLiveNotes(`Résultat supprimé : ${label}`);
+        renderResultsAdminPanel();
         window.alert("Résultat supprimé de la page publique.");
       })
       .catch((error) => {
@@ -5251,10 +5558,16 @@ resultImportModal?.addEventListener("change", async (event) => {
     : (hasFinal
       ? `Publier ce résultat ${isPartial ? "partiel" : "complet"} et détecter les finalistes ?`
       : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`));
-  if (!window.confirm(message)) return;
+  const importLabel = [
+    currentResultImportRow.session ? `Session ${currentResultImportRow.session}` : "",
+    data.events.find((item) => item.id === currentResultImportRow.eventId)?.label || currentResultImportRow.label || currentResultImportRow.eventId,
+    sexDisplayLabel(currentResultImportRow.sex)
+  ].filter(Boolean).join(" - ");
+  if (!window.confirm([message, "", `Course : ${importLabel}`, `Fichier : ${file.name}`].join("\n"))) return;
   try {
     renderDataStatus("Publication du résultat en cours...");
     const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial, { preserveFinalists });
+    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel}${result.session ? ` S${result.session}` : ""}`);
     closeResultImportModal();
     renderDataStatus();
     const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
@@ -5290,8 +5603,8 @@ adminSeriesModal?.addEventListener("change", async (event) => {
     return;
   }
   const message = mode === "full"
-    ? "Confirmer l'import comme PDF général ? Cela remplace toutes les séries actuellement publiées."
-    : `Confirmer l'import comme mise à jour de la session ${forcedSession} ? Cette session sera remplacée par le PDF choisi.`;
+    ? `Confirmer l'import comme PDF général ?\n\nFichier : ${file.name}\n\nCela remplace toutes les séries actuellement publiées.`
+    : `Confirmer l'import comme mise à jour de la session ${forcedSession} ?\n\nFichier : ${file.name}\n\nCette session sera remplacée par le PDF choisi.`;
   if (!window.confirm(message)) return;
   closeAdminSeriesModal();
   await importSeriesPdf(file, mode, forcedSession);
@@ -5479,6 +5792,20 @@ alertDetailModal?.addEventListener("click", (event) => {
     });
     return;
   }
+  const preWithdrawButton = event.target.closest("[data-final-prewithdraw]");
+  if (preWithdrawButton) {
+    const activeLabel = preWithdrawButton.textContent.includes("Annuler") ? "Annuler ce pré-forfait ?" : "Enregistrer ce pré-forfait si le nageur est repêché ?";
+    const ok = window.confirm(activeLabel);
+    if (!ok) return;
+    toggleFinalPreWithdrawal(
+      preWithdrawButton.dataset.finalPrewithdraw,
+      preWithdrawButton.dataset.finalRowKey
+    ).catch((error) => {
+      console.error(error);
+      window.alert(`Pré-forfait impossible : ${error?.message || error}`);
+    });
+    return;
+  }
   const reinstateButton = event.target.closest("[data-final-reinstate]");
   if (reinstateButton) {
     const ok = window.confirm("Réintégrer ce nageur dans la finale ? Si le repêchage n'a pas encore été annoncé, l'alerte speaker sera annulée.");
@@ -5516,7 +5843,7 @@ decisionModal?.addEventListener("click", (event) => {
   if (!entrant) return;
   const cancelButton = event.target.closest("[data-cancel-active-decision]");
   if (cancelButton) {
-    const ok = window.confirm("Annuler cette DSQ ? Une alerte sera envoyée si le speaker ou l'informatique doit corriger l'information.");
+    const ok = window.confirm("Annuler cette DSQ ? Une alerte sera envoyée si le speaker ou le bureau des performances doit corriger l'information.");
     if (ok) {
       closeDecisionModal();
       cancelDecision(cancelButton.dataset.cancelActiveDecision, "referee");
@@ -5593,6 +5920,14 @@ roleQueue?.addEventListener("click", (event) => {
 });
 
 roleHistory?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-history-export-pdf]")) {
+    exportDsqPdf();
+    return;
+  }
+  if (event.target.closest("[data-history-reset]")) {
+    resetHistory();
+    return;
+  }
   const toggle = event.target.closest("[data-history-toggle]");
   if (toggle) {
     const key = toggle.dataset.historyToggle;
@@ -5610,10 +5945,10 @@ roleHistory?.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.historyAction === "cancel-ja") {
-    const ok = window.confirm("Annuler cette décision ? Une alerte sera envoyée si le speaker ou l'informatique doit corriger l'information.");
+    const ok = window.confirm("Annuler cette décision ? Une alerte sera envoyée si le speaker ou le bureau des performances doit corriger l'information.");
     if (ok) cancelDecision(alert.id, "referee");
   } else if (button.dataset.historyAction === "delegate-cancel") {
-    const ok = window.confirm("Confirmer l'annulation par le délégué de la compétition ? Le speaker et l'informatique recevront une alerte de requalification.");
+    const ok = window.confirm("Confirmer l'annulation par le délégué de la compétition ? Le speaker et le bureau des performances recevront une alerte de requalification.");
     if (ok) cancelDecision(alert.id, "delegate");
   }
 });
@@ -5645,6 +5980,17 @@ fullscreenBtn?.addEventListener("click", async () => {
     isFullscreenMode = !isFullscreenMode;
     render();
   }
+});
+
+viewModeBtn?.addEventListener("click", () => {
+  if (state.role === "referee") {
+    refereeTabletMode = !refereeTabletMode;
+  } else if (state.role === "video") {
+    videoTabletMode = !videoTabletMode;
+  } else if (state.role === "computer") {
+    computerTabletMode = !computerTabletMode;
+  }
+  render();
 });
 
 document.addEventListener("fullscreenchange", () => {
@@ -5781,6 +6127,7 @@ document.querySelector("#printBtn")?.addEventListener("click", () => window.prin
 document.querySelector("#exportBtn")?.addEventListener("click", downloadJson);
 document.querySelector("#exportDsqPdfBtn")?.addEventListener("click", exportDsqPdf);
 document.querySelector("#updateSpeakerInfoBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
+document.querySelector("#updateSpeakerInfoPanelBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
 
 const PDF_EVENT_ALIASES = {
   "50mapnee": "50ap",
