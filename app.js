@@ -399,6 +399,14 @@ function historyArchivesCollection() {
     .collection("historyArchives");
 }
 
+function resultArchivesCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("resultArchives");
+}
+
 function resultsCollection() {
   if (!firestoreDb) return null;
   return firestoreDb
@@ -737,12 +745,18 @@ function renderResetHistoryModal() {
 
 async function renderHistoryArchivesModal() {
   if (!roleCodesModal) return;
-  const collection = historyArchivesCollection();
-  let archives = [];
-  if (collection) {
+  const historyCollection = historyArchivesCollection();
+  const resultCollection = resultArchivesCollection();
+  let historyArchives = [];
+  let resultArchives = [];
+  if (historyCollection) {
     try {
-      const snapshot = await collection.orderBy("createdAt", "desc").limit(20).get();
-      archives = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const snapshot = await historyCollection.orderBy("createdAt", "desc").limit(20).get();
+      historyArchives = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      if (resultCollection) {
+        const resultSnapshot = await resultCollection.orderBy("createdAt", "desc").limit(20).get();
+        resultArchives = resultSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      }
     } catch (error) {
       console.warn("Lecture des archives impossible", error);
       window.alert("Impossible de lire les archives historiques.");
@@ -756,12 +770,13 @@ async function renderHistoryArchivesModal() {
         <div>
           <span>Administration</span>
           <h2>Archives historiques</h2>
-          <p>Archives créées automatiquement avant un RAZ historique.</p>
+          <p>Archives créées automatiquement avant un RAZ historique ou une remise à zéro des résultats.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
+      <h3 class="archive-section-title">Journal d'arbitrage</h3>
       <div class="archive-list">
-        ${archives.length ? archives.map((archive) => `
+        ${historyArchives.length ? historyArchives.map((archive) => `
           <div class="archive-item" data-archive-id="${escapeHtml(archive.id)}">
             <div>
               <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
@@ -773,6 +788,21 @@ async function renderHistoryArchivesModal() {
             </div>
           </div>
         `).join("") : `<p class="panel-subtitle">Aucune archive enregistrée.</p>`}
+      </div>
+      <h3 class="archive-section-title">Résultats publics</h3>
+      <div class="archive-list">
+        ${resultArchives.length ? resultArchives.map((archive) => `
+          <div class="archive-item" data-result-archive-id="${escapeHtml(archive.id)}">
+            <div>
+              <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
+              <span>${escapeHtml(String(archive.count || 0))} résultats archivés${archive.reason ? ` - ${escapeHtml(archive.reason)}` : ""}</span>
+            </div>
+            <div class="archive-actions">
+              <button class="ghost-button compact" type="button" data-print-result-archive="${escapeHtml(archive.id)}">PDF</button>
+              <button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>
+            </div>
+          </div>
+        `).join("") : `<p class="panel-subtitle">Aucune archive de résultats enregistrée.</p>`}
       </div>
       <div class="decision-modal-actions">
         <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
@@ -987,6 +1017,32 @@ async function archiveCurrentHistory() {
     alerts: rows.map(sanitizeAlertForFirestore)
   };
   await collection.doc(archive.id).set(sanitizeAlertForFirestore(archive));
+  return archive;
+}
+
+async function archiveCurrentResults(reason = "Archivage des résultats publics", sourceResults = raceResults) {
+  const rows = Array.isArray(sourceResults) ? sourceResults : [];
+  if (!rows.length) return null;
+  const collection = resultArchivesCollection();
+  if (!collection || !firestoreDb) throw new Error("Firebase n'est pas disponible pour archiver les résultats.");
+  const now = new Date();
+  const archive = {
+    id: `${now.getTime()}-${Math.random().toString(16).slice(2)}`,
+    createdAt: now.toISOString(),
+    createdLabel: now.toLocaleString("fr-FR"),
+    reason,
+    meet: data.meet || {},
+    count: rows.length,
+    publicIndex: sanitizeAlertForFirestore(buildPublicResultsIndex())
+  };
+  const archiveRef = collection.doc(archive.id);
+  const batch = firestoreDb.batch();
+  batch.set(archiveRef, sanitizeAlertForFirestore(archive));
+  rows.forEach((result) => {
+    const itemId = result.id || `${result.raceKey || "result"}-${Math.random().toString(16).slice(2)}`;
+    batch.set(archiveRef.collection("items").doc(itemId), sanitizeAlertForFirestore({ ...result, id: itemId }));
+  });
+  await batch.commit();
   return archive;
 }
 
@@ -3391,18 +3447,23 @@ function renderProgramModal() {
   if (!programModal || programModal.hidden) return;
   const viewState = ["video", "computer"].includes(state.role) ? (roleStates.speaker || state) : state;
   const readOnlyProgram = ["video", "computer"].includes(state.role);
+  const compactProgram = (
+    (state.role === "referee" && refereeTabletMode) ||
+    (state.role === "video" && videoTabletMode) ||
+    (state.role === "computer" && computerTabletMode)
+  );
   const rows = (data.program || [])
     .filter((row) => viewState.session === "all" || !row.session || row.session === viewState.session)
     .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
     .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
   const currentKey = raceOptionKey(viewState.eventId, viewState.sex);
   programModal.innerHTML = `
-    <div class="decision-dialog program-dialog" role="dialog" aria-modal="true" aria-label="Programme">
+    <div class="decision-dialog program-dialog ${compactProgram ? "compact-program-dialog" : ""}" role="dialog" aria-modal="true" aria-label="Programme">
       <div class="decision-modal-head">
         <div>
           <span>Avancement</span>
           <h2>Programme simplifié</h2>
-          <p>${viewState.session === "all" ? "Toutes les sessions" : `Session ${escapeHtml(viewState.session)}`} - courses, séries et horaires indicatifs.</p>
+          <p>${compactProgram ? (viewState.session === "all" ? "Toutes les sessions" : `Session ${escapeHtml(viewState.session)}`) : `${viewState.session === "all" ? "Toutes les sessions" : `Session ${escapeHtml(viewState.session)}`} - courses, séries et horaires indicatifs.`}</p>
           ${state.role === "referee" ? `<p class="speaker-program-marker">${escapeHtml(speakerProgramPositionLabel())}</p>` : ""}
         </div>
         <button class="decision-close" type="button" data-program-close aria-label="Fermer">×</button>
@@ -4333,6 +4394,10 @@ async function clearPublishedResults() {
   if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les résultats publics.");
   const snapshot = await collection.get();
   const docs = snapshot.docs || [];
+  const rowsToArchive = raceResults.length ? raceResults : docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  if (rowsToArchive.length) {
+    await archiveCurrentResults("Avant remise à zéro des résultats publics", rowsToArchive);
+  }
   await Promise.all(docs.map((doc) => doc.ref.delete()));
   raceResults = [];
   await publishPublicResultsIndex();
@@ -5429,6 +5494,78 @@ function printDsqRows(rows, title = "Journal d'arbitrage") {
   setTimeout(() => reportWindow.print(), 250);
 }
 
+function buildResultArchiveHtmlFromRows(rows, archive = {}) {
+  const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const meet = archive.meet || data.meet || {};
+  const meetName = `${meet.name || "Compétition"}${meet.city ? ` - ${meet.city}` : ""}`;
+  const body = rows.length ? rows
+    .slice()
+    .sort((a, b) => String(a.session || "").localeCompare(String(b.session || ""), "fr", { numeric: true }) || String(a.eventLabel || "").localeCompare(String(b.eventLabel || "")))
+    .map((result, index) => {
+      const sexLabel = result.sexLabel || sexDisplayLabel(result.sex);
+      const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
+      const withdrawalCount = (result.finalWithdrawals || []).filter((item) => item.withdrawnAt).length;
+      const status = result.hasFinal
+        ? (result.finalistsAnnouncedAt ? "Publié avec finalistes" : "En attente annonce speaker")
+        : "Publié";
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(result.eventLabel || result.eventId || "-")} ${escapeHtml(sexLabel)}<br><small>Session ${escapeHtml(result.session || "-")}</small></td>
+          <td>${escapeHtml(status)}${result.isPartial ? "<br><small>Résultat partiel</small>" : ""}</td>
+          <td>${result.pdfDataUrl ? `<a href="${escapeHtml(result.pdfDataUrl)}" target="_blank" rel="noopener">${escapeHtml(result.pdfName || "Ouvrir le PDF")}</a>` : escapeHtml(result.pdfName || "-")}</td>
+          <td>${finalistCount ? `${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""}${withdrawalCount ? `<br><small>${escapeHtml(String(withdrawalCount))} forfait${withdrawalCount > 1 ? "s" : ""}</small>` : ""}` : "-"}</td>
+        </tr>
+      `;
+    }).join("") : `<tr><td colspan="5" class="empty">Aucun résultat archivé.</td></tr>`;
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Archive résultats publics</title>
+  <style>
+    @page { margin: 12mm; }
+    body { font-family: Arial, sans-serif; color: #15232d; font-size: 11px; }
+    h1 { margin: 0 0 4px; font-size: 18px; }
+    p { margin: 0 0 10px; color: #52616b; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #d8e0e6; padding: 5px 6px; vertical-align: top; text-align: left; }
+    th { background: #eef4f7; font-size: 10px; text-transform: uppercase; }
+    td:first-child { width: 24px; text-align: center; font-weight: 700; }
+    small { color: #60717c; font-size: 10px; }
+    .empty { text-align: center; color: #60717c; }
+    .print-actions { margin-bottom: 10px; }
+    button { min-height: 32px; padding: 0 10px; border: 1px solid #b9c8d1; border-radius: 6px; background: #eef4f7; font-weight: 700; cursor: pointer; }
+    @media print { .print-actions { display: none; } body { font-size: 10px; } }
+  </style>
+</head>
+<body>
+  <div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>
+  <h1>Archive résultats publics</h1>
+  <p>${escapeHtml(meetName)} - archive du ${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || "-")} - généré le ${escapeHtml(generatedAt)} - ${rows.length} résultats</p>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Course / session</th><th>Statut</th><th>PDF</th><th>Finales</th></tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>
+</body>
+</html>`;
+}
+
+function printResultArchiveRows(rows, archive = {}) {
+  const reportWindow = window.open("", "_blank");
+  if (!reportWindow) {
+    window.alert("La fenêtre PDF a été bloquée par le navigateur.");
+    return;
+  }
+  reportWindow.document.open();
+  reportWindow.document.write(buildResultArchiveHtmlFromRows(rows, archive));
+  reportWindow.document.close();
+  reportWindow.focus();
+  setTimeout(() => reportWindow.print(), 250);
+}
+
 async function exportDsqPdf() {
   try {
     await archiveCurrentHistory();
@@ -5773,6 +5910,36 @@ roleCodesModal?.addEventListener("click", async (event) => {
     const collection = historyArchivesCollection();
     if (!collection) return;
     await collection.doc(deleteArchiveButton.dataset.deleteArchive).delete();
+    await renderHistoryArchivesModal();
+    return;
+  }
+  const printResultArchiveButton = event.target.closest("[data-print-result-archive]");
+  if (printResultArchiveButton) {
+    const id = printResultArchiveButton.dataset.printResultArchive;
+    const collection = resultArchivesCollection();
+    if (!collection) return;
+    const archiveSnapshot = await collection.doc(id).get();
+    if (!archiveSnapshot.exists) {
+      window.alert("Archive introuvable.");
+      return;
+    }
+    const itemSnapshot = await collection.doc(id).collection("items").get();
+    const rows = itemSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    printResultArchiveRows(rows, archiveSnapshot.data());
+    return;
+  }
+  const deleteResultArchiveButton = event.target.closest("[data-delete-result-archive]");
+  if (deleteResultArchiveButton) {
+    const ok = window.confirm("Supprimer définitivement cette archive de résultats ?");
+    if (!ok) return;
+    const collection = resultArchivesCollection();
+    if (!collection || !firestoreDb) return;
+    const archiveRef = collection.doc(deleteResultArchiveButton.dataset.deleteResultArchive);
+    const itemSnapshot = await archiveRef.collection("items").get();
+    const batch = firestoreDb.batch();
+    itemSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    batch.delete(archiveRef);
+    await batch.commit();
     await renderHistoryArchivesModal();
     return;
   }
@@ -6982,6 +7149,7 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     applyFreshData(nextData, true);
     try {
       await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
+      await publishPublicResultsIndex({ silent: true });
       const sessionList = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
         .sort((a, b) => Number(a) - Number(b))
         .map((session) => `S${session}`)

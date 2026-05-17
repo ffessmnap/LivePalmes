@@ -60,6 +60,12 @@ function formatPersonNameParts(firstName, lastName, fallback = "") {
 
 function setStatus(label, className = "pending") {
   if (!statusBadge) return;
+  if (className === "ok") {
+    statusBadge.hidden = true;
+    statusBadge.innerHTML = "";
+    return;
+  }
+  statusBadge.hidden = false;
   statusBadge.className = `firebase-header-status ${className}`;
   statusBadge.innerHTML = `<i class="firebase-dot ${className}" aria-hidden="true"></i>${escapeHtml(label)}`;
 }
