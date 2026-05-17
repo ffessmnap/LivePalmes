@@ -332,11 +332,34 @@ async function loadPublicResultsIndex() {
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
   const snapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
   const index = snapshot.data() || {};
+  if (!snapshot.exists || !Array.isArray(index.program) || !index.program.length) {
+    await loadPublicResultsFallback(competition);
+    return;
+  }
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicIndexUpdatedAt = index.updatedAt || "";
+  setStatus("Connecté", "ok");
+  renderResults();
+}
+
+async function loadPublicResultsFallback(competition) {
+  const [liveSnapshot, resultsSnapshot] = await Promise.all([
+    competition.collection("liveData").doc("current").get({ source: "server" }),
+    competition.collection("results").orderBy("updatedAt", "desc").get({ source: "server" })
+  ]);
+  const remote = liveSnapshot.data()?.data || {};
+  publicMeet = remote.meet || {};
+  publicProgram = Array.isArray(remote.program) ? remote.program : [];
+  publicEvents = Array.isArray(remote.events) ? remote.events : [];
+  publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicIndexUpdatedAt = publicResults
+    .map((result) => result.updatedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
   setStatus("Connecté", "ok");
   renderResults();
 }
