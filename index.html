@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-finalists-speaker-text">
+    <link rel="stylesheet" href="styles.css?v=20260517-final-withdrawal-limit">
   </head>
   <body>
     <header class="topbar">
@@ -39,14 +39,8 @@
         <span>Session</span>
         <div id="sessionControls" class="session-controls"></div>
       </div>
-      <div class="role-switch" aria-label="Console">
-        <button class="role-chip active" type="button" data-role="live">Live</button>
-        <button class="role-chip" type="button" data-role="speaker">Speaker</button>
-        <button class="role-chip" type="button" data-role="referee">Juge arbitre</button>
-        <button class="role-chip" type="button" data-role="video">Juge vid&eacute;o</button>
-        <button class="role-chip" type="button" data-role="computer">Informatique</button>
-      </div>
       <div class="top-actions">
+        <button id="profileHomeBtn" class="ghost-button compact" type="button">Accueil</button>
         <button id="fullscreenBtn" class="ghost-button compact" type="button">Plein &eacute;cran</button>
         <button id="dataDiagnosticBtn" class="ghost-button compact computer-only" type="button">Diagnostic</button>
         <button id="updateSpeakerInfoBtn" class="ghost-button compact computer-only" type="button">Infos speaker</button>
@@ -56,7 +50,50 @@
       </div>
     </header>
 
-    <main class="app-shell">
+    <section id="profileHome" class="profile-home" aria-label="Choix du profil">
+      <div class="profile-home-hero">
+        <div>
+          <p class="eyebrow">Choix du profil</p>
+          <h2>Bienvenue sur LivePalmes</h2>
+          <p>S&eacute;lectionne ta console pour suivre la comp&eacute;tition en temps r&eacute;el.</p>
+        </div>
+        <a class="public-results-link" href="resultats.html" target="_blank" rel="noopener">R&eacute;sultats publics</a>
+      </div>
+      <div class="profile-grid">
+        <button class="profile-card profile-live" type="button" data-home-role="live">
+          <span class="profile-icon" aria-hidden="true">●</span>
+          <strong>Live</strong>
+          <small>Suivi de course et informations sans action officielle.</small>
+        </button>
+        <button class="profile-card profile-speaker" type="button" data-home-role="speaker">
+          <span class="profile-icon" aria-hidden="true">▸</span>
+          <strong>Speaker</strong>
+          <small>Annonces, rep&egrave;res chrono et alertes officielles.</small>
+        </button>
+        <button class="profile-card profile-referee" type="button" data-home-role="referee">
+          <span class="profile-icon" aria-hidden="true">✓</span>
+          <strong>Juge arbitre</strong>
+          <small>Saisie des forfaits, abandons et disqualifications.</small>
+        </button>
+        <button class="profile-card profile-video" type="button" data-home-role="video">
+          <span class="profile-icon" aria-hidden="true">◐</span>
+          <strong>Juge vid&eacute;o</strong>
+          <small>Demandes d'arbitrage vid&eacute;o et historique.</small>
+        </button>
+        <button class="profile-card profile-computer" type="button" data-home-role="computer">
+          <span class="profile-icon" aria-hidden="true">▦</span>
+          <strong>Informatique</strong>
+          <small>R&eacute;sultats, s&eacute;ries, journal et administration.</small>
+        </button>
+        <button class="profile-card profile-secretary" type="button" data-home-role="secretary">
+          <span class="profile-icon" aria-hidden="true">✎</span>
+          <strong>Secr&eacute;tariat</strong>
+          <small>Gestion des forfaits en finale et rep&ecirc;chages.</small>
+        </button>
+      </div>
+    </section>
+
+    <main class="app-shell" hidden>
       <aside class="sidebar" aria-label="Choix de la course">
         <div class="field">
           <label for="eventSelect">Course</label>
@@ -135,6 +172,7 @@
         <section id="decisionPanel" class="panel decision-panel" hidden></section>
         <section id="roleQueue" class="panel role-queue" hidden></section>
         <section id="resultsAdminPanel" class="panel results-admin-panel computer-only" hidden></section>
+        <section id="secretaryFinalsPanel" class="panel secretary-finals-panel secretary-only" hidden></section>
         <section id="roleHistory" class="panel role-history" hidden></section>
 
         <div class="reference-grid single-reference speaker-only">
@@ -173,6 +211,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260517-finalists-speaker-text"></script>
+    <script src="app.js?v=20260517-final-withdrawal-limit"></script>
   </body>
 </html>

@@ -1,0 +1,126 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isLivePalmesCompetition(competitionId) {
+      return competitionId == "livepalmes-active";
+    }
+
+    function validText(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function validOptionalText(field, maxLength) {
+      return !(field in request.resource.data)
+        || validText(request.resource.data[field], maxLength);
+    }
+
+    function validRole(role) {
+      return role in ["speaker", "referee", "video", "computer", "secretary"];
+    }
+
+    match /competitions/{competitionId} {
+      allow read: if isLivePalmesCompetition(competitionId);
+      allow write: if false;
+
+      match /alerts/{alertId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasAny(["id"])
+          && request.resource.data.id == alertId
+          && validText(alertId, 160)
+          && validOptionalText("type", 40)
+          && validOptionalText("eventId", 120)
+          && validOptionalText("sex", 10)
+          && validOptionalText("createdAt", 40)
+          && validOptionalText("updatedAt", 40);
+        allow delete: if isLivePalmesCompetition(competitionId);
+      }
+
+      match /liveData/{documentId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && documentId == "current"
+          && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
+          && request.resource.data.data is map
+          && validText(request.resource.data.updatedAt, 40)
+          && validText(request.resource.data.source, 160);
+        allow delete: if false;
+      }
+
+      match /roleLocks/{role} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && validRole(role)
+          && request.resource.data.keys().hasOnly([
+            "role",
+            "clientId",
+            "roleLabel",
+            "createdAt",
+            "updatedAt",
+            "expiresAt"
+          ])
+          && request.resource.data.role == role
+          && validText(request.resource.data.clientId, 120)
+          && validText(request.resource.data.roleLabel, 80)
+          && validText(request.resource.data.createdAt, 40)
+          && validText(request.resource.data.updatedAt, 40)
+          && validText(request.resource.data.expiresAt, 40);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && validRole(role);
+      }
+
+      match /historyArchives/{archiveId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "createdAt",
+            "createdLabel",
+            "meet",
+            "count",
+            "alerts"
+          ])
+          && request.resource.data.id == archiveId
+          && validText(archiveId, 160)
+          && validText(request.resource.data.createdAt, 40)
+          && validOptionalText("createdLabel", 80)
+          && request.resource.data.meet is map
+          && request.resource.data.count is int
+          && request.resource.data.alerts is list;
+        allow delete: if isLivePalmesCompetition(competitionId);
+      }
+
+      match /results/{resultId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasAll([
+            "id",
+            "raceKey",
+            "eventId",
+            "eventLabel",
+            "sex",
+            "hasFinal",
+            "pdfName",
+            "pdfDataUrl",
+            "updatedAt"
+          ])
+          && request.resource.data.id == resultId
+          && validText(resultId, 180)
+          && validText(request.resource.data.raceKey, 120)
+          && validText(request.resource.data.eventId, 120)
+          && validText(request.resource.data.eventLabel, 160)
+          && validText(request.resource.data.sex, 10)
+          && request.resource.data.hasFinal is bool
+          && validText(request.resource.data.pdfName, 220)
+          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesCompetition(competitionId);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

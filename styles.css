@@ -56,6 +56,11 @@ body.role-computer {
   --role-accent-soft: #fff4e6;
 }
 
+body.role-secretary {
+  --role-accent: #0b7285;
+  --role-accent-soft: #e7f8fb;
+}
+
 button,
 input,
 select,
@@ -396,6 +401,142 @@ h3 {
   flex-wrap: wrap;
 }
 
+body.profile-home-active .top-session-field,
+body.profile-home-active .top-actions,
+body.profile-home-active .footer-status {
+  display: none;
+}
+
+.profile-home {
+  width: min(1120px, calc(100% - 28px));
+  margin: 24px auto 40px;
+  display: grid;
+  gap: 16px;
+}
+
+.profile-home[hidden] {
+  display: none;
+}
+
+.profile-home-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #d9e7ed;
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 34px rgba(6, 42, 58, 0.08);
+}
+
+.profile-home-hero h2 {
+  margin: 2px 0 4px;
+  color: var(--ink);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.profile-home-hero p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.public-results-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-card {
+  --profile-color: var(--accent);
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #dfe9ee;
+  border-top: 5px solid var(--profile-color);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(6, 42, 58, 0.06);
+}
+
+.profile-card:hover,
+.profile-card:focus-visible {
+  border-color: var(--profile-color);
+  box-shadow: 0 12px 30px rgba(6, 42, 58, 0.12);
+  transform: translateY(-1px);
+}
+
+.profile-card strong {
+  font-size: 1.05rem;
+}
+
+.profile-card small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 780;
+  line-height: 1.35;
+}
+
+.profile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--profile-color) 14%, #ffffff);
+  color: var(--profile-color);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.profile-live {
+  --profile-color: #1971c2;
+}
+
+.profile-speaker {
+  --profile-color: #d71920;
+}
+
+.profile-referee {
+  --profile-color: #2b8a3e;
+}
+
+.profile-video {
+  --profile-color: #6741d9;
+}
+
+.profile-computer {
+  --profile-color: #e67700;
+}
+
+.profile-secretary {
+  --profile-color: #0b7285;
+}
+
 .live-toggle.active {
   border-color: var(--accent);
   background: var(--accent);
@@ -673,6 +814,134 @@ body.role-referee #fullscreenBtn {
   font-style: normal;
 }
 
+.secretary-finals-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.secretary-finals-panel[hidden] {
+  display: none;
+}
+
+.secretary-finals-list {
+  display: grid;
+  gap: 8px;
+}
+
+.secretary-final-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid #cce8ee;
+  border-left: 5px solid #0b7285;
+  border-radius: 8px;
+  background: #f2fbfd;
+}
+
+.secretary-final-card.pending {
+  border-left-color: #9db2c6;
+  background: #f8fbfd;
+}
+
+.secretary-final-card strong,
+.secretary-final-card span,
+.secretary-final-card em {
+  display: block;
+}
+
+.secretary-final-card strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.secretary-final-card span,
+.secretary-final-card em {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.final-withdrawal-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.final-withdrawal-group {
+  padding: 8px;
+  border: 1px solid #e4edf1;
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
+.final-withdrawal-group > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+}
+
+.final-withdrawal-group ol {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.final-withdrawal-group li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+
+.final-withdrawal-group li.withdrawn {
+  opacity: 0.66;
+}
+
+.final-withdrawal-group li.withdrawn span,
+.final-withdrawal-group li.withdrawn em {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #9f1d16;
+}
+
+.final-withdrawal-group li.closed {
+  opacity: 0.72;
+}
+
+.final-withdrawal-group li.closed .danger-button:not(:disabled) {
+  border-color: #f08c00;
+  color: #9a5b00;
+}
+
+.final-withdrawal-group li span,
+.final-withdrawal-group li em,
+.final-withdrawal-group li small {
+  display: block;
+}
+
+.final-withdrawal-group li span {
+  font-weight: 950;
+}
+
+.final-withdrawal-group li em,
+.final-withdrawal-group li small {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.final-withdrawal-group .repechage-label {
+  color: #0b7285;
+}
+
 .public-results-page {
   min-height: 100vh;
   background: #f4f8fb;
@@ -932,6 +1201,45 @@ body.role-referee #fullscreenBtn {
   font-weight: 850;
 }
 
+.public-finalists-block li span small {
+  margin-left: 5px;
+  color: #7b8b94;
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.public-finalist-withdrawn {
+  opacity: 0.62;
+}
+
+.public-finalist-withdrawn strong,
+.public-finalist-withdrawn span {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #9f1d16;
+}
+
+.public-finalist-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+
+.public-finalist-badge.withdrawn {
+  background: #ffe3e3;
+  color: #9f1d16;
+}
+
+.public-finalist-badge.repechaged {
+  background: #d8f5f0;
+  color: #087f5b;
+}
+
 .public-unqualified-block li,
 .public-unqualified-block li span,
 .public-unqualified-more li,
@@ -1013,6 +1321,10 @@ body.role-referee #fullscreenBtn {
   grid-template-columns: minmax(260px, 340px) 1fr;
   gap: 18px;
   padding: 18px;
+}
+
+.app-shell[hidden] {
+  display: none;
 }
 
 .sidebar,
@@ -2054,7 +2366,8 @@ body:not(.role-speaker):not(.role-live) .badge-row .badge.muted {
 
 .role-speaker .admin-only,
 .role-live .admin-only,
-.role-referee .admin-only {
+.role-referee .admin-only,
+.role-secretary .admin-only {
   display: none !important;
 }
 
@@ -2062,42 +2375,57 @@ body:not(.role-computer) .computer-only {
   display: none !important;
 }
 
+body:not(.role-secretary) .secretary-only {
+  display: none !important;
+}
+
 .role-video .race-header,
 .role-computer .race-header,
+.role-secretary .race-header,
 .role-video .entrants-panel,
 .role-computer .entrants-panel,
+.role-secretary .entrants-panel,
 .role-video .reference-grid,
 .role-computer .reference-grid,
+.role-secretary .reference-grid,
 .role-video .top-session-field,
 .role-computer .top-session-field,
+.role-secretary .top-session-field,
 .role-video .sidebar .field,
 .role-computer .sidebar .field,
+.role-secretary .sidebar .field,
 .role-video .series-field,
-.role-computer .series-field {
+.role-computer .series-field,
+.role-secretary .series-field {
   display: none !important;
 }
 
 .role-video .sidebar,
-.role-computer .sidebar {
+.role-computer .sidebar,
+.role-secretary .sidebar {
   position: static;
   display: block;
 }
 
 .role-video .program-button,
-.role-computer .program-button {
+.role-computer .program-button,
+.role-secretary .program-button {
   display: inline-flex;
   width: min(280px, 100%);
 }
 
 .role-video .floating-series-nav,
-.role-computer .floating-series-nav {
+.role-computer .floating-series-nav,
+.role-secretary .floating-series-nav {
   grid-template-columns: 1fr;
 }
 
 .role-video .floating-previous,
 .role-computer .floating-previous,
+.role-secretary .floating-previous,
 .role-video #nextSeriesFloatBtn,
-.role-computer #nextSeriesFloatBtn {
+.role-computer #nextSeriesFloatBtn,
+.role-secretary #nextSeriesFloatBtn {
   display: none !important;
 }
 
@@ -3425,6 +3753,39 @@ tbody tr:hover,
     padding: 8px 12px;
   }
 
+  .profile-home {
+    width: calc(100% - 16px);
+    margin: 10px auto 24px;
+    gap: 10px;
+  }
+
+  .profile-home-hero {
+    display: grid;
+    align-items: start;
+    padding: 14px;
+  }
+
+  .profile-home-hero h2 {
+    font-size: 1.45rem;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .profile-card {
+    min-height: 92px;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 6px 10px;
+    padding: 12px;
+  }
+
+  .profile-card small {
+    grid-column: 2;
+  }
+
   .eyebrow {
     font-size: 0.68rem;
     margin-bottom: 2px;
@@ -3644,7 +4005,13 @@ tbody tr:hover,
   }
 
   .alert-detail-grid,
-  .alert-timeline-row {
+  .alert-timeline-row,
+  .final-withdrawal-list {
+    grid-template-columns: 1fr;
+  }
+
+  .secretary-final-card,
+  .final-withdrawal-group li {
     grid-template-columns: 1fr;
   }
 
