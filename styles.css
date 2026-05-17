@@ -2194,6 +2194,12 @@ textarea {
   max-height: min(86vh, 760px);
 }
 
+.compact-program-dialog {
+  width: min(520px, 100%);
+  max-height: 92vh;
+  gap: 8px;
+}
+
 .role-codes-dialog {
   width: min(520px, 100%);
 }
@@ -2276,6 +2282,12 @@ textarea {
   gap: 8px;
   max-height: 360px;
   overflow: auto;
+}
+
+.archive-section-title {
+  margin: 10px 0 6px;
+  color: var(--ink);
+  font-size: 0.84rem;
 }
 
 .archive-item {
@@ -4306,15 +4318,54 @@ tbody tr:hover,
 
   .role-referee.referee-tablet-mode .topbar {
     gap: 6px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 5px 8px;
   }
 
-  .role-referee.referee-tablet-mode .topbar > div:first-child,
   .role-referee.referee-tablet-mode .top-session-field {
     display: none;
   }
 
+  .role-referee.referee-tablet-mode .topbar > div:first-child {
+    display: block;
+    min-width: 0;
+  }
+
+  .role-referee.referee-tablet-mode .topbar h1 {
+    display: none;
+  }
+
+  .role-referee.referee-tablet-mode .app-name {
+    margin: 0;
+    gap: 5px;
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+
+  .role-referee.referee-tablet-mode .livepalmes-logo {
+    width: 18px;
+    height: 18px;
+  }
+
+  .role-referee.referee-tablet-mode .firebase-header-status {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0;
+  }
+
+  .role-referee.referee-tablet-mode .firebase-header-status .firebase-dot {
+    width: 9px;
+    height: 9px;
+    margin: 0;
+  }
+
   .role-referee.referee-tablet-mode .top-actions {
     margin-left: auto;
+    gap: 5px;
   }
 
   .role-referee.referee-tablet-mode .role-switch {
@@ -4345,6 +4396,7 @@ tbody tr:hover,
   }
 
   .role-referee.referee-tablet-mode .sidebar .field:first-child,
+  .role-referee.referee-tablet-mode .series-field,
   .role-referee.referee-tablet-mode .series-controls,
   .role-referee.referee-tablet-mode .category-field,
   .role-referee.referee-tablet-mode .series-nav {
@@ -4477,18 +4529,62 @@ tbody tr:hover,
   .role-video.video-tablet-mode .topbar,
   .role-computer.computer-tablet-mode .topbar {
     gap: 6px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 5px 8px;
+  }
+
+  .role-video.video-tablet-mode .top-session-field,
+  .role-computer.computer-tablet-mode .top-session-field {
+    display: none;
   }
 
   .role-video.video-tablet-mode .topbar > div:first-child,
-  .role-video.video-tablet-mode .top-session-field,
-  .role-computer.computer-tablet-mode .topbar > div:first-child,
-  .role-computer.computer-tablet-mode .top-session-field {
+  .role-computer.computer-tablet-mode .topbar > div:first-child {
+    display: block;
+    min-width: 0;
+  }
+
+  .role-video.video-tablet-mode .topbar h1,
+  .role-computer.computer-tablet-mode .topbar h1 {
     display: none;
+  }
+
+  .role-video.video-tablet-mode .app-name,
+  .role-computer.computer-tablet-mode .app-name {
+    margin: 0;
+    gap: 5px;
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+
+  .role-video.video-tablet-mode .livepalmes-logo,
+  .role-computer.computer-tablet-mode .livepalmes-logo {
+    width: 18px;
+    height: 18px;
+  }
+
+  .role-video.video-tablet-mode .firebase-header-status,
+  .role-computer.computer-tablet-mode .firebase-header-status {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0;
+  }
+
+  .role-video.video-tablet-mode .firebase-header-status .firebase-dot,
+  .role-computer.computer-tablet-mode .firebase-header-status .firebase-dot {
+    width: 9px;
+    height: 9px;
+    margin: 0;
   }
 
   .role-video.video-tablet-mode .top-actions,
   .role-computer.computer-tablet-mode .top-actions {
     margin-left: auto;
+    gap: 5px;
   }
 
   .role-video.video-tablet-mode .top-actions > :not(#viewModeBtn),
@@ -4563,6 +4659,55 @@ tbody tr:hover,
   .role-video.video-tablet-mode .history-list.compact-scroll,
   .role-computer.computer-tablet-mode .history-list.compact-scroll {
     max-height: 260px;
+  }
+
+  .compact-program-dialog .decision-modal-head {
+    padding-bottom: 6px;
+  }
+
+  .compact-program-dialog .decision-modal-head h2 {
+    font-size: 1rem;
+  }
+
+  .compact-program-dialog .decision-modal-head p,
+  .compact-program-dialog .speaker-program-marker {
+    margin-top: 2px;
+    font-size: 0.72rem;
+  }
+
+  .compact-program-dialog .program-list {
+    gap: 4px;
+  }
+
+  .compact-program-dialog .program-row {
+    gap: 4px;
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .compact-program-dialog .program-race-button {
+    gap: 6px;
+    font-size: 0.78rem;
+    line-height: 1.18;
+  }
+
+  .compact-program-dialog .program-race-button small {
+    font-size: 0.68rem;
+  }
+
+  .compact-program-dialog .program-series-line {
+    gap: 4px;
+  }
+
+  .compact-program-dialog .program-series-chip {
+    min-height: 24px;
+    padding: 0 7px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+  }
+
+  .compact-program-dialog .program-series-chip span {
+    font-size: 0.64rem;
   }
 
   .ranking-columns {
