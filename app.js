@@ -18,6 +18,8 @@ const ROLE_PINS = {
 const LOCK_DURATION_MS = 120000;
 const LOCK_HEARTBEAT_MS = 30000;
 const FIREBASE_CONNECTION_CHECK_MS = 15000;
+const COMPETITION_INACTIVITY_MS = 60 * 60 * 1000;
+const COMPETITION_INACTIVITY_CHECK_MS = 60 * 1000;
 const SPEAKER_INFO_SHEETS = {
   france: "France N-1",
   records: "Records",
@@ -284,6 +286,8 @@ let resultsUnsubscribe = null;
 let firestoreReady = false;
 let firebaseStatus = "connecting";
 let firebaseConnectionCheckRunning = false;
+let lastConsoleActivityAt = Date.now();
+let competitionAutoDisableRunning = false;
 let applyingRemoteData = false;
 let rolePinResolver = null;
 let activeRoleLock = null;
@@ -301,9 +305,12 @@ const seriesControls = document.querySelector("#seriesControls");
 const roleSwitch = document.querySelector(".role-switch");
 const topActions = document.querySelector(".top-actions");
 const profileHome = document.querySelector("#profileHome");
+const profileModeStatus = document.querySelector("#profileModeStatus");
 const profileHomeBtn = document.querySelector("#profileHomeBtn");
+const manualRefreshBtn = document.querySelector("#manualRefreshBtn");
 const appShell = document.querySelector(".app-shell");
 const sidebar = document.querySelector(".sidebar");
+const competitionModeTopBtn = document.querySelector("#competitionModeTopBtn");
 const previousSeriesBtn = document.querySelector("#previousSeriesBtn");
 const nextSeriesBtn = document.querySelector("#nextSeriesBtn");
 const previousSeriesInlineBtn = document.querySelector("#previousSeriesInlineBtn");
@@ -923,6 +930,90 @@ async function toggleRoleLock() {
   renderRoleCodesAdminModal();
 }
 
+function toggleCompetitionMode() {
+  const enabled = !competitionModeEnabled();
+  lastConsoleActivityAt = Date.now();
+  updateLiveNotes(enabled ? "Mode compétition activé" : "Mode compétition désactivé", {
+    competitionMode: enabled,
+    competitionModeUpdatedAt: new Date().toISOString()
+  }).then(() => {
+    initFirebaseSync();
+    render();
+  });
+}
+
+function markConsoleActivity() {
+  lastConsoleActivityAt = Date.now();
+}
+
+async function disableCompetitionModeAfterInactivity() {
+  if (competitionAutoDisableRunning || !competitionModeEnabled()) return;
+  if (state.role !== "computer" || profileHomeActive || document.visibilityState !== "visible") return;
+  if (Date.now() - lastConsoleActivityAt < COMPETITION_INACTIVITY_MS) return;
+  competitionAutoDisableRunning = true;
+  try {
+    await updateLiveNotes("Mode compétition désactivé automatiquement après 1h d'inactivité", {
+      competitionMode: false,
+      competitionModeUpdatedAt: new Date().toISOString(),
+      competitionModeAutoDisabledAt: new Date().toISOString()
+    });
+    initFirebaseSync();
+    render();
+  } finally {
+    competitionAutoDisableRunning = false;
+  }
+}
+
+function stopFirebaseRealtimeSync() {
+  firestoreUnsubscribe?.();
+  liveDataUnsubscribe?.();
+  resultsUnsubscribe?.();
+  firestoreUnsubscribe = null;
+  liveDataUnsubscribe = null;
+  resultsUnsubscribe = null;
+}
+
+function applyResultsSnapshot(snapshot) {
+  raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  ensurePendingFinalistsSpeakerAlerts();
+  ensurePendingReplacementSpeakerAlerts();
+  if (state.role === "computer") publishPublicResultsIndex({ silent: true });
+}
+
+async function refreshFirebaseOnce(showMessage = true) {
+  if (!firestoreDb) {
+    firebaseStatus = "local";
+    renderDataStatus("Firebase n'est pas chargé. Les données restent locales sur cet appareil.");
+    return;
+  }
+  try {
+    const [alertSnapshot, liveSnapshot, resultSnapshot] = await Promise.all([
+      alertsCollection().orderBy("createdAt", "desc").get({ source: "server" }),
+      liveDataDocument().get({ source: "server" }),
+      resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" })
+    ]);
+    firestoreReady = true;
+    alerts = alertSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    saveAlerts();
+    if (liveSnapshot.exists) {
+      const remote = liveSnapshot.data()?.data;
+      if (remote?.sourceVersion && remote.sourceVersion !== data.sourceVersion) {
+        applyRemoteLiveData(remote);
+      }
+    }
+    applyResultsSnapshot(resultSnapshot);
+    firebaseStatus = "manual";
+    render();
+    if (showMessage && state.role === "computer") {
+      renderDataStatus("Données Firebase actualisées. Le direct reste coupé tant que le mode compétition est désactivé.");
+    }
+  } catch (error) {
+    console.warn("Actualisation Firebase impossible", error);
+    firebaseStatus = window.navigator.onLine ? "error" : "offline";
+    renderDataStatus("Actualisation impossible. Vérifie la connexion ou les règles Firebase.");
+  }
+}
+
 function initFirebaseSync() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     firebaseStatus = "local";
@@ -934,9 +1025,13 @@ function initFirebaseSync() {
       window.firebase.initializeApp(FIREBASE_CONFIG);
     }
     firestoreDb = window.firebase.firestore();
-    firestoreUnsubscribe?.();
-    liveDataUnsubscribe?.();
-    resultsUnsubscribe?.();
+    stopFirebaseRealtimeSync();
+    if (!competitionModeEnabled()) {
+      firebaseStatus = "manual";
+      refreshFirebaseOnce(false);
+      renderDataStatus();
+      return;
+    }
     firestoreUnsubscribe = alertsCollection()
       .orderBy("createdAt", "desc")
       .onSnapshot((snapshot) => {
@@ -965,10 +1060,7 @@ function initFirebaseSync() {
     resultsUnsubscribe = resultsCollection()
       .orderBy("updatedAt", "desc")
       .onSnapshot((snapshot) => {
-        raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        ensurePendingFinalistsSpeakerAlerts();
-        ensurePendingReplacementSpeakerAlerts();
-        if (state.role === "computer") publishPublicResultsIndex({ silent: true });
+        applyResultsSnapshot(snapshot);
         renderResultsAdminPanel();
       }, (error) => {
         console.warn("Lecture des résultats Firebase impossible", error);
@@ -984,6 +1076,11 @@ async function checkFirebaseConnection() {
   if (firebaseConnectionCheckRunning) return;
   if (!window.navigator.onLine) {
     firebaseStatus = "offline";
+    renderDataStatus();
+    return;
+  }
+  if (!competitionModeEnabled()) {
+    firebaseStatus = firestoreDb ? "manual" : "local";
     renderDataStatus();
     return;
   }
@@ -1832,7 +1929,24 @@ function render() {
   document.body.classList.toggle("computer-tablet-mode", state.role === "computer" && computerTabletMode);
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
+  if (profileModeStatus) {
+    profileModeStatus.textContent = competitionModeEnabled()
+      ? "Mode compétition - direct actif"
+      : "Mode préparation - actualisation manuelle";
+    profileModeStatus.classList.toggle("active", competitionModeEnabled());
+  }
   if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
+  if (manualRefreshBtn) {
+    const manualMode = !competitionModeEnabled();
+    manualRefreshBtn.hidden = profileHomeActive || !manualMode;
+    manualRefreshBtn.title = "Actualiser les données des consoles";
+  }
+  if (competitionModeTopBtn) {
+    const competitionMode = competitionModeEnabled();
+    competitionModeTopBtn.hidden = profileHomeActive || state.role !== "computer";
+    competitionModeTopBtn.textContent = competitionMode ? "Mode compétition actif" : "Mode compétition";
+    competitionModeTopBtn.classList.toggle("confirm-button", competitionMode);
+  }
   if (appConsoleTitle) {
     appConsoleTitle.textContent = profileHomeActive
       ? "LivePalmes"
@@ -1848,7 +1962,7 @@ function render() {
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
   }
   if (viewModeBtn) {
-    const canUseSmartphoneMode = ["referee", "video", "computer"].includes(state.role);
+    const canUseSmartphoneMode = ["referee", "video"].includes(state.role);
     const isSmartphoneMode = (
       (state.role === "referee" && refereeTabletMode) ||
       (state.role === "video" && videoTabletMode) ||
@@ -2516,7 +2630,6 @@ function renderResultsAdminPanel() {
   const sessions = resultSessions();
   const activeSession = ensureResultsAdminSession();
   const rows = resultProgramRows(activeSession);
-  const competitionMode = competitionModeEnabled();
   resultsAdminPanel.hidden = false;
   resultsAdminPanel.innerHTML = `
     <div class="panel-title">
@@ -2535,10 +2648,7 @@ function renderResultsAdminPanel() {
             </select>
           </label>
         ` : ""}
-        <button class="ghost-button compact ${competitionMode ? "confirm-button" : ""}" type="button" data-competition-mode>
-          ${competitionMode ? "Mode compétition actif" : "Mode compétition"}
-        </button>
-        ${competitionMode ? "" : `<button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>`}
+        ${competitionModeEnabled() ? "" : `<button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>`}
         <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
@@ -3519,7 +3629,7 @@ function renderDataStatus(message = "") {
 
 function firebaseStatusMeta() {
   if (firebaseStatus === "connected") {
-    return { label: "Connecté", className: "ok" };
+    return { label: competitionModeEnabled() ? "Direct actif" : "Connecté", className: "ok" };
   }
   if (firebaseStatus === "error") {
     return { label: "Connexion interrompue", className: "error" };
@@ -3529,6 +3639,9 @@ function firebaseStatusMeta() {
   }
   if (firebaseStatus === "local") {
     return { label: "Local", className: "pending" };
+  }
+  if (firebaseStatus === "manual") {
+    return { label: "Actualisation manuelle", className: "pending" };
   }
   return { label: "Connexion", className: "pending" };
 }
@@ -6196,6 +6309,16 @@ profileHomeBtn?.addEventListener("click", () => {
   render();
 });
 
+competitionModeTopBtn?.addEventListener("click", toggleCompetitionMode);
+
+manualRefreshBtn?.addEventListener("click", async () => {
+  manualRefreshBtn.disabled = true;
+  manualRefreshBtn.textContent = "Actualisation...";
+  await refreshFirebaseOnce(true);
+  manualRefreshBtn.disabled = false;
+  manualRefreshBtn.textContent = "Actualiser";
+});
+
 headerRefs.addEventListener("click", (event) => {
   const button = event.target.closest(".ref-chip-button");
   if (!button) return;
@@ -6251,13 +6374,7 @@ adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
 
 resultsAdminPanel?.addEventListener("click", (event) => {
   if (event.target.closest("[data-competition-mode]")) {
-    const enabled = !competitionModeEnabled();
-    updateLiveNotes(enabled ? "Mode compétition activé" : "Mode compétition désactivé", {
-      competitionMode: enabled,
-      competitionModeUpdatedAt: new Date().toISOString()
-    }).then(() => {
-      render();
-    });
+    toggleCompetitionMode();
     return;
   }
   if (event.target.closest("[data-computer-admin-series]")) {
@@ -7891,6 +8008,10 @@ dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
 setInterval(checkForGeneratedUpdates, 5000);
 setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
 setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
+setInterval(disableCompetitionModeAfterInactivity, COMPETITION_INACTIVITY_CHECK_MS);
+["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
+  window.addEventListener(eventName, markConsoleActivity, { passive: true });
+});
 window.addEventListener("online", checkFirebaseConnection);
 window.addEventListener("offline", () => {
   firebaseStatus = "offline";

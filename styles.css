@@ -479,6 +479,27 @@ body.profile-home-active .top-actions {
   font-weight: 800;
 }
 
+.profile-home-hero .profile-mode-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  margin-top: 10px;
+  padding: 0 10px;
+  border: 1px solid #ffe3a3;
+  border-radius: 999px;
+  background: #fff8db;
+  color: #8a6200;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.profile-home-hero .profile-mode-status.active {
+  border-color: #b7dfc0;
+  background: #eefaf1;
+  color: #2b7a3b;
+}
+
 .public-results-link {
   display: inline-flex;
   align-items: center;

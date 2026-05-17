@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-public-series-pdfs">
+    <link rel="stylesheet" href="styles.css?v=20260517-direct-mode-status">
   </head>
   <body>
     <header class="topbar">
@@ -42,6 +42,8 @@
       <div class="top-actions">
         <button id="roleLockBtn" class="footer-lock-button top-lock-button" type="button" title="G&eacute;rer les codes" aria-label="G&eacute;rer les codes">🔓</button>
         <button id="profileHomeBtn" class="ghost-button compact" type="button">Accueil</button>
+        <button id="manualRefreshBtn" class="ghost-button compact" type="button" hidden>Actualiser</button>
+        <button id="competitionModeTopBtn" class="ghost-button compact computer-only" type="button">Mode compétition</button>
         <button id="viewModeBtn" class="ghost-button compact view-mode-button" type="button" hidden title="Affichage smartphone" aria-label="Affichage smartphone">📱</button>
         <button id="fullscreenBtn" class="ghost-button compact" type="button">Plein &eacute;cran</button>
         <button id="dataDiagnosticBtn" class="ghost-button compact computer-only" type="button">Diagnostic</button>
@@ -57,6 +59,7 @@
           <p class="eyebrow">Choix du profil</p>
           <h2>Bienvenue sur LivePalmes</h2>
           <p>S&eacute;lectionne ta console pour suivre la comp&eacute;tition en temps r&eacute;el.</p>
+          <p id="profileModeStatus" class="profile-mode-status">Mode pr&eacute;paration</p>
         </div>
         <a class="public-results-link" href="resultats.html" target="_blank" rel="noopener">R&eacute;sultats publics</a>
       </div>
@@ -212,6 +215,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260517-public-series-pdfs"></script>
+    <script src="app.js?v=20260517-direct-mode-status"></script>
   </body>
 </html>
