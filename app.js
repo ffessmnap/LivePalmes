@@ -1404,7 +1404,7 @@ function updateEventSelect() {
       seen.add(optionKey);
       options.push({
         id: optionKey,
-        label: `${event?.label || row.label || row.eventId.toUpperCase()} ${sexDisplayLabel(row.sex)}`
+        label: `${event?.label || row.label || row.eventId.toUpperCase()} ${sexDisplayLabel(row.sex)} - ${raceOptionPhaseLabel(row.eventId, row.sex)}`
       });
     });
     if (!options.some((option) => option.id === raceOptionKey(state.eventId, state.sex))) {
@@ -1422,7 +1422,7 @@ function updateEventSelect() {
     (sexes.length ? sexes : ["F", "M"]).forEach((sex) => {
       fallbackOptions.push({
         id: raceOptionKey(event.id, sex),
-        label: `${event.label} ${sexDisplayLabel(sex)}`
+        label: `${event.label} ${sexDisplayLabel(sex)} - ${raceOptionPhaseLabel(event.id, sex)}`
       });
     });
   });
@@ -1434,6 +1434,48 @@ function updateEventSelect() {
 
 function raceOptionKey(eventId, sex) {
   return `${eventId || ""}|${sex || ""}`;
+}
+
+function raceProgramRowsForOption(eventId, sex) {
+  return programRows().filter((row) => row.eventId === eventId && row.sex === sex);
+}
+
+function seriesNumbersForRaceOption(eventId, sex) {
+  const rows = (data.series || [])
+    .filter((row) => row.eventId === eventId && row.sex === sex)
+    .filter((row) => state.session === "all" || !row.session || row.session === state.session)
+    .filter((row) => !isFinalStage(row.stage));
+  return [...new Set(rows.map((row) => Number(row.series)).filter(Number.isFinite))].sort((a, b) => a - b);
+}
+
+function finalRowsForRaceOption(eventId, sex) {
+  const seen = new Set();
+  return raceProgramRowsForOption(eventId, sex)
+    .filter((row) => isFinalStage(row.stage))
+    .filter((row) => {
+      const key = row.stage || programKey(row);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function raceOptionPhaseLabel(eventId, sex) {
+  const currentOption = eventId === state.eventId && sex === state.sex;
+  const finals = finalRowsForRaceOption(eventId, sex);
+  if (currentOption && isFinalStage(state.series) && finals.length) {
+    return finals.length > 1 ? "finales" : "finale";
+  }
+  const seriesNumbers = seriesNumbersForRaceOption(eventId, sex);
+  if (seriesNumbers.length) {
+    const lastSeries = seriesNumbers[seriesNumbers.length - 1];
+    if (currentOption && !finals.length && String(state.series) === String(lastSeries)) {
+      return "meilleure série";
+    }
+    return seriesNumbers.length > 1 ? "séries" : "série";
+  }
+  if (finals.length) return finals.length > 1 ? "finales" : "finale";
+  return "série";
 }
 
 function programRowFromRaceOption(value) {
@@ -2286,6 +2328,7 @@ function buildPublicResultsIndex() {
     meet: data.meet || {},
     events: data.events || [],
     program: data.program || [],
+    series: data.series || [],
     results: raceResults.map(publicResultPayload).filter(Boolean),
     updatedAt,
     sourceVersion: data.sourceVersion || "",
@@ -4884,6 +4927,7 @@ function findCompetitionStatsForEntrant(entrant) {
   return (data.competitionStats || []).filter((item) => {
     if (!item.name || normalizePersonName(item.name) !== entrantName) return false;
     if (item.sex && entrantSex && item.sex !== entrantSex) return false;
+    if (item.type === "birthday") return true;
     if (item.birthYear && entrantYear !== "----" && String(item.birthYear) !== String(entrantYear)) return false;
     return true;
   });
@@ -5174,7 +5218,7 @@ function currentRecordRows() {
     : null;
   return data.records
     .filter(shouldKeepRecord)
-    .filter(recordMatchesRace)
+    .filter((record) => recordMatchesRace(record))
     .filter((record) => !relayCategories || relayCategories.has(record.category))
     .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
 }
@@ -5528,7 +5572,6 @@ function parseCompetitionStatsSheet(rows) {
       ...person,
       detail: detailParts.join(" - ")
     });
-    currentType = null;
   });
   return stats;
 }

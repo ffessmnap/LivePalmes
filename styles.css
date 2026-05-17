@@ -1214,6 +1214,20 @@ body.role-referee #fullscreenBtn {
   vertical-align: 1px;
 }
 
+.public-phase-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f3f6f8;
+  color: #5f6f7b;
+  font-size: 0.68rem;
+  font-weight: 900;
+  vertical-align: 1px;
+}
+
 .sex-female .public-sex-label {
   background: #fff0f2;
   color: #a31927;
