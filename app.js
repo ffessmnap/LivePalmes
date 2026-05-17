@@ -2287,12 +2287,21 @@ function renderRolePanels() {
 }
 
 function resultIdForProgramRow(row) {
-  return `result-${raceOptionKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
+  const base = `result-${raceOptionKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
+  if (!isFinalStage(row.stage)) return base;
+  const stage = String(row.stage || "finale").replace(/[^a-z0-9_-]+/gi, "-");
+  return `${base}-${stage}`;
 }
 
 function resultForProgramRow(row) {
   const raceKey = raceOptionKey(row.eventId, row.sex);
-  return raceResults.find((result) => result.raceKey === raceKey) || null;
+  const exact = raceResults.find((result) =>
+    result.programKey === programKey(row) ||
+    result.id === resultIdForProgramRow(row)
+  );
+  if (exact) return exact;
+  if (isFinalStage(row.stage)) return null;
+  return raceResults.find((result) => result.raceKey === raceKey && !isFinalStage(result.stage)) || null;
 }
 
 function publicResultPayload(result) {
@@ -2305,6 +2314,9 @@ function publicResultPayload(result) {
     eventLabel: result.eventLabel || "",
     sex: result.sex || "",
     sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+    stage: result.stage || "series",
+    phaseLabel: result.phaseLabel || "",
+    finalStageCount: result.finalStageCount || 0,
     session: result.session || "",
     startTime: result.startTime || "",
     hasFinal: Boolean(result.hasFinal),
@@ -2352,7 +2364,7 @@ async function publishPublicResultsIndex({ silent = false } = {}) {
 
 function isLastProgramPartForRace(row) {
   const raceRows = (data.program || [])
-    .filter((item) => item.eventId === row.eventId && item.sex === row.sex && item.stage !== "finalA" && item.stage !== "finalB")
+    .filter((item) => item.eventId === row.eventId && item.sex === row.sex && !isFinalStage(item.stage))
     .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
   if (!raceRows.length) return true;
   return programKey(raceRows[raceRows.length - 1]) === programKey(row);
@@ -2360,7 +2372,7 @@ function isLastProgramPartForRace(row) {
 
 function resultSessions() {
   return sessionRows().filter((session) =>
-    (data.program || []).some((row) => row.session === session.number && row.eventId && row.sex && row.stage !== "finalA" && row.stage !== "finalB")
+    (data.program || []).some((row) => row.session === session.number && row.eventId && row.sex)
   );
 }
 
@@ -2388,18 +2400,61 @@ function ensureResultsAdminSession() {
 }
 
 function resultProgramRows(sessionNumber = "") {
-  const seen = new Set();
-  return (data.program || [])
-    .filter((row) => row.eventId && row.sex && row.stage !== "finalA" && row.stage !== "finalB")
+  const seenRegular = new Set();
+  const seenFinals = new Set();
+  const sortedRows = (data.program || [])
+    .filter((row) => row.eventId && row.sex)
     .filter((row) => !sessionNumber || row.session === sessionNumber)
-    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999))
-    .filter((row) => {
-      const raceKey = raceOptionKey(row.eventId, row.sex);
-      if (!isLastProgramPartForRace(row) && !resultForProgramRow(row)) return true;
-      if (seen.has(raceKey)) return false;
-      seen.add(raceKey);
-      return true;
-    });
+    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
+  const rows = [];
+  sortedRows.forEach((row) => {
+    if (isFinalStage(row.stage)) {
+      const key = `${row.session || ""}|${row.eventId}|${row.sex}|finales`;
+      if (seenFinals.has(key)) return;
+      seenFinals.add(key);
+      const finalRows = sortedRows.filter((item) =>
+        item.session === row.session &&
+        item.eventId === row.eventId &&
+        item.sex === row.sex &&
+        isFinalStage(item.stage)
+      );
+      rows.push({
+        ...row,
+        finalStageCount: finalRows.length,
+        finalStages: finalRows.map((item) => item.stage).filter(Boolean),
+        stage: finalRows.length > 1 ? "finales" : row.stage,
+        startTime: finalRows.map((item) => item.startTime).filter(Boolean)[0] || row.startTime || ""
+      });
+      return;
+    }
+    const raceKey = raceOptionKey(row.eventId, row.sex);
+    if (!isLastProgramPartForRace(row) && !resultForProgramRow(row)) {
+      rows.push(row);
+      return;
+    }
+    if (seenRegular.has(raceKey)) return;
+    seenRegular.add(raceKey);
+    rows.push(row);
+  });
+  return rows;
+}
+
+function resultPhaseLabelForProgramRow(row) {
+  if (isFinalStage(row.stage)) {
+    return Number(row.finalStageCount || 0) > 1 || row.stage === "finales" ? "finales" : "finale";
+  }
+  const finals = (data.program || []).filter((item) => item.eventId === row.eventId && item.sex === row.sex && isFinalStage(item.stage));
+  const seriesNumbers = (data.series || [])
+    .filter((item) => item.eventId === row.eventId && item.sex === row.sex)
+    .filter((item) => !row.session || !item.session || item.session === row.session)
+    .filter((item) => !isFinalStage(item.stage))
+    .map((item) => Number(item.series))
+    .filter(Number.isFinite);
+  const uniqueSeries = [...new Set(seriesNumbers)];
+  if (!finals.length && isSplitRaceAcrossSessions(row.eventId, row.sex) && isLastProgramPartForRace(row)) {
+    return "meilleure série";
+  }
+  return uniqueSeries.length > 1 ? "séries" : "série";
 }
 
 function resultStatusForProgramRow(row) {
@@ -2458,6 +2513,7 @@ function renderResultProgramRow(row) {
   const result = resultForProgramRow(row);
   const status = resultStatusForProgramRow(row);
   const event = data.events.find((item) => item.id === row.eventId);
+  const phaseLabel = resultPhaseLabelForProgramRow(row);
   const finalistCount = (result?.finalists?.a?.length || 0) + (result?.finalists?.b?.length || 0);
   const compositionLabel = result?.hasFinal
     ? (finalCompositionIsDefinitive(result) ? "Finalistes définitifs" : "Finalistes provisoires")
@@ -2466,7 +2522,7 @@ function renderResultProgramRow(row) {
   return `
     <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""}">
       <div>
-        <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</strong>
+        <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</strong>
         <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
         ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
         ${result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
@@ -3749,7 +3805,9 @@ function openResultImportModal(row) {
   if (!resultImportModal || !row) return;
   currentResultImportRow = row;
   const event = data.events.find((item) => item.id === row.eventId);
-  const defaultPartial = isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row);
+  const phaseLabel = resultPhaseLabelForProgramRow(row);
+  const isFinalResult = isFinalStage(row.stage);
+  const defaultPartial = !isFinalResult && isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row);
   const existingResult = resultForProgramRow(row);
   const protectedFinalists = Boolean(existingResult?.hasFinal && (
     existingResult.finalistsAnnouncedAt ||
@@ -3763,7 +3821,7 @@ function openResultImportModal(row) {
       <div class="decision-modal-head">
         <div>
           <span>Résultat de course</span>
-          <h2>${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</h2>
+          <h2>${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</h2>
           <p>${escapeHtml([row.session ? `Session ${row.session}` : "", row.startTime || ""].filter(Boolean).join(" - ") || "Importer le PDF résultat")}</p>
         </div>
         <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
@@ -3791,7 +3849,7 @@ function openResultImportModal(row) {
             <strong>Résultat partiel</strong>
             <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
           </label>
-          <label class="admin-series-option">
+          ${isFinalResult ? "" : `<label class="admin-series-option">
             <input type="radio" name="resultFinalMode" value="no" checked>
             <strong>Sans finale</strong>
             <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
@@ -3800,7 +3858,7 @@ function openResultImportModal(row) {
             <input type="radio" name="resultFinalMode" value="yes">
             <strong>Avec finale</strong>
             <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
-          </label>
+          </label>`}
         `}
       </div>
       <label class="file-button admin-series-file">
@@ -3888,6 +3946,9 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     eventLabel: event?.label || row.label || row.eventId,
     sex: row.sex,
     sexLabel: sexDisplayLabel(row.sex),
+    stage: isFinalStage(row.stage) ? row.stage : "series",
+    phaseLabel: resultPhaseLabelForProgramRow(row),
+    finalStageCount: row.finalStageCount || 0,
     session: row.session || "",
     startTime: row.startTime || "",
     hasFinal,
@@ -6129,7 +6190,8 @@ resultsAdminPanel?.addEventListener("click", (event) => {
   }
   const button = event.target.closest("[data-result-import]");
   if (!button) return;
-  const row = (data.program || []).find((item) => programKey(item) === button.dataset.resultImport);
+  const row = resultProgramRows(resultsAdminSession).find((item) => programKey(item) === button.dataset.resultImport)
+    || (data.program || []).find((item) => programKey(item) === button.dataset.resultImport);
   if (!row) return;
   openResultImportModal(row);
 });
@@ -6166,7 +6228,10 @@ resultImportModal?.addEventListener("change", async (event) => {
   const finalListMode = resultImportModal.querySelector("input[name='resultFinalListMode']:checked")?.value || "";
   const preserveFinalists = Boolean(existingResult?.hasFinal && finalListMode === "preserve");
   const overwriteFinalists = Boolean(existingResult?.hasFinal && finalListMode === "overwrite");
-  const hasFinal = overwriteFinalists || (!preserveFinalists && resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes");
+  const hasFinal = !isFinalStage(currentResultImportRow.stage) && (
+    overwriteFinalists ||
+    (!preserveFinalists && resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes")
+  );
   const isPartial = preserveFinalists
     ? Boolean(existingResult?.isPartial)
     : resultImportModal.querySelector("input[name='resultCompletionMode']:checked")?.value === "partial";
@@ -6180,13 +6245,13 @@ resultImportModal?.addEventListener("change", async (event) => {
   const importLabel = [
     currentResultImportRow.session ? `Session ${currentResultImportRow.session}` : "",
     data.events.find((item) => item.id === currentResultImportRow.eventId)?.label || currentResultImportRow.label || currentResultImportRow.eventId,
-    sexDisplayLabel(currentResultImportRow.sex)
+    `${sexDisplayLabel(currentResultImportRow.sex)} - ${resultPhaseLabelForProgramRow(currentResultImportRow)}`
   ].filter(Boolean).join(" - ");
   if (!window.confirm([message, "", `Course : ${importLabel}`, `Fichier : ${file.name}`].join("\n"))) return;
   try {
     renderDataStatus("Publication du résultat en cours...");
     const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial, { preserveFinalists });
-    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel}${result.session ? ` S${result.session}` : ""}`);
+    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(currentResultImportRow)}${result.session ? ` S${result.session}` : ""}`);
     closeResultImportModal();
     renderDataStatus();
     const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
