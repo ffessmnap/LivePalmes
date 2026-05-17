@@ -14,11 +14,13 @@ const list = document.querySelector("#publicResultsList");
 const sessionControls = document.querySelector("#publicSessionControls");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
+const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
 
 let publicProgram = [];
 let publicEvents = [];
 let publicMeet = {};
 let publicResults = [];
+let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
 
@@ -287,7 +289,7 @@ function renderMeetTitle() {
   const title = [publicMeet.name, publicMeet.city, publicMeet.year].filter(Boolean).join(" - ");
   meetTitle.textContent = cleanText(title || "Résultats & finalistes");
   if (meetMeta) {
-    const lastUpdate = publicResults
+    const lastUpdate = publicIndexUpdatedAt || publicResults
       .map((result) => result.updatedAt)
       .filter(Boolean)
       .sort()
@@ -317,32 +319,31 @@ function renderResults() {
   `;
 }
 
-function init() {
+async function loadPublicResultsIndex() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (list) list.innerHTML = `<p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p>`;
     return;
   }
-  window.firebase.initializeApp(FIREBASE_CONFIG);
+  if (!window.firebase.apps?.length) {
+    window.firebase.initializeApp(FIREBASE_CONFIG);
+  }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  competition.collection("liveData").doc("current").onSnapshot((snapshot) => {
-    const remote = snapshot.data()?.data || {};
-    publicMeet = remote.meet || {};
-    publicProgram = Array.isArray(remote.program) ? remote.program : [];
-    publicEvents = Array.isArray(remote.events) ? remote.events : [];
-    setStatus("Connecté", "ok");
-    renderResults();
-  }, (error) => {
-    console.warn("Lecture programme impossible", error);
-    setStatus("Erreur", "error");
-  });
-  competition.collection("results").orderBy("updatedAt", "desc").onSnapshot((snapshot) => {
-    publicResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setStatus("Connecté", "ok");
-    renderResults();
-  }, (error) => {
-    console.warn("Lecture résultats impossible", error);
+  const snapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
+  const index = snapshot.data() || {};
+  publicMeet = index.meet || {};
+  publicProgram = Array.isArray(index.program) ? index.program : [];
+  publicEvents = Array.isArray(index.events) ? index.events : [];
+  publicResults = Array.isArray(index.results) ? index.results : [];
+  publicIndexUpdatedAt = index.updatedAt || "";
+  setStatus("Connecté", "ok");
+  renderResults();
+}
+
+function init() {
+  loadPublicResultsIndex().catch((error) => {
+    console.warn("Lecture index public impossible", error);
     setStatus("Erreur", "error");
     if (list) list.innerHTML = `<p class="panel-subtitle">Impossible de charger les résultats.</p>`;
   });
@@ -359,6 +360,14 @@ sessionControls?.addEventListener("click", (event) => {
 collapseDetailsBtn?.addEventListener("click", () => {
   document.querySelectorAll(".public-results-list details[open]").forEach((details) => {
     details.open = false;
+  });
+});
+
+refreshResultsBtn?.addEventListener("click", () => {
+  setStatus("Actualisation", "pending");
+  loadPublicResultsIndex().catch((error) => {
+    console.warn("Actualisation résultats impossible", error);
+    setStatus("Erreur", "error");
   });
 });
 

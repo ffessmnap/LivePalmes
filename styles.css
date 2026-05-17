@@ -744,6 +744,14 @@ body.role-referee #fullscreenBtn {
   flex-wrap: wrap;
 }
 
+.public-results-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .results-session-select {
   display: inline-flex;
   align-items: center;
