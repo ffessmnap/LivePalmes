@@ -7122,24 +7122,71 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     let clearedResultsCount = 0;
     let clearedAlertsCount = 0;
     let archivedHistoryCount = 0;
-    if (mode === "full" && alerts.length) {
-      renderDataStatus("Archivage du journal et remise à zéro des alertes...");
-      const historyReset = await clearHistoryAndAlertsForFullImport();
-      clearedAlertsCount = historyReset.clearedAlerts;
-      archivedHistoryCount = historyReset.archivedCount;
-      renderDataStatus("Journal archivé et alertes remises à zéro.");
-    }
-    if (mode === "full" && raceResults.length) {
-      const clearResults = window.confirm([
+    let clearResults = false;
+    if (mode === "full") {
+      const hasActiveHistory = alerts.length > 0;
+      const hasPublishedResults = raceResults.length > 0;
+      const confirmFullImport = window.confirm([
         "Tu importes un PDF général de compétition.",
         "",
-        "Veux-tu effacer les résultats PDF déjà publiés sur la page publique ?",
-        "C'est recommandé si tu changes de compétition."
+        "LivePalmes va remplacer tout le programme de la compétition.",
+        hasActiveHistory
+          ? `Le journal actif sera archivé puis les ${alerts.length} alerte${alerts.length > 1 ? "s" : ""} active${alerts.length > 1 ? "s" : ""} seront supprimées.`
+          : "Aucune alerte active à supprimer.",
+        hasPublishedResults
+          ? `Il y a ${raceResults.length} résultat${raceResults.length > 1 ? "s" : ""} public${raceResults.length > 1 ? "s" : ""} déjà publié${raceResults.length > 1 ? "s" : ""}.`
+          : "Aucun résultat public déjà publié.",
+        "",
+        "Continuer l'import du PDF général ?"
       ].join("\n"));
+      if (!confirmFullImport) {
+        renderDataStatus("Import PDF général annulé.");
+        return;
+      }
+      if (hasPublishedResults) {
+        clearResults = window.confirm([
+          "Résultats publics existants",
+          "",
+          "Veux-tu les archiver puis les supprimer de la page publique ?",
+          "Oui : conseillé si tu changes de compétition.",
+          "Non : les résultats restent visibles."
+        ].join("\n"));
+      }
+      if (hasActiveHistory) {
+        renderDataStatus("Archivage du journal et remise à zéro des alertes...");
+        try {
+          const historyReset = await clearHistoryAndAlertsForFullImport();
+          clearedAlertsCount = historyReset.clearedAlerts;
+          archivedHistoryCount = historyReset.archivedCount;
+          renderDataStatus("Journal archivé et alertes remises à zéro.");
+        } catch (error) {
+          console.warn("Archivage/nettoyage du journal refusé par Firebase", error);
+          renderDataStatus("Import annulé : Firebase a refusé l'archivage du journal.");
+          window.alert([
+            "Import annulé par sécurité.",
+            "",
+            "Le PDF est bien reconnu, mais Firebase a refusé l'archivage du journal ou la suppression des anciennes alertes.",
+            "Il faut publier les dernières règles Firestore depuis le fichier firestore.rules, puis relancer l'import."
+          ].join("\n"));
+          return;
+        }
+      }
       if (clearResults) {
         renderDataStatus("Suppression des anciens résultats publics...");
-        clearedResultsCount = await clearPublishedResults();
-        renderDataStatus("Anciens résultats publics supprimés.");
+        try {
+          clearedResultsCount = await clearPublishedResults();
+          renderDataStatus("Anciens résultats publics supprimés.");
+        } catch (error) {
+          console.warn("Archivage/nettoyage des résultats refusé par Firebase", error);
+          renderDataStatus("Import annulé : Firebase a refusé l'archivage des résultats.");
+          window.alert([
+            "Import annulé par sécurité.",
+            "",
+            "Le PDF est bien reconnu, mais Firebase a refusé l'archivage ou la suppression des anciens résultats publics.",
+            "Il faut publier les dernières règles Firestore depuis le fichier firestore.rules, puis relancer l'import."
+          ].join("\n"));
+          return;
+        }
       }
     }
     const importHistoryLabel = mode === "full"
@@ -7188,7 +7235,16 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     }
   } catch (error) {
     console.error(error);
-    window.alert(`Import impossible pour ce PDF : ${error?.message || error}. On gardera la méthode actuelle si ce format n'est pas reconnu.`);
+    const message = String(error?.message || error);
+    const isPermissionError = /permission|insufficient/i.test(message);
+    window.alert(isPermissionError
+      ? [
+        "Import impossible : Firebase a refusé l'opération.",
+        "",
+        "Le problème vient probablement des règles Firestore, pas du PDF.",
+        "Publie le contenu du fichier firestore.rules dans Firebase > Firestore Database > Règles, puis réessaie."
+      ].join("\n")
+      : `Import impossible pour ce PDF : ${message}. On gardera la méthode actuelle si ce format n'est pas reconnu.`);
     renderDataStatus();
   }
 }
