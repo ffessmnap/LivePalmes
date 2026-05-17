@@ -96,7 +96,10 @@ function sessions() {
 
 function resultForRow(row) {
   const key = raceKey(row.eventId, row.sex);
-  return publicResults.find((result) => result.raceKey === key) || null;
+  const exact = publicResults.find((result) => result.programKey === programKey(row));
+  if (exact) return exact;
+  if (isFinalStage(row.stage)) return null;
+  return publicResults.find((result) => result.raceKey === key && !isFinalStage(result.stage)) || null;
 }
 
 function isFinalStage(stage) {
@@ -156,17 +159,42 @@ function publicRacePhaseLabel(row) {
 }
 
 function rowsForSession(session) {
-  const seen = new Set();
-  return publicProgram
-    .filter((row) => row.session === session && row.eventId && row.sex && !isFinalStage(row.stage))
-    .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999))
-    .filter((row) => {
+  const seenRegular = new Set();
+  const seenFinals = new Set();
+  const sortedRows = publicProgram
+    .filter((row) => row.session === session && row.eventId && row.sex)
+    .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
+  const rows = [];
+  sortedRows.forEach((row) => {
+      if (isFinalStage(row.stage)) {
+        const finalKey = `${row.session || ""}|${row.eventId}|${row.sex}|finales`;
+        if (seenFinals.has(finalKey)) return;
+        seenFinals.add(finalKey);
+        const finalRows = sortedRows.filter((item) =>
+          item.session === row.session &&
+          item.eventId === row.eventId &&
+          item.sex === row.sex &&
+          isFinalStage(item.stage)
+        );
+        rows.push({
+          ...row,
+          finalStageCount: finalRows.length,
+          finalStages: finalRows.map((item) => item.stage).filter(Boolean),
+          stage: finalRows.length > 1 ? "finales" : row.stage,
+          startTime: finalRows.map((item) => item.startTime).filter(Boolean)[0] || row.startTime || ""
+        });
+        return;
+      }
       const key = raceKey(row.eventId, row.sex);
-      if (!isLastProgramPartForRace(row) && !resultForRow(row)) return true;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      if (!isLastProgramPartForRace(row) && !resultForRow(row)) {
+        rows.push(row);
+        return;
+      }
+      if (seenRegular.has(key)) return;
+      seenRegular.add(key);
+      rows.push(row);
     });
+  return rows;
 }
 
 function latestResultSession() {
