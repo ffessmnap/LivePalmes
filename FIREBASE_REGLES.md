@@ -10,6 +10,7 @@ LivePalmes utilise seulement ces zones dans Firestore :
 - `competitions/livepalmes-active/liveData/current`
 - `competitions/livepalmes-active/roleLocks`
 - `competitions/livepalmes-active/historyArchives`
+- `competitions/livepalmes-active/resultArchives`
 - `competitions/livepalmes-active/results`
 - `competitions/livepalmes-active/public/resultsIndex`
 
@@ -27,6 +28,7 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
 - Publication d'un index public leger pour limiter les lectures de la page resultats.
 - Gestion des finalistes, forfaits, pre-forfaits et repechages dans les resultats.
 - Archivage du journal d'arbitrage avant RAZ.
+- Archivage des resultats publics avant remise a zero.
 
 ## Ce que les regles bloquent
 
@@ -58,7 +60,8 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
    - traiter cote bureau des performances ;
    - exporter le journal ;
    - faire une RAZ historique ;
-   - verifier que l'archive du journal est consultable depuis l'administration.
+   - verifier que l'archive du journal est consultable depuis l'administration ;
+   - remettre a zero les resultats publics et verifier que l'archive des resultats apparait dans l'administration.
 
 ## A retenir
 
