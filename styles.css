@@ -870,6 +870,28 @@ body.role-referee #fullscreenBtn {
   font-weight: 800;
 }
 
+.finalists-alert-group li.withdrawn span,
+.finalists-alert-group li.withdrawn em {
+  color: #8b98a5;
+  text-decoration: line-through;
+  text-decoration-color: #9f1d16;
+  text-decoration-thickness: 2px;
+}
+
+.finalist-status {
+  margin-left: 5px;
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+
+.finalist-status.withdrawn {
+  color: #9f1d16;
+}
+
+.finalist-status.repechaged {
+  color: #087f5b;
+}
+
 .finalists-speaker-text strong {
   font-size: 0.94rem;
 }
@@ -3486,6 +3508,37 @@ tbody tr:hover,
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d7e2ea;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #6f4b00;
+  font-size: 0.82rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.stat-badge.youngest-male {
+  background: #e7f2ff;
+  color: #155fa0;
+}
+
+.stat-badge.youngest-female {
+  background: #fff0f2;
+  color: #a31927;
+}
+
+.stat-badge.oldest-male,
+.stat-badge.oldest-female {
+  background: #f4f0ff;
+  color: #5530b0;
+}
+
 .name-cell span,
 .muted-text {
   color: var(--muted);
@@ -3744,6 +3797,25 @@ tbody tr:hover,
   color: var(--muted);
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+.stat-detail-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.stat-detail-list strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #fff7e6;
+  color: #704800;
+  font-size: 0.72rem;
+  font-weight: 950;
 }
 
 .compact-program {
