@@ -3431,6 +3431,21 @@ tbody tr:hover,
   font-weight: 800;
 }
 
+.non-selectable-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
 .edf-badge {
   display: inline-flex;
   align-items: center;
