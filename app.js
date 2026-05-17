@@ -749,6 +749,11 @@ async function renderHistoryArchivesModal() {
   const resultCollection = resultArchivesCollection();
   let historyArchives = [];
   let resultArchives = [];
+  const archiveMeetLabel = (archive) => {
+    const meet = archive?.meet || {};
+    const parts = [meet.name, meet.city, meet.year].filter(Boolean);
+    return parts.length ? parts.join(" - ") : "Compétition non renseignée";
+  };
   if (historyCollection) {
     try {
       const snapshot = await historyCollection.orderBy("createdAt", "desc").limit(20).get();
@@ -780,6 +785,7 @@ async function renderHistoryArchivesModal() {
           <div class="archive-item" data-archive-id="${escapeHtml(archive.id)}">
             <div>
               <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
+              <span>${escapeHtml(archiveMeetLabel(archive))}</span>
               <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes du journal</span>
             </div>
             <div class="archive-actions">
@@ -795,10 +801,11 @@ async function renderHistoryArchivesModal() {
           <div class="archive-item" data-result-archive-id="${escapeHtml(archive.id)}">
             <div>
               <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
+              <span>${escapeHtml(archiveMeetLabel(archive))}</span>
               <span>${escapeHtml(String(archive.count || 0))} résultats archivés${archive.reason ? ` - ${escapeHtml(archive.reason)}` : ""}</span>
             </div>
             <div class="archive-actions">
-              <button class="ghost-button compact" type="button" data-print-result-archive="${escapeHtml(archive.id)}">PDF</button>
+              <button class="ghost-button compact" type="button" data-print-result-archive="${escapeHtml(archive.id)}">Voir</button>
               <button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>
             </div>
           </div>
@@ -2021,6 +2028,17 @@ function renderLineAlertBadges(lineAlerts) {
       ${codes.length ? `<span class="line-alert-reasons">${escapeHtml(codes.join(" / "))}</span>` : ""}
     </span>
   `;
+}
+
+function importedLineStatusLabel(entrant) {
+  if (entrant.importedStatus === "forfait") return "Forfait déclaré";
+  return "";
+}
+
+function renderImportedLineStatusBadge(entrant) {
+  const label = importedLineStatusLabel(entrant);
+  if (!label) return "";
+  return `<span class="line-alert-badges imported-status-badges" title="${escapeHtml(label)}"><span class="line-alert-badge abs-line-badge">ABS</span><span class="line-alert-reasons">${escapeHtml(label)}</span></span>`;
 }
 
 function finalistRowName(row) {
@@ -4562,9 +4580,11 @@ function renderEntrants() {
       ? (shortClubName(entrant) || formatDisplayName(entrant))
       : formatSeriesDisplayName(entrant);
     const lineAlerts = activeLineAlertsForEntrant(entrant);
-    const alertBadges = renderLineAlertBadges(lineAlerts);
+    const importedStatusBadge = renderImportedLineStatusBadge(entrant);
+    const alertBadges = renderLineAlertBadges(lineAlerts) || importedStatusBadge;
+    const rowDisabled = lineAlerts.length || entrant.importedStatus === "forfait";
     return `
-      <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${lineAlerts.length ? "dsq-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}">
+      <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${entrant.importedStatus === "forfait" ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}">
         <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
         <td class="name-cell">
           <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
@@ -4572,11 +4592,12 @@ function renderEntrants() {
         </td>
         <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
         <td class="time-cell">
-          ${state.role === "referee" && refereeTabletMode && lineAlerts.length
-            ? renderLineAlertBadges(lineAlerts)
+          ${state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")
+            ? alertBadges
             : `<span class="time">${escapeHtml(entrant.seedTime || "-")}</span>`}
-          ${!(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
-          ${!(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
+          ${entrant.importedStatus === "forfait" && !(state.role === "referee" && refereeTabletMode) ? `<span class="seed-source imported-status-label">Forfait déclaré</span>` : ""}
+          ${!(state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")) && isSpeakerView() && entrant.importedStatus !== "forfait" ? renderRecordGapAlert(entrant) : ""}
+          ${!(state.role === "referee" && refereeTabletMode && (lineAlerts.length || entrant.importedStatus === "forfait")) && isSpeakerView() && entrant.seedSource && entrant.importedStatus !== "forfait" ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
         </td>
         <td>${reference}</td>
       </tr>
@@ -6680,6 +6701,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
   const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+IN)?$/;
   const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
   const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
+  const forfaitLinePattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+FORFAIT\s+([0-9:.]+)(.*)$/i;
 
   const updateSessionFromLabel = (label) => {
     const cleanLabel = fixPdfEncoding(label);
@@ -6841,6 +6863,8 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
     }
     const swimmerMatch = line.match(swimmerPattern);
     const speakerMatch = line.match(speakerPattern) || line.match(tolerantSpeakerPattern);
+    const forfaitMatch = line.match(forfaitLinePattern);
+    let importedStatus = "";
     let lastName = "";
     let firstName = "";
     let birthYear = "";
@@ -6854,15 +6878,16 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
       fullClub = fixPdfEncoding(String(relayMatch.groups.full || "").trim() || rawName);
       lastName = rawName;
       swimmerId = `relay|${current.eventId}|${current.sex}|${club.toLowerCase()}|${lane}|${current.series}`;
-    } else if (swimmerMatch || speakerMatch) {
-      const match = swimmerMatch || speakerMatch;
+    } else if (forfaitMatch || swimmerMatch || speakerMatch) {
+      const match = forfaitMatch || swimmerMatch || speakerMatch;
       lane = match[1];
       rawName = fixPdfEncoding(match[2]);
       birth = match[3];
       catCode = match[4];
       club = match[5];
       seedTime = match[6];
-      fullClub = speakerMatch ? fixPdfEncoding(String(match[7] || "").trim() || club) : club;
+      importedStatus = forfaitMatch ? "forfait" : "";
+      fullClub = speakerMatch || forfaitMatch ? fixPdfEncoding(String(match[7] || "").trim() || club) : club;
       const split = splitImportedPersonName(rawName);
       lastName = split.lastName;
       firstName = split.firstName;
@@ -6890,6 +6915,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         categoryCode: catCode,
         seedTime,
         seedSource: "",
+        importedStatus,
         session: current.session,
         sessionLabel: current.sessionLabel,
         note: ""
@@ -6915,6 +6941,7 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
         line: Number(lane),
         startTime: current.startTime,
         heatOrder: current.heatOrder,
+        importedStatus,
         session: current.session,
         sessionLabel: current.sessionLabel,
         stage: current.stage
@@ -7022,6 +7049,47 @@ function applyImportedSessionOverride(parsed, sessionNumber) {
   };
 }
 
+function parsedSessionNumbers(parsed) {
+  return [...new Set([
+    ...((parsed.entrants || []).map((row) => row.session).filter(Boolean)),
+    ...((parsed.series || []).map((row) => row.session).filter(Boolean)),
+    ...((parsed.program || []).map((row) => row.session).filter(Boolean))
+  ])].sort((a, b) => Number(a) - Number(b));
+}
+
+function filterImportedSession(parsed, sessionNumber) {
+  const cleanSession = String(sessionNumber || "").trim();
+  if (!cleanSession) return parsed;
+  const keepRows = (rows) => (rows || []).filter((row) => String(row.session || "") === cleanSession);
+  const entrants = keepRows(parsed.entrants);
+  const series = keepRows(parsed.series);
+  const program = keepRows(parsed.program);
+  if (!entrants.length && !series.length && !program.length) return null;
+  const eventIds = new Set([
+    ...entrants.map((row) => row.eventId),
+    ...series.map((row) => row.eventId),
+    ...program.map((row) => row.eventId)
+  ].filter(Boolean));
+  return {
+    ...parsed,
+    entrants,
+    series,
+    program,
+    events: (parsed.events || []).filter((event) => eventIds.has(event.id))
+  };
+}
+
+function prepareImportedSeriesForMode(parsed, mode, forcedSession) {
+  const cleanSession = String(forcedSession || "").trim();
+  if (mode !== "session" || !cleanSession) return parsed;
+  const sessions = parsedSessionNumbers(parsed);
+  if (sessions.length > 1) {
+    const filtered = filterImportedSession(parsed, cleanSession);
+    if (filtered) return filtered;
+  }
+  return applyImportedSessionOverride(parsed, cleanSession);
+}
+
 function seedSourceLookupKeys(row) {
   const eventId = row.eventId || "";
   const sex = row.sex || "";
@@ -7102,7 +7170,8 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
   renderDataStatus("Lecture du PDF des séries...");
   try {
     const lines = await extractPdfLines(file);
-    const parsed = inheritImportedSeedSources(applyImportedSessionOverride(parseImportedSeriesLines(lines, file.name), forcedSession));
+    const parsedRaw = parseImportedSeriesLines(lines, file.name);
+    const parsed = inheritImportedSeedSources(prepareImportedSeriesForMode(parsedRaw, mode, forcedSession));
     if (!parsed.series.length || !parsed.program.length) {
       showPdfImportDebug(parsed, lines);
       renderDataStatus();
