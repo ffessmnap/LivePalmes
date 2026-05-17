@@ -5591,11 +5591,16 @@ function parseEdfSheet(rows) {
 
 function statTypeFromLabel(label) {
   const text = normalizeSheetHeader(label);
-  if (text.includes("anniversaire") && text.includes("nageur")) return { type: "birthday", icon: "🎂", label: "Anniversaire aujourd'hui" };
-  if (text.includes("plus_jeune") && text.includes("nageuse")) return { type: "youngest-female", icon: "👶", label: "Plus jeune nageuse de la compétition", sex: "F" };
-  if (text.includes("plus_jeune") && text.includes("nageur")) return { type: "youngest-male", icon: "👶", label: "Plus jeune nageur de la compétition", sex: "M" };
-  if (text.includes("doyenne")) return { type: "oldest-female", icon: "★", label: "Doyenne de la rencontre", sex: "F" };
-  if (text.includes("doyen")) return { type: "oldest-male", icon: "★", label: "Doyen de la rencontre", sex: "M" };
+  const female = ["nageuse", "femme", "femmes", "fille", "filles", "female", "feminin", "doyenne", "vieille"].some((word) => text.includes(word));
+  const male = ["nageur", "homme", "hommes", "garcon", "garcons", "male", "masculin", "doyen", "vieux"].some((word) => text.includes(word));
+  if (text.includes("anniversaire")) return { type: "birthday", icon: "🎂", label: "Anniversaire aujourd'hui" };
+  if (text.includes("plus_jeune")) {
+    if (female) return { type: "youngest-female", icon: "👶", label: "Plus jeune nageuse de la compétition", sex: "F" };
+    if (male) return { type: "youngest-male", icon: "👶", label: "Plus jeune nageur de la compétition", sex: "M" };
+    return { type: "youngest", icon: "👶", label: "Plus jeune de la compétition" };
+  }
+  if (text.includes("doyenne") || (text.includes("plus_vieille") && !male)) return { type: "oldest-female", icon: "★", label: "Doyenne de la rencontre", sex: "F" };
+  if (text.includes("doyen") || text.includes("plus_vieux")) return { type: "oldest-male", icon: "★", label: "Doyen de la rencontre", sex: "M" };
   return null;
 }
 
@@ -5614,6 +5619,33 @@ function parseCompetitionStatPerson(value) {
 }
 
 function parseCompetitionStatsSheet(rows) {
+  const objectStats = sheetObjects(rows).map((row) => {
+    const label = rowValue(row, ["type", "repere", "repère", "stat", "categorie", "catégorie"]);
+    const currentType = statTypeFromLabel(label);
+    if (!currentType) return null;
+    const name = rowValue(row, ["nom_prenom", "nom prenom", "nageur", "nageuse", "nom", "name"]);
+    const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
+    const lastName = rowValue(row, ["nom", "lastName"]);
+    const birthDate = rowValue(row, ["date_naissance", "date naissance", "naissance", "birthDate"]);
+    if (!name && !firstName && !lastName) return null;
+    const person = {
+      name: name || formatPersonNameParts(firstName, lastName),
+      birthDate,
+      birthYear: (String(birthDate).match(/\d{4}$/) || [])[0] || rowValue(row, ["annee", "année", "birthYear"]),
+      clubCode: rowValue(row, ["club", "code_club", "code club"]).toUpperCase(),
+      extra: rowValue(row, ["info", "extra", "commentaire"])
+    };
+    const sex = sheetSex(rowValue(row, ["sexe", "sex"])) || currentType.sex || "";
+    const detailParts = [currentType.label, person.birthDate, person.clubCode, person.extra].filter(Boolean);
+    return {
+      ...currentType,
+      ...person,
+      sex,
+      detail: detailParts.join(" - ")
+    };
+  }).filter(Boolean);
+  if (objectStats.length) return objectStats;
+
   const stats = [];
   let currentType = null;
   rows.forEach((cells) => {
