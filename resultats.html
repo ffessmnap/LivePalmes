@@ -6,7 +6,7 @@
     <title>Résultats - LivePalmes v2 prototype</title>
     <meta name="description" content="Résultats publiés et finalistes de la compétition LivePalmes.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-next-unqualified">
+    <link rel="stylesheet" href="styles.css?v=20260517-withdrawal-limit">
   </head>
   <body class="public-results-page">
     <header class="public-results-header">
@@ -22,7 +22,7 @@
           </span>
           LivePalmes
         </p>
-        <h1>Résultats & finalistes</h1>
+        <h1 id="publicMeetTitle">Résultats & finalistes</h1>
       </div>
       <span id="publicResultsStatus" class="firebase-header-status pending">
         <i class="firebase-dot pending" aria-hidden="true"></i>
@@ -34,10 +34,11 @@
       <section class="panel">
         <div class="panel-title">
           <div>
-            <h2>Résultats publiés</h2>
-            <p class="panel-subtitle">Consultation uniquement. Les informations sont publiées par le juge informatique.</p>
+            <h2>Résultats publics</h2>
+            <p class="panel-subtitle">Les résultats sont publiés par le bureau des performances.</p>
           </div>
         </div>
+        <div id="publicSessionControls" class="session-controls public-session-controls"></div>
         <div id="publicResultsList" class="public-results-list">
           <p class="panel-subtitle">Chargement des résultats...</p>
         </div>
@@ -46,6 +47,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="resultats.js?v=20260517-next-unqualified"></script>
+    <script src="resultats.js?v=20260517-withdrawal-limit"></script>
   </body>
 </html>

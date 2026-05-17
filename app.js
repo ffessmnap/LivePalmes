@@ -218,6 +218,8 @@ let rolePinResolver = null;
 let activeRoleLock = null;
 let raceResults = [];
 let currentResultImportRow = null;
+let resultsAdminSession = "";
+let finalistAlertRepairRunning = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -807,6 +809,7 @@ function initFirebaseSync() {
       .orderBy("updatedAt", "desc")
       .onSnapshot((snapshot) => {
         raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        ensurePendingFinalistsSpeakerAlerts();
         renderResultsAdminPanel();
       }, (error) => {
         console.warn("Lecture des résultats Firebase impossible", error);
@@ -1612,16 +1615,21 @@ function renderSessionControls() {
   if (state.session === "all" || !sessions.some((session) => session.number === state.session)) {
     state.session = preferredInitialSession();
   }
-  sessionControls.innerHTML = sessions.map((session) => `
-      <button class="session-chip ${state.session === session.number ? "active" : ""}" type="button" data-session="${escapeHtml(session.number)}" title="${escapeHtml(session.label)}">
-        S${escapeHtml(session.number)}
-      </button>
-    `).join("");
+  sessionControls.innerHTML = `
+    <select id="sessionSelect" class="session-select" aria-label="Choisir la session">
+      ${sessions.map((session) => `
+        <option value="${escapeHtml(session.number)}" ${state.session === session.number ? "selected" : ""}>
+          S${escapeHtml(session.number)}
+        </option>
+      `).join("")}
+    </select>
+  `;
 }
 
 function currentRoleAlertFilter(alert) {
   if (alert.cancelledAt) return false;
   if (state.role === "live") {
+    if (alert.type === "finalists_announcement") return false;
     return alert.speakerStatus !== "none" && !liveDismissedAlertIds.includes(alert.id);
   }
   if (state.role === "speaker") {
@@ -1679,6 +1687,7 @@ function alertCommentLabel(alert) {
 }
 
 function decisionMotifLabel(alert) {
+  if (alert.type === "finalists_announcement") return "Finalistes à annoncer";
   if (alert.type === "requalification") return "Requalification - décision du délégué";
   if (alert.type === "ja_cancellation") return "Requalification - annulation par le JA";
   const motif = DECISION_LABELS[alert.type] || alert.type;
@@ -1687,6 +1696,12 @@ function decisionMotifLabel(alert) {
 }
 
 function speakerAlertSentence(alert) {
+  if (alert.type === "finalists_announcement") {
+    return {
+      text: `Finalistes à annoncer pour ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)}.`,
+      identity: `${alert.finalistCount || 0} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`
+    };
+  }
   const event = data.events.find((item) => item.id === alert.eventId);
   const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
   const personLabel = alert.sex === "F" ? "la nageuse" : "le nageur";
@@ -1712,7 +1727,7 @@ function speakerAlertSentence(alert) {
 }
 
 function isDsqAlert(alert) {
-  return !["forfait", "abandon", "requalification", "ja_cancellation"].includes(alert.type);
+  return !["forfait", "abandon", "requalification", "ja_cancellation", "finalists_announcement"].includes(alert.type);
 }
 
 function activeDsqAlertsForEntrant(entrant) {
@@ -1774,6 +1789,50 @@ function renderLineAlertBadges(lineAlerts) {
   `;
 }
 
+function finalistRowName(row) {
+  return row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ") || "Concurrent";
+}
+
+function renderFinalistsAlertList(alert) {
+  const renderRows = (title, rows = []) => rows.length ? `
+    <div class="finalists-alert-group">
+      <strong>${escapeHtml(title)}</strong>
+      <ol>
+        ${rows.map((row) => `
+          <li value="${escapeHtml(row.rank || "")}">
+            <span>${escapeHtml(finalistRowName(row))}</span>
+            <em>${escapeHtml(row.time || "")}</em>
+          </li>
+        `).join("")}
+      </ol>
+    </div>
+  ` : "";
+  const finals = alert.finalists || {};
+  return `
+    <div class="finalists-alert-list">
+      ${renderRows("Finale A", finals.a || [])}
+      ${renderRows("Finale B", finals.b || [])}
+    </div>
+  `;
+}
+
+function alertPriority(alert) {
+  if (isDsqAlert(alert)) return 1;
+  if (alert.type === "finalists_announcement" || isRequalificationAlert(alert)) return 2;
+  return 3;
+}
+
+function alertPriorityMeta(alert) {
+  const time = formatAlertTime(alert.createdAt);
+  const priority = alertPriority(alert);
+  const label = priority <= 2 ? `Priorité ${priority}` : "Action";
+  return [label, time].filter(Boolean).join(" - ");
+}
+
+function compareAlertsForAction(a, b) {
+  return alertPriority(a) - alertPriority(b) || String(a.createdAt).localeCompare(String(b.createdAt));
+}
+
 function historySentence(alert) {
   if (isDsqAlert(alert)) return speakerAlertSentence(alert);
   const event = data.events.find((item) => item.id === alert.eventId);
@@ -1791,6 +1850,21 @@ function historySentence(alert) {
 
 function renderAlertCard(alert, actionLabel = "") {
   const detail = alertDetailLabel(alert);
+  if (alert.type === "finalists_announcement") {
+    const title = state.role === "speaker" ? "Finalistes à annoncer" : "Finalistes en attente d'annonce";
+    return `
+      <div class="alert-card speaker-alert-card finalists-alert-card" data-alert-id="${escapeHtml(alert.id)}">
+        <div>
+          <strong class="alert-title finalists-alert-title"><span aria-hidden="true">📣</span> ${escapeHtml(title)} <small>${escapeHtml(alertPriorityMeta(alert))}</small></strong>
+          <span class="speaker-alert-line">
+            <span class="speaker-alert-text">${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</span>
+            <span class="speaker-alert-identity">- ${escapeHtml(String(alert.finalistCount || 0))} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}</span>
+          </span>
+        </div>
+        ${state.role === "speaker" ? `<button class="ghost-button compact" type="button" data-finalists-open>Ouvrir</button>` : ""}
+      </div>
+    `;
+  }
   if (isSpeakerView()) {
     const sentence = speakerAlertSentence(alert);
     const alertTitle = state.role === "live"
@@ -1799,7 +1873,7 @@ function renderAlertCard(alert, actionLabel = "") {
     return `
       <div class="alert-card speaker-alert-card" data-alert-id="${escapeHtml(alert.id)}">
         <div>
-          <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(alertTitle)}</strong>
+          <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(alertTitle)} <small>${escapeHtml(alertPriorityMeta(alert))}</small></strong>
           <span class="speaker-alert-line">
             <span class="speaker-alert-text">${escapeHtml(sentence.text)}</span>
             <span class="speaker-alert-identity">- ${escapeHtml(sentence.identity)}</span>
@@ -1812,7 +1886,7 @@ function renderAlertCard(alert, actionLabel = "") {
   return `
     <div class="alert-card" data-alert-id="${escapeHtml(alert.id)}">
       <div>
-        <strong>${escapeHtml(DECISION_LABELS[alert.type] || (isRequalificationAlert(alert) ? "Requalification / annulation" : alert.type))}</strong>
+        <strong>${escapeHtml(DECISION_LABELS[alert.type] || (isRequalificationAlert(alert) ? "Requalification / annulation" : alert.type))} <small class="alert-title-meta">${escapeHtml(alertPriorityMeta(alert))}</small></strong>
         <span>${escapeHtml(alertRaceLabel(alert))}</span>
         <span>${escapeHtml(alertSwimmerLabel(alert))}${detail ? ` - ${escapeHtml(detail)}` : ""}</span>
       </div>
@@ -1830,6 +1904,7 @@ function renderVideoInfoCard(alert) {
     <div class="alert-card video-info-card" aria-live="polite">
       <div>
         <strong class="alert-title"><span aria-hidden="true">⏳</span> Arbitrage vidéo en cours</strong>
+        <small class="alert-title-meta">Info - ${escapeHtml(formatAlertTime(alert.createdAt) || "--:--")}</small>
         <span class="speaker-alert-line">
           <span class="speaker-alert-text">Arbitrage vidéo en cours sur la ${escapeHtml(seriesLabel)} du ${escapeHtml(event?.label || alert.eventId)} ${escapeHtml(sexDisplayLabel(alert.sex))}.</span>
         </span>
@@ -1841,8 +1916,8 @@ function renderVideoInfoCard(alert) {
 function renderRolePanels() {
   renderOfficialAlerts();
   renderDecisionPanel();
-  renderResultsAdminPanel();
   renderRoleQueue();
+  renderResultsAdminPanel();
   renderRoleHistory();
   renderSpeakerHistory();
 }
@@ -1864,10 +1939,40 @@ function isLastProgramPartForRace(row) {
   return programKey(raceRows[raceRows.length - 1]) === programKey(row);
 }
 
-function resultProgramRows() {
+function resultSessions() {
+  return sessionRows().filter((session) =>
+    (data.program || []).some((row) => row.session === session.number && row.eventId && row.sex && row.stage !== "finalA" && row.stage !== "finalB")
+  );
+}
+
+function latestResultSession() {
+  const latest = raceResults
+    .filter((result) => result.updatedAt && result.session)
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+  return latest?.session ? String(latest.session) : "";
+}
+
+function ensureResultsAdminSession() {
+  const sessions = resultSessions();
+  if (!sessions.length) {
+    resultsAdminSession = "";
+    return "";
+  }
+  if (resultsAdminSession && sessions.some((session) => session.number === resultsAdminSession)) {
+    return resultsAdminSession;
+  }
+  const currentSession = state.session && state.session !== "all" ? String(state.session) : "";
+  const latestSession = latestResultSession();
+  resultsAdminSession = [currentSession, latestSession, "1", sessions[0].number]
+    .find((candidate) => candidate && sessions.some((session) => session.number === candidate)) || sessions[0].number;
+  return resultsAdminSession;
+}
+
+function resultProgramRows(sessionNumber = "") {
   const seen = new Set();
   return (data.program || [])
     .filter((row) => row.eventId && row.sex && row.stage !== "finalA" && row.stage !== "finalB")
+    .filter((row) => !sessionNumber || row.session === sessionNumber)
     .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999))
     .filter((row) => {
       const raceKey = raceOptionKey(row.eventId, row.sex);
@@ -1885,9 +1990,6 @@ function resultStatusForProgramRow(row) {
     if (result.hasFinal) return "Finalistes à annoncer";
     return "Publié";
   }
-  if (isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row)) {
-    return "En attente de la série rapide";
-  }
   return "À importer";
 }
 
@@ -1898,7 +2000,9 @@ function renderResultsAdminPanel() {
     resultsAdminPanel.innerHTML = "";
     return;
   }
-  const rows = resultProgramRows();
+  const sessions = resultSessions();
+  const activeSession = ensureResultsAdminSession();
+  const rows = resultProgramRows(activeSession);
   resultsAdminPanel.hidden = false;
   resultsAdminPanel.innerHTML = `
     <div class="panel-title">
@@ -1906,7 +2010,19 @@ function renderResultsAdminPanel() {
         <h3>Résultats à publier</h3>
         <p class="panel-subtitle">Prototype V2 - import PDF résultat et détection des finalistes.</p>
       </div>
-      <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
+      <div class="results-admin-actions">
+        ${sessions.length ? `
+          <label class="results-session-select">
+            <span>Session</span>
+            <select id="resultsAdminSessionSelect" aria-label="Session des résultats à publier">
+              ${sessions.map((session) => `
+                <option value="${escapeHtml(session.number)}" ${activeSession === session.number ? "selected" : ""}>S${escapeHtml(session.number)}</option>
+              `).join("")}
+            </select>
+          </label>
+        ` : ""}
+        <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
+      </div>
     </div>
     <div class="results-admin-list">
       ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
@@ -1918,18 +2034,24 @@ function renderResultProgramRow(row) {
   const result = resultForProgramRow(row);
   const status = resultStatusForProgramRow(row);
   const event = data.events.find((item) => item.id === row.eventId);
-  const waitingFastSeries = status === "En attente de la série rapide";
   const finalistCount = (result?.finalists?.a?.length || 0) + (result?.finalists?.b?.length || 0);
   return `
-    <div class="result-admin-row ${result ? "published" : ""} ${waitingFastSeries ? "waiting" : ""}">
+    <div class="result-admin-row ${result ? "published" : ""}">
       <div>
         <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}</strong>
         <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
         ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
       </div>
-      <button class="ghost-button compact ${waitingFastSeries ? "" : "confirm-button"}" type="button" data-result-import="${escapeHtml(programKey(row))}">
-        ${result ? "Remplacer" : (waitingFastSeries ? "Importer partiel" : "Importer résultat")}
-      </button>
+      <div class="result-admin-row-actions">
+        <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
+          ${result ? "Remplacer" : "Importer résultat"}
+        </button>
+        ${result ? `
+          <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(result.id)}">
+            Supprimer
+          </button>
+        ` : ""}
+      </div>
     </div>
   `;
 }
@@ -1950,7 +2072,7 @@ function renderOfficialAlerts() {
   const official = isSpeakerView()
     ? alerts
       .filter(currentRoleAlertFilter)
-      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
+      .sort(compareAlertsForAction)
     : [];
   if (!official.length && !videoInfos.length) {
     officialAlerts.hidden = true;
@@ -2122,6 +2244,36 @@ function closeAlertDetail() {
   alertDetailModal.innerHTML = "";
 }
 
+function openFinalistsAnnouncementModal(alertId) {
+  const alert = alerts.find((item) => item.id === alertId);
+  if (!alert || !alertDetailModal) return;
+  const hasFinalB = Boolean(alert.finalists?.b?.length);
+  const finalLabel = hasFinalB ? "les finales" : "la finale";
+  const speakerText = `Votre attention s'il vous plait, sont qualifiés pour ${finalLabel} du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)} :`;
+  alertDetailModal.hidden = false;
+  alertDetailModal.innerHTML = `
+    <div class="decision-dialog alert-detail-dialog finalists-announcement-dialog" role="dialog" aria-modal="true" aria-label="Finalistes à annoncer">
+      <div class="decision-modal-head">
+        <div>
+          <span>Annonce speaker</span>
+          <h2>Finalistes à annoncer</h2>
+          <p>${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</p>
+        </div>
+        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
+      </div>
+      <div class="alert-detail-note finalists-speaker-text">
+        <span>Texte speaker</span>
+        <strong>${escapeHtml(speakerText)}</strong>
+      </div>
+      ${renderFinalistsAlertList(alert)}
+      <div class="decision-actions">
+        <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
+        <button class="primary-button" type="button" data-finalists-announced="${escapeHtml(alert.id)}">Annoncé</button>
+      </div>
+    </div>
+  `;
+}
+
 function historyActionForAlert(alert) {
   if (alert.cancelledAt || isRequalificationAlert(alert)) return null;
   if (state.role === "referee" && alert.roleSource === "referee") {
@@ -2141,7 +2293,7 @@ function renderSpeakerHistory() {
     return;
   }
   const doneAlerts = alerts
-    .filter((alert) => !isRequalificationAlert(alert))
+    .filter((alert) => !isRequalificationAlert(alert) && alert.type !== "finalists_announcement")
     .filter((alert) => alert.speakerStatus === "done" || (alert.cancelledAt && alert.speakerAnnouncedAt))
     .sort((a, b) => String(b.speakerAnnouncedAt || b.updatedAt).localeCompare(String(a.speakerAnnouncedAt || a.updatedAt)));
   if (!doneAlerts.length) {
@@ -2501,7 +2653,7 @@ function renderQueueItem(alert) {
   return `
     <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
       <div>
-        <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(title)}</strong>
+        <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(title)} <small>${escapeHtml([formatAlertTime(alert.createdAt)].filter(Boolean).join(""))}</small></strong>
         <strong>${escapeHtml(decisionMotifLabel(alert))}</strong>
         <span>${escapeHtml(alertRaceLabel(alert))}</span>
         <span>${escapeHtml(identityLine)}</span>
@@ -2918,6 +3070,7 @@ function openResultImportModal(row) {
   if (!resultImportModal || !row) return;
   currentResultImportRow = row;
   const event = data.events.find((item) => item.id === row.eventId);
+  const defaultPartial = isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row);
   resultImportModal.hidden = false;
   resultImportModal.innerHTML = `
     <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer un résultat">
@@ -2930,6 +3083,16 @@ function openResultImportModal(row) {
         <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
       </div>
       <div class="admin-series-options">
+        <label class="admin-series-option">
+          <input type="radio" name="resultCompletionMode" value="complete" ${defaultPartial ? "" : "checked"}>
+          <strong>Résultat complet</strong>
+          <span>La course est terminée et le résultat peut être considéré comme officiel pour cette phase.</span>
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="resultCompletionMode" value="partial" ${defaultPartial ? "checked" : ""}>
+          <strong>Résultat partiel</strong>
+          <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
+        </label>
         <label class="admin-series-option">
           <input type="radio" name="resultFinalMode" value="no" checked>
           <strong>Sans finale</strong>
@@ -2991,11 +3154,11 @@ function parseFinalistsFromResultLines(lines) {
       a: qualified.slice(0, 8),
       b: qualified.slice(8, 16)
     },
-    nextUnqualified: ranking.filter((row) => !row.qualified).slice(0, 8)
+    nextUnqualified: ranking.filter((row) => !row.qualified)
   };
 }
 
-async function publishResultPdf(file, row, hasFinal) {
+async function publishResultPdf(file, row, hasFinal, isPartial = false) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
   const now = new Date().toISOString();
@@ -3028,10 +3191,113 @@ async function publishResultPdf(file, row, hasFinal) {
     pdfDataUrl,
     createdAt: resultForProgramRow(row)?.createdAt || now,
     updatedAt: now,
+    isPartial: Boolean(isPartial),
     status: hasFinal ? "finalists_pending_speaker" : "published"
   };
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
+  if (hasFinal) {
+    await createFinalistsSpeakerAlert(result);
+  }
   return result;
+}
+
+async function createFinalistsSpeakerAlert(result) {
+  const now = new Date().toISOString();
+  alerts
+    .filter((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
+    .forEach((alert) => {
+      alert.speakerStatus = "none";
+      alert.updatedAt = now;
+      syncAlertToFirestore(alert);
+    });
+  const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
+  const alert = {
+    id: `finalists-${result.id}`,
+    type: "finalists_announcement",
+    roleSource: "computer",
+    resultId: result.id,
+    eventId: result.eventId,
+    eventLabel: result.eventLabel,
+    sex: result.sex,
+    sexLabel: result.sexLabel,
+    session: result.session || "",
+    startTime: result.startTime || "",
+    finalistCount,
+    finalists: result.finalists || { a: [], b: [] },
+    nextUnqualified: result.nextUnqualified || [],
+    requiresVideo: false,
+    videoStatus: "none",
+    speakerStatus: "pending",
+    informaticsStatus: "none",
+    createdAt: now,
+    updatedAt: now
+  };
+  alerts.unshift(alert);
+  saveAlerts();
+  await syncAlertToFirestore(alert);
+}
+
+async function ensurePendingFinalistsSpeakerAlerts() {
+  if (finalistAlertRepairRunning) return;
+  const pendingResults = raceResults.filter((result) => (
+    result.hasFinal &&
+    !result.finalistsAnnouncedAt &&
+    !alerts.some((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
+  ));
+  if (!pendingResults.length) return;
+  finalistAlertRepairRunning = true;
+  try {
+    for (const result of pendingResults) {
+      await createFinalistsSpeakerAlert(result);
+    }
+    saveAlerts();
+    render();
+  } finally {
+    finalistAlertRepairRunning = false;
+  }
+}
+
+async function publishFinalistsAfterSpeaker(alertId) {
+  const alert = alerts.find((item) => item.id === alertId);
+  const now = new Date().toISOString();
+  if (!alert?.resultId) {
+    updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
+    return;
+  }
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour publier les finalistes.");
+  await collection.doc(alert.resultId).update({
+    finalistsAnnouncedAt: now,
+    status: "published",
+    updatedAt: now
+  });
+  const index = raceResults.findIndex((result) => result.id === alert.resultId);
+  if (index !== -1) {
+    raceResults[index] = {
+      ...raceResults[index],
+      finalistsAnnouncedAt: now,
+      status: "published",
+      updatedAt: now
+    };
+  }
+  updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
+}
+
+async function deleteResultPdf(resultId) {
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour supprimer ce résultat.");
+  await collection.doc(resultId).delete();
+}
+
+async function clearPublishedResults() {
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les résultats publics.");
+  const snapshot = await collection.get();
+  const docs = snapshot.docs || [];
+  await Promise.all(docs.map((doc) => doc.ref.delete()));
+  raceResults = [];
+  renderResultsAdminPanel();
+  return docs.length;
 }
 
 function renderCategorySelect() {
@@ -4152,10 +4418,8 @@ eventSelect.addEventListener("change", () => {
   render();
 });
 
-sessionControls?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-session]");
-  if (!button) return;
-  state.session = button.dataset.session;
+function changeSession(sessionNumber) {
+  state.session = sessionNumber;
   const firstProgram = programRows()[0];
   if (firstProgram) {
     applyProgramRow(firstProgram);
@@ -4166,6 +4430,11 @@ sessionControls?.addEventListener("click", (event) => {
   state.selectedSwimmerId = "";
   state.selectedRecordKey = "";
   render();
+}
+
+sessionControls?.addEventListener("change", (event) => {
+  if (event.target?.id !== "sessionSelect") return;
+  changeSession(event.target.value);
 });
 
 document.querySelectorAll(".role-chip").forEach((button) => {
@@ -4262,11 +4531,33 @@ programModal?.addEventListener("click", (event) => {
 adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
 
 resultsAdminPanel?.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-result-delete]");
+  if (deleteButton) {
+    const result = raceResults.find((item) => item.id === deleteButton.dataset.resultDelete);
+    const label = [result?.eventLabel, result?.sexLabel, result?.session ? `S${result.session}` : ""].filter(Boolean).join(" - ") || "ce résultat";
+    const ok = window.confirm(`Supprimer le PDF publié pour ${label} ?\n\nIl disparaîtra aussi de la page publique.`);
+    if (!ok) return;
+    deleteResultPdf(deleteButton.dataset.resultDelete)
+      .then(() => {
+        window.alert("Résultat supprimé de la page publique.");
+      })
+      .catch((error) => {
+        console.error(error);
+        window.alert(`Suppression impossible : ${error?.message || error}`);
+      });
+    return;
+  }
   const button = event.target.closest("[data-result-import]");
   if (!button) return;
   const row = (data.program || []).find((item) => programKey(item) === button.dataset.resultImport);
   if (!row) return;
   openResultImportModal(row);
+});
+
+resultsAdminPanel?.addEventListener("change", (event) => {
+  if (event.target?.id !== "resultsAdminSessionSelect") return;
+  resultsAdminSession = event.target.value;
+  renderResultsAdminPanel();
 });
 
 adminSeriesModal?.addEventListener("click", (event) => {
@@ -4286,13 +4577,14 @@ resultImportModal?.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file || !currentResultImportRow) return;
   const hasFinal = resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes";
+  const isPartial = resultImportModal.querySelector("input[name='resultCompletionMode']:checked")?.value === "partial";
   const message = hasFinal
-    ? "Publier ce résultat et détecter les finalistes ?"
-    : "Publier ce résultat sans finale ?";
+    ? `Publier ce résultat ${isPartial ? "partiel" : "complet"} et détecter les finalistes ?`
+    : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`;
   if (!window.confirm(message)) return;
   try {
     renderDataStatus("Publication du résultat en cours...");
-    const result = await publishResultPdf(file, currentResultImportRow, hasFinal);
+    const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial);
     closeResultImportModal();
     renderDataStatus();
     const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
@@ -4465,6 +4757,11 @@ officialAlerts?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-alert-action]");
   const card = event.target.closest("[data-alert-id]");
   if (!card) return;
+  const alert = alerts.find((item) => item.id === card.dataset.alertId);
+  if (alert?.type === "finalists_announcement") {
+    if (state.role === "speaker") openFinalistsAnnouncementModal(card.dataset.alertId);
+    return;
+  }
   if (state.role === "live") {
     dismissLiveAlert(card.dataset.alertId);
     return;
@@ -4476,6 +4773,16 @@ officialAlerts?.addEventListener("click", (event) => {
 });
 
 alertDetailModal?.addEventListener("click", (event) => {
+  const finalistsButton = event.target.closest("[data-finalists-announced]");
+  if (finalistsButton) {
+    publishFinalistsAfterSpeaker(finalistsButton.dataset.finalistsAnnounced).then(() => {
+      closeAlertDetail();
+    }).catch((error) => {
+      console.error(error);
+      window.alert(`Publication des finalistes impossible : ${error?.message || error}`);
+    });
+    return;
+  }
   if (event.target === alertDetailModal || event.target.closest("[data-close-alert-detail]")) {
     closeAlertDetail();
   }
@@ -4703,7 +5010,7 @@ document.addEventListener("keydown", (event) => {
     goToPreviousSeries();
   } else if (event.key.toLowerCase() === "s") {
     event.preventDefault();
-    sessionControls?.querySelector("[data-session]")?.focus();
+    sessionControls?.querySelector("#sessionSelect")?.focus();
   } else if (event.key.toLowerCase() === "a") {
     event.preventDefault();
     toggleAntoineOverlay();
@@ -5441,6 +5748,20 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     const importedSessions = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
       .sort((a, b) => Number(a) - Number(b));
     const updatedSession = mode === "full" ? "" : (forcedSession || importedSessions[0] || "");
+    let clearedResultsCount = 0;
+    if (mode === "full" && raceResults.length) {
+      const clearResults = window.confirm([
+        "Tu importes un PDF général de compétition.",
+        "",
+        "Veux-tu effacer les résultats PDF déjà publiés sur la page publique ?",
+        "C'est recommandé si tu changes de compétition."
+      ].join("\n"));
+      if (clearResults) {
+        renderDataStatus("Suppression des anciens résultats publics...");
+        clearedResultsCount = await clearPublishedResults();
+        renderDataStatus("Anciens résultats publics supprimés.");
+      }
+    }
     const importHistoryLabel = mode === "full"
       ? `PDF général ${file.name}`
       : `mise à jour S${updatedSession || "?"} ${file.name}`;
@@ -5476,7 +5797,8 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
         .map((session) => `S${session}`)
         .join(", ");
       const sessionText = sessionList ? ` Sessions détectées : ${sessionList}.` : "";
-      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}`);
+      const clearedText = clearedResultsCount ? ` ${clearedResultsCount} résultat${clearedResultsCount > 1 ? "s" : ""} public${clearedResultsCount > 1 ? "s" : ""} supprimé${clearedResultsCount > 1 ? "s" : ""}.` : "";
+      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}`);
     } catch {
       window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
     }
