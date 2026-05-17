@@ -6557,6 +6557,15 @@ adminSeriesModal?.addEventListener("change", async (event) => {
     window.alert("Indique le numéro de la session à remplacer avant de choisir le PDF.");
     return;
   }
+  if (competitionModeEnabled()) {
+    const continueLiveImport = window.confirm([
+      "Le mode compétition est actif.",
+      "",
+      "Si tu importes ce PDF, les consoles en direct seront mises à jour immédiatement.",
+      "Continuer ?"
+    ].join("\n"));
+    if (!continueLiveImport) return;
+  }
   const message = mode === "full"
     ? `Confirmer l'import comme PDF général ?\n\nFichier : ${file.name}\n\nCela remplace toutes les séries actuellement publiées.`
     : `Confirmer l'import comme mise à jour de la session ${forcedSession} ?\n\nFichier : ${file.name}\n\nCette session sera remplacée par le PDF choisi.`;
