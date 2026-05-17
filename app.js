@@ -360,6 +360,7 @@ const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const viewModeBtn = document.querySelector("#viewModeBtn");
 const roleLockBtn = document.querySelector("#roleLockBtn");
 const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
+const archivesBtn = document.querySelector("#archivesBtn");
 const dataDiagnosticBtn = document.querySelector("#dataDiagnosticBtn");
 const jsonInput = document.querySelector("#jsonInput");
 const csvInput = document.querySelector("#csvInput");
@@ -761,7 +762,7 @@ function renderResetHistoryModal() {
   roleCodesModal.querySelector("#resetHistoryInput")?.focus();
 }
 
-async function renderHistoryArchivesModal() {
+async function renderHistoryArchivesModal({ canDelete = false } = {}) {
   if (!roleCodesModal) return;
   const historyCollection = historyArchivesCollection();
   const resultCollection = resultArchivesCollection();
@@ -788,7 +789,7 @@ async function renderHistoryArchivesModal() {
   }
   roleCodesModal.hidden = false;
   roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog history-archives-dialog" role="dialog" aria-modal="true" aria-label="Archives historiques">
+    <div class="decision-dialog role-codes-dialog history-archives-dialog" role="dialog" aria-modal="true" aria-label="Archives historiques" data-archives-can-delete="${canDelete ? "1" : "0"}">
       <div class="decision-modal-head">
         <div>
           <span>Administration</span>
@@ -808,7 +809,7 @@ async function renderHistoryArchivesModal() {
             </div>
             <div class="archive-actions">
               <button class="ghost-button compact" type="button" data-open-archive="${escapeHtml(archive.id)}">Ouvrir</button>
-              <button class="ghost-button compact danger-button" type="button" data-delete-archive="${escapeHtml(archive.id)}">Supprimer</button>
+              ${canDelete ? `<button class="ghost-button compact danger-button" type="button" data-delete-archive="${escapeHtml(archive.id)}">Supprimer</button>` : ""}
             </div>
           </div>
         `).join("") : `<p class="panel-subtitle">Aucune archive enregistrée.</p>`}
@@ -824,13 +825,13 @@ async function renderHistoryArchivesModal() {
             </div>
             <div class="archive-actions">
               <button class="ghost-button compact" type="button" data-open-result-archive="${escapeHtml(archive.id)}">Ouvrir</button>
-              <button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>
+              ${canDelete ? `<button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>` : ""}
             </div>
           </div>
         `).join("") : `<p class="panel-subtitle">Aucune archive de résultats enregistrée.</p>`}
       </div>
       <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+        ${canDelete ? `<button class="ghost-button" type="button" data-role-codes-back>Retour</button>` : ""}
         <button class="primary-button" type="button" data-role-codes-close>Fermer</button>
       </div>
     </div>
@@ -940,6 +941,47 @@ function toggleCompetitionMode() {
     initFirebaseSync();
     render();
   });
+}
+
+async function endCompetitionSession() {
+  if (!competitionModeEnabled()) return;
+  const closeSession = window.confirm([
+    "Terminer la session ?",
+    "",
+    "Le mode compétition sera coupé et les consoles passeront en actualisation manuelle."
+  ].join("\n"));
+  if (!closeSession) return;
+  const archiveWanted = window.confirm([
+    "Veux-tu archiver le journal d'arbitrage maintenant ?",
+    "",
+    "Oui : une archive sera conservée dans Archives historiques.",
+    "Non : le direct sera simplement coupé."
+  ].join("\n"));
+  let archive = null;
+  if (archiveWanted) {
+    try {
+      archive = await archiveCurrentHistory();
+    } catch (error) {
+      const continueWithoutArchive = window.confirm([
+        "Archivage impossible.",
+        error?.message || "",
+        "",
+        "Veux-tu quand même couper le mode compétition ?"
+      ].join("\n"));
+      if (!continueWithoutArchive) return;
+    }
+  }
+  await updateLiveNotes(archive ? "Fin de session - journal archivé" : "Mode compétition désactivé manuellement", {
+    competitionMode: false,
+    competitionModeUpdatedAt: new Date().toISOString(),
+    competitionModeEndedAt: new Date().toISOString(),
+    ...(archive ? { lastSessionArchiveId: archive.id } : {})
+  });
+  initFirebaseSync();
+  render();
+  window.alert(archive
+    ? `Session terminée. Journal archivé (${archive.count} lignes).`
+    : "Session terminée. Mode compétition coupé.");
 }
 
 function markConsoleActivity() {
@@ -1944,7 +1986,10 @@ function render() {
   if (competitionModeTopBtn) {
     const competitionMode = competitionModeEnabled();
     competitionModeTopBtn.hidden = profileHomeActive || state.role !== "computer";
-    competitionModeTopBtn.textContent = competitionMode ? "Mode compétition actif" : "Mode compétition";
+    competitionModeTopBtn.textContent = competitionMode ? "Fin de session" : "Mode compétition";
+    competitionModeTopBtn.title = competitionMode
+      ? "Terminer la session, proposer l'archivage et couper le direct"
+      : "Activer le direct des consoles";
     competitionModeTopBtn.classList.toggle("confirm-button", competitionMode);
   }
   if (appConsoleTitle) {
@@ -1980,6 +2025,7 @@ function render() {
     roleLockBtn.classList.toggle("confirm-button", pinLockEnabled());
   }
   if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
+  if (archivesBtn) archivesBtn.hidden = profileHomeActive || state.role !== "computer";
   if (!data.events.length) {
     data.events = structuredClone(sampleData.events);
     state.eventId = data.events[0].id;
@@ -2648,7 +2694,7 @@ function renderResultsAdminPanel() {
             </select>
           </label>
         ` : ""}
-        ${competitionModeEnabled() ? "" : `<button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>`}
+        <button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>
         <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
@@ -6309,7 +6355,13 @@ profileHomeBtn?.addEventListener("click", () => {
   render();
 });
 
-competitionModeTopBtn?.addEventListener("click", toggleCompetitionMode);
+competitionModeTopBtn?.addEventListener("click", () => {
+  if (competitionModeEnabled()) {
+    endCompetitionSession();
+    return;
+  }
+  toggleCompetitionMode();
+});
 
 manualRefreshBtn?.addEventListener("click", async () => {
   manualRefreshBtn.disabled = true;
@@ -6371,6 +6423,9 @@ programModal?.addEventListener("click", (event) => {
 });
 
 adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
+archivesBtn?.addEventListener("click", () => {
+  renderHistoryArchivesModal({ canDelete: false });
+});
 
 resultsAdminPanel?.addEventListener("click", (event) => {
   if (event.target.closest("[data-competition-mode]")) {
@@ -6516,7 +6571,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
     return;
   }
   if (event.target.closest("[data-open-history-archives]")) {
-    await renderHistoryArchivesModal();
+    await renderHistoryArchivesModal({ canDelete: true });
     return;
   }
   if (event.target.closest("[data-role-codes-back]")) {
@@ -6549,6 +6604,10 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   const deleteArchiveButton = event.target.closest("[data-delete-archive]");
   if (deleteArchiveButton) {
+    if (roleCodesModal.querySelector(".history-archives-dialog")?.dataset.archivesCanDelete !== "1") {
+      window.alert("Suppression réservée à l'administrateur général.");
+      return;
+    }
     const ok = window.confirm("Supprimer définitivement cette archive ?");
     if (!ok) return;
     const collection = historyArchivesCollection();
@@ -6574,6 +6633,10 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   const deleteResultArchiveButton = event.target.closest("[data-delete-result-archive]");
   if (deleteResultArchiveButton) {
+    if (roleCodesModal.querySelector(".history-archives-dialog")?.dataset.archivesCanDelete !== "1") {
+      window.alert("Suppression réservée à l'administrateur général.");
+      return;
+    }
     const ok = window.confirm("Supprimer définitivement cette archive de résultats ?");
     if (!ok) return;
     const collection = resultArchivesCollection();
