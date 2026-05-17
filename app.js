@@ -416,6 +416,14 @@ function resultsCollection() {
     .collection("results");
 }
 
+function seriesPdfsCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("seriesPdfs");
+}
+
 function publicResultsIndexDocument() {
   if (!firestoreDb) return null;
   return firestoreDb
@@ -2360,6 +2368,37 @@ async function publishPublicResultsIndex({ silent = false } = {}) {
       renderDataStatus("L'index public des résultats n'a pas pu être mis à jour. Vérifie les règles Firebase.");
     }
   }
+}
+
+function publicSeriesPdfId(scope, session = "") {
+  return scope === "full" ? "full" : `session-${String(session || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
+}
+
+async function clearPublicSeriesPdfs() {
+  const collection = seriesPdfsCollection();
+  if (!collection) return 0;
+  const snapshot = await collection.get();
+  await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+  return snapshot.docs.length;
+}
+
+async function publishPublicSeriesPdf(file, mode = "session", session = "") {
+  const collection = seriesPdfsCollection();
+  if (!collection || !file) return null;
+  const scope = mode === "full" ? "full" : "session";
+  const now = new Date().toISOString();
+  const id = publicSeriesPdfId(scope, session);
+  const payload = {
+    id,
+    scope,
+    session: scope === "session" ? String(session || "") : "",
+    pdfName: file.name,
+    pdfDataUrl: await fileToDataUrl(file),
+    updatedAt: now,
+    sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
+  };
+  await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
+  return payload;
 }
 
 function isLastProgramPartForRace(row) {
@@ -7659,6 +7698,7 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     let clearedResultsCount = 0;
     let clearedAlertsCount = 0;
     let archivedHistoryCount = 0;
+    let publishedSeriesPdf = null;
     let clearResults = false;
     if (mode === "full") {
       const hasActiveHistory = alerts.length > 0;
@@ -7755,6 +7795,10 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
     });
     applyFreshData(nextData, true);
     try {
+      if (mode === "full") {
+        await clearPublicSeriesPdfs();
+      }
+      publishedSeriesPdf = await publishPublicSeriesPdf(file, mode, updatedSession);
       await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
       await publishPublicResultsIndex({ silent: true });
       const sessionList = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
@@ -7766,7 +7810,8 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
       const historyText = clearedAlertsCount
         ? ` Journal archivé (${archivedHistoryCount} ligne${archivedHistoryCount > 1 ? "s" : ""}) et ${clearedAlertsCount} alerte${clearedAlertsCount > 1 ? "s" : ""} supprimée${clearedAlertsCount > 1 ? "s" : ""}.`
         : "";
-      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}${historyText}`);
+      const publicPdfText = publishedSeriesPdf ? ` PDF public des séries mis à jour.` : "";
+      window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}${historyText}${publicPdfText}`);
     } catch {
       window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
     }

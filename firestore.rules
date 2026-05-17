@@ -57,6 +57,7 @@ service cloud.firestore {
             "meet",
             "events",
             "program",
+            "series",
             "results",
             "updatedAt",
             "sourceVersion",
@@ -67,12 +68,36 @@ service cloud.firestore {
           && request.resource.data.meet is map
           && request.resource.data.events is list
           && request.resource.data.program is list
+          && request.resource.data.series is list
           && request.resource.data.results is list
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceVersion", 120)
           && validOptionalText("sourceLabel", 160)
           && validOptionalText("lastUpdatedSession", 20);
         allow delete: if false;
+      }
+
+      match /seriesPdfs/{pdfId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "scope",
+            "session",
+            "pdfName",
+            "pdfDataUrl",
+            "updatedAt",
+            "sourceLabel"
+          ])
+          && request.resource.data.id == pdfId
+          && validText(pdfId, 120)
+          && validText(request.resource.data.scope, 20)
+          && validOptionalText("session", 20)
+          && validText(request.resource.data.pdfName, 220)
+          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validText(request.resource.data.updatedAt, 40)
+          && validOptionalText("sourceLabel", 120);
+        allow delete: if isLivePalmesCompetition(competitionId);
       }
 
       match /roleLocks/{role} {

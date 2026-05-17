@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Séries LivePalmes</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css?v=20260517-series-pdf-public">
+  </head>
+  <body class="public-results-page">
+    <header class="public-results-header">
+      <div>
+        <p class="eyebrow">LivePalmes</p>
+        <h1 id="pdfTitle">Séries</h1>
+        <p class="public-meet-meta">Ouverture du PDF...</p>
+      </div>
+    </header>
+
+    <main class="public-results-shell">
+      <section class="panel">
+        <div id="pdfViewerStatus">
+          <p class="panel-subtitle">Chargement du PDF des séries.</p>
+        </div>
+        <iframe id="pdfFrame" title="PDF des séries" hidden></iframe>
+        <div id="pdfFallback" class="public-result-actions" hidden></div>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="series-pdf.js?v=20260517-series-pdf-public"></script>
+  </body>
+</html>

@@ -21,6 +21,7 @@ let publicEvents = [];
 let publicSeries = [];
 let publicMeet = {};
 let publicResults = [];
+let publicSeriesPdfs = [];
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
@@ -356,6 +357,27 @@ function renderSessionControls() {
   `).join("");
 }
 
+function seriesPdfForSession(session) {
+  const exact = publicSeriesPdfs.find((pdf) => pdf.scope === "session" && String(pdf.session || "") === String(session || ""));
+  return exact || publicSeriesPdfs.find((pdf) => pdf.scope === "full") || null;
+}
+
+function renderSeriesPdfLink(session) {
+  const pdf = seriesPdfForSession(session);
+  if (!pdf) return "";
+  const label = pdf.scope === "session" ? `Séries de la session ${session}` : "Séries complètes";
+  const updated = pdf.updatedAt ? `Mis à jour le ${new Date(pdf.updatedAt).toLocaleString("fr-FR")}` : "";
+  return `
+    <div class="public-series-pdf">
+      <div>
+        <strong>${escapeHtml(label)}</strong>
+        ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
+      </div>
+      <a class="ghost-button compact confirm-button" href="series-pdf.html?id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">Voir les séries</a>
+    </div>
+  `;
+}
+
 function renderMeetTitle() {
   if (!meetTitle) return;
   const title = [publicMeet.name, publicMeet.city, publicMeet.year].filter(Boolean).join(" - ");
@@ -387,8 +409,21 @@ function renderResults() {
       <h2>Session ${escapeHtml(activeSession)}</h2>
       <span>${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
+    ${renderSeriesPdfLink(activeSession)}
     ${rows.map(renderRow).join("")}
   `;
+}
+
+async function loadPublicSeriesPdfs(competition) {
+  try {
+    const snapshot = await competition.collection("seriesPdfs").get({ source: "server" });
+    publicSeriesPdfs = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  } catch (error) {
+    console.warn("Lecture PDF séries impossible", error);
+    publicSeriesPdfs = [];
+  }
 }
 
 async function loadPublicResultsIndex() {
@@ -414,6 +449,7 @@ async function loadPublicResultsIndex() {
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicIndexUpdatedAt = index.updatedAt || "";
+  await loadPublicSeriesPdfs(competition);
   setStatus("Connecté", "ok");
   renderResults();
 }
@@ -429,6 +465,7 @@ async function loadPublicResultsFallback(competition) {
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  await loadPublicSeriesPdfs(competition);
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
     .filter(Boolean)
