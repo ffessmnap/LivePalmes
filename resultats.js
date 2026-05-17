@@ -217,9 +217,15 @@ function renderResultDetails(result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
   const finalistCount = ["a", "b"].reduce((count, key) => count + (result.finalists?.[key] || []).filter((row) => !row.withdrawnAt).length, 0);
-  const nextUnqualified = result.nextUnqualified?.length > 8
+  const finalistKeys = new Set(["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) =>
+    [row.rank, cleanText(row.displayName), row.time].filter(Boolean).join("|")
+  )));
+  const baseNextUnqualified = result.nextUnqualified?.length > 8
     ? result.nextUnqualified
     : (result.ranking || []).filter((row) => !row.qualified);
+  const nextUnqualified = (baseNextUnqualified || []).filter((row) =>
+    !finalistKeys.has([row.rank, cleanText(row.displayName), row.time].filter(Boolean).join("|"))
+  );
   return `
     ${publicFinalistsVisible ? `
       <div class="public-result-actions">

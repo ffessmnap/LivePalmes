@@ -223,6 +223,7 @@ let raceResults = [];
 let currentResultImportRow = null;
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
+let replacementAlertRepairRunning = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -818,6 +819,7 @@ function initFirebaseSync() {
       .onSnapshot((snapshot) => {
         raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         ensurePendingFinalistsSpeakerAlerts();
+        ensurePendingReplacementSpeakerAlerts();
         renderResultsAdminPanel();
       }, (error) => {
         console.warn("Lecture des résultats Firebase impossible", error);
@@ -3366,6 +3368,50 @@ async function ensurePendingFinalistsSpeakerAlerts() {
   }
 }
 
+function replacementAlertMatches(alert, result, row) {
+  if (alert.type !== "finalist_replacement_announcement") return false;
+  if (alert.resultId !== result.id) return false;
+  const sameName = String(alert.replacementName || "") === finalistRowName(row);
+  const sameRank = !alert.replacementRank || String(alert.replacementRank || "") === String(row.rank || "");
+  const sameTime = !alert.replacementTime || String(alert.replacementTime || "") === String(row.time || "");
+  return sameName && sameRank && sameTime;
+}
+
+async function ensurePendingReplacementSpeakerAlerts() {
+  if (replacementAlertRepairRunning) return;
+  const missing = [];
+  for (const result of raceResults) {
+    for (const finalKey of ["a", "b"]) {
+      for (const row of (result.finalists?.[finalKey] || [])) {
+        if (!row.repechaged || row.repechageAnnouncedAt || row.withdrawnAt) continue;
+        const existing = alerts.find((alert) => replacementAlertMatches(alert, result, row));
+        if (existing?.speakerStatus === "done" && existing.speakerAnnouncedAt) {
+          await stampReplacementAnnouncement(result, row, existing.speakerAnnouncedAt);
+          continue;
+        }
+        if (!existing || existing.speakerStatus !== "pending") {
+          missing.push({ result, row });
+        }
+      }
+    }
+  }
+  if (!missing.length) return;
+  replacementAlertRepairRunning = true;
+  try {
+    for (const item of missing) {
+      const withdrawn = {
+        displayName: item.row.replacesName || item.row.withdrawnName || "un finaliste",
+        name: item.row.replacesName || item.row.withdrawnName || "un finaliste"
+      };
+      await createFinalistReplacementSpeakerAlert(item.result, withdrawn, item.row);
+    }
+    saveAlerts();
+    render();
+  } finally {
+    replacementAlertRepairRunning = false;
+  }
+}
+
 async function publishFinalistsAfterSpeaker(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   const now = new Date().toISOString();
@@ -3565,6 +3611,50 @@ async function createFinalistReplacementSpeakerAlert(result, withdrawn, replacem
   await syncAlertToFirestore(alert);
 }
 
+async function updateReplacementRowAnnouncement(resultId, matcher, announcedAt) {
+  const index = raceResults.findIndex((result) => result.id === resultId);
+  const result = raceResults[index];
+  if (!result) return false;
+  const finalists = {
+    a: (result.finalists?.a || []).map((row) => ({ ...row })),
+    b: (result.finalists?.b || []).map((row) => ({ ...row }))
+  };
+  let changed = false;
+  ["a", "b"].forEach((key) => {
+    finalists[key] = finalists[key].map((row) => {
+      if (row.repechaged && matcher(row) && !row.repechageAnnouncedAt) {
+        changed = true;
+        return { ...row, repechageAnnouncedAt: announcedAt };
+      }
+      return row;
+    });
+  });
+  if (!changed) return false;
+  const collection = resultsCollection();
+  if (collection) {
+    await collection.doc(result.id).update({
+      finalists,
+      updatedAt: announcedAt
+    });
+  }
+  raceResults[index] = {
+    ...result,
+    finalists,
+    updatedAt: announcedAt
+  };
+  return true;
+}
+
+async function stampReplacementAnnouncement(result, row, announcedAt) {
+  return updateReplacementRowAnnouncement(
+    result.id,
+    (candidate) => finalistRowName(candidate) === finalistRowName(row) &&
+      String(candidate.rank || "") === String(row.rank || "") &&
+      String(candidate.time || "") === String(row.time || ""),
+    announcedAt
+  );
+}
+
 async function publishReplacementAfterSpeaker(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   const now = new Date().toISOString();
@@ -3572,39 +3662,16 @@ async function publishReplacementAfterSpeaker(alertId) {
     updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
     return;
   }
-  const index = raceResults.findIndex((result) => result.id === alert.resultId);
-  const result = raceResults[index];
-  if (!result) {
-    updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
-    return;
-  }
-  const finalists = {
-    a: (result.finalists?.a || []).map((row) => ({ ...row })),
-    b: (result.finalists?.b || []).map((row) => ({ ...row }))
-  };
-  ["a", "b"].forEach((key) => {
-    finalists[key] = finalists[key].map((row) => {
+  await updateReplacementRowAnnouncement(
+    alert.resultId,
+    (row) => {
       const sameName = finalistRowName(row) === alert.replacementName;
       const sameRank = !alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || "");
       const sameTime = !alert.replacementTime || String(row.time || "") === String(alert.replacementTime || "");
-      if (row.repechaged && sameName && sameRank && sameTime && !row.repechageAnnouncedAt) {
-        return { ...row, repechageAnnouncedAt: now };
-      }
-      return row;
-    });
-  });
-  const collection = resultsCollection();
-  if (collection) {
-    await collection.doc(result.id).update({
-      finalists,
-      updatedAt: now
-    });
-  }
-  raceResults[index] = {
-    ...result,
-    finalists,
-    updatedAt: now
-  };
+      return sameName && sameRank && sameTime;
+    },
+    now
+  );
   updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
 }
 
