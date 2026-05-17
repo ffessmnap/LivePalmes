@@ -407,6 +407,15 @@ function resultsCollection() {
     .collection("results");
 }
 
+function publicResultsIndexDocument() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("public")
+    .doc("resultsIndex");
+}
+
 function liveDataDocument() {
   if (!firestoreDb) return null;
   return firestoreDb
@@ -479,6 +488,7 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     updatedAt: livePayload.notes.livePublishedAt,
     source
   });
+  await publishPublicResultsIndex({ silent: true });
   firebaseStatus = "connected";
 }
 
@@ -909,6 +919,7 @@ function initFirebaseSync() {
         raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         ensurePendingFinalistsSpeakerAlerts();
         ensurePendingReplacementSpeakerAlerts();
+        if (state.role === "computer") publishPublicResultsIndex({ silent: true });
         renderResultsAdminPanel();
       }, (error) => {
         console.warn("Lecture des résultats Firebase impossible", error);
@@ -2086,6 +2097,60 @@ function resultIdForProgramRow(row) {
 function resultForProgramRow(row) {
   const raceKey = raceOptionKey(row.eventId, row.sex);
   return raceResults.find((result) => result.raceKey === raceKey) || null;
+}
+
+function publicResultPayload(result) {
+  if (!result) return null;
+  return {
+    id: result.id || "",
+    raceKey: result.raceKey || "",
+    programKey: result.programKey || "",
+    eventId: result.eventId || "",
+    eventLabel: result.eventLabel || "",
+    sex: result.sex || "",
+    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+    session: result.session || "",
+    startTime: result.startTime || "",
+    hasFinal: Boolean(result.hasFinal),
+    finalists: result.finalists || { a: [], b: [] },
+    nextUnqualified: result.nextUnqualified || [],
+    pdfName: result.pdfName || "",
+    pdfSize: result.pdfSize || 0,
+    createdAt: result.createdAt || "",
+    updatedAt: result.updatedAt || "",
+    isPartial: Boolean(result.isPartial),
+    status: result.status || "",
+    finalistsAnnouncedAt: result.finalistsAnnouncedAt || "",
+    finalWithdrawals: result.finalWithdrawals || []
+  };
+}
+
+function buildPublicResultsIndex() {
+  const updatedAt = new Date().toISOString();
+  return {
+    id: "resultsIndex",
+    meet: data.meet || {},
+    events: data.events || [],
+    program: data.program || [],
+    results: raceResults.map(publicResultPayload).filter(Boolean),
+    updatedAt,
+    sourceVersion: data.sourceVersion || "",
+    sourceLabel: data.notes?.sourceLabel || "",
+    lastUpdatedSession: data.notes?.lastUpdatedSession || ""
+  };
+}
+
+async function publishPublicResultsIndex({ silent = false } = {}) {
+  const doc = publicResultsIndexDocument();
+  if (!doc) return;
+  try {
+    await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
+  } catch (error) {
+    console.warn("Publication de l'index public impossible", error);
+    if (!silent) {
+      renderDataStatus("L'index public des résultats n'a pas pu être mis à jour. Vérifie les règles Firebase.");
+    }
+  }
 }
 
 function isLastProgramPartForRace(row) {
@@ -3589,9 +3654,14 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
   }
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
+  raceResults = [
+    result,
+    ...raceResults.filter((item) => item.id !== result.id)
+  ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   if (hasFinal && !preserveFinalists) {
     await createFinalistsSpeakerAlert(result);
   }
+  await publishPublicResultsIndex();
   return result;
 }
 
@@ -3752,6 +3822,7 @@ async function publishFinalistsAfterSpeaker(alertId) {
       updatedAt: now
     };
   }
+  await publishPublicResultsIndex();
   updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
 }
 
@@ -4067,6 +4138,7 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
   if (replacement) {
     await createFinalistReplacementSpeakerAlert(updated, row, replacement, now);
   }
+  await publishPublicResultsIndex();
   render();
   openFinalWithdrawalsModal(result.id);
 }
@@ -4124,6 +4196,7 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
     finalWithdrawals,
     updatedAt: now
   };
+  await publishPublicResultsIndex();
   render();
   openFinalWithdrawalsModal(result.id);
 }
@@ -4212,6 +4285,7 @@ async function updateReplacementRowAnnouncement(resultId, matcher, announcedAt) 
     finalists,
     updatedAt: announcedAt
   };
+  await publishPublicResultsIndex();
   return true;
 }
 
@@ -4249,6 +4323,8 @@ async function deleteResultPdf(resultId) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour supprimer ce résultat.");
   await collection.doc(resultId).delete();
+  raceResults = raceResults.filter((result) => result.id !== resultId);
+  await publishPublicResultsIndex();
 }
 
 async function clearPublishedResults() {
@@ -4258,6 +4334,7 @@ async function clearPublishedResults() {
   const docs = snapshot.docs || [];
   await Promise.all(docs.map((doc) => doc.ref.delete()));
   raceResults = [];
+  await publishPublicResultsIndex();
   renderResultsAdminPanel();
   return docs.length;
 }

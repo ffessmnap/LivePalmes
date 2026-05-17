@@ -48,6 +48,33 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      match /public/{documentId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && documentId == "resultsIndex"
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "meet",
+            "events",
+            "program",
+            "results",
+            "updatedAt",
+            "sourceVersion",
+            "sourceLabel",
+            "lastUpdatedSession"
+          ])
+          && request.resource.data.id == "resultsIndex"
+          && request.resource.data.meet is map
+          && request.resource.data.events is list
+          && request.resource.data.program is list
+          && request.resource.data.results is list
+          && validText(request.resource.data.updatedAt, 40)
+          && validOptionalText("sourceVersion", 120)
+          && validOptionalText("sourceLabel", 160)
+          && validOptionalText("lastUpdatedSession", 20);
+        allow delete: if false;
+      }
+
       match /roleLocks/{role} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
