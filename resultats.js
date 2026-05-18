@@ -406,7 +406,14 @@ function renderSeriesPdfLink(session) {
 
 function renderMeetTitle() {
   if (!meetTitle) return;
-  const title = [publicMeet.name, publicMeet.city, publicMeet.year].filter(Boolean).join(" - ");
+  const name = cleanText(publicMeet.name || "");
+  const city = cleanText(publicMeet.city || "");
+  const year = cleanText(publicMeet.year || "");
+  const titleParts = [name, city].filter(Boolean);
+  if (year && !titleParts.some((part) => new RegExp(`\\b${year}\\b`).test(part))) {
+    titleParts.push(year);
+  }
+  const title = titleParts.join(" - ");
   meetTitle.textContent = cleanText(title || "Résultats & finalistes");
   if (meetMeta) {
     const lastUpdate = publicIndexUpdatedAt || publicResults

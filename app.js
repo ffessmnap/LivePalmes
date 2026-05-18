@@ -8072,9 +8072,6 @@ function parseImportedMeetMetadata(lines) {
   if (!city && secondUseful) {
     city = secondUseful.split(/\s+-\s+/)[0].trim();
   }
-  if (year && name && !name.includes(year)) {
-    name = `${name} ${year}`;
-  }
   return {
     name: name || "Séries importées",
     city,
