@@ -1574,11 +1574,58 @@ body.profile-home-active .top-actions {
   overflow: hidden;
 }
 
+.pdf-viewer-page .public-results-header {
+  gap: 8px;
+  min-height: 0;
+  padding: 6px 10px;
+  border-top-width: 2px;
+}
+
+.pdf-viewer-page .public-results-header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pdf-viewer-page .app-name {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+.pdf-viewer-page .livepalmes-logo {
+  width: 18px;
+  height: 18px;
+}
+
+.pdf-viewer-page .public-results-header h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-viewer-page .public-meet-meta {
+  display: none;
+}
+
+.pdf-viewer-page .public-results-header .ghost-button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+}
+
 .pdf-viewer-shell {
   display: grid;
   gap: 8px;
-  height: calc(100vh - 86px);
-  padding: 10px;
+  height: calc(100vh - 47px);
+  padding: 6px;
 }
 
 .pdf-frame {
@@ -4483,6 +4530,39 @@ tbody tr:hover,
 
   .history-list.compact-scroll {
     max-height: 520px;
+  }
+
+  .pdf-viewer-page .public-results-header {
+    padding: 4px 6px;
+  }
+
+  .pdf-viewer-page .public-results-header > div {
+    gap: 6px;
+  }
+
+  .pdf-viewer-page .app-name {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .pdf-viewer-page .livepalmes-logo {
+    width: 20px;
+    height: 20px;
+  }
+
+  .pdf-viewer-page .public-results-header h1 {
+    font-size: 0.82rem;
+  }
+
+  .pdf-viewer-page .public-results-header .ghost-button {
+    min-height: 26px;
+    padding: 0 7px;
+    font-size: 0.68rem;
+  }
+
+  .pdf-viewer-shell {
+    height: calc(100vh - 38px);
+    padding: 4px;
   }
 
   .decision-modal {
