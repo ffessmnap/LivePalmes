@@ -2925,7 +2925,7 @@ function renderResultProgramRow(row) {
           </button>
         ` : ""}
         ${publicVisible ? `
-          <a class="ghost-button compact" href="resultat-pdf.html?id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir public</a>
+          <a class="ghost-button compact" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir public</a>
         ` : (result ? `<span class="result-public-waiting">Public après annonce</span>` : "")}
       </div>
     </div>

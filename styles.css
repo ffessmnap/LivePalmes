@@ -1576,7 +1576,9 @@ body.profile-home-active .top-actions {
 
 .pdf-viewer-page .public-results-header {
   gap: 8px;
+  box-sizing: border-box;
   min-height: 0;
+  height: 36px;
   padding: 6px 10px;
   border-top-width: 2px;
 }
@@ -1586,6 +1588,7 @@ body.profile-home-active .top-actions {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .pdf-viewer-page .app-name {
@@ -1624,7 +1627,7 @@ body.profile-home-active .top-actions {
 .pdf-viewer-shell {
   display: grid;
   gap: 8px;
-  height: calc(100vh - 47px);
+  height: calc(100vh - 36px);
   padding: 6px;
 }
 
@@ -4533,6 +4536,7 @@ tbody tr:hover,
   }
 
   .pdf-viewer-page .public-results-header {
+    height: 34px;
     padding: 4px 6px;
   }
 
@@ -4561,7 +4565,7 @@ tbody tr:hover,
   }
 
   .pdf-viewer-shell {
-    height: calc(100vh - 38px);
+    height: calc(100vh - 34px);
     padding: 4px;
   }
 

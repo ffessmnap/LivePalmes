@@ -336,7 +336,7 @@ function renderResultDetails(result) {
   return `
     ${publicFinalistsVisible ? `
       <div class="public-result-actions">
-        <a class="ghost-button compact confirm-button" href="resultat-pdf.html?id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">PDF</a>
+        <a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir</a>
       </div>
     ` : ""}
     ${result.hasFinal && publicFinalistsVisible ? `
@@ -399,7 +399,7 @@ function renderSeriesPdfLink(session) {
         <strong>${escapeHtml(label)}</strong>
         ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
       </div>
-      <a class="ghost-button compact confirm-button" href="series-pdf.html?id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">Voir les séries</a>
+      <a class="ghost-button compact confirm-button" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">Voir les séries</a>
     </div>
   `;
 }
