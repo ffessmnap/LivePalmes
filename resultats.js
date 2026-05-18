@@ -267,7 +267,7 @@ function renderFinalistRows(title, rows, result) {
             <strong>${escapeHtml(finalistName(row))}</strong>
             <span>${escapeHtml(row.time || "")}${withdrawalLabel ? ` <small>${escapeHtml(withdrawalLabel)}</small>` : ""}</span>
             ${row.withdrawnAt ? `<mark class="public-finalist-badge withdrawn">Forfait</mark>` : ""}
-            ${row.repechaged ? `<mark class="public-finalist-badge repechaged">Repêché${result?.sex === "F" ? "e" : ""}</mark>` : ""}
+            ${row.repechaged && !row.withdrawnAt ? `<mark class="public-finalist-badge repechaged">Repêché${result?.sex === "F" ? "e" : ""}</mark>` : ""}
           </li>
         `;
         }).join("")}
@@ -299,13 +299,17 @@ function renderResultDetails(result) {
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
   const finalistCount = ["a", "b"].reduce((count, key) => count + (result.finalists?.[key] || []).filter((row) => !row.withdrawnAt).length, 0);
   const finalistKeys = new Set(["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) =>
-    [row.rank, cleanText(row.displayName), row.time].filter(Boolean).join("|")
+    [row.rank, cleanText(row.displayName || finalistName(row)), row.time].filter(Boolean).join("|")
   )));
+  const finalistNames = new Set(["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) =>
+    cleanText(row.displayName || finalistName(row))
+  )).filter(Boolean));
   const baseNextUnqualified = result.nextUnqualified?.length > 8
     ? result.nextUnqualified
     : (result.ranking || []).filter((row) => !row.qualified);
   const nextUnqualified = (baseNextUnqualified || []).filter((row) =>
-    !finalistKeys.has([row.rank, cleanText(row.displayName), row.time].filter(Boolean).join("|"))
+    !finalistKeys.has([row.rank, cleanText(row.displayName || finalistName(row)), row.time].filter(Boolean).join("|")) &&
+    !finalistNames.has(cleanText(row.displayName || finalistName(row)))
   );
   return `
     ${publicFinalistsVisible ? `
