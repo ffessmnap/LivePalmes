@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260518-logo-final">
-    <link rel="stylesheet" href="styles.css?v=20260518-clap-smaller">
+    <link rel="stylesheet" href="styles.css?v=20260518-result-status-finalists">
   </head>
   <body>
     <header class="topbar">
@@ -68,7 +68,12 @@
           <small>Suivi de course et informations sans action officielle.</small>
         </button>
         <button class="profile-card profile-speaker" type="button" data-home-role="speaker">
-          <span class="profile-icon" aria-hidden="true">🎙</span>
+          <span class="profile-icon" aria-hidden="true">
+            <svg class="profile-svg-icon" viewBox="0 0 48 48" focusable="false">
+              <rect x="17" y="6" width="14" height="24" rx="7"/>
+              <path d="M11 22c0 7.2 5.1 12 13 12s13-4.8 13-12M24 34v8M16 42h16"/>
+            </svg>
+          </span>
           <strong>Speaker</strong>
           <span class="profile-presence" data-presence-role="speaker">0 connect&eacute;</span>
           <small>Annonces, rep&egrave;res chrono et alertes officielles.</small>
@@ -82,24 +87,40 @@
           <small>Saisie des forfaits, abandons et disqualifications.</small>
         </button>
         <button class="profile-card profile-video" type="button" data-home-role="video">
-          <span class="profile-icon" aria-hidden="true">◉</span>
+          <span class="profile-icon" aria-hidden="true">
+            <svg class="profile-svg-icon" viewBox="0 0 48 48" focusable="false">
+              <rect x="7" y="15" width="22" height="15" rx="5"/>
+              <path d="M29 20l11-6v22l-11-6zM16 35h10M21 30v5"/>
+            </svg>
+          </span>
           <strong>Juge vid&eacute;o</strong>
           <span class="profile-presence" data-presence-role="video">0 connect&eacute;</span>
           <small>Demandes d'arbitrage vid&eacute;o et historique.</small>
         </button>
         <button class="profile-card profile-computer" type="button" data-home-role="computer">
-          <span class="profile-icon" aria-hidden="true">⌨</span>
+          <span class="profile-icon" aria-hidden="true">
+            <svg class="profile-svg-icon" viewBox="0 0 48 48" focusable="false">
+              <rect x="8" y="9" width="32" height="23" rx="3"/>
+              <path d="M18 39h12M21 32v7M27 32v7"/>
+            </svg>
+          </span>
           <strong>Bureau des performances</strong>
           <span class="profile-presence" data-presence-role="computer">0 connect&eacute;</span>
           <small>Publication des r&eacute;sultats, s&eacute;ries, journal et administration.</small>
         </button>
         <button class="profile-card profile-secretary" type="button" data-home-role="secretary">
-          <span class="profile-icon" aria-hidden="true">✎</span>
+          <span class="profile-icon" aria-hidden="true">
+            <svg class="profile-svg-icon" viewBox="0 0 48 48" focusable="false">
+              <path d="M10 35l3 3 9-2 17-17-10-10-17 17z"/>
+              <path d="M26 12l10 10M9 41h30"/>
+            </svg>
+          </span>
           <strong>Secr&eacute;tariat</strong>
           <span class="profile-presence" data-presence-role="secretary">0 connect&eacute;</span>
           <small>Gestion des forfaits en finale et rep&ecirc;chages.</small>
         </button>
       </div>
+      <p class="app-version">LivePalmes v1.1</p>
     </section>
 
     <main class="app-shell" hidden>
@@ -200,6 +221,7 @@
 
     <footer class="footer-status">
       <div id="dataStatus" class="data-status" hidden></div>
+      <span class="app-version">LivePalmes v1.1</span>
     </footer>
 
     <div class="floating-series-nav">
@@ -220,6 +242,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260518-no-smartphone-mode"></script>
+    <script src="app.js?v=20260518-result-status-finalists"></script>
   </body>
 </html>

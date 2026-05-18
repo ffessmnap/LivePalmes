@@ -279,9 +279,9 @@ function renderFinalistRows(title, rows, result) {
 function renderNextUnqualified(rows) {
   if (!rows?.length) return "";
   const renderRows = (items) => items.map((row) => `
-    <li value="${escapeHtml(row.rank || "")}">
+    <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
       <strong>${escapeHtml(finalistName(row))}</strong>
-      <span>${escapeHtml(row.time || "")}</span>
+      <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
     </li>
   `).join("");
   return `
