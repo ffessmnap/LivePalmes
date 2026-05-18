@@ -1,0 +1,156 @@
+const FIRESTORE_COMPETITION_ID = "livepalmes-active";
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
+  authDomain: "livepalmes.firebaseapp.com",
+  projectId: "livepalmes",
+  storageBucket: "livepalmes.firebasestorage.app",
+  messagingSenderId: "718081132564",
+  appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
+};
+
+const PDFJS_WORKER_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const pdfTitle = document.querySelector("#pdfTitle");
+const statusBox = document.querySelector("#pdfViewerStatus");
+const pdfFrame = document.querySelector("#pdfFrame");
+const canvasViewer = document.querySelector("#pdfCanvasViewer");
+const fallback = document.querySelector("#pdfFallback");
+
+const PDF_TYPES = {
+  resultat: {
+    collection: "results",
+    defaultTitle: "Résultat",
+    missingId: "PDF introuvable : aucun identifiant de résultat.",
+    missingDoc: "PDF introuvable ou résultat non publié.",
+    downloadName: "resultat.pdf",
+    titleFromData: (data) => `${data.eventLabel || "Résultat"} ${data.sexLabel || ""}`.trim()
+  },
+  series: {
+    collection: "seriesPdfs",
+    defaultTitle: "Séries",
+    missingId: "PDF de séries introuvable.",
+    missingDoc: "PDF de séries introuvable ou non publié.",
+    downloadName: "series.pdf",
+    titleFromData: (data) => data.sourceLabel || "Séries"
+  }
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function showMessage(message) {
+  if (!statusBox) return;
+  statusBox.hidden = false;
+  statusBox.innerHTML = `<p class="panel-subtitle">${escapeHtml(message)}</p>`;
+}
+
+function dataUrlToBytes(dataUrl) {
+  const [header, base64] = String(dataUrl || "").split(",");
+  if (!header?.includes("application/pdf") || !base64) return null;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function dataUrlToBlobUrl(dataUrl) {
+  const bytes = dataUrlToBytes(dataUrl);
+  if (!bytes) return "";
+  return URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+}
+
+async function renderPdfInline(dataUrl) {
+  const bytes = dataUrlToBytes(dataUrl);
+  if (!bytes || !canvasViewer || !window.pdfjsLib) return false;
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+  canvasViewer.hidden = false;
+  canvasViewer.innerHTML = "";
+  const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+  if (statusBox) statusBox.hidden = true;
+  const dpr = window.devicePixelRatio || 1;
+  const containerWidth = Math.max(canvasViewer.clientWidth || window.innerWidth || 360, 320);
+  const targetWidth = Math.min(containerWidth - 16, 980);
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = targetWidth / baseViewport.width;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvasViewer.appendChild(canvas);
+    await page.render({ canvasContext: context, viewport }).promise;
+  }
+  return true;
+}
+
+function showFallback(blobUrl, pdfName) {
+  if (pdfFrame && blobUrl) {
+    pdfFrame.hidden = false;
+    pdfFrame.src = blobUrl;
+  }
+  if (fallback && blobUrl) {
+    fallback.hidden = false;
+    fallback.innerHTML = `
+      <a class="ghost-button compact confirm-button" href="${escapeHtml(blobUrl)}" target="_blank" rel="noopener">Ouvrir le PDF</a>
+      <a class="ghost-button compact" href="${escapeHtml(blobUrl)}" download="${escapeHtml(pdfName || "livepalmes.pdf")}">Télécharger</a>
+    `;
+  }
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get("type") || "resultat";
+  const id = params.get("id");
+  const config = PDF_TYPES[type] || PDF_TYPES.resultat;
+  if (pdfTitle) pdfTitle.textContent = config.defaultTitle;
+  if (!id) {
+    showMessage(config.missingId);
+    return;
+  }
+  if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
+    showMessage("Firebase n'est pas disponible sur cette page.");
+    return;
+  }
+  if (!window.firebase.apps?.length) {
+    window.firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const snapshot = await window.firebase.firestore()
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection(config.collection)
+    .doc(id)
+    .get();
+  if (!snapshot.exists) {
+    showMessage(config.missingDoc);
+    return;
+  }
+  const data = snapshot.data();
+  if (pdfTitle) pdfTitle.textContent = config.titleFromData(data);
+  const rendered = await renderPdfInline(data.pdfDataUrl);
+  if (rendered) return;
+  const blobUrl = dataUrlToBlobUrl(data.pdfDataUrl);
+  if (!blobUrl) {
+    showMessage("Le PDF n'a pas pu être chargé.");
+    return;
+  }
+  if (statusBox) statusBox.hidden = true;
+  showFallback(blobUrl, data.pdfName || config.downloadName);
+}
+
+init().catch((error) => {
+  console.error(error);
+  showMessage(`Impossible de charger le PDF : ${error?.message || error}`);
+});
