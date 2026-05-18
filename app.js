@@ -5,6 +5,7 @@ const UNLOCKED_ROLES_KEY = "napSpeakerFrance2026:unlocked-roles:v1";
 const CLIENT_ID_KEY = "napSpeakerFrance2026:client-id:v1";
 const ACTIVE_VIEW_KEY = "napSpeakerFrance2026:active-view:v1";
 const ROLE_STATES_KEY = "napSpeakerFrance2026:role-states:v1";
+const LAST_ACTIVITY_KEY = "napSpeakerFrance2026:last-activity:v1";
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
@@ -18,6 +19,7 @@ const ROLE_PINS = {
 const LOCK_DURATION_MS = 120000;
 const LOCK_HEARTBEAT_MS = 30000;
 const FIREBASE_CONNECTION_CHECK_MS = 15000;
+const HOME_AFTER_INACTIVITY_MS = 15 * 60 * 1000;
 const COMPETITION_INACTIVITY_MS = 60 * 60 * 1000;
 const COMPETITION_INACTIVITY_CHECK_MS = 60 * 1000;
 const PRESENCE_DURATION_MS = 3 * 60 * 1000;
@@ -194,8 +196,22 @@ function knownRole(role) {
   return ["live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
 }
 
+function lastActivityTimestamp() {
+  return Number(localStorage.getItem(LAST_ACTIVITY_KEY) || "0") || 0;
+}
+
+function saveLastActivityTimestamp(timestamp = Date.now()) {
+  localStorage.setItem(LAST_ACTIVITY_KEY, String(timestamp));
+}
+
+function shouldReturnHomeForInactivity() {
+  const last = lastActivityTimestamp();
+  return last > 0 && Date.now() - last > HOME_AFTER_INACTIVITY_MS;
+}
+
 function loadActiveView() {
   const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
+  if (shouldReturnHomeForInactivity()) return { role: "live", profileHomeActive: true };
   if (!saved) return { role: "live", profileHomeActive: true };
   try {
     const parsed = JSON.parse(saved);
@@ -264,6 +280,10 @@ function switchRole(nextRole) {
 }
 
 const initialView = loadActiveView();
+if (initialView.profileHomeActive && shouldReturnHomeForInactivity()) {
+  unlockedRoles = [];
+  saveUnlockedRoles();
+}
 const initialRole = knownRole(initialView.role) ? initialView.role : "live";
 let state = createRoleState(initialRole);
 let roleStates = loadRoleStates();
@@ -278,9 +298,6 @@ let expandedHistories = {
   role: false
 };
 let isFullscreenMode = Boolean(document.fullscreenElement);
-let refereeTabletMode = false;
-let videoTabletMode = false;
-let computerTabletMode = false;
 let profileHomeActive = initialView.profileHomeActive;
 let firestoreDb = null;
 let firestoreUnsubscribe = null;
@@ -1118,6 +1135,19 @@ async function endCompetitionSession() {
 
 function markConsoleActivity() {
   lastConsoleActivityAt = Date.now();
+  saveLastActivityTimestamp(lastConsoleActivityAt);
+}
+
+async function returnHomeAfterLocalInactivity() {
+  if (!shouldReturnHomeForInactivity() || profileHomeActive) return;
+  saveCurrentRoleState();
+  profileHomeActive = true;
+  unlockedRoles = [];
+  saveUnlockedRoles();
+  await releaseRoleLock();
+  await releaseConsolePresence();
+  render();
+  refreshPresenceCounts();
 }
 
 async function disableCompetitionModeAfterInactivity() {
@@ -2120,9 +2150,6 @@ function render() {
   document.body.classList.toggle("role-video", state.role === "video");
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("role-secretary", state.role === "secretary");
-  document.body.classList.toggle("referee-tablet-mode", state.role === "referee" && refereeTabletMode);
-  document.body.classList.toggle("video-tablet-mode", state.role === "video" && videoTabletMode);
-  document.body.classList.toggle("computer-tablet-mode", state.role === "computer" && computerTabletMode);
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
   if (profileModeStatus) {
@@ -2158,21 +2185,10 @@ function render() {
   });
   if (roleBadge) roleBadge.textContent = ROLE_LABELS[state.role] || "Console";
   if (fullscreenBtn) {
-    fullscreenBtn.hidden = state.role === "referee";
+    fullscreenBtn.hidden = profileHomeActive;
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
   }
-  if (viewModeBtn) {
-    const canUseSmartphoneMode = ["referee", "video"].includes(state.role);
-    const isSmartphoneMode = (
-      (state.role === "referee" && refereeTabletMode) ||
-      (state.role === "video" && videoTabletMode) ||
-      (state.role === "computer" && computerTabletMode)
-    );
-    viewModeBtn.hidden = !canUseSmartphoneMode;
-    viewModeBtn.textContent = isSmartphoneMode ? "🖥" : "📱";
-    viewModeBtn.title = isSmartphoneMode ? "Revenir à l'affichage classique" : "Passer en affichage smartphone";
-    viewModeBtn.setAttribute("aria-label", viewModeBtn.title);
-  }
+  if (viewModeBtn) viewModeBtn.hidden = true;
   if (roleLockBtn) {
     roleLockBtn.textContent = pinLockEnabled() ? "🔒" : "🔓";
     roleLockBtn.title = pinLockEnabled() ? "Codes actifs" : "Codes inactifs";
@@ -2199,6 +2215,7 @@ function render() {
   }
   updateEventSelect();
   renderSessionControls();
+  syncLineOrderButtonPlacement();
   renderSeriesControls();
   renderProgramButtons();
   renderCategorySelect();
@@ -2214,25 +2231,33 @@ function render() {
 
 function syncProgramButtonPlacement() {
   if (!programBtn || !sidebar) return;
-  const compactReferee = state.role === "referee" && refereeTabletMode;
-  const compactVideo = state.role === "video" && videoTabletMode;
-  const compactComputer = state.role === "computer" && computerTabletMode;
-  if (compactReferee || compactVideo || compactComputer) {
-    const compactTarget = roleSwitch || topActions || sidebar;
-    if (programBtn.parentElement !== compactTarget) {
-      compactTarget.appendChild(programBtn);
-    }
-    return;
-  }
   const panelActions = document.querySelector(".entrants-panel .panel-actions");
   if (["speaker", "referee", "live"].includes(state.role) && panelActions) {
     if (programBtn.parentElement !== panelActions) {
-      panelActions.insertBefore(programBtn, lineOrderBtn || null);
+      const lineOrderReference = lineOrderBtn?.parentElement === panelActions ? lineOrderBtn : null;
+      panelActions.insertBefore(programBtn, lineOrderReference);
     }
     return;
   }
   if (programBtn.parentElement !== sidebar) {
     sidebar.insertBefore(programBtn, categoryField || null);
+  }
+}
+
+function syncLineOrderButtonPlacement() {
+  if (!lineOrderBtn) return;
+  const topSessionField = sessionControls?.closest(".top-session-field");
+  const panelActions = document.querySelector(".entrants-panel .panel-actions");
+  const shouldUseTopbar = ["live", "speaker", "referee"].includes(state.role) && topSessionField;
+  if (shouldUseTopbar) {
+    if (lineOrderBtn.parentElement !== topSessionField) {
+      topSessionField.appendChild(lineOrderBtn);
+    }
+    return;
+  }
+  if (panelActions && lineOrderBtn.parentElement !== panelActions) {
+    const filteredReference = filteredCount?.parentElement === panelActions ? filteredCount : null;
+    panelActions.insertBefore(lineOrderBtn, filteredReference);
   }
 }
 
@@ -3435,10 +3460,11 @@ function renderDecisionPanel() {
     return;
   }
   const entrant = selectedEntrant();
+  const modalOpen = Boolean(decisionModal && !decisionModal.hidden && decisionModal.innerHTML.trim());
   decisionPanel.hidden = false;
   decisionPanel.innerHTML = `
     <h3>Décision juge arbitre</h3>
-    <p class="panel-subtitle">${entrant ? `${escapeHtml(formatDisplayName(entrant))} sélectionné. La fenêtre de décision est ouverte.` : "Clique sur une ligne de la série pour créer une décision."}</p>
+    <p class="panel-subtitle">${entrant && modalOpen ? `${escapeHtml(formatDisplayName(entrant))} sélectionné. La fenêtre de décision est ouverte.` : "Clique sur une ligne de la série pour créer une décision."}</p>
   `;
 }
 
@@ -3459,10 +3485,15 @@ function openDecisionModal() {
   renderDecisionModal();
 }
 
-function closeDecisionModal() {
+function closeDecisionModal({ clearSelection = false } = {}) {
   if (!decisionModal) return;
   decisionModal.hidden = true;
   decisionModal.innerHTML = "";
+  if (clearSelection) {
+    state.selectedSwimmerId = "";
+    renderEntrants();
+    renderDecisionPanel();
+  }
 }
 
 function decisionNeedsDetail(type) {
@@ -4010,7 +4041,7 @@ function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, next
 
 function renderProgramButtons() {
   if (programBtn) {
-    const inlineProgram = ["speaker", "referee", "live"].includes(state.role) && !(state.role === "referee" && refereeTabletMode);
+    const inlineProgram = ["speaker", "referee", "live"].includes(state.role);
     programBtn.textContent = inlineProgram ? "Programme" : "P";
     programBtn.title = "Programme";
     programBtn.setAttribute("aria-label", "Programme");
@@ -4084,11 +4115,7 @@ function renderProgramModal() {
   if (!programModal || programModal.hidden) return;
   const viewState = ["video", "computer"].includes(state.role) ? (roleStates.speaker || state) : state;
   const readOnlyProgram = ["video", "computer"].includes(state.role);
-  const compactProgram = (
-    (state.role === "referee" && refereeTabletMode) ||
-    (state.role === "video" && videoTabletMode) ||
-    (state.role === "computer" && computerTabletMode)
-  );
+  const compactProgram = false;
   const rows = (data.program || [])
     .filter((row) => viewState.session === "all" || !row.session || row.session === viewState.session)
     .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
@@ -5289,7 +5316,7 @@ function renderEntrants() {
   if (swimmerHeader) swimmerHeader.textContent = isFemaleContext() ? "Nageuse" : "Nageur";
   if (searchLabel) searchLabel.textContent = `Recherche ${entrantWord(1)}`;
   if (lineOrderBtn) {
-    lineOrderBtn.hidden = !hasSeriesFilter;
+    lineOrderBtn.hidden = !hasSeriesFilter || !["live", "speaker", "referee"].includes(state.role);
     lineOrderBtn.textContent = state.lineOrder === "desc" ? "Lignes 8→1" : "Lignes 1→8";
     lineOrderBtn.title = state.lineOrder === "desc" ? "Afficher les lignes de 1 à 8" : "Afficher les lignes de 8 à 1";
   }
@@ -6567,23 +6594,8 @@ sessionControls?.addEventListener("change", (event) => {
   changeSession(event.target.value);
 });
 
-async function openRoleConsole(nextRole, { allowTabletToggle = false } = {}) {
+async function openRoleConsole(nextRole) {
   if (!ROLE_LABELS[nextRole]) return;
-  if (allowTabletToggle && nextRole === "referee" && state.role === "referee") {
-    refereeTabletMode = !refereeTabletMode;
-    render();
-    return;
-  }
-  if (allowTabletToggle && nextRole === "video" && state.role === "video") {
-    videoTabletMode = !videoTabletMode;
-    render();
-    return;
-  }
-  if (allowTabletToggle && nextRole === "computer" && state.role === "computer") {
-    computerTabletMode = !computerTabletMode;
-    render();
-    return;
-  }
   if (!requestRoleAccess(nextRole)) {
     const access = await askRolePin(nextRole);
     if (!access?.allowed) return;
@@ -6609,7 +6621,7 @@ async function openRoleConsole(nextRole, { allowTabletToggle = false } = {}) {
 
 document.querySelectorAll(".role-chip").forEach((button) => {
   button.addEventListener("click", async () => {
-    await openRoleConsole(button.dataset.role || "speaker", { allowTabletToggle: true });
+    await openRoleConsole(button.dataset.role || "speaker");
   });
 });
 
@@ -7127,7 +7139,7 @@ alertDetailModal?.addEventListener("click", (event) => {
 
 decisionModal?.addEventListener("click", (event) => {
   if (event.target === decisionModal || event.target.closest("[data-close-decision]")) {
-    closeDecisionModal();
+    closeDecisionModal({ clearSelection: true });
     return;
   }
   const entrant = selectedEntrant();
@@ -7136,7 +7148,7 @@ decisionModal?.addEventListener("click", (event) => {
   if (cancelButton) {
     const ok = window.confirm("Annuler cette DSQ ? Une alerte sera envoyée si le speaker ou le bureau des performances doit corriger l'information.");
     if (ok) {
-      closeDecisionModal();
+      closeDecisionModal({ clearSelection: true });
       cancelDecision(cancelButton.dataset.cancelActiveDecision, "referee");
     }
     return;
@@ -7273,17 +7285,6 @@ fullscreenBtn?.addEventListener("click", async () => {
     isFullscreenMode = !isFullscreenMode;
     render();
   }
-});
-
-viewModeBtn?.addEventListener("click", () => {
-  if (state.role === "referee") {
-    refereeTabletMode = !refereeTabletMode;
-  } else if (state.role === "video") {
-    videoTabletMode = !videoTabletMode;
-  } else if (state.role === "computer") {
-    computerTabletMode = !computerTabletMode;
-  }
-  render();
 });
 
 document.addEventListener("fullscreenchange", () => {
@@ -8376,6 +8377,11 @@ setInterval(() => {
 }, PRESENCE_HEARTBEAT_MS);
 ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
   window.addEventListener(eventName, markConsoleActivity, { passive: true });
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    returnHomeAfterLocalInactivity();
+  }
 });
 window.addEventListener("online", checkFirebaseConnection);
 window.addEventListener("offline", () => {
