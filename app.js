@@ -2949,7 +2949,7 @@ function renderResultsAdminPanel() {
           </label>
         ` : ""}
         <button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>
-        <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
+        <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
@@ -3061,7 +3061,7 @@ function renderSecretaryFinalsPanel() {
         <h3>Forfaits finales</h3>
         <p class="panel-subtitle">Gestion par le secrétariat après annonce officielle des finalistes.</p>
       </div>
-      <a class="ghost-button compact" href="resultats.html" target="_blank" rel="noopener">Page publique</a>
+      <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
     </div>
     <div class="secretary-finals-list">
       ${finals.length ? finals.map((result) => {
