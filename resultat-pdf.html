@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PDF résultat - LivePalmes</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-public-sex-colors">
+    <link rel="stylesheet" href="styles.css?v=20260518-inline-pdf-viewer">
   </head>
   <body class="public-results-page pdf-viewer-page">
     <header class="public-results-header">
@@ -30,12 +30,14 @@
       <div id="pdfViewerStatus" class="panel">
         <p class="panel-subtitle">Chargement du PDF...</p>
       </div>
+      <div id="pdfCanvasViewer" class="pdf-canvas-viewer" hidden></div>
       <iframe id="pdfFrame" class="pdf-frame" title="PDF résultat" hidden></iframe>
       <div id="pdfFallback" class="panel pdf-fallback" hidden></div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="resultat-pdf.js?v=20260517-direct-pdf"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="resultat-pdf.js?v=20260518-inline-pdf-viewer"></script>
   </body>
 </html>

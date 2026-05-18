@@ -5,29 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Séries LivePalmes</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="styles.css?v=20260517-series-pdf-public">
+    <link rel="stylesheet" href="styles.css?v=20260518-inline-pdf-viewer">
   </head>
-  <body class="public-results-page">
+  <body class="public-results-page pdf-viewer-page">
     <header class="public-results-header">
       <div>
         <p class="eyebrow">LivePalmes</p>
         <h1 id="pdfTitle">Séries</h1>
         <p class="public-meet-meta">Ouverture du PDF...</p>
       </div>
+      <a class="ghost-button compact" href="resultats.html">Retour</a>
     </header>
 
-    <main class="public-results-shell">
-      <section class="panel">
-        <div id="pdfViewerStatus">
-          <p class="panel-subtitle">Chargement du PDF des séries.</p>
-        </div>
-        <iframe id="pdfFrame" title="PDF des séries" hidden></iframe>
-        <div id="pdfFallback" class="public-result-actions" hidden></div>
-      </section>
+    <main class="pdf-viewer-shell">
+      <div id="pdfViewerStatus" class="panel">
+        <p class="panel-subtitle">Chargement du PDF des séries...</p>
+      </div>
+      <div id="pdfCanvasViewer" class="pdf-canvas-viewer" hidden></div>
+      <iframe id="pdfFrame" class="pdf-frame" title="PDF des séries" hidden></iframe>
+      <div id="pdfFallback" class="panel pdf-fallback" hidden></div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-    <script src="series-pdf.js?v=20260517-series-pdf-public"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="series-pdf.js?v=20260518-inline-pdf-viewer"></script>
   </body>
 </html>

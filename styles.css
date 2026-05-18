@@ -1549,6 +1549,34 @@ body.role-referee #fullscreenBtn {
   background: #ffffff;
 }
 
+.pdf-canvas-viewer {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf3f6;
+}
+
+.pdf-canvas-viewer[hidden] {
+  display: none;
+}
+
+.pdf-canvas-viewer canvas {
+  display: block;
+  width: 100%;
+  max-width: 980px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(6, 42, 58, 0.14);
+}
+
 .pdf-fallback {
   display: flex;
   gap: 8px;
