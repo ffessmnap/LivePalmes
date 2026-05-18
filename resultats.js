@@ -234,6 +234,24 @@ function finalistName(row) {
   return [name, row.birthYear ? `(${row.birthYear})` : "", row.club].filter(Boolean).join(" ");
 }
 
+function finalRowOrderValue(row, fallback = 9999) {
+  const rank = Number(row?.rank);
+  if (Number.isFinite(rank) && rank > 0) return rank;
+  const sourceIndex = Number(row?.sourceIndex);
+  if (Number.isFinite(sourceIndex)) return 10000 + sourceIndex;
+  return fallback;
+}
+
+function sortedFinalRows(rows = []) {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) =>
+      finalRowOrderValue(a.row, 20000 + a.index) - finalRowOrderValue(b.row, 20000 + b.index) ||
+      a.index - b.index
+    )
+    .map((item) => item.row);
+}
+
 function formatDeadlineTime(date) {
   if (!date || Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
@@ -297,11 +315,15 @@ function renderNextUnqualified(rows) {
 function renderResultDetails(result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
-  const finalistCount = ["a", "b"].reduce((count, key) => count + (result.finalists?.[key] || []).filter((row) => !row.withdrawnAt).length, 0);
-  const finalistKeys = new Set(["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) =>
+  const finalists = {
+    a: sortedFinalRows(result.finalists?.a || []),
+    b: sortedFinalRows(result.finalists?.b || [])
+  };
+  const finalistCount = ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter((row) => !row.withdrawnAt).length, 0);
+  const finalistKeys = new Set(["a", "b"].flatMap((key) => (finalists[key] || []).map((row) =>
     [row.rank, cleanText(row.displayName || finalistName(row)), row.time].filter(Boolean).join("|")
   )));
-  const finalistNames = new Set(["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) =>
+  const finalistNames = new Set(["a", "b"].flatMap((key) => (finalists[key] || []).map((row) =>
     cleanText(row.displayName || finalistName(row))
   )).filter(Boolean));
   const baseNextUnqualified = result.nextUnqualified?.length > 8
@@ -322,10 +344,10 @@ function renderResultDetails(result) {
         <strong>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</strong>
       </div>
       <details class="public-finalists-group">
-        <summary>${(result.finalists?.b || []).length ? "Finales A et B" : "Finale A"}</summary>
+        <summary>${(finalists.b || []).length ? "Finales A et B" : "Finale A"}</summary>
         <div class="public-finalists-grid">
-          ${renderFinalistRows("Finale A", result.finalists?.a || [], result)}
-          ${renderFinalistRows("Finale B", result.finalists?.b || [], result)}
+          ${renderFinalistRows("Finale A", finalists.a || [], result)}
+          ${renderFinalistRows("Finale B", finalists.b || [], result)}
         </div>
       </details>
       ${renderNextUnqualified(nextUnqualified || [])}

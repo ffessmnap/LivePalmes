@@ -2503,7 +2503,7 @@ function finalistRowName(row) {
 
 function finalRowsForAnnouncementAlert(alert) {
   const result = alert?.resultId ? raceResults.find((item) => item.id === alert.resultId) : null;
-  return result?.finalists || alert?.finalists || {};
+  return normalizeFinalistsOrder(result?.finalists || alert?.finalists || {});
 }
 
 function renderFinalistsAlertList(alert) {
@@ -4618,6 +4618,31 @@ function finalRowKey(row) {
   return String(row?.rowKey || [row?.rank, row?.displayName || finalistRowName(row), row?.time].filter(Boolean).join("|"));
 }
 
+function finalRowOrderValue(row, fallback = 9999) {
+  const rank = Number(row?.rank);
+  if (Number.isFinite(rank) && rank > 0) return rank;
+  const sourceIndex = Number(row?.sourceIndex);
+  if (Number.isFinite(sourceIndex)) return 10000 + sourceIndex;
+  return fallback;
+}
+
+function sortedFinalRows(rows = []) {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) =>
+      finalRowOrderValue(a.row, 20000 + a.index) - finalRowOrderValue(b.row, 20000 + b.index) ||
+      a.index - b.index
+    )
+    .map((item) => item.row);
+}
+
+function normalizeFinalistsOrder(finalists = {}) {
+  return {
+    a: sortedFinalRows(finalists.a || []),
+    b: sortedFinalRows(finalists.b || [])
+  };
+}
+
 function activeFinalPreWithdrawals(result) {
   return (result?.finalPreWithdrawals || []).filter((item) => !item.cancelledAt);
 }
@@ -4703,11 +4728,22 @@ function addReplacementChain(result, finalists, finalKey, firstReference, now) {
 }
 
 function firstActiveFinalistIndex(rows = []) {
-  return rows.findIndex((row) => row && !row.withdrawnAt);
+  let bestIndex = -1;
+  let bestOrder = Infinity;
+  rows.forEach((row, index) => {
+    if (!row || row.withdrawnAt) return;
+    const order = finalRowOrderValue(row, 20000 + index);
+    if (order < bestOrder) {
+      bestOrder = order;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
 }
 
 function finalCompositionRows(result) {
-  const finalRows = ["a", "b"].flatMap((key) => (result.finalists?.[key] || []).map((row) => ({
+  const finalists = normalizeFinalistsOrder(result.finalists || {});
+  const finalRows = ["a", "b"].flatMap((key) => (finalists[key] || []).map((row) => ({
     ...row,
     finalLabel: key.toUpperCase()
   })));
@@ -4754,11 +4790,11 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
               ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
             ${row.withdrawnAt ? `
-              <button class="ghost-button compact confirm-button" type="button" data-final-reinstate="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}">
+              <button class="ghost-button compact confirm-button" type="button" data-final-reinstate="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
                 Réintégrer
               </button>
             ` : `
-              <button class="ghost-button compact danger-button" type="button" data-final-withdraw="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-expired="${expired ? "1" : "0"}" ${hasDeadline || canWithdrawUnannouncedReplacement ? "" : "disabled"}>
+              <button class="ghost-button compact danger-button" type="button" data-final-withdraw="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-row-key="${escapeHtml(finalRowKey(row))}" data-final-expired="${expired ? "1" : "0"}" ${hasDeadline || canWithdrawUnannouncedReplacement ? "" : "disabled"}>
                 Forfait
               </button>
             `}
@@ -4768,6 +4804,16 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
       </ol>
     </div>
   `;
+}
+
+function finalRowIndexByKey(finalists, finalKey, finalIndex, rowKey = "") {
+  const rows = finalists?.[finalKey] || [];
+  if (rowKey) {
+    const byKey = rows.findIndex((row) => finalRowKey(row) === rowKey);
+    if (byKey !== -1) return byKey;
+  }
+  const index = Number(finalIndex);
+  return Number.isFinite(index) ? index : -1;
 }
 
 function nextUnqualifiedRowsForSecretary(result) {
@@ -4807,6 +4853,7 @@ function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false 
 function openFinalWithdrawalsModal(resultId, options = {}) {
   const result = raceResults.find((item) => item.id === resultId);
   if (!result || !alertDetailModal) return;
+  const finalists = normalizeFinalistsOrder(result.finalists || {});
   alertDetailModal.hidden = false;
   alertDetailModal.innerHTML = `
     <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Forfaits finales">
@@ -4819,8 +4866,8 @@ function openFinalWithdrawalsModal(resultId, options = {}) {
         <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
       </div>
       <div class="final-withdrawal-list">
-        ${renderFinalWithdrawalGroup("Finale A", result, "a", result.finalists?.a || [])}
-        ${renderFinalWithdrawalGroup("Finale B", result, "b", result.finalists?.b || [])}
+        ${renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || [])}
+        ${renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || [])}
         ${renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })}
       </div>
       <div class="decision-actions">
@@ -4867,6 +4914,7 @@ async function toggleFinalPreWithdrawal(resultId, rowKey) {
 }
 
 function renderFinalCompositionList(result) {
+  const finalists = normalizeFinalistsOrder(result.finalists || {});
   const renderRows = (title, rows = []) => rows.length ? `
     <div class="final-withdrawal-group">
       <strong>${escapeHtml(title)}</strong>
@@ -4885,8 +4933,8 @@ function renderFinalCompositionList(result) {
   ` : "";
   return `
     <div class="final-withdrawal-list">
-      ${renderRows("Finale A", result.finalists?.a || [])}
-      ${renderRows("Finale B", result.finalists?.b || [])}
+      ${renderRows("Finale A", finalists.a || [])}
+      ${renderRows("Finale B", finalists.b || [])}
       ${renderSecretaryUnqualifiedGroup(result, { actions: false })}
     </div>
   `;
@@ -4924,13 +4972,14 @@ function openFinalCompositionModal(alertId) {
   if (alert?.resultId) openFinalCompositionResultModal(alert.resultId);
 }
 
-async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpired = false } = {}) {
+async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpired = false, rowKey = "" } = {}) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour gérer les forfaits.");
   const resultIndex = raceResults.findIndex((item) => item.id === resultId);
   const result = raceResults[resultIndex];
-  const row = result?.finalists?.[finalKey]?.[Number(finalIndex)];
-  if (resultIndex === -1 || !row) throw new Error("Finaliste introuvable.");
+  const sourceIndex = finalRowIndexByKey(result?.finalists, finalKey, finalIndex, rowKey);
+  const row = result?.finalists?.[finalKey]?.[sourceIndex];
+  if (resultIndex === -1 || sourceIndex === -1 || !row) throw new Error("Finaliste introuvable.");
   const isUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
   if (!hasFinalWithdrawalDeadline(row, result) && !isUnannouncedReplacement) {
     throw new Error("Le délai de ce finaliste n'a pas encore démarré.");
@@ -4943,7 +4992,7 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
     a: (result.finalists?.a || []).map((item) => ({ ...item })),
     b: (result.finalists?.b || []).map((item) => ({ ...item }))
   };
-  finalists[finalKey][Number(finalIndex)] = {
+  finalists[finalKey][sourceIndex] = {
     ...row,
     withdrawnAt: now
   };
@@ -4987,14 +5036,15 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
         preWithdrawal: true
       }))
   ];
+  const orderedFinalists = normalizeFinalistsOrder(finalists);
   const updated = {
     ...result,
-    finalists,
+    finalists: orderedFinalists,
     finalWithdrawals,
     updatedAt: now
   };
   await collection.doc(result.id).update({
-    finalists,
+    finalists: orderedFinalists,
     finalWithdrawals,
     updatedAt: now
   });
@@ -5010,13 +5060,14 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
   openFinalWithdrawalsModal(result.id);
 }
 
-async function reinstateFinalist(resultId, finalKey, finalIndex) {
+async function reinstateFinalist(resultId, finalKey, finalIndex, rowKey = "") {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour réintégrer ce finaliste.");
   const resultIndex = raceResults.findIndex((item) => item.id === resultId);
   const result = raceResults[resultIndex];
-  const row = result?.finalists?.[finalKey]?.[Number(finalIndex)];
-  if (resultIndex === -1 || !row?.withdrawnAt) throw new Error("Finaliste forfait introuvable.");
+  const sourceIndex = finalRowIndexByKey(result?.finalists, finalKey, finalIndex, rowKey);
+  const row = result?.finalists?.[finalKey]?.[sourceIndex];
+  if (resultIndex === -1 || sourceIndex === -1 || !row?.withdrawnAt) throw new Error("Finaliste forfait introuvable.");
   const now = new Date().toISOString();
   const finalists = {
     a: (result.finalists?.a || []).map((item) => ({ ...item })),
@@ -5025,7 +5076,7 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
   const reinstated = { ...row };
   delete reinstated.withdrawnAt;
   reinstated.reinstatedAt = now;
-  finalists[finalKey][Number(finalIndex)] = reinstated;
+  finalists[finalKey][sourceIndex] = reinstated;
   const withdrawal = [...(result.finalWithdrawals || [])]
     .reverse()
     .find((item) => item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt);
@@ -5070,14 +5121,15 @@ async function reinstateFinalist(resultId, finalKey, finalIndex) {
     }
     return item;
   });
+  const orderedFinalists = normalizeFinalistsOrder(finalists);
   await collection.doc(result.id).update({
-    finalists,
+    finalists: orderedFinalists,
     finalWithdrawals,
     updatedAt: now
   });
   raceResults[resultIndex] = {
     ...result,
-    finalists,
+    finalists: orderedFinalists,
     finalWithdrawals,
     updatedAt: now
   };
@@ -5158,16 +5210,17 @@ async function updateReplacementRowAnnouncement(resultId, matcher, announcedAt) 
     });
   });
   if (!changed) return false;
+  const orderedFinalists = normalizeFinalistsOrder(finalists);
   const collection = resultsCollection();
   if (collection) {
     await collection.doc(result.id).update({
-      finalists,
+      finalists: orderedFinalists,
       updatedAt: announcedAt
     });
   }
   raceResults[index] = {
     ...result,
-    finalists,
+    finalists: orderedFinalists,
     updatedAt: announcedAt
   };
   await publishPublicResultsIndex();
@@ -7138,7 +7191,7 @@ alertDetailModal?.addEventListener("click", (event) => {
       withdrawButton.dataset.finalWithdraw,
       withdrawButton.dataset.finalKey,
       withdrawButton.dataset.finalIndex,
-      { allowExpired: expired }
+      { allowExpired: expired, rowKey: withdrawButton.dataset.finalRowKey || "" }
     ).catch((error) => {
       console.error(error);
       window.alert(`Forfait impossible : ${error?.message || error}`);
@@ -7166,7 +7219,8 @@ alertDetailModal?.addEventListener("click", (event) => {
     reinstateFinalist(
       reinstateButton.dataset.finalReinstate,
       reinstateButton.dataset.finalKey,
-      reinstateButton.dataset.finalIndex
+      reinstateButton.dataset.finalIndex,
+      reinstateButton.dataset.finalRowKey || ""
     ).catch((error) => {
       console.error(error);
       window.alert(`Réintégration impossible : ${error?.message || error}`);
