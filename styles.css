@@ -1547,12 +1547,6 @@ body.profile-home-active .top-actions {
   color: #7b8790;
 }
 
-.public-unqualified-block li.public-result-status-row,
-.public-unqualified-block li.public-result-status-row span {
-  color: #9f1d16;
-  font-weight: 900;
-}
-
 .public-unqualified-more {
   margin-top: 6px;
 }

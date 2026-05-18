@@ -4784,13 +4784,14 @@ function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false 
       <ol>
         ${rows.map((row) => {
           const preWithdrawal = finalPreWithdrawalForRow(result, row);
+          const actionAllowed = !row.resultStatus && row.time;
           return `
           <li value="${escapeHtml(row.rank || "")}" class="closed ${preWithdrawal ? "prewithdrawn" : ""}">
             <div>
               <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
               <small>${preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)}</small>
             </div>
-            ${actions ? `
+            ${actions && actionAllowed ? `
               <button class="ghost-button compact ${preWithdrawal ? "confirm-button" : ""}" type="button" data-final-prewithdraw="${escapeHtml(result.id)}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
                 ${preWithdrawal ? "Annuler pré-forfait" : "Pré-forfait si repêché"}
               </button>
