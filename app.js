@@ -2689,6 +2689,18 @@ function publicResultPayload(result) {
   };
 }
 
+function publicSeriesPdfPayload(pdf) {
+  if (!pdf) return null;
+  return {
+    id: pdf.id || "",
+    scope: pdf.scope || "",
+    session: pdf.session || "",
+    pdfName: pdf.pdfName || "",
+    updatedAt: pdf.updatedAt || "",
+    sourceLabel: pdf.sourceLabel || ""
+  };
+}
+
 function buildPublicResultsIndex() {
   const updatedAt = new Date().toISOString();
   return {
@@ -2698,6 +2710,7 @@ function buildPublicResultsIndex() {
     program: data.program || [],
     series: data.series || [],
     results: raceResults.map(publicResultPayload).filter(Boolean),
+    seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
     updatedAt,
     sourceVersion: data.sourceVersion || "",
     sourceLabel: data.notes?.sourceLabel || "",
@@ -2709,6 +2722,7 @@ async function publishPublicResultsIndex({ silent = false } = {}) {
   const doc = publicResultsIndexDocument();
   if (!doc) return;
   try {
+    await hydratePublicSeriesPdfMetadataIfNeeded();
     await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
   } catch (error) {
     console.warn("Publication de l'index public impossible", error);
@@ -2722,11 +2736,62 @@ function publicSeriesPdfId(scope, session = "") {
   return scope === "full" ? "full" : `session-${String(session || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
 }
 
+function updatePublicSeriesPdfMetadata(pdf) {
+  const metadata = publicSeriesPdfPayload(pdf);
+  if (!metadata) return;
+  const current = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs : [];
+  const next = metadata.scope === "full"
+    ? [metadata]
+    : [
+      ...current.filter((item) => item.id !== metadata.id),
+      metadata
+    ];
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSeriesPdfs: next
+    }
+  });
+  saveData();
+}
+
+function clearPublicSeriesPdfMetadata() {
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSeriesPdfs: []
+    }
+  });
+  saveData();
+}
+
+async function hydratePublicSeriesPdfMetadataIfNeeded() {
+  if (Array.isArray(data.notes?.publicSeriesPdfs)) return;
+  const collection = seriesPdfsCollection();
+  if (!collection) return;
+  const snapshot = await collection.get();
+  const metadata = snapshot.docs
+    .map((doc) => publicSeriesPdfPayload({ id: doc.id, ...doc.data() }))
+    .filter(Boolean)
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSeriesPdfs: metadata
+    }
+  });
+  saveData();
+}
+
 async function clearPublicSeriesPdfs() {
   const collection = seriesPdfsCollection();
   if (!collection) return 0;
   const snapshot = await collection.get();
   await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+  clearPublicSeriesPdfMetadata();
   return snapshot.docs.length;
 }
 
@@ -2746,6 +2811,7 @@ async function publishPublicSeriesPdf(file, mode = "session", session = "") {
     sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
   };
   await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
+  updatePublicSeriesPdfMetadata(payload);
   return payload;
 }
 
@@ -8379,7 +8445,7 @@ async function importSeriesPdf(file, mode = "session", forcedSession = "") {
         await clearPublicSeriesPdfs();
       }
       publishedSeriesPdf = await publishPublicSeriesPdf(file, mode, updatedSession);
-      await publishLiveDataToFirestore(nextData, `Import PDF ${file.name}`);
+      await publishLiveDataToFirestore(data, `Import PDF ${file.name}`);
       await publishPublicResultsIndex({ silent: true });
       const sessionList = [...new Set(parsed.program.map((row) => row.session).filter(Boolean))]
         .sort((a, b) => Number(a) - Number(b))

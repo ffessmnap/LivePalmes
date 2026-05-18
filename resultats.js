@@ -482,7 +482,13 @@ async function loadPublicResultsIndex() {
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicIndexUpdatedAt = index.updatedAt || "";
-  await loadPublicSeriesPdfs(competition);
+  if (Array.isArray(index.seriesPdfs)) {
+    publicSeriesPdfs = index.seriesPdfs
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  } else {
+    await loadPublicSeriesPdfs(competition);
+  }
   setStatus("Connecté", "ok");
   renderResults();
 }
