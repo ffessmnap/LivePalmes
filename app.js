@@ -20,6 +20,9 @@ const LOCK_HEARTBEAT_MS = 30000;
 const FIREBASE_CONNECTION_CHECK_MS = 15000;
 const COMPETITION_INACTIVITY_MS = 60 * 60 * 1000;
 const COMPETITION_INACTIVITY_CHECK_MS = 60 * 1000;
+const PRESENCE_DURATION_MS = 3 * 60 * 1000;
+const PRESENCE_HEARTBEAT_MS = 60 * 1000;
+const PRESENCE_WRITE_THROTTLE_MS = 30 * 1000;
 const SPEAKER_INFO_SHEETS = {
   france: "France N-1",
   records: "Records",
@@ -296,6 +299,9 @@ let currentResultImportRow = null;
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
 let replacementAlertRepairRunning = false;
+let presenceCounts = {};
+let lastPresenceWriteAt = 0;
+let consolePresenceActive = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -457,6 +463,100 @@ function roleLockDocument(role) {
     .doc(FIRESTORE_COMPETITION_ID)
     .collection("roleLocks")
     .doc(role);
+}
+
+function presenceCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("presence");
+}
+
+function presenceDocument(id = `console-${currentClientId()}`) {
+  const collection = presenceCollection();
+  return collection ? collection.doc(id) : null;
+}
+
+function emptyPresenceCounts() {
+  return {
+    live: 0,
+    speaker: 0,
+    referee: 0,
+    video: 0,
+    computer: 0,
+    secretary: 0
+  };
+}
+
+function presenceLabel(count) {
+  const value = Number(count || 0);
+  return `${value} connecté${value > 1 ? "s" : ""}`;
+}
+
+function renderPresenceCounts() {
+  const counts = { ...emptyPresenceCounts(), ...(presenceCounts || {}) };
+  document.querySelectorAll("[data-presence-role]").forEach((node) => {
+    node.textContent = presenceLabel(counts[node.dataset.presenceRole] || 0);
+  });
+}
+
+async function updateConsolePresence(force = false) {
+  const doc = presenceDocument();
+  if (!doc) return;
+  if (profileHomeActive) {
+    if (consolePresenceActive) await releaseConsolePresence();
+    return;
+  }
+  const timestamp = Date.now();
+  if (!force && timestamp - lastPresenceWriteAt < PRESENCE_WRITE_THROTTLE_MS) return;
+  const now = new Date();
+  try {
+    await doc.set({
+      id: doc.id,
+      clientId: currentClientId(),
+      role: state.role || "live",
+      page: "console",
+      updatedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + PRESENCE_DURATION_MS).toISOString()
+    });
+    lastPresenceWriteAt = timestamp;
+    consolePresenceActive = true;
+  } catch (error) {
+    console.warn("Présence console impossible", error);
+  }
+}
+
+async function releaseConsolePresence() {
+  const doc = presenceDocument();
+  if (!doc || !consolePresenceActive) return;
+  try {
+    await doc.delete();
+    consolePresenceActive = false;
+  } catch (error) {
+    console.warn("Suppression présence console impossible", error);
+  }
+}
+
+async function refreshPresenceCounts() {
+  const collection = presenceCollection();
+  if (!collection) return;
+  try {
+    const snapshot = await collection.get({ source: "server" });
+    const counts = emptyPresenceCounts();
+    const now = Date.now();
+    snapshot.docs.forEach((doc) => {
+      const item = doc.data() || {};
+      if ((Date.parse(item.expiresAt || "") || 0) <= now) return;
+      if (item.page === "console" && item.role && Object.prototype.hasOwnProperty.call(counts, item.role)) {
+        counts[item.role] += 1;
+      }
+    });
+    presenceCounts = counts;
+    renderPresenceCounts();
+  } catch (error) {
+    console.warn("Lecture présence impossible", error);
+  }
 }
 
 function sanitizeAlertForFirestore(alert) {
@@ -1345,6 +1445,7 @@ const DECISION_LABELS = {
   relay_early_start: "DSQ - départ anticipé",
   underwater_15m: "DSQ - coulée supérieure à 15 m",
   immersion: "DSQ - passage en immersion",
+  bottle_fault: "DSQ - faute de bouteille",
   interference: "DSQ - gêne d'un concurrent",
   other_dsq: "DSQ - autre motif"
 };
@@ -1354,6 +1455,7 @@ const SPEAKER_DECISION_REASONS = {
   relay_early_start: "départ anticipé",
   underwater_15m: "coulée supérieure à 15 m",
   immersion: "passage en immersion",
+  bottle_fault: "faute de bouteille",
   interference: "gêne d'un concurrent",
   other_dsq: "autre motif"
 };
@@ -1977,6 +2079,7 @@ function render() {
       : "Mode préparation - actualisation manuelle";
     profileModeStatus.classList.toggle("active", competitionModeEnabled());
   }
+  renderPresenceCounts();
   if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
   if (manualRefreshBtn) {
     const manualMode = !competitionModeEnabled();
@@ -2252,6 +2355,7 @@ function alertLineCode(alert) {
     relay_early_start: "DA",
     underwater_15m: "+15m",
     immersion: "FSTYLE",
+    bottle_fault: "BOUT",
     interference: "GENE",
     other_dsq: "AUTRE"
   };
@@ -2300,7 +2404,7 @@ function renderLineTimeStatus(entrant, lineAlerts) {
   const terminalStatus = terminalLineStatus(lineAlerts);
   if (terminalStatus) {
     const isAbandon = terminalStatus.type === "abandon";
-    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon déclaré" : "Forfait non déclaré"}</strong></span>`;
+    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon" : "Forfait non déclaré"}</strong></span>`;
   }
   const importedLabel = importedLineStatusLabel(entrant);
   if (importedLabel) {
@@ -2977,12 +3081,14 @@ function renderHistoryItem(alert, options = {}) {
     ? `${alert.finalistCount || 0} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`
     : options.showIdentity ? fullAlertIdentityLabel(alert) : alertIdentityLabel(alert);
   const action = historyActionForAlert(alert);
+  const comment = alertCommentLabel(alert);
   return `
     <div class="history-item ${alertStatusClass(alert)} ${options.compact ? "compact-history-item" : ""}" data-history-alert-id="${escapeHtml(alert.id)}">
       <time>${escapeHtml(formatAlertTime(options.timeValue || alert.cancelledAt || alert.createdAt) || "--:--")}</time>
       <span>${escapeHtml(courseLine)}</span>
       <strong>${escapeHtml(motif)}</strong>
       <small>${escapeHtml(identity)}</small>
+      ${comment ? `<em class="history-comment">Remarque JA : ${escapeHtml(comment)}</em>` : ""}
       <em>${escapeHtml(status)}${timeline ? ` - ${escapeHtml(timeline)}` : ""}</em>
       ${action ? `<button class="history-action ${escapeHtml(action.className)}" type="button" data-history-action="${escapeHtml(action.action)}">${escapeHtml(action.label)}</button>` : ""}
     </div>
@@ -3006,23 +3112,30 @@ function openAlertDetail(alertId) {
   const status = alertStatusLabel(alert);
   const event = data.events.find((item) => item.id === alert.eventId);
   const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
+  const isInfoAlert = alert.type === "finalist_replacement_announcement" || alert.type === "finalists_announcement" || alert.type === "final_composition_ready";
   const seriesLabel = alert.stage && isFinalStage(alert.stage)
     ? finalStageLabel(alert.stage)
     : `Série ${alert.series || "-"}`;
-  const identity = alertIdentityLabel(alert);
+  const courseLabel = `${event?.label || alert.eventId} ${sexLabel}`;
+  const seriesLineLabel = `${seriesLabel} ligne ${alert.line || "-"}`;
+  const hasSeriesLine = !isInfoAlert && (alert.line || alert.series || alert.stage);
+  const identity = alert.type === "finalist_replacement_announcement"
+    ? `${alert.replacementName || "Concurrent"}${alert.replacementClub ? ` - ${alert.replacementClub}` : ""}`
+    : alertIdentityLabel(alert);
   const comment = alertCommentLabel(alert);
   const timeline = alertTimelineItems(alert);
-  const speakerSentence = state.role !== "video" && (isSpeakerView() || alert.speakerStatus !== "none") ? speakerAlertSentence(alert) : null;
+  const speakerSentence = state.role === "speaker" ? speakerAlertSentence(alert) : null;
   const clickedSentence = state.role !== "video" && clickedAlert.id !== alert.id ? speakerAlertSentence(clickedAlert) : null;
+  const sheetTitle = isInfoAlert ? "Fiche information" : "Fiche décision";
   alertDetailModal.hidden = false;
   alertDetailModal.innerHTML = `
-    <div class="decision-dialog alert-detail-dialog" role="dialog" aria-modal="true" aria-label="Détail de décision">
+    <div class="decision-dialog alert-detail-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(sheetTitle)}">
       <div class="decision-modal-head">
         <div>
-          <span>Fiche décision</span>
+          <span>${escapeHtml(sheetTitle)}</span>
           <h2>${escapeHtml(decisionMotifLabel(alert))}</h2>
           <p>${escapeHtml(identity)}</p>
-          <p class="decision-race-info">${escapeHtml(event?.label || alert.eventId)} ${escapeHtml(sexLabel)} - ${escapeHtml(seriesLabel)} - Ligne ${escapeHtml(alert.line || "-")}</p>
+          <p class="decision-race-info">${escapeHtml(courseLabel)}${hasSeriesLine ? ` - ${escapeHtml(seriesLineLabel)}` : ""}</p>
         </div>
         <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
       </div>
@@ -3030,15 +3143,13 @@ function openAlertDetail(alertId) {
         <strong>${escapeHtml(status)}</strong>
       </div>
       <div class="alert-detail-grid">
-        <div><span>Course</span><strong>${escapeHtml(event?.label || alert.eventId)}</strong></div>
-        <div><span>Sexe</span><strong>${escapeHtml(sexLabel)}</strong></div>
-        <div><span>Série</span><strong>${escapeHtml(seriesLabel)}</strong></div>
-        <div><span>Ligne</span><strong>${escapeHtml(alert.line || "-")}</strong></div>
+        <div><span>Course</span><strong>${escapeHtml(courseLabel)}</strong></div>
+        ${hasSeriesLine ? `<div><span>Série - Ligne</span><strong>${escapeHtml(seriesLineLabel)}</strong></div>` : ""}
         <div><span>Concurrent</span><strong>${escapeHtml(identity)}</strong></div>
         <div><span>Motif</span><strong>${escapeHtml(decisionMotifLabel(alert))}</strong></div>
       </div>
       ${comment ? `<div class="alert-detail-note"><span>Remarque</span><strong>${escapeHtml(comment)}</strong></div>` : ""}
-      ${speakerSentence ? `<div class="alert-detail-note"><span>Texte speaker DSQ</span><strong>${escapeHtml(speakerSentence.text)} - ${escapeHtml(speakerSentence.identity)}</strong></div>` : ""}
+      ${speakerSentence ? `<div class="alert-detail-note"><span>Texte speaker</span><strong>${escapeHtml(speakerSentence.text)} - ${escapeHtml(speakerSentence.identity)}</strong></div>` : ""}
       ${clickedSentence ? `<div class="alert-detail-note"><span>Alerte en cours</span><strong>${escapeHtml(clickedSentence.text)} - ${escapeHtml(clickedSentence.identity)}</strong></div>` : ""}
       <div class="alert-detail-timeline">
         <h3>Historique</h3>
@@ -3242,6 +3353,7 @@ function decisionOptionsForEntrant(entrant) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
   const forbidsUnderwaterAndImmersion = discipline.includes("apnee") || discipline.includes("immersion");
+  const isImmersionRace = discipline.includes("immersion");
   return [
     ["forfait", "Forfait"],
     ["abandon", "Abandon"],
@@ -3249,6 +3361,7 @@ function decisionOptionsForEntrant(entrant) {
     ...(relay ? [["relay_early_start", "DSQ - départ anticipé"]] : []),
     ...(!forbidsUnderwaterAndImmersion ? [["underwater_15m", "DSQ - coulée supérieure à 15 m"]] : []),
     ...(!forbidsUnderwaterAndImmersion ? [["immersion", "DSQ - passage en immersion"]] : []),
+    ...(isImmersionRace ? [["bottle_fault", "DSQ - faute de bouteille"]] : []),
     ["interference", "DSQ - gêne d'un concurrent"],
     ["other_dsq", "DSQ - autre motif"]
   ];
@@ -3298,7 +3411,7 @@ function decisionNeedsDetail(type) {
 }
 
 function decisionNeedsRelayLeg(type, entrant) {
-  return isRelayEntrant(entrant) && ["relay_early_start", "underwater_15m", "immersion", "interference", "other_dsq"].includes(type);
+  return isRelayEntrant(entrant) && ["relay_early_start", "underwater_15m", "immersion", "bottle_fault", "interference", "other_dsq"].includes(type);
 }
 
 function decisionNeedsLengthPosition(type) {
@@ -5049,26 +5162,24 @@ function renderEntrants() {
       ? (shortClubName(entrant) || formatDisplayName(entrant))
       : formatSeriesDisplayName(entrant);
     const lineAlerts = activeLineAlertsForEntrant(entrant);
-    const importedStatusBadge = renderImportedLineStatusBadge(entrant);
     const lineTimeStatus = renderLineTimeStatus(entrant, lineAlerts);
-    const alertBadges = lineTimeStatus ? "" : (renderLineAlertBadges(lineAlerts) || importedStatusBadge);
     const rowDisabled = lineAlerts.length || importedForfait;
     return `
       <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${importedForfait ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}" data-imported-forfait="${importedForfait ? "1" : "0"}">
         <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
         <td class="name-cell">
-          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}${renderCompetitionStatBadges(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}${alertBadges}</button>
+          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}${renderCompetitionStatBadges(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}</button>
           ${!isRelayEntrant(entrant) || state.role === "referee" ? `<span class="club-name">${escapeHtml(clubLabel || "-")}</span>` : ""}
         </td>
         <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
         <td class="time-cell">
           ${lineTimeStatus
             ? lineTimeStatus
-            : state.role === "referee" && refereeTabletMode && lineAlerts.length
+            : lineAlerts.length
             ? renderLineAlertBadges(lineAlerts)
             : `<span class="time">${escapeHtml(entrant.seedTime || "-")}</span>`}
-          ${!lineTimeStatus && !(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
-          ${!lineTimeStatus && !(state.role === "referee" && refereeTabletMode && lineAlerts.length) && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
+          ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
+          ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
         </td>
         <td>${reference}</td>
       </tr>
@@ -5361,6 +5472,11 @@ function renderSwimmerDetails() {
     return;
   }
   const swimmer = entries[0];
+  const uniqueEntries = [...entries.reduce((map, entry) => {
+    const key = `${entry.eventId}|${entry.sex || swimmer.sex || ""}`;
+    if (!map.has(key)) map.set(key, entry);
+    return map;
+  }, new Map()).values()];
   const france2025 = findFrance2025Results(swimmer);
   const internationalMedals = findInternationalMedals(swimmer);
   const heldRecords = findAllRecordsHeldByEntrant(swimmer);
@@ -5378,10 +5494,9 @@ function renderSwimmerDetails() {
         ` : ""}
       </div>
       <div class="compact-program" aria-label="Courses engagées du weekend">
-        ${entries.map((entry) => `
+        ${uniqueEntries.map((entry) => `
           <span class="${categoryClass(entry.category)}">
-            <strong>${escapeHtml(shortEventLabel(entry.eventId))}</strong>
-            ${escapeHtml(entry.seedTime || "-")}
+            ${escapeHtml(shortEventLabel(entry.eventId))}
           </span>
         `).join("")}
       </div>
@@ -6336,6 +6451,7 @@ async function openRoleConsole(nextRole, { allowTabletToggle = false } = {}) {
   profileHomeActive = false;
   switchRoleUnlocked(nextRole);
   render();
+  updateConsolePresence(true);
 }
 
 document.querySelectorAll(".role-chip").forEach((button) => {
@@ -6353,6 +6469,8 @@ profileHome?.addEventListener("click", async (event) => {
 profileHomeBtn?.addEventListener("click", () => {
   profileHomeActive = true;
   render();
+  releaseConsolePresence();
+  refreshPresenceCounts();
 });
 
 competitionModeTopBtn?.addEventListener("click", () => {
@@ -8081,6 +8199,10 @@ setInterval(checkForGeneratedUpdates, 5000);
 setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
 setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
 setInterval(disableCompetitionModeAfterInactivity, COMPETITION_INACTIVITY_CHECK_MS);
+setInterval(updateConsolePresence, PRESENCE_HEARTBEAT_MS);
+setInterval(() => {
+  if (profileHomeActive) refreshPresenceCounts();
+}, PRESENCE_HEARTBEAT_MS);
 ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
   window.addEventListener(eventName, markConsoleActivity, { passive: true });
 });
@@ -8092,6 +8214,7 @@ window.addEventListener("offline", () => {
 window.addEventListener("pagehide", () => {
   saveCurrentRoleState();
   releaseRoleLock();
+  releaseConsolePresence();
 });
 
 jsonInput?.addEventListener("change", async () => {
@@ -8119,4 +8242,6 @@ render();
 initFirebaseSync();
 checkForGeneratedUpdates();
 checkFirebaseConnection();
+updateConsolePresence(true);
+if (profileHomeActive) refreshPresenceCounts();
 
