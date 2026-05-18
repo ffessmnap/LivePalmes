@@ -2163,6 +2163,30 @@ textarea {
   line-height: 1.08;
 }
 
+.decision-title-line {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.decision-title-line h2 {
+  margin: 0;
+}
+
+.decision-line-pill {
+  flex: 0 0 auto;
+  min-width: 28px;
+  padding: 0;
+  background: #172026;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
 .decision-modal-head p {
   margin: 4px 0 0;
   color: var(--muted);
@@ -2728,6 +2752,9 @@ body:not(.role-secretary) .secretary-only {
   display: none !important;
 }
 
+.role-speaker .race-header,
+.role-live .race-header,
+.role-referee .race-header,
 .role-video .race-header,
 .role-computer .race-header,
 .role-secretary .race-header,
@@ -3026,6 +3053,27 @@ body:not(.role-secretary) .secretary-only {
   min-width: 120px;
 }
 
+.entrant-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inline-entrant-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eef7f9;
+  border: 1px solid #cce7ee;
+  color: #00576b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .panel-subtitle {
   margin: 3px 0 0;
   color: var(--muted);
@@ -3061,6 +3109,25 @@ body:not(.role-secretary) .secretary-only {
 .line-order-button:hover {
   border-color: var(--accent);
   color: var(--accent-dark);
+}
+
+#previousSeriesInlineBtn,
+#nextSeriesInlineBtn {
+  width: auto;
+  min-width: 128px;
+  padding-inline: 10px;
+  font-size: 0.76rem;
+  line-height: 1.1;
+}
+
+#previousSeriesInlineBtn::before {
+  content: "←";
+  margin-right: 6px;
+}
+
+#nextSeriesInlineBtn::after {
+  content: "→";
+  margin-left: 6px;
 }
 
 .table-wrap {
@@ -3385,6 +3452,60 @@ td {
   align-items: center;
   padding: 2px 2px 8px;
   border-bottom: 1px solid var(--line);
+}
+
+.role-speaker #filteredCount,
+.role-live #filteredCount,
+.role-referee #filteredCount {
+  display: none;
+}
+
+.role-speaker .entrants-panel .panel-title,
+.role-live .entrants-panel .panel-title {
+  align-items: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.role-speaker .entrant-heading,
+.role-live .entrant-heading {
+  display: block;
+  min-width: 0;
+}
+
+.role-speaker .panel-actions,
+.role-live .panel-actions {
+  gap: 6px;
+  padding-top: 1px;
+}
+
+.role-speaker .panel-actions .program-button,
+.role-live .panel-actions .program-button,
+.role-referee .panel-actions .program-button {
+  display: inline-flex;
+  width: auto;
+  min-width: 96px;
+  min-height: 30px;
+  padding-inline: 10px;
+  font-size: 0.76rem;
+}
+
+.speaker-panel-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.speaker-panel-refs .ref-chip {
+  min-height: 23px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+}
+
+.speaker-panel-ref-details {
+  display: flex;
+  margin-top: 6px;
 }
 
 .live-mode #entrantsTitle {
@@ -4350,6 +4471,17 @@ tbody tr:hover,
     font-size: 1rem;
   }
 
+  .decision-title-line {
+    gap: 7px;
+  }
+
+  .decision-line-pill {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    font-size: 1.18rem;
+  }
+
   .decision-modal-head p {
     margin-top: 2px;
     font-size: 0.74rem;
@@ -4547,8 +4679,8 @@ tbody tr:hover,
   }
 
   .live-mode .badge-row,
-  .live-mode #previousSeriesInlineBtn,
-  .live-mode #nextSeriesInlineBtn {
+  .role-live #previousSeriesInlineBtn,
+  .role-live #nextSeriesInlineBtn {
     display: none;
   }
 

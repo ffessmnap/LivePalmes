@@ -295,6 +295,7 @@ let applyingRemoteData = false;
 let rolePinResolver = null;
 let activeRoleLock = null;
 let raceResults = [];
+let resultsSnapshotReady = false;
 let currentResultImportRow = null;
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
@@ -571,6 +572,37 @@ async function syncAlertToFirestore(alert) {
   } catch (error) {
     console.warn("Synchronisation Firebase impossible", error);
     renderDataStatus("Firebase n'a pas pu enregistrer cette action. L'outil continue en local sur cet appareil.");
+  }
+}
+
+function isFinalResultAlert(alert) {
+  return alert?.type === "finalists_announcement" || alert?.type === "finalist_replacement_announcement";
+}
+
+async function deleteFinalResultAlerts(resultId) {
+  if (!resultId) return 0;
+  const linkedAlerts = alerts.filter((alert) => isFinalResultAlert(alert) && alert.resultId === resultId);
+  if (!linkedAlerts.length) return 0;
+  alerts = alerts.filter((alert) => !(isFinalResultAlert(alert) && alert.resultId === resultId));
+  saveAlerts();
+  const collection = alertsCollection();
+  if (collection && firestoreDb) {
+    const batch = firestoreDb.batch();
+    linkedAlerts.forEach((alert) => batch.delete(collection.doc(alert.id)));
+    await batch.commit();
+  }
+  render();
+  return linkedAlerts.length;
+}
+
+async function cleanupOrphanFinalResultAlerts() {
+  if (!resultsSnapshotReady) return;
+  const resultIds = new Set(raceResults.map((result) => result.id).filter(Boolean));
+  const orphanResultIds = [...new Set(alerts
+    .filter((alert) => isFinalResultAlert(alert) && alert.resultId && !resultIds.has(alert.resultId))
+    .map((alert) => alert.resultId))];
+  for (const resultId of orphanResultIds) {
+    await deleteFinalResultAlerts(resultId);
   }
 }
 
@@ -1117,6 +1149,8 @@ function stopFirebaseRealtimeSync() {
 
 function applyResultsSnapshot(snapshot) {
   raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  resultsSnapshotReady = true;
+  cleanupOrphanFinalResultAlerts();
   ensurePendingFinalistsSpeakerAlerts();
   ensurePendingReplacementSpeakerAlerts();
   if (state.role === "computer") publishPublicResultsIndex({ silent: true });
@@ -1181,6 +1215,7 @@ function initFirebaseSync() {
         firebaseStatus = "connected";
         alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         saveAlerts();
+        cleanupOrphanFinalResultAlerts();
         render();
       }, (error) => {
         console.warn("Lecture Firebase impossible", error);
@@ -1969,6 +2004,23 @@ function selectedSeriesTime() {
   return raceSeries().find((row) => Number(row.series) === Number(state.series))?.startTime || "";
 }
 
+function selectedSeriesLabel() {
+  if (state.series === "all") return "";
+  if (isFinalStage(state.series)) return finalStageLabel(state.series);
+  const selectedSeries = Number(state.series);
+  const seriesNumbers = availableSeriesNumbers();
+  const selectedSeriesCount = currentSeriesRows()[0]?.seriesCount || seriesNumbers.length || selectedSeries;
+  return `Série ${selectedSeries}/${selectedSeriesCount}`;
+}
+
+function compactRaceTitle() {
+  return [
+    currentEvent()?.label || "Course",
+    sexDisplayLabel(state.sex),
+    selectedSeriesLabel()
+  ].filter(Boolean).join(" · ");
+}
+
 function hasNextProgramSeries() {
   const rows = programRows();
   const index = currentProgramIndex();
@@ -2169,6 +2221,13 @@ function syncProgramButtonPlacement() {
     const compactTarget = roleSwitch || topActions || sidebar;
     if (programBtn.parentElement !== compactTarget) {
       compactTarget.appendChild(programBtn);
+    }
+    return;
+  }
+  const panelActions = document.querySelector(".entrants-panel .panel-actions");
+  if (["speaker", "referee", "live"].includes(state.role) && panelActions) {
+    if (programBtn.parentElement !== panelActions) {
+      panelActions.insertBefore(programBtn, lineOrderBtn || null);
     }
     return;
   }
@@ -2432,7 +2491,7 @@ function renderFinalistsAlertList(alert) {
             <span>${escapeHtml(finalistRowName(row))}</span>
             <em>${escapeHtml(row.time || "")}</em>
             ${row.withdrawnAt ? `<small class="finalist-status withdrawn">Forfait</small>` : ""}
-            ${row.repechaged ? `<small class="finalist-status repechaged">Repêché${alert.sex === "F" ? "e" : ""}</small>` : ""}
+            ${row.repechaged && !row.withdrawnAt ? `<small class="finalist-status repechaged">Repêché${alert.sex === "F" ? "e" : ""}</small>` : ""}
           </li>
         `).join("")}
       </ol>
@@ -3513,8 +3572,10 @@ function renderDecisionModal() {
       <div class="decision-modal-head">
         <div>
           <span>Décision JA</span>
-          <h2>${escapeHtml(formatDisplayName(entrant))}</h2>
-          <p>${escapeHtml(shortClubName(entrant) || entrant.club || "")}</p>
+          <div class="decision-title-line">
+            <span class="lane decision-line-pill" title="Ligne ${escapeHtml(String(modalLineLabel))}">${escapeHtml(String(modalLineLabel))}</span>
+            <h2>${escapeHtml(formatDisplayName(entrant))}</h2>
+          </div>
           <p class="decision-race-info">${escapeHtml(modalRaceInfo)}</p>
         </div>
         <button class="icon-button decision-close" type="button" data-close-decision aria-label="Fermer">×</button>
@@ -3919,29 +3980,46 @@ function renderSeriesControls() {
 }
 
 function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, nextLabel) {
-  [previousSeriesBtn, previousSeriesInlineBtn, previousSeriesFloatBtn].forEach((button) => {
+  [previousSeriesBtn, previousSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = previousDisabled;
     button.textContent = "←";
     button.title = previousLabel;
     button.setAttribute("aria-label", previousLabel);
   });
-  [nextSeriesBtn, nextSeriesInlineBtn, nextSeriesFloatBtn].forEach((button) => {
+  [nextSeriesBtn, nextSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = nextDisabled;
     button.textContent = "→";
     button.title = nextLabel;
     button.setAttribute("aria-label", nextLabel);
   });
+  if (previousSeriesInlineBtn) {
+    previousSeriesInlineBtn.disabled = previousDisabled;
+    previousSeriesInlineBtn.textContent = previousLabel;
+    previousSeriesInlineBtn.title = previousLabel;
+    previousSeriesInlineBtn.setAttribute("aria-label", previousLabel);
+  }
+  if (nextSeriesInlineBtn) {
+    nextSeriesInlineBtn.disabled = nextDisabled;
+    nextSeriesInlineBtn.textContent = nextLabel;
+    nextSeriesInlineBtn.title = nextLabel;
+    nextSeriesInlineBtn.setAttribute("aria-label", nextLabel);
+  }
 }
 
 function renderProgramButtons() {
-  [programBtn, programFloatBtn].forEach((button) => {
-    if (!button) return;
-    button.textContent = "P";
-    button.title = "Programme";
-    button.setAttribute("aria-label", "Programme");
-  });
+  if (programBtn) {
+    const inlineProgram = ["speaker", "referee", "live"].includes(state.role) && !(state.role === "referee" && refereeTabletMode);
+    programBtn.textContent = inlineProgram ? "Programme" : "P";
+    programBtn.title = "Programme";
+    programBtn.setAttribute("aria-label", "Programme");
+  }
+  if (programFloatBtn) {
+    programFloatBtn.textContent = "P";
+    programFloatBtn.title = "Programme";
+    programFloatBtn.setAttribute("aria-label", "Programme");
+  }
 }
 
 function programSeriesItems(row) {
@@ -4434,11 +4512,19 @@ async function publishFinalistsAfterSpeaker(alertId) {
   }
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier les finalistes.");
-  await collection.doc(alert.resultId).update({
-    finalistsAnnouncedAt: now,
-    status: "published",
-    updatedAt: now
-  });
+  try {
+    await collection.doc(alert.resultId).update({
+      finalistsAnnouncedAt: now,
+      status: "published",
+      updatedAt: now
+    });
+  } catch (error) {
+    if (/not.?found|no document|missing/i.test(String(error?.message || error))) {
+      await deleteFinalResultAlerts(alert.resultId);
+      return;
+    }
+    throw error;
+  }
   const index = raceResults.findIndex((result) => result.id === alert.resultId);
   if (index !== -1) {
     raceResults[index] = {
@@ -4471,7 +4557,73 @@ function isFinalPreWithdrawn(result, row) {
 
 function availableReplacementForResult(result, finalists) {
   const used = new Set(["a", "b"].flatMap((finalKey) => (finalists?.[finalKey] || []).map(finalRowKey)));
-  return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row)) && !isFinalPreWithdrawn(result, row)) || null;
+  return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row))) || null;
+}
+
+function buildReplacementFinalistRow(result, row, reference, now) {
+  const preWithdrawal = finalPreWithdrawalForRow(result, row);
+  return {
+    ...row,
+    qualified: true,
+    repechaged: true,
+    repechageAt: now,
+    repechageAnnouncedAt: preWithdrawal ? now : "",
+    withdrawnAt: preWithdrawal ? (preWithdrawal.at || now) : "",
+    preWithdrawnAt: preWithdrawal ? (preWithdrawal.at || now) : "",
+    replacesRank: reference?.rank || "",
+    replacesName: finalistRowName(reference)
+  };
+}
+
+function buildFinalWithdrawalEntry({ at, finalKey, withdrawn, replacement = null, promoted = null, preWithdrawal = false }) {
+  return {
+    at,
+    final: String(finalKey || "").toUpperCase(),
+    preWithdrawal,
+    withdrawn: {
+      rank: withdrawn?.rank || "",
+      name: finalistRowName(withdrawn),
+      club: withdrawn?.club || "",
+      time: withdrawn?.time || ""
+    },
+    replacement: replacement ? {
+      final: String(replacement.finalKey || finalKey || "").toUpperCase(),
+      rank: replacement.row?.rank || "",
+      name: finalistRowName(replacement.row),
+      club: replacement.row?.club || "",
+      time: replacement.row?.time || ""
+    } : null,
+    promoted: promoted ? {
+      fromFinal: "B",
+      toFinal: "A",
+      rank: promoted.rank || "",
+      name: finalistRowName(promoted),
+      club: promoted.club || "",
+      time: promoted.time || ""
+    } : null
+  };
+}
+
+function addReplacementChain(result, finalists, finalKey, firstReference, now) {
+  const added = [];
+  let reference = firstReference;
+  while (true) {
+    const row = availableReplacementForResult(result, finalists);
+    if (!row) break;
+    const finalistRow = buildReplacementFinalistRow(result, row, reference, now);
+    finalists[finalKey].push(finalistRow);
+    const item = {
+      finalKey,
+      row,
+      finalistRow,
+      reference,
+      preWithdrawn: Boolean(finalistRow.withdrawnAt)
+    };
+    added.push(item);
+    if (!item.preWithdrawn) break;
+    reference = finalistRow;
+  }
+  return added;
 }
 
 function firstActiveFinalistIndex(rows = []) {
@@ -4523,7 +4675,7 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
             <div>
               <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
               <small>${escapeHtml(status)}</small>
-              ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
+              ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
             ${row.withdrawnAt ? `
               <button class="ghost-button compact confirm-button" type="button" data-final-reinstate="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}">
@@ -4647,7 +4799,7 @@ function renderFinalCompositionList(result) {
             <div>
               <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
               ${row.withdrawnAt ? `<small>Forfait à ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
-              ${row.repechaged ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
+              ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
           </li>
         `).join("")}
@@ -4719,7 +4871,6 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
     withdrawnAt: now
   };
   let promoted = null;
-  let replacement = null;
   let replacementFinalKey = finalKey;
   let replacementReference = row;
   if (finalKey === "a" && finalists.b.length) {
@@ -4737,45 +4888,27 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
       replacementReference = promoted;
     }
   }
-  replacement = availableReplacementForResult(result, finalists);
-  if (replacement) {
-    finalists[replacementFinalKey].push({
-      ...replacement,
-      qualified: true,
-      repechaged: true,
-      repechageAt: now,
-      repechageAnnouncedAt: "",
-      replacesRank: replacementReference.rank || "",
-      replacesName: finalistRowName(replacementReference)
-    });
-  }
+  const replacements = addReplacementChain(result, finalists, replacementFinalKey, replacementReference, now);
+  const announcedReplacement = replacements.find((item) => !item.preWithdrawn) || null;
+  const firstReplacement = replacements[0] || null;
   const finalWithdrawals = [
     ...(result.finalWithdrawals || []),
-    {
+    buildFinalWithdrawalEntry({
       at: now,
-      final: finalKey.toUpperCase(),
-      withdrawn: {
-        rank: row.rank || "",
-        name: finalistRowName(row),
-        club: row.club || "",
-        time: row.time || ""
-      },
-      replacement: replacement ? {
-        final: replacementFinalKey.toUpperCase(),
-        rank: replacement.rank || "",
-        name: finalistRowName(replacement),
-        club: replacement.club || "",
-        time: replacement.time || ""
-      } : null,
-      promoted: promoted ? {
-        fromFinal: "B",
-        toFinal: "A",
-        rank: promoted.rank || "",
-        name: finalistRowName(promoted),
-        club: promoted.club || "",
-        time: promoted.time || ""
-      } : null
-    }
+      finalKey,
+      withdrawn: row,
+      replacement: firstReplacement,
+      promoted
+    }),
+    ...replacements
+      .filter((item) => item.preWithdrawn)
+      .map((item, index) => buildFinalWithdrawalEntry({
+        at: item.finalistRow.withdrawnAt || now,
+        finalKey: item.finalKey,
+        withdrawn: item.finalistRow,
+        replacement: replacements[index + 1] || null,
+        preWithdrawal: true
+      }))
   ];
   const updated = {
     ...result,
@@ -4792,8 +4925,8 @@ async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpi
   if (isUnannouncedReplacement) {
     await cancelPendingReplacementSpeakerAlert(result, row, now);
   }
-  if (replacement) {
-    await createFinalistReplacementSpeakerAlert(updated, row, replacement, now);
+  if (announcedReplacement) {
+    await createFinalistReplacementSpeakerAlert(updated, announcedReplacement.reference, announcedReplacement.row, now);
   }
   await publishPublicResultsIndex();
   render();
@@ -4997,6 +5130,7 @@ async function publishReplacementAfterSpeaker(alertId) {
 async function deleteResultPdf(resultId) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour supprimer ce résultat.");
+  await deleteFinalResultAlerts(resultId);
   await collection.doc(resultId).delete();
   raceResults = raceResults.filter((result) => result.id !== resultId);
   await publishPublicResultsIndex();
@@ -5038,21 +5172,25 @@ function renderCategorySelect() {
 }
 
 function renderHeader() {
-  const event = currentEvent();
-  const sexLabel = sexDisplayLabel(state.sex);
-  const title = `${event?.label || "Course"} - ${sexLabel}`;
+  const title = compactRaceTitle();
   raceTitle.innerHTML = `${escapeHtml(title)}${isLastRaceOfCurrentSession() ? ` <span class="session-end-note">[dernière course de la session]</span>` : ""}`;
-  const meta = [event?.discipline, event?.distance].filter(Boolean).join(" - ");
+  const currentEntrants = raceEntrants();
+  const meta = [
+    state.session !== "all" ? `Session ${state.session}` : "",
+    selectedSeriesTime() ? `Horaire ${selectedSeriesTime()}` : "",
+    state.role === "speaker" && state.series !== "all" ? `${currentEntrants.length} ${swimmerWord(currentEntrants.length)}` : ""
+  ].filter(Boolean).join(" - ");
   raceMeta.textContent = meta;
+  const sexLabel = sexDisplayLabel(state.sex);
   raceSexBadge.textContent = sexLabel;
 }
 
-function renderHeaderReferences() {
+function headerReferenceChipsHtml() {
   const recordRows = currentRecordRows();
   const qualificationRows = data.qualifications
     .filter(matchesRace)
     .sort((a, b) => timeToMs(a.time) - timeToMs(b.time));
-  const chips = [
+  return [
     ...recordRows.map((row) => {
       const key = recordKey(row);
       return `
@@ -5068,32 +5206,39 @@ function renderHeaderReferences() {
         ${escapeHtml(row.time || "-")}
       </span>
     `)
-  ];
-  headerRefs.innerHTML = chips.join("");
-  renderHeaderRefDetails();
+  ].join("");
 }
 
-function renderHeaderRefDetails() {
-  if (!state.selectedRecordKey) {
-    headerRefDetails.hidden = true;
-    headerRefDetails.innerHTML = "";
-    return;
-  }
+function selectedHeaderReferenceDetailsHtml() {
+  if (!state.selectedRecordKey) return "";
   const row = currentRecordRows().find((record) => recordKey(record) === state.selectedRecordKey);
   if (!row) {
     state.selectedRecordKey = "";
-    headerRefDetails.hidden = true;
-    headerRefDetails.innerHTML = "";
-    return;
+    return "";
   }
-  headerRefDetails.hidden = false;
-  headerRefDetails.innerHTML = `
+  return `
     <div>
       <strong>${escapeHtml(shortRecordLabel(row))} - ${escapeHtml(row.time || "-")}</strong>
       <span>${escapeHtml(recordDescription(row))}</span>
     </div>
     <button class="icon-button close-ref-details" title="Fermer le détail" aria-label="Fermer le détail">×</button>
   `;
+}
+
+function renderHeaderReferences() {
+  headerRefs.innerHTML = headerReferenceChipsHtml();
+  renderHeaderRefDetails();
+}
+
+function renderHeaderRefDetails() {
+  const detailsHtml = selectedHeaderReferenceDetailsHtml();
+  if (!detailsHtml) {
+    headerRefDetails.hidden = true;
+    headerRefDetails.innerHTML = "";
+    return;
+  }
+  headerRefDetails.hidden = false;
+  headerRefDetails.innerHTML = detailsHtml;
 }
 
 function recordKey(row) {
@@ -5116,21 +5261,29 @@ function renderEntrants() {
   filteredCount.textContent = hasSeriesFilter
     ? `${seriesTime ? `Horaire ${seriesTime} - ` : ""}${visibleEntrants.length} ${swimmerWord(visibleEntrants.length)}`
     : `${visibleEntrants.length} ${displayedWord(visibleEntrants.length)}`;
-  const selectedSeriesCount = currentSeriesRows()[0]?.seriesCount || seriesNumbers.length || selectedSeries;
-  const seriesLabel = isFinalStage(state.series)
-    ? finalStageLabel(state.series)
-    : `Série ${selectedSeries} / ${selectedSeriesCount}`;
-  const tabletRacePrefix = state.role === "referee" && refereeTabletMode && hasSeriesFilter
-    ? `${currentEvent()?.label || "Course"} ${sexDisplayLabel(state.sex)} - `
-    : "";
+  const seriesLabel = selectedSeriesLabel();
+  const compactViewTitle = ["referee", "speaker", "live"].includes(state.role);
   const entrantsTitleText = hasSeriesFilter
-    ? `${tabletRacePrefix}${seriesLabel}`
+    ? (compactViewTitle ? compactRaceTitle() : seriesLabel)
     : (state.role === "referee" ? "Participants" : `${entrantWord(2).replace(/^./, (letter) => letter.toUpperCase())} 2026`);
-  entrantsTitle.innerHTML = `${escapeHtml(entrantsTitleText)}${hasSeriesFilter ? splitRaceNote() : ""}${isLastSeriesOfCurrentSession() ? ` <span class="session-end-note">[dernière série de la session]</span>` : ""}`;
+  const inlineEntrantCount = ["referee", "speaker", "live"].includes(state.role) && hasSeriesFilter
+    ? ` <span class="inline-entrant-count">${escapeHtml(`${statsCount} ${entrantWord(statsCount)}`)}</span>`
+    : "";
+  entrantsTitle.innerHTML = `${escapeHtml(entrantsTitleText)}${inlineEntrantCount}${hasSeriesFilter ? splitRaceNote() : ""}${isLastSeriesOfCurrentSession() ? ` <span class="session-end-note">[dernière série de la session]</span>` : ""}`;
   if (entrantsSubtitle) {
-    entrantsSubtitle.textContent = hasSeriesFilter
-      ? [seriesTime ? `Horaire ${seriesTime}` : "", `${visibleEntrants.length} ${swimmerWord(visibleEntrants.length)}`].filter(Boolean).join(" - ")
-      : "";
+    if (hasSeriesFilter && ["speaker", "live"].includes(state.role)) {
+      const refDetails = selectedHeaderReferenceDetailsHtml();
+      entrantsSubtitle.innerHTML = `
+        <span class="speaker-panel-refs">${headerReferenceChipsHtml()}</span>
+        ${refDetails ? `<span class="header-ref-details speaker-panel-ref-details">${refDetails}</span>` : ""}
+      `;
+    } else if (hasSeriesFilter && state.role === "referee") {
+      entrantsSubtitle.textContent = "";
+    } else {
+      entrantsSubtitle.textContent = hasSeriesFilter
+        ? [seriesTime ? `Horaire ${seriesTime}` : "", `${visibleEntrants.length} ${swimmerWord(visibleEntrants.length)}`].filter(Boolean).join(" - ")
+        : "";
+    }
   }
   rankHeader.textContent = hasSeriesFilter ? "Ligne" : "Rang";
   if (swimmerHeader) swimmerHeader.textContent = isFemaleContext() ? "Nageuse" : "Nageur";
@@ -6494,12 +6647,29 @@ headerRefs.addEventListener("click", (event) => {
   if (!button) return;
   state.selectedRecordKey = state.selectedRecordKey === button.dataset.recordKey ? "" : button.dataset.recordKey;
   renderHeaderReferences();
+  renderEntrants();
 });
 
 headerRefDetails.addEventListener("click", (event) => {
   if (!event.target.closest(".close-ref-details")) return;
   state.selectedRecordKey = "";
   renderHeaderReferences();
+  renderEntrants();
+});
+
+entrantsSubtitle?.addEventListener("click", (event) => {
+  const closeButton = event.target.closest(".close-ref-details");
+  if (closeButton) {
+    state.selectedRecordKey = "";
+    renderHeaderReferences();
+    renderEntrants();
+    return;
+  }
+  const button = event.target.closest(".ref-chip-button");
+  if (!button) return;
+  state.selectedRecordKey = state.selectedRecordKey === button.dataset.recordKey ? "" : button.dataset.recordKey;
+  renderHeaderReferences();
+  renderEntrants();
 });
 
 seriesControls.addEventListener("click", (event) => {
@@ -6613,11 +6783,12 @@ resultImportModal?.addEventListener("change", async (event) => {
   if (event.target?.id !== "resultPdfInput") return;
   const file = event.target.files?.[0];
   if (!file || !currentResultImportRow) return;
-  const existingResult = resultForProgramRow(currentResultImportRow);
+  const rowToImport = currentResultImportRow;
+  const existingResult = resultForProgramRow(rowToImport);
   const finalListMode = resultImportModal.querySelector("input[name='resultFinalListMode']:checked")?.value || "";
   const preserveFinalists = Boolean(existingResult?.hasFinal && finalListMode === "preserve");
   const overwriteFinalists = Boolean(existingResult?.hasFinal && finalListMode === "overwrite");
-  const hasFinal = !isFinalStage(currentResultImportRow.stage) && (
+  const hasFinal = !isFinalStage(rowToImport.stage) && (
     overwriteFinalists ||
     (!preserveFinalists && resultImportModal.querySelector("input[name='resultFinalMode']:checked")?.value === "yes")
   );
@@ -6632,16 +6803,16 @@ resultImportModal?.addEventListener("change", async (event) => {
       ? `Publier ce résultat ${isPartial ? "partiel" : "complet"} et détecter les finalistes ?`
       : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`));
   const importLabel = [
-    currentResultImportRow.session ? `Session ${currentResultImportRow.session}` : "",
-    data.events.find((item) => item.id === currentResultImportRow.eventId)?.label || currentResultImportRow.label || currentResultImportRow.eventId,
-    `${sexDisplayLabel(currentResultImportRow.sex)} - ${resultPhaseLabelForProgramRow(currentResultImportRow)}`
+    rowToImport.session ? `Session ${rowToImport.session}` : "",
+    data.events.find((item) => item.id === rowToImport.eventId)?.label || rowToImport.label || rowToImport.eventId,
+    `${sexDisplayLabel(rowToImport.sex)} - ${resultPhaseLabelForProgramRow(rowToImport)}`
   ].filter(Boolean).join(" - ");
   if (!window.confirm([message, "", `Course : ${importLabel}`, `Fichier : ${file.name}`].join("\n"))) return;
+  closeResultImportModal();
   try {
     renderDataStatus("Publication du résultat en cours...");
-    const result = await publishResultPdf(file, currentResultImportRow, hasFinal, isPartial, { preserveFinalists });
-    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(currentResultImportRow)}${result.session ? ` S${result.session}` : ""}`);
-    closeResultImportModal();
+    const result = await publishResultPdf(file, rowToImport, hasFinal, isPartial, { preserveFinalists });
+    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(rowToImport)}${result.session ? ` S${result.session}` : ""}`);
     renderDataStatus();
     const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
     window.alert(hasFinal
