@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260517-direct-mode-status">
+    <link rel="stylesheet" href="styles.css?v=20260518-swimmer-program">
   </head>
   <body>
     <header class="topbar">
@@ -68,31 +68,37 @@
         <button class="profile-card profile-live" type="button" data-home-role="live">
           <span class="profile-icon" aria-hidden="true">🎬</span>
           <strong>Live</strong>
+          <span class="profile-presence" data-presence-role="live">0 connect&eacute;</span>
           <small>Suivi de course et informations sans action officielle.</small>
         </button>
         <button class="profile-card profile-speaker" type="button" data-home-role="speaker">
           <span class="profile-icon" aria-hidden="true">🎙</span>
           <strong>Speaker</strong>
+          <span class="profile-presence" data-presence-role="speaker">0 connect&eacute;</span>
           <small>Annonces, rep&egrave;res chrono et alertes officielles.</small>
         </button>
         <button class="profile-card profile-referee" type="button" data-home-role="referee">
           <span class="profile-icon" aria-hidden="true">■</span>
           <strong>Juge arbitre</strong>
+          <span class="profile-presence" data-presence-role="referee">0 connect&eacute;</span>
           <small>Saisie des forfaits, abandons et disqualifications.</small>
         </button>
         <button class="profile-card profile-video" type="button" data-home-role="video">
           <span class="profile-icon" aria-hidden="true">◉</span>
           <strong>Juge vid&eacute;o</strong>
+          <span class="profile-presence" data-presence-role="video">0 connect&eacute;</span>
           <small>Demandes d'arbitrage vid&eacute;o et historique.</small>
         </button>
         <button class="profile-card profile-computer" type="button" data-home-role="computer">
           <span class="profile-icon" aria-hidden="true">⌨</span>
           <strong>Bureau des performances</strong>
+          <span class="profile-presence" data-presence-role="computer">0 connect&eacute;</span>
           <small>Publication des r&eacute;sultats, s&eacute;ries, journal et administration.</small>
         </button>
         <button class="profile-card profile-secretary" type="button" data-home-role="secretary">
           <span class="profile-icon" aria-hidden="true">✎</span>
           <strong>Secr&eacute;tariat</strong>
+          <span class="profile-presence" data-presence-role="secretary">0 connect&eacute;</span>
           <small>Gestion des forfaits en finale et rep&ecirc;chages.</small>
         </button>
       </div>
@@ -216,6 +222,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260517-live-import-warning"></script>
+    <script src="app.js?v=20260518-swimmer-program"></script>
   </body>
 </html>

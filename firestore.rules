@@ -19,6 +19,10 @@ service cloud.firestore {
       return role in ["speaker", "referee", "video", "computer", "secretary"];
     }
 
+    function validPresenceRole(role) {
+      return role in ["live", "speaker", "referee", "video", "computer", "secretary"];
+    }
+
     match /competitions/{competitionId} {
       allow read: if isLivePalmesCompetition(competitionId);
       allow write: if false;
@@ -120,6 +124,27 @@ service cloud.firestore {
           && validText(request.resource.data.expiresAt, 40);
         allow delete: if isLivePalmesCompetition(competitionId)
           && validRole(role);
+      }
+
+      match /presence/{presenceId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "clientId",
+            "role",
+            "page",
+            "updatedAt",
+            "expiresAt"
+          ])
+          && request.resource.data.id == presenceId
+          && validText(presenceId, 180)
+          && validText(request.resource.data.clientId, 120)
+          && validPresenceRole(request.resource.data.role)
+          && request.resource.data.page == "console"
+          && validText(request.resource.data.updatedAt, 40)
+          && validText(request.resource.data.expiresAt, 40);
+        allow delete: if isLivePalmesCompetition(competitionId);
       }
 
       match /historyArchives/{archiveId} {
