@@ -4303,7 +4303,8 @@ async function fileToDataUrl(file) {
 }
 
 function parseResultRow(line) {
-  const match = String(line || "").match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -4318,8 +4319,56 @@ function parseResultRow(line) {
   };
 }
 
+function resultStatusFromText(value) {
+  const text = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/\b(forfait|absent|abs|dns|ns)\b/.test(text)) return "forfait";
+  if (/\b(abandon|abd|dnf)\b/.test(text)) return "abandon";
+  if (/\b(disqualification|disqualifie|disqualifiee|dsq|dq)\b/.test(text)) return "disqualification";
+  return "";
+}
+
+function parseResultStatusRow(line) {
+  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const status = resultStatusFromText(text);
+  if (!status) return null;
+  const match = text.match(/^\s*(?:(\d+)\s+)?(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(.+?)\s*$/i);
+  if (!match) return null;
+  const split = splitImportedPersonName(fixPdfEncoding(match[2]));
+  return {
+    rank: match[1] ? Number(match[1]) : "",
+    lastName: split.lastName,
+    firstName: split.firstName,
+    displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
+    birthYear: `20${match[3]}`,
+    club: match[4],
+    time: "",
+    resultStatus: status,
+    statusLabel: {
+      forfait: "Forfait",
+      abandon: "Abandon",
+      disqualification: "Disqualification"
+    }[status],
+    qualified: false
+  };
+}
+
 function parseFinalistsFromResultLines(lines) {
-  const ranking = lines.map(parseResultRow).filter(Boolean);
+  const ranking = lines
+    .map((line, sourceIndex) => {
+      const row = parseResultRow(line) || parseResultStatusRow(line);
+      return row ? { ...row, sourceIndex } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const statusA = a.resultStatus ? 1 : 0;
+      const statusB = b.resultStatus ? 1 : 0;
+      return statusA - statusB ||
+        Number(a.rank || 9999) - Number(b.rank || 9999) ||
+        Number(a.sourceIndex || 0) - Number(b.sourceIndex || 0);
+    });
   const qualified = ranking.filter((row) => row.qualified);
   return {
     ranking,
@@ -4584,7 +4633,7 @@ function isFinalPreWithdrawn(result, row) {
 
 function availableReplacementForResult(result, finalists) {
   const used = new Set(["a", "b"].flatMap((finalKey) => (finalists?.[finalKey] || []).map(finalRowKey)));
-  return (result.nextUnqualified || []).find((row) => !used.has(finalRowKey(row))) || null;
+  return (result.nextUnqualified || []).find((row) => row.time && !row.resultStatus && !used.has(finalRowKey(row))) || null;
 }
 
 function buildReplacementFinalistRow(result, row, reference, now) {
@@ -4700,7 +4749,7 @@ function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
           return `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}">
             <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
               <small>${escapeHtml(status)}</small>
               ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
@@ -4738,8 +4787,8 @@ function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false 
           return `
           <li value="${escapeHtml(row.rank || "")}" class="closed ${preWithdrawal ? "prewithdrawn" : ""}">
             <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
-              <small>${preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : `Non qualifié${result.sex === "F" ? "e" : ""}`}</small>
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
+              <small>${preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)}</small>
             </div>
             ${actions ? `
               <button class="ghost-button compact ${preWithdrawal ? "confirm-button" : ""}" type="button" data-final-prewithdraw="${escapeHtml(result.id)}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
@@ -4824,7 +4873,7 @@ function renderFinalCompositionList(result) {
         ${rows.map((row) => `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
             <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time].filter(Boolean).join(" - "))}</span>
+              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
               ${row.withdrawnAt ? `<small>Forfait à ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
               ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
             </div>
