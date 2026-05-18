@@ -8,24 +8,19 @@
     <meta property="og:title" content="LivePalmes v1.0">
     <meta property="og:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="favicon.svg">
+    <meta property="og:image" content="logo-livepalmes.png">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="LivePalmes v1.0">
     <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260516-livepalmes-icon">
-    <link rel="stylesheet" href="styles.css?v=20260518-no-smartphone-mode">
+    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260518-logo-final">
+    <link rel="stylesheet" href="styles.css?v=20260518-clap-smaller">
   </head>
   <body>
     <header class="topbar">
       <div>
         <p class="eyebrow app-name">
           <span class="livepalmes-logo" aria-hidden="true">
-            <svg viewBox="0 0 32 32" focusable="false">
-              <rect class="logo-card" x="3.5" y="9" width="17" height="14" rx="3.2"/>
-              <path class="logo-card-line" d="M8 14h7.8M8 18h5.2"/>
-              <circle class="logo-live-dot" cx="21.5" cy="10.2" r="3.2"/>
-              <path class="logo-wave" d="M23.9 16c1.5.8 2.7 2 3.4 3.5M25.6 12.5c2.5 1.2 4.4 3.2 5.4 5.8"/>
-            </svg>
+            <img src="logo-livepalmes.png?v=20260518-logo-final" alt="">
           </span>
           <span id="appConsoleTitle">LivePalmes</span>
           <span id="firebaseHeaderStatus" class="firebase-header-status pending">
@@ -65,7 +60,9 @@
       </div>
       <div class="profile-grid">
         <button class="profile-card profile-live" type="button" data-home-role="live">
-          <span class="profile-icon" aria-hidden="true">🎬</span>
+          <span class="profile-icon" aria-hidden="true">
+            <img class="profile-clap-icon" src="clap-live.png?v=20260518-live-clap-png" alt="">
+          </span>
           <strong>Live</strong>
           <span class="profile-presence" data-presence-role="live">0 connect&eacute;</span>
           <small>Suivi de course et informations sans action officielle.</small>
@@ -77,7 +74,9 @@
           <small>Annonces, rep&egrave;res chrono et alertes officielles.</small>
         </button>
         <button class="profile-card profile-referee" type="button" data-home-role="referee">
-          <span class="profile-icon" aria-hidden="true">■</span>
+          <span class="profile-icon" aria-hidden="true">
+            <img class="profile-whistle-icon" src="sifflet-ja.png?v=20260518-whistle-png" alt="">
+          </span>
           <strong>Juge arbitre</strong>
           <span class="profile-presence" data-presence-role="referee">0 connect&eacute;</span>
           <small>Saisie des forfaits, abandons et disqualifications.</small>
