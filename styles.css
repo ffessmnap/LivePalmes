@@ -940,6 +940,10 @@ body.profile-home-active .top-actions {
   background: #fff9e8;
 }
 
+.session-results-import-row {
+  border-style: dashed;
+}
+
 .result-admin-row-actions {
   display: flex;
   align-items: center;
@@ -1130,6 +1134,29 @@ body.profile-home-active .top-actions {
   padding: 5px 8px;
   border-radius: 7px;
   background: #fff4d6;
+}
+
+.session-results-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+
+.session-results-checkboxes[hidden] {
+  display: none;
+}
+
+.session-results-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .secretary-finals-panel {
@@ -1387,6 +1414,18 @@ body.profile-home-active .top-actions {
   color: var(--muted);
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+.public-session-results-pdf {
+  border-left-color: #17642b;
+  background: #f4fbf5;
+}
+
+.public-pdf-link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .public-result-card {
