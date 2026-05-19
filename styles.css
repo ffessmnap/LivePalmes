@@ -3769,7 +3769,7 @@ td {
   order: 2;
 }
 
-.live-mode .program-button {
+.live-mode .sidebar > .program-button {
   display: none;
 }
 
@@ -3815,11 +3815,35 @@ td {
   margin-top: 2px;
 }
 
-.role-live .series-nav,
-.role-speaker .series-nav,
 .role-live .floating-series-nav,
 .role-speaker .floating-series-nav {
   display: none !important;
+}
+
+.role-live .series-nav,
+.role-speaker .series-nav,
+.role-referee .series-nav {
+  display: flex;
+}
+
+.role-live #previousSeriesBtn,
+.role-live #nextSeriesBtn,
+.role-speaker #previousSeriesBtn,
+.role-speaker #nextSeriesBtn,
+.role-referee #previousSeriesBtn,
+.role-referee #nextSeriesBtn {
+  display: none;
+}
+
+.role-live .series-nav .program-button,
+.role-speaker .series-nav .program-button,
+.role-referee .series-nav .program-button {
+  display: inline-flex;
+  width: auto;
+  min-width: 96px;
+  min-height: 30px;
+  padding-inline: 10px;
+  font-size: 0.76rem;
 }
 
 .live-mode .race-panel {
