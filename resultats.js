@@ -1,4 +1,5 @@
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
+const PUBLIC_RESULTS_UNLOCK_KEY = "livepalmes:public-results-unlocked:v1";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
   authDomain: "livepalmes.firebaseapp.com",
@@ -23,6 +24,7 @@ let publicMeet = {};
 let publicResults = [];
 let publicSeriesPdfs = [];
 let publicSessionResultsPdfs = [];
+let publicAccess = { locked: false, pin: "" };
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
@@ -71,6 +73,49 @@ function setStatus(label, className = "pending") {
   statusBadge.hidden = false;
   statusBadge.className = `firebase-header-status ${className}`;
   statusBadge.innerHTML = `<i class="firebase-dot ${className}" aria-hidden="true"></i>${escapeHtml(label)}`;
+}
+
+function publicUnlockToken() {
+  return publicAccess?.pin ? `pin:${publicAccess.pin}` : "open";
+}
+
+function publicResultsUnlocked() {
+  return !publicAccess?.locked || localStorage.getItem(PUBLIC_RESULTS_UNLOCK_KEY) === publicUnlockToken();
+}
+
+function renderPublicLock(error = "") {
+  renderMeetTitle();
+  if (sessionControls) sessionControls.innerHTML = "";
+  if (collapseDetailsBtn) collapseDetailsBtn.hidden = true;
+  if (!list) return;
+  list.innerHTML = `
+    <div class="public-lock-panel">
+      <div>
+        <h2>Accès protégé</h2>
+        <p class="panel-subtitle">Entre le code communiqué par l'organisation pour consulter les résultats.</p>
+      </div>
+      <form class="public-lock-form" id="publicLockForm">
+        <input id="publicLockInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="Code">
+        <button class="primary-button" type="submit">Ouvrir</button>
+      </form>
+      ${error ? `<p class="public-lock-error">${escapeHtml(error)}</p>` : ""}
+    </div>
+  `;
+  list.querySelector("#publicLockInput")?.focus();
+}
+
+function ensurePublicAccess() {
+  if (!publicAccess?.locked) {
+    if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
+    return true;
+  }
+  if (publicResultsUnlocked()) {
+    if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
+    return true;
+  }
+  setStatus("Accès protégé", "pending");
+  renderPublicLock();
+  return false;
 }
 
 function raceKey(eventId, sex) {
@@ -523,6 +568,7 @@ async function loadPublicResultsIndex() {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
+  publicAccess = index.publicAccess || { locked: false, pin: "" };
   publicIndexUpdatedAt = index.updatedAt || "";
   if (Array.isArray(index.seriesPdfs)) {
     publicSeriesPdfs = index.seriesPdfs
@@ -536,6 +582,7 @@ async function loadPublicResultsIndex() {
       .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
     : [];
+  if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   renderResults();
 }
@@ -551,6 +598,10 @@ async function loadPublicResultsFallback(competition) {
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicAccess = {
+    locked: remote.notes?.publicResultsLocked === true,
+    pin: remote.notes?.rolePins?.public || "0006"
+  };
   await loadPublicSeriesPdfs(competition);
   publicSessionResultsPdfs = [];
   publicIndexUpdatedAt = publicResults
@@ -558,6 +609,7 @@ async function loadPublicResultsFallback(competition) {
     .filter(Boolean)
     .sort()
     .at(-1) || "";
+  if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   renderResults();
 }
@@ -590,6 +642,20 @@ refreshResultsBtn?.addEventListener("click", () => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
+});
+
+list?.addEventListener("submit", (event) => {
+  const form = event.target.closest("#publicLockForm");
+  if (!form) return;
+  event.preventDefault();
+  const code = String(form.querySelector("#publicLockInput")?.value || "").trim();
+  if (code !== String(publicAccess?.pin || "")) {
+    renderPublicLock("Code incorrect.");
+    return;
+  }
+  localStorage.setItem(PUBLIC_RESULTS_UNLOCK_KEY, publicUnlockToken());
+  setStatus("ConnectÃ©", "ok");
+  renderResults();
 });
 
 init();
