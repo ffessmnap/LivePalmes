@@ -325,6 +325,7 @@ let resultsSnapshotReady = false;
 let currentResultImportRow = null;
 let currentSessionResultsImport = null;
 let resultUploadStates = new Map();
+let seriesImportState = null;
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
 let replacementAlertRepairRunning = false;
@@ -560,6 +561,15 @@ function refereeProgressLabel(progress = refereeProgress()) {
   return [session, eventLabel, sex, phase].filter(Boolean).join(" · ");
 }
 
+function refereeProgressShortLabel(progress = refereeProgress()) {
+  if (!progress?.programKey) return "";
+  const session = progress.session ? `S${progress.session}` : "";
+  const phase = isFinalStage(progress.stage)
+    ? finalStageLabel(progress.stage)
+    : `série ${progress.series || "-"}`;
+  return `Point JA : ${[session, phase].filter(Boolean).join(" · ")}`;
+}
+
 function currentRefereeProgressPayload() {
   const row = selectedProgramRow() || programRows().find((item) => item.eventId === state.eventId && item.sex === state.sex);
   if (!row) return null;
@@ -574,6 +584,17 @@ function currentRefereeProgressPayload() {
     order: Number(row.order || 0),
     updatedAt: new Date().toISOString()
   };
+}
+
+function sameRefereeProgress(a, b) {
+  return Boolean(a?.programKey && b?.programKey) &&
+    String(a.programKey) === String(b.programKey) &&
+    String(a.series || "") === String(b.series || "") &&
+    String(a.stage || "") === String(b.stage || "");
+}
+
+function currentRefereeProgressIsHere() {
+  return sameRefereeProgress(currentRefereeProgressPayload(), refereeProgress());
 }
 
 function homeActionCounts() {
@@ -994,6 +1015,45 @@ function renderResetHistoryModal() {
     </div>
   `;
   roleCodesModal.querySelector("#resetHistoryInput")?.focus();
+}
+
+function renderResetResultsModal() {
+  if (!roleCodesModal) return;
+  const activeSession = ensureResultsAdminSession();
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ résultats">
+      <div class="decision-modal-head">
+        <div>
+          <span>Résultats publics</span>
+          <h2>RAZ résultats</h2>
+          <p>Disponible uniquement hors mode compétition. Les résultats effacés sont archivés avant suppression.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <div class="admin-series-options">
+        <label class="admin-series-option">
+          <input type="radio" name="resetResultsScope" value="session" checked ${activeSession ? "" : "disabled"}>
+          <strong>Session affichée ${activeSession ? `S${escapeHtml(activeSession)}` : ""}</strong>
+          <span>Supprime les résultats publiés et PDF complets liés à cette session.</span>
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="resetResultsScope" value="all" ${activeSession ? "" : "checked"}>
+          <strong>Toute la compétition</strong>
+          <span>Supprime tous les résultats publics publiés.</span>
+        </label>
+      </div>
+      <label class="role-code-admin-field">
+        Confirmation
+        <input id="resetResultsInput" type="text" maxlength="3" autocomplete="off" placeholder="RAZ">
+      </label>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
+        <button class="primary-button danger-button" type="button" data-confirm-reset-results>Archiver et remettre à zéro</button>
+      </div>
+    </div>
+  `;
+  roleCodesModal.querySelector("#resetResultsInput")?.focus();
 }
 
 async function renderHistoryArchivesModal({ canDelete = false } = {}) {
@@ -2920,6 +2980,32 @@ async function clearPublicSessionResultsPdfs() {
   return snapshot.docs.length;
 }
 
+async function clearPublicSessionResultsPdfsForSession(session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession) return 0;
+  const collection = sessionResultsPdfsCollection();
+  if (!collection) return 0;
+  const snapshot = await collection.get();
+  const docs = snapshot.docs.filter((doc) => {
+    const pdf = { id: doc.id, ...doc.data() };
+    if (pdf.scope === "full") return false;
+    const sessions = Array.isArray(pdf.sessions) ? pdf.sessions.map(String) : [];
+    return String(pdf.session || "") === cleanSession || sessions.includes(cleanSession);
+  });
+  await Promise.all(docs.map((doc) => doc.ref.delete()));
+  const deletedIds = new Set(docs.map((doc) => doc.id));
+  const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSessionResultsPdfs: current.filter((pdf) => !deletedIds.has(pdf.id))
+    }
+  });
+  saveData();
+  return docs.length;
+}
+
 async function publishPublicSeriesPdf(file, mode = "session", session = "") {
   const collection = seriesPdfsCollection();
   if (!collection || !file) return null;
@@ -3122,7 +3208,7 @@ function resultStatusForProgramRow(row) {
     if (result.hasFinal) return "En attente annonce speaker";
     return "Publié";
   }
-  return "À importer";
+  return "";
 }
 
 function resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive) {
@@ -3168,6 +3254,16 @@ function clearResultUploadState(key) {
   renderResultsAdminPanel();
 }
 
+function setSeriesImportState(label, tone = "loading") {
+  seriesImportState = { label, tone };
+  renderResultsAdminPanel();
+}
+
+function clearSeriesImportState() {
+  seriesImportState = null;
+  renderResultsAdminPanel();
+}
+
 function resultUploadBadgeHtml(uploadState) {
   if (!uploadState) return "";
   const tone = uploadState.tone || "loading";
@@ -3193,6 +3289,7 @@ function renderResultsAdminPanel() {
         <p class="panel-subtitle">Import PDF, publication publique et suivi des finalistes.</p>
       </div>
       <div class="results-admin-actions">
+        ${seriesImportState ? resultUploadBadgeHtml(seriesImportState) : ""}
         ${sessions.length ? `
           <label class="results-session-select">
             <span>Session</span>
@@ -3204,7 +3301,8 @@ function renderResultsAdminPanel() {
           </label>
         ` : ""}
         <button class="ghost-button compact" type="button" data-computer-diagnostic>Vérifier</button>
-        <button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>
+        <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
+        ${competitionModeEnabled() ? "" : `<button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ résultats</button>`}
         <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
@@ -4227,6 +4325,30 @@ function updateAlert(alertId, changes) {
   render();
 }
 
+function markSpeakerAlertDoneLocally(alertId, announcedAt = new Date().toISOString()) {
+  const index = alerts.findIndex((alert) => alert.id === alertId);
+  if (index === -1) return null;
+  const previous = { ...alerts[index] };
+  alerts[index] = {
+    ...alerts[index],
+    speakerStatus: "done",
+    speakerAnnouncedAt: announcedAt,
+    updatedAt: announcedAt
+  };
+  saveAlerts();
+  render();
+  return previous;
+}
+
+function restoreAlertLocally(previousAlert) {
+  if (!previousAlert?.id) return;
+  const index = alerts.findIndex((alert) => alert.id === previousAlert.id);
+  if (index === -1) return;
+  alerts[index] = previousAlert;
+  saveAlerts();
+  render();
+}
+
 function cloneAlertForCancellation(source, type, by) {
   const now = new Date().toISOString();
   return {
@@ -4418,7 +4540,8 @@ function renderSeriesControls() {
   const preview = raceSeries().some((row) => row.isPreview);
   const programRow = selectedProgramRow();
   if (programRow?.hasEntrants === false) {
-    seriesControls.innerHTML = `<span class="no-series-note">${escapeHtml(programRow.startTime ? `Finale - ${programRow.startTime}` : "Finale")}</span>`;
+    const jaMark = seriesChipIsRefereeProgress(programRow, "", programRow.stage || "final") ? `<span class="series-ja-marker">JA</span>` : "";
+    seriesControls.innerHTML = `<span class="no-series-note">${escapeHtml(programRow.startTime ? `Finale - ${programRow.startTime}` : "Finale")}${jaMark}</span>`;
     setSeriesNavigation(
       !hasPreviousProgramSeries(),
       "Course précédente",
@@ -4433,17 +4556,21 @@ function renderSeriesControls() {
         .filter(matchesRace)
         .filter((row) => !isFinalStage(row.stage))
         .find((row) => Number(row.series) === number)?.startTime || "";
+      const jaCurrent = seriesChipIsRefereeProgress(programRow, number, "series");
       return `
-        <button class="series-chip ${Number(state.series) === number ? "active" : ""}" type="button" data-series="${number}">
-          <strong>${number}</strong>${time ? `<span>${escapeHtml(time)}</span>` : ""}
+        <button class="series-chip ${Number(state.series) === number ? "active" : ""} ${jaCurrent ? "ja-current" : ""}" type="button" data-series="${number}">
+          <strong>${number}</strong>${time ? `<span>${escapeHtml(time)}</span>` : ""}${jaCurrent ? `<em>JA</em>` : ""}
         </button>
       `;
     }),
-    ...finalRows.map((row) => `
-      <button class="series-chip final-chip ${state.series === row.stage ? "active" : ""}" type="button" data-series="${escapeHtml(row.stage)}">
-        <strong>${escapeHtml(finalStageLabel(row.stage))}</strong>${row.startTime ? `<span>${escapeHtml(row.startTime)}</span>` : ""}
-      </button>
-    `)
+    ...finalRows.map((row) => {
+      const jaCurrent = seriesChipIsRefereeProgress(row, "", row.stage);
+      return `
+        <button class="series-chip final-chip ${state.series === row.stage ? "active" : ""} ${jaCurrent ? "ja-current" : ""}" type="button" data-series="${escapeHtml(row.stage)}">
+          <strong>${escapeHtml(finalStageLabel(row.stage))}</strong>${row.startTime ? `<span>${escapeHtml(row.startTime)}</span>` : ""}${jaCurrent ? `<em>JA</em>` : ""}
+        </button>
+      `;
+    })
   ];
   seriesControls.innerHTML = controls.length
     ? controls.join("")
@@ -4461,6 +4588,14 @@ function renderSeriesControls() {
     atLastCurrentRace ? "Course suivante" : "Série suivante"
   );
   seriesControls.title = preview ? "Aperçu généré automatiquement en attendant le fichier officiel des séries" : "";
+}
+
+function seriesChipIsRefereeProgress(row, series, stage) {
+  const progress = refereeProgress();
+  if (!row || !progress?.programKey) return false;
+  return String(progress.programKey) === String(programKey(row)) &&
+    String(progress.stage || "series") === String(stage || "series") &&
+    String(progress.series || "") === String(series || "");
 }
 
 function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, nextLabel) {
@@ -4670,16 +4805,21 @@ function closeProgramModal() {
 async function setRefereeProgressHere() {
   if (state.role !== "referee") return;
   const progress = currentRefereeProgressPayload();
-  if (!progress) {
-    window.alert("Impossible de pointer cette course : aucune course active.");
-    return;
-  }
+  if (!progress) return;
   const label = refereeProgressLabel(progress);
-  const ok = window.confirm(`Pointer l'avancement JA ici ?\n\n${label || compactRaceTitle()}\n\nToutes les séries précédentes seront considérées comme passées dans le programme.`);
-  if (!ok) return;
-  await updateLiveNotes(`Point JA : ${label || compactRaceTitle()}`, { refereeProgress: progress });
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      refereeProgress: progress
+    }
+  });
   render();
   if (!programModal.hidden) renderProgramModal();
+  updateLiveNotes(`Point JA : ${label || compactRaceTitle()}`, { refereeProgress: progress }).catch((error) => {
+    console.error(error);
+    window.alert(`Point JA non publié : ${error?.message || error}`);
+  });
 }
 
 function openAdminSeriesModal() {
@@ -5860,12 +6000,42 @@ async function clearPublishedResults() {
   if (rowsToArchive.length) {
     await archiveCurrentResults("Avant remise à zéro des résultats publics", rowsToArchive);
   }
+  for (const result of rowsToArchive) {
+    await deleteFinalResultAlerts(result.id);
+  }
   await Promise.all(docs.map((doc) => doc.ref.delete()));
   await clearPublicSessionResultsPdfs();
   raceResults = [];
   await publishPublicResultsIndex();
   renderResultsAdminPanel();
   return docs.length;
+}
+
+async function clearPublishedResultsForSession(session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession) throw new Error("Aucune session sélectionnée.");
+  const collection = resultsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les résultats publics.");
+  const snapshot = await collection.get();
+  const docs = snapshot.docs || [];
+  const rows = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const rowsToDelete = rows.filter((row) => String(row.session || "") === cleanSession);
+  if (rowsToDelete.length) {
+    await archiveCurrentResults(`Avant remise à zéro des résultats publics S${cleanSession}`, rowsToDelete);
+  }
+  for (const result of rowsToDelete) {
+    await deleteFinalResultAlerts(result.id);
+  }
+  const idsToDelete = new Set(rowsToDelete.map((row) => row.id));
+  await Promise.all(docs.filter((doc) => idsToDelete.has(doc.id)).map((doc) => doc.ref.delete()));
+  const clearedSessionPdfs = await clearPublicSessionResultsPdfsForSession(cleanSession);
+  raceResults = raceResults.filter((result) => String(result.session || "") !== cleanSession);
+  await publishPublicResultsIndex();
+  renderResultsAdminPanel();
+  return {
+    results: rowsToDelete.length,
+    sessionPdfs: clearedSessionPdfs
+  };
 }
 
 function renderCategorySelect() {
@@ -5904,35 +6074,32 @@ function renderHeader() {
 
 function renderRefereeProgressControl() {
   if (!refereeProgressBtn) return;
-  const panelActions = document.querySelector(".entrants-panel .panel-actions");
-  if (["referee", "speaker", "live"].includes(state.role) && panelActions && refereeProgressBtn.parentElement !== panelActions) {
-    const programReference = programBtn?.parentElement === panelActions ? programBtn : null;
-    const filteredReference = filteredCount?.parentElement === panelActions ? filteredCount : null;
-    panelActions.insertBefore(refereeProgressBtn, programReference || filteredReference);
-  }
   const progress = refereeProgress();
   const label = refereeProgressLabel(progress);
   if (state.role === "referee") {
+    const panelActions = document.querySelector(".entrants-panel .panel-actions");
+    if (panelActions && refereeProgressBtn.parentElement !== panelActions) {
+      const programReference = programBtn?.parentElement === panelActions ? programBtn : null;
+      panelActions.insertBefore(refereeProgressBtn, programReference || panelActions.firstChild);
+    }
+    const isPointedHere = currentRefereeProgressIsHere();
     refereeProgressBtn.hidden = false;
     refereeProgressBtn.disabled = !selectedProgramRow();
     refereeProgressBtn.dataset.refereeProgressAction = "set";
-    refereeProgressBtn.textContent = "Pointer ici";
+    refereeProgressBtn.textContent = isPointedHere ? "Pointé JA" : "Pointer ici";
     refereeProgressBtn.title = label ? `Repère actuel : ${label}` : "Marquer cette course/série comme repère du JA";
     refereeProgressBtn.classList.add("confirm-button");
+    refereeProgressBtn.classList.toggle("is-pointed", isPointedHere);
     return;
   }
-  if (["speaker", "live"].includes(state.role) && label) {
-    refereeProgressBtn.hidden = false;
-    refereeProgressBtn.disabled = true;
-    refereeProgressBtn.removeAttribute("data-referee-progress-action");
-    refereeProgressBtn.textContent = `Point JA : ${label}`;
-    refereeProgressBtn.title = "Repère d'avancement posé par le juge arbitre";
-    refereeProgressBtn.classList.remove("confirm-button");
-    return;
+  const headerActions = document.querySelector(".race-header .badge-row");
+  if (headerActions && refereeProgressBtn.parentElement !== headerActions) {
+    headerActions.insertBefore(refereeProgressBtn, headerActions.firstChild);
   }
   refereeProgressBtn.hidden = true;
   refereeProgressBtn.disabled = false;
   refereeProgressBtn.removeAttribute("data-referee-progress-action");
+  refereeProgressBtn.classList.remove("confirm-button", "is-pointed");
 }
 
 function headerReferenceChipsHtml() {
@@ -7520,6 +7687,14 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     openAdminSeriesModal();
     return;
   }
+  if (event.target.closest("[data-results-reset]")) {
+    if (competitionModeEnabled()) {
+      window.alert("RAZ résultats indisponible en mode compétition.");
+      return;
+    }
+    renderResetResultsModal();
+    return;
+  }
   const compositionButton = event.target.closest("[data-final-composition-result]");
   if (compositionButton) {
     openFinalCompositionResultModal(compositionButton.dataset.finalCompositionResult);
@@ -7619,9 +7794,9 @@ resultImportModal?.addEventListener("change", async (event) => {
     try {
       renderDataStatus("Publication du PDF résultats complets...");
       const pdf = await publishSessionResultsPdf(file, scope === "full" ? "full" : "sessions", selectedSessions);
-      await updateLiveNotes(`PDF résultats complets publié : ${pdf.sourceLabel}`);
       clearResultUploadState(uploadKey);
       renderDataStatus();
+      updateLiveNotes(`PDF résultats complets publié : ${pdf.sourceLabel}`).catch((error) => console.warn("Note de publication non mise à jour", error));
       window.alert("PDF résultats complets publié sur la page publique.");
     } catch (error) {
       console.error(error);
@@ -7665,9 +7840,9 @@ resultImportModal?.addEventListener("change", async (event) => {
   try {
     renderDataStatus("Publication du résultat en cours...");
     const result = await publishResultPdf(file, rowToImport, hasFinal, isPartial, { preserveFinalists });
-    await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(rowToImport)}${result.session ? ` S${result.session}` : ""}`);
     clearResultUploadState(uploadKey);
     renderDataStatus();
+    updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(rowToImport)}${result.session ? ` S${result.session}` : ""}`).catch((error) => console.warn("Note de publication non mise à jour", error));
     const finalistCount = finalRowsCount(result.finalists);
     window.alert(hasFinal
       ? `Résultat publié : ${finalistCount} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}.`
@@ -7715,7 +7890,14 @@ adminSeriesModal?.addEventListener("change", async (event) => {
     : `Confirmer l'import comme mise à jour de la session ${forcedSession} ?\n\nFichier : ${file.name}\n\nCette session sera remplacée par le PDF choisi.`;
   if (!window.confirm(message)) return;
   closeAdminSeriesModal();
-  await importSeriesPdf(file, mode, forcedSession);
+  setSeriesImportState(mode === "full" ? "Chargement du PDF général..." : `Chargement de la session ${forcedSession}...`);
+  try {
+    await importSeriesPdf(file, mode, forcedSession);
+    clearSeriesImportState();
+  } catch (error) {
+    console.error(error);
+    setSeriesImportState("Chargement impossible. Réessaie.", "error");
+  }
 });
 
 roleCodesModal?.addEventListener("click", async (event) => {
@@ -7739,6 +7921,36 @@ roleCodesModal?.addEventListener("click", async (event) => {
     }
     closeRoleCodesModal();
     await performResetHistoryWithArchive();
+    return;
+  }
+  if (event.target.closest("[data-confirm-reset-results]")) {
+    const confirmation = String(roleCodesModal.querySelector("#resetResultsInput")?.value || "").trim().toUpperCase();
+    if (confirmation !== "RAZ") {
+      window.alert("RAZ annulée : il faut écrire RAZ.");
+      return;
+    }
+    if (competitionModeEnabled()) {
+      window.alert("RAZ résultats indisponible en mode compétition.");
+      closeRoleCodesModal();
+      return;
+    }
+    const scope = roleCodesModal.querySelector("input[name='resetResultsScope']:checked")?.value || "session";
+    const activeSession = ensureResultsAdminSession();
+    closeRoleCodesModal();
+    try {
+      if (scope === "all") {
+        const count = await clearPublishedResults();
+        await updateLiveNotes("RAZ résultats publics compétition");
+        window.alert(`${count} résultat${count > 1 ? "s" : ""} public${count > 1 ? "s" : ""} archivé${count > 1 ? "s" : ""} puis supprimé${count > 1 ? "s" : ""}.`);
+      } else {
+        const summary = await clearPublishedResultsForSession(activeSession);
+        await updateLiveNotes(`RAZ résultats publics S${activeSession}`);
+        window.alert(`${summary.results} résultat${summary.results > 1 ? "s" : ""} public${summary.results > 1 ? "s" : ""} et ${summary.sessionPdfs} PDF complet${summary.sessionPdfs > 1 ? "s" : ""} de session archivés puis supprimés pour S${activeSession}.`);
+      }
+    } catch (error) {
+      console.error(error);
+      window.alert(`RAZ résultats impossible : ${error?.message || error}`);
+    }
     return;
   }
   const openArchiveButton = event.target.closest("[data-open-archive]");
@@ -7856,7 +8068,7 @@ roleCodesModal?.addEventListener("input", (event) => {
     event.target.value = String(event.target.value || "").replace(/[^0-9!]/g, "").slice(0, 5);
     return;
   }
-  if (event.target?.matches("#resetHistoryInput")) {
+  if (event.target?.matches("#resetHistoryInput, #resetResultsInput")) {
     event.target.value = String(event.target.value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
   }
 });
@@ -7879,6 +8091,12 @@ roleCodesModal?.addEventListener("keydown", (event) => {
   if (resetInput) {
     event.preventDefault();
     roleCodesModal.querySelector("[data-confirm-reset-history]")?.click();
+    return;
+  }
+  const resetResultsInput = event.target?.closest("#resetResultsInput");
+  if (resetResultsInput) {
+    event.preventDefault();
+    roleCodesModal.querySelector("[data-confirm-reset-results]")?.click();
   }
 });
 
@@ -7911,10 +8129,15 @@ officialAlerts?.addEventListener("click", (event) => {
 alertDetailModal?.addEventListener("click", (event) => {
   const finalistsButton = event.target.closest("[data-finalists-announced]");
   if (finalistsButton) {
-    publishFinalistsAfterSpeaker(finalistsButton.dataset.finalistsAnnounced).then(() => {
-      closeAlertDetail();
-    }).catch((error) => {
+    const alertId = finalistsButton.dataset.finalistsAnnounced;
+    const announcedAt = new Date().toISOString();
+    finalistsButton.disabled = true;
+    finalistsButton.textContent = "Pris en compte";
+    closeAlertDetail();
+    const previousAlert = markSpeakerAlertDoneLocally(alertId, announcedAt);
+    publishFinalistsAfterSpeaker(alertId).catch((error) => {
       console.error(error);
+      restoreAlertLocally(previousAlert);
       window.alert(`Publication des finalistes impossible : ${error?.message || error}`);
     });
     return;
