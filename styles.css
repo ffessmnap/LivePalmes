@@ -2024,6 +2024,16 @@ textarea {
   width: 44px;
 }
 
+.series-controls .program-button {
+  display: inline-flex;
+  width: auto;
+  min-width: 90px;
+  min-height: 28px;
+  padding-inline: 10px;
+  border-radius: 7px;
+  font-size: 0.76rem;
+}
+
 .referee-progress-button {
   min-height: 28px;
   max-width: 260px;

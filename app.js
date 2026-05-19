@@ -2364,6 +2364,7 @@ function render() {
   renderSessionControls();
   syncLineOrderButtonPlacement();
   renderSeriesControls();
+  syncProgramButtonPlacement();
   renderProgramButtons();
   renderCategorySelect();
   renderHeader();
@@ -2378,11 +2379,9 @@ function render() {
 
 function syncProgramButtonPlacement() {
   if (!programBtn || !sidebar) return;
-  const panelActions = document.querySelector(".entrants-panel .panel-actions");
-  if (["speaker", "referee", "live"].includes(state.role) && panelActions) {
-    if (programBtn.parentElement !== panelActions) {
-      const lineOrderReference = lineOrderBtn?.parentElement === panelActions ? lineOrderBtn : null;
-      panelActions.insertBefore(programBtn, lineOrderReference);
+  if (["speaker", "referee", "live"].includes(state.role) && seriesControls) {
+    if (programBtn.parentElement !== seriesControls || programBtn.previousElementSibling !== seriesControls.lastElementChild) {
+      seriesControls.appendChild(programBtn);
     }
     return;
   }
