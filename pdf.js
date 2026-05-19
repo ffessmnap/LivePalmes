@@ -15,6 +15,7 @@ const statusBox = document.querySelector("#pdfViewerStatus");
 const pdfFrame = document.querySelector("#pdfFrame");
 const canvasViewer = document.querySelector("#pdfCanvasViewer");
 const fallback = document.querySelector("#pdfFallback");
+const downloadBtn = document.querySelector("#pdfDownloadBtn");
 
 const PDF_TYPES = {
   resultat: {
@@ -110,6 +111,13 @@ function showFallback(blobUrl, pdfName) {
   }
 }
 
+function setDownloadLink(blobUrl, pdfName) {
+  if (!downloadBtn || !blobUrl) return;
+  downloadBtn.hidden = false;
+  downloadBtn.href = blobUrl;
+  downloadBtn.download = pdfName || "livepalmes.pdf";
+}
+
 async function init() {
   const params = new URLSearchParams(window.location.search);
   const type = params.get("type") || "resultat";
@@ -139,9 +147,10 @@ async function init() {
   }
   const data = snapshot.data();
   if (pdfTitle) pdfTitle.textContent = config.titleFromData(data);
+  const blobUrl = dataUrlToBlobUrl(data.pdfDataUrl);
+  if (blobUrl) setDownloadLink(blobUrl, data.pdfName || config.downloadName);
   const rendered = await renderPdfInline(data.pdfDataUrl);
   if (rendered) return;
-  const blobUrl = dataUrlToBlobUrl(data.pdfDataUrl);
   if (!blobUrl) {
     showMessage("Le PDF n'a pas pu être chargé.");
     return;

@@ -1624,6 +1624,17 @@ body.profile-home-active .top-actions {
   font-size: 0.72rem;
 }
 
+.pdf-header-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.pdf-header-actions .ghost-button[hidden] {
+  display: none;
+}
+
 .pdf-viewer-shell {
   display: grid;
   gap: 8px;
@@ -4560,8 +4571,12 @@ tbody tr:hover,
 
   .pdf-viewer-page .public-results-header .ghost-button {
     min-height: 26px;
-    padding: 0 7px;
+    padding: 0 6px;
     font-size: 0.68rem;
+  }
+
+  .pdf-header-actions {
+    gap: 4px;
   }
 
   .pdf-viewer-shell {
