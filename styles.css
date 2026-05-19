@@ -829,6 +829,29 @@ body.profile-home-active .top-actions {
   width: fit-content;
 }
 
+.admin-series-file.loading {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.upload-progress-message {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #f3cc7a;
+  border-radius: 8px;
+  background: #fff6dc;
+  color: #875900;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.upload-progress-message[hidden] {
+  display: none;
+}
+
 .results-admin-panel {
   display: grid;
   gap: 10px;
@@ -1006,6 +1029,18 @@ body.profile-home-active .top-actions {
   border-color: #b7dfc0;
   background: #eefbf1;
   color: #17642b;
+}
+
+.result-status-badge.loading {
+  border-color: #f3cc7a;
+  background: #fff6dc;
+  color: #875900;
+}
+
+.result-status-badge.error {
+  border-color: #ffd1d1;
+  background: #fff1f1;
+  color: #9f1d1d;
 }
 
 .danger-button {
@@ -1989,6 +2024,19 @@ textarea {
   width: 44px;
 }
 
+.referee-progress-button {
+  min-height: 28px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referee-progress-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .series-chip,
 .session-chip {
   display: inline-flex;
@@ -2896,6 +2944,23 @@ textarea {
   color: #a31927;
 }
 
+.program-row.ja-passed-row {
+  opacity: 0.68;
+}
+
+.program-series-chip.ja-passed {
+  border-color: #c8d3d8;
+  background: #eef3f5;
+  color: #6b7b84;
+}
+
+.program-series-chip.ja-current {
+  border-color: #2b8a3e;
+  background: #eefaf1;
+  color: #1f6f32;
+  box-shadow: inset 0 0 0 2px rgba(43, 138, 62, 0.14);
+}
+
 .speaker-program-marker {
   margin-top: 4px;
   color: #52616b;
@@ -3057,6 +3122,10 @@ body:not(.role-speaker):not(.role-live) .badge-row .badge.muted {
 }
 
 body:not(.role-computer) .computer-only {
+  display: none !important;
+}
+
+body:not(.role-referee) #decisionPanel {
   display: none !important;
 }
 
