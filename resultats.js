@@ -546,6 +546,36 @@ async function loadPublicSeriesPdfs(competition) {
   }
 }
 
+function liveDataIsNewerThanPublicIndex(remote, index) {
+  if (!remote?.sourceVersion) return false;
+  if (!index?.sourceVersion) return true;
+  return remote.sourceVersion !== index.sourceVersion;
+}
+
+function applyPublicLiveOverlay(remote, index = {}) {
+  if (!liveDataIsNewerThanPublicIndex(remote, index)) return;
+  publicMeet = remote.meet || publicMeet;
+  publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
+  publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
+  publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
+  publicAccess = {
+    locked: remote.notes?.publicResultsLocked === true,
+    pin: remote.notes?.rolePins?.public || publicAccess.pin || "0006",
+    updatedAt: remote.notes?.publicResultsLockUpdatedAt || publicAccess.updatedAt || ""
+  };
+  if (Array.isArray(remote.notes?.publicSeriesPdfs)) {
+    publicSeriesPdfs = remote.notes.publicSeriesPdfs
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  }
+  if (Array.isArray(remote.notes?.publicSessionResultsPdfs)) {
+    publicSessionResultsPdfs = remote.notes.publicSessionResultsPdfs
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  }
+  publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
+}
+
 async function loadPublicResultsIndex() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
@@ -557,7 +587,10 @@ async function loadPublicResultsIndex() {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const snapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
+  const [snapshot, liveSnapshot] = await Promise.all([
+    competition.collection("public").doc("resultsIndex").get({ source: "server" }),
+    competition.collection("liveData").doc("current").get({ source: "server" })
+  ]);
   const index = snapshot.data() || {};
   if (!snapshot.exists || !Array.isArray(index.program) || !index.program.length) {
     await loadPublicResultsFallback(competition);
@@ -582,6 +615,7 @@ async function loadPublicResultsIndex() {
       .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
     : [];
+  applyPublicLiveOverlay(liveSnapshot.data()?.data || {}, index);
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   renderResults();
