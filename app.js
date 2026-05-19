@@ -2379,9 +2379,10 @@ function render() {
 
 function syncProgramButtonPlacement() {
   if (!programBtn || !sidebar) return;
-  if (["speaker", "referee", "live"].includes(state.role) && seriesControls) {
-    if (programBtn.parentElement !== seriesControls || programBtn.previousElementSibling !== seriesControls.lastElementChild) {
-      seriesControls.appendChild(programBtn);
+  const seriesNav = document.querySelector(".series-field .series-nav");
+  if (["speaker", "referee", "live"].includes(state.role) && seriesNav) {
+    if (programBtn.parentElement !== seriesNav) {
+      seriesNav.appendChild(programBtn);
     }
     return;
   }
