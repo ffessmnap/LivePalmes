@@ -966,6 +966,12 @@ body.profile-home-active .top-actions {
   border-top: 1px dashed #d9e4ea;
 }
 
+.computer-footer-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .results-session-select {
   display: inline-flex;
   align-items: center;

@@ -390,6 +390,7 @@ const roleQueue = document.querySelector("#roleQueue");
 const resultsAdminPanel = document.querySelector("#resultsAdminPanel");
 const secretaryFinalsPanel = document.querySelector("#secretaryFinalsPanel");
 const roleHistory = document.querySelector("#roleHistory");
+const computerFooterPanel = document.querySelector("#computerFooterPanel");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
 const refereeProgressBtn = document.querySelector("#refereeProgressBtn");
@@ -2800,6 +2801,7 @@ function renderRolePanels() {
   renderResultsAdminPanel();
   renderSecretaryFinalsPanel();
   renderRoleHistory();
+  renderComputerFooterPanel();
   renderSpeakerHistory();
 }
 
@@ -3294,6 +3296,7 @@ function renderResultsAdminPanel() {
   if (state.role !== "computer") {
     resultsAdminPanel.hidden = true;
     resultsAdminPanel.innerHTML = "";
+    renderComputerFooterPanel();
     return;
   }
   const sessions = resultSessions();
@@ -3324,20 +3327,15 @@ function renderResultsAdminPanel() {
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
         </button>
-        <a class="ghost-button compact" href="resultats.html?v=20260519-public-online-switch" target="_blank" rel="noopener">Page publique</a>
+        <a class="ghost-button compact" href="resultats.html?v=20260519-pdf-accents" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
       ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
       ${renderSessionResultsImportRow(activeSession)}
     </div>
-    ${renderCompetitionDiagnostic()}
-    ${competitionModeEnabled() ? "" : `
-      <div class="results-admin-danger-zone">
-        <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
-      </div>
-    `}
   `;
+  renderComputerFooterPanel();
 }
 
 function diagnosticItem(label, value, status = "ok") {
@@ -3371,6 +3369,22 @@ function renderCompetitionDiagnostic() {
       ${diagnosticItem("PDF séries publics", String(seriesPdfCount), seriesPdfCount ? "ok" : "neutral")}
       ${diagnosticItem("actions en attente", String(pendingAlerts), pendingAlerts ? "warn" : "ok")}
       ${diagnosticItem("repères speaker", speakerInfoUpdatedAt || "non faits", speakerInfoUpdatedAt ? "ok" : "warn")}
+    </div>
+  `;
+}
+
+function renderComputerFooterPanel() {
+  if (!computerFooterPanel) return;
+  if (state.role !== "computer") {
+    computerFooterPanel.hidden = true;
+    computerFooterPanel.innerHTML = "";
+    return;
+  }
+  computerFooterPanel.hidden = false;
+  computerFooterPanel.innerHTML = `
+    ${renderCompetitionDiagnostic()}
+    <div class="results-admin-danger-zone">
+      <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
     </div>
   `;
 }
@@ -3511,7 +3525,7 @@ function renderSecretaryFinalsPanel() {
         <h3>Forfaits finales</h3>
         <p class="panel-subtitle">Gestion par le secrétariat après annonce officielle des finalistes.</p>
       </div>
-      <a class="ghost-button compact" href="resultats.html?v=20260519-public-online-switch" target="_blank" rel="noopener">Page publique</a>
+      <a class="ghost-button compact" href="resultats.html?v=20260519-public-offline-footer" target="_blank" rel="noopener">Page publique</a>
     </div>
     <div class="secretary-finals-list">
       ${finals.length ? finals.map((result) => {
@@ -4438,6 +4452,11 @@ function renderDataStatus(message = "") {
     dataStatus.hidden = false;
     dataStatus.textContent = message;
     dataStatus.classList.add("warning");
+    return;
+  }
+  if (state.role === "computer") {
+    dataStatus.hidden = true;
+    dataStatus.innerHTML = "";
     return;
   }
   if (data.sourceVersion) {
@@ -7810,6 +7829,15 @@ resultsAdminPanel?.addEventListener("change", (event) => {
   renderResultsAdminPanel();
 });
 
+computerFooterPanel?.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-results-reset]")) return;
+  if (competitionModeEnabled()) {
+    window.alert("RAZ indisponible quand l'actualisation directe est active.");
+    return;
+  }
+  renderResetResultsModal();
+});
+
 secretaryFinalsPanel?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-final-withdrawals]");
   if (!button) return;
@@ -8371,6 +8399,14 @@ roleQueue?.addEventListener("click", (event) => {
 });
 
 roleHistory?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-results-reset]")) {
+    if (competitionModeEnabled()) {
+      window.alert("RAZ indisponible quand l'actualisation directe est active.");
+      return;
+    }
+    renderResetResultsModal();
+    return;
+  }
   if (event.target.closest("[data-history-export-pdf]")) {
     exportDsqPdf();
     return;
@@ -8659,6 +8695,14 @@ function fixPdfEncoding(value) {
   Object.entries(replacements).forEach(([bad, good]) => {
     text = text.replaceAll(bad, good);
   });
+  text = text
+    .replace(/\bDOUY(?:…|\.{3}|�|□)RE\b/gi, "DOUYERE")
+    .replace(/\bFRAN(?:…|\.{3}|�|□)OIS\b/gi, "FRANCOIS")
+    .replace(/\bRAPHAÎL\b/g, "RAPHAEL")
+    .replace(/\bRaphaÎl\b/g, "Raphaël")
+    .replace(/\bMAÎLLE\b/g, "MAELLE")
+    .replace(/\bMaÎlle\b/g, "Maëlle")
+    .replace(/\bMaïlle\b/g, "Maëlle");
   text = text.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])Î([A-Za-zÀ-ÖØ-öø-ÿ])/g, "$1ï$2");
   return text.normalize("NFC");
 }

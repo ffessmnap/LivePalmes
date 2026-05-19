@@ -176,15 +176,17 @@ async function init() {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const [snapshot, indexSnapshot] = await Promise.all([
+  const [snapshot, indexSnapshot, liveSnapshot] = await Promise.all([
     competition
       .collection(config.collection)
       .doc(id)
       .get(),
-    competition.collection("public").doc("resultsIndex").get().catch(() => null)
+    competition.collection("public").doc("resultsIndex").get().catch(() => null),
+    competition.collection("liveData").doc("current").get().catch(() => null)
   ]);
   const publicIndex = indexSnapshot?.data() || {};
-  if (publicIndex.publicAccess?.online === false) {
+  const livePublicOnline = liveSnapshot?.data()?.data?.notes?.publicResultsOnline;
+  if (livePublicOnline === false || publicIndex.publicAccess?.online === false) {
     showMessage("La page publique des résultats est temporairement hors ligne.");
     return;
   }
