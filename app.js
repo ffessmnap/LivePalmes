@@ -3327,7 +3327,7 @@ function renderResultsAdminPanel() {
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
         </button>
-        <a class="ghost-button compact" href="resultats.html?v=20260519-pdf-accents" target="_blank" rel="noopener">Page publique</a>
+        <a class="ghost-button compact" href="resultats.html?v=20260519-pdf-cedille" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
@@ -8695,9 +8695,13 @@ function fixPdfEncoding(value) {
   Object.entries(replacements).forEach(([bad, good]) => {
     text = text.replaceAll(bad, good);
   });
-  text = text
+  text = text.normalize("NFC")
+    .replace(/C[¸̧]/g, "C")
+    .replace(/c[¸̧]/g, "c")
+    .replace(/[ÇĆČĈĊ]/g, "C")
+    .replace(/[çćčĉċ]/g, "c")
     .replace(/\bDOUY(?:…|\.{3}|�|□)RE\b/gi, "DOUYERE")
-    .replace(/\bFRAN(?:…|\.{3}|�|□)OIS\b/gi, "FRANCOIS")
+    .replace(/\bFRAN(?:C|…|\.{3}|�|□)OIS\b/gi, "FRANCOIS")
     .replace(/\bRAPHAÎL\b/g, "RAPHAEL")
     .replace(/\bRaphaÎl\b/g, "Raphaël")
     .replace(/\bMAÎLLE\b/g, "MAELLE")
@@ -8753,9 +8757,9 @@ function importedSeriesTime(value) {
 
 function normalizePdfUppercaseEToken(token) {
   const text = String(token || "");
-  const withPlainE = text.replace(/[ÉÈÊËéèêë]/g, "E");
+  const withPlainE = text.replace(/[ÉÈÊËéèêë]/g, "E").replace(/[Çç]/g, "C");
   const letters = withPlainE.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
-  return letters && letters === letters.toUpperCase() ? withPlainE : text.replace(/[ÉÈÊË]/g, "E");
+  return letters && letters === letters.toUpperCase() ? withPlainE : text.replace(/[ÉÈÊË]/g, "E").replace(/Ç/g, "C");
 }
 
 function splitImportedPersonName(value) {

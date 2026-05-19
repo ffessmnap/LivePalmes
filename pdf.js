@@ -142,7 +142,7 @@ function closeOrReturn() {
   if (window.opener) {
     window.close();
     setTimeout(() => {
-      if (!window.closed) window.location.href = "resultats.html?v=20260519-public-online-switch";
+      if (!window.closed) window.location.href = "resultats.html?v=20260519-pdf-same-tab";
     }, 120);
     return;
   }
@@ -150,7 +150,7 @@ function closeOrReturn() {
     window.history.back();
     return;
   }
-  window.location.href = "resultats.html?v=20260519-public-online-switch";
+  window.location.href = "resultats.html?v=20260519-pdf-same-tab";
 }
 
 async function init() {
