@@ -33,7 +33,8 @@ const SPEAKER_INFO_SHEETS = {
   qualifications: "Qualifs EDF",
   clubs: "Club",
   seedSources: "Lieux temps",
-  competitionStats: "stat compet"
+  competitionStats: "stat compet",
+  swimmerInfos: "infos nageurs"
 };
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
@@ -297,6 +298,14 @@ let expandedHistories = {
   speaker: false,
   role: false
 };
+let historyFilters = {
+  speaker: "all",
+  live: "all",
+  referee: "all",
+  video: "all",
+  computer: "all",
+  secretary: "all"
+};
 let isFullscreenMode = Boolean(document.fullscreenElement);
 let profileHomeActive = initialView.profileHomeActive;
 let firestoreDb = null;
@@ -314,6 +323,7 @@ let activeRoleLock = null;
 let raceResults = [];
 let resultsSnapshotReady = false;
 let currentResultImportRow = null;
+let currentSessionResultsImport = null;
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
 let replacementAlertRepairRunning = false;
@@ -456,6 +466,14 @@ function seriesPdfsCollection() {
     .collection("seriesPdfs");
 }
 
+function sessionResultsPdfsCollection() {
+  if (!firestoreDb) return null;
+  return firestoreDb
+    .collection("competitions")
+    .doc(FIRESTORE_COMPETITION_ID)
+    .collection("sessionResultsPdfs");
+}
+
 function publicResultsIndexDocument() {
   if (!firestoreDb) return null;
   return firestoreDb
@@ -516,6 +534,32 @@ function renderPresenceCounts() {
   const counts = { ...emptyPresenceCounts(), ...(presenceCounts || {}) };
   document.querySelectorAll("[data-presence-role]").forEach((node) => {
     node.textContent = presenceLabel(counts[node.dataset.presenceRole] || 0);
+  });
+}
+
+function homeActionCounts() {
+  const counts = emptyPresenceCounts();
+  alerts.forEach((alert) => {
+    if (alert.cancelledAt || alert.type === "final_composition_ready") return;
+    if (alert.speakerStatus === "pending") counts.speaker += 1;
+    if (alert.requiresVideo && alert.videoStatus === "pending") counts.video += 1;
+    if (alert.informaticsStatus === "pending") counts.computer += 1;
+    if (alert.type === "forfait" && alert.secretaryStatus === "pending") counts.secretary += 1;
+  });
+  return counts;
+}
+
+function actionCountLabel(count) {
+  const value = Number(count || 0);
+  return `${value} action${value > 1 ? "s" : ""}`;
+}
+
+function renderHomeActionCounts() {
+  const counts = homeActionCounts();
+  document.querySelectorAll("[data-home-actions-role]").forEach((node) => {
+    const value = counts[node.dataset.homeActionsRole] || 0;
+    node.hidden = value <= 0;
+    node.textContent = actionCountLabel(value);
   });
 }
 
@@ -651,6 +695,7 @@ async function publishLiveDataToFirestore(nextData, source = "Import PDF séries
     edfMembers: payload.edfMembers,
     internationalMedals: payload.internationalMedals,
     competitionStats: payload.competitionStats,
+    swimmerInfos: payload.swimmerInfos,
     sourceVersion: payload.sourceVersion,
     notes: {
       ...(payload.notes || {}),
@@ -797,6 +842,7 @@ function mergeRemoteLiveData(remoteData) {
     edfMembers: Array.isArray(remoteData.edfMembers) ? remoteData.edfMembers : data.edfMembers,
     internationalMedals: Array.isArray(remoteData.internationalMedals) ? remoteData.internationalMedals : data.internationalMedals,
     competitionStats: Array.isArray(remoteData.competitionStats) ? remoteData.competitionStats : data.competitionStats,
+    swimmerInfos: Array.isArray(remoteData.swimmerInfos) ? remoteData.swimmerInfos : data.swimmerInfos,
     sourceVersion: remoteData.sourceVersion || data.sourceVersion,
     notes: {
       ...(data.notes || {}),
@@ -1438,6 +1484,7 @@ function normalizeData(nextData) {
     edfMembers: Array.isArray(nextData.edfMembers) ? nextData.edfMembers : (sampleData.edfMembers || []),
     internationalMedals: Array.isArray(nextData.internationalMedals) ? nextData.internationalMedals : (sampleData.internationalMedals || []),
     competitionStats: Array.isArray(nextData.competitionStats) ? nextData.competitionStats : [],
+    swimmerInfos: Array.isArray(nextData.swimmerInfos) ? nextData.swimmerInfos : [],
     sourceVersion: nextData.sourceVersion || sampleData.sourceVersion || "",
     notes: nextData.notes || {}
   };
@@ -1778,17 +1825,17 @@ function raceOptionPhaseLabel(eventId, sex) {
   const currentOption = eventId === state.eventId && sex === state.sex;
   const finals = finalRowsForRaceOption(eventId, sex);
   if (currentOption && isFinalStage(state.series) && finals.length) {
-    return finals.length > 1 ? "finales" : "finale";
+    return `${finals.length} finale${finals.length > 1 ? "s" : ""}`;
   }
   const seriesNumbers = seriesNumbersForRaceOption(eventId, sex);
+  const rows = raceProgramRowsForOption(eventId, sex);
+  const lastRegularRow = rows.filter((row) => !isFinalStage(row.stage)).at(-1);
+  const isBestSeries = !finals.length && lastRegularRow && isSplitRaceAcrossSessions(eventId, sex) && isLastProgramPartForRace(lastRegularRow);
+  if (isBestSeries) return "meilleure série";
   if (seriesNumbers.length) {
-    const lastSeries = seriesNumbers[seriesNumbers.length - 1];
-    if (currentOption && !finals.length && String(state.series) === String(lastSeries)) {
-      return "meilleure série";
-    }
-    return seriesNumbers.length > 1 ? "séries" : "série";
+    return `${seriesNumbers.length} série${seriesNumbers.length > 1 ? "s" : ""}`;
   }
-  if (finals.length) return finals.length > 1 ? "finales" : "finale";
+  if (finals.length) return `${finals.length} finale${finals.length > 1 ? "s" : ""}`;
   return "série";
 }
 
@@ -2159,6 +2206,7 @@ function render() {
     profileModeStatus.classList.toggle("active", competitionModeEnabled());
   }
   renderPresenceCounts();
+  renderHomeActionCounts();
   if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
   if (manualRefreshBtn) {
     const manualMode = !competitionModeEnabled();
@@ -2246,18 +2294,18 @@ function syncProgramButtonPlacement() {
 
 function syncLineOrderButtonPlacement() {
   if (!lineOrderBtn) return;
-  const topSessionField = sessionControls?.closest(".top-session-field");
   const panelActions = document.querySelector(".entrants-panel .panel-actions");
-  const shouldUseTopbar = ["live", "speaker", "referee"].includes(state.role) && topSessionField;
-  if (shouldUseTopbar) {
-    if (lineOrderBtn.parentElement !== topSessionField) {
-      topSessionField.appendChild(lineOrderBtn);
-    }
+  if (panelActions && lineOrderBtn.parentElement !== panelActions) {
+    const previousReference = previousSeriesInlineBtn?.parentElement === panelActions ? previousSeriesInlineBtn : null;
+    const filteredReference = filteredCount?.parentElement === panelActions ? filteredCount : null;
+    panelActions.insertBefore(lineOrderBtn, previousReference || filteredReference);
     return;
   }
-  if (panelActions && lineOrderBtn.parentElement !== panelActions) {
-    const filteredReference = filteredCount?.parentElement === panelActions ? filteredCount : null;
-    panelActions.insertBefore(lineOrderBtn, filteredReference);
+  if (panelActions && lineOrderBtn.parentElement === panelActions) {
+    const previousReference = previousSeriesInlineBtn?.parentElement === panelActions ? previousSeriesInlineBtn : null;
+    if (previousReference && lineOrderBtn.nextElementSibling !== previousReference) {
+      panelActions.insertBefore(lineOrderBtn, previousReference);
+    }
   }
 }
 
@@ -2701,6 +2749,22 @@ function publicSeriesPdfPayload(pdf) {
   };
 }
 
+function publicSessionResultsPdfPayload(pdf) {
+  if (!pdf) return null;
+  const sessions = Array.isArray(pdf.sessions)
+    ? pdf.sessions.map((session) => String(session || "").trim()).filter(Boolean)
+    : [];
+  return {
+    id: pdf.id || "",
+    scope: pdf.scope || "",
+    session: pdf.session || "",
+    sessions,
+    pdfName: pdf.pdfName || "",
+    updatedAt: pdf.updatedAt || "",
+    sourceLabel: pdf.sourceLabel || ""
+  };
+}
+
 function buildPublicResultsIndex() {
   const updatedAt = new Date().toISOString();
   return {
@@ -2711,6 +2775,7 @@ function buildPublicResultsIndex() {
     series: data.series || [],
     results: raceResults.map(publicResultPayload).filter(Boolean),
     seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
+    sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
     updatedAt,
     sourceVersion: data.sourceVersion || "",
     sourceLabel: data.notes?.sourceLabel || "",
@@ -2723,6 +2788,7 @@ async function publishPublicResultsIndex({ silent = false } = {}) {
   if (!doc) return;
   try {
     await hydratePublicSeriesPdfMetadataIfNeeded();
+    await hydratePublicSessionResultsPdfMetadataIfNeeded();
     await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
   } catch (error) {
     console.warn("Publication de l'index public impossible", error);
@@ -2920,6 +2986,29 @@ function resultStatusForProgramRow(row) {
   return "À importer";
 }
 
+function resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive) {
+  if (!result) return { label: "À importer", tone: "missing" };
+  if (result.hasFinal && !result.finalistsAnnouncedAt) return { label: "Attente speaker", tone: "waiting" };
+  if (result.hasFinal) {
+    return isFinalCompositionDefinitive
+      ? { label: "Finalistes définitifs", tone: "done" }
+      : { label: "Finalistes provisoires", tone: "pending" };
+  }
+  if (result.isPartial) return { label: "Résultat partiel", tone: "partial" };
+  return { label: "Résultat publié", tone: "done" };
+}
+
+function resultStatusControlHtml(row, result, statusBadge) {
+  const className = `result-status-badge ${escapeHtml(statusBadge.tone)}`;
+  if (!result) {
+    return `<button class="${className} status-action" type="button" data-result-import="${escapeHtml(programKey(row))}">${escapeHtml(statusBadge.label)}</button>`;
+  }
+  if (result.hasFinal) {
+    return `<button class="${className} status-action" type="button" data-final-composition-result="${escapeHtml(result.id)}">${escapeHtml(statusBadge.label)}</button>`;
+  }
+  return `<span class="${className}">${escapeHtml(statusBadge.label)}</span>`;
+}
+
 function renderResultsAdminPanel() {
   if (!resultsAdminPanel) return;
   if (state.role !== "computer") {
@@ -2948,12 +3037,49 @@ function renderResultsAdminPanel() {
             </select>
           </label>
         ` : ""}
+        <button class="ghost-button compact" type="button" data-computer-diagnostic>Vérifier</button>
         <button class="ghost-button compact" type="button" data-computer-admin-series>Importer séries</button>
         <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
       ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
+    </div>
+    ${renderCompetitionDiagnostic()}
+  `;
+}
+
+function diagnosticItem(label, value, status = "ok") {
+  return `
+    <span class="diagnostic-item ${escapeHtml(status)}">
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(label)}</small>
+    </span>
+  `;
+}
+
+function renderCompetitionDiagnostic() {
+  const sessions = sessionRows();
+  const programCount = data.program?.length || 0;
+  const resultCount = raceResults.length;
+  const publicResultCount = raceResults.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length;
+  const seriesPdfCount = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs.length : 0;
+  const pendingAlerts = alerts.filter((alert) => (
+    alert.speakerStatus === "pending" ||
+    alert.videoStatus === "pending" ||
+    alert.informaticsStatus === "pending" ||
+    alert.secretaryStatus === "pending"
+  )).length;
+  const speakerInfoUpdatedAt = data.notes?.speakerInfoUpdatedAt || "";
+  return `
+    <div class="competition-diagnostic" aria-label="Diagnostic compétition">
+      ${diagnosticItem("sessions", String(sessions.length || 0), sessions.length ? "ok" : "warn")}
+      ${diagnosticItem("courses programme", String(programCount), programCount ? "ok" : "warn")}
+      ${diagnosticItem("lignes séries", String(data.series?.length || 0), data.series?.length ? "ok" : "warn")}
+      ${diagnosticItem("résultats publiés", `${publicResultCount}/${resultCount}`, resultCount ? "ok" : "neutral")}
+      ${diagnosticItem("PDF séries publics", String(seriesPdfCount), seriesPdfCount ? "ok" : "neutral")}
+      ${diagnosticItem("actions en attente", String(pendingAlerts), pendingAlerts ? "warn" : "ok")}
+      ${diagnosticItem("repères speaker", speakerInfoUpdatedAt || "non faits", speakerInfoUpdatedAt ? "ok" : "warn")}
     </div>
   `;
 }
@@ -2963,36 +3089,36 @@ function renderResultProgramRow(row) {
   const status = resultStatusForProgramRow(row);
   const event = data.events.find((item) => item.id === row.eventId);
   const phaseLabel = resultPhaseLabelForProgramRow(row);
-  const finalistCount = (result?.finalists?.a?.length || 0) + (result?.finalists?.b?.length || 0);
-  const compositionLabel = result?.hasFinal
-    ? (finalCompositionIsDefinitive(result) ? "Finalistes définitifs" : "Finalistes provisoires")
+  const finalistCount = finalRowsCount(result?.finalists);
+  const isFinalCompositionDefinitive = finalCompositionIsDefinitive(result);
+  const definitiveDate = result?.hasFinal && !isFinalCompositionDefinitive
+    ? finalCompositionDefinitiveDate(result)
+    : null;
+  const statusBadge = resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive);
+  const definitiveLabel = result?.hasFinal && !isFinalCompositionDefinitive
+    ? (definitiveDate ? `Définitif à partir de ${formatDeadlineTime(definitiveDate)}` : finalCompositionPendingDeadlineLabel(result))
     : "";
-  const publicVisible = Boolean(result && (!result.hasFinal || result.finalistsAnnouncedAt));
   return `
     <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""}">
       <div>
         <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</strong>
         <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
         ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
+        ${definitiveLabel ? `<small class="result-admin-note result-definitive-note">${escapeHtml(definitiveLabel)}</small>` : ""}
         ${result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
       </div>
       <div class="result-admin-row-actions">
-        <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
-          ${result ? "Remplacer" : "Importer résultat"}
-        </button>
+        ${resultStatusControlHtml(row, result, statusBadge)}
+        ${result ? `
+          <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
+            Remplacer
+          </button>
+        ` : ""}
         ${result ? `
           <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(result.id)}">
             Supprimer
           </button>
         ` : ""}
-        ${result?.hasFinal ? `
-          <button class="ghost-button compact" type="button" data-final-composition-result="${escapeHtml(result.id)}">
-            ${escapeHtml(compositionLabel)}
-          </button>
-        ` : ""}
-        ${publicVisible ? `
-          <a class="ghost-button compact" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir public</a>
-        ` : (result ? `<span class="result-public-waiting">Public après annonce</span>` : "")}
       </div>
     </div>
   `;
@@ -3040,8 +3166,14 @@ function isFinalWithdrawalDeadlineExpired(row, result, now = new Date()) {
   return Boolean(limit) && now > limit;
 }
 
+function finalRowCountsAsFinalist(row) {
+  if (!row || row.withdrawnAt || row.resultStatus) return false;
+  const statusText = [row.statusLabel, row.status, row.motif, row.note].filter(Boolean).join(" ");
+  return !resultStatusFromText(statusText);
+}
+
 function finalRowsCount(finalists = {}) {
-  return ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter((row) => !row.withdrawnAt).length, 0);
+  return ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter(finalRowCountsAsFinalist).length, 0);
 }
 
 function renderSecretaryFinalsPanel() {
@@ -3363,6 +3495,58 @@ function historyActionForAlert(alert) {
   return null;
 }
 
+function historyFilterKey() {
+  return isSpeakerView() ? state.role : state.role;
+}
+
+function historyFilterValue(key) {
+  return historyFilters[key] || "all";
+}
+
+function historyAlertMatchesFilter(alert, filter) {
+  if (!filter || filter === "all") return true;
+  if (filter === "finals") {
+    return ["finalists_announcement", "finalist_replacement_announcement", "final_composition_ready"].includes(alert.type);
+  }
+  if (filter === "dsq") {
+    return isDsqAlert(alert) || alert.type === "abandon";
+  }
+  if (filter === "forfait") {
+    return alert.type === "forfait";
+  }
+  return true;
+}
+
+function filteredHistoryRows(rows, key) {
+  const filter = historyFilterValue(key);
+  return rows.filter((alert) => historyAlertMatchesFilter(alert, filter));
+}
+
+function historyFilterControl(key) {
+  const current = historyFilterValue(key);
+  const options = [
+    ["all", "Tous"],
+    ["finals", "Finalistes / repêchage"],
+    ["dsq", "DSQ / abandon"],
+    ["forfait", "Forfaits"]
+  ];
+  return `
+    <label class="history-filter">
+      <span>Filtrer</span>
+      <select data-history-filter="${escapeHtml(key)}">
+        ${options.map(([value, label]) => `<option value="${escapeHtml(value)}" ${current === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function historyEmptyLabel(filter) {
+  if (filter === "finals") return "Aucune annonce finaliste ou repêchage à afficher.";
+  if (filter === "dsq") return "Aucune disqualification ou abandon à afficher.";
+  if (filter === "forfait") return "Aucun forfait à afficher.";
+  return "Aucune action à afficher pour le moment.";
+}
+
 function renderSpeakerHistory() {
   if (!speakerHistory) return;
   if (!isSpeakerView()) {
@@ -3379,17 +3563,22 @@ function renderSpeakerHistory() {
     speakerHistory.innerHTML = "";
     return;
   }
+  const filterKey = historyFilterKey();
+  const filteredAlerts = filteredHistoryRows(doneAlerts, filterKey);
   speakerHistory.hidden = false;
   speakerHistory.innerHTML = `
     <div class="panel-title">
       <h3>Journal des annonces</h3>
-      ${historyToggleButton("speaker", doneAlerts.length)}
+      <div class="history-actions">
+        ${historyFilterControl(filterKey)}
+        ${historyToggleButton("speaker", filteredAlerts.length)}
+      </div>
     </div>
-    <div class="history-list ${expandedHistories.speaker ? "expanded" : "compact-scroll"}">
-      ${doneAlerts.map((alert) => {
+    ${filteredAlerts.length ? `<div class="history-list ${expandedHistories.speaker ? "expanded" : "compact-scroll"}">
+      ${filteredAlerts.map((alert) => {
         return renderHistoryItem(alert, { compact: false, timeValue: alert.cancelledAt || alert.speakerAnnouncedAt || alert.updatedAt });
       }).join("")}
-    </div>
+    </div>` : `<p class="panel-subtitle">${escapeHtml(historyEmptyLabel(historyFilterValue(filterKey)))}</p>`}
   `;
 }
 
@@ -3423,6 +3612,8 @@ function renderRoleHistory() {
   }
   rows = rows
     .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+  const filterKey = historyFilterKey();
+  const filteredRows = filteredHistoryRows(rows, filterKey);
   if (!rows.length) {
     if (!["computer", "secretary"].includes(state.role)) {
       roleHistory.hidden = true;
@@ -3438,6 +3629,7 @@ function renderRoleHistory() {
       <div class="panel-title">
         <h3>${escapeHtml(title)}</h3>
         <div class="history-actions">
+          ${historyFilterControl(filterKey)}
           ${historyActions}
         </div>
       </div>
@@ -3454,20 +3646,21 @@ function renderRoleHistory() {
     <div class="panel-title">
       <h3>${escapeHtml(title)}</h3>
       <div class="history-actions">
-        ${historyToggleButton("role", rows.length)}
+        ${historyFilterControl(filterKey)}
+        ${historyToggleButton("role", filteredRows.length)}
         ${computerHistoryActions}
       </div>
     </div>
-    <div class="history-list ${expandedHistories.role ? "expanded" : "compact-scroll"}">
-      ${rows.map((alert) => renderHistoryItem(alert, { timeValue: alert.cancelledAt || alert.createdAt, showIdentity: state.role === "video" })).join("")}
-    </div>
+    ${filteredRows.length ? `<div class="history-list ${expandedHistories.role ? "expanded" : "compact-scroll"}">
+      ${filteredRows.map((alert) => renderHistoryItem(alert, { timeValue: alert.cancelledAt || alert.createdAt, showIdentity: state.role === "video" })).join("")}
+    </div>` : `<p class="panel-subtitle">${escapeHtml(historyEmptyLabel(historyFilterValue(filterKey)))}</p>`}
   `;
 }
 
 function historyToggleButton(historyKey, rowCount) {
   if (rowCount <= 5) return "";
   const expanded = Boolean(expandedHistories[historyKey]);
-  return `<button class="history-toggle" type="button" data-history-toggle="${escapeHtml(historyKey)}">${expanded ? "Réduire" : "Tout afficher"}</button>`;
+  return `<button class="history-toggle" type="button" data-history-toggle="${escapeHtml(historyKey)}">${expanded ? "Réduire le journal" : "Agrandir le journal"}</button>`;
 }
 
 function selectedEntrant() {
@@ -4512,6 +4705,8 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
 }
 
 async function createFinalistsSpeakerAlert(result) {
+  const finalistCount = finalRowsCount(result?.finalists);
+  if (!finalistCount) return null;
   const now = new Date().toISOString();
   alerts
     .filter((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
@@ -4520,7 +4715,6 @@ async function createFinalistsSpeakerAlert(result) {
       alert.updatedAt = now;
       syncAlertToFirestore(alert);
     });
-  const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
   const alert = {
     id: `finalists-${result.id}`,
     type: "finalists_announcement",
@@ -4545,12 +4739,14 @@ async function createFinalistsSpeakerAlert(result) {
   alerts.unshift(alert);
   saveAlerts();
   await syncAlertToFirestore(alert);
+  return alert;
 }
 
 async function ensurePendingFinalistsSpeakerAlerts() {
   if (finalistAlertRepairRunning) return;
   const pendingResults = raceResults.filter((result) => (
     result.hasFinal &&
+    finalRowsCount(result.finalists) > 0 &&
     !result.finalistsAnnouncedAt &&
     !alerts.some((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
   ));
@@ -4824,12 +5020,31 @@ function finalCompositionKey(result) {
 
 function finalCompositionIsDefinitive(result, now = new Date()) {
   if (!result?.hasFinal || !result.finalistsAnnouncedAt) return false;
-  const activeRows = finalCompositionRows(result).filter((row) => !row.withdrawnAt);
+  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
   if (!activeRows.length) return false;
   return activeRows.every((row) => {
     const limit = finalWithdrawalLimitDate(row, result);
     return Boolean(limit) && now > limit;
   });
+}
+
+function finalCompositionDefinitiveDate(result) {
+  if (!result?.hasFinal || !result.finalistsAnnouncedAt) return null;
+  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
+  const limits = activeRows
+    .map((row) => finalWithdrawalLimitDate(row, result))
+    .filter((date) => date && !Number.isNaN(date.getTime()));
+  if (!activeRows.length || limits.length !== activeRows.length) return null;
+  return new Date(Math.max(...limits.map((date) => date.getTime())));
+}
+
+function finalCompositionPendingDeadlineLabel(result) {
+  if (!result?.finalistsAnnouncedAt) return "Définitif 30 min après annonce speaker";
+  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
+  const unannouncedReplacementCount = activeRows.filter((row) => row.repechaged && !row.repechageAnnouncedAt).length;
+  if (unannouncedReplacementCount > 1) return "Définitif 30 min après annonce des repêchés";
+  if (unannouncedReplacementCount === 1) return "Définitif 30 min après annonce du repêché";
+  return "Définitif après fin des délais de forfait";
 }
 
 function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
@@ -5577,6 +5792,9 @@ function getEntrantReference(entrant) {
   raceMedals.forEach((medal) => {
     references.push(`<span class="badge international-alert">${escapeHtml(medal.medal || "Médaille")} ${escapeHtml(shortChampionshipLabel(medal.championship))}</span>`);
   });
+  findSwimmerInfosForEntrant(entrant).forEach((item) => {
+    references.push(`<span class="badge swimmer-info-badge">${escapeHtml(item.info)}</span>`);
+  });
   return references.length ? `<div class="reference-badges">${references.join("")}</div>` : "";
 }
 
@@ -5649,6 +5867,29 @@ function findCompetitionStatsForEntrant(entrant) {
     if (item.type === "birthday") return true;
     if (item.birthYear && entrantYear !== "----" && String(item.birthYear) !== String(entrantYear)) return false;
     return true;
+  });
+}
+
+function normalizeClubMatch(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .toUpperCase();
+}
+
+function findSwimmerInfosForEntrant(entrant) {
+  if (!isSpeakerView() || isRelayEntrant(entrant)) return [];
+  const entrantName = normalizePersonName(formatName(entrant));
+  const clubKeys = [
+    entrant.club,
+    entrant.clubCode,
+    shortClubName(entrant)
+  ].map(normalizeClubMatch).filter(Boolean);
+  return (data.swimmerInfos || []).filter((item) => {
+    if (!item.info || item.personKey !== entrantName) return false;
+    if (!item.clubKey) return true;
+    return clubKeys.includes(item.clubKey);
   });
 }
 
@@ -5830,6 +6071,7 @@ function renderSwimmerDetails() {
   const internationalMedals = findInternationalMedals(swimmer);
   const heldRecords = findAllRecordsHeldByEntrant(swimmer);
   const competitionStats = findCompetitionStatsForEntrant(swimmer);
+  const swimmerInfos = findSwimmerInfosForEntrant(swimmer);
   swimmerDetails.hidden = false;
   swimmerDetails.innerHTML = `
     <div class="details-title">
@@ -5839,6 +6081,11 @@ function renderSwimmerDetails() {
         ${competitionStats.length ? `
           <div class="stat-detail-list">
             ${competitionStats.map((item) => `<strong>${escapeHtml(item.icon || "*")} ${escapeHtml(item.detail || item.label || "Repère compétition")}</strong>`).join("")}
+          </div>
+        ` : ""}
+        ${swimmerInfos.length ? `
+          <div class="swimmer-info-list">
+            ${swimmerInfos.map((item) => `<strong>${escapeHtml(item.info)}</strong>`).join("")}
           </div>
         ` : ""}
       </div>
@@ -6408,6 +6655,24 @@ function parseClubSheet(rows) {
   return clubs;
 }
 
+function parseSwimmerInfosSheet(rows) {
+  return sheetObjects(rows).map((row) => {
+    const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
+    const lastName = rowValue(row, ["nom", "lastName"]);
+    const fullName = rowValue(row, ["nom_prenom", "nom prenom", "nageur", "nageuse", "name"]);
+    const club = rowValue(row, ["club", "code_club", "club_code", "club_nom_complet"]);
+    const info = rowValue(row, ["infos", "info", "remarque", "commentaire"]);
+    const name = displayNameFromParts(firstName, lastName, fullName);
+    return {
+      name,
+      club,
+      info,
+      personKey: normalizePersonName(name),
+      clubKey: normalizeClubMatch(club)
+    };
+  }).filter((row) => row.personKey && row.info);
+}
+
 function seedSourceNameFromRen(cells) {
   const date = cells[1] || "";
   const year = (date.match(/\b(20\d{2})\b/) || date.match(/\b(\d{2})$/))?.[1] || "";
@@ -6479,7 +6744,8 @@ async function updateSpeakerInfoFromGoogleSheet() {
       qualificationRows,
       clubRows,
       seedRows,
-      competitionStatRows
+      competitionStatRows,
+      swimmerInfoRows
     ] = await Promise.all([
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.records),
@@ -6488,7 +6754,8 @@ async function updateSpeakerInfoFromGoogleSheet() {
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.clubs),
       fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources),
-      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.competitionStats)
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.competitionStats),
+      fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.swimmerInfos).catch(() => [])
     ]);
     const clubs = parseClubSheet(clubRows);
     const seedSources = parseSeedSourceSheet(seedRows);
@@ -6501,6 +6768,7 @@ async function updateSpeakerInfoFromGoogleSheet() {
       edfMembers: parseEdfSheet(edfRows),
       internationalMedals: parseInternationalSheet(internationalRows),
       competitionStats: parseCompetitionStatsSheet(competitionStatRows),
+      swimmerInfos: parseSwimmerInfosSheet(swimmerInfoRows),
       qualifications: parseQualificationsSheet(qualificationRows),
       entrants: entrantsWithSpeakerInfo,
       sourceVersion: `speaker-info-${Date.now()}`,
@@ -6512,9 +6780,9 @@ async function updateSpeakerInfoFromGoogleSheet() {
         importHistory: appendImportHistory(data.notes || {}, "infos speaker Google Sheet")
       }
     });
-    applyFreshData(nextData, true);
+    applyFreshData(nextData, false);
     await publishLiveDataToFirestore(nextData, "Infos speaker Google Sheets");
-    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.competitionStats.length} stats compétition, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
+    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.competitionStats.length} stats compétition, ${nextData.swimmerInfos.length} infos nageurs, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
   } catch (error) {
     console.error(error);
     renderDataStatus(`Impossible de lire le Google Sheet : ${error?.message || error}`);
@@ -6637,7 +6905,7 @@ function buildResultArchiveHtmlFromRows(rows, archive = {}, options = {}) {
     .sort((a, b) => String(a.session || "").localeCompare(String(b.session || ""), "fr", { numeric: true }) || String(a.eventLabel || "").localeCompare(String(b.eventLabel || "")))
     .map((result, index) => {
       const sexLabel = result.sexLabel || sexDisplayLabel(result.sex);
-      const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
+      const finalistCount = finalRowsCount(result.finalists);
       const withdrawalCount = (result.finalWithdrawals || []).filter((item) => item.withdrawnAt).length;
       const status = result.hasFinal
         ? (result.finalistsAnnouncedAt ? "Publié avec finalistes" : "En attente annonce speaker")
@@ -6901,6 +7169,10 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     toggleCompetitionMode();
     return;
   }
+  if (event.target.closest("[data-computer-diagnostic]")) {
+    showDataDiagnostic();
+    return;
+  }
   if (event.target.closest("[data-computer-admin-series]")) {
     openAdminSeriesModal();
     return;
@@ -6995,7 +7267,7 @@ resultImportModal?.addEventListener("change", async (event) => {
     const result = await publishResultPdf(file, rowToImport, hasFinal, isPartial, { preserveFinalists });
     await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(rowToImport)}${result.session ? ` S${result.session}` : ""}`);
     renderDataStatus();
-    const finalistCount = (result.finalists?.a?.length || 0) + (result.finalists?.b?.length || 0);
+    const finalistCount = finalRowsCount(result.finalists);
     window.alert(hasFinal
       ? `Résultat publié : ${finalistCount} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}.`
       : "Résultat publié sur la page publique.");
@@ -7092,7 +7364,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
     const collection = historyArchivesCollection();
     if (!collection) return;
     await collection.doc(deleteArchiveButton.dataset.deleteArchive).delete();
-    await renderHistoryArchivesModal();
+    await renderHistoryArchivesModal({ canDelete: true });
     return;
   }
   const openResultArchiveButton = event.target.closest("[data-open-result-archive]");
@@ -7126,7 +7398,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
     itemSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
     batch.delete(archiveRef);
     await batch.commit();
-    await renderHistoryArchivesModal();
+    await renderHistoryArchivesModal({ canDelete: true });
     return;
   }
   if (event.target.closest("[data-role-pin-cancel]")) {
@@ -7428,6 +7700,14 @@ roleHistory?.addEventListener("click", (event) => {
   }
 });
 
+roleHistory?.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-history-filter]");
+  if (!select) return;
+  historyFilters[select.dataset.historyFilter] = select.value;
+  expandedHistories.role = false;
+  renderRoleHistory();
+});
+
 speakerHistory?.addEventListener("click", (event) => {
   const toggle = event.target.closest("[data-history-toggle]");
   if (toggle) {
@@ -7439,6 +7719,14 @@ speakerHistory?.addEventListener("click", (event) => {
   const item = event.target.closest("[data-history-alert-id]");
   if (!item) return;
   openAlertDetail(item.dataset.historyAlertId);
+});
+
+speakerHistory?.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-history-filter]");
+  if (!select) return;
+  historyFilters[select.dataset.historyFilter] = select.value;
+  expandedHistories.speaker = false;
+  renderSpeakerHistory();
 });
 
 fullscreenBtn?.addEventListener("click", async () => {

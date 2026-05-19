@@ -145,7 +145,7 @@ function seriesNumbersForRace(row) {
 function publicRacePhaseLabel(row) {
   const finals = finalProgramRows(row.eventId, row.sex);
   if (isFinalStage(row.stage)) {
-    return finals.length > 1 ? "finales" : "finale";
+    return `${finals.length || 1} finale${(finals.length || 1) > 1 ? "s" : ""}`;
   }
   const regularRows = raceProgramRows(row.eventId, row.sex).filter((item) => !isFinalStage(item.stage));
   const hasSplitSeries = regularRows.length > 1;
@@ -153,10 +153,8 @@ function publicRacePhaseLabel(row) {
   if (!finals.length && hasSplitSeries && isLastProgramPartForRace(row)) {
     return "meilleure série";
   }
-  if (seriesNumbers.length > 1 || hasSplitSeries) {
-    return "séries";
-  }
-  return "série";
+  const count = seriesNumbers.length || regularRows.length || 1;
+  return `${count} série${count > 1 ? "s" : ""}`;
 }
 
 function rowsForSession(session) {
@@ -272,6 +270,22 @@ function finalistWithdrawalLabel(row, result) {
   return `forfait possible jusqu'à ${formatDeadlineTime(limit)}`;
 }
 
+function publicResultStatusFromText(value) {
+  const text = cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/\b(forfait|absent|abs|dns|ns)\b/.test(text)) return "forfait";
+  if (/\b(abandon|abd|dnf)\b/.test(text)) return "abandon";
+  if (/\b(disqualification|disqualifie|disqualifiee|dsq|dq)\b/.test(text)) return "disqualification";
+  return "";
+}
+
+function publicFinalRowCountsAsFinalist(row) {
+  if (!row || row.withdrawnAt || row.resultStatus) return false;
+  return !publicResultStatusFromText([row.statusLabel, row.status, row.motif, row.note].filter(Boolean).join(" "));
+}
+
 function renderFinalistRows(title, rows, result) {
   if (!rows?.length) return "";
   return `
@@ -319,7 +333,7 @@ function renderResultDetails(result) {
     a: sortedFinalRows(result.finalists?.a || []),
     b: sortedFinalRows(result.finalists?.b || [])
   };
-  const finalistCount = ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter((row) => !row.withdrawnAt).length, 0);
+  const finalistCount = ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter(publicFinalRowCountsAsFinalist).length, 0);
   const finalistKeys = new Set(["a", "b"].flatMap((key) => (finalists[key] || []).map((row) =>
     [row.rank, cleanText(row.displayName || finalistName(row)), row.time].filter(Boolean).join("|")
   )));
@@ -359,14 +373,14 @@ function renderRow(row) {
   const result = resultForRow(row);
   const status = resultStatus(row, result);
   const hideResultMeta = result?.hasFinal && !result.finalistsAnnouncedAt;
-  const updated = !hideResultMeta && result?.updatedAt ? new Date(result.updatedAt).toLocaleString("fr-FR") : "";
+  const updated = !hideResultMeta && result?.updatedAt ? `Mis à jour le ${new Date(result.updatedAt).toLocaleString("fr-FR")}` : "";
   const sexClass = row.sex === "F" ? "sex-female" : (row.sex === "M" ? "sex-male" : "sex-mixed");
   return `
     <article class="public-result-card ${result ? "published" : "not-published"} ${sexClass}">
       <div class="public-result-head">
         <div>
           <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span> <span class="public-phase-label">${escapeHtml(publicRacePhaseLabel(row))}</span></h2>
-          <p>${escapeHtml(updated)}</p>
+          ${updated ? `<p class="public-update-meta">${escapeHtml(updated)}</p>` : ""}
         </div>
         <span class="public-result-status ${status.className}">${escapeHtml(status.label)}</span>
       </div>
@@ -422,7 +436,7 @@ function renderMeetTitle() {
       .sort()
       .at(-1);
     meetMeta.textContent = lastUpdate
-      ? `Dernière mise à jour : ${new Date(lastUpdate).toLocaleString("fr-FR")}`
+      ? `Mis à jour le ${new Date(lastUpdate).toLocaleString("fr-FR")}`
       : "En attente de publication des premiers résultats";
   }
 }

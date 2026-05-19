@@ -16,6 +16,8 @@ const pdfFrame = document.querySelector("#pdfFrame");
 const canvasViewer = document.querySelector("#pdfCanvasViewer");
 const fallback = document.querySelector("#pdfFallback");
 const downloadBtn = document.querySelector("#pdfDownloadBtn");
+const closeBtn = document.querySelector("#pdfCloseBtn");
+const meetMeta = document.querySelector("#pdfMeetMeta");
 
 const PDF_TYPES = {
   resultat: {
@@ -43,6 +45,16 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function meetMetaLabel(meet = {}) {
+  const city = cleanText(meet.city || "");
+  const year = cleanText(meet.year || "");
+  return [city, year].filter(Boolean).join(" ");
 }
 
 function showMessage(message) {
@@ -118,7 +130,26 @@ function setDownloadLink(blobUrl, pdfName) {
   downloadBtn.download = pdfName || "livepalmes.pdf";
 }
 
+function closeOrReturn() {
+  if (window.opener) {
+    window.close();
+    setTimeout(() => {
+      if (!window.closed) window.location.href = "resultats.html?v=20260519-public-index-optimized";
+    }, 120);
+    return;
+  }
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  window.location.href = "resultats.html?v=20260519-public-index-optimized";
+}
+
 async function init() {
+  if (closeBtn) {
+    closeBtn.textContent = window.opener ? "Fermer" : "Retour";
+    closeBtn.addEventListener("click", closeOrReturn);
+  }
   const params = new URLSearchParams(window.location.search);
   const type = params.get("type") || "resultat";
   const id = params.get("id");
@@ -135,17 +166,25 @@ async function init() {
   if (!window.firebase.apps?.length) {
     window.firebase.initializeApp(FIREBASE_CONFIG);
   }
-  const snapshot = await window.firebase.firestore()
-    .collection("competitions")
-    .doc(FIRESTORE_COMPETITION_ID)
-    .collection(config.collection)
-    .doc(id)
-    .get();
+  const db = window.firebase.firestore();
+  const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
+  const [snapshot, indexSnapshot] = await Promise.all([
+    competition
+      .collection(config.collection)
+      .doc(id)
+      .get(),
+    competition.collection("public").doc("resultsIndex").get().catch(() => null)
+  ]);
   if (!snapshot.exists) {
     showMessage(config.missingDoc);
     return;
   }
   const data = snapshot.data();
+  const metaLabel = meetMetaLabel(indexSnapshot?.data()?.meet || data.meet || {});
+  if (meetMeta) {
+    meetMeta.textContent = metaLabel;
+    meetMeta.hidden = !metaLabel;
+  }
   if (pdfTitle) pdfTitle.textContent = config.titleFromData(data);
   const blobUrl = dataUrlToBlobUrl(data.pdfDataUrl);
   if (blobUrl) setDownloadLink(blobUrl, data.pdfName || config.downloadName);
