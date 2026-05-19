@@ -3327,7 +3327,7 @@ function renderResultsAdminPanel() {
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
         </button>
-        <a class="ghost-button compact" href="resultats.html?v=20260519-pdf-cedille" target="_blank" rel="noopener">Page publique</a>
+        <a class="ghost-button compact" href="resultats.html?v=20260520-pdf-francois" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
@@ -8700,6 +8700,7 @@ function fixPdfEncoding(value) {
     .replace(/c[¸̧]/g, "c")
     .replace(/[ÇĆČĈĊ]/g, "C")
     .replace(/[çćčĉċ]/g, "c")
+    .replace(/\bFRAN[«‹]OIS\b/gi, "FRANCOIS")
     .replace(/\bDOUY(?:…|\.{3}|�|□)RE\b/gi, "DOUYERE")
     .replace(/\bFRAN(?:C|…|\.{3}|�|□)OIS\b/gi, "FRANCOIS")
     .replace(/\bRAPHAÎL\b/g, "RAPHAEL")
