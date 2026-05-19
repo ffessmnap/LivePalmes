@@ -385,7 +385,7 @@ function renderResultDetails(result) {
   return `
     ${publicFinalistsVisible ? `
       <div class="public-result-actions">
-        <a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" target="_blank" rel="noopener">Voir</a>
+        <a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}">Voir</a>
       </div>
     ` : ""}
     ${result.hasFinal && publicFinalistsVisible ? `
@@ -454,7 +454,7 @@ function renderSeriesPdfLink(session) {
         <strong>${escapeHtml(label)}</strong>
         ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
       </div>
-      <a class="ghost-button compact confirm-button" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">Voir les séries</a>
+      <a class="ghost-button compact confirm-button" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir les séries</a>
     </div>
   `;
 }
@@ -470,7 +470,7 @@ function renderSessionResultsPdfLinks(session) {
       </div>
       <div class="public-pdf-link-actions">
         ${pdfs.map((pdf) => `
-          <a class="ghost-button compact confirm-button" href="pdf.html?type=session-result&id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">
+          <a class="ghost-button compact confirm-button" href="pdf.html?type=session-result&id=${encodeURIComponent(pdf.id || "")}">
             ${escapeHtml(pdfs.length > 1 ? (pdf.sourceLabel || "Voir") : "Voir")}
           </a>
         `).join("")}
