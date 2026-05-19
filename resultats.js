@@ -1,5 +1,4 @@
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
-const PUBLIC_RESULTS_UNLOCK_KEY = "livepalmes:public-results-unlocked:v1";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
   authDomain: "livepalmes.firebaseapp.com",
@@ -24,7 +23,7 @@ let publicMeet = {};
 let publicResults = [];
 let publicSeriesPdfs = [];
 let publicSessionResultsPdfs = [];
-let publicAccess = { locked: false, pin: "", updatedAt: "" };
+let publicAccess = { online: true, updatedAt: "" };
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
@@ -75,15 +74,7 @@ function setStatus(label, className = "pending") {
   statusBadge.innerHTML = `<i class="firebase-dot ${className}" aria-hidden="true"></i>${escapeHtml(label)}`;
 }
 
-function publicUnlockToken() {
-  return publicAccess?.pin ? `pin:${publicAccess.pin}:${publicAccess.updatedAt || ""}` : "open";
-}
-
-function publicResultsUnlocked() {
-  return !publicAccess?.locked || localStorage.getItem(PUBLIC_RESULTS_UNLOCK_KEY) === publicUnlockToken();
-}
-
-function renderPublicLock(error = "") {
+function renderPublicOffline() {
   renderMeetTitle();
   if (sessionControls) sessionControls.innerHTML = "";
   if (collapseDetailsBtn) collapseDetailsBtn.hidden = true;
@@ -91,31 +82,29 @@ function renderPublicLock(error = "") {
   list.innerHTML = `
     <div class="public-lock-panel">
       <div>
-        <h2>Accès protégé</h2>
-        <p class="panel-subtitle">Entre le code communiqué par l'organisation pour consulter les résultats.</p>
+        <h2>Résultats temporairement hors ligne</h2>
+        <p class="panel-subtitle">La page publique des résultats n'est pas ouverte pour le moment.</p>
       </div>
-      <form class="public-lock-form" id="publicLockForm">
-        <input id="publicLockInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="Code">
-        <button class="primary-button" type="submit">Ouvrir</button>
-      </form>
-      ${error ? `<p class="public-lock-error">${escapeHtml(error)}</p>` : ""}
     </div>
   `;
-  list.querySelector("#publicLockInput")?.focus();
 }
 
 function ensurePublicAccess() {
-  if (!publicAccess?.locked) {
-    if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
-    return true;
+  if (publicAccess?.online === false) {
+    setStatus("Hors ligne", "pending");
+    renderPublicOffline();
+    return false;
   }
-  if (publicResultsUnlocked()) {
-    if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
-    return true;
-  }
-  setStatus("Accès protégé", "pending");
-  renderPublicLock();
-  return false;
+  if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
+  return true;
+}
+
+function applyPublicAccessFromLiveData(remote) {
+  if (!remote?.notes || !Object.prototype.hasOwnProperty.call(remote.notes, "publicResultsOnline")) return;
+  publicAccess = {
+    online: remote.notes.publicResultsOnline !== false,
+    updatedAt: remote.notes.publicResultsOnlineUpdatedAt || publicAccess.updatedAt || ""
+  };
 }
 
 function raceKey(eventId, sex) {
@@ -553,16 +542,12 @@ function liveDataIsNewerThanPublicIndex(remote, index) {
 }
 
 function applyPublicLiveOverlay(remote, index = {}) {
+  applyPublicAccessFromLiveData(remote);
   if (!liveDataIsNewerThanPublicIndex(remote, index)) return;
   publicMeet = remote.meet || publicMeet;
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
-  publicAccess = {
-    locked: remote.notes?.publicResultsLocked === true,
-    pin: remote.notes?.rolePins?.public || publicAccess.pin || "0006",
-    updatedAt: remote.notes?.publicResultsLockUpdatedAt || publicAccess.updatedAt || ""
-  };
   if (Array.isArray(remote.notes?.publicSeriesPdfs)) {
     publicSeriesPdfs = remote.notes.publicSeriesPdfs
       .slice()
@@ -592,6 +577,10 @@ async function loadPublicResultsIndex() {
     competition.collection("liveData").doc("current").get({ source: "server" })
   ]);
   const index = snapshot.data() || {};
+  const remote = liveSnapshot.data()?.data || {};
+  publicAccess = index.publicAccess || { online: true, updatedAt: "" };
+  applyPublicAccessFromLiveData(remote);
+  if (!ensurePublicAccess()) return;
   if (!snapshot.exists || !Array.isArray(index.program) || !index.program.length) {
     await loadPublicResultsFallback(competition);
     return;
@@ -601,7 +590,6 @@ async function loadPublicResultsIndex() {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
-  publicAccess = index.publicAccess || { locked: false, pin: "" };
   publicIndexUpdatedAt = index.updatedAt || "";
   if (Array.isArray(index.seriesPdfs)) {
     publicSeriesPdfs = index.seriesPdfs
@@ -615,7 +603,7 @@ async function loadPublicResultsIndex() {
       .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
     : [];
-  applyPublicLiveOverlay(liveSnapshot.data()?.data || {}, index);
+  applyPublicLiveOverlay(remote, index);
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   renderResults();
@@ -633,9 +621,8 @@ async function loadPublicResultsFallback(competition) {
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   publicAccess = {
-    locked: remote.notes?.publicResultsLocked === true,
-    pin: remote.notes?.rolePins?.public || "0006",
-    updatedAt: remote.notes?.publicResultsLockUpdatedAt || ""
+    online: remote.notes?.publicResultsOnline !== false,
+    updatedAt: remote.notes?.publicResultsOnlineUpdatedAt || ""
   };
   await loadPublicSeriesPdfs(competition);
   publicSessionResultsPdfs = [];
@@ -677,20 +664,6 @@ refreshResultsBtn?.addEventListener("click", () => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
-});
-
-list?.addEventListener("submit", (event) => {
-  const form = event.target.closest("#publicLockForm");
-  if (!form) return;
-  event.preventDefault();
-  const code = String(form.querySelector("#publicLockInput")?.value || "").trim();
-  if (code !== String(publicAccess?.pin || "")) {
-    renderPublicLock("Code incorrect.");
-    return;
-  }
-  localStorage.setItem(PUBLIC_RESULTS_UNLOCK_KEY, publicUnlockToken());
-  setStatus("ConnectÃ©", "ok");
-  renderResults();
 });
 
 init();
