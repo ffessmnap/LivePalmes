@@ -24,7 +24,7 @@ let publicMeet = {};
 let publicResults = [];
 let publicSeriesPdfs = [];
 let publicSessionResultsPdfs = [];
-let publicAccess = { locked: false, pin: "" };
+let publicAccess = { locked: false, pin: "", updatedAt: "" };
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
@@ -76,7 +76,7 @@ function setStatus(label, className = "pending") {
 }
 
 function publicUnlockToken() {
-  return publicAccess?.pin ? `pin:${publicAccess.pin}` : "open";
+  return publicAccess?.pin ? `pin:${publicAccess.pin}:${publicAccess.updatedAt || ""}` : "open";
 }
 
 function publicResultsUnlocked() {
@@ -600,7 +600,8 @@ async function loadPublicResultsFallback(competition) {
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   publicAccess = {
     locked: remote.notes?.publicResultsLocked === true,
-    pin: remote.notes?.rolePins?.public || "0006"
+    pin: remote.notes?.rolePins?.public || "0006",
+    updatedAt: remote.notes?.publicResultsLockUpdatedAt || ""
   };
   await loadPublicSeriesPdfs(competition);
   publicSessionResultsPdfs = [];
