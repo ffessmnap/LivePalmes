@@ -1400,6 +1400,37 @@ body.profile-home-active .top-actions {
   gap: 10px;
 }
 
+.public-lock-panel {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.public-lock-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.public-lock-form input {
+  flex: 1 1 150px;
+  min-height: 38px;
+  border: 1px solid #cfdce1;
+  border-radius: 8px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.public-lock-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .public-session-controls {
   margin: 4px 0 12px;
 }
@@ -2791,6 +2822,25 @@ textarea {
   font-weight: 950;
   letter-spacing: 0.08em;
   text-align: center;
+}
+
+.public-lock-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid #d8e6ea;
+  border-radius: 8px;
+  background: #f7fbfc;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.public-lock-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
 }
 
 .role-code-admin-field {

@@ -14,7 +14,8 @@ const ROLE_PINS = {
   referee: "0002",
   video: "0003",
   computer: "0004",
-  secretary: "0005"
+  secretary: "0005",
+  public: "0006"
 };
 const LOCK_DURATION_MS = 120000;
 const LOCK_HEARTBEAT_MS = 30000;
@@ -947,7 +948,15 @@ function renderRoleCodesModal() {
             <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(role)}" value="${escapeHtml(pins[role] || "")}">
           </label>
         `).join("")}
+        <label>
+          <span>Résultats publics</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="public" value="${escapeHtml(pins.public || "0006")}">
+        </label>
       </div>
+      <label class="public-lock-option">
+        <input type="checkbox" id="publicResultsLockInput" ${data.notes?.publicResultsLocked ? "checked" : ""}>
+        <span>Verrouiller la page résultats publics</span>
+      </label>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
         <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
@@ -1198,6 +1207,8 @@ async function saveRoleCodesFromModal(enableLock) {
       ...(data.notes || {}),
       rolePins: pins,
       pinLockEnabled: enableLock,
+      publicResultsLocked: Boolean(roleCodesModal.querySelector("#publicResultsLockInput")?.checked),
+      publicResultsLockUpdatedAt: new Date().toISOString(),
       pinLockUpdatedAt: new Date().toISOString()
     },
     sourceVersion: `lock-${Date.now()}`
@@ -2875,6 +2886,11 @@ function buildPublicResultsIndex() {
     results: raceResults.map(publicResultPayload).filter(Boolean),
     seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
     sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
+    publicAccess: {
+      locked: data.notes?.publicResultsLocked === true,
+      pin: currentRolePins().public || "0006",
+      updatedAt: data.notes?.publicResultsLockUpdatedAt || ""
+    },
     updatedAt,
     sourceVersion: data.sourceVersion || "",
     sourceLabel: data.notes?.sourceLabel || "",
