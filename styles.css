@@ -780,6 +780,20 @@ body.profile-home-active .top-actions {
   font-weight: 750;
 }
 
+.reset-session-select {
+  grid-column: 2;
+  width: min(210px, 100%);
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid #cfdce1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
 .admin-series-option.warning-option {
   border-color: #ffd8a8;
   background: #fff9ef;
@@ -869,12 +883,87 @@ body.profile-home-active .top-actions {
   flex-wrap: wrap;
 }
 
+.public-online-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #cfe1d5;
+  border-radius: 8px;
+  background: #eefaf1;
+  color: #087434;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.public-online-toggle span {
+  width: 24px;
+  height: 14px;
+  border-radius: 999px;
+  background: #19a35b;
+  box-shadow: inset 10px 0 0 #ffffff;
+}
+
+.public-online-toggle.offline {
+  border-color: #f1c7c0;
+  background: #fff0ee;
+  color: #b42318;
+}
+
+.public-online-toggle.offline span {
+  background: #d92d20;
+  box-shadow: inset -10px 0 0 #ffffff;
+}
+
+.sync-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d5e2e8;
+  border-radius: 8px;
+  background: #f2f6f8;
+  color: #49606a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sync-mode-toggle span {
+  width: 26px;
+  height: 15px;
+  border-radius: 999px;
+  background: #98a7b1;
+  box-shadow: inset -11px 0 0 #ffffff;
+}
+
+.sync-mode-toggle.active {
+  border-color: #b7dfc0;
+  background: #eefaf1;
+  color: #207236;
+}
+
+.sync-mode-toggle.active span {
+  background: #19a35b;
+  box-shadow: inset 11px 0 0 #ffffff;
+}
+
 .public-results-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.results-admin-danger-zone {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+  border-top: 1px dashed #d9e4ea;
 }
 
 .results-session-select {

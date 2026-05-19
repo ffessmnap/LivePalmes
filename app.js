@@ -14,8 +14,7 @@ const ROLE_PINS = {
   referee: "0002",
   video: "0003",
   computer: "0004",
-  secretary: "0005",
-  public: "0006"
+  secretary: "0005"
 };
 const LOCK_DURATION_MS = 120000;
 const LOCK_HEARTBEAT_MS = 30000;
@@ -948,18 +947,6 @@ function renderRoleCodesModal() {
             <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(role)}" value="${escapeHtml(pins[role] || "")}">
           </label>
         `).join("")}
-        <label>
-          <span>Résultats publics</span>
-          <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="public" value="${escapeHtml(pins.public || "0006")}">
-        </label>
-      </div>
-      <label class="public-lock-option">
-        <input type="checkbox" id="publicResultsLockInput" ${data.notes?.publicResultsLocked ? "checked" : ""}>
-        <span>Verrouiller la page résultats publics</span>
-      </label>
-      <div class="public-lock-actions">
-        <button class="ghost-button compact" type="button" data-save-public-results-lock>Enregistrer l'accès public</button>
-        <span>Ce réglage est indépendant des codes des consoles.</span>
       </div>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
@@ -1033,27 +1020,46 @@ function renderResetHistoryModal() {
 function renderResetResultsModal() {
   if (!roleCodesModal) return;
   const activeSession = ensureResultsAdminSession();
+  const sessions = resultSessions();
+  const selectedSession = activeSession || sessions[0]?.number || "";
   roleCodesModal.hidden = false;
   roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ résultats">
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ LivePalmes">
       <div class="decision-modal-head">
         <div>
-          <span>Résultats publics</span>
-          <h2>RAZ résultats</h2>
-          <p>Disponible uniquement hors mode compétition. Les résultats effacés sont archivés avant suppression.</p>
+          <span>Remise à zéro</span>
+          <h2>RAZ LivePalmes</h2>
+          <p>Disponible uniquement en actualisation manuelle. Chaque RAZ archive ce qu'il efface avant suppression.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
       <div class="admin-series-options">
         <label class="admin-series-option">
-          <input type="radio" name="resetResultsScope" value="session" checked ${activeSession ? "" : "disabled"}>
-          <strong>Session affichée ${activeSession ? `S${escapeHtml(activeSession)}` : ""}</strong>
-          <span>Supprime les résultats publiés et PDF complets liés à cette session.</span>
+          <input type="radio" name="resetResultsScope" value="history">
+          <strong>Journal d'arbitrage</strong>
+          <span>Archive puis vide les décisions, forfaits, abandons et annonces.</span>
         </label>
         <label class="admin-series-option">
-          <input type="radio" name="resetResultsScope" value="all" ${activeSession ? "" : "checked"}>
-          <strong>Toute la compétition</strong>
-          <span>Supprime tous les résultats publics publiés.</span>
+          <input type="radio" name="resetResultsScope" value="results-session" checked ${sessions.length ? "" : "disabled"}>
+          <strong>Résultats d'une session</strong>
+          <span>Archive puis supprime les résultats publiés et PDF complets liés à la session choisie.</span>
+          ${sessions.length ? `
+            <select id="resetResultsSessionSelect" class="reset-session-select" aria-label="Session à remettre à zéro">
+              ${sessions.map((session) => `
+                <option value="${escapeHtml(session.number)}" ${session.number === selectedSession ? "selected" : ""}>Session ${escapeHtml(session.number)}</option>
+              `).join("")}
+            </select>
+          ` : ""}
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="resetResultsScope" value="results-all" ${activeSession ? "" : "checked"}>
+          <strong>Tous les résultats de la compétition</strong>
+          <span>Archive puis supprime les résultats publics de toutes les sessions.</span>
+        </label>
+        <label class="admin-series-option danger-option">
+          <input type="radio" name="resetResultsScope" value="series-all">
+          <strong>Séries et compétition complète</strong>
+          <span>Vide programme, séries, engagés, PDF de séries publics et résultats publics pour préparer une nouvelle compétition.</span>
         </label>
       </div>
       <label class="role-code-admin-field">
@@ -1217,8 +1223,6 @@ async function saveRoleCodesFromModal(enableLock) {
       ...(data.notes || {}),
       rolePins: pins,
       pinLockEnabled: enableLock,
-      publicResultsLocked: Boolean(roleCodesModal.querySelector("#publicResultsLockInput")?.checked),
-      publicResultsLockUpdatedAt: new Date().toISOString(),
       pinLockUpdatedAt: new Date().toISOString()
     },
     sourceVersion: `lock-${Date.now()}`
@@ -1242,39 +1246,26 @@ async function saveRoleCodesFromModal(enableLock) {
   window.alert(enableLock ? "Codes enregistrés et actifs." : "Codes désactivés.");
 }
 
-async function savePublicResultsLockFromModal() {
-  if (!roleCodesModal) return;
-  const publicPin = String(roleCodesModal.querySelector('[data-role-code="public"]')?.value || "").trim();
-  if (!/^\d{4}$/.test(publicPin)) {
-    window.alert("Le code des résultats publics doit contenir exactement 4 chiffres.");
-    return;
-  }
-  const locked = Boolean(roleCodesModal.querySelector("#publicResultsLockInput")?.checked);
+async function togglePublicResultsOnline() {
+  const online = data.notes?.publicResultsOnline === false;
   const nextData = normalizeData({
     ...data,
     notes: {
       ...(data.notes || {}),
-      rolePins: {
-        ...currentRolePins(),
-        public: publicPin
-      },
-      publicResultsLocked: locked,
-      publicResultsLockUpdatedAt: new Date().toISOString()
+      publicResultsOnline: online,
+      publicResultsOnlineUpdatedAt: new Date().toISOString()
     },
-    sourceVersion: `public-lock-${Date.now()}`
+    sourceVersion: `public-online-${Date.now()}`
   });
   data = nextData;
   saveData();
-  closeRoleCodesModal();
   render();
   try {
-    await publishLiveDataToFirestore(nextData, locked ? "Résultats publics verrouillés" : "Résultats publics déverrouillés");
+    await publishLiveDataToFirestore(nextData, online ? "Page résultats publics en ligne" : "Page résultats publics hors ligne");
     await publishPublicResultsIndex({ silent: true });
   } catch {
-    window.alert("Le réglage public a été modifié sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
-    return;
+    renderDataStatus("Le statut de la page publique a été modifié sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
   }
-  window.alert(locked ? "Page résultats publics verrouillée." : "Page résultats publics déverrouillée.");
 }
 
 async function toggleRoleLock() {
@@ -1284,7 +1275,7 @@ async function toggleRoleLock() {
 function toggleCompetitionMode() {
   const enabled = !competitionModeEnabled();
   lastConsoleActivityAt = Date.now();
-  updateLiveNotes(enabled ? "Mode compétition activé" : "Mode compétition désactivé", {
+  updateLiveNotes(enabled ? "Actualisation directe activée" : "Actualisation manuelle activée", {
     competitionMode: enabled,
     competitionModeUpdatedAt: new Date().toISOString()
   }).then(() => {
@@ -1295,43 +1286,13 @@ function toggleCompetitionMode() {
 
 async function endCompetitionSession() {
   if (!competitionModeEnabled()) return;
-  const closeSession = window.confirm([
-    "Terminer la session ?",
-    "",
-    "Le mode compétition sera coupé et les consoles passeront en actualisation manuelle."
-  ].join("\n"));
-  if (!closeSession) return;
-  const archiveWanted = window.confirm([
-    "Veux-tu archiver le journal d'arbitrage maintenant ?",
-    "",
-    "Oui : une archive sera conservée dans Archives historiques.",
-    "Non : le direct sera simplement coupé."
-  ].join("\n"));
-  let archive = null;
-  if (archiveWanted) {
-    try {
-      archive = await archiveCurrentHistory();
-    } catch (error) {
-      const continueWithoutArchive = window.confirm([
-        "Archivage impossible.",
-        error?.message || "",
-        "",
-        "Veux-tu quand même couper le mode compétition ?"
-      ].join("\n"));
-      if (!continueWithoutArchive) return;
-    }
-  }
-  await updateLiveNotes(archive ? "Fin de session - journal archivé" : "Mode compétition désactivé manuellement", {
+  await updateLiveNotes("Actualisation manuelle activée", {
     competitionMode: false,
     competitionModeUpdatedAt: new Date().toISOString(),
-    competitionModeEndedAt: new Date().toISOString(),
-    ...(archive ? { lastSessionArchiveId: archive.id } : {})
+    competitionModeEndedAt: new Date().toISOString()
   });
   initFirebaseSync();
   render();
-  window.alert(archive
-    ? `Session terminée. Journal archivé (${archive.count} lignes).`
-    : "Session terminée. Mode compétition coupé.");
 }
 
 function markConsoleActivity() {
@@ -1357,7 +1318,7 @@ async function disableCompetitionModeAfterInactivity() {
   if (Date.now() - lastConsoleActivityAt < COMPETITION_INACTIVITY_MS) return;
   competitionAutoDisableRunning = true;
   try {
-    await updateLiveNotes("Mode compétition désactivé automatiquement après 1h d'inactivité", {
+    await updateLiveNotes("Actualisation manuelle activée automatiquement après 1h d'inactivité", {
       competitionMode: false,
       competitionModeUpdatedAt: new Date().toISOString(),
       competitionModeAutoDisabledAt: new Date().toISOString()
@@ -1412,7 +1373,7 @@ async function refreshFirebaseOnce(showMessage = true) {
     firebaseStatus = "manual";
     render();
     if (showMessage && state.role === "computer") {
-      renderDataStatus("Données Firebase actualisées. Le direct reste coupé tant que le mode compétition est désactivé.");
+      renderDataStatus("Données Firebase actualisées. L'actualisation directe reste coupée tant que l'interrupteur est en manuel.");
     }
   } catch (error) {
     console.warn("Actualisation Firebase impossible", error);
@@ -2356,8 +2317,8 @@ function render() {
   if (appShell) appShell.hidden = profileHomeActive;
   if (profileModeStatus) {
     profileModeStatus.textContent = competitionModeEnabled()
-      ? "Mode compétition - direct actif"
-      : "Mode préparation - actualisation manuelle";
+      ? "Direct actif"
+      : "Actualisation manuelle";
     profileModeStatus.classList.toggle("active", competitionModeEnabled());
   }
   renderPresenceCounts();
@@ -2371,11 +2332,12 @@ function render() {
   if (competitionModeTopBtn) {
     const competitionMode = competitionModeEnabled();
     competitionModeTopBtn.hidden = profileHomeActive || state.role !== "computer";
-    competitionModeTopBtn.textContent = competitionMode ? "Fin de session" : "Mode compétition";
+    competitionModeTopBtn.innerHTML = `<span aria-hidden="true"></span>${competitionMode ? "Direct" : "Manuel"}`;
+    competitionModeTopBtn.setAttribute("aria-pressed", competitionMode ? "true" : "false");
     competitionModeTopBtn.title = competitionMode
-      ? "Terminer la session, proposer l'archivage et couper le direct"
-      : "Activer le direct des consoles";
-    competitionModeTopBtn.classList.toggle("confirm-button", competitionMode);
+      ? "Passer les consoles en actualisation manuelle"
+      : "Activer l'actualisation directe des consoles";
+    competitionModeTopBtn.classList.toggle("active", competitionMode);
   }
   if (appConsoleTitle) {
     appConsoleTitle.textContent = profileHomeActive
@@ -2400,12 +2362,8 @@ function render() {
   }
   if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
   if (archivesBtn) archivesBtn.hidden = profileHomeActive || state.role !== "computer";
-  if (!data.events.length) {
-    data.events = structuredClone(sampleData.events);
-    state.eventId = data.events[0].id;
-  }
   if (!data.events.some((event) => event.id === state.eventId)) {
-    state.eventId = data.events[0].id;
+    state.eventId = data.events[0]?.id || "";
   }
   normalizeLivePosition();
   const availableSexes = availableSexesForEvent();
@@ -2932,9 +2890,8 @@ function buildPublicResultsIndex() {
     seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
     sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
     publicAccess: {
-      locked: data.notes?.publicResultsLocked === true,
-      pin: currentRolePins().public || "0006",
-      updatedAt: data.notes?.publicResultsLockUpdatedAt || ""
+      online: data.notes?.publicResultsOnline !== false,
+      updatedAt: data.notes?.publicResultsOnlineUpdatedAt || ""
     },
     updatedAt,
     sourceVersion: data.sourceVersion || "",
@@ -3342,6 +3299,7 @@ function renderResultsAdminPanel() {
   const sessions = resultSessions();
   const activeSession = ensureResultsAdminSession();
   const rows = resultProgramRows(activeSession);
+  const publicResultsOnline = data.notes?.publicResultsOnline !== false;
   resultsAdminPanel.hidden = false;
   resultsAdminPanel.innerHTML = `
     <div class="panel-title">
@@ -3363,8 +3321,10 @@ function renderResultsAdminPanel() {
         ` : ""}
         <button class="ghost-button compact" type="button" data-computer-diagnostic>Vérifier</button>
         <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
-        ${competitionModeEnabled() ? "" : `<button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ résultats</button>`}
-        <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
+        <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
+          <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
+        </button>
+        <a class="ghost-button compact" href="resultats.html?v=20260519-public-online-switch" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
@@ -3372,6 +3332,11 @@ function renderResultsAdminPanel() {
       ${renderSessionResultsImportRow(activeSession)}
     </div>
     ${renderCompetitionDiagnostic()}
+    ${competitionModeEnabled() ? "" : `
+      <div class="results-admin-danger-zone">
+        <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
+      </div>
+    `}
   `;
 }
 
@@ -3546,7 +3511,7 @@ function renderSecretaryFinalsPanel() {
         <h3>Forfaits finales</h3>
         <p class="panel-subtitle">Gestion par le secrétariat après annonce officielle des finalistes.</p>
       </div>
-      <a class="ghost-button compact" href="resultats.html?v=20260519-public-index-optimized" target="_blank" rel="noopener">Page publique</a>
+      <a class="ghost-button compact" href="resultats.html?v=20260519-public-online-switch" target="_blank" rel="noopener">Page publique</a>
     </div>
     <div class="secretary-finals-list">
       ${finals.length ? finals.map((result) => {
@@ -3976,7 +3941,6 @@ function renderRoleHistory() {
     roleHistory.hidden = false;
     const historyActions = state.role === "computer" ? `
       <button class="history-toggle" type="button" data-history-export-pdf>Export journal</button>
-      ${competitionModeEnabled() ? "" : `<button class="history-toggle danger-history-action" type="button" data-history-reset>RAZ</button>`}
     ` : "";
     roleHistory.innerHTML = `
       <div class="panel-title">
@@ -3993,7 +3957,6 @@ function renderRoleHistory() {
   roleHistory.hidden = false;
   const computerHistoryActions = state.role === "computer" ? `
     <button class="history-toggle" type="button" data-history-export-pdf>Export journal</button>
-    ${competitionModeEnabled() ? "" : `<button class="history-toggle danger-history-action" type="button" data-history-reset>RAZ</button>`}
   ` : "";
   roleHistory.innerHTML = `
     <div class="panel-title">
@@ -4497,7 +4460,7 @@ function renderDataStatus(message = "") {
     dataStatus.innerHTML = `
       <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
       <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
-      <span><strong>Mode</strong> ${competitionModeEnabled() ? "compétition" : "préparation"}</span>
+      <span><strong>Actualisation</strong> ${competitionModeEnabled() ? "directe" : "manuelle"}</span>
       <span><strong>Codes</strong> ${pinLockEnabled() ? "actifs" : "inactifs"}</span>
       <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
       <span>${escapeHtml(String(entrantTotal))} engagements</span>
@@ -6099,6 +6062,55 @@ async function clearPublishedResultsForSession(session) {
   };
 }
 
+async function resetSeriesForNextCompetition() {
+  if (competitionModeEnabled()) {
+    window.alert("RAZ séries indisponible quand l'actualisation directe est active.");
+    return;
+  }
+  const clearedSeriesPdfs = await clearPublicSeriesPdfs();
+  const clearedResults = await clearPublishedResults();
+  const nextData = normalizeData({
+    ...data,
+    meet: {},
+    events: [],
+    entrants: [],
+    series: [],
+    program: [],
+    sourceVersion: `series-reset-${Date.now()}`,
+    notes: {
+      ...(data.notes || {}),
+      sourceMode: "empty",
+      sourceLabel: "Aucune série chargée",
+      sourceFile: "",
+      seriesLineCount: 0,
+      entrantCount: 0,
+      programCount: 0,
+      lastImportedMode: "",
+      lastImportedSessions: "",
+      lastUpdatedSession: "",
+      lastUpdatedSessionAt: "",
+      publicSeriesPdfs: [],
+      generatedAt: new Date().toLocaleString("fr-FR"),
+      importHistory: appendImportHistory(data.notes || {}, "RAZ séries")
+    }
+  });
+  data = nextData;
+    state.eventId = "";
+    state.sex = "F";
+    state.series = "1";
+    state.session = "1";
+    state.programKey = "";
+    state.category = "all";
+    state.selectedSwimmerId = "";
+    state.selectedRecordKey = "";
+  resultsAdminSession = "";
+  saveData();
+  render();
+  await publishLiveDataToFirestore(nextData, "RAZ séries");
+  await publishPublicResultsIndex({ silent: true });
+  window.alert(`RAZ séries effectuée : programme, séries et engagés vidés. ${clearedSeriesPdfs} PDF séries public${clearedSeriesPdfs > 1 ? "s" : ""} supprimé${clearedSeriesPdfs > 1 ? "s" : ""}. ${clearedResults} résultat${clearedResults > 1 ? "s" : ""} public${clearedResults > 1 ? "s" : ""} archivé${clearedResults > 1 ? "s" : ""} puis supprimé${clearedResults > 1 ? "s" : ""}.`);
+}
+
 function renderCategorySelect() {
   const categories = [...new Set(data.entrants.filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))];
   const preferred = ["Cadet", "Junior", "Senior"];
@@ -7643,10 +7655,6 @@ profileHomeBtn?.addEventListener("click", () => {
 });
 
 competitionModeTopBtn?.addEventListener("click", () => {
-  if (competitionModeEnabled()) {
-    endCompetitionSession();
-    return;
-  }
   toggleCompetitionMode();
 });
 
@@ -7748,9 +7756,13 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     openAdminSeriesModal();
     return;
   }
+  if (event.target.closest("[data-public-results-online-toggle]")) {
+    togglePublicResultsOnline();
+    return;
+  }
   if (event.target.closest("[data-results-reset]")) {
     if (competitionModeEnabled()) {
-      window.alert("RAZ résultats indisponible en mode compétition.");
+      window.alert("RAZ indisponible quand l'actualisation directe est active.");
       return;
     }
     renderResetResultsModal();
@@ -7939,7 +7951,7 @@ adminSeriesModal?.addEventListener("change", async (event) => {
   }
   if (competitionModeEnabled()) {
     const continueLiveImport = window.confirm([
-      "Le mode compétition est actif.",
+      "L'actualisation directe est active.",
       "",
       "Si tu importes ce PDF, les consoles en direct seront mises à jour immédiatement.",
       "Continuer ?"
@@ -7991,26 +8003,32 @@ roleCodesModal?.addEventListener("click", async (event) => {
       return;
     }
     if (competitionModeEnabled()) {
-      window.alert("RAZ résultats indisponible en mode compétition.");
+      window.alert("RAZ indisponible quand l'actualisation directe est active.");
       closeRoleCodesModal();
       return;
     }
-    const scope = roleCodesModal.querySelector("input[name='resetResultsScope']:checked")?.value || "session";
-    const activeSession = ensureResultsAdminSession();
+    const scope = roleCodesModal.querySelector("input[name='resetResultsScope']:checked")?.value || "results-session";
+    const selectedResetSession = String(roleCodesModal.querySelector("#resetResultsSessionSelect")?.value || ensureResultsAdminSession() || "").trim();
     closeRoleCodesModal();
     try {
-      if (scope === "all") {
+      if (scope === "history") {
+        await performResetHistoryWithArchive();
+      } else if (scope === "series-all") {
+        await resetSeriesForNextCompetition();
+      } else if (scope === "results-all") {
         const count = await clearPublishedResults();
         await updateLiveNotes("RAZ résultats publics compétition");
         window.alert(`${count} résultat${count > 1 ? "s" : ""} public${count > 1 ? "s" : ""} archivé${count > 1 ? "s" : ""} puis supprimé${count > 1 ? "s" : ""}.`);
+      } else if (selectedResetSession) {
+        const summary = await clearPublishedResultsForSession(selectedResetSession);
+        await updateLiveNotes(`RAZ résultats publics S${selectedResetSession}`);
+        window.alert(`${summary.results} résultat${summary.results > 1 ? "s" : ""} public${summary.results > 1 ? "s" : ""} et ${summary.sessionPdfs} PDF complet${summary.sessionPdfs > 1 ? "s" : ""} de session archivés puis supprimés pour S${selectedResetSession}.`);
       } else {
-        const summary = await clearPublishedResultsForSession(activeSession);
-        await updateLiveNotes(`RAZ résultats publics S${activeSession}`);
-        window.alert(`${summary.results} résultat${summary.results > 1 ? "s" : ""} public${summary.results > 1 ? "s" : ""} et ${summary.sessionPdfs} PDF complet${summary.sessionPdfs > 1 ? "s" : ""} de session archivés puis supprimés pour S${activeSession}.`);
+        window.alert("Aucune session sélectionnée pour le RAZ résultats.");
       }
     } catch (error) {
       console.error(error);
-      window.alert(`RAZ résultats impossible : ${error?.message || error}`);
+      window.alert(`RAZ impossible : ${error?.message || error}`);
     }
     return;
   }
@@ -8112,10 +8130,6 @@ roleCodesModal?.addEventListener("click", async (event) => {
   const saveButton = event.target.closest("[data-save-role-codes]");
   if (saveButton) {
     await saveRoleCodesFromModal(true);
-    return;
-  }
-  if (event.target.closest("[data-save-public-results-lock]")) {
-    await savePublicResultsLockFromModal();
     return;
   }
   if (event.target.closest("[data-disable-role-codes]")) {
@@ -8693,8 +8707,19 @@ function importedSeriesTime(value) {
   return clean;
 }
 
+function normalizePdfUppercaseEToken(token) {
+  const text = String(token || "");
+  const withPlainE = text.replace(/[ÉÈÊËéèêë]/g, "E");
+  const letters = withPlainE.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
+  return letters && letters === letters.toUpperCase() ? withPlainE : text.replace(/[ÉÈÊË]/g, "E");
+}
+
 function splitImportedPersonName(value) {
-  const tokens = fixPdfEncoding(value).trim().split(/\s+/).filter(Boolean);
+  const tokens = fixPdfEncoding(value)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(normalizePdfUppercaseEToken);
   let firstIndex = Math.max(0, tokens.length - 1);
   for (let index = 0; index < tokens.length; index += 1) {
     const letters = tokens[index].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
@@ -9095,26 +9120,33 @@ function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
 }
 
 function parseImportedMeetMetadata(lines) {
-  const firstUseful = lines.find((line) => /^FFESSM\s+/i.test(line)) || "";
-  const secondUseful = lines.find((line) => /\b20\d{2}\b/.test(line) && !/^FFESSM\s+/i.test(line)) || "";
+  const cleanMeetTitle = (value) => fixPdfEncoding(value)
+    .replace(/^FFESSM\b\s*/i, "")
+    .replace(/\s*\bFFESSM\b\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const firstUseful = lines.find((line) => /^FFESSM\s+/i.test(line)) ||
+    lines.find((line) => /\b(?:championnat|meeting|coupe|open)\b/i.test(line) && !/\b(?:liste|session|série|finale|horaire)\b/i.test(line)) ||
+    "";
+  const secondUseful = lines.find((line) => /\b20\d{2}\b/.test(line) && !/^FFESSM\s*$/i.test(line)) || "";
   let name = "";
   let city = "";
   let year = "";
   if (firstUseful) {
-    const cleaned = firstUseful.replace(/^FFESSM\s+/i, "").trim();
+    const cleaned = cleanMeetTitle(firstUseful);
     const match = cleaned.match(/(.+?)\s+CNNP\s*([A-Za-zÀ-ÖØ-öø-ÿ' -]+)?/i);
     if (match) {
-      name = match[1].trim();
+      name = cleanMeetTitle(match[1]);
       city = (match[2] || "").trim();
     } else {
-      name = cleaned.replace(/\s+CNNP.*$/i, "").trim();
+      name = cleanMeetTitle(cleaned.replace(/\s+CNNP.*$/i, ""));
     }
   }
   const combined = `${firstUseful} ${secondUseful}`;
   const yearMatch = combined.match(/\b(20\d{2})\b/);
   if (yearMatch) year = yearMatch[1];
   if (!city && secondUseful) {
-    city = secondUseful.split(/\s+-\s+/)[0].trim();
+    city = cleanMeetTitle(secondUseful.split(/\s+-\s+/)[0].replace(/\b20\d{2}\b.*$/, ""));
   }
   return {
     name: name || "Séries importées",
@@ -9509,7 +9541,6 @@ async function checkForGeneratedUpdates() {
   applyFreshData(freshData, false);
 }
 
-document.querySelector("#resetHistoryBtn")?.addEventListener("click", resetHistory);
 roleLockBtn?.addEventListener("click", toggleRoleLock);
 dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
 setInterval(checkForGeneratedUpdates, 5000);
