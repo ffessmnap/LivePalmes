@@ -957,6 +957,10 @@ function renderRoleCodesModal() {
         <input type="checkbox" id="publicResultsLockInput" ${data.notes?.publicResultsLocked ? "checked" : ""}>
         <span>Verrouiller la page résultats publics</span>
       </label>
+      <div class="public-lock-actions">
+        <button class="ghost-button compact" type="button" data-save-public-results-lock>Enregistrer l'accès public</button>
+        <span>Ce réglage est indépendant des codes des consoles.</span>
+      </div>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
         <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
@@ -1190,17 +1194,23 @@ function closeRoleCodesModal() {
   roleCodesModal.innerHTML = "";
 }
 
-async function saveRoleCodesFromModal(enableLock) {
-  if (!roleCodesModal) return;
+function readRolePinsFromModal() {
   const pins = {};
-  roleCodesModal.querySelectorAll("[data-role-code]").forEach((input) => {
+  roleCodesModal?.querySelectorAll("[data-role-code]").forEach((input) => {
     pins[input.dataset.roleCode] = String(input.value || "").trim();
   });
   const invalid = Object.entries(pins).find(([, value]) => !/^\d{4}$/.test(value));
   if (invalid) {
     window.alert("Chaque code doit contenir exactement 4 chiffres.");
-    return;
+    return null;
   }
+  return pins;
+}
+
+async function saveRoleCodesFromModal(enableLock) {
+  if (!roleCodesModal) return;
+  const pins = readRolePinsFromModal();
+  if (!pins) return;
   const nextData = normalizeData({
     ...data,
     notes: {
@@ -1230,6 +1240,41 @@ async function saveRoleCodesFromModal(enableLock) {
     return;
   }
   window.alert(enableLock ? "Codes enregistrés et actifs." : "Codes désactivés.");
+}
+
+async function savePublicResultsLockFromModal() {
+  if (!roleCodesModal) return;
+  const publicPin = String(roleCodesModal.querySelector('[data-role-code="public"]')?.value || "").trim();
+  if (!/^\d{4}$/.test(publicPin)) {
+    window.alert("Le code des résultats publics doit contenir exactement 4 chiffres.");
+    return;
+  }
+  const locked = Boolean(roleCodesModal.querySelector("#publicResultsLockInput")?.checked);
+  const nextData = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      rolePins: {
+        ...currentRolePins(),
+        public: publicPin
+      },
+      publicResultsLocked: locked,
+      publicResultsLockUpdatedAt: new Date().toISOString()
+    },
+    sourceVersion: `public-lock-${Date.now()}`
+  });
+  data = nextData;
+  saveData();
+  closeRoleCodesModal();
+  render();
+  try {
+    await publishLiveDataToFirestore(nextData, locked ? "Résultats publics verrouillés" : "Résultats publics déverrouillés");
+    await publishPublicResultsIndex({ silent: true });
+  } catch {
+    window.alert("Le réglage public a été modifié sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
+    return;
+  }
+  window.alert(locked ? "Page résultats publics verrouillée." : "Page résultats publics déverrouillée.");
 }
 
 async function toggleRoleLock() {
@@ -8067,6 +8112,10 @@ roleCodesModal?.addEventListener("click", async (event) => {
   const saveButton = event.target.closest("[data-save-role-codes]");
   if (saveButton) {
     await saveRoleCodesFromModal(true);
+    return;
+  }
+  if (event.target.closest("[data-save-public-results-lock]")) {
+    await savePublicResultsLockFromModal();
     return;
   }
   if (event.target.closest("[data-disable-role-codes]")) {

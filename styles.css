@@ -2843,6 +2843,16 @@ textarea {
   accent-color: var(--accent);
 }
 
+.public-lock-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .role-code-admin-field {
   display: grid;
   gap: 6px;
