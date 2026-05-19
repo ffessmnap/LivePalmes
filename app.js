@@ -324,6 +324,7 @@ let raceResults = [];
 let resultsSnapshotReady = false;
 let currentResultImportRow = null;
 let currentSessionResultsImport = null;
+let resultUploadStates = new Map();
 let resultsAdminSession = "";
 let finalistAlertRepairRunning = false;
 let replacementAlertRepairRunning = false;
@@ -390,6 +391,7 @@ const secretaryFinalsPanel = document.querySelector("#secretaryFinalsPanel");
 const roleHistory = document.querySelector("#roleHistory");
 const speakerHistory = document.querySelector("#speakerHistory");
 const roleBadge = document.querySelector("#roleBadge");
+const refereeProgressBtn = document.querySelector("#refereeProgressBtn");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const viewModeBtn = document.querySelector("#viewModeBtn");
 const roleLockBtn = document.querySelector("#roleLockBtn");
@@ -535,6 +537,43 @@ function renderPresenceCounts() {
   document.querySelectorAll("[data-presence-role]").forEach((node) => {
     node.textContent = presenceLabel(counts[node.dataset.presenceRole] || 0);
   });
+}
+
+function refereeProgress() {
+  return data.notes?.refereeProgress || null;
+}
+
+function progressProgramRow() {
+  const progress = refereeProgress();
+  if (!progress?.programKey) return null;
+  return (data.program || []).find((row) => programKey(row) === progress.programKey) || null;
+}
+
+function refereeProgressLabel(progress = refereeProgress()) {
+  if (!progress?.programKey) return "";
+  const row = (data.program || []).find((item) => programKey(item) === progress.programKey) || progressProgramRow();
+  const event = data.events.find((item) => item.id === (row?.eventId || progress.eventId));
+  const session = progress.session ? `S${progress.session}` : "";
+  const eventLabel = event?.label || row?.label || progress.eventLabel || "course";
+  const sex = sexDisplayLabel(row?.sex || progress.sex || "");
+  const phase = isFinalStage(progress.stage) ? finalStageLabel(progress.stage) : (progress.series ? `série ${progress.series}` : "");
+  return [session, eventLabel, sex, phase].filter(Boolean).join(" · ");
+}
+
+function currentRefereeProgressPayload() {
+  const row = selectedProgramRow() || programRows().find((item) => item.eventId === state.eventId && item.sex === state.sex);
+  if (!row) return null;
+  return {
+    programKey: programKey(row),
+    eventId: row.eventId,
+    eventLabel: data.events.find((item) => item.id === row.eventId)?.label || row.label || row.eventId,
+    sex: row.sex,
+    session: state.session !== "all" ? String(state.session || row.session || "") : String(row.session || ""),
+    series: isFinalStage(state.series) ? "" : String(state.series || ""),
+    stage: isFinalStage(state.series) ? String(state.series) : (row.stage || "series"),
+    order: Number(row.order || 0),
+    updatedAt: new Date().toISOString()
+  };
 }
 
 function homeActionCounts() {
@@ -2956,7 +2995,7 @@ async function publishSessionResultsPdf(file, scope = "session", sessions = []) 
   const now = new Date().toISOString();
   const id = sessionResultsPdfId(finalScope, cleanSessions);
   const sessionLabel = finalScope === "full"
-    ? "Résultats complets du week-end"
+    ? "Résultats complets de la compétition"
     : `Résultats complets ${cleanSessions.map((session) => `S${session}`).join(" + ")}`;
   const payload = {
     id,
@@ -3109,6 +3148,33 @@ function resultStatusControlHtml(row, result, statusBadge) {
   return `<span class="${className}">${escapeHtml(statusBadge.label)}</span>`;
 }
 
+function resultUploadKeyForProgram(row) {
+  return `result:${programKey(row)}`;
+}
+
+function resultUploadKeyForSessionResults(session) {
+  return `session-results:${String(session || "current")}`;
+}
+
+function setResultUploadState(key, label, tone = "loading") {
+  if (!key) return;
+  resultUploadStates.set(key, { label, tone });
+  renderResultsAdminPanel();
+}
+
+function clearResultUploadState(key) {
+  if (!key) return;
+  resultUploadStates.delete(key);
+  renderResultsAdminPanel();
+}
+
+function resultUploadBadgeHtml(uploadState) {
+  if (!uploadState) return "";
+  const tone = uploadState.tone || "loading";
+  const label = uploadState.label || "Chargement en cours...";
+  return `<span class="result-status-badge ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+}
+
 function renderResultsAdminPanel() {
   if (!resultsAdminPanel) return;
   if (state.role !== "computer") {
@@ -3188,17 +3254,22 @@ function renderCompetitionDiagnostic() {
 function renderSessionResultsImportRow(activeSession) {
   const published = sessionResultsPdfsForAdminSession(activeSession);
   const latest = published[0];
+  const uploadState = resultUploadStates.get(resultUploadKeyForSessionResults(activeSession));
+  const blockingUpload = uploadState && uploadState.tone !== "error";
   return `
-    <div class="result-admin-row session-results-import-row ${latest ? "published" : ""}">
+    <div class="result-admin-row session-results-import-row ${latest ? "published" : ""} ${uploadState ? "waiting" : ""}">
       <div>
         <strong>${activeSession ? `S${escapeHtml(activeSession)} · ` : ""}Résultats complets de session</strong>
-        <span>${latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes."}</span>
-        ${latest?.updatedAt ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(new Date(latest.updatedAt).toLocaleString("fr-FR"))}</small>` : ""}
+        <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes.")}</span>
+        ${!uploadState && latest?.updatedAt ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(new Date(latest.updatedAt).toLocaleString("fr-FR"))}</small>` : ""}
       </div>
       <div class="result-admin-row-actions">
-        <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
-          ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
-        </button>
+        ${uploadState ? resultUploadBadgeHtml(uploadState) : ""}
+        ${blockingUpload ? "" : `
+          <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
+            ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
+          </button>
+        `}
       </div>
     </div>
   `;
@@ -3206,6 +3277,8 @@ function renderSessionResultsImportRow(activeSession) {
 
 function renderResultProgramRow(row) {
   const result = resultForProgramRow(row);
+  const uploadState = resultUploadStates.get(resultUploadKeyForProgram(row));
+  const blockingUpload = uploadState && uploadState.tone !== "error";
   const status = resultStatusForProgramRow(row);
   const event = data.events.find((item) => item.id === row.eventId);
   const phaseLabel = resultPhaseLabelForProgramRow(row);
@@ -3219,22 +3292,23 @@ function renderResultProgramRow(row) {
     ? (definitiveDate ? `Définitif à partir de ${formatDeadlineTime(definitiveDate)}` : finalCompositionPendingDeadlineLabel(result))
     : "";
   return `
-    <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""}">
+    <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""} ${uploadState ? "waiting" : ""}">
       <div>
         <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</strong>
-        <span>${escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
-        ${result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
-        ${definitiveLabel ? `<small class="result-admin-note result-definitive-note">${escapeHtml(definitiveLabel)}</small>` : ""}
-        ${result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
+        <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
+        ${!blockingUpload && result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
+        ${!blockingUpload && definitiveLabel ? `<small class="result-admin-note result-definitive-note">${escapeHtml(definitiveLabel)}</small>` : ""}
+        ${!blockingUpload && result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
       </div>
       <div class="result-admin-row-actions">
-        ${resultStatusControlHtml(row, result, statusBadge)}
-        ${result ? `
+        ${uploadState ? resultUploadBadgeHtml(uploadState) : ""}
+        ${blockingUpload ? "" : resultStatusControlHtml(row, result, statusBadge)}
+        ${!blockingUpload && result ? `
           <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
             Remplacer
           </button>
         ` : ""}
-        ${result ? `
+        ${!blockingUpload && result ? `
           <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(result.id)}">
             Supprimer
           </button>
@@ -4481,6 +4555,49 @@ function programItemIsSpeakerCurrent(row, item) {
   return programItemMatchesState(row, item, roleStates.speaker || state);
 }
 
+function programProgressValue(row, item = null) {
+  const session = Number(row?.session || 0);
+  const order = Number(row?.order || 0);
+  const stage = item?.stage || row?.stage || "series";
+  const series = isFinalStage(stage)
+    ? (String(stage).toUpperCase().includes("B") ? 200 : 100)
+    : Number(item?.series || 0);
+  return [session, order, series];
+}
+
+function compareProgramProgressValues(a, b) {
+  for (let index = 0; index < 3; index += 1) {
+    const diff = Number(a[index] || 0) - Number(b[index] || 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+function progressValueFromMarker(progress = refereeProgress()) {
+  if (!progress?.programKey) return null;
+  const row = (data.program || []).find((item) => programKey(item) === progress.programKey);
+  if (!row) return null;
+  return programProgressValue(row, {
+    series: progress.series,
+    stage: progress.stage || row.stage || "series"
+  });
+}
+
+function programItemProgressClass(row, item) {
+  const markerValue = progressValueFromMarker();
+  if (!markerValue) return "";
+  const comparison = compareProgramProgressValues(programProgressValue(row, item), markerValue);
+  if (comparison < 0) return "ja-passed";
+  if (comparison === 0) return "ja-current";
+  return "";
+}
+
+function programRowProgressClass(row) {
+  const markerValue = progressValueFromMarker();
+  if (!markerValue) return "";
+  return compareProgramProgressValues(programProgressValue(row), markerValue) < 0 ? "ja-passed-row" : "";
+}
+
 function speakerProgramPositionLabel() {
   const speakerState = roleStates.speaker || state;
   const event = data.events.find((item) => item.id === speakerState.eventId);
@@ -4518,15 +4635,15 @@ function renderProgramModal() {
           const rowCurrent = rowKey === currentKey && (!row.session || state.session === "all" || row.session === state.session);
           const items = programSeriesItems(row);
           return `
-            <div class="program-row ${rowCurrent ? "current-race" : ""} ${readOnlyProgram ? "readonly-program-row" : ""}" data-program-row="${escapeHtml(programKey(row))}">
+            <div class="program-row ${rowCurrent ? "current-race" : ""} ${programRowProgressClass(row)} ${readOnlyProgram ? "readonly-program-row" : ""}" data-program-row="${escapeHtml(programKey(row))}">
               <button class="program-race-button" type="button" ${readOnlyProgram ? "disabled" : `data-program-race="${escapeHtml(programKey(row))}"`}>
                 <span>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}${splitRaceNote(row.eventId, row.sex)}</span>
                 ${row.startTime ? `<small>${escapeHtml(row.startTime)}</small>` : ""}
               </button>
               <div class="program-series-line">
                 ${items.length ? items.map((item) => `
-                  <button class="program-series-chip ${programItemIsCurrent(row, item) ? "current" : ""} ${programItemIsSpeakerCurrent(row, item) ? "speaker-current" : ""}" type="button" ${readOnlyProgram ? "disabled" : `data-program-race="${escapeHtml(programKey(row))}" data-program-series="${escapeHtml(item.series)}" data-program-stage="${escapeHtml(item.stage || "series")}"`}>
-                    <strong>${escapeHtml(item.label)}</strong>${item.time ? `<span>${escapeHtml(item.time)}</span>` : ""}${programItemIsSpeakerCurrent(row, item) ? `<em>speaker</em>` : ""}
+                  <button class="program-series-chip ${programItemIsCurrent(row, item) ? "current" : ""} ${programItemIsSpeakerCurrent(row, item) ? "speaker-current" : ""} ${programItemProgressClass(row, item)}" type="button" ${readOnlyProgram ? "disabled" : `data-program-race="${escapeHtml(programKey(row))}" data-program-series="${escapeHtml(item.series)}" data-program-stage="${escapeHtml(item.stage || "series")}"`}>
+                    <strong>${escapeHtml(item.label)}</strong>${item.time ? `<span>${escapeHtml(item.time)}</span>` : ""}${programItemIsSpeakerCurrent(row, item) ? `<em>speaker</em>` : ""}${programItemProgressClass(row, item) === "ja-current" ? `<em>JA</em>` : ""}
                   </button>
                 `).join("") : `<span class="no-series-note">Aucune série</span>`}
               </div>
@@ -4548,6 +4665,21 @@ function closeProgramModal() {
   if (!programModal) return;
   programModal.hidden = true;
   programModal.innerHTML = "";
+}
+
+async function setRefereeProgressHere() {
+  if (state.role !== "referee") return;
+  const progress = currentRefereeProgressPayload();
+  if (!progress) {
+    window.alert("Impossible de pointer cette course : aucune course active.");
+    return;
+  }
+  const label = refereeProgressLabel(progress);
+  const ok = window.confirm(`Pointer l'avancement JA ici ?\n\n${label || compactRaceTitle()}\n\nToutes les séries précédentes seront considérées comme passées dans le programme.`);
+  if (!ok) return;
+  await updateLiveNotes(`Point JA : ${label || compactRaceTitle()}`, { refereeProgress: progress });
+  render();
+  if (!programModal.hidden) renderProgramModal();
 }
 
 function openAdminSeriesModal() {
@@ -4679,7 +4811,7 @@ function openSessionResultsImportModal(defaultSession = "") {
         <div>
           <span>Résultats complets</span>
           <h2>PDF de consultation publique</h2>
-          <p>À utiliser en fin de session, journée ou week-end. Le PDF n'est pas analysé.</p>
+          <p>À utiliser en fin de session, journée ou compétition. Le PDF n'est pas analysé.</p>
         </div>
         <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
       </div>
@@ -4704,7 +4836,7 @@ function openSessionResultsImportModal(defaultSession = "") {
         </div>
         <label class="admin-series-option">
           <input type="radio" name="sessionResultsScope" value="full">
-          <strong>Résultats complets du week-end</strong>
+          <strong>Résultats complets de la compétition</strong>
           <span>Le PDF sera visible sur toutes les sessions de la page publique.</span>
         </label>
       </div>
@@ -5767,6 +5899,40 @@ function renderHeader() {
   raceMeta.textContent = meta;
   const sexLabel = sexDisplayLabel(state.sex);
   raceSexBadge.textContent = sexLabel;
+  renderRefereeProgressControl();
+}
+
+function renderRefereeProgressControl() {
+  if (!refereeProgressBtn) return;
+  const panelActions = document.querySelector(".entrants-panel .panel-actions");
+  if (["referee", "speaker", "live"].includes(state.role) && panelActions && refereeProgressBtn.parentElement !== panelActions) {
+    const programReference = programBtn?.parentElement === panelActions ? programBtn : null;
+    const filteredReference = filteredCount?.parentElement === panelActions ? filteredCount : null;
+    panelActions.insertBefore(refereeProgressBtn, programReference || filteredReference);
+  }
+  const progress = refereeProgress();
+  const label = refereeProgressLabel(progress);
+  if (state.role === "referee") {
+    refereeProgressBtn.hidden = false;
+    refereeProgressBtn.disabled = !selectedProgramRow();
+    refereeProgressBtn.dataset.refereeProgressAction = "set";
+    refereeProgressBtn.textContent = "Pointer ici";
+    refereeProgressBtn.title = label ? `Repère actuel : ${label}` : "Marquer cette course/série comme repère du JA";
+    refereeProgressBtn.classList.add("confirm-button");
+    return;
+  }
+  if (["speaker", "live"].includes(state.role) && label) {
+    refereeProgressBtn.hidden = false;
+    refereeProgressBtn.disabled = true;
+    refereeProgressBtn.removeAttribute("data-referee-progress-action");
+    refereeProgressBtn.textContent = `Point JA : ${label}`;
+    refereeProgressBtn.title = "Repère d'avancement posé par le juge arbitre";
+    refereeProgressBtn.classList.remove("confirm-button");
+    return;
+  }
+  refereeProgressBtn.hidden = true;
+  refereeProgressBtn.disabled = false;
+  refereeProgressBtn.removeAttribute("data-referee-progress-action");
 }
 
 function headerReferenceChipsHtml() {
@@ -7303,6 +7469,10 @@ seriesControls.addEventListener("click", (event) => {
 });
 
 programBtn?.addEventListener("click", openProgramModal);
+refereeProgressBtn?.addEventListener("click", (event) => {
+  if (event.currentTarget.dataset.refereeProgressAction !== "set") return;
+  setRefereeProgressHere();
+});
 programModal?.addEventListener("click", (event) => {
   if (event.target === programModal || event.target.closest("[data-program-close]")) {
     closeProgramModal();
@@ -7442,17 +7612,21 @@ resultImportModal?.addEventListener("change", async (event) => {
       "Le PDF sera visible sur la page publique, sans lecture automatique des finalistes."
     ].join("\n"));
     if (!ok) return;
+    const visibleSession = currentSessionResultsImport?.defaultSession || resultsAdminSession || selectedSessions[0] || "";
+    const uploadKey = resultUploadKeyForSessionResults(visibleSession);
     closeResultImportModal();
+    setResultUploadState(uploadKey, "Chargement en cours...");
     try {
       renderDataStatus("Publication du PDF résultats complets...");
       const pdf = await publishSessionResultsPdf(file, scope === "full" ? "full" : "sessions", selectedSessions);
       await updateLiveNotes(`PDF résultats complets publié : ${pdf.sourceLabel}`);
-      renderResultsAdminPanel();
+      clearResultUploadState(uploadKey);
       renderDataStatus();
       window.alert("PDF résultats complets publié sur la page publique.");
     } catch (error) {
       console.error(error);
       renderDataStatus();
+      setResultUploadState(uploadKey, "Chargement impossible. Réessaie.", "error");
       window.alert(`Publication impossible : ${error?.message || error}`);
     }
     return;
@@ -7485,11 +7659,14 @@ resultImportModal?.addEventListener("change", async (event) => {
     `${sexDisplayLabel(rowToImport.sex)} - ${resultPhaseLabelForProgramRow(rowToImport)}`
   ].filter(Boolean).join(" - ");
   if (!window.confirm([message, "", `Course : ${importLabel}`, `Fichier : ${file.name}`].join("\n"))) return;
+  const uploadKey = resultUploadKeyForProgram(rowToImport);
   closeResultImportModal();
+  setResultUploadState(uploadKey, "Chargement en cours...");
   try {
     renderDataStatus("Publication du résultat en cours...");
     const result = await publishResultPdf(file, rowToImport, hasFinal, isPartial, { preserveFinalists });
     await updateLiveNotes(`Résultat publié : ${result.eventLabel} ${result.sexLabel} - ${result.phaseLabel || resultPhaseLabelForProgramRow(rowToImport)}${result.session ? ` S${result.session}` : ""}`);
+    clearResultUploadState(uploadKey);
     renderDataStatus();
     const finalistCount = finalRowsCount(result.finalists);
     window.alert(hasFinal
@@ -7497,6 +7674,7 @@ resultImportModal?.addEventListener("change", async (event) => {
       : "Résultat publié sur la page publique.");
   } catch (error) {
     console.error(error);
+    setResultUploadState(uploadKey, "Chargement impossible. Réessaie.", "error");
     window.alert(`Publication impossible : ${error?.message || error}`);
     renderDataStatus();
   } finally {
