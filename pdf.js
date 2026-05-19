@@ -142,7 +142,7 @@ function closeOrReturn() {
   if (window.opener) {
     window.close();
     setTimeout(() => {
-      if (!window.closed) window.location.href = "resultats.html?v=20260519-public-index-optimized";
+      if (!window.closed) window.location.href = "resultats.html?v=20260519-public-online-switch";
     }, 120);
     return;
   }
@@ -150,7 +150,7 @@ function closeOrReturn() {
     window.history.back();
     return;
   }
-  window.location.href = "resultats.html?v=20260519-public-index-optimized";
+  window.location.href = "resultats.html?v=20260519-public-online-switch";
 }
 
 async function init() {
@@ -183,12 +183,17 @@ async function init() {
       .get(),
     competition.collection("public").doc("resultsIndex").get().catch(() => null)
   ]);
+  const publicIndex = indexSnapshot?.data() || {};
+  if (publicIndex.publicAccess?.online === false) {
+    showMessage("La page publique des résultats est temporairement hors ligne.");
+    return;
+  }
   if (!snapshot.exists) {
     showMessage(config.missingDoc);
     return;
   }
   const data = snapshot.data();
-  const metaLabel = meetMetaLabel(indexSnapshot?.data()?.meet || data.meet || {});
+  const metaLabel = meetMetaLabel(publicIndex.meet || data.meet || {});
   if (meetMeta) {
     meetMeta.textContent = metaLabel;
     meetMeta.hidden = !metaLabel;
