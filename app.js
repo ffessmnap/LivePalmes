@@ -2861,6 +2861,26 @@ async function clearPublicSeriesPdfs() {
   return snapshot.docs.length;
 }
 
+function clearPublicSessionResultsPdfMetadata() {
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSessionResultsPdfs: []
+    }
+  });
+  saveData();
+}
+
+async function clearPublicSessionResultsPdfs() {
+  const collection = sessionResultsPdfsCollection();
+  if (!collection) return 0;
+  const snapshot = await collection.get();
+  await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+  clearPublicSessionResultsPdfMetadata();
+  return snapshot.docs.length;
+}
+
 async function publishPublicSeriesPdf(file, mode = "session", session = "") {
   const collection = seriesPdfsCollection();
   if (!collection || !file) return null;
@@ -2881,6 +2901,79 @@ async function publishPublicSeriesPdf(file, mode = "session", session = "") {
   return payload;
 }
 
+function sessionResultsPdfId(scope, sessions = []) {
+  if (scope === "full") return "complete-results-full";
+  const safeSessions = sessions.map((session) => String(session || "").replace(/[^a-z0-9_-]+/gi, "-")).filter(Boolean);
+  return `complete-results-${safeSessions.join("-") || "session"}`;
+}
+
+function updatePublicSessionResultsPdfMetadata(pdf) {
+  const metadata = publicSessionResultsPdfPayload(pdf);
+  if (!metadata) return;
+  const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
+  const next = [
+    ...current.filter((item) => item.id !== metadata.id),
+    metadata
+  ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSessionResultsPdfs: next
+    }
+  });
+  saveData();
+}
+
+async function hydratePublicSessionResultsPdfMetadataIfNeeded() {
+  if (Array.isArray(data.notes?.publicSessionResultsPdfs)) return;
+  const collection = sessionResultsPdfsCollection();
+  if (!collection) return;
+  const snapshot = await collection.get();
+  const metadata = snapshot.docs
+    .map((doc) => publicSessionResultsPdfPayload({ id: doc.id, ...doc.data() }))
+    .filter(Boolean)
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      publicSessionResultsPdfs: metadata
+    }
+  });
+  saveData();
+}
+
+async function publishSessionResultsPdf(file, scope = "session", sessions = []) {
+  const collection = sessionResultsPdfsCollection();
+  if (!collection || !file) throw new Error("Firebase n'est pas disponible pour publier ce PDF.");
+  const cleanSessions = [...new Set((sessions || []).map((session) => String(session || "").trim()).filter(Boolean))]
+    .sort((a, b) => Number(a) - Number(b));
+  const finalScope = scope === "full" ? "full" : "sessions";
+  if (finalScope !== "full" && !cleanSessions.length) {
+    throw new Error("Sélectionne au moins une session pour publier ce PDF.");
+  }
+  const now = new Date().toISOString();
+  const id = sessionResultsPdfId(finalScope, cleanSessions);
+  const sessionLabel = finalScope === "full"
+    ? "Résultats complets du week-end"
+    : `Résultats complets ${cleanSessions.map((session) => `S${session}`).join(" + ")}`;
+  const payload = {
+    id,
+    scope: finalScope,
+    session: finalScope === "sessions" && cleanSessions.length === 1 ? cleanSessions[0] : "",
+    sessions: finalScope === "full" ? [] : cleanSessions,
+    pdfName: file.name,
+    pdfDataUrl: await fileToDataUrl(file),
+    updatedAt: now,
+    sourceLabel: sessionLabel
+  };
+  await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
+  updatePublicSessionResultsPdfMetadata(payload);
+  await publishPublicResultsIndex();
+  return payload;
+}
+
 function isLastProgramPartForRace(row) {
   const raceRows = (data.program || [])
     .filter((item) => item.eventId === row.eventId && item.sex === row.sex && !isFinalStage(item.stage))
@@ -2893,6 +2986,13 @@ function resultSessions() {
   return sessionRows().filter((session) =>
     (data.program || []).some((row) => row.session === session.number && row.eventId && row.sex)
   );
+}
+
+function sessionResultsPdfsForAdminSession(session) {
+  const items = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
+  return items
+    .filter((pdf) => pdf.scope === "full" || (pdf.sessions || []).map(String).includes(String(session || "")) || String(pdf.session || "") === String(session || ""))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
 }
 
 function latestResultSession() {
@@ -3044,6 +3144,7 @@ function renderResultsAdminPanel() {
     </div>
     <div class="results-admin-list">
       ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
+      ${renderSessionResultsImportRow(activeSession)}
     </div>
     ${renderCompetitionDiagnostic()}
   `;
@@ -3080,6 +3181,25 @@ function renderCompetitionDiagnostic() {
       ${diagnosticItem("PDF séries publics", String(seriesPdfCount), seriesPdfCount ? "ok" : "neutral")}
       ${diagnosticItem("actions en attente", String(pendingAlerts), pendingAlerts ? "warn" : "ok")}
       ${diagnosticItem("repères speaker", speakerInfoUpdatedAt || "non faits", speakerInfoUpdatedAt ? "ok" : "warn")}
+    </div>
+  `;
+}
+
+function renderSessionResultsImportRow(activeSession) {
+  const published = sessionResultsPdfsForAdminSession(activeSession);
+  const latest = published[0];
+  return `
+    <div class="result-admin-row session-results-import-row ${latest ? "published" : ""}">
+      <div>
+        <strong>${activeSession ? `S${escapeHtml(activeSession)} · ` : ""}Résultats complets de session</strong>
+        <span>${latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes."}</span>
+        ${latest?.updatedAt ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(new Date(latest.updatedAt).toLocaleString("fr-FR"))}</small>` : ""}
+      </div>
+      <div class="result-admin-row-actions">
+        <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
+          ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
+        </button>
+      </div>
     </div>
   `;
 }
@@ -4479,6 +4599,7 @@ function closeAdminSeriesModal() {
 function openResultImportModal(row) {
   if (!resultImportModal || !row) return;
   currentResultImportRow = row;
+  currentSessionResultsImport = null;
   const event = data.events.find((item) => item.id === row.eventId);
   const phaseLabel = resultPhaseLabelForProgramRow(row);
   const isFinalResult = isFinalStage(row.stage);
@@ -4545,11 +4666,62 @@ function openResultImportModal(row) {
   `;
 }
 
+function openSessionResultsImportModal(defaultSession = "") {
+  if (!resultImportModal) return;
+  currentResultImportRow = null;
+  const sessions = resultSessions();
+  const selectedSession = defaultSession || resultsAdminSession || sessions[0]?.number || "";
+  currentSessionResultsImport = { defaultSession: selectedSession };
+  resultImportModal.hidden = false;
+  resultImportModal.innerHTML = `
+    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer des résultats complets">
+      <div class="decision-modal-head">
+        <div>
+          <span>Résultats complets</span>
+          <h2>PDF de consultation publique</h2>
+          <p>À utiliser en fin de session, journée ou week-end. Le PDF n'est pas analysé.</p>
+        </div>
+        <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
+      </div>
+      <div class="admin-series-options">
+        <label class="admin-series-option">
+          <input type="radio" name="sessionResultsScope" value="current" checked>
+          <strong>Session affichée ${selectedSession ? `S${escapeHtml(selectedSession)}` : ""}</strong>
+          <span>Le PDF sera visible uniquement sur cette session.</span>
+        </label>
+        <label class="admin-series-option">
+          <input type="radio" name="sessionResultsScope" value="multiple">
+          <strong>Plusieurs sessions</strong>
+          <span>Choisir les sessions concernées par le PDF.</span>
+        </label>
+        <div class="session-results-checkboxes" hidden>
+          ${sessions.map((session) => `
+            <label>
+              <input type="checkbox" name="sessionResultsSession" value="${escapeHtml(session.number)}" ${session.number === selectedSession ? "checked" : ""}>
+              S${escapeHtml(session.number)}
+            </label>
+          `).join("")}
+        </div>
+        <label class="admin-series-option">
+          <input type="radio" name="sessionResultsScope" value="full">
+          <strong>Résultats complets du week-end</strong>
+          <span>Le PDF sera visible sur toutes les sessions de la page publique.</span>
+        </label>
+      </div>
+      <label class="file-button admin-series-file">
+        Choisir le PDF résultats
+        <input id="sessionResultsPdfInput" type="file" accept="application/pdf">
+      </label>
+    </div>
+  `;
+}
+
 function closeResultImportModal() {
   if (!resultImportModal) return;
   resultImportModal.hidden = true;
   resultImportModal.innerHTML = "";
   currentResultImportRow = null;
+  currentSessionResultsImport = null;
 }
 
 async function fileToDataUrl(file) {
@@ -5557,6 +5729,7 @@ async function clearPublishedResults() {
     await archiveCurrentResults("Avant remise à zéro des résultats publics", rowsToArchive);
   }
   await Promise.all(docs.map((doc) => doc.ref.delete()));
+  await clearPublicSessionResultsPdfs();
   raceResults = [];
   await publishPublicResultsIndex();
   renderResultsAdminPanel();
@@ -7182,6 +7355,11 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     openFinalCompositionResultModal(compositionButton.dataset.finalCompositionResult);
     return;
   }
+  const sessionResultsButton = event.target.closest("[data-session-results-import]");
+  if (sessionResultsButton) {
+    openSessionResultsImportModal(sessionResultsButton.dataset.sessionResultsImport || resultsAdminSession);
+    return;
+  }
   const deleteButton = event.target.closest("[data-result-delete]");
   if (deleteButton) {
     const result = raceResults.find((item) => item.id === deleteButton.dataset.resultDelete);
@@ -7233,6 +7411,52 @@ resultImportModal?.addEventListener("click", (event) => {
 });
 
 resultImportModal?.addEventListener("change", async (event) => {
+  if (event.target?.name === "sessionResultsScope") {
+    const multipleField = resultImportModal.querySelector(".session-results-checkboxes");
+    if (multipleField) multipleField.hidden = event.target.value !== "multiple";
+    return;
+  }
+  if (event.target?.id === "sessionResultsPdfInput") {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const scope = resultImportModal.querySelector("input[name='sessionResultsScope']:checked")?.value || "current";
+    const selectedSessions = scope === "full"
+      ? resultSessions().map((session) => session.number)
+      : (scope === "multiple"
+        ? [...resultImportModal.querySelectorAll("input[name='sessionResultsSession']:checked")].map((input) => input.value)
+        : [currentSessionResultsImport?.defaultSession || resultsAdminSession].filter(Boolean));
+    if (scope !== "full" && !selectedSessions.length) {
+      window.alert("Sélectionne au moins une session.");
+      return;
+    }
+    const sessionLabel = scope === "full"
+      ? "toutes les sessions"
+      : selectedSessions.map((session) => `S${session}`).join(", ");
+    const ok = window.confirm([
+      "Publier ce PDF comme résultats complets de consultation ?",
+      "",
+      `Portée : ${sessionLabel}`,
+      `Fichier : ${file.name}`,
+      "",
+      "Le PDF sera visible sur la page publique, sans lecture automatique des finalistes."
+    ].join("\n"));
+    if (!ok) return;
+    closeResultImportModal();
+    try {
+      renderDataStatus("Publication du PDF résultats complets...");
+      const pdf = await publishSessionResultsPdf(file, scope === "full" ? "full" : "sessions", selectedSessions);
+      await updateLiveNotes(`PDF résultats complets publié : ${pdf.sourceLabel}`);
+      renderResultsAdminPanel();
+      renderDataStatus();
+      window.alert("PDF résultats complets publié sur la page publique.");
+    } catch (error) {
+      console.error(error);
+      renderDataStatus();
+      window.alert(`Publication impossible : ${error?.message || error}`);
+    }
+    return;
+  }
   if (event.target?.id !== "resultPdfInput") return;
   const file = event.target.files?.[0];
   if (!file || !currentResultImportRow) return;

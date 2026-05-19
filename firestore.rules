@@ -63,6 +63,8 @@ service cloud.firestore {
             "program",
             "series",
             "results",
+            "seriesPdfs",
+            "sessionResultsPdfs",
             "updatedAt",
             "sourceVersion",
             "sourceLabel",
@@ -74,6 +76,8 @@ service cloud.firestore {
           && request.resource.data.program is list
           && request.resource.data.series is list
           && request.resource.data.results is list
+          && request.resource.data.seriesPdfs is list
+          && request.resource.data.sessionResultsPdfs is list
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceVersion", 120)
           && validOptionalText("sourceLabel", 160)
@@ -101,6 +105,31 @@ service cloud.firestore {
           && validText(request.resource.data.pdfDataUrl, 900000)
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceLabel", 120);
+        allow delete: if isLivePalmesCompetition(competitionId);
+      }
+
+      match /sessionResultsPdfs/{pdfId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "scope",
+            "session",
+            "sessions",
+            "pdfName",
+            "pdfDataUrl",
+            "updatedAt",
+            "sourceLabel"
+          ])
+          && request.resource.data.id == pdfId
+          && validText(pdfId, 160)
+          && validText(request.resource.data.scope, 20)
+          && validOptionalText("session", 20)
+          && request.resource.data.sessions is list
+          && validText(request.resource.data.pdfName, 220)
+          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validText(request.resource.data.updatedAt, 40)
+          && validOptionalText("sourceLabel", 160);
         allow delete: if isLivePalmesCompetition(competitionId);
       }
 

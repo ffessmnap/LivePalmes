@@ -35,6 +35,14 @@ const PDF_TYPES = {
     missingDoc: "PDF de séries introuvable ou non publié.",
     downloadName: "series.pdf",
     titleFromData: (data) => data.sourceLabel || "Séries"
+  },
+  "session-result": {
+    collection: "sessionResultsPdfs",
+    defaultTitle: "Résultats complets",
+    missingId: "PDF de résultats complets introuvable.",
+    missingDoc: "PDF de résultats complets introuvable ou non publié.",
+    downloadName: "resultats-complets.pdf",
+    titleFromData: (data) => data.sourceLabel || "Résultats complets"
   }
 };
 

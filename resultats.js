@@ -22,6 +22,7 @@ let publicSeries = [];
 let publicMeet = {};
 let publicResults = [];
 let publicSeriesPdfs = [];
+let publicSessionResultsPdfs = [];
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeSessionChosen = false;
@@ -402,6 +403,12 @@ function seriesPdfForSession(session) {
   return exact || publicSeriesPdfs.find((pdf) => pdf.scope === "full") || null;
 }
 
+function sessionResultsPdfsForSession(session) {
+  return publicSessionResultsPdfs
+    .filter((pdf) => pdf.scope === "full" || (pdf.sessions || []).map(String).includes(String(session || "")) || String(pdf.session || "") === String(session || ""))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+}
+
 function renderSeriesPdfLink(session) {
   const pdf = seriesPdfForSession(session);
   if (!pdf) return "";
@@ -414,6 +421,26 @@ function renderSeriesPdfLink(session) {
         ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
       </div>
       <a class="ghost-button compact confirm-button" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">Voir les séries</a>
+    </div>
+  `;
+}
+
+function renderSessionResultsPdfLinks(session) {
+  const pdfs = sessionResultsPdfsForSession(session);
+  if (!pdfs.length) return "";
+  return `
+    <div class="public-series-pdf public-session-results-pdf">
+      <div>
+        <strong>Résultats complets</strong>
+        <span>${escapeHtml(pdfs.length > 1 ? `${pdfs.length} PDF disponibles` : (pdfs[0].sourceLabel || "PDF de consultation"))}</span>
+      </div>
+      <div class="public-pdf-link-actions">
+        ${pdfs.map((pdf) => `
+          <a class="ghost-button compact confirm-button" href="pdf.html?type=session-result&id=${encodeURIComponent(pdf.id || "")}" target="_blank" rel="noopener">
+            ${escapeHtml(pdfs.length > 1 ? (pdf.sourceLabel || "Voir") : "Voir")}
+          </a>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -457,6 +484,7 @@ function renderResults() {
       <span>${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
     ${renderSeriesPdfLink(activeSession)}
+    ${renderSessionResultsPdfLinks(activeSession)}
     ${rows.map(renderRow).join("")}
   `;
 }
@@ -503,6 +531,11 @@ async function loadPublicResultsIndex() {
   } else {
     await loadPublicSeriesPdfs(competition);
   }
+  publicSessionResultsPdfs = Array.isArray(index.sessionResultsPdfs)
+    ? index.sessionResultsPdfs
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+    : [];
   setStatus("Connecté", "ok");
   renderResults();
 }
@@ -519,6 +552,7 @@ async function loadPublicResultsFallback(competition) {
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   await loadPublicSeriesPdfs(competition);
+  publicSessionResultsPdfs = [];
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
     .filter(Boolean)
