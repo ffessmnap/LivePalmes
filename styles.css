@@ -1730,6 +1730,27 @@ body.profile-home-active .top-actions {
   color: #1f2933;
 }
 
+.public-session-video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid #b8d8e4;
+  border-radius: 999px;
+  background: #e7f5ff;
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.public-session-video-link:hover {
+  border-color: var(--accent);
+  background: #d0ebff;
+}
+
 .public-documents-section {
   display: grid;
   gap: 8px;
