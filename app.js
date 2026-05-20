@@ -3486,6 +3486,7 @@ function renderResultsAdminPanel() {
           </label>
         ` : ""}
         <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
+        <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
         <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
@@ -8018,6 +8019,18 @@ resultsAdminPanel?.addEventListener("click", (event) => {
   }
   if (event.target.closest("[data-public-session-infos]")) {
     renderPublicSessionInfosModal();
+    return;
+  }
+  if (event.target.closest("[data-public-index-republish]")) {
+    publishPublicResultsIndex()
+      .then(() => {
+        renderResultsAdminPanel();
+        window.alert("Index public republié. Les pages Séries/Résultats peuvent utiliser les données à jour sans modifier l'heure des séries.");
+      })
+      .catch((error) => {
+        console.error(error);
+        window.alert(`Republication impossible : ${error?.message || error}`);
+      });
     return;
   }
   if (event.target.closest("[data-computer-admin-series]")) {
