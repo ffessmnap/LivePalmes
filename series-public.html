@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>S&eacute;ries - LivePalmes</title>
+    <meta name="description" content="S&eacute;ries publiques LivePalmes, programme des nageurs et horaires indicatifs.">
+    <meta name="theme-color" content="#0b7285">
+    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260518-logo-final">
+    <link rel="apple-touch-icon" href="apple-touch-icon-resultats.png?v=20260520-public-app-icon">
+    <link rel="stylesheet" href="styles.css?v=20260520-series-public">
+  </head>
+  <body class="public-results-page public-series-page">
+    <header class="public-results-header public-series-header">
+      <div>
+        <p class="eyebrow app-name">
+          <span class="livepalmes-logo" aria-hidden="true">
+            <img src="logo-livepalmes.png?v=20260518-logo-final" alt="">
+          </span>
+          LivePalmes
+        </p>
+        <h1 id="publicSeriesMeetTitle">S&eacute;ries publiques</h1>
+        <p id="publicSeriesMeetMeta" class="public-meet-meta">Horaires indicatifs</p>
+      </div>
+      <span id="publicSeriesStatus" class="firebase-header-status pending">
+        <i class="firebase-dot pending" aria-hidden="true"></i>
+        Connexion
+      </span>
+    </header>
+
+    <main class="public-series-shell">
+      <section class="panel public-series-toolbar">
+        <div>
+          <h2>Programme</h2>
+          <p class="panel-subtitle">Consultation publique des s&eacute;ries, lignes et temps d'engagement.</p>
+        </div>
+        <div class="public-series-toolbar-actions">
+          <button id="publicSeriesProgramBtn" class="ghost-button compact" type="button">Programme</button>
+          <button id="refreshPublicSeriesBtn" class="ghost-button compact" type="button">Actualiser</button>
+        </div>
+      </section>
+
+      <nav id="publicSeriesSessions" class="session-controls public-session-controls" aria-label="Sessions"></nav>
+
+      <section id="publicSeriesApp" class="public-series-app">
+        <p class="panel-subtitle">Chargement des s&eacute;ries...</p>
+      </section>
+    </main>
+
+    <div id="publicSwimmerSheet" class="public-swimmer-sheet" hidden></div>
+    <div id="publicProgramSheet" class="public-swimmer-sheet" hidden></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="series-public.js?v=20260520-series-public"></script>
+  </body>
+</html>

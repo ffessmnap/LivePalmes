@@ -1,6 +1,6 @@
 {
-  "name": "Résultats LivePalmes",
-  "short_name": "Résultats",
+  "name": "LP Résultats",
+  "short_name": "LP Résultats",
   "description": "Résultats publics LivePalmes.",
   "start_url": "resultats.html",
   "scope": ".",
