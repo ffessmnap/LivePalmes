@@ -13,7 +13,7 @@
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260518-logo-final">
     <link rel="apple-touch-icon" href="apple-touch-icon-resultats.png?v=20260520-public-app-icon">
     <link rel="manifest" href="manifest-public.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=20260520-public-cache-2">
+    <link rel="stylesheet" href="styles.css?v=20260520-header-search">
   </head>
   <body class="public-results-page">
     <header class="public-results-header">
@@ -27,10 +27,13 @@
         <h1 id="publicMeetTitle">R&eacute;sultats</h1>
         <p id="publicMeetMeta" class="public-meet-meta"></p>
       </div>
-      <span id="publicResultsStatus" class="firebase-header-status pending">
-        <i class="firebase-dot pending" aria-hidden="true"></i>
-        Connexion
-      </span>
+      <div class="public-header-actions">
+        <a class="ghost-button compact public-page-switch" href="series-public.html">Voir les s&eacute;ries</a>
+        <span id="publicResultsStatus" class="firebase-header-status pending">
+          <i class="firebase-dot pending" aria-hidden="true"></i>
+          Connexion
+        </span>
+      </div>
     </header>
 
     <main class="public-results-shell">
@@ -44,7 +47,6 @@
           <h2>R&eacute;sultats</h2>
         </div>
         <div class="public-series-toolbar-actions public-results-actions">
-          <a class="ghost-button compact" href="series-public.html">S&eacute;ries</a>
           <button id="refreshPublicResultsBtn" class="ghost-button compact public-refresh-button" type="button" title="Actualiser" aria-label="Actualiser">↻</button>
           <button id="collapsePublicDetailsBtn" class="ghost-button compact" type="button">Tout replier</button>
         </div>
@@ -62,6 +64,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="resultats.js?v=20260520-public-cache-2"></script>
+    <script src="resultats.js?v=20260520-header-search"></script>
   </body>
 </html>

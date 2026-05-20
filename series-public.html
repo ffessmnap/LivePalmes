@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0b7285">
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260518-logo-final">
     <link rel="apple-touch-icon" href="apple-touch-icon-resultats.png?v=20260520-public-app-icon">
-    <link rel="stylesheet" href="styles.css?v=20260520-public-cache-2">
+    <link rel="stylesheet" href="styles.css?v=20260520-header-search">
   </head>
   <body class="public-results-page public-series-page">
     <header class="public-results-header public-series-header">
@@ -22,10 +22,13 @@
         <h1 id="publicSeriesMeetTitle">S&eacute;ries</h1>
         <p id="publicSeriesMeetMeta" class="public-meet-meta">S&eacute;ries non mises &agrave; jour</p>
       </div>
-      <span id="publicSeriesStatus" class="firebase-header-status pending">
-        <i class="firebase-dot pending" aria-hidden="true"></i>
-        Connexion
-      </span>
+      <div class="public-header-actions">
+        <a class="ghost-button compact public-page-switch" href="resultats.html">Voir les r&eacute;sultats</a>
+        <span id="publicSeriesStatus" class="firebase-header-status pending">
+          <i class="firebase-dot pending" aria-hidden="true"></i>
+          Connexion
+        </span>
+      </div>
     </header>
 
     <main class="public-series-shell">
@@ -40,7 +43,6 @@
           <p class="panel-subtitle">Lignes et engagements.</p>
         </div>
         <div class="public-series-toolbar-actions">
-          <a class="ghost-button compact" href="resultats.html">R&eacute;sultats</a>
           <button id="publicSeriesProgramBtn" class="ghost-button compact" type="button">Programme</button>
           <button id="refreshPublicSeriesBtn" class="ghost-button compact public-refresh-button" type="button" title="Actualiser" aria-label="Actualiser">↻</button>
         </div>
@@ -58,6 +60,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="series-public.js?v=20260520-public-cache-2"></script>
+    <script src="series-public.js?v=20260520-header-search"></script>
   </body>
 </html>
