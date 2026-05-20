@@ -24,7 +24,7 @@
           </span>
           LivePalmes
         </p>
-        <h1 id="publicMeetTitle">R&eacute;sultats & finalistes</h1>
+        <h1 id="publicMeetTitle">R&eacute;sultats</h1>
         <p id="publicMeetMeta" class="public-meet-meta"></p>
       </div>
       <span id="publicResultsStatus" class="firebase-header-status pending">
@@ -34,19 +34,26 @@
     </header>
 
     <main class="public-results-shell">
-      <section class="panel">
-        <div class="panel-title">
-          <div>
-            <h2>R&eacute;sultats</h2>
-            <p class="panel-subtitle">Les r&eacute;sultats sont publi&eacute;s par le bureau des performances.</p>
-          </div>
-          <div class="public-results-actions">
-            <a class="ghost-button compact" href="series-public.html">S&eacute;ries</a>
-            <button id="refreshPublicResultsBtn" class="ghost-button compact" type="button">Actualiser</button>
-            <button id="collapsePublicDetailsBtn" class="ghost-button compact" type="button">Tout replier</button>
-          </div>
+      <section class="panel public-series-toolbar public-results-toolbar">
+        <label class="public-session-select">
+          <span>Session</span>
+          <select id="publicResultsSessionSelect" aria-label="Choisir la session"></select>
+        </label>
+        <div class="public-series-toolbar-text">
+          <h2>R&eacute;sultats</h2>
         </div>
-        <div id="publicSessionControls" class="session-controls public-session-controls"></div>
+        <div class="public-series-toolbar-actions public-results-actions">
+          <a class="ghost-button compact active-public-page" href="resultats.html">R&eacute;sultats</a>
+          <a class="ghost-button compact" href="series-public.html">S&eacute;ries</a>
+          <button id="refreshPublicResultsBtn" class="ghost-button compact" type="button">Actualiser</button>
+          <button id="collapsePublicDetailsBtn" class="ghost-button compact" type="button">Tout replier</button>
+        </div>
+      </section>
+
+      <section id="publicSessionInfoHost"></section>
+
+      <section class="panel">
+        <div id="publicSessionControls" class="session-controls public-session-controls" hidden></div>
         <div id="publicResultsList" class="public-results-list">
           <p class="panel-subtitle">Chargement des r&eacute;sultats...</p>
         </div>

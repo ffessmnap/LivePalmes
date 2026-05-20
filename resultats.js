@@ -12,6 +12,8 @@ const meetTitle = document.querySelector("#publicMeetTitle");
 const meetMeta = document.querySelector("#publicMeetMeta");
 const list = document.querySelector("#publicResultsList");
 const sessionControls = document.querySelector("#publicSessionControls");
+const sessionSelect = document.querySelector("#publicResultsSessionSelect");
+const sessionInfoHost = document.querySelector("#publicSessionInfoHost");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
@@ -470,11 +472,18 @@ function renderRow(row) {
 }
 
 function renderSessionControls() {
-  if (!sessionControls) return;
   const available = sessions();
-  sessionControls.innerHTML = available.map((session) => `
-    <button class="session-chip ${session === activeSession ? "active" : ""}" type="button" data-public-session="${escapeHtml(session)}">S${escapeHtml(session)}</button>
-  `).join("");
+  if (sessionControls) {
+    sessionControls.innerHTML = available.map((session) => `
+      <button class="session-chip ${session === activeSession ? "active" : ""}" type="button" data-public-session="${escapeHtml(session)}">S${escapeHtml(session)}</button>
+    `).join("");
+  }
+  if (sessionSelect) {
+    sessionSelect.innerHTML = available.map((session) => `
+      <option value="${escapeHtml(session)}" ${session === activeSession ? "selected" : ""}>Session ${escapeHtml(session)}</option>
+    `).join("");
+    sessionSelect.disabled = available.length <= 1;
+  }
 }
 
 function renderSessionInformation(session) {
@@ -577,15 +586,10 @@ function renderPendingRows(rows = []) {
 
 function renderMeetTitle() {
   if (!meetTitle) return;
-  const name = cleanText(publicMeet.name || "");
   const city = cleanText(publicMeet.city || "");
   const year = cleanText(publicMeet.year || "");
-  const titleParts = [name, city].filter(Boolean);
-  if (year && !titleParts.some((part) => new RegExp(`\\b${year}\\b`).test(part))) {
-    titleParts.push(year);
-  }
-  const title = titleParts.join(" - ");
-  meetTitle.textContent = cleanText(title || "Résultats & finalistes");
+  const title = [city, year, "Résultats"].filter(Boolean).join(" · ");
+  meetTitle.textContent = cleanText(title || "Résultats");
   if (meetMeta) {
     const lastUpdate = publicIndexUpdatedAt || publicResults
       .map((result) => result.updatedAt)
@@ -610,6 +614,8 @@ function renderResults() {
   const documentsHtml = [renderSeriesPdfLink(activeSession), renderSessionResultsPdfLinks(activeSession)]
     .filter(Boolean)
     .join("");
+  const sessionInformationHtml = renderSessionInformation(activeSession);
+  if (sessionInfoHost) sessionInfoHost.innerHTML = sessionInformationHtml;
   if (!rows.length) {
     list.innerHTML = `<p class="panel-subtitle">Aucune course trouvée pour cette session.</p>`;
     return;
@@ -622,7 +628,6 @@ function renderResults() {
       </div>
       <span>${escapeHtml(String(sessionResults.length))} résultat${sessionResults.length > 1 ? "s" : ""} publié${sessionResults.length > 1 ? "s" : ""} / ${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
-    ${renderSessionInformation(activeSession)}
     ${sessionResults.length ? "" : `
       <div class="public-empty-results-note">
         Aucun résultat n'est publié pour cette session pour le moment.
@@ -767,6 +772,12 @@ sessionControls?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-public-session]");
   if (!button) return;
   activeSession = button.dataset.publicSession;
+  activeSessionChosen = true;
+  renderResults();
+});
+
+sessionSelect?.addEventListener("change", (event) => {
+  activeSession = event.target.value || "";
   activeSessionChosen = true;
   renderResults();
 });

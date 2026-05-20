@@ -1551,6 +1551,8 @@ body.profile-home-active .top-actions {
 .public-results-shell {
   width: min(1060px, calc(100% - 24px));
   margin: 18px auto 40px;
+  display: grid;
+  gap: 10px;
 }
 
 .public-results-list {
@@ -1591,6 +1593,20 @@ body.profile-home-active .top-actions {
 
 .public-session-controls {
   margin: 4px 0 12px;
+}
+
+.public-results-toolbar {
+  margin: 0;
+}
+
+.public-results-actions .active-public-page {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+#publicSessionInfoHost:empty {
+  display: none;
 }
 
 .public-session-title {

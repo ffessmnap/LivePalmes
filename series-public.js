@@ -437,12 +437,9 @@ function renderReferences(program, rows = []) {
 }
 
 function renderMeetTitle() {
-  const name = cleanText(publicMeet.name || "");
   const city = cleanText(publicMeet.city || "");
   const year = cleanText(publicMeet.year || "");
-  const parts = [name, city].filter(Boolean);
-  if (year && !parts.some((part) => new RegExp(`\\b${year}\\b`).test(part))) parts.push(year);
-  if (meetTitle) meetTitle.textContent = cleanText(parts.join(" - ") || "Séries publiques");
+  if (meetTitle) meetTitle.textContent = cleanText([city, year, "Séries"].filter(Boolean).join(" · ") || "Séries");
   if (meetMeta) {
     const pdf = seriesPdfForSession(activeSession);
     const date = pdf?.updatedAt ? new Date(pdf.updatedAt) : null;
