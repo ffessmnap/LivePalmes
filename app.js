@@ -6582,7 +6582,7 @@ function findInternationalMedals(entrant) {
 }
 
 function findInternationalMedalsForRace(entrant) {
-  return findInternationalMedals(entrant).filter((medal) => medal.eventId === entrant.eventId);
+  return findInternationalMedals(entrant).filter((medal) => recordEventMatches(medal, entrant.eventId));
 }
 
 function shortChampionshipLabel(value) {
@@ -7290,16 +7290,19 @@ function parseCompetitionStatsSheet(rows) {
 }
 
 function parseInternationalSheet(rows) {
-  return sheetObjects(rows).map((row) => ({
-    personKey: personKeyFromSheet(row, rowValue(row, ["sexe", "sex"])),
-    eventId: rowValue(row, ["course_id", "eventId"]).toLowerCase(),
-    sex: rowValue(row, ["sexe", "sex"]),
-    eventLabel: rowValue(row, ["course_libelle", "course"]),
-    medal: rowValue(row, ["medaille", "médaille"]),
-    time: importedSeriesTime(rowValue(row, ["temps", "time"])),
-    championship: [rowValue(row, ["championnat"]), rowValue(row, ["annee", "année"])].filter(Boolean).join(" "),
-    place: rowValue(row, ["lieu", "place"])
-  })).filter((row) => row.personKey !== "|" && row.eventId);
+  return sheetObjects(rows).map((row) => {
+    const eventText = rowValue(row, ["course_id", "eventId", "epreuve", "épreuve", "course", "course_libelle"]);
+    return {
+      personKey: personKeyFromSheet(row, rowValue(row, ["sexe", "sex"])),
+      eventId: sheetEventId(eventText),
+      sex: sheetSex(rowValue(row, ["sexe", "sex"])),
+      eventLabel: rowValue(row, ["course_libelle", "course", "epreuve", "épreuve"]) || eventText,
+      medal: rowValue(row, ["medaille", "médaille"]),
+      time: sheetTime(rowValue(row, ["temps", "time"])),
+      championship: [rowValue(row, ["championnat", "competition", "compétition"]), rowValue(row, ["annee", "année"])].filter(Boolean).join(" "),
+      place: rowValue(row, ["lieu", "place"])
+    };
+  }).filter((row) => row.personKey !== "|" && row.eventId);
 }
 
 function parseQualificationsSheet(rows) {
@@ -7465,7 +7468,7 @@ async function updateSpeakerInfoFromGoogleSheet() {
     });
     applyFreshData(nextData, false);
     await publishLiveDataToFirestore(nextData, "Infos speaker Google Sheets");
-    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.competitionStats.length} stats compétition, ${nextData.swimmerInfos.length} infos nageurs, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
+    window.alert(`Infos speaker mises à jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.internationalMedals.length} repères internationaux, ${nextData.competitionStats.length} stats compétition, ${nextData.swimmerInfos.length} infos nageurs, ${attachedSeedSources} lieux rattachés aux engagés (${seedSources.size} repères trouvés).`);
   } catch (error) {
     console.error(error);
     renderDataStatus(`Impossible de lire le Google Sheet : ${error?.message || error}`);
