@@ -25,7 +25,7 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
 - Creation et mise a jour des alertes arbitres, speaker, video, bureau des performances et secretariat.
 - Reservation d'une console par role via `roleLocks`.
 - Publication, remplacement et suppression des PDF resultats.
-- Publication d'un index public leger pour limiter les lectures de la page resultats.
+- Publication d'un index public leger pour limiter les lectures de la page resultats, avec etat public et infos de session.
 - Gestion des finalistes, forfaits, pre-forfaits et repechages dans les resultats.
 - Archivage du journal d'arbitrage avant RAZ.
 - Archivage des resultats publics avant remise a zero.
