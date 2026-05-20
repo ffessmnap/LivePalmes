@@ -3050,6 +3050,7 @@ function buildPublicResultsIndex() {
     meet: data.meet || {},
     events: data.events || [],
     program: data.program || [],
+    entrants: data.entrants || [],
     series: data.series || [],
     results: raceResults.map(publicResultPayload).filter(Boolean),
     seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),

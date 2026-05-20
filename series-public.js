@@ -14,6 +14,7 @@ const meetMeta = document.querySelector("#publicSeriesMeetMeta");
 const app = document.querySelector("#publicSeriesApp");
 const sessionsHost = document.querySelector("#publicSeriesSessions");
 const sessionSelect = document.querySelector("#publicSeriesSessionSelect");
+const sessionInfoHost = document.querySelector("#publicSeriesInfoHost");
 const seriesPdfInlineLink = document.querySelector("#publicSeriesPdfInlineLink");
 const statusBadge = document.querySelector("#publicSeriesStatus");
 const refreshBtn = document.querySelector("#refreshPublicSeriesBtn");
@@ -31,6 +32,7 @@ let publicForfaits = [];
 let publicRecords = [];
 let publicQualifications = [];
 let publicSeriesPdfs = [];
+let publicSessionInfos = {};
 let publicProgress = null;
 let publicIndexUpdatedAt = "";
 let activeSession = "";
@@ -628,6 +630,27 @@ function renderMeetTitle() {
   }
 }
 
+function renderSessionInformation(session) {
+  const text = cleanText(publicSessionInfos?.[session] || "").trim();
+  if (!text) return "";
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return `
+    <div class="public-session-info">
+      <strong>Informations</strong>
+      ${lines.map((line) => {
+        const isWarning = line.startsWith("!!");
+        const isNotice = !isWarning && line.startsWith("!");
+        const displayLine = isWarning ? line.slice(2).trim() : (isNotice ? line.slice(1).trim() : line);
+        const className = isWarning ? "public-session-warning" : (isNotice ? "public-session-notice" : "");
+        const icon = isWarning || isNotice
+          ? `<span class="public-session-info-icon" aria-hidden="true">!</span>`
+          : "";
+        return `<p class="${className}">${icon}${escapeHtml(displayLine)}</p>`;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderSessions() {
   const available = sessions();
   if (sessionsHost) {
@@ -642,6 +665,9 @@ function renderSessions() {
     sessionSelect.disabled = available.length <= 1;
   }
   syncSeriesPdfInlineLink();
+  if (sessionInfoHost) {
+    sessionInfoHost.innerHTML = renderSessionInformation(activeSession);
+  }
 }
 
 function clampState() {
@@ -1073,6 +1099,7 @@ function applyLiveData(remote, index = {}) {
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicResults = Array.isArray(index.results) ? index.results : publicResults;
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
+  publicSessionInfos = index.sessionInfos || publicSessionInfos;
   publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
@@ -1103,6 +1130,7 @@ async function loadPublicSeries() {
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
+  publicSessionInfos = index.sessionInfos || {};
   publicProgress = remote.notes?.publicProgress || null;
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
