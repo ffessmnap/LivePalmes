@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function validRole(role) {
-      return role in ["speaker", "referee", "video", "computer", "secretary"];
+      return role in ["live", "speaker", "referee", "video", "computer", "secretary"];
     }
 
     function validPresenceRole(role) {
@@ -144,17 +144,29 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             "role",
             "clientId",
+            "clients",
             "roleLabel",
             "createdAt",
             "updatedAt",
             "expiresAt"
           ])
           && request.resource.data.role == role
-          && validText(request.resource.data.clientId, 120)
           && validText(request.resource.data.roleLabel, 80)
-          && validText(request.resource.data.createdAt, 40)
           && validText(request.resource.data.updatedAt, 40)
-          && validText(request.resource.data.expiresAt, 40);
+          && validText(request.resource.data.expiresAt, 40)
+          && (
+            (
+              !("clients" in request.resource.data)
+              && validText(request.resource.data.clientId, 120)
+              && validText(request.resource.data.createdAt, 40)
+            )
+            || (
+              role == "live"
+              && !("clientId" in request.resource.data)
+              && !("createdAt" in request.resource.data)
+              && request.resource.data.clients is map
+            )
+          );
         allow delete: if isLivePalmesCompetition(competitionId)
           && validRole(role);
       }

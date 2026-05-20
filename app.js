@@ -10,6 +10,7 @@ const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
 const ROLE_PINS = {
+  live: "0000",
   speaker: "0001",
   referee: "0002",
   video: "0003",
@@ -242,7 +243,7 @@ function unlockRole(role) {
 }
 
 function roleIsUnlocked(role) {
-  return role === "live" || !pinLockEnabled() || unlockedRoles.includes(role);
+  return !pinLockEnabled() || unlockedRoles.includes(role);
 }
 
 function requestRoleAccess(role) {
@@ -265,7 +266,11 @@ function currentClientId() {
 }
 
 function protectedRole(role) {
-  return ["speaker", "referee", "video", "computer", "secretary"].includes(role);
+  return ["live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
+}
+
+function roleConnectionLimit(role) {
+  return role === "live" ? 3 : 1;
 }
 
 function switchRoleUnlocked(nextRole) {
@@ -855,9 +860,30 @@ async function releaseRoleLock(role = activeRoleLock?.role) {
   if (!doc) return;
   const clientId = currentClientId();
   try {
-    const snapshot = await doc.get();
-    if (snapshot.exists && snapshot.data()?.clientId === clientId) {
-      await doc.delete();
+    if (roleConnectionLimit(role) > 1 && firestoreDb) {
+      await firestoreDb.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(doc);
+        if (!snapshot.exists) return;
+        const lock = snapshot.data() || {};
+        const clients = { ...(lock.clients || {}) };
+        delete clients[clientId];
+        const activeClients = Object.fromEntries(Object.entries(clients).filter(([, item]) => !lockExpired(item)));
+        if (Object.keys(activeClients).length) {
+          transaction.set(doc, {
+            role,
+            roleLabel: ROLE_LABELS[role] || role,
+            clients: activeClients,
+            updatedAt: new Date().toISOString()
+          }, { merge: false });
+        } else {
+          transaction.delete(doc);
+        }
+      });
+    } else {
+      const snapshot = await doc.get();
+      if (snapshot.exists && snapshot.data()?.clientId === clientId) {
+        await doc.delete();
+      }
     }
   } catch (error) {
     console.warn("Libération du verrou impossible", error);
@@ -883,24 +909,45 @@ async function acquireRoleLock(role, options = {}) {
   }
   const clientId = currentClientId();
   const now = new Date();
+  const expiresAt = new Date(now.getTime() + LOCK_DURATION_MS).toISOString();
   const payload = {
     role,
     clientId,
     roleLabel: ROLE_LABELS[role] || role,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + LOCK_DURATION_MS).toISOString()
+    expiresAt
   };
   try {
     const allowed = await firestoreDb.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(doc);
       const lock = snapshot.exists ? snapshot.data() : null;
+      if (roleConnectionLimit(role) > 1) {
+        const clients = Object.fromEntries(Object.entries(lock?.clients || {}).filter(([, item]) => !lockExpired(item)));
+        if (!clients[clientId] && Object.keys(clients).length >= roleConnectionLimit(role)) return false;
+        clients[clientId] = {
+          clientId,
+          createdAt: clients[clientId]?.createdAt || now.toISOString(),
+          updatedAt: now.toISOString(),
+          expiresAt
+        };
+        transaction.set(doc, {
+          role,
+          roleLabel: ROLE_LABELS[role] || role,
+          clients,
+          updatedAt: now.toISOString(),
+          expiresAt
+        }, { merge: false });
+        return true;
+      }
       if (lock && lock.clientId !== clientId && !lockExpired(lock)) return false;
       transaction.set(doc, payload);
       return true;
     });
     if (!allowed) {
-      window.alert(`La console ${ROLE_LABELS[role] || role} est déjà utilisée sur un autre appareil.`);
+      window.alert(roleConnectionLimit(role) > 1
+        ? `La console ${ROLE_LABELS[role] || role} est déjà utilisée sur ${roleConnectionLimit(role)} appareils.`
+        : `La console ${ROLE_LABELS[role] || role} est déjà utilisée sur un autre appareil.`);
       return false;
     }
     if (activeRoleLock?.role && activeRoleLock.role !== role) {
@@ -922,16 +969,45 @@ async function heartbeatRoleLock() {
   if (!doc) return;
   const clientId = currentClientId();
   const now = new Date();
+  const expiresAt = new Date(now.getTime() + LOCK_DURATION_MS).toISOString();
   try {
-    const snapshot = await doc.get();
-    if (!snapshot.exists || snapshot.data()?.clientId !== clientId) {
-      activeRoleLock = null;
-      return;
+    if (roleConnectionLimit(activeRoleLock.role) > 1 && firestoreDb) {
+      await firestoreDb.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(doc);
+        if (!snapshot.exists) {
+          activeRoleLock = null;
+          return;
+        }
+        const lock = snapshot.data() || {};
+        const clients = Object.fromEntries(Object.entries(lock.clients || {}).filter(([, item]) => !lockExpired(item)));
+        if (!clients[clientId]) {
+          activeRoleLock = null;
+          return;
+        }
+        clients[clientId] = {
+          ...clients[clientId],
+          updatedAt: now.toISOString(),
+          expiresAt
+        };
+        transaction.set(doc, {
+          role: activeRoleLock.role,
+          roleLabel: ROLE_LABELS[activeRoleLock.role] || activeRoleLock.role,
+          clients,
+          updatedAt: now.toISOString(),
+          expiresAt
+        }, { merge: false });
+      });
+    } else {
+      const snapshot = await doc.get();
+      if (!snapshot.exists || snapshot.data()?.clientId !== clientId) {
+        activeRoleLock = null;
+        return;
+      }
+      await doc.set({
+        updatedAt: now.toISOString(),
+        expiresAt
+      }, { merge: true });
     }
-    await doc.set({
-      updatedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + LOCK_DURATION_MS).toISOString()
-    }, { merge: true });
   } catch (error) {
     console.warn("Maintien de la réservation impossible", error);
   }
@@ -978,6 +1054,7 @@ function renderRoleCodesModal() {
   if (!roleCodesModal) return;
   const pins = currentRolePins();
   const active = pinLockEnabled();
+  const roleOrder = ["live", "speaker", "referee", "video", "computer", "secretary"];
   roleCodesModal.hidden = false;
   roleCodesModal.innerHTML = `
     <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Codes d'accès">
@@ -985,12 +1062,12 @@ function renderRoleCodesModal() {
         <div>
           <span>Sécurité</span>
           <h2>Codes des consoles</h2>
-          <p>Chaque code doit contenir exactement 4 chiffres. Live reste libre.</p>
+          <p>Chaque code doit contenir exactement 4 chiffres. Live accepte 3 connexions simultanées.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
       <div class="role-code-grid">
-        ${["speaker", "referee", "video", "computer", "secretary"].map((role) => `
+        ${roleOrder.map((role) => `
           <label>
             <span>${escapeHtml(ROLE_LABELS[role])}</span>
             <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(role)}" value="${escapeHtml(pins[role] || "")}">
