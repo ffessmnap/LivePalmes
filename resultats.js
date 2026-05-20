@@ -18,7 +18,6 @@ const sessionInfoHost = document.querySelector("#publicSessionInfoHost");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
-const programResultsBtn = document.querySelector("#publicResultsProgramBtn");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -541,22 +540,6 @@ function renderSeriesPdfLink(session) {
   `;
 }
 
-function updateProgramButton(session) {
-  if (!programResultsBtn) return;
-  const pdf = seriesPdfForSession(session);
-  if (pdf?.id) {
-    programResultsBtn.href = `pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}`;
-    programResultsBtn.classList.remove("is-disabled");
-    programResultsBtn.removeAttribute("aria-disabled");
-    programResultsBtn.title = "Voir le PDF du programme";
-    return;
-  }
-  programResultsBtn.href = "series-public.html";
-  programResultsBtn.classList.add("is-disabled");
-  programResultsBtn.setAttribute("aria-disabled", "true");
-  programResultsBtn.title = "PDF du programme non disponible";
-}
-
 function renderSessionResultsPdfLinks(session) {
   const pdfs = sessionResultsPdfsForSession(session);
   if (!pdfs.length) return "";
@@ -629,7 +612,6 @@ function renderResults() {
   ensureActiveSession();
   renderMeetTitle();
   renderSessionControls();
-  updateProgramButton(activeSession);
   const rows = rowsForSession(activeSession);
   const publishedRows = rows.filter((row) => resultIsVisible(resultForRow(row)));
   const pendingRows = rows.filter((row) => !resultIsVisible(resultForRow(row)));
@@ -650,11 +632,6 @@ function renderResults() {
       </div>
       <span>${escapeHtml(String(sessionResults.length))} résultat${sessionResults.length > 1 ? "s" : ""} publié${sessionResults.length > 1 ? "s" : ""} / ${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
-    ${sessionResults.length ? "" : `
-      <div class="public-empty-results-note">
-        Aucun résultat n'est publié pour cette session pour le moment.
-      </div>
-    `}
     <div class="public-results-section-title">
       <h3>Résultats des courses</h3>
       <span>${escapeHtml(String(sessionResults.length))} disponible${sessionResults.length > 1 ? "s" : ""}</span>
