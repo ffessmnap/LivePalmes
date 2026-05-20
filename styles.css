@@ -3909,27 +3909,27 @@ textarea {
 }
 
 .role-codes-dialog {
-  width: min(520px, 100%);
+  width: min(460px, 100%);
 }
 
 .role-code-grid {
   display: grid;
-  gap: 10px;
+  gap: 7px;
 }
 
 .role-code-grid label {
   display: grid;
-  grid-template-columns: 1fr 120px;
+  grid-template-columns: 1fr 104px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 900;
 }
 
 .role-code-grid input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid #cfdce1;
   border-radius: 8px;
   color: var(--ink);
