@@ -23,6 +23,7 @@ let publicMeet = {};
 let publicResults = [];
 let publicSeriesPdfs = [];
 let publicSessionResultsPdfs = [];
+let publicSessionInfos = {};
 let publicAccess = { online: true, updatedAt: "" };
 let publicIndexUpdatedAt = "";
 let activeSession = "";
@@ -432,6 +433,18 @@ function renderSessionControls() {
   `).join("");
 }
 
+function renderSessionInformation(session) {
+  const text = cleanText(publicSessionInfos?.[session] || "").trim();
+  if (!text) return "";
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return `
+    <div class="public-session-info">
+      <strong>Informations</strong>
+      ${lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+    </div>
+  `;
+}
+
 function seriesPdfForSession(session) {
   const exact = publicSeriesPdfs.find((pdf) => pdf.scope === "session" && String(pdf.session || "") === String(session || ""));
   return exact || publicSeriesPdfs.find((pdf) => pdf.scope === "full") || null;
@@ -517,6 +530,7 @@ function renderResults() {
       <h2>Session ${escapeHtml(activeSession)}</h2>
       <span>${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
+    ${renderSessionInformation(activeSession)}
     ${renderSeriesPdfLink(activeSession)}
     ${renderSessionResultsPdfLinks(activeSession)}
     ${rows.map(renderRow).join("")}
@@ -548,6 +562,7 @@ function applyPublicLiveOverlay(remote, index = {}) {
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
+  publicSessionInfos = remote.notes?.publicSessionInfos || publicSessionInfos;
   if (Array.isArray(remote.notes?.publicSeriesPdfs)) {
     publicSeriesPdfs = remote.notes.publicSeriesPdfs
       .slice()
@@ -590,6 +605,7 @@ async function loadPublicResultsIndex() {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
+  publicSessionInfos = index.sessionInfos || {};
   publicIndexUpdatedAt = index.updatedAt || "";
   if (Array.isArray(index.seriesPdfs)) {
     publicSeriesPdfs = index.seriesPdfs
@@ -620,6 +636,7 @@ async function loadPublicResultsFallback(competition) {
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicSessionInfos = remote.notes?.publicSessionInfos || {};
   publicAccess = {
     online: remote.notes?.publicResultsOnline !== false,
     updatedAt: remote.notes?.publicResultsOnlineUpdatedAt || ""
