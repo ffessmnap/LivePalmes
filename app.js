@@ -1076,6 +1076,37 @@ function renderResetResultsModal() {
   roleCodesModal.querySelector("#resetResultsInput")?.focus();
 }
 
+function renderPublicSessionInfosModal() {
+  if (!roleCodesModal) return;
+  const sessions = resultSessions();
+  const infos = data.notes?.publicSessionInfos || {};
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog session-infos-dialog" role="dialog" aria-modal="true" aria-label="Informations des sessions">
+      <div class="decision-modal-head">
+        <div>
+          <span>Page résultats</span>
+          <h2>Informations</h2>
+          <p>Ces textes apparaîtront sur la page résultats publique quand on clique sur la session concernée.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      <div class="session-infos-editor">
+        ${sessions.length ? sessions.map((session) => `
+          <label class="session-info-field">
+            <strong>Session ${escapeHtml(session.number)}</strong>
+            <textarea data-session-info-input="${escapeHtml(session.number)}" rows="4" placeholder="Ex : échauffement à 8h00, début de session à 9h00, protocole à 11h30...">${escapeHtml(infos[session.number] || "")}</textarea>
+          </label>
+        `).join("") : `<p class="panel-subtitle">Aucune session chargée pour le moment.</p>`}
+      </div>
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
+        <button class="primary-button" type="button" data-save-public-session-infos ${sessions.length ? "" : "disabled"}>Publier les informations</button>
+      </div>
+    </div>
+  `;
+}
+
 async function renderHistoryArchivesModal({ canDelete = false } = {}) {
   if (!roleCodesModal) return;
   const historyCollection = historyArchivesCollection();
@@ -2891,6 +2922,7 @@ function buildPublicResultsIndex() {
     results: raceResults.map(publicResultPayload).filter(Boolean),
     seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
     sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
+    sessionInfos: data.notes?.publicSessionInfos || {},
     publicAccess: {
       online: data.notes?.publicResultsOnline !== false,
       updatedAt: data.notes?.publicResultsOnlineUpdatedAt || ""
@@ -3322,12 +3354,12 @@ function renderResultsAdminPanel() {
             </select>
           </label>
         ` : ""}
-        <button class="ghost-button compact" type="button" data-computer-diagnostic>Vérifier</button>
+        <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
         <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
         </button>
-        <a class="ghost-button compact" href="resultats.html?v=20260520-pdf-francois" target="_blank" rel="noopener">Page publique</a>
+        <a class="ghost-button compact" href="resultats.html?v=20260520-session-infos-light" target="_blank" rel="noopener">Page publique</a>
       </div>
     </div>
     <div class="results-admin-list">
@@ -7767,8 +7799,8 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     toggleCompetitionMode();
     return;
   }
-  if (event.target.closest("[data-computer-diagnostic]")) {
-    showDataDiagnostic();
+  if (event.target.closest("[data-public-session-infos]")) {
+    renderPublicSessionInfosModal();
     return;
   }
   if (event.target.closest("[data-computer-admin-series]")) {
@@ -8058,6 +8090,27 @@ roleCodesModal?.addEventListener("click", async (event) => {
       console.error(error);
       window.alert(`RAZ impossible : ${error?.message || error}`);
     }
+    return;
+  }
+  if (event.target.closest("[data-save-public-session-infos]")) {
+    const nextInfos = {};
+    roleCodesModal.querySelectorAll("[data-session-info-input]").forEach((field) => {
+      const session = String(field.dataset.sessionInfoInput || "").trim();
+      const value = String(field.value || "").trim();
+      if (session && value) nextInfos[session] = value;
+    });
+    closeRoleCodesModal();
+    updateLiveNotes("Informations sessions publiques", {
+      publicSessionInfos: nextInfos,
+      publicSessionInfosUpdatedAt: new Date().toISOString()
+    }).then(async () => {
+      await publishPublicResultsIndex({ silent: true });
+      renderResultsAdminPanel();
+      window.alert("Informations de session publiées sur la page résultats.");
+    }).catch((error) => {
+      console.error(error);
+      window.alert(`Publication impossible : ${error?.message || error}`);
+    });
     return;
   }
   const openArchiveButton = event.target.closest("[data-open-archive]");

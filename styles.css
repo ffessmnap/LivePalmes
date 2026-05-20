@@ -1289,6 +1289,44 @@ body.profile-home-active .top-actions {
   font-weight: 900;
 }
 
+.session-infos-dialog {
+  width: min(760px, 100%);
+}
+
+.session-infos-editor {
+  display: grid;
+  gap: 10px;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.session-info-field {
+  display: grid;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.session-info-field strong {
+  color: var(--accent-dark);
+}
+
+.session-info-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 82px;
+  border: 1px solid #cfdde4;
+  border-radius: 7px;
+  padding: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
 .secretary-finals-panel {
   display: grid;
   gap: 10px;
@@ -1547,6 +1585,28 @@ body.profile-home-active .top-actions {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 900;
+}
+
+.public-session-info {
+  display: grid;
+  gap: 2px;
+  margin: -2px 2px 8px;
+  padding: 0;
+}
+
+.public-session-info strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-session-info p {
+  margin: 0;
+  color: #445661;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.25;
 }
 
 .public-series-pdf {
