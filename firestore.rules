@@ -65,6 +65,8 @@ service cloud.firestore {
             "results",
             "seriesPdfs",
             "sessionResultsPdfs",
+            "sessionInfos",
+            "publicAccess",
             "updatedAt",
             "sourceVersion",
             "sourceLabel",
@@ -78,6 +80,8 @@ service cloud.firestore {
           && request.resource.data.results is list
           && request.resource.data.seriesPdfs is list
           && request.resource.data.sessionResultsPdfs is list
+          && request.resource.data.sessionInfos is map
+          && request.resource.data.publicAccess is map
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceVersion", 120)
           && validOptionalText("sourceLabel", 160)
