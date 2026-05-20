@@ -1609,6 +1609,73 @@ body.profile-home-active .top-actions {
   line-height: 1.25;
 }
 
+.public-session-info .public-session-warning {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #b42318;
+  font-weight: 950;
+}
+
+.public-session-info .public-session-notice {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #8a5a00;
+  font-weight: 900;
+}
+
+.public-session-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.public-session-notice .public-session-info-icon {
+  background: #f59f00;
+  color: #1f2933;
+}
+
+.public-documents-section {
+  display: grid;
+  gap: 8px;
+}
+
+.public-documents-section:empty {
+  display: none;
+}
+
+.public-results-section-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 10px 2px 2px;
+  border-top: 1px solid #d8e3e8;
+}
+
+.public-results-section-title h3 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.96rem;
+}
+
+.public-results-section-title span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .public-series-pdf {
   display: flex;
   align-items: center;
@@ -1621,9 +1688,26 @@ body.profile-home-active .top-actions {
   background: #f4fbfd;
 }
 
+.public-series-program-pdf {
+  border-color: #d5dee4;
+  border-left-color: #6f7f89;
+  background: #f8fafb;
+}
+
 .public-series-pdf div {
   display: grid;
   gap: 2px;
+}
+
+.public-document-kind {
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: #5d6b75;
+  font-size: 0.66rem;
+  font-weight: 950;
+  text-transform: uppercase;
 }
 
 .public-series-pdf strong {
@@ -1638,8 +1722,14 @@ body.profile-home-active .top-actions {
 }
 
 .public-session-results-pdf {
+  border-color: #b7dfc0;
   border-left-color: #17642b;
   background: #f4fbf5;
+}
+
+.public-session-results-pdf .public-document-kind {
+  background: #e8f7ec;
+  color: #17642b;
 }
 
 .public-pdf-link-actions {

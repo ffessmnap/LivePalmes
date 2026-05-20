@@ -8034,6 +8034,9 @@ adminSeriesModal?.addEventListener("change", async (event) => {
 });
 
 roleCodesModal?.addEventListener("click", async (event) => {
+  if (event.target === roleCodesModal && roleCodesModal.querySelector(".session-infos-dialog")) {
+    return;
+  }
   if (event.target === roleCodesModal || event.target.closest("[data-role-codes-close]")) {
     closeRoleCodesModal();
     return;
