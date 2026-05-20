@@ -13,6 +13,7 @@ const meetMeta = document.querySelector("#publicMeetMeta");
 const list = document.querySelector("#publicResultsList");
 const sessionControls = document.querySelector("#publicSessionControls");
 const sessionSelect = document.querySelector("#publicResultsSessionSelect");
+const sessionMeta = document.querySelector("#publicResultsSessionMeta");
 const sessionInfoHost = document.querySelector("#publicSessionInfoHost");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
@@ -306,8 +307,8 @@ function latestSessionUpdateLabel(results = []) {
     .filter(Boolean)
     .sort()
     .at(-1);
-  const label = formatPublicDateTime(latest || publicIndexUpdatedAt);
-  return label ? `Dernière mise à jour : ${label}` : "En attente de publication";
+  const label = formatPublicDateTime(latest);
+  return label ? `Dernière mise à jour : ${label}` : "Pas de résultat en ligne pour cette session";
 }
 
 function finalistName(row) {
@@ -474,6 +475,7 @@ function renderRow(row) {
 
 function renderSessionControls() {
   const available = sessions();
+  const sessionResults = resultsForRows(rowsForSession(activeSession).filter((row) => resultIsVisible(resultForRow(row))));
   if (sessionControls) {
     sessionControls.innerHTML = available.map((session) => `
       <button class="session-chip ${session === activeSession ? "active" : ""}" type="button" data-public-session="${escapeHtml(session)}">S${escapeHtml(session)}</button>
@@ -484,6 +486,9 @@ function renderSessionControls() {
       <option value="${escapeHtml(session)}" ${session === activeSession ? "selected" : ""}>Session ${escapeHtml(session)}</option>
     `).join("");
     sessionSelect.disabled = available.length <= 1;
+  }
+  if (sessionMeta) {
+    sessionMeta.textContent = latestSessionUpdateLabel(sessionResults);
   }
 }
 
@@ -642,7 +647,6 @@ function renderResults() {
     <div class="public-session-title">
       <div>
         <h2>Session ${escapeHtml(activeSession)}</h2>
-        <p class="public-session-update">${escapeHtml(latestSessionUpdateLabel(sessionResults))}</p>
       </div>
       <span>${escapeHtml(String(sessionResults.length))} résultat${sessionResults.length > 1 ? "s" : ""} publié${sessionResults.length > 1 ? "s" : ""} / ${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>

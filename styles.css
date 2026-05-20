@@ -1853,6 +1853,14 @@ body.profile-home-active .top-actions {
   font-weight: 850;
 }
 
+.public-session-select-meta {
+  margin: -1px 0 0;
+  color: #52646e;
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
 .public-series-toolbar-actions {
   display: flex;
   justify-content: flex-end;
@@ -1954,24 +1962,53 @@ body.profile-home-active .top-actions {
 }
 
 .public-progress-card {
+  appearance: none;
   display: grid;
-  gap: 3px;
-  padding: 9px 10px;
-  border-color: #b8dce3;
-  background: #f3fbfc;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-color: #8ecbd6;
+  border-left: 4px solid var(--accent);
+  background: #f1fbfc;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .public-progress-card span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #dff3f6;
   color: #0b7285;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 950;
   text-transform: uppercase;
 }
 
 .public-progress-card strong {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 950;
+  min-width: 0;
+}
+
+.public-progress-card::after {
+  content: "→";
+  color: var(--accent-dark);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.public-progress-card:hover,
+.public-progress-card:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(11, 114, 133, 0.12);
+  outline: none;
 }
 
 .public-program-inline-button {
@@ -2532,6 +2569,25 @@ body.profile-home-active .top-actions {
 .public-session-results-pdf .public-document-kind {
   background: #e8f7ec;
   color: #17642b;
+}
+
+.public-series-public-pdf {
+  padding: 7px 9px;
+  border-left-width: 0;
+  background: #fbfdfe;
+}
+
+.public-series-public-pdf strong {
+  font-size: 0.84rem;
+}
+
+.public-series-public-pdf span {
+  font-size: 0.68rem;
+}
+
+.public-series-public-pdf .ghost-button {
+  min-height: 30px;
+  padding-inline: 10px;
 }
 
 .public-pdf-link-actions {

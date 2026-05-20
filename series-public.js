@@ -146,9 +146,20 @@ function progressMatchesSeries(row, seriesNumber) {
   return String(publicProgress.series || "") === String(seriesNumber || "");
 }
 
+function publicProgressTarget() {
+  if (!publicProgress?.programKey) return null;
+  const races = raceRows();
+  const raceIndex = races.findIndex((item) => progressMatchesRace(item));
+  if (raceIndex < 0) return null;
+  const numbers = seriesNumbers(seriesRowsForProgram(races[raceIndex] || {}));
+  const seriesIndex = Math.max(0, numbers.findIndex((number) => progressMatchesSeries(races[raceIndex], number)));
+  return { raceIndex, seriesIndex };
+}
+
 function renderPublicProgress() {
   if (!publicProgress?.programKey) return "";
   const row = raceRows().find((item) => progressMatchesRace(item));
+  const target = publicProgressTarget();
   const eventName = eventLabel(publicProgress.eventId, publicProgress.eventLabel || row?.label || "");
   const session = publicProgress.session ? `S${publicProgress.session}` : "";
   const phase = publicProgress.stage && isFinalStage(publicProgress.stage)
@@ -156,10 +167,10 @@ function renderPublicProgress() {
     : `Série ${publicProgress.series || "-"}`;
   const sex = sexLabel(publicProgress.sex || row?.sex || "");
   return `
-    <section class="panel public-progress-card" aria-label="Repère de compétition">
+    <button class="panel public-progress-card" type="button" ${target ? `data-public-progress-race="${escapeHtml(String(target.raceIndex))}" data-public-progress-series="${escapeHtml(String(target.seriesIndex))}"` : "disabled"} aria-label="Aller à la série en cours">
       <span>En cours</span>
       <strong>${escapeHtml([session, eventName, sex, phase].filter(Boolean).join(" · "))}</strong>
-    </section>
+    </button>
   `;
 }
 
@@ -652,16 +663,15 @@ function seriesPdfForSession(session) {
 function renderSeriesPdfSection() {
   const pdf = seriesPdfForSession(activeSession);
   if (!pdf) return "";
-  const label = pdf.scope === "session" ? `PDF séries - session ${activeSession || "-"}` : "PDF séries complet";
-  const updated = pdf.updatedAt ? `Mis à jour le ${new Date(pdf.updatedAt).toLocaleString("fr-FR")}` : "";
+  const label = pdf.scope === "session" ? `Session ${activeSession || "-"}` : "Complet";
+  const updated = pdf.updatedAt ? new Date(pdf.updatedAt).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
   return `
     <section class="public-series-pdf public-series-public-pdf">
       <div>
-        <span class="public-document-kind">PDF</span>
-        <strong>${escapeHtml(label)}</strong>
-        ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
+        <strong>PDF séries</strong>
+        <span>${escapeHtml([label, updated].filter(Boolean).join(" · "))}</span>
       </div>
-      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir le PDF</a>
+      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir</a>
     </section>
   `;
 }
@@ -927,6 +937,14 @@ sessionSelect?.addEventListener("change", (event) => {
 
 app?.addEventListener("click", (event) => {
   if (event.target.closest("[data-close-public-record]")) {
+    activeRecordKey = "";
+    render();
+    return;
+  }
+  const progressButton = event.target.closest("[data-public-progress-race]");
+  if (progressButton) {
+    activeRaceIndex = Number(progressButton.dataset.publicProgressRace) || 0;
+    activeSeriesIndex = Number(progressButton.dataset.publicProgressSeries) || 0;
     activeRecordKey = "";
     render();
     return;
