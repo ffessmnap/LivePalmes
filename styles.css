@@ -380,6 +380,16 @@ body.fullscreen-mode .top-actions .ghost-button:not(#fullscreenBtn) {
   color: #8a6200;
 }
 
+body.training-mode .topbar {
+  border-top: 5px solid #f59f00;
+}
+
+body.training-mode .firebase-header-status.ok {
+  border-color: #ffd8a8;
+  background: #fff4e6;
+  color: #b86200;
+}
+
 .firebase-header-status .firebase-dot {
   margin-right: 0;
 }

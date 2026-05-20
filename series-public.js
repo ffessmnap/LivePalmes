@@ -1089,6 +1089,13 @@ function sanitizeForfaitAlert(alert) {
   };
 }
 
+function sessionInfosFromLiveOrIndex(remote = {}, index = {}, fallback = {}) {
+  if (remote.notes && Object.prototype.hasOwnProperty.call(remote.notes, "publicSessionInfos")) {
+    return remote.notes.publicSessionInfos || {};
+  }
+  return index.sessionInfos || fallback || {};
+}
+
 async function loadPublicForfaits(competition) {
   try {
     const snapshot = await competition.collection("alerts").where("type", "==", "forfait").get({ source: "server" });
@@ -1107,7 +1114,7 @@ function applyLiveData(remote, index = {}) {
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicResults = Array.isArray(index.results) ? index.results : publicResults;
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
-  publicSessionInfos = index.sessionInfos || remote.notes?.publicSessionInfos || publicSessionInfos;
+  publicSessionInfos = sessionInfosFromLiveOrIndex(remote, index, publicSessionInfos);
   publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
@@ -1138,7 +1145,7 @@ async function loadPublicSeries() {
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
-  publicSessionInfos = index.sessionInfos || remote.notes?.publicSessionInfos || {};
+  publicSessionInfos = sessionInfosFromLiveOrIndex(remote, index, {});
   publicProgress = remote.notes?.publicProgress || null;
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
