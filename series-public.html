@@ -20,7 +20,7 @@
           LivePalmes
         </p>
         <h1 id="publicSeriesMeetTitle">S&eacute;ries publiques</h1>
-        <p id="publicSeriesMeetMeta" class="public-meet-meta">Horaires indicatifs</p>
+        <p id="publicSeriesMeetMeta" class="public-meet-meta">S&eacute;ries non mises &agrave; jour</p>
       </div>
       <span id="publicSeriesStatus" class="firebase-header-status pending">
         <i class="firebase-dot pending" aria-hidden="true"></i>
@@ -30,9 +30,13 @@
 
     <main class="public-series-shell">
       <section class="panel public-series-toolbar">
+        <label class="public-session-select">
+          <span>Session</span>
+          <select id="publicSeriesSessionSelect" aria-label="Choisir la session"></select>
+        </label>
         <div>
           <h2>Programme</h2>
-          <p class="panel-subtitle">Consultation publique des s&eacute;ries, lignes et temps d'engagement.</p>
+          <p class="panel-subtitle">Consultation des s&eacute;ries, lignes et temps d'engagement.</p>
         </div>
         <div class="public-series-toolbar-actions">
           <button id="publicSeriesProgramBtn" class="ghost-button compact" type="button">Programme</button>
@@ -40,7 +44,7 @@
         </div>
       </section>
 
-      <nav id="publicSeriesSessions" class="session-controls public-session-controls" aria-label="Sessions"></nav>
+      <nav id="publicSeriesSessions" class="session-controls public-session-controls" aria-label="Sessions" hidden></nav>
 
       <section id="publicSeriesApp" class="public-series-app">
         <p class="panel-subtitle">Chargement des s&eacute;ries...</p>

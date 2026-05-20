@@ -1772,6 +1772,30 @@ body.profile-home-active .top-actions {
   gap: 10px;
 }
 
+.public-session-select {
+  display: grid;
+  gap: 5px;
+  flex: 0 0 140px;
+}
+
+.public-session-select span {
+  color: #42566b;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.public-session-select select {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #cfdce1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
 .public-series-toolbar-actions {
   display: flex;
   justify-content: flex-end;
@@ -1785,11 +1809,11 @@ body.profile-home-active .top-actions {
 }
 
 .public-series-console-controls {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.7fr);
+  align-items: end;
+  gap: 10px;
   padding: 10px;
-  overflow-x: auto;
 }
 
 .public-series-race-card {
@@ -1799,7 +1823,6 @@ body.profile-home-active .top-actions {
 
 .public-series-race-select {
   display: grid;
-  flex: 0 0 212px;
   gap: 6px;
 }
 
@@ -1826,7 +1849,6 @@ body.profile-home-active .top-actions {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 auto;
   min-width: 0;
   padding-bottom: 1px;
 }
@@ -1847,6 +1869,16 @@ body.profile-home-active .top-actions {
 
 .public-series-chip-row .series-chip {
   flex: 0 0 auto;
+}
+
+.public-series-chip-row .series-chip em {
+  background: #eef3f6;
+  color: #5b6f7b;
+}
+
+.public-series-chip-row .series-chip.active em {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
 
 .public-program-inline-button {
@@ -5936,6 +5968,12 @@ tbody tr:hover,
     flex-direction: column;
   }
 
+  .public-session-select {
+    flex: none;
+    width: 100%;
+    order: -2;
+  }
+
   .public-series-toolbar-actions {
     justify-content: stretch;
   }
@@ -5947,11 +5985,27 @@ tbody tr:hover,
 
   .public-series-console-controls {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 10px;
+    padding: 10px;
   }
 
-  .public-program-inline-button {
-    justify-self: stretch;
+  .public-series-race-select {
+    width: 100%;
+  }
+
+  .public-series-chip-field {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .public-series-chip-row {
+    padding-bottom: 2px;
+  }
+
+  .public-series-chip-row .series-chip {
+    min-width: 58px;
+    justify-content: center;
   }
 
   .public-series-board {
@@ -5968,16 +6022,61 @@ tbody tr:hover,
   }
 
   .public-series-table {
-    min-width: 440px;
+    min-width: 0;
+    table-layout: fixed;
   }
 
   .public-series-table th,
   .public-series-table td {
-    padding: 7px 6px;
+    padding: 6px 4px;
+    font-size: 0.74rem;
+  }
+
+  .public-series-table th:nth-child(1),
+  .public-series-table td:nth-child(1) {
+    width: 38px;
+  }
+
+  .public-series-table th:nth-child(2),
+  .public-series-table td:nth-child(2) {
+    width: auto;
+  }
+
+  .public-series-table th:nth-child(3),
+  .public-series-table td:nth-child(3) {
+    width: 58px;
+  }
+
+  .public-series-table th:nth-child(4),
+  .public-series-table td:nth-child(4) {
+    width: 58px;
   }
 
   .public-series-name-button strong {
-    font-size: 0.84rem;
+    font-size: 0.76rem;
+    line-height: 1.1;
+  }
+
+  .public-series-name-button span {
+    font-size: 0.66rem;
+  }
+
+  .public-series-category,
+  .public-series-forfait {
+    min-height: 20px;
+    padding: 0 5px;
+    font-size: 0.62rem;
+  }
+
+  .public-series-line {
+    width: 25px;
+    min-width: 25px;
+    height: 25px;
+    font-size: 0.74rem;
+  }
+
+  .public-series-table-wrap {
+    overflow-x: hidden;
   }
 
   #refreshPublicResultsBtn {
