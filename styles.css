@@ -1605,6 +1605,18 @@ body.profile-home-active .top-actions {
   color: #ffffff;
 }
 
+.public-results-actions .is-disabled {
+  opacity: 0.55;
+}
+
+.public-refresh-button {
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
+  font-size: 1.08rem;
+  font-weight: 950;
+}
+
 #publicSessionInfoHost:empty {
   display: none;
 }
@@ -6183,7 +6195,8 @@ tbody tr:hover,
     overflow-x: hidden;
   }
 
-  #refreshPublicResultsBtn {
+  #refreshPublicResultsBtn,
+  #refreshPublicSeriesBtn {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
