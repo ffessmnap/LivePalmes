@@ -1211,9 +1211,9 @@ function renderPublicSessionInfosModal() {
     <div class="decision-dialog role-codes-dialog session-infos-dialog" role="dialog" aria-modal="true" aria-label="Informations des sessions">
       <div class="decision-modal-head">
         <div>
-          <span>Page résultats</span>
+          <span>Pages publiques</span>
           <h2>Informations</h2>
-          <p>Ces textes apparaîtront sur la page résultats publique quand on clique sur la session concernée.</p>
+          <p>Ces textes apparaîtront sur les pages publiques Résultats et Séries quand on clique sur la session concernée.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
@@ -8338,7 +8338,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
     }).then(async () => {
       await publishPublicResultsIndex({ silent: true });
       renderResultsAdminPanel();
-      window.alert("Informations de session publiées sur la page résultats.");
+      window.alert("Informations de session publiées sur les pages Résultats et Séries.");
     }).catch((error) => {
       console.error(error);
       window.alert(`Publication impossible : ${error?.message || error}`);
