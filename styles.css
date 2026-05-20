@@ -126,6 +126,31 @@ button,
   text-transform: uppercase;
 }
 
+.public-position-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: stretch;
+  padding: 0 8px;
+  border-left: 1px solid #dbe8ee;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.public-position-toggle input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.public-position-toggle:has(input:checked) {
+  color: var(--accent-dark);
+  background: #eef9fb;
+}
+
 .role-switch {
   display: flex;
   align-items: center;
@@ -1772,6 +1797,10 @@ body.profile-home-active .top-actions {
   gap: 10px;
 }
 
+.public-series-toolbar-text {
+  min-width: 0;
+}
+
 .public-session-select {
   display: grid;
   gap: 5px;
@@ -1879,6 +1908,42 @@ body.profile-home-active .top-actions {
 .public-series-chip-row .series-chip.active em {
   background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
+}
+
+.public-series-chip-row .public-current-chip {
+  border-color: #0b7285;
+  box-shadow: 0 0 0 2px rgba(11, 114, 133, 0.12);
+}
+
+.public-series-chip-row .public-current-chip strong {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e7f6f8;
+  color: #0b7285;
+  font-size: 0.58rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-progress-card {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-color: #b8dce3;
+  background: #f3fbfc;
+}
+
+.public-progress-card span {
+  color: #0b7285;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-progress-card strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 950;
 }
 
 .public-program-inline-button {
@@ -5964,23 +6029,46 @@ tbody tr:hover,
   }
 
   .public-series-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .public-series-toolbar-text {
+    display: none;
   }
 
   .public-session-select {
     flex: none;
-    width: 100%;
-    order: -2;
+    width: auto;
   }
 
   .public-series-toolbar-actions {
-    justify-content: stretch;
+    justify-content: flex-end;
+    gap: 5px;
   }
 
   .public-series-toolbar-actions .ghost-button {
-    flex: 1 1 120px;
-    min-height: 38px;
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 0.76rem;
+  }
+
+  .public-session-select {
+    gap: 3px;
+  }
+
+  .public-session-select span {
+    font-size: 0.66rem;
+  }
+
+  .public-session-select select {
+    min-height: 32px;
+    font-size: 0.8rem;
+    padding: 0 8px;
   }
 
   .public-series-console-controls {
