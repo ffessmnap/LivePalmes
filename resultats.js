@@ -268,6 +268,45 @@ function resultStatus(row, result) {
   return { label: "En attente du résultat", className: "missing" };
 }
 
+function formatPublicDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function resultsForRows(rows = []) {
+  const seen = new Set();
+  return rows
+    .map((row) => resultForRow(row))
+    .filter(Boolean)
+    .filter((result) => {
+      const key = result.id || result.programKey || result.raceKey || `${result.eventId || ""}|${result.sex || ""}|${result.updatedAt || ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function resultIsVisible(result) {
+  return Boolean(result && (!result.hasFinal || result.finalistsAnnouncedAt));
+}
+
+function latestSessionUpdateLabel(results = []) {
+  const latest = results
+    .map((result) => result.updatedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const label = formatPublicDateTime(latest || publicIndexUpdatedAt);
+  return label ? `Dernière mise à jour : ${label}` : "En attente de publication";
+}
+
 function finalistName(row) {
   const name = formatPersonNameParts(row.firstName, row.lastName, row.displayName);
   return [name, row.birthYear ? `(${row.birthYear})` : "", row.club].filter(Boolean).join(" ");
@@ -508,6 +547,34 @@ function renderSessionResultsPdfLinks(session) {
   `;
 }
 
+function renderPublicDocumentsSection(documentsHtml) {
+  if (!documentsHtml) return "";
+  return `
+    <div class="public-results-section-title public-documents-title">
+      <h3>Documents</h3>
+      <span>Séries et PDF publiés</span>
+    </div>
+    <section class="public-documents-section" aria-label="Documents de la session">
+      ${documentsHtml}
+    </section>
+  `;
+}
+
+function renderPendingRows(rows = []) {
+  if (!rows.length) return "";
+  return `
+    <details class="public-pending-results-block">
+      <summary>
+        <span>Courses en attente de résultat</span>
+        <strong>${escapeHtml(String(rows.length))}</strong>
+      </summary>
+      <div class="public-pending-results-list">
+        ${rows.map(renderRow).join("")}
+      </div>
+    </details>
+  `;
+}
+
 function renderMeetTitle() {
   if (!meetTitle) return;
   const name = cleanText(publicMeet.name || "");
@@ -537,25 +604,37 @@ function renderResults() {
   renderMeetTitle();
   renderSessionControls();
   const rows = rowsForSession(activeSession);
+  const publishedRows = rows.filter((row) => resultIsVisible(resultForRow(row)));
+  const pendingRows = rows.filter((row) => !resultIsVisible(resultForRow(row)));
+  const sessionResults = resultsForRows(publishedRows);
+  const documentsHtml = [renderSeriesPdfLink(activeSession), renderSessionResultsPdfLinks(activeSession)]
+    .filter(Boolean)
+    .join("");
   if (!rows.length) {
     list.innerHTML = `<p class="panel-subtitle">Aucune course trouvée pour cette session.</p>`;
     return;
   }
   list.innerHTML = `
     <div class="public-session-title">
-      <h2>Session ${escapeHtml(activeSession)}</h2>
-      <span>${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
+      <div>
+        <h2>Session ${escapeHtml(activeSession)}</h2>
+        <p class="public-session-update">${escapeHtml(latestSessionUpdateLabel(sessionResults))}</p>
+      </div>
+      <span>${escapeHtml(String(sessionResults.length))} résultat${sessionResults.length > 1 ? "s" : ""} publié${sessionResults.length > 1 ? "s" : ""} / ${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
     ${renderSessionInformation(activeSession)}
-    <section class="public-documents-section" aria-label="Documents de la session">
-      ${renderSeriesPdfLink(activeSession)}
-      ${renderSessionResultsPdfLinks(activeSession)}
-    </section>
+    ${sessionResults.length ? "" : `
+      <div class="public-empty-results-note">
+        Aucun résultat n'est publié pour cette session pour le moment.
+      </div>
+    `}
     <div class="public-results-section-title">
       <h3>Résultats des courses</h3>
-      <span>Publication course par course</span>
+      <span>${escapeHtml(String(sessionResults.length))} disponible${sessionResults.length > 1 ? "s" : ""}</span>
     </div>
-    ${rows.map(renderRow).join("")}
+    ${publishedRows.map(renderRow).join("")}
+    ${renderPendingRows(pendingRows)}
+    ${renderPublicDocumentsSection(documentsHtml)}
   `;
   updateCollapseDetailsButton();
 }
