@@ -5213,7 +5213,7 @@ async function fileToDataUrl(file) {
 
 function parseResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
-  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(\(.*?finale.*?\)\s+)?([0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -5222,9 +5222,10 @@ function parseResultRow(line) {
     firstName: split.firstName,
     displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
     birthYear: importedBirthYear(match[3]),
-    club: match[4],
-    time: importedSeriesTime(match[6]) || match[6],
-    qualified: Boolean(match[5])
+    categoryCode: match.groups?.category || "",
+    club: match.groups?.club || match[4],
+    time: importedSeriesTime(match.groups?.time) || match.groups?.time || "",
+    qualified: Boolean(match.groups?.finalMarker)
   };
 }
 
@@ -5244,7 +5245,7 @@ function parseResultStatusRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
   const status = resultStatusFromText(text);
   if (!status) return null;
-  const match = text.match(/^\s*(?:(\d+)\s+)?(.+?)\s+(\d{2})\s+([A-Z0-9]+)\s+(.+?)\s*$/i);
+  const match = text.match(/^\s*(?:(\d+)\s+)?(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(.+?)\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -5253,7 +5254,8 @@ function parseResultStatusRow(line) {
     firstName: split.firstName,
     displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
     birthYear: importedBirthYear(match[3]),
-    club: match[4],
+    categoryCode: match.groups?.category || "",
+    club: match.groups?.club || match[4],
     time: "",
     resultStatus: status,
     statusLabel: {
@@ -5265,13 +5267,32 @@ function parseResultStatusRow(line) {
   };
 }
 
+function resultImportRowKey(row) {
+  return [
+    row.rank || "",
+    row.lastName || "",
+    row.firstName || "",
+    row.birthYear || "",
+    row.club || "",
+    row.time || "",
+    row.resultStatus || ""
+  ].map((value) => String(value).trim().toLowerCase()).join("|");
+}
+
 function parseFinalistsFromResultLines(lines) {
+  const seen = new Set();
   const ranking = lines
     .map((line, sourceIndex) => {
       const row = parseResultRow(line) || parseResultStatusRow(line);
       return row ? { ...row, sourceIndex } : null;
     })
     .filter(Boolean)
+    .filter((row) => {
+      const key = resultImportRowKey(row);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .sort((a, b) => {
       const statusA = a.resultStatus ? 1 : 0;
       const statusB = b.resultStatus ? 1 : 0;
