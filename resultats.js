@@ -260,7 +260,7 @@ function resultStatus(row, result) {
     if (result.isPartial) return { label: "Résultat partiel", className: "waiting" };
     return { label: "Résultat publié", className: "done" };
   }
-  return { label: "Résultat non publié", className: "missing" };
+  return { label: "En attente du résultat", className: "missing" };
 }
 
 function finalistName(row) {
@@ -440,7 +440,16 @@ function renderSessionInformation(session) {
   return `
     <div class="public-session-info">
       <strong>Informations</strong>
-      ${lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+      ${lines.map((line) => {
+        const isWarning = line.startsWith("!!");
+        const isNotice = !isWarning && line.startsWith("!");
+        const displayLine = isWarning ? line.slice(2).trim() : (isNotice ? line.slice(1).trim() : line);
+        const className = isWarning ? "public-session-warning" : (isNotice ? "public-session-notice" : "");
+        const icon = isWarning || isNotice
+          ? `<span class="public-session-info-icon" aria-hidden="true">!</span>`
+          : "";
+        return `<p class="${className}">${icon}${escapeHtml(displayLine)}</p>`;
+      }).join("")}
     </div>
   `;
 }
@@ -459,15 +468,16 @@ function sessionResultsPdfsForSession(session) {
 function renderSeriesPdfLink(session) {
   const pdf = seriesPdfForSession(session);
   if (!pdf) return "";
-  const label = pdf.scope === "session" ? `Séries de la session ${session}` : "Séries complètes";
+  const label = pdf.scope === "session" ? `Séries publiées - session ${session}` : "Séries publiées complètes";
   const updated = pdf.updatedAt ? `Mis à jour le ${new Date(pdf.updatedAt).toLocaleString("fr-FR")}` : "";
   return `
-    <div class="public-series-pdf">
+    <div class="public-series-pdf public-series-program-pdf">
       <div>
+        <span class="public-document-kind">Séries</span>
         <strong>${escapeHtml(label)}</strong>
         ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
       </div>
-      <a class="ghost-button compact confirm-button" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir les séries</a>
+      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir les séries</a>
     </div>
   `;
 }
@@ -478,6 +488,7 @@ function renderSessionResultsPdfLinks(session) {
   return `
     <div class="public-series-pdf public-session-results-pdf">
       <div>
+        <span class="public-document-kind">Résultats</span>
         <strong>Résultats complets</strong>
         <span>${escapeHtml(pdfs.length > 1 ? `${pdfs.length} PDF disponibles` : (pdfs[0].sourceLabel || "PDF de consultation"))}</span>
       </div>
@@ -531,8 +542,14 @@ function renderResults() {
       <span>${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
     ${renderSessionInformation(activeSession)}
-    ${renderSeriesPdfLink(activeSession)}
-    ${renderSessionResultsPdfLinks(activeSession)}
+    <section class="public-documents-section" aria-label="Documents de la session">
+      ${renderSeriesPdfLink(activeSession)}
+      ${renderSessionResultsPdfLinks(activeSession)}
+    </section>
+    <div class="public-results-section-title">
+      <h3>Résultats des courses</h3>
+      <span>Publication course par course</span>
+    </div>
     ${rows.map(renderRow).join("")}
   `;
 }
