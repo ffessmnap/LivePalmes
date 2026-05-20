@@ -634,10 +634,18 @@ function renderSessionInformation(session) {
   const text = cleanText(publicSessionInfos?.[session] || "").trim();
   if (!text) return "";
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const visibleLines = lines.filter((line) => !/^!{0,2}\s*Live\s+vid[ée]o\s*:\s*$/i.test(line));
+  const renderLineContent = (line) => {
+    const videoMatch = line.match(/^Live\s+vid[ée]o\s*:\s*(https?:\/\/\S+)/i);
+    if (videoMatch) {
+      return `<a class="public-session-video-link" href="${escapeHtml(videoMatch[1])}" target="_blank" rel="noopener">📹 Live vidéo</a>`;
+    }
+    return escapeHtml(line);
+  };
   return `
     <div class="public-session-info">
       <strong>Informations</strong>
-      ${lines.map((line) => {
+      ${visibleLines.map((line) => {
         const isWarning = line.startsWith("!!");
         const isNotice = !isWarning && line.startsWith("!");
         const displayLine = isWarning ? line.slice(2).trim() : (isNotice ? line.slice(1).trim() : line);
@@ -645,7 +653,7 @@ function renderSessionInformation(session) {
         const icon = isWarning || isNotice
           ? `<span class="public-session-info-icon" aria-hidden="true">!</span>`
           : "";
-        return `<p class="${className}">${icon}${escapeHtml(displayLine)}</p>`;
+        return `<p class="${className}">${icon}${renderLineContent(displayLine)}</p>`;
       }).join("")}
     </div>
   `;
