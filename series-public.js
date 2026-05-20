@@ -12,6 +12,7 @@ const meetTitle = document.querySelector("#publicSeriesMeetTitle");
 const meetMeta = document.querySelector("#publicSeriesMeetMeta");
 const app = document.querySelector("#publicSeriesApp");
 const sessionsHost = document.querySelector("#publicSeriesSessions");
+const sessionSelect = document.querySelector("#publicSeriesSessionSelect");
 const statusBadge = document.querySelector("#publicSeriesStatus");
 const refreshBtn = document.querySelector("#refreshPublicSeriesBtn");
 const programBtn = document.querySelector("#publicSeriesProgramBtn");
@@ -370,17 +371,24 @@ function renderMeetTitle() {
   if (meetMeta) {
     const date = publicIndexUpdatedAt ? new Date(publicIndexUpdatedAt) : null;
     meetMeta.textContent = date && !Number.isNaN(date.getTime())
-      ? `Horaires indicatifs · mis à jour le ${date.toLocaleString("fr-FR")}`
-      : "Horaires indicatifs";
+      ? `Séries mises à jour le ${date.toLocaleString("fr-FR")}`
+      : "Séries non mises à jour";
   }
 }
 
 function renderSessions() {
-  if (!sessionsHost) return;
   const available = sessions();
-  sessionsHost.innerHTML = available.map((session) => `
-    <button class="session-chip ${session === activeSession ? "active" : ""}" type="button" data-series-session="${escapeHtml(session)}">S${escapeHtml(session)}</button>
-  `).join("");
+  if (sessionsHost) {
+    sessionsHost.innerHTML = available.map((session) => `
+      <button class="session-chip ${session === activeSession ? "active" : ""}" type="button" data-series-session="${escapeHtml(session)}">S${escapeHtml(session)}</button>
+    `).join("");
+  }
+  if (sessionSelect) {
+    sessionSelect.innerHTML = available.map((session) => `
+      <option value="${escapeHtml(session)}" ${session === activeSession ? "selected" : ""}>Session ${escapeHtml(session)}</option>
+    `).join("");
+    sessionSelect.disabled = available.length <= 1;
+  }
 }
 
 function clampState() {
@@ -611,7 +619,6 @@ function render() {
           }).join("")}
         </div>
       </div>
-      <button id="publicSeriesProgramInlineBtn" class="ghost-button compact public-program-inline-button" type="button">Programme</button>
     </section>
 
     <section class="panel public-series-board">
@@ -802,6 +809,14 @@ sessionsHost?.addEventListener("click", (event) => {
   render();
 });
 
+sessionSelect?.addEventListener("change", (event) => {
+  activeSession = event.target.value || "";
+  activeRaceIndex = 0;
+  activeSeriesIndex = 0;
+  activeRecordKey = "";
+  render();
+});
+
 app?.addEventListener("click", (event) => {
   if (event.target.closest("[data-close-public-record]")) {
     activeRecordKey = "";
@@ -813,10 +828,6 @@ app?.addEventListener("click", (event) => {
     const key = recordButton.dataset.publicRecordKey || "";
     activeRecordKey = activeRecordKey === key ? "" : key;
     render();
-    return;
-  }
-  if (event.target.closest("#publicSeriesProgramInlineBtn")) {
-    renderProgramSheet();
     return;
   }
   if (event.target.closest("[data-public-series-previous]")) {
