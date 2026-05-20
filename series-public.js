@@ -1107,7 +1107,7 @@ function applyLiveData(remote, index = {}) {
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicResults = Array.isArray(index.results) ? index.results : publicResults;
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
-  publicSessionInfos = index.sessionInfos || publicSessionInfos;
+  publicSessionInfos = index.sessionInfos || remote.notes?.publicSessionInfos || publicSessionInfos;
   publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
@@ -1138,7 +1138,7 @@ async function loadPublicSeries() {
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
-  publicSessionInfos = index.sessionInfos || {};
+  publicSessionInfos = index.sessionInfos || remote.notes?.publicSessionInfos || {};
   publicProgress = remote.notes?.publicProgress || null;
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
