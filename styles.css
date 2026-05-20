@@ -1849,6 +1849,22 @@ body.profile-home-active .top-actions {
   font-weight: 850;
 }
 
+.public-session-pdf-link {
+  color: var(--accent-dark);
+  font-size: 0.68rem;
+  font-weight: 950;
+  line-height: 1.15;
+  text-decoration: none;
+}
+
+.public-session-pdf-link:hover {
+  text-decoration: underline;
+}
+
+.public-session-pdf-link[hidden] {
+  display: none;
+}
+
 .public-session-select-meta {
   margin: -1px 0 0;
   color: #52646e;

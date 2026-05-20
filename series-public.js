@@ -1,4 +1,5 @@
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
+const PUBLIC_PROGRESS_MAX_AGE_MS = 30 * 60 * 1000;
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
   authDomain: "livepalmes.firebaseapp.com",
@@ -13,6 +14,7 @@ const meetMeta = document.querySelector("#publicSeriesMeetMeta");
 const app = document.querySelector("#publicSeriesApp");
 const sessionsHost = document.querySelector("#publicSeriesSessions");
 const sessionSelect = document.querySelector("#publicSeriesSessionSelect");
+const seriesPdfInlineLink = document.querySelector("#publicSeriesPdfInlineLink");
 const statusBadge = document.querySelector("#publicSeriesStatus");
 const refreshBtn = document.querySelector("#refreshPublicSeriesBtn");
 const programBtn = document.querySelector("#publicSeriesProgramBtn");
@@ -130,7 +132,7 @@ function programKey(row) {
 }
 
 function progressMatchesRace(row) {
-  return Boolean(publicProgress?.programKey && row && (
+  return Boolean(publicProgressIsFresh() && row && (
     String(publicProgress.programKey || "") === String(programKey(row)) ||
     (
       publicProgress.eventId === row.eventId &&
@@ -140,6 +142,13 @@ function progressMatchesRace(row) {
   ));
 }
 
+function publicProgressIsFresh() {
+  if (!publicProgress?.programKey || !publicProgress.updatedAt) return false;
+  const updated = new Date(publicProgress.updatedAt);
+  if (Number.isNaN(updated.getTime())) return false;
+  return Date.now() - updated.getTime() <= PUBLIC_PROGRESS_MAX_AGE_MS;
+}
+
 function progressMatchesSeries(row, seriesNumber) {
   if (!progressMatchesRace(row)) return false;
   if (publicProgress.stage && isFinalStage(publicProgress.stage)) return false;
@@ -147,7 +156,7 @@ function progressMatchesSeries(row, seriesNumber) {
 }
 
 function publicProgressTarget() {
-  if (!publicProgress?.programKey) return null;
+  if (!publicProgressIsFresh()) return null;
   const races = raceRows();
   const raceIndex = races.findIndex((item) => progressMatchesRace(item));
   if (raceIndex < 0) return null;
@@ -157,7 +166,7 @@ function publicProgressTarget() {
 }
 
 function renderPublicProgress() {
-  if (!publicProgress?.programKey) return "";
+  if (!publicProgressIsFresh()) return "";
   const row = raceRows().find((item) => progressMatchesRace(item));
   const target = publicProgressTarget();
   const eventName = eventLabel(publicProgress.eventId, publicProgress.eventLabel || row?.label || "");
@@ -473,6 +482,7 @@ function renderSessions() {
     `).join("");
     sessionSelect.disabled = available.length <= 1;
   }
+  syncSeriesPdfInlineLink();
 }
 
 function clampState() {
@@ -660,20 +670,19 @@ function seriesPdfForSession(session) {
   return exact || publicSeriesPdfs.find((pdf) => pdf.scope === "full") || null;
 }
 
-function renderSeriesPdfSection() {
+function syncSeriesPdfInlineLink() {
+  if (!seriesPdfInlineLink) return;
   const pdf = seriesPdfForSession(activeSession);
-  if (!pdf) return "";
-  const label = pdf.scope === "session" ? `Session ${activeSession || "-"}` : "Complet";
+  if (!pdf?.id) {
+    seriesPdfInlineLink.hidden = true;
+    seriesPdfInlineLink.removeAttribute("href");
+    return;
+  }
+  const label = pdf.scope === "session" ? `PDF séries S${activeSession || "-"}` : "PDF séries";
   const updated = pdf.updatedAt ? new Date(pdf.updatedAt).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
-  return `
-    <section class="public-series-pdf public-series-public-pdf">
-      <div>
-        <strong>PDF séries</strong>
-        <span>${escapeHtml([label, updated].filter(Boolean).join(" · "))}</span>
-      </div>
-      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir</a>
-    </section>
-  `;
+  seriesPdfInlineLink.hidden = false;
+  seriesPdfInlineLink.href = `pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}`;
+  seriesPdfInlineLink.textContent = [label, updated].filter(Boolean).join(" · ");
 }
 
 function raceSelectLabel(row) {
@@ -699,7 +708,6 @@ function render() {
   const time = race.startTime || currentRows.find((row) => row.startTime)?.startTime || rowStartTime(race);
   const navigation = publicNavigationState(races, numbers);
   app.innerHTML = `
-    ${renderSeriesPdfSection()}
     ${renderPublicProgress()}
 
     <section class="panel public-series-console-controls">
