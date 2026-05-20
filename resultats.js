@@ -21,6 +21,7 @@ const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
 
 let publicProgram = [];
 let publicEvents = [];
+let publicEntrants = [];
 let publicSeries = [];
 let publicMeet = {};
 let publicResults = [];
@@ -375,13 +376,50 @@ function swimmerKey(row) {
   return normalizeText([row.lastName, row.firstName, row.name, row.displayName, row.club].filter(Boolean).join("|"));
 }
 
+function entrantForSeriesRow(row) {
+  if (!row) return null;
+  if (row.swimmerId) {
+    return publicEntrants.find((entrant) =>
+      entrant.swimmerId === row.swimmerId &&
+      (!row.eventId || !entrant.eventId || entrant.eventId === row.eventId) &&
+      (!row.sex || !entrant.sex || entrant.sex === row.sex) &&
+      (!row.session || !entrant.session || entrant.session === row.session)
+    ) || publicEntrants.find((entrant) => entrant.swimmerId === row.swimmerId) || null;
+  }
+  const key = normalizeText([row.lastName, row.firstName, row.birthDate, row.sex].join("|"));
+  return publicEntrants.find((entrant) =>
+    normalizeText([entrant.lastName, entrant.firstName, entrant.birthDate, entrant.sex].join("|")) === key
+  ) || null;
+}
+
+function displaySeriesRow(row) {
+  const entrant = entrantForSeriesRow(row);
+  if (!entrant) return row || {};
+  return {
+    ...entrant,
+    ...row,
+    lastName: row.lastName || entrant.lastName || "",
+    firstName: row.firstName || entrant.firstName || "",
+    name: row.name || entrant.name || entrant.displayName || "",
+    displayName: row.displayName || entrant.displayName || "",
+    club: row.club || entrant.club || "",
+    clubCode: row.clubCode || entrant.clubCode || "",
+    category: row.category || entrant.category || "",
+    categoryCode: row.categoryCode || entrant.categoryCode || "",
+    seedTime: row.seedTime || entrant.seedTime || "",
+    birthDate: row.birthDate || entrant.birthDate || ""
+  };
+}
+
 function swimmerName(row) {
+  row = displaySeriesRow(row);
   const last = cleanText(row.lastName || "").trim().toLocaleUpperCase("fr-FR");
   const first = cleanText(row.firstName || "").trim();
   return [last, first].filter(Boolean).join(" ").trim() || cleanText(row.name || row.displayName || "Nageur");
 }
 
 function clubLabel(row) {
+  row = displaySeriesRow(row);
   const explicit = cleanText(row.clubCode || "").trim();
   if (explicit) return explicit.toLocaleUpperCase("fr-FR");
   const club = cleanText(row.club || "").trim();
@@ -401,10 +439,12 @@ function lineLabel(row) {
 }
 
 function seedLabel(row) {
+  row = displaySeriesRow(row);
   return cleanText(row.seedTime || row.time || row.entryTime || "");
 }
 
 function birthYearLabel(row) {
+  row = displaySeriesRow(row);
   const value = cleanText(row.birthDate || row.birthYear || "");
   const match = value.match(/\b(19|20)\d{2}\b/);
   return match ? match[0] : value;
@@ -450,6 +490,7 @@ function allPublicPerformances() {
 }
 
 function performanceMatchesRow(performance, row) {
+  row = displaySeriesRow(row);
   if (/^4x/i.test(String(performance.eventId || row.eventId || ""))) return false;
   if (!recordEventMatches(performance.eventId, row.eventId)) return false;
   if (performance.sex && row.sex && performance.sex !== row.sex) return false;
@@ -607,6 +648,7 @@ function swimmerProgramRows(key) {
   return publicSeries
     .filter((row) => swimmerKey(row) === key)
     .filter((row) => !isFinalStage(row.stage) && !isRelayRow(row))
+    .map(displaySeriesRow)
     .sort((a, b) =>
       Number(a.session || 999) - Number(b.session || 999) ||
       Number(a.heatOrder || a.series || 9999) - Number(b.heatOrder || b.series || 9999)
@@ -1054,10 +1096,13 @@ function liveDataIsNewerThanPublicIndex(remote, index) {
 
 function applyPublicLiveOverlay(remote, index = {}) {
   applyPublicAccessFromLiveData(remote);
+  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
+  if (!publicSeries.length && Array.isArray(remote.series)) publicSeries = remote.series;
   if (!liveDataIsNewerThanPublicIndex(remote, index)) return;
   publicMeet = remote.meet || publicMeet;
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
+  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicSessionInfos = remote.notes?.publicSessionInfos || publicSessionInfos;
   if (Array.isArray(remote.notes?.publicSeriesPdfs)) {
@@ -1100,6 +1145,7 @@ async function loadPublicResultsIndex() {
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
+  publicEntrants = Array.isArray(index.entrants) ? index.entrants : (Array.isArray(remote.entrants) ? remote.entrants : []);
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
   publicSessionInfos = index.sessionInfos || {};
@@ -1131,6 +1177,7 @@ async function loadPublicResultsFallback(competition) {
   publicMeet = remote.meet || {};
   publicProgram = Array.isArray(remote.program) ? remote.program : [];
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
+  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   publicSessionInfos = remote.notes?.publicSessionInfos || {};

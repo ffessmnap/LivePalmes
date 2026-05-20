@@ -1626,7 +1626,8 @@ body.profile-home-active .top-actions {
   font-weight: 950;
 }
 
-#publicSessionInfoHost:empty {
+#publicSessionInfoHost:empty,
+#publicSeriesInfoHost:empty {
   display: none;
 }
 
