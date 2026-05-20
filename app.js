@@ -1076,6 +1076,7 @@ function renderRoleCodesModal() {
       </div>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
+        <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
         <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
       </div>
       <div class="decision-modal-actions">
@@ -3486,7 +3487,6 @@ function renderResultsAdminPanel() {
           </label>
         ` : ""}
         <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
-        <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
         <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
         <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
           <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
@@ -8021,18 +8021,6 @@ resultsAdminPanel?.addEventListener("click", (event) => {
     renderPublicSessionInfosModal();
     return;
   }
-  if (event.target.closest("[data-public-index-republish]")) {
-    publishPublicResultsIndex()
-      .then(() => {
-        renderResultsAdminPanel();
-        window.alert("Index public republié. Les pages Séries/Résultats peuvent utiliser les données à jour sans modifier l'heure des séries.");
-      })
-      .catch((error) => {
-        console.error(error);
-        window.alert(`Republication impossible : ${error?.message || error}`);
-      });
-    return;
-  }
   if (event.target.closest("[data-computer-admin-series]")) {
     openAdminSeriesModal();
     return;
@@ -8273,6 +8261,16 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   if (event.target.closest("[data-open-history-archives]")) {
     await renderHistoryArchivesModal({ canDelete: true });
+    return;
+  }
+  if (event.target.closest("[data-public-index-republish]")) {
+    try {
+      await publishPublicResultsIndex();
+      window.alert("Index public republié. Les pages Séries/Résultats peuvent utiliser les données à jour sans modifier l'heure des séries.");
+    } catch (error) {
+      console.error(error);
+      window.alert(`Republication impossible : ${error?.message || error}`);
+    }
     return;
   }
   if (event.target.closest("[data-role-codes-back]")) {
