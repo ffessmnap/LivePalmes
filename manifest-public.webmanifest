@@ -1,8 +1,8 @@
 {
-  "name": "LivePalmes",
-  "short_name": "LivePalmes",
-  "description": "Outil de suivi en temps reel pour la nage avec palmes.",
-  "start_url": "index.html",
+  "name": "Résultats LivePalmes",
+  "short_name": "Résultats",
+  "description": "Résultats publics LivePalmes.",
+  "start_url": "resultats.html",
   "scope": ".",
   "display": "standalone",
   "background_color": "#f4f8fb",
