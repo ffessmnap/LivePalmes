@@ -22,6 +22,7 @@ const programSheet = document.querySelector("#publicProgramSheet");
 let publicMeet = {};
 let publicEvents = [];
 let publicProgram = [];
+let publicEntrants = [];
 let publicSeries = [];
 let publicForfaits = [];
 let publicRecords = [];
@@ -131,13 +132,50 @@ function swimmerKey(row) {
   return normalizeText([row.lastName, row.firstName, row.name, row.club].filter(Boolean).join("|"));
 }
 
+function entrantForSeriesRow(row) {
+  if (!row) return null;
+  if (row.swimmerId) {
+    return publicEntrants.find((entrant) =>
+      entrant.swimmerId === row.swimmerId &&
+      (!row.eventId || !entrant.eventId || entrant.eventId === row.eventId) &&
+      (!row.sex || !entrant.sex || entrant.sex === row.sex) &&
+      (!row.session || !entrant.session || entrant.session === row.session)
+    ) || publicEntrants.find((entrant) => entrant.swimmerId === row.swimmerId) || null;
+  }
+  const key = normalizeText([row.lastName, row.firstName, row.birthDate, row.sex].join("|"));
+  return publicEntrants.find((entrant) =>
+    normalizeText([entrant.lastName, entrant.firstName, entrant.birthDate, entrant.sex].join("|")) === key
+  ) || null;
+}
+
+function displaySeriesRow(row) {
+  const entrant = entrantForSeriesRow(row);
+  if (!entrant) return row || {};
+  return {
+    ...entrant,
+    ...row,
+    lastName: row.lastName || entrant.lastName || "",
+    firstName: row.firstName || entrant.firstName || "",
+    name: row.name || entrant.name || entrant.displayName || "",
+    displayName: row.displayName || entrant.displayName || "",
+    club: row.club || entrant.club || "",
+    clubCode: row.clubCode || entrant.clubCode || "",
+    category: row.category || entrant.category || "",
+    categoryCode: row.categoryCode || entrant.categoryCode || "",
+    seedTime: row.seedTime || entrant.seedTime || "",
+    birthDate: row.birthDate || entrant.birthDate || ""
+  };
+}
+
 function swimmerName(row) {
+  row = displaySeriesRow(row);
   const last = cleanText(row.lastName || "").trim().toLocaleUpperCase("fr-FR");
   const first = cleanText(row.firstName || "").trim();
   return [last, first].filter(Boolean).join(" ").trim() || cleanText(row.name || row.displayName || "Nageur");
 }
 
 function clubLabel(row) {
+  row = displaySeriesRow(row);
   const explicit = cleanText(row.clubCode || "").trim();
   if (explicit) return explicit.toLocaleUpperCase("fr-FR");
   const club = cleanText(row.club || "").trim();
@@ -157,6 +195,7 @@ function lineLabel(row) {
 }
 
 function seedLabel(row) {
+  row = displaySeriesRow(row);
   return cleanText(row.seedTime || row.time || row.entryTime || "");
 }
 
@@ -459,18 +498,19 @@ function renderSeriesRows(rows) {
     return `<tr><td colspan="4" class="public-series-empty-line">Aucune ligne trouvée pour cette série.</td></tr>`;
   }
   return rows.map((row) => {
+    const displayRow = displaySeriesRow(row);
     const forfait = isForfait(row);
     return `
       <tr class="public-series-table-row ${forfait ? "is-forfait" : ""}" data-swimmer-key="${escapeHtml(swimmerKey(row))}">
         <td><span class="public-series-line">${escapeHtml(lineLabel(row))}</span></td>
         <td>
           <button class="public-series-name-button" type="button">
-            <strong>${escapeHtml(swimmerName(row))}</strong>
-            <span>${escapeHtml(clubLabel(row) || "-")}</span>
+            <strong>${escapeHtml(swimmerName(displayRow))}</strong>
+            <span>${escapeHtml(clubLabel(displayRow) || "-")}</span>
           </button>
         </td>
-        <td><span class="public-series-category ${categoryClass(row.category)}">${escapeHtml(categoryLabel(row.category, row.sex) || "-")}</span></td>
-        <td>${forfait ? `<span class="public-series-forfait">Forfait</span>` : `<strong>${escapeHtml(seedLabel(row) || "-")}</strong>`}</td>
+        <td><span class="public-series-category ${categoryClass(displayRow.category)}">${escapeHtml(categoryLabel(displayRow.category, displayRow.sex) || "-")}</span></td>
+        <td>${forfait ? `<span class="public-series-forfait">Forfait</span>` : `<strong>${escapeHtml(seedLabel(displayRow) || "-")}</strong>`}</td>
       </tr>
     `;
   }).join("");
@@ -655,6 +695,7 @@ function swimmerProgramRows(key) {
   return publicSeries
     .filter((row) => swimmerKey(row) === key)
     .filter((row) => !isFinalStage(row.stage))
+    .map(displaySeriesRow)
     .sort((a, b) =>
       Number(a.session || 999) - Number(b.session || 999) ||
       Number(a.heatOrder || a.series || 9999) - Number(b.heatOrder || b.series || 9999)
@@ -761,6 +802,7 @@ function applyLiveData(remote, index = {}) {
   publicMeet = remote.meet || publicMeet;
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
+  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
@@ -787,6 +829,7 @@ async function loadPublicSeries() {
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
+  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
