@@ -96,8 +96,13 @@ function ensurePublicAccess() {
     renderPublicOffline();
     return false;
   }
-  if (collapseDetailsBtn) collapseDetailsBtn.hidden = false;
+  updateCollapseDetailsButton();
   return true;
+}
+
+function updateCollapseDetailsButton() {
+  if (!collapseDetailsBtn || !list) return;
+  collapseDetailsBtn.hidden = !list.querySelector("details[open]");
 }
 
 function applyPublicAccessFromLiveData(remote) {
@@ -552,6 +557,7 @@ function renderResults() {
     </div>
     ${rows.map(renderRow).join("")}
   `;
+  updateCollapseDetailsButton();
 }
 
 async function loadPublicSeriesPdfs(competition) {
@@ -690,7 +696,14 @@ collapseDetailsBtn?.addEventListener("click", () => {
   document.querySelectorAll(".public-results-list details[open]").forEach((details) => {
     details.open = false;
   });
+  updateCollapseDetailsButton();
 });
+
+list?.addEventListener("toggle", (event) => {
+  if (event.target?.matches("details")) {
+    updateCollapseDetailsButton();
+  }
+}, true);
 
 refreshResultsBtn?.addEventListener("click", () => {
   setStatus("Actualisation", "pending");
