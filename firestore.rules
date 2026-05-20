@@ -3,7 +3,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isLivePalmesCompetition(competitionId) {
+      return competitionId == "livepalmes-active" || competitionId == "livepalmes-test";
+    }
+
+    function isLivePalmesActiveCompetition(competitionId) {
       return competitionId == "livepalmes-active";
+    }
+
+    function isLivePalmesTestCompetition(competitionId) {
+      return competitionId == "livepalmes-test";
     }
 
     function validText(value, maxLength) {
@@ -27,6 +35,23 @@ service cloud.firestore {
       allow read: if isLivePalmesCompetition(competitionId);
       allow write: if false;
 
+      match /testMode/{documentId} {
+        allow read: if isLivePalmesActiveCompetition(competitionId);
+        allow create, update: if isLivePalmesActiveCompetition(competitionId)
+          && documentId == "state"
+          && request.resource.data.keys().hasOnly([
+            "enabled",
+            "startedAt",
+            "stoppedAt",
+            "updatedAt"
+          ])
+          && request.resource.data.enabled is bool
+          && validOptionalText("startedAt", 40)
+          && validOptionalText("stoppedAt", 40)
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId);
+      }
+
       match /alerts/{alertId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
@@ -49,7 +74,7 @@ service cloud.firestore {
           && request.resource.data.data is map
           && validText(request.resource.data.updatedAt, 40)
           && validText(request.resource.data.source, 160);
-        allow delete: if false;
+        allow delete: if isLivePalmesTestCompetition(competitionId);
       }
 
       match /public/{documentId} {
@@ -61,6 +86,7 @@ service cloud.firestore {
             "meet",
             "events",
             "program",
+            "entrants",
             "series",
             "results",
             "seriesPdfs",
@@ -76,6 +102,7 @@ service cloud.firestore {
           && request.resource.data.meet is map
           && request.resource.data.events is list
           && request.resource.data.program is list
+          && request.resource.data.entrants is list
           && request.resource.data.series is list
           && request.resource.data.results is list
           && request.resource.data.seriesPdfs is list
