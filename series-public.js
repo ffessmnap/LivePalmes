@@ -27,6 +27,8 @@ let publicSeries = [];
 let publicForfaits = [];
 let publicRecords = [];
 let publicQualifications = [];
+let publicSeriesPdfs = [];
+let publicProgress = null;
 let publicIndexUpdatedAt = "";
 let activeSession = "";
 let activeRaceIndex = 0;
@@ -125,6 +127,40 @@ function eventLabel(eventId, fallback = "") {
 
 function programKey(row) {
   return [row.order, row.session || "", row.eventId, row.sex, row.stage || "series"].join("|");
+}
+
+function progressMatchesRace(row) {
+  return Boolean(publicProgress?.programKey && row && (
+    String(publicProgress.programKey || "") === String(programKey(row)) ||
+    (
+      publicProgress.eventId === row.eventId &&
+      publicProgress.sex === row.sex &&
+      (!publicProgress.session || !row.session || String(publicProgress.session) === String(row.session))
+    )
+  ));
+}
+
+function progressMatchesSeries(row, seriesNumber) {
+  if (!progressMatchesRace(row)) return false;
+  if (publicProgress.stage && isFinalStage(publicProgress.stage)) return false;
+  return String(publicProgress.series || "") === String(seriesNumber || "");
+}
+
+function renderPublicProgress() {
+  if (!publicProgress?.programKey) return "";
+  const row = raceRows().find((item) => progressMatchesRace(item));
+  const eventName = eventLabel(publicProgress.eventId, publicProgress.eventLabel || row?.label || "");
+  const session = publicProgress.session ? `S${publicProgress.session}` : "";
+  const phase = publicProgress.stage && isFinalStage(publicProgress.stage)
+    ? "Finale"
+    : `Série ${publicProgress.series || "-"}`;
+  const sex = sexLabel(publicProgress.sex || row?.sex || "");
+  return `
+    <section class="panel public-progress-card" aria-label="Repère de compétition">
+      <span>En cours</span>
+      <strong>${escapeHtml([session, eventName, sex, phase].filter(Boolean).join(" · "))}</strong>
+    </section>
+  `;
 }
 
 function swimmerKey(row) {
@@ -408,7 +444,8 @@ function renderMeetTitle() {
   if (year && !parts.some((part) => new RegExp(`\\b${year}\\b`).test(part))) parts.push(year);
   if (meetTitle) meetTitle.textContent = cleanText(parts.join(" - ") || "Séries publiques");
   if (meetMeta) {
-    const date = publicIndexUpdatedAt ? new Date(publicIndexUpdatedAt) : null;
+    const pdf = seriesPdfForSession(activeSession);
+    const date = pdf?.updatedAt ? new Date(pdf.updatedAt) : null;
     meetMeta.textContent = date && !Number.isNaN(date.getTime())
       ? `Séries mises à jour le ${date.toLocaleString("fr-FR")}`
       : "Séries non mises à jour";
@@ -610,6 +647,28 @@ function renderSwimmerSearchSection() {
   `;
 }
 
+function seriesPdfForSession(session) {
+  const exact = publicSeriesPdfs.find((pdf) => pdf.scope === "session" && String(pdf.session || "") === String(session || ""));
+  return exact || publicSeriesPdfs.find((pdf) => pdf.scope === "full") || null;
+}
+
+function renderSeriesPdfSection() {
+  const pdf = seriesPdfForSession(activeSession);
+  if (!pdf) return "";
+  const label = pdf.scope === "session" ? `PDF séries - session ${activeSession || "-"}` : "PDF séries complet";
+  const updated = pdf.updatedAt ? `Mis à jour le ${new Date(pdf.updatedAt).toLocaleString("fr-FR")}` : "";
+  return `
+    <section class="public-series-pdf public-series-public-pdf">
+      <div>
+        <span class="public-document-kind">PDF</span>
+        <strong>${escapeHtml(label)}</strong>
+        ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
+      </div>
+      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir le PDF</a>
+    </section>
+  `;
+}
+
 function raceSelectLabel(row) {
   const time = row.startTime ? `${row.startTime} · ` : "";
   return `${time}${eventLabel(row.eventId, row.label)} ${sexLabel(row.sex)}`;
@@ -633,6 +692,9 @@ function render() {
   const time = race.startTime || currentRows.find((row) => row.startTime)?.startTime || rowStartTime(race);
   const navigation = publicNavigationState(races, numbers);
   app.innerHTML = `
+    ${renderSeriesPdfSection()}
+    ${renderPublicProgress()}
+
     <section class="panel public-series-console-controls">
       <label class="public-series-race-select">
         <span>Courses</span>
@@ -650,10 +712,12 @@ function render() {
           ${numbers.map((number, index) => {
             const rows = rowsForCurrentSeries(race, number);
             const heatTime = rows.find((row) => row.startTime)?.startTime || time || "";
+            const current = progressMatchesSeries(race, number);
             return `
-              <button class="series-chip ${index === activeSeriesIndex ? "active" : ""}" type="button" data-public-series-index="${escapeHtml(String(index))}">
+              <button class="series-chip ${index === activeSeriesIndex ? "active" : ""} ${current ? "public-current-chip" : ""}" type="button" data-public-series-index="${escapeHtml(String(index))}">
                 <span>${escapeHtml(String(number))}</span>
                 ${heatTime ? `<em>${escapeHtml(heatTime)}</em>` : ""}
+                ${current ? `<strong>En cours</strong>` : ""}
               </button>
             `;
           }).join("")}
@@ -804,6 +868,8 @@ function applyLiveData(remote, index = {}) {
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
+  publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
+  publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
   publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
@@ -831,6 +897,8 @@ async function loadPublicSeries() {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
+  publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
+  publicProgress = remote.notes?.publicProgress || null;
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
   publicIndexUpdatedAt = index.updatedAt || "";

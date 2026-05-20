@@ -186,6 +186,10 @@ function competitionModeEnabled() {
   return data.notes?.competitionMode === true;
 }
 
+function publicPositionEnabled() {
+  return data.notes?.publicPositionEnabled === true;
+}
+
 function currentRolePins() {
   return {
     ...ROLE_PINS,
@@ -332,11 +336,13 @@ let replacementAlertRepairRunning = false;
 let presenceCounts = {};
 let lastPresenceWriteAt = 0;
 let consolePresenceActive = false;
+let lastPublicProgressSignature = "";
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
 const categorySelect = document.querySelector("#categorySelect");
 const sessionControls = document.querySelector("#sessionControls");
+const publicPositionToggle = document.querySelector("#publicPositionToggle");
 const seriesControls = document.querySelector("#seriesControls");
 const roleSwitch = document.querySelector(".role-switch");
 const topActions = document.querySelector(".top-actions");
@@ -596,6 +602,48 @@ function sameRefereeProgress(a, b) {
 
 function currentRefereeProgressIsHere() {
   return sameRefereeProgress(currentRefereeProgressPayload(), refereeProgress());
+}
+
+function currentPublicProgressPayload() {
+  if (state.role !== "speaker" || !publicPositionEnabled()) return null;
+  const row = selectedProgramRow() || programRows().find((item) => item.eventId === state.eventId && item.sex === state.sex);
+  if (!row) return null;
+  return {
+    programKey: programKey(row),
+    eventId: row.eventId,
+    eventLabel: data.events.find((item) => item.id === row.eventId)?.label || row.label || row.eventId,
+    sex: row.sex,
+    session: state.session !== "all" ? String(state.session || row.session || "") : String(row.session || ""),
+    series: isFinalStage(state.series) ? "" : String(state.series || ""),
+    stage: isFinalStage(state.series) ? String(state.series) : (row.stage || "series"),
+    order: Number(row.order || 0),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function publicProgressSignature(progress) {
+  return [progress?.programKey, progress?.session, progress?.series, progress?.stage].join("|");
+}
+
+function publishPublicProgressIfNeeded() {
+  const progress = currentPublicProgressPayload();
+  if (!progress || !liveDataDocument()) return;
+  const signature = publicProgressSignature(progress);
+  if (!signature || signature === lastPublicProgressSignature) return;
+  lastPublicProgressSignature = signature;
+  updateLiveNotes("Repère public compétition", { publicProgress: progress }).catch((error) => {
+    console.warn("Publication du repère public impossible", error);
+    lastPublicProgressSignature = "";
+  });
+}
+
+async function setPublicPositionEnabled(enabled) {
+  const nextProgress = enabled ? currentPublicProgressPayload() : null;
+  lastPublicProgressSignature = "";
+  await updateLiveNotes(enabled ? "Repère public activé" : "Repère public désactivé", {
+    publicPositionEnabled: Boolean(enabled),
+    publicProgress: nextProgress
+  });
 }
 
 function homeActionCounts() {
@@ -2392,6 +2440,10 @@ function render() {
     roleLockBtn.setAttribute("aria-label", pinLockEnabled() ? "Codes actifs" : "Codes inactifs");
     roleLockBtn.classList.toggle("confirm-button", pinLockEnabled());
   }
+  if (publicPositionToggle) {
+    publicPositionToggle.checked = publicPositionEnabled();
+    publicPositionToggle.disabled = state.role !== "speaker" || !firestoreDb;
+  }
   if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
   if (archivesBtn) archivesBtn.hidden = profileHomeActive || state.role !== "computer";
   if (!data.events.some((event) => event.id === state.eventId)) {
@@ -2421,6 +2473,7 @@ function render() {
   renderDataStatus();
   saveCurrentRoleState();
   saveActiveView();
+  publishPublicProgressIfNeeded();
 }
 
 function syncProgramButtonPlacement() {
@@ -7659,6 +7712,18 @@ function changeSession(sessionNumber) {
 sessionControls?.addEventListener("change", (event) => {
   if (event.target?.id !== "sessionSelect") return;
   changeSession(event.target.value);
+});
+
+publicPositionToggle?.addEventListener("change", (event) => {
+  const enabled = event.target.checked;
+  event.target.disabled = true;
+  setPublicPositionEnabled(enabled).catch((error) => {
+    console.warn("Modification du repère public impossible", error);
+    event.target.checked = !enabled;
+  }).finally(() => {
+    event.target.disabled = state.role !== "speaker" || !firestoreDb;
+    render();
+  });
 });
 
 async function openRoleConsole(nextRole) {
