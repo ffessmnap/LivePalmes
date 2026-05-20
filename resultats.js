@@ -17,6 +17,7 @@ const sessionInfoHost = document.querySelector("#publicSessionInfoHost");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
+const programResultsBtn = document.querySelector("#publicResultsProgramBtn");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -535,6 +536,22 @@ function renderSeriesPdfLink(session) {
   `;
 }
 
+function updateProgramButton(session) {
+  if (!programResultsBtn) return;
+  const pdf = seriesPdfForSession(session);
+  if (pdf?.id) {
+    programResultsBtn.href = `pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}`;
+    programResultsBtn.classList.remove("is-disabled");
+    programResultsBtn.removeAttribute("aria-disabled");
+    programResultsBtn.title = "Voir le PDF du programme";
+    return;
+  }
+  programResultsBtn.href = "series-public.html";
+  programResultsBtn.classList.add("is-disabled");
+  programResultsBtn.setAttribute("aria-disabled", "true");
+  programResultsBtn.title = "PDF du programme non disponible";
+}
+
 function renderSessionResultsPdfLinks(session) {
   const pdfs = sessionResultsPdfsForSession(session);
   if (!pdfs.length) return "";
@@ -607,6 +624,7 @@ function renderResults() {
   ensureActiveSession();
   renderMeetTitle();
   renderSessionControls();
+  updateProgramButton(activeSession);
   const rows = rowsForSession(activeSession);
   const publishedRows = rows.filter((row) => resultIsVisible(resultForRow(row)));
   const pendingRows = rows.filter((row) => !resultIsVisible(resultForRow(row)));
