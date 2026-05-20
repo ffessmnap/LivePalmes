@@ -3008,6 +3008,7 @@ function publicResultPayload(result) {
     updatedAt: result.updatedAt || "",
     isPartial: Boolean(result.isPartial),
     status: result.status || "",
+    performances: Array.isArray(result.performances) ? result.performances : [],
     finalistsAnnouncedAt: result.finalistsAnnouncedAt || "",
     finalWithdrawals: result.finalWithdrawals || []
   };
@@ -5220,7 +5221,7 @@ function parseResultRow(line) {
     lastName: split.lastName,
     firstName: split.firstName,
     displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
-    birthYear: `20${match[3]}`,
+    birthYear: importedBirthYear(match[3]),
     club: match[4],
     time: importedSeriesTime(match[6]) || match[6],
     qualified: Boolean(match[5])
@@ -5232,9 +5233,10 @@ function resultStatusFromText(value) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-  if (/\b(forfait|absent|abs|dns|ns)\b/.test(text)) return "forfait";
-  if (/\b(abandon|abd|dnf)\b/.test(text)) return "abandon";
-  if (/\b(disqualification|disqualifie|disqualifiee|dsq|dq)\b/.test(text)) return "disqualification";
+  if (/\b(dns|ns|absent|abs)\b/.test(text)) return "dns";
+  if (/\b(abandon|abd|ab|dnf)\b/.test(text)) return "ab";
+  if (/\b(disqualification|disqualifie|disqualifiee|dsq|dq)\b/.test(text)) return "dsq";
+  if (/\b(forfait)\b/.test(text)) return "dns";
   return "";
 }
 
@@ -5250,14 +5252,14 @@ function parseResultStatusRow(line) {
     lastName: split.lastName,
     firstName: split.firstName,
     displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
-    birthYear: `20${match[3]}`,
+    birthYear: importedBirthYear(match[3]),
     club: match[4],
     time: "",
     resultStatus: status,
     statusLabel: {
-      forfait: "Forfait",
-      abandon: "Abandon",
-      disqualification: "Disqualification"
+      dns: "DNS",
+      ab: "AB",
+      dsq: "DSQ"
     }[status],
     qualified: false
   };
@@ -5288,6 +5290,51 @@ function parseFinalistsFromResultLines(lines) {
   };
 }
 
+function performanceStageForResultRow(item, result, row) {
+  if (!isFinalStage(result.stage)) return {
+    stage: result.stage,
+    phaseLabel: result.phaseLabel
+  };
+  const rank = Number(item.rank || 0);
+  if (Number(row.finalStageCount || 0) > 1 && rank >= 9 && rank <= 16) {
+    return { stage: "finale-b", phaseLabel: "Finale B" };
+  }
+  if (rank >= 1 && rank <= 8) {
+    return { stage: "finale-a", phaseLabel: "Finale A" };
+  }
+  return null;
+}
+
+function resultPerformanceRows(parsedRows, result, row) {
+  if (/^4x/i.test(String(row.eventId || ""))) return [];
+  return (parsedRows || [])
+    .filter((item) => item.lastName || item.firstName || item.displayName)
+    .map((item) => {
+      const phase = performanceStageForResultRow(item, result, row);
+      if (!phase) return null;
+      return {
+        eventId: row.eventId,
+        eventLabel: result.eventLabel,
+        sex: row.sex,
+        stage: phase.stage,
+        phaseLabel: phase.phaseLabel,
+        session: row.session || "",
+        startTime: row.startTime || "",
+        programKey: result.programKey,
+        lastName: item.lastName || "",
+        firstName: item.firstName || "",
+        displayName: item.displayName || "",
+        birthYear: item.birthYear || "",
+        club: item.club || "",
+        time: item.time || "",
+        status: item.resultStatus || "",
+        statusLabel: item.statusLabel || "",
+        updatedAt: result.updatedAt
+      };
+    })
+    .filter(Boolean);
+}
+
 async function publishResultPdf(file, row, hasFinal, isPartial = false, options = {}) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
@@ -5296,6 +5343,8 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   const pdfDataUrl = await fileToDataUrl(file);
   const existingResult = resultForProgramRow(row);
   const preserveFinalists = Boolean(options.preserveFinalists && existingResult?.hasFinal);
+  const lines = await extractPdfLines(file);
+  const parsedRows = parseFinalistsFromResultLines(lines);
   let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
   if (preserveFinalists) {
     parsedFinals = {
@@ -5305,11 +5354,12 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     };
     hasFinal = true;
   } else if (hasFinal) {
-    const lines = await extractPdfLines(file);
-    parsedFinals = parseFinalistsFromResultLines(lines);
+    parsedFinals = parsedRows;
     if (!parsedFinals.finalists.a.length) {
       throw new Error("Aucun finaliste détecté dans ce PDF. Vérifie que les lignes contiennent bien la mention finale.");
     }
+  } else {
+    parsedFinals = parsedRows;
   }
   const result = {
     id: resultIdForProgramRow(row),
@@ -5336,6 +5386,7 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     isPartial: Boolean(isPartial),
     status: preserveFinalists ? (existingResult.status || "published") : (hasFinal ? "finalists_pending_speaker" : "published")
   };
+  result.performances = resultPerformanceRows(parsedRows.ranking, result, row);
   if (preserveFinalists) {
     result.finalistsAnnouncedAt = existingResult.finalistsAnnouncedAt || "";
     result.finalWithdrawals = existingResult.finalWithdrawals || [];

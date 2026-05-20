@@ -26,6 +26,7 @@ let publicEvents = [];
 let publicProgram = [];
 let publicEntrants = [];
 let publicSeries = [];
+let publicResults = [];
 let publicForfaits = [];
 let publicRecords = [];
 let publicQualifications = [];
@@ -94,6 +95,10 @@ function sexLabel(sex) {
 function isFinalStage(stage) {
   const value = String(stage || "");
   return value === "finalA" || value === "finalB" || value.startsWith("finale");
+}
+
+function isRelayRow(row) {
+  return /^4x/i.test(String(row?.eventId || row?.label || ""));
 }
 
 function comparableEventId(value) {
@@ -255,6 +260,153 @@ function seedLabel(row) {
   return cleanText(row.seedTime || row.time || row.entryTime || "");
 }
 
+function birthYearLabel(row) {
+  const value = cleanText(row.birthDate || row.birthYear || "");
+  const match = value.match(/\b(19|20)\d{2}\b/);
+  return match ? match[0] : value;
+}
+
+function performanceNameKey(row) {
+  const parts = [row.lastName, row.firstName].filter(Boolean);
+  return normalizeText(parts.length ? parts.join(" ") : (row.displayName || row.name || ""));
+}
+
+function performanceClubKey(row) {
+  return normalizeText(row.clubCode || row.club || "");
+}
+
+function allPublicPerformances() {
+  return publicResults.flatMap((result) =>
+    (result.performances || []).map((performance) => ({
+      ...performance,
+      resultId: result.id || "",
+      eventId: performance.eventId || result.eventId,
+      eventLabel: performance.eventLabel || result.eventLabel,
+      sex: performance.sex || result.sex,
+      stage: performance.stage || result.stage,
+      phaseLabel: performance.phaseLabel || result.phaseLabel,
+      updatedAt: performance.updatedAt || result.updatedAt
+    }))
+  );
+}
+
+function performanceMatchesRow(performance, row) {
+  row = displaySeriesRow(row);
+  if (/^4x/i.test(String(performance.eventId || row.eventId || ""))) return false;
+  if (!recordEventMatches(performance.eventId, row.eventId)) return false;
+  if (performance.sex && row.sex && performance.sex !== row.sex) return false;
+  if (performanceNameKey(performance) !== performanceNameKey(row)) return false;
+  const performanceBirth = birthYearLabel(performance);
+  const rowBirth = birthYearLabel(row);
+  if (performanceBirth && rowBirth && performanceBirth !== rowBirth) return false;
+  const performanceClub = performanceClubKey(performance);
+  const rowClub = performanceClubKey(row);
+  if (performanceClub && rowClub && performanceClub !== rowClub) return false;
+  return true;
+}
+
+function performancesForProgramRow(row) {
+  return allPublicPerformances()
+    .filter((performance) => performanceMatchesRow(performance, row))
+    .sort((a, b) => {
+      const finalA = isFinalStage(a.stage) ? 1 : 0;
+      const finalB = isFinalStage(b.stage) ? 1 : 0;
+      return finalA - finalB || String(a.updatedAt || "").localeCompare(String(b.updatedAt || ""));
+    });
+}
+
+function resultPdfLinksForProgramRow(row, performances = performancesForProgramRow(row)) {
+  const seen = new Set();
+  const matches = performances
+    .map((performance) => publicResults.find((result) => String(result.id || "") === String(performance.resultId || "")))
+    .filter(Boolean);
+  if (!matches.length) {
+    matches.push(...publicResults.filter((result) =>
+      result.id &&
+      result.eventId === row.eventId &&
+      result.sex === row.sex &&
+      !isFinalStage(result.stage) &&
+      (
+        result.programKey === programKey(row) ||
+        result.raceKey === `${row.eventId || ""}|${row.sex || ""}`
+      )
+    ));
+  }
+  return matches.filter((result) => {
+    const key = result.id || result.programKey || result.raceKey;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function resultPdfLabel(result) {
+  if (isFinalStage(result.stage)) return "PDF finale";
+  return "PDF";
+}
+
+function renderSwimmerResultPdfLinks(row, performances = performancesForProgramRow(row)) {
+  const results = resultPdfLinksForProgramRow(row, performances);
+  if (!results.length) return "";
+  return `
+    <span class="public-swimmer-pdf-actions">
+      ${results.map((result) => `
+        <a class="public-swimmer-pdf-link" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" aria-label="Voir le PDF résultat">
+          ${escapeHtml(resultPdfLabel(result))}
+        </a>
+      `).join("")}
+    </span>
+  `;
+}
+
+function performancePhaseLabel(performance) {
+  if (!isFinalStage(performance.stage)) return "Série";
+  if (performance.phaseLabel) return cleanText(performance.phaseLabel);
+  return "Finale";
+}
+
+function performanceValueLabel(performance) {
+  return cleanText(performance.statusLabel || performance.time || "-");
+}
+
+function performanceDeltaLabel(performance, referenceTime, referenceLabel = "") {
+  if (performance.status || !performance.time || !referenceTime) return "";
+  const performanceMs = timeToMs(performance.time);
+  const referenceMs = timeToMs(referenceTime);
+  if (!Number.isFinite(performanceMs) || !Number.isFinite(referenceMs)) return "";
+  const delta = (performanceMs - referenceMs) / 1000;
+  if (!Number.isFinite(delta)) return "";
+  const sign = delta >= 0 ? "+" : "-";
+  return `${sign}${Math.abs(delta).toFixed(2).replace(".", ",")}s${referenceLabel ? ` / ${referenceLabel}` : ""}`;
+}
+
+function renderPerformanceLines(row) {
+  const performances = performancesForProgramRow(row);
+  if (!performances.length) return "";
+  const engagementReference = seedLabel(row);
+  let seriesReference = "";
+  return performances.map((performance) => {
+    const isFinal = isFinalStage(performance.stage);
+    const reference = isFinal ? seriesReference : engagementReference;
+    const delta = performanceDeltaLabel(performance, reference, isFinal ? "série" : "eng.");
+    if (!isFinal && performance.time) seriesReference = performance.time;
+    return `
+      <span class="public-performance-line">
+        Réalisé ${escapeHtml(performancePhaseLabel(performance).toLowerCase())} : <strong>${escapeHtml(performanceValueLabel(performance))}</strong>
+        ${delta ? `<em class="public-performance-delta ${delta.startsWith("-") ? "faster" : "slower"}">${escapeHtml(delta)}</em>` : ""}
+      </span>
+    `;
+  }).join("");
+}
+
+function renderSwimmerProgramMeta(row, forfait, performances = performancesForProgramRow(row)) {
+  const engagement = forfait ? "Forfait" : (seedLabel(row) || "-");
+  if (performances.length) {
+    return `<span class="public-entry-line">Engagement : ${escapeHtml(engagement)}</span>`;
+  }
+  return `<span>Série ${escapeHtml(row.series || "-")} · Ligne ${escapeHtml(lineLabel(row))} · Engagement : ${escapeHtml(engagement)}</span>`;
+}
+
 function timeToMs(value) {
   const text = String(value || "").trim();
   const parts = text.split(":");
@@ -323,6 +475,13 @@ function sessions() {
     ...publicSeries.map((row) => row.session)
   ].filter(Boolean));
   return [...values].sort((a, b) => Number(a) - Number(b));
+}
+
+function latestResultSession() {
+  const latest = publicResults
+    .filter((result) => result.session)
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))[0];
+  return latest?.session || "";
 }
 
 function rowsForSession(session) {
@@ -488,12 +647,20 @@ function renderSessions() {
 function clampState() {
   const availableSessions = sessions();
   if (!activeSession || !availableSessions.includes(activeSession)) {
-    activeSession = availableSessions[0] || "";
+    const progressSession = publicProgressIsFresh() ? String(publicProgress.session || "") : "";
+    activeSession = (progressSession && availableSessions.includes(progressSession))
+      ? progressSession
+      : (latestResultSession() || availableSessions[0] || "");
   }
   const races = raceRows();
   activeRaceIndex = Math.max(0, Math.min(activeRaceIndex, Math.max(0, races.length - 1)));
   const numbers = seriesNumbers(seriesRowsForProgram(races[activeRaceIndex] || {}));
   activeSeriesIndex = Math.max(0, Math.min(activeSeriesIndex, Math.max(0, numbers.length - 1)));
+  const progress = publicProgressTarget();
+  if (progress && publicProgressIsFresh() && String(publicProgress.session || "") === String(activeSession || "")) {
+    activeRaceIndex = progress.raceIndex;
+    activeSeriesIndex = progress.seriesIndex;
+  }
 }
 
 function publicNavigationState(races, numbers) {
@@ -548,6 +715,16 @@ function categoryLabel(category, sex) {
   return cleanText(category || "");
 }
 
+function swimmerCategoryBirthHtml(row) {
+  const category = categoryLabel(row.category, row.sex);
+  const birthYear = birthYearLabel(row);
+  if (!category && !birthYear) return "-";
+  return [
+    category ? `<span class="public-swimmer-category ${categoryClass(row.category)}">${escapeHtml(category)}</span>` : "",
+    birthYear ? `<span class="public-swimmer-birth">· ${escapeHtml(birthYear)}</span>` : ""
+  ].filter(Boolean).join("");
+}
+
 function renderSeriesRows(rows) {
   if (!rows.length) {
     return `<tr><td colspan="4" class="public-series-empty-line">Aucune ligne trouvée pour cette série.</td></tr>`;
@@ -574,7 +751,7 @@ function renderSeriesRows(rows) {
 function allSearchSwimmers() {
   const seen = new Set();
   return publicSeries
-    .filter((row) => !isFinalStage(row.stage))
+    .filter((row) => !isFinalStage(row.stage) && !isRelayRow(row))
     .sort((a, b) => swimmerName(a).localeCompare(swimmerName(b), "fr") || clubLabel(a).localeCompare(clubLabel(b), "fr"))
     .reduce((items, row) => {
       const key = swimmerKey(row);
@@ -606,15 +783,22 @@ function renderInlineSwimmerProgram(key) {
       <div class="public-search-program-head">
         <span>${escapeHtml(clubLabel(swimmer) || "-")}</span>
         <strong>${escapeHtml(swimmerName(swimmer))}</strong>
+        <em>${swimmerCategoryBirthHtml(swimmer)}</em>
       </div>
       <div class="public-swimmer-program">
         ${rows.map((row) => {
           const time = row.startTime || rowStartTime(row);
           const forfait = isForfait(row);
+          const performances = performancesForProgramRow(row);
+          const timeLabel = performances.length ? "" : (time ? ` · ${escapeHtml(time)}` : "");
           return `
             <div class="public-swimmer-program-row ${forfait ? "is-forfait" : ""}">
-              <strong>S${escapeHtml(row.session || "-")}${time ? ` · ${escapeHtml(time)}` : ""} · ${escapeHtml(eventLabel(row.eventId, row.label))} ${escapeHtml(sexLabel(row.sex))}</strong>
-              <span>S&eacute;rie ${escapeHtml(row.series || "-")} · Ligne ${escapeHtml(lineLabel(row))} · ${forfait ? "Forfait" : escapeHtml(seedLabel(row) || "-")}</span>
+              <div class="public-swimmer-program-row-head">
+                <strong>S${escapeHtml(row.session || "-")}${timeLabel} · ${escapeHtml(eventLabel(row.eventId, row.label))} ${escapeHtml(sexLabel(row.sex))}</strong>
+                ${renderSwimmerResultPdfLinks(row, performances)}
+              </div>
+              ${renderSwimmerProgramMeta(row, forfait, performances)}
+              ${renderPerformanceLines(row)}
             </div>
           `;
         }).join("")}
@@ -624,11 +808,10 @@ function renderInlineSwimmerProgram(key) {
 }
 
 function renderSwimmerSearchContent() {
-  const matches = searchSwimmers(swimmerSearchQuery);
-  const selectedStillVisible = matches.some((row) => swimmerKey(row) === selectedSearchSwimmerKey);
-  if (selectedSearchSwimmerKey && !selectedStillVisible && normalizeText(swimmerSearchQuery).length >= 2) {
-    selectedSearchSwimmerKey = "";
+  if (selectedSearchSwimmerKey) {
+    return renderInlineSwimmerProgram(selectedSearchSwimmerKey);
   }
+  const matches = searchSwimmers(swimmerSearchQuery);
   if (normalizeText(swimmerSearchQuery).length < 2) {
     return `<p class="panel-subtitle public-search-empty">Tape au moins 2 lettres pour chercher un nageur.</p>`;
   }
@@ -647,7 +830,6 @@ function renderSwimmerSearchContent() {
         `;
       }).join("")}
     </div>
-    ${selectedSearchSwimmerKey ? renderInlineSwimmerProgram(selectedSearchSwimmerKey) : ""}
   `;
 }
 
@@ -773,7 +955,7 @@ function render() {
 function swimmerProgramRows(key) {
   return publicSeries
     .filter((row) => swimmerKey(row) === key)
-    .filter((row) => !isFinalStage(row.stage))
+    .filter((row) => !isFinalStage(row.stage) && !isRelayRow(row))
     .map(displaySeriesRow)
     .sort((a, b) =>
       Number(a.session || 999) - Number(b.session || 999) ||
@@ -793,6 +975,7 @@ function renderSwimmerSheet(key) {
         <div>
           <span>${escapeHtml(clubLabel(swimmer))}</span>
           <h2>${escapeHtml(swimmerName(swimmer))}</h2>
+          <em>${swimmerCategoryBirthHtml(swimmer)}</em>
         </div>
         <button class="decision-close" type="button" data-close-swimmer aria-label="Fermer">×</button>
       </div>
@@ -801,10 +984,16 @@ function renderSwimmerSheet(key) {
         ${rows.map((row) => {
           const time = row.startTime || rowStartTime(row);
           const forfait = isForfait(row);
+          const performances = performancesForProgramRow(row);
+          const timeLabel = performances.length ? "" : (time ? ` · ${escapeHtml(time)}` : "");
           return `
             <div class="public-swimmer-program-row ${forfait ? "is-forfait" : ""}">
-              <strong>S${escapeHtml(row.session || "-")}${time ? ` · ${escapeHtml(time)}` : ""} · ${escapeHtml(eventLabel(row.eventId, row.label))} ${escapeHtml(sexLabel(row.sex))}</strong>
-              <span>Série ${escapeHtml(row.series || "-")} · Ligne ${escapeHtml(lineLabel(row))} · ${forfait ? "Forfait" : escapeHtml(seedLabel(row) || "-")}</span>
+              <div class="public-swimmer-program-row-head">
+                <strong>S${escapeHtml(row.session || "-")}${timeLabel} · ${escapeHtml(eventLabel(row.eventId, row.label))} ${escapeHtml(sexLabel(row.sex))}</strong>
+                ${renderSwimmerResultPdfLinks(row, performances)}
+              </div>
+              ${renderSwimmerProgramMeta(row, forfait, performances)}
+              ${renderPerformanceLines(row)}
             </div>
           `;
         }).join("")}
@@ -812,7 +1001,6 @@ function renderSwimmerSheet(key) {
     </section>
   `;
 }
-
 function closeSwimmerSheet() {
   if (!swimmerSheet) return;
   swimmerSheet.hidden = true;
@@ -883,6 +1071,7 @@ function applyLiveData(remote, index = {}) {
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
+  publicResults = Array.isArray(index.results) ? index.results : publicResults;
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
   publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
@@ -912,6 +1101,7 @@ async function loadPublicSeries() {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
+  publicResults = Array.isArray(index.results) ? index.results : [];
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
   publicProgress = remote.notes?.publicProgress || null;
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
