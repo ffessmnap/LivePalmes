@@ -812,7 +812,7 @@ function renderControlTowerPanel() {
           <span></span>${publicOnline ? "Pages publiques en ligne" : "Pages publiques hors ligne"}
         </button>
         <button class="ghost-button compact" type="button" data-control-speaker-info>MAJ repères</button>
-        <button class="ghost-button compact danger-button" type="button" data-control-results-reset ${canReset ? "" : "disabled"}>RAZ</button>
+        <button class="ghost-button compact danger-button" type="button" data-control-results-reset title="${canReset ? "Remise à zéro LivePalmes" : "RAZ indisponible quand l'actualisation directe est active"}">RAZ</button>
       </div>
     </article>
     <div class="control-tower-columns">
@@ -1703,9 +1703,20 @@ async function toggleRoleLock() {
 function toggleCompetitionMode() {
   const enabled = !competitionModeEnabled();
   lastConsoleActivityAt = Date.now();
+  data = normalizeData({
+    ...data,
+    notes: {
+      ...(data.notes || {}),
+      competitionMode: enabled,
+      competitionModeUpdatedAt: new Date().toISOString()
+    },
+    sourceVersion: `competition-mode-${Date.now()}`
+  });
+  saveData();
+  render();
   updateLiveNotes(enabled ? "Actualisation directe activée" : "Actualisation manuelle activée", {
     competitionMode: enabled,
-    competitionModeUpdatedAt: new Date().toISOString()
+    competitionModeUpdatedAt: data.notes.competitionModeUpdatedAt
   }).then(() => {
     initFirebaseSync();
     render();
