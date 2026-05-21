@@ -243,7 +243,7 @@ function loadActiveView() {
 
 function saveActiveView() {
   localStorage.setItem(ACTIVE_VIEW_KEY, JSON.stringify({
-    role: state.role,
+    role: controlPreviewActive ? "control" : state.role,
     profileHomeActive
   }));
 }
@@ -357,6 +357,7 @@ let consolePresenceActive = false;
 let lastPublicProgressSignature = "";
 let activeCompetitionId = FIRESTORE_COMPETITION_ID;
 let trainingModeState = { enabled: false, updatedAt: "" };
+let controlPreviewActive = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -643,6 +644,7 @@ function publicProgressSignature(progress) {
 }
 
 function publishPublicProgressIfNeeded() {
+  if (controlPreviewActive) return;
   const progress = currentPublicProgressPayload();
   if (!progress || !liveDataDocument()) return;
   const signature = publicProgressSignature(progress);
@@ -827,6 +829,7 @@ function renderControlTowerPanel() {
               <strong>${escapeHtml(ROLE_LABELS[role])}</strong>
               <span>${escapeHtml(presenceLabel(counts[role] || 0))}</span>
               <small>${escapeHtml(actionCountLabel(pending[role] || 0))}</small>
+              ${role === "control" ? "" : `<button class="ghost-button compact control-preview-button" type="button" data-control-preview-role="${escapeHtml(role)}">Voir</button>`}
             </div>
           `).join("")}
         </div>
@@ -853,7 +856,7 @@ function renderControlTowerPanel() {
 async function updateConsolePresence(force = false) {
   const doc = presenceDocument();
   if (!doc) return;
-  if (profileHomeActive) {
+  if (profileHomeActive || controlPreviewActive) {
     if (consolePresenceActive) await releaseConsolePresence();
     return;
   }
@@ -1742,6 +1745,7 @@ function markConsoleActivity() {
 async function returnHomeAfterLocalInactivity() {
   if (!shouldReturnHomeForInactivity() || profileHomeActive) return;
   saveCurrentRoleState();
+  controlPreviewActive = false;
   profileHomeActive = true;
   unlockedRoles = [];
   saveUnlockedRoles();
@@ -2798,6 +2802,7 @@ function render() {
   document.body.classList.toggle("role-secretary", state.role === "secretary");
   document.body.classList.toggle("role-control", state.role === "control");
   document.body.classList.toggle("training-mode", trainingModeEnabled());
+  document.body.classList.toggle("control-preview-active", controlPreviewActive);
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
   if (racePanel) racePanel.hidden = isControlTowerView();
@@ -2813,7 +2818,10 @@ function render() {
   renderPresenceCounts();
   renderHomeActionCounts();
   renderControlTowerPanel();
-  if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
+  if (profileHomeBtn) {
+    profileHomeBtn.hidden = profileHomeActive;
+    profileHomeBtn.textContent = controlPreviewActive ? "Tour de contrôle" : "Accueil";
+  }
   if (manualRefreshBtn) {
     const manualMode = !realtimeSyncEnabled();
     manualRefreshBtn.hidden = profileHomeActive || !manualMode;
@@ -2832,13 +2840,13 @@ function render() {
   if (appConsoleTitle) {
     appConsoleTitle.textContent = profileHomeActive
       ? "LivePalmes"
-      : `LivePalmes - ${ROLE_LABELS[state.role] || "Console"}`;
+      : `LivePalmes - ${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " (vue tour de contrôle)" : ""}`;
   }
   syncProgramButtonPlacement();
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
   });
-  if (roleBadge) roleBadge.textContent = `${ROLE_LABELS[state.role] || "Console"}${trainingModeEnabled() ? " - Formation" : ""}`;
+  if (roleBadge) roleBadge.textContent = `${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " - Vue tour" : ""}${trainingModeEnabled() ? " - Formation" : ""}`;
   if (fullscreenBtn) {
     fullscreenBtn.hidden = profileHomeActive;
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
@@ -8216,6 +8224,7 @@ publicPositionToggle?.addEventListener("change", (event) => {
 
 async function openRoleConsole(nextRole) {
   if (!ROLE_LABELS[nextRole]) return;
+  controlPreviewActive = false;
   if (!requestRoleAccess(nextRole)) {
     const access = await askRolePin(nextRole);
     if (!access?.allowed) return;
@@ -8239,6 +8248,16 @@ async function openRoleConsole(nextRole) {
   updateConsolePresence(true);
 }
 
+async function openRolePreviewFromControl(nextRole) {
+  if (!ROLE_LABELS[nextRole] || nextRole === "control") return;
+  await releaseRoleLock();
+  await releaseConsolePresence();
+  controlPreviewActive = true;
+  profileHomeActive = false;
+  switchRoleUnlocked(nextRole);
+  render();
+}
+
 document.querySelectorAll(".role-chip").forEach((button) => {
   button.addEventListener("click", async () => {
     await openRoleConsole(button.dataset.role || "speaker");
@@ -8252,6 +8271,13 @@ profileHome?.addEventListener("click", async (event) => {
 });
 
 profileHomeBtn?.addEventListener("click", () => {
+  if (controlPreviewActive) {
+    controlPreviewActive = false;
+    profileHomeActive = false;
+    switchRoleUnlocked("control");
+    render();
+    return;
+  }
   profileHomeActive = true;
   render();
   releaseConsolePresence();
@@ -8263,6 +8289,11 @@ competitionModeTopBtn?.addEventListener("click", () => {
 });
 
 controlTowerPanel?.addEventListener("click", (event) => {
+  const previewButton = event.target.closest("[data-control-preview-role]");
+  if (previewButton) {
+    openRolePreviewFromControl(previewButton.dataset.controlPreviewRole || "");
+    return;
+  }
   if (event.target.closest("[data-control-competition-mode]")) {
     toggleCompetitionMode();
     return;
@@ -8635,6 +8666,7 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   if (event.target.closest("[data-open-control-tower]")) {
     unlockRole("control");
+    controlPreviewActive = false;
     closeRoleCodesModal();
     await openRoleConsole("control");
     return;

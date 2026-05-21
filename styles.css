@@ -4818,7 +4818,7 @@ body:not(.role-secretary) .secretary-only {
 .control-console-row,
 .control-session-row {
   display: grid;
-  grid-template-columns: minmax(130px, 1fr) auto auto;
+  grid-template-columns: minmax(130px, 1fr) auto auto auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -4841,6 +4841,17 @@ body:not(.role-secretary) .secretary-only {
 .control-session-row span {
   color: #004e61;
   font-weight: 950;
+}
+
+.control-preview-button {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 0.72rem;
+}
+
+body.control-preview-active .topbar {
+  border-top-color: #0b7285;
+  box-shadow: 0 6px 18px rgba(6, 42, 58, 0.08);
 }
 
 .race-header {
