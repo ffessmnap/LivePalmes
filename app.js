@@ -370,6 +370,7 @@ const profileHome = document.querySelector("#profileHome");
 const profileModeStatus = document.querySelector("#profileModeStatus");
 const profileHomeBtn = document.querySelector("#profileHomeBtn");
 const manualRefreshBtn = document.querySelector("#manualRefreshBtn");
+const topbar = document.querySelector(".topbar");
 const appShell = document.querySelector(".app-shell");
 const sidebar = document.querySelector(".sidebar");
 const racePanel = document.querySelector(".race-panel");
@@ -687,6 +688,11 @@ function renderHomeActionCounts() {
     node.hidden = value <= 0;
     node.textContent = actionCountLabel(value);
   });
+}
+
+function updateStickyAlertOffset() {
+  const height = topbar?.getBoundingClientRect().height || 0;
+  document.documentElement.style.setProperty("--alert-sticky-top", `${Math.ceil(height + 8)}px`);
 }
 
 function controlTowerStatusTone(status) {
@@ -2769,6 +2775,7 @@ function lastSeriesSelectionForCurrentRace() {
 }
 
 function render() {
+  updateStickyAlertOffset();
   document.body.classList.add("live-mode");
   document.body.classList.toggle("profile-home-active", profileHomeActive);
   document.body.classList.toggle("fullscreen-mode", isFullscreenMode);
@@ -10260,6 +10267,7 @@ window.addEventListener("offline", () => {
   firebaseStatus = "offline";
   renderDataStatus();
 });
+window.addEventListener("resize", updateStickyAlertOffset);
 window.addEventListener("pagehide", () => {
   saveCurrentRoleState();
   releaseRoleLock();
