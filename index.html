@@ -42,7 +42,8 @@
         <div id="sessionControls" class="session-controls"></div>
         <label class="public-position-toggle speaker-only" title="Afficher un rep&egrave;re public de la course en cours">
           <input id="publicPositionToggle" type="checkbox">
-          <span>Public</span>
+          <span class="public-position-switch" aria-hidden="true"></span>
+          <span>Partage position</span>
         </label>
       </div>
       <div class="top-actions">
@@ -237,6 +238,8 @@
 
         <section id="speakerHistory" class="panel speaker-history speaker-only" hidden></section>
       </section>
+
+      <section id="controlTowerPanel" class="control-tower-panel" hidden></section>
     </main>
 
     <footer class="footer-status">
@@ -262,6 +265,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
-    <script src="app.js?v=20260521-formation"></script>
+    <script src="app.js?v=20260521-control-tower"></script>
   </body>
 </html>

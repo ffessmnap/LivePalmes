@@ -24,11 +24,11 @@ service cloud.firestore {
     }
 
     function validRole(role) {
-      return role in ["live", "speaker", "referee", "video", "computer", "secretary"];
+      return role in ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
     }
 
     function validPresenceRole(role) {
-      return role in ["live", "speaker", "referee", "video", "computer", "secretary"];
+      return role in ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
     }
 
     match /competitions/{competitionId} {

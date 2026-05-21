@@ -11,6 +11,7 @@ const FIRESTORE_TEST_COMPETITION_ID = "livepalmes-test";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
 const ROLE_PINS = {
+  control: "0006",
   live: "0000",
   speaker: "0001",
   referee: "0002",
@@ -129,6 +130,7 @@ function cloneRoleState(nextState) {
 
 function defaultRoleStates() {
   return {
+    control: createRoleState("control"),
     speaker: createRoleState("speaker"),
     live: createRoleState("live"),
     referee: createRoleState("referee"),
@@ -208,7 +210,7 @@ function currentRolePins() {
 }
 
 function knownRole(role) {
-  return ["live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
+  return ["control", "live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
 }
 
 function lastActivityTimestamp() {
@@ -275,7 +277,7 @@ function currentClientId() {
 }
 
 function protectedRole(role) {
-  return ["live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
+  return knownRole(role);
 }
 
 function roleConnectionLimit(role) {
@@ -317,6 +319,7 @@ let expandedHistories = {
   role: false
 };
 let historyFilters = {
+  control: "all",
   speaker: "all",
   live: "all",
   referee: "all",
@@ -369,6 +372,7 @@ const profileHomeBtn = document.querySelector("#profileHomeBtn");
 const manualRefreshBtn = document.querySelector("#manualRefreshBtn");
 const appShell = document.querySelector(".app-shell");
 const sidebar = document.querySelector(".sidebar");
+const racePanel = document.querySelector(".race-panel");
 const competitionModeTopBtn = document.querySelector("#competitionModeTopBtn");
 const previousSeriesBtn = document.querySelector("#previousSeriesBtn");
 const nextSeriesBtn = document.querySelector("#nextSeriesBtn");
@@ -415,6 +419,7 @@ const secretaryFinalsPanel = document.querySelector("#secretaryFinalsPanel");
 const roleHistory = document.querySelector("#roleHistory");
 const computerFooterPanel = document.querySelector("#computerFooterPanel");
 const speakerHistory = document.querySelector("#speakerHistory");
+const controlTowerPanel = document.querySelector("#controlTowerPanel");
 const roleBadge = document.querySelector("#roleBadge");
 const refereeProgressBtn = document.querySelector("#refereeProgressBtn");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
@@ -519,6 +524,7 @@ function presenceDocument(id = `console-${currentClientId()}`) {
 
 function emptyPresenceCounts() {
   return {
+    control: 0,
     live: 0,
     speaker: 0,
     referee: 0,
@@ -598,17 +604,34 @@ function currentRefereeProgressIsHere() {
 }
 
 function currentPublicProgressPayload() {
-  if (state.role !== "speaker" || !publicPositionEnabled()) return null;
-  const row = selectedProgramRow() || programRows().find((item) => item.eventId === state.eventId && item.sex === state.sex);
+  return publicProgressPayloadFromState(state, { requireSpeaker: true });
+}
+
+function programRowForRoleState(roleState = state) {
+  if (roleState.programKey) {
+    const exact = (data.program || []).find((row) => programKey(row) === roleState.programKey);
+    if (exact) return exact;
+  }
+  return (data.program || []).find((item) =>
+    item.eventId === roleState.eventId &&
+    item.sex === roleState.sex &&
+    (!roleState.session || roleState.session === "all" || item.session === roleState.session)
+  ) || null;
+}
+
+function publicProgressPayloadFromState(roleState = state, options = {}) {
+  if (options.requireSpeaker && roleState.role !== "speaker") return null;
+  if (!publicPositionEnabled() && options.requireSpeaker) return null;
+  const row = programRowForRoleState(roleState);
   if (!row) return null;
   return {
     programKey: programKey(row),
     eventId: row.eventId,
     eventLabel: data.events.find((item) => item.id === row.eventId)?.label || row.label || row.eventId,
     sex: row.sex,
-    session: state.session !== "all" ? String(state.session || row.session || "") : String(row.session || ""),
-    series: isFinalStage(state.series) ? "" : String(state.series || ""),
-    stage: isFinalStage(state.series) ? String(state.series) : (row.stage || "series"),
+    session: roleState.session !== "all" ? String(roleState.session || row.session || "") : String(row.session || ""),
+    series: isFinalStage(roleState.series) ? "" : String(roleState.series || ""),
+    stage: isFinalStage(roleState.series) ? String(roleState.series) : (row.stage || "series"),
     order: Number(row.order || 0),
     updatedAt: new Date().toISOString()
   };
@@ -631,7 +654,8 @@ function publishPublicProgressIfNeeded() {
 }
 
 async function setPublicPositionEnabled(enabled) {
-  const nextProgress = enabled ? currentPublicProgressPayload() : null;
+  const sourceState = state.role === "speaker" ? state : (roleStates.speaker || state);
+  const nextProgress = enabled ? publicProgressPayloadFromState(sourceState) : null;
   lastPublicProgressSignature = "";
   await updateLiveNotes(enabled ? "Repère public activé" : "Repère public désactivé", {
     publicPositionEnabled: Boolean(enabled),
@@ -663,6 +687,161 @@ function renderHomeActionCounts() {
     node.hidden = value <= 0;
     node.textContent = actionCountLabel(value);
   });
+}
+
+function controlTowerStatusTone(status) {
+  if (status === "ok") return "ok";
+  if (status === "warning") return "warning";
+  return "muted";
+}
+
+function controlTowerDateTime(value) {
+  return formatAlertDateTime(value) || "non renseigné";
+}
+
+function controlTowerProgressLabel(progress) {
+  if (!progress?.programKey && !progress?.eventId) return "Non partagé";
+  const event = data.events.find((item) => item.id === progress.eventId);
+  const session = progress.session ? `Session ${progress.session}` : "";
+  const race = [event?.label || progress.eventLabel || progress.eventId, sexDisplayLabel(progress.sex)].filter(Boolean).join(" ");
+  const phase = isFinalStage(progress.stage)
+    ? finalStageLabel(progress.stage)
+    : (progress.series ? `Série ${progress.series}` : "");
+  return [session, race, phase].filter(Boolean).join(" · ");
+}
+
+function controlTowerPendingCounts() {
+  const counts = {
+    speaker: 0,
+    video: 0,
+    computer: 0,
+    secretary: 0,
+    referee: 0
+  };
+  alerts.forEach((alert) => {
+    if (alert.cancelledAt || alert.type === "final_composition_ready") return;
+    if (alert.speakerStatus === "pending") counts.speaker += 1;
+    if (alert.requiresVideo && alert.videoStatus === "pending") counts.video += 1;
+    if (alert.informaticsStatus === "pending") counts.computer += 1;
+    if (alert.type === "forfait" && alert.secretaryStatus === "pending") counts.secretary += 1;
+    if (alert.roleSource === "referee" && !alert.informaticsDoneAt && !alert.speakerAnnouncedAt && !alert.cancelledAt) counts.referee += 1;
+  });
+  return counts;
+}
+
+function controlTowerSessionRows() {
+  return resultSessions().map((session) => {
+    const program = resultProgramRows(session.number);
+    const results = raceResults.filter((result) => String(result.session || "") === String(session.number));
+    return {
+      session,
+      programCount: program.length,
+      resultCount: results.length,
+      lastResultAt: results.map((result) => result.updatedAt).filter(Boolean).sort().at(-1) || ""
+    };
+  });
+}
+
+function renderControlTowerPanel() {
+  if (!controlTowerPanel) return;
+  if (!isControlTowerView()) {
+    controlTowerPanel.hidden = true;
+    controlTowerPanel.innerHTML = "";
+    return;
+  }
+  const counts = { ...emptyPresenceCounts(), ...(presenceCounts || {}) };
+  const pending = controlTowerPendingCounts();
+  const publicProgress = data.notes?.publicProgress || null;
+  const jaProgress = refereeProgress();
+  const sessionRowsList = controlTowerSessionRows();
+  const seriesUpdatedAt = data.notes?.seriesLoadedAt || data.notes?.livePublishedAt || data.notes?.updatedAt || "";
+  const publicOnline = data.notes?.publicResultsOnline !== false;
+  const directEnabled = realtimeSyncEnabled();
+  const canReset = !competitionModeEnabled();
+  controlTowerPanel.hidden = false;
+  controlTowerPanel.innerHTML = `
+    <div class="control-tower-head">
+      <div>
+        <p class="eyebrow">Pilotage</p>
+        <h2>Tour de contrôle</h2>
+        <p>${escapeHtml([data.meet?.name, data.meet?.city, data.meet?.year].filter(Boolean).join(" · ") || "Compétition")}</p>
+      </div>
+      <div class="control-tower-state">
+        <span class="status-pill ${controlTowerStatusTone(realtimeSyncEnabled() ? "ok" : "warning")}">${trainingModeEnabled() ? "Formation" : (realtimeSyncEnabled() ? "Direct" : "Manuel")}</span>
+        <span class="status-pill ${controlTowerStatusTone(firebaseStatus === "online" || realtimeSyncEnabled() ? "ok" : "muted")}">Firebase ${escapeHtml(firebaseStatus || "-")}</span>
+      </div>
+    </div>
+    <div class="control-tower-grid">
+      <article class="control-card wide">
+        <span>Repères compétition</span>
+        <strong>${escapeHtml(publicPositionEnabled() ? controlTowerProgressLabel(publicProgress) : "Partage public désactivé")}</strong>
+        <small>Point JA : ${escapeHtml(refereeProgressLabel(jaProgress) || "non renseigné")}</small>
+      </article>
+      <article class="control-card">
+        <span>Pages publiques</span>
+        <strong>${publicOnline ? "En ligne" : "Hors ligne"}</strong>
+        <small>${escapeHtml(String(raceResults.length))} résultat${raceResults.length > 1 ? "s" : ""} publié${raceResults.length > 1 ? "s" : ""}</small>
+      </article>
+      <article class="control-card">
+        <span>Séries</span>
+        <strong>${escapeHtml(String((data.program || []).length))} courses</strong>
+        <small>MAJ ${escapeHtml(controlTowerDateTime(seriesUpdatedAt))}</small>
+      </article>
+    </div>
+    <article class="panel control-panel control-actions-panel">
+      <div class="panel-title">
+        <h3>Commandes</h3>
+        <span class="soft-count">Synchronisées</span>
+      </div>
+      <div class="control-action-grid">
+        <button class="sync-mode-toggle control-sync-toggle ${directEnabled ? "active" : ""}" type="button" data-control-competition-mode aria-pressed="${directEnabled ? "true" : "false"}">
+          <span aria-hidden="true"></span>${trainingModeEnabled() ? "Formation" : (directEnabled ? "Direct" : "Manuel")}
+        </button>
+        <label class="control-speaker-share-toggle">
+          <input type="checkbox" data-control-public-position ${publicPositionEnabled() ? "checked" : ""} ${firestoreDb ? "" : "disabled"}>
+          <span class="control-toggle-switch" aria-hidden="true"></span>
+          <span>Partage position speaker</span>
+        </label>
+        <button class="public-online-toggle ${publicOnline ? "online" : "offline"} control-public-online-toggle" type="button" data-control-public-online aria-pressed="${publicOnline ? "true" : "false"}">
+          <span></span>${publicOnline ? "Pages publiques en ligne" : "Pages publiques hors ligne"}
+        </button>
+        <button class="ghost-button compact" type="button" data-control-speaker-info>MAJ repères</button>
+        <button class="ghost-button compact danger-button" type="button" data-control-results-reset ${canReset ? "" : "disabled"}>RAZ</button>
+      </div>
+    </article>
+    <div class="control-tower-columns">
+      <article class="panel control-panel">
+        <div class="panel-title">
+          <h3>Consoles</h3>
+          <span class="soft-count">${escapeHtml(String(Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0)))} connecté${Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0) > 1 ? "s" : ""}</span>
+        </div>
+        <div class="control-console-list">
+          ${["control", "live", "speaker", "referee", "video", "computer", "secretary"].map((role) => `
+            <div class="control-console-row">
+              <strong>${escapeHtml(ROLE_LABELS[role])}</strong>
+              <span>${escapeHtml(presenceLabel(counts[role] || 0))}</span>
+              <small>${escapeHtml(actionCountLabel(pending[role] || 0))}</small>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+      <article class="panel control-panel">
+        <div class="panel-title">
+          <h3>Sessions</h3>
+          <span class="soft-count">${escapeHtml(String(sessionRowsList.length))}</span>
+        </div>
+        <div class="control-session-list">
+          ${sessionRowsList.length ? sessionRowsList.map((item) => `
+            <div class="control-session-row">
+              <strong>${escapeHtml(item.session.label || `Session ${item.session.number}`)}</strong>
+              <span>${escapeHtml(String(item.resultCount))} / ${escapeHtml(String(item.programCount))} résultats</span>
+              <small>${item.lastResultAt ? `MAJ ${escapeHtml(controlTowerDateTime(item.lastResultAt))}` : "Pas de résultat"}</small>
+            </div>
+          `).join("") : `<p class="panel-subtitle">Aucune session chargée.</p>`}
+        </div>
+      </article>
+    </div>
+  `;
 }
 
 async function updateConsolePresence(force = false) {
@@ -1135,7 +1314,7 @@ function renderRoleCodesModal() {
   if (!roleCodesModal) return;
   const pins = currentRolePins();
   const active = pinLockEnabled();
-  const roleOrder = ["live", "speaker", "referee", "video", "computer", "secretary"];
+  const roleOrder = ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
   roleCodesModal.hidden = false;
   roleCodesModal.innerHTML = `
     <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Codes d'accès">
@@ -1143,7 +1322,7 @@ function renderRoleCodesModal() {
         <div>
           <span>Sécurité</span>
           <h2>Codes des consoles</h2>
-          <p>Chaque code doit contenir exactement 4 chiffres. Live accepte 3 connexions simultanées.</p>
+          <p>Chaque code doit contenir exactement 4 chiffres. La tour de contrôle pilote les commandes globales.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
@@ -1157,6 +1336,7 @@ function renderRoleCodesModal() {
       </div>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
+        <button class="ghost-button compact" type="button" data-open-control-tower>Ouvrir tour de contrôle</button>
         <button class="ghost-button compact ${trainingModeEnabled() ? "danger-button" : ""}" type="button" data-training-mode-toggle>
           ${trainingModeEnabled() ? "Quitter le mode formation" : "Mode formation"}
         </button>
@@ -1934,6 +2114,7 @@ function clearSearch() {
 }
 
 const ROLE_LABELS = {
+  control: "Tour de contrôle",
   speaker: "Speaker",
   live: "Live",
   referee: "Juge arbitre",
@@ -1944,6 +2125,10 @@ const ROLE_LABELS = {
 
 function isSpeakerView() {
   return state.role === "speaker" || state.role === "live";
+}
+
+function isControlTowerView() {
+  return state.role === "control";
 }
 
 const DECISION_LABELS = {
@@ -2593,9 +2778,12 @@ function render() {
   document.body.classList.toggle("role-video", state.role === "video");
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("role-secretary", state.role === "secretary");
+  document.body.classList.toggle("role-control", state.role === "control");
   document.body.classList.toggle("training-mode", trainingModeEnabled());
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
+  if (racePanel) racePanel.hidden = isControlTowerView();
+  if (sidebar) sidebar.hidden = isControlTowerView();
   if (profileModeStatus) {
     profileModeStatus.textContent = trainingModeEnabled()
       ? "Mode formation"
@@ -2606,6 +2794,7 @@ function render() {
   }
   renderPresenceCounts();
   renderHomeActionCounts();
+  renderControlTowerPanel();
   if (profileHomeBtn) profileHomeBtn.hidden = profileHomeActive;
   if (manualRefreshBtn) {
     const manualMode = !realtimeSyncEnabled();
@@ -7688,7 +7877,8 @@ function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
 async function updateSpeakerInfoFromGoogleSheet() {
   const buttons = [
     document.querySelector("#updateSpeakerInfoBtn"),
-    document.querySelector("#updateSpeakerInfoPanelBtn")
+    document.querySelector("#updateSpeakerInfoPanelBtn"),
+    document.querySelector("[data-control-speaker-info]")
   ].filter(Boolean);
   const setButtons = (disabled, label) => {
     buttons.forEach((button) => {
@@ -8054,6 +8244,41 @@ competitionModeTopBtn?.addEventListener("click", () => {
   toggleCompetitionMode();
 });
 
+controlTowerPanel?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-control-competition-mode]")) {
+    toggleCompetitionMode();
+    return;
+  }
+  if (event.target.closest("[data-control-speaker-info]")) {
+    updateSpeakerInfoFromGoogleSheet();
+    return;
+  }
+  if (event.target.closest("[data-control-public-online]")) {
+    togglePublicResultsOnline();
+    return;
+  }
+  if (event.target.closest("[data-control-results-reset]")) {
+    if (competitionModeEnabled()) {
+      window.alert("RAZ indisponible quand l'actualisation directe est active.");
+      return;
+    }
+    renderResetResultsModal();
+  }
+});
+
+controlTowerPanel?.addEventListener("change", (event) => {
+  const toggle = event.target.closest("[data-control-public-position]");
+  if (!toggle) return;
+  const enabled = toggle.checked;
+  toggle.disabled = true;
+  setPublicPositionEnabled(enabled).catch((error) => {
+    console.warn("Modification du repère public impossible", error);
+    toggle.checked = !enabled;
+  }).finally(() => {
+    render();
+  });
+});
+
 manualRefreshBtn?.addEventListener("click", async () => {
   manualRefreshBtn.disabled = true;
   manualRefreshBtn.textContent = "Actualisation...";
@@ -8388,6 +8613,12 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   if (event.target.closest("[data-open-history-archives]")) {
     await renderHistoryArchivesModal({ canDelete: true });
+    return;
+  }
+  if (event.target.closest("[data-open-control-tower]")) {
+    unlockRole("control");
+    closeRoleCodesModal();
+    await openRoleConsole("control");
     return;
   }
   if (event.target.closest("[data-training-mode-toggle]")) {
