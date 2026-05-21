@@ -3509,6 +3509,10 @@ textarea {
 .alert-strip {
   display: grid;
   gap: 8px;
+  position: sticky;
+  top: var(--alert-sticky-top, 82px);
+  z-index: 9;
+  align-self: start;
 }
 
 .alert-strip[hidden],
