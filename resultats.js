@@ -779,8 +779,8 @@ function finalistWithdrawalLabel(row, result) {
   if (!announcedAt) return row?.repechaged ? "forfait possible après annonce speaker" : "";
   const limit = new Date(new Date(announcedAt).getTime() + 30 * 60 * 1000);
   if (Number.isNaN(limit.getTime())) return "";
-  if (new Date() > limit) return "forfait fermé";
-  return `forfait possible jusqu'à ${formatDeadlineTime(limit)}`;
+  if (new Date() > limit) return "";
+  return `forfait jusqu'à ${formatDeadlineTime(limit)}`;
 }
 
 function publicResultStatusFromText(value) {
