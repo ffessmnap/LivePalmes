@@ -79,6 +79,18 @@ function normalizeText(value) {
     .trim();
 }
 
+function formatPublicDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 function setStatus(label, className = "pending") {
   if (!statusBadge) return;
   if (className === "ok") {
@@ -650,7 +662,7 @@ function renderMeetTitle() {
     const pdf = seriesPdfForSession(activeSession);
     const date = pdf?.updatedAt ? new Date(pdf.updatedAt) : null;
     meetMeta.textContent = date && !Number.isNaN(date.getTime())
-      ? `Séries mises à jour le ${date.toLocaleString("fr-FR")}`
+      ? `Séries mises à jour le ${formatPublicDateTime(pdf.updatedAt)}`
       : "Séries non mises à jour";
   }
 }
@@ -925,7 +937,7 @@ function syncSeriesPdfInlineLink() {
     return;
   }
   const label = pdf.scope === "session" ? `PDF séries S${activeSession || "-"}` : "PDF séries";
-  const updated = pdf.updatedAt ? new Date(pdf.updatedAt).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+  const updated = pdf.updatedAt ? formatPublicDateTime(pdf.updatedAt) : "";
   seriesPdfInlineLink.hidden = false;
   seriesPdfInlineLink.href = `pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}`;
   seriesPdfInlineLink.textContent = [label, updated].filter(Boolean).join(" · ");
