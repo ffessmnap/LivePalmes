@@ -3376,6 +3376,7 @@ function publicResultPayload(result) {
     hasFinal: Boolean(result.hasFinal),
     finalists: result.finalists || { a: [], b: [] },
     nextUnqualified: result.nextUnqualified || [],
+    ranking: Array.isArray(result.ranking) ? result.ranking : [],
     pdfName: result.pdfName || "",
     pdfSize: result.pdfSize || 0,
     createdAt: result.createdAt || "",
