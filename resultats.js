@@ -884,11 +884,12 @@ function renderRow(row) {
   const hideResultMeta = result?.hasFinal && !result.finalistsAnnouncedAt;
   const updated = !hideResultMeta && result?.updatedAt ? `Mis à jour le ${new Date(result.updatedAt).toLocaleString("fr-FR")}` : "";
   const sexClass = row.sex === "F" ? "sex-female" : (row.sex === "M" ? "sex-male" : "sex-mixed");
+  const phaseLabel = resultIsVisible(result) ? "" : publicRacePhaseLabel(row);
   return `
     <article class="public-result-card ${result ? "published" : "not-published"} ${sexClass}">
       <div class="public-result-head">
         <div>
-          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span> <span class="public-phase-label">${escapeHtml(publicRacePhaseLabel(row))}</span></h2>
+          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span>${phaseLabel ? ` <span class="public-phase-label">${escapeHtml(phaseLabel)}</span>` : ""}</h2>
           ${updated ? `<p class="public-update-meta">${escapeHtml(updated)}</p>` : ""}
         </div>
         <span class="public-result-status ${status.className}">${escapeHtml(status.label)}</span>
