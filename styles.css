@@ -32,6 +32,26 @@ body {
   display: none !important;
 }
 
+.app-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 80;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 10px 12px;
+  border: 1px solid #f1b7b7;
+  border-radius: 8px;
+  background: #fff5f5;
+  box-shadow: 0 12px 28px rgba(20, 32, 44, 0.18);
+  color: #9f1d16;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.app-toast[hidden] {
+  display: none;
+}
+
 body.role-live {
   --role-accent: #0b7285;
   --role-accent-soft: #e7f5f7;
