@@ -856,6 +856,15 @@ function renderPublishedRanking(rows) {
   `;
 }
 
+function publishedRankingRows(result) {
+  if (Array.isArray(result?.ranking) && result.ranking.length) return result.ranking;
+  if (!result?.isPartial || !Array.isArray(result?.performances)) return [];
+  return result.performances.filter((performance) => (
+    !isFinalStage(performance.stage) &&
+    (performance.time || performance.statusLabel)
+  ));
+}
+
 function renderResultDetails(result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
@@ -887,7 +896,7 @@ function renderResultDetails(result) {
       </details>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
-    ${!result.hasFinal && publicFinalistsVisible ? renderPublishedRanking(result.ranking || []) : ""}
+    ${!result.hasFinal && publicFinalistsVisible ? renderPublishedRanking(publishedRankingRows(result)) : ""}
   `;
 }
 
