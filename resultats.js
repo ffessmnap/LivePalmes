@@ -846,7 +846,6 @@ function renderResultDetails(result) {
     a: sortedFinalRows(result.finalists?.a || []),
     b: sortedFinalRows(result.finalists?.b || [])
   };
-  const finalistCount = ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter(publicFinalRowCountsAsFinalist).length, 0);
   const finalistKeys = new Set(["a", "b"].flatMap((key) => (finalists[key] || []).map((row) =>
     [row.rank, cleanText(row.displayName || finalistName(row)), row.time].filter(Boolean).join("|")
   )));
@@ -867,9 +866,6 @@ function renderResultDetails(result) {
       </div>
     ` : ""}
     ${result.hasFinal && publicFinalistsVisible ? `
-      <div class="public-finalists-summary">
-        <strong>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</strong>
-      </div>
       <details class="public-finalists-group">
         <summary>${(finalists.b || []).length ? "Finales A et B" : "Finale A"}</summary>
         <div class="public-finalists-grid">
