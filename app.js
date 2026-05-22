@@ -5605,6 +5605,24 @@ function parseResultRow(line) {
   };
 }
 
+function parseUnrankedResultRow(line) {
+  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  if (!match || !match.groups?.splitTimes?.trim()) return null;
+  const split = splitImportedPersonName(fixPdfEncoding(match[1]));
+  return {
+    rank: "",
+    lastName: split.lastName,
+    firstName: split.firstName,
+    displayName: formatDisplayName({ lastName: split.lastName, firstName: split.firstName }),
+    birthYear: importedBirthYear(match[2]),
+    categoryCode: match.groups?.category || "",
+    club: match.groups?.club || match[4],
+    time: importedSeriesTime(match.groups?.time) || match.groups?.time || "",
+    qualified: false
+  };
+}
+
 function resultStatusFromText(value) {
   const text = String(value || "")
     .normalize("NFD")
@@ -5659,7 +5677,7 @@ function parseFinalistsFromResultLines(lines) {
   const seen = new Set();
   const ranking = lines
     .map((line, sourceIndex) => {
-      const row = parseResultRow(line) || parseResultStatusRow(line);
+      const row = parseResultRow(line) || parseUnrankedResultRow(line) || parseResultStatusRow(line);
       return row ? { ...row, sourceIndex } : null;
     })
     .filter(Boolean)
