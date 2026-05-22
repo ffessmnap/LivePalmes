@@ -20,6 +20,7 @@ const ROLE_PINS = {
   secretary: "0005"
 };
 const LOCK_DURATION_MS = 120000;
+const LOCK_RECOVERY_MS = 75000;
 const LOCK_HEARTBEAT_MS = 30000;
 const FIREBASE_CONNECTION_CHECK_MS = 15000;
 const HOME_AFTER_INACTIVITY_MS = 15 * 60 * 1000;
@@ -1119,6 +1120,15 @@ function lockExpired(lock) {
   return !lock?.expiresAt || Date.parse(lock.expiresAt) <= Date.now();
 }
 
+function lockLastActivityTime(lock) {
+  return Date.parse(lock?.updatedAt || lock?.expiresAt || lock?.createdAt || "") || 0;
+}
+
+function lockLooksAbandoned(lock) {
+  const last = lockLastActivityTime(lock);
+  return !last || Date.now() - last > LOCK_RECOVERY_MS;
+}
+
 async function releaseRoleLock(role = activeRoleLock?.role) {
   if (!role || !activeRoleLock || activeRoleLock.role !== role) return;
   if (activeRoleLock.adminBypass) {
@@ -1188,6 +1198,7 @@ async function acquireRoleLock(role, options = {}) {
     expiresAt
   };
   try {
+    let blockingLock = null;
     const allowed = await firestoreDb.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(doc);
       const lock = snapshot.exists ? snapshot.data() : null;
@@ -1209,11 +1220,31 @@ async function acquireRoleLock(role, options = {}) {
         }, { merge: false });
         return true;
       }
-      if (lock && lock.clientId !== clientId && !lockExpired(lock)) return false;
+      if (lock && lock.clientId !== clientId && !lockExpired(lock)) {
+        blockingLock = lock;
+        return false;
+      }
       transaction.set(doc, payload);
       return true;
     });
     if (!allowed) {
+      if (lockLooksAbandoned(blockingLock)) {
+        const last = formatAlertTime(blockingLock?.updatedAt);
+        const ok = window.confirm([
+          `La console ${ROLE_LABELS[role] || role} semble encore réservée par un ancien appareil.`,
+          last ? `Dernier signal reçu à ${last}.` : "Aucun signal récent n'a été trouvé.",
+          "",
+          "Forcer l'ouverture de cette console ?"
+        ].join("\n"));
+        if (ok) {
+          await doc.set(payload, { merge: false });
+          if (activeRoleLock?.role && activeRoleLock.role !== role) {
+            await releaseRoleLock(activeRoleLock.role);
+          }
+          activeRoleLock = { role, adminBypass: false };
+          return true;
+        }
+      }
       window.alert(roleConnectionLimit(role) > 1
         ? `La console ${ROLE_LABELS[role] || role} est déjà utilisée sur ${roleConnectionLimit(role)} appareils.`
         : `La console ${ROLE_LABELS[role] || role} est déjà utilisée sur un autre appareil.`);
