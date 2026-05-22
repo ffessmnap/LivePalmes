@@ -3980,6 +3980,11 @@ function renderResultProgramRow(row) {
         ${uploadState ? resultUploadBadgeHtml(uploadState) : ""}
         ${blockingUpload ? "" : resultStatusControlHtml(row, result, statusBadge)}
         ${!blockingUpload && result ? `
+          <button class="ghost-button compact" type="button" data-result-reread="${escapeHtml(programKey(row))}">
+            Relire
+          </button>
+        ` : ""}
+        ${!blockingUpload && result ? `
           <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
             Remplacer
           </button>
@@ -5587,6 +5592,12 @@ async function fileToDataUrl(file) {
   });
 }
 
+async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application/pdf") {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  return new File([blob], name, { type: blob.type || type });
+}
+
 function parseResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
   const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
@@ -5817,6 +5828,21 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   }
   await publishPublicResultsIndex();
   return result;
+}
+
+async function rereadPublishedResult(row) {
+  const existingResult = resultForProgramRow(row);
+  if (!existingResult?.pdfDataUrl) {
+    throw new Error("Aucun PDF déjà publié à relire pour cette course.");
+  }
+  const file = await dataUrlToFile(existingResult.pdfDataUrl, existingResult.pdfName || "resultat.pdf");
+  const preserveFinalists = Boolean(existingResult.hasFinal && (
+    existingResult.finalistsAnnouncedAt ||
+    existingResult.finalWithdrawals?.length ||
+    existingResult.finalPreWithdrawals?.length ||
+    ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
+  ));
+  return publishResultPdf(file, row, Boolean(existingResult.hasFinal), Boolean(existingResult.isPartial), { preserveFinalists });
 }
 
 async function createFinalistsSpeakerAlert(result) {
@@ -8468,7 +8494,7 @@ archivesBtn?.addEventListener("click", () => {
   renderHistoryArchivesModal({ canDelete: false });
 });
 
-resultsAdminPanel?.addEventListener("click", (event) => {
+resultsAdminPanel?.addEventListener("click", async (event) => {
   if (event.target.closest("[data-competition-mode]")) {
     toggleCompetitionMode();
     return;
@@ -8501,6 +8527,43 @@ resultsAdminPanel?.addEventListener("click", (event) => {
   const sessionResultsButton = event.target.closest("[data-session-results-import]");
   if (sessionResultsButton) {
     openSessionResultsImportModal(sessionResultsButton.dataset.sessionResultsImport || resultsAdminSession);
+    return;
+  }
+  const rereadButton = event.target.closest("[data-result-reread]");
+  if (rereadButton) {
+    const row = resultProgramRows(resultsAdminSession).find((item) => programKey(item) === rereadButton.dataset.resultReread)
+      || (data.program || []).find((item) => programKey(item) === rereadButton.dataset.resultReread);
+    const result = row ? resultForProgramRow(row) : null;
+    if (!row || !result) return;
+    const label = [
+      row.session ? `Session ${row.session}` : "",
+      data.events.find((item) => item.id === row.eventId)?.label || row.label || row.eventId,
+      `${sexDisplayLabel(row.sex)} - ${resultPhaseLabelForProgramRow(row)}`
+    ].filter(Boolean).join(" - ");
+    const ok = window.confirm([
+      "Relire le PDF déjà publié pour mettre à jour les données extraites ?",
+      "",
+      `Course : ${label}`,
+      `PDF : ${result.pdfName || "PDF résultat"}`,
+      "",
+      "Le fichier PDF ne sera pas remplacé."
+    ].join("\n"));
+    if (!ok) return;
+    const uploadKey = resultUploadKeyForProgram(row);
+    setResultUploadState(uploadKey, "Relecture en cours...");
+    try {
+      renderDataStatus("Relecture du résultat en cours...");
+      const rereadResult = await rereadPublishedResult(row);
+      clearResultUploadState(uploadKey);
+      renderDataStatus();
+      updateLiveNotes(`Résultat relu : ${rereadResult.eventLabel} ${rereadResult.sexLabel} - ${rereadResult.phaseLabel || resultPhaseLabelForProgramRow(row)}${rereadResult.session ? ` S${rereadResult.session}` : ""}`).catch((error) => console.warn("Note de relecture non mise à jour", error));
+      window.alert(`Résultat relu : ${rereadResult.ranking?.length || 0} ligne${Number(rereadResult.ranking?.length || 0) > 1 ? "s" : ""} détectée${Number(rereadResult.ranking?.length || 0) > 1 ? "s" : ""}.`);
+    } catch (error) {
+      console.error(error);
+      setResultUploadState(uploadKey, "Relecture impossible. Réessaie.", "error");
+      renderDataStatus();
+      window.alert(`Relecture impossible : ${error?.message || error}`);
+    }
     return;
   }
   const deleteButton = event.target.closest("[data-result-delete]");
