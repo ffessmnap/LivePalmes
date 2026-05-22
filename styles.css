@@ -1683,6 +1683,32 @@ body.profile-home-active .top-actions {
   font-weight: 950;
 }
 
+.public-floating-refresh {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 80;
+  display: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(11, 114, 133, 0.24);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 950;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.public-floating-refresh:active {
+  transform: translateY(1px);
+}
+
 #publicSessionInfoHost:empty,
 #publicSeriesInfoHost:empty {
   display: none;
@@ -6764,6 +6790,10 @@ tbody tr:hover,
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
+  }
+
+  .public-floating-refresh {
+    display: flex;
   }
 
   .public-session-title {

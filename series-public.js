@@ -18,6 +18,7 @@ const sessionInfoHost = document.querySelector("#publicSeriesInfoHost");
 const seriesPdfInlineLink = document.querySelector("#publicSeriesPdfInlineLink");
 const statusBadge = document.querySelector("#publicSeriesStatus");
 const refreshBtn = document.querySelector("#refreshPublicSeriesBtn");
+const refreshFloatBtn = document.querySelector("#refreshPublicSeriesFloatBtn");
 const programBtn = document.querySelector("#publicSeriesProgramBtn");
 const swimmerSheet = document.querySelector("#publicSwimmerSheet");
 const programSheet = document.querySelector("#publicProgramSheet");
@@ -1310,13 +1311,16 @@ programSheet?.addEventListener("click", (event) => {
 
 programBtn?.addEventListener("click", renderProgramSheet);
 
-refreshBtn?.addEventListener("click", () => {
+function refreshPublicSeries() {
   setStatus("Actualisation", "pending");
   loadPublicSeries().catch((error) => {
     console.warn("Actualisation séries publiques impossible", error);
     setStatus("Erreur", "error");
   });
-});
+}
+
+refreshBtn?.addEventListener("click", refreshPublicSeries);
+refreshFloatBtn?.addEventListener("click", refreshPublicSeries);
 
 loadPublicSeries().catch((error) => {
   console.warn("Lecture séries publiques impossible", error);

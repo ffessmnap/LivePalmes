@@ -18,6 +18,7 @@ const sessionInfoHost = document.querySelector("#publicSessionInfoHost");
 const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
+const refreshResultsFloatBtn = document.querySelector("#refreshPublicResultsFloatBtn");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -1271,12 +1272,15 @@ list?.addEventListener("click", (event) => {
   if (output) output.innerHTML = renderSwimmerSearchContent();
 });
 
-refreshResultsBtn?.addEventListener("click", () => {
+function refreshPublicResults() {
   setStatus("Actualisation", "pending");
   loadPublicResultsIndex().catch((error) => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
-});
+}
+
+refreshResultsBtn?.addEventListener("click", refreshPublicResults);
+refreshResultsFloatBtn?.addEventListener("click", refreshPublicResults);
 
 init();
