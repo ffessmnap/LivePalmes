@@ -5589,7 +5589,7 @@ async function fileToDataUrl(file) {
 
 function parseResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
-  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<entryTime>[0-9:.]+)\s+)?(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -5745,9 +5745,9 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
   if (preserveFinalists) {
     parsedFinals = {
-      ranking: existingResult.ranking || [],
+      ranking: parsedRows.ranking.length ? parsedRows.ranking : (existingResult.ranking || []),
       finalists: existingResult.finalists || { a: [], b: [] },
-      nextUnqualified: existingResult.nextUnqualified || []
+      nextUnqualified: parsedRows.nextUnqualified.length ? parsedRows.nextUnqualified : (existingResult.nextUnqualified || [])
     };
     hasFinal = true;
   } else if (hasFinal) {
