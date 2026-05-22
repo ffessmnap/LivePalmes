@@ -1342,7 +1342,9 @@ function applyRemoteLiveData(remoteData) {
   if (!remoteData) return;
   const wasLocked = pinLockEnabled();
   applyingRemoteData = true;
-  applyFreshData(mergeRemoteLiveData(remoteData), true);
+  // Les mises à jour live arrivent souvent pendant la compétition : elles ne doivent
+  // pas ramener le JA, la vidéo ou le live sur la première série.
+  applyFreshData(mergeRemoteLiveData(remoteData), false);
   applyingRemoteData = false;
   if (wasLocked && !pinLockEnabled()) {
     unlockedRoles = [];
