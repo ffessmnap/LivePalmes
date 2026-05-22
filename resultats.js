@@ -1011,6 +1011,20 @@ function renderPublicDocumentsSection(documentsHtml) {
   `;
 }
 
+function renderSessionResultsPdfSection(session) {
+  const pdfLinks = renderSessionResultsPdfLinks(session);
+  if (!pdfLinks) return "";
+  return `
+    <div class="public-results-section-title public-documents-title">
+      <h3>Résultats complets</h3>
+      <span>PDF de la session</span>
+    </div>
+    <section class="public-documents-section public-session-results-section" aria-label="PDF résultats de la session">
+      ${pdfLinks}
+    </section>
+  `;
+}
+
 function renderPendingRows(rows = []) {
   if (!rows.length) return "";
   return `
@@ -1053,14 +1067,14 @@ function renderResults() {
   const publishedRows = rows.filter((row) => resultIsVisible(resultForRow(row)));
   const pendingRows = rows.filter((row) => !resultIsVisible(resultForRow(row)));
   const sessionResults = resultsForRows(publishedRows);
-  const documentsHtml = [renderSeriesPdfLink(activeSession), renderSessionResultsPdfLinks(activeSession)]
-    .filter(Boolean)
-    .join("");
+  const seriesDocumentsHtml = renderSeriesPdfLink(activeSession);
+  const sessionResultsPdfHtml = renderSessionResultsPdfSection(activeSession);
   const sessionInformationHtml = renderSessionInformation(activeSession);
   if (sessionInfoHost) sessionInfoHost.innerHTML = sessionInformationHtml;
   if (!rows.length) {
     list.innerHTML = `
       <p class="panel-subtitle">Aucune course trouvée pour cette session.</p>
+      ${sessionResultsPdfHtml}
       ${renderSwimmerSearchSection()}
     `;
     return;
@@ -1072,13 +1086,14 @@ function renderResults() {
       </div>
       <span>${escapeHtml(String(sessionResults.length))} résultat${sessionResults.length > 1 ? "s" : ""} publié${sessionResults.length > 1 ? "s" : ""} / ${escapeHtml(String(rows.length))} course${rows.length > 1 ? "s" : ""}</span>
     </div>
+    ${sessionResultsPdfHtml}
     <div class="public-results-section-title">
       <h3>Résultats des courses</h3>
       <span>${escapeHtml(String(sessionResults.length))} disponible${sessionResults.length > 1 ? "s" : ""}</span>
     </div>
     ${publishedRows.map(renderRow).join("")}
     ${renderPendingRows(pendingRows)}
-    ${renderPublicDocumentsSection(documentsHtml)}
+    ${renderPublicDocumentsSection(seriesDocumentsHtml)}
     ${renderSwimmerSearchSection()}
   `;
   updateCollapseDetailsButton();
