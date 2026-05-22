@@ -3053,12 +3053,18 @@ body.profile-home-active .top-actions {
 }
 
 .public-finalists-block ol,
+.public-unqualified-block ul,
 .public-unqualified-block ol,
 .public-unqualified-more ol {
   display: grid;
   gap: 4px;
   margin: 0;
   padding-left: 22px;
+}
+
+.public-unqualified-block ul {
+  list-style: none;
+  padding-left: 0;
 }
 
 .public-finalists-block li,

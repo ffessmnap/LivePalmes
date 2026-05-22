@@ -839,30 +839,39 @@ function renderNextUnqualified(rows) {
   `;
 }
 
-function renderPublishedRanking(rows) {
+function renderPublishedRanking(rows, { ordered = true } = {}) {
   if (!rows?.length) return "";
+  const listTag = ordered ? "ol" : "ul";
   return `
     <details class="public-unqualified-block public-ranking-block">
       <summary>Résultats de la course</summary>
-      <ol>
+      <${listTag}>
         ${rows.map((row) => `
-          <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+          <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
             <strong>${escapeHtml(finalistName(row))}</strong>
             <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
           </li>
         `).join("")}
-      </ol>
+      </${listTag}>
     </details>
   `;
 }
 
 function publishedRankingRows(result) {
-  if (Array.isArray(result?.ranking) && result.ranking.length) return result.ranking;
-  if (!result?.isPartial || !Array.isArray(result?.performances)) return [];
-  return result.performances.filter((performance) => (
-    !isFinalStage(performance.stage) &&
-    (performance.time || performance.statusLabel)
-  ));
+  if (!result?.isPartial && Array.isArray(result?.ranking) && result.ranking.length) {
+    return { rows: result.ranking, ordered: true };
+  }
+  if (!result?.isPartial) return { rows: [], ordered: true };
+  const sourceRows = Array.isArray(result.performances) && result.performances.length
+    ? result.performances
+    : (Array.isArray(result.ranking) ? result.ranking : []);
+  const rows = sourceRows
+    .filter((performance) => (
+      !isFinalStage(performance.stage) &&
+      (performance.time || performance.statusLabel)
+    ))
+    .sort((a, b) => timeToMs(a.time) - timeToMs(b.time) || finalistName(a).localeCompare(finalistName(b), "fr"));
+  return { rows, ordered: false };
 }
 
 function renderResultDetails(result) {
@@ -896,7 +905,10 @@ function renderResultDetails(result) {
       </details>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
-    ${!result.hasFinal && publicFinalistsVisible ? renderPublishedRanking(publishedRankingRows(result)) : ""}
+    ${!result.hasFinal && publicFinalistsVisible ? (() => {
+      const ranking = publishedRankingRows(result);
+      return renderPublishedRanking(ranking.rows || [], { ordered: ranking.ordered !== false });
+    })() : ""}
   `;
 }
 
