@@ -565,6 +565,14 @@ function performancePhaseLabel(performance) {
   return "Finale";
 }
 
+function performanceInlinePhaseLabel(performance) {
+  const label = performancePhaseLabel(performance);
+  if (/^finale\s+[AB]$/i.test(label)) {
+    return label.replace(/^finale/i, "finale").replace(/\s+([ab])$/i, (_, letter) => ` ${letter.toUpperCase()}`);
+  }
+  return label.toLowerCase();
+}
+
 function performanceValueLabel(performance) {
   return cleanText(performance.statusLabel || performance.time || "-");
 }
@@ -604,7 +612,7 @@ function renderPerformanceLines(row) {
     if (!isFinal && performance.time) seriesReference = performance.time;
     return `
       <span class="public-performance-line">
-        Réalisé ${escapeHtml(performancePhaseLabel(performance).toLowerCase())} : <strong>${escapeHtml(performanceValueLabel(performance))}</strong>
+        Réalisé ${escapeHtml(performanceInlinePhaseLabel(performance))} : <strong>${escapeHtml(performanceValueLabel(performance))}</strong>
         ${delta ? `<em class="public-performance-delta ${delta.startsWith("-") ? "faster" : "slower"}">${escapeHtml(delta)}</em>` : ""}
       </span>
     `;
@@ -839,12 +847,12 @@ function renderNextUnqualified(rows) {
   `;
 }
 
-function renderPublishedRanking(rows, { ordered = true } = {}) {
+function renderPublishedRanking(rows, { ordered = true, title = "Résultats de la course" } = {}) {
   if (!rows?.length) return "";
   const listTag = ordered ? "ol" : "ul";
   return `
     <details class="public-unqualified-block public-ranking-block">
-      <summary>Résultats de la course</summary>
+      <summary>${escapeHtml(title)}</summary>
       <${listTag}>
         ${rows.map((row) => `
           <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
@@ -874,7 +882,76 @@ function publishedRankingRows(result) {
   return { rows, ordered: false };
 }
 
-function renderResultDetails(result) {
+function finalResultsForRow(row, result) {
+  if (!row || !isFinalStage(row.stage)) return [];
+  const seen = new Set();
+  const matches = publicResults
+    .filter((item) =>
+      item.eventId === row.eventId &&
+      item.sex === row.sex &&
+      (!row.session || !item.session || item.session === row.session) &&
+      isFinalStage(item.stage) &&
+      (item.ranking?.length || item.performances?.length)
+    )
+    .sort((a, b) =>
+      Number(a.programKey?.split("|")[0] || 9999) - Number(b.programKey?.split("|")[0] || 9999) ||
+      String(a.stage || "").localeCompare(String(b.stage || ""))
+    );
+  if (result && isFinalStage(result.stage) && (result.ranking?.length || result.performances?.length)) {
+    matches.unshift(result);
+  }
+  return matches.filter((item) => {
+    const key = item.id || item.programKey || `${item.eventId}|${item.sex}|${item.stage}`;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function resultRankingTitle(result, fallback = "Résultats de la course") {
+  if (!isFinalStage(result?.stage)) return fallback;
+  const label = cleanText(result.phaseLabel || "");
+  if (/finale\s+[AB]/i.test(label)) return `Résultats ${label}`;
+  if (String(result.stage || "").toLowerCase().includes("b")) return "Résultats Finale B";
+  if (String(result.stage || "").toLowerCase().includes("a")) return "Résultats Finale A";
+  if (String(result.stage || "").startsWith("finales")) return "Résultats des finales";
+  return "Résultats de la finale";
+}
+
+function finalRankingGroups(result) {
+  const ranking = publishedRankingRows(result);
+  const rows = ranking.rows || [];
+  if (!isFinalStage(result?.stage) || rows.length <= 8) {
+    return [{
+      title: resultRankingTitle(result),
+      rows,
+      ordered: ranking.ordered !== false
+    }];
+  }
+  return [
+    { title: "Résultats Finale A", rows: rows.slice(0, 8), ordered: ranking.ordered !== false },
+    { title: "Résultats Finale B", rows: rows.slice(8, 16), ordered: ranking.ordered !== false }
+  ].filter((group) => group.rows.length);
+}
+
+function renderResultRankingBlocks(result) {
+  if (!result) return "";
+  if (isFinalStage(result.stage)) {
+    return finalRankingGroups(result).map((group) =>
+      renderPublishedRanking(group.rows, {
+        ordered: group.ordered,
+        title: group.title
+      })
+    ).join("");
+  }
+  const ranking = publishedRankingRows(result);
+  return renderPublishedRanking(ranking.rows || [], {
+    ordered: ranking.ordered !== false,
+    title: resultRankingTitle(result)
+  });
+}
+
+function renderResultDetails(row, result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
   const finalists = {
@@ -905,10 +982,10 @@ function renderResultDetails(result) {
       </details>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
-    ${!result.hasFinal && publicFinalistsVisible ? (() => {
-      const ranking = publishedRankingRows(result);
-      return renderPublishedRanking(ranking.rows || [], { ordered: ranking.ordered !== false });
-    })() : ""}
+    ${!result.hasFinal && publicFinalistsVisible ? renderResultRankingBlocks(result) : ""}
+    ${isFinalStage(row?.stage) ? finalResultsForRow(row, result)
+      .filter((finalResult) => finalResult.id !== result.id)
+      .map(renderResultRankingBlocks).join("") : ""}
   `;
 }
 
@@ -932,7 +1009,7 @@ function renderRow(row) {
           ${pdfVisible ? `<a class="ghost-button compact confirm-button public-result-pdf" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}">PDF</a>` : ""}
         </div>
       </div>
-      ${renderResultDetails(result)}
+      ${renderResultDetails(row, result)}
     </article>
   `;
 }
