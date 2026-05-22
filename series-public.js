@@ -1163,7 +1163,7 @@ function applyLiveData(remote, index = {}) {
   publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
 }
 
-async function loadPublicSeries() {
+async function loadPublicSeries({ forceLive = false } = {}) {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (app) app.innerHTML = `<section class="panel"><p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p></section>`;
@@ -1192,7 +1192,7 @@ async function loadPublicSeries() {
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
   publicIndexUpdatedAt = index.updatedAt || "";
-  if (!indexSnapshot.exists || !publicSeries.length || liveDataIsNewerThanPublicIndex(remote, index)) {
+  if (forceLive || !indexSnapshot.exists || !publicSeries.length || liveDataIsNewerThanPublicIndex(remote, index)) {
     applyLiveData(remote, index);
   }
   await loadPublicForfaits(competition);
@@ -1313,7 +1313,7 @@ programBtn?.addEventListener("click", renderProgramSheet);
 
 function refreshPublicSeries() {
   setStatus("Actualisation", "pending");
-  loadPublicSeries().catch((error) => {
+  loadPublicSeries({ forceLive: true }).catch((error) => {
     console.warn("Actualisation séries publiques impossible", error);
     setStatus("Erreur", "error");
   });

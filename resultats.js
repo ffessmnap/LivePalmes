@@ -1126,17 +1126,43 @@ async function loadPublicSeriesPdfs(competition) {
   }
 }
 
+async function loadPublicSessionResultsPdfs(competition) {
+  try {
+    const snapshot = await competition.collection("sessionResultsPdfs").get({ source: "server" });
+    publicSessionResultsPdfs = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  } catch (error) {
+    console.warn("Lecture PDF résultats complets impossible", error);
+    publicSessionResultsPdfs = [];
+  }
+}
+
+async function loadPublicResultsDirectData(competition) {
+  const [resultsSnapshot] = await Promise.all([
+    competition.collection("results").orderBy("updatedAt", "desc").get({ source: "server" }),
+    loadPublicSeriesPdfs(competition),
+    loadPublicSessionResultsPdfs(competition)
+  ]);
+  publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicIndexUpdatedAt = publicResults
+    .map((result) => result.updatedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1) || publicIndexUpdatedAt;
+}
+
 function liveDataIsNewerThanPublicIndex(remote, index) {
   if (!remote?.sourceVersion) return false;
   if (!index?.sourceVersion) return true;
   return remote.sourceVersion !== index.sourceVersion;
 }
 
-function applyPublicLiveOverlay(remote, index = {}) {
+function applyPublicLiveOverlay(remote, index = {}, { force = false } = {}) {
   applyPublicAccessFromLiveData(remote);
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   if (!publicSeries.length && Array.isArray(remote.series)) publicSeries = remote.series;
-  if (!liveDataIsNewerThanPublicIndex(remote, index)) return;
+  if (!force && !liveDataIsNewerThanPublicIndex(remote, index)) return;
   publicMeet = remote.meet || publicMeet;
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
   publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
@@ -1156,7 +1182,7 @@ function applyPublicLiveOverlay(remote, index = {}) {
   publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
 }
 
-async function loadPublicResultsIndex() {
+async function loadPublicResultsIndex({ forceDirect = false } = {}) {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (list) list.innerHTML = `<p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p>`;
@@ -1200,7 +1226,10 @@ async function loadPublicResultsIndex() {
       .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
     : [];
-  applyPublicLiveOverlay(remote, index);
+  applyPublicLiveOverlay(remote, index, { force: forceDirect });
+  if (forceDirect) {
+    await loadPublicResultsDirectData(competition);
+  }
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   renderResults();
@@ -1288,7 +1317,7 @@ list?.addEventListener("click", (event) => {
 
 function refreshPublicResults() {
   setStatus("Actualisation", "pending");
-  loadPublicResultsIndex().catch((error) => {
+  loadPublicResultsIndex({ forceDirect: true }).catch((error) => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
