@@ -927,6 +927,31 @@ async function syncAlertToFirestore(alert) {
   }
 }
 
+async function syncAlertToFirestoreStrict(alert) {
+  const collection = alertsCollection();
+  if (!collection || !alert?.id) throw new Error("Firebase n'est pas disponible.");
+  await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
+}
+
+let toastTimer = null;
+
+function showToast(message, tone = "error") {
+  let toast = document.querySelector(".app-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "app-toast";
+    toast.setAttribute("role", "status");
+    document.body.appendChild(toast);
+  }
+  toast.className = `app-toast ${tone}`;
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 4500);
+}
+
 function isFinalResultAlert(alert) {
   return alert?.type === "finalists_announcement" || alert?.type === "finalist_replacement_announcement";
 }
@@ -9038,14 +9063,23 @@ officialAlerts?.addEventListener("click", (event) => {
   }
   if (!button) return;
   if (button.dataset.alertAction === "Annoncé") {
+    const alertId = card.dataset.alertId;
+    const announcedAt = new Date().toISOString();
+    const previousAlert = markSpeakerAlertDoneLocally(alertId, announcedAt);
+    if (!previousAlert) return;
     if (alert?.type === "finalist_replacement_announcement") {
-      publishReplacementAfterSpeaker(card.dataset.alertId).catch((error) => {
+      publishReplacementAfterSpeaker(alertId).catch((error) => {
         console.error(error);
-        window.alert(`Annonce du repêchage impossible : ${error?.message || error}`);
+        restoreAlertLocally(previousAlert);
+        showToast(`Annonce du repêchage impossible : ${error?.message || error}`);
       });
       return;
     }
-    updateAlert(card.dataset.alertId, { speakerStatus: "done", speakerAnnouncedAt: new Date().toISOString() });
+    syncAlertToFirestoreStrict(alerts.find((item) => item.id === alertId)).catch((error) => {
+      console.error(error);
+      restoreAlertLocally(previousAlert);
+      showToast(`Annonce impossible : ${error?.message || error}`);
+    });
   }
 });
 
@@ -9061,7 +9095,7 @@ alertDetailModal?.addEventListener("click", (event) => {
     publishFinalistsAfterSpeaker(alertId).catch((error) => {
       console.error(error);
       restoreAlertLocally(previousAlert);
-      window.alert(`Publication des finalistes impossible : ${error?.message || error}`);
+      showToast(`Publication des finalistes impossible : ${error?.message || error}`);
     });
     return;
   }
