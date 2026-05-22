@@ -405,6 +405,14 @@ function performancePhaseLabel(performance) {
   return "Finale";
 }
 
+function performanceInlinePhaseLabel(performance) {
+  const label = performancePhaseLabel(performance);
+  if (/^finale\s+[AB]$/i.test(label)) {
+    return label.replace(/^finale/i, "finale").replace(/\s+([ab])$/i, (_, letter) => ` ${letter.toUpperCase()}`);
+  }
+  return label.toLowerCase();
+}
+
 function performanceValueLabel(performance) {
   return cleanText(performance.statusLabel || performance.time || "-");
 }
@@ -432,7 +440,7 @@ function renderPerformanceLines(row) {
     if (!isFinal && performance.time) seriesReference = performance.time;
     return `
       <span class="public-performance-line">
-        Réalisé ${escapeHtml(performancePhaseLabel(performance).toLowerCase())} : <strong>${escapeHtml(performanceValueLabel(performance))}</strong>
+        Réalisé ${escapeHtml(performanceInlinePhaseLabel(performance))} : <strong>${escapeHtml(performanceValueLabel(performance))}</strong>
         ${delta ? `<em class="public-performance-delta ${delta.startsWith("-") ? "faster" : "slower"}">${escapeHtml(delta)}</em>` : ""}
       </span>
     `;
