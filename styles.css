@@ -3087,11 +3087,14 @@ body.profile-home-active .top-actions {
   opacity: 0.62;
 }
 
-.public-finalist-withdrawn strong,
-.public-finalist-withdrawn span {
+.public-finalist-withdrawn strong {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
   text-decoration-color: #9f1d16;
+}
+
+.public-finalist-withdrawn span {
+  text-decoration: none;
 }
 
 .public-finalist-badge {
