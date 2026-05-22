@@ -8403,6 +8403,10 @@ seriesControls.addEventListener("click", (event) => {
   const button = event.target.closest("[data-series]");
   if (!button) return;
   state.series = button.dataset.series;
+  if (isFinalStage(state.series)) {
+    const row = finalProgramRowsForRace().find((item) => item.stage === state.series);
+    if (row) applyProgramRow(row);
+  }
   state.selectedSwimmerId = "";
   render();
 });
@@ -9229,9 +9233,10 @@ function goToNextSeries() {
     state.series = String(numbers[0] || finalStages[0] || "all");
   } else if (isFinalStage(state.series)) {
     const currentFinalIndex = finalStages.indexOf(state.series);
-    const nextFinal = finalStages[currentFinalIndex + 1];
-    if (nextFinal) {
-      state.series = nextFinal;
+    const nextFinalRow = finals[currentFinalIndex + 1];
+    if (nextFinalRow) {
+      applyProgramRow(nextFinalRow);
+      state.series = nextFinalRow.stage;
     } else {
       goToNextProgramRace();
     }
@@ -9255,9 +9260,10 @@ function goToPreviousSeries() {
   if (!numbers.length && !finalStages.length) return;
   if (isFinalStage(state.series)) {
     const currentFinalIndex = finalStages.indexOf(state.series);
-    const previousFinal = finalStages[currentFinalIndex - 1];
-    if (previousFinal) {
-      state.series = previousFinal;
+    const previousFinalRow = finals[currentFinalIndex - 1];
+    if (previousFinalRow) {
+      applyProgramRow(previousFinalRow);
+      state.series = previousFinalRow.stage;
     } else if (numbers.length) {
       state.series = String(numbers[numbers.length - 1]);
     } else {
