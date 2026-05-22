@@ -9527,11 +9527,14 @@ async function extractPdfLines(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const text = await page.getTextContent();
+    const canRepeatPdfStructureLine = (line) =>
+      /^finale\s+[AB]\s+Horaire indicatif/i.test(line) ||
+      /^s.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i.test(line);
     const uniqueLines = (inputLines) => {
       const result = [];
       inputLines.forEach((line) => {
         const clean = fixPdfEncoding(line).replace(/\s+/g, " ").trim();
-        if (clean && !result.includes(clean)) result.push(clean);
+        if (clean && (canRepeatPdfStructureLine(clean) || !result.includes(clean))) result.push(clean);
       });
       return result;
     };
@@ -9539,11 +9542,11 @@ async function extractPdfLines(file) {
     const hasStructuredFlow = flowLines.some((line) => /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+/i.test(line))
       || flowLines.some((line) => /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i.test(line));
     const pageLines = [];
-    const appendPageLine = (line) => {
+    const appendPageLine = (line, allowRepeat = false) => {
       const clean = String(line || "").replace(/\s+/g, " ").trim();
-      if (clean && !pageLines.includes(clean)) pageLines.push(clean);
+      if (clean && (allowRepeat || !pageLines.includes(clean))) pageLines.push(clean);
     };
-    flowLines.forEach(appendPageLine);
+    flowLines.forEach((line) => appendPageLine(line, canRepeatPdfStructureLine(line)));
     if (!hasStructuredFlow) {
       uniqueLines(extractPdfLinesFromItems(text.items, 2.5)).forEach(appendPageLine);
       uniqueLines(extractPdfLinesFromItems(text.items, 7)).forEach(appendPageLine);
