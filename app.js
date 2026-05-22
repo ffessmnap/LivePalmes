@@ -3055,7 +3055,7 @@ function speakerAlertSentence(alert) {
   const comment = alertCommentLabel(alert);
   const club = alertClubShortLabel(alert);
   if (isRequalificationAlert(alert)) {
-    const source = alert.type === "requalification" ? "suite à la décision du délégué de la compétition" : "suite à l'annulation de la décision par le juge arbitre";
+    const source = alert.type === "requalification" ? "suite à la décision du délégué de la compétition" : "suite à l'annulation de la décision par le délégué";
     return {
       text: `${source}, ${personLabel} de la ligne ${alert.line || "-"} sur ${event?.label || alert.eventId} ${sexLabel} a été requalifié${agreement}.`,
       identity: `${alert.displayName || "Concurrent"}${club ? ` - ${club}` : ""}`
