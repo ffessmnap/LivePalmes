@@ -22,6 +22,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   color: var(--ink);
   background: var(--paper);
   font-family: Inter, "Segoe UI", Arial, sans-serif;
@@ -5184,7 +5185,8 @@ body.control-preview-active .topbar {
 }
 
 .table-wrap {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   max-height: 410px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -5192,20 +5194,20 @@ body.control-preview-active .topbar {
 
 .table-wrap.series-table {
   max-height: none;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: #ffffff;
-  min-width: 600px;
+  min-width: 0;
 }
 
 .series-table table {
   table-layout: fixed;
-  min-width: 780px;
+  min-width: 0;
 }
 
 .series-table th:nth-child(1),
@@ -6505,7 +6507,7 @@ tbody tr:hover,
 
   .role-switch {
     justify-content: flex-start;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   .top-actions .ghost-button {
@@ -7016,11 +7018,11 @@ tbody tr:hover,
   }
 
   .table-wrap.series-table {
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   .series-table table {
-    min-width: 680px;
+    min-width: 0;
   }
 
   .series-table tbody tr {
