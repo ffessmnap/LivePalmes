@@ -904,7 +904,7 @@ function renderRow(row) {
   const result = resultForRow(row);
   const status = resultStatus(row, result);
   const hideResultMeta = result?.hasFinal && !result.finalistsAnnouncedAt;
-  const updated = !hideResultMeta && result?.updatedAt ? `Mis à jour le ${new Date(result.updatedAt).toLocaleString("fr-FR")}` : "";
+  const updated = !hideResultMeta && result?.updatedAt ? `Mis à jour le ${formatPublicDateTime(result.updatedAt)}` : "";
   const sexClass = row.sex === "F" ? "sex-female" : (row.sex === "M" ? "sex-male" : "sex-mixed");
   const phaseLabel = resultIsVisible(result) ? "" : publicRacePhaseLabel(row);
   const pdfVisible = result && (!result.hasFinal || result.finalistsAnnouncedAt);
@@ -988,7 +988,7 @@ function renderSeriesPdfLink(session) {
   const pdf = seriesPdfForSession(session);
   if (!pdf) return "";
   const label = pdf.scope === "session" ? `Séries publiées - session ${session}` : "Séries publiées complètes";
-  const updated = pdf.updatedAt ? `Mis à jour le ${new Date(pdf.updatedAt).toLocaleString("fr-FR")}` : "";
+  const updated = pdf.updatedAt ? `Mis à jour le ${formatPublicDateTime(pdf.updatedAt)}` : "";
   return `
     <div class="public-series-pdf public-series-program-pdf">
       <div>
@@ -1077,7 +1077,7 @@ function renderMeetTitle() {
       .sort()
       .at(-1);
     meetMeta.textContent = lastUpdate
-      ? `Mis à jour le ${new Date(lastUpdate).toLocaleString("fr-FR")}`
+      ? `Mis à jour le ${formatPublicDateTime(lastUpdate)}`
       : "En attente de publication des premiers résultats";
   }
 }
