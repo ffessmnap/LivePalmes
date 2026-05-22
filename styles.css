@@ -2954,6 +2954,20 @@ body.profile-home-active .top-actions {
   color: #6b7c86;
 }
 
+.public-result-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.public-result-pdf {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+}
+
 .public-result-actions {
   display: flex;
   justify-content: flex-end;
