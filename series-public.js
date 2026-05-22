@@ -41,6 +41,8 @@ let activeSeriesIndex = 0;
 let activeRecordKey = "";
 let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
+let followPublicProgress = true;
+let lastAppliedPublicProgressKey = "";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -170,6 +172,22 @@ function publicProgressTarget() {
   const numbers = seriesNumbers(seriesRowsForProgram(races[raceIndex] || {}));
   const seriesIndex = Math.max(0, numbers.findIndex((number) => progressMatchesSeries(races[raceIndex], number)));
   return { raceIndex, seriesIndex };
+}
+
+function publicProgressKey() {
+  if (!publicProgressIsFresh()) return "";
+  return [
+    publicProgress.programKey || "",
+    publicProgress.session || "",
+    publicProgress.eventId || "",
+    publicProgress.sex || "",
+    publicProgress.stage || "",
+    publicProgress.series || ""
+  ].join("|");
+}
+
+function leavePublicProgressFollow() {
+  followPublicProgress = false;
 }
 
 function renderPublicProgress() {
@@ -691,9 +709,12 @@ function clampState() {
   const numbers = seriesNumbers(seriesRowsForProgram(races[activeRaceIndex] || {}));
   activeSeriesIndex = Math.max(0, Math.min(activeSeriesIndex, Math.max(0, numbers.length - 1)));
   const progress = publicProgressTarget();
-  if (progress && publicProgressIsFresh() && String(publicProgress.session || "") === String(activeSession || "")) {
+  const progressKey = publicProgressKey();
+  if (progress && progressKey && String(publicProgress.session || "") === String(activeSession || "") && (followPublicProgress || progressKey !== lastAppliedPublicProgressKey)) {
     activeRaceIndex = progress.raceIndex;
     activeSeriesIndex = progress.seriesIndex;
+    lastAppliedPublicProgressKey = progressKey;
+    followPublicProgress = true;
   }
 }
 
@@ -715,6 +736,7 @@ function goToNextPublicSeries() {
   const race = races[activeRaceIndex];
   const numbers = seriesNumbers(seriesRowsForProgram(race || {}));
   if (!races.length || !numbers.length) return;
+  leavePublicProgressFollow();
   if (activeSeriesIndex < numbers.length - 1) {
     activeSeriesIndex += 1;
   } else if (activeRaceIndex < races.length - 1) {
@@ -730,6 +752,7 @@ function goToPreviousPublicSeries() {
   const race = races[activeRaceIndex];
   const numbers = seriesNumbers(seriesRowsForProgram(race || {}));
   if (!races.length || !numbers.length) return;
+  leavePublicProgressFollow();
   if (activeSeriesIndex > 0) {
     activeSeriesIndex -= 1;
   } else if (activeRaceIndex > 0) {
@@ -1161,6 +1184,7 @@ async function loadPublicSeries() {
 sessionsHost?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-series-session]");
   if (!button) return;
+  leavePublicProgressFollow();
   activeSession = button.dataset.seriesSession;
   activeRaceIndex = 0;
   activeSeriesIndex = 0;
@@ -1169,6 +1193,7 @@ sessionsHost?.addEventListener("click", (event) => {
 });
 
 sessionSelect?.addEventListener("change", (event) => {
+  leavePublicProgressFollow();
   activeSession = event.target.value || "";
   activeRaceIndex = 0;
   activeSeriesIndex = 0;
@@ -1184,6 +1209,8 @@ app?.addEventListener("click", (event) => {
   }
   const progressButton = event.target.closest("[data-public-progress-race]");
   if (progressButton) {
+    followPublicProgress = true;
+    lastAppliedPublicProgressKey = publicProgressKey();
     activeRaceIndex = Number(progressButton.dataset.publicProgressRace) || 0;
     activeSeriesIndex = Number(progressButton.dataset.publicProgressSeries) || 0;
     activeRecordKey = "";
@@ -1207,6 +1234,7 @@ app?.addEventListener("click", (event) => {
   }
   const seriesButton = event.target.closest("[data-public-series-index]");
   if (seriesButton) {
+    leavePublicProgressFollow();
     activeSeriesIndex = Number(seriesButton.dataset.publicSeriesIndex) || 0;
     activeRecordKey = "";
     render();
@@ -1235,6 +1263,7 @@ app?.addEventListener("input", (event) => {
 
 app?.addEventListener("change", (event) => {
   if (event.target?.matches("#publicSeriesRaceSelect")) {
+    leavePublicProgressFollow();
     activeRaceIndex = Number(event.target.value) || 0;
     activeSeriesIndex = 0;
     activeRecordKey = "";
