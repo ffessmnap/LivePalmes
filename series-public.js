@@ -101,6 +101,13 @@ function isFinalStage(stage) {
   return value === "finalA" || value === "finalB" || value.startsWith("finale");
 }
 
+function finalStageLabel(stage) {
+  const value = String(stage || "").toLowerCase();
+  if (value.includes("b")) return "Finale B";
+  if (value.includes("a")) return "Finale A";
+  return "Finale";
+}
+
 function isRelayRow(row) {
   return /^4x/i.test(String(row?.eventId || row?.label || ""));
 }
@@ -506,7 +513,7 @@ function latestResultSession() {
 
 function rowsForSession(session) {
   return publicProgram
-    .filter((row) => row.session === session && row.eventId && row.sex && !isFinalStage(row.stage))
+    .filter((row) => row.session === session && row.eventId && row.sex)
     .filter((row) => seriesRowsForProgram(row).length)
     .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
 }
@@ -514,7 +521,7 @@ function rowsForSession(session) {
 function fallbackRowsForSession(session) {
   const seen = new Set();
   return publicSeries
-    .filter((row) => (!session || row.session === session) && row.eventId && row.sex && !isFinalStage(row.stage))
+    .filter((row) => (!session || row.session === session) && row.eventId && row.sex)
     .sort((a, b) =>
       Number(a.heatOrder || a.series || 9999) - Number(b.heatOrder || b.series || 9999) ||
       Number(a.line || a.lane || 99) - Number(b.line || b.lane || 99)
@@ -543,7 +550,6 @@ function raceRows() {
 function seriesRowsForProgram(program) {
   return publicSeries
     .filter((row) => row.eventId === program.eventId && row.sex === program.sex)
-    .filter((row) => !isFinalStage(row.stage))
     .filter((row) => !program.session || !row.session || row.session === program.session)
     .filter((row) => !program.stage || program.stage === "series" || row.stage === program.stage || !row.stage)
     .sort((a, b) =>
@@ -926,7 +932,8 @@ function syncSeriesPdfInlineLink() {
 
 function raceSelectLabel(row) {
   const time = row.startTime ? `${row.startTime} · ` : "";
-  return `${time}${eventLabel(row.eventId, row.label)} ${sexLabel(row.sex)}`;
+  const phase = isFinalStage(row.stage) ? ` · ${finalStageLabel(row.stage)}` : "";
+  return `${time}${eventLabel(row.eventId, row.label)} ${sexLabel(row.sex)}${phase}`;
 }
 
 function render() {
@@ -946,6 +953,9 @@ function render() {
   const currentRows = rowsForCurrentSeries(race, currentNumber);
   const time = race.startTime || currentRows.find((row) => row.startTime)?.startTime || rowStartTime(race);
   const navigation = publicNavigationState(races, numbers);
+  const phaseTitle = isFinalStage(race.stage)
+    ? finalStageLabel(race.stage)
+    : `Série ${String(currentNumber || "-")}/${String(numbers.length || 1)}`;
   app.innerHTML = `
     ${renderPublicProgress()}
 
@@ -982,7 +992,7 @@ function render() {
     <section class="panel public-series-board">
       <div class="public-series-board-head">
         <div>
-          <h2>${escapeHtml(eventLabel(race.eventId, race.label))} · ${escapeHtml(sexLabel(race.sex))} · Série ${escapeHtml(String(currentNumber || "-"))}/${escapeHtml(String(numbers.length || 1))}</h2>
+          <h2>${escapeHtml(eventLabel(race.eventId, race.label))} · ${escapeHtml(sexLabel(race.sex))} · ${escapeHtml(phaseTitle)}</h2>
           <p>${escapeHtml(String(currentRows.length))} engagé${currentRows.length > 1 ? "s" : ""}${time ? ` · ${escapeHtml(time)}` : ""} · horaires indicatifs</p>
           ${renderReferences(race, currentRows)}
         </div>
@@ -1012,7 +1022,7 @@ function render() {
 function swimmerProgramRows(key) {
   return publicSeries
     .filter((row) => swimmerKey(row) === key)
-    .filter((row) => !isFinalStage(row.stage) && !isRelayRow(row))
+    .filter((row) => !isRelayRow(row))
     .map(displaySeriesRow)
     .sort((a, b) =>
       Number(a.session || 999) - Number(b.session || 999) ||
@@ -1129,6 +1139,12 @@ async function loadPublicForfaits(competition) {
   }
 }
 
+function liveDataIsNewerThanPublicIndex(remote, index) {
+  if (!remote?.sourceVersion) return false;
+  if (!index?.sourceVersion) return true;
+  return remote.sourceVersion !== index.sourceVersion;
+}
+
 function applyLiveData(remote, index = {}) {
   publicMeet = remote.meet || publicMeet;
   publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
@@ -1136,7 +1152,9 @@ function applyLiveData(remote, index = {}) {
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
   publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
   publicResults = Array.isArray(index.results) ? index.results : publicResults;
-  publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs;
+  publicSeriesPdfs = Array.isArray(remote.notes?.publicSeriesPdfs)
+    ? remote.notes.publicSeriesPdfs
+    : (Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs);
   publicSessionInfos = sessionInfosFromLiveOrIndex(remote, index, publicSessionInfos);
   publicProgress = remote.notes?.publicProgress || publicProgress;
   publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
@@ -1173,7 +1191,7 @@ async function loadPublicSeries() {
   publicRecords = Array.isArray(remote.records) ? remote.records : [];
   publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
   publicIndexUpdatedAt = index.updatedAt || "";
-  if (!indexSnapshot.exists || !publicSeries.length) {
+  if (!indexSnapshot.exists || !publicSeries.length || liveDataIsNewerThanPublicIndex(remote, index)) {
     applyLiveData(remote, index);
   }
   await loadPublicForfaits(competition);
