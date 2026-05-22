@@ -567,6 +567,9 @@ function performancePhaseLabel(performance) {
 
 function performanceInlinePhaseLabel(performance) {
   const label = performancePhaseLabel(performance);
+  const stage = String(performance.stage || "").toLowerCase();
+  if (stage.includes("b")) return "finale B";
+  if (stage.includes("a")) return "finale A";
   if (/^finale\s+[AB]$/i.test(label)) {
     return label.replace(/^finale/i, "finale").replace(/\s+([ab])$/i, (_, letter) => ` ${letter.toUpperCase()}`);
   }
