@@ -3087,6 +3087,23 @@ body.profile-home-active .top-actions {
   padding-left: 0;
 }
 
+.public-final-ranking-section {
+  display: grid;
+  gap: 5px;
+}
+
+.public-final-ranking-section + .public-final-ranking-section {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed #c7d8df;
+}
+
+.public-final-ranking-section > strong {
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
 .public-finalists-block li,
 .public-unqualified-block li,
 .public-unqualified-more li {

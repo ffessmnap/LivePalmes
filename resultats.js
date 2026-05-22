@@ -850,17 +850,46 @@ function renderNextUnqualified(rows) {
 function renderPublishedRanking(rows, { ordered = true, title = "Résultats de la course" } = {}) {
   if (!rows?.length) return "";
   const listTag = ordered ? "ol" : "ul";
+  const renderRows = (items) => items.map((row) => `
+    <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+      <strong>${escapeHtml(finalistName(row))}</strong>
+      <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
+    </li>
+  `).join("");
   return `
     <details class="public-unqualified-block public-ranking-block">
       <summary>${escapeHtml(title)}</summary>
       <${listTag}>
-        ${rows.map((row) => `
-          <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+        ${renderRows(rows)}
+      </${listTag}>
+    </details>
+  `;
+}
+
+function renderFinalRankingGroup(group) {
+  if (!group?.rows?.length) return "";
+  return `
+    <section class="public-final-ranking-section">
+      <strong>${escapeHtml(group.title)}</strong>
+      <ol>
+        ${group.rows.map((row) => `
+          <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
             <strong>${escapeHtml(finalistName(row))}</strong>
             <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
           </li>
         `).join("")}
-      </${listTag}>
+      </ol>
+    </section>
+  `;
+}
+
+function renderFinalRankingBlocks(result) {
+  const groups = finalRankingGroups(result);
+  if (!groups.length || !groups.some((group) => group.rows.length)) return "";
+  return `
+    <details class="public-unqualified-block public-ranking-block public-final-ranking-block">
+      <summary>Résultats de la course</summary>
+      ${groups.map(renderFinalRankingGroup).join("")}
     </details>
   `;
 }
@@ -937,12 +966,7 @@ function finalRankingGroups(result) {
 function renderResultRankingBlocks(result) {
   if (!result) return "";
   if (isFinalStage(result.stage)) {
-    return finalRankingGroups(result).map((group) =>
-      renderPublishedRanking(group.rows, {
-        ordered: group.ordered,
-        title: group.title
-      })
-    ).join("");
+    return renderFinalRankingBlocks(result);
   }
   const ranking = publishedRankingRows(result);
   return renderPublishedRanking(ranking.rows || [], {
