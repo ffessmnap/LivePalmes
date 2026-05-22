@@ -839,6 +839,23 @@ function renderNextUnqualified(rows) {
   `;
 }
 
+function renderPublishedRanking(rows) {
+  if (!rows?.length) return "";
+  return `
+    <details class="public-unqualified-block public-ranking-block">
+      <summary>Résultats de la course</summary>
+      <ol>
+        ${rows.map((row) => `
+          <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+            <strong>${escapeHtml(finalistName(row))}</strong>
+            <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
+          </li>
+        `).join("")}
+      </ol>
+    </details>
+  `;
+}
+
 function renderResultDetails(result) {
   if (!result) return "";
   const publicFinalistsVisible = !result.hasFinal || result.finalistsAnnouncedAt;
@@ -875,6 +892,7 @@ function renderResultDetails(result) {
       </details>
       ${renderNextUnqualified(nextUnqualified || [])}
     ` : ""}
+    ${!result.hasFinal && publicFinalistsVisible ? renderPublishedRanking(result.ranking || []) : ""}
   `;
 }
 
