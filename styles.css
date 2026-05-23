@@ -3142,9 +3142,7 @@ body.profile-home-active .top-actions {
   font: inherit;
   font-weight: 950;
   text-align: left;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-decoration: none;
   cursor: pointer;
 }
 
