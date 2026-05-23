@@ -3720,9 +3720,10 @@ function ensureResultsAdminSession() {
   if (resultsAdminSession && sessions.some((session) => session.number === resultsAdminSession)) {
     return resultsAdminSession;
   }
+  const speakerSession = roleStates.speaker?.session && roleStates.speaker.session !== "all" ? String(roleStates.speaker.session) : "";
   const currentSession = state.session && state.session !== "all" ? String(state.session) : "";
   const latestSession = latestResultSession();
-  resultsAdminSession = [currentSession, latestSession, "1", sessions[0].number]
+  resultsAdminSession = [speakerSession, currentSession, latestSession, "1", sessions[0].number]
     .find((candidate) => candidate && sessions.some((session) => session.number === candidate)) || sessions[0].number;
   return resultsAdminSession;
 }
