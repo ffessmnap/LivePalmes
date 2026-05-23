@@ -5684,6 +5684,15 @@ async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application
   return new File([blob], name, { type: blob.type || type });
 }
 
+function resultTimeFromMatch(match) {
+  const time = match.groups?.time || "";
+  const splitTimes = String(match.groups?.splitTimes || "").trim().split(/\s+/).filter(Boolean);
+  if (!match.groups?.finalMarker && /^\d+$/.test(time) && splitTimes.length) {
+    return importedSeriesTime(splitTimes.at(-1)) || splitTimes.at(-1) || "";
+  }
+  return importedSeriesTime(time) || time || "";
+}
+
 function parseResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
   const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
@@ -5697,7 +5706,7 @@ function parseResultRow(line) {
     birthYear: importedBirthYear(match[3]),
     categoryCode: match.groups?.category || "",
     club: match.groups?.club || match[4],
-    time: importedSeriesTime(match.groups?.time) || match.groups?.time || "",
+    time: resultTimeFromMatch(match),
     qualified: Boolean(match.groups?.finalMarker)
   };
 }
@@ -5715,7 +5724,7 @@ function parseUnrankedResultRow(line) {
     birthYear: importedBirthYear(match[2]),
     categoryCode: match.groups?.category || "",
     club: match.groups?.club || match[4],
-    time: importedSeriesTime(match.groups?.time) || match.groups?.time || "",
+    time: resultTimeFromMatch(match),
     qualified: false
   };
 }
