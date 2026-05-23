@@ -1062,8 +1062,8 @@ function renderResultDetails(row, result) {
       <details class="public-finalists-group">
         <summary>${(finalists.b || []).length ? "Finales A et B" : "Finale A"}</summary>
         <div class="public-finalists-grid">
-          ${renderFinalistRows("Finale A", finalists.a || [], result)}
-          ${renderFinalistRows("Finale B", finalists.b || [], result)}
+          ${renderFinalistRows("Qualifiés Finale A", finalists.a || [], result)}
+          ${renderFinalistRows("Qualifiés Finale B", finalists.b || [], result)}
         </div>
       </details>
       ${renderNextUnqualified(nextUnqualified || [], result)}
