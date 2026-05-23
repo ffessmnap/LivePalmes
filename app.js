@@ -6008,7 +6008,7 @@ function replacementAlertMatches(alert, result, row) {
   const sameName = String(alert.replacementName || "") === finalistRowName(row);
   const sameRank = !alert.replacementRank || String(alert.replacementRank || "") === String(row.rank || "");
   const sameTime = !alert.replacementTime || String(alert.replacementTime || "") === String(row.time || "");
-  return sameName && sameRank && sameTime;
+  return sameName && sameRank && (sameTime || alert.speakerStatus === "done");
 }
 
 function replacementAlertKey(alert) {
@@ -6051,11 +6051,20 @@ async function ensurePendingReplacementSpeakerAlerts() {
     for (const finalKey of ["a", "b"]) {
       for (const row of (result.finalists?.[finalKey] || [])) {
         if (!row.repechaged || row.repechageAnnouncedAt || row.withdrawnAt) continue;
-        const existing = alerts.find((alert) => replacementAlertMatches(alert, result, row));
-        if (existing?.speakerStatus === "done" && existing.speakerAnnouncedAt) {
-          await stampReplacementAnnouncement(result, row, existing.speakerAnnouncedAt);
+        const matchingAlerts = alerts.filter((alert) => replacementAlertMatches(alert, result, row));
+        const announcedAlert = matchingAlerts.find((alert) => alert.speakerStatus === "done" && alert.speakerAnnouncedAt);
+        if (announcedAlert) {
+          await stampReplacementAnnouncement(result, row, announcedAlert.speakerAnnouncedAt);
+          const now = new Date().toISOString();
+          for (const pendingAlert of matchingAlerts.filter((alert) => alert.speakerStatus === "pending")) {
+            pendingAlert.speakerStatus = "none";
+            pendingAlert.cancelledAt = pendingAlert.cancelledAt || now;
+            pendingAlert.updatedAt = now;
+            await syncAlertToFirestore(pendingAlert);
+          }
           continue;
         }
+        const existing = matchingAlerts.find((alert) => alert.speakerStatus === "pending");
         if (!existing || existing.speakerStatus !== "pending") {
           missing.push({ result, row });
         }
