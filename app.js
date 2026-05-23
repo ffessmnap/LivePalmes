@@ -5798,11 +5798,13 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   const lines = await extractPdfLines(file);
   const parsedRows = parseFinalistsFromResultLines(lines);
   let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
+  let preservedFinalState = null;
   if (preserveFinalists) {
+    preservedFinalState = rebuildFinalistsFromParsedResult(parsedRows, existingResult, now);
     parsedFinals = {
       ranking: parsedRows.ranking.length ? parsedRows.ranking : (existingResult.ranking || []),
-      finalists: existingResult.finalists || { a: [], b: [] },
-      nextUnqualified: parsedRows.nextUnqualified.length ? parsedRows.nextUnqualified : (existingResult.nextUnqualified || [])
+      finalists: preservedFinalState.finalists,
+      nextUnqualified: preservedFinalState.nextUnqualified
     };
     hasFinal = true;
   } else if (hasFinal) {
@@ -5841,7 +5843,7 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   result.performances = resultPerformanceRows(parsedRows.ranking, result, row);
   if (preserveFinalists) {
     result.finalistsAnnouncedAt = existingResult.finalistsAnnouncedAt || "";
-    result.finalWithdrawals = existingResult.finalWithdrawals || [];
+    result.finalWithdrawals = preservedFinalState?.finalWithdrawals || existingResult.finalWithdrawals || [];
     result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
   }
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
@@ -6154,6 +6156,123 @@ function addReplacementChain(result, finalists, finalKey, firstReference, now) {
     reference = finalistRow;
   }
   return added;
+}
+
+function finalistRowsWithFinalKey(finalists = {}) {
+  return ["a", "b"].flatMap((finalKey) =>
+    (finalists?.[finalKey] || []).map((row) => ({ finalKey, row }))
+  );
+}
+
+function finalistRowsMatch(a, b) {
+  if (!a || !b) return false;
+  if (finalRowKey(a) === finalRowKey(b)) return true;
+  return normalizePersonName(finalistRowName(a)) === normalizePersonName(finalistRowName(b)) &&
+    String(a.time || "") === String(b.time || "");
+}
+
+function findPreservedFinalistRow(existingRows, row) {
+  return existingRows.find((item) => finalistRowsMatch(item.row, row))?.row || null;
+}
+
+function finalistPositionByRow(finalists, reference) {
+  for (const finalKey of ["a", "b"]) {
+    const index = (finalists?.[finalKey] || []).findIndex((row) => finalistRowsMatch(row, reference));
+    if (index !== -1) return { finalKey, index };
+  }
+  return null;
+}
+
+function applyPreservedReplacementAnnouncement(row, existingRows) {
+  const preserved = findPreservedFinalistRow(existingRows, row);
+  if (!preserved) return row;
+  if (preserved.repechageAnnouncedAt) row.repechageAnnouncedAt = preserved.repechageAnnouncedAt;
+  if (preserved.repechageAt) row.repechageAt = preserved.repechageAt;
+  return row;
+}
+
+function rebuildFinalistsFromParsedResult(parsedRows, existingResult, now) {
+  const parsedHasFinalists = Boolean(parsedRows?.finalists?.a?.length || parsedRows?.finalists?.b?.length);
+  if (!parsedHasFinalists) {
+    return {
+      finalists: existingResult?.finalists || { a: [], b: [] },
+      nextUnqualified: parsedRows?.nextUnqualified?.length ? parsedRows.nextUnqualified : (existingResult?.nextUnqualified || []),
+      finalWithdrawals: existingResult?.finalWithdrawals || []
+    };
+  }
+  const finalists = {
+    a: (parsedRows.finalists.a || []).map((row) => ({ ...row })),
+    b: (parsedRows.finalists.b || []).map((row) => ({ ...row }))
+  };
+  const draftResult = {
+    ...existingResult,
+    finalists,
+    nextUnqualified: parsedRows.nextUnqualified || [],
+    finalPreWithdrawals: existingResult?.finalPreWithdrawals || []
+  };
+  const existingRows = finalistRowsWithFinalKey(existingResult?.finalists || {});
+  const preservedWithdrawals = existingRows
+    .filter((item) => item.row?.withdrawnAt)
+    .sort((a, b) => String(a.row.withdrawnAt || "").localeCompare(String(b.row.withdrawnAt || "")));
+  const finalWithdrawals = [];
+  preservedWithdrawals.forEach(({ row: withdrawnReference }) => {
+    const position = finalistPositionByRow(finalists, withdrawnReference);
+    if (!position) return;
+    const sourceRow = finalists[position.finalKey][position.index];
+    const at = withdrawnReference.withdrawnAt || now;
+    finalists[position.finalKey][position.index] = {
+      ...sourceRow,
+      withdrawnAt: at,
+      preWithdrawnAt: withdrawnReference.preWithdrawnAt || sourceRow.preWithdrawnAt || ""
+    };
+    const withdrawn = finalists[position.finalKey][position.index];
+    let promoted = null;
+    let replacementFinalKey = position.finalKey;
+    let replacementReference = withdrawn;
+    if (position.finalKey === "a" && finalists.b.length) {
+      const promotedIndex = firstActiveFinalistIndex(finalists.b);
+      if (promotedIndex !== -1) {
+        const promotedSource = finalists.b.splice(promotedIndex, 1)[0];
+        promoted = {
+          ...promotedSource,
+          promotedFromFinal: "B",
+          promotedAt: at,
+          replacesRank: withdrawn.rank || "",
+          replacesName: finalistRowName(withdrawn)
+        };
+        finalists.a.push(promoted);
+        replacementFinalKey = "b";
+        replacementReference = promotedSource;
+      }
+    }
+    const replacements = addReplacementChain(draftResult, finalists, replacementFinalKey, replacementReference, at);
+    replacements.forEach((item) => applyPreservedReplacementAnnouncement(item.finalistRow, existingRows));
+    const firstReplacement = replacements[0] || null;
+    finalWithdrawals.push(
+      buildFinalWithdrawalEntry({
+        at,
+        finalKey: position.finalKey,
+        withdrawn,
+        replacement: firstReplacement,
+        promoted
+      }),
+      ...replacements
+        .filter((item) => item.preWithdrawn)
+        .map((item, index) => buildFinalWithdrawalEntry({
+          at: item.finalistRow.withdrawnAt || at,
+          finalKey: item.finalKey,
+          withdrawn: item.finalistRow,
+          replacement: replacements[index + 1] || null,
+          preWithdrawal: true
+        }))
+    );
+    draftResult.finalists = finalists;
+  });
+  return {
+    finalists: normalizeFinalistsOrder(finalists),
+    nextUnqualified: parsedRows.nextUnqualified || [],
+    finalWithdrawals
+  };
 }
 
 function firstActiveFinalistIndex(rows = []) {
