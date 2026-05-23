@@ -3484,7 +3484,7 @@ function buildPublicResultsIndex() {
   };
 }
 
-async function publishPublicResultsIndex({ silent = false } = {}) {
+async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
   const doc = publicResultsIndexDocument();
   if (!doc) return;
   try {
@@ -3496,6 +3496,7 @@ async function publishPublicResultsIndex({ silent = false } = {}) {
     if (!silent) {
       renderDataStatus("L'index public des résultats n'a pas pu être mis à jour. Vérifie les règles Firebase.");
     }
+    if (strict) throw error;
   }
 }
 
@@ -6073,13 +6074,16 @@ async function publishFinalistsAfterSpeaker(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   const now = new Date().toISOString();
   if (!alert?.resultId) {
+    const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
+    await syncAlertChangesToFirestoreStrict(alertId, changes);
     updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
     return;
   }
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier les finalistes.");
+  const resultRef = collection.doc(alert.resultId);
   try {
-    await collection.doc(alert.resultId).update({
+    await resultRef.update({
       finalistsAnnouncedAt: now,
       status: "published",
       updatedAt: now
@@ -6091,8 +6095,17 @@ async function publishFinalistsAfterSpeaker(alertId) {
     }
     throw error;
   }
+  const resultSnapshot = await resultRef.get({ source: "server" });
+  const updatedResult = resultSnapshot.exists
+    ? { id: resultSnapshot.id, ...resultSnapshot.data() }
+    : null;
   const index = raceResults.findIndex((result) => result.id === alert.resultId);
-  if (index !== -1) {
+  if (updatedResult) {
+    raceResults = [
+      updatedResult,
+      ...raceResults.filter((result) => result.id !== alert.resultId)
+    ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  } else if (index !== -1) {
     raceResults[index] = {
       ...raceResults[index],
       finalistsAnnouncedAt: now,
@@ -6100,7 +6113,9 @@ async function publishFinalistsAfterSpeaker(alertId) {
       updatedAt: now
     };
   }
-  await publishPublicResultsIndex();
+  await publishPublicResultsIndex({ strict: true });
+  const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
+  await syncAlertChangesToFirestoreStrict(alertId, changes);
   updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
 }
 
