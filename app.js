@@ -350,6 +350,7 @@ let currentSessionResultsImport = null;
 let resultUploadStates = new Map();
 let seriesImportState = null;
 let resultsAdminSession = "";
+let secretaryFinalsSession = "";
 let finalistAlertRepairRunning = false;
 let replacementAlertRepairRunning = false;
 let presenceCounts = {};
@@ -4078,6 +4079,26 @@ function finalRowsCount(finalists = {}) {
   return ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter(finalRowCountsAsFinalist).length, 0);
 }
 
+function finalResultSessions(results = []) {
+  return [...new Set(results.map((result) => String(result.session || "")).filter(Boolean))]
+    .sort((a, b) => Number(a || 0) - Number(b || 0));
+}
+
+function ensureSecretaryFinalsSession(finals = []) {
+  const available = finalResultSessions(finals);
+  if (!available.length) {
+    secretaryFinalsSession = "";
+    return "";
+  }
+  if (secretaryFinalsSession === "all" || available.includes(secretaryFinalsSession)) {
+    return secretaryFinalsSession;
+  }
+  const speakerSession = roleStates.speaker?.session && roleStates.speaker.session !== "all" ? String(roleStates.speaker.session) : "";
+  secretaryFinalsSession = [speakerSession, available.at(-1), available[0]]
+    .find((session) => session && available.includes(session)) || available[0];
+  return secretaryFinalsSession;
+}
+
 function renderSecretaryFinalsPanel() {
   if (!secretaryFinalsPanel) return;
   if (state.role !== "secretary") {
@@ -4088,6 +4109,11 @@ function renderSecretaryFinalsPanel() {
   const finals = raceResults
     .filter((result) => result.hasFinal)
     .sort((a, b) => String(b.finalistsAnnouncedAt || b.updatedAt || "").localeCompare(String(a.finalistsAnnouncedAt || a.updatedAt || "")));
+  const availableSessions = finalResultSessions(finals);
+  const activeSession = ensureSecretaryFinalsSession(finals);
+  const visibleFinals = activeSession && activeSession !== "all"
+    ? finals.filter((result) => String(result.session || "") === activeSession)
+    : finals;
   secretaryFinalsPanel.hidden = false;
   secretaryFinalsPanel.innerHTML = `
     <div class="panel-title">
@@ -4095,10 +4121,23 @@ function renderSecretaryFinalsPanel() {
         <h3>Forfaits finales</h3>
         <p class="panel-subtitle">Gestion par le secrétariat après annonce officielle des finalistes.</p>
       </div>
-      <a class="ghost-button compact" href="resultats.html?v=20260519-public-offline-footer" target="_blank" rel="noopener">Page publique</a>
+      <div class="results-admin-actions">
+        ${availableSessions.length ? `
+          <label class="results-session-select">
+            <span>Session</span>
+            <select id="secretaryFinalsSessionSelect" aria-label="Session des finales">
+              ${availableSessions.length > 1 ? `<option value="all" ${activeSession === "all" ? "selected" : ""}>Toutes</option>` : ""}
+              ${availableSessions.map((session) => `
+                <option value="${escapeHtml(session)}" ${activeSession === session ? "selected" : ""}>S${escapeHtml(session)}</option>
+              `).join("")}
+            </select>
+          </label>
+        ` : ""}
+        <a class="ghost-button compact" href="resultats.html?v=20260519-public-offline-footer" target="_blank" rel="noopener">Page publique</a>
+      </div>
     </div>
     <div class="secretary-finals-list">
-      ${finals.length ? finals.map((result) => {
+      ${visibleFinals.length ? visibleFinals.map((result) => {
         const announced = Boolean(result.finalistsAnnouncedAt);
         const withdrawals = (result.finalWithdrawals || []).length;
         return `
@@ -4113,7 +4152,7 @@ function renderSecretaryFinalsPanel() {
             </button>
           </article>
         `;
-      }).join("") : `<p class="panel-subtitle">Aucune finale publiée pour le moment.</p>`}
+      }).join("") : `<p class="panel-subtitle">${finals.length ? "Aucune finale pour cette session." : "Aucune finale publiée pour le moment."}</p>`}
     </div>
   `;
 }
@@ -8757,6 +8796,12 @@ secretaryFinalsPanel?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-final-withdrawals]");
   if (!button) return;
   openFinalWithdrawalsModal(button.dataset.finalWithdrawals);
+});
+
+secretaryFinalsPanel?.addEventListener("change", (event) => {
+  if (event.target?.id !== "secretaryFinalsSessionSelect") return;
+  secretaryFinalsSession = event.target.value || "";
+  renderSecretaryFinalsPanel();
 });
 
 adminSeriesModal?.addEventListener("click", (event) => {
