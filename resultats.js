@@ -287,7 +287,7 @@ function rowsForSession(session) {
 
 function latestResultSession() {
   const latest = publicResults
-    .filter((result) => result.session)
+    .filter((result) => result.session && resultIsVisible(result))
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))[0];
   return latest?.session || "";
 }
