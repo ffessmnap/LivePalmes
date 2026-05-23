@@ -934,6 +934,23 @@ async function syncAlertToFirestoreStrict(alert) {
   await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
 }
 
+async function syncAlertChangesToFirestore(alertId, changes) {
+  const collection = alertsCollection();
+  if (!collection || !alertId) return;
+  try {
+    await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
+  } catch (error) {
+    console.warn("Synchronisation Firebase impossible", error);
+    renderDataStatus("Firebase n'a pas pu enregistrer cette action. L'outil continue en local sur cet appareil.");
+  }
+}
+
+async function syncAlertChangesToFirestoreStrict(alertId, changes) {
+  const collection = alertsCollection();
+  if (!collection || !alertId) throw new Error("Firebase n'est pas disponible.");
+  await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
+}
+
 let toastTimer = null;
 
 function showToast(message, tone = "error") {
@@ -4966,9 +4983,11 @@ function renderQueueItem(alert) {
 function updateAlert(alertId, changes) {
   const index = alerts.findIndex((alert) => alert.id === alertId);
   if (index === -1) return;
-  alerts[index] = { ...alerts[index], ...changes, updatedAt: new Date().toISOString() };
+  const updatedAt = new Date().toISOString();
+  const nextChanges = { ...changes, updatedAt };
+  alerts[index] = { ...alerts[index], ...nextChanges };
   saveAlerts();
-  syncAlertToFirestore(alerts[index]);
+  syncAlertChangesToFirestore(alertId, nextChanges);
   render();
 }
 
@@ -9240,7 +9259,11 @@ officialAlerts?.addEventListener("click", (event) => {
       });
       return;
     }
-    syncAlertToFirestoreStrict(alerts.find((item) => item.id === alertId)).catch((error) => {
+    syncAlertChangesToFirestoreStrict(alertId, {
+      speakerStatus: "done",
+      speakerAnnouncedAt: announcedAt,
+      updatedAt: announcedAt
+    }).catch((error) => {
       console.error(error);
       restoreAlertLocally(previousAlert);
       showToast(`Annonce impossible : ${error?.message || error}`);
