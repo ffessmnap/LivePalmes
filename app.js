@@ -5626,7 +5626,7 @@ async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application
 
 function parseResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
-  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
   return {
@@ -5644,7 +5644,7 @@ function parseResultRow(line) {
 
 function parseUnrankedResultRow(line) {
   const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
-  const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?:\s+\d+)?(?:\s+[A-Z0-9]+)?\s*$/i);
+  const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
   if (!match || !match.groups?.splitTimes?.trim()) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[1]));
   return {
