@@ -19,6 +19,7 @@ const statusBadge = document.querySelector("#publicResultsStatus");
 const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
 const refreshResultsFloatBtn = document.querySelector("#refreshPublicResultsFloatBtn");
+const swimmerSheet = document.querySelector("#publicSwimmerSheet");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -35,6 +36,7 @@ let activeSession = "";
 let activeSessionChosen = false;
 let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
+let activeSheetSwimmerKey = "";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -505,6 +507,30 @@ function performanceMatchesRow(performance, row) {
   return true;
 }
 
+function swimmerKeyForResultRow(row, result = {}) {
+  const probe = {
+    ...row,
+    eventId: row.eventId || result.eventId || "",
+    sex: row.sex || result.sex || "",
+    session: row.session || result.session || ""
+  };
+  const match = publicSeries
+    .filter((seriesRow) => !isFinalStage(seriesRow.stage) && !isRelayRow(seriesRow))
+    .find((seriesRow) => performanceMatchesRow(probe, seriesRow));
+  return match ? swimmerKey(match) : "";
+}
+
+function renderResultSwimmerName(row, result = {}) {
+  const key = swimmerKeyForResultRow(row, result);
+  const name = finalistName(row);
+  if (!key) return `<strong>${escapeHtml(name)}</strong>`;
+  return `
+    <button class="public-result-swimmer-button" type="button" data-result-swimmer-key="${escapeHtml(key)}">
+      ${escapeHtml(name)}
+    </button>
+  `;
+}
+
 function performancesForProgramRow(row) {
   return allPublicPerformances()
     .filter((performance) => performanceMatchesRow(performance, row))
@@ -741,6 +767,30 @@ function renderSwimmerSearchSection() {
   `;
 }
 
+function closeSwimmerSheet() {
+  activeSheetSwimmerKey = "";
+  if (!swimmerSheet) return;
+  swimmerSheet.hidden = true;
+  swimmerSheet.innerHTML = "";
+  document.body.classList.remove("public-sheet-open");
+}
+
+function openSwimmerSheet(key) {
+  if (!swimmerSheet || !key) return;
+  const content = renderInlineSwimmerProgram(key);
+  if (!content) return;
+  activeSheetSwimmerKey = key;
+  swimmerSheet.hidden = false;
+  swimmerSheet.innerHTML = `
+    <div class="public-swimmer-backdrop" data-close-swimmer-sheet></div>
+    <div class="public-swimmer-panel" role="dialog" aria-modal="true" aria-label="Fiche nageur">
+      <button class="public-swimmer-close" type="button" data-close-swimmer-sheet aria-label="Fermer">×</button>
+      ${content}
+    </div>
+  `;
+  document.body.classList.add("public-sheet-open");
+}
+
 function latestSessionUpdateLabel(results = []) {
   const latest = results
     .map((result) => result.updatedAt)
@@ -820,7 +870,7 @@ function renderFinalistRows(title, rows, result) {
           const withdrawalLabel = finalistWithdrawalLabel(row, result);
           return `
           <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "public-finalist-withdrawn" : ""}">
-            <strong>${escapeHtml(finalistName(row))}</strong>
+            ${renderResultSwimmerName(row, result)}
             <span>${escapeHtml(row.time || "")}${withdrawalLabel ? ` <small>${escapeHtml(withdrawalLabel)}</small>` : ""}</span>
             ${row.withdrawnAt ? `<mark class="public-finalist-badge withdrawn">Forfait</mark>` : ""}
             ${row.repechaged && !row.withdrawnAt ? `<mark class="public-finalist-badge repechaged">Repêché${result?.sex === "F" ? "e" : ""}</mark>` : ""}
@@ -832,11 +882,11 @@ function renderFinalistRows(title, rows, result) {
   `;
 }
 
-function renderNextUnqualified(rows) {
+function renderNextUnqualified(rows, result = {}) {
   if (!rows?.length) return "";
   const renderRows = (items) => items.map((row) => `
     <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
-      <strong>${escapeHtml(finalistName(row))}</strong>
+      ${renderResultSwimmerName(row, result)}
       <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
     </li>
   `).join("");
@@ -855,7 +905,7 @@ function renderPublishedRanking(rows, { ordered = true, title = "Résultats de l
   const listTag = ordered ? "ol" : "ul";
   const renderRows = (items) => items.map((row) => `
     <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
-      <strong>${escapeHtml(finalistName(row))}</strong>
+      ${renderResultSwimmerName(row, row)}
       <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
     </li>
   `).join("");
@@ -877,7 +927,7 @@ function renderFinalRankingGroup(group) {
       <ol>
         ${group.rows.map((row) => `
           <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
-            <strong>${escapeHtml(finalistName(row))}</strong>
+            ${renderResultSwimmerName(row, group.result || row)}
             <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
           </li>
         `).join("")}
@@ -899,7 +949,15 @@ function renderFinalRankingBlocks(result) {
 
 function publishedRankingRows(result) {
   if (!result?.isPartial && Array.isArray(result?.ranking) && result.ranking.length) {
-    return { rows: result.ranking, ordered: true };
+    return {
+      rows: result.ranking.map((row) => ({
+        ...row,
+        eventId: row.eventId || result.eventId || "",
+        sex: row.sex || result.sex || "",
+        session: row.session || result.session || ""
+      })),
+      ordered: true
+    };
   }
   if (!result?.isPartial) return { rows: [], ordered: true };
   const sourceRows = Array.isArray(result.performances) && result.performances.length
@@ -957,12 +1015,13 @@ function finalRankingGroups(result) {
     return [{
       title: resultRankingTitle(result),
       rows,
+      result,
       ordered: ranking.ordered !== false
     }];
   }
   return [
-    { title: "Résultats Finale A", rows: rows.slice(0, 8), ordered: ranking.ordered !== false },
-    { title: "Résultats Finale B", rows: rows.slice(8, 16), ordered: ranking.ordered !== false }
+    { title: "Résultats Finale A", rows: rows.slice(0, 8), result, ordered: ranking.ordered !== false },
+    { title: "Résultats Finale B", rows: rows.slice(8, 16), result, ordered: ranking.ordered !== false }
   ].filter((group) => group.rows.length);
 }
 
@@ -1007,7 +1066,7 @@ function renderResultDetails(row, result) {
           ${renderFinalistRows("Finale B", finalists.b || [], result)}
         </div>
       </details>
-      ${renderNextUnqualified(nextUnqualified || [])}
+      ${renderNextUnqualified(nextUnqualified || [], result)}
     ` : ""}
     ${!result.hasFinal && publicFinalistsVisible ? renderResultRankingBlocks(result) : ""}
     ${isFinalStage(row?.stage) ? finalResultsForRow(row, result)
@@ -1433,11 +1492,28 @@ list?.addEventListener("input", (event) => {
 });
 
 list?.addEventListener("click", (event) => {
+  const resultSwimmerButton = event.target.closest("[data-result-swimmer-key]");
+  if (resultSwimmerButton) {
+    event.preventDefault();
+    openSwimmerSheet(resultSwimmerButton.dataset.resultSwimmerKey || "");
+    return;
+  }
   const button = event.target.closest("[data-search-swimmer-key]");
   if (!button) return;
   selectedSearchSwimmerKey = button.dataset.searchSwimmerKey || "";
   const output = document.querySelector("#publicSwimmerSearchOutput");
   if (output) output.innerHTML = renderSwimmerSearchContent();
+});
+
+swimmerSheet?.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-close-swimmer-sheet]")) return;
+  closeSwimmerSheet();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && activeSheetSwimmerKey) {
+    closeSwimmerSheet();
+  }
 });
 
 function refreshPublicResults() {
