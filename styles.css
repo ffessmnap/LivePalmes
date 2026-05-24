@@ -6291,6 +6291,11 @@ tbody tr:hover,
   white-space: nowrap;
 }
 
+.compact-program-rank {
+  color: var(--cat-color);
+  font-weight: 950;
+}
+
 .close-details {
   width: 34px;
   height: 34px;
