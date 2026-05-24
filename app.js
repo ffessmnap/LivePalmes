@@ -7657,6 +7657,58 @@ function categoryClass(category) {
   return "cat-other";
 }
 
+function entrantPerformanceNameKey(row) {
+  return normalizePersonName(formatPersonNameParts(row?.firstName, row?.lastName, row?.displayName || row?.name || ""));
+}
+
+function performanceBirthYear(row) {
+  const text = String(row?.birthYear || row?.birthDate || "").trim();
+  const match = text.match(/\b(19|20)\d{2}\b/);
+  return match ? match[0] : text;
+}
+
+function performanceMatchesEntrant(performance, entrant) {
+  if (!performance || !entrant) return false;
+  if (!recordEventMatches(performance.eventId, entrant.eventId)) return false;
+  if (performance.sex && entrant.sex && performance.sex !== entrant.sex) return false;
+  if (entrantPerformanceNameKey(performance) !== entrantPerformanceNameKey(entrant)) return false;
+  const performanceBirth = performanceBirthYear(performance);
+  const entrantBirth = performanceBirthYear(entrant);
+  if (performanceBirth && entrantBirth && performanceBirth !== entrantBirth) return false;
+  return true;
+}
+
+function performanceDisplayValue(performance) {
+  return String(performance?.statusLabel || performance?.time || "").trim();
+}
+
+function swimmerBestPerformanceForEntry(entry) {
+  const performances = raceResults.flatMap((result) =>
+    (Array.isArray(result.performances) ? result.performances : []).map((performance) => ({
+      ...performance,
+      eventId: performance.eventId || result.eventId,
+      sex: performance.sex || result.sex,
+      stage: performance.stage || result.stage,
+      phaseLabel: performance.phaseLabel || result.phaseLabel,
+      updatedAt: performance.updatedAt || result.updatedAt
+    }))
+  ).filter((performance) => performanceMatchesEntrant(performance, entry) && performanceDisplayValue(performance));
+  if (!performances.length) return null;
+  return performances.sort((a, b) => {
+    const finalA = isFinalStage(a.stage) ? 0 : 1;
+    const finalB = isFinalStage(b.stage) ? 0 : 1;
+    return finalA - finalB || String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+  })[0];
+}
+
+function compactProgramPerformanceLabel(entry) {
+  if (!isSpeakerView()) return "";
+  const performance = swimmerBestPerformanceForEntry(entry);
+  if (!performance) return "";
+  const label = isFinalStage(performance.stage) ? finalStageLabel(performance.stage) : "Série";
+  return `<small>${escapeHtml(label)} ${escapeHtml(performanceDisplayValue(performance))}</small>`;
+}
+
 function selectRecordForCategory(category) {
   if (category === "all") {
     state.selectedRecordKey = "";
@@ -7711,7 +7763,8 @@ function renderSwimmerDetails() {
       <div class="compact-program" aria-label="Courses engagées du weekend">
         ${uniqueEntries.map((entry) => `
           <span class="${categoryClass(entry.category)}">
-            ${escapeHtml(shortEventLabel(entry.eventId))}
+            <strong>${escapeHtml(shortEventLabel(entry.eventId))}</strong>
+            ${compactProgramPerformanceLabel(entry)}
           </span>
         `).join("")}
       </div>

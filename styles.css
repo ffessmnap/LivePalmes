@@ -6268,6 +6268,7 @@ tbody tr:hover,
 .compact-program span {
   display: inline-flex;
   align-items: center;
+  flex-direction: column;
   min-height: 20px;
   padding: 0 6px;
   border-left: 3px solid var(--cat-color);
@@ -6280,6 +6281,14 @@ tbody tr:hover,
 
 .compact-program strong {
   color: var(--cat-color);
+}
+
+.compact-program small {
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 950;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .close-details {
