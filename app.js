@@ -5861,8 +5861,9 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
   const now = new Date().toISOString();
   const event = data.events.find((item) => item.id === row.eventId);
-  const pdfDataUrl = await fileToDataUrl(file);
   const existingResult = resultForProgramRow(row);
+  const reuseExistingPdf = Boolean(options.reuseExistingPdf && existingResult?.pdfDataUrl);
+  const pdfDataUrl = reuseExistingPdf ? existingResult.pdfDataUrl : await fileToDataUrl(file);
   const preserveFinalists = Boolean(options.preserveFinalists && existingResult?.hasFinal);
   const lines = await extractPdfLines(file);
   const parsedRows = parseFinalistsFromResultLines(lines);
@@ -5915,7 +5916,14 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     result.finalWithdrawals = preservedFinalState?.finalWithdrawals || existingResult.finalWithdrawals || [];
     result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
   }
-  await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
+  if (reuseExistingPdf) {
+    const payload = JSON.parse(JSON.stringify(result));
+    delete payload.pdfDataUrl;
+    delete payload.pdfSize;
+    await collection.doc(result.id).set(payload, { merge: true });
+  } else {
+    await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
+  }
   raceResults = [
     result,
     ...raceResults.filter((item) => item.id !== result.id)
@@ -5939,7 +5947,10 @@ async function rereadPublishedResult(row) {
     existingResult.finalPreWithdrawals?.length ||
     ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
   ));
-  return publishResultPdf(file, row, Boolean(existingResult.hasFinal), Boolean(existingResult.isPartial), { preserveFinalists });
+  return publishResultPdf(file, row, Boolean(existingResult.hasFinal), Boolean(existingResult.isPartial), {
+    preserveFinalists,
+    reuseExistingPdf: true
+  });
 }
 
 async function createFinalistsSpeakerAlert(result) {
