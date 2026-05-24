@@ -5806,8 +5806,8 @@ function parseResultStatusRow(line) {
     time: "",
     resultStatus: status,
     statusLabel: {
-      dns: "DNS",
-      ab: "AB",
+      dns: "Forfait",
+      ab: "ABD",
       dsq: "DSQ"
     }[status],
     qualified: false
@@ -7679,8 +7679,21 @@ function performanceMatchesEntrant(performance, entrant) {
   return true;
 }
 
+function performanceStatusResultLabel(performance) {
+  const status = String(performance?.status || performance?.resultStatus || "").toLowerCase();
+  const label = String(performance?.statusLabel || "").trim();
+  const normalizedLabel = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
+  if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
+  if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
+  return label;
+}
+
 function performanceDisplayValue(performance) {
-  return String(performance?.statusLabel || performance?.time || "").trim();
+  return String(performanceStatusResultLabel(performance) || performance?.time || "").trim();
 }
 
 function resultRankForPerformance(performance, result) {

@@ -442,8 +442,18 @@ function performanceInlinePhaseLabel(performance) {
   return label.toLowerCase();
 }
 
+function performanceStatusLabel(performance) {
+  const status = cleanText(performance.status || performance.resultStatus || "").toLowerCase();
+  const label = cleanText(performance.statusLabel || "").trim();
+  const normalizedLabel = normalizeText(label);
+  if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
+  if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
+  if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
+  return label;
+}
+
 function performanceValueLabel(performance) {
-  return cleanText(performance.statusLabel || performance.time || "-");
+  return cleanText(performanceStatusLabel(performance) || performance.time || "-");
 }
 
 function performanceDeltaLabel(performance, referenceTime, referenceLabel = "") {
