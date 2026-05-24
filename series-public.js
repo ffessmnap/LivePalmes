@@ -345,14 +345,40 @@ function performanceMatchesRow(performance, row) {
   return true;
 }
 
+function performanceDuplicateKey(performance) {
+  return [
+    performance.eventId || "",
+    performance.sex || "",
+    performance.stage || "",
+    performance.phaseLabel || "",
+    performanceNameKey(performance),
+    birthYearLabel(performance),
+    performanceClubKey(performance),
+    cleanText(performance.time || ""),
+    cleanText(performance.status || ""),
+    cleanText(performance.statusLabel || "")
+  ].join("|");
+}
+
+function uniquePerformances(rows) {
+  const seen = new Set();
+  return rows.filter((performance) => {
+    const key = performanceDuplicateKey(performance);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function performancesForProgramRow(row) {
-  return allPublicPerformances()
+  const performances = allPublicPerformances()
     .filter((performance) => performanceMatchesRow(performance, row))
     .sort((a, b) => {
       const finalA = isFinalStage(a.stage) ? 1 : 0;
       const finalB = isFinalStage(b.stage) ? 1 : 0;
       return finalA - finalB || String(a.updatedAt || "").localeCompare(String(b.updatedAt || ""));
     });
+  return uniquePerformances(performances);
 }
 
 function resultPdfLinksForProgramRow(row, performances = performancesForProgramRow(row)) {
