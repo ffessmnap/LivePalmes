@@ -5910,6 +5910,7 @@ function resultPerformanceRows(parsedRows, result, row) {
         displayName: item.displayName || "",
         birthYear: item.birthYear || "",
         club: item.club || "",
+        rank: item.rank || "",
         time: item.time || "",
         status: item.resultStatus || "",
         statusLabel: item.statusLabel || "",
@@ -7682,6 +7683,29 @@ function performanceDisplayValue(performance) {
   return String(performance?.statusLabel || performance?.time || "").trim();
 }
 
+function resultRankForPerformance(performance, result) {
+  const rows = Array.isArray(result?.ranking) ? result.ranking : [];
+  const match = rows.find((row) => {
+    const candidate = {
+      ...row,
+      eventId: row.eventId || result.eventId || performance.eventId || "",
+      sex: row.sex || result.sex || performance.sex || ""
+    };
+    if (!performanceMatchesEntrant(performance, candidate)) return false;
+    const performanceTime = String(performance.time || "").trim();
+    const candidateTime = String(row.time || "").trim();
+    if (performanceTime && candidateTime && performanceTime !== candidateTime) return false;
+    return true;
+  });
+  return match?.rank || "";
+}
+
+function performanceRankLabel(performance) {
+  const rank = Number(performance?.rank);
+  if (!Number.isFinite(rank) || rank <= 0) return "";
+  return formatRank(rank);
+}
+
 function swimmerBestPerformanceForEntry(entry) {
   const performances = raceResults.flatMap((result) =>
     (Array.isArray(result.performances) ? result.performances : []).map((performance) => ({
@@ -7690,6 +7714,7 @@ function swimmerBestPerformanceForEntry(entry) {
       sex: performance.sex || result.sex,
       stage: performance.stage || result.stage,
       phaseLabel: performance.phaseLabel || result.phaseLabel,
+      rank: performance.rank || resultRankForPerformance(performance, result),
       updatedAt: performance.updatedAt || result.updatedAt
     }))
   ).filter((performance) => performanceMatchesEntrant(performance, entry) && performanceDisplayValue(performance));
@@ -7706,7 +7731,8 @@ function compactProgramPerformanceLabel(entry) {
   const performance = swimmerBestPerformanceForEntry(entry);
   if (!performance) return "";
   const label = isFinalStage(performance.stage) ? finalStageLabel(performance.stage) : "Série";
-  return `<small>${escapeHtml(label)} ${escapeHtml(performanceDisplayValue(performance))}</small>`;
+  const rank = performanceRankLabel(performance);
+  return `<small>${escapeHtml(label)} ${escapeHtml(performanceDisplayValue(performance))}${rank ? ` <b class="compact-program-rank">${escapeHtml(rank)}</b>` : ""}</small>`;
 }
 
 function selectRecordForCategory(category) {
