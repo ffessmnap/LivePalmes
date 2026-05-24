@@ -1001,6 +1001,28 @@ async function cleanupOrphanFinalResultAlerts() {
   }
 }
 
+async function cleanupResolvedSpeakerResultAlerts() {
+  if (!resultsSnapshotReady) return;
+  const now = new Date().toISOString();
+  const resolved = alerts.filter((alert) =>
+    alert.speakerStatus === "pending" &&
+    !alert.cancelledAt &&
+    speakerAlertAlreadyResolvedByResult(alert)
+  );
+  if (!resolved.length) return;
+  for (const alert of resolved) {
+    alert.speakerStatus = "none";
+    alert.cancelledAt = alert.cancelledAt || now;
+    alert.updatedAt = now;
+    await syncAlertChangesToFirestore(alert.id, {
+      speakerStatus: "none",
+      cancelledAt: alert.cancelledAt,
+      updatedAt: now
+    });
+  }
+  saveAlerts();
+}
+
 async function clearFirestoreAlerts() {
   const collection = alertsCollection();
   if (!collection) return;
@@ -1867,6 +1889,7 @@ function applyResultsSnapshot(snapshot) {
   raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   resultsSnapshotReady = true;
   cleanupOrphanFinalResultAlerts();
+  cleanupResolvedSpeakerResultAlerts();
   ensurePendingFinalistsSpeakerAlerts();
   ensurePendingReplacementSpeakerAlerts();
   if (state.role === "computer") publishPublicResultsIndex({ silent: true });
@@ -3028,6 +3051,7 @@ function renderSessionControls() {
 function currentRoleAlertFilter(alert) {
   if (alert.type === "final_composition_ready") return false;
   if (alert.cancelledAt) return false;
+  if (speakerAlertAlreadyResolvedByResult(alert)) return false;
   if (state.role === "live") {
     if (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") return false;
     return alert.speakerStatus !== "none" && !liveDismissedAlertIds.includes(alert.id);
@@ -3045,6 +3069,24 @@ function currentRoleAlertFilter(alert) {
     if (alert.type === "forfait" && alert.secretaryStatus === "pending") return true;
     return alert.speakerStatus === "pending" &&
       (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement");
+  }
+  return false;
+}
+
+function speakerAlertAlreadyResolvedByResult(alert) {
+  if (alert.type === "finalists_announcement") {
+    const result = raceResults.find((item) => item.id === alert.resultId);
+    return Boolean(result?.finalistsAnnouncedAt);
+  }
+  if (alert.type === "finalist_replacement_announcement") {
+    const result = raceResults.find((item) => item.id === alert.resultId);
+    if (!result) return false;
+    return ["a", "b"].some((finalKey) => (result.finalists?.[finalKey] || []).some((row) =>
+      row.repechaged &&
+      row.repechageAnnouncedAt &&
+      finalistRowName(row) === alert.replacementName &&
+      (!alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || ""))
+    ));
   }
   return false;
 }
