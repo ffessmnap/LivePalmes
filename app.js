@@ -5873,8 +5873,24 @@ function performanceStageForResultRow(item, result, row) {
   return null;
 }
 
+function resultPerformanceDuplicateKey(item) {
+  return [
+    item.eventId || "",
+    item.sex || "",
+    item.stage || "",
+    item.phaseLabel || "",
+    normalizePersonName([item.lastName, item.firstName].filter(Boolean).join(" ") || item.displayName || ""),
+    String(item.birthYear || "").trim(),
+    normalizePersonName(item.club || ""),
+    String(item.time || "").trim(),
+    String(item.status || "").trim(),
+    String(item.statusLabel || "").trim()
+  ].join("|");
+}
+
 function resultPerformanceRows(parsedRows, result, row) {
   if (/^4x/i.test(String(row.eventId || ""))) return [];
+  const seen = new Set();
   return (parsedRows || [])
     .filter((item) => item.lastName || item.firstName || item.displayName)
     .map((item) => {
@@ -5900,7 +5916,13 @@ function resultPerformanceRows(parsedRows, result, row) {
         updatedAt: result.updatedAt
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => {
+      const key = resultPerformanceDuplicateKey(item);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 async function publishResultPdf(file, row, hasFinal, isPartial = false, options = {}) {
