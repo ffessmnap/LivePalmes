@@ -923,7 +923,7 @@ function renderNextUnqualified(rows, result = {}) {
   const renderRows = (items) => items.map((row) => `
     <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
       ${renderResultSwimmerName(row, result)}
-      <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
+      <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
     </li>
   `).join("");
   return `
@@ -936,13 +936,23 @@ function renderNextUnqualified(rows, result = {}) {
   `;
 }
 
+function resultRowStatusLabel(row) {
+  const status = cleanText(row?.resultStatus || row?.status || "").toLowerCase();
+  const label = cleanText(row?.statusLabel || "");
+  const normalizedLabel = normalizeText(label);
+  if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
+  if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
+  if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
+  return label;
+}
+
 function renderPublishedRanking(rows, { ordered = true, title = "Résultats de la course" } = {}) {
   if (!rows?.length) return "";
   const listTag = ordered ? "ol" : "ul";
   const renderRows = (items) => items.map((row) => `
     <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
       ${renderResultSwimmerName(row, row)}
-      <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
+      <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
     </li>
   `).join("");
   return `
@@ -964,7 +974,7 @@ function renderFinalRankingGroup(group) {
         ${group.rows.map((row) => `
           <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
             ${renderResultSwimmerName(row, group.result || row)}
-            <span>${escapeHtml(row.time || row.statusLabel || "")}</span>
+            <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
           </li>
         `).join("")}
       </ol>
@@ -985,13 +995,20 @@ function renderFinalRankingBlocks(result) {
 
 function publishedRankingRows(result) {
   if (!result?.isPartial && Array.isArray(result?.ranking) && result.ranking.length) {
+    const rows = result.ranking.map((row) => ({
+      ...row,
+      eventId: row.eventId || result.eventId || "",
+      sex: row.sex || result.sex || "",
+      session: row.session || result.session || ""
+    }));
+    const orderedRows = isFinalStage(result.stage)
+      ? rows.sort((a, b) =>
+        Number(a.sourceIndex ?? 9999) - Number(b.sourceIndex ?? 9999) ||
+        Number(a.rank || 9999) - Number(b.rank || 9999)
+      )
+      : rows;
     return {
-      rows: result.ranking.map((row) => ({
-        ...row,
-        eventId: row.eventId || result.eventId || "",
-        sex: row.sex || result.sex || "",
-        session: row.session || result.session || ""
-      })),
+      rows: orderedRows,
       ordered: true
     };
   }

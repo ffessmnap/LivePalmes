@@ -5731,6 +5731,13 @@ async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application
   return new File([blob], name, { type: blob.type || type });
 }
 
+function normalizeResultLineText(line) {
+  return fixPdfEncoding(String(line || ""))
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\s*(IN|NS)\s+(\d+)\s+/i, "$2 ");
+}
+
 function resultTimeFromMatch(match) {
   const time = match.groups?.time || "";
   const splitTimes = String(match.groups?.splitTimes || "").trim().split(/\s+/).filter(Boolean);
@@ -5741,7 +5748,7 @@ function resultTimeFromMatch(match) {
 }
 
 function parseResultRow(line) {
-  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const text = normalizeResultLineText(line);
   const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
   if (!match) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[2]));
@@ -5759,7 +5766,7 @@ function parseResultRow(line) {
 }
 
 function parseUnrankedResultRow(line) {
-  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const text = normalizeResultLineText(line);
   const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
   if (!match || !match.groups?.splitTimes?.trim()) return null;
   const split = splitImportedPersonName(fixPdfEncoding(match[1]));
@@ -5789,7 +5796,7 @@ function resultStatusFromText(value) {
 }
 
 function parseResultStatusRow(line) {
-  const text = fixPdfEncoding(String(line || "")).replace(/\s+/g, " ").trim();
+  const text = normalizeResultLineText(line);
   const status = resultStatusFromText(text);
   if (!status) return null;
   const match = text.match(/^\s*(?:(\d+)\s+)?(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(.+?)\s*$/i);
@@ -5841,6 +5848,9 @@ function parseFinalistsFromResultLines(lines) {
       return true;
     })
     .sort((a, b) => {
+      if (Number.isFinite(a.sourceIndex) && Number.isFinite(b.sourceIndex) && (a.resultStatus || b.resultStatus || !a.rank || !b.rank)) {
+        return Number(a.sourceIndex || 0) - Number(b.sourceIndex || 0);
+      }
       const statusA = a.resultStatus ? 1 : 0;
       const statusB = b.resultStatus ? 1 : 0;
       return statusA - statusB ||
@@ -5858,17 +5868,25 @@ function parseFinalistsFromResultLines(lines) {
   };
 }
 
-function performanceStageForResultRow(item, result, row) {
+function performanceStageForResultRow(item, result, row, rowIndex = 0) {
   if (!isFinalStage(result.stage)) return {
     stage: result.stage,
     phaseLabel: result.phaseLabel
   };
   const rank = Number(item.rank || 0);
+  const stage = String(row.stage || result.stage || "").toLowerCase();
+  if (/finale[-\s]?b\b/.test(stage)) return { stage: "finale-b", phaseLabel: "Finale B" };
+  if (/finale[-\s]?a\b/.test(stage)) return { stage: "finale-a", phaseLabel: "Finale A" };
   if (Number(row.finalStageCount || 0) > 1 && rank >= 9 && rank <= 16) {
     return { stage: "finale-b", phaseLabel: "Finale B" };
   }
   if (rank >= 1 && rank <= 8) {
     return { stage: "finale-a", phaseLabel: "Finale A" };
+  }
+  if (Number(row.finalStageCount || 0) > 1 || String(result.stage || "").toLowerCase().startsWith("finales")) {
+    return Number(rowIndex) < 8
+      ? { stage: "finale-a", phaseLabel: "Finale A" }
+      : { stage: "finale-b", phaseLabel: "Finale B" };
   }
   return null;
 }
@@ -5893,8 +5911,8 @@ function resultPerformanceRows(parsedRows, result, row) {
   const seen = new Set();
   return (parsedRows || [])
     .filter((item) => item.lastName || item.firstName || item.displayName)
-    .map((item) => {
-      const phase = performanceStageForResultRow(item, result, row);
+    .map((item, rowIndex) => {
+      const phase = performanceStageForResultRow(item, result, row, rowIndex);
       if (!phase) return null;
       return {
         eventId: row.eventId,
