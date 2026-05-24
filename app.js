@@ -951,6 +951,11 @@ async function syncAlertChangesToFirestoreStrict(alertId, changes) {
   await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
 }
 
+function markAlertAlreadyClosedError(error) {
+  if (error && typeof error === "object") error.alertAlreadyClosed = true;
+  return error;
+}
+
 let toastTimer = null;
 
 function showToast(message, tone = "error") {
@@ -6185,14 +6190,17 @@ async function ensurePendingReplacementSpeakerAlerts() {
 async function publishFinalistsAfterSpeaker(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   const now = new Date().toISOString();
+  const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
+  await syncAlertChangesToFirestoreStrict(alertId, changes);
+  markSpeakerAlertDoneLocally(alertId, now);
   if (!alert?.resultId) {
-    const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
-    await syncAlertChangesToFirestoreStrict(alertId, changes);
-    updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
     return;
   }
   const collection = resultsCollection();
-  if (!collection) throw new Error("Firebase n'est pas disponible pour publier les finalistes.");
+  if (!collection) {
+    const error = new Error("Firebase n'est pas disponible pour publier les finalistes.");
+    throw markAlertAlreadyClosedError(error);
+  }
   const resultRef = collection.doc(alert.resultId);
   try {
     await resultRef.update({
@@ -6205,30 +6213,31 @@ async function publishFinalistsAfterSpeaker(alertId) {
       await deleteFinalResultAlerts(alert.resultId);
       return;
     }
-    throw error;
+    throw markAlertAlreadyClosedError(error);
   }
-  const resultSnapshot = await resultRef.get({ source: "server" });
-  const updatedResult = resultSnapshot.exists
-    ? { id: resultSnapshot.id, ...resultSnapshot.data() }
-    : null;
-  const index = raceResults.findIndex((result) => result.id === alert.resultId);
-  if (updatedResult) {
-    raceResults = [
-      updatedResult,
-      ...raceResults.filter((result) => result.id !== alert.resultId)
-    ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  } else if (index !== -1) {
-    raceResults[index] = {
-      ...raceResults[index],
-      finalistsAnnouncedAt: now,
-      status: "published",
-      updatedAt: now
-    };
+  try {
+    const resultSnapshot = await resultRef.get({ source: "server" });
+    const updatedResult = resultSnapshot.exists
+      ? { id: resultSnapshot.id, ...resultSnapshot.data() }
+      : null;
+    const index = raceResults.findIndex((result) => result.id === alert.resultId);
+    if (updatedResult) {
+      raceResults = [
+        updatedResult,
+        ...raceResults.filter((result) => result.id !== alert.resultId)
+      ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    } else if (index !== -1) {
+      raceResults[index] = {
+        ...raceResults[index],
+        finalistsAnnouncedAt: now,
+        status: "published",
+        updatedAt: now
+      };
+    }
+    await publishPublicResultsIndex({ strict: true });
+  } catch (error) {
+    throw markAlertAlreadyClosedError(error);
   }
-  await publishPublicResultsIndex({ strict: true });
-  const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
-  await syncAlertChangesToFirestoreStrict(alertId, changes);
-  updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
 }
 
 function finalRowKey(row) {
@@ -6993,21 +7002,26 @@ async function stampReplacementAnnouncement(result, row, announcedAt) {
 async function publishReplacementAfterSpeaker(alertId) {
   const alert = alerts.find((item) => item.id === alertId);
   const now = new Date().toISOString();
+  const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
+  await syncAlertChangesToFirestoreStrict(alertId, changes);
+  markSpeakerAlertDoneLocally(alertId, now);
   if (!alert?.resultId) {
-    updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
     return;
   }
-  await updateReplacementRowAnnouncement(
-    alert.resultId,
-    (row) => {
-      const sameName = finalistRowName(row) === alert.replacementName;
-      const sameRank = !alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || "");
-      const sameTime = !alert.replacementTime || String(row.time || "") === String(alert.replacementTime || "");
-      return sameName && sameRank && sameTime;
-    },
-    now
-  );
-  updateAlert(alertId, { speakerStatus: "done", speakerAnnouncedAt: now });
+  try {
+    await updateReplacementRowAnnouncement(
+      alert.resultId,
+      (row) => {
+        const sameName = finalistRowName(row) === alert.replacementName;
+        const sameRank = !alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || "");
+        const sameTime = !alert.replacementTime || String(row.time || "") === String(alert.replacementTime || "");
+        return sameName && sameRank && sameTime;
+      },
+      now
+    );
+  } catch (error) {
+    throw markAlertAlreadyClosedError(error);
+  }
 }
 
 async function deleteResultPdf(resultId) {
@@ -9381,7 +9395,7 @@ officialAlerts?.addEventListener("click", (event) => {
     if (alert?.type === "finalist_replacement_announcement") {
       publishReplacementAfterSpeaker(alertId).catch((error) => {
         console.error(error);
-        restoreAlertLocally(previousAlert);
+        if (!error?.alertAlreadyClosed) restoreAlertLocally(previousAlert);
         showToast(`Annonce du repêchage impossible : ${error?.message || error}`);
       });
       return;
@@ -9409,7 +9423,7 @@ alertDetailModal?.addEventListener("click", (event) => {
     const previousAlert = markSpeakerAlertDoneLocally(alertId, announcedAt);
     publishFinalistsAfterSpeaker(alertId).catch((error) => {
       console.error(error);
-      restoreAlertLocally(previousAlert);
+      if (!error?.alertAlreadyClosed) restoreAlertLocally(previousAlert);
       showToast(`Publication des finalistes impossible : ${error?.message || error}`);
     });
     return;
