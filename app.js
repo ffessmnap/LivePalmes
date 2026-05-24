@@ -5957,6 +5957,18 @@ async function createFinalistsSpeakerAlert(result) {
   const finalistCount = finalRowsCount(result?.finalists);
   if (!finalistCount) return null;
   const now = new Date().toISOString();
+  const alreadyAnnounced = alerts.find((alert) =>
+    alert.type === "finalists_announcement" &&
+    alert.resultId === result.id &&
+    alert.speakerStatus === "done" &&
+    alert.speakerAnnouncedAt
+  );
+  if (alreadyAnnounced) {
+    if (!result.finalistsAnnouncedAt) {
+      await stampFinalistsAnnouncement(result, alreadyAnnounced.speakerAnnouncedAt);
+    }
+    return alreadyAnnounced;
+  }
   alerts
     .filter((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
     .forEach((alert) => {
@@ -5991,18 +6003,47 @@ async function createFinalistsSpeakerAlert(result) {
   return alert;
 }
 
+async function stampFinalistsAnnouncement(result, announcedAt) {
+  if (!result?.id || !announcedAt) return false;
+  const collection = resultsCollection();
+  if (!collection) return false;
+  await collection.doc(result.id).set({
+    finalistsAnnouncedAt: announcedAt,
+    status: "published",
+    updatedAt: announcedAt
+  }, { merge: true });
+  const index = raceResults.findIndex((item) => item.id === result.id);
+  if (index !== -1) {
+    raceResults[index] = {
+      ...raceResults[index],
+      finalistsAnnouncedAt: announcedAt,
+      status: "published",
+      updatedAt: announcedAt
+    };
+  }
+  await publishPublicResultsIndex({ silent: true });
+  return true;
+}
+
 async function ensurePendingFinalistsSpeakerAlerts() {
   if (finalistAlertRepairRunning) return;
-  const pendingResults = raceResults.filter((result) => (
-    result.hasFinal &&
-    finalRowsCount(result.finalists) > 0 &&
-    !result.finalistsAnnouncedAt &&
-    !alerts.some((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id && alert.speakerStatus === "pending")
-  ));
-  if (!pendingResults.length) return;
   finalistAlertRepairRunning = true;
   try {
-    for (const result of pendingResults) {
+    for (const result of raceResults.filter((item) => item.hasFinal && finalRowsCount(item.finalists) > 0 && !item.finalistsAnnouncedAt)) {
+      const relatedAlerts = alerts.filter((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id);
+      const announcedAlert = relatedAlerts.find((alert) => alert.speakerStatus === "done" && alert.speakerAnnouncedAt);
+      if (announcedAlert) {
+        await stampFinalistsAnnouncement(result, announcedAlert.speakerAnnouncedAt);
+        const now = new Date().toISOString();
+        for (const pendingAlert of relatedAlerts.filter((alert) => alert.speakerStatus === "pending")) {
+          pendingAlert.speakerStatus = "none";
+          pendingAlert.cancelledAt = pendingAlert.cancelledAt || now;
+          pendingAlert.updatedAt = now;
+          await syncAlertToFirestore(pendingAlert);
+        }
+        continue;
+      }
+      if (relatedAlerts.some((alert) => alert.speakerStatus === "pending")) continue;
       await createFinalistsSpeakerAlert(result);
     }
     saveAlerts();
