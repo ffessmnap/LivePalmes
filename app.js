@@ -1897,7 +1897,6 @@ function applyResultsSnapshot(snapshot) {
   cleanupResolvedSpeakerResultAlerts();
   ensurePendingFinalistsSpeakerAlerts();
   ensurePendingReplacementSpeakerAlerts();
-  if (state.role === "computer") publishPublicResultsIndex({ silent: true });
 }
 
 function subscribeTrainingModeState() {
@@ -3464,18 +3463,13 @@ function publicResultPayload(result) {
     session: result.session || "",
     startTime: result.startTime || "",
     hasFinal: Boolean(result.hasFinal),
-    finalists: result.finalists || { a: [], b: [] },
-    nextUnqualified: result.nextUnqualified || [],
-    ranking: Array.isArray(result.ranking) ? result.ranking : [],
     pdfName: result.pdfName || "",
     pdfSize: result.pdfSize || 0,
     createdAt: result.createdAt || "",
     updatedAt: result.updatedAt || "",
     isPartial: Boolean(result.isPartial),
     status: result.status || "",
-    performances: Array.isArray(result.performances) ? result.performances : [],
-    finalistsAnnouncedAt: result.finalistsAnnouncedAt || "",
-    finalWithdrawals: result.finalWithdrawals || []
+    finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
   };
 }
 

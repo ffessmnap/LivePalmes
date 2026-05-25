@@ -44,6 +44,7 @@ let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
 let followPublicProgress = true;
 let lastAppliedPublicProgressKey = "";
+const directResultSessionsLoaded = new Set();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -569,6 +570,22 @@ function latestResultSession() {
     .filter((result) => result.session)
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))[0];
   return latest?.session || "";
+}
+
+function publicResultFromDoc(doc) {
+  const result = { id: doc.id, ...doc.data() };
+  delete result.pdfDataUrl;
+  return result;
+}
+
+function mergePublicResults(results = []) {
+  const byId = new Map(publicResults.map((result) => [result.id, result]));
+  results.forEach((result) => {
+    if (!result?.id) return;
+    byId.set(result.id, result);
+  });
+  publicResults = [...byId.values()]
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
 }
 
 function rowsForSession(session) {
@@ -1199,6 +1216,36 @@ async function loadPublicForfaits(competition) {
   }
 }
 
+async function loadPublicSessionResultsDirectData(competition, session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
+  const snapshot = await competition.collection("results")
+    .where("session", "==", cleanSession)
+    .get({ source: "server" });
+  mergePublicResults(snapshot.docs.map(publicResultFromDoc));
+  directResultSessionsLoaded.add(cleanSession);
+}
+
+async function refreshPublicSeriesSessionResults(session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
+  if (!window.firebase?.initializeApp || !window.firebase?.firestore) return;
+  if (!window.firebase.apps?.length) {
+    window.firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const db = window.firebase.firestore();
+  const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
+  try {
+    setStatus("Actualisation", "pending");
+    await loadPublicSessionResultsDirectData(competition, cleanSession);
+    setStatus("ConnectÃ©", "ok");
+    render();
+  } catch (error) {
+    console.warn("Lecture des rÃ©sultats de session impossible", error);
+    setStatus("Erreur", "error");
+  }
+}
+
 function liveDataIsNewerThanPublicIndex(remote, index) {
   if (!remote?.sourceVersion) return false;
   if (!index?.sourceVersion) return true;
@@ -1255,6 +1302,8 @@ async function loadPublicSeries({ forceLive = false } = {}) {
     applyLiveData(remote, index);
   }
   await loadPublicForfaits(competition);
+  clampState();
+  await loadPublicSessionResultsDirectData(competition, activeSession);
   setStatus("Connecté", "ok");
   render();
 }
@@ -1268,6 +1317,7 @@ sessionsHost?.addEventListener("click", (event) => {
   activeSeriesIndex = 0;
   activeRecordKey = "";
   render();
+  refreshPublicSeriesSessionResults(activeSession);
 });
 
 sessionSelect?.addEventListener("change", (event) => {
@@ -1277,6 +1327,7 @@ sessionSelect?.addEventListener("change", (event) => {
   activeSeriesIndex = 0;
   activeRecordKey = "";
   render();
+  refreshPublicSeriesSessionResults(activeSession);
 });
 
 app?.addEventListener("click", (event) => {
@@ -1372,6 +1423,7 @@ programBtn?.addEventListener("click", renderProgramSheet);
 
 function refreshPublicSeries() {
   setStatus("Actualisation", "pending");
+  if (activeSession) directResultSessionsLoaded.delete(String(activeSession));
   loadPublicSeries({ forceLive: true }).catch((error) => {
     console.warn("Actualisation séries publiques impossible", error);
     setStatus("Erreur", "error");
