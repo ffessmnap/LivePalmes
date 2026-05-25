@@ -348,6 +348,22 @@ function resultIsVisible(result) {
   return Boolean(result && (!result.hasFinal || result.finalistsAnnouncedAt));
 }
 
+function resultHasDetails(result) {
+  return Boolean(result && (
+    (Array.isArray(result.ranking) && result.ranking.length) ||
+    (Array.isArray(result.performances) && result.performances.length) ||
+    (Array.isArray(result.nextUnqualified) && result.nextUnqualified.length) ||
+    (Array.isArray(result.finalists?.a) && result.finalists.a.length) ||
+    (Array.isArray(result.finalists?.b) && result.finalists.b.length)
+  ));
+}
+
+function publicResultFromDoc(doc) {
+  const result = { id: doc.id, ...doc.data() };
+  delete result.pdfDataUrl;
+  return result;
+}
+
 function comparableEventId(value) {
   return normalizeText(value).replace(/\s+/g, "");
 }
@@ -1356,9 +1372,16 @@ function sessionHasVisibleResults(session) {
   return rowsForSession(session).some((row) => resultIsVisible(resultForRow(row)));
 }
 
+function sessionHasDetailedResults(session) {
+  return rowsForSession(session).some((row) => {
+    const result = resultForRow(row);
+    return resultIsVisible(result) && resultHasDetails(result);
+  });
+}
+
 function refreshPublicSessionResultsIfMissing(session) {
   const cleanSession = String(session || "").trim();
-  if (!cleanSession || directResultSessionsLoaded.has(cleanSession) || sessionHasVisibleResults(cleanSession)) return;
+  if (!cleanSession || (directResultSessionsLoaded.has(cleanSession) && sessionHasDetailedResults(cleanSession))) return;
   setStatus("Actualisation", "pending");
   loadPublicResultsIndex({ directSession: cleanSession }).catch((error) => {
     console.warn("Actualisation résultats session impossible", error);
@@ -1396,7 +1419,7 @@ async function loadPublicResultsDirectData(competition) {
     loadPublicSeriesPdfs(competition),
     loadPublicSessionResultsPdfs(competition)
   ]);
-  publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicResults = resultsSnapshot.docs.map(publicResultFromDoc);
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
     .filter(Boolean)
@@ -1425,7 +1448,7 @@ async function loadPublicSessionResultsDirectData(competition, session) {
   const snapshot = await competition.collection("results")
     .where("session", "==", cleanSession)
     .get({ source: "server" });
-  mergePublicResults(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  mergePublicResults(snapshot.docs.map(publicResultFromDoc));
   directResultSessionsLoaded.add(cleanSession);
 }
 
@@ -1435,7 +1458,7 @@ async function latestVisibleResultSessionFromServer(competition) {
     .limit(5)
     .get({ source: "server" });
   const latest = snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .map(publicResultFromDoc)
     .find((result) => result.session && resultIsVisible(result));
   return latest?.session || "";
 }
@@ -1524,7 +1547,7 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
       console.warn("Lecture de la dernière session résultat impossible", error);
       return "";
     });
-    if (latestServerSession && latestServerSession !== latestResultSession()) {
+    if (latestServerSession && (!sessionHasDetailedResults(latestServerSession) || latestServerSession !== latestResultSession())) {
       await loadPublicSessionResultsDirectData(competition, latestServerSession);
     }
   }
@@ -1544,7 +1567,7 @@ async function loadPublicResultsFallback(competition) {
   publicEvents = Array.isArray(remote.events) ? remote.events : [];
   publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
-  publicResults = resultsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicResults = resultsSnapshot.docs.map(publicResultFromDoc);
   publicSessionInfos = remote.notes?.publicSessionInfos || {};
   publicAccess = {
     online: remote.notes?.publicResultsOnline !== false,
