@@ -1571,7 +1571,7 @@ document.addEventListener("keydown", (event) => {
 
 function refreshPublicResults() {
   setStatus("Actualisation", "pending");
-  loadPublicResultsIndex({ forceDirect: true }).catch((error) => {
+  loadPublicResultsIndex().catch((error) => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
