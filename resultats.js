@@ -1429,6 +1429,17 @@ async function loadPublicSessionResultsDirectData(competition, session) {
   directResultSessionsLoaded.add(cleanSession);
 }
 
+async function latestVisibleResultSessionFromServer(competition) {
+  const snapshot = await competition.collection("results")
+    .orderBy("updatedAt", "desc")
+    .limit(5)
+    .get({ source: "server" });
+  const latest = snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .find((result) => result.session && resultIsVisible(result));
+  return latest?.session || "";
+}
+
 function liveDataIsNewerThanPublicIndex(remote, index) {
   if (!remote?.sourceVersion) return false;
   if (!index?.sourceVersion) return true;
@@ -1508,6 +1519,14 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
     await loadPublicResultsDirectData(competition);
   } else if (directSession) {
     await loadPublicSessionResultsDirectData(competition, directSession);
+  } else if (!activeSessionChosen) {
+    const latestServerSession = await latestVisibleResultSessionFromServer(competition).catch((error) => {
+      console.warn("Lecture de la dernière session résultat impossible", error);
+      return "";
+    });
+    if (latestServerSession && latestServerSession !== latestResultSession()) {
+      await loadPublicSessionResultsDirectData(competition, latestServerSession);
+    }
   }
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
