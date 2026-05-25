@@ -37,6 +37,7 @@ let activeSessionChosen = false;
 let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
 let activeSheetSwimmerKey = "";
+const directResultSessionsLoaded = new Set();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1351,6 +1352,20 @@ function renderResults() {
   updateCollapseDetailsButton();
 }
 
+function sessionHasVisibleResults(session) {
+  return rowsForSession(session).some((row) => resultIsVisible(resultForRow(row)));
+}
+
+function refreshPublicSessionResultsIfMissing(session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession || directResultSessionsLoaded.has(cleanSession) || sessionHasVisibleResults(cleanSession)) return;
+  setStatus("Actualisation", "pending");
+  loadPublicResultsIndex({ directSession: cleanSession }).catch((error) => {
+    console.warn("Actualisation résultats session impossible", error);
+    setStatus("Erreur", "error");
+  });
+}
+
 async function loadPublicSeriesPdfs(competition) {
   try {
     const snapshot = await competition.collection("seriesPdfs").get({ source: "server" });
@@ -1389,6 +1404,31 @@ async function loadPublicResultsDirectData(competition) {
     .at(-1) || publicIndexUpdatedAt;
 }
 
+function mergePublicResults(results = []) {
+  const byId = new Map(publicResults.map((result) => [result.id, result]));
+  results.forEach((result) => {
+    if (!result?.id) return;
+    byId.set(result.id, result);
+  });
+  publicResults = [...byId.values()]
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  publicIndexUpdatedAt = publicResults
+    .map((result) => result.updatedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1) || publicIndexUpdatedAt;
+}
+
+async function loadPublicSessionResultsDirectData(competition, session) {
+  const cleanSession = String(session || "").trim();
+  if (!cleanSession) return;
+  const snapshot = await competition.collection("results")
+    .where("session", "==", cleanSession)
+    .get({ source: "server" });
+  mergePublicResults(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  directResultSessionsLoaded.add(cleanSession);
+}
+
 function liveDataIsNewerThanPublicIndex(remote, index) {
   if (!remote?.sourceVersion) return false;
   if (!index?.sourceVersion) return true;
@@ -1419,7 +1459,7 @@ function applyPublicLiveOverlay(remote, index = {}, { force = false } = {}) {
   publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
 }
 
-async function loadPublicResultsIndex({ forceDirect = false } = {}) {
+async function loadPublicResultsIndex({ forceDirect = false, directSession = "" } = {}) {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (list) list.innerHTML = `<p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p>`;
@@ -1466,6 +1506,8 @@ async function loadPublicResultsIndex({ forceDirect = false } = {}) {
   applyPublicLiveOverlay(remote, index, { force: forceDirect });
   if (forceDirect) {
     await loadPublicResultsDirectData(competition);
+  } else if (directSession) {
+    await loadPublicSessionResultsDirectData(competition, directSession);
   }
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
@@ -1515,12 +1557,14 @@ sessionControls?.addEventListener("click", (event) => {
   activeSession = button.dataset.publicSession;
   activeSessionChosen = true;
   renderResults();
+  refreshPublicSessionResultsIfMissing(activeSession);
 });
 
 sessionSelect?.addEventListener("change", (event) => {
   activeSession = event.target.value || "";
   activeSessionChosen = true;
   renderResults();
+  refreshPublicSessionResultsIfMissing(activeSession);
 });
 
 collapseDetailsBtn?.addEventListener("click", () => {
@@ -1571,7 +1615,7 @@ document.addEventListener("keydown", (event) => {
 
 function refreshPublicResults() {
   setStatus("Actualisation", "pending");
-  loadPublicResultsIndex().catch((error) => {
+  loadPublicResultsIndex({ directSession: activeSession }).catch((error) => {
     console.warn("Actualisation résultats impossible", error);
     setStatus("Erreur", "error");
   });
