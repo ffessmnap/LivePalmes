@@ -5508,11 +5508,78 @@ async function safeDocumentData(documentRef) {
   }
 }
 
+function alertPendingTargets(alert, { respectLiveDismissed = true } = {}) {
+  if (!alert || alert.cancelledAt || alert.type === "final_composition_ready") return [];
+  const targets = [];
+  if (alert.speakerStatus === "pending" && !speakerAlertAlreadyResolvedByResult(alert)) targets.push("speaker");
+  if (
+    alert.speakerStatus !== "none" &&
+    alert.type !== "finalists_announcement" &&
+    alert.type !== "finalist_replacement_announcement" &&
+    (!respectLiveDismissed || !liveDismissedAlertIds.includes(alert.id))
+  ) {
+    targets.push("live");
+  }
+  if (alert.requiresVideo && alert.videoStatus === "pending") targets.push("video");
+  if (alert.informaticsStatus === "pending") targets.push("computer");
+  if (alert.type === "forfait" && alert.secretaryStatus === "pending") targets.push("secretary");
+  if (alert.roleSource === "referee" && !alert.informaticsDoneAt && !alert.speakerAnnouncedAt) targets.push("referee");
+  return [...new Set(targets)];
+}
+
+function alertPendingBreakdown(rows = [], options = {}) {
+  const counts = {
+    live: 0,
+    speaker: 0,
+    video: 0,
+    computer: 0,
+    secretary: 0,
+    referee: 0
+  };
+  const pending = [];
+  rows.forEach((alert) => {
+    const targets = alertPendingTargets(alert, options);
+    if (!targets.length) return;
+    targets.forEach((target) => {
+      counts[target] += 1;
+    });
+    pending.push({ alert, targets });
+  });
+  return {
+    counts,
+    total: pending.length,
+    examples: pending
+      .sort((a, b) => String(b.alert.createdAt || "").localeCompare(String(a.alert.createdAt || "")))
+      .slice(0, 8)
+      .map(({ alert, targets }) => ({
+        id: alert.id || "",
+        targets,
+        type: decisionMotifLabel(alert),
+        status: alertStatusLabel(alert),
+        race: alertRaceLabel(alert),
+        identity: fullAlertIdentityLabel(alert),
+        createdAt: alert.createdAt || alert.updatedAt || ""
+      }))
+  };
+}
+
+function alertTargetsLabel(targets = []) {
+  const labels = {
+    live: "Live",
+    speaker: "Speaker",
+    video: "Vidéo",
+    computer: "Bureau perf",
+    secretary: "Secrétariat",
+    referee: "JA"
+  };
+  return targets.map((target) => labels[target] || target).join(", ");
+}
+
 async function collectTechnicalDiagnostic() {
   const startedAt = performance.now();
   const localResults = Array.isArray(raceResults) ? raceResults : [];
   const localAlerts = Array.isArray(alerts) ? alerts : [];
-  const localPendingAlerts = localAlerts.filter((alert) => !alert.speakerAnnouncedAt && !alert.cancelledAt).length;
+  const localAlertBreakdown = alertPendingBreakdown(localAlerts, { respectLiveDismissed: true });
   const localResultPerformances = localResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
   const localDetailedResults = localResults.filter(resultHasDetailsForDiagnostic).length;
   const report = {
@@ -5527,7 +5594,9 @@ async function collectTechnicalDiagnostic() {
       detailedResults: localDetailedResults,
       performances: localResultPerformances,
       alerts: localAlerts.length,
-      pendingAlerts: localPendingAlerts,
+      pendingAlerts: localAlertBreakdown.total,
+      pendingAlertCounts: localAlertBreakdown.counts,
+      pendingAlertExamples: localAlertBreakdown.examples,
       sourceVersion: data.sourceVersion || "",
       lastUpdatedSession: data.notes?.lastUpdatedSession || ""
     },
@@ -5548,7 +5617,7 @@ async function collectTechnicalDiagnostic() {
     resultPdfCount,
     seriesPdfCount,
     sessionResultsPdfCount,
-    alertCount,
+    alertSnapshot,
     presenceCount,
     roleLockCount
   ] = await Promise.all([
@@ -5561,12 +5630,17 @@ async function collectTechnicalDiagnostic() {
     safeCountCollection(resultPdfsCollection()),
     safeCountCollection(seriesPdfsCollection()),
     safeCountCollection(sessionResultsPdfsCollection()),
-    safeCountCollection(alertsCollection()),
+    alertsCollection()?.orderBy("createdAt", "desc").get({ source: "server" }).catch((error) => {
+      console.warn("Lecture alertes diagnostic impossible", error);
+      return null;
+    }),
     safeCountCollection(presenceCollection()),
     safeCountCollection(activeCompetitionDocument()?.collection("roleLocks"))
   ]);
 
   const serverResults = resultsSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
+  const serverAlerts = alertSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
+  const serverAlertBreakdown = alertPendingBreakdown(serverAlerts, { respectLiveDismissed: false });
   const resultPerformances = serverResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
   const detailedResults = serverResults.filter(resultHasDetailsForDiagnostic).length;
   const legacyPdfResults = serverResults.filter((result) => result.pdfDataUrl);
@@ -5589,7 +5663,10 @@ async function collectTechnicalDiagnostic() {
     resultPdfCount,
     seriesPdfCount,
     sessionResultsPdfCount,
-    alertCount,
+    alertCount: serverAlerts.length,
+    pendingAlertCount: serverAlertBreakdown.total,
+    pendingAlertCounts: serverAlertBreakdown.counts,
+    pendingAlertExamples: serverAlertBreakdown.examples,
     presenceCount,
     roleLockCount,
     publicResults: publicResults.length,
@@ -5635,6 +5712,11 @@ function renderTechnicalDiagnosticModal(report) {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
   const firebase = report?.firebase || {};
+  const localAlertCounts = report?.local?.pendingAlertCounts || {};
+  const serverAlertCounts = firebase.pendingAlertCounts || {};
+  const alertExamples = firebase.pendingAlertExamples?.length
+    ? firebase.pendingAlertExamples
+    : (report?.local?.pendingAlertExamples || []);
   roleCodesModal.innerHTML = `
     <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
       <div class="decision-modal-head">
@@ -5679,6 +5761,31 @@ function renderTechnicalDiagnosticModal(report) {
           { label: "PDF séries", value: String(firebase.seriesPdfCount ?? "-"), status: firebase.seriesPdfCount ? "ok" : "neutral" },
           { label: "PDF résultats sessions", value: String(firebase.sessionResultsPdfCount ?? "-"), status: firebase.sessionResultsPdfCount ? "ok" : "neutral" }
         ])}
+        ${technicalDiagnosticSection("Alertes en attente", [
+          { label: "total local", value: String(report.local.pendingAlerts || 0), status: report.local.pendingAlerts ? "warn" : "ok" },
+          { label: "total serveur", value: String(firebase.pendingAlertCount || 0), status: firebase.pendingAlertCount ? "warn" : "ok" },
+          { label: "Live", value: `${localAlertCounts.live || 0} / ${serverAlertCounts.live || 0}`, status: (localAlertCounts.live || serverAlertCounts.live) ? "warn" : "ok" },
+          { label: "Speaker", value: `${localAlertCounts.speaker || 0} / ${serverAlertCounts.speaker || 0}`, status: (localAlertCounts.speaker || serverAlertCounts.speaker) ? "warn" : "ok" },
+          { label: "Bureau perf", value: `${localAlertCounts.computer || 0} / ${serverAlertCounts.computer || 0}`, status: (localAlertCounts.computer || serverAlertCounts.computer) ? "warn" : "ok" },
+          { label: "Secrétariat", value: `${localAlertCounts.secretary || 0} / ${serverAlertCounts.secretary || 0}`, status: (localAlertCounts.secretary || serverAlertCounts.secretary) ? "warn" : "ok" },
+          { label: "Vidéo", value: `${localAlertCounts.video || 0} / ${serverAlertCounts.video || 0}`, status: (localAlertCounts.video || serverAlertCounts.video) ? "warn" : "ok" },
+          { label: "JA", value: `${localAlertCounts.referee || 0} / ${serverAlertCounts.referee || 0}`, status: (localAlertCounts.referee || serverAlertCounts.referee) ? "warn" : "ok" }
+        ])}
+        ${alertExamples.length ? `
+          <div class="admin-series-help technical-diagnostic-alerts">
+            <strong>Exemples d'alertes ouvertes</strong>
+            ${alertExamples.map((item) => `
+              <span>
+                ${escapeHtml(alertTargetsLabel(item.targets))} :
+                ${escapeHtml(item.status)} -
+                ${escapeHtml(item.type)}
+                ${item.identity ? ` - ${escapeHtml(item.identity)}` : ""}
+                ${item.race ? ` - ${escapeHtml(item.race)}` : ""}
+                ${item.createdAt ? ` (${escapeHtml(formatAlertDateTime(item.createdAt) || item.createdAt)})` : ""}
+              </span>
+            `).join("")}
+          </div>
+        ` : ""}
         <div class="admin-series-help technical-diagnostic-notes">
           <strong>Analyse</strong>
           ${report.recommendations.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}

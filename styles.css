@@ -4384,6 +4384,14 @@ textarea {
   gap: 4px;
 }
 
+.technical-diagnostic-alerts {
+  gap: 4px;
+}
+
+.technical-diagnostic-alerts span {
+  line-height: 1.35;
+}
+
 .archive-list {
   display: grid;
   gap: 8px;
