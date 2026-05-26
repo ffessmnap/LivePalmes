@@ -3917,17 +3917,17 @@ function resultSessions() {
 }
 
 function sessionResultsPdfsForAdminSession(session) {
-  const items = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
-  return items
-    .filter((pdf) => pdf.scope === "full" || (pdf.sessions || []).map(String).includes(String(session || "")) || String(pdf.session || "") === String(session || ""))
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  if (typeof livePalmesAdminResults.sessionResultsPdfsForSession === "function") {
+    return livePalmesAdminResults.sessionResultsPdfsForSession(data.notes?.publicSessionResultsPdfs || [], session);
+  }
+  return [];
 }
 
 function latestResultSession() {
-  const latest = raceResults
-    .filter((result) => result.updatedAt && result.session)
-    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
-  return latest?.session ? String(latest.session) : "";
+  if (typeof livePalmesAdminResults.latestResultSession === "function") {
+    return livePalmesAdminResults.latestResultSession(raceResults);
+  }
+  return "";
 }
 
 function ensureResultsAdminSession() {
@@ -4007,42 +4007,42 @@ function resultPhaseLabelForProgramRow(row) {
 
 function resultStatusForProgramRow(row) {
   const result = resultForProgramRow(row);
-  if (result) {
-    if (result.hasFinal && result.finalistsAnnouncedAt) return "Finalistes annoncés";
-    if (result.hasFinal) return "En attente annonce speaker";
-    return "Publié";
+  if (typeof livePalmesAdminResults.resultStatusLabel === "function") {
+    return livePalmesAdminResults.resultStatusLabel(result);
   }
   return "";
 }
 
 function resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive) {
-  if (!result) return { label: "À importer", tone: "missing" };
-  if (result.hasFinal && !result.finalistsAnnouncedAt) return { label: "Attente speaker", tone: "waiting" };
-  if (result.hasFinal) {
-    return isFinalCompositionDefinitive
-      ? { label: "Finalistes définitifs", tone: "done" }
-      : { label: "Finalistes provisoires", tone: "pending" };
+  if (typeof livePalmesAdminResults.resultStatusBadge === "function") {
+    return livePalmesAdminResults.resultStatusBadge(result, isFinalCompositionDefinitive);
   }
-  if (result.isPartial) return { label: "Résultat partiel", tone: "partial" };
-  return { label: "Résultat publié", tone: "done" };
+  return result ? { label: "Résultat publié", tone: "done" } : { label: "À importer", tone: "missing" };
 }
 
 function resultStatusControlHtml(row, result, statusBadge) {
-  const className = `result-status-badge ${escapeHtml(statusBadge.tone)}`;
-  if (!result) {
-    return `<button class="${className} status-action" type="button" data-result-import="${escapeHtml(programKey(row))}">${escapeHtml(statusBadge.label)}</button>`;
+  if (typeof livePalmesAdminResults.resultStatusControlHtml === "function") {
+    return livePalmesAdminResults.resultStatusControlHtml({
+      programKeyValue: programKey(row),
+      result,
+      resultId: result?.id || "",
+      statusBadge
+    });
   }
-  if (result.hasFinal) {
-    return `<button class="${className} status-action" type="button" data-final-composition-result="${escapeHtml(result.id)}">${escapeHtml(statusBadge.label)}</button>`;
-  }
-  return `<span class="${className}">${escapeHtml(statusBadge.label)}</span>`;
+  return "";
 }
 
 function resultUploadKeyForProgram(row) {
+  if (typeof livePalmesAdminResults.resultUploadKeyForProgram === "function") {
+    return livePalmesAdminResults.resultUploadKeyForProgram(programKey(row));
+  }
   return `result:${programKey(row)}`;
 }
 
 function resultUploadKeyForSessionResults(session) {
+  if (typeof livePalmesAdminResults.resultUploadKeyForSessionResults === "function") {
+    return livePalmesAdminResults.resultUploadKeyForSessionResults(session);
+  }
   return `session-results:${String(session || "current")}`;
 }
 
@@ -4069,10 +4069,10 @@ function clearSeriesImportState() {
 }
 
 function resultUploadBadgeHtml(uploadState) {
-  if (!uploadState) return "";
-  const tone = uploadState.tone || "loading";
-  const label = uploadState.label || "Chargement en cours...";
-  return `<span class="result-status-badge ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+  if (typeof livePalmesAdminResults.resultUploadBadgeHtml === "function") {
+    return livePalmesAdminResults.resultUploadBadgeHtml(uploadState);
+  }
+  return "";
 }
 
 function renderResultsAdminPanel() {
@@ -4153,6 +4153,7 @@ const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
 const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
 const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
 const livePalmesAdminMaintenance = window.LivePalmesAdminMaintenance || {};
+const livePalmesAdminResults = window.LivePalmesAdminResults || {};
 const livePalmesPdfImport = window.LivePalmesPdfImport || {};
 const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
   <span class="diagnostic-item ${escapeHtml(status)}">
