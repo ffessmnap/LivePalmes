@@ -1044,6 +1044,9 @@ async function clearFirestoreAlerts() {
 }
 
 async function deleteCollectionDocuments(collectionRef, { nestedItems = false } = {}) {
+  if (typeof livePalmesAdminMaintenance.deleteCollectionDocuments === "function") {
+    return livePalmesAdminMaintenance.deleteCollectionDocuments(collectionRef, { firestoreDb, nestedItems });
+  }
   if (!collectionRef || !firestoreDb) return 0;
   const snapshot = await collectionRef.get();
   let deleted = 0;
@@ -1067,6 +1070,25 @@ async function deleteCollectionDocuments(collectionRef, { nestedItems = false } 
 async function clearTrainingCompetitionData() {
   const testCompetition = competitionDocument(FIRESTORE_TEST_COMPETITION_ID);
   if (!testCompetition) return;
+  if (typeof livePalmesAdminMaintenance.clearCompetitionCollections === "function") {
+    await livePalmesAdminMaintenance.clearCompetitionCollections(testCompetition, {
+      firestoreDb,
+      collections: [
+        "alerts",
+        "liveData",
+        "results",
+        "resultPdfs",
+        "seriesPdfs",
+        "sessionResultsPdfs",
+        "public",
+        "roleLocks",
+        "presence",
+        "historyArchives",
+        { name: "resultArchives", nestedItems: true }
+      ]
+    });
+    return;
+  }
   await deleteCollectionDocuments(testCompetition.collection("alerts"));
   await deleteCollectionDocuments(testCompetition.collection("liveData"));
   await deleteCollectionDocuments(testCompetition.collection("results"));
@@ -1088,21 +1110,27 @@ async function enableTrainingMode() {
   const ok = window.confirm("Activer le mode formation partagé ?\n\nLes consoles utiliseront un espace séparé et les pages publiques ne seront pas modifiées.");
   if (!ok) return;
   await clearTrainingCompetitionData();
-  const trainingData = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      trainingMode: true,
-      competitionMode: true,
-      trainingModeStartedAt: new Date().toISOString()
-    },
-    sourceVersion: `training-${Date.now()}`
-  });
+  const nowIso = new Date().toISOString();
+  const trainingData = normalizeData(livePalmesAdminMaintenance.buildTrainingData
+    ? livePalmesAdminMaintenance.buildTrainingData(data, {
+      nowIso,
+      sourceVersion: `training-${Date.now()}`
+    })
+    : {
+      ...data,
+      notes: {
+        ...(data.notes || {}),
+        trainingMode: true,
+        competitionMode: true,
+        trainingModeStartedAt: nowIso
+      },
+      sourceVersion: `training-${Date.now()}`
+    });
   await publishLiveDataToCompetition(trainingData, "Activation mode formation", FIRESTORE_TEST_COMPETITION_ID);
   await trainingModeDocument().set({
     enabled: true,
-    startedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    startedAt: nowIso,
+    updatedAt: nowIso
   });
 }
 
@@ -3662,6 +3690,9 @@ async function publishPublicResultsIndex({ silent = false, strict = false } = {}
 }
 
 function publicSeriesPdfId(scope, session = "") {
+  if (typeof livePalmesAdminMaintenance.publicSeriesPdfId === "function") {
+    return livePalmesAdminMaintenance.publicSeriesPdfId(scope, session);
+  }
   return scope === "full" ? "full" : `session-${String(session || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
 }
 
@@ -3752,6 +3783,9 @@ async function clearPublicSessionResultsPdfsForSession(session) {
   const snapshot = await collection.get();
   const docs = snapshot.docs.filter((doc) => {
     const pdf = { id: doc.id, ...doc.data() };
+    if (typeof livePalmesAdminMaintenance.sessionResultsPdfMatchesSession === "function") {
+      return livePalmesAdminMaintenance.sessionResultsPdfMatchesSession(pdf, cleanSession);
+    }
     if (pdf.scope === "full") return false;
     const sessions = Array.isArray(pdf.sessions) ? pdf.sessions.map(String) : [];
     return String(pdf.session || "") === cleanSession || sessions.includes(cleanSession);
@@ -3791,6 +3825,9 @@ async function publishPublicSeriesPdf(file, mode = "session", session = "") {
 }
 
 function sessionResultsPdfId(scope, sessions = []) {
+  if (typeof livePalmesAdminMaintenance.sessionResultsPdfId === "function") {
+    return livePalmesAdminMaintenance.sessionResultsPdfId(scope, sessions);
+  }
   if (scope === "full") return "complete-results-full";
   const safeSessions = sessions.map((session) => String(session || "").replace(/[^a-z0-9_-]+/gi, "-")).filter(Boolean);
   return `complete-results-${safeSessions.join("-") || "session"}`;
@@ -3836,8 +3873,10 @@ async function hydratePublicSessionResultsPdfMetadataIfNeeded() {
 async function publishSessionResultsPdf(file, scope = "session", sessions = []) {
   const collection = sessionResultsPdfsCollection();
   if (!collection || !file) throw new Error("Firebase n'est pas disponible pour publier ce PDF.");
-  const cleanSessions = [...new Set((sessions || []).map((session) => String(session || "").trim()).filter(Boolean))]
-    .sort((a, b) => Number(a) - Number(b));
+  const cleanSessions = typeof livePalmesAdminMaintenance.normalizeSessionList === "function"
+    ? livePalmesAdminMaintenance.normalizeSessionList(sessions)
+    : [...new Set((sessions || []).map((session) => String(session || "").trim()).filter(Boolean))]
+      .sort((a, b) => Number(a) - Number(b));
   const finalScope = scope === "full" ? "full" : "sessions";
   if (finalScope !== "full" && !cleanSessions.length) {
     throw new Error("Sélectionne au moins une session pour publier ce PDF.");
@@ -4113,6 +4152,8 @@ const formatByteSize = livePalmesDiagnostics.formatByteSize;
 const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
 const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
 const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
+const livePalmesAdminMaintenance = window.LivePalmesAdminMaintenance || {};
+const livePalmesPdfImport = window.LivePalmesPdfImport || {};
 const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
   <span class="diagnostic-item ${escapeHtml(status)}">
     <strong>${escapeHtml(value)}</strong>
@@ -4289,16 +4330,6 @@ function canWithdrawBeforeReplacementAnnouncement(row) {
 function isFinalWithdrawalDeadlineExpired(row, result, now = new Date()) {
   const limit = finalWithdrawalLimitDate(row, result);
   return Boolean(limit) && now > limit;
-}
-
-function finalRowCountsAsFinalist(row) {
-  if (!row || row.withdrawnAt || row.resultStatus) return false;
-  const statusText = [row.statusLabel, row.status, row.motif, row.note].filter(Boolean).join(" ");
-  return !resultStatusFromText(statusText);
-}
-
-function finalRowsCount(finalists = {}) {
-  return ["a", "b"].reduce((count, key) => count + (finalists[key] || []).filter(finalRowCountsAsFinalist).length, 0);
 }
 
 function finalResultSessions(results = []) {
@@ -6381,9 +6412,12 @@ const livePalmesResultParser = window.LivePalmesResultParser;
 function resultParserOptions() {
   return {
     fixPdfEncoding,
+    finalistRowName,
     formatDisplayName,
     importedBirthYear,
     importedSeriesTime,
+    isFinalStage,
+    normalizePersonName,
     splitImportedPersonName
   };
 }
@@ -6422,80 +6456,43 @@ function parseFinalistsFromResultLines(lines) {
   return resultParserFunction("parseFinalistsFromResultLines")(lines, resultParserOptions());
 }
 
+function emptyParsedFinals() {
+  return resultParserFunction("emptyParsedFinals")();
+}
+
+function resolveParsedFinals(parsedRows, existingResult, options = {}) {
+  return resultParserFunction("resolveParsedFinals")(parsedRows, existingResult, {
+    ...options,
+    rebuildFinalistsFromParsedResult
+  });
+}
+
+function shouldPreserveFinalistsOnReread(existingResult) {
+  return resultParserFunction("shouldPreserveFinalistsOnReread")(existingResult);
+}
+
+function buildPublishedResult(input) {
+  return resultParserFunction("buildPublishedResult")(input);
+}
+
+function finalRowCountsAsFinalist(row) {
+  return resultParserFunction("finalRowCountsAsFinalist")(row, resultParserOptions());
+}
+
+function finalRowsCount(finalists = {}) {
+  return resultParserFunction("finalRowsCount")(finalists, resultParserOptions());
+}
+
 function performanceStageForResultRow(item, result, row, rowIndex = 0) {
-  if (!isFinalStage(result.stage)) return {
-    stage: result.stage,
-    phaseLabel: result.phaseLabel
-  };
-  const rank = Number(item.rank || 0);
-  const stage = String(row.stage || result.stage || "").toLowerCase();
-  if (/finale[-\s]?b\b/.test(stage)) return { stage: "finale-b", phaseLabel: "Finale B" };
-  if (/finale[-\s]?a\b/.test(stage)) return { stage: "finale-a", phaseLabel: "Finale A" };
-  if (Number(row.finalStageCount || 0) > 1 && rank >= 9 && rank <= 16) {
-    return { stage: "finale-b", phaseLabel: "Finale B" };
-  }
-  if (rank >= 1 && rank <= 8) {
-    return { stage: "finale-a", phaseLabel: "Finale A" };
-  }
-  if (Number(row.finalStageCount || 0) > 1 || String(result.stage || "").toLowerCase().startsWith("finales")) {
-    return Number(rowIndex) < 8
-      ? { stage: "finale-a", phaseLabel: "Finale A" }
-      : { stage: "finale-b", phaseLabel: "Finale B" };
-  }
-  return null;
+  return resultParserFunction("performanceStageForResultRow")(item, result, row, rowIndex, resultParserOptions());
 }
 
 function resultPerformanceDuplicateKey(item) {
-  return [
-    item.eventId || "",
-    item.sex || "",
-    item.stage || "",
-    item.phaseLabel || "",
-    normalizePersonName([item.lastName, item.firstName].filter(Boolean).join(" ") || item.displayName || ""),
-    String(item.birthYear || "").trim(),
-    normalizePersonName(item.club || ""),
-    String(item.time || "").trim(),
-    String(item.status || "").trim(),
-    String(item.statusLabel || "").trim()
-  ].join("|");
+  return resultParserFunction("resultPerformanceDuplicateKey")(item, resultParserOptions());
 }
 
 function resultPerformanceRows(parsedRows, result, row) {
-  if (/^4x/i.test(String(row.eventId || ""))) return [];
-  const seen = new Set();
-  return (parsedRows || [])
-    .filter((item) => item.lastName || item.firstName || item.displayName)
-    .map((item, rowIndex) => {
-      const phase = performanceStageForResultRow(item, result, row, rowIndex);
-      if (!phase) return null;
-      return {
-        eventId: row.eventId,
-        eventLabel: result.eventLabel,
-        sex: row.sex,
-        stage: phase.stage,
-        phaseLabel: phase.phaseLabel,
-        session: row.session || "",
-        startTime: row.startTime || "",
-        programKey: result.programKey,
-        lastName: item.lastName || "",
-        firstName: item.firstName || "",
-        displayName: item.displayName || "",
-        birthYear: item.birthYear || "",
-        club: item.club || "",
-        rank: item.rank || "",
-        time: item.time || "",
-        status: item.resultStatus || "",
-        statusLabel: item.statusLabel || "",
-        updatedAt: result.updatedAt
-      };
-    })
-    .filter(Boolean)
-    .filter((item) => {
-      const key = resultPerformanceDuplicateKey(item);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  return resultParserFunction("resultPerformanceRows")(parsedRows, result, row, resultParserOptions());
 }
 
 async function publishResultPdf(file, row, hasFinal, isPartial = false, options = {}) {
@@ -6509,54 +6506,36 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   const preserveFinalists = Boolean(options.preserveFinalists && existingResult?.hasFinal);
   const lines = await extractPdfLines(file);
   const parsedRows = parseFinalistsFromResultLines(lines);
-  let parsedFinals = { ranking: [], finalists: { a: [], b: [] }, nextUnqualified: [] };
-  let preservedFinalState = null;
-  if (preserveFinalists) {
-    preservedFinalState = rebuildFinalistsFromParsedResult(parsedRows, existingResult, now);
-    parsedFinals = {
-      ranking: parsedRows.ranking.length ? parsedRows.ranking : (existingResult.ranking || []),
-      finalists: preservedFinalState.finalists,
-      nextUnqualified: preservedFinalState.nextUnqualified
-    };
-    hasFinal = true;
-  } else if (hasFinal) {
-    parsedFinals = parsedRows;
-    if (!parsedFinals.finalists.a.length) {
-      throw new Error("Aucun finaliste détecté dans ce PDF. Vérifie que les lignes contiennent bien la mention finale.");
-    }
-  } else {
-    parsedFinals = parsedRows;
-  }
-  const result = {
-    id: resultIdForProgramRow(row),
-    raceKey: raceOptionKey(row.eventId, row.sex),
-    programKey: programKey(row),
-    eventId: row.eventId,
-    eventLabel: event?.label || row.label || row.eventId,
-    sex: row.sex,
-    sexLabel: sexDisplayLabel(row.sex),
-    stage: isFinalStage(row.stage) ? row.stage : "series",
-    phaseLabel: resultPhaseLabelForProgramRow(row),
-    finalStageCount: row.finalStageCount || 0,
-    session: row.session || "",
-    startTime: row.startTime || "",
+  const resolvedFinals = resolveParsedFinals(parsedRows, existingResult, {
     hasFinal,
-    finalists: parsedFinals.finalists,
-    nextUnqualified: parsedFinals.nextUnqualified,
-    ranking: parsedFinals.ranking,
-    pdfName: file.name,
-    pdfSize: file.size,
-    createdAt: existingResult?.createdAt || now,
-    updatedAt: now,
-    isPartial: Boolean(isPartial),
-    status: preserveFinalists ? (existingResult.status || "published") : (hasFinal ? "finalists_pending_speaker" : "published")
-  };
-  result.performances = resultPerformanceRows(parsedRows.ranking, result, row);
-  if (preserveFinalists) {
-    result.finalistsAnnouncedAt = existingResult.finalistsAnnouncedAt || "";
-    result.finalWithdrawals = preservedFinalState?.finalWithdrawals || existingResult.finalWithdrawals || [];
-    result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
+    now,
+    preserveFinalists
+  });
+  hasFinal = resolvedFinals.hasFinal;
+  if (hasFinal && !preserveFinalists && !resolvedFinals.parsedFinals.finalists.a.length) {
+    throw new Error("Aucun finaliste détecté dans ce PDF. Vérifie que les lignes contiennent bien la mention finale.");
   }
+  const result = buildPublishedResult({
+    event,
+    existingResult,
+    file,
+    hasFinal,
+    isPartial,
+    now,
+    parsedFinals: resolvedFinals.parsedFinals || emptyParsedFinals(),
+    preserveFinalists,
+    preservedFinalState: resolvedFinals.preservedFinalState,
+    row,
+    values: {
+      id: resultIdForProgramRow(row),
+      raceKey: raceOptionKey(row.eventId, row.sex),
+      programKey: programKey(row),
+      sexLabel: sexDisplayLabel(row.sex),
+      stage: isFinalStage(row.stage) ? row.stage : "series",
+      phaseLabel: resultPhaseLabelForProgramRow(row)
+    }
+  });
+  result.performances = resultPerformanceRows(parsedRows.ranking, result, row);
   await saveResultPdfPayload(result, pdfDataUrl);
   await collection.doc(result.id).set(JSON.parse(JSON.stringify(resultMetadataPayload(result))));
   raceResults = [
@@ -6577,12 +6556,7 @@ async function rereadPublishedResult(row) {
   }
   const pdfDataUrl = await resultPdfDataUrl(existingResult);
   const file = await dataUrlToFile(pdfDataUrl, existingResult.pdfName || "resultat.pdf");
-  const preserveFinalists = Boolean(existingResult.hasFinal && (
-    existingResult.finalistsAnnouncedAt ||
-    existingResult.finalWithdrawals?.length ||
-    existingResult.finalPreWithdrawals?.length ||
-    ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
-  ));
+  const preserveFinalists = shouldPreserveFinalistsOnReread(existingResult);
   return publishResultPdf(file, row, Boolean(existingResult.hasFinal), Boolean(existingResult.isPartial), {
     preserveFinalists,
     reuseExistingPdf: true
@@ -6830,32 +6804,19 @@ async function publishFinalistsAfterSpeaker(alertId) {
 }
 
 function finalRowKey(row) {
-  return String(row?.rowKey || [row?.rank, row?.displayName || finalistRowName(row), row?.time].filter(Boolean).join("|"));
+  return resultParserFunction("finalRowKey")(row, resultParserOptions());
 }
 
 function finalRowOrderValue(row, fallback = 9999) {
-  const rank = Number(row?.rank);
-  if (Number.isFinite(rank) && rank > 0) return rank;
-  const sourceIndex = Number(row?.sourceIndex);
-  if (Number.isFinite(sourceIndex)) return 10000 + sourceIndex;
-  return fallback;
+  return resultParserFunction("finalRowOrderValue")(row, fallback, resultParserOptions());
 }
 
 function sortedFinalRows(rows = []) {
-  return rows
-    .map((row, index) => ({ row, index }))
-    .sort((a, b) =>
-      finalRowOrderValue(a.row, 20000 + a.index) - finalRowOrderValue(b.row, 20000 + b.index) ||
-      a.index - b.index
-    )
-    .map((item) => item.row);
+  return resultParserFunction("sortedFinalRows")(rows, resultParserOptions());
 }
 
 function normalizeFinalistsOrder(finalists = {}) {
-  return {
-    a: sortedFinalRows(finalists.a || []),
-    b: sortedFinalRows(finalists.b || [])
-  };
+  return resultParserFunction("normalizeFinalistsOrder")(finalists, resultParserOptions());
 }
 
 function activeFinalPreWithdrawals(result) {
@@ -7651,7 +7612,9 @@ async function clearPublishedResultsForSession(session) {
   const snapshot = await collection.get();
   const docs = snapshot.docs || [];
   const rows = docs.map((doc) => resultWithoutPdf({ id: doc.id, ...doc.data() }));
-  const rowsToDelete = rows.filter((row) => String(row.session || "") === cleanSession);
+  const rowsToDelete = typeof livePalmesAdminMaintenance.splitRowsForSession === "function"
+    ? livePalmesAdminMaintenance.splitRowsForSession(rows, cleanSession)
+    : rows.filter((row) => String(row.session || "") === cleanSession);
   if (rowsToDelete.length) {
     await archiveCurrentResults(`Avant remise à zéro des résultats publics S${cleanSession}`, rowsToDelete);
   }
@@ -7677,32 +7640,37 @@ async function resetSeriesForNextCompetition() {
   }
   const clearedSeriesPdfs = await clearPublicSeriesPdfs();
   const clearedResults = await clearPublishedResults();
-  const nextData = normalizeData({
-    ...data,
-    meet: {},
-    events: [],
-    entrants: [],
-    series: [],
-    program: [],
-    sourceVersion: `series-reset-${Date.now()}`,
-    notes: {
-      ...(data.notes || {}),
-      sourceMode: "empty",
-      sourceLabel: "Aucune série chargée",
-      sourceFile: "",
-      seriesLineCount: 0,
-      entrantCount: 0,
-      programCount: 0,
-      lastImportedMode: "",
-      lastImportedSessions: "",
-      lastUpdatedSession: "",
-      lastUpdatedSessionAt: "",
-      publicSeriesPdfs: [],
-      generatedAt: new Date().toLocaleString("fr-FR"),
-      importHistory: appendImportHistory(data.notes || {}, "RAZ séries")
-    }
-  });
+  const nextData = normalizeData(livePalmesAdminMaintenance.buildResetSeriesData
+    ? livePalmesAdminMaintenance.buildResetSeriesData(data, { appendImportHistory })
+    : {
+      ...data,
+      meet: {},
+      events: [],
+      entrants: [],
+      series: [],
+      program: [],
+      sourceVersion: `series-reset-${Date.now()}`,
+      notes: {
+        ...(data.notes || {}),
+        sourceMode: "empty",
+        sourceLabel: "Aucune série chargée",
+        sourceFile: "",
+        seriesLineCount: 0,
+        entrantCount: 0,
+        programCount: 0,
+        lastImportedMode: "",
+        lastImportedSessions: "",
+        lastUpdatedSession: "",
+        lastUpdatedSessionAt: "",
+        publicSeriesPdfs: [],
+        generatedAt: new Date().toLocaleString("fr-FR"),
+        importHistory: appendImportHistory(data.notes || {}, "RAZ séries")
+      }
+    });
   data = nextData;
+  if (typeof livePalmesAdminMaintenance.resetSeriesViewState === "function") {
+    livePalmesAdminMaintenance.resetSeriesViewState(state);
+  } else {
     state.eventId = "";
     state.sex = "F";
     state.series = "1";
@@ -7711,6 +7679,7 @@ async function resetSeriesForNextCompetition() {
     state.category = "all";
     state.selectedSwimmerId = "";
     state.selectedRecordKey = "";
+  }
   resultsAdminSession = "";
   saveData();
   render();
@@ -10462,160 +10431,68 @@ document.querySelector("#exportDsqPdfBtn")?.addEventListener("click", exportDsqP
 document.querySelector("#updateSpeakerInfoBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
 document.querySelector("#updateSpeakerInfoPanelBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
 
-const PDF_EVENT_ALIASES = {
-  "50mapnee": "50ap",
-  "50mapnée": "50ap",
-  "50msurface": "50sf",
-  "100msurface": "100sf",
-  "200msurface": "200sf",
-  "400msurface": "400sf",
-  "800msurface": "800sf",
-  "1500msurface": "1500sf",
-  "100mimmersion": "100is",
-  "200mimmersion": "200is",
-  "400mimmersion": "400is",
-  "50mbipalmes": "50bi",
-  "100mbipalmes": "100bi",
-  "200mbipalmes": "200bi",
-  "400mbipalmes": "400bi",
-  "4x50msurface": "4x50sf",
-  "4x100msurface": "4x100sf",
-  "4x200msurface": "4x200sf",
-  "4x100mbipalmes": "4x100bix",
-  "4x100msb": "4x100sb"
-};
-
 function normalizePdfLabel(value) {
-  return fixPdfEncoding(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "")
-    .toLowerCase();
+  if (typeof livePalmesPdfImport.normalizePdfLabel === "function") {
+    return livePalmesPdfImport.normalizePdfLabel(value);
+  }
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase();
 }
 
 function fixPdfEncoding(value) {
-  let text = String(value || "");
-  const replacements = {
-    "Ã©": "é",
-    "Ã¨": "è",
-    "Ãª": "ê",
-    "Ã«": "ë",
-    "Ã ": "à",
-    "Ã¢": "â",
-    "Ã¤": "ä",
-    "Ã®": "î",
-    "Ã¯": "ï",
-    "Ã´": "ô",
-    "Ã¶": "ö",
-    "Ã¹": "ù",
-    "Ã»": "û",
-    "Ã¼": "ü",
-    "Ã§": "ç",
-    "Ã‰": "É",
-    "Ãˆ": "È",
-    "ÃŠ": "Ê",
-    "Ã‹": "Ë",
-    "Ã€": "À",
-    "Ã‚": "Â",
-    "ÃŽ": "Î",
-    "Ã”": "Ô",
-    "Ã™": "Ù",
-    "Ã‡": "Ç",
-    "È": "é",
-    "Ë": "é",
-    "Í": "ê",
-    "Ô": "ï",
-    "Å“": "œ",
-    "Å’": "Œ",
-    "â€™": "’",
-    "â€˜": "‘",
-    "â€“": "-",
-    "â€”": "-"
-  };
-  Object.entries(replacements).forEach(([bad, good]) => {
-    text = text.replaceAll(bad, good);
-  });
-  text = text.normalize("NFC")
-    .replace(/C[¸̧]/g, "C")
-    .replace(/c[¸̧]/g, "c")
-    .replace(/[ÇĆČĈĊ]/g, "C")
-    .replace(/[çćčĉċ]/g, "c")
-    .replace(/\bFRAN[«‹]OIS\b/gi, "FRANCOIS")
-    .replace(/\bDOUY(?:…|\.{3}|�|□)RE\b/gi, "DOUYERE")
-    .replace(/\bFRAN(?:C|…|\.{3}|�|□)OIS\b/gi, "FRANCOIS")
-    .replace(/\bRAPHAÎL\b/g, "RAPHAEL")
-    .replace(/\bRaphaÎl\b/g, "Raphaël")
-    .replace(/\bMAÎLLE\b/g, "MAELLE")
-    .replace(/\bMaÎlle\b/g, "Maëlle")
-    .replace(/\bMaïlle\b/g, "Maëlle");
-  text = text.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])Î([A-Za-zÀ-ÖØ-öø-ÿ])/g, "$1ï$2");
-  return text.normalize("NFC");
+  if (typeof livePalmesPdfImport.fixPdfEncoding === "function") {
+    return livePalmesPdfImport.fixPdfEncoding(value);
+  }
+  return String(value || "");
 }
 
 function importedEventId(label) {
+  if (typeof livePalmesPdfImport.importedEventId === "function") {
+    return livePalmesPdfImport.importedEventId(label, { events: data.events || [] });
+  }
   const normalized = normalizePdfLabel(label);
-  const known = PDF_EVENT_ALIASES[normalized];
-  if (known) return known;
   const event = data.events.find((item) => normalizePdfLabel(item.label) === normalized);
   return event?.id || "";
 }
 
 function importedEventInfo(eventId, fallbackLabel = "") {
-  const existing = data.events.find((event) => event.id === eventId);
-  if (existing) return existing;
-  const label = fallbackLabel || eventId;
-  const distance = label.match(/^\d+x?\d*\s*m/i)?.[0] || "";
-  return {
-    id: eventId,
-    label,
-    distance,
-    discipline: label.replace(distance, "").trim() || label
-  };
+  if (typeof livePalmesPdfImport.importedEventInfo === "function") {
+    return livePalmesPdfImport.importedEventInfo(eventId, fallbackLabel, { events: data.events || [] });
+  }
+  return data.events.find((event) => event.id === eventId) || { id: eventId, label: fallbackLabel || eventId };
 }
 
 function importedCategoryLabel(code) {
-  const clean = String(code || "").toUpperCase();
-  if (clean.includes("CA")) return "Cadet";
-  if (clean.includes("JU")) return "Junior";
-  if (clean.includes("SE")) return "Senior";
-  return clean || "";
+  if (typeof livePalmesPdfImport.importedCategoryLabel === "function") {
+    return livePalmesPdfImport.importedCategoryLabel(code);
+  }
+  return String(code || "").toUpperCase();
 }
 
 function importedBirthYear(twoDigits) {
-  const value = Number.parseInt(twoDigits, 10);
-  if (!Number.isFinite(value)) return "";
-  return String(value <= 35 ? 2000 + value : 1900 + value);
+  if (typeof livePalmesPdfImport.importedBirthYear === "function") {
+    return livePalmesPdfImport.importedBirthYear(twoDigits);
+  }
+  return String(twoDigits || "");
 }
 
 function normalizePdfUppercaseEToken(token) {
-  const text = String(token || "");
-  const withPlainE = text.replace(/[ÉÈÊËéèêë]/g, "E").replace(/[Çç]/g, "C");
-  const letters = withPlainE.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
-  return letters && letters === letters.toUpperCase() ? withPlainE : text.replace(/[ÉÈÊË]/g, "E").replace(/Ç/g, "C");
+  if (typeof livePalmesPdfImport.normalizePdfUppercaseEToken === "function") {
+    return livePalmesPdfImport.normalizePdfUppercaseEToken(token);
+  }
+  return String(token || "");
 }
 
 function splitImportedPersonName(value) {
-  const tokens = fixPdfEncoding(value)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(normalizePdfUppercaseEToken);
-  let firstIndex = Math.max(0, tokens.length - 1);
-  for (let index = 0; index < tokens.length; index += 1) {
-    const letters = tokens[index].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ-]/g, "");
-    if (letters && letters !== letters.toUpperCase()) {
-      firstIndex = index;
-      break;
-    }
+  if (typeof livePalmesPdfImport.splitImportedPersonName === "function") {
+    return livePalmesPdfImport.splitImportedPersonName(value);
   }
-  const titleCase = (text) => text.toLowerCase().replace(/(^|\s|-)([a-zà-öø-ÿ])/g, (match) => match.toUpperCase());
-  return {
-    lastName: titleCase(tokens.slice(0, firstIndex).join(" ")),
-    firstName: tokens.slice(firstIndex).join(" ")
-  };
+  return { lastName: String(value || "").trim(), firstName: "" };
 }
 
 function isImportedRelayEvent(eventId) {
+  if (typeof livePalmesPdfImport.isImportedRelayEvent === "function") {
+    return livePalmesPdfImport.isImportedRelayEvent(eventId);
+  }
   return String(eventId || "").includes("x");
 }
 
