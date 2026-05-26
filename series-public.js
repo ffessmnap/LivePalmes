@@ -1244,9 +1244,26 @@ async function loadPublicSessionResultsDirectData(competition, session) {
   directResultSessionsLoaded.add(cleanSession);
 }
 
+function swimmerResultSessions(key) {
+  const sessions = new Set();
+  const rows = swimmerProgramRows(key);
+  rows.forEach((row) => {
+    if (row.session) sessions.add(String(row.session).trim());
+    publicProgram
+      .filter((programRow) =>
+        programRow.eventId === row.eventId &&
+        programRow.sex === row.sex &&
+        isFinalStage(programRow.stage) &&
+        programRow.session
+      )
+      .forEach((programRow) => sessions.add(String(programRow.session).trim()));
+  });
+  return [...sessions].filter(Boolean);
+}
+
 async function ensureSwimmerResultDetails(key) {
   if (!key || swimmerResultDetailsLoading.has(key)) return;
-  const sessionsToLoad = [...new Set(swimmerProgramRows(key).map((row) => String(row.session || "").trim()).filter(Boolean))]
+  const sessionsToLoad = swimmerResultSessions(key)
     .filter((session) => !directResultSessionsLoaded.has(session));
   if (!sessionsToLoad.length) return;
   const competition = publicCompetitionDocument();
