@@ -4009,18 +4009,35 @@ function diagnosticItem(label, value, status = "ok") {
   `;
 }
 
-function formatByteSize(bytes) {
-  const value = Number(bytes || 0);
-  if (!Number.isFinite(value) || value <= 0) return "0 ko";
-  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
-  return `${Math.max(1, Math.round(value / 1024))} ko`;
-}
-
-function dataUrlApproxBytes(value) {
-  const text = String(value || "");
-  const base64 = text.includes(",") ? text.split(",").at(-1) : text;
-  return Math.round((base64.length * 3) / 4);
-}
+const livePalmesDiagnostics = window.LivePalmesDiagnostics || {
+  formatByteSize(bytes) {
+    const value = Number(bytes || 0);
+    if (!Number.isFinite(value) || value <= 0) return "0 ko";
+    if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+    return `${Math.max(1, Math.round(value / 1024))} ko`;
+  },
+  dataUrlApproxBytes(value) {
+    const text = String(value || "");
+    const base64 = text.includes(",") ? text.split(",").at(-1) : text;
+    return Math.round((base64.length * 3) / 4);
+  },
+  performanceDiagnosticLines(report) {
+    if (!report?.available) return [report?.message || "Diagnostic performance indisponible."];
+    return [
+      `Competition : ${report.competitionId}`,
+      `Resultats : ${report.publicResultCount}/${report.resultCount} visibles/publics`,
+      `PDF dans resultPdfs : ${report.resultPdfCount}`,
+      `PDF encore dans results : ${report.legacyPdfCount}`,
+      `Poids a nettoyer : ${this.formatByteSize(report.legacyBytes)}`,
+      `Index public : ${this.formatByteSize(report.publicIndexBytes)}`,
+      `Index public MAJ : ${report.publicIndexUpdatedAt || "inconnue"}`,
+      `Temps lecture diagnostic : ${report.readMs} ms`
+    ];
+  }
+};
+const formatByteSize = livePalmesDiagnostics.formatByteSize;
+const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
+const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
 
 function renderCompetitionDiagnostic() {
   const sessions = sessionRows();
@@ -5303,20 +5320,6 @@ async function collectPerformanceDiagnostic() {
     readMs: Math.round(performance.now() - startedAt),
     status: legacyPdfResults.length ? "warn" : "ok"
   };
-}
-
-function performanceDiagnosticLines(report) {
-  if (!report?.available) return [report?.message || "Diagnostic performance indisponible."];
-  return [
-    `Compétition : ${report.competitionId}`,
-    `Résultats : ${report.publicResultCount}/${report.resultCount} visibles/publics`,
-    `PDF dans resultPdfs : ${report.resultPdfCount}`,
-    `PDF encore dans results : ${report.legacyPdfCount}`,
-    `Poids à nettoyer : ${formatByteSize(report.legacyBytes)}`,
-    `Index public : ${formatByteSize(report.publicIndexBytes)}`,
-    `Index public MAJ : ${report.publicIndexUpdatedAt || "inconnue"}`,
-    `Temps lecture diagnostic : ${report.readMs} ms`
-  ];
 }
 
 function renderPerformanceDiagnosticModal(report) {

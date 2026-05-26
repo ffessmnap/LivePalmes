@@ -923,6 +923,39 @@ function searchSwimmers(query) {
     .slice(0, 8);
 }
 
+function finalSessionsForRace(eventId, sex) {
+  return new Set(publicProgram
+    .filter((row) => row.eventId === eventId && row.sex === sex && isFinalStage(row.stage) && row.session)
+    .map((row) => String(row.session || "").trim()));
+}
+
+function swimmerProgramSortValue(row) {
+  return Number(row.session || 999) * 100000 +
+    Number(row.heatOrder || row.series || 9999) * 100 +
+    Number(row.line || row.lane || 99);
+}
+
+function dedupeSwimmerProgramRows(rows = []) {
+  const byRace = new Map();
+  rows.forEach((row) => {
+    const key = `${row.eventId || ""}|${row.sex || ""}`;
+    if (!key.trim()) return;
+    if (!byRace.has(key)) byRace.set(key, []);
+    byRace.get(key).push(row);
+  });
+  return [...byRace.values()]
+    .map((raceRows) => {
+      const reference = raceRows[0] || {};
+      const finalSessions = finalSessionsForRace(reference.eventId, reference.sex);
+      const initialRows = raceRows.filter((row) => !finalSessions.has(String(row.session || "").trim()));
+      return (initialRows.length ? initialRows : raceRows)
+        .slice()
+        .sort((a, b) => swimmerProgramSortValue(a) - swimmerProgramSortValue(b))[0];
+    })
+    .filter(Boolean)
+    .sort((a, b) => swimmerProgramSortValue(a) - swimmerProgramSortValue(b));
+}
+
 function renderInlineSwimmerProgram(key) {
   if (swimmerResultDetailsLoading.has(key)) {
     return `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>`;
@@ -1109,14 +1142,11 @@ function render() {
 }
 
 function swimmerProgramRows(key) {
-  return publicSeries
+  const rows = publicSeries
     .filter((row) => swimmerKey(row) === key)
-    .filter((row) => !isRelayRow(row))
-    .map(displaySeriesRow)
-    .sort((a, b) =>
-      Number(a.session || 999) - Number(b.session || 999) ||
-      Number(a.heatOrder || a.series || 9999) - Number(b.heatOrder || b.series || 9999)
-    );
+    .filter((row) => !isFinalStage(row.stage) && !isRelayRow(row))
+    .map(displaySeriesRow);
+  return dedupeSwimmerProgramRows(rows);
 }
 
 function renderSwimmerSheet(key) {
