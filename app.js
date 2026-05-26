@@ -345,6 +345,8 @@ let rolePinResolver = null;
 let activeRoleLock = null;
 let raceResults = [];
 let resultsSnapshotReady = false;
+let resultPdfMigrationRunning = false;
+let resultPdfMigrationAttempted = false;
 let currentResultImportRow = null;
 let currentSessionResultsImport = null;
 let resultUploadStates = new Map();
@@ -495,6 +497,10 @@ function resultArchivesCollection() {
 
 function resultsCollection() {
   return activeCompetitionDocument()?.collection("results") || null;
+}
+
+function resultPdfsCollection() {
+  return activeCompetitionDocument()?.collection("resultPdfs") || null;
 }
 
 function seriesPdfsCollection() {
@@ -1064,6 +1070,7 @@ async function clearTrainingCompetitionData() {
   await deleteCollectionDocuments(testCompetition.collection("alerts"));
   await deleteCollectionDocuments(testCompetition.collection("liveData"));
   await deleteCollectionDocuments(testCompetition.collection("results"));
+  await deleteCollectionDocuments(testCompetition.collection("resultPdfs"));
   await deleteCollectionDocuments(testCompetition.collection("seriesPdfs"));
   await deleteCollectionDocuments(testCompetition.collection("sessionResultsPdfs"));
   await deleteCollectionDocuments(testCompetition.collection("public"));
@@ -1891,12 +1898,16 @@ function stopTrainingModeSync() {
 }
 
 function applyResultsSnapshot(snapshot) {
-  raceResults = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  raceResults = rows.map(resultWithoutPdf);
   resultsSnapshotReady = true;
   cleanupOrphanFinalResultAlerts();
   cleanupResolvedSpeakerResultAlerts();
   ensurePendingFinalistsSpeakerAlerts();
   ensurePendingReplacementSpeakerAlerts();
+  migrateResultPdfsOutOfResults(rows).catch((error) => {
+    console.warn("Migration des PDF résultats impossible", error);
+  });
 }
 
 function subscribeTrainingModeState() {
@@ -2089,7 +2100,7 @@ async function archiveCurrentHistory() {
 }
 
 async function archiveCurrentResults(reason = "Archivage des résultats publics", sourceResults = raceResults) {
-  const rows = Array.isArray(sourceResults) ? sourceResults : [];
+  const rows = Array.isArray(sourceResults) ? sourceResults.map(resultWithoutPdf) : [];
   if (!rows.length) return null;
   const collection = resultArchivesCollection();
   if (!collection || !firestoreDb) throw new Error("Firebase n'est pas disponible pour archiver les résultats.");
@@ -3470,6 +3481,31 @@ function publicResultPayload(result) {
     isPartial: Boolean(result.isPartial),
     status: result.status || "",
     finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
+  };
+}
+
+function resultWithoutPdf(result) {
+  if (!result) return result;
+  const clean = { ...result };
+  delete clean.pdfDataUrl;
+  return clean;
+}
+
+function resultMetadataPayload(result) {
+  return resultWithoutPdf(result);
+}
+
+function resultPdfPayload(result, pdfDataUrl) {
+  return {
+    id: result.id || "",
+    resultId: result.id || "",
+    pdfName: result.pdfName || "",
+    pdfSize: result.pdfSize || 0,
+    pdfDataUrl: pdfDataUrl || "",
+    updatedAt: result.updatedAt || "",
+    eventLabel: result.eventLabel || "",
+    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+    session: result.session || ""
   };
 }
 
@@ -5719,6 +5755,65 @@ async function fileToDataUrl(file) {
   });
 }
 
+async function loadResultPdfData(result) {
+  if (!result?.id) return null;
+  const collection = resultPdfsCollection();
+  if (collection) {
+    const snapshot = await collection.doc(result.id).get({ source: "server" }).catch(() => null);
+    if (snapshot?.exists) return { id: snapshot.id, ...snapshot.data() };
+  }
+  if (result.pdfDataUrl) {
+    return resultPdfPayload(result, result.pdfDataUrl);
+  }
+  return null;
+}
+
+async function resultPdfDataUrl(result) {
+  const pdf = await loadResultPdfData(result);
+  if (!pdf?.pdfDataUrl) {
+    throw new Error("Aucun PDF déjà publié à relire pour cette course.");
+  }
+  return pdf.pdfDataUrl;
+}
+
+async function saveResultPdfPayload(result, pdfDataUrl) {
+  const collection = resultPdfsCollection();
+  if (!collection) throw new Error("Firebase n'est pas disponible pour stocker le PDF résultat.");
+  const payload = resultPdfPayload(result, pdfDataUrl);
+  await collection.doc(result.id).set(JSON.parse(JSON.stringify(payload)));
+  return payload;
+}
+
+async function deleteResultPdfPayload(resultId) {
+  const collection = resultPdfsCollection();
+  if (!collection || !resultId) return;
+  await collection.doc(resultId).delete().catch((error) => {
+    console.warn("Suppression du PDF résultat séparé impossible", error);
+  });
+}
+
+async function migrateResultPdfsOutOfResults(rows = []) {
+  if (resultPdfMigrationRunning || resultPdfMigrationAttempted || state.role !== "computer") return;
+  const withPdf = rows.filter((result) => result.id && result.pdfDataUrl);
+  if (!withPdf.length) return;
+  const pdfCollection = resultPdfsCollection();
+  const resultCollection = resultsCollection();
+  if (!pdfCollection || !resultCollection || !window.firebase?.firestore?.FieldValue) return;
+  resultPdfMigrationRunning = true;
+  resultPdfMigrationAttempted = true;
+  try {
+    for (const result of withPdf) {
+      await pdfCollection.doc(result.id).set(JSON.parse(JSON.stringify(resultPdfPayload(result, result.pdfDataUrl))));
+      await resultCollection.doc(result.id).update({
+        pdfDataUrl: window.firebase.firestore.FieldValue.delete()
+      });
+    }
+    renderDataStatus(`${withPdf.length} PDF résultat déplacé${withPdf.length > 1 ? "s" : ""} hors de la liste principale.`);
+  } finally {
+    resultPdfMigrationRunning = false;
+  }
+}
+
 async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application/pdf") {
   const response = await fetch(dataUrl);
   const blob = await response.blob();
@@ -5944,8 +6039,8 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
   const now = new Date().toISOString();
   const event = data.events.find((item) => item.id === row.eventId);
   const existingResult = resultForProgramRow(row);
-  const reuseExistingPdf = Boolean(options.reuseExistingPdf && existingResult?.pdfDataUrl);
-  const pdfDataUrl = reuseExistingPdf ? existingResult.pdfDataUrl : await fileToDataUrl(file);
+  const reuseExistingPdf = Boolean(options.reuseExistingPdf && existingResult);
+  const pdfDataUrl = reuseExistingPdf ? await resultPdfDataUrl(existingResult) : await fileToDataUrl(file);
   const preserveFinalists = Boolean(options.preserveFinalists && existingResult?.hasFinal);
   const lines = await extractPdfLines(file);
   const parsedRows = parseFinalistsFromResultLines(lines);
@@ -5986,7 +6081,6 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     ranking: parsedFinals.ranking,
     pdfName: file.name,
     pdfSize: file.size,
-    pdfDataUrl,
     createdAt: existingResult?.createdAt || now,
     updatedAt: now,
     isPartial: Boolean(isPartial),
@@ -5998,16 +6092,10 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
     result.finalWithdrawals = preservedFinalState?.finalWithdrawals || existingResult.finalWithdrawals || [];
     result.finalPreWithdrawals = existingResult.finalPreWithdrawals || [];
   }
-  if (reuseExistingPdf) {
-    const payload = JSON.parse(JSON.stringify(result));
-    delete payload.pdfDataUrl;
-    delete payload.pdfSize;
-    await collection.doc(result.id).set(payload, { merge: true });
-  } else {
-    await collection.doc(result.id).set(JSON.parse(JSON.stringify(result)));
-  }
+  await saveResultPdfPayload(result, pdfDataUrl);
+  await collection.doc(result.id).set(JSON.parse(JSON.stringify(resultMetadataPayload(result))));
   raceResults = [
-    result,
+    resultMetadataPayload(result),
     ...raceResults.filter((item) => item.id !== result.id)
   ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   if (hasFinal && !preserveFinalists) {
@@ -6019,10 +6107,11 @@ async function publishResultPdf(file, row, hasFinal, isPartial = false, options 
 
 async function rereadPublishedResult(row) {
   const existingResult = resultForProgramRow(row);
-  if (!existingResult?.pdfDataUrl) {
+  if (!existingResult) {
     throw new Error("Aucun PDF déjà publié à relire pour cette course.");
   }
-  const file = await dataUrlToFile(existingResult.pdfDataUrl, existingResult.pdfName || "resultat.pdf");
+  const pdfDataUrl = await resultPdfDataUrl(existingResult);
+  const file = await dataUrlToFile(pdfDataUrl, existingResult.pdfName || "resultat.pdf");
   const preserveFinalists = Boolean(existingResult.hasFinal && (
     existingResult.finalistsAnnouncedAt ||
     existingResult.finalWithdrawals?.length ||
@@ -6253,7 +6342,7 @@ async function publishFinalistsAfterSpeaker(alertId) {
   try {
     const resultSnapshot = await resultRef.get({ source: "server" });
     const updatedResult = resultSnapshot.exists
-      ? { id: resultSnapshot.id, ...resultSnapshot.data() }
+      ? resultWithoutPdf({ id: resultSnapshot.id, ...resultSnapshot.data() })
       : null;
     const index = raceResults.findIndex((result) => result.id === alert.resultId);
     if (updatedResult) {
@@ -7063,6 +7152,7 @@ async function deleteResultPdf(resultId) {
   const collection = resultsCollection();
   if (!collection) throw new Error("Firebase n'est pas disponible pour supprimer ce résultat.");
   await deleteFinalResultAlerts(resultId);
+  await deleteResultPdfPayload(resultId);
   await collection.doc(resultId).delete();
   raceResults = raceResults.filter((result) => result.id !== resultId);
   await publishPublicResultsIndex();
@@ -7073,14 +7163,14 @@ async function clearPublishedResults() {
   if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les résultats publics.");
   const snapshot = await collection.get();
   const docs = snapshot.docs || [];
-  const rowsToArchive = raceResults.length ? raceResults : docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const rowsToArchive = raceResults.length ? raceResults.map(resultWithoutPdf) : docs.map((doc) => resultWithoutPdf({ id: doc.id, ...doc.data() }));
   if (rowsToArchive.length) {
     await archiveCurrentResults("Avant remise à zéro des résultats publics", rowsToArchive);
   }
   for (const result of rowsToArchive) {
     await deleteFinalResultAlerts(result.id);
   }
-  await Promise.all(docs.map((doc) => doc.ref.delete()));
+  await Promise.all(docs.map((doc) => Promise.all([doc.ref.delete(), deleteResultPdfPayload(doc.id)])));
   await clearPublicSessionResultsPdfs();
   raceResults = [];
   await publishPublicResultsIndex();
@@ -7095,7 +7185,7 @@ async function clearPublishedResultsForSession(session) {
   if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les résultats publics.");
   const snapshot = await collection.get();
   const docs = snapshot.docs || [];
-  const rows = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const rows = docs.map((doc) => resultWithoutPdf({ id: doc.id, ...doc.data() }));
   const rowsToDelete = rows.filter((row) => String(row.session || "") === cleanSession);
   if (rowsToDelete.length) {
     await archiveCurrentResults(`Avant remise à zéro des résultats publics S${cleanSession}`, rowsToDelete);
@@ -7104,7 +7194,7 @@ async function clearPublishedResultsForSession(session) {
     await deleteFinalResultAlerts(result.id);
   }
   const idsToDelete = new Set(rowsToDelete.map((row) => row.id));
-  await Promise.all(docs.filter((doc) => idsToDelete.has(doc.id)).map((doc) => doc.ref.delete()));
+  await Promise.all(docs.filter((doc) => idsToDelete.has(doc.id)).map((doc) => Promise.all([doc.ref.delete(), deleteResultPdfPayload(doc.id)])));
   const clearedSessionPdfs = await clearPublicSessionResultsPdfsForSession(cleanSession);
   raceResults = raceResults.filter((result) => String(result.session || "") !== cleanSession);
   await publishPublicResultsIndex();
@@ -8642,7 +8732,7 @@ function buildResultArchiveHtmlFromRows(rows, archive = {}, options = {}) {
           <td>${index + 1}</td>
           <td>${escapeHtml(result.eventLabel || result.eventId || "-")} ${escapeHtml(sexLabel)}<br><small>Session ${escapeHtml(result.session || "-")}</small></td>
           <td>${escapeHtml(status)}${result.isPartial ? "<br><small>Résultat partiel</small>" : ""}</td>
-          <td>${result.pdfDataUrl ? `<a href="${escapeHtml(result.pdfDataUrl)}" target="_blank" rel="noopener">${escapeHtml(result.pdfName || "Ouvrir le PDF")}</a>` : escapeHtml(result.pdfName || "-")}</td>
+          <td>${result.id ? `<a href="pdf.html?type=resultat&id=${encodeURIComponent(result.id)}" target="_blank" rel="noopener">${escapeHtml(result.pdfName || "Ouvrir le PDF")}</a>` : escapeHtml(result.pdfName || "-")}</td>
           <td>${finalistCount ? `${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""}${withdrawalCount ? `<br><small>${escapeHtml(String(withdrawalCount))} forfait${withdrawalCount > 1 ? "s" : ""}</small>` : ""}` : "-"}</td>
         </tr>
       `;

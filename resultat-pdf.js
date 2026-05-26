@@ -102,17 +102,22 @@ async function init() {
     return;
   }
   window.firebase.initializeApp(FIREBASE_CONFIG);
-  const snapshot = await window.firebase.firestore()
+  const db = window.firebase.firestore();
+  const competition = db
     .collection("competitions")
-    .doc(FIRESTORE_COMPETITION_ID)
-    .collection("results")
-    .doc(id)
-    .get();
+    .doc(FIRESTORE_COMPETITION_ID);
+  const [snapshot, pdfSnapshot] = await Promise.all([
+    competition.collection("results").doc(id).get(),
+    competition.collection("resultPdfs").doc(id).get().catch(() => null)
+  ]);
   if (!snapshot.exists) {
     showMessage("PDF introuvable ou résultat non publié.");
     return;
   }
-  const result = snapshot.data();
+  const result = {
+    ...snapshot.data(),
+    ...(pdfSnapshot?.exists ? pdfSnapshot.data() : {})
+  };
   const title = `${result.eventLabel || "Résultat"} ${result.sexLabel || ""}`.trim();
   if (pdfTitle) pdfTitle.textContent = title;
   const rendered = await renderPdfInline(result.pdfDataUrl);

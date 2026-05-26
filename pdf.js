@@ -176,11 +176,15 @@ async function init() {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const [snapshot, indexSnapshot, liveSnapshot] = await Promise.all([
+  const resultPdfRequest = type === "resultat"
+    ? competition.collection("resultPdfs").doc(id).get().catch(() => null)
+    : Promise.resolve(null);
+  const [snapshot, pdfSnapshot, indexSnapshot, liveSnapshot] = await Promise.all([
     competition
       .collection(config.collection)
       .doc(id)
       .get(),
+    resultPdfRequest,
     competition.collection("public").doc("resultsIndex").get().catch(() => null),
     competition.collection("liveData").doc("current").get().catch(() => null)
   ]);
@@ -194,7 +198,10 @@ async function init() {
     showMessage(config.missingDoc);
     return;
   }
-  const data = snapshot.data();
+  const data = {
+    ...snapshot.data(),
+    ...(pdfSnapshot?.exists ? pdfSnapshot.data() : {})
+  };
   const metaLabel = meetMetaLabel(publicIndex.meet || data.meet || {});
   if (meetMeta) {
     meetMeta.textContent = metaLabel;

@@ -273,7 +273,6 @@ service cloud.firestore {
               "sex",
               "hasFinal",
               "pdfName",
-              "pdfDataUrl",
               "updatedAt"
             ])
             && request.resource.data.id == resultId
@@ -284,10 +283,37 @@ service cloud.firestore {
             && validText(request.resource.data.sex, 10)
             && request.resource.data.hasFinal is bool
             && validText(request.resource.data.pdfName, 220)
-            && validText(request.resource.data.pdfDataUrl, 900000)
+            && validOptionalText("pdfDataUrl", 900000)
             && validText(request.resource.data.updatedAt, 40);
           allow delete: if isLivePalmesCompetition(competitionId);
         }
+      }
+
+      match /resultPdfs/{resultId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && request.resource.data.keys().hasOnly([
+            "id",
+            "resultId",
+            "pdfName",
+            "pdfSize",
+            "pdfDataUrl",
+            "updatedAt",
+            "eventLabel",
+            "sexLabel",
+            "session"
+          ])
+          && request.resource.data.id == resultId
+          && request.resource.data.resultId == resultId
+          && validText(resultId, 180)
+          && validText(request.resource.data.pdfName, 220)
+          && request.resource.data.pdfSize is int
+          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validText(request.resource.data.updatedAt, 40)
+          && validOptionalText("eventLabel", 160)
+          && validOptionalText("sexLabel", 40)
+          && validOptionalText("session", 20);
+        allow delete: if isLivePalmesCompetition(competitionId);
       }
 
       match /results/{resultId} {
@@ -301,7 +327,6 @@ service cloud.firestore {
             "sex",
             "hasFinal",
             "pdfName",
-            "pdfDataUrl",
             "updatedAt"
           ])
           && request.resource.data.id == resultId
@@ -312,7 +337,7 @@ service cloud.firestore {
           && validText(request.resource.data.sex, 10)
           && request.resource.data.hasFinal is bool
           && validText(request.resource.data.pdfName, 220)
-          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validOptionalText("pdfDataUrl", 900000)
           && validText(request.resource.data.updatedAt, 40);
         allow delete: if isLivePalmesCompetition(competitionId);
       }
