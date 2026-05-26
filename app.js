@@ -2246,11 +2246,57 @@ const timeToMs = livePalmesTime.timeToMs.bind(livePalmesTime);
 const formatGap = livePalmesTime.formatGap.bind(livePalmesTime);
 const importedSeriesTime = livePalmesTime.importedSeriesTime.bind(livePalmesTime);
 
-function formatPersonNameParts(firstName, lastName, fallback = "") {
-  const last = String(lastName || "").trim().toLocaleUpperCase("fr-FR");
-  const first = String(firstName || "").trim();
-  return [last, first].filter(Boolean).join(" ").trim() || fallback;
-}
+const livePalmesPeople = window.LivePalmesPeople || {
+  formatPersonNameParts(firstName, lastName, fallback = "") {
+    const last = String(lastName || "").trim().toLocaleUpperCase("fr-FR");
+    const first = String(firstName || "").trim();
+    return [last, first].filter(Boolean).join(" ").trim() || fallback;
+  },
+  getBirthYear(birthDate) {
+    const match = String(birthDate || "").match(/(\d{4})$/);
+    return match ? Number(match[1]) : Number.NaN;
+  },
+  getBirthYearLabel(birthDate) {
+    const year = this.getBirthYear(birthDate);
+    return Number.isFinite(year) ? String(year) : "----";
+  },
+  normalizePersonName(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z ]/g, " ")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .sort()
+      .join(" ");
+  },
+  formatRank(rank) {
+    const value = Number(rank);
+    if (!Number.isFinite(value)) return "-";
+    return value === 1 ? "1er" : `${value}e`;
+  },
+  entrantKey(entrant) {
+    return [entrant.lastName, entrant.firstName, entrant.birthDate, entrant.sex].join("|").toLowerCase();
+  },
+  sameCategory(a, b) {
+    return String(a || "").toLowerCase() === String(b || "").toLowerCase();
+  },
+  categoryClass(category) {
+    if (this.sameCategory(category, "Cadet")) return "cat-cadet";
+    if (this.sameCategory(category, "Junior")) return "cat-junior";
+    if (this.sameCategory(category, "Senior")) return "cat-senior";
+    return "cat-other";
+  }
+};
+const formatPersonNameParts = livePalmesPeople.formatPersonNameParts.bind(livePalmesPeople);
+const getBirthYear = livePalmesPeople.getBirthYear.bind(livePalmesPeople);
+const getBirthYearLabel = livePalmesPeople.getBirthYearLabel.bind(livePalmesPeople);
+const normalizePersonName = livePalmesPeople.normalizePersonName.bind(livePalmesPeople);
+const formatRank = livePalmesPeople.formatRank.bind(livePalmesPeople);
+const entrantKey = livePalmesPeople.entrantKey.bind(livePalmesPeople);
+const sameCategory = livePalmesPeople.sameCategory.bind(livePalmesPeople);
+const categoryClass = livePalmesPeople.categoryClass.bind(livePalmesPeople);
 
 function formatName(swimmer) {
   return formatPersonNameParts(swimmer.firstName, swimmer.lastName, swimmer.name)
@@ -7807,50 +7853,11 @@ function isQualificationEligible(entrant, qualification) {
   return Number.isFinite(birthYear) && birthYear >= 2005;
 }
 
-function getBirthYear(birthDate) {
-  const match = String(birthDate || "").match(/(\d{4})$/);
-  return match ? Number(match[1]) : Number.NaN;
-}
-
-function getBirthYearLabel(birthDate) {
-  const year = getBirthYear(birthDate);
-  return Number.isFinite(year) ? String(year) : "----";
-}
-
 function findTop2025ForEntrant(entrant) {
   const entrantName = normalizePersonName(formatName(entrant));
   return data.top2025.find((item) => (
     matchesRace(item) && normalizePersonName(item.name) === entrantName
   ));
-}
-
-function normalizePersonName(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z ]/g, " ")
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .sort()
-    .join(" ");
-}
-
-function formatRank(rank) {
-  const value = Number(rank);
-  if (!Number.isFinite(value)) return "-";
-  return value === 1 ? "1er" : `${value}e`;
-}
-
-function entrantKey(entrant) {
-  return [entrant.lastName, entrant.firstName, entrant.birthDate, entrant.sex].join("|").toLowerCase();
-}
-
-function categoryClass(category) {
-  if (sameCategory(category, "Cadet")) return "cat-cadet";
-  if (sameCategory(category, "Junior")) return "cat-junior";
-  if (sameCategory(category, "Senior")) return "cat-senior";
-  return "cat-other";
 }
 
 function entrantPerformanceNameKey(row) {
@@ -8081,10 +8088,6 @@ function medalClass(value) {
   if (text.includes("argent")) return "medal-silver";
   if (text.includes("bronze")) return "medal-bronze";
   return "medal-neutral";
-}
-
-function sameCategory(a, b) {
-  return String(a || "").toLowerCase() === String(b || "").toLowerCase();
 }
 
 function currentRecordRows() {
