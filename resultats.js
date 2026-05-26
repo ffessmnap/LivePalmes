@@ -785,10 +785,34 @@ function swimmerProgramRows(key) {
   return dedupeSwimmerProgramRows(rows);
 }
 
+function swimmerResultSessionsToLoad(key) {
+  return swimmerResultSessions(key)
+    .filter((session) => !directResultSessionsLoaded.has(session));
+}
+
+function swimmerResultsAreLoading(key) {
+  return Boolean(key && (
+    swimmerResultDetailsLoading.has(key) ||
+    swimmerResultSessionsToLoad(key).length
+  ));
+}
+
 function renderInlineSwimmerProgram(key) {
   const rows = swimmerProgramRows(key);
   const swimmer = rows[0];
   if (!swimmer) return "";
+  if (swimmerResultsAreLoading(key)) {
+    return `
+      <div class="public-search-program">
+        <div class="public-search-program-head">
+          <span>${escapeHtml(clubLabel(swimmer) || "-")}</span>
+          <strong>${escapeHtml(swimmerName(swimmer))}</strong>
+          <em>${swimmerCategoryBirthHtml(swimmer)}</em>
+        </div>
+        <p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>
+      </div>
+    `;
+  }
   return `
     <div class="public-search-program">
       <div class="public-search-program-head">
@@ -820,9 +844,6 @@ function renderInlineSwimmerProgram(key) {
 
 function renderSwimmerSearchContent() {
   if (selectedSearchSwimmerKey) {
-    if (swimmerResultDetailsLoading.has(selectedSearchSwimmerKey)) {
-      return `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>`;
-    }
     return renderInlineSwimmerProgram(selectedSearchSwimmerKey);
   }
   const matches = searchSwimmers(swimmerSearchQuery);
@@ -1520,8 +1541,7 @@ function swimmerResultSessions(key) {
 
 async function ensureSwimmerResultDetails(key) {
   if (!key || swimmerResultDetailsLoading.has(key)) return;
-  const sessionsToLoad = swimmerResultSessions(key)
-    .filter((session) => !directResultSessionsLoaded.has(session));
+  const sessionsToLoad = swimmerResultSessionsToLoad(key);
   if (!sessionsToLoad.length) return;
   const competition = publicCompetitionDocument();
   if (!competition) return;
