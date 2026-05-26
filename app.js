@@ -5725,58 +5725,15 @@ function openResultImportModal(row) {
     ["a", "b"].some((key) => (existingResult.finalists?.[key] || []).some((finalist) => finalist.withdrawnAt || finalist.repechaged))
   ));
   resultImportModal.hidden = false;
-  resultImportModal.innerHTML = `
-    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer un résultat">
-      <div class="decision-modal-head">
-        <div>
-          <span>Résultat de course</span>
-          <h2>${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</h2>
-          <p>${escapeHtml([row.session ? `Session ${row.session}` : "", row.startTime || ""].filter(Boolean).join(" - ") || "Importer le PDF résultat")}</p>
-        </div>
-        <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
-      </div>
-      <div class="admin-series-options">
-        ${protectedFinalists ? `
-          <label class="admin-series-option warning-option">
-            <input type="radio" name="resultFinalListMode" value="preserve" checked>
-            <strong>Conserver les finalistes déjà annoncés</strong>
-            <span>Remplace seulement le PDF résultat. Les forfaits, repêchages et délais restent inchangés.</span>
-          </label>
-          <label class="admin-series-option warning-option">
-            <input type="radio" name="resultFinalListMode" value="overwrite">
-            <strong>Écraser la liste des finalistes</strong>
-            <span>Attention : relit le PDF et remplace la liste des finalistes, forfaits et repêchages.</span>
-          </label>
-        ` : `
-          <label class="admin-series-option">
-            <input type="radio" name="resultCompletionMode" value="complete" ${defaultPartial ? "" : "checked"}>
-            <strong>Résultat complet</strong>
-            <span>La course est terminée et le résultat peut être considéré comme officiel pour cette phase.</span>
-          </label>
-          <label class="admin-series-option">
-            <input type="radio" name="resultCompletionMode" value="partial" ${defaultPartial ? "checked" : ""}>
-            <strong>Résultat partiel</strong>
-            <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
-          </label>
-          ${isFinalResult ? "" : `<label class="admin-series-option">
-            <input type="radio" name="resultFinalMode" value="no" checked>
-            <strong>Sans finale</strong>
-            <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
-          </label>
-          <label class="admin-series-option">
-            <input type="radio" name="resultFinalMode" value="yes">
-            <strong>Avec finale</strong>
-            <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
-          </label>`}
-        `}
-      </div>
-      <label class="file-button admin-series-file">
-        Choisir le PDF résultat
-        <input id="resultPdfInput" type="file" accept="application/pdf" hidden>
-      </label>
-      <p class="panel-subtitle">Prototype : le PDF est stocké dans Firebase pour la page publique. Taille conseillée : 200 ko maximum.</p>
-    </div>
-  `;
+  resultImportModal.innerHTML = livePalmesAdminResults.renderResultImportModalHtml({
+    defaultPartial,
+    eventLabel: event?.label || row.label || row.eventId,
+    isFinalResult,
+    phaseLabel,
+    protectedFinalists,
+    sexLabel: sexDisplayLabel(row.sex),
+    subtitle: [row.session ? `Session ${row.session}` : "", row.startTime || ""].filter(Boolean).join(" - ") || "Importer le PDF résultat"
+  });
 }
 
 function openSessionResultsImportModal(defaultSession = "") {
@@ -5786,47 +5743,10 @@ function openSessionResultsImportModal(defaultSession = "") {
   const selectedSession = defaultSession || resultsAdminSession || sessions[0]?.number || "";
   currentSessionResultsImport = { defaultSession: selectedSession };
   resultImportModal.hidden = false;
-  resultImportModal.innerHTML = `
-    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer des résultats complets">
-      <div class="decision-modal-head">
-        <div>
-          <span>Résultats complets</span>
-          <h2>PDF de consultation publique</h2>
-          <p>À utiliser en fin de session, journée ou compétition. Le PDF n'est pas analysé.</p>
-        </div>
-        <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
-      </div>
-      <div class="admin-series-options">
-        <label class="admin-series-option">
-          <input type="radio" name="sessionResultsScope" value="current" checked>
-          <strong>Session affichée ${selectedSession ? `S${escapeHtml(selectedSession)}` : ""}</strong>
-          <span>Le PDF sera visible uniquement sur cette session.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="sessionResultsScope" value="multiple">
-          <strong>Plusieurs sessions</strong>
-          <span>Choisir les sessions concernées par le PDF.</span>
-        </label>
-        <div class="session-results-checkboxes" hidden>
-          ${sessions.map((session) => `
-            <label>
-              <input type="checkbox" name="sessionResultsSession" value="${escapeHtml(session.number)}" ${session.number === selectedSession ? "checked" : ""}>
-              S${escapeHtml(session.number)}
-            </label>
-          `).join("")}
-        </div>
-        <label class="admin-series-option">
-          <input type="radio" name="sessionResultsScope" value="full">
-          <strong>Résultats complets de la compétition</strong>
-          <span>Le PDF sera visible sur toutes les sessions de la page publique.</span>
-        </label>
-      </div>
-      <label class="file-button admin-series-file">
-        Choisir le PDF résultats
-        <input id="sessionResultsPdfInput" type="file" accept="application/pdf">
-      </label>
-    </div>
-  `;
+  resultImportModal.innerHTML = livePalmesAdminResults.renderSessionResultsImportModalHtml({
+    selectedSession,
+    sessions
+  });
 }
 
 function closeResultImportModal() {
@@ -5838,48 +5758,34 @@ function closeResultImportModal() {
 }
 
 async function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("Lecture du fichier impossible."));
-    reader.readAsDataURL(file);
-  });
+  return livePalmesResults.fileToDataUrl(file);
 }
 
 async function loadResultPdfData(result) {
-  if (!result?.id) return null;
-  const collection = resultPdfsCollection();
-  if (collection) {
-    const snapshot = await collection.doc(result.id).get({ source: "server" }).catch(() => null);
-    if (snapshot?.exists) return { id: snapshot.id, ...snapshot.data() };
-  }
-  if (result.pdfDataUrl) {
-    return resultPdfPayload(result, result.pdfDataUrl);
-  }
-  return null;
+  return livePalmesResults.loadResultPdfData(result, {
+    collection: resultPdfsCollection(),
+    resultPdfPayload
+  });
 }
 
 async function resultPdfDataUrl(result) {
-  const pdf = await loadResultPdfData(result);
-  if (!pdf?.pdfDataUrl) {
-    throw new Error("Aucun PDF déjà publié à relire pour cette course.");
-  }
-  return pdf.pdfDataUrl;
+  return livePalmesResults.resultPdfDataUrl(result, {
+    collection: resultPdfsCollection(),
+    resultPdfPayload
+  });
 }
 
 async function saveResultPdfPayload(result, pdfDataUrl) {
-  const collection = resultPdfsCollection();
-  if (!collection) throw new Error("Firebase n'est pas disponible pour stocker le PDF résultat.");
-  const payload = resultPdfPayload(result, pdfDataUrl);
-  await collection.doc(result.id).set(JSON.parse(JSON.stringify(payload)));
-  return payload;
+  return livePalmesResults.saveResultPdfPayload(result, pdfDataUrl, {
+    collection: resultPdfsCollection(),
+    resultPdfPayload
+  });
 }
 
 async function deleteResultPdfPayload(resultId) {
-  const collection = resultPdfsCollection();
-  if (!collection || !resultId) return;
-  await collection.doc(resultId).delete().catch((error) => {
-    console.warn("Suppression du PDF résultat séparé impossible", error);
+  return livePalmesResults.deleteResultPdfPayload(resultId, {
+    collection: resultPdfsCollection(),
+    onError: (error) => console.warn("Suppression du PDF résultat séparé impossible", error)
   });
 }
 
@@ -5910,9 +5816,7 @@ async function migrateResultPdfsOutOfResults(rows = [], options = {}) {
 }
 
 async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application/pdf") {
-  const response = await fetch(dataUrl);
-  const blob = await response.blob();
-  return new File([blob], name, { type: blob.type || type });
+  return livePalmesResults.dataUrlToFile(dataUrl, name, type);
 }
 
 const livePalmesResultParser = window.LivePalmesResultParser;

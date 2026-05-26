@@ -24,6 +24,61 @@
     };
   }
 
+  async function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Lecture du fichier impossible."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application/pdf") {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], name, { type: blob.type || type });
+  }
+
+  async function loadResultPdfData(result, options = {}) {
+    if (!result?.id) return null;
+    const collection = options.collection || null;
+    const payloadFactory = options.resultPdfPayload || resultPdfPayload;
+    if (collection) {
+      const snapshot = await collection.doc(result.id).get({ source: "server" }).catch(() => null);
+      if (snapshot?.exists) return { id: snapshot.id, ...snapshot.data() };
+    }
+    if (result.pdfDataUrl) {
+      return payloadFactory(result, result.pdfDataUrl);
+    }
+    return null;
+  }
+
+  async function resultPdfDataUrl(result, options = {}) {
+    const pdf = await loadResultPdfData(result, options);
+    if (!pdf?.pdfDataUrl) {
+      throw new Error("Aucun PDF déjà publié à relire pour cette course.");
+    }
+    return pdf.pdfDataUrl;
+  }
+
+  async function saveResultPdfPayload(result, pdfDataUrl, options = {}) {
+    const collection = options.collection || null;
+    if (!collection) throw new Error("Firebase n'est pas disponible pour stocker le PDF résultat.");
+    const payloadFactory = options.resultPdfPayload || resultPdfPayload;
+    const payload = payloadFactory(result, pdfDataUrl);
+    await collection.doc(result.id).set(JSON.parse(JSON.stringify(payload)));
+    return payload;
+  }
+
+  async function deleteResultPdfPayload(resultId, options = {}) {
+    const collection = options.collection || null;
+    const onError = typeof options.onError === "function" ? options.onError : null;
+    if (!collection || !resultId) return;
+    await collection.doc(resultId).delete().catch((error) => {
+      if (onError) onError(error);
+    });
+  }
+
   function publicResultPayload(result, options = {}) {
     if (!result) return null;
     return {
@@ -79,11 +134,17 @@
   }
 
   global.LivePalmesResults = {
+    dataUrlToFile,
+    deleteResultPdfPayload,
+    fileToDataUrl,
+    loadResultPdfData,
     publicResultPayload,
     publicSeriesPdfPayload,
     publicSessionResultsPdfPayload,
     resultMetadataPayload,
+    resultPdfDataUrl,
     resultPdfPayload,
-    resultWithoutPdf
+    resultWithoutPdf,
+    saveResultPdfPayload
   };
 })(window);

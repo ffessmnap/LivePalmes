@@ -143,6 +143,118 @@
     `;
   }
 
+  function renderResultImportModalHtml(options = {}) {
+    const {
+      defaultPartial = false,
+      eventLabel = "",
+      isFinalResult = false,
+      phaseLabel = "",
+      protectedFinalists = false,
+      sexLabel = "",
+      subtitle = ""
+    } = options;
+    return `
+      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer un résultat">
+        <div class="decision-modal-head">
+          <div>
+            <span>Résultat de course</span>
+            <h2>${escapeHtml(eventLabel)} ${escapeHtml(sexLabel)} - ${escapeHtml(phaseLabel)}</h2>
+            <p>${escapeHtml(subtitle || "Importer le PDF résultat")}</p>
+          </div>
+          <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
+        </div>
+        <div class="admin-series-options">
+          ${protectedFinalists ? `
+            <label class="admin-series-option warning-option">
+              <input type="radio" name="resultFinalListMode" value="preserve" checked>
+              <strong>Conserver les finalistes déjà annoncés</strong>
+              <span>Remplace seulement le PDF résultat. Les forfaits, repêchages et délais restent inchangés.</span>
+            </label>
+            <label class="admin-series-option warning-option">
+              <input type="radio" name="resultFinalListMode" value="overwrite">
+              <strong>Écraser la liste des finalistes</strong>
+              <span>Attention : relit le PDF et remplace la liste des finalistes, forfaits et repêchages.</span>
+            </label>
+          ` : `
+            <label class="admin-series-option">
+              <input type="radio" name="resultCompletionMode" value="complete" ${defaultPartial ? "" : "checked"}>
+              <strong>Résultat complet</strong>
+              <span>La course est terminée et le résultat peut être considéré comme officiel pour cette phase.</span>
+            </label>
+            <label class="admin-series-option">
+              <input type="radio" name="resultCompletionMode" value="partial" ${defaultPartial ? "checked" : ""}>
+              <strong>Résultat partiel</strong>
+              <span>À utiliser pour une course avec séries lentes / rapides ou un résultat provisoire.</span>
+            </label>
+            ${isFinalResult ? "" : `<label class="admin-series-option">
+              <input type="radio" name="resultFinalMode" value="no" checked>
+              <strong>Sans finale</strong>
+              <span>Le PDF est publié pour consultation, sans analyse des finalistes.</span>
+            </label>
+            <label class="admin-series-option">
+              <input type="radio" name="resultFinalMode" value="yes">
+              <strong>Avec finale</strong>
+              <span>LivePalmes lit le PDF et détecte les lignes marquées en finale.</span>
+            </label>`}
+          `}
+        </div>
+        <label class="file-button admin-series-file">
+          Choisir le PDF résultat
+          <input id="resultPdfInput" type="file" accept="application/pdf" hidden>
+        </label>
+        <p class="panel-subtitle">Prototype : le PDF est stocké dans Firebase pour la page publique. Taille conseillée : 200 ko maximum.</p>
+      </div>
+    `;
+  }
+
+  function renderSessionResultsImportModalHtml(options = {}) {
+    const {
+      selectedSession = "",
+      sessions = []
+    } = options;
+    return `
+      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer des résultats complets">
+        <div class="decision-modal-head">
+          <div>
+            <span>Résultats complets</span>
+            <h2>PDF de consultation publique</h2>
+            <p>À utiliser en fin de session, journée ou compétition. Le PDF n'est pas analysé.</p>
+          </div>
+          <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
+        </div>
+        <div class="admin-series-options">
+          <label class="admin-series-option">
+            <input type="radio" name="sessionResultsScope" value="current" checked>
+            <strong>Session affichée ${selectedSession ? `S${escapeHtml(selectedSession)}` : ""}</strong>
+            <span>Le PDF sera visible uniquement sur cette session.</span>
+          </label>
+          <label class="admin-series-option">
+            <input type="radio" name="sessionResultsScope" value="multiple">
+            <strong>Plusieurs sessions</strong>
+            <span>Choisir les sessions concernées par le PDF.</span>
+          </label>
+          <div class="session-results-checkboxes" hidden>
+            ${sessions.map((session) => `
+              <label>
+                <input type="checkbox" name="sessionResultsSession" value="${escapeHtml(session.number)}" ${session.number === selectedSession ? "checked" : ""}>
+                S${escapeHtml(session.number)}
+              </label>
+            `).join("")}
+          </div>
+          <label class="admin-series-option">
+            <input type="radio" name="sessionResultsScope" value="full">
+            <strong>Résultats complets de la compétition</strong>
+            <span>Le PDF sera visible sur toutes les sessions de la page publique.</span>
+          </label>
+        </div>
+        <label class="file-button admin-series-file">
+          Choisir le PDF résultats
+          <input id="sessionResultsPdfInput" type="file" accept="application/pdf">
+        </label>
+      </div>
+    `;
+  }
+
   function renderResultProgramRowHtml(options = {}) {
     const {
       blockingUpload = false,
@@ -196,7 +308,9 @@
   global.LivePalmesAdminResults = {
     latestResultSession,
     renderResultProgramRowHtml,
+    renderResultImportModalHtml,
     renderResultsAdminPanelHtml,
+    renderSessionResultsImportModalHtml,
     renderSessionResultsImportRowHtml,
     resultStatusBadge,
     resultStatusControlHtml,
