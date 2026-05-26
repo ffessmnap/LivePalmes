@@ -36,20 +36,6 @@
     return summary;
   }
 
-  function buildTrainingData(currentData, options = {}) {
-    const nowIso = options.nowIso || new Date().toISOString();
-    return {
-      ...currentData,
-      notes: {
-        ...(currentData?.notes || {}),
-        trainingMode: true,
-        competitionMode: true,
-        trainingModeStartedAt: nowIso
-      },
-      sourceVersion: options.sourceVersion || `training-${Date.now()}`
-    };
-  }
-
   function publicSeriesPdfId(scope, session = "") {
     return scope === "full" ? "full" : `session-${String(session || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
   }
@@ -123,7 +109,6 @@
 
   global.LivePalmesAdminMaintenance = {
     buildResetSeriesData,
-    buildTrainingData,
     clearCompetitionCollections,
     deleteCollectionDocuments,
     normalizeSessionList,
