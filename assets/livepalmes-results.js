@@ -133,18 +133,126 @@
     };
   }
 
+  function entrantPerformanceNameKey(row, options = {}) {
+    const normalizePersonName = options.normalizePersonName || ((value) => String(value || "").trim().toLocaleUpperCase("fr-FR"));
+    const formatPersonNameParts = options.formatPersonNameParts || ((firstName, lastName, fallback) => [lastName, firstName].filter(Boolean).join(" ") || fallback || "");
+    return normalizePersonName(formatPersonNameParts(row?.firstName, row?.lastName, row?.displayName || row?.name || ""));
+  }
+
+  function performanceBirthYear(row) {
+    const text = String(row?.birthYear || row?.birthDate || "").trim();
+    const match = text.match(/\b(19|20)\d{2}\b/);
+    return match ? match[0] : text;
+  }
+
+  function performanceMatchesEntrant(performance, entrant, options = {}) {
+    const recordEventMatches = options.recordEventMatches || ((left, right) => left === right);
+    if (!performance || !entrant) return false;
+    if (!recordEventMatches(performance.eventId, entrant.eventId)) return false;
+    if (performance.sex && entrant.sex && performance.sex !== entrant.sex) return false;
+    if (entrantPerformanceNameKey(performance, options) !== entrantPerformanceNameKey(entrant, options)) return false;
+    const performanceBirth = performanceBirthYear(performance);
+    const entrantBirth = performanceBirthYear(entrant);
+    if (performanceBirth && entrantBirth && performanceBirth !== entrantBirth) return false;
+    return true;
+  }
+
+  function performanceStatusResultLabel(performance) {
+    const status = String(performance?.status || performance?.resultStatus || "").toLowerCase();
+    const label = String(performance?.statusLabel || "").trim();
+    const normalizedLabel = label
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
+    if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
+    if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
+    return label;
+  }
+
+  function performanceDisplayValue(performance) {
+    return String(performanceStatusResultLabel(performance) || performance?.time || "").trim();
+  }
+
+  function resultRankForPerformance(performance, result, options = {}) {
+    const rows = Array.isArray(result?.ranking) ? result.ranking : [];
+    const match = rows.find((row) => {
+      const candidate = {
+        ...row,
+        eventId: row.eventId || result.eventId || performance.eventId || "",
+        sex: row.sex || result.sex || performance.sex || ""
+      };
+      if (!performanceMatchesEntrant(performance, candidate, options)) return false;
+      const performanceTime = String(performance.time || "").trim();
+      const candidateTime = String(row.time || "").trim();
+      if (performanceTime && candidateTime && performanceTime !== candidateTime) return false;
+      return true;
+    });
+    return match?.rank || "";
+  }
+
+  function performanceRankLabel(performance, options = {}) {
+    const rank = Number(performance?.rank);
+    if (!Number.isFinite(rank) || rank <= 0) return "";
+    const formatRank = options.formatRank || ((value) => String(value));
+    return formatRank(rank);
+  }
+
+  function swimmerBestPerformanceForEntry(entry, results = [], options = {}) {
+    const isFinalStage = options.isFinalStage || (() => false);
+    const performances = (Array.isArray(results) ? results : []).flatMap((result) =>
+      (Array.isArray(result.performances) ? result.performances : []).map((performance) => ({
+        ...performance,
+        eventId: performance.eventId || result.eventId,
+        sex: performance.sex || result.sex,
+        stage: performance.stage || result.stage,
+        phaseLabel: performance.phaseLabel || result.phaseLabel,
+        rank: performance.rank || resultRankForPerformance(performance, result, options),
+        updatedAt: performance.updatedAt || result.updatedAt
+      }))
+    ).filter((performance) => performanceMatchesEntrant(performance, entry, options) && performanceDisplayValue(performance));
+    if (!performances.length) return null;
+    return performances.sort((a, b) => {
+      const finalA = isFinalStage(a.stage) ? 0 : 1;
+      const finalB = isFinalStage(b.stage) ? 0 : 1;
+      return finalA - finalB || String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+    })[0];
+  }
+
+  function compactProgramPerformanceLabel(entry, results = [], options = {}) {
+    const isSpeakerView = options.isSpeakerView || (() => false);
+    if (!isSpeakerView()) return "";
+    const performance = swimmerBestPerformanceForEntry(entry, results, options);
+    if (!performance) return "";
+    const isFinalStage = options.isFinalStage || (() => false);
+    const finalStageLabel = options.finalStageLabel || ((stage) => stage || "Finale");
+    const escapeHtml = options.escapeHtml || ((value) => String(value ?? ""));
+    const label = isFinalStage(performance.stage) ? finalStageLabel(performance.stage) : "Série";
+    const rank = performanceRankLabel(performance, options);
+    return `<small>${escapeHtml(label)} ${escapeHtml(performanceDisplayValue(performance))}${rank ? ` <b class="compact-program-rank">${escapeHtml(rank)}</b>` : ""}</small>`;
+  }
+
   global.LivePalmesResults = {
+    compactProgramPerformanceLabel,
     dataUrlToFile,
     deleteResultPdfPayload,
+    entrantPerformanceNameKey,
     fileToDataUrl,
     loadResultPdfData,
+    performanceBirthYear,
+    performanceDisplayValue,
+    performanceMatchesEntrant,
+    performanceRankLabel,
+    performanceStatusResultLabel,
     publicResultPayload,
     publicSeriesPdfPayload,
     publicSessionResultsPdfPayload,
+    resultRankForPerformance,
     resultMetadataPayload,
     resultPdfDataUrl,
     resultPdfPayload,
     resultWithoutPdf,
-    saveResultPdfPayload
+    saveResultPdfPayload,
+    swimmerBestPerformanceForEntry
   };
 })(window);
