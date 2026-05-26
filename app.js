@@ -1459,6 +1459,7 @@ function renderRoleCodesModal() {
         <button class="ghost-button compact ${trainingModeEnabled() ? "danger-button" : ""}" type="button" data-training-mode-toggle>
           ${trainingModeEnabled() ? "Quitter le mode formation" : "Mode formation"}
         </button>
+        <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
         <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
         <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
         <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
@@ -5469,6 +5470,257 @@ async function showPerformanceDiagnosticModal() {
   renderPerformanceDiagnosticModal(report);
 }
 
+function technicalDiagnosticStatus(value, warnLimit = 0, dangerLimit = Number.POSITIVE_INFINITY) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "neutral";
+  if (number >= dangerLimit) return "warn";
+  if (number > warnLimit) return "warn";
+  return "ok";
+}
+
+function technicalDiagnosticSection(title, items = []) {
+  return `
+    <div class="technical-diagnostic-section">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="competition-diagnostic">
+        ${items.map((item) => diagnosticItem(item.label, item.value, item.status || "neutral")).join("")}
+      </div>
+    </div>
+  `;
+}
+
+async function safeCountCollection(collection) {
+  try {
+    return await countCollectionDocuments(collection);
+  } catch (error) {
+    console.warn("Comptage diagnostic impossible", error);
+    return null;
+  }
+}
+
+async function safeDocumentData(documentRef) {
+  try {
+    const snapshot = await documentRef?.get({ source: "server" });
+    return snapshot?.exists ? (snapshot.data() || {}) : null;
+  } catch (error) {
+    console.warn("Lecture diagnostic impossible", error);
+    return null;
+  }
+}
+
+async function collectTechnicalDiagnostic() {
+  const startedAt = performance.now();
+  const localResults = Array.isArray(raceResults) ? raceResults : [];
+  const localAlerts = Array.isArray(alerts) ? alerts : [];
+  const localPendingAlerts = localAlerts.filter((alert) => !alert.speakerAnnouncedAt && !alert.cancelledAt).length;
+  const localResultPerformances = localResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
+  const localDetailedResults = localResults.filter(resultHasDetailsForDiagnostic).length;
+  const report = {
+    available: Boolean(firestoreDb),
+    competitionId: activeCompetitionId,
+    local: {
+      sessions: sessionRows().length,
+      program: data.program?.length || 0,
+      series: data.series?.length || 0,
+      entrants: data.entrants?.length || 0,
+      results: localResults.length,
+      detailedResults: localDetailedResults,
+      performances: localResultPerformances,
+      alerts: localAlerts.length,
+      pendingAlerts: localPendingAlerts,
+      sourceVersion: data.sourceVersion || "",
+      lastUpdatedSession: data.notes?.lastUpdatedSession || ""
+    },
+    firebase: {},
+    recommendations: []
+  };
+  if (!firestoreDb) {
+    report.message = "Firebase indisponible sur cet appareil.";
+    report.readMs = Math.round(performance.now() - startedAt);
+    report.recommendations.push("Impossible de lire les compteurs serveur depuis cet appareil.");
+    return report;
+  }
+
+  const [
+    resultsSnapshot,
+    publicIndex,
+    liveData,
+    resultPdfCount,
+    seriesPdfCount,
+    sessionResultsPdfCount,
+    alertCount,
+    presenceCount,
+    roleLockCount
+  ] = await Promise.all([
+    resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" }).catch((error) => {
+      console.warn("Lecture résultats diagnostic impossible", error);
+      return null;
+    }),
+    safeDocumentData(publicResultsIndexDocument()),
+    safeDocumentData(liveDataDocument()),
+    safeCountCollection(resultPdfsCollection()),
+    safeCountCollection(seriesPdfsCollection()),
+    safeCountCollection(sessionResultsPdfsCollection()),
+    safeCountCollection(alertsCollection()),
+    safeCountCollection(presenceCollection()),
+    safeCountCollection(activeCompetitionDocument()?.collection("roleLocks"))
+  ]);
+
+  const serverResults = resultsSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
+  const resultPerformances = serverResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
+  const detailedResults = serverResults.filter(resultHasDetailsForDiagnostic).length;
+  const legacyPdfResults = serverResults.filter((result) => result.pdfDataUrl);
+  const resultSessions = [...new Set(serverResults.map((result) => String(result.session || "").trim()).filter(Boolean))]
+    .sort((a, b) => Number(a) - Number(b));
+  const publicResults = Array.isArray(publicIndex?.results) ? publicIndex.results : [];
+  const livePayload = liveData?.data || {};
+  const publicIndexBytes = publicIndex ? JSON.stringify(publicIndex).length : 0;
+  const liveDataBytes = livePayload ? JSON.stringify(livePayload).length : 0;
+  const lastResultUpdatedAt = serverResults.map((result) => result.updatedAt).filter(Boolean).sort().at(-1) || "";
+  report.firebase = {
+    results: serverResults.length,
+    visibleResults: serverResults.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length,
+    detailedResults,
+    resultPerformances,
+    partialResults: serverResults.filter((result) => result.isPartial).length,
+    waitingFinalAnnouncements: serverResults.filter((result) => result.hasFinal && !result.finalistsAnnouncedAt).length,
+    legacyPdfCount: legacyPdfResults.length,
+    legacyBytes: legacyPdfResults.reduce((sum, result) => sum + dataUrlApproxBytes(result.pdfDataUrl), 0),
+    resultPdfCount,
+    seriesPdfCount,
+    sessionResultsPdfCount,
+    alertCount,
+    presenceCount,
+    roleLockCount,
+    publicResults: publicResults.length,
+    publicIndexBytes,
+    publicIndexUpdatedAt: publicIndex?.updatedAt || "",
+    liveDataBytes,
+    liveSourceVersion: livePayload.sourceVersion || "",
+    livePublishedAt: livePayload.notes?.livePublishedAt || "",
+    resultSessions: resultSessions.join(", ") || "aucune",
+    lastResultUpdatedAt
+  };
+
+  if (report.firebase.legacyPdfCount) {
+    report.recommendations.push("Des PDF résultats sont encore stockés dans results : lancer le nettoyage PDF résultats.");
+  }
+  if (publicIndexBytes > 750000) {
+    report.recommendations.push("L'index public est lourd : surveiller le temps d'actualisation des pages publiques.");
+  }
+  if (liveDataBytes > 900000) {
+    report.recommendations.push("Les données live sont lourdes : éviter de republier inutilement pendant une session chargée.");
+  }
+  if (serverResults.length && detailedResults < serverResults.length / 2) {
+    report.recommendations.push("Beaucoup de résultats n'ont pas de détails nageurs : relire les PDF concernés si les fiches publiques sont incomplètes.");
+  }
+  if (!report.recommendations.length) {
+    report.recommendations.push("Aucun signal technique préoccupant détecté.");
+  }
+  report.readMs = Math.round(performance.now() - startedAt);
+  return report;
+}
+
+function resultHasDetailsForDiagnostic(result) {
+  return Boolean(result && (
+    (Array.isArray(result.ranking) && result.ranking.length) ||
+    (Array.isArray(result.performances) && result.performances.length) ||
+    (Array.isArray(result.nextUnqualified) && result.nextUnqualified.length) ||
+    (Array.isArray(result.finalists?.a) && result.finalists.a.length) ||
+    (Array.isArray(result.finalists?.b) && result.finalists.b.length)
+  ));
+}
+
+function renderTechnicalDiagnosticModal(report) {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  const firebase = report?.firebase || {};
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
+      <div class="decision-modal-head">
+        <div>
+          <span>Diagnostic</span>
+          <h2>Diagnostic technique</h2>
+          <p>Vue rapide des données LivePalmes utiles en compétition.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      ${report?.available ? `
+        ${technicalDiagnosticSection("Local", [
+          { label: "sessions", value: String(report.local.sessions), status: report.local.sessions ? "ok" : "warn" },
+          { label: "programme", value: String(report.local.program), status: report.local.program ? "ok" : "warn" },
+          { label: "séries", value: String(report.local.series), status: report.local.series ? "ok" : "warn" },
+          { label: "engagés", value: String(report.local.entrants), status: report.local.entrants ? "ok" : "warn" },
+          { label: "résultats chargés", value: String(report.local.results), status: report.local.results ? "ok" : "neutral" },
+          { label: "performances", value: String(report.local.performances), status: report.local.performances ? "ok" : "neutral" },
+          { label: "alertes attente", value: String(report.local.pendingAlerts), status: report.local.pendingAlerts ? "warn" : "ok" }
+        ])}
+        ${technicalDiagnosticSection("Serveur", [
+          { label: "résultats", value: String(firebase.results || 0), status: firebase.results ? "ok" : "neutral" },
+          { label: "visibles public", value: String(firebase.visibleResults || 0), status: firebase.visibleResults ? "ok" : "neutral" },
+          { label: "détaillés", value: String(firebase.detailedResults || 0), status: firebase.detailedResults ? "ok" : "warn" },
+          { label: "lignes nageurs", value: String(firebase.resultPerformances || 0), status: firebase.resultPerformances ? "ok" : "neutral" },
+          { label: "partiels", value: String(firebase.partialResults || 0), status: firebase.partialResults ? "neutral" : "ok" },
+          { label: "finales attente", value: String(firebase.waitingFinalAnnouncements || 0), status: firebase.waitingFinalAnnouncements ? "warn" : "ok" },
+          { label: "sessions résultats", value: escapeHtml(firebase.resultSessions || "aucune"), status: firebase.results ? "ok" : "neutral" }
+        ])}
+        ${technicalDiagnosticSection("Poids / synchro", [
+          { label: "index public", value: formatByteSize(firebase.publicIndexBytes || 0), status: (firebase.publicIndexBytes || 0) > 750000 ? "warn" : "ok" },
+          { label: "live data", value: formatByteSize(firebase.liveDataBytes || 0), status: (firebase.liveDataBytes || 0) > 900000 ? "warn" : "ok" },
+          { label: "PDF résultats", value: String(firebase.resultPdfCount ?? "-"), status: firebase.resultPdfCount ? "ok" : "neutral" },
+          { label: "PDF à nettoyer", value: String(firebase.legacyPdfCount || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
+          { label: "poids à nettoyer", value: formatByteSize(firebase.legacyBytes || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
+          { label: "lecture diag", value: `${report.readMs} ms`, status: report.readMs > 5000 ? "warn" : "ok" }
+        ])}
+        ${technicalDiagnosticSection("Consoles", [
+          { label: "présences", value: String(firebase.presenceCount ?? "-"), status: firebase.presenceCount ? "ok" : "neutral" },
+          { label: "verrous rôles", value: String(firebase.roleLockCount ?? "-"), status: firebase.roleLockCount ? "neutral" : "ok" },
+          { label: "alertes serveur", value: String(firebase.alertCount ?? "-"), status: firebase.alertCount ? "neutral" : "ok" },
+          { label: "PDF séries", value: String(firebase.seriesPdfCount ?? "-"), status: firebase.seriesPdfCount ? "ok" : "neutral" },
+          { label: "PDF résultats sessions", value: String(firebase.sessionResultsPdfCount ?? "-"), status: firebase.sessionResultsPdfCount ? "ok" : "neutral" }
+        ])}
+        <div class="admin-series-help technical-diagnostic-notes">
+          <strong>Analyse</strong>
+          ${report.recommendations.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+          <span>Dernier résultat : ${escapeHtml(firebase.lastResultUpdatedAt || "inconnu")}</span>
+          <span>Index public : ${escapeHtml(firebase.publicIndexUpdatedAt || "inconnu")}</span>
+        </div>
+      ` : `
+        <div class="admin-series-help">
+          <strong>Diagnostic indisponible</strong>
+          <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
+        </div>
+      `}
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+        <button class="ghost-button" type="button" data-technical-diagnostic>Relire</button>
+      </div>
+    </div>
+  `;
+}
+
+async function showTechnicalDiagnosticModal() {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
+      <div class="decision-modal-head">
+        <div>
+          <span>Diagnostic</span>
+          <h2>Diagnostic technique</h2>
+          <p>Lecture des compteurs LivePalmes en cours...</p>
+        </div>
+      </div>
+      <div class="admin-series-help">
+        <strong>Analyse en cours</strong>
+        <span>LivePalmes vérifie les données locales, serveur et publiques.</span>
+      </div>
+    </div>
+  `;
+  const report = await collectTechnicalDiagnostic();
+  renderTechnicalDiagnosticModal(report);
+}
+
 async function cleanLegacyResultPdfs() {
   const snapshot = await resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" });
   const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -9455,6 +9707,15 @@ roleCodesModal?.addEventListener("click", async (event) => {
   if (event.target.closest("[data-training-mode-toggle]")) {
     await toggleTrainingMode();
     renderRoleCodesModal();
+    return;
+  }
+  if (event.target.closest("[data-technical-diagnostic]")) {
+    try {
+      await showTechnicalDiagnosticModal();
+    } catch (error) {
+      console.error(error);
+      window.alert(`Diagnostic technique impossible : ${error?.message || error}`);
+    }
     return;
   }
   if (event.target.closest("[data-performance-diagnostic]")) {
