@@ -38,6 +38,7 @@ let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
 let activeSheetSwimmerKey = "";
 const directResultSessionsLoaded = new Set();
+const swimmerResultDetailsLoading = new Set();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -362,6 +363,14 @@ function publicResultFromDoc(doc) {
   const result = { id: doc.id, ...doc.data() };
   delete result.pdfDataUrl;
   return result;
+}
+
+function publicCompetitionDocument() {
+  if (!window.firebase?.initializeApp || !window.firebase?.firestore) return null;
+  if (!window.firebase.apps?.length) {
+    window.firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  return window.firebase.firestore().collection("competitions").doc(FIRESTORE_COMPETITION_ID);
 }
 
 function comparableEventId(value) {
@@ -781,6 +790,9 @@ function renderInlineSwimmerProgram(key) {
 
 function renderSwimmerSearchContent() {
   if (selectedSearchSwimmerKey) {
+    if (swimmerResultDetailsLoading.has(selectedSearchSwimmerKey)) {
+      return `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>`;
+    }
     return renderInlineSwimmerProgram(selectedSearchSwimmerKey);
   }
   const matches = searchSwimmers(swimmerSearchQuery);
@@ -828,7 +840,7 @@ function closeSwimmerSheet() {
   document.body.classList.remove("public-sheet-open");
 }
 
-function openSwimmerSheet(key) {
+function renderSwimmerSheetContent(key) {
   if (!swimmerSheet || !key) return;
   const content = renderInlineSwimmerProgram(key);
   if (!content) return;
@@ -842,6 +854,13 @@ function openSwimmerSheet(key) {
     </div>
   `;
   document.body.classList.add("public-sheet-open");
+}
+
+async function openSwimmerSheet(key) {
+  if (!swimmerSheet || !key) return;
+  renderSwimmerSheetContent(key);
+  await ensureSwimmerResultDetails(key);
+  if (activeSheetSwimmerKey === key) renderSwimmerSheetContent(key);
 }
 
 function latestSessionUpdateLabel(results = []) {
@@ -1452,6 +1471,21 @@ async function loadPublicSessionResultsDirectData(competition, session) {
   directResultSessionsLoaded.add(cleanSession);
 }
 
+async function ensureSwimmerResultDetails(key) {
+  if (!key || swimmerResultDetailsLoading.has(key)) return;
+  const sessionsToLoad = [...new Set(swimmerProgramRows(key).map((row) => String(row.session || "").trim()).filter(Boolean))]
+    .filter((session) => !directResultSessionsLoaded.has(session));
+  if (!sessionsToLoad.length) return;
+  const competition = publicCompetitionDocument();
+  if (!competition) return;
+  swimmerResultDetailsLoading.add(key);
+  try {
+    await Promise.all(sessionsToLoad.map((session) => loadPublicSessionResultsDirectData(competition, session)));
+  } finally {
+    swimmerResultDetailsLoading.delete(key);
+  }
+}
+
 async function latestVisibleResultSessionFromServer(competition) {
   const snapshot = await competition.collection("results")
     .orderBy("updatedAt", "desc")
@@ -1634,7 +1668,10 @@ list?.addEventListener("click", (event) => {
   const resultSwimmerButton = event.target.closest("[data-result-swimmer-key]");
   if (resultSwimmerButton) {
     event.preventDefault();
-    openSwimmerSheet(resultSwimmerButton.dataset.resultSwimmerKey || "");
+    openSwimmerSheet(resultSwimmerButton.dataset.resultSwimmerKey || "").catch((error) => {
+      console.warn("Chargement fiche nageur impossible", error);
+      setStatus("Erreur", "error");
+    });
     return;
   }
   const button = event.target.closest("[data-search-swimmer-key]");
@@ -1642,6 +1679,17 @@ list?.addEventListener("click", (event) => {
   selectedSearchSwimmerKey = button.dataset.searchSwimmerKey || "";
   const output = document.querySelector("#publicSwimmerSearchOutput");
   if (output) output.innerHTML = renderSwimmerSearchContent();
+  ensureSwimmerResultDetails(selectedSearchSwimmerKey)
+    .then(() => {
+      const refreshedOutput = document.querySelector("#publicSwimmerSearchOutput");
+      if (refreshedOutput && selectedSearchSwimmerKey === button.dataset.searchSwimmerKey) {
+        refreshedOutput.innerHTML = renderSwimmerSearchContent();
+      }
+    })
+    .catch((error) => {
+      console.warn("Chargement des résultats nageur impossible", error);
+      setStatus("Erreur", "error");
+    });
 });
 
 swimmerSheet?.addEventListener("click", (event) => {
