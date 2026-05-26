@@ -103,6 +103,9 @@ const fallbackData = {
 };
 
 const sampleData = window.SPEAKER_DATA || fallbackData;
+const livePalmesFirebase = window.LivePalmesFirebase || {};
+const livePalmesRoleAccess = window.LivePalmesRoleAccess || {};
+const livePalmesPublication = window.LivePalmesPublication || {};
 
 let data = loadData();
 let unlockedRoles = loadUnlockedRoles();
@@ -183,7 +186,7 @@ function saveUnlockedRoles() {
 }
 
 function pinLockEnabled() {
-  return data.notes?.pinLockEnabled === true;
+  return livePalmesRoleAccess.pinLockEnabled(data.notes);
 }
 
 function competitionModeEnabled() {
@@ -199,14 +202,11 @@ function publicPositionEnabled() {
 }
 
 function currentRolePins() {
-  return {
-    ...ROLE_PINS,
-    ...(data.notes?.rolePins || {})
-  };
+  return livePalmesRoleAccess.currentRolePins(ROLE_PINS, data.notes);
 }
 
 function knownRole(role) {
-  return ["control", "live", "speaker", "referee", "video", "computer", "secretary"].includes(role);
+  return livePalmesRoleAccess.knownRole(role);
 }
 
 function lastActivityTimestamp() {
@@ -250,7 +250,10 @@ function unlockRole(role) {
 }
 
 function roleIsUnlocked(role) {
-  return !pinLockEnabled() || unlockedRoles.includes(role);
+  return livePalmesRoleAccess.roleIsUnlocked(role, {
+    notes: data.notes,
+    unlockedRoles
+  });
 }
 
 function requestRoleAccess(role) {
@@ -273,11 +276,11 @@ function currentClientId() {
 }
 
 function protectedRole(role) {
-  return knownRole(role);
+  return livePalmesRoleAccess.protectedRole(role);
 }
 
 function roleConnectionLimit(role) {
-  return role === "live" ? 3 : 1;
+  return livePalmesRoleAccess.roleConnectionLimit(role);
 }
 
 function switchRoleUnlocked(nextRole) {
@@ -458,62 +461,59 @@ function saveAlerts() {
 }
 
 function activeCompetitionDocument() {
-  if (!firestoreDb) return null;
-  return firestoreDb.collection("competitions").doc(activeCompetitionId);
+  return livePalmesFirebase.competitionDocument(firestoreDb, activeCompetitionId);
 }
 
 function competitionDocument(competitionId = activeCompetitionId) {
-  if (!firestoreDb) return null;
-  return firestoreDb.collection("competitions").doc(competitionId);
+  return livePalmesFirebase.competitionDocument(firestoreDb, competitionId);
 }
 
 function alertsCollection() {
-  return activeCompetitionDocument()?.collection("alerts") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "alerts");
 }
 
 function historyArchivesCollection() {
-  return activeCompetitionDocument()?.collection("historyArchives") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "historyArchives");
 }
 
 function resultArchivesCollection() {
-  return activeCompetitionDocument()?.collection("resultArchives") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "resultArchives");
 }
 
 function resultsCollection() {
-  return activeCompetitionDocument()?.collection("results") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "results");
 }
 
 function resultPdfsCollection() {
-  return activeCompetitionDocument()?.collection("resultPdfs") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "resultPdfs");
 }
 
 function seriesPdfsCollection() {
-  return activeCompetitionDocument()?.collection("seriesPdfs") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "seriesPdfs");
 }
 
 function sessionResultsPdfsCollection() {
-  return activeCompetitionDocument()?.collection("sessionResultsPdfs") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "sessionResultsPdfs");
 }
 
 function publicResultsIndexDocument() {
-  return activeCompetitionDocument()?.collection("public").doc("resultsIndex") || null;
+  return livePalmesFirebase.publicResultsIndexDocument(firestoreDb, activeCompetitionId);
 }
 
 function liveDataDocument(competitionId = activeCompetitionId) {
-  return competitionDocument(competitionId)?.collection("liveData").doc("current") || null;
+  return livePalmesFirebase.liveDataDocument(firestoreDb, competitionId);
 }
 
 function roleLockDocument(role) {
-  return activeCompetitionDocument()?.collection("roleLocks").doc(role) || null;
+  return livePalmesFirebase.roleLockDocument(firestoreDb, activeCompetitionId, role);
 }
 
 function presenceCollection() {
-  return activeCompetitionDocument()?.collection("presence") || null;
+  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "presence");
 }
 
 function presenceDocument(id = `console-${currentClientId()}`) {
-  const collection = presenceCollection();
-  return collection ? collection.doc(id) : null;
+  return livePalmesFirebase.presenceDocument(firestoreDb, activeCompetitionId, id);
 }
 
 function emptyPresenceCounts() {
@@ -904,7 +904,7 @@ async function refreshPresenceCounts() {
 }
 
 function sanitizeAlertForFirestore(alert) {
-  return JSON.parse(JSON.stringify(alert || {}));
+  return livePalmesFirebase.sanitizeForFirestore(alert);
 }
 
 async function syncAlertToFirestore(alert) {
@@ -1114,16 +1114,15 @@ async function updateLiveNotes(label, notePatch = {}) {
 }
 
 function lockExpired(lock) {
-  return !lock?.expiresAt || Date.parse(lock.expiresAt) <= Date.now();
+  return livePalmesRoleAccess.lockExpired(lock);
 }
 
 function lockLastActivityTime(lock) {
-  return Date.parse(lock?.updatedAt || lock?.expiresAt || lock?.createdAt || "") || 0;
+  return livePalmesRoleAccess.lockLastActivityTime(lock);
 }
 
 function lockLooksAbandoned(lock) {
-  const last = lockLastActivityTime(lock);
-  return !last || Date.now() - last > LOCK_RECOVERY_MS;
+  return livePalmesRoleAccess.lockLooksAbandoned(lock, LOCK_RECOVERY_MS);
 }
 
 async function releaseRoleLock(role = activeRoleLock?.role) {
@@ -1143,7 +1142,7 @@ async function releaseRoleLock(role = activeRoleLock?.role) {
         const lock = snapshot.data() || {};
         const clients = { ...(lock.clients || {}) };
         delete clients[clientId];
-        const activeClients = Object.fromEntries(Object.entries(clients).filter(([, item]) => !lockExpired(item)));
+        const activeClients = livePalmesRoleAccess.activeClients(clients);
         if (Object.keys(activeClients).length) {
           transaction.set(doc, {
             role,
@@ -1200,7 +1199,7 @@ async function acquireRoleLock(role, options = {}) {
       const snapshot = await transaction.get(doc);
       const lock = snapshot.exists ? snapshot.data() : null;
       if (roleConnectionLimit(role) > 1) {
-        const clients = Object.fromEntries(Object.entries(lock?.clients || {}).filter(([, item]) => !lockExpired(item)));
+        const clients = livePalmesRoleAccess.activeClients(lock?.clients || {});
         if (!clients[clientId] && Object.keys(clients).length >= roleConnectionLimit(role)) return false;
         clients[clientId] = {
           clientId,
@@ -1276,7 +1275,7 @@ async function heartbeatRoleLock() {
           return;
         }
         const lock = snapshot.data() || {};
-        const clients = Object.fromEntries(Object.entries(lock.clients || {}).filter(([, item]) => !lockExpired(item)));
+        const clients = livePalmesRoleAccess.activeClients(lock.clients || {});
         if (!clients[clientId]) {
           activeRoleLock = null;
           return;
@@ -3502,27 +3501,13 @@ const publicSeriesPdfPayload = livePalmesResults.publicSeriesPdfPayload.bind(liv
 const publicSessionResultsPdfPayload = livePalmesResults.publicSessionResultsPdfPayload.bind(livePalmesResults);
 
 function buildPublicResultsIndex() {
-  const updatedAt = new Date().toISOString();
-  return {
-    id: "resultsIndex",
-    meet: data.meet || {},
-    events: data.events || [],
-    program: data.program || [],
-    entrants: data.entrants || [],
-    series: data.series || [],
-    results: raceResults.map(publicResultPayload).filter(Boolean),
-    seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
-    sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
-    sessionInfos: data.notes?.publicSessionInfos || {},
-    publicAccess: {
-      online: data.notes?.publicResultsOnline !== false,
-      updatedAt: data.notes?.publicResultsOnlineUpdatedAt || ""
-    },
-    updatedAt,
-    sourceVersion: data.sourceVersion || "",
-    sourceLabel: data.notes?.sourceLabel || "",
-    lastUpdatedSession: data.notes?.lastUpdatedSession || ""
-  };
+  return livePalmesPublication.buildPublicResultsIndex({
+    data,
+    raceResults,
+    publicResultPayload,
+    publicSeriesPdfPayload,
+    publicSessionResultsPdfPayload
+  });
 }
 
 async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
@@ -3552,12 +3537,7 @@ function updatePublicSeriesPdfMetadata(pdf) {
   const metadata = publicSeriesPdfPayload(pdf);
   if (!metadata) return;
   const current = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs : [];
-  const next = metadata.scope === "full"
-    ? [metadata]
-    : [
-      ...current.filter((item) => item.id !== metadata.id),
-      metadata
-    ];
+  const next = livePalmesPublication.nextPublicSeriesPdfMetadata(current, metadata);
   data = normalizeData({
     ...data,
     notes: {
@@ -3689,10 +3669,7 @@ function updatePublicSessionResultsPdfMetadata(pdf) {
   const metadata = publicSessionResultsPdfPayload(pdf);
   if (!metadata) return;
   const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
-  const next = [
-    ...current.filter((item) => item.id !== metadata.id),
-    metadata
-  ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  const next = livePalmesPublication.nextPublicSessionResultsPdfMetadata(current, metadata);
   data = normalizeData({
     ...data,
     notes: {
