@@ -2206,23 +2206,45 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data, null, 2));
 }
 
-function timeToMs(value) {
-  if (!value) return Number.POSITIVE_INFINITY;
-  const clean = String(value).trim().replace(",", ".");
-  const parts = clean.split(":");
-  let minutes = 0;
-  let seconds = 0;
-  if (parts.length === 3) {
-    minutes = Number(parts[0]) * 60 + Number(parts[1]);
-    seconds = Number(parts[2]);
-  } else if (parts.length === 2) {
-    minutes = Number(parts[0]);
-    seconds = Number(parts[1]);
-  } else {
-    seconds = Number(parts[0]);
+const livePalmesTime = window.LivePalmesTime || {
+  timeToMs(value) {
+    if (!value) return Number.POSITIVE_INFINITY;
+    const clean = String(value).trim().replace(",", ".");
+    const parts = clean.split(":");
+    let minutes = 0;
+    let seconds = 0;
+    if (parts.length === 3) {
+      minutes = Number(parts[0]) * 60 + Number(parts[1]);
+      seconds = Number(parts[2]);
+    } else if (parts.length === 2) {
+      minutes = Number(parts[0]);
+      seconds = Number(parts[1]);
+    } else {
+      seconds = Number(parts[0]);
+    }
+    return Math.round((minutes * 60 + seconds) * 1000);
+  },
+  formatGap(ms) {
+    const total = Math.abs(ms) / 1000;
+    if (total >= 60) {
+      const minutes = Math.floor(total / 60);
+      const seconds = (total % 60).toFixed(2).padStart(5, "0");
+      return `${minutes}:${seconds}`;
+    }
+    return total.toFixed(2);
+  },
+  importedSeriesTime(value) {
+    const clean = String(value || "").trim().replace(",", ".");
+    if (!clean) return "";
+    const parts = clean.split(":");
+    if (parts.length === 3) return `${parts[0]}:${parts[1].padStart(2, "0")}.${parts[2].padStart(2, "0")}`;
+    if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+    return clean;
   }
-  return Math.round((minutes * 60 + seconds) * 1000);
-}
+};
+const timeToMs = livePalmesTime.timeToMs.bind(livePalmesTime);
+const formatGap = livePalmesTime.formatGap.bind(livePalmesTime);
+const importedSeriesTime = livePalmesTime.importedSeriesTime.bind(livePalmesTime);
 
 function formatPersonNameParts(firstName, lastName, fallback = "") {
   const last = String(lastName || "").trim().toLocaleUpperCase("fr-FR");
@@ -3459,84 +3481,98 @@ function resultForProgramRow(row) {
   return raceResults.find((result) => result.raceKey === raceKey && !isFinalStage(result.stage)) || null;
 }
 
-function publicResultPayload(result) {
-  if (!result) return null;
-  return {
-    id: result.id || "",
-    raceKey: result.raceKey || "",
-    programKey: result.programKey || "",
-    eventId: result.eventId || "",
-    eventLabel: result.eventLabel || "",
-    sex: result.sex || "",
-    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
-    stage: result.stage || "series",
-    phaseLabel: result.phaseLabel || "",
-    finalStageCount: result.finalStageCount || 0,
-    session: result.session || "",
-    startTime: result.startTime || "",
-    hasFinal: Boolean(result.hasFinal),
-    pdfName: result.pdfName || "",
-    pdfSize: result.pdfSize || 0,
-    createdAt: result.createdAt || "",
-    updatedAt: result.updatedAt || "",
-    isPartial: Boolean(result.isPartial),
-    status: result.status || "",
-    finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
-  };
-}
-
-function resultWithoutPdf(result) {
-  if (!result) return result;
-  const clean = { ...result };
-  delete clean.pdfDataUrl;
-  return clean;
-}
-
-function resultMetadataPayload(result) {
-  return resultWithoutPdf(result);
-}
+const livePalmesResults = window.LivePalmesResults || {
+  resultWithoutPdf(result) {
+    if (!result) return result;
+    const clean = { ...result };
+    delete clean.pdfDataUrl;
+    return clean;
+  },
+  resultMetadataPayload(result) {
+    return this.resultWithoutPdf(result);
+  },
+  resultPdfPayload(result, pdfDataUrl, options = {}) {
+    return {
+      id: result?.id || "",
+      resultId: result?.id || "",
+      pdfName: result?.pdfName || "",
+      pdfSize: result?.pdfSize || 0,
+      pdfDataUrl: pdfDataUrl || "",
+      updatedAt: result?.updatedAt || "",
+      eventLabel: result?.eventLabel || "",
+      sexLabel: result?.sexLabel || options.sexLabel || "",
+      session: result?.session || ""
+    };
+  },
+  publicResultPayload(result, options = {}) {
+    if (!result) return null;
+    return {
+      id: result.id || "",
+      raceKey: result.raceKey || "",
+      programKey: result.programKey || "",
+      eventId: result.eventId || "",
+      eventLabel: result.eventLabel || "",
+      sex: result.sex || "",
+      sexLabel: result.sexLabel || options.sexLabel || "",
+      stage: result.stage || "series",
+      phaseLabel: result.phaseLabel || "",
+      finalStageCount: result.finalStageCount || 0,
+      session: result.session || "",
+      startTime: result.startTime || "",
+      hasFinal: Boolean(result.hasFinal),
+      pdfName: result.pdfName || "",
+      pdfSize: result.pdfSize || 0,
+      createdAt: result.createdAt || "",
+      updatedAt: result.updatedAt || "",
+      isPartial: Boolean(result.isPartial),
+      status: result.status || "",
+      finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
+    };
+  },
+  publicSeriesPdfPayload(pdf) {
+    if (!pdf) return null;
+    return {
+      id: pdf.id || "",
+      scope: pdf.scope || "",
+      session: pdf.session || "",
+      pdfName: pdf.pdfName || "",
+      updatedAt: pdf.updatedAt || "",
+      sourceLabel: pdf.sourceLabel || ""
+    };
+  },
+  publicSessionResultsPdfPayload(pdf) {
+    if (!pdf) return null;
+    const sessions = Array.isArray(pdf.sessions)
+      ? pdf.sessions.map((session) => String(session || "").trim()).filter(Boolean)
+      : [];
+    return {
+      id: pdf.id || "",
+      scope: pdf.scope || "",
+      session: pdf.session || "",
+      sessions,
+      pdfName: pdf.pdfName || "",
+      updatedAt: pdf.updatedAt || "",
+      sourceLabel: pdf.sourceLabel || ""
+    };
+  }
+};
+const resultWithoutPdf = livePalmesResults.resultWithoutPdf.bind(livePalmesResults);
+const resultMetadataPayload = livePalmesResults.resultMetadataPayload.bind(livePalmesResults);
 
 function resultPdfPayload(result, pdfDataUrl) {
-  return {
-    id: result.id || "",
-    resultId: result.id || "",
-    pdfName: result.pdfName || "",
-    pdfSize: result.pdfSize || 0,
-    pdfDataUrl: pdfDataUrl || "",
-    updatedAt: result.updatedAt || "",
-    eventLabel: result.eventLabel || "",
-    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
-    session: result.session || ""
-  };
+  return livePalmesResults.resultPdfPayload(result, pdfDataUrl, {
+    sexLabel: sexDisplayLabel(result?.sex)
+  });
 }
 
-function publicSeriesPdfPayload(pdf) {
-  if (!pdf) return null;
-  return {
-    id: pdf.id || "",
-    scope: pdf.scope || "",
-    session: pdf.session || "",
-    pdfName: pdf.pdfName || "",
-    updatedAt: pdf.updatedAt || "",
-    sourceLabel: pdf.sourceLabel || ""
-  };
+function publicResultPayload(result) {
+  return livePalmesResults.publicResultPayload(result, {
+    sexLabel: sexDisplayLabel(result?.sex)
+  });
 }
 
-function publicSessionResultsPdfPayload(pdf) {
-  if (!pdf) return null;
-  const sessions = Array.isArray(pdf.sessions)
-    ? pdf.sessions.map((session) => String(session || "").trim()).filter(Boolean)
-    : [];
-  return {
-    id: pdf.id || "",
-    scope: pdf.scope || "",
-    session: pdf.session || "",
-    sessions,
-    pdfName: pdf.pdfName || "",
-    updatedAt: pdf.updatedAt || "",
-    sourceLabel: pdf.sourceLabel || ""
-  };
-}
+const publicSeriesPdfPayload = livePalmesResults.publicSeriesPdfPayload.bind(livePalmesResults);
+const publicSessionResultsPdfPayload = livePalmesResults.publicSessionResultsPdfPayload.bind(livePalmesResults);
 
 function buildPublicResultsIndex() {
   const updatedAt = new Date().toISOString();
@@ -7684,16 +7720,6 @@ function recordTargetsForEntrant(entrant) {
     .filter((record) => sameCategory(record.category, entrant.category));
 }
 
-function formatGap(ms) {
-  const total = Math.abs(ms) / 1000;
-  if (total >= 60) {
-    const minutes = Math.floor(total / 60);
-    const seconds = (total % 60).toFixed(2).padStart(5, "0");
-    return `${minutes}:${seconds}`;
-  }
-  return total.toFixed(2);
-}
-
 function renderRecordGapAlert(entrant) {
   const seed = timeToMs(entrant.seedTime);
   if (!Number.isFinite(seed)) return "";
@@ -10322,15 +10348,6 @@ function importedBirthYear(twoDigits) {
   const value = Number.parseInt(twoDigits, 10);
   if (!Number.isFinite(value)) return "";
   return String(value <= 35 ? 2000 + value : 1900 + value);
-}
-
-function importedSeriesTime(value) {
-  const clean = String(value || "").trim().replace(",", ".");
-  if (!clean) return "";
-  const parts = clean.split(":");
-  if (parts.length === 3) return `${parts[0]}:${parts[1].padStart(2, "0")}.${parts[2].padStart(2, "0")}`;
-  if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
-  return clean;
 }
 
 function normalizePdfUppercaseEToken(token) {
