@@ -1166,38 +1166,11 @@ function renderRoleCodesModal() {
   const active = pinLockEnabled();
   const roleOrder = ["live", "speaker", "referee", "video", "computer", "secretary"];
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Codes d'accès">
-      <div class="decision-modal-head">
-        <div>
-          <span>Sécurité</span>
-          <h2>Codes des consoles</h2>
-          <p>Chaque code doit contenir exactement 4 chiffres. L'administrateur peut modifier les accès depuis cette fenêtre.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <div class="role-code-grid">
-        ${roleOrder.map((role) => `
-          <label>
-            <span>${escapeHtml(ROLE_LABELS[role])}</span>
-            <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(role)}" value="${escapeHtml(pins[role] || "")}">
-          </label>
-        `).join("")}
-      </div>
-      <div class="admin-extra-zone">
-        <span>Administration avancée</span>
-        <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
-        <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
-        <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
-        <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
-      </div>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        ${active ? `<button class="ghost-button danger-button" type="button" data-disable-role-codes>Désactiver les codes</button>` : ""}
-        <button class="primary-button" type="button" data-save-role-codes="${active ? "keep" : "enable"}">${active ? "Enregistrer les codes" : "Enregistrer et activer"}</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesModalHtml({
+    active,
+    pins,
+    roles: roleOrder.map((role) => ({ role, label: ROLE_LABELS[role] }))
+  });
 }
 
 function renderRoleCodesAdminModal(action = "codes") {
@@ -1207,52 +1180,14 @@ function renderRoleCodesAdminModal(action = "codes") {
   const help = action === "reset"
     ? "Entre le code administrateur pour archiver puis remettre l'historique à zéro."
     : "Entre le code administrateur pour modifier les codes des consoles.";
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
-      <div class="decision-modal-head">
-        <div>
-          <span>Sécurité</span>
-          <h2>${escapeHtml(title)}</h2>
-          <p>${escapeHtml(help)}</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <label class="role-code-admin-field">
-        Code admin
-        <input id="roleCodeAdminInput" type="password" inputmode="text" maxlength="5" autocomplete="off">
-      </label>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        <button class="primary-button" type="button" data-confirm-role-code-admin="${escapeHtml(action)}">Continuer</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesAdminModalHtml({ action, help, title });
   roleCodesModal.querySelector("#roleCodeAdminInput")?.focus();
 }
 
 function renderResetHistoryModal() {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ historique">
-      <div class="decision-modal-head">
-        <div>
-          <span>Historique</span>
-          <h2>Confirmer le RAZ</h2>
-          <p>Écris RAZ pour archiver l'historique actif puis le remettre à zéro.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <label class="role-code-admin-field">
-        Confirmation
-        <input id="resetHistoryInput" type="text" maxlength="3" autocomplete="off">
-      </label>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        <button class="primary-button danger-button" type="button" data-confirm-reset-history>Archiver et remettre à zéro</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderResetHistoryModalHtml();
   roleCodesModal.querySelector("#resetHistoryInput")?.focus();
 }
 
@@ -1262,55 +1197,11 @@ function renderResetResultsModal() {
   const sessions = resultSessions();
   const selectedSession = activeSession || sessions[0]?.number || "";
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Confirmer RAZ LivePalmes">
-      <div class="decision-modal-head">
-        <div>
-          <span>Remise à zéro</span>
-          <h2>RAZ LivePalmes</h2>
-          <p>Disponible uniquement en actualisation manuelle. Chaque RAZ archive ce qu'il efface avant suppression.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <div class="admin-series-options">
-        <label class="admin-series-option">
-          <input type="radio" name="resetResultsScope" value="history">
-          <strong>Journal d'arbitrage</strong>
-          <span>Archive puis vide les décisions, forfaits, abandons et annonces.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="resetResultsScope" value="results-session" checked ${sessions.length ? "" : "disabled"}>
-          <strong>Résultats d'une session</strong>
-          <span>Archive puis supprime les résultats publiés et PDF complets liés à la session choisie.</span>
-          ${sessions.length ? `
-            <select id="resetResultsSessionSelect" class="reset-session-select" aria-label="Session à remettre à zéro">
-              ${sessions.map((session) => `
-                <option value="${escapeHtml(session.number)}" ${session.number === selectedSession ? "selected" : ""}>Session ${escapeHtml(session.number)}</option>
-              `).join("")}
-            </select>
-          ` : ""}
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="resetResultsScope" value="results-all" ${activeSession ? "" : "checked"}>
-          <strong>Tous les résultats de la compétition</strong>
-          <span>Archive puis supprime les résultats publics de toutes les sessions.</span>
-        </label>
-        <label class="admin-series-option danger-option">
-          <input type="radio" name="resetResultsScope" value="series-all">
-          <strong>Séries et compétition complète</strong>
-          <span>Vide programme, séries, engagés, PDF de séries publics et résultats publics pour préparer une nouvelle compétition.</span>
-        </label>
-      </div>
-      <label class="role-code-admin-field">
-        Confirmation
-        <input id="resetResultsInput" type="text" maxlength="3" autocomplete="off" placeholder="RAZ">
-      </label>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        <button class="primary-button danger-button" type="button" data-confirm-reset-results>Archiver et remettre à zéro</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderResetResultsModalHtml({
+    activeSession,
+    selectedSession,
+    sessions
+  });
   roleCodesModal.querySelector("#resetResultsInput")?.focus();
 }
 
@@ -1319,30 +1210,7 @@ function renderPublicSessionInfosModal() {
   const sessions = resultSessions();
   const infos = data.notes?.publicSessionInfos || {};
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog session-infos-dialog" role="dialog" aria-modal="true" aria-label="Informations des sessions">
-      <div class="decision-modal-head">
-        <div>
-          <span>Pages publiques</span>
-          <h2>Informations</h2>
-          <p>Ces textes apparaîtront sur les pages publiques Résultats et Séries quand on clique sur la session concernée.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <div class="session-infos-editor">
-        ${sessions.length ? sessions.map((session) => `
-          <label class="session-info-field">
-            <strong>Session ${escapeHtml(session.number)}</strong>
-            <textarea data-session-info-input="${escapeHtml(session.number)}" rows="4" placeholder="Ex : échauffement à 8h00, début de session à 9h00, protocole à 11h30...">${escapeHtml(infos[session.number] || "")}</textarea>
-          </label>
-        `).join("") : `<p class="panel-subtitle">Aucune session chargée pour le moment.</p>`}
-      </div>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-        <button class="primary-button" type="button" data-save-public-session-infos ${sessions.length ? "" : "disabled"}>Publier les informations</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderPublicSessionInfosModalHtml({ infos, sessions });
 }
 
 async function renderHistoryArchivesModal({ canDelete = false } = {}) {
@@ -1351,11 +1219,6 @@ async function renderHistoryArchivesModal({ canDelete = false } = {}) {
   const resultCollection = resultArchivesCollection();
   let historyArchives = [];
   let resultArchives = [];
-  const archiveMeetLabel = (archive) => {
-    const meet = archive?.meet || {};
-    const parts = [meet.name, meet.city, meet.year].filter(Boolean);
-    return parts.length ? parts.join(" - ") : "Compétition non renseignée";
-  };
   if (historyCollection) {
     try {
       const snapshot = await historyCollection.orderBy("createdAt", "desc").limit(20).get();
@@ -1371,80 +1234,19 @@ async function renderHistoryArchivesModal({ canDelete = false } = {}) {
     }
   }
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog history-archives-dialog" role="dialog" aria-modal="true" aria-label="Archives historiques" data-archives-can-delete="${canDelete ? "1" : "0"}">
-      <div class="decision-modal-head">
-        <div>
-          <span>Administration</span>
-          <h2>Archives historiques</h2>
-          <p>Archives créées automatiquement avant un RAZ historique ou une remise à zéro des résultats.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      <h3 class="archive-section-title">Journal d'arbitrage</h3>
-      <div class="archive-list">
-        ${historyArchives.length ? historyArchives.map((archive) => `
-          <div class="archive-item" data-archive-id="${escapeHtml(archive.id)}">
-            <div>
-              <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
-              <span>${escapeHtml(archiveMeetLabel(archive))}</span>
-              <span>${escapeHtml(String(archive.count || archive.alerts?.length || 0))} lignes du journal</span>
-            </div>
-            <div class="archive-actions">
-              <button class="ghost-button compact" type="button" data-open-archive="${escapeHtml(archive.id)}">Ouvrir</button>
-              ${canDelete ? `<button class="ghost-button compact danger-button" type="button" data-delete-archive="${escapeHtml(archive.id)}">Supprimer</button>` : ""}
-            </div>
-          </div>
-        `).join("") : `<p class="panel-subtitle">Aucune archive enregistrée.</p>`}
-      </div>
-      <h3 class="archive-section-title">Résultats publics</h3>
-      <div class="archive-list">
-        ${resultArchives.length ? resultArchives.map((archive) => `
-          <div class="archive-item" data-result-archive-id="${escapeHtml(archive.id)}">
-            <div>
-              <strong>${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
-              <span>${escapeHtml(archiveMeetLabel(archive))}</span>
-              <span>${escapeHtml(String(archive.count || 0))} résultats archivés${archive.reason ? ` - ${escapeHtml(archive.reason)}` : ""}</span>
-            </div>
-            <div class="archive-actions">
-              <button class="ghost-button compact" type="button" data-open-result-archive="${escapeHtml(archive.id)}">Ouvrir</button>
-              ${canDelete ? `<button class="ghost-button compact danger-button" type="button" data-delete-result-archive="${escapeHtml(archive.id)}">Supprimer</button>` : ""}
-            </div>
-          </div>
-        `).join("") : `<p class="panel-subtitle">Aucune archive de résultats enregistrée.</p>`}
-      </div>
-      <div class="decision-modal-actions">
-        ${canDelete ? `<button class="ghost-button" type="button" data-role-codes-back>Retour</button>` : ""}
-        <button class="primary-button" type="button" data-role-codes-close>Fermer</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderHistoryArchivesModalHtml({
+    canDelete,
+    formatDateTime: formatAlertDateTime,
+    historyArchives,
+    resultArchives
+  });
 }
 
 function renderRolePinModal(role) {
   if (!roleCodesModal) return;
   const label = ROLE_LABELS[role] || "Console";
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Code d'accès">
-      <div class="decision-modal-head">
-        <div>
-          <span>Accès console</span>
-          <h2>${escapeHtml(label)}</h2>
-          <p>Entre le code de cette console ou le code administrateur.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-pin-cancel aria-label="Fermer">×</button>
-      </div>
-      <label class="role-code-admin-field">
-        Code
-        <input id="rolePinInput" type="password" inputmode="text" maxlength="5" autocomplete="off" data-role-pin-input="${escapeHtml(role)}">
-      </label>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-pin-cancel>Annuler</button>
-        <button class="primary-button" type="button" data-confirm-role-pin="${escapeHtml(role)}">Ouvrir</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminModals.renderRolePinModalHtml({ label, role });
   roleCodesModal.querySelector("#rolePinInput")?.focus();
 }
 
@@ -3717,6 +3519,8 @@ const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
 const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
 const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
 const livePalmesAdminMaintenance = window.LivePalmesAdminMaintenance || {};
+const livePalmesAdminModals = window.LivePalmesAdminModals || {};
+const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
 const livePalmesAdminResults = window.LivePalmesAdminResults || {};
 const livePalmesPdfImport = window.LivePalmesPdfImport || {};
 const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
@@ -3754,17 +3558,16 @@ function renderCompetitionDiagnostic() {
     alert.secretaryStatus === "pending"
   )).length;
   const speakerInfoUpdatedAt = data.notes?.speakerInfoUpdatedAt || "";
-  return `
-    <div class="competition-diagnostic" aria-label="Diagnostic compétition">
-      ${diagnosticItem("sessions", String(sessions.length || 0), sessions.length ? "ok" : "warn")}
-      ${diagnosticItem("courses programme", String(programCount), programCount ? "ok" : "warn")}
-      ${diagnosticItem("lignes séries", String(data.series?.length || 0), data.series?.length ? "ok" : "warn")}
-      ${diagnosticItem("résultats publiés", `${publicResultCount}/${resultCount}`, resultCount ? "ok" : "neutral")}
-      ${diagnosticItem("PDF séries publics", String(seriesPdfCount), seriesPdfCount ? "ok" : "neutral")}
-      ${diagnosticItem("actions en attente", String(pendingAlerts), pendingAlerts ? "warn" : "ok")}
-      ${diagnosticItem("repères speaker", speakerInfoUpdatedAt || "non faits", speakerInfoUpdatedAt ? "ok" : "warn")}
-    </div>
-  `;
+  return livePalmesAdminDiagnostics.renderCompetitionDiagnosticHtml({
+    pendingAlerts,
+    programCount,
+    publicResultCount,
+    resultCount,
+    seriesCount: data.series?.length || 0,
+    seriesPdfCount,
+    sessionCount: sessions.length || 0,
+    speakerInfoUpdatedAt
+  });
 }
 
 function renderComputerFooterPanel() {
@@ -4960,64 +4763,15 @@ async function collectPerformanceDiagnostic() {
 function renderPerformanceDiagnosticModal(report) {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
-  const canClean = report?.available && report.legacyPdfCount > 0;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
-      <div class="decision-modal-head">
-        <div>
-          <span>Performance</span>
-          <h2>Diagnostic résultats</h2>
-          <p>Contrôle que les PDF résultats sont bien séparés des données live.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      ${report?.available ? `
-        <div class="competition-diagnostic" aria-label="Diagnostic performance résultats">
-          ${diagnosticItem("résultats", String(report.resultCount), report.resultCount ? "ok" : "neutral")}
-          ${diagnosticItem("PDF séparés", String(report.resultPdfCount), report.resultPdfCount ? "ok" : "neutral")}
-          ${diagnosticItem("PDF à nettoyer", String(report.legacyPdfCount), report.legacyPdfCount ? "warn" : "ok")}
-          ${diagnosticItem("poids à nettoyer", formatByteSize(report.legacyBytes), report.legacyPdfCount ? "warn" : "ok")}
-          ${diagnosticItem("index public", formatByteSize(report.publicIndexBytes), report.publicIndexBytes > 750000 ? "warn" : "ok")}
-          ${diagnosticItem("lecture", `${report.readMs} ms`, report.readMs > 5000 ? "warn" : "ok")}
-        </div>
-        <div class="admin-series-help">
-          <strong>${report.legacyPdfCount ? "Nettoyage recommandé" : "Etat correct"}</strong>
-          <span>${report.legacyPdfCount ? "Des PDF sont encore stockés dans results et peuvent ralentir les consoles." : "Aucun PDF lourd n'a été détecté dans la liste principale des résultats."}</span>
-          <span>Dernier index public : ${escapeHtml(report.publicIndexUpdatedAt || "inconnu")}</span>
-        </div>
-      ` : `
-        <div class="admin-series-help">
-          <strong>Diagnostic indisponible</strong>
-          <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
-        </div>
-      `}
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
-        <button class="ghost-button" type="button" data-performance-diagnostic>Relire</button>
-        ${canClean ? `<button class="primary-button" type="button" data-clean-result-pdfs>Nettoyer les PDF résultats</button>` : ""}
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPerformanceDiagnosticModalHtml(report, {
+    formatByteSize
+  });
 }
 
 async function showPerformanceDiagnosticModal() {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
-      <div class="decision-modal-head">
-        <div>
-          <span>Performance</span>
-          <h2>Diagnostic résultats</h2>
-          <p>Lecture des compteurs Firebase en cours...</p>
-        </div>
-      </div>
-      <div class="admin-series-help">
-        <strong>Analyse en cours</strong>
-        <span>LivePalmes vérifie si des PDF lourds sont encore dans results.</span>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPerformanceDiagnosticLoadingHtml();
   const report = await collectPerformanceDiagnostic();
   renderPerformanceDiagnosticModal(report);
 }
@@ -7537,93 +7291,64 @@ function findTop2025ForEntrant(entrant) {
 }
 
 function entrantPerformanceNameKey(row) {
-  return normalizePersonName(formatPersonNameParts(row?.firstName, row?.lastName, row?.displayName || row?.name || ""));
+  return livePalmesResults.entrantPerformanceNameKey(row, {
+    formatPersonNameParts,
+    normalizePersonName
+  });
 }
 
 function performanceBirthYear(row) {
-  const text = String(row?.birthYear || row?.birthDate || "").trim();
-  const match = text.match(/\b(19|20)\d{2}\b/);
-  return match ? match[0] : text;
+  return livePalmesResults.performanceBirthYear(row);
 }
 
 function performanceMatchesEntrant(performance, entrant) {
-  if (!performance || !entrant) return false;
-  if (!recordEventMatches(performance.eventId, entrant.eventId)) return false;
-  if (performance.sex && entrant.sex && performance.sex !== entrant.sex) return false;
-  if (entrantPerformanceNameKey(performance) !== entrantPerformanceNameKey(entrant)) return false;
-  const performanceBirth = performanceBirthYear(performance);
-  const entrantBirth = performanceBirthYear(entrant);
-  if (performanceBirth && entrantBirth && performanceBirth !== entrantBirth) return false;
-  return true;
+  return livePalmesResults.performanceMatchesEntrant(performance, entrant, {
+    formatPersonNameParts,
+    normalizePersonName,
+    recordEventMatches
+  });
 }
 
 function performanceStatusResultLabel(performance) {
-  const status = String(performance?.status || performance?.resultStatus || "").toLowerCase();
-  const label = String(performance?.statusLabel || "").trim();
-  const normalizedLabel = label
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-  if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
-  if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
-  if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
-  return label;
+  return livePalmesResults.performanceStatusResultLabel(performance);
 }
 
 function performanceDisplayValue(performance) {
-  return String(performanceStatusResultLabel(performance) || performance?.time || "").trim();
+  return livePalmesResults.performanceDisplayValue(performance);
 }
 
 function resultRankForPerformance(performance, result) {
-  const rows = Array.isArray(result?.ranking) ? result.ranking : [];
-  const match = rows.find((row) => {
-    const candidate = {
-      ...row,
-      eventId: row.eventId || result.eventId || performance.eventId || "",
-      sex: row.sex || result.sex || performance.sex || ""
-    };
-    if (!performanceMatchesEntrant(performance, candidate)) return false;
-    const performanceTime = String(performance.time || "").trim();
-    const candidateTime = String(row.time || "").trim();
-    if (performanceTime && candidateTime && performanceTime !== candidateTime) return false;
-    return true;
+  return livePalmesResults.resultRankForPerformance(performance, result, {
+    formatPersonNameParts,
+    normalizePersonName,
+    recordEventMatches
   });
-  return match?.rank || "";
 }
 
 function performanceRankLabel(performance) {
-  const rank = Number(performance?.rank);
-  if (!Number.isFinite(rank) || rank <= 0) return "";
-  return formatRank(rank);
+  return livePalmesResults.performanceRankLabel(performance, { formatRank });
 }
 
 function swimmerBestPerformanceForEntry(entry) {
-  const performances = raceResults.flatMap((result) =>
-    (Array.isArray(result.performances) ? result.performances : []).map((performance) => ({
-      ...performance,
-      eventId: performance.eventId || result.eventId,
-      sex: performance.sex || result.sex,
-      stage: performance.stage || result.stage,
-      phaseLabel: performance.phaseLabel || result.phaseLabel,
-      rank: performance.rank || resultRankForPerformance(performance, result),
-      updatedAt: performance.updatedAt || result.updatedAt
-    }))
-  ).filter((performance) => performanceMatchesEntrant(performance, entry) && performanceDisplayValue(performance));
-  if (!performances.length) return null;
-  return performances.sort((a, b) => {
-    const finalA = isFinalStage(a.stage) ? 0 : 1;
-    const finalB = isFinalStage(b.stage) ? 0 : 1;
-    return finalA - finalB || String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
-  })[0];
+  return livePalmesResults.swimmerBestPerformanceForEntry(entry, raceResults, {
+    formatPersonNameParts,
+    isFinalStage,
+    normalizePersonName,
+    recordEventMatches
+  });
 }
 
 function compactProgramPerformanceLabel(entry) {
-  if (!isSpeakerView()) return "";
-  const performance = swimmerBestPerformanceForEntry(entry);
-  if (!performance) return "";
-  const label = isFinalStage(performance.stage) ? finalStageLabel(performance.stage) : "Série";
-  const rank = performanceRankLabel(performance);
-  return `<small>${escapeHtml(label)} ${escapeHtml(performanceDisplayValue(performance))}${rank ? ` <b class="compact-program-rank">${escapeHtml(rank)}</b>` : ""}</small>`;
+  return livePalmesResults.compactProgramPerformanceLabel(entry, raceResults, {
+    escapeHtml,
+    finalStageLabel,
+    formatPersonNameParts,
+    formatRank,
+    isFinalStage,
+    isSpeakerView,
+    normalizePersonName,
+    recordEventMatches
+  });
 }
 
 function selectRecordForCategory(category) {
@@ -8403,59 +8128,19 @@ function buildDsqReportHtml() {
 }
 
 function buildDsqReportHtmlFromRows(rows, title = "Journal d'arbitrage", options = {}) {
-  const includePrint = options.includePrint !== false;
-  const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  const meetName = `${data.meet?.name || "Compétition"}${data.meet?.city ? ` - ${data.meet.city}` : ""}`;
-  const body = rows.length ? rows.map((alert, index) => {
-    const event = data.events.find((item) => item.id === alert.eventId);
-    const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
-    const seriesLabel = alert.stage && isFinalStage(alert.stage) ? finalStageLabel(alert.stage) : `Série ${alert.series || "-"}`;
-    const sessionLabel = alert.session && alert.session !== "all" ? `Session ${alert.session}` : "Session -";
-    const identity = `${alert.displayName || "Concurrent"}${alertClubShortLabel(alert) ? ` - ${alertClubShortLabel(alert)}` : ""}`;
-    const timeline = alertTimelineItems(alert).map(([label, value]) => `${label} ${formatAlertDateTime(value)}`).join(" | ");
-    return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${escapeHtml(event?.label || alert.eventId)} ${escapeHtml(sexLabel)}<br><small>${escapeHtml(sessionLabel)} - ${escapeHtml(seriesLabel)} - ligne ${escapeHtml(alert.line || "-")}</small></td>
-        <td>${escapeHtml(identity)}</td>
-        <td>${escapeHtml(decisionMotifLabel(alert))}<br><small>${escapeHtml(alertStatusLabel(alert))}</small></td>
-        <td>${escapeHtml(timeline || "-")}</td>
-      </tr>
-    `;
-  }).join("") : `<tr><td colspan="5" class="empty">Aucune action d'arbitrage enregistrée.</td></tr>`;
-  return `<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Journal d'arbitrage</title>
-  <style>
-    @page { margin: 12mm; }
-    body { font-family: Arial, sans-serif; color: #15232d; font-size: 11px; }
-    h1 { margin: 0 0 4px; font-size: 18px; }
-    p { margin: 0 0 10px; color: #52616b; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #d8e0e6; padding: 5px 6px; vertical-align: top; text-align: left; }
-    th { background: #eef4f7; font-size: 10px; text-transform: uppercase; }
-    td:first-child { width: 24px; text-align: center; font-weight: 700; }
-    small { color: #60717c; font-size: 10px; }
-    .empty { text-align: center; color: #60717c; }
-    .print-actions { margin-bottom: 10px; }
-    button { min-height: 32px; padding: 0 10px; border: 1px solid #b9c8d1; border-radius: 6px; background: #eef4f7; font-weight: 700; cursor: pointer; }
-    @media print { .print-actions { display: none; } body { font-size: 10px; } }
-  </style>
-</head>
-<body>
-  ${includePrint ? `<div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>` : ""}
-  <h1>${escapeHtml(title)}</h1>
-  <p>${escapeHtml(meetName)} - généré le ${escapeHtml(generatedAt)} - ${rows.length} lignes</p>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Course / session</th><th>Nageur / relais</th><th>Décision / action</th><th>Vie de la décision</th></tr>
-    </thead>
-    <tbody>${body}</tbody>
-  </table>
-</body>
-</html>`;
+  return livePalmesAdminArchives.buildDsqReportHtmlFromRows(rows, title, {
+    ...options,
+    data,
+    helpers: {
+      alertClubShortLabel,
+      alertStatusLabel,
+      alertTimelineItems,
+      decisionMotifLabel,
+      finalStageLabel,
+      formatAlertDateTime,
+      isFinalStage
+    }
+  });
 }
 
 function printDsqRows(rows, title = "Journal d'arbitrage") {
@@ -8484,63 +8169,15 @@ function openDsqRows(rows, title = "Journal d'arbitrage") {
 }
 
 function buildResultArchiveHtmlFromRows(rows, archive = {}, options = {}) {
-  const includePrint = options.includePrint !== false;
-  const generatedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  const meet = archive.meet || data.meet || {};
-  const meetName = `${meet.name || "Compétition"}${meet.city ? ` - ${meet.city}` : ""}`;
-  const body = rows.length ? rows
-    .slice()
-    .sort((a, b) => String(a.session || "").localeCompare(String(b.session || ""), "fr", { numeric: true }) || String(a.eventLabel || "").localeCompare(String(b.eventLabel || "")))
-    .map((result, index) => {
-      const sexLabel = result.sexLabel || sexDisplayLabel(result.sex);
-      const finalistCount = finalRowsCount(result.finalists);
-      const withdrawalCount = (result.finalWithdrawals || []).filter((item) => item.withdrawnAt).length;
-      const status = result.hasFinal
-        ? (result.finalistsAnnouncedAt ? "Publié avec finalistes" : "En attente annonce speaker")
-        : "Publié";
-      return `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${escapeHtml(result.eventLabel || result.eventId || "-")} ${escapeHtml(sexLabel)}<br><small>Session ${escapeHtml(result.session || "-")}</small></td>
-          <td>${escapeHtml(status)}${result.isPartial ? "<br><small>Résultat partiel</small>" : ""}</td>
-          <td>${result.id ? `<a href="pdf.html?type=resultat&id=${encodeURIComponent(result.id)}" target="_blank" rel="noopener">${escapeHtml(result.pdfName || "Ouvrir le PDF")}</a>` : escapeHtml(result.pdfName || "-")}</td>
-          <td>${finalistCount ? `${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""}${withdrawalCount ? `<br><small>${escapeHtml(String(withdrawalCount))} forfait${withdrawalCount > 1 ? "s" : ""}</small>` : ""}` : "-"}</td>
-        </tr>
-      `;
-    }).join("") : `<tr><td colspan="5" class="empty">Aucun résultat archivé.</td></tr>`;
-  return `<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Archive résultats publics</title>
-  <style>
-    @page { margin: 12mm; }
-    body { font-family: Arial, sans-serif; color: #15232d; font-size: 11px; }
-    h1 { margin: 0 0 4px; font-size: 18px; }
-    p { margin: 0 0 10px; color: #52616b; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #d8e0e6; padding: 5px 6px; vertical-align: top; text-align: left; }
-    th { background: #eef4f7; font-size: 10px; text-transform: uppercase; }
-    td:first-child { width: 24px; text-align: center; font-weight: 700; }
-    small { color: #60717c; font-size: 10px; }
-    .empty { text-align: center; color: #60717c; }
-    .print-actions { margin-bottom: 10px; }
-    button { min-height: 32px; padding: 0 10px; border: 1px solid #b9c8d1; border-radius: 6px; background: #eef4f7; font-weight: 700; cursor: pointer; }
-    @media print { .print-actions { display: none; } body { font-size: 10px; } }
-  </style>
-</head>
-<body>
-  ${includePrint ? `<div class="print-actions"><button onclick="window.print()">Enregistrer en PDF</button></div>` : ""}
-  <h1>Archive résultats publics</h1>
-  <p>${escapeHtml(meetName)} - archive du ${escapeHtml(archive.createdLabel || formatAlertDateTime(archive.createdAt) || "-")} - généré le ${escapeHtml(generatedAt)} - ${rows.length} résultats</p>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Course / session</th><th>Statut</th><th>PDF</th><th>Finales</th></tr>
-    </thead>
-    <tbody>${body}</tbody>
-  </table>
-</body>
-</html>`;
+  return livePalmesAdminArchives.buildResultArchiveHtmlFromRows(rows, archive, {
+    ...options,
+    meet: data.meet,
+    helpers: {
+      finalRowsCount,
+      formatAlertDateTime,
+      sexDisplayLabel
+    }
+  });
 }
 
 function printResultArchiveRows(rows, archive = {}) {

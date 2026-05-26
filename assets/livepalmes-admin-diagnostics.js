@@ -36,6 +36,92 @@
     `;
   }
 
+  function renderCompetitionDiagnosticHtml(options = {}) {
+    const {
+      pendingAlerts = 0,
+      programCount = 0,
+      publicResultCount = 0,
+      resultCount = 0,
+      seriesCount = 0,
+      seriesPdfCount = 0,
+      sessionCount = 0,
+      speakerInfoUpdatedAt = ""
+    } = options;
+    return `
+      <div class="competition-diagnostic" aria-label="Diagnostic compétition">
+        ${diagnosticItem("sessions", String(sessionCount || 0), sessionCount ? "ok" : "warn")}
+        ${diagnosticItem("courses programme", String(programCount), programCount ? "ok" : "warn")}
+        ${diagnosticItem("lignes séries", String(seriesCount || 0), seriesCount ? "ok" : "warn")}
+        ${diagnosticItem("résultats publiés", `${publicResultCount}/${resultCount}`, resultCount ? "ok" : "neutral")}
+        ${diagnosticItem("PDF séries publics", String(seriesPdfCount), seriesPdfCount ? "ok" : "neutral")}
+        ${diagnosticItem("actions en attente", String(pendingAlerts), pendingAlerts ? "warn" : "ok")}
+        ${diagnosticItem("repères speaker", speakerInfoUpdatedAt || "non faits", speakerInfoUpdatedAt ? "ok" : "warn")}
+      </div>
+    `;
+  }
+
+  function renderPerformanceDiagnosticModalHtml(report, options = {}) {
+    const {
+      formatByteSize = (value) => String(value || 0)
+    } = options;
+    const canClean = report?.available && report.legacyPdfCount > 0;
+    return `
+      <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
+        <div class="decision-modal-head">
+          <div>
+            <span>Performance</span>
+            <h2>Diagnostic résultats</h2>
+            <p>Contrôle que les PDF résultats sont bien séparés des données live.</p>
+          </div>
+          <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+        </div>
+        ${report?.available ? `
+          <div class="competition-diagnostic" aria-label="Diagnostic performance résultats">
+            ${diagnosticItem("résultats", String(report.resultCount), report.resultCount ? "ok" : "neutral")}
+            ${diagnosticItem("PDF séparés", String(report.resultPdfCount), report.resultPdfCount ? "ok" : "neutral")}
+            ${diagnosticItem("PDF à nettoyer", String(report.legacyPdfCount), report.legacyPdfCount ? "warn" : "ok")}
+            ${diagnosticItem("poids à nettoyer", formatByteSize(report.legacyBytes), report.legacyPdfCount ? "warn" : "ok")}
+            ${diagnosticItem("index public", formatByteSize(report.publicIndexBytes), report.publicIndexBytes > 750000 ? "warn" : "ok")}
+            ${diagnosticItem("lecture", `${report.readMs} ms`, report.readMs > 5000 ? "warn" : "ok")}
+          </div>
+          <div class="admin-series-help">
+            <strong>${report.legacyPdfCount ? "Nettoyage recommandé" : "Etat correct"}</strong>
+            <span>${report.legacyPdfCount ? "Des PDF sont encore stockés dans results et peuvent ralentir les consoles." : "Aucun PDF lourd n'a été détecté dans la liste principale des résultats."}</span>
+            <span>Dernier index public : ${escapeHtml(report.publicIndexUpdatedAt || "inconnu")}</span>
+          </div>
+        ` : `
+          <div class="admin-series-help">
+            <strong>Diagnostic indisponible</strong>
+            <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
+          </div>
+        `}
+        <div class="decision-modal-actions">
+          <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+          <button class="ghost-button" type="button" data-performance-diagnostic>Relire</button>
+          ${canClean ? `<button class="primary-button" type="button" data-clean-result-pdfs>Nettoyer les PDF résultats</button>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPerformanceDiagnosticLoadingHtml() {
+    return `
+      <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
+        <div class="decision-modal-head">
+          <div>
+            <span>Performance</span>
+            <h2>Diagnostic résultats</h2>
+            <p>Lecture des compteurs Firebase en cours...</p>
+          </div>
+        </div>
+        <div class="admin-series-help">
+          <strong>Analyse en cours</strong>
+          <span>LivePalmes vérifie si des PDF lourds sont encore dans results.</span>
+        </div>
+      </div>
+    `;
+  }
+
   function alertPendingTargets(alert, options = {}) {
     const {
       isResolvedByResult = () => false,
@@ -123,6 +209,9 @@
     alertPendingTargets,
     alertTargetsLabel,
     diagnosticItem,
+    renderCompetitionDiagnosticHtml,
+    renderPerformanceDiagnosticLoadingHtml,
+    renderPerformanceDiagnosticModalHtml,
     resultHasDetails,
     technicalDiagnosticSection,
     technicalDiagnosticStatus
