@@ -1,5 +1,5 @@
 (function attachLivePalmesRoleState(global) {
-  const ROLE_ORDER = ["control", "speaker", "live", "referee", "video", "computer", "secretary"];
+  const ROLE_ORDER = ["speaker", "live", "referee", "video", "computer", "secretary"];
 
   function createRoleState(options = {}) {
     const {

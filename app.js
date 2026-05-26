@@ -10,7 +10,6 @@ const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
 const ROLE_PINS = {
-  control: "0006",
   live: "0000",
   speaker: "0001",
   referee: "0002",
@@ -110,7 +109,6 @@ const livePalmesRaceCore = window.LivePalmesRaceCore || {};
 const livePalmesAlerts = window.LivePalmesAlerts || {};
 const livePalmesFinalists = window.LivePalmesFinalists || {};
 const livePalmesSecretaryFinals = window.LivePalmesSecretaryFinals || {};
-const livePalmesControlTower = window.LivePalmesControlTower || {};
 const livePalmesPublication = window.LivePalmesPublication || {};
 
 let data = loadData();
@@ -223,7 +221,7 @@ function loadActiveView() {
 
 function saveActiveView() {
   localStorage.setItem(ACTIVE_VIEW_KEY, JSON.stringify({
-    role: controlPreviewActive ? "control" : state.role,
+    role: state.role,
     profileHomeActive
   }));
 }
@@ -302,7 +300,6 @@ let expandedHistories = {
   role: false
 };
 let historyFilters = {
-  control: "all",
   speaker: "all",
   live: "all",
   referee: "all",
@@ -341,7 +338,6 @@ let lastPresenceWriteAt = 0;
 let consolePresenceActive = false;
 let lastPublicProgressSignature = "";
 const activeCompetitionId = FIRESTORE_COMPETITION_ID;
-let controlPreviewActive = false;
 
 const eventSelect = document.querySelector("#eventSelect");
 const searchInput = document.querySelector("#searchInput");
@@ -405,7 +401,6 @@ const secretaryFinalsPanel = document.querySelector("#secretaryFinalsPanel");
 const roleHistory = document.querySelector("#roleHistory");
 const computerFooterPanel = document.querySelector("#computerFooterPanel");
 const speakerHistory = document.querySelector("#speakerHistory");
-const controlTowerPanel = document.querySelector("#controlTowerPanel");
 const roleBadge = document.querySelector("#roleBadge");
 const refereeProgressBtn = document.querySelector("#refereeProgressBtn");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
@@ -502,7 +497,6 @@ function presenceDocument(id = `console-${currentClientId()}`) {
 
 function emptyPresenceCounts() {
   return {
-    control: 0,
     live: 0,
     speaker: 0,
     referee: 0,
@@ -620,7 +614,6 @@ function publicProgressSignature(progress) {
 }
 
 function publishPublicProgressIfNeeded() {
-  if (controlPreviewActive) return;
   const progress = currentPublicProgressPayload();
   if (!progress || !liveDataDocument()) return;
   const signature = publicProgressSignature(progress);
@@ -664,95 +657,10 @@ function updateStickyAlertOffset() {
   document.documentElement.style.setProperty("--alert-sticky-top", `${Math.ceil(height + 8)}px`);
 }
 
-function controlTowerStatusTone(status) {
-  if (status === "ok") return "ok";
-  if (status === "warning") return "warning";
-  return "muted";
-}
-
-function controlTowerDateTime(value) {
-  return formatAlertDateTime(value) || "non renseigné";
-}
-
-function controlTowerProgressLabel(progress) {
-  if (!progress?.programKey && !progress?.eventId) return "Non partagé";
-  const event = data.events.find((item) => item.id === progress.eventId);
-  const session = progress.session ? `Session ${progress.session}` : "";
-  const race = [event?.label || progress.eventLabel || progress.eventId, sexDisplayLabel(progress.sex)].filter(Boolean).join(" ");
-  const phase = isFinalStage(progress.stage)
-    ? finalStageLabel(progress.stage)
-    : (progress.series ? `Série ${progress.series}` : "");
-  return [session, race, phase].filter(Boolean).join(" · ");
-}
-
-function controlTowerPendingCounts() {
-  return livePalmesAlerts.controlTowerPendingCounts(alerts);
-}
-
-function controlTowerSessionRows() {
-  return resultSessions().map((session) => {
-    const program = resultProgramRows(session.number);
-    const results = raceResults.filter((result) => String(result.session || "") === String(session.number));
-    return {
-      session,
-      programCount: program.length,
-      resultCount: results.length,
-      lastResultAt: results.map((result) => result.updatedAt).filter(Boolean).sort().at(-1) || ""
-    };
-  });
-}
-
-function renderControlTowerPanel() {
-  if (!controlTowerPanel) return;
-  if (!isControlTowerView()) {
-    controlTowerPanel.hidden = true;
-    controlTowerPanel.innerHTML = "";
-    return;
-  }
-  const counts = { ...emptyPresenceCounts(), ...(presenceCounts || {}) };
-  const pending = controlTowerPendingCounts();
-  const publicProgress = data.notes?.publicProgress || null;
-  const jaProgress = refereeProgress();
-  const sessionRowsList = controlTowerSessionRows();
-  const seriesUpdatedAt = data.notes?.seriesLoadedAt || data.notes?.livePublishedAt || data.notes?.updatedAt || "";
-  const publicOnline = data.notes?.publicResultsOnline !== false;
-  const directEnabled = realtimeSyncEnabled();
-  const canReset = !competitionModeEnabled();
-  controlTowerPanel.hidden = false;
-  controlTowerPanel.innerHTML = livePalmesControlTower.renderPanelHtml({
-    canReset,
-    competitionLabel: [data.meet?.name, data.meet?.city, data.meet?.year].filter(Boolean).join(" · ") || "Compétition",
-    consoleRows: ["control", "live", "speaker", "referee", "video", "computer", "secretary"].map((role) => ({
-      actionLabel: actionCountLabel(pending[role] || 0),
-      count: counts[role] || 0,
-      presenceLabel: presenceLabel(counts[role] || 0),
-      role
-    })),
-    directEnabled,
-    firebaseStatus,
-    firestoreAvailable: Boolean(firestoreDb),
-    jaProgressLabel: refereeProgressLabel(jaProgress) || "",
-    pageResultCount: raceResults.length,
-    publicOnline,
-    publicPositionEnabled: publicPositionEnabled(),
-    publicProgressLabel: controlTowerProgressLabel(publicProgress),
-    roleLabels: ROLE_LABELS,
-    sessionRows: sessionRowsList.map((item) => ({
-      label: item.session.label || `Session ${item.session.number}`,
-      lastResultLabel: item.lastResultAt ? controlTowerDateTime(item.lastResultAt) : "",
-      number: item.session.number,
-      programCount: item.programCount,
-      resultCount: item.resultCount
-    })),
-    seriesCount: (data.program || []).length,
-    seriesUpdatedLabel: controlTowerDateTime(seriesUpdatedAt)
-  });
-}
-
 async function updateConsolePresence(force = false) {
   const doc = presenceDocument();
   if (!doc) return;
-  if (profileHomeActive || controlPreviewActive) {
+  if (profileHomeActive) {
     if (consolePresenceActive) await releaseConsolePresence();
     return;
   }
@@ -1256,7 +1164,7 @@ function renderRoleCodesModal() {
   if (!roleCodesModal) return;
   const pins = currentRolePins();
   const active = pinLockEnabled();
-  const roleOrder = ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
+  const roleOrder = ["live", "speaker", "referee", "video", "computer", "secretary"];
   roleCodesModal.hidden = false;
   roleCodesModal.innerHTML = `
     <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Codes d'accès">
@@ -1264,7 +1172,7 @@ function renderRoleCodesModal() {
         <div>
           <span>Sécurité</span>
           <h2>Codes des consoles</h2>
-          <p>Chaque code doit contenir exactement 4 chiffres. La tour de contrôle pilote les commandes globales.</p>
+          <p>Chaque code doit contenir exactement 4 chiffres. L'administrateur peut modifier les accès depuis cette fenêtre.</p>
         </div>
         <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
       </div>
@@ -1278,7 +1186,6 @@ function renderRoleCodesModal() {
       </div>
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
-        <button class="ghost-button compact" type="button" data-open-control-tower>Ouvrir tour de contrôle</button>
         <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
         <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
         <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
@@ -1677,7 +1584,6 @@ function markConsoleActivity() {
 async function returnHomeAfterLocalInactivity() {
   if (!shouldReturnHomeForInactivity() || profileHomeActive) return;
   saveCurrentRoleState();
-  controlPreviewActive = false;
   profileHomeActive = true;
   unlockedRoles = [];
   saveUnlockedRoles();
@@ -2105,7 +2011,6 @@ function clearSearch() {
 }
 
 const ROLE_LABELS = {
-  control: "Tour de contrôle",
   speaker: "Speaker",
   live: "Live",
   referee: "Juge arbitre",
@@ -2116,10 +2021,6 @@ const ROLE_LABELS = {
 
 function isSpeakerView() {
   return state.role === "speaker" || state.role === "live";
-}
-
-function isControlTowerView() {
-  return state.role === "control";
 }
 
 const DECISION_LABELS = {
@@ -2769,12 +2670,8 @@ function render() {
   document.body.classList.toggle("role-video", state.role === "video");
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("role-secretary", state.role === "secretary");
-  document.body.classList.toggle("role-control", state.role === "control");
-  document.body.classList.toggle("control-preview-active", controlPreviewActive);
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
-  if (racePanel) racePanel.hidden = isControlTowerView();
-  if (sidebar) sidebar.hidden = isControlTowerView();
   if (profileModeStatus) {
     profileModeStatus.textContent = competitionModeEnabled()
       ? "Direct actif"
@@ -2783,10 +2680,9 @@ function render() {
   }
   renderPresenceCounts();
   renderHomeActionCounts();
-  renderControlTowerPanel();
   if (profileHomeBtn) {
     profileHomeBtn.hidden = profileHomeActive;
-    profileHomeBtn.textContent = controlPreviewActive ? "Tour de contrôle" : "Accueil";
+    profileHomeBtn.textContent = "Accueil";
   }
   if (manualRefreshBtn) {
     const manualMode = !realtimeSyncEnabled();
@@ -2806,13 +2702,13 @@ function render() {
   if (appConsoleTitle) {
     appConsoleTitle.textContent = profileHomeActive
       ? "LivePalmes"
-      : `LivePalmes - ${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " (vue tour de contrôle)" : ""}`;
+      : `LivePalmes - ${ROLE_LABELS[state.role] || "Console"}`;
   }
   syncProgramButtonPlacement();
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
   });
-  if (roleBadge) roleBadge.textContent = `${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " - Vue tour" : ""}`;
+  if (roleBadge) roleBadge.textContent = ROLE_LABELS[state.role] || "Console";
   if (fullscreenBtn) {
     fullscreenBtn.hidden = profileHomeActive;
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
@@ -8513,8 +8409,7 @@ function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
 async function updateSpeakerInfoFromGoogleSheet() {
   const buttons = [
     document.querySelector("#updateSpeakerInfoBtn"),
-    document.querySelector("#updateSpeakerInfoPanelBtn"),
-    document.querySelector("[data-control-speaker-info]")
+    document.querySelector("#updateSpeakerInfoPanelBtn")
   ].filter(Boolean);
   const setButtons = (disabled, label) => {
     buttons.forEach((button) => {
@@ -8834,7 +8729,6 @@ publicPositionToggle?.addEventListener("change", (event) => {
 
 async function openRoleConsole(nextRole) {
   if (!ROLE_LABELS[nextRole]) return;
-  controlPreviewActive = false;
   if (!requestRoleAccess(nextRole)) {
     const access = await askRolePin(nextRole);
     if (!access?.allowed) return;
@@ -8858,16 +8752,6 @@ async function openRoleConsole(nextRole) {
   updateConsolePresence(true);
 }
 
-async function openRolePreviewFromControl(nextRole) {
-  if (!ROLE_LABELS[nextRole] || nextRole === "control") return;
-  await releaseRoleLock();
-  await releaseConsolePresence();
-  controlPreviewActive = true;
-  profileHomeActive = false;
-  switchRoleUnlocked(nextRole);
-  render();
-}
-
 document.querySelectorAll(".role-chip").forEach((button) => {
   button.addEventListener("click", async () => {
     await openRoleConsole(button.dataset.role || "speaker");
@@ -8881,13 +8765,6 @@ profileHome?.addEventListener("click", async (event) => {
 });
 
 profileHomeBtn?.addEventListener("click", () => {
-  if (controlPreviewActive) {
-    controlPreviewActive = false;
-    profileHomeActive = false;
-    switchRoleUnlocked("control");
-    render();
-    return;
-  }
   profileHomeActive = true;
   render();
   releaseConsolePresence();
@@ -8896,46 +8773,6 @@ profileHomeBtn?.addEventListener("click", () => {
 
 competitionModeTopBtn?.addEventListener("click", () => {
   toggleCompetitionMode();
-});
-
-controlTowerPanel?.addEventListener("click", (event) => {
-  const previewButton = event.target.closest("[data-control-preview-role]");
-  if (previewButton) {
-    openRolePreviewFromControl(previewButton.dataset.controlPreviewRole || "");
-    return;
-  }
-  if (event.target.closest("[data-control-competition-mode]")) {
-    toggleCompetitionMode();
-    return;
-  }
-  if (event.target.closest("[data-control-speaker-info]")) {
-    updateSpeakerInfoFromGoogleSheet();
-    return;
-  }
-  if (event.target.closest("[data-control-public-online]")) {
-    togglePublicResultsOnline();
-    return;
-  }
-  if (event.target.closest("[data-control-results-reset]")) {
-    if (competitionModeEnabled()) {
-      window.alert("RAZ indisponible quand l'actualisation directe est active.");
-      return;
-    }
-    renderResetResultsModal();
-  }
-});
-
-controlTowerPanel?.addEventListener("change", (event) => {
-  const toggle = event.target.closest("[data-control-public-position]");
-  if (!toggle) return;
-  const enabled = toggle.checked;
-  toggle.disabled = true;
-  setPublicPositionEnabled(enabled).catch((error) => {
-    console.warn("Modification du repère public impossible", error);
-    toggle.checked = !enabled;
-  }).finally(() => {
-    render();
-  });
 });
 
 manualRefreshBtn?.addEventListener("click", async () => {
@@ -9319,13 +9156,6 @@ roleCodesModal?.addEventListener("click", async (event) => {
   }
   if (event.target.closest("[data-open-history-archives]")) {
     await renderHistoryArchivesModal({ canDelete: true });
-    return;
-  }
-  if (event.target.closest("[data-open-control-tower]")) {
-    unlockRole("control");
-    controlPreviewActive = false;
-    closeRoleCodesModal();
-    await openRoleConsole("control");
     return;
   }
   if (event.target.closest("[data-technical-diagnostic]")) {
