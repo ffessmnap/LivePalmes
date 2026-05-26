@@ -1459,6 +1459,7 @@ function renderRoleCodesModal() {
         <button class="ghost-button compact ${trainingModeEnabled() ? "danger-button" : ""}" type="button" data-training-mode-toggle>
           ${trainingModeEnabled() ? "Quitter le mode formation" : "Mode formation"}
         </button>
+        <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
         <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
         <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
       </div>
@@ -4008,6 +4009,19 @@ function diagnosticItem(label, value, status = "ok") {
   `;
 }
 
+function formatByteSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return "0 ko";
+  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+  return `${Math.max(1, Math.round(value / 1024))} ko`;
+}
+
+function dataUrlApproxBytes(value) {
+  const text = String(value || "");
+  const base64 = text.includes(",") ? text.split(",").at(-1) : text;
+  return Math.round((base64.length * 3) / 4);
+}
+
 function renderCompetitionDiagnostic() {
   const sessions = sessionRows();
   const programCount = data.program?.length || 0;
@@ -5246,7 +5260,137 @@ function appendImportHistory(notes, label) {
   return [...history, `${shortStatusDate()} - ${label}`].slice(-8);
 }
 
-function showDataDiagnostic() {
+async function countCollectionDocuments(collection) {
+  if (!collection) return 0;
+  if (typeof collection.count === "function") {
+    try {
+      const snapshot = await collection.count().get();
+      return Number(snapshot.data()?.count || 0);
+    } catch (error) {
+      console.warn("Comptage Firestore impossible, lecture classique utilisée", error);
+    }
+  }
+  const snapshot = await collection.get({ source: "server" });
+  return snapshot.size || snapshot.docs?.length || 0;
+}
+
+async function collectPerformanceDiagnostic() {
+  if (!firestoreDb) {
+    return {
+      available: false,
+      message: "Firebase indisponible sur cet appareil."
+    };
+  }
+  const startedAt = performance.now();
+  const resultSnapshot = await resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" });
+  const results = resultSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const legacyPdfResults = results.filter((result) => result.pdfDataUrl);
+  const legacyBytes = legacyPdfResults.reduce((sum, result) => sum + dataUrlApproxBytes(result.pdfDataUrl), 0);
+  const resultPdfCount = await countCollectionDocuments(resultPdfsCollection());
+  const publicIndexSnapshot = await publicResultsIndexDocument().get({ source: "server" }).catch(() => null);
+  const publicIndex = publicIndexSnapshot?.data() || {};
+  const publicIndexBytes = JSON.stringify(publicIndex).length;
+  return {
+    available: true,
+    competitionId: activeCompetitionId,
+    resultCount: results.length,
+    publicResultCount: results.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length,
+    resultPdfCount,
+    legacyPdfCount: legacyPdfResults.length,
+    legacyBytes,
+    publicIndexBytes,
+    publicIndexUpdatedAt: publicIndex.updatedAt || "",
+    readMs: Math.round(performance.now() - startedAt),
+    status: legacyPdfResults.length ? "warn" : "ok"
+  };
+}
+
+function performanceDiagnosticLines(report) {
+  if (!report?.available) return [report?.message || "Diagnostic performance indisponible."];
+  return [
+    `Compétition : ${report.competitionId}`,
+    `Résultats : ${report.publicResultCount}/${report.resultCount} visibles/publics`,
+    `PDF dans resultPdfs : ${report.resultPdfCount}`,
+    `PDF encore dans results : ${report.legacyPdfCount}`,
+    `Poids à nettoyer : ${formatByteSize(report.legacyBytes)}`,
+    `Index public : ${formatByteSize(report.publicIndexBytes)}`,
+    `Index public MAJ : ${report.publicIndexUpdatedAt || "inconnue"}`,
+    `Temps lecture diagnostic : ${report.readMs} ms`
+  ];
+}
+
+function renderPerformanceDiagnosticModal(report) {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  const canClean = report?.available && report.legacyPdfCount > 0;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
+      <div class="decision-modal-head">
+        <div>
+          <span>Performance</span>
+          <h2>Diagnostic résultats</h2>
+          <p>Contrôle que les PDF résultats sont bien séparés des données live.</p>
+        </div>
+        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+      </div>
+      ${report?.available ? `
+        <div class="competition-diagnostic" aria-label="Diagnostic performance résultats">
+          ${diagnosticItem("résultats", String(report.resultCount), report.resultCount ? "ok" : "neutral")}
+          ${diagnosticItem("PDF séparés", String(report.resultPdfCount), report.resultPdfCount ? "ok" : "neutral")}
+          ${diagnosticItem("PDF à nettoyer", String(report.legacyPdfCount), report.legacyPdfCount ? "warn" : "ok")}
+          ${diagnosticItem("poids à nettoyer", formatByteSize(report.legacyBytes), report.legacyPdfCount ? "warn" : "ok")}
+          ${diagnosticItem("index public", formatByteSize(report.publicIndexBytes), report.publicIndexBytes > 750000 ? "warn" : "ok")}
+          ${diagnosticItem("lecture", `${report.readMs} ms`, report.readMs > 5000 ? "warn" : "ok")}
+        </div>
+        <div class="admin-series-help">
+          <strong>${report.legacyPdfCount ? "Nettoyage recommandé" : "Etat correct"}</strong>
+          <span>${report.legacyPdfCount ? "Des PDF sont encore stockés dans results et peuvent ralentir les consoles." : "Aucun PDF lourd n'a été détecté dans la liste principale des résultats."}</span>
+          <span>Dernier index public : ${escapeHtml(report.publicIndexUpdatedAt || "inconnu")}</span>
+        </div>
+      ` : `
+        <div class="admin-series-help">
+          <strong>Diagnostic indisponible</strong>
+          <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
+        </div>
+      `}
+      <div class="decision-modal-actions">
+        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+        <button class="ghost-button" type="button" data-performance-diagnostic>Relire</button>
+        ${canClean ? `<button class="primary-button" type="button" data-clean-result-pdfs>Nettoyer les PDF résultats</button>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+async function showPerformanceDiagnosticModal() {
+  if (!roleCodesModal) return;
+  roleCodesModal.hidden = false;
+  roleCodesModal.innerHTML = `
+    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic performance">
+      <div class="decision-modal-head">
+        <div>
+          <span>Performance</span>
+          <h2>Diagnostic résultats</h2>
+          <p>Lecture des compteurs Firebase en cours...</p>
+        </div>
+      </div>
+      <div class="admin-series-help">
+        <strong>Analyse en cours</strong>
+        <span>LivePalmes vérifie si des PDF lourds sont encore dans results.</span>
+      </div>
+    </div>
+  `;
+  const report = await collectPerformanceDiagnostic();
+  renderPerformanceDiagnosticModal(report);
+}
+
+async function cleanLegacyResultPdfs() {
+  const snapshot = await resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" });
+  const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return migrateResultPdfsOutOfResults(rows, { force: true });
+}
+
+async function showDataDiagnostic() {
   const sessions = sessionRows().map((session) => `S${session.number}`).join(", ") || "aucune";
   const seriesCount = data.series?.length || 0;
   const programCount = data.program?.length || 0;
@@ -5254,6 +5398,10 @@ function showDataDiagnostic() {
   const locations = (data.entrants || []).filter((entrant) => entrant.seedSource).length;
   const firebaseMeta = firebaseStatusMeta();
   const firebaseLabel = firebaseStatus === "local" ? "local seulement" : firebaseMeta.label.toLowerCase();
+  const performanceReport = await collectPerformanceDiagnostic().catch((error) => ({
+    available: false,
+    message: error?.message || String(error)
+  }));
   window.alert([
     "Diagnostic LivePalmes",
     "",
@@ -5268,7 +5416,10 @@ function showDataDiagnostic() {
     `France N-1 : ${data.top2025?.length || 0}`,
     `Lieux rattachés : ${locations}`,
     `Dernière mise à jour session : ${data.notes?.lastUpdatedSession ? `S${data.notes.lastUpdatedSession}` : "aucune"}`,
-    `Infos speaker : ${data.notes?.speakerInfoUpdatedAt || "non mises à jour"}`
+    `Infos speaker : ${data.notes?.speakerInfoUpdatedAt || "non mises à jour"}`,
+    "",
+    "Performance résultats",
+    ...performanceDiagnosticLines(performanceReport)
   ].join("\n"));
 }
 
@@ -5792,15 +5943,16 @@ async function deleteResultPdfPayload(resultId) {
   });
 }
 
-async function migrateResultPdfsOutOfResults(rows = []) {
-  if (resultPdfMigrationRunning || resultPdfMigrationAttempted || state.role !== "computer") return;
+async function migrateResultPdfsOutOfResults(rows = [], options = {}) {
+  const force = options.force === true;
+  if (resultPdfMigrationRunning || (!force && resultPdfMigrationAttempted) || (state.role !== "computer" && !force)) return 0;
   const withPdf = rows.filter((result) => result.id && result.pdfDataUrl);
-  if (!withPdf.length) return;
+  if (!withPdf.length) return 0;
   const pdfCollection = resultPdfsCollection();
   const resultCollection = resultsCollection();
-  if (!pdfCollection || !resultCollection || !window.firebase?.firestore?.FieldValue) return;
+  if (!pdfCollection || !resultCollection || !window.firebase?.firestore?.FieldValue) return 0;
   resultPdfMigrationRunning = true;
-  resultPdfMigrationAttempted = true;
+  if (!force) resultPdfMigrationAttempted = true;
   try {
     for (const result of withPdf) {
       await pdfCollection.doc(result.id).set(JSON.parse(JSON.stringify(resultPdfPayload(result, result.pdfDataUrl))));
@@ -5808,7 +5960,10 @@ async function migrateResultPdfsOutOfResults(rows = []) {
         pdfDataUrl: window.firebase.firestore.FieldValue.delete()
       });
     }
-    renderDataStatus(`${withPdf.length} PDF résultat déplacé${withPdf.length > 1 ? "s" : ""} hors de la liste principale.`);
+    if (options.showStatus !== false) {
+      renderDataStatus(`${withPdf.length} PDF résultat déplacé${withPdf.length > 1 ? "s" : ""} hors de la liste principale.`);
+    }
+    return withPdf.length;
   } finally {
     resultPdfMigrationRunning = false;
   }
@@ -9361,6 +9516,28 @@ roleCodesModal?.addEventListener("click", async (event) => {
     renderRoleCodesModal();
     return;
   }
+  if (event.target.closest("[data-performance-diagnostic]")) {
+    try {
+      await showPerformanceDiagnosticModal();
+    } catch (error) {
+      console.error(error);
+      window.alert(`Diagnostic performance impossible : ${error?.message || error}`);
+    }
+    return;
+  }
+  if (event.target.closest("[data-clean-result-pdfs]")) {
+    const ok = window.confirm("Nettoyer les anciens PDF résultats encore stockés dans results ?\n\nLes PDF resteront consultables, mais seront déplacés dans resultPdfs pour accélérer les consoles.");
+    if (!ok) return;
+    try {
+      const count = await cleanLegacyResultPdfs();
+      window.alert(`${count} PDF résultat${count > 1 ? "s" : ""} nettoyé${count > 1 ? "s" : ""}.`);
+      await showPerformanceDiagnosticModal();
+    } catch (error) {
+      console.error(error);
+      window.alert(`Nettoyage impossible : ${error?.message || error}`);
+    }
+    return;
+  }
   if (event.target.closest("[data-public-index-republish]")) {
     try {
       await publishPublicResultsIndex();
@@ -10992,7 +11169,12 @@ async function checkForGeneratedUpdates() {
 }
 
 roleLockBtn?.addEventListener("click", toggleRoleLock);
-dataDiagnosticBtn?.addEventListener("click", showDataDiagnostic);
+dataDiagnosticBtn?.addEventListener("click", () => {
+  showDataDiagnostic().catch((error) => {
+    console.error(error);
+    window.alert(`Diagnostic impossible : ${error?.message || error}`);
+  });
+});
 setInterval(checkForGeneratedUpdates, 5000);
 setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
 setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
