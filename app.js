@@ -109,6 +109,8 @@ const livePalmesRoleState = window.LivePalmesRoleState || {};
 const livePalmesRaceCore = window.LivePalmesRaceCore || {};
 const livePalmesAlerts = window.LivePalmesAlerts || {};
 const livePalmesFinalists = window.LivePalmesFinalists || {};
+const livePalmesSecretaryFinals = window.LivePalmesSecretaryFinals || {};
+const livePalmesControlTower = window.LivePalmesControlTower || {};
 const livePalmesPublication = window.LivePalmesPublication || {};
 
 let data = loadData();
@@ -717,90 +719,34 @@ function renderControlTowerPanel() {
   const directEnabled = realtimeSyncEnabled();
   const canReset = !competitionModeEnabled();
   controlTowerPanel.hidden = false;
-  controlTowerPanel.innerHTML = `
-    <div class="control-tower-head">
-      <div>
-        <p class="eyebrow">Pilotage</p>
-        <h2>Tour de contrôle</h2>
-        <p>${escapeHtml([data.meet?.name, data.meet?.city, data.meet?.year].filter(Boolean).join(" · ") || "Compétition")}</p>
-      </div>
-      <div class="control-tower-state">
-        <span class="status-pill ${controlTowerStatusTone(realtimeSyncEnabled() ? "ok" : "warning")}">${realtimeSyncEnabled() ? "Direct" : "Manuel"}</span>
-        <span class="status-pill ${controlTowerStatusTone(firebaseStatus === "online" || realtimeSyncEnabled() ? "ok" : "muted")}">Firebase ${escapeHtml(firebaseStatus || "-")}</span>
-      </div>
-    </div>
-    <div class="control-tower-grid">
-      <article class="control-card wide">
-        <span>Repères compétition</span>
-        <strong>${escapeHtml(publicPositionEnabled() ? controlTowerProgressLabel(publicProgress) : "Partage public désactivé")}</strong>
-        <small>Point JA : ${escapeHtml(refereeProgressLabel(jaProgress) || "non renseigné")}</small>
-      </article>
-      <article class="control-card">
-        <span>Pages publiques</span>
-        <strong>${publicOnline ? "En ligne" : "Hors ligne"}</strong>
-        <small>${escapeHtml(String(raceResults.length))} résultat${raceResults.length > 1 ? "s" : ""} publié${raceResults.length > 1 ? "s" : ""}</small>
-      </article>
-      <article class="control-card">
-        <span>Séries</span>
-        <strong>${escapeHtml(String((data.program || []).length))} courses</strong>
-        <small>MAJ ${escapeHtml(controlTowerDateTime(seriesUpdatedAt))}</small>
-      </article>
-    </div>
-    <article class="panel control-panel control-actions-panel">
-      <div class="panel-title">
-        <h3>Commandes</h3>
-        <span class="soft-count">Synchronisées</span>
-      </div>
-      <div class="control-action-grid">
-        <button class="sync-mode-toggle control-sync-toggle ${directEnabled ? "active" : ""}" type="button" data-control-competition-mode aria-pressed="${directEnabled ? "true" : "false"}">
-          <span aria-hidden="true"></span>${directEnabled ? "Direct" : "Manuel"}
-        </button>
-        <label class="control-speaker-share-toggle">
-          <input type="checkbox" data-control-public-position ${publicPositionEnabled() ? "checked" : ""} ${firestoreDb ? "" : "disabled"}>
-          <span class="control-toggle-switch" aria-hidden="true"></span>
-          <span>Partage position speaker</span>
-        </label>
-        <button class="public-online-toggle ${publicOnline ? "online" : "offline"} control-public-online-toggle" type="button" data-control-public-online aria-pressed="${publicOnline ? "true" : "false"}">
-          <span></span>${publicOnline ? "Pages publiques en ligne" : "Pages publiques hors ligne"}
-        </button>
-        <button class="ghost-button compact" type="button" data-control-speaker-info>MAJ repères</button>
-        <button class="ghost-button compact danger-button" type="button" data-control-results-reset title="${canReset ? "Remise à zéro LivePalmes" : "RAZ indisponible quand l'actualisation directe est active"}">RAZ</button>
-      </div>
-    </article>
-    <div class="control-tower-columns">
-      <article class="panel control-panel">
-        <div class="panel-title">
-          <h3>Consoles</h3>
-          <span class="soft-count">${escapeHtml(String(Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0)))} connecté${Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0) > 1 ? "s" : ""}</span>
-        </div>
-        <div class="control-console-list">
-          ${["control", "live", "speaker", "referee", "video", "computer", "secretary"].map((role) => `
-            <div class="control-console-row">
-              <strong>${escapeHtml(ROLE_LABELS[role])}</strong>
-              <span>${escapeHtml(presenceLabel(counts[role] || 0))}</span>
-              <small>${escapeHtml(actionCountLabel(pending[role] || 0))}</small>
-              ${role === "control" ? "" : `<button class="ghost-button compact control-preview-button" type="button" data-control-preview-role="${escapeHtml(role)}">Voir</button>`}
-            </div>
-          `).join("")}
-        </div>
-      </article>
-      <article class="panel control-panel">
-        <div class="panel-title">
-          <h3>Sessions</h3>
-          <span class="soft-count">${escapeHtml(String(sessionRowsList.length))}</span>
-        </div>
-        <div class="control-session-list">
-          ${sessionRowsList.length ? sessionRowsList.map((item) => `
-            <div class="control-session-row">
-              <strong>${escapeHtml(item.session.label || `Session ${item.session.number}`)}</strong>
-              <span>${escapeHtml(String(item.resultCount))} / ${escapeHtml(String(item.programCount))} résultats</span>
-              <small>${item.lastResultAt ? `MAJ ${escapeHtml(controlTowerDateTime(item.lastResultAt))}` : "Pas de résultat"}</small>
-            </div>
-          `).join("") : `<p class="panel-subtitle">Aucune session chargée.</p>`}
-        </div>
-      </article>
-    </div>
-  `;
+  controlTowerPanel.innerHTML = livePalmesControlTower.renderPanelHtml({
+    canReset,
+    competitionLabel: [data.meet?.name, data.meet?.city, data.meet?.year].filter(Boolean).join(" · ") || "Compétition",
+    consoleRows: ["control", "live", "speaker", "referee", "video", "computer", "secretary"].map((role) => ({
+      actionLabel: actionCountLabel(pending[role] || 0),
+      count: counts[role] || 0,
+      presenceLabel: presenceLabel(counts[role] || 0),
+      role
+    })),
+    directEnabled,
+    firebaseStatus,
+    firestoreAvailable: Boolean(firestoreDb),
+    jaProgressLabel: refereeProgressLabel(jaProgress) || "",
+    pageResultCount: raceResults.length,
+    publicOnline,
+    publicPositionEnabled: publicPositionEnabled(),
+    publicProgressLabel: controlTowerProgressLabel(publicProgress),
+    roleLabels: ROLE_LABELS,
+    sessionRows: sessionRowsList.map((item) => ({
+      label: item.session.label || `Session ${item.session.number}`,
+      lastResultLabel: item.lastResultAt ? controlTowerDateTime(item.lastResultAt) : "",
+      number: item.session.number,
+      programCount: item.programCount,
+      resultCount: item.resultCount
+    })),
+    seriesCount: (data.program || []).length,
+    seriesUpdatedLabel: controlTowerDateTime(seriesUpdatedAt)
+  });
 }
 
 async function updateConsolePresence(force = false) {
@@ -3832,37 +3778,15 @@ function renderResultsAdminPanel() {
   const rows = resultProgramRows(activeSession);
   const publicResultsOnline = data.notes?.publicResultsOnline !== false;
   resultsAdminPanel.hidden = false;
-  resultsAdminPanel.innerHTML = `
-    <div class="panel-title">
-      <div>
-        <h3>Publication des résultats</h3>
-        <p class="panel-subtitle">Import PDF, publication publique et suivi des finalistes.</p>
-      </div>
-      <div class="results-admin-actions">
-        ${seriesImportState ? resultUploadBadgeHtml(seriesImportState) : ""}
-        ${sessions.length ? `
-          <label class="results-session-select">
-            <span>Session</span>
-            <select id="resultsAdminSessionSelect" aria-label="Session des résultats">
-              ${sessions.map((session) => `
-                <option value="${escapeHtml(session.number)}" ${activeSession === session.number ? "selected" : ""}>S${escapeHtml(session.number)}</option>
-              `).join("")}
-            </select>
-          </label>
-        ` : ""}
-        <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
-        <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportState?.tone === "loading" ? "disabled" : ""}>Importer séries</button>
-        <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
-          <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
-        </button>
-        <a class="ghost-button compact" href="resultats.html?v=20260520-session-infos-light" target="_blank" rel="noopener">Page publique</a>
-      </div>
-    </div>
-    <div class="results-admin-list">
-      ${rows.length ? rows.map((row) => renderResultProgramRow(row)).join("") : `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
-      ${renderSessionResultsImportRow(activeSession)}
-    </div>
-  `;
+  resultsAdminPanel.innerHTML = livePalmesAdminResults.renderResultsAdminPanelHtml({
+    activeSession,
+    publicResultsOnline,
+    rowsHtml: rows.map((row) => renderResultProgramRow(row)).join(""),
+    seriesImportBusy: seriesImportState?.tone === "loading",
+    seriesImportStateHtml: seriesImportState ? resultUploadBadgeHtml(seriesImportState) : "",
+    sessionResultsImportHtml: renderSessionResultsImportRow(activeSession),
+    sessions
+  });
   renderComputerFooterPanel();
 }
 
@@ -3968,23 +3892,14 @@ function renderSessionResultsImportRow(activeSession) {
   const latest = published[0];
   const uploadState = resultUploadStates.get(resultUploadKeyForSessionResults(activeSession));
   const blockingUpload = uploadState && uploadState.tone !== "error";
-  return `
-    <div class="result-admin-row session-results-import-row ${latest ? "published" : ""} ${uploadState ? "waiting" : ""}">
-      <div>
-        <strong>${activeSession ? `S${escapeHtml(activeSession)} · ` : ""}Résultats complets de session</strong>
-        <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes.")}</span>
-        ${!uploadState && latest?.updatedAt ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(new Date(latest.updatedAt).toLocaleString("fr-FR"))}</small>` : ""}
-      </div>
-      <div class="result-admin-row-actions">
-        ${uploadState ? resultUploadBadgeHtml(uploadState) : ""}
-        ${blockingUpload ? "" : `
-          <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
-            ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
-          </button>
-        `}
-      </div>
-    </div>
-  `;
+  return livePalmesAdminResults.renderSessionResultsImportRowHtml({
+    activeSession,
+    blockingUpload,
+    latest,
+    latestUpdatedLabel: latest?.updatedAt ? new Date(latest.updatedAt).toLocaleString("fr-FR") : "",
+    uploadState,
+    uploadStateHtml: uploadState ? resultUploadBadgeHtml(uploadState) : ""
+  });
 }
 
 function renderResultProgramRow(row) {
@@ -4003,36 +3918,23 @@ function renderResultProgramRow(row) {
   const definitiveLabel = result?.hasFinal && !isFinalCompositionDefinitive
     ? (definitiveDate ? `Définitif à partir de ${formatDeadlineTime(definitiveDate)}` : finalCompositionPendingDeadlineLabel(result))
     : "";
-  return `
-    <div class="result-admin-row ${result ? "published" : ""} ${result?.hasFinal && !result.finalistsAnnouncedAt ? "waiting" : ""} ${uploadState ? "waiting" : ""}">
-      <div>
-        <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))} - ${escapeHtml(phaseLabel)}</strong>
-        <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
-        ${!blockingUpload && result?.hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
-        ${!blockingUpload && definitiveLabel ? `<small class="result-admin-note result-definitive-note">${escapeHtml(definitiveLabel)}</small>` : ""}
-        ${!blockingUpload && result?.hasFinal && !result.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
-      </div>
-      <div class="result-admin-row-actions">
-        ${uploadState ? resultUploadBadgeHtml(uploadState) : ""}
-        ${blockingUpload ? "" : resultStatusControlHtml(row, result, statusBadge)}
-        ${!blockingUpload && result ? `
-          <button class="ghost-button compact" type="button" data-result-reread="${escapeHtml(programKey(row))}">
-            Relire
-          </button>
-        ` : ""}
-        ${!blockingUpload && result ? `
-          <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKey(row))}">
-            Remplacer
-          </button>
-        ` : ""}
-        ${!blockingUpload && result ? `
-          <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(result.id)}">
-            Supprimer
-          </button>
-        ` : ""}
-      </div>
-    </div>
-  `;
+  return livePalmesAdminResults.renderResultProgramRowHtml({
+    blockingUpload,
+    definitiveLabel,
+    eventLabel: event?.label || row.label || row.eventId,
+    finalistCount,
+    hasFinal: Boolean(result?.hasFinal),
+    phaseLabel,
+    programKeyValue: programKey(row),
+    result,
+    resultId: result?.id || "",
+    row,
+    sexLabel: sexDisplayLabel(row.sex),
+    status,
+    statusControlHtml: resultStatusControlHtml(row, result, statusBadge),
+    uploadState,
+    uploadStateHtml: uploadState ? resultUploadBadgeHtml(uploadState) : ""
+  });
 }
 
 function formatDeadlineTime(date) {
@@ -4104,46 +4006,21 @@ function renderSecretaryFinalsPanel() {
     ? finals.filter((result) => String(result.session || "") === activeSession)
     : finals;
   secretaryFinalsPanel.hidden = false;
-  secretaryFinalsPanel.innerHTML = `
-    <div class="panel-title">
-      <div>
-        <h3>Forfaits finales</h3>
-        <p class="panel-subtitle">Gestion par le secrétariat après annonce officielle des finalistes.</p>
-      </div>
-      <div class="results-admin-actions">
-        ${availableSessions.length ? `
-          <label class="results-session-select">
-            <span>Session</span>
-            <select id="secretaryFinalsSessionSelect" aria-label="Session des finales">
-              ${availableSessions.length > 1 ? `<option value="all" ${activeSession === "all" ? "selected" : ""}>Toutes</option>` : ""}
-              ${availableSessions.map((session) => `
-                <option value="${escapeHtml(session)}" ${activeSession === session ? "selected" : ""}>S${escapeHtml(session)}</option>
-              `).join("")}
-            </select>
-          </label>
-        ` : ""}
-        <a class="ghost-button compact" href="resultats.html?v=20260519-public-offline-footer" target="_blank" rel="noopener">Page publique</a>
-      </div>
-    </div>
-    <div class="secretary-finals-list">
-      ${visibleFinals.length ? visibleFinals.map((result) => {
-        const announced = Boolean(result.finalistsAnnouncedAt);
-        const withdrawals = (result.finalWithdrawals || []).length;
-        return `
-          <article class="secretary-final-card ${announced ? "" : "pending"}">
-            <div>
-              <strong>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}</strong>
-              <span>${escapeHtml([result.session ? `S${result.session}` : "", result.startTime, announced ? "Forfaits ouverts par nageur" : "En attente annonce speaker"].filter(Boolean).join(" - "))}</span>
-              <em>${escapeHtml(String(finalRowsCount(result.finalists)))} finaliste${finalRowsCount(result.finalists) > 1 ? "s" : ""}${withdrawals ? ` - ${withdrawals} forfait${withdrawals > 1 ? "s" : ""}` : ""}</em>
-            </div>
-            <button class="ghost-button compact confirm-button" type="button" data-final-withdrawals="${escapeHtml(result.id)}" ${announced ? "" : "disabled"}>
-              Gérer forfaits
-            </button>
-          </article>
-        `;
-      }).join("") : `<p class="panel-subtitle">${finals.length ? "Aucune finale pour cette session." : "Aucune finale publiée pour le moment."}</p>`}
-    </div>
-  `;
+  secretaryFinalsPanel.innerHTML = livePalmesSecretaryFinals.renderPanelHtml({
+    activeSession,
+    availableSessions,
+    hasFinals: Boolean(finals.length),
+    visibleCardsHtml: visibleFinals.map((result) => livePalmesSecretaryFinals.renderFinalCardHtml({
+      announced: Boolean(result.finalistsAnnouncedAt),
+      eventLabel: result.eventLabel || result.eventId,
+      finalistCount: finalRowsCount(result.finalists),
+      resultId: result.id,
+      session: result.session || "",
+      sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+      startTime: result.startTime || "",
+      withdrawals: (result.finalWithdrawals || []).length
+    })).join("")
+  });
 }
 
 function renderOfficialAlerts() {
@@ -6816,41 +6693,30 @@ function finalCompositionPendingDeadlineLabel(result) {
 function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
   if (!rows.length) return "";
   const now = new Date();
-  return `
-    <div class="final-withdrawal-group">
-      <strong>${escapeHtml(title)}</strong>
-      <ol>
-        ${rows.map((row, index) => {
-          const limit = finalWithdrawalLimitLabel(row, result);
-          const canWithdraw = canWithdrawFinalist(row, result, now);
-          const hasDeadline = hasFinalWithdrawalDeadline(row, result);
-          const canWithdrawUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
-          const expired = isFinalWithdrawalDeadlineExpired(row, result, now);
-          const status = row.withdrawnAt
-            ? `Forfait ${formatDeadlineTime(new Date(row.withdrawnAt))}`
-            : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : (canWithdrawUnannouncedReplacement ? "Repêchage non annoncé" : "En attente annonce speaker"));
-          return `
-          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}">
-            <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
-              <small>${escapeHtml(status)}</small>
-              ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
-            </div>
-            ${row.withdrawnAt ? `
-              <button class="ghost-button compact confirm-button" type="button" data-final-reinstate="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
-                Réintégrer
-              </button>
-            ` : `
-              <button class="ghost-button compact danger-button" type="button" data-final-withdraw="${escapeHtml(result.id)}" data-final-key="${escapeHtml(finalKey)}" data-final-index="${escapeHtml(String(index))}" data-final-row-key="${escapeHtml(finalRowKey(row))}" data-final-expired="${expired ? "1" : "0"}" ${hasDeadline || canWithdrawUnannouncedReplacement ? "" : "disabled"}>
-                Forfait
-              </button>
-            `}
-          </li>
-        `;
-        }).join("")}
-      </ol>
-    </div>
-  `;
+  return livePalmesSecretaryFinals.renderWithdrawalGroupHtml(title, rows.map((row, index) => {
+    const limit = finalWithdrawalLimitLabel(row, result);
+    const canWithdraw = canWithdrawFinalist(row, result, now);
+    const hasDeadline = hasFinalWithdrawalDeadline(row, result);
+    const canWithdrawUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
+    const expired = isFinalWithdrawalDeadlineExpired(row, result, now);
+    return {
+      actionDisabled: !(hasDeadline || canWithdrawUnannouncedReplacement),
+      className: `${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}`,
+      expired,
+      finalKey,
+      index,
+      label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
+      rank: row.rank || "",
+      repechaged: Boolean(row.repechaged && !row.withdrawnAt),
+      resultId: result.id,
+      rowKey: finalRowKey(row),
+      sex: result.sex,
+      status: row.withdrawnAt
+        ? `Forfait ${formatDeadlineTime(new Date(row.withdrawnAt))}`
+        : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : (canWithdrawUnannouncedReplacement ? "Repêchage non annoncé" : "En attente annonce speaker")),
+      withdrawn: Boolean(row.withdrawnAt)
+    };
+  }));
 }
 
 function finalRowIndexByKey(finalists, finalKey, finalIndex, rowKey = "") {
@@ -6871,30 +6737,22 @@ function nextUnqualifiedRowsForSecretary(result) {
 function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false } = {}) {
   const rows = nextUnqualifiedRowsForSecretary(result);
   if (!rows.length) return "";
-  return `
-    <details class="final-withdrawal-group final-unqualified-group" ${open ? "open" : ""}>
-      <summary>Non qualifiés suivants (${escapeHtml(String(rows.length))})</summary>
-      <ol>
-        ${rows.map((row) => {
-          const preWithdrawal = finalPreWithdrawalForRow(result, row);
-          const actionAllowed = !row.resultStatus && row.time;
-          return `
-          <li value="${escapeHtml(row.rank || "")}" class="closed ${preWithdrawal ? "prewithdrawn" : ""}">
-            <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
-              <small>${preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)}</small>
-            </div>
-            ${actions && actionAllowed ? `
-              <button class="ghost-button compact ${preWithdrawal ? "confirm-button" : ""}" type="button" data-final-prewithdraw="${escapeHtml(result.id)}" data-final-row-key="${escapeHtml(finalRowKey(row))}">
-                ${preWithdrawal ? "Annuler pré-forfait" : "Pré-forfait si repêché"}
-              </button>
-            ` : ""}
-          </li>
-        `;
-        }).join("")}
-      </ol>
-    </details>
-  `;
+  return livePalmesSecretaryFinals.renderUnqualifiedGroupHtml({
+    actions,
+    open,
+    rows: rows.map((row) => {
+      const preWithdrawal = finalPreWithdrawalForRow(result, row);
+      return {
+        actionAllowed: Boolean(!row.resultStatus && row.time),
+        label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
+        preWithdrawal: Boolean(preWithdrawal),
+        rank: row.rank || "",
+        resultId: result.id,
+        rowKey: finalRowKey(row),
+        status: preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)
+      };
+    })
+  });
 }
 
 function openFinalWithdrawalsModal(resultId, options = {}) {
@@ -6978,13 +6836,11 @@ function renderFinalCompositionList(result) {
       </ol>
     </div>
   ` : "";
-  return `
-    <div class="final-withdrawal-list">
-      ${renderRows("Finale A", finalists.a || [])}
-      ${renderRows("Finale B", finalists.b || [])}
-      ${renderSecretaryUnqualifiedGroup(result, { actions: false })}
-    </div>
-  `;
+  return livePalmesSecretaryFinals.renderCompositionListHtml({
+    finalAHtml: renderRows("Finale A", finalists.a || []),
+    finalBHtml: renderRows("Finale B", finalists.b || []),
+    unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { actions: false })
+  });
 }
 
 function openFinalCompositionResultModal(resultId) {

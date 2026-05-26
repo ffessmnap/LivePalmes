@@ -72,8 +72,132 @@
     return `<span class="${className}">${escapeHtml(statusBadge.label)}</span>`;
   }
 
+  function renderResultsAdminPanelHtml(options = {}) {
+    const {
+      activeSession = "",
+      publicResultsOnline = true,
+      rowsHtml = "",
+      seriesImportBusy = false,
+      seriesImportStateHtml = "",
+      sessionResultsImportHtml = "",
+      sessions = []
+    } = options;
+    return `
+      <div class="panel-title">
+        <div>
+          <h3>Publication des résultats</h3>
+          <p class="panel-subtitle">Import PDF, publication publique et suivi des finalistes.</p>
+        </div>
+        <div class="results-admin-actions">
+          ${seriesImportStateHtml}
+          ${sessions.length ? `
+            <label class="results-session-select">
+              <span>Session</span>
+              <select id="resultsAdminSessionSelect" aria-label="Session des résultats">
+                ${sessions.map((session) => `
+                  <option value="${escapeHtml(session.number)}" ${activeSession === session.number ? "selected" : ""}>S${escapeHtml(session.number)}</option>
+                `).join("")}
+              </select>
+            </label>
+          ` : ""}
+          <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
+          <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportBusy ? "disabled" : ""}>Importer séries</button>
+          <button class="public-online-toggle ${publicResultsOnline ? "online" : "offline"}" type="button" data-public-results-online-toggle aria-pressed="${publicResultsOnline ? "true" : "false"}">
+            <span></span>${publicResultsOnline ? "Page publique en ligne" : "Page publique hors ligne"}
+          </button>
+          <a class="ghost-button compact" href="resultats.html?v=20260520-session-infos-light" target="_blank" rel="noopener">Page publique</a>
+        </div>
+      </div>
+      <div class="results-admin-list">
+        ${rowsHtml || `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
+        ${sessionResultsImportHtml}
+      </div>
+    `;
+  }
+
+  function renderSessionResultsImportRowHtml(options = {}) {
+    const {
+      activeSession = "",
+      blockingUpload = false,
+      latest = null,
+      latestUpdatedLabel = "",
+      uploadState = null,
+      uploadStateHtml = ""
+    } = options;
+    return `
+      <div class="result-admin-row session-results-import-row ${latest ? "published" : ""} ${uploadState ? "waiting" : ""}">
+        <div>
+          <strong>${activeSession ? `S${escapeHtml(activeSession)} · ` : ""}Résultats complets de session</strong>
+          <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes.")}</span>
+          ${!uploadState && latestUpdatedLabel ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(latestUpdatedLabel)}</small>` : ""}
+        </div>
+        <div class="result-admin-row-actions">
+          ${uploadStateHtml}
+          ${blockingUpload ? "" : `
+            <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
+              ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResultProgramRowHtml(options = {}) {
+    const {
+      blockingUpload = false,
+      definitiveLabel = "",
+      eventLabel = "",
+      finalistCount = 0,
+      hasFinal = false,
+      phaseLabel = "",
+      programKeyValue = "",
+      result = null,
+      resultId = "",
+      row = {},
+      sexLabel = "",
+      status = "",
+      statusControlHtml = "",
+      uploadState = null,
+      uploadStateHtml = ""
+    } = options;
+    return `
+      <div class="result-admin-row ${result ? "published" : ""} ${hasFinal && !result?.finalistsAnnouncedAt ? "waiting" : ""} ${uploadState ? "waiting" : ""}">
+        <div>
+          <strong>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(eventLabel)} ${escapeHtml(sexLabel)} - ${escapeHtml(phaseLabel)}</strong>
+          <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : escapeHtml([row.startTime, status, result?.pdfName].filter(Boolean).join(" - "))}</span>
+          ${!blockingUpload && hasFinal ? `<em>${escapeHtml(String(finalistCount))} finaliste${finalistCount > 1 ? "s" : ""} détecté${finalistCount > 1 ? "s" : ""}</em>` : ""}
+          ${!blockingUpload && definitiveLabel ? `<small class="result-admin-note result-definitive-note">${escapeHtml(definitiveLabel)}</small>` : ""}
+          ${!blockingUpload && hasFinal && !result?.finalistsAnnouncedAt ? `<small class="result-admin-note">PDF et finalistes masqués côté public jusqu'à l'annonce speaker.</small>` : ""}
+        </div>
+        <div class="result-admin-row-actions">
+          ${uploadStateHtml}
+          ${blockingUpload ? "" : statusControlHtml}
+          ${!blockingUpload && result ? `
+            <button class="ghost-button compact" type="button" data-result-reread="${escapeHtml(programKeyValue)}">
+              Relire
+            </button>
+          ` : ""}
+          ${!blockingUpload && result ? `
+            <button class="ghost-button compact confirm-button" type="button" data-result-import="${escapeHtml(programKeyValue)}">
+              Remplacer
+            </button>
+          ` : ""}
+          ${!blockingUpload && result ? `
+            <button class="ghost-button compact danger-button" type="button" data-result-delete="${escapeHtml(resultId)}">
+              Supprimer
+            </button>
+          ` : ""}
+        </div>
+      </div>
+    `;
+  }
+
   global.LivePalmesAdminResults = {
     latestResultSession,
+    renderResultProgramRowHtml,
+    renderResultsAdminPanelHtml,
+    renderSessionResultsImportRowHtml,
     resultStatusBadge,
     resultStatusControlHtml,
     resultStatusLabel,
