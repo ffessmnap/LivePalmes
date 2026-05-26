@@ -4228,6 +4228,10 @@ textarea {
   gap: 12px;
 }
 
+.technical-diagnostic-dialog {
+  width: min(900px, 100%);
+}
+
 .role-codes-dialog .decision-modal-head {
   gap: 10px;
 }
@@ -4352,6 +4356,32 @@ textarea {
 
 .role-codes-dialog .decision-modal-actions button {
   min-height: 34px;
+}
+
+.technical-diagnostic-section {
+  display: grid;
+  gap: 5px;
+  padding: 8px 9px;
+  border: 1px solid #edf3f5;
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
+.technical-diagnostic-section h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.technical-diagnostic-section .competition-diagnostic {
+  border-top: 0;
+  padding-top: 0;
+  opacity: 0.9;
+}
+
+.technical-diagnostic-notes {
+  gap: 4px;
 }
 
 .archive-list {
