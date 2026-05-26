@@ -66,6 +66,29 @@
     return cleanText((Array.isArray(events) ? events : []).find((event) => event.id === eventId)?.label || fallback || eventId || "Course");
   }
 
+  function programKey(row) {
+    return [row?.order, row?.session || "", row?.eventId, row?.sex, row?.stage || "series"].join("|");
+  }
+
+  function publicSessions(program = [], series = [], options = {}) {
+    const values = new Set([
+      ...(Array.isArray(program) ? program : []).map((row) => row.session),
+      ...(options.includeSeries ? (Array.isArray(series) ? series : []).map((row) => row.session) : [])
+    ].filter(Boolean));
+    return [...values].sort((a, b) => Number(a) - Number(b));
+  }
+
+  function rowStartTime(row, program = []) {
+    if (row?.startTime) return row.startTime;
+    const match = (Array.isArray(program) ? program : []).find((item) =>
+      item.eventId === row?.eventId &&
+      item.sex === row?.sex &&
+      (!row?.session || !item.session || item.session === row.session) &&
+      (!isFinalStage(item.stage) || item.stage === row?.stage)
+    );
+    return match?.startTime || "";
+  }
+
   function categoryClass(category) {
     if (sameCategory(category, "Cadet")) return "cat-cadet";
     if (sameCategory(category, "Junior")) return "cat-junior";
@@ -737,6 +760,7 @@
     dedupeSwimmerProgramRows,
     displaySeriesRow,
     entrantForSeriesRow,
+    escapeHtml: escapeHtmlFallback,
     eventLabel,
     eventSignature,
     finalStageLabel,
@@ -761,6 +785,7 @@
     performanceValueLabel,
     performanceMatchesRow,
     performancesForProgramRow,
+    programKey,
     publicCompetitionDocument,
     publicResultFromDoc,
     recordEventMatches,
@@ -779,6 +804,8 @@
     seriesPdfForSession,
     setStatus,
     sexLabel,
+    publicSessions,
+    rowStartTime,
     swimmerKey,
     swimmerCategoryBirthHtml,
     swimmerName,

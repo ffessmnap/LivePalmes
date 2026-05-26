@@ -47,53 +47,52 @@ let lastAppliedPublicProgressKey = "";
 const directResultSessionsLoaded = new Set();
 const swimmerResultDetailsLoading = new Set();
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-
 const publicSwimmers = window.LivePalmesPublicSwimmers || {};
-const cleanText = publicSwimmers.cleanText || ((value) => String(value ?? ""));
-const normalizeText = publicSwimmers.normalizeText || ((value) => cleanText(value).toLowerCase().trim());
-const sameCategory = publicSwimmers.sameCategory || ((a, b) => normalizeText(a) === normalizeText(b));
-const categoryClass = publicSwimmers.categoryClass || (() => "cat-other");
-const isFinalStage = publicSwimmers.isFinalStage || ((stage) => String(stage || "").startsWith("finale"));
-const finalStageLabel = publicSwimmers.finalStageLabel || (() => "Finale");
-const isRelayRow = publicSwimmers.isRelayRow || ((row) => /^4x/i.test(String(row?.eventId || row?.label || "")));
-const recordEventMatches = publicSwimmers.recordEventMatches || ((recordEventId, eventId) => normalizeText(recordEventId) === normalizeText(eventId));
-const birthYearLabel = publicSwimmers.birthYearLabel || ((row) => cleanText(row?.birthDate || row?.birthYear || ""));
-const performanceNameKey = publicSwimmers.performanceNameKey || ((row) => normalizeText([row?.lastName, row?.firstName, row?.displayName, row?.name].filter(Boolean).join(" ")));
-const performanceClubKey = publicSwimmers.performanceClubKey || ((row) => normalizeText(row?.clubCode || row?.club || ""));
-const uniquePerformances = publicSwimmers.uniquePerformances || ((rows) => rows);
-const performanceStatusLabel = publicSwimmers.performanceStatusLabel || ((performance) => cleanText(performance?.statusLabel || ""));
-const performanceValueLabel = publicSwimmers.performanceValueLabel || ((performance) => cleanText(performance?.time || performance?.statusLabel || "-"));
-const performanceDeltaLabel = publicSwimmers.performanceDeltaLabel || (() => "");
-const timeToMs = publicSwimmers.timeToMs || ((value) => Number(value) || Number.POSITIVE_INFINITY);
+const {
+  birthYearLabel,
+  categoryClass,
+  cleanText,
+  finalStageLabel,
+  isFinalStage,
+  isRelayRow,
+  normalizeText,
+  performanceClubKey,
+  performanceDeltaLabel,
+  performanceNameKey,
+  performanceStatusLabel,
+  performanceValueLabel,
+  recordEventMatches,
+  sameCategory,
+  timeToMs,
+  uniquePerformances
+} = publicSwimmers;
 
-function formatPublicDateTime(value) {
-  return publicSwimmers.formatPublicDateTime(value);
+const escapeHtml = (value) => publicSwimmers.escapeHtml(value);
+
+function publicSwimmerOptions(extra = {}) {
+  return {
+    escapeHtml,
+    entrants: publicEntrants,
+    results: publicResults,
+    program: publicProgram,
+    programKey,
+    rowStartTime,
+    eventLabel,
+    sexLabel,
+    isForfait,
+    ...extra
+  };
 }
 
-function setStatus(label, className = "pending") {
-  return publicSwimmers.setStatus(statusBadge, label, className, { escapeHtml });
-}
+const formatPublicDateTime = (value) => publicSwimmers.formatPublicDateTime(value);
 
-function sexLabel(sex) {
-  return publicSwimmers.sexLabel(sex);
-}
+const setStatus = (label, className = "pending") => publicSwimmers.setStatus(statusBadge, label, className, { escapeHtml });
 
-function eventLabel(eventId, fallback = "") {
-  return publicSwimmers.eventLabel(publicEvents, eventId, fallback);
-}
+const sexLabel = (sex) => publicSwimmers.sexLabel(sex);
 
-function programKey(row) {
-  return [row.order, row.session || "", row.eventId, row.sex, row.stage || "series"].join("|");
-}
+const eventLabel = (eventId, fallback = "") => publicSwimmers.eventLabel(publicEvents, eventId, fallback);
+
+const programKey = (row) => publicSwimmers.programKey(row);
 
 function progressMatchesRace(row) {
   return Boolean(publicProgressIsFresh() && row && (
@@ -163,86 +162,50 @@ function renderPublicProgress() {
   `;
 }
 
-function swimmerKey(row) {
-  return publicSwimmers.swimmerKey(row);
-}
+const swimmerKey = (row) => publicSwimmers.swimmerKey(row);
 
-function entrantForSeriesRow(row) {
-  return publicSwimmers.entrantForSeriesRow(row, publicEntrants);
-}
+const entrantForSeriesRow = (row) => publicSwimmers.entrantForSeriesRow(row, publicEntrants);
 
-function displaySeriesRow(row) {
-  return publicSwimmers.displaySeriesRow(row, publicEntrants);
-}
+const displaySeriesRow = (row) => publicSwimmers.displaySeriesRow(row, publicEntrants);
 
-function swimmerName(row) {
-  return publicSwimmers.swimmerName(row, publicEntrants);
-}
+const swimmerName = (row) => publicSwimmers.swimmerName(row, publicEntrants);
 
-function clubLabel(row) {
-  return publicSwimmers.clubLabel(row, publicEntrants);
-}
+const clubLabel = (row) => publicSwimmers.clubLabel(row, publicEntrants);
 
-function lineLabel(row) {
-  return publicSwimmers.lineLabel(row);
-}
+const lineLabel = (row) => publicSwimmers.lineLabel(row);
 
-function seedLabel(row) {
-  return publicSwimmers.seedLabel(row, publicEntrants);
-}
+const seedLabel = (row) => publicSwimmers.seedLabel(row, publicEntrants);
 
-function allPublicPerformances() {
-  return publicSwimmers.allPublicPerformances(publicResults);
-}
+const allPublicPerformances = () => publicSwimmers.allPublicPerformances(publicResults);
 
 function performanceMatchesRow(performance, row) {
-  return publicSwimmers.performanceMatchesRow(performance, row, { entrants: publicEntrants });
+  return publicSwimmers.performanceMatchesRow(performance, row, publicSwimmerOptions());
 }
 
 function performancesForProgramRow(row) {
-  return publicSwimmers.performancesForProgramRow(row, { entrants: publicEntrants, results: publicResults });
+  return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions());
 }
 
 function resultPdfLinksForProgramRow(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.resultPdfLinksForProgramRow(row, performances, { results: publicResults, programKey });
+  return publicSwimmers.resultPdfLinksForProgramRow(row, performances, publicSwimmerOptions());
 }
 
-function resultPdfLabel(result) {
-  return publicSwimmers.resultPdfLabel(result);
-}
+const resultPdfLabel = (result) => publicSwimmers.resultPdfLabel(result);
 
 function renderSwimmerResultPdfLinks(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerResultPdfLinks(row, performances, {
-    escapeHtml,
-    results: publicResults,
-    programKey
-  });
+  return publicSwimmers.renderSwimmerResultPdfLinks(row, performances, publicSwimmerOptions());
 }
 
-function performancePhaseLabel(performance) {
-  return publicSwimmers.performancePhaseLabel(performance);
-}
+const performancePhaseLabel = (performance) => publicSwimmers.performancePhaseLabel(performance);
 
-function performanceInlinePhaseLabel(performance) {
-  return publicSwimmers.performanceInlinePhaseLabel(performance);
-}
+const performanceInlinePhaseLabel = (performance) => publicSwimmers.performanceInlinePhaseLabel(performance);
 
 function renderPerformanceLines(row) {
-  return publicSwimmers.renderPerformanceLines(row, {
-    escapeHtml,
-    entrants: publicEntrants,
-    results: publicResults
-  });
+  return publicSwimmers.renderPerformanceLines(row, publicSwimmerOptions());
 }
 
 function renderSwimmerProgramMeta(row, forfait, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerProgramMeta(row, {
-    escapeHtml,
-    entrants: publicEntrants,
-    results: publicResults,
-    forfait,
-    performances
-  });
+  return publicSwimmers.renderSwimmerProgramMeta(row, publicSwimmerOptions({ forfait, performances }));
 }
 
 function recordFlag(record) {
@@ -273,36 +236,17 @@ function recordDescription(record) {
   ].filter(Boolean).map(cleanText).join(" - ");
 }
 
-function rowStartTime(row) {
-  if (row.startTime) return row.startTime;
-  const program = publicProgram.find((item) =>
-    item.eventId === row.eventId &&
-    item.sex === row.sex &&
-    (!row.session || !item.session || item.session === row.session) &&
-    (!isFinalStage(item.stage) || item.stage === row.stage)
-  );
-  return program?.startTime || "";
-}
+const rowStartTime = (row) => publicSwimmers.rowStartTime(row, publicProgram);
 
-function sessions() {
-  const values = new Set([
-    ...publicProgram.map((row) => row.session),
-    ...publicSeries.map((row) => row.session)
-  ].filter(Boolean));
-  return [...values].sort((a, b) => Number(a) - Number(b));
-}
+const sessions = () => publicSwimmers.publicSessions(publicProgram, publicSeries, { includeSeries: true });
 
 function latestResultSession() {
   return publicSwimmers.latestResultSession(publicResults);
 }
 
-function publicResultFromDoc(doc) {
-  return publicSwimmers.publicResultFromDoc(doc);
-}
+const publicResultFromDoc = (doc) => publicSwimmers.publicResultFromDoc(doc);
 
-function publicCompetitionDocument() {
-  return publicSwimmers.publicCompetitionDocument(FIREBASE_CONFIG, FIRESTORE_COMPETITION_ID);
-}
+const publicCompetitionDocument = () => publicSwimmers.publicCompetitionDocument(FIREBASE_CONFIG, FIRESTORE_COMPETITION_ID);
 
 function mergePublicResults(results = []) {
   publicResults = publicSwimmers.mergePublicResults(publicResults, results).results;
@@ -546,13 +490,9 @@ function goToPreviousPublicSeries() {
   render();
 }
 
-function categoryLabel(category, sex) {
-  return publicSwimmers.categoryLabel(category, sex);
-}
+const categoryLabel = (category, sex) => publicSwimmers.categoryLabel(category, sex);
 
-function swimmerCategoryBirthHtml(row) {
-  return publicSwimmers.swimmerCategoryBirthHtml(row, { escapeHtml });
-}
+const swimmerCategoryBirthHtml = (row) => publicSwimmers.swimmerCategoryBirthHtml(row, { escapeHtml });
 
 function renderSeriesRows(rows) {
   if (!rows.length) {
@@ -577,66 +517,42 @@ function renderSeriesRows(rows) {
   }).join("");
 }
 
-function allSearchSwimmers() {
-  return publicSwimmers.allSearchSwimmers(publicSeries, { entrants: publicEntrants });
-}
+const allSearchSwimmers = () => publicSwimmers.allSearchSwimmers(publicSeries, { entrants: publicEntrants });
 
-function searchSwimmers(query) {
-  return publicSwimmers.searchSwimmers(query, publicSeries, { entrants: publicEntrants, limit: 8 });
-}
+const searchSwimmers = (query) => publicSwimmers.searchSwimmers(query, publicSeries, { entrants: publicEntrants, limit: 8 });
 
-function finalSessionsForRace(eventId, sex) {
-  return publicSwimmers.finalSessionsForRace(eventId, sex, publicProgram);
-}
+const finalSessionsForRace = (eventId, sex) => publicSwimmers.finalSessionsForRace(eventId, sex, publicProgram);
 
-function swimmerProgramSortValue(row) {
-  return publicSwimmers.swimmerProgramSortValue(row);
-}
+const swimmerProgramSortValue = (row) => publicSwimmers.swimmerProgramSortValue(row);
 
-function dedupeSwimmerProgramRows(rows = []) {
-  return publicSwimmers.dedupeSwimmerProgramRows(rows, { program: publicProgram });
-}
+const dedupeSwimmerProgramRows = (rows = []) => publicSwimmers.dedupeSwimmerProgramRows(rows, { program: publicProgram });
 
 function renderInlineSwimmerProgram(key) {
-  return publicSwimmers.renderInlineSwimmerProgram(key, {
+  return publicSwimmers.renderInlineSwimmerProgram(key, publicSwimmerOptions({
     rows: swimmerProgramRows(key),
-    loading: swimmerResultsAreLoading(key),
-    escapeHtml,
-    entrants: publicEntrants,
-    results: publicResults,
-    programKey,
-    rowStartTime,
-    eventLabel,
-    sexLabel,
-    isForfait
-  });
+    loading: swimmerResultsAreLoading(key)
+  }));
 }
 
 function renderSwimmerSearchContent() {
-  return publicSwimmers.renderSwimmerSearchContent({
+  return publicSwimmers.renderSwimmerSearchContent(publicSwimmerOptions({
     query: swimmerSearchQuery,
     selectedKey: selectedSearchSwimmerKey,
     matches: searchSwimmers(swimmerSearchQuery),
-    renderProgram: renderInlineSwimmerProgram,
-    escapeHtml,
-    entrants: publicEntrants
-  });
+    renderProgram: renderInlineSwimmerProgram
+  }));
 }
 
 function renderSwimmerSearchSection() {
-  return publicSwimmers.renderSwimmerSearchSection({
+  return publicSwimmers.renderSwimmerSearchSection(publicSwimmerOptions({
     query: swimmerSearchQuery,
     selectedKey: selectedSearchSwimmerKey,
     matches: searchSwimmers(swimmerSearchQuery),
-    renderProgram: renderInlineSwimmerProgram,
-    escapeHtml,
-    entrants: publicEntrants
-  });
+    renderProgram: renderInlineSwimmerProgram
+  }));
 }
 
-function seriesPdfForSession(session) {
-  return publicSwimmers.seriesPdfForSession(publicSeriesPdfs, session);
-}
+const seriesPdfForSession = (session) => publicSwimmers.seriesPdfForSession(publicSeriesPdfs, session);
 
 function syncSeriesPdfInlineLink() {
   if (!seriesPdfInlineLink) return;
@@ -743,10 +659,7 @@ function render() {
 }
 
 function swimmerProgramRows(key) {
-  return publicSwimmers.swimmerProgramRows(key, publicSeries, {
-    entrants: publicEntrants,
-    program: publicProgram
-  });
+  return publicSwimmers.swimmerProgramRows(key, publicSeries, publicSwimmerOptions());
 }
 
 function renderSwimmerSheet(key) {
@@ -876,30 +789,22 @@ async function loadPublicSessionResultsDirectData(competition, session) {
 }
 
 function swimmerResultSessions(key) {
-  return publicSwimmers.swimmerResultSessions(key, {
-    series: publicSeries,
-    entrants: publicEntrants,
-    program: publicProgram
-  });
+  return publicSwimmers.swimmerResultSessions(key, publicSwimmerOptions({ series: publicSeries }));
 }
 
 function swimmerResultSessionsToLoad(key) {
-  return publicSwimmers.swimmerResultSessionsToLoad(key, {
+  return publicSwimmers.swimmerResultSessionsToLoad(key, publicSwimmerOptions({
     series: publicSeries,
-    entrants: publicEntrants,
-    program: publicProgram,
     loadedSessions: directResultSessionsLoaded
-  });
+  }));
 }
 
 function swimmerResultsAreLoading(key) {
-  return publicSwimmers.swimmerResultsAreLoading(key, {
+  return publicSwimmers.swimmerResultsAreLoading(key, publicSwimmerOptions({
     series: publicSeries,
-    entrants: publicEntrants,
-    program: publicProgram,
     loadedSessions: directResultSessionsLoaded,
     loadingKeys: swimmerResultDetailsLoading
-  });
+  }));
 }
 
 async function ensureSwimmerResultDetails(key) {
@@ -936,9 +841,7 @@ async function refreshPublicSeriesSessionResults(session) {
   }
 }
 
-function liveDataIsNewerThanPublicIndex(remote, index) {
-  return publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
-}
+const liveDataIsNewerThanPublicIndex = (remote, index) => publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
 
 function applyLiveData(remote, index = {}) {
   publicMeet = remote.meet || publicMeet;

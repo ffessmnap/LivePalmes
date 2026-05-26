@@ -7,7 +7,6 @@ const ACTIVE_VIEW_KEY = "napSpeakerFrance2026:active-view:v1";
 const ROLE_STATES_KEY = "napSpeakerFrance2026:role-states:v1";
 const LAST_ACTIVITY_KEY = "napSpeakerFrance2026:last-activity:v1";
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
-const FIRESTORE_TEST_COMPETITION_ID = "livepalmes-test";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "2216!";
 const ROLE_PINS = {
@@ -191,12 +190,8 @@ function competitionModeEnabled() {
   return data.notes?.competitionMode === true;
 }
 
-function trainingModeEnabled() {
-  return trainingModeState.enabled === true;
-}
-
 function realtimeSyncEnabled() {
-  return trainingModeEnabled() || competitionModeEnabled();
+  return competitionModeEnabled();
 }
 
 function publicPositionEnabled() {
@@ -334,7 +329,6 @@ let firestoreDb = null;
 let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
 let resultsUnsubscribe = null;
-let trainingModeUnsubscribe = null;
 let firestoreReady = false;
 let firebaseStatus = "connecting";
 let firebaseConnectionCheckRunning = false;
@@ -359,8 +353,7 @@ let presenceCounts = {};
 let lastPresenceWriteAt = 0;
 let consolePresenceActive = false;
 let lastPublicProgressSignature = "";
-let activeCompetitionId = FIRESTORE_COMPETITION_ID;
-let trainingModeState = { enabled: false, updatedAt: "" };
+const activeCompetitionId = FIRESTORE_COMPETITION_ID;
 let controlPreviewActive = false;
 
 const eventSelect = document.querySelector("#eventSelect");
@@ -472,15 +465,6 @@ function activeCompetitionDocument() {
 function competitionDocument(competitionId = activeCompetitionId) {
   if (!firestoreDb) return null;
   return firestoreDb.collection("competitions").doc(competitionId);
-}
-
-function trainingModeDocument() {
-  if (!firestoreDb) return null;
-  return firestoreDb
-    .collection("competitions")
-    .doc(FIRESTORE_COMPETITION_ID)
-    .collection("testMode")
-    .doc("state");
 }
 
 function alertsCollection() {
@@ -783,7 +767,7 @@ function renderControlTowerPanel() {
         <p>${escapeHtml([data.meet?.name, data.meet?.city, data.meet?.year].filter(Boolean).join(" · ") || "Compétition")}</p>
       </div>
       <div class="control-tower-state">
-        <span class="status-pill ${controlTowerStatusTone(realtimeSyncEnabled() ? "ok" : "warning")}">${trainingModeEnabled() ? "Formation" : (realtimeSyncEnabled() ? "Direct" : "Manuel")}</span>
+        <span class="status-pill ${controlTowerStatusTone(realtimeSyncEnabled() ? "ok" : "warning")}">${realtimeSyncEnabled() ? "Direct" : "Manuel"}</span>
         <span class="status-pill ${controlTowerStatusTone(firebaseStatus === "online" || realtimeSyncEnabled() ? "ok" : "muted")}">Firebase ${escapeHtml(firebaseStatus || "-")}</span>
       </div>
     </div>
@@ -811,7 +795,7 @@ function renderControlTowerPanel() {
       </div>
       <div class="control-action-grid">
         <button class="sync-mode-toggle control-sync-toggle ${directEnabled ? "active" : ""}" type="button" data-control-competition-mode aria-pressed="${directEnabled ? "true" : "false"}">
-          <span aria-hidden="true"></span>${trainingModeEnabled() ? "Formation" : (directEnabled ? "Direct" : "Manuel")}
+          <span aria-hidden="true"></span>${directEnabled ? "Direct" : "Manuel"}
         </button>
         <label class="control-speaker-share-toggle">
           <input type="checkbox" data-control-public-position ${publicPositionEnabled() ? "checked" : ""} ${firestoreDb ? "" : "disabled"}>
@@ -1065,98 +1049,6 @@ async function deleteCollectionDocuments(collectionRef, { nestedItems = false } 
     deleted += 1;
   }
   return deleted;
-}
-
-async function clearTrainingCompetitionData() {
-  const testCompetition = competitionDocument(FIRESTORE_TEST_COMPETITION_ID);
-  if (!testCompetition) return;
-  if (typeof livePalmesAdminMaintenance.clearCompetitionCollections === "function") {
-    await livePalmesAdminMaintenance.clearCompetitionCollections(testCompetition, {
-      firestoreDb,
-      collections: [
-        "alerts",
-        "liveData",
-        "results",
-        "resultPdfs",
-        "seriesPdfs",
-        "sessionResultsPdfs",
-        "public",
-        "roleLocks",
-        "presence",
-        "historyArchives",
-        { name: "resultArchives", nestedItems: true }
-      ]
-    });
-    return;
-  }
-  await deleteCollectionDocuments(testCompetition.collection("alerts"));
-  await deleteCollectionDocuments(testCompetition.collection("liveData"));
-  await deleteCollectionDocuments(testCompetition.collection("results"));
-  await deleteCollectionDocuments(testCompetition.collection("resultPdfs"));
-  await deleteCollectionDocuments(testCompetition.collection("seriesPdfs"));
-  await deleteCollectionDocuments(testCompetition.collection("sessionResultsPdfs"));
-  await deleteCollectionDocuments(testCompetition.collection("public"));
-  await deleteCollectionDocuments(testCompetition.collection("roleLocks"));
-  await deleteCollectionDocuments(testCompetition.collection("presence"));
-  await deleteCollectionDocuments(testCompetition.collection("historyArchives"));
-  await deleteCollectionDocuments(testCompetition.collection("resultArchives"), { nestedItems: true });
-}
-
-async function enableTrainingMode() {
-  if (!firestoreDb) {
-    window.alert("Firebase n'est pas disponible, le mode formation partagé ne peut pas être activé.");
-    return;
-  }
-  const ok = window.confirm("Activer le mode formation partagé ?\n\nLes consoles utiliseront un espace séparé et les pages publiques ne seront pas modifiées.");
-  if (!ok) return;
-  await clearTrainingCompetitionData();
-  const nowIso = new Date().toISOString();
-  const trainingData = normalizeData(livePalmesAdminMaintenance.buildTrainingData
-    ? livePalmesAdminMaintenance.buildTrainingData(data, {
-      nowIso,
-      sourceVersion: `training-${Date.now()}`
-    })
-    : {
-      ...data,
-      notes: {
-        ...(data.notes || {}),
-        trainingMode: true,
-        competitionMode: true,
-        trainingModeStartedAt: nowIso
-      },
-      sourceVersion: `training-${Date.now()}`
-    });
-  await publishLiveDataToCompetition(trainingData, "Activation mode formation", FIRESTORE_TEST_COMPETITION_ID);
-  await trainingModeDocument().set({
-    enabled: true,
-    startedAt: nowIso,
-    updatedAt: nowIso
-  });
-}
-
-async function disableTrainingMode() {
-  if (!firestoreDb) return;
-  const ok = window.confirm("Désactiver le mode formation ?\n\nToutes les données créées pendant la formation seront supprimées et les consoles reviendront aux données réelles.");
-  if (!ok) return;
-  await trainingModeDocument().set({
-    enabled: false,
-    stoppedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-  await clearTrainingCompetitionData();
-}
-
-async function toggleTrainingMode() {
-  try {
-    if (trainingModeEnabled()) {
-      await disableTrainingMode();
-    } else {
-      await enableTrainingMode();
-    }
-  } catch (error) {
-    console.error(error);
-    window.alert(`Mode formation impossible : ${error?.message || error}`);
-  }
 }
 
 async function publishLiveDataToFirestore(nextData, source = "Import PDF séries") {
@@ -1484,9 +1376,6 @@ function renderRoleCodesModal() {
       <div class="admin-extra-zone">
         <span>Administration avancée</span>
         <button class="ghost-button compact" type="button" data-open-control-tower>Ouvrir tour de contrôle</button>
-        <button class="ghost-button compact ${trainingModeEnabled() ? "danger-button" : ""}" type="button" data-training-mode-toggle>
-          ${trainingModeEnabled() ? "Quitter le mode formation" : "Mode formation"}
-        </button>
         <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
         <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
         <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
@@ -1922,11 +1811,6 @@ function stopFirebaseRealtimeSync() {
   resultsUnsubscribe = null;
 }
 
-function stopTrainingModeSync() {
-  trainingModeUnsubscribe?.();
-  trainingModeUnsubscribe = null;
-}
-
 function applyResultsSnapshot(snapshot) {
   const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   raceResults = rows.map(resultWithoutPdf);
@@ -1937,34 +1821,6 @@ function applyResultsSnapshot(snapshot) {
   ensurePendingReplacementSpeakerAlerts();
   migrateResultPdfsOutOfResults(rows).catch((error) => {
     console.warn("Migration des PDF résultats impossible", error);
-  });
-}
-
-function subscribeTrainingModeState() {
-  const doc = trainingModeDocument();
-  if (!doc || trainingModeUnsubscribe) return;
-  trainingModeUnsubscribe = doc.onSnapshot((snapshot) => {
-    const nextState = snapshot.exists
-      ? { enabled: snapshot.data()?.enabled === true, updatedAt: snapshot.data()?.updatedAt || "" }
-      : { enabled: false, updatedAt: "" };
-    const nextCompetitionId = nextState.enabled ? FIRESTORE_TEST_COMPETITION_ID : FIRESTORE_COMPETITION_ID;
-    const changed = nextCompetitionId !== activeCompetitionId;
-    trainingModeState = nextState;
-    if (!changed) {
-      render();
-      return;
-    }
-    activeCompetitionId = nextCompetitionId;
-    activeRoleLock = null;
-    resultsSnapshotReady = false;
-    raceResults = [];
-    alerts = [];
-    saveAlerts();
-    stopFirebaseRealtimeSync();
-    startCompetitionSync();
-    render();
-  }, (error) => {
-    console.warn("Lecture du mode formation impossible", error);
   });
 }
 
@@ -2057,7 +1913,6 @@ function initFirebaseSync() {
       window.firebase.initializeApp(FIREBASE_CONFIG);
     }
     firestoreDb = window.firebase.firestore();
-    subscribeTrainingModeState();
     startCompetitionSync();
   } catch (error) {
     console.warn("Initialisation Firebase impossible", error);
@@ -3013,16 +2868,13 @@ function render() {
   document.body.classList.toggle("role-computer", state.role === "computer");
   document.body.classList.toggle("role-secretary", state.role === "secretary");
   document.body.classList.toggle("role-control", state.role === "control");
-  document.body.classList.toggle("training-mode", trainingModeEnabled());
   document.body.classList.toggle("control-preview-active", controlPreviewActive);
   if (profileHome) profileHome.hidden = !profileHomeActive;
   if (appShell) appShell.hidden = profileHomeActive;
   if (racePanel) racePanel.hidden = isControlTowerView();
   if (sidebar) sidebar.hidden = isControlTowerView();
   if (profileModeStatus) {
-    profileModeStatus.textContent = trainingModeEnabled()
-      ? "Mode formation"
-      : competitionModeEnabled()
+    profileModeStatus.textContent = competitionModeEnabled()
       ? "Direct actif"
       : "Actualisation manuelle";
     profileModeStatus.classList.toggle("active", realtimeSyncEnabled());
@@ -3042,7 +2894,7 @@ function render() {
   if (competitionModeTopBtn) {
     const competitionMode = realtimeSyncEnabled();
     competitionModeTopBtn.hidden = profileHomeActive || state.role !== "computer";
-    competitionModeTopBtn.innerHTML = `<span aria-hidden="true"></span>${trainingModeEnabled() ? "Formation" : (competitionMode ? "Direct" : "Manuel")}`;
+    competitionModeTopBtn.innerHTML = `<span aria-hidden="true"></span>${competitionMode ? "Direct" : "Manuel"}`;
     competitionModeTopBtn.setAttribute("aria-pressed", competitionMode ? "true" : "false");
     competitionModeTopBtn.title = competitionMode
       ? "Passer les consoles en actualisation manuelle"
@@ -3058,7 +2910,7 @@ function render() {
   document.querySelectorAll(".role-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === state.role);
   });
-  if (roleBadge) roleBadge.textContent = `${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " - Vue tour" : ""}${trainingModeEnabled() ? " - Formation" : ""}`;
+  if (roleBadge) roleBadge.textContent = `${ROLE_LABELS[state.role] || "Console"}${controlPreviewActive ? " - Vue tour" : ""}`;
   if (fullscreenBtn) {
     fullscreenBtn.hidden = profileHomeActive;
     fullscreenBtn.textContent = isFullscreenMode ? "Quitter plein écran" : "Plein écran";
@@ -5344,7 +5196,7 @@ function renderDataStatus(message = "") {
     dataStatus.innerHTML = `
       <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
       <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
-      <span><strong>Actualisation</strong> ${trainingModeEnabled() ? "formation" : (competitionModeEnabled() ? "directe" : "manuelle")}</span>
+      <span><strong>Actualisation</strong> ${competitionModeEnabled() ? "directe" : "manuelle"}</span>
       <span><strong>Codes</strong> ${pinLockEnabled() ? "actifs" : "inactifs"}</span>
       <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
       <span>${escapeHtml(String(entrantTotal))} engagements</span>
@@ -5362,9 +5214,8 @@ function renderDataStatus(message = "") {
 }
 
 function firebaseStatusMeta() {
-  const suffix = trainingModeEnabled() ? " - Formation" : "";
   if (firebaseStatus === "connected") {
-    return { label: `${realtimeSyncEnabled() ? "Direct actif" : "Connecté"}${suffix}`, className: "ok" };
+    return { label: realtimeSyncEnabled() ? "Direct actif" : "Connecté", className: "ok" };
   }
   if (firebaseStatus === "error") {
     return { label: "Connexion interrompue", className: "error" };
@@ -9736,11 +9587,6 @@ roleCodesModal?.addEventListener("click", async (event) => {
     controlPreviewActive = false;
     closeRoleCodesModal();
     await openRoleConsole("control");
-    return;
-  }
-  if (event.target.closest("[data-training-mode-toggle]")) {
-    await toggleTrainingMode();
-    renderRoleCodesModal();
     return;
   }
   if (event.target.closest("[data-technical-diagnostic]")) {
