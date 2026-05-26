@@ -105,50 +105,39 @@ const fallbackData = {
 const sampleData = window.SPEAKER_DATA || fallbackData;
 const livePalmesFirebase = window.LivePalmesFirebase || {};
 const livePalmesRoleAccess = window.LivePalmesRoleAccess || {};
+const livePalmesRoleState = window.LivePalmesRoleState || {};
+const livePalmesRaceCore = window.LivePalmesRaceCore || {};
+const livePalmesAlerts = window.LivePalmesAlerts || {};
+const livePalmesFinalists = window.LivePalmesFinalists || {};
 const livePalmesPublication = window.LivePalmesPublication || {};
 
 let data = loadData();
 let unlockedRoles = loadUnlockedRoles();
 function createRoleState(role = "speaker") {
   const initial = initialProgramPosition();
-  return {
-  eventId: initial.eventId || data.events[0]?.id || "",
-  sex: initial.sex || "F",
-  search: "",
-  category: "all",
-  series: initial.series || "all",
-  session: initial.session || "all",
-  programKey: initial.programKey || "",
-  lineOrder: "asc",
-  selectedSwimmerId: "",
-  selectedRecordKey: "",
-  liveMode: true,
-    role
-  };
+  return livePalmesRoleState.createRoleState({
+    role,
+    initial,
+    firstEventId: data.events[0]?.id || ""
+  });
 }
 
 function cloneRoleState(nextState) {
-  return { ...nextState, search: "", selectedSwimmerId: "", selectedRecordKey: "" };
+  return livePalmesRoleState.cloneRoleState(nextState);
 }
 
 function defaultRoleStates() {
-  return {
-    control: createRoleState("control"),
-    speaker: createRoleState("speaker"),
-    live: createRoleState("live"),
-    referee: createRoleState("referee"),
-    video: createRoleState("video"),
-    computer: createRoleState("computer"),
-    secretary: createRoleState("secretary")
-  };
+  const initial = initialProgramPosition();
+  return livePalmesRoleState.defaultRoleStates({
+    initial,
+    firstEventId: data.events[0]?.id || ""
+  });
 }
 
 function normalizeRoleState(role, savedState, fallbackState) {
-  const nextState = cloneRoleState({ ...fallbackState, ...(savedState || {}), role });
-  if (nextState.eventId && !data.events.some((event) => event.id === nextState.eventId)) {
-    return cloneRoleState(fallbackState);
-  }
-  return nextState;
+  return livePalmesRoleState.normalizeRoleState(role, savedState, fallbackState, (eventId) =>
+    data.events.some((event) => event.id === eventId)
+  );
 }
 
 function loadRoleStates() {
@@ -156,11 +145,11 @@ function loadRoleStates() {
   const saved = localStorage.getItem(ROLE_STATES_KEY);
   if (!saved) return defaults;
   try {
-    const parsed = JSON.parse(saved);
-    return Object.fromEntries(Object.keys(defaults).map((role) => [
-      role,
-      normalizeRoleState(role, parsed?.[role], defaults[role])
-    ]));
+    return livePalmesRoleState.parseRoleStates(saved, {
+      initial: initialProgramPosition(),
+      firstEventId: data.events[0]?.id || "",
+      eventExists: (eventId) => data.events.some((event) => event.id === eventId)
+    });
   } catch {
     return defaults;
   }
@@ -171,14 +160,7 @@ function saveRoleStates() {
 }
 
 function loadUnlockedRoles() {
-  const saved = localStorage.getItem(UNLOCKED_ROLES_KEY);
-  if (!saved) return [];
-  try {
-    const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  return livePalmesRoleState.parseUnlockedRoles(localStorage.getItem(UNLOCKED_ROLES_KEY));
 }
 
 function saveUnlockedRoles() {
@@ -659,20 +641,11 @@ async function setPublicPositionEnabled(enabled) {
 }
 
 function homeActionCounts() {
-  const counts = emptyPresenceCounts();
-  alerts.forEach((alert) => {
-    if (alert.cancelledAt || alert.type === "final_composition_ready") return;
-    if (alert.speakerStatus === "pending") counts.speaker += 1;
-    if (alert.requiresVideo && alert.videoStatus === "pending") counts.video += 1;
-    if (alert.informaticsStatus === "pending") counts.computer += 1;
-    if (alert.type === "forfait" && alert.secretaryStatus === "pending") counts.secretary += 1;
-  });
-  return counts;
+  return livePalmesAlerts.homeActionCounts(alerts, emptyPresenceCounts());
 }
 
 function actionCountLabel(count) {
-  const value = Number(count || 0);
-  return `${value} action${value > 1 ? "s" : ""}`;
+  return livePalmesAlerts.actionCountLabel(count);
 }
 
 function renderHomeActionCounts() {
@@ -711,22 +684,7 @@ function controlTowerProgressLabel(progress) {
 }
 
 function controlTowerPendingCounts() {
-  const counts = {
-    speaker: 0,
-    video: 0,
-    computer: 0,
-    secretary: 0,
-    referee: 0
-  };
-  alerts.forEach((alert) => {
-    if (alert.cancelledAt || alert.type === "final_composition_ready") return;
-    if (alert.speakerStatus === "pending") counts.speaker += 1;
-    if (alert.requiresVideo && alert.videoStatus === "pending") counts.video += 1;
-    if (alert.informaticsStatus === "pending") counts.computer += 1;
-    if (alert.type === "forfait" && alert.secretaryStatus === "pending") counts.secretary += 1;
-    if (alert.roleSource === "referee" && !alert.informaticsDoneAt && !alert.speakerAnnouncedAt && !alert.cancelledAt) counts.referee += 1;
-  });
-  return counts;
+  return livePalmesAlerts.controlTowerPendingCounts(alerts);
 }
 
 function controlTowerSessionRows() {
@@ -966,7 +924,7 @@ function showToast(message, tone = "error") {
 }
 
 function isFinalResultAlert(alert) {
-  return alert?.type === "finalists_announcement" || alert?.type === "finalist_replacement_announcement";
+  return livePalmesAlerts.isFinalResultAlert(alert);
 }
 
 async function deleteFinalResultAlerts(resultId) {
@@ -2307,12 +2265,11 @@ function recordMatchesRace(record, eventId = state.eventId, sex = state.sex) {
 }
 
 function isFinalStage(stage) {
-  return String(stage || "").startsWith("finale");
+  return livePalmesRaceCore.isFinalStage(stage);
 }
 
 function finalStageLabel(stage) {
-  const letter = String(stage || "").split("-")[1]?.toUpperCase();
-  return letter ? `Finale ${letter}` : "Finale";
+  return livePalmesRaceCore.finalStageLabel(stage);
 }
 
 function isFemaleContext(sex = state.sex) {
@@ -2462,7 +2419,7 @@ function updateEventSelect() {
 }
 
 function raceOptionKey(eventId, sex) {
-  return `${eventId || ""}|${sex || ""}`;
+  return livePalmesRaceCore.raceOptionKey(eventId, sex);
 }
 
 function raceProgramRowsForOption(eventId, sex) {
@@ -2514,7 +2471,7 @@ function programRowFromRaceOption(value) {
 }
 
 function programKey(row) {
-  return [row.order, row.session || "", row.eventId, row.sex, row.stage || "series"].join("|");
+  return livePalmesRaceCore.programKey(row);
 }
 
 function programLabel(row) {
@@ -3013,50 +2970,19 @@ function renderSessionControls() {
 }
 
 function currentRoleAlertFilter(alert) {
-  if (alert.type === "final_composition_ready") return false;
-  if (alert.cancelledAt) return false;
-  if (speakerAlertAlreadyResolvedByResult(alert)) return false;
-  if (state.role === "live") {
-    if (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") return false;
-    return alert.speakerStatus !== "none" && !liveDismissedAlertIds.includes(alert.id);
-  }
-  if (state.role === "speaker") {
-    return alert.speakerStatus === "pending";
-  }
-  if (state.role === "video") {
-    return alert.requiresVideo && alert.videoStatus === "pending";
-  }
-  if (state.role === "computer") {
-    return alert.informaticsStatus === "pending";
-  }
-  if (state.role === "secretary") {
-    if (alert.type === "forfait" && alert.secretaryStatus === "pending") return true;
-    return alert.speakerStatus === "pending" &&
-      (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement");
-  }
-  return false;
+  return livePalmesAlerts.currentRoleAlertFilter(alert, {
+    role: state.role,
+    liveDismissedAlertIds,
+    resolvedByResult: speakerAlertAlreadyResolvedByResult(alert)
+  });
 }
 
 function speakerAlertAlreadyResolvedByResult(alert) {
-  if (alert.type === "finalists_announcement") {
-    const result = raceResults.find((item) => item.id === alert.resultId);
-    return Boolean(result?.finalistsAnnouncedAt);
-  }
-  if (alert.type === "finalist_replacement_announcement") {
-    const result = raceResults.find((item) => item.id === alert.resultId);
-    if (!result) return false;
-    return ["a", "b"].some((finalKey) => (result.finalists?.[finalKey] || []).some((row) =>
-      row.repechaged &&
-      row.repechageAnnouncedAt &&
-      finalistRowName(row) === alert.replacementName &&
-      (!alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || ""))
-    ));
-  }
-  return false;
+  return livePalmesAlerts.speakerAlertAlreadyResolvedByResult(alert, raceResults, finalistRowName);
 }
 
 function isRequalificationAlert(alert) {
-  return alert.type === "requalification" || alert.type === "ja_cancellation";
+  return livePalmesAlerts.isRequalificationAlert(alert);
 }
 
 function alertRaceLabel(alert) {
@@ -3150,7 +3076,7 @@ function speakerAlertSentence(alert) {
 }
 
 function isDsqAlert(alert) {
-  return !["forfait", "abandon", "requalification", "ja_cancellation", "finalists_announcement", "finalist_replacement_announcement"].includes(alert.type);
+  return livePalmesAlerts.isDsqAlert(alert);
 }
 
 function activeDsqAlertsForEntrant(entrant) {
@@ -3178,18 +3104,7 @@ function activeLineAlertsForEntrant(entrant) {
 }
 
 function alertLineCode(alert) {
-  const codes = {
-    forfait: "ABS",
-    abandon: "ABD",
-    false_start: "FD",
-    relay_early_start: "DA",
-    underwater_15m: "+15m",
-    immersion: "FSTYLE",
-    bottle_fault: "BOUT",
-    interference: "GENE",
-    other_dsq: "AUTRE"
-  };
-  return codes[alert.type] || "";
+  return livePalmesAlerts.alertLineCode(alert);
 }
 
 function renderLineAlertBadges(lineAlerts) {
@@ -4126,16 +4041,11 @@ function formatDeadlineTime(date) {
 }
 
 function finalistAnnouncedAt(row, result) {
-  if (row?.repechaged) return row.repechageAnnouncedAt || "";
-  return row?.announcedAt || result?.finalistsAnnouncedAt || "";
+  return livePalmesFinalists.finalistAnnouncedAt(row, result);
 }
 
 function finalWithdrawalLimitDate(row, result) {
-  const announcedAt = finalistAnnouncedAt(row, result);
-  if (!announcedAt) return null;
-  const date = new Date(new Date(announcedAt).getTime() + 30 * 60 * 1000);
-  if (Number.isNaN(date.getTime())) return "";
-  return date;
+  return livePalmesFinalists.finalWithdrawalLimitDate(row, result);
 }
 
 function finalWithdrawalLimitLabel(row, result) {
@@ -4144,27 +4054,23 @@ function finalWithdrawalLimitLabel(row, result) {
 }
 
 function canWithdrawFinalist(row, result, now = new Date()) {
-  if (row?.withdrawnAt) return false;
-  const limit = finalWithdrawalLimitDate(row, result);
-  return Boolean(limit) && now <= limit;
+  return livePalmesFinalists.canWithdrawFinalist(row, result, now);
 }
 
 function hasFinalWithdrawalDeadline(row, result) {
-  return Boolean(finalWithdrawalLimitDate(row, result));
+  return livePalmesFinalists.hasFinalWithdrawalDeadline(row, result);
 }
 
 function canWithdrawBeforeReplacementAnnouncement(row) {
-  return Boolean(row?.repechaged && !row.repechageAnnouncedAt && !row.withdrawnAt);
+  return livePalmesFinalists.canWithdrawBeforeReplacementAnnouncement(row);
 }
 
 function isFinalWithdrawalDeadlineExpired(row, result, now = new Date()) {
-  const limit = finalWithdrawalLimitDate(row, result);
-  return Boolean(limit) && now > limit;
+  return livePalmesFinalists.isFinalWithdrawalDeadlineExpired(row, result, now);
 }
 
 function finalResultSessions(results = []) {
-  return [...new Set(results.map((result) => String(result.session || "")).filter(Boolean))]
-    .sort((a, b) => Number(a || 0) - Number(b || 0));
+  return livePalmesFinalists.finalResultSessions(results);
 }
 
 function ensureSecretaryFinalsSession(finals = []) {
