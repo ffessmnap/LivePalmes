@@ -4083,15 +4083,6 @@ function renderResultsAdminPanel() {
   renderComputerFooterPanel();
 }
 
-function diagnosticItem(label, value, status = "ok") {
-  return `
-    <span class="diagnostic-item ${escapeHtml(status)}">
-      <strong>${escapeHtml(value)}</strong>
-      <small>${escapeHtml(label)}</small>
-    </span>
-  `;
-}
-
 const livePalmesDiagnostics = window.LivePalmesDiagnostics || {
   formatByteSize(bytes) {
     const value = Number(bytes || 0);
@@ -4121,6 +4112,28 @@ const livePalmesDiagnostics = window.LivePalmesDiagnostics || {
 const formatByteSize = livePalmesDiagnostics.formatByteSize;
 const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
 const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
+const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
+const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
+  <span class="diagnostic-item ${escapeHtml(status)}">
+    <strong>${escapeHtml(value)}</strong>
+    <small>${escapeHtml(label)}</small>
+  </span>
+`);
+const technicalDiagnosticStatus = livePalmesAdminDiagnostics.technicalDiagnosticStatus || ((value, warnLimit = 0, dangerLimit = Number.POSITIVE_INFINITY) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "neutral";
+  if (number >= dangerLimit) return "warn";
+  if (number > warnLimit) return "warn";
+  return "ok";
+});
+const technicalDiagnosticSection = livePalmesAdminDiagnostics.technicalDiagnosticSection || ((title, items = []) => `
+  <div class="technical-diagnostic-section">
+    <h3>${escapeHtml(title)}</h3>
+    <div class="competition-diagnostic">
+      ${items.map((item) => diagnosticItem(item.label, item.value, item.status || "neutral")).join("")}
+    </div>
+  </div>
+`);
 
 function renderCompetitionDiagnostic() {
   const sessions = sessionRows();
@@ -5470,25 +5483,6 @@ async function showPerformanceDiagnosticModal() {
   renderPerformanceDiagnosticModal(report);
 }
 
-function technicalDiagnosticStatus(value, warnLimit = 0, dangerLimit = Number.POSITIVE_INFINITY) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "neutral";
-  if (number >= dangerLimit) return "warn";
-  if (number > warnLimit) return "warn";
-  return "ok";
-}
-
-function technicalDiagnosticSection(title, items = []) {
-  return `
-    <div class="technical-diagnostic-section">
-      <h3>${escapeHtml(title)}</h3>
-      <div class="competition-diagnostic">
-        ${items.map((item) => diagnosticItem(item.label, item.value, item.status || "neutral")).join("")}
-      </div>
-    </div>
-  `;
-}
-
 async function safeCountCollection(collection) {
   try {
     return await countCollectionDocuments(collection);
@@ -5509,70 +5503,36 @@ async function safeDocumentData(documentRef) {
 }
 
 function alertPendingTargets(alert, { respectLiveDismissed = true } = {}) {
-  if (!alert || alert.cancelledAt || alert.type === "final_composition_ready") return [];
-  const targets = [];
-  if (alert.speakerStatus === "pending" && !speakerAlertAlreadyResolvedByResult(alert)) targets.push("speaker");
-  if (
-    alert.speakerStatus !== "none" &&
-    alert.type !== "finalists_announcement" &&
-    alert.type !== "finalist_replacement_announcement" &&
-    (!respectLiveDismissed || !liveDismissedAlertIds.includes(alert.id))
-  ) {
-    targets.push("live");
+  if (typeof livePalmesAdminDiagnostics.alertPendingTargets === "function") {
+    return livePalmesAdminDiagnostics.alertPendingTargets(alert, {
+      isResolvedByResult: speakerAlertAlreadyResolvedByResult,
+      liveDismissedIds: liveDismissedAlertIds,
+      respectLiveDismissed
+    });
   }
-  if (alert.requiresVideo && alert.videoStatus === "pending") targets.push("video");
-  if (alert.informaticsStatus === "pending") targets.push("computer");
-  if (alert.type === "forfait" && alert.secretaryStatus === "pending") targets.push("secretary");
-  if (alert.roleSource === "referee" && !alert.informaticsDoneAt && !alert.speakerAnnouncedAt) targets.push("referee");
-  return [...new Set(targets)];
+  return [];
 }
 
 function alertPendingBreakdown(rows = [], options = {}) {
-  const counts = {
-    live: 0,
-    speaker: 0,
-    video: 0,
-    computer: 0,
-    secretary: 0,
-    referee: 0
-  };
-  const pending = [];
-  rows.forEach((alert) => {
-    const targets = alertPendingTargets(alert, options);
-    if (!targets.length) return;
-    targets.forEach((target) => {
-      counts[target] += 1;
+  if (typeof livePalmesAdminDiagnostics.alertPendingBreakdown === "function") {
+    return livePalmesAdminDiagnostics.alertPendingBreakdown(rows, {
+      ...options,
+      alertRaceLabel,
+      alertStatusLabel,
+      decisionMotifLabel,
+      fullAlertIdentityLabel,
+      isResolvedByResult: speakerAlertAlreadyResolvedByResult,
+      liveDismissedIds: liveDismissedAlertIds
     });
-    pending.push({ alert, targets });
-  });
-  return {
-    counts,
-    total: pending.length,
-    examples: pending
-      .sort((a, b) => String(b.alert.createdAt || "").localeCompare(String(a.alert.createdAt || "")))
-      .slice(0, 8)
-      .map(({ alert, targets }) => ({
-        id: alert.id || "",
-        targets,
-        type: decisionMotifLabel(alert),
-        status: alertStatusLabel(alert),
-        race: alertRaceLabel(alert),
-        identity: fullAlertIdentityLabel(alert),
-        createdAt: alert.createdAt || alert.updatedAt || ""
-      }))
-  };
+  }
+  return { counts: {}, examples: [], total: 0 };
 }
 
 function alertTargetsLabel(targets = []) {
-  const labels = {
-    live: "Live",
-    speaker: "Speaker",
-    video: "Vidéo",
-    computer: "Bureau perf",
-    secretary: "Secrétariat",
-    referee: "JA"
-  };
-  return targets.map((target) => labels[target] || target).join(", ");
+  if (typeof livePalmesAdminDiagnostics.alertTargetsLabel === "function") {
+    return livePalmesAdminDiagnostics.alertTargetsLabel(targets);
+  }
+  return targets.join(", ");
 }
 
 async function collectTechnicalDiagnostic() {
@@ -5699,13 +5659,10 @@ async function collectTechnicalDiagnostic() {
 }
 
 function resultHasDetailsForDiagnostic(result) {
-  return Boolean(result && (
-    (Array.isArray(result.ranking) && result.ranking.length) ||
-    (Array.isArray(result.performances) && result.performances.length) ||
-    (Array.isArray(result.nextUnqualified) && result.nextUnqualified.length) ||
-    (Array.isArray(result.finalists?.a) && result.finalists.a.length) ||
-    (Array.isArray(result.finalists?.b) && result.finalists.b.length)
-  ));
+  if (typeof livePalmesAdminDiagnostics.resultHasDetails === "function") {
+    return livePalmesAdminDiagnostics.resultHasDetails(result);
+  }
+  return Boolean(result?.ranking?.length || result?.performances?.length);
 }
 
 function renderTechnicalDiagnosticModal(report) {
