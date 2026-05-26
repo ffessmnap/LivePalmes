@@ -1,5 +1,5 @@
 (function attachLivePalmesRoleAccess(global) {
-  const KNOWN_ROLES = ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
+  const KNOWN_ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 
   function pinLockEnabled(notes = {}) {
     return notes?.pinLockEnabled === true;

@@ -88,12 +88,6 @@ body.role-secretary {
   --logo-filter: none;
 }
 
-body.role-control {
-  --role-accent: #0b7285;
-  --role-accent-soft: #e7f5f7;
-  --logo-filter: none;
-}
-
 body.profile-home-active {
   --role-accent: #0b7285;
   --role-accent-soft: #e7f5f7;
@@ -760,10 +754,6 @@ body.profile-home-active .top-actions {
 
 .profile-live {
   --profile-color: #1971c2;
-}
-
-.profile-control {
-  --profile-color: #0b7285;
 }
 
 .profile-speaker {
@@ -2944,33 +2934,6 @@ tbody tr:hover,
 }
 
 @media (max-width: 720px) {
-  .control-tower-head,
-  .control-tower-grid,
-  .control-tower-columns {
-    grid-template-columns: 1fr;
-  }
-
-  .control-tower-head {
-    display: grid;
-  }
-
-  .control-tower-state {
-    justify-content: flex-start;
-  }
-
-  .control-console-row,
-  .control-session-row {
-    grid-template-columns: 1fr;
-  }
-
-  .control-action-grid {
-    align-items: stretch;
-  }
-
-  .control-action-grid > * {
-    width: 100%;
-  }
-
   .topbar,
   .race-header {
     flex-direction: column;

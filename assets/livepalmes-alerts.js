@@ -28,25 +28,6 @@
     return counts;
   }
 
-  function controlTowerPendingCounts(alerts = []) {
-    const counts = {
-      speaker: 0,
-      video: 0,
-      computer: 0,
-      secretary: 0,
-      referee: 0
-    };
-    alerts.forEach((alert) => {
-      if (alert.cancelledAt || alert.type === "final_composition_ready") return;
-      if (alert.speakerStatus === "pending") counts.speaker += 1;
-      if (alert.requiresVideo && alert.videoStatus === "pending") counts.video += 1;
-      if (alert.informaticsStatus === "pending") counts.computer += 1;
-      if (alert.type === "forfait" && alert.secretaryStatus === "pending") counts.secretary += 1;
-      if (alert.roleSource === "referee" && !alert.informaticsDoneAt && !alert.speakerAnnouncedAt && !alert.cancelledAt) counts.referee += 1;
-    });
-    return counts;
-  }
-
   function speakerAlertAlreadyResolvedByResult(alert, results = [], finalistRowName = () => "") {
     if (alert?.type === "finalists_announcement") {
       const result = results.find((item) => item.id === alert.resultId);
@@ -106,7 +87,6 @@
   global.LivePalmesAlerts = {
     actionCountLabel,
     alertLineCode,
-    controlTowerPendingCounts,
     currentRoleAlertFilter,
     homeActionCounts,
     isDsqAlert,
