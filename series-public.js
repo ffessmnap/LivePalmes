@@ -957,12 +957,21 @@ function dedupeSwimmerProgramRows(rows = []) {
 }
 
 function renderInlineSwimmerProgram(key) {
-  if (swimmerResultDetailsLoading.has(key)) {
-    return `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>`;
-  }
   const rows = swimmerProgramRows(key);
   const swimmer = rows[0];
   if (!swimmer) return "";
+  if (swimmerResultsAreLoading(key)) {
+    return `
+      <div class="public-search-program">
+        <div class="public-search-program-head">
+          <span>${escapeHtml(clubLabel(swimmer) || "-")}</span>
+          <strong>${escapeHtml(swimmerName(swimmer))}</strong>
+          <em>${swimmerCategoryBirthHtml(swimmer)}</em>
+        </div>
+        <p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>
+      </div>
+    `;
+  }
   return `
     <div class="public-search-program">
       <div class="public-search-program-head">
@@ -1153,6 +1162,7 @@ function renderSwimmerSheet(key) {
   const rows = swimmerProgramRows(key);
   const swimmer = rows[0];
   if (!swimmer || !swimmerSheet) return;
+  const loadingResults = swimmerResultsAreLoading(key);
   swimmerSheet.hidden = false;
   swimmerSheet.innerHTML = `
     <div class="public-swimmer-backdrop" data-close-swimmer></div>
@@ -1167,7 +1177,7 @@ function renderSwimmerSheet(key) {
       </div>
       <p class="panel-subtitle">Programme du week-end · horaires indicatifs</p>
       <div class="public-swimmer-program">
-        ${rows.map((row) => {
+        ${loadingResults ? `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>` : rows.map((row) => {
           const time = row.startTime || rowStartTime(row);
           const forfait = isForfait(row);
           const performances = performancesForProgramRow(row);
@@ -1291,10 +1301,21 @@ function swimmerResultSessions(key) {
   return [...sessions].filter(Boolean);
 }
 
+function swimmerResultSessionsToLoad(key) {
+  return swimmerResultSessions(key)
+    .filter((session) => !directResultSessionsLoaded.has(session));
+}
+
+function swimmerResultsAreLoading(key) {
+  return Boolean(key && (
+    swimmerResultDetailsLoading.has(key) ||
+    swimmerResultSessionsToLoad(key).length
+  ));
+}
+
 async function ensureSwimmerResultDetails(key) {
   if (!key || swimmerResultDetailsLoading.has(key)) return;
-  const sessionsToLoad = swimmerResultSessions(key)
-    .filter((session) => !directResultSessionsLoaded.has(session));
+  const sessionsToLoad = swimmerResultSessionsToLoad(key);
   if (!sessionsToLoad.length) return;
   const competition = publicCompetitionDocument();
   if (!competition) return;
