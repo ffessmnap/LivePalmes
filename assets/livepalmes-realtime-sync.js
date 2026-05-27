@@ -41,12 +41,12 @@
         initFirebaseSync();
         render();
       }
-      
+
       function markConsoleActivity() {
         context.lastConsoleActivityAt = Date.now();
         saveLastActivityTimestamp(context.lastConsoleActivityAt);
       }
-      
+
       async function returnHomeAfterLocalInactivity() {
         if (!shouldReturnHomeForInactivity() || context.profileHomeActive) return;
         saveCurrentRoleState();
@@ -58,7 +58,7 @@
         render();
         refreshPresenceCounts();
       }
-      
+
       async function disableCompetitionModeAfterInactivity() {
         if (context.competitionAutoDisableRunning || !competitionModeEnabled()) return;
         if (context.state?.role !== "computer" || context.profileHomeActive || document.visibilityState !== "visible") return;
@@ -76,7 +76,7 @@
           context.competitionAutoDisableRunning = false;
         }
       }
-      
+
       function stopFirebaseRealtimeSync() {
         context.firestoreUnsubscribe?.();
         context.liveDataUnsubscribe?.();
@@ -85,7 +85,7 @@
         context.liveDataUnsubscribe = null;
         context.resultsUnsubscribe = null;
       }
-      
+
       function applyResultsSnapshot(snapshot) {
         const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         context.raceResults = rows.map(resultWithoutPdf);
@@ -98,7 +98,62 @@
           console.warn("Migration des PDF résultats impossible", error);
         });
       }
-      
+
+      function firestoreRestValueToJs(value = {}) {
+        if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
+        if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue);
+        if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue);
+        if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return Boolean(value.booleanValue);
+        if (Object.prototype.hasOwnProperty.call(value, "timestampValue")) return value.timestampValue;
+        if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
+        if (value.arrayValue) return (value.arrayValue.values || []).map(firestoreRestValueToJs);
+        if (value.mapValue) return firestoreRestFieldsToJs(value.mapValue.fields || {});
+        return "";
+      }
+
+      function firestoreRestFieldsToJs(fields = {}) {
+        return Object.fromEntries(
+          Object.entries(fields).map(([key, value]) => [key, firestoreRestValueToJs(value)])
+        );
+      }
+
+      function firestoreRestDocToJs(document = {}) {
+        const id = String(document.name || "").split("/").pop() || "";
+        return { id, ...firestoreRestFieldsToJs(document.fields || {}) };
+      }
+
+      async function fetchAlertsWithRestFallback() {
+        const projectId = FIREBASE_CONFIG?.projectId;
+        if (!projectId || !window.fetch) return null;
+        const baseUrl = "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(projectId) + "/databases/(default)/documents/competitions/livepalmes-active/alerts?pageSize=300";
+        const documents = [];
+        let pageToken = "";
+        do {
+          const url = baseUrl + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
+          const response = await window.fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error("Firestore REST " + response.status);
+          const payload = await response.json();
+          documents.push(...(payload.documents || []));
+          pageToken = payload.nextPageToken || "";
+        } while (pageToken);
+        return documents
+          .map(firestoreRestDocToJs)
+          .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      }
+
+      async function applyAlertsRestFallback(showMessage = false) {
+        const rows = await fetchAlertsWithRestFallback();
+        if (!rows) return false;
+        context.alerts = rows;
+        saveAlerts();
+        context.firebaseStatus = "manual";
+        render();
+        if (showMessage && context.state?.role === "computer") {
+          renderDataStatus("Journaux relus depuis Firebase. L'actualisation directe reste coupee tant que l'interrupteur est en manuel.");
+        }
+        return true;
+      }
+
       function startCompetitionSync() {
         stopFirebaseRealtimeSync();
         if (!realtimeSyncEnabled()) {
@@ -114,6 +169,16 @@
             context.firebaseStatus = "connected";
             context.alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
             saveAlerts();
+            if (!context.alerts.length) {
+              fetchAlertsWithRestFallback().then((rows) => {
+                if (!rows?.length) return;
+                context.alerts = rows;
+                saveAlerts();
+                render();
+              }).catch((error) => {
+                console.warn("Lecture REST Firebase impossible", error);
+              });
+            }
             cleanupOrphanFinalResultAlerts();
             render();
           }, (error) => {
@@ -142,9 +207,14 @@
             console.warn("Lecture des résultats Firebase impossible", error);
           });
       }
-      
+
       async function refreshFirebaseOnce(showMessage = true) {
         if (!context.firestoreDb) {
+          try {
+            if (await applyAlertsRestFallback(showMessage)) return;
+          } catch (error) {
+            console.warn("Lecture REST Firebase impossible", error);
+          }
           context.firebaseStatus = "local";
           renderDataStatus("Firebase n'est pas chargé. Les données restent locales sur cet appareil.");
           return;
@@ -156,7 +226,12 @@
             resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" })
           ]);
           context.firestoreReady = true;
-          context.alerts = alertSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          const loadedAlerts = alertSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          context.alerts = loadedAlerts;
+          if (!loadedAlerts.length) {
+            const fallbackAlerts = await fetchAlertsWithRestFallback();
+            if (fallbackAlerts?.length) context.alerts = fallbackAlerts;
+          }
           saveAlerts();
           if (liveSnapshot.exists) {
             const remote = liveSnapshot.data()?.data;
@@ -172,15 +247,23 @@
           }
         } catch (error) {
           console.warn("Actualisation Firebase impossible", error);
+          try {
+            if (await applyAlertsRestFallback(showMessage)) return;
+          } catch (fallbackError) {
+            console.warn("Lecture REST Firebase impossible", fallbackError);
+          }
           context.firebaseStatus = window.navigator.onLine ? "error" : "offline";
           renderDataStatus("Actualisation impossible. Vérifie la connexion ou les règles Firebase.");
         }
       }
-      
+
       function initFirebaseSync() {
         if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
+          applyAlertsRestFallback(false).catch((error) => {
+            console.warn("Lecture REST Firebase impossible", error);
+          });
           context.firebaseStatus = "local";
-          renderDataStatus("Firebase n'est pas chargé. Les alertes restent locales sur cet appareil.");
+          renderDataStatus("Firebase n'est pas charge. Les alertes restent locales sur cet appareil.");
           return;
         }
         try {
@@ -191,11 +274,14 @@
           startCompetitionSync();
         } catch (error) {
           console.warn("Initialisation Firebase impossible", error);
+          applyAlertsRestFallback(false).catch((fallbackError) => {
+            console.warn("Lecture REST Firebase impossible", fallbackError);
+          });
           context.firebaseStatus = "error";
-          renderDataStatus("Firebase n'est pas configuré correctement. Les alertes restent locales sur cet appareil.");
+          renderDataStatus("Firebase n'est pas configure correctement. Les alertes restent locales sur cet appareil.");
         }
       }
-      
+
       async function checkFirebaseConnection() {
         if (context.firebaseConnectionCheckRunning) return;
         if (!window.navigator.onLine) {
