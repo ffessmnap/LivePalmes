@@ -1,6 +1,55 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      appendImportHistory,
+      applyFreshData,
+      availableSexesForEvent,
+      clearHistoryAndAlertsForFullImport,
+      clearPublishedResults,
+      clearPublicSeriesPdfs,
+      eventSignature,
+      formatName,
+      importedSeriesTime,
+      livePalmesPdfImport,
+      livePalmesSeriesImport,
+      normalizeData,
+      normalizePersonName,
+      publishLiveDataToFirestore,
+      publishPublicResultsIndex,
+      publishPublicSeriesPdf,
+      renderDataStatus,
+      sampleData,
+      seedSourceTimeKey,
+      window = globalThis.window
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop],
+      set: (_, prop, value) => {
+        const nextAlerts = context.alerts || [];
+        nextAlerts[prop] = value;
+        context.alerts = nextAlerts;
+        return true;
+      }
+    });
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      }
+    });
+    const raceResults = new Proxy([], {
+      get: (_, prop) => context.raceResults?.[prop],
+      set: (_, prop, value) => {
+        const nextResults = context.raceResults || [];
+        nextResults[prop] = value;
+        context.raceResults = nextResults;
+        return true;
+      }
+    });
+
       function normalizePdfLabel(value) {
         if (typeof livePalmesPdfImport.normalizePdfLabel === "function") {
           return livePalmesPdfImport.normalizePdfLabel(value);
@@ -280,7 +329,6 @@
         mergeImportedSeriesData,
         importSeriesPdf
       };
-    }
   }
 
   window.LivePalmesSeriesImportWorkflow = { init };

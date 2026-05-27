@@ -1,6 +1,70 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      ROLE_LABELS,
+      acquireRoleLock,
+      adminSeriesBtn,
+      archivesBtn,
+      applyProgramRow,
+      askRolePin,
+      clearSearch,
+      closeProgramModal,
+      competitionModeTopBtn,
+      entrantsSubtitle,
+      eventSelect,
+      finalProgramRowsForRace,
+      firstSeriesSelectionForCurrentRace,
+      headerRefDetails,
+      headerRefs,
+      isFinalStage,
+      manualRefreshBtn,
+      openAdminSeriesModal,
+      openProgramModal,
+      profileHome,
+      profileHomeBtn,
+      programBtn,
+      programKey,
+      programModal,
+      programRowFromRaceOption,
+      programRows,
+      publicPositionToggle,
+      refereeProgressBtn,
+      refreshFirebaseOnce,
+      refreshPresenceCounts,
+      releaseConsolePresence,
+      render,
+      renderEntrants,
+      renderHeaderReferences,
+      renderHistoryArchivesModal,
+      requestRoleAccess,
+      saveUnlockedRoles,
+      seriesControls,
+      sessionControls,
+      setPublicPositionEnabled,
+      setRefereeProgressHere,
+      switchRoleUnlocked,
+      toggleCompetitionMode,
+      updateConsolePresence
+    } = context;
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       eventSelect.addEventListener("change", () => {
         const row = programRowFromRaceOption(eventSelect.value);
         if (row.eventId) state.eventId = row.eventId;
@@ -40,7 +104,7 @@
           console.warn("Modification du repère public impossible", error);
           event.target.checked = !enabled;
         }).finally(() => {
-          event.target.disabled = state.role !== "speaker" || !firestoreDb;
+          event.target.disabled = state.role !== "speaker" || !context.firestoreDb;
           render();
         });
       });
@@ -52,19 +116,19 @@
           if (!access?.allowed) return;
           const reserved = await acquireRoleLock(nextRole, { adminBypass: access.adminBypass });
           if (!reserved) {
-            unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+            context.unlockedRoles = (context.unlockedRoles || []).filter((role) => role !== nextRole);
             saveUnlockedRoles();
             return;
           }
         } else {
           const reserved = await acquireRoleLock(nextRole, { adminBypass: false });
           if (!reserved) {
-            unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+            context.unlockedRoles = (context.unlockedRoles || []).filter((role) => role !== nextRole);
             saveUnlockedRoles();
             return;
           }
         }
-        profileHomeActive = false;
+        context.profileHomeActive = false;
         switchRoleUnlocked(nextRole);
         render();
         updateConsolePresence(true);
@@ -83,7 +147,7 @@
       });
       
       profileHomeBtn?.addEventListener("click", () => {
-        profileHomeActive = true;
+        context.profileHomeActive = true;
         render();
         releaseConsolePresence();
         refreshPresenceCounts();
@@ -181,7 +245,6 @@
       archivesBtn?.addEventListener("click", () => {
         renderHistoryArchivesModal({ canDelete: false });
       });
-    }
   }
 
   window.LivePalmesUiNavigationEvents = { init };

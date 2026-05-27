@@ -1,6 +1,110 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      alertDetailModal,
+      antoineOverlay,
+      applyProgramRow,
+      availableSeriesNumbers,
+      cancelDecision,
+      categorySelect,
+      closeAlertDetail,
+      closeDecisionModal,
+      competitionModeEnabled,
+      createDecisionAlert,
+      decisionDraftIsReady,
+      decisionModal,
+      defaultDecisionDetail,
+      dismissLiveAlert,
+      downloadJson,
+      entrantsBody,
+      exportDsqPdf,
+      finalProgramRowsForRace,
+      fullscreenBtn,
+      goToNextProgramRace,
+      goToPreviousProgramRace,
+      isFinalStage,
+      lineOrderBtn,
+      markFinalistWithdrawn,
+      markSpeakerAlertDoneLocally,
+      nextSeriesBtn,
+      nextSeriesFloatBtn,
+      nextSeriesInlineBtn,
+      officialAlerts,
+      openAlertDetail,
+      openDecisionModal,
+      openFinalCompositionModal,
+      openFinalistsAnnouncementModal,
+      previousSeriesBtn,
+      previousSeriesFloatBtn,
+      previousSeriesInlineBtn,
+      programFloatBtn,
+      openProgramModal,
+      publishFinalistsAfterSpeaker,
+      publishReplacementAfterSpeaker,
+      reinstateFinalist,
+      render,
+      renderDecisionModal,
+      renderEntrants,
+      renderHeaderReferences,
+      renderResetResultsModal,
+      renderRoleHistory,
+      renderRolePanels,
+      renderSpeakerHistory,
+      resetHistory,
+      restoreAlertLocally,
+      roleHistory,
+      roleQueue,
+      searchInput,
+      selectRecordForCategory,
+      selectedEntrant,
+      speakerHistory,
+      swimmerDetails,
+      syncAlertChangesToFirestoreStrict,
+      toggleFinalPreWithdrawal,
+      updateAlert,
+      updateSpeakerInfoFromGoogleSheet,
+      showToast
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop]
+    });
+    const decisionDraft = new Proxy({}, {
+      get: (_, prop) => context.decisionDraft?.[prop],
+      set: (_, prop, value) => {
+        const nextDraft = context.decisionDraft || {};
+        nextDraft[prop] = value;
+        context.decisionDraft = nextDraft;
+        return true;
+      }
+    });
+    const expandedHistories = new Proxy({}, {
+      get: (_, prop) => context.expandedHistories?.[prop],
+      set: (_, prop, value) => {
+        const nextHistories = context.expandedHistories || {};
+        nextHistories[prop] = value;
+        context.expandedHistories = nextHistories;
+        return true;
+      }
+    });
+    const historyFilters = new Proxy({}, {
+      get: (_, prop) => context.historyFilters?.[prop],
+      set: (_, prop, value) => {
+        const nextFilters = context.historyFilters || {};
+        nextFilters[prop] = value;
+        context.historyFilters = nextFilters;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       officialAlerts?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-alert-action]");
         const card = event.target.closest("[data-alert-id]");
@@ -283,17 +387,17 @@
           } else if (document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen();
           } else {
-            isFullscreenMode = !isFullscreenMode;
+            context.isFullscreenMode = !context.isFullscreenMode;
             render();
           }
         } catch {
-          isFullscreenMode = !isFullscreenMode;
+          context.isFullscreenMode = !context.isFullscreenMode;
           render();
         }
       });
       
       document.addEventListener("fullscreenchange", () => {
-        isFullscreenMode = Boolean(document.fullscreenElement);
+        context.isFullscreenMode = Boolean(document.fullscreenElement);
         render();
       });
       
@@ -430,7 +534,6 @@
       document.querySelector("#exportDsqPdfBtn")?.addEventListener("click", exportDsqPdf);
       document.querySelector("#updateSpeakerInfoBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
       document.querySelector("#updateSpeakerInfoPanelBtn")?.addEventListener("click", updateSpeakerInfoFromGoogleSheet);
-    }
   }
 
   window.LivePalmesUiAlertEvents = { init };

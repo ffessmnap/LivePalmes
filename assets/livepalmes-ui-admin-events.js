@@ -1,6 +1,33 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      ADMIN_PIN,
+      cleanLegacyResultPdfs,
+      clearPublishedResults,
+      clearPublishedResultsForSession,
+      closeRoleCodesModal,
+      competitionModeEnabled,
+      currentRolePins,
+      ensureResultsAdminSession,
+      finishRolePin,
+      historyArchivesCollection,
+      openDsqRows,
+      openResultArchiveRows,
+      performResetHistoryWithArchive,
+      publishPublicResultsIndex,
+      renderHistoryArchivesModal,
+      renderResultsAdminPanel,
+      renderRoleCodesModal,
+      resetSeriesForNextCompetition,
+      resultArchivesCollection,
+      roleCodesModal,
+      saveRoleCodesFromModal,
+      showPerformanceDiagnosticModal,
+      showTechnicalDiagnosticModal,
+      unlockRole,
+      updateLiveNotes
+    } = context;
+
       roleCodesModal?.addEventListener("click", async (event) => {
         if (event.target === roleCodesModal && roleCodesModal.querySelector(".session-infos-dialog")) {
           return;
@@ -177,10 +204,10 @@
           const ok = window.confirm("Supprimer définitivement cette archive de résultats ?");
           if (!ok) return;
           const collection = resultArchivesCollection();
-          if (!collection || !firestoreDb) return;
+          if (!collection || !context.firestoreDb) return;
           const archiveRef = collection.doc(deleteResultArchiveButton.dataset.deleteResultArchive);
           const itemSnapshot = await archiveRef.collection("items").get();
-          const batch = firestoreDb.batch();
+          const batch = context.firestoreDb.batch();
           itemSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
           batch.delete(archiveRef);
           await batch.commit();
@@ -271,7 +298,6 @@
           roleCodesModal.querySelector("[data-confirm-reset-results]")?.click();
         }
       });
-    }
   }
 
   window.LivePalmesUiAdminEvents = { init };
