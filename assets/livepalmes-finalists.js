@@ -38,12 +38,24 @@
       .sort((a, b) => Number(a || 0) - Number(b || 0));
   }
 
+  function formatDeadlineTime(date) {
+    if (!date || Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+  }
+
+  function finalWithdrawalLimitLabel(row, result) {
+    const date = finalWithdrawalLimitDate(row, result);
+    return date ? formatDeadlineTime(date) : "";
+  }
+
   global.LivePalmesFinalists = {
     canWithdrawBeforeReplacementAnnouncement,
     canWithdrawFinalist,
     finalResultSessions,
     finalistAnnouncedAt,
     finalWithdrawalLimitDate,
+    finalWithdrawalLimitLabel,
+    formatDeadlineTime,
     hasFinalWithdrawalDeadline,
     isFinalWithdrawalDeadlineExpired
   };
