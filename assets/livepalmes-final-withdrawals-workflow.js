@@ -304,35 +304,6 @@
     return "Définitif après fin des délais de forfait";
   }
   
-  function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
-    if (!rows.length) return "";
-    const now = new Date();
-    return livePalmesSecretaryFinals.renderWithdrawalGroupHtml(title, rows.map((row, index) => {
-      const limit = finalWithdrawalLimitLabel(row, result);
-      const canWithdraw = canWithdrawFinalist(row, result, now);
-      const hasDeadline = hasFinalWithdrawalDeadline(row, result);
-      const canWithdrawUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
-      const expired = isFinalWithdrawalDeadlineExpired(row, result, now);
-      return {
-        actionDisabled: !(hasDeadline || canWithdrawUnannouncedReplacement),
-        className: `${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}`,
-        expired,
-        finalKey,
-        index,
-        label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
-        rank: row.rank || "",
-        repechaged: Boolean(row.repechaged && !row.withdrawnAt),
-        resultId: result.id,
-        rowKey: finalRowKey(row),
-        sex: result.sex,
-        status: row.withdrawnAt
-          ? `Forfait ${formatDeadlineTime(new Date(row.withdrawnAt))}`
-          : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : (canWithdrawUnannouncedReplacement ? "Repêchage non annoncé" : "En attente annonce speaker")),
-        withdrawn: Boolean(row.withdrawnAt)
-      };
-    }));
-  }
-  
   function finalRowIndexByKey(finalists, finalKey, finalIndex, rowKey = "") {
     const rows = finalists?.[finalKey] || [];
     if (rowKey) {
@@ -348,27 +319,30 @@
     return (result.nextUnqualified || []).filter((row) => !used.has(finalRowKey(row)));
   }
   
-  function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false } = {}) {
-    const rows = nextUnqualifiedRowsForSecretary(result);
-    if (!rows.length) return "";
-    return livePalmesSecretaryFinals.renderUnqualifiedGroupHtml({
-      actions,
-      open,
-      rows: rows.map((row) => {
-        const preWithdrawal = finalPreWithdrawalForRow(result, row);
-        return {
-          actionAllowed: Boolean(!row.resultStatus && row.time),
-          label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
-          preWithdrawal: Boolean(preWithdrawal),
-          rank: row.rank || "",
-          resultId: result.id,
-          rowKey: finalRowKey(row),
-          status: preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)
-        };
-      })
-    });
-  }
-  
+  const finalWithdrawalView = window.LivePalmesFinalWithdrawalsView?.create({
+    canWithdrawBeforeReplacementAnnouncement: (...args) => canWithdrawBeforeReplacementAnnouncement(...args),
+    canWithdrawFinalist: (...args) => canWithdrawFinalist(...args),
+    escapeHtml: (...args) => escapeHtml(...args),
+    finalPreWithdrawalForRow: (...args) => finalPreWithdrawalForRow(...args),
+    finalRowKey: (...args) => finalRowKey(...args),
+    finalistRowName: (...args) => finalistRowName(...args),
+    finalWithdrawalLimitLabel: (...args) => finalWithdrawalLimitLabel(...args),
+    formatDeadlineTime: (...args) => formatDeadlineTime(...args),
+    hasFinalWithdrawalDeadline: (...args) => hasFinalWithdrawalDeadline(...args),
+    isFinalWithdrawalDeadlineExpired: (...args) => isFinalWithdrawalDeadlineExpired(...args),
+    livePalmesSecretaryFinals: {
+      renderCompositionListHtml: (...args) => livePalmesSecretaryFinals.renderCompositionListHtml(...args),
+      renderUnqualifiedGroupHtml: (...args) => livePalmesSecretaryFinals.renderUnqualifiedGroupHtml(...args),
+      renderWithdrawalGroupHtml: (...args) => livePalmesSecretaryFinals.renderWithdrawalGroupHtml(...args)
+    },
+    nextUnqualifiedRowsForSecretary: (...args) => nextUnqualifiedRowsForSecretary(...args),
+    normalizeFinalistsOrder: (...args) => normalizeFinalistsOrder(...args)
+  }) || {};
+
+  const renderFinalWithdrawalGroup = finalWithdrawalView.renderFinalWithdrawalGroup || (() => "");
+  const renderSecretaryUnqualifiedGroup = finalWithdrawalView.renderSecretaryUnqualifiedGroup || (() => "");
+  const renderFinalCompositionList = finalWithdrawalView.renderFinalCompositionList || (() => "");
+
   function openFinalWithdrawalsModal(resultId, options = {}) {
     const result = raceResults.find((item) => item.id === resultId);
     if (!result || !alertDetailModal) return;
@@ -417,31 +391,6 @@
     };
     render();
     openFinalWithdrawalsModal(result.id, { openUnqualified: true });
-  }
-  
-  function renderFinalCompositionList(result) {
-    const finalists = normalizeFinalistsOrder(result.finalists || {});
-    const renderRows = (title, rows = []) => rows.length ? `
-      <div class="final-withdrawal-group">
-        <strong>${escapeHtml(title)}</strong>
-        <ol>
-          ${rows.map((row) => `
-            <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
-              <div>
-                <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
-                ${row.withdrawnAt ? `<small>Forfait à ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
-                ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
-              </div>
-            </li>
-          `).join("")}
-        </ol>
-      </div>
-    ` : "";
-    return livePalmesSecretaryFinals.renderCompositionListHtml({
-      finalAHtml: renderRows("Finale A", finalists.a || []),
-      finalBHtml: renderRows("Finale B", finalists.b || []),
-      unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { actions: false })
-    });
   }
   
   function openFinalCompositionResultModal(resultId) {

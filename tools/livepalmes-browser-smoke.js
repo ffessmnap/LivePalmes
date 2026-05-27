@@ -192,13 +192,31 @@ async function testRoleOpening(client, baseUrl) {
         role: ${JSON.stringify(role)},
         ok: document.body.className.includes('role-${role}'),
         bodyClass: document.body.className,
-        appScript: document.querySelector('script[src^="app.js"]')?.getAttribute('src') || ''
+        appScript: document.querySelector('script[src^="app.js"]')?.getAttribute('src') || '',
+        roleQueueText: (document.querySelector('#roleQueue')?.textContent || '').trim(),
+        resultsAdminText: (document.querySelector('#resultsAdminPanel')?.textContent || '').trim(),
+        roleHistoryHidden: Boolean(document.querySelector('#roleHistory')?.hidden),
+        roleHistoryText: (document.querySelector('#roleHistory')?.textContent || '').trim()
       };
     `);
     results.push(state);
   }
   const failed = results.filter((item) => !item.ok);
   assert(!failed.length, `Ouverture console KO : ${failed.map((item) => item.role).join(", ")}`);
+  const computer = results.find((item) => item.role === "computer");
+  assert(
+    computer?.resultsAdminText.includes("Publication des résultats"),
+    "Bureau des performances : panneau resultats absent."
+  );
+  assert(
+    computer?.roleHistoryText.includes("Journal"),
+    "Bureau des performances : journal absent."
+  );
+  const video = results.find((item) => item.role === "video");
+  assert(
+    video?.roleQueueText.includes("Demandes vidéo"),
+    "Juge video : file des demandes absente."
+  );
   console.log("Consoles : OK");
 }
 
