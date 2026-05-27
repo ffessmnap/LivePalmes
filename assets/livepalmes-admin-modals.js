@@ -277,7 +277,46 @@
     `;
   }
 
+  function renderAdminSeriesModalHtml() {
+    return `
+      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Administration des séries">
+        <div class="decision-modal-head">
+          <div>
+            <span>Administration</span>
+            <h2>Importer des séries PDF</h2>
+            <p>Choisis si le PDF remplace toute la compétition ou seulement une session déjà publiée.</p>
+          </div>
+          <button class="decision-close" type="button" data-admin-series-close aria-label="Fermer">×</button>
+        </div>
+        <div class="admin-series-options">
+          <label class="admin-series-option">
+            <input type="radio" name="seriesImportMode" value="full" checked>
+            <strong>PDF général de la compétition</strong>
+            <span>Remplace toutes les séries, le programme, le titre de compétition et les engagés.</span>
+          </label>
+          <label class="admin-series-option">
+            <input type="radio" name="seriesImportMode" value="session">
+            <strong>PDF de mise à jour d'une session</strong>
+            <span>Remplace uniquement la ou les sessions présentes dans le PDF, par exemple la session 2 avec finales.</span>
+          </label>
+        </div>
+        <div class="admin-series-help">
+          <strong>Repère rapide</strong>
+          <span>PDF général : à utiliser au début de la compétition.</span>
+          <span>Mise à jour session : remplace seulement la session choisie.</span>
+        </div>
+        <label class="admin-session-field" hidden>
+          <span>Session à remplacer</span>
+          <input id="seriesSessionOverride" type="number" min="1" max="20" inputmode="numeric" placeholder="ex. 2">
+        </label>
+        <label class="ghost-button admin-series-file" for="seriesPdfInput">Choisir le PDF</label>
+        <input id="seriesPdfInput" class="hidden-file-input" type="file" accept="application/pdf">
+      </div>
+    `;
+  }
+
   global.LivePalmesAdminModals = {
+    renderAdminSeriesModalHtml,
     renderHistoryArchivesModalHtml,
     renderPublicSessionInfosModalHtml,
     renderResetHistoryModalHtml,
