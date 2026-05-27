@@ -110,6 +110,24 @@ const livePalmesAlerts = window.LivePalmesAlerts || {};
 const livePalmesFinalists = window.LivePalmesFinalists || {};
 const livePalmesSecretaryFinals = window.LivePalmesSecretaryFinals || {};
 const livePalmesPublication = window.LivePalmesPublication || {};
+const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
+const livePalmesAdminModals = window.LivePalmesAdminModals || {};
+const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
+const livePalmesAdminResults = window.LivePalmesAdminResults || {};
+const livePalmesPdfImport = window.LivePalmesPdfImport || {};
+const livePalmesSeriesImport = window.LivePalmesSeriesImport || {};
+const livePalmesSpeakerInfo = window.LivePalmesSpeakerInfo || {};
+const livePalmesProgramNavigation = window.LivePalmesProgramNavigation || {};
+const livePalmesSwimmerPanel = window.LivePalmesSwimmerPanel || {};
+const livePalmesResultsAdminWorkflow = window.LivePalmesResultsAdminWorkflow || {};
+const livePalmesProgramView = window.LivePalmesProgramView || {};
+const livePalmesRefereeView = window.LivePalmesRefereeView || {};
+const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
+const livePalmesHistoryView = window.LivePalmesHistoryView || {};
+const livePalmesHeaderView = window.LivePalmesHeaderView || {};
+const livePalmesAlertDetailView = window.LivePalmesAlertDetailView || {};
+const livePalmesAlertCardView = window.LivePalmesAlertCardView || {};
+const livePalmesLineStatusView = window.LivePalmesLineStatusView || {};
 
 let data = loadData();
 let unlockedRoles = loadUnlockedRoles();
@@ -2350,704 +2368,104 @@ function renderRolePanels() {
   renderSpeakerHistory();
 }
 
-function resultIdForProgramRow(row) {
-  const base = `result-${raceOptionKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
-  if (!isFinalStage(row.stage)) return base;
-  const stage = String(row.stage || "finale").replace(/[^a-z0-9_-]+/gi, "-");
-  return `${base}-${stage}`;
-}
-
-function resultForProgramRow(row) {
-  const raceKey = raceOptionKey(row.eventId, row.sex);
-  const exact = raceResults.find((result) =>
-    result.programKey === programKey(row) ||
-    result.id === resultIdForProgramRow(row)
-  );
-  if (exact) return exact;
-  if (isFinalStage(row.stage)) return null;
-  return raceResults.find((result) => result.raceKey === raceKey && !isFinalStage(result.stage)) || null;
-}
-
-const livePalmesResults = window.LivePalmesResults || {
-  resultWithoutPdf(result) {
-    if (!result) return result;
-    const clean = { ...result };
-    delete clean.pdfDataUrl;
-    return clean;
-  },
-  resultMetadataPayload(result) {
-    return this.resultWithoutPdf(result);
-  },
-  resultPdfPayload(result, pdfDataUrl, options = {}) {
-    return {
-      id: result?.id || "",
-      resultId: result?.id || "",
-      pdfName: result?.pdfName || "",
-      pdfSize: result?.pdfSize || 0,
-      pdfDataUrl: pdfDataUrl || "",
-      updatedAt: result?.updatedAt || "",
-      eventLabel: result?.eventLabel || "",
-      sexLabel: result?.sexLabel || options.sexLabel || "",
-      session: result?.session || ""
-    };
-  },
-  publicResultPayload(result, options = {}) {
-    if (!result) return null;
-    return {
-      id: result.id || "",
-      raceKey: result.raceKey || "",
-      programKey: result.programKey || "",
-      eventId: result.eventId || "",
-      eventLabel: result.eventLabel || "",
-      sex: result.sex || "",
-      sexLabel: result.sexLabel || options.sexLabel || "",
-      stage: result.stage || "series",
-      phaseLabel: result.phaseLabel || "",
-      finalStageCount: result.finalStageCount || 0,
-      session: result.session || "",
-      startTime: result.startTime || "",
-      hasFinal: Boolean(result.hasFinal),
-      pdfName: result.pdfName || "",
-      pdfSize: result.pdfSize || 0,
-      createdAt: result.createdAt || "",
-      updatedAt: result.updatedAt || "",
-      isPartial: Boolean(result.isPartial),
-      status: result.status || "",
-      finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
-    };
-  },
-  publicSeriesPdfPayload(pdf) {
-    if (!pdf) return null;
-    return {
-      id: pdf.id || "",
-      scope: pdf.scope || "",
-      session: pdf.session || "",
-      pdfName: pdf.pdfName || "",
-      updatedAt: pdf.updatedAt || "",
-      sourceLabel: pdf.sourceLabel || ""
-    };
-  },
-  publicSessionResultsPdfPayload(pdf) {
-    if (!pdf) return null;
-    const sessions = Array.isArray(pdf.sessions)
-      ? pdf.sessions.map((session) => String(session || "").trim()).filter(Boolean)
-      : [];
-    return {
-      id: pdf.id || "",
-      scope: pdf.scope || "",
-      session: pdf.session || "",
-      sessions,
-      pdfName: pdf.pdfName || "",
-      updatedAt: pdf.updatedAt || "",
-      sourceLabel: pdf.sourceLabel || ""
-    };
-  }
-};
-const resultWithoutPdf = livePalmesResults.resultWithoutPdf.bind(livePalmesResults);
-const resultMetadataPayload = livePalmesResults.resultMetadataPayload.bind(livePalmesResults);
-
-function resultPdfPayload(result, pdfDataUrl) {
-  return livePalmesResults.resultPdfPayload(result, pdfDataUrl, {
-    sexLabel: sexDisplayLabel(result?.sex)
-  });
-}
-
-function publicResultPayload(result) {
-  return livePalmesResults.publicResultPayload(result, {
-    sexLabel: sexDisplayLabel(result?.sex)
-  });
-}
-
-const publicSeriesPdfPayload = livePalmesResults.publicSeriesPdfPayload.bind(livePalmesResults);
-const publicSessionResultsPdfPayload = livePalmesResults.publicSessionResultsPdfPayload.bind(livePalmesResults);
-
-function buildPublicResultsIndex() {
-  return livePalmesPublication.buildPublicResultsIndex({
+function resultsAdminWorkflowOptions() {
+  const options = {
+    activeCompetitionId,
+    alertPendingBreakdown,
+    alerts,
+    appendImportHistory,
+    buildFinalistsFromResult,
+    categoryLabel,
+    clearPublishedResults,
+    competitionDocument,
+    competitionModeEnabled,
+    countCollectionDocuments,
     data,
+    deleteFinalResultAlerts,
+    deleteResultPdfPayload,
+    emptyPresenceCounts,
+    escapeHtml,
+    finalCompositionIsDefinitive,
+    finalCompositionPendingDeadlineLabel,
+    finalResultSessions,
+    finalRowsCount,
+    firestoreDb,
+    formatAlertDateTime,
+    formatByteSize,
+    formatDeadlineTime,
+    formatRank,
+    isFinalStage,
+    livePalmesAdminDiagnostics,
+    livePalmesAdminResults,
+    livePalmesPublication,
+    programKey,
+    programRows,
+    publicResultsIndexDocument,
+    raceOptionKey,
     raceResults,
-    publicResultPayload,
-    publicSeriesPdfPayload,
-    publicSessionResultsPdfPayload
-  });
-}
-
-async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
-  const doc = publicResultsIndexDocument();
-  if (!doc) return;
-  try {
-    await hydratePublicSeriesPdfMetadataIfNeeded();
-    await hydratePublicSessionResultsPdfMetadataIfNeeded();
-    await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
-  } catch (error) {
-    console.warn("Publication de l'index public impossible", error);
-    if (!silent) {
-      renderDataStatus("L'index public des résultats n'a pas pu être mis à jour. Vérifie les règles Firebase.");
-    }
-    if (strict) throw error;
-  }
-}
-
-function publicSeriesPdfId(scope, session = "") {
-  if (typeof livePalmesAdminMaintenance.publicSeriesPdfId === "function") {
-    return livePalmesAdminMaintenance.publicSeriesPdfId(scope, session);
-  }
-  return scope === "full" ? "full" : `session-${String(session || "").replace(/[^a-z0-9_-]+/gi, "-")}`;
-}
-
-function updatePublicSeriesPdfMetadata(pdf) {
-  const metadata = publicSeriesPdfPayload(pdf);
-  if (!metadata) return;
-  const current = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs : [];
-  const next = livePalmesPublication.nextPublicSeriesPdfMetadata(current, metadata);
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSeriesPdfs: next
-    }
-  });
-  saveData();
-}
-
-function clearPublicSeriesPdfMetadata() {
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSeriesPdfs: []
-    }
-  });
-  saveData();
-}
-
-async function hydratePublicSeriesPdfMetadataIfNeeded() {
-  if (Array.isArray(data.notes?.publicSeriesPdfs)) return;
-  const collection = seriesPdfsCollection();
-  if (!collection) return;
-  const snapshot = await collection.get();
-  const metadata = snapshot.docs
-    .map((doc) => publicSeriesPdfPayload({ id: doc.id, ...doc.data() }))
-    .filter(Boolean)
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSeriesPdfs: metadata
-    }
-  });
-  saveData();
-}
-
-async function clearPublicSeriesPdfs() {
-  const collection = seriesPdfsCollection();
-  if (!collection) return 0;
-  const snapshot = await collection.get();
-  await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
-  clearPublicSeriesPdfMetadata();
-  return snapshot.docs.length;
-}
-
-function clearPublicSessionResultsPdfMetadata() {
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSessionResultsPdfs: []
-    }
-  });
-  saveData();
-}
-
-async function clearPublicSessionResultsPdfs() {
-  const collection = sessionResultsPdfsCollection();
-  if (!collection) return 0;
-  const snapshot = await collection.get();
-  await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
-  clearPublicSessionResultsPdfMetadata();
-  return snapshot.docs.length;
-}
-
-async function clearPublicSessionResultsPdfsForSession(session) {
-  const cleanSession = String(session || "").trim();
-  if (!cleanSession) return 0;
-  const collection = sessionResultsPdfsCollection();
-  if (!collection) return 0;
-  const snapshot = await collection.get();
-  const docs = snapshot.docs.filter((doc) => {
-    const pdf = { id: doc.id, ...doc.data() };
-    if (typeof livePalmesAdminMaintenance.sessionResultsPdfMatchesSession === "function") {
-      return livePalmesAdminMaintenance.sessionResultsPdfMatchesSession(pdf, cleanSession);
-    }
-    if (pdf.scope === "full") return false;
-    const sessions = Array.isArray(pdf.sessions) ? pdf.sessions.map(String) : [];
-    return String(pdf.session || "") === cleanSession || sessions.includes(cleanSession);
-  });
-  await Promise.all(docs.map((doc) => doc.ref.delete()));
-  const deletedIds = new Set(docs.map((doc) => doc.id));
-  const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSessionResultsPdfs: current.filter((pdf) => !deletedIds.has(pdf.id))
-    }
-  });
-  saveData();
-  return docs.length;
-}
-
-async function publishPublicSeriesPdf(file, mode = "session", session = "") {
-  const collection = seriesPdfsCollection();
-  if (!collection || !file) return null;
-  const scope = mode === "full" ? "full" : "session";
-  const now = new Date().toISOString();
-  const id = publicSeriesPdfId(scope, session);
-  const payload = {
-    id,
-    scope,
-    session: scope === "session" ? String(session || "") : "",
-    pdfName: file.name,
-    pdfDataUrl: await fileToDataUrl(file),
-    updatedAt: now,
-    sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
+    renderDataStatus,
+    resultArchivesCollection,
+    resultHasDetailsForDiagnostic,
+    resultPdfMigrationRunning,
+    resultPdfsCollection,
+    resultSessionPdfs,
+    resultUploadStates,
+    resultsAdminPanel,
+    safeCountCollection,
+    safeDocumentData,
+    sessionResultsPdfsCollection,
+    seriesPdfsCollection,
+    sexDisplayLabel,
+    showToast,
+    state,
+    updateLiveNotes
   };
-  await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
-  updatePublicSeriesPdfMetadata(payload);
-  return payload;
+  Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
+  Object.defineProperty(options, "seriesImportState", { get: () => seriesImportState, set: (value) => { seriesImportState = value; } });
+  return options;
 }
 
-function sessionResultsPdfId(scope, sessions = []) {
-  if (typeof livePalmesAdminMaintenance.sessionResultsPdfId === "function") {
-    return livePalmesAdminMaintenance.sessionResultsPdfId(scope, sessions);
-  }
-  if (scope === "full") return "complete-results-full";
-  const safeSessions = sessions.map((session) => String(session || "").replace(/[^a-z0-9_-]+/gi, "-")).filter(Boolean);
-  return `complete-results-${safeSessions.join("-") || "session"}`;
-}
-
-function updatePublicSessionResultsPdfMetadata(pdf) {
-  const metadata = publicSessionResultsPdfPayload(pdf);
-  if (!metadata) return;
-  const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
-  const next = livePalmesPublication.nextPublicSessionResultsPdfMetadata(current, metadata);
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSessionResultsPdfs: next
-    }
-  });
-  saveData();
-}
-
-async function hydratePublicSessionResultsPdfMetadataIfNeeded() {
-  if (Array.isArray(data.notes?.publicSessionResultsPdfs)) return;
-  const collection = sessionResultsPdfsCollection();
-  if (!collection) return;
-  const snapshot = await collection.get();
-  const metadata = snapshot.docs
-    .map((doc) => publicSessionResultsPdfPayload({ id: doc.id, ...doc.data() }))
-    .filter(Boolean)
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  data = normalizeData({
-    ...data,
-    notes: {
-      ...(data.notes || {}),
-      publicSessionResultsPdfs: metadata
-    }
-  });
-  saveData();
-}
-
-async function publishSessionResultsPdf(file, scope = "session", sessions = []) {
-  const collection = sessionResultsPdfsCollection();
-  if (!collection || !file) throw new Error("Firebase n'est pas disponible pour publier ce PDF.");
-  const cleanSessions = typeof livePalmesAdminMaintenance.normalizeSessionList === "function"
-    ? livePalmesAdminMaintenance.normalizeSessionList(sessions)
-    : [...new Set((sessions || []).map((session) => String(session || "").trim()).filter(Boolean))]
-      .sort((a, b) => Number(a) - Number(b));
-  const finalScope = scope === "full" ? "full" : "sessions";
-  if (finalScope !== "full" && !cleanSessions.length) {
-    throw new Error("Sélectionne au moins une session pour publier ce PDF.");
-  }
-  const now = new Date().toISOString();
-  const id = sessionResultsPdfId(finalScope, cleanSessions);
-  const sessionLabel = finalScope === "full"
-    ? "Résultats complets de la compétition"
-    : `Résultats complets ${cleanSessions.map((session) => `S${session}`).join(" + ")}`;
-  const payload = {
-    id,
-    scope: finalScope,
-    session: finalScope === "sessions" && cleanSessions.length === 1 ? cleanSessions[0] : "",
-    sessions: finalScope === "full" ? [] : cleanSessions,
-    pdfName: file.name,
-    pdfDataUrl: await fileToDataUrl(file),
-    updatedAt: now,
-    sourceLabel: sessionLabel
-  };
-  await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
-  updatePublicSessionResultsPdfMetadata(payload);
-  await publishPublicResultsIndex();
-  return payload;
-}
-
-function isLastProgramPartForRace(row) {
-  const raceRows = (data.program || [])
-    .filter((item) => item.eventId === row.eventId && item.sex === row.sex && !isFinalStage(item.stage))
-    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
-  if (!raceRows.length) return true;
-  return programKey(raceRows[raceRows.length - 1]) === programKey(row);
-}
-
-function resultSessions() {
-  return sessionRows().filter((session) =>
-    (data.program || []).some((row) => row.session === session.number && row.eventId && row.sex)
-  );
-}
-
-function sessionResultsPdfsForAdminSession(session) {
-  if (typeof livePalmesAdminResults.sessionResultsPdfsForSession === "function") {
-    return livePalmesAdminResults.sessionResultsPdfsForSession(data.notes?.publicSessionResultsPdfs || [], session);
-  }
-  return [];
-}
-
-function latestResultSession() {
-  if (typeof livePalmesAdminResults.latestResultSession === "function") {
-    return livePalmesAdminResults.latestResultSession(raceResults);
-  }
-  return "";
-}
-
-function ensureResultsAdminSession() {
-  const sessions = resultSessions();
-  if (!sessions.length) {
-    resultsAdminSession = "";
-    return "";
-  }
-  if (resultsAdminSession && sessions.some((session) => session.number === resultsAdminSession)) {
-    return resultsAdminSession;
-  }
-  const speakerSession = roleStates.speaker?.session && roleStates.speaker.session !== "all" ? String(roleStates.speaker.session) : "";
-  const currentSession = state.session && state.session !== "all" ? String(state.session) : "";
-  const latestSession = latestResultSession();
-  resultsAdminSession = [speakerSession, currentSession, latestSession, "1", sessions[0].number]
-    .find((candidate) => candidate && sessions.some((session) => session.number === candidate)) || sessions[0].number;
-  return resultsAdminSession;
-}
-
-function resultProgramRows(sessionNumber = "") {
-  const seenRegular = new Set();
-  const seenFinals = new Set();
-  const sortedRows = (data.program || [])
-    .filter((row) => row.eventId && row.sex)
-    .filter((row) => !sessionNumber || row.session === sessionNumber)
-    .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
-  const rows = [];
-  sortedRows.forEach((row) => {
-    if (isFinalStage(row.stage)) {
-      const key = `${row.session || ""}|${row.eventId}|${row.sex}|finales`;
-      if (seenFinals.has(key)) return;
-      seenFinals.add(key);
-      const finalRows = sortedRows.filter((item) =>
-        item.session === row.session &&
-        item.eventId === row.eventId &&
-        item.sex === row.sex &&
-        isFinalStage(item.stage)
-      );
-      rows.push({
-        ...row,
-        finalStageCount: finalRows.length,
-        finalStages: finalRows.map((item) => item.stage).filter(Boolean),
-        stage: finalRows.length > 1 ? "finales" : row.stage,
-        startTime: finalRows.map((item) => item.startTime).filter(Boolean)[0] || row.startTime || ""
-      });
-      return;
-    }
-    const raceKey = raceOptionKey(row.eventId, row.sex);
-    if (!isLastProgramPartForRace(row) && !resultForProgramRow(row)) {
-      rows.push(row);
-      return;
-    }
-    if (seenRegular.has(raceKey)) return;
-    seenRegular.add(raceKey);
-    rows.push(row);
-  });
-  return rows;
-}
-
-function resultPhaseLabelForProgramRow(row) {
-  if (isFinalStage(row.stage)) {
-    return Number(row.finalStageCount || 0) > 1 || row.stage === "finales" ? "finales" : "finale";
-  }
-  const finals = (data.program || []).filter((item) => item.eventId === row.eventId && item.sex === row.sex && isFinalStage(item.stage));
-  const seriesNumbers = (data.series || [])
-    .filter((item) => item.eventId === row.eventId && item.sex === row.sex)
-    .filter((item) => !row.session || !item.session || item.session === row.session)
-    .filter((item) => !isFinalStage(item.stage))
-    .map((item) => Number(item.series))
-    .filter(Number.isFinite);
-  const uniqueSeries = [...new Set(seriesNumbers)];
-  if (!finals.length && isSplitRaceAcrossSessions(row.eventId, row.sex) && isLastProgramPartForRace(row)) {
-    return "meilleure série";
-  }
-  return uniqueSeries.length > 1 ? "séries" : "série";
-}
-
-function resultStatusForProgramRow(row) {
-  const result = resultForProgramRow(row);
-  if (typeof livePalmesAdminResults.resultStatusLabel === "function") {
-    return livePalmesAdminResults.resultStatusLabel(result);
-  }
-  return "";
-}
-
-function resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive) {
-  if (typeof livePalmesAdminResults.resultStatusBadge === "function") {
-    return livePalmesAdminResults.resultStatusBadge(result, isFinalCompositionDefinitive);
-  }
-  return result ? { label: "Résultat publié", tone: "done" } : { label: "À importer", tone: "missing" };
-}
-
-function resultStatusControlHtml(row, result, statusBadge) {
-  if (typeof livePalmesAdminResults.resultStatusControlHtml === "function") {
-    return livePalmesAdminResults.resultStatusControlHtml({
-      programKeyValue: programKey(row),
-      result,
-      resultId: result?.id || "",
-      statusBadge
-    });
-  }
-  return "";
-}
-
-function resultUploadKeyForProgram(row) {
-  if (typeof livePalmesAdminResults.resultUploadKeyForProgram === "function") {
-    return livePalmesAdminResults.resultUploadKeyForProgram(programKey(row));
-  }
-  return `result:${programKey(row)}`;
-}
-
-function resultUploadKeyForSessionResults(session) {
-  if (typeof livePalmesAdminResults.resultUploadKeyForSessionResults === "function") {
-    return livePalmesAdminResults.resultUploadKeyForSessionResults(session);
-  }
-  return `session-results:${String(session || "current")}`;
-}
-
-function setResultUploadState(key, label, tone = "loading") {
-  if (!key) return;
-  resultUploadStates.set(key, { label, tone });
-  renderResultsAdminPanel();
-}
-
-function clearResultUploadState(key) {
-  if (!key) return;
-  resultUploadStates.delete(key);
-  renderResultsAdminPanel();
-}
-
-function setSeriesImportState(label, tone = "loading") {
-  seriesImportState = { label, tone };
-  renderResultsAdminPanel();
-}
-
-function clearSeriesImportState() {
-  seriesImportState = null;
-  renderResultsAdminPanel();
-}
-
-function resultUploadBadgeHtml(uploadState) {
-  if (typeof livePalmesAdminResults.resultUploadBadgeHtml === "function") {
-    return livePalmesAdminResults.resultUploadBadgeHtml(uploadState);
-  }
-  return "";
-}
-
-function renderResultsAdminPanel() {
-  if (!resultsAdminPanel) return;
-  if (state.role !== "computer") {
-    resultsAdminPanel.hidden = true;
-    resultsAdminPanel.innerHTML = "";
-    renderComputerFooterPanel();
-    return;
-  }
-  const sessions = resultSessions();
-  const activeSession = ensureResultsAdminSession();
-  const rows = resultProgramRows(activeSession);
-  const publicResultsOnline = data.notes?.publicResultsOnline !== false;
-  resultsAdminPanel.hidden = false;
-  resultsAdminPanel.innerHTML = livePalmesAdminResults.renderResultsAdminPanelHtml({
-    activeSession,
-    publicResultsOnline,
-    rowsHtml: rows.map((row) => renderResultProgramRow(row)).join(""),
-    seriesImportBusy: seriesImportState?.tone === "loading",
-    seriesImportStateHtml: seriesImportState ? resultUploadBadgeHtml(seriesImportState) : "",
-    sessionResultsImportHtml: renderSessionResultsImportRow(activeSession),
-    sessions
-  });
-  renderComputerFooterPanel();
-}
-
-const livePalmesDiagnostics = window.LivePalmesDiagnostics || {
-  formatByteSize(bytes) {
-    const value = Number(bytes || 0);
-    if (!Number.isFinite(value) || value <= 0) return "0 ko";
-    if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
-    return `${Math.max(1, Math.round(value / 1024))} ko`;
-  },
-  dataUrlApproxBytes(value) {
-    const text = String(value || "");
-    const base64 = text.includes(",") ? text.split(",").at(-1) : text;
-    return Math.round((base64.length * 3) / 4);
-  },
-  performanceDiagnosticLines(report) {
-    if (!report?.available) return [report?.message || "Diagnostic performance indisponible."];
-    return [
-      `Competition : ${report.competitionId}`,
-      `Resultats : ${report.publicResultCount}/${report.resultCount} visibles/publics`,
-      `PDF dans resultPdfs : ${report.resultPdfCount}`,
-      `PDF encore dans results : ${report.legacyPdfCount}`,
-      `Poids a nettoyer : ${this.formatByteSize(report.legacyBytes)}`,
-      `Index public : ${this.formatByteSize(report.publicIndexBytes)}`,
-      `Index public MAJ : ${report.publicIndexUpdatedAt || "inconnue"}`,
-      `Temps lecture diagnostic : ${report.readMs} ms`
-    ];
-  }
-};
-const formatByteSize = livePalmesDiagnostics.formatByteSize;
-const dataUrlApproxBytes = livePalmesDiagnostics.dataUrlApproxBytes;
-const performanceDiagnosticLines = livePalmesDiagnostics.performanceDiagnosticLines.bind(livePalmesDiagnostics);
-const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
-const livePalmesAdminMaintenance = window.LivePalmesAdminMaintenance || {};
-const livePalmesAdminModals = window.LivePalmesAdminModals || {};
-const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
-const livePalmesAdminResults = window.LivePalmesAdminResults || {};
-const livePalmesPdfImport = window.LivePalmesPdfImport || {};
-const livePalmesSeriesImport = window.LivePalmesSeriesImport || {};
-const livePalmesSpeakerInfo = window.LivePalmesSpeakerInfo || {};
-const livePalmesProgramNavigation = window.LivePalmesProgramNavigation || {};
-const livePalmesProgramView = window.LivePalmesProgramView || {};
-const livePalmesRefereeView = window.LivePalmesRefereeView || {};
-const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
-const livePalmesHistoryView = window.LivePalmesHistoryView || {};
-const livePalmesHeaderView = window.LivePalmesHeaderView || {};
-const livePalmesAlertDetailView = window.LivePalmesAlertDetailView || {};
-const livePalmesAlertCardView = window.LivePalmesAlertCardView || {};
-const livePalmesLineStatusView = window.LivePalmesLineStatusView || {};
-const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
-  <span class="diagnostic-item ${escapeHtml(status)}">
-    <strong>${escapeHtml(value)}</strong>
-    <small>${escapeHtml(label)}</small>
-  </span>
-`);
-const technicalDiagnosticStatus = livePalmesAdminDiagnostics.technicalDiagnosticStatus || ((value, warnLimit = 0, dangerLimit = Number.POSITIVE_INFINITY) => {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "neutral";
-  if (number >= dangerLimit) return "warn";
-  if (number > warnLimit) return "warn";
-  return "ok";
-});
-const technicalDiagnosticSection = livePalmesAdminDiagnostics.technicalDiagnosticSection || ((title, items = []) => `
-  <div class="technical-diagnostic-section">
-    <h3>${escapeHtml(title)}</h3>
-    <div class="competition-diagnostic">
-      ${items.map((item) => diagnosticItem(item.label, item.value, item.status || "neutral")).join("")}
-    </div>
-  </div>
-`);
-
-function renderCompetitionDiagnostic() {
-  const sessions = sessionRows();
-  const programCount = data.program?.length || 0;
-  const resultCount = raceResults.length;
-  const publicResultCount = raceResults.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length;
-  const seriesPdfCount = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs.length : 0;
-  const pendingAlerts = alerts.filter((alert) => (
-    alert.speakerStatus === "pending" ||
-    alert.videoStatus === "pending" ||
-    alert.informaticsStatus === "pending" ||
-    alert.secretaryStatus === "pending"
-  )).length;
-  const speakerInfoUpdatedAt = data.notes?.speakerInfoUpdatedAt || "";
-  return livePalmesAdminDiagnostics.renderCompetitionDiagnosticHtml({
-    pendingAlerts,
-    programCount,
-    publicResultCount,
-    resultCount,
-    seriesCount: data.series?.length || 0,
-    seriesPdfCount,
-    sessionCount: sessions.length || 0,
-    speakerInfoUpdatedAt
-  });
-}
-
-function renderComputerFooterPanel() {
-  if (!computerFooterPanel) return;
-  if (state.role !== "computer") {
-    computerFooterPanel.hidden = true;
-    computerFooterPanel.innerHTML = "";
-    return;
-  }
-  computerFooterPanel.hidden = false;
-  computerFooterPanel.innerHTML = `
-    ${renderCompetitionDiagnostic()}
-    <div class="results-admin-danger-zone">
-      <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
-    </div>
-  `;
-}
-
-function renderSessionResultsImportRow(activeSession) {
-  const published = sessionResultsPdfsForAdminSession(activeSession);
-  const latest = published[0];
-  const uploadState = resultUploadStates.get(resultUploadKeyForSessionResults(activeSession));
-  const blockingUpload = uploadState && uploadState.tone !== "error";
-  return livePalmesAdminResults.renderSessionResultsImportRowHtml({
-    activeSession,
-    blockingUpload,
-    latest,
-    latestUpdatedLabel: latest?.updatedAt ? new Date(latest.updatedAt).toLocaleString("fr-FR") : "",
-    uploadState,
-    uploadStateHtml: uploadState ? resultUploadBadgeHtml(uploadState) : ""
-  });
-}
-
-function renderResultProgramRow(row) {
-  const result = resultForProgramRow(row);
-  const uploadState = resultUploadStates.get(resultUploadKeyForProgram(row));
-  const blockingUpload = uploadState && uploadState.tone !== "error";
-  const status = resultStatusForProgramRow(row);
-  const event = data.events.find((item) => item.id === row.eventId);
-  const phaseLabel = resultPhaseLabelForProgramRow(row);
-  const finalistCount = finalRowsCount(result?.finalists);
-  const isFinalCompositionDefinitive = finalCompositionIsDefinitive(result);
-  const definitiveDate = result?.hasFinal && !isFinalCompositionDefinitive
-    ? finalCompositionDefinitiveDate(result)
-    : null;
-  const statusBadge = resultStatusBadgeForProgramRow(row, result, isFinalCompositionDefinitive);
-  const definitiveLabel = result?.hasFinal && !isFinalCompositionDefinitive
-    ? (definitiveDate ? `Définitif à partir de ${formatDeadlineTime(definitiveDate)}` : finalCompositionPendingDeadlineLabel(result))
-    : "";
-  return livePalmesAdminResults.renderResultProgramRowHtml({
-    blockingUpload,
-    definitiveLabel,
-    eventLabel: event?.label || row.label || row.eventId,
-    finalistCount,
-    hasFinal: Boolean(result?.hasFinal),
-    phaseLabel,
-    programKeyValue: programKey(row),
-    result,
-    resultId: result?.id || "",
-    row,
-    sexLabel: sexDisplayLabel(row.sex),
-    status,
-    statusControlHtml: resultStatusControlHtml(row, result, statusBadge),
-    uploadState,
-    uploadStateHtml: uploadState ? resultUploadBadgeHtml(uploadState) : ""
-  });
-}
+function resultIdForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultIdForProgramRow(...args, resultsAdminWorkflowOptions()); }
+function resultForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultForProgramRow(...args, resultsAdminWorkflowOptions()); }
+function resultPdfPayload(...args) { return livePalmesResultsAdminWorkflow.resultPdfPayload(...args, resultsAdminWorkflowOptions()); }
+function publicResultPayload(...args) { return livePalmesResultsAdminWorkflow.publicResultPayload(...args, resultsAdminWorkflowOptions()); }
+function buildPublicResultsIndex(...args) { return livePalmesResultsAdminWorkflow.buildPublicResultsIndex(...args, resultsAdminWorkflowOptions()); }
+function publishPublicResultsIndex(...args) { return livePalmesResultsAdminWorkflow.publishPublicResultsIndex(...args, resultsAdminWorkflowOptions()); }
+function publicSeriesPdfId(...args) { return livePalmesResultsAdminWorkflow.publicSeriesPdfId(...args, resultsAdminWorkflowOptions()); }
+function updatePublicSeriesPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.updatePublicSeriesPdfMetadata(...args, resultsAdminWorkflowOptions()); }
+function clearPublicSeriesPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.clearPublicSeriesPdfMetadata(...args, resultsAdminWorkflowOptions()); }
+function hydratePublicSeriesPdfMetadataIfNeeded(...args) { return livePalmesResultsAdminWorkflow.hydratePublicSeriesPdfMetadataIfNeeded(...args, resultsAdminWorkflowOptions()); }
+function clearPublicSeriesPdfs(...args) { return livePalmesResultsAdminWorkflow.clearPublicSeriesPdfs(...args, resultsAdminWorkflowOptions()); }
+function clearPublicSessionResultsPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfMetadata(...args, resultsAdminWorkflowOptions()); }
+function clearPublicSessionResultsPdfs(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfs(...args, resultsAdminWorkflowOptions()); }
+function clearPublicSessionResultsPdfsForSession(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfsForSession(...args, resultsAdminWorkflowOptions()); }
+function publishPublicSeriesPdf(...args) { return livePalmesResultsAdminWorkflow.publishPublicSeriesPdf(...args, resultsAdminWorkflowOptions()); }
+function sessionResultsPdfId(...args) { return livePalmesResultsAdminWorkflow.sessionResultsPdfId(...args, resultsAdminWorkflowOptions()); }
+function updatePublicSessionResultsPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.updatePublicSessionResultsPdfMetadata(...args, resultsAdminWorkflowOptions()); }
+function hydratePublicSessionResultsPdfMetadataIfNeeded(...args) { return livePalmesResultsAdminWorkflow.hydratePublicSessionResultsPdfMetadataIfNeeded(...args, resultsAdminWorkflowOptions()); }
+function publishSessionResultsPdf(...args) { return livePalmesResultsAdminWorkflow.publishSessionResultsPdf(...args, resultsAdminWorkflowOptions()); }
+function isLastProgramPartForRace(...args) { return livePalmesResultsAdminWorkflow.isLastProgramPartForRace(...args, resultsAdminWorkflowOptions()); }
+function resultSessions(...args) { return livePalmesResultsAdminWorkflow.resultSessions(...args, resultsAdminWorkflowOptions()); }
+function sessionResultsPdfsForAdminSession(...args) { return livePalmesResultsAdminWorkflow.sessionResultsPdfsForAdminSession(...args, resultsAdminWorkflowOptions()); }
+function latestResultSession(...args) { return livePalmesResultsAdminWorkflow.latestResultSession(...args, resultsAdminWorkflowOptions()); }
+function ensureResultsAdminSession(...args) { return livePalmesResultsAdminWorkflow.ensureResultsAdminSession(...args, resultsAdminWorkflowOptions()); }
+function resultProgramRows(...args) { return livePalmesResultsAdminWorkflow.resultProgramRows(...args, resultsAdminWorkflowOptions()); }
+function resultPhaseLabelForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultPhaseLabelForProgramRow(...args, resultsAdminWorkflowOptions()); }
+function resultStatusForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultStatusForProgramRow(...args, resultsAdminWorkflowOptions()); }
+function resultStatusBadgeForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultStatusBadgeForProgramRow(...args, resultsAdminWorkflowOptions()); }
+function resultStatusControlHtml(...args) { return livePalmesResultsAdminWorkflow.resultStatusControlHtml(...args, resultsAdminWorkflowOptions()); }
+function resultUploadKeyForProgram(...args) { return livePalmesResultsAdminWorkflow.resultUploadKeyForProgram(...args, resultsAdminWorkflowOptions()); }
+function resultUploadKeyForSessionResults(...args) { return livePalmesResultsAdminWorkflow.resultUploadKeyForSessionResults(...args, resultsAdminWorkflowOptions()); }
+function setResultUploadState(...args) { return livePalmesResultsAdminWorkflow.setResultUploadState(...args, resultsAdminWorkflowOptions()); }
+function clearResultUploadState(...args) { return livePalmesResultsAdminWorkflow.clearResultUploadState(...args, resultsAdminWorkflowOptions()); }
+function setSeriesImportState(...args) { return livePalmesResultsAdminWorkflow.setSeriesImportState(...args, resultsAdminWorkflowOptions()); }
+function clearSeriesImportState(...args) { return livePalmesResultsAdminWorkflow.clearSeriesImportState(...args, resultsAdminWorkflowOptions()); }
+function resultUploadBadgeHtml(...args) { return livePalmesResultsAdminWorkflow.resultUploadBadgeHtml(...args, resultsAdminWorkflowOptions()); }
+function renderResultsAdminPanel(...args) { return livePalmesResultsAdminWorkflow.renderResultsAdminPanel(...args, resultsAdminWorkflowOptions()); }
+function renderCompetitionDiagnostic(...args) { return livePalmesResultsAdminWorkflow.renderCompetitionDiagnostic(...args, resultsAdminWorkflowOptions()); }
+function renderComputerFooterPanel(...args) { return livePalmesResultsAdminWorkflow.renderComputerFooterPanel(...args, resultsAdminWorkflowOptions()); }
+function renderSessionResultsImportRow(...args) { return livePalmesResultsAdminWorkflow.renderSessionResultsImportRow(...args, resultsAdminWorkflowOptions()); }
+function renderResultProgramRow(...args) { return livePalmesResultsAdminWorkflow.renderResultProgramRow(...args, resultsAdminWorkflowOptions()); }
 
 function formatDeadlineTime(date) {
   if (!date || Number.isNaN(date.getTime())) return "";
@@ -5917,730 +5335,125 @@ async function resetSeriesForNextCompetition() {
   window.alert(`RAZ séries effectuée : programme, séries et engagés vidés. ${clearedSeriesPdfs} PDF séries public${clearedSeriesPdfs > 1 ? "s" : ""} supprimé${clearedSeriesPdfs > 1 ? "s" : ""}. ${clearedResults} résultat${clearedResults > 1 ? "s" : ""} public${clearedResults > 1 ? "s" : ""} archivé${clearedResults > 1 ? "s" : ""} puis supprimé${clearedResults > 1 ? "s" : ""}.`);
 }
 
-function renderCategorySelect() {
-  const categories = [...new Set(data.entrants.filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))];
-  const preferred = ["Cadet", "Junior", "Senior"];
-  categories.sort((a, b) => {
-    const ai = preferred.indexOf(a);
-    const bi = preferred.indexOf(b);
-    if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    return a.localeCompare(b, "fr");
-  });
-  if (state.category !== "all" && !categories.some((category) => sameCategory(category, state.category))) {
-    state.category = "all";
-  }
-  categorySelect.innerHTML = [
-    `<option value="all">Toutes catégories</option>`,
-    ...categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(categoryLabel(category))}</option>`)
-  ].join("");
-  categorySelect.value = state.category;
-}
-
-function renderHeader() {
-  const title = compactRaceTitle();
-  raceTitle.innerHTML = `${escapeHtml(title)}${isLastRaceOfCurrentSession() ? ` <span class="session-end-note">[dernière course de la session]</span>` : ""}`;
-  const currentEntrants = raceEntrants();
-  const meta = [
-    state.session !== "all" ? `Session ${state.session}` : "",
-    selectedSeriesTime() ? `Horaire ${selectedSeriesTime()}` : "",
-    state.role === "speaker" && state.series !== "all" ? `${currentEntrants.length} ${swimmerWord(currentEntrants.length)}` : ""
-  ].filter(Boolean).join(" - ");
-  raceMeta.textContent = meta;
-  const sexLabel = sexDisplayLabel(state.sex);
-  raceSexBadge.textContent = sexLabel;
-  renderRefereeProgressControl();
-}
-
-function renderRefereeProgressControl() {
-  if (!refereeProgressBtn) return;
-  const progress = refereeProgress();
-  const label = refereeProgressLabel(progress);
-  if (state.role === "referee") {
-    const panelActions = document.querySelector(".entrants-panel .panel-actions");
-    if (panelActions && refereeProgressBtn.parentElement !== panelActions) {
-      const programReference = programBtn?.parentElement === panelActions ? programBtn : null;
-      panelActions.insertBefore(refereeProgressBtn, programReference || panelActions.firstChild);
-    }
-    const isPointedHere = currentRefereeProgressIsHere();
-    refereeProgressBtn.hidden = false;
-    refereeProgressBtn.disabled = !selectedProgramRow();
-    refereeProgressBtn.dataset.refereeProgressAction = "set";
-    refereeProgressBtn.textContent = isPointedHere ? "Pointé JA" : "Pointer ici";
-    refereeProgressBtn.title = label ? `Repère actuel : ${label}` : "Marquer cette course/série comme repère du JA";
-    refereeProgressBtn.classList.add("confirm-button");
-    refereeProgressBtn.classList.toggle("is-pointed", isPointedHere);
-    return;
-  }
-  const headerActions = document.querySelector(".race-header .badge-row");
-  if (headerActions && refereeProgressBtn.parentElement !== headerActions) {
-    headerActions.insertBefore(refereeProgressBtn, headerActions.firstChild);
-  }
-  refereeProgressBtn.hidden = true;
-  refereeProgressBtn.disabled = false;
-  refereeProgressBtn.removeAttribute("data-referee-progress-action");
-  refereeProgressBtn.classList.remove("confirm-button", "is-pointed");
-}
-
-function headerReferenceChipsHtml() {
-  const recordRows = currentRecordRows();
-  const qualificationRows = data.qualifications
-    .filter(matchesRace)
-    .sort((a, b) => timeToMs(a.time) - timeToMs(b.time));
-  return livePalmesHeaderView.renderHeaderReferenceChipsHtml({
-    qualificationRows,
-    recordRows,
-    selectedRecordKey: state.selectedRecordKey,
-    helpers: {
-      categoryClass,
-      recordKey,
-      shortRecordLabel
-    }
-  });
-}
-
-function selectedHeaderReferenceDetailsHtml() {
-  if (!state.selectedRecordKey) return "";
-  const row = currentRecordRows().find((record) => recordKey(record) === state.selectedRecordKey);
-  if (!row) {
-    state.selectedRecordKey = "";
-    return "";
-  }
-  return livePalmesHeaderView.renderSelectedHeaderReferenceDetailsHtml(row, {
-    recordDescription,
-    shortRecordLabel
-  });
-}
-
-function renderHeaderReferences() {
-  headerRefs.innerHTML = headerReferenceChipsHtml();
-  renderHeaderRefDetails();
-}
-
-function renderHeaderRefDetails() {
-  const detailsHtml = selectedHeaderReferenceDetailsHtml();
-  if (!detailsHtml) {
-    headerRefDetails.hidden = true;
-    headerRefDetails.innerHTML = "";
-    return;
-  }
-  headerRefDetails.hidden = false;
-  headerRefDetails.innerHTML = detailsHtml;
-}
-
-function recordKey(row) {
-  return [row.eventId, row.sex, row.category, row.label].join("|").toLowerCase();
-}
-
-function renderEntrants() {
-  const entrants = raceEntrants();
-  const allRaceEntrants = data.entrants.filter(matchesRace);
-  const statsEntrants = raceEntrantsForStats();
-  const visibleEntrants = entrants;
-  const seriesNumbers = availableSeriesNumbers();
-  const selectedSeries = Number(state.series);
-  const hasSeriesFilter = state.series !== "all";
-  const programRow = selectedProgramRow() || programRows().find((row) => row.eventId === state.eventId && row.sex === state.sex);
-  const seriesTime = selectedSeriesTime();
-  const statsCount = statsEntrants.length || allRaceEntrants.length;
-  entrantCount.textContent = statsCount;
-  if (entrantCountLabel) entrantCountLabel.textContent = entrantWord(statsCount);
-  filteredCount.textContent = hasSeriesFilter
-    ? `${seriesTime ? `Horaire ${seriesTime} - ` : ""}${visibleEntrants.length} ${swimmerWord(visibleEntrants.length)}`
-    : `${visibleEntrants.length} ${displayedWord(visibleEntrants.length)}`;
-  const seriesLabel = selectedSeriesLabel();
-  const compactViewTitle = ["referee", "speaker", "live"].includes(state.role);
-  const entrantsTitleText = hasSeriesFilter
-    ? (compactViewTitle ? compactRaceTitle() : seriesLabel)
-    : (state.role === "referee" ? "Participants" : `${entrantWord(2).replace(/^./, (letter) => letter.toUpperCase())} 2026`);
-  const inlineEntrantCount = ["referee", "speaker", "live"].includes(state.role) && hasSeriesFilter
-    ? ` <span class="inline-entrant-count">${escapeHtml(`${statsCount} ${entrantWord(statsCount)}`)}</span>`
-    : "";
-  entrantsTitle.innerHTML = `${escapeHtml(entrantsTitleText)}${inlineEntrantCount}${hasSeriesFilter ? splitRaceNote() : ""}${isLastSeriesOfCurrentSession() ? ` <span class="session-end-note">[dernière série de la session]</span>` : ""}`;
-  if (entrantsSubtitle) {
-    if (hasSeriesFilter && ["speaker", "live"].includes(state.role)) {
-      const refDetails = selectedHeaderReferenceDetailsHtml();
-      entrantsSubtitle.innerHTML = `
-        <span class="speaker-panel-refs">${headerReferenceChipsHtml()}</span>
-        ${refDetails ? `<span class="header-ref-details speaker-panel-ref-details">${refDetails}</span>` : ""}
-      `;
-    } else if (hasSeriesFilter && state.role === "referee") {
-      entrantsSubtitle.textContent = "";
-    } else {
-      entrantsSubtitle.textContent = hasSeriesFilter
-        ? [seriesTime ? `Horaire ${seriesTime}` : "", `${visibleEntrants.length} ${swimmerWord(visibleEntrants.length)}`].filter(Boolean).join(" - ")
-        : "";
-    }
-  }
-  rankHeader.textContent = hasSeriesFilter ? "Ligne" : "Rang";
-  if (swimmerHeader) swimmerHeader.textContent = isFemaleContext() ? "Nageuse" : "Nageur";
-  if (searchLabel) searchLabel.textContent = `Recherche ${entrantWord(1)}`;
-  if (lineOrderBtn) {
-    lineOrderBtn.hidden = !hasSeriesFilter || !["live", "speaker", "referee"].includes(state.role);
-    lineOrderBtn.textContent = state.lineOrder === "desc" ? "Lignes 8→1" : "Lignes 1→8";
-    lineOrderBtn.title = state.lineOrder === "desc" ? "Afficher les lignes de 1 à 8" : "Afficher les lignes de 8 à 1";
-  }
-  entrantsTableWrap?.classList.toggle("series-table", hasSeriesFilter);
-  const best = [...(statsEntrants.length ? statsEntrants : allRaceEntrants)].sort((a, b) => timeToMs(a.seedTime) - timeToMs(b.seedTime))[0];
-  bestEntry.textContent = best?.seedTime || "--";
-  if (bestEntryName) {
-    const club = best ? shortClubName(best) : "";
-    bestEntryName.textContent = best
-      ? `${formatDisplayName(best)}${club ? ` - ${club}` : ""}`
-      : "";
-  }
-
-  entrantsBody.innerHTML = visibleEntrants.length ? visibleEntrants.map((entrant, index) => {
-    const importedForfait = entrant.importedStatus === "forfait";
-    const reference = state.role === "referee"
-      ? (importedForfait ? `<span class="badge muted">Forfait déclaré</span>` : `<span class="badge muted">Cliquer pour décider</span>`)
-      : (isSpeakerView() ? getEntrantReference(entrant) : "");
-    const swimmerId = entrant.swimmerId || entrantKey(entrant);
-    const lineLabel = hasSeriesFilter ? (entrant.seriesInfo?.line || "-") : index + 1;
-    const clubLabel = state.role === "referee" ? shortClubName(entrant) : (entrant.club || "-");
-    const displayName = state.role === "referee" && isRelayEntrant(entrant)
-      ? (shortClubName(entrant) || formatDisplayName(entrant))
-      : formatSeriesDisplayName(entrant);
-    const lineAlerts = activeLineAlertsForEntrant(entrant);
-    const lineTimeStatus = renderLineTimeStatus(entrant, lineAlerts);
-    const rowDisabled = lineAlerts.length || importedForfait;
-    return `
-      <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${importedForfait ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}" data-imported-forfait="${importedForfait ? "1" : "0"}">
-        <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
-        <td class="name-cell">
-          <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}${renderCompetitionStatBadges(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}</button>
-          ${!isRelayEntrant(entrant) || state.role === "referee" ? `<span class="club-name">${escapeHtml(clubLabel || "-")}</span>` : ""}
-        </td>
-        <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
-        <td class="time-cell">
-          ${lineTimeStatus
-            ? lineTimeStatus
-            : lineAlerts.length
-            ? renderLineAlertBadges(lineAlerts)
-            : `<span class="time">${escapeHtml(entrant.seedTime || "-")}</span>`}
-          ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
-          ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
-        </td>
-        <td>${reference}</td>
-      </tr>
-    `;
-  }).join("") : `<tr><td colspan="5" class="empty">${programRow?.hasEntrants === false ? `Finale à afficher, ${entrantWord(2)} non disponibles pour le moment.` : `Aucun${isFemaleContext() ? "e" : ""} ${entrantWord(1)} pour cette sélection.`}</td></tr>`;
-  if (isSpeakerView()) {
-    renderSwimmerDetails();
-  } else {
-    swimmerDetails.hidden = true;
-    swimmerDetails.innerHTML = "";
-  }
-}
-
-function getEntrantReference(entrant) {
-  const references = [];
-  const seed = timeToMs(entrant.seedTime);
-  const recordSeed = findRecordByTime(entrant, entrant.seedTime, entrant.category);
-  if (recordSeed) {
-    references.push(`<span class="badge record-alert">${escapeHtml(shortRecordLabel(recordSeed))} actuel</span>`);
-  }
-  if (sameCategory(entrant.category, "Senior")) {
-    const quals = data.qualifications
-      .filter(matchesRace)
-      .filter((item) => isQualificationEligible(entrant, item))
-      .sort((a, b) => timeToMs(a.time) - timeToMs(b.time));
-    const qual = quals.find((item) => seed <= timeToMs(item.time));
-    if (qual) {
-      references.push(`<span class="badge">${escapeHtml(qual.label)} EDF</span>`);
-    }
-  }
-  const top2025Match = findTop2025ForEntrant(entrant);
-  if (top2025Match) {
-    const record2025 = findRecordByTime(entrant, top2025Match.time, top2025Match.category);
-    references.push(`<span class="badge category-mini ${categoryClass(top2025Match.category)}">FRA 25: ${escapeHtml(formatRank(top2025Match.rank))} ${escapeHtml(categoryLabel(top2025Match.category, entrant.sex))} - ${escapeHtml(top2025Match.time || "-")}</span>`);
-    if (record2025) {
-      references.push(`<span class="badge record-alert">Temps FRA 25 = ${escapeHtml(shortRecordLabel(record2025))}</span>`);
-    }
-  }
-  const heldRecords = findRecordsHeldByEntrant(entrant).filter((record) => (
-    !sameTime(record.time, entrant.seedTime) && (!top2025Match || !sameTime(record.time, top2025Match.time))
-  ));
-  heldRecords.forEach((record) => {
-    references.push(`<span class="badge holder-alert">${isRelayEntrant(entrant) ? "Club recordman" : "Détient"} ${escapeHtml(shortRecordLabel(record))}</span>`);
-  });
-  const raceMedals = findInternationalMedalsForRace(entrant);
-  raceMedals.forEach((medal) => {
-    references.push(`<span class="badge international-alert">${escapeHtml(medal.medal || "Médaille")} ${escapeHtml(shortChampionshipLabel(medal.championship))}</span>`);
-  });
-  findSwimmerInfosForEntrant(entrant).forEach((item) => {
-    references.push(`<span class="badge swimmer-info-badge">${escapeHtml(item.info)}</span>`);
-  });
-  return references.length ? `<div class="reference-badges">${references.join("")}</div>` : "";
-}
-
-function recordTargetsForEntrant(entrant) {
-  return data.records
-    .filter((record) => record.eventId === entrant.eventId && record.sex === entrant.sex)
-    .filter((record) => sameCategory(record.category, entrant.category));
-}
-
-function renderRecordGapAlert(entrant) {
-  const seed = timeToMs(entrant.seedTime);
-  if (!Number.isFinite(seed)) return "";
-  const target = recordTargetsForEntrant(entrant)
-    .map((record) => ({ record, diff: seed - timeToMs(record.time) }))
-    .filter((item) => Number.isFinite(item.diff))
-    .sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff))[0];
-  if (!target) return "";
-  const label = shortRecordLabel(target.record);
-  if (target.diff <= 0) {
-    return `<span class="record-gap under-record">sous ${escapeHtml(label)}</span>`;
-  }
-  const threshold = seed < 60000 ? 1000 : (seed < 180000 ? 2500 : 5000);
-  if (target.diff > threshold) return "";
-  return `<span class="record-gap">à ${escapeHtml(formatGap(target.diff))} du ${escapeHtml(label)}</span>`;
-}
-
-function renderEdfBadges(entrant) {
-  const memberships = findEdfMemberships(entrant);
-  return memberships.map((member) => (
-    `<span class="edf-badge" title="${escapeHtml(member.label || "Equipe de France")}">${escapeHtml(member.team || "E")}</span>`
-  )).join("");
-}
-
-function renderCompetitionStatBadges(entrant) {
-  if (!isSpeakerView()) return "";
-  return findCompetitionStatsForEntrant(entrant).map((item) => (
-    `<span class="stat-badge ${escapeHtml(item.type || "")}" title="${escapeHtml(item.detail || item.label || "Repère compétition")}">${escapeHtml(item.icon || "*")}</span>`
-  )).join("");
-}
-
-function renderNonSelectableBadge(entrant) {
-  return entrant?.nonSelectable && isSpeakerView()
-    ? `<span class="non-selectable-label" title="Non sélectionnable">NS</span>`
-    : "";
-}
-
-function findEdfMemberships(entrant) {
-  const key = entrantPersonKey(entrant);
-  return (data.edfMembers || []).filter((member) => member.personKey === key);
-}
-
-function findCompetitionStatsForEntrant(entrant) {
-  if (isRelayEntrant(entrant)) return [];
-  const entrantName = normalizePersonName(formatName(entrant));
-  const entrantYear = getBirthYearLabel(entrant.birthDate);
-  const entrantSex = sheetSex(entrant.sex);
-  return (data.competitionStats || []).filter((item) => {
-    if (!item.name || normalizePersonName(item.name) !== entrantName) return false;
-    if (item.sex && entrantSex && item.sex !== entrantSex) return false;
-    if (item.type === "birthday") return true;
-    if (item.birthYear && entrantYear !== "----" && String(item.birthYear) !== String(entrantYear)) return false;
-    return true;
-  });
-}
-
-function normalizeClubMatch(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "")
-    .toUpperCase();
-}
-
-function findSwimmerInfosForEntrant(entrant) {
-  if (!isSpeakerView() || isRelayEntrant(entrant)) return [];
-  const entrantName = normalizePersonName(formatName(entrant));
-  const clubKeys = [
-    entrant.club,
-    entrant.clubCode,
-    shortClubName(entrant)
-  ].map(normalizeClubMatch).filter(Boolean);
-  return (data.swimmerInfos || []).filter((item) => {
-    if (!item.info || item.personKey !== entrantName) return false;
-    if (!item.clubKey) return true;
-    return clubKeys.includes(item.clubKey);
-  });
-}
-
-function findInternationalMedals(entrant) {
-  const key = entrantPersonKey(entrant);
-  return (data.internationalMedals || []).filter((medal) => medal.personKey === key);
-}
-
-function findInternationalMedalsForRace(entrant) {
-  return findInternationalMedals(entrant).filter((medal) => recordEventMatches(medal, entrant.eventId));
-}
-
-function shortChampionshipLabel(value) {
-  const text = String(value || "").toUpperCase();
-  if (text.includes("MONDE")) return text.replace("MONDE", "Monde");
-  if (text.includes("EURO")) return text.replace("EURO", "Europe");
-  return value || "";
-}
-
-function findRecordByTime(entrant, time, category) {
-  if (!time) return null;
-  return data.records.find((record) => (
-    record.eventId === entrant.eventId &&
-    record.sex === entrant.sex &&
-    sameCategory(record.category, category) &&
-    sameTime(record.time, time)
-  ));
-}
-
-function isRelayEntrant(entrant) {
-  return /^\d+x/i.test(String(entrant.eventId || ""));
-}
-
-function isNationalTeamRelayRecord(record) {
-  if (!isRelayEntrant(record)) return false;
-  const values = [record.club, record.holder]
-    .map((value) => String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toUpperCase());
-  return values.some((value) => value === "EDF" || value === "EDFJ" || value === "EQUIPEDEFRANCE");
-}
-
-function shouldKeepRecord(record) {
-  return !isNationalTeamRelayRecord(record);
-}
-
-function isBestClubRelayEntry(entrant) {
-  if (!isRelayEntrant(entrant) || !entrant.clubCode) return false;
-  const sameClubEntries = data.entrants.filter((row) => (
-    row.eventId === entrant.eventId &&
-    row.sex === entrant.sex &&
-    String(row.clubCode || "").toUpperCase() === String(entrant.clubCode || "").toUpperCase()
-  ));
-  const best = sameClubEntries.sort((a, b) => timeToMs(a.seedTime) - timeToMs(b.seedTime))[0];
-  return best && (best.swimmerId || entrantKey(best)) === (entrant.swimmerId || entrantKey(entrant));
-}
-
-function findRelayClubRecords(entrant) {
-  if (!isBestClubRelayEntry(entrant)) return [];
-  const clubCode = String(entrant.clubCode || "").toUpperCase();
-  return data.records.filter((record) => (
-    shouldKeepRecord(record) &&
-    record.eventId === entrant.eventId &&
-    recordMatchesRace(record, entrant.eventId, entrant.sex) &&
-    sameCategory(record.category, entrant.category) &&
-    String(record.club || "").toUpperCase() === clubCode
-  ));
-}
-
-function findRecordsHeldByEntrant(entrant) {
-  if (isRelayEntrant(entrant)) {
-    return findRelayClubRecords(entrant);
-  }
-  const entrantName = normalizePersonName(formatName(entrant));
-  return data.records.filter((record) => (
-    shouldKeepRecord(record) &&
-    record.eventId === entrant.eventId &&
-    record.sex === entrant.sex &&
-    normalizePersonName(record.holder) === entrantName
-  ));
-}
-
-function findAllRecordsHeldByEntrant(entrant) {
-  const entrantName = normalizePersonName(formatName(entrant));
-  return data.records.filter((record) => (
-    record.sex === entrant.sex &&
-    normalizePersonName(record.holder) === entrantName
-  ));
-}
-
-function sameTime(left, right) {
-  return Number.isFinite(timeToMs(left)) && timeToMs(left) === timeToMs(right);
-}
-
-function isQualificationEligible(entrant, qualification) {
-  if (qualification.label !== "TRP") return true;
-  const birthYear = getBirthYear(entrant.birthDate);
-  return Number.isFinite(birthYear) && birthYear >= 2005;
-}
-
-function findTop2025ForEntrant(entrant) {
-  const entrantName = normalizePersonName(formatName(entrant));
-  return data.top2025.find((item) => (
-    matchesRace(item) && normalizePersonName(item.name) === entrantName
-  ));
-}
-
-function entrantPerformanceNameKey(row) {
-  return livePalmesResults.entrantPerformanceNameKey(row, {
-    formatPersonNameParts,
-    normalizePersonName
-  });
-}
-
-function performanceBirthYear(row) {
-  return livePalmesResults.performanceBirthYear(row);
-}
-
-function performanceMatchesEntrant(performance, entrant) {
-  return livePalmesResults.performanceMatchesEntrant(performance, entrant, {
-    formatPersonNameParts,
-    normalizePersonName,
-    recordEventMatches
-  });
-}
-
-function performanceStatusResultLabel(performance) {
-  return livePalmesResults.performanceStatusResultLabel(performance);
-}
-
-function performanceDisplayValue(performance) {
-  return livePalmesResults.performanceDisplayValue(performance);
-}
-
-function resultRankForPerformance(performance, result) {
-  return livePalmesResults.resultRankForPerformance(performance, result, {
-    formatPersonNameParts,
-    normalizePersonName,
-    recordEventMatches
-  });
-}
-
-function performanceRankLabel(performance) {
-  return livePalmesResults.performanceRankLabel(performance, { formatRank });
-}
-
-function swimmerBestPerformanceForEntry(entry) {
-  return livePalmesResults.swimmerBestPerformanceForEntry(entry, raceResults, {
-    formatPersonNameParts,
-    isFinalStage,
-    normalizePersonName,
-    recordEventMatches
-  });
-}
-
-function compactProgramPerformanceLabel(entry) {
-  return livePalmesResults.compactProgramPerformanceLabel(entry, raceResults, {
+function swimmerPanelOptions() {
+  return {
+    alertDetailLabel,
+    availableSeriesNumbers,
+    categoryClass,
+    categoryLabel,
+    categorySelect,
+    compactRaceTitle,
+    currentEvent,
+    currentSeriesRows,
+    data,
+    displayedWord,
+    entrantsBody,
+    entrantsSubtitle,
+    entrantsTitle,
+    entrantCount,
+    entrantCountLabel,
+    entrantKey,
+    entrantWord,
     escapeHtml,
+    filteredCount,
     finalStageLabel,
-    formatPersonNameParts,
+    formatGap,
+    formatName,
     formatRank,
+    getBirthYearLabel,
+    headerRefDetails,
+    headerRefs,
+    isFemaleContext,
     isFinalStage,
+    isLastSeriesOfCurrentSession,
     isSpeakerView,
+    lineOrderBtn,
+    matchesRace,
     normalizePersonName,
-    recordEventMatches
-  });
+    programBtn,
+    programRows,
+    raceEntrants,
+    raceEntrantsForStats,
+    raceResults,
+    raceSexBadge,
+    raceTitle,
+    rankHeader,
+    recordEventMatches,
+    recordMatchesRace,
+    refereeProgressBtn,
+    refereeProgressLabel,
+    sameCategory,
+    selectedProgramRow,
+    selectedSeriesLabel,
+    selectedSeriesTime,
+    state,
+    swimmerDetails,
+    swimmerHeader,
+    swimmerWord,
+    timeToMs,
+    top2025Box,
+    splitRaceNote
+  };
 }
 
-function selectRecordForCategory(category) {
-  if (category === "all") {
-    state.selectedRecordKey = "";
-    return;
-  }
-  const record = currentRecordRows().find((row) => sameCategory(row.category, category));
-  state.selectedRecordKey = record ? recordKey(record) : "";
-}
-
-function renderSwimmerDetails() {
-  if (!state.selectedSwimmerId) {
-    swimmerDetails.hidden = true;
-    swimmerDetails.innerHTML = "";
-    return;
-  }
-  const entries = data.entrants
-    .filter((entrant) => (entrant.swimmerId || entrantKey(entrant)) === state.selectedSwimmerId)
-    .sort((a, b) => eventOrder(a.eventId) - eventOrder(b.eventId) || timeToMs(a.seedTime) - timeToMs(b.seedTime));
-  if (!entries.length) {
-    swimmerDetails.hidden = true;
-    swimmerDetails.innerHTML = "";
-    return;
-  }
-  const swimmer = entries[0];
-  const uniqueEntries = [...entries.reduce((map, entry) => {
-    const key = `${entry.eventId}|${entry.sex || swimmer.sex || ""}`;
-    if (!map.has(key)) map.set(key, entry);
-    return map;
-  }, new Map()).values()];
-  const france2025 = findFrance2025Results(swimmer);
-  const internationalMedals = findInternationalMedals(swimmer);
-  const heldRecords = findAllRecordsHeldByEntrant(swimmer);
-  const competitionStats = findCompetitionStatsForEntrant(swimmer);
-  const swimmerInfos = findSwimmerInfosForEntrant(swimmer);
-  swimmerDetails.hidden = false;
-  swimmerDetails.innerHTML = `
-    <div class="details-title">
-      <div class="swimmer-identity">
-        <h4>${escapeHtml(formatName(swimmer))} ${renderCompetitionStatBadges(swimmer)} ${renderEdfBadges(swimmer)}</h4>
-        <span>${escapeHtml(swimmer.club || "")} - ${escapeHtml(categoryLabel(swimmer.category, swimmer.sex))} - ${escapeHtml(getBirthYearLabel(swimmer.birthDate))}</span>
-        ${competitionStats.length ? `
-          <div class="stat-detail-list">
-            ${competitionStats.map((item) => `<strong>${escapeHtml(item.icon || "*")} ${escapeHtml(item.detail || item.label || "Repère compétition")}</strong>`).join("")}
-          </div>
-        ` : ""}
-        ${swimmerInfos.length ? `
-          <div class="swimmer-info-list">
-            ${swimmerInfos.map((item) => `<strong>${escapeHtml(item.info)}</strong>`).join("")}
-          </div>
-        ` : ""}
-      </div>
-      <div class="compact-program" aria-label="Courses engagées du weekend">
-        ${uniqueEntries.map((entry) => `
-          <span class="${categoryClass(entry.category)}">
-            <strong>${escapeHtml(shortEventLabel(entry.eventId))}</strong>
-            ${compactProgramPerformanceLabel(entry)}
-          </span>
-        `).join("")}
-      </div>
-      <button class="icon-button close-details" title="Fermer la fiche" aria-label="Fermer la fiche">×</button>
-    </div>
-    ${heldRecords.length ? `
-      <div class="detail-section">
-        <h5>Records actuels détenus</h5>
-        <div class="detail-list">
-          ${heldRecords.map((record) => `
-            <div class="detail-row record-detail ${categoryClass(record.category)}">
-              <span>${renderRecordFlag(record)} ${renderRecordCategoryFlag(record)} <strong>${escapeHtml(eventLabel(record.eventId))}</strong> - ${escapeHtml([record.time, record.date, record.place].filter(Boolean).join(" - ") || "-")}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    ` : ""}
-    ${internationalMedals.length ? `
-      <div class="detail-section">
-        <h5>International</h5>
-        <div class="compact-achievement-list">
-          ${internationalMedals.map((medal) => `
-            <div class="compact-achievement ${categoryClass(swimmer.category)}">
-              <span class="medal-dot ${medalClass(medal.medal)}" aria-label="${escapeHtml(medal.medal || "Médaille")}">●</span>
-              <span><strong>${escapeHtml(medal.eventLabel || eventLabel(medal.eventId))}</strong>${escapeHtml([medal.time, shortChampionshipLabel(medal.championship)].filter(Boolean).join(" - ")) ? ` - ${escapeHtml([medal.time, shortChampionshipLabel(medal.championship)].filter(Boolean).join(" - "))}` : ""}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    ` : ""}
-    ${france2025.length ? `
-      <div class="detail-section">
-        <h5>France 2025</h5>
-        <div class="compact-achievement-list france-compact">
-          ${france2025.map((row) => `
-            <div class="compact-achievement ${categoryClass(row.category)}">
-              <span><strong>${escapeHtml(formatRank(row.rank))}</strong> ${escapeHtml(categoryLabel(row.category, row.sex))}</span>
-              <span>${escapeHtml(eventLabel(row.eventId))}</span>
-              <span>${escapeHtml(row.time || "-")}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    ` : ""}
-  `;
-}
-
-function eventOrder(eventId) {
-  const index = data.events.findIndex((event) => event.id === eventId);
-  return index === -1 ? 99 : index;
-}
-
-function eventLabel(eventId) {
-  const event = data.events.find((item) => item.id === eventId);
-  return event?.label || String(eventId || "").toUpperCase();
-}
-
-function shortEventLabel(eventId) {
-  return String(eventId || "").toUpperCase();
-}
-
-function findFrance2025Results(entrant) {
-  const entrantName = normalizePersonName(formatName(entrant));
-  return data.top2025
-    .filter((item) => item.sex === entrant.sex && normalizePersonName(item.name) === entrantName)
-    .sort((a, b) => eventOrder(a.eventId) - eventOrder(b.eventId) || (a.rank || 99) - (b.rank || 99));
-}
-
-function medalForRank(rank) {
-  const value = Number(rank);
-  if (value === 1) return "Or";
-  if (value === 2) return "Argent";
-  if (value === 3) return "Bronze";
-  return "Finaliste";
-}
-
-function medalClass(value) {
-  const text = String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (text.includes("or")) return "medal-gold";
-  if (text.includes("argent")) return "medal-silver";
-  if (text.includes("bronze")) return "medal-bronze";
-  return "medal-neutral";
-}
-
-function currentRecordRows() {
-  const order = { Cadet: 1, Junior: 2, Senior: 3 };
-  const relayCategories = isRelayEntrant({ eventId: state.eventId })
-    ? new Set(data.entrants.filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))
-    : null;
-  return data.records
-    .filter(shouldKeepRecord)
-    .filter((record) => recordMatchesRace(record))
-    .filter((record) => !relayCategories || relayCategories.has(record.category))
-    .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
-}
-
-function shortRecordLabel(row) {
-  if (sameCategory(row.category, "Cadet")) return state.sex === "F" ? "MPF cadette" : "MPF cadet";
-  if (sameCategory(row.category, "Junior")) return "RF junior";
-  if (sameCategory(row.category, "Senior")) return "RF senior";
-  return row.label || row.category || "Record";
-}
-
-function recordFlagText(row) {
-  if (sameCategory(row.category, "Cadet")) return "MPF";
-  if (sameCategory(row.category, "Junior")) return "RFJ";
-  if (sameCategory(row.category, "Senior")) return "RF";
-  return "REC";
-}
-
-function renderRecordFlag(row) {
-  return `<span class="record-flag" title="${escapeHtml(shortRecordLabel(row))}">${escapeHtml(recordFlagText(row))}</span>`;
-}
-
-function shortCategoryLabel(category) {
-  if (sameCategory(category, "Cadet")) return "CAD";
-  if (sameCategory(category, "Junior")) return "JUN";
-  if (sameCategory(category, "Senior")) return "SEN";
-  return String(category || "").slice(0, 3).toUpperCase();
-}
-
-function renderRecordCategoryFlag(row) {
-  return `<span class="record-category-flag ${categoryClass(row.category)}">${escapeHtml(shortCategoryLabel(row.category))}</span>`;
-}
-
-function renderTop2025() {
-  const categories = ["Cadet", "Junior", "Senior"];
-  top2025Box.innerHTML = categories.map((category) => {
-    const rows = data.top2025
-      .filter((item) => matchesRace(item) && sameCategory(item.category, category))
-      .sort((a, b) => (a.rank || 99) - (b.rank || 99))
-      .slice(0, 5);
-    return `
-      <div class="ranking-list ${categoryClass(category)}">
-        <h4>${escapeHtml(categoryLabel(category))}</h4>
-        <ol>
-          ${rows.length ? rows.map((row) => `
-            <li>
-              <span class="rank">${escapeHtml(row.rank || "-")}</span>
-              <span>
-                <strong>${escapeHtml(row.name || "-")}</strong>
-                <span class="muted-text">${escapeHtml(row.club || "")}</span>
-              </span>
-              <span class="time">${escapeHtml(row.time || "-")}</span>
-            </li>
-          `).join("") : `<li class="empty">À renseigner</li>`}
-        </ol>
-      </div>
-    `;
-  }).join("");
-}
-
-function recordDescription(row) {
-  return [
-    row.holder || "Titulaire à renseigner",
-    row.club,
-    row.date,
-    row.place
-  ].filter(Boolean).join(" - ");
-}
+function renderCategorySelect(...args) { return livePalmesSwimmerPanel.renderCategorySelect(...args, swimmerPanelOptions()); }
+function renderHeader(...args) { return livePalmesSwimmerPanel.renderHeader(...args, swimmerPanelOptions()); }
+function renderRefereeProgressControl(...args) { return livePalmesSwimmerPanel.renderRefereeProgressControl(...args, swimmerPanelOptions()); }
+function headerReferenceChipsHtml(...args) { return livePalmesSwimmerPanel.headerReferenceChipsHtml(...args, swimmerPanelOptions()); }
+function selectedHeaderReferenceDetailsHtml(...args) { return livePalmesSwimmerPanel.selectedHeaderReferenceDetailsHtml(...args, swimmerPanelOptions()); }
+function renderHeaderReferences(...args) { return livePalmesSwimmerPanel.renderHeaderReferences(...args, swimmerPanelOptions()); }
+function renderHeaderRefDetails(...args) { return livePalmesSwimmerPanel.renderHeaderRefDetails(...args, swimmerPanelOptions()); }
+function recordKey(...args) { return livePalmesSwimmerPanel.recordKey(...args, swimmerPanelOptions()); }
+function renderEntrants(...args) { return livePalmesSwimmerPanel.renderEntrants(...args, swimmerPanelOptions()); }
+function getEntrantReference(...args) { return livePalmesSwimmerPanel.getEntrantReference(...args, swimmerPanelOptions()); }
+function recordTargetsForEntrant(...args) { return livePalmesSwimmerPanel.recordTargetsForEntrant(...args, swimmerPanelOptions()); }
+function renderRecordGapAlert(...args) { return livePalmesSwimmerPanel.renderRecordGapAlert(...args, swimmerPanelOptions()); }
+function renderEdfBadges(...args) { return livePalmesSwimmerPanel.renderEdfBadges(...args, swimmerPanelOptions()); }
+function renderCompetitionStatBadges(...args) { return livePalmesSwimmerPanel.renderCompetitionStatBadges(...args, swimmerPanelOptions()); }
+function renderNonSelectableBadge(...args) { return livePalmesSwimmerPanel.renderNonSelectableBadge(...args, swimmerPanelOptions()); }
+function findEdfMemberships(...args) { return livePalmesSwimmerPanel.findEdfMemberships(...args, swimmerPanelOptions()); }
+function findCompetitionStatsForEntrant(...args) { return livePalmesSwimmerPanel.findCompetitionStatsForEntrant(...args, swimmerPanelOptions()); }
+function normalizeClubMatch(...args) { return livePalmesSwimmerPanel.normalizeClubMatch(...args, swimmerPanelOptions()); }
+function findSwimmerInfosForEntrant(...args) { return livePalmesSwimmerPanel.findSwimmerInfosForEntrant(...args, swimmerPanelOptions()); }
+function findInternationalMedals(...args) { return livePalmesSwimmerPanel.findInternationalMedals(...args, swimmerPanelOptions()); }
+function findInternationalMedalsForRace(...args) { return livePalmesSwimmerPanel.findInternationalMedalsForRace(...args, swimmerPanelOptions()); }
+function shortChampionshipLabel(...args) { return livePalmesSwimmerPanel.shortChampionshipLabel(...args, swimmerPanelOptions()); }
+function findRecordByTime(...args) { return livePalmesSwimmerPanel.findRecordByTime(...args, swimmerPanelOptions()); }
+function isRelayEntrant(...args) { return livePalmesSwimmerPanel.isRelayEntrant(...args, swimmerPanelOptions()); }
+function isNationalTeamRelayRecord(...args) { return livePalmesSwimmerPanel.isNationalTeamRelayRecord(...args, swimmerPanelOptions()); }
+function shouldKeepRecord(...args) { return livePalmesSwimmerPanel.shouldKeepRecord(...args, swimmerPanelOptions()); }
+function isBestClubRelayEntry(...args) { return livePalmesSwimmerPanel.isBestClubRelayEntry(...args, swimmerPanelOptions()); }
+function findRelayClubRecords(...args) { return livePalmesSwimmerPanel.findRelayClubRecords(...args, swimmerPanelOptions()); }
+function findRecordsHeldByEntrant(...args) { return livePalmesSwimmerPanel.findRecordsHeldByEntrant(...args, swimmerPanelOptions()); }
+function findAllRecordsHeldByEntrant(...args) { return livePalmesSwimmerPanel.findAllRecordsHeldByEntrant(...args, swimmerPanelOptions()); }
+function sameTime(...args) { return livePalmesSwimmerPanel.sameTime(...args, swimmerPanelOptions()); }
+function isQualificationEligible(...args) { return livePalmesSwimmerPanel.isQualificationEligible(...args, swimmerPanelOptions()); }
+function findTop2025ForEntrant(...args) { return livePalmesSwimmerPanel.findTop2025ForEntrant(...args, swimmerPanelOptions()); }
+function entrantPerformanceNameKey(...args) { return livePalmesSwimmerPanel.entrantPerformanceNameKey(...args, swimmerPanelOptions()); }
+function performanceBirthYear(...args) { return livePalmesSwimmerPanel.performanceBirthYear(...args, swimmerPanelOptions()); }
+function performanceMatchesEntrant(...args) { return livePalmesSwimmerPanel.performanceMatchesEntrant(...args, swimmerPanelOptions()); }
+function performanceStatusResultLabel(...args) { return livePalmesSwimmerPanel.performanceStatusResultLabel(...args, swimmerPanelOptions()); }
+function performanceDisplayValue(...args) { return livePalmesSwimmerPanel.performanceDisplayValue(...args, swimmerPanelOptions()); }
+function resultRankForPerformance(...args) { return livePalmesSwimmerPanel.resultRankForPerformance(...args, swimmerPanelOptions()); }
+function performanceRankLabel(...args) { return livePalmesSwimmerPanel.performanceRankLabel(...args, swimmerPanelOptions()); }
+function swimmerBestPerformanceForEntry(...args) { return livePalmesSwimmerPanel.swimmerBestPerformanceForEntry(...args, swimmerPanelOptions()); }
+function compactProgramPerformanceLabel(...args) { return livePalmesSwimmerPanel.compactProgramPerformanceLabel(...args, swimmerPanelOptions()); }
+function selectRecordForCategory(...args) { return livePalmesSwimmerPanel.selectRecordForCategory(...args, swimmerPanelOptions()); }
+function renderSwimmerDetails(...args) { return livePalmesSwimmerPanel.renderSwimmerDetails(...args, swimmerPanelOptions()); }
+function eventOrder(...args) { return livePalmesSwimmerPanel.eventOrder(...args, swimmerPanelOptions()); }
+function eventLabel(...args) { return livePalmesSwimmerPanel.eventLabel(...args, swimmerPanelOptions()); }
+function shortEventLabel(...args) { return livePalmesSwimmerPanel.shortEventLabel(...args, swimmerPanelOptions()); }
+function findFrance2025Results(...args) { return livePalmesSwimmerPanel.findFrance2025Results(...args, swimmerPanelOptions()); }
+function medalForRank(...args) { return livePalmesSwimmerPanel.medalForRank(...args, swimmerPanelOptions()); }
+function medalClass(...args) { return livePalmesSwimmerPanel.medalClass(...args, swimmerPanelOptions()); }
+function currentRecordRows(...args) { return livePalmesSwimmerPanel.currentRecordRows(...args, swimmerPanelOptions()); }
+function shortRecordLabel(...args) { return livePalmesSwimmerPanel.shortRecordLabel(...args, swimmerPanelOptions()); }
+function recordFlagText(...args) { return livePalmesSwimmerPanel.recordFlagText(...args, swimmerPanelOptions()); }
+function renderRecordFlag(...args) { return livePalmesSwimmerPanel.renderRecordFlag(...args, swimmerPanelOptions()); }
+function shortCategoryLabel(...args) { return livePalmesSwimmerPanel.shortCategoryLabel(...args, swimmerPanelOptions()); }
+function renderRecordCategoryFlag(...args) { return livePalmesSwimmerPanel.renderRecordCategoryFlag(...args, swimmerPanelOptions()); }
+function renderTop2025(...args) { return livePalmesSwimmerPanel.renderTop2025(...args, swimmerPanelOptions()); }
+function recordDescription(...args) { return livePalmesSwimmerPanel.recordDescription(...args, swimmerPanelOptions()); }
 
 function noteKey() {
   return `${state.eventId}:${state.sex}`;
