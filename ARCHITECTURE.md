@@ -84,7 +84,7 @@ Le code est nettement plus sain qu'avant :
 
 Il reste encore des points a ameliorer :
 
-- 5 modules utilisent encore `with (context)` pour recevoir leurs dependances.
+- Il ne reste plus d'acces implicite `with (context)`.
 - Il y a peu de tests automatiques.
 - Les imports PDF restent complexes car les formats PDF changent selon les competitions.
 

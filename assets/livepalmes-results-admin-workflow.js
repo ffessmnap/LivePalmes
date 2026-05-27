@@ -1,7 +1,56 @@
 (function () {
   const context = {};
   let api;
-  with (context) {
+  let activeCompetitionId;
+  let alertPendingBreakdown;
+  let alerts;
+  let appendImportHistory;
+  let categoryLabel;
+  let clearPublishedResults;
+  let competitionDocument;
+  let competitionModeEnabled;
+  let countCollectionDocuments;
+  let data;
+  let deleteFinalResultAlerts;
+  let deleteResultPdfPayload;
+  let emptyPresenceCounts;
+  let escapeHtml;
+  let finalCompositionIsDefinitive;
+  let finalCompositionPendingDeadlineLabel;
+  let finalResultSessions;
+  let finalRowsCount;
+  let firestoreDb;
+  let formatAlertDateTime;
+  let formatDeadlineTime;
+  let formatRank;
+  let isFinalStage;
+  let livePalmesPublication;
+  let normalizeData;
+  let programKey;
+  let programRows;
+  let publicResultsIndexDocument;
+  let raceOptionKey;
+  let raceResults;
+  let renderDataStatus;
+  let resultArchivesCollection;
+  let resultHasDetailsForDiagnostic;
+  let resultPdfMigrationRunning;
+  let resultPdfsCollection;
+  let resultUploadStates;
+  let resultsAdminPanel;
+  let resultsAdminSession;
+  let roleStates;
+  let safeCountCollection;
+  let safeDocumentData;
+  let seriesImportState;
+  let sessionResultsPdfsCollection;
+  let seriesPdfsCollection;
+  let sessionRows;
+  let sexDisplayLabel;
+  let showToast;
+  let state;
+  let updateLiveNotes;
+
   function resultIdForProgramRow(row) {
     const base = `result-${raceOptionKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
     if (!isFinalStage(row.stage)) return base;
@@ -158,6 +207,7 @@
         publicSeriesPdfs: next
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -169,6 +219,7 @@
         publicSeriesPdfs: []
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -188,6 +239,7 @@
         publicSeriesPdfs: metadata
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -208,6 +260,7 @@
         publicSessionResultsPdfs: []
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -245,6 +298,7 @@
         publicSessionResultsPdfs: current.filter((pdf) => !deletedIds.has(pdf.id))
       }
     });
+    context.data = data;
     saveData();
     return docs.length;
   }
@@ -290,6 +344,7 @@
         publicSessionResultsPdfs: next
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -309,6 +364,7 @@
         publicSessionResultsPdfs: metadata
       }
     });
+    context.data = data;
     saveData();
   }
   
@@ -376,6 +432,7 @@
     const sessions = resultSessions();
     if (!sessions.length) {
       resultsAdminSession = "";
+      context.resultsAdminSession = resultsAdminSession;
       return "";
     }
     if (resultsAdminSession && sessions.some((session) => session.number === resultsAdminSession)) {
@@ -386,6 +443,7 @@
     const latestSession = latestResultSession();
     resultsAdminSession = [speakerSession, currentSession, latestSession, "1", sessions[0].number]
       .find((candidate) => candidate && sessions.some((session) => session.number === candidate)) || sessions[0].number;
+    context.resultsAdminSession = resultsAdminSession;
     return resultsAdminSession;
   }
   
@@ -502,11 +560,13 @@
   
   function setSeriesImportState(label, tone = "loading") {
     seriesImportState = { label, tone };
+    context.seriesImportState = seriesImportState;
     renderResultsAdminPanel();
   }
   
   function clearSeriesImportState() {
     seriesImportState = null;
+    context.seriesImportState = seriesImportState;
     renderResultsAdminPanel();
   }
   
@@ -744,11 +804,59 @@
     renderSessionResultsImportRow,
     renderResultProgramRow
   };
-  }
 
   function useContext(nextContext = {}) {
     Object.keys(context).forEach((key) => { delete context[key]; });
     Object.assign(context, nextContext || {});
+    activeCompetitionId = context.activeCompetitionId;
+    alertPendingBreakdown = context.alertPendingBreakdown;
+    alerts = context.alerts;
+    appendImportHistory = context.appendImportHistory;
+    categoryLabel = context.categoryLabel;
+    clearPublishedResults = context.clearPublishedResults;
+    competitionDocument = context.competitionDocument;
+    competitionModeEnabled = context.competitionModeEnabled;
+    countCollectionDocuments = context.countCollectionDocuments;
+    data = context.data;
+    deleteFinalResultAlerts = context.deleteFinalResultAlerts;
+    deleteResultPdfPayload = context.deleteResultPdfPayload;
+    emptyPresenceCounts = context.emptyPresenceCounts;
+    escapeHtml = context.escapeHtml;
+    finalCompositionIsDefinitive = context.finalCompositionIsDefinitive;
+    finalCompositionPendingDeadlineLabel = context.finalCompositionPendingDeadlineLabel;
+    finalResultSessions = context.finalResultSessions;
+    finalRowsCount = context.finalRowsCount;
+    firestoreDb = context.firestoreDb;
+    formatAlertDateTime = context.formatAlertDateTime;
+    formatDeadlineTime = context.formatDeadlineTime;
+    formatRank = context.formatRank;
+    isFinalStage = context.isFinalStage;
+    livePalmesPublication = context.livePalmesPublication;
+    normalizeData = context.normalizeData;
+    programKey = context.programKey;
+    programRows = context.programRows;
+    publicResultsIndexDocument = context.publicResultsIndexDocument;
+    raceOptionKey = context.raceOptionKey;
+    raceResults = context.raceResults;
+    renderDataStatus = context.renderDataStatus;
+    resultArchivesCollection = context.resultArchivesCollection;
+    resultHasDetailsForDiagnostic = context.resultHasDetailsForDiagnostic;
+    resultPdfMigrationRunning = context.resultPdfMigrationRunning;
+    resultPdfsCollection = context.resultPdfsCollection;
+    resultUploadStates = context.resultUploadStates;
+    resultsAdminPanel = context.resultsAdminPanel;
+    resultsAdminSession = context.resultsAdminSession;
+    roleStates = context.roleStates;
+    safeCountCollection = context.safeCountCollection;
+    safeDocumentData = context.safeDocumentData;
+    seriesImportState = context.seriesImportState;
+    sessionResultsPdfsCollection = context.sessionResultsPdfsCollection;
+    seriesPdfsCollection = context.seriesPdfsCollection;
+    sessionRows = context.sessionRows;
+    sexDisplayLabel = context.sexDisplayLabel;
+    showToast = context.showToast;
+    state = context.state;
+    updateLiveNotes = context.updateLiveNotes;
   }
 
   window.LivePalmesResultsAdminWorkflow = {
