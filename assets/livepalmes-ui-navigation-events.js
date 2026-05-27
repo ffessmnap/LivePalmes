@@ -1,0 +1,188 @@
+(function () {
+  function init(context = {}) {
+    with (context) {
+      eventSelect.addEventListener("change", () => {
+        const row = programRowFromRaceOption(eventSelect.value);
+        if (row.eventId) state.eventId = row.eventId;
+        if (row.sex) state.sex = row.sex;
+        state.programKey = row.order ? programKey(row) : "";
+        clearSearch();
+        state.category = "all";
+        state.series = firstSeriesSelectionForCurrentRace();
+        state.selectedSwimmerId = "";
+        state.selectedRecordKey = "";
+        render();
+      });
+      
+      function changeSession(sessionNumber) {
+        state.session = sessionNumber;
+        const firstProgram = programRows()[0];
+        if (firstProgram) {
+          applyProgramRow(firstProgram);
+        }
+        clearSearch();
+        state.category = "all";
+        state.series = firstSeriesSelectionForCurrentRace();
+        state.selectedSwimmerId = "";
+        state.selectedRecordKey = "";
+        render();
+      }
+      
+      sessionControls?.addEventListener("change", (event) => {
+        if (event.target?.id !== "sessionSelect") return;
+        changeSession(event.target.value);
+      });
+      
+      publicPositionToggle?.addEventListener("change", (event) => {
+        const enabled = event.target.checked;
+        event.target.disabled = true;
+        setPublicPositionEnabled(enabled).catch((error) => {
+          console.warn("Modification du repère public impossible", error);
+          event.target.checked = !enabled;
+        }).finally(() => {
+          event.target.disabled = state.role !== "speaker" || !firestoreDb;
+          render();
+        });
+      });
+      
+      async function openRoleConsole(nextRole) {
+        if (!ROLE_LABELS[nextRole]) return;
+        if (!requestRoleAccess(nextRole)) {
+          const access = await askRolePin(nextRole);
+          if (!access?.allowed) return;
+          const reserved = await acquireRoleLock(nextRole, { adminBypass: access.adminBypass });
+          if (!reserved) {
+            unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+            saveUnlockedRoles();
+            return;
+          }
+        } else {
+          const reserved = await acquireRoleLock(nextRole, { adminBypass: false });
+          if (!reserved) {
+            unlockedRoles = unlockedRoles.filter((role) => role !== nextRole);
+            saveUnlockedRoles();
+            return;
+          }
+        }
+        profileHomeActive = false;
+        switchRoleUnlocked(nextRole);
+        render();
+        updateConsolePresence(true);
+      }
+      
+      document.querySelectorAll(".role-chip").forEach((button) => {
+        button.addEventListener("click", async () => {
+          await openRoleConsole(button.dataset.role || "speaker");
+        });
+      });
+      
+      profileHome?.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-home-role]");
+        if (!button) return;
+        await openRoleConsole(button.dataset.homeRole || "live");
+      });
+      
+      profileHomeBtn?.addEventListener("click", () => {
+        profileHomeActive = true;
+        render();
+        releaseConsolePresence();
+        refreshPresenceCounts();
+      });
+      
+      competitionModeTopBtn?.addEventListener("click", () => {
+        toggleCompetitionMode();
+      });
+      
+      manualRefreshBtn?.addEventListener("click", async () => {
+        manualRefreshBtn.disabled = true;
+        manualRefreshBtn.textContent = "Actualisation...";
+        await refreshFirebaseOnce(true);
+        manualRefreshBtn.disabled = false;
+        manualRefreshBtn.textContent = "Actualiser";
+      });
+      
+      headerRefs.addEventListener("click", (event) => {
+        const button = event.target.closest(".ref-chip-button");
+        if (!button) return;
+        state.selectedRecordKey = state.selectedRecordKey === button.dataset.recordKey ? "" : button.dataset.recordKey;
+        renderHeaderReferences();
+        renderEntrants();
+      });
+      
+      headerRefDetails.addEventListener("click", (event) => {
+        if (!event.target.closest(".close-ref-details")) return;
+        state.selectedRecordKey = "";
+        renderHeaderReferences();
+        renderEntrants();
+      });
+      
+      entrantsSubtitle?.addEventListener("click", (event) => {
+        const closeButton = event.target.closest(".close-ref-details");
+        if (closeButton) {
+          state.selectedRecordKey = "";
+          renderHeaderReferences();
+          renderEntrants();
+          return;
+        }
+        const button = event.target.closest(".ref-chip-button");
+        if (!button) return;
+        state.selectedRecordKey = state.selectedRecordKey === button.dataset.recordKey ? "" : button.dataset.recordKey;
+        renderHeaderReferences();
+        renderEntrants();
+      });
+      
+      seriesControls.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-series]");
+        if (!button) return;
+        state.series = button.dataset.series;
+        if (isFinalStage(state.series)) {
+          const row = finalProgramRowsForRace().find((item) => item.stage === state.series);
+          if (row) applyProgramRow(row);
+        }
+        state.selectedSwimmerId = "";
+        render();
+      });
+      
+      programBtn?.addEventListener("click", openProgramModal);
+      refereeProgressBtn?.addEventListener("click", (event) => {
+        if (event.currentTarget.dataset.refereeProgressAction !== "set") return;
+        setRefereeProgressHere();
+      });
+      programModal?.addEventListener("click", (event) => {
+        if (event.target === programModal || event.target.closest("[data-program-close]")) {
+          closeProgramModal();
+          return;
+        }
+        if (["video", "computer"].includes(state.role)) return;
+        const button = event.target.closest("[data-program-race]");
+        if (!button) return;
+        const row = (data.program || []).find((item) => programKey(item) === button.dataset.programRace);
+        if (!row) return;
+        applyProgramRow(row);
+        if (row.session) state.session = row.session;
+        const stage = button.dataset.programStage;
+        const series = button.dataset.programSeries;
+        if (stage && isFinalStage(stage)) {
+          state.series = stage;
+        } else if (series) {
+          state.series = String(series);
+        } else {
+          state.series = firstSeriesSelectionForCurrentRace();
+        }
+        clearSearch();
+        state.category = "all";
+        state.selectedSwimmerId = "";
+        state.selectedRecordKey = "";
+        closeProgramModal();
+        render();
+      });
+      
+      adminSeriesBtn?.addEventListener("click", openAdminSeriesModal);
+      archivesBtn?.addEventListener("click", () => {
+        renderHistoryArchivesModal({ canDelete: false });
+      });
+    }
+  }
+
+  window.LivePalmesUiNavigationEvents = { init };
+}());
