@@ -2,6 +2,7 @@
   const context = {};
   let api;
   let referenceApi;
+  let performanceApi;
   let activeLineAlertsForEntrant;
   let alertDetailLabel;
   let availableSeriesNumbers;
@@ -349,67 +350,34 @@
   function isQualificationEligible(entrant, qualification) { return swimmerReferenceApi().isQualificationEligible(entrant, qualification); }
   function findTop2025ForEntrant(entrant) { return swimmerReferenceCall("findTop2025ForEntrant", entrant); }
 
-  function entrantPerformanceNameKey(row) {
-    return livePalmesResults.entrantPerformanceNameKey(row, {
-      formatPersonNameParts,
-      normalizePersonName
-    });
+  function swimmerPerformanceApi() {
+    if (!performanceApi) {
+      performanceApi = window.LivePalmesSwimmerPerformances.build({
+        escapeHtml,
+        finalStageLabel,
+        formatPersonNameParts,
+        formatRank,
+        isFinalStage,
+        isSpeakerView,
+        livePalmesResults,
+        normalizePersonName,
+        raceResults,
+        recordEventMatches
+      });
+    }
+    return performanceApi;
   }
-  
-  function performanceBirthYear(row) {
-    return livePalmesResults.performanceBirthYear(row);
-  }
-  
-  function performanceMatchesEntrant(performance, entrant) {
-    return livePalmesResults.performanceMatchesEntrant(performance, entrant, {
-      formatPersonNameParts,
-      normalizePersonName,
-      recordEventMatches
-    });
-  }
-  
-  function performanceStatusResultLabel(performance) {
-    return livePalmesResults.performanceStatusResultLabel(performance);
-  }
-  
-  function performanceDisplayValue(performance) {
-    return livePalmesResults.performanceDisplayValue(performance);
-  }
-  
-  function resultRankForPerformance(performance, result) {
-    return livePalmesResults.resultRankForPerformance(performance, result, {
-      formatPersonNameParts,
-      normalizePersonName,
-      recordEventMatches
-    });
-  }
-  
-  function performanceRankLabel(performance) {
-    return livePalmesResults.performanceRankLabel(performance, { formatRank });
-  }
-  
-  function swimmerBestPerformanceForEntry(entry) {
-    return livePalmesResults.swimmerBestPerformanceForEntry(entry, raceResults, {
-      formatPersonNameParts,
-      isFinalStage,
-      normalizePersonName,
-      recordEventMatches
-    });
-  }
-  
-  function compactProgramPerformanceLabel(entry) {
-    return livePalmesResults.compactProgramPerformanceLabel(entry, raceResults, {
-      escapeHtml,
-      finalStageLabel,
-      formatPersonNameParts,
-      formatRank,
-      isFinalStage,
-      isSpeakerView,
-      normalizePersonName,
-      recordEventMatches
-    });
-  }
-  
+
+  function entrantPerformanceNameKey(row) { return swimmerPerformanceApi().entrantPerformanceNameKey(row); }
+  function performanceBirthYear(row) { return swimmerPerformanceApi().performanceBirthYear(row); }
+  function performanceMatchesEntrant(performance, entrant) { return swimmerPerformanceApi().performanceMatchesEntrant(performance, entrant); }
+  function performanceStatusResultLabel(performance) { return swimmerPerformanceApi().performanceStatusResultLabel(performance); }
+  function performanceDisplayValue(performance) { return swimmerPerformanceApi().performanceDisplayValue(performance); }
+  function resultRankForPerformance(performance, result) { return swimmerPerformanceApi().resultRankForPerformance(performance, result); }
+  function performanceRankLabel(performance) { return swimmerPerformanceApi().performanceRankLabel(performance); }
+  function swimmerBestPerformanceForEntry(entry) { return swimmerPerformanceApi().swimmerBestPerformanceForEntry(entry); }
+  function compactProgramPerformanceLabel(entry) { return swimmerPerformanceApi().compactProgramPerformanceLabel(entry); }
+
   function selectRecordForCategory(category) {
     if (category === "all") {
       state.selectedRecordKey = "";
@@ -691,6 +659,7 @@
     Object.keys(context).forEach((key) => { delete context[key]; });
     Object.assign(context, nextContext || {});
     referenceApi = null;
+    performanceApi = null;
     activeLineAlertsForEntrant = context.activeLineAlertsForEntrant;
     alertDetailLabel = context.alertDetailLabel;
     availableSeriesNumbers = context.availableSeriesNumbers;
