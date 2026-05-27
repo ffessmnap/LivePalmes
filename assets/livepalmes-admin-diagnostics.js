@@ -122,6 +122,125 @@
     `;
   }
 
+  function renderTechnicalDiagnosticModalHtml(report, options = {}) {
+    const {
+      alertTargetsLabel = (targets) => (targets || []).join(", "),
+      formatAlertDateTime = (value) => value || "",
+      formatByteSize = (value) => String(value || 0)
+    } = options;
+    const firebase = report?.firebase || {};
+    const localAlertCounts = report?.local?.pendingAlertCounts || {};
+    const serverAlertCounts = firebase.pendingAlertCounts || {};
+    const alertExamples = firebase.pendingAlertExamples?.length
+      ? firebase.pendingAlertExamples
+      : (report?.local?.pendingAlertExamples || []);
+    return `
+      <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
+        <div class="decision-modal-head">
+          <div>
+            <span>Diagnostic</span>
+            <h2>Diagnostic technique</h2>
+            <p>Vue rapide des données LivePalmes utiles en compétition.</p>
+          </div>
+          <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+        </div>
+        ${report?.available ? `
+          ${technicalDiagnosticSection("Local", [
+            { label: "sessions", value: String(report.local.sessions), status: report.local.sessions ? "ok" : "warn" },
+            { label: "programme", value: String(report.local.program), status: report.local.program ? "ok" : "warn" },
+            { label: "séries", value: String(report.local.series), status: report.local.series ? "ok" : "warn" },
+            { label: "engagés", value: String(report.local.entrants), status: report.local.entrants ? "ok" : "warn" },
+            { label: "résultats chargés", value: String(report.local.results), status: report.local.results ? "ok" : "neutral" },
+            { label: "performances", value: String(report.local.performances), status: report.local.performances ? "ok" : "neutral" },
+            { label: "alertes attente", value: String(report.local.pendingAlerts), status: report.local.pendingAlerts ? "warn" : "ok" }
+          ])}
+          ${technicalDiagnosticSection("Serveur", [
+            { label: "résultats", value: String(firebase.results || 0), status: firebase.results ? "ok" : "neutral" },
+            { label: "visibles public", value: String(firebase.visibleResults || 0), status: firebase.visibleResults ? "ok" : "neutral" },
+            { label: "détaillés", value: String(firebase.detailedResults || 0), status: firebase.detailedResults ? "ok" : "warn" },
+            { label: "lignes nageurs", value: String(firebase.resultPerformances || 0), status: firebase.resultPerformances ? "ok" : "neutral" },
+            { label: "partiels", value: String(firebase.partialResults || 0), status: firebase.partialResults ? "neutral" : "ok" },
+            { label: "finales attente", value: String(firebase.waitingFinalAnnouncements || 0), status: firebase.waitingFinalAnnouncements ? "warn" : "ok" },
+            { label: "sessions résultats", value: escapeHtml(firebase.resultSessions || "aucune"), status: firebase.results ? "ok" : "neutral" }
+          ])}
+          ${technicalDiagnosticSection("Poids / synchro", [
+            { label: "index public", value: formatByteSize(firebase.publicIndexBytes || 0), status: (firebase.publicIndexBytes || 0) > 750000 ? "warn" : "ok" },
+            { label: "live data", value: formatByteSize(firebase.liveDataBytes || 0), status: (firebase.liveDataBytes || 0) > 900000 ? "warn" : "ok" },
+            { label: "PDF résultats", value: String(firebase.resultPdfCount ?? "-"), status: firebase.resultPdfCount ? "ok" : "neutral" },
+            { label: "PDF à nettoyer", value: String(firebase.legacyPdfCount || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
+            { label: "poids à nettoyer", value: formatByteSize(firebase.legacyBytes || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
+            { label: "lecture diag", value: `${report.readMs} ms`, status: report.readMs > 5000 ? "warn" : "ok" }
+          ])}
+          ${technicalDiagnosticSection("Consoles", [
+            { label: "présences", value: String(firebase.presenceCount ?? "-"), status: firebase.presenceCount ? "ok" : "neutral" },
+            { label: "verrous rôles", value: String(firebase.roleLockCount ?? "-"), status: firebase.roleLockCount ? "neutral" : "ok" },
+            { label: "alertes serveur", value: String(firebase.alertCount ?? "-"), status: firebase.alertCount ? "neutral" : "ok" },
+            { label: "PDF séries", value: String(firebase.seriesPdfCount ?? "-"), status: firebase.seriesPdfCount ? "ok" : "neutral" },
+            { label: "PDF résultats sessions", value: String(firebase.sessionResultsPdfCount ?? "-"), status: firebase.sessionResultsPdfCount ? "ok" : "neutral" }
+          ])}
+          ${technicalDiagnosticSection("Alertes en attente", [
+            { label: "total local", value: String(report.local.pendingAlerts || 0), status: report.local.pendingAlerts ? "warn" : "ok" },
+            { label: "total serveur", value: String(firebase.pendingAlertCount || 0), status: firebase.pendingAlertCount ? "warn" : "ok" },
+            { label: "Live", value: `${localAlertCounts.live || 0} / ${serverAlertCounts.live || 0}`, status: (localAlertCounts.live || serverAlertCounts.live) ? "warn" : "ok" },
+            { label: "Speaker", value: `${localAlertCounts.speaker || 0} / ${serverAlertCounts.speaker || 0}`, status: (localAlertCounts.speaker || serverAlertCounts.speaker) ? "warn" : "ok" },
+            { label: "Bureau perf", value: `${localAlertCounts.computer || 0} / ${serverAlertCounts.computer || 0}`, status: (localAlertCounts.computer || serverAlertCounts.computer) ? "warn" : "ok" },
+            { label: "Secrétariat", value: `${localAlertCounts.secretary || 0} / ${serverAlertCounts.secretary || 0}`, status: (localAlertCounts.secretary || serverAlertCounts.secretary) ? "warn" : "ok" },
+            { label: "Vidéo", value: `${localAlertCounts.video || 0} / ${serverAlertCounts.video || 0}`, status: (localAlertCounts.video || serverAlertCounts.video) ? "warn" : "ok" },
+            { label: "JA", value: `${localAlertCounts.referee || 0} / ${serverAlertCounts.referee || 0}`, status: (localAlertCounts.referee || serverAlertCounts.referee) ? "warn" : "ok" }
+          ])}
+          ${alertExamples.length ? `
+            <div class="admin-series-help technical-diagnostic-alerts">
+              <strong>Exemples d'alertes ouvertes</strong>
+              ${alertExamples.map((item) => `
+                <span>
+                  ${escapeHtml(alertTargetsLabel(item.targets))} :
+                  ${escapeHtml(item.status)} -
+                  ${escapeHtml(item.type)}
+                  ${item.identity ? ` - ${escapeHtml(item.identity)}` : ""}
+                  ${item.race ? ` - ${escapeHtml(item.race)}` : ""}
+                  ${item.createdAt ? ` (${escapeHtml(formatAlertDateTime(item.createdAt) || item.createdAt)})` : ""}
+                </span>
+              `).join("")}
+            </div>
+          ` : ""}
+          <div class="admin-series-help technical-diagnostic-notes">
+            <strong>Analyse</strong>
+            ${report.recommendations.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+            <span>Dernier résultat : ${escapeHtml(firebase.lastResultUpdatedAt || "inconnu")}</span>
+            <span>Index public : ${escapeHtml(firebase.publicIndexUpdatedAt || "inconnu")}</span>
+          </div>
+        ` : `
+          <div class="admin-series-help">
+            <strong>Diagnostic indisponible</strong>
+            <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
+          </div>
+        `}
+        <div class="decision-modal-actions">
+          <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+          <button class="ghost-button" type="button" data-technical-diagnostic>Relire</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTechnicalDiagnosticLoadingHtml() {
+    return `
+      <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
+        <div class="decision-modal-head">
+          <div>
+            <span>Diagnostic</span>
+            <h2>Diagnostic technique</h2>
+            <p>Lecture des compteurs LivePalmes en cours...</p>
+          </div>
+        </div>
+        <div class="admin-series-help">
+          <strong>Analyse en cours</strong>
+          <span>LivePalmes vérifie les données locales, serveur et publiques.</span>
+        </div>
+      </div>
+    `;
+  }
+
   function alertPendingTargets(alert, options = {}) {
     const {
       isResolvedByResult = () => false,
@@ -212,6 +331,8 @@
     renderCompetitionDiagnosticHtml,
     renderPerformanceDiagnosticLoadingHtml,
     renderPerformanceDiagnosticModalHtml,
+    renderTechnicalDiagnosticLoadingHtml,
+    renderTechnicalDiagnosticModalHtml,
     resultHasDetails,
     technicalDiagnosticSection,
     technicalDiagnosticStatus

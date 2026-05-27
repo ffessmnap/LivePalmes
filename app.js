@@ -2753,23 +2753,11 @@ function alertLineCode(alert) {
 
 function renderLineAlertBadges(lineAlerts) {
   if (!lineAlerts.length) return "";
-  const terminalStatus = lineAlerts
-    .filter((alert) => alert.type === "forfait" || alert.type === "abandon")
-    .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0];
+  const terminalStatus = terminalLineStatus(lineAlerts);
   const dsqAlerts = lineAlerts.filter(isDsqAlert);
   const title = lineAlerts.map(decisionMotifLabel).join(" / ");
-  if (terminalStatus) {
-    const code = terminalStatus.type === "abandon" ? "ABD" : "ABS";
-    const className = terminalStatus.type === "abandon" ? "abd-line-badge" : "abs-line-badge";
-    return `<span class="line-alert-badges" title="${escapeHtml(title)}"><span class="line-alert-badge ${className}">${code}</span></span>`;
-  }
   const codes = [...new Set(dsqAlerts.map(alertLineCode).filter(Boolean))];
-  return `
-    <span class="line-alert-badges" title="${escapeHtml(title)}">
-      <span class="line-alert-badge dsq-line-badge">DSQ</span>
-      ${codes.length ? `<span class="line-alert-reasons">${escapeHtml(codes.join(" / "))}</span>` : ""}
-    </span>
-  `;
+  return livePalmesLineStatusView.renderLineAlertBadgesHtml({ codes, terminalStatus, title });
 }
 
 function terminalLineStatus(lineAlerts) {
@@ -2785,21 +2773,13 @@ function importedLineStatusLabel(entrant) {
 
 function renderImportedLineStatusBadge(entrant) {
   const label = importedLineStatusLabel(entrant);
-  if (!label) return "";
-  return `<span class="line-alert-badges imported-status-badges" title="${escapeHtml(label)}"><span class="line-alert-badge abs-line-badge">ABS</span><span class="line-alert-reasons">${escapeHtml(label)}</span></span>`;
+  return livePalmesLineStatusView.renderImportedLineStatusBadgeHtml(label);
 }
 
 function renderLineTimeStatus(entrant, lineAlerts) {
   const terminalStatus = terminalLineStatus(lineAlerts);
-  if (terminalStatus) {
-    const isAbandon = terminalStatus.type === "abandon";
-    return `<span class="line-time-status"><span class="line-alert-badge ${isAbandon ? "abd-line-badge" : "abs-line-badge"}">${isAbandon ? "ABD" : "ABS"}</span><strong>${isAbandon ? "Abandon" : "Forfait non déclaré"}</strong></span>`;
-  }
   const importedLabel = importedLineStatusLabel(entrant);
-  if (importedLabel) {
-    return `<span class="line-time-status"><span class="line-alert-badge abs-line-badge">ABS</span><strong>${escapeHtml(importedLabel)}</strong></span>`;
-  }
-  return "";
+  return livePalmesLineStatusView.renderLineTimeStatusHtml({ importedLabel, terminalStatus });
 }
 
 function finalistRowName(row) {
@@ -2812,28 +2792,11 @@ function finalRowsForAnnouncementAlert(alert) {
 }
 
 function renderFinalistsAlertList(alert) {
-  const renderRows = (title, rows = []) => rows.length ? `
-    <div class="finalists-alert-group">
-      <strong>${escapeHtml(title)}</strong>
-      <ol>
-        ${rows.map((row) => `
-          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
-            <span>${escapeHtml(finalistRowName(row))}</span>
-            <em>${escapeHtml(row.time || "")}</em>
-            ${row.withdrawnAt ? `<small class="finalist-status withdrawn">Forfait</small>` : ""}
-            ${row.repechaged && !row.withdrawnAt ? `<small class="finalist-status repechaged">Repêché${alert.sex === "F" ? "e" : ""}</small>` : ""}
-          </li>
-        `).join("")}
-      </ol>
-    </div>
-  ` : "";
-  const finals = finalRowsForAnnouncementAlert(alert);
-  return `
-    <div class="finalists-alert-list">
-      ${renderRows("Finale A", finals.a || [])}
-      ${renderRows("Finale B", finals.b || [])}
-    </div>
-  `;
+  return livePalmesAlertCardView.renderFinalistsAlertListHtml({
+    finalistRowName,
+    finals: finalRowsForAnnouncementAlert(alert),
+    sex: alert.sex
+  });
 }
 
 function alertPriority(alert) {
@@ -2870,53 +2833,19 @@ function historySentence(alert) {
 
 function renderAlertCard(alert, actionLabel = "") {
   const detail = alertDetailLabel(alert);
-  if (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") {
-    const isReplacement = alert.type === "finalist_replacement_announcement";
-    const title = isReplacement
-      ? (state.role === "speaker" ? "Repêchage à annoncer" : "Repêchage finale")
-      : (state.role === "speaker" ? "Finalistes à annoncer" : "Finalistes en attente d'annonce");
-    const sentence = isReplacement ? speakerAlertSentence(alert) : null;
-    return `
-      <div class="alert-card speaker-alert-card finalists-alert-card" data-alert-id="${escapeHtml(alert.id)}">
-        <div>
-          <strong class="alert-title finalists-alert-title"><span aria-hidden="true">📣</span> ${escapeHtml(title)} <small>${escapeHtml(alertPriorityMeta(alert))}</small></strong>
-          <span class="speaker-alert-line">
-            <span class="speaker-alert-text">${escapeHtml(sentence?.text || `${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)}`)}</span>
-            <span class="speaker-alert-identity">- ${escapeHtml(sentence?.identity || `${String(alert.finalistCount || 0)} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`)}</span>
-          </span>
-        </div>
-        ${state.role === "speaker" ? `<button class="ghost-button compact" type="button" ${isReplacement ? `data-alert-action="Annoncé"` : "data-finalists-open"}>${isReplacement ? "Annoncé" : "Ouvrir"}</button>` : ""}
-      </div>
-    `;
-  }
-  if (isSpeakerView()) {
-    const sentence = speakerAlertSentence(alert);
-    const alertTitle = state.role === "live"
-      ? (isRequalificationAlert(alert) ? "Requalification signalée" : "Disqualification signalée")
-      : (isRequalificationAlert(alert) ? "Requalification à annoncer" : "Disqualification à annoncer");
-    return `
-      <div class="alert-card speaker-alert-card" data-alert-id="${escapeHtml(alert.id)}">
-        <div>
-          <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(alertTitle)} <small>${escapeHtml(alertPriorityMeta(alert))}</small></strong>
-          <span class="speaker-alert-line">
-            <span class="speaker-alert-text">${escapeHtml(sentence.text)}</span>
-            <span class="speaker-alert-identity">- ${escapeHtml(sentence.identity)}</span>
-          </span>
-        </div>
-        ${actionLabel ? `<button class="ghost-button compact" type="button" data-alert-action="${escapeHtml(actionLabel)}">${escapeHtml(actionLabel)}</button>` : ""}
-      </div>
-    `;
-  }
-  return `
-    <div class="alert-card" data-alert-id="${escapeHtml(alert.id)}">
-      <div>
-        <strong>${escapeHtml(DECISION_LABELS[alert.type] || (isRequalificationAlert(alert) ? "Requalification / annulation" : alert.type))} <small class="alert-title-meta">${escapeHtml(alertPriorityMeta(alert))}</small></strong>
-        <span>${escapeHtml(alertRaceLabel(alert))}</span>
-        <span>${escapeHtml(alertSwimmerLabel(alert))}${detail ? ` - ${escapeHtml(detail)}` : ""}</span>
-      </div>
-      ${actionLabel ? `<button class="ghost-button compact" type="button" data-alert-action="${escapeHtml(actionLabel)}">${escapeHtml(actionLabel)}</button>` : ""}
-    </div>
-  `;
+  return livePalmesAlertCardView.renderAlertCardHtml(alert, {
+    actionLabel,
+    alertPriorityMeta,
+    alertRaceLabel,
+    alertSwimmerLabel,
+    decisionLabels: DECISION_LABELS,
+    detail,
+    isRequalificationAlert,
+    isSpeakerView: isSpeakerView(),
+    role: state.role,
+    sexDisplayLabel,
+    speakerAlertSentence
+  });
 }
 
 function renderVideoInfoCard(alert) {
@@ -2924,17 +2853,12 @@ function renderVideoInfoCard(alert) {
   const seriesLabel = alert.stage && isFinalStage(alert.stage)
     ? finalStageLabel(alert.stage)
     : `série ${alert.series || "-"}`;
-  return `
-    <div class="alert-card video-info-card" aria-live="polite">
-      <div>
-        <strong class="alert-title"><span aria-hidden="true">⏳</span> Arbitrage vidéo en cours</strong>
-        <small class="alert-title-meta">Info - ${escapeHtml(formatAlertTime(alert.createdAt) || "--:--")}</small>
-        <span class="speaker-alert-line">
-          <span class="speaker-alert-text">Arbitrage vidéo en cours sur la ${escapeHtml(seriesLabel)} du ${escapeHtml(event?.label || alert.eventId)} ${escapeHtml(sexDisplayLabel(alert.sex))}.</span>
-        </span>
-      </div>
-    </div>
-  `;
+  return livePalmesAlertCardView.renderVideoInfoCardHtml({
+    eventLabel: event?.label || alert.eventId,
+    seriesLabel,
+    sexLabel: sexDisplayLabel(alert.sex),
+    timeLabel: formatAlertTime(alert.createdAt)
+  });
 }
 
 function renderRolePanels() {
@@ -3523,6 +3447,14 @@ const livePalmesAdminModals = window.LivePalmesAdminModals || {};
 const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
 const livePalmesAdminResults = window.LivePalmesAdminResults || {};
 const livePalmesPdfImport = window.LivePalmesPdfImport || {};
+const livePalmesProgramView = window.LivePalmesProgramView || {};
+const livePalmesRefereeView = window.LivePalmesRefereeView || {};
+const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
+const livePalmesHistoryView = window.LivePalmesHistoryView || {};
+const livePalmesHeaderView = window.LivePalmesHeaderView || {};
+const livePalmesAlertDetailView = window.LivePalmesAlertDetailView || {};
+const livePalmesAlertCardView = window.LivePalmesAlertCardView || {};
+const livePalmesLineStatusView = window.LivePalmesLineStatusView || {};
 const diagnosticItem = livePalmesAdminDiagnostics.diagnosticItem || ((label, value, status = "ok") => `
   <span class="diagnostic-item ${escapeHtml(status)}">
     <strong>${escapeHtml(value)}</strong>
@@ -3847,40 +3779,23 @@ function alertTimelineItems(alert) {
 }
 
 function renderHistoryItem(alert, options = {}) {
-  const status = alertStatusLabel(alert);
-  const timeline = alertTimeline(alert);
-  const event = data.events.find((item) => item.id === alert.eventId);
-  const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
-  const isFinalAnnouncement = alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement";
-  const seriesLabel = alert.type === "final_composition_ready"
-    ? "Finales"
-    : isFinalAnnouncement
-    ? "Finales"
-    : alert.stage && isFinalStage(alert.stage)
-    ? finalStageLabel(alert.stage)
-    : `Série ${alert.series || "-"}`;
-  const courseLine = alert.type === "final_composition_ready"
-    ? `${alert.eventLabel || event?.label || alert.eventId} ${alert.sexLabel || sexLabel} - Composition finale`
-    : isFinalAnnouncement
-    ? `${alert.eventLabel || event?.label || alert.eventId} ${alert.sexLabel || sexLabel} - ${seriesLabel}`
-    : `${event?.label || alert.eventId} ${sexLabel} - ${seriesLabel} - Ligne ${alert.line || "-"}`;
-  const motif = decisionMotifLabel(alert);
-  const identity = alert.type === "finalists_announcement"
-    ? `${alert.finalistCount || 0} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`
-    : options.showIdentity ? fullAlertIdentityLabel(alert) : alertIdentityLabel(alert);
-  const action = historyActionForAlert(alert);
-  const comment = alertCommentLabel(alert);
-  return `
-    <div class="history-item ${alertStatusClass(alert)} ${options.compact ? "compact-history-item" : ""}" data-history-alert-id="${escapeHtml(alert.id)}">
-      <time>${escapeHtml(formatAlertTime(options.timeValue || alert.cancelledAt || alert.createdAt) || "--:--")}</time>
-      <span>${escapeHtml(courseLine)}</span>
-      <strong>${escapeHtml(motif)}</strong>
-      <small>${escapeHtml(identity)}</small>
-      ${comment ? `<em class="history-comment">Remarque JA : ${escapeHtml(comment)}</em>` : ""}
-      <em>${escapeHtml(status)}${timeline ? ` - ${escapeHtml(timeline)}` : ""}</em>
-      ${action ? `<button class="history-action ${escapeHtml(action.className)}" type="button" data-history-action="${escapeHtml(action.action)}">${escapeHtml(action.label)}</button>` : ""}
-    </div>
-  `;
+  return livePalmesHistoryView.renderHistoryItem(alert, {
+    ...options,
+    events: data.events || [],
+    helpers: {
+      alertCommentLabel,
+      alertIdentityLabel,
+      alertStatusClass,
+      alertStatusLabel,
+      alertTimeline,
+      decisionMotifLabel,
+      finalStageLabel,
+      formatAlertTime,
+      fullAlertIdentityLabel,
+      historyActionForAlert,
+      isFinalStage
+    }
+  });
 }
 
 function openAlertDetail(alertId) {
@@ -3916,40 +3831,22 @@ function openAlertDetail(alertId) {
   const clickedSentence = state.role !== "video" && clickedAlert.id !== alert.id ? speakerAlertSentence(clickedAlert) : null;
   const sheetTitle = isInfoAlert ? "Fiche information" : "Fiche décision";
   alertDetailModal.hidden = false;
-  alertDetailModal.innerHTML = `
-    <div class="decision-dialog alert-detail-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(sheetTitle)}">
-      <div class="decision-modal-head">
-        <div>
-          <span>${escapeHtml(sheetTitle)}</span>
-          <h2>${escapeHtml(decisionMotifLabel(alert))}</h2>
-          <p>${escapeHtml(identity)}</p>
-          <p class="decision-race-info">${escapeHtml(courseLabel)}${hasSeriesLine ? ` - ${escapeHtml(seriesLineLabel)}` : ""}</p>
-        </div>
-        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
-      </div>
-      <div class="alert-detail-status ${alertStatusClass(alert)}">
-        <strong>${escapeHtml(status)}</strong>
-      </div>
-      <div class="alert-detail-grid">
-        <div><span>Course</span><strong>${escapeHtml(courseLabel)}</strong></div>
-        ${hasSeriesLine ? `<div><span>Série - Ligne</span><strong>${escapeHtml(seriesLineLabel)}</strong></div>` : ""}
-        <div><span>Concurrent</span><strong>${escapeHtml(identity)}</strong></div>
-        <div><span>Motif</span><strong>${escapeHtml(decisionMotifLabel(alert))}</strong></div>
-      </div>
-      ${comment ? `<div class="alert-detail-note"><span>Remarque</span><strong>${escapeHtml(comment)}</strong></div>` : ""}
-      ${speakerSentence ? `<div class="alert-detail-note"><span>Texte speaker</span><strong>${escapeHtml(speakerSentence.text)} - ${escapeHtml(speakerSentence.identity)}</strong></div>` : ""}
-      ${clickedSentence ? `<div class="alert-detail-note"><span>Alerte en cours</span><strong>${escapeHtml(clickedSentence.text)} - ${escapeHtml(clickedSentence.identity)}</strong></div>` : ""}
-      <div class="alert-detail-timeline">
-        <h3>Historique</h3>
-        ${timeline.length ? timeline.map(([label, value]) => `
-          <div class="alert-timeline-row">
-            <time>${escapeHtml(formatAlertDateTime(value) || "--")}</time>
-            <strong>${escapeHtml(label)}</strong>
-          </div>
-        `).join("") : `<p class="panel-subtitle">Aucun historique disponible.</p>`}
-      </div>
-    </div>
-  `;
+  alertDetailModal.innerHTML = livePalmesAlertDetailView.renderAlertDetailModalHtml({
+    alert,
+    clickedSentence,
+    comment,
+    courseLabel,
+    decisionLabel: decisionMotifLabel(alert),
+    formatAlertDateTime,
+    hasSeriesLine,
+    identity,
+    seriesLineLabel,
+    sheetTitle,
+    speakerSentence,
+    status,
+    statusClass: alertStatusClass(alert),
+    timeline
+  });
 }
 
 function closeAlertDetail() {
@@ -3967,27 +3864,14 @@ function openFinalistsAnnouncementModal(alertId) {
   const finalLabel = hasFinalB ? "les finales" : "la finale";
   const speakerText = `Votre attention s'il vous plait, sont qualifiés pour ${finalLabel} du ${alert.eventLabel || alert.eventId} ${alert.sexLabel || sexDisplayLabel(alert.sex)} :`;
   alertDetailModal.hidden = false;
-  alertDetailModal.innerHTML = `
-    <div class="decision-dialog alert-detail-dialog finalists-announcement-dialog" role="dialog" aria-modal="true" aria-label="Finalistes à annoncer">
-      <div class="decision-modal-head">
-        <div>
-          <span>Annonce speaker</span>
-          <h2>Finalistes à annoncer</h2>
-          <p>${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</p>
-        </div>
-        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
-      </div>
-      <div class="alert-detail-note finalists-speaker-text">
-        <span>Texte speaker</span>
-        <strong>${escapeHtml(speakerText)}</strong>
-      </div>
-      ${renderFinalistsAlertList(alert)}
-      <div class="decision-actions">
-        <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
-        ${canMarkAnnounced ? `<button class="primary-button" type="button" data-finalists-announced="${escapeHtml(alert.id)}">Annoncé</button>` : ""}
-      </div>
-    </div>
-  `;
+  alertDetailModal.innerHTML = livePalmesAlertDetailView.renderFinalistsAnnouncementModalHtml({
+    alert,
+    canMarkAnnounced,
+    eventLabel: alert.eventLabel || alert.eventId,
+    finalistsListHtml: renderFinalistsAlertList(alert),
+    sexLabel: alert.sexLabel || sexDisplayLabel(alert.sex),
+    speakerText
+  });
 }
 
 function historyActionForAlert(alert) {
@@ -4225,10 +4109,10 @@ function renderDecisionPanel() {
   const entrant = selectedEntrant();
   const modalOpen = Boolean(decisionModal && !decisionModal.hidden && decisionModal.innerHTML.trim());
   decisionPanel.hidden = false;
-  decisionPanel.innerHTML = `
-    <h3>Décision juge arbitre</h3>
-    <p class="panel-subtitle">${entrant && modalOpen ? `${escapeHtml(formatDisplayName(entrant))} sélectionné. La fenêtre de décision est ouverte.` : "Clique sur une ligne de la série pour créer une décision."}</p>
-  `;
+  decisionPanel.innerHTML = livePalmesRefereeView.renderDecisionPanelHtml({
+    modalOpen,
+    selectedName: entrant ? formatDisplayName(entrant) : ""
+  });
 }
 
 function createDecisionDraft() {
@@ -4309,84 +4193,25 @@ function renderDecisionModal() {
   const modalLineLabel = row?.line || entrant.lane || entrant.seriesInfo?.line || "-";
   const modalRaceInfo = `${event?.label || entrant.eventId} ${sexLabel} - ${modalSeriesLabel} - Ligne ${modalLineLabel}`;
   const activeDecisions = activeDsqAlertsForEntrant(entrant);
-  const activeDecisionActions = activeDecisions.length ? `
-    <div class="decision-existing">
-      <strong>Décision déjà saisie sur cette ligne</strong>
-      ${activeDecisions.map((alert) => `
-        <div class="decision-existing-row">
-          <span>${escapeHtml(decisionMotifLabel(alert))}</span>
-          <button class="ghost-button compact danger-button" type="button" data-cancel-active-decision="${escapeHtml(alert.id)}">Annuler cette DSQ</button>
-        </div>
-      `).join("")}
-    </div>
-  ` : "";
-  const options = decisionOptionsForEntrant(entrant)
-    .map(([value, label]) => `
-      <button class="decision-choice ${decisionDraft.type === value ? "active" : ""}" type="button" data-decision-type="${escapeHtml(value)}">
-        ${escapeHtml(label)}
-      </button>
-    `)
-    .join("");
-  const relayLegButtons = (from, to) => Array.from({ length: Math.max(0, to - from + 1) }, (_, index) => from + index)
-    .map((leg) => `<button class="decision-extra-button ${String(decisionDraft.relayLeg) === String(leg) ? "active" : ""}" type="button" data-relay-leg="${leg}">Relayeur ${leg}</button>`)
-    .join("");
-  const lengthSelector = `
-    <div class="decision-extra">
-      <p>${relay ? "Où la coulée du relayeur a-t-elle été constatée ?" : "Où la coulée a-t-elle été constatée ?"}</p>
-      <div class="decision-extra-buttons">
-        <button class="decision-extra-button ${decisionDraft.lengthType === "start" ? "active" : ""}" type="button" data-length-type="start">Au départ</button>
-        <button class="decision-extra-button ${decisionDraft.lengthType === "length" ? "active" : ""}" type="button" data-length-type="length">Longueur n°</button>
-      </div>
-      <label class="decision-length-input ${decisionDraft.lengthType === "length" ? "" : "muted-field"}">
-        Numéro de longueur
-        <span class="length-stepper">
-          <button class="stepper-button" type="button" data-length-step="-1" ${decisionDraft.lengthType === "length" ? "" : "disabled"}>−</button>
-          <input id="modalLengthNumber" type="text" inputmode="numeric" pattern="[0-9]*" value="${escapeHtml(decisionDraft.lengthNumber || "1")}" ${decisionDraft.lengthType === "length" ? "" : "disabled"}>
-          <button class="stepper-button" type="button" data-length-step="1" ${decisionDraft.lengthType === "length" ? "" : "disabled"}>+</button>
-        </span>
-      </label>
-    </div>
-  `;
-  let extra = "";
-  if (decisionNeedsRelayLeg(decisionDraft.type, entrant)) {
-    const firstLeg = decisionDraft.type === "relay_early_start" ? 2 : 1;
-    extra = `
-      <div class="decision-extra">
-        <p>Quel relayeur est concerné ?</p>
-        <div class="decision-extra-buttons">${relayLegButtons(firstLeg, legCount)}</div>
-      </div>
-      ${decisionDraft.type === "underwater_15m" ? lengthSelector : ""}
-    `;
-  } else if (decisionDraft.type === "underwater_15m") {
-    extra = lengthSelector;
-  }
   decisionModal.hidden = false;
-  decisionModal.innerHTML = `
-    <div class="decision-dialog" role="dialog" aria-modal="true" aria-label="Décision juge arbitre">
-      <div class="decision-modal-head">
-        <div>
-          <span>Décision JA</span>
-          <div class="decision-title-line">
-            <span class="lane decision-line-pill" title="Ligne ${escapeHtml(String(modalLineLabel))}">${escapeHtml(String(modalLineLabel))}</span>
-            <h2>${escapeHtml(formatDisplayName(entrant))}</h2>
-          </div>
-          <p class="decision-race-info">${escapeHtml(modalRaceInfo)}</p>
-        </div>
-        <button class="icon-button decision-close" type="button" data-close-decision aria-label="Fermer">×</button>
-      </div>
-      ${activeDecisionActions}
-      <div class="decision-choice-grid">${options}</div>
-      ${extra}
-      <label class="decision-comment">
-        Remarque optionnelle
-        <textarea id="modalDecisionComment" placeholder="Précision utile si besoin">${escapeHtml(decisionDraft.comment)}</textarea>
-      </label>
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-close-decision>Annuler</button>
-        <button class="primary-button" type="button" data-submit-decision ${decisionDraftIsReady(entrant) ? "" : "disabled"}>Valider la décision</button>
-      </div>
-    </div>
-  `;
+  decisionModal.innerHTML = livePalmesRefereeView.renderDecisionModalHtml({
+    activeDecisions: activeDecisions.map((alert) => ({ id: alert.id, label: decisionMotifLabel(alert) })),
+    choices: decisionOptionsForEntrant(entrant).map(([value, label]) => ({
+      active: decisionDraft.type === value,
+      label,
+      value
+    })),
+    decisionDraft,
+    entrantName: formatDisplayName(entrant),
+    firstLeg: decisionDraft.type === "relay_early_start" ? 2 : 1,
+    legCount,
+    lineLabel: modalLineLabel,
+    raceInfo: modalRaceInfo,
+    ready: decisionDraftIsReady(entrant),
+    relay,
+    showLengthSelector: decisionDraft.type === "underwater_15m",
+    showRelayLeg: decisionNeedsRelayLeg(decisionDraft.type, entrant)
+  });
 }
 
 function decisionRoute(type) {
@@ -4448,84 +4273,19 @@ function renderRoleQueue() {
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   const title = state.role === "video" ? "Demandes vidéo à vérifier" : "Informations";
   roleQueue.hidden = false;
-  roleQueue.innerHTML = `
-    <h3>${title}</h3>
-    <div class="queue-list">
-      ${rows.length ? rows.map(renderQueueItem).join("") : `<p class="panel-subtitle">Aucune information en attente.</p>`}
-    </div>
-  `;
-}
-
-function renderQueueItem(alert) {
-  if (state.role === "secretary" && alert.type === "forfait" && alert.secretaryStatus === "pending") {
-    const detail = alertCommentLabel(alert);
-    return `
-      <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
-        <div>
-          <strong class="alert-title"><span aria-hidden="true">!</span> Forfait non déclaré à prendre en note <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
-          <strong>${escapeHtml(alertRaceLabel(alert))}</strong>
-          <span>${escapeHtml(`${alertSwimmerLabel(alert)}${detail ? ` - ${detail}` : ""}`)}</span>
-        </div>
-        <div class="queue-actions">
-          <button class="ghost-button compact confirm-button" type="button" data-queue-action="done-secretary">Pris note</button>
-        </div>
-      </div>
-    `;
-  }
-  if (state.role === "secretary" && (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement")) {
-    const label = alert.type === "finalist_replacement_announcement"
-      ? "Repêchage en attente d'annonce speaker"
-      : "Finalistes en attente d'annonce speaker";
-    const detail = alert.type === "finalist_replacement_announcement" && alert.replacementName
-      ? `Repêché(e) : ${alert.replacementName}${alert.replacementClub ? ` - ${alert.replacementClub}` : ""}`
-      : "Le secrétariat peut relancer le speaker si l'annonce tarde.";
-    return `
-      <div class="queue-item video-info-card" data-alert-id="${escapeHtml(alert.id)}">
-        <div>
-          <strong class="alert-title secretary-info-title"><span aria-hidden="true">i</span> ${escapeHtml(label)} <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
-          <strong class="secretary-info-race">${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</strong>
-          <span class="secretary-info-detail">${escapeHtml(detail)}</span>
-        </div>
-      </div>
-    `;
-  }
-  if (alert.type === "final_composition_ready") {
-    return `
-      <div class="queue-item final-composition-item" data-alert-id="${escapeHtml(alert.id)}">
-        <div>
-          <strong class="alert-title"><span aria-hidden="true">i</span> Composition finale définitive <small>${escapeHtml(formatAlertTime(alert.createdAt) || "")}</small></strong>
-          <strong>${escapeHtml(alert.eventLabel || alert.eventId)} ${escapeHtml(alert.sexLabel || sexDisplayLabel(alert.sex))}</strong>
-          <span>La composition de la ou des finales est définitive.</span>
-        </div>
-        <div class="queue-actions">
-          <button class="ghost-button compact confirm-button" type="button" data-final-composition-open="${escapeHtml(alert.id)}">Voir les qualifiés et forfaits</button>
-        </div>
-      </div>
-    `;
-  }
-  const videoActions = state.role === "video"
-    ? `<button class="ghost-button compact confirm-button" type="button" data-queue-action="confirm-video">Confirmer DSQ</button>
-       <button class="ghost-button compact danger-button" type="button" data-queue-action="reject-video">Invalider</button>`
-    : "";
-  const computerActions = state.role === "computer"
-    ? `<button class="ghost-button compact confirm-button" type="button" data-queue-action="done-computer">Traité</button>`
-    : "";
-  const title = state.role === "video" ? "Demande arbitrage vidéo à traiter" : "Décision à saisir";
-  const detail = alertCommentLabel(alert);
-  const identityLine = state.role === "video"
-    ? ""
-    : `${alertSwimmerLabel(alert)}${detail ? ` - ${detail}` : ""}`;
-  return `
-    <div class="queue-item urgent-queue-item" data-alert-id="${escapeHtml(alert.id)}">
-      <div>
-        <strong class="alert-title"><span aria-hidden="true">!</span> ${escapeHtml(title)} <small>${escapeHtml([formatAlertTime(alert.createdAt)].filter(Boolean).join(""))}</small></strong>
-        <strong>${escapeHtml(decisionMotifLabel(alert))}</strong>
-        <span>${escapeHtml(alertRaceLabel(alert))}</span>
-        ${identityLine ? `<span>${escapeHtml(identityLine)}</span>` : ""}
-      </div>
-      <div class="queue-actions">${videoActions}${computerActions}</div>
-    </div>
-  `;
+  roleQueue.innerHTML = livePalmesRoleQueueView.renderRoleQueueHtml({
+    helpers: {
+      alertCommentLabel,
+      alertRaceLabel,
+      alertSwimmerLabel,
+      decisionMotifLabel,
+      formatAlertTime,
+      sexDisplayLabel
+    },
+    role: state.role,
+    rows,
+    title
+  });
 }
 
 function updateAlert(alertId, changes) {
@@ -4961,119 +4721,17 @@ function resultHasDetailsForDiagnostic(result) {
 function renderTechnicalDiagnosticModal(report) {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
-  const firebase = report?.firebase || {};
-  const localAlertCounts = report?.local?.pendingAlertCounts || {};
-  const serverAlertCounts = firebase.pendingAlertCounts || {};
-  const alertExamples = firebase.pendingAlertExamples?.length
-    ? firebase.pendingAlertExamples
-    : (report?.local?.pendingAlertExamples || []);
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
-      <div class="decision-modal-head">
-        <div>
-          <span>Diagnostic</span>
-          <h2>Diagnostic technique</h2>
-          <p>Vue rapide des données LivePalmes utiles en compétition.</p>
-        </div>
-        <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
-      </div>
-      ${report?.available ? `
-        ${technicalDiagnosticSection("Local", [
-          { label: "sessions", value: String(report.local.sessions), status: report.local.sessions ? "ok" : "warn" },
-          { label: "programme", value: String(report.local.program), status: report.local.program ? "ok" : "warn" },
-          { label: "séries", value: String(report.local.series), status: report.local.series ? "ok" : "warn" },
-          { label: "engagés", value: String(report.local.entrants), status: report.local.entrants ? "ok" : "warn" },
-          { label: "résultats chargés", value: String(report.local.results), status: report.local.results ? "ok" : "neutral" },
-          { label: "performances", value: String(report.local.performances), status: report.local.performances ? "ok" : "neutral" },
-          { label: "alertes attente", value: String(report.local.pendingAlerts), status: report.local.pendingAlerts ? "warn" : "ok" }
-        ])}
-        ${technicalDiagnosticSection("Serveur", [
-          { label: "résultats", value: String(firebase.results || 0), status: firebase.results ? "ok" : "neutral" },
-          { label: "visibles public", value: String(firebase.visibleResults || 0), status: firebase.visibleResults ? "ok" : "neutral" },
-          { label: "détaillés", value: String(firebase.detailedResults || 0), status: firebase.detailedResults ? "ok" : "warn" },
-          { label: "lignes nageurs", value: String(firebase.resultPerformances || 0), status: firebase.resultPerformances ? "ok" : "neutral" },
-          { label: "partiels", value: String(firebase.partialResults || 0), status: firebase.partialResults ? "neutral" : "ok" },
-          { label: "finales attente", value: String(firebase.waitingFinalAnnouncements || 0), status: firebase.waitingFinalAnnouncements ? "warn" : "ok" },
-          { label: "sessions résultats", value: escapeHtml(firebase.resultSessions || "aucune"), status: firebase.results ? "ok" : "neutral" }
-        ])}
-        ${technicalDiagnosticSection("Poids / synchro", [
-          { label: "index public", value: formatByteSize(firebase.publicIndexBytes || 0), status: (firebase.publicIndexBytes || 0) > 750000 ? "warn" : "ok" },
-          { label: "live data", value: formatByteSize(firebase.liveDataBytes || 0), status: (firebase.liveDataBytes || 0) > 900000 ? "warn" : "ok" },
-          { label: "PDF résultats", value: String(firebase.resultPdfCount ?? "-"), status: firebase.resultPdfCount ? "ok" : "neutral" },
-          { label: "PDF à nettoyer", value: String(firebase.legacyPdfCount || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
-          { label: "poids à nettoyer", value: formatByteSize(firebase.legacyBytes || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },
-          { label: "lecture diag", value: `${report.readMs} ms`, status: report.readMs > 5000 ? "warn" : "ok" }
-        ])}
-        ${technicalDiagnosticSection("Consoles", [
-          { label: "présences", value: String(firebase.presenceCount ?? "-"), status: firebase.presenceCount ? "ok" : "neutral" },
-          { label: "verrous rôles", value: String(firebase.roleLockCount ?? "-"), status: firebase.roleLockCount ? "neutral" : "ok" },
-          { label: "alertes serveur", value: String(firebase.alertCount ?? "-"), status: firebase.alertCount ? "neutral" : "ok" },
-          { label: "PDF séries", value: String(firebase.seriesPdfCount ?? "-"), status: firebase.seriesPdfCount ? "ok" : "neutral" },
-          { label: "PDF résultats sessions", value: String(firebase.sessionResultsPdfCount ?? "-"), status: firebase.sessionResultsPdfCount ? "ok" : "neutral" }
-        ])}
-        ${technicalDiagnosticSection("Alertes en attente", [
-          { label: "total local", value: String(report.local.pendingAlerts || 0), status: report.local.pendingAlerts ? "warn" : "ok" },
-          { label: "total serveur", value: String(firebase.pendingAlertCount || 0), status: firebase.pendingAlertCount ? "warn" : "ok" },
-          { label: "Live", value: `${localAlertCounts.live || 0} / ${serverAlertCounts.live || 0}`, status: (localAlertCounts.live || serverAlertCounts.live) ? "warn" : "ok" },
-          { label: "Speaker", value: `${localAlertCounts.speaker || 0} / ${serverAlertCounts.speaker || 0}`, status: (localAlertCounts.speaker || serverAlertCounts.speaker) ? "warn" : "ok" },
-          { label: "Bureau perf", value: `${localAlertCounts.computer || 0} / ${serverAlertCounts.computer || 0}`, status: (localAlertCounts.computer || serverAlertCounts.computer) ? "warn" : "ok" },
-          { label: "Secrétariat", value: `${localAlertCounts.secretary || 0} / ${serverAlertCounts.secretary || 0}`, status: (localAlertCounts.secretary || serverAlertCounts.secretary) ? "warn" : "ok" },
-          { label: "Vidéo", value: `${localAlertCounts.video || 0} / ${serverAlertCounts.video || 0}`, status: (localAlertCounts.video || serverAlertCounts.video) ? "warn" : "ok" },
-          { label: "JA", value: `${localAlertCounts.referee || 0} / ${serverAlertCounts.referee || 0}`, status: (localAlertCounts.referee || serverAlertCounts.referee) ? "warn" : "ok" }
-        ])}
-        ${alertExamples.length ? `
-          <div class="admin-series-help technical-diagnostic-alerts">
-            <strong>Exemples d'alertes ouvertes</strong>
-            ${alertExamples.map((item) => `
-              <span>
-                ${escapeHtml(alertTargetsLabel(item.targets))} :
-                ${escapeHtml(item.status)} -
-                ${escapeHtml(item.type)}
-                ${item.identity ? ` - ${escapeHtml(item.identity)}` : ""}
-                ${item.race ? ` - ${escapeHtml(item.race)}` : ""}
-                ${item.createdAt ? ` (${escapeHtml(formatAlertDateTime(item.createdAt) || item.createdAt)})` : ""}
-              </span>
-            `).join("")}
-          </div>
-        ` : ""}
-        <div class="admin-series-help technical-diagnostic-notes">
-          <strong>Analyse</strong>
-          ${report.recommendations.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
-          <span>Dernier résultat : ${escapeHtml(firebase.lastResultUpdatedAt || "inconnu")}</span>
-          <span>Index public : ${escapeHtml(firebase.publicIndexUpdatedAt || "inconnu")}</span>
-        </div>
-      ` : `
-        <div class="admin-series-help">
-          <strong>Diagnostic indisponible</strong>
-          <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
-        </div>
-      `}
-      <div class="decision-modal-actions">
-        <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
-        <button class="ghost-button" type="button" data-technical-diagnostic>Relire</button>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalDiagnosticModalHtml(report, {
+    alertTargetsLabel,
+    formatAlertDateTime,
+    formatByteSize
+  });
 }
 
 async function showTechnicalDiagnosticModal() {
   if (!roleCodesModal) return;
   roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = `
-    <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic technique">
-      <div class="decision-modal-head">
-        <div>
-          <span>Diagnostic</span>
-          <h2>Diagnostic technique</h2>
-          <p>Lecture des compteurs LivePalmes en cours...</p>
-        </div>
-      </div>
-      <div class="admin-series-help">
-        <strong>Analyse en cours</strong>
-        <span>LivePalmes vérifie les données locales, serveur et publiques.</span>
-      </div>
-    </div>
-  `;
+  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalDiagnosticLoadingHtml();
   const report = await collectTechnicalDiagnostic();
   renderTechnicalDiagnosticModal(report);
 }
@@ -5347,42 +5005,34 @@ function renderProgramModal() {
     .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
     .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
   const currentKey = raceOptionKey(viewState.eventId, viewState.sex);
-  programModal.innerHTML = `
-    <div class="decision-dialog program-dialog ${compactProgram ? "compact-program-dialog" : ""}" role="dialog" aria-modal="true" aria-label="Programme">
-      <div class="decision-modal-head">
-        <div>
-          <span>Avancement</span>
-          <h2>Programme simplifié</h2>
-          <p>${compactProgram ? (viewState.session === "all" ? "Toutes les sessions" : `Session ${escapeHtml(viewState.session)}`) : `${viewState.session === "all" ? "Toutes les sessions" : `Session ${escapeHtml(viewState.session)}`} - courses, séries et horaires indicatifs.`}</p>
-          ${state.role === "referee" ? `<p class="speaker-program-marker">${escapeHtml(speakerProgramPositionLabel())}</p>` : ""}
-        </div>
-        <button class="decision-close" type="button" data-program-close aria-label="Fermer">×</button>
-      </div>
-      <div class="program-list">
-        ${rows.length ? rows.map((row) => {
-          const event = data.events.find((item) => item.id === row.eventId);
-          const rowKey = raceOptionKey(row.eventId, row.sex);
-          const rowCurrent = rowKey === currentKey && (!row.session || state.session === "all" || row.session === state.session);
-          const items = programSeriesItems(row);
-          return `
-            <div class="program-row ${rowCurrent ? "current-race" : ""} ${programRowProgressClass(row)} ${readOnlyProgram ? "readonly-program-row" : ""}" data-program-row="${escapeHtml(programKey(row))}">
-              <button class="program-race-button" type="button" ${readOnlyProgram ? "disabled" : `data-program-race="${escapeHtml(programKey(row))}"`}>
-                <span>${row.session ? `S${escapeHtml(row.session)} · ` : ""}${escapeHtml(event?.label || row.label || row.eventId)} ${escapeHtml(sexDisplayLabel(row.sex))}${splitRaceNote(row.eventId, row.sex)}</span>
-                ${row.startTime ? `<small>${escapeHtml(row.startTime)}</small>` : ""}
-              </button>
-              <div class="program-series-line">
-                ${items.length ? items.map((item) => `
-                  <button class="program-series-chip ${programItemIsCurrent(row, item) ? "current" : ""} ${programItemIsSpeakerCurrent(row, item) ? "speaker-current" : ""} ${programItemProgressClass(row, item)}" type="button" ${readOnlyProgram ? "disabled" : `data-program-race="${escapeHtml(programKey(row))}" data-program-series="${escapeHtml(item.series)}" data-program-stage="${escapeHtml(item.stage || "series")}"`}>
-                    <strong>${escapeHtml(item.label)}</strong>${item.time ? `<span>${escapeHtml(item.time)}</span>` : ""}${programItemIsSpeakerCurrent(row, item) ? `<em>speaker</em>` : ""}${programItemProgressClass(row, item) === "ja-current" ? `<em>JA</em>` : ""}
-                  </button>
-                `).join("") : `<span class="no-series-note">Aucune série</span>`}
-              </div>
-            </div>
-          `;
-        }).join("") : `<p class="empty">Aucun programme disponible.</p>`}
-      </div>
-    </div>
-  `;
+  programModal.innerHTML = livePalmesProgramView.renderProgramModalHtml({
+    compactProgram,
+    readOnlyProgram,
+    rows: rows.map((row) => {
+      const event = data.events.find((item) => item.id === row.eventId);
+      const rowKey = raceOptionKey(row.eventId, row.sex);
+      return {
+        current: rowKey === currentKey && (!row.session || state.session === "all" || row.session === state.session),
+        eventLabel: event?.label || row.label || row.eventId,
+        items: programSeriesItems(row).map((item) => ({
+          ...item,
+          current: programItemIsCurrent(row, item),
+          progressClass: programItemProgressClass(row, item),
+          speakerCurrent: programItemIsSpeakerCurrent(row, item)
+        })),
+        programKey: programKey(row),
+        progressClass: programRowProgressClass(row),
+        session: row.session || "",
+        sexLabel: sexDisplayLabel(row.sex),
+        splitNote: splitRaceNote(row.eventId, row.sex),
+        startTime: row.startTime || ""
+      };
+    }),
+    sessionLabel: compactProgram
+      ? (viewState.session === "all" ? "Toutes les sessions" : `Session ${viewState.session}`)
+      : `${viewState.session === "all" ? "Toutes les sessions" : `Session ${viewState.session}`} - courses, séries et horaires indicatifs.`,
+    speakerMarker: state.role === "referee" ? speakerProgramPositionLabel() : ""
+  });
 }
 
 function openProgramModal() {
@@ -5420,41 +5070,7 @@ async function setRefereeProgressHere() {
 function openAdminSeriesModal() {
   if (!adminSeriesModal) return;
   adminSeriesModal.hidden = false;
-  adminSeriesModal.innerHTML = `
-    <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Administration des séries">
-      <div class="decision-modal-head">
-        <div>
-          <span>Administration</span>
-          <h2>Importer des séries PDF</h2>
-          <p>Choisis si le PDF remplace toute la compétition ou seulement une session déjà publiée.</p>
-        </div>
-        <button class="decision-close" type="button" data-admin-series-close aria-label="Fermer">×</button>
-      </div>
-      <div class="admin-series-options">
-        <label class="admin-series-option">
-          <input type="radio" name="seriesImportMode" value="full" checked>
-          <strong>PDF général de la compétition</strong>
-          <span>Remplace toutes les séries, le programme, le titre de compétition et les engagés.</span>
-        </label>
-        <label class="admin-series-option">
-          <input type="radio" name="seriesImportMode" value="session">
-          <strong>PDF de mise à jour d'une session</strong>
-          <span>Remplace uniquement la ou les sessions présentes dans le PDF, par exemple la session 2 avec finales.</span>
-        </label>
-      </div>
-      <div class="admin-series-help">
-        <strong>Repère rapide</strong>
-        <span>PDF général : à utiliser au début de la compétition.</span>
-        <span>Mise à jour session : remplace seulement la session choisie.</span>
-      </div>
-      <label class="admin-session-field" hidden>
-        <span>Session à remplacer</span>
-        <input id="seriesSessionOverride" type="number" min="1" max="20" inputmode="numeric" placeholder="ex. 2">
-      </label>
-      <label class="ghost-button admin-series-file" for="seriesPdfInput">Choisir le PDF</label>
-      <input id="seriesPdfInput" class="hidden-file-input" type="file" accept="application/pdf">
-    </div>
-  `;
+  adminSeriesModal.innerHTML = livePalmesAdminModals.renderAdminSeriesModalHtml();
 }
 
 function closeAdminSeriesModal() {
@@ -6314,26 +5930,13 @@ function openFinalWithdrawalsModal(resultId, options = {}) {
   if (!result || !alertDetailModal) return;
   const finalists = normalizeFinalistsOrder(result.finalists || {});
   alertDetailModal.hidden = false;
-  alertDetailModal.innerHTML = `
-    <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Forfaits finales">
-      <div class="decision-modal-head">
-        <div>
-          <span>Secrétariat</span>
-          <h2>Forfaits finales</h2>
-          <p>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}</p>
-        </div>
-        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
-      </div>
-      <div class="final-withdrawal-list">
-        ${renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || [])}
-        ${renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || [])}
-        ${renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })}
-      </div>
-      <div class="decision-actions">
-        <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
-      </div>
-    </div>
-  `;
+  alertDetailModal.innerHTML = livePalmesAlertDetailView.renderFinalWithdrawalsModalHtml({
+    eventLabel: result.eventLabel || result.eventId,
+    finalAHtml: renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || []),
+    finalBHtml: renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || []),
+    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+    unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })
+  });
 }
 
 async function toggleFinalPreWithdrawal(resultId, rowKey) {
@@ -6902,23 +6505,16 @@ function headerReferenceChipsHtml() {
   const qualificationRows = data.qualifications
     .filter(matchesRace)
     .sort((a, b) => timeToMs(a.time) - timeToMs(b.time));
-  return [
-    ...recordRows.map((row) => {
-      const key = recordKey(row);
-      return `
-      <button class="ref-chip ref-chip-button ${categoryClass(row.category)} ${state.selectedRecordKey === key ? "active-ref" : ""}" data-record-key="${escapeHtml(key)}">
-        <strong>${escapeHtml(shortRecordLabel(row))}</strong>
-        ${escapeHtml(row.time || "-")}
-      </button>
-    `;
-    }),
-    ...qualificationRows.map((row) => `
-      <span class="ref-chip qualification-chip">
-        <strong>${escapeHtml(row.label || "EDF")}</strong>
-        ${escapeHtml(row.time || "-")}
-      </span>
-    `)
-  ].join("");
+  return livePalmesHeaderView.renderHeaderReferenceChipsHtml({
+    qualificationRows,
+    recordRows,
+    selectedRecordKey: state.selectedRecordKey,
+    helpers: {
+      categoryClass,
+      recordKey,
+      shortRecordLabel
+    }
+  });
 }
 
 function selectedHeaderReferenceDetailsHtml() {
@@ -6928,13 +6524,10 @@ function selectedHeaderReferenceDetailsHtml() {
     state.selectedRecordKey = "";
     return "";
   }
-  return `
-    <div>
-      <strong>${escapeHtml(shortRecordLabel(row))} - ${escapeHtml(row.time || "-")}</strong>
-      <span>${escapeHtml(recordDescription(row))}</span>
-    </div>
-    <button class="icon-button close-ref-details" title="Fermer le détail" aria-label="Fermer le détail">×</button>
-  `;
+  return livePalmesHeaderView.renderSelectedHeaderReferenceDetailsHtml(row, {
+    recordDescription,
+    shortRecordLabel
+  });
 }
 
 function renderHeaderReferences() {
