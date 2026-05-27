@@ -1,16 +1,44 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      DECISION_LABELS = {},
+      SPEAKER_DECISION_REASONS = {},
+      entrantKey,
+      finalStageLabel,
+      formatAlertTime,
+      formatPersonNameParts,
+      isFinalStage,
+      isSpeakerView,
+      livePalmesAlertCardView,
+      livePalmesAlerts,
+      livePalmesLineStatusView,
+      normalizeFinalistsOrder,
+      renderComputerFooterPanel,
+      renderDecisionPanel,
+      renderOfficialAlerts,
+      renderResultsAdminPanel,
+      renderRoleHistory,
+      renderRoleQueue,
+      renderSecretaryFinalsPanel,
+      renderSpeakerHistory,
+      sexDisplayLabel
+    } = context;
+    const getAlerts = () => context.alerts || [];
+    const getData = () => context.data || { events: [] };
+    const getLiveDismissedAlertIds = () => context.liveDismissedAlertIds || new Set();
+    const getRaceResults = () => context.raceResults || [];
+    const getState = () => context.state || {};
+
       function currentRoleAlertFilter(alert) {
         return livePalmesAlerts.currentRoleAlertFilter(alert, {
-          role: state.role,
-          liveDismissedAlertIds,
+          role: getState().role,
+          liveDismissedAlertIds: getLiveDismissedAlertIds(),
           resolvedByResult: speakerAlertAlreadyResolvedByResult(alert)
         });
       }
       
       function speakerAlertAlreadyResolvedByResult(alert) {
-        return livePalmesAlerts.speakerAlertAlreadyResolvedByResult(alert, raceResults, finalistRowName);
+        return livePalmesAlerts.speakerAlertAlreadyResolvedByResult(alert, getRaceResults(), finalistRowName);
       }
       
       function isRequalificationAlert(alert) {
@@ -21,7 +49,7 @@
         if (alert.type === "final_composition_ready") {
           return `${alert.eventLabel || alert.eventId} - ${alert.sexLabel || sexDisplayLabel(alert.sex)}`;
         }
-        const event = data.events.find((item) => item.id === alert.eventId);
+        const event = (getData().events || []).find((item) => item.id === alert.eventId);
         const sex = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
         const series = alert.stage && isFinalStage(alert.stage)
           ? finalStageLabel(alert.stage)
@@ -34,7 +62,7 @@
       }
       
       function alertIdentityLabel(alert) {
-        if (state.role === "video") return "Concurrent non affiché";
+        if (getState().role === "video") return "Concurrent non affiché";
         return `${alert.displayName || "Concurrent"}${alertClubShortLabel(alert) ? ` - ${alertClubShortLabel(alert)}` : ""}`;
       }
       
@@ -83,7 +111,7 @@
             identity: alert.replacementClub ? `${alert.replacementName || "Concurrent"} - ${alert.replacementClub}` : (alert.replacementName || "Concurrent")
           };
         }
-        const event = data.events.find((item) => item.id === alert.eventId);
+        const event = (getData().events || []).find((item) => item.id === alert.eventId);
         const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
         const personLabel = alert.sex === "F" ? "la nageuse" : "le nageur";
         const agreement = alert.sex === "F" ? "e" : "";
@@ -113,7 +141,7 @@
       
       function activeDsqAlertsForEntrant(entrant) {
         const swimmerId = entrant.swimmerId || entrantKey(entrant);
-        return alerts.filter((alert) => (
+        return getAlerts().filter((alert) => (
           isDsqAlert(alert) &&
           !alert.cancelledAt &&
           alert.videoStatus !== "rejected" &&
@@ -125,7 +153,7 @@
       
       function activeLineAlertsForEntrant(entrant) {
         const swimmerId = entrant.swimmerId || entrantKey(entrant);
-        return alerts.filter((alert) => (
+        return getAlerts().filter((alert) => (
           !isRequalificationAlert(alert) &&
           !alert.cancelledAt &&
           alert.videoStatus !== "rejected" &&
@@ -175,7 +203,7 @@
       }
       
       function finalRowsForAnnouncementAlert(alert) {
-        const result = alert?.resultId ? raceResults.find((item) => item.id === alert.resultId) : null;
+        const result = alert?.resultId ? getRaceResults().find((item) => item.id === alert.resultId) : null;
         return normalizeFinalistsOrder(result?.finalists || alert?.finalists || {});
       }
       
@@ -206,7 +234,7 @@
       
       function historySentence(alert) {
         if (isDsqAlert(alert)) return speakerAlertSentence(alert);
-        const event = data.events.find((item) => item.id === alert.eventId);
+        const event = (getData().events || []).find((item) => item.id === alert.eventId);
         const sexLabel = alert.sex === "F" ? "Femmes" : (alert.sex === "M" ? "Hommes" : "Mixte");
         const seriesLabel = alert.stage && isFinalStage(alert.stage)
           ? finalStageLabel(alert.stage)
@@ -230,14 +258,14 @@
           detail,
           isRequalificationAlert,
           isSpeakerView: isSpeakerView(),
-          role: state.role,
+          role: getState().role,
           sexDisplayLabel,
           speakerAlertSentence
         });
       }
       
       function renderVideoInfoCard(alert) {
-        const event = data.events.find((item) => item.id === alert.eventId);
+        const event = (getData().events || []).find((item) => item.id === alert.eventId);
         const seriesLabel = alert.stage && isFinalStage(alert.stage)
           ? finalStageLabel(alert.stage)
           : `série ${alert.series || "-"}`;
@@ -293,7 +321,6 @@
         renderVideoInfoCard,
         renderRolePanels
       };
-    }
   }
 
   window.LivePalmesAlertPresenter = { init };

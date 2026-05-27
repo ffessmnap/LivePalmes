@@ -526,7 +526,8 @@ function adminActionsOptions() {
     roleCodesModal,
     roleIsUnlocked,
     saveData,
-    saveUnlockedRoles
+    saveUnlockedRoles,
+    updateLiveNotes
   };
   Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
   Object.defineProperty(options, "lastConsoleActivityAt", { get: () => lastConsoleActivityAt, set: (value) => { lastConsoleActivityAt = value; } });

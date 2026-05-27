@@ -1,6 +1,31 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      ROLE_LABELS,
+      competitionModeEnabled,
+      currentRolePins,
+      ensureResultsAdminSession,
+      formatAlertDateTime,
+      historyArchivesCollection,
+      initFirebaseSync,
+      livePalmesAdminModals,
+      normalizeData,
+      pinLockEnabled,
+      publishLiveDataToFirestore,
+      publishPublicResultsIndex,
+      render,
+      renderDataStatus,
+      resultArchivesCollection,
+      resultSessions,
+      roleCodesModal,
+      roleIsUnlocked,
+      saveData,
+      saveUnlockedRoles,
+      updateLiveNotes
+    } = context;
+    const getData = () => context.data || { notes: {} };
+    const setData = (value) => { context.data = value; };
+
       function renderRoleCodesModal() {
         if (!roleCodesModal) return;
         const pins = currentRolePins();
@@ -49,7 +74,7 @@
       function renderPublicSessionInfosModal() {
         if (!roleCodesModal) return;
         const sessions = resultSessions();
-        const infos = data.notes?.publicSessionInfos || {};
+        const infos = getData().notes?.publicSessionInfos || {};
         roleCodesModal.hidden = false;
         roleCodesModal.innerHTML = livePalmesAdminModals.renderPublicSessionInfosModalHtml({ infos, sessions });
       }
@@ -95,14 +120,14 @@
         if (roleIsUnlocked(role)) return Promise.resolve({ allowed: true, adminBypass: false });
         renderRolePinModal(role);
         return new Promise((resolve) => {
-          rolePinResolver = resolve;
+          context.rolePinResolver = resolve;
         });
       }
       
       function finishRolePin(result) {
-        if (rolePinResolver) {
-          rolePinResolver(result);
-          rolePinResolver = null;
+        if (context.rolePinResolver) {
+          context.rolePinResolver(result);
+          context.rolePinResolver = null;
         }
         closeRoleCodesModal();
       }
@@ -130,6 +155,7 @@
         if (!roleCodesModal) return;
         const pins = readRolePinsFromModal();
         if (!pins) return;
+        const data = getData();
         const nextData = normalizeData({
           ...data,
           notes: {
@@ -140,11 +166,11 @@
           },
           sourceVersion: `lock-${Date.now()}`
         });
-        data = nextData;
+        setData(nextData);
         if (enableLock) {
-          unlockedRoles = ["computer"];
+          context.unlockedRoles = ["computer"];
         } else {
-          unlockedRoles = [];
+          context.unlockedRoles = [];
         }
         saveUnlockedRoles();
         saveData();
@@ -160,6 +186,7 @@
       }
       
       async function togglePublicResultsOnline() {
+        const data = getData();
         const online = data.notes?.publicResultsOnline === false;
         const nextData = normalizeData({
           ...data,
@@ -170,7 +197,7 @@
           },
           sourceVersion: `public-online-${Date.now()}`
         });
-        data = nextData;
+        setData(nextData);
         saveData();
         render();
         try {
@@ -187,8 +214,9 @@
       
       function toggleCompetitionMode() {
         const enabled = !competitionModeEnabled();
-        lastConsoleActivityAt = Date.now();
-        data = normalizeData({
+        context.lastConsoleActivityAt = Date.now();
+        const data = getData();
+        const nextData = normalizeData({
           ...data,
           notes: {
             ...(data.notes || {}),
@@ -197,11 +225,12 @@
           },
           sourceVersion: `competition-mode-${Date.now()}`
         });
+        setData(nextData);
         saveData();
         render();
         updateLiveNotes(enabled ? "Actualisation directe activée" : "Actualisation manuelle activée", {
           competitionMode: enabled,
-          competitionModeUpdatedAt: data.notes.competitionModeUpdatedAt
+          competitionModeUpdatedAt: nextData.notes.competitionModeUpdatedAt
         }).then(() => {
           initFirebaseSync();
           render();
@@ -225,7 +254,6 @@
         toggleRoleLock,
         toggleCompetitionMode
       };
-    }
   }
 
   window.LivePalmesAdminActions = { init };
