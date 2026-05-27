@@ -19,9 +19,11 @@ Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands dom
 ## Modules principaux
 
 - `assets/livepalmes-result-parser.js` : lecture des resultats depuis les lignes extraites des PDF.
+- `assets/livepalmes-app-config.js` : configuration de demarrage, codes par defaut, Firebase, donnees de secours.
 - `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
 - `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
 - `assets/livepalmes-final-withdrawals-workflow.js` : finalistes, forfaits en finale, repechages, reintegrations.
+- `assets/livepalmes-export-actions.js` : telechargements JSON, ouverture et impression des archives.
 - `assets/livepalmes-swimmer-panel.js` : fiche nageur, records, affichage speaker/live.
 - `assets/livepalmes-public-swimmers.js` : recherche nageur et fiche nageur sur les pages publiques.
 - `assets/livepalmes-program-navigation.js` : sessions, courses, series, finales, navigation.
