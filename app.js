@@ -1863,603 +1863,81 @@ function entrantPersonKey(entrant) {
   return `${entrant.sex || ""}|${normalizePersonName(formatName(entrant))}`;
 }
 
-function currentEvent() {
-  return data.events.find((event) => event.id === state.eventId) || data.events[0];
-}
-
-function matchesRace(item) {
-  return item.eventId === state.eventId &&
-    item.sex === state.sex;
-}
-
-function comparableEventId(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
-function eventSignature(value) {
-  const compact = normalizePdfLabel(value).replace(/[^a-z0-9x]+/g, "");
-  const direct = compact.match(/(\d+x\d+|\d+)(?:m)?(apnee|ap|immersion|is|surface|sf|bipalmes|bipalme|bi|sb)/i);
-  if (!direct) return "";
-  const distance = direct[1].toLowerCase();
-  const disciplineText = direct[2].toLowerCase();
-  let discipline = "";
-  if (disciplineText === "ap" || disciplineText === "apnee") discipline = "ap";
-  else if (disciplineText === "is" || disciplineText === "immersion") discipline = "is";
-  else if (disciplineText === "sf" || disciplineText === "surface") discipline = "sf";
-  else if (disciplineText === "bi" || disciplineText === "bipalme" || disciplineText === "bipalmes") discipline = "bi";
-  else if (disciplineText === "sb") discipline = "sb";
-  return discipline ? `${distance}${discipline}` : "";
-}
-
-function recordEventMatches(recordEventId, eventId) {
-  const recordId = comparableEventId(recordEventId);
-  const raceId = comparableEventId(eventId);
-  if (recordId === raceId) return true;
-  const recordSignature = eventSignature(recordEventId);
-  const raceSignature = eventSignature(eventId);
-  if (recordSignature && raceSignature && recordSignature === raceSignature) return true;
-  if (recordSignature && raceId && recordSignature === raceId) return true;
-  if (raceSignature && recordId && raceSignature === recordId) return true;
-  if (/^(\d+x)/i.test(raceId) && raceId.endsWith("x") && recordId === raceId.slice(0, -1)) return true;
-  if (/^(\d+x)/i.test(recordId) && recordId.endsWith("x") && raceId === recordId.slice(0, -1)) return true;
-  return false;
-}
-
-function recordMatchesRace(record, eventId = state.eventId, sex = state.sex) {
-  if (!recordEventMatches(record.eventId, eventId)) return false;
-  if (sex === "X" && isRelayEntrant({ eventId })) {
-    return ["F", "M", "X"].includes(sheetSex(record.sex));
-  }
-  return sheetSex(record.sex) === sex;
-}
-
-function isFinalStage(stage) {
-  return livePalmesRaceCore.isFinalStage(stage);
-}
-
-function finalStageLabel(stage) {
-  return livePalmesRaceCore.finalStageLabel(stage);
-}
-
-function isFemaleContext(sex = state.sex) {
-  return sex === "F";
-}
-
-function sexDisplayLabel(sex = state.sex) {
-  if (sex === "F") return "Femmes";
-  if (sex === "M") return "Hommes";
-  return "Mixte";
-}
-
-function categoryLabel(category, sex = state.sex) {
-  if (isFemaleContext(sex)) {
-    if (sameCategory(category, "Cadet")) return "Cadette";
-    if (sameCategory(category, "Junior")) return "Junior";
-    if (sameCategory(category, "Senior")) return "Senior";
-  }
-  return category || "";
-}
-
-function entrantWord(count = 2, sex = state.sex) {
-  const female = isFemaleContext(sex);
-  if (Number(count) === 1) return female ? "engagée" : "engagé";
-  return female ? "engagées" : "engagés";
-}
-
-function swimmerWord(count = 1, sex = state.sex) {
-  const female = isFemaleContext(sex);
-  if (Number(count) === 1) return female ? "nageuse" : "nageur";
-  return female ? "nageuses" : "nageurs";
-}
-
-function displayedWord(count = 2, sex = state.sex) {
-  if (Number(count) === 1) return isFemaleContext(sex) ? "affichée" : "affiché";
-  return isFemaleContext(sex) ? "affichées" : "affichés";
-}
-
-function availableSexesForEvent(eventId = state.eventId) {
-  const order = ["F", "M", "X"];
-  const sexes = new Set([
-    ...data.entrants.filter((item) => item.eventId === eventId).map((item) => item.sex),
-    ...data.series.filter((item) => item.eventId === eventId).map((item) => item.sex),
-    ...data.program.filter((item) => item.eventId === eventId).map((item) => item.sex)
-  ].filter(Boolean));
-  return order.filter((sex) => sexes.has(sex));
-}
-
-function raceEntrants() {
-  const query = state.search.trim().toLowerCase();
-  const seriesRows = currentSeriesRows();
-  const seriesMap = new Map(seriesRows.map((row) => [row.swimmerId || entrantKey(row), row]));
-  const hasSeriesFilter = state.series !== "all";
-  return data.entrants
-    .filter(matchesRace)
-    .filter((entrant) => {
-      if (!hasSeriesFilter) return true;
-      const seriesRow = seriesMap.get(entrant.swimmerId || entrantKey(entrant));
-      return Boolean(seriesRow) && (!seriesRow.session || !entrant.session || entrant.session === seriesRow.session);
-    })
-    .filter((entrant) => state.category === "all" || sameCategory(entrant.category, state.category))
-    .filter((entrant) => {
-      const haystack = [
-        entrant.lane,
-        entrant.lastName,
-        entrant.firstName,
-        entrant.name,
-        entrant.club,
-        entrant.category,
-        entrant.seedTime,
-        entrant.note
-      ].join(" ").toLowerCase();
-      return haystack.includes(query);
-    })
-    .map((entrant) => ({ ...entrant, seriesInfo: seriesMap.get(entrant.swimmerId || entrantKey(entrant)) }))
-    .sort((a, b) => {
-      if (hasSeriesFilter) {
-        const direction = state.lineOrder === "desc" ? -1 : 1;
-        return direction * (Number(a.seriesInfo?.line || 99) - Number(b.seriesInfo?.line || 99));
-      }
-      return timeToMs(a.seedTime) - timeToMs(b.seedTime);
-    });
-}
-
-function raceEntrantsForStats() {
-  const raceItems = data.entrants.filter(matchesRace);
-  const seriesItems = raceItems.filter((entrant) => {
-    if (isFinalStage(entrant.stage)) return false;
-    const row = (data.series || []).find((seriesRow) => (
-      seriesRow.eventId === entrant.eventId &&
-      seriesRow.sex === entrant.sex &&
-      (seriesRow.swimmerId || entrantKey(seriesRow)) === (entrant.swimmerId || entrantKey(entrant)) &&
-      (!entrant.session || !seriesRow.session || entrant.session === seriesRow.session)
-    ));
-    return !row || !isFinalStage(row.stage);
-  });
-  const source = seriesItems.length ? seriesItems : raceItems;
-  const bySwimmer = new Map();
-  source.forEach((entrant) => {
-    const key = entrant.swimmerId || entrantKey(entrant);
-    const current = bySwimmer.get(key);
-    if (!current || timeToMs(entrant.seedTime) < timeToMs(current.seedTime)) {
-      bySwimmer.set(key, entrant);
-    }
-  });
-  return [...bySwimmer.values()];
-}
-
-function updateEventSelect() {
-  const rows = programRows();
-  if (rows.length) {
-    const options = [];
-    const seen = new Set();
-    rows.forEach((row) => {
-      const optionKey = raceOptionKey(row.eventId, row.sex);
-      if (seen.has(optionKey)) return;
-      const event = data.events.find((item) => item.id === row.eventId);
-      seen.add(optionKey);
-      options.push({
-        id: optionKey,
-        label: `${event?.label || row.label || row.eventId.toUpperCase()} ${sexDisplayLabel(row.sex)} - ${raceOptionPhaseLabel(row.eventId, row.sex)}`
-      });
-    });
-    if (!options.some((option) => option.id === raceOptionKey(state.eventId, state.sex))) {
-      applyProgramRow(rows[0]);
-    }
-    eventSelect.innerHTML = options.map((option) => (
-      `<option value="${escapeHtml(option.id)}">${escapeHtml(option.label)}</option>`
-    )).join("");
-    eventSelect.value = raceOptionKey(state.eventId, state.sex);
-    return;
-  }
-  const fallbackOptions = [];
-  data.events.forEach((event) => {
-    const sexes = availableSexesForEvent(event.id);
-    (sexes.length ? sexes : ["F", "M"]).forEach((sex) => {
-      fallbackOptions.push({
-        id: raceOptionKey(event.id, sex),
-        label: `${event.label} ${sexDisplayLabel(sex)} - ${raceOptionPhaseLabel(event.id, sex)}`
-      });
-    });
-  });
-  eventSelect.innerHTML = fallbackOptions.map((option) => (
-    `<option value="${escapeHtml(option.id)}">${escapeHtml(option.label)}</option>`
-  )).join("");
-  eventSelect.value = raceOptionKey(state.eventId, state.sex);
-}
-
-function raceOptionKey(eventId, sex) {
-  return livePalmesRaceCore.raceOptionKey(eventId, sex);
-}
-
-function raceProgramRowsForOption(eventId, sex) {
-  return programRows().filter((row) => row.eventId === eventId && row.sex === sex);
-}
-
-function seriesNumbersForRaceOption(eventId, sex) {
-  const rows = (data.series || [])
-    .filter((row) => row.eventId === eventId && row.sex === sex)
-    .filter((row) => state.session === "all" || !row.session || row.session === state.session)
-    .filter((row) => !isFinalStage(row.stage));
-  return [...new Set(rows.map((row) => Number(row.series)).filter(Number.isFinite))].sort((a, b) => a - b);
-}
-
-function finalRowsForRaceOption(eventId, sex) {
-  const seen = new Set();
-  return raceProgramRowsForOption(eventId, sex)
-    .filter((row) => isFinalStage(row.stage))
-    .filter((row) => {
-      const key = row.stage || programKey(row);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-}
-
-function raceOptionPhaseLabel(eventId, sex) {
-  const currentOption = eventId === state.eventId && sex === state.sex;
-  const finals = finalRowsForRaceOption(eventId, sex);
-  if (currentOption && isFinalStage(state.series) && finals.length) {
-    return `${finals.length} finale${finals.length > 1 ? "s" : ""}`;
-  }
-  const seriesNumbers = seriesNumbersForRaceOption(eventId, sex);
-  const rows = raceProgramRowsForOption(eventId, sex);
-  const lastRegularRow = rows.filter((row) => !isFinalStage(row.stage)).at(-1);
-  const isBestSeries = !finals.length && lastRegularRow && isSplitRaceAcrossSessions(eventId, sex) && isLastProgramPartForRace(lastRegularRow);
-  if (isBestSeries) return "meilleure série";
-  if (seriesNumbers.length) {
-    return `${seriesNumbers.length} série${seriesNumbers.length > 1 ? "s" : ""}`;
-  }
-  if (finals.length) return `${finals.length} finale${finals.length > 1 ? "s" : ""}`;
-  return "série";
-}
-
-function programRowFromRaceOption(value) {
-  const [eventId, sex] = String(value || "").split("|");
-  return programRows().find((row) => row.eventId === eventId && row.sex === sex)
-    || { eventId, sex };
-}
-
-function programKey(row) {
-  return livePalmesRaceCore.programKey(row);
-}
-
-function programLabel(row) {
-  const sexLabel = sexDisplayLabel(row.sex);
-  const time = row.startTime ? ` - ${row.startTime}` : "";
-  const session = row.session ? `S${row.session} - ` : "";
-  return `${session}${row.label} - ${sexLabel}${time}`;
-}
-
-function selectedProgramRow() {
-  if (state.programKey) {
-    const exact = programRows().find((row) => programKey(row) === state.programKey);
-    if (exact) return exact;
-  }
-  if (isFinalStage(state.series)) {
-    const finalRow = finalProgramRowsForRace().find((row) => row.stage === state.series);
-    if (finalRow) return finalRow;
-  }
-  return programRows().find((row) => row.eventId === state.eventId && row.sex === state.sex) || null;
-}
-
-function applyProgramRow(row) {
-  if (!row) return;
-  state.programKey = programKey(row);
-  state.eventId = row.eventId;
-  state.sex = row.sex;
-}
-
-function sessionRows() {
-  const rows = (data.program || []).filter((row) => row.session);
-  const bySession = new Map();
-  rows.forEach((row) => {
-    if (!bySession.has(row.session)) {
-      bySession.set(row.session, {
-        number: row.session,
-        label: row.sessionLabel || `Session ${row.session}`,
-        order: Number(row.order || 9999)
-      });
-    }
-  });
-  return [...bySession.values()].sort((a, b) => Number(a.number) - Number(b.number) || a.order - b.order);
-}
-
-function firstSessionNumber() {
-  return sessionRows()[0]?.number || "all";
-}
-
-function preferredInitialSession() {
-  const sessions = sessionRows();
-  if (!sessions.length) return "all";
-  const updatedSession = String(data.notes?.lastUpdatedSession || "");
-  if (data.notes?.lastImportedMode === "Mise à jour session" && sessions.some((session) => session.number === updatedSession)) {
-    return updatedSession;
-  }
-  return sessions.find((session) => session.number === "1")?.number || sessions[0].number;
-}
-
-function firstProgramRowForSession(sessionNumber) {
-  const rows = (data.program || [])
-    .filter((row) => !sessionNumber || sessionNumber === "all" || row.session === sessionNumber)
-    .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
-    .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
-  return rows[0] || null;
-}
-
-function firstSeriesForRace(eventId, sex, sessionNumber) {
-  const rows = (data.series || [])
-    .filter((row) => row.eventId === eventId && row.sex === sex)
-    .filter((row) => sessionNumber === "all" || !row.session || row.session === sessionNumber);
-  const firstRegular = rows
-    .filter((row) => !isFinalStage(row.stage))
-    .map((row) => Number(row.series))
-    .filter(Number.isFinite)
-    .sort((a, b) => a - b)[0];
-  if (firstRegular) return String(firstRegular);
-  return rows.find((row) => isFinalStage(row.stage))?.stage || "all";
-}
-
-function initialProgramPosition() {
-  const session = preferredInitialSession();
-  const row = firstProgramRowForSession(session);
-  if (!row) {
-    return {
-      eventId: data.events[0]?.id || "",
-      sex: "F",
-      session,
-      series: "all",
-      programKey: ""
-    };
-  }
+function programNavigationOptions() {
   return {
-    eventId: row.eventId,
-    sex: row.sex,
-    session: row.session || session,
-    series: firstSeriesForRace(row.eventId, row.sex, row.session || session),
-    programKey: programKey(row)
+    clearSearch,
+    data,
+    entrantKey,
+    escapeHtml,
+    eventSelect,
+    isLastProgramPartForRace,
+    isRelayEntrant,
+    normalizePdfLabel,
+    sameCategory,
+    sheetSex,
+    state,
+    timeToMs
   };
 }
-
-function normalizeLivePosition() {
-  const sessions = sessionRows();
-  if (!sessions.length) {
-    state.session = "all";
-    return;
-  }
-    if (state.session === "all" || !sessions.some((session) => session.number === state.session)) {
-      const initial = initialProgramPosition();
-      state.session = initial.session;
-    state.eventId = initial.eventId;
-    state.sex = initial.sex;
-    state.programKey = initial.programKey;
-    state.series = initial.series;
-    return;
-  }
-  if (state.series === "all") {
-    state.series = firstSeriesSelectionForCurrentRace();
-  }
-}
-
-function programRowsForSession() {
-  const rows = data.program || [];
-  if (state.session === "all") return rows;
-  return rows.filter((row) => row.session === state.session);
-}
-
-function programRows() {
-  const explicitProgram = programRowsForSession()
-    .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
-    .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
-  if (explicitProgram.length) return explicitProgram;
-
-  const seen = new Set();
-  return (data.series || [])
-    .filter((row) => row.eventId && row.sex)
-    .sort((a, b) => Number(a.heatOrder || 9999) - Number(b.heatOrder || 9999))
-    .reduce((rows, row) => {
-      const key = `${row.eventId}|${row.sex}`;
-      if (seen.has(key)) return rows;
-      seen.add(key);
-      rows.push({
-        eventId: row.eventId,
-        sex: row.sex,
-        order: Number(row.heatOrder || rows.length + 1)
-      });
-      return rows;
-    }, []);
-}
-
-function currentProgramIndex() {
-  const current = selectedProgramRow();
-  if (!current) return -1;
-  return programRows().findIndex((row) => programKey(row) === programKey(current));
-}
-
-function isLastRaceOfCurrentSession() {
-  if (state.session === "all") return false;
-  const rows = programRows();
-  const index = currentProgramIndex();
-  return rows.length > 0 && index === rows.length - 1;
-}
-
-function isLastSeriesOfCurrentSession() {
-  if (state.session === "all" || state.series === "all") return false;
-  return isLastRaceOfCurrentSession() && String(state.series) === String(lastSeriesSelectionForCurrentRace());
-}
-
-function isSplitRaceAcrossSessions(eventId = state.eventId, sex = state.sex) {
-  const sessions = new Set((data.series || [])
-    .filter((row) => row.eventId === eventId && row.sex === sex && row.session && !isFinalStage(row.stage))
-    .map((row) => row.session));
-  return sessions.size > 1;
-}
-
-function shouldShowSplitRaceNote() {
-  return ["live", "speaker"].includes(state.role);
-}
-
-function splitRaceNote(eventId = state.eventId, sex = state.sex) {
-  if (!shouldShowSplitRaceNote() || !isSplitRaceAcrossSessions(eventId, sex)) return "";
-  return `<span class="session-end-note">[séries lentes matin, série rapide soir]</span>`;
-}
-
-function raceSeries() {
-  return raceSeriesFor(state.eventId, state.sex);
-}
-
-function raceSeriesFor(eventId, sex) {
-  let officialRows = (data.series || [])
-    .filter((row) => row.eventId === eventId && row.sex === sex)
-    .sort((a, b) => Number(a.heatOrder || a.series || 999) - Number(b.heatOrder || b.series || 999) || Number(a.line || 99) - Number(b.line || 99));
-  if (isFinalStage(state.series)) {
-    officialRows = officialRows.filter((row) => row.stage === state.series);
-  } else {
-    officialRows = officialRows
-      .filter((row) => !isFinalStage(row.stage))
-      .filter((row) => state.session === "all" || state.series === "all" || !row.session || row.session === state.session);
-  }
-  if (officialRows.length) return officialRows;
-  const entrants = data.entrants
-    .filter((entrant) => entrant.eventId === eventId && entrant.sex === sex)
-    .sort((a, b) => timeToMs(b.seedTime) - timeToMs(a.seedTime));
-  const total = Math.max(1, Math.ceil(entrants.length / 8));
-  return entrants.map((entrant, index) => {
-    const zeroBasedSeries = Math.floor(index / 8);
-    const inSeriesIndex = index % 8;
-    return {
-      ...entrant,
-      series: zeroBasedSeries + 1,
-      seriesCount: total,
-      line: inSeriesIndex + 1,
-      isPreview: true
-    };
-  });
-}
-
-function availableSeriesNumbers() {
-  const officialRows = (data.series || [])
-    .filter(matchesRace)
-    .filter((row) => state.session === "all" || !row.session || row.session === state.session);
-  const regularRows = officialRows.filter((row) => !isFinalStage(row.stage));
-  const sourceRows = officialRows.length ? regularRows : raceSeries().filter((row) => !isFinalStage(row.stage));
-  return [...new Set(sourceRows.map((row) => Number(row.series)).filter(Number.isFinite))].sort((a, b) => a - b);
-}
-
-function selectedSeriesTime() {
-  if (state.series === "all") return "";
-  if (isFinalStage(state.series)) {
-    return finalProgramRowsForRace().find((row) => row.stage === state.series)?.startTime ||
-      raceSeries().find((row) => row.stage === state.series)?.startTime ||
-      "";
-  }
-  return raceSeries().find((row) => Number(row.series) === Number(state.series))?.startTime || "";
-}
-
-function selectedSeriesLabel() {
-  if (state.series === "all") return "";
-  if (isFinalStage(state.series)) return finalStageLabel(state.series);
-  const selectedSeries = Number(state.series);
-  const seriesNumbers = availableSeriesNumbers();
-  const selectedSeriesCount = currentSeriesRows()[0]?.seriesCount || seriesNumbers.length || selectedSeries;
-  return `Série ${selectedSeries}/${selectedSeriesCount}`;
-}
-
-function compactRaceTitle() {
-  return [
-    currentEvent()?.label || "Course",
-    sexDisplayLabel(state.sex),
-    selectedSeriesLabel()
-  ].filter(Boolean).join(" · ");
-}
-
-function hasNextProgramSeries() {
-  const rows = programRows();
-  const index = currentProgramIndex();
-  return index >= 0 && index < rows.length - 1;
-}
-
-function hasPreviousProgramSeries() {
-  const rows = programRows();
-  const index = currentProgramIndex();
-  return index > 0;
-}
-
-function goToNextProgramRace() {
-  const rows = programRows();
-  const programIndex = currentProgramIndex();
-  const nextRace = rows[programIndex + 1];
-  if (!nextRace) return false;
-  applyProgramRow(nextRace);
-  state.category = "all";
-  clearSearch();
-  state.selectedRecordKey = "";
-  const nextNumbers = availableSeriesNumbers();
-  const nextFinal = finalProgramRowsForRace()[0]?.stage;
-  state.series = String(nextNumbers[0] || nextFinal || "all");
-  return true;
-}
-
-function goToPreviousProgramRace() {
-  const rows = programRows();
-  const programIndex = currentProgramIndex();
-  const previousRace = rows[programIndex - 1];
-  if (!previousRace) return false;
-  applyProgramRow(previousRace);
-  state.category = "all";
-  clearSearch();
-  state.selectedRecordKey = "";
-  state.series = lastSeriesSelectionForCurrentRace();
-  return true;
-}
-
-function currentSeriesRows() {
-  if (state.series === "all") return [];
-  if (isFinalStage(state.series)) {
-    return raceSeries().filter((row) => row.stage === state.series);
-  }
-  const selected = Number(state.series);
-  return raceSeries().filter((row) => Number(row.series) === selected);
-}
-
-function hasRowsForProgram(row) {
-  return (data.series || []).some((seriesRow) => (
-    seriesRow.eventId === row.eventId &&
-    seriesRow.sex === row.sex &&
-    (!row.session || !seriesRow.session || seriesRow.session === row.session) &&
-    (!isFinalStage(row.stage) || seriesRow.stage === row.stage)
-  ));
-}
-
-function programRowsForCurrentRace() {
-  return programRowsForSession()
-    .filter((row) => row.eventId === state.eventId && row.sex === state.sex)
-    .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
-}
-
-function finalProgramRowsForRace() {
-  const seen = new Set();
-  return programRowsForCurrentRace()
-    .filter((row) => isFinalStage(row.stage))
-    .filter((row) => {
-      if (seen.has(row.stage)) return false;
-      seen.add(row.stage);
-      return true;
-    });
-}
-
-function firstSeriesSelectionForCurrentRace() {
-  const numbers = availableSeriesNumbers();
-  if (numbers.length) return String(numbers[0]);
-  return finalProgramRowsForRace()[0]?.stage || "all";
-}
-
-function lastSeriesSelectionForCurrentRace() {
-  const finals = finalProgramRowsForRace();
-  if (finals.length) return finals[finals.length - 1].stage;
-  const numbers = availableSeriesNumbers();
-  if (numbers.length) return String(numbers[numbers.length - 1]);
-  return "all";
-}
+function currentEvent(...args) { return livePalmesProgramNavigation.currentEvent(...args, programNavigationOptions()); }
+function matchesRace(...args) { return livePalmesProgramNavigation.matchesRace(...args, programNavigationOptions()); }
+function comparableEventId(...args) { return livePalmesProgramNavigation.comparableEventId(...args, programNavigationOptions()); }
+function eventSignature(...args) { return livePalmesProgramNavigation.eventSignature(...args, programNavigationOptions()); }
+function recordEventMatches(...args) { return livePalmesProgramNavigation.recordEventMatches(...args, programNavigationOptions()); }
+function recordMatchesRace(...args) { return livePalmesProgramNavigation.recordMatchesRace(...args, programNavigationOptions()); }
+function isFinalStage(...args) { return livePalmesProgramNavigation.isFinalStage(...args, programNavigationOptions()); }
+function finalStageLabel(...args) { return livePalmesProgramNavigation.finalStageLabel(...args, programNavigationOptions()); }
+function isFemaleContext(...args) { return livePalmesProgramNavigation.isFemaleContext(...args, programNavigationOptions()); }
+function sexDisplayLabel(...args) { return livePalmesProgramNavigation.sexDisplayLabel(...args, programNavigationOptions()); }
+function categoryLabel(...args) { return livePalmesProgramNavigation.categoryLabel(...args, programNavigationOptions()); }
+function entrantWord(...args) { return livePalmesProgramNavigation.entrantWord(...args, programNavigationOptions()); }
+function swimmerWord(...args) { return livePalmesProgramNavigation.swimmerWord(...args, programNavigationOptions()); }
+function displayedWord(...args) { return livePalmesProgramNavigation.displayedWord(...args, programNavigationOptions()); }
+function availableSexesForEvent(...args) { return livePalmesProgramNavigation.availableSexesForEvent(...args, programNavigationOptions()); }
+function raceEntrants(...args) { return livePalmesProgramNavigation.raceEntrants(...args, programNavigationOptions()); }
+function raceEntrantsForStats(...args) { return livePalmesProgramNavigation.raceEntrantsForStats(...args, programNavigationOptions()); }
+function updateEventSelect(...args) { return livePalmesProgramNavigation.updateEventSelect(...args, programNavigationOptions()); }
+function raceOptionKey(...args) { return livePalmesProgramNavigation.raceOptionKey(...args, programNavigationOptions()); }
+function raceProgramRowsForOption(...args) { return livePalmesProgramNavigation.raceProgramRowsForOption(...args, programNavigationOptions()); }
+function seriesNumbersForRaceOption(...args) { return livePalmesProgramNavigation.seriesNumbersForRaceOption(...args, programNavigationOptions()); }
+function finalRowsForRaceOption(...args) { return livePalmesProgramNavigation.finalRowsForRaceOption(...args, programNavigationOptions()); }
+function raceOptionPhaseLabel(...args) { return livePalmesProgramNavigation.raceOptionPhaseLabel(...args, programNavigationOptions()); }
+function programRowFromRaceOption(...args) { return livePalmesProgramNavigation.programRowFromRaceOption(...args, programNavigationOptions()); }
+function programKey(...args) { return livePalmesProgramNavigation.programKey(...args, programNavigationOptions()); }
+function programLabel(...args) { return livePalmesProgramNavigation.programLabel(...args, programNavigationOptions()); }
+function selectedProgramRow(...args) { return livePalmesProgramNavigation.selectedProgramRow(...args, programNavigationOptions()); }
+function applyProgramRow(...args) { return livePalmesProgramNavigation.applyProgramRow(...args, programNavigationOptions()); }
+function sessionRows(...args) { return livePalmesProgramNavigation.sessionRows(...args, programNavigationOptions()); }
+function firstSessionNumber(...args) { return livePalmesProgramNavigation.firstSessionNumber(...args, programNavigationOptions()); }
+function preferredInitialSession(...args) { return livePalmesProgramNavigation.preferredInitialSession(...args, programNavigationOptions()); }
+function firstProgramRowForSession(...args) { return livePalmesProgramNavigation.firstProgramRowForSession(...args, programNavigationOptions()); }
+function firstSeriesForRace(...args) { return livePalmesProgramNavigation.firstSeriesForRace(...args, programNavigationOptions()); }
+function initialProgramPosition(...args) { return livePalmesProgramNavigation.initialProgramPosition(...args, programNavigationOptions()); }
+function normalizeLivePosition(...args) { return livePalmesProgramNavigation.normalizeLivePosition(...args, programNavigationOptions()); }
+function programRowsForSession(...args) { return livePalmesProgramNavigation.programRowsForSession(...args, programNavigationOptions()); }
+function programRows(...args) { return livePalmesProgramNavigation.programRows(...args, programNavigationOptions()); }
+function currentProgramIndex(...args) { return livePalmesProgramNavigation.currentProgramIndex(...args, programNavigationOptions()); }
+function isLastRaceOfCurrentSession(...args) { return livePalmesProgramNavigation.isLastRaceOfCurrentSession(...args, programNavigationOptions()); }
+function isLastSeriesOfCurrentSession(...args) { return livePalmesProgramNavigation.isLastSeriesOfCurrentSession(...args, programNavigationOptions()); }
+function isSplitRaceAcrossSessions(...args) { return livePalmesProgramNavigation.isSplitRaceAcrossSessions(...args, programNavigationOptions()); }
+function shouldShowSplitRaceNote(...args) { return livePalmesProgramNavigation.shouldShowSplitRaceNote(...args, programNavigationOptions()); }
+function splitRaceNote(...args) { return livePalmesProgramNavigation.splitRaceNote(...args, programNavigationOptions()); }
+function raceSeries(...args) { return livePalmesProgramNavigation.raceSeries(...args, programNavigationOptions()); }
+function raceSeriesFor(...args) { return livePalmesProgramNavigation.raceSeriesFor(...args, programNavigationOptions()); }
+function availableSeriesNumbers(...args) { return livePalmesProgramNavigation.availableSeriesNumbers(...args, programNavigationOptions()); }
+function selectedSeriesTime(...args) { return livePalmesProgramNavigation.selectedSeriesTime(...args, programNavigationOptions()); }
+function selectedSeriesLabel(...args) { return livePalmesProgramNavigation.selectedSeriesLabel(...args, programNavigationOptions()); }
+function compactRaceTitle(...args) { return livePalmesProgramNavigation.compactRaceTitle(...args, programNavigationOptions()); }
+function hasNextProgramSeries(...args) { return livePalmesProgramNavigation.hasNextProgramSeries(...args, programNavigationOptions()); }
+function hasPreviousProgramSeries(...args) { return livePalmesProgramNavigation.hasPreviousProgramSeries(...args, programNavigationOptions()); }
+function goToNextProgramRace(...args) { return livePalmesProgramNavigation.goToNextProgramRace(...args, programNavigationOptions()); }
+function goToPreviousProgramRace(...args) { return livePalmesProgramNavigation.goToPreviousProgramRace(...args, programNavigationOptions()); }
+function currentSeriesRows(...args) { return livePalmesProgramNavigation.currentSeriesRows(...args, programNavigationOptions()); }
+function hasRowsForProgram(...args) { return livePalmesProgramNavigation.hasRowsForProgram(...args, programNavigationOptions()); }
+function programRowsForCurrentRace(...args) { return livePalmesProgramNavigation.programRowsForCurrentRace(...args, programNavigationOptions()); }
+function finalProgramRowsForRace(...args) { return livePalmesProgramNavigation.finalProgramRowsForRace(...args, programNavigationOptions()); }
+function firstSeriesSelectionForCurrentRace(...args) { return livePalmesProgramNavigation.firstSeriesSelectionForCurrentRace(...args, programNavigationOptions()); }
+function lastSeriesSelectionForCurrentRace(...args) { return livePalmesProgramNavigation.lastSeriesSelectionForCurrentRace(...args, programNavigationOptions()); }
 
 function render() {
   updateStickyAlertOffset();
@@ -3447,6 +2925,9 @@ const livePalmesAdminModals = window.LivePalmesAdminModals || {};
 const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
 const livePalmesAdminResults = window.LivePalmesAdminResults || {};
 const livePalmesPdfImport = window.LivePalmesPdfImport || {};
+const livePalmesSeriesImport = window.LivePalmesSeriesImport || {};
+const livePalmesSpeakerInfo = window.LivePalmesSpeakerInfo || {};
+const livePalmesProgramNavigation = window.LivePalmesProgramNavigation || {};
 const livePalmesProgramView = window.LivePalmesProgramView || {};
 const livePalmesRefereeView = window.LivePalmesRefereeView || {};
 const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
@@ -7189,444 +6670,50 @@ function parseCsv(text) {
   });
 }
 
-function parseDelimitedRows(text) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let quoted = false;
-  const source = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const separator = source.split("\n")[0]?.includes(";") ? ";" : ",";
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
-    if (char === '"') {
-      if (quoted && source[index + 1] === '"') {
-        cell += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (char === separator && !quoted) {
-      row.push(cell.trim());
-      cell = "";
-    } else if (char === "\n" && !quoted) {
-      row.push(cell.trim());
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      cell = "";
-    } else {
-      cell += char;
-    }
-  }
-  row.push(cell.trim());
-  if (row.some(Boolean)) rows.push(row);
-  return rows.map((cells) => (cells.length === 1 && cells[0].includes(";") ? cells[0].split(";").map((item) => item.trim()) : cells));
-}
-
-function normalizeSheetHeader(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function sheetObjects(rows) {
-  if (!rows.length) return [];
-  const headerIndex = rows.findIndex((row) => row.some((cell) => normalizeSheetHeader(cell)));
-  if (headerIndex < 0) return [];
-  const headers = rows[headerIndex].map(normalizeSheetHeader);
-  return rows.slice(headerIndex + 1).map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""])));
-}
-
-function rowValue(row, names) {
-  return names.map((name) => row[normalizeSheetHeader(name)]).find((value) => String(value || "").trim()) || "";
-}
-
-function sheetEventId(value) {
-  const normalized = normalizePdfLabel(value);
-  const compact = normalized.replace(/[^a-z0-9]+/g, "");
-  const signature = eventSignature(value);
-  return importedEventId(value) ||
-    (data.events || []).find((event) => event.id === normalized || event.id === compact)?.id ||
-    signature ||
-    compact ||
-    normalized;
-}
-
-function sheetTime(value) {
-  const clean = String(value || "").trim().replace(",", ".").replace(/\s+/g, "");
-  if (!clean || clean === ":." || clean === "00.00" || clean === "00:00") return "";
-  if (/^\d{6}$/.test(clean)) {
-    return `${clean.slice(0, 2)}:${clean.slice(2, 4)}.${clean.slice(4, 6)}`;
-  }
-  if (/^\d{5}$/.test(clean)) {
-    return `00:${clean.slice(1, 3)}.${clean.slice(3, 5)}`;
-  }
-  return importedSeriesTime(clean);
-}
-
-function seedSourceTimeKey(value) {
-  const ms = timeToMs(value);
-  if (Number.isFinite(ms)) return String(ms);
-  return String(value || "").trim().replace(",", ".").replace(/^00:/, "");
-}
-
-function sheetSex(value) {
-  const text = normalizeSheetHeader(value);
-  if (["f", "femme", "femmes"].includes(text)) return "F";
-  if (["h", "homme", "hommes", "m"].includes(text)) return "M";
-  if (["x", "mixte"].includes(text)) return "X";
-  return String(value || "").trim();
-}
-
-function splitRawTimingCells(cells) {
-  if (String(cells?.[0] || "").includes(";")) {
-    return String(cells[0]).split(";").map((item) => fixPdfEncoding(item).trim());
-  }
-  return (cells || []).map((item) => fixPdfEncoding(item).trim());
-}
-
-function displayNameFromParts(firstName, lastName, fallback = "") {
-  return formatPersonNameParts(firstName, lastName, fallback);
-}
-
-function categoryFromCodeOrText(value) {
-  const text = String(value || "").toUpperCase();
-  if (text.includes("CA") || text.includes("CADET")) return "Cadet";
-  if (text.includes("JU") || text.includes("JUNIOR")) return "Junior";
-  if (text.includes("SE") || text.includes("SENIOR")) return "Senior";
-  return value || "";
-}
-
-function personKeyFromSheet(row, sex = "") {
-  const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
-  const lastName = rowValue(row, ["nom", "lastName"]);
-  const fullName = rowValue(row, ["nom_prenom", "nom prenom", "detenteur", "détenteur", "name"]);
-  return `${sheetSex(sex || rowValue(row, ["sexe", "sex"]) || "")}|${normalizePersonName(displayNameFromParts(firstName, lastName, fullName))}`;
-}
-
-async function fetchSpeakerSheetRows(sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${SPEAKER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cache=${Date.now()}`;
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`onglet ${sheetName} inaccessible (${response.status})`);
-  const text = await response.text();
-  if (/^\s*</.test(text)) {
-    throw new Error(`Google n'a pas renvoyé le CSV de l'onglet ${sheetName}. Vérifie que le fichier est bien partagé en lecture avec le lien.`);
-  }
-  const rows = parseDelimitedRows(text);
-  if (!rows.length) throw new Error(`onglet ${sheetName} vide ou non lisible`);
-  return rows;
-}
-
-function parseTopSheet(rows) {
-  return sheetObjects(rows).map((row) => {
-    const firstName = rowValue(row, ["prenom", "prénom"]);
-    const lastName = rowValue(row, ["nom"]);
-    return {
-      eventId: rowValue(row, ["course_id", "eventId"]).toLowerCase(),
-      sex: rowValue(row, ["sexe", "sex"]),
-      category: categoryFromCodeOrText(rowValue(row, ["categorie", "catégorie", "category"])),
-      rank: Number(rowValue(row, ["rang", "rank"])) || "",
-      name: displayNameFromParts(firstName, lastName, rowValue(row, ["nom_prenom", "name"])),
-      birthDate: rowValue(row, ["annee_naissance", "naissance", "birthDate"]),
-      clubCode: rowValue(row, ["club_code", "code_club"]),
-      club: rowValue(row, ["club", "club_nom_complet"]),
-      time: importedSeriesTime(rowValue(row, ["temps", "time"]))
-    };
-  }).filter((row) => row.eventId && row.sex && row.category && row.name && row.time);
-}
-
-function parseRecordsSheet(rows) {
-  const directRows = sheetObjects(rows).map((row) => {
-    const category = categoryFromCodeOrText(rowValue(row, ["categorie", "catégorie", "category"]));
-    const type = rowValue(row, ["type", "label"]);
-    return {
-      eventId: sheetEventId(rowValue(row, ["course_id", "eventId", "epreuve", "épreuve"])),
-      sex: sheetSex(rowValue(row, ["sexe", "sex"])),
-      category,
-      label: type || (sameCategory(category, "Cadet") ? "Meilleure performance" : `Record de France ${category}`),
-      holder: rowValue(row, ["detenteur", "détenteur", "holder", "nom_prenom", "nom"]),
-      club: rowValue(row, ["club_code", "club"]),
-      time: sheetTime(rowValue(row, ["temps", "time"])),
-      date: rowValue(row, ["date", "annee", "année"]),
-      place: rowValue(row, ["lieu", "place"])
-    };
-  }).filter((row) => row.eventId && row.sex && row.category && row.time && shouldKeepRecord(row));
-  if (directRows.length) return directRows;
-
-  const records = [];
-  let context = null;
-  rows.forEach((cells) => {
-    const [first = "", time = "", holder = "", club = "", date = "", place = ""] = cells.map((cell) => fixPdfEncoding(cell).trim());
-    const title = normalizeSheetHeader(first);
-    if (!first) return;
-    if (title.includes("jeunes_hommes")) context = { sex: "M", category: "Junior", label: "Record de France junior" };
-    else if (title.includes("jeunes_femmes")) context = { sex: "F", category: "Junior", label: "Record de France junior" };
-    else if (title.includes("toutes_categories_hommes")) context = { sex: "M", category: "Senior", label: "Record de France senior" };
-    else if (title.includes("toutes_categories_femmes")) context = { sex: "F", category: "Senior", label: "Record de France senior" };
-    else if (title.includes("mpf_cadets")) context = { sex: "M", category: "Cadet", label: "Meilleure performance cadet" };
-    else if (title.includes("mpf_cadettes")) context = { sex: "F", category: "Cadet", label: "Meilleure performance cadette" };
-    if (!context) return;
-    if (/^(epreuve|surface|immersion|apnee|apnée|bi palmes|relais)$/i.test(first)) return;
-    const eventId = sheetEventId(first);
-    const parsedTime = sheetTime(time);
-    if (!eventId || !parsedTime) return;
-    if (!shouldKeepRecord({ eventId, club, holder })) return;
-    records.push({
-      eventId,
-      sex: context.sex,
-      category: context.category,
-      label: context.label,
-      holder,
-      club,
-      time: parsedTime,
-      date,
-      place
-    });
-  });
-  return records;
-}
-
-function parseEdfSheet(rows) {
-  const members = [];
-  sheetObjects(rows).forEach((row) => {
-    const edf = rowValue(row, ["edf", "equipe", "équipe", "selection", "sélection"]);
-    const base = { personKey: personKeyFromSheet(row), label: edf || "Equipe de France" };
-    const senior = rowValue(row, ["edf_senior_2025", "senior", "s"]) || (/edf\s*s/i.test(edf) ? edf : "");
-    const junior = rowValue(row, ["edf_junior_2026", "junior", "j"]) || (/edf\s*j/i.test(edf) ? edf : "");
-    if (/oui|x|1|s/i.test(senior)) members.push({ ...base, team: "S", label: "EDF senior 2025" });
-    if (/oui|x|1|j/i.test(junior)) members.push({ ...base, team: "J", label: "EDF junior 2026" });
-  });
-  return members.filter((row) => row.personKey !== "|");
-}
-
-function statTypeFromLabel(label) {
-  const text = normalizeSheetHeader(label);
-  const female = ["nageuse", "femme", "femmes", "fille", "filles", "female", "feminin", "doyenne", "vieille"].some((word) => text.includes(word));
-  const male = ["nageur", "homme", "hommes", "garcon", "garcons", "male", "masculin", "doyen", "vieux"].some((word) => text.includes(word));
-  if (text.includes("anniversaire")) return { type: "birthday", icon: "🎂", label: "Anniversaire aujourd'hui" };
-  if (text.includes("plus_jeune")) {
-    if (female) return { type: "youngest-female", icon: "👶", label: "Plus jeune nageuse de la compétition", sex: "F" };
-    if (male) return { type: "youngest-male", icon: "👶", label: "Plus jeune nageur de la compétition", sex: "M" };
-    return { type: "youngest", icon: "👶", label: "Plus jeune de la compétition" };
-  }
-  if (text.includes("doyenne") || (text.includes("plus_vieille") && !male)) return { type: "oldest-female", icon: "★", label: "Doyenne de la rencontre", sex: "F" };
-  if (text.includes("doyen") || text.includes("plus_vieux")) return { type: "oldest-male", icon: "★", label: "Doyen de la rencontre", sex: "M" };
-  return null;
-}
-
-function parseCompetitionStatPerson(value) {
-  const text = fixPdfEncoding(value).replace(/\s+/g, " ").trim();
-  const match = text.match(/^(.+?)\s+(\d{2}\/\d{2}\/\d{4})(?:\s+([A-Z0-9]+))?(?:\s+\(([^)]+)\))?$/i);
-  if (!match) return null;
-  const [, name, birthDate, clubCode = "", extra = ""] = match;
+function speakerInfoOptions() {
   return {
-    name: name.trim(),
-    birthDate,
-    birthYear: (birthDate.match(/\d{4}$/) || [])[0] || "",
-    clubCode: clubCode.toUpperCase(),
-    extra: extra.trim()
+    data,
+    eventSignature,
+    fixPdfEncoding,
+    formatPersonNameParts,
+    importedEventId,
+    importedSeriesTime,
+    normalizeClubMatch,
+    normalizePdfLabel,
+    normalizePersonName,
+    sameCategory,
+    seedSourceLookupKeys,
+    shouldKeepRecord,
+    speakerSheetId: SPEAKER_SHEET_ID,
+    timeToMs
   };
 }
 
-function ageFromFrenchDate(value, referenceDate = new Date()) {
-  const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return "";
-  const birthDate = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
-  if (Number.isNaN(birthDate.getTime())) return "";
-  let age = referenceDate.getFullYear() - birthDate.getFullYear();
-  const birthdayThisYear = new Date(referenceDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-  if (referenceDate < birthdayThisYear) age -= 1;
-  return age >= 0 ? `${age} ans` : "";
-}
+function fetchSpeakerSheetRows(sheetName) { return livePalmesSpeakerInfo.fetchSpeakerSheetRows(sheetName, speakerInfoOptions()); }
 
-function frenchDateMatchesToday(value, referenceDate = new Date()) {
-  const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return false;
-  return Number(match[1]) === referenceDate.getDate() && Number(match[2]) === referenceDate.getMonth() + 1;
-}
+function parseTopSheet(rows) { return livePalmesSpeakerInfo.parseTopSheet(rows, speakerInfoOptions()); }
 
-function competitionStatAgeLabel(type, birthDate) {
-  if (!String(type || "").startsWith("youngest") && !String(type || "").startsWith("oldest")) return "";
-  return ageFromFrenchDate(birthDate);
-}
+function parseRecordsSheet(rows) { return livePalmesSpeakerInfo.parseRecordsSheet(rows, speakerInfoOptions()); }
 
-function parseCompetitionStatsSheet(rows) {
-  const objectStats = sheetObjects(rows).map((row) => {
-    const label = rowValue(row, ["type", "repere", "repère", "stat", "categorie", "catégorie"]);
-    const currentType = statTypeFromLabel(label);
-    if (!currentType) return null;
-    const name = rowValue(row, ["nom_prenom", "nom prenom", "nageur", "nageuse", "nom", "name"]);
-    const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
-    const lastName = rowValue(row, ["nom", "lastName"]);
-    const birthDate = rowValue(row, ["date_naissance", "date naissance", "naissance", "birthDate"]);
-    if (!name && !firstName && !lastName) return null;
-    const person = {
-      name: name || formatPersonNameParts(firstName, lastName),
-      birthDate,
-      birthYear: (String(birthDate).match(/\d{4}$/) || [])[0] || rowValue(row, ["annee", "année", "birthYear"]),
-      clubCode: rowValue(row, ["club", "code_club", "code club"]).toUpperCase(),
-      extra: rowValue(row, ["info", "extra", "commentaire"])
-    };
-    const sex = sheetSex(rowValue(row, ["sexe", "sex"])) || currentType.sex || "";
-    const ageLabel = competitionStatAgeLabel(currentType.type, person.birthDate);
-    if (currentType.type === "birthday" && !frenchDateMatchesToday(person.birthDate)) return null;
-    const detailParts = [currentType.label, ageLabel, person.birthDate, person.clubCode, person.extra].filter(Boolean);
-    return {
-      ...currentType,
-      ...person,
-      ageLabel,
-      sex,
-      detail: detailParts.join(" - ")
-    };
-  }).filter(Boolean);
-  if (objectStats.length) return objectStats;
+function parseEdfSheet(rows) { return livePalmesSpeakerInfo.parseEdfSheet(rows, speakerInfoOptions()); }
 
-  const stats = [];
-  let currentType = null;
-  rows.forEach((cells) => {
-    const first = fixPdfEncoding(cells?.[0] || "").trim();
-    if (!first) return;
-    const type = statTypeFromLabel(first);
-    if (type) {
-      currentType = type;
-      return;
-    }
-    if (!currentType) return;
-    const person = parseCompetitionStatPerson(first);
-    if (!person) return;
-    const ageLabel = competitionStatAgeLabel(currentType.type, person.birthDate);
-    if (currentType.type === "birthday" && !frenchDateMatchesToday(person.birthDate)) return;
-    const detailParts = [currentType.label, ageLabel, person.birthDate, person.clubCode, person.extra].filter(Boolean);
-    stats.push({
-      ...currentType,
-      ...person,
-      ageLabel,
-      detail: detailParts.join(" - ")
-    });
-  });
-  return stats;
-}
+function parseCompetitionStatsSheet(rows) { return livePalmesSpeakerInfo.parseCompetitionStatsSheet(rows, speakerInfoOptions()); }
 
-function parseInternationalSheet(rows) {
-  return sheetObjects(rows).map((row) => {
-    const eventText = rowValue(row, ["course_id", "eventId", "epreuve", "épreuve", "course", "course_libelle"]);
-    return {
-      personKey: personKeyFromSheet(row, rowValue(row, ["sexe", "sex"])),
-      eventId: sheetEventId(eventText),
-      sex: sheetSex(rowValue(row, ["sexe", "sex"])),
-      eventLabel: rowValue(row, ["course_libelle", "course", "epreuve", "épreuve"]) || eventText,
-      medal: rowValue(row, ["medaille", "médaille"]),
-      time: sheetTime(rowValue(row, ["temps", "time"])),
-      championship: [rowValue(row, ["championnat", "competition", "compétition"]), rowValue(row, ["annee", "année"])].filter(Boolean).join(" "),
-      place: rowValue(row, ["lieu", "place"])
-    };
-  }).filter((row) => row.personKey !== "|" && row.eventId);
-}
+function parseInternationalSheet(rows) { return livePalmesSpeakerInfo.parseInternationalSheet(rows, speakerInfoOptions()); }
 
-function parseQualificationsSheet(rows) {
-  const objects = sheetObjects(rows);
-  const directRows = objects.map((row) => ({
-    eventId: sheetEventId(rowValue(row, ["course_id", "eventId", "epreuve", "épreuve", "course"])),
-    sex: rowValue(row, ["sexe", "sex"]),
-    label: rowValue(row, ["type", "label"]),
-    time: sheetTime(rowValue(row, ["temps", "time"])),
-    category: rowValue(row, ["categorie_concernee", "catégorie", "category"])
-  })).filter((row) => row.eventId && row.sex && row.label && row.time);
-  if (directRows.length) return directRows;
+function parseQualificationsSheet(rows) { return livePalmesSpeakerInfo.parseQualificationsSheet(rows, speakerInfoOptions()); }
 
-  const qualifications = [];
-  rows.forEach((cells) => {
-    const sexText = String(cells[0] || "").trim();
-    const eventText = String(cells[1] || "").trim();
-    if (!/^(femmes|hommes)$/i.test(sexText) || !eventText) return;
-    const sex = /^femmes$/i.test(sexText) ? "F" : "M";
-    const eventId = sheetEventId(eventText);
-    const tsp = sheetTime(cells[2]);
-    const trp = sheetTime(cells[3]);
-    if (eventId && tsp) qualifications.push({ eventId, sex, label: "TSP", time: tsp, category: "Senior" });
-    if (eventId && trp) qualifications.push({ eventId, sex, label: "TRP", time: trp, category: "Relève" });
-  });
-  return qualifications;
-}
+function parseClubSheet(rows) { return livePalmesSpeakerInfo.parseClubSheet(rows, speakerInfoOptions()); }
 
-function parseClubSheet(rows) {
-  const clubs = new Map();
-  sheetObjects(rows).forEach((row) => {
-    const code = rowValue(row, ["club_code", "code_club"]).toUpperCase();
-    const name = rowValue(row, ["club_nom_complet", "club", "nom"]);
-    if (code && name) clubs.set(code, name);
-  });
-  return clubs;
-}
+function parseSwimmerInfosSheet(rows) { return livePalmesSpeakerInfo.parseSwimmerInfosSheet(rows, speakerInfoOptions()); }
 
-function parseSwimmerInfosSheet(rows) {
-  return sheetObjects(rows).map((row) => {
-    const firstName = rowValue(row, ["prenom", "prénom", "firstName"]);
-    const lastName = rowValue(row, ["nom", "lastName"]);
-    const fullName = rowValue(row, ["nom_prenom", "nom prenom", "nageur", "nageuse", "name"]);
-    const club = rowValue(row, ["club", "code_club", "club_code", "club_nom_complet"]);
-    const info = rowValue(row, ["infos", "info", "remarque", "commentaire"]);
-    const name = displayNameFromParts(firstName, lastName, fullName);
-    return {
-      name,
-      club,
-      info,
-      personKey: normalizePersonName(name),
-      clubKey: normalizeClubMatch(club)
-    };
-  }).filter((row) => row.personKey && row.info);
-}
+function parseSeedSourceSheet(rows) { return livePalmesSpeakerInfo.parseSeedSourceSheet(rows, speakerInfoOptions()); }
 
-function seedSourceNameFromRen(cells) {
-  const date = cells[1] || "";
-  const year = (date.match(/\b(20\d{2})\b/) || date.match(/\b(\d{2})$/))?.[1] || "";
-  const normalizedYear = year.length === 2 ? `20${year}` : year;
-  const place = fixPdfEncoding(cells[3] || "").replace(/,\s*France$/i, "").trim();
-  return [place, normalizedYear].filter(Boolean).join(" ");
-}
+function sheetSex(value) { return livePalmesSpeakerInfo.sheetSex(value, speakerInfoOptions()); }
 
-function parseSeedSourceSheet(rows) {
-  const sourceByKey = new Map();
-  let currentSource = "";
-  rows.forEach((cells) => {
-    cells = splitRawTimingCells(cells);
-    if (!cells.length) return;
-    if (cells[0] === "REN") {
-      currentSource = seedSourceNameFromRen(cells);
-      return;
-    }
-    if (cells[0] !== "NAG" || !currentSource) return;
-    const lastName = fixPdfEncoding(cells[1] || "").trim();
-    const firstName = fixPdfEncoding(cells[2] || "").trim();
-    const birthDate = cells[3] || "";
-    const birthYear = (birthDate.match(/\d{4}$/) || [])[0] || "";
-    const sex = cells[4] || "";
-    const clubCode = String(cells[5] || "").trim().toUpperCase();
-    const eventId = normalizePdfLabel(cells[7] || "").toLowerCase();
-    const times = [sheetTime(cells[15] || ""), sheetTime(cells[8] || "")]
-      .filter((time, index, list) => time && time !== "00:00" && time !== "00.00" && list.indexOf(time) === index);
-    if (!lastName || !firstName || !eventId || !times.length) return;
-    times.forEach((time) => {
-      const row = { eventId, sex, seedTime: time, swimmerId: `${lastName.toLowerCase()}|${firstName.toLowerCase()}|${birthYear}|${sex}`, clubCode, firstName, lastName };
-      seedSourceLookupKeys(row).forEach((key) => sourceByKey.set(key, currentSource));
-    });
-  });
-  return sourceByKey;
-}
+function seedSourceTimeKey(value) { return livePalmesSpeakerInfo.seedSourceTimeKey(value, speakerInfoOptions()); }
 
-function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
-  return entrants.map((entrant) => {
-    const seedSource = seedSourceLookupKeys(entrant).map((key) => seedSources.get(key)).find(Boolean);
-    const clubName = clubs.get(String(entrant.clubCode || "").toUpperCase());
-    return {
-      ...entrant,
-      seedSource: seedSource || entrant.seedSource || "",
-      club: clubName || entrant.club
-    };
-  });
-}
+function applySpeakerInfoToEntrants(entrants, seedSources, clubs) { return livePalmesSpeakerInfo.applySpeakerInfoToEntrants(entrants, seedSources, clubs, speakerInfoOptions()); }
 
 async function updateSpeakerInfoFromGoogleSheet() {
   const buttons = [
@@ -9046,598 +8133,40 @@ function isImportedRelayEvent(eventId) {
   return String(eventId || "").includes("x");
 }
 
-async function extractPdfLines(file) {
-  const pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs";
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-  const lines = [];
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const page = await pdf.getPage(pageNumber);
-    const text = await page.getTextContent();
-    const canRepeatPdfStructureLine = (line) =>
-      /^finale\s+[AB]\s+Horaire indicatif/i.test(line) ||
-      /^s.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i.test(line);
-    const uniqueLines = (inputLines) => {
-      const result = [];
-      inputLines.forEach((line) => {
-        const clean = fixPdfEncoding(line).replace(/\s+/g, " ").trim();
-        if (clean && (canRepeatPdfStructureLine(clean) || !result.includes(clean))) result.push(clean);
-      });
-      return result;
-    };
-    const flowLines = uniqueLines(extractPdfLinesByFlow(text.items));
-    const hasStructuredFlow = flowLines.some((line) => /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+/i.test(line))
-      || flowLines.some((line) => /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i.test(line));
-    const pageLines = [];
-    const appendPageLine = (line, allowRepeat = false) => {
-      const clean = String(line || "").replace(/\s+/g, " ").trim();
-      if (clean && (allowRepeat || !pageLines.includes(clean))) pageLines.push(clean);
-    };
-    flowLines.forEach((line) => appendPageLine(line, canRepeatPdfStructureLine(line)));
-    if (!hasStructuredFlow) {
-      uniqueLines(extractPdfLinesFromItems(text.items, 2.5)).forEach(appendPageLine);
-      uniqueLines(extractPdfLinesFromItems(text.items, 7)).forEach(appendPageLine);
-    }
-    const isSessionHeaderLine = (line) => /\bSession\s*\d+\b/i.test(line) || line.includes("Session du") || line.includes("Session de l");
-    const sessionHeaderLines = pageLines.filter(isSessionHeaderLine);
-    const bodyLines = pageLines.filter((line) => !isSessionHeaderLine(line));
-    lines.push(...sessionHeaderLines, ...bodyLines);
-  }
-  return lines;
-}
-
-function extractPdfLinesByFlow(items) {
-  const lines = [];
-  let current = "";
-  items.forEach((item) => {
-    const text = String(item.str || "").trim();
-    if (text) {
-      current = `${current} ${text}`.replace(/\s+/g, " ").trim();
-    }
-    if (item.hasEOL) {
-      if (current) lines.push(current);
-      current = "";
-    }
-  });
-  if (current) lines.push(current);
-  return lines;
-}
-
-function extractPdfLinesFromItems(items, tolerance = 2.5) {
-  const rows = [];
-  items
-    .map((item) => ({ x: item.transform[4], y: item.transform[5], text: item.str }))
-    .filter((item) => String(item.text || "").trim())
-    .sort((a, b) => b.y - a.y || a.x - b.x)
-    .forEach((item) => {
-      const row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= tolerance);
-      if (row) {
-        row.items.push(item);
-        row.y = (row.y * (row.items.length - 1) + item.y) / row.items.length;
-      } else {
-        rows.push({ y: item.y, items: [item] });
-      }
-    });
-  return rows
-    .sort((a, b) => b.y - a.y)
-    .map((row) => row.items
-      .sort((a, b) => a.x - b.x)
-      .map((item) => item.text)
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim())
-    .filter(Boolean);
-}
-
-function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {
-  const normalizedLines = [];
-  lines.forEach((line) => {
-    const clean = fixPdfEncoding(line).replace(/\s+/g, " ").trim();
-    if (!clean) return;
-    splitEmbeddedPdfLines(clean).forEach((part) => normalizedLines.push(part));
-  });
-  const entrants = [];
-  const seriesRows = [];
-  const program = [];
-  const eventsById = new Map(data.events.map((event) => [event.id, event]));
-  const seenProgram = new Set();
-  const seenEntrants = new Set();
-  const seenSeriesRows = new Set();
-  let currentSession = { number: "", label: "" };
-  let current = null;
-  let pendingFinal = null;
-  let activeFinalContext = null;
-  let order = 0;
-  const meet = parseImportedMeetMetadata(normalizedLines);
-
-  const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: M\s*eilleure s[eé]rie.*))?$/i;
-  const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
-  const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?: \((\d+)\))?/i;
-  const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: M\s*eilleure s[eé]rie.*)?$/i;
-  const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?:\s+\((\d+)\))?/i;
-  const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+(IN|NS))?$/i;
-  const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
-  const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
-  const forfaitLinePattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+FORFAIT\s+([0-9:.]+)(.*)$/i;
-
-  const updateSessionFromLabel = (label) => {
-    const cleanLabel = fixPdfEncoding(label);
-    const normalizedLabel = cleanLabel
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-    const currentNumber = Number(currentSession.number || 0);
-    let inferredNumber = "";
-    if (/apres\s*-?\s*midi/.test(normalizedLabel) && currentNumber && currentNumber % 2 === 1) {
-      inferredNumber = String(currentNumber + 1);
-    } else if (normalizedLabel.includes("matin") && currentNumber && currentNumber % 2 === 0) {
-      inferredNumber = String(currentNumber + 1);
-    }
-    currentSession = {
-      ...currentSession,
-      number: inferredNumber || currentSession.number,
-      label: cleanLabel
-    };
-  };
-
-  normalizedLines.forEach((rawLine) => {
-    const line = rawLine.replace(/\s+/g, " ").trim();
-    const hasSessionPeriod = /Session.*(?:matin|apr[eè]s|apr)/i.test(line);
-    const sessionMatch = line.match(/\bSession\s*(\d+)\b/i);
-    if (sessionMatch) {
-      currentSession = { ...currentSession, number: sessionMatch[1] };
-      if (hasSessionPeriod) updateSessionFromLabel(line);
-      return;
-    }
-    if (line.includes("Session du") || line.includes("Session de l") || hasSessionPeriod) {
-      updateSessionFromLabel(line);
-      return;
-    }
-
-    const finalTitleMatch = line.match(finalTitlePattern);
-    if (finalTitleMatch) {
-      const [, rawLabel, sexText, startTime] = finalTitleMatch;
-      const label = fixPdfEncoding(rawLabel);
-      const eventId = importedEventId(label);
-      if (eventId) {
-        const event = importedEventInfo(eventId, label);
-        eventsById.set(eventId, event);
-        pendingFinal = {
-          eventId,
-          sex: { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText],
-          baseLabel: event.label,
-          startTime: startTime || ""
-        };
-        activeFinalContext = pendingFinal;
-      }
-      current = null;
-      return;
-    }
-
-    const finalHeatMatch = line.match(finalHeatPattern);
-    const finalContext = pendingFinal || activeFinalContext;
-    if (finalHeatMatch && finalContext) {
-      const [, letter, startTime, heatOrder] = finalHeatMatch;
-      order += 1;
-      const stage = `finale-${letter.toUpperCase()}`;
-      program.push({
-        eventId: finalContext.eventId,
-        sex: finalContext.sex,
-        order,
-        label: `${finalContext.baseLabel} - Finale ${letter.toUpperCase()}`,
-        session: currentSession.number,
-        sessionLabel: currentSession.label,
-        stage,
-        startTime,
-        hasEntrants: true
-      });
-      current = {
-        eventId: finalContext.eventId,
-        sex: finalContext.sex,
-        series: letter.toUpperCase() === "A" ? 1 : 2,
-        seriesCount: 1,
-        heatOrder: Number(heatOrder || order),
-        startTime,
-        isRelay: isImportedRelayEvent(finalContext.eventId),
-        session: currentSession.number,
-        sessionLabel: currentSession.label,
-        stage
-      };
-      pendingFinal = null;
-      return;
-    }
-
-    const titleMatch = line.match(titlePattern) || line.match(relayTitlePattern);
-    if (titleMatch) {
-      pendingFinal = null;
-      activeFinalContext = null;
-      const [, rawLabel, sexText] = titleMatch;
-      const label = fixPdfEncoding(rawLabel);
-      if (/Finale/i.test(line)) {
-        current = null;
-        return;
-      }
-      const eventId = importedEventId(label);
-      if (!eventId) {
-        current = null;
-        return;
-      }
-      const event = importedEventInfo(eventId, label);
-      eventsById.set(eventId, event);
-      const sex = { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText];
-      const stage = /M\s*eilleure s[eé]rie/i.test(line) ? "meilleure-serie" : "series";
-      const programKeyValue = `${eventId}|${sex}|${currentSession.number}|series`;
-      if (!seenProgram.has(programKeyValue)) {
-        order += 1;
-        seenProgram.add(programKeyValue);
-        program.push({
-          eventId,
-          sex,
-          order,
-          label: stage === "meilleure-serie" ? `${event.label} - Meilleure série` : event.label,
-          session: currentSession.number,
-          sessionLabel: currentSession.label,
-          stage,
-          hasEntrants: true
-        });
-      }
-      current = {
-        eventId,
-        sex,
-        series: null,
-        seriesCount: null,
-        heatOrder: null,
-        startTime: "",
-        isRelay: isImportedRelayEvent(eventId),
-        session: currentSession.number,
-        sessionLabel: currentSession.label,
-        stage
-      };
-      return;
-    }
-
-    const heatMatch = line.match(heatPattern);
-    if (heatMatch && current) {
-      const [, number, total, startTime, heatOrder] = heatMatch;
-      current = {
-        ...current,
-        series: Number(number),
-        seriesCount: Number(total),
-        startTime,
-        heatOrder: Number(heatOrder || seriesRows.length + 1)
-      };
-      return;
-    }
-
-    if (!current?.series) return;
-    let lane = "";
-    let rawName = "";
-    let birth = "";
-    let catCode = "";
-    let club = "";
-    let seedTime = "";
-    let fullClub = "";
-    let relayMatch = null;
-    if (current.isRelay) {
-      relayMatch = line.match(/^(\d+)\s+(.+?)\s+(?:(?<cat>[FHX][A-Z0-9+]+)\s+)?(?:\*\s+)?(?<club>[A-Z0-9]+)\s+(?<time>[0-9:.]+)(?<full>.*)$/);
-    }
-    const swimmerMatch = line.match(swimmerPattern);
-    const speakerMatch = line.match(speakerPattern) || line.match(tolerantSpeakerPattern);
-    const forfaitMatch = line.match(forfaitLinePattern);
-    let importedStatus = "";
-    let nonSelectable = false;
-    let lastName = "";
-    let firstName = "";
-    let birthYear = "";
-    let swimmerId = "";
-    if (relayMatch) {
-      lane = relayMatch[1];
-      rawName = fixPdfEncoding(String(relayMatch[2] || "").trim());
-      catCode = relayMatch.groups.cat || (current.sex === "X" ? "XSE" : (current.sex === "F" ? "FSE" : "HSE"));
-      club = relayMatch.groups.club;
-      seedTime = relayMatch.groups.time;
-      fullClub = fixPdfEncoding(String(relayMatch.groups.full || "").trim() || rawName);
-      lastName = rawName;
-      swimmerId = `relay|${current.eventId}|${current.sex}|${club.toLowerCase()}|${lane}|${current.series}`;
-    } else if (forfaitMatch || swimmerMatch || speakerMatch) {
-      const match = forfaitMatch || swimmerMatch || speakerMatch;
-      lane = match[1];
-      rawName = fixPdfEncoding(match[2]);
-      birth = match[3];
-      catCode = match[4];
-      club = match[5];
-      seedTime = match[6];
-      const trailingText = fixPdfEncoding(String(match[7] || "").trim());
-      const trailingIsForfait = /\bFORFAIT\b/i.test(trailingText);
-      const trailingIsNonSelectable = /\bNS\b/i.test(trailingText);
-      const trailingClubText = trailingText.replace(/\b(FORFAIT|NS|IN)\b/gi, "").replace(/\s+/g, " ").trim();
-      importedStatus = forfaitMatch || trailingIsForfait ? "forfait" : "";
-      nonSelectable = trailingIsNonSelectable;
-      fullClub = (speakerMatch || forfaitMatch) && trailingClubText ? trailingClubText : club;
-      const split = splitImportedPersonName(rawName);
-      lastName = split.lastName;
-      firstName = split.firstName;
-      birthYear = importedBirthYear(birth);
-      swimmerId = `${lastName.toLowerCase()}|${firstName.toLowerCase()}|${birthYear}|${current.sex}`;
-    } else {
-      return;
-    }
-
-    seedTime = importedSeriesTime(seedTime);
-    const entrantKeyValue = `${current.eventId}|${current.sex}|${current.session}|${swimmerId}`;
-    if (!seenEntrants.has(entrantKeyValue)) {
-      seenEntrants.add(entrantKeyValue);
-      entrants.push({
-        eventId: current.eventId,
-        sex: current.sex,
-        lane: Number(lane),
-        lastName,
-        firstName,
-        birthDate: birthYear,
-        swimmerId,
-        club: fullClub,
-        clubCode: club,
-        category: importedCategoryLabel(catCode),
-        categoryCode: catCode,
-        seedTime,
-        seedSource: "",
-        importedStatus,
-        nonSelectable,
-        session: current.session,
-        sessionLabel: current.sessionLabel,
-        note: ""
-      });
-    }
-    const seriesKeyValue = [
-      current.eventId,
-      current.sex,
-      current.session,
-      current.stage,
-      current.series,
-      lane,
-      swimmerId
-    ].join("|");
-    if (!seenSeriesRows.has(seriesKeyValue)) {
-      seenSeriesRows.add(seriesKeyValue);
-      seriesRows.push({
-        eventId: current.eventId,
-        sex: current.sex,
-        swimmerId,
-        series: current.series,
-        seriesCount: current.seriesCount,
-        line: Number(lane),
-        startTime: current.startTime,
-        heatOrder: current.heatOrder,
-        importedStatus,
-        nonSelectable,
-        session: current.session,
-        sessionLabel: current.sessionLabel,
-        stage: current.stage
-      });
-    }
-  });
-
+function seriesImportOptions() {
   return {
-    meet,
-    events: [...eventsById.values()],
-    entrants,
-    series: seriesRows,
-    program,
-    sourceFile: fileName,
-    debugLines: normalizedLines.slice(0, 80)
+    availableSexesForEvent,
+    data,
+    eventSignature,
+    fixPdfEncoding,
+    formatName,
+    importedBirthYear,
+    importedCategoryLabel,
+    importedEventId,
+    importedEventInfo,
+    importedSeriesTime,
+    isImportedRelayEvent,
+    normalizePdfLabel,
+    normalizePersonName,
+    sampleData,
+    seedSourceTimeKey,
+    splitImportedPersonName
   };
 }
 
-function parseImportedMeetMetadata(lines) {
-  const cleanMeetTitle = (value) => fixPdfEncoding(value)
-    .replace(/^FFESSM\b\s*/i, "")
-    .replace(/\s*\bFFESSM\b\s*$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const firstUseful = lines.find((line) => /^FFESSM\s+/i.test(line)) ||
-    lines.find((line) => /\b(?:championnat|meeting|coupe|open)\b/i.test(line) && !/\b(?:liste|session|série|finale|horaire)\b/i.test(line)) ||
-    "";
-  const secondUseful = lines.find((line) => /\b20\d{2}\b/.test(line) && !/^FFESSM\s*$/i.test(line)) || "";
-  let name = "";
-  let city = "";
-  let year = "";
-  if (firstUseful) {
-    const cleaned = cleanMeetTitle(firstUseful);
-    const match = cleaned.match(/(.+?)\s+CNNP\s*([A-Za-zÀ-ÖØ-öø-ÿ' -]+)?/i);
-    if (match) {
-      name = cleanMeetTitle(match[1]);
-      city = (match[2] || "").trim();
-    } else {
-      name = cleanMeetTitle(cleaned.replace(/\s+CNNP.*$/i, ""));
-    }
-  }
-  const combined = `${firstUseful} ${secondUseful}`;
-  const yearMatch = combined.match(/\b(20\d{2})\b/);
-  if (yearMatch) year = yearMatch[1];
-  if (!city && secondUseful) {
-    city = cleanMeetTitle(secondUseful.split(/\s+-\s+/)[0].replace(/\b20\d{2}\b.*$/, ""));
-  }
-  return {
-    name: name || "Séries importées",
-    city,
-    year
-  };
-}
+async function extractPdfLines(file) { return livePalmesSeriesImport.extractPdfLines(file, seriesImportOptions()); }
 
-function splitEmbeddedPdfLines(line) {
-  const parts = [];
-  const markers = [
-    /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i,
-    /\bfinale\s+[AB]\s+Horaire indicatif/i,
-    /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i
-  ];
-  const queue = [line];
-  while (queue.length) {
-    const currentLine = String(queue.shift() || "").trim();
-    if (!currentLine) continue;
-    let splitIndex = -1;
-    for (const marker of markers) {
-      const match = marker.exec(currentLine);
-      if (match && match.index > 0) {
-        splitIndex = match.index;
-        break;
-      }
-    }
-    if (splitIndex > 0) {
-      const after = currentLine.slice(splitIndex).trim();
-      const before = currentLine.slice(0, splitIndex).trim();
-      if (after) queue.unshift(after);
-      if (before) queue.unshift(before);
-    } else {
-      parts.push(currentLine);
-    }
-  }
-  return parts;
-}
+function parseImportedSeriesLines(lines, fileName = "s?ries import?es.pdf") { return livePalmesSeriesImport.parseImportedSeriesLines(lines, fileName, seriesImportOptions()); }
 
-function showPdfImportDebug(parsed, lines) {
-  const samples = (parsed?.debugLines?.length ? parsed.debugLines : lines)
-    .slice(0, 18)
-    .map((line, index) => `${index + 1}. ${line}`)
-    .join("\n");
-  window.alert(`Import PDF non reconnu.\n\nLignes lues dans le PDF :\n${samples || "Aucune ligne lue."}`);
-}
+function showPdfImportDebug(parsed, lines) { return livePalmesSeriesImport.showPdfImportDebug(parsed, lines, seriesImportOptions()); }
 
-function applyImportedSessionOverride(parsed, sessionNumber) {
-  const cleanSession = String(sessionNumber || "").trim();
-  if (!cleanSession) return parsed;
-  const existingLabel = [...parsed.program, ...parsed.series, ...parsed.entrants]
-    .map((row) => row.sessionLabel)
-    .find(Boolean) || `Session ${cleanSession}`;
-  const forceRows = (rows) => rows.map((row) => ({
-    ...row,
-    session: cleanSession,
-    sessionLabel: existingLabel
-  }));
-  return {
-    ...parsed,
-    entrants: forceRows(parsed.entrants || []),
-    series: forceRows(parsed.series || []),
-    program: forceRows(parsed.program || [])
-  };
-}
+function prepareImportedSeriesForMode(parsed, mode, forcedSession) { return livePalmesSeriesImport.prepareImportedSeriesForMode(parsed, mode, forcedSession, seriesImportOptions()); }
 
-function parsedSessionNumbers(parsed) {
-  return [...new Set([
-    ...((parsed.entrants || []).map((row) => row.session).filter(Boolean)),
-    ...((parsed.series || []).map((row) => row.session).filter(Boolean)),
-    ...((parsed.program || []).map((row) => row.session).filter(Boolean))
-  ])].sort((a, b) => Number(a) - Number(b));
-}
+function seedSourceLookupKeys(row) { return livePalmesSeriesImport.seedSourceLookupKeys(row, seriesImportOptions()); }
 
-function filterImportedSession(parsed, sessionNumber) {
-  const cleanSession = String(sessionNumber || "").trim();
-  if (!cleanSession) return parsed;
-  const keepRows = (rows) => (rows || []).filter((row) => String(row.session || "") === cleanSession);
-  const entrants = keepRows(parsed.entrants);
-  const series = keepRows(parsed.series);
-  const program = keepRows(parsed.program);
-  if (!entrants.length && !series.length && !program.length) return null;
-  const eventIds = new Set([
-    ...entrants.map((row) => row.eventId),
-    ...series.map((row) => row.eventId),
-    ...program.map((row) => row.eventId)
-  ].filter(Boolean));
-  return {
-    ...parsed,
-    entrants,
-    series,
-    program,
-    events: (parsed.events || []).filter((event) => eventIds.has(event.id))
-  };
-}
+function inheritImportedSeedSources(parsed) { return livePalmesSeriesImport.inheritImportedSeedSources(parsed, seriesImportOptions()); }
 
-function prepareImportedSeriesForMode(parsed, mode, forcedSession) {
-  const cleanSession = String(forcedSession || "").trim();
-  if (mode !== "session" || !cleanSession) return parsed;
-  const sessions = parsedSessionNumbers(parsed);
-  if (sessions.length > 1) {
-    const filtered = filterImportedSession(parsed, cleanSession);
-    if (filtered) return filtered;
-  }
-  return applyImportedSessionOverride(parsed, cleanSession);
-}
-
-function seedSourceLookupKeys(row) {
-  const eventId = row.eventId || "";
-  const sex = row.sex || "";
-  const seedTime = seedSourceTimeKey(row.seedTime || "");
-  const swimmerId = row.swimmerId || "";
-  const name = normalizePersonName(formatName(row));
-  return [
-    `${eventId}|${sex}|${swimmerId}|${seedTime}`,
-    `${eventId}|${sex}|${name}|${seedTime}`
-  ].filter((key) => !key.includes("undefined"));
-}
-
-function inheritImportedSeedSources(parsed) {
-  const sourceByKey = new Map();
-  [...(sampleData.entrants || []), ...(data.entrants || [])].forEach((row) => {
-    if (!row.seedSource) return;
-    seedSourceLookupKeys(row).forEach((key) => {
-      if (!sourceByKey.has(key)) sourceByKey.set(key, row.seedSource);
-    });
-  });
-  return {
-    ...parsed,
-    entrants: (parsed.entrants || []).map((row) => {
-      if (row.seedSource) return row;
-      const inheritedSource = seedSourceLookupKeys(row)
-        .map((key) => sourceByKey.get(key))
-        .find(Boolean);
-      return inheritedSource ? { ...row, seedSource: inheritedSource } : row;
-    })
-  };
-}
-
-function mergeImportedSeriesData(parsed, mode = "session") {
-  if (mode === "full") {
-    return {
-      events: parsed.events,
-      entrants: parsed.entrants,
-      series: parsed.series,
-      program: parsed.program
-    };
-  }
-  const sessions = [...new Set([
-    ...parsed.entrants.map((row) => row.session).filter(Boolean),
-    ...parsed.series.map((row) => row.session).filter(Boolean),
-    ...parsed.program.map((row) => row.session).filter(Boolean)
-  ])];
-  const sessionSet = new Set(sessions);
-  if (!sessionSet.size) {
-    return {
-      events: parsed.events,
-      entrants: parsed.entrants,
-      series: parsed.series,
-      program: parsed.program
-    };
-  }
-  const importedEventIds = new Set(parsed.events.map((event) => event.id));
-  const eventMap = new Map(data.events.map((event) => [event.id, event]));
-  parsed.events.forEach((event) => eventMap.set(event.id, event));
-  return {
-    events: [...eventMap.values()].filter((event) => importedEventIds.has(event.id) || availableSexesForEvent(event.id).length),
-    entrants: [
-      ...data.entrants.filter((row) => !sessionSet.has(row.session || "")),
-      ...parsed.entrants
-    ],
-    series: [
-      ...data.series.filter((row) => !sessionSet.has(row.session || "")),
-      ...parsed.series
-    ],
-    program: [
-      ...data.program.filter((row) => !sessionSet.has(row.session || "")),
-      ...parsed.program
-    ].sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999))
-  };
-}
+function mergeImportedSeriesData(parsed, mode = "session") { return livePalmesSeriesImport.mergeImportedSeriesData(parsed, mode, seriesImportOptions()); }
 
 async function importSeriesPdf(file, mode = "session", forcedSession = "") {
   if (!file) return;
