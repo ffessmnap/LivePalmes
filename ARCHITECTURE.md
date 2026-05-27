@@ -22,13 +22,19 @@ Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands dom
 - `assets/livepalmes-app-config.js` : configuration de demarrage, codes par defaut, Firebase, donnees de secours.
 - `assets/livepalmes-local-state.js` : chargement et sauvegarde du stockage local du navigateur.
 - `assets/livepalmes-firestore-refs.js` : acces aux documents et collections Firestore.
+- `assets/livepalmes-console-sync.js` : presence console, verrous de roles, publication live et synchronisation Firebase.
+- `assets/livepalmes-alert-presenter.js` : libelles et affichage des alertes des consoles.
 - `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
 - `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
+- `assets/livepalmes-admin-actions.js` : fenetres codes, RAZ, informations publiques et interrupteurs admin.
 - `assets/livepalmes-final-withdrawals-workflow.js` : finalistes, forfaits en finale, repechages, reintegrations.
 - `assets/livepalmes-export-actions.js` : telechargements JSON, ouverture et impression des archives.
+- `assets/livepalmes-history-actions.js` : archivage historique, RAZ historique et alertes live masquees.
 - `assets/livepalmes-swimmer-panel.js` : fiche nageur, records, affichage speaker/live.
 - `assets/livepalmes-public-swimmers.js` : recherche nageur et fiche nageur sur les pages publiques.
 - `assets/livepalmes-program-navigation.js` : sessions, courses, series, finales, navigation.
+- `assets/livepalmes-program-modals.js` : boutons et fenetres programme/import.
+- `assets/livepalmes-entrant-helpers.js` : noms nageurs, recherche et affichage club court.
 - `assets/livepalmes-diagnostics-workflow.js` : diagnostic technique et diagnostic performance.
 
 ## Evenements interface

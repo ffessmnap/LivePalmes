@@ -15,3 +15,10 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Extraction des actions d'export et d'impression dans `assets/livepalmes-export-actions.js`.
 - Extraction des references Firestore dans `assets/livepalmes-firestore-refs.js`.
 - Extraction du stockage local navigateur dans `assets/livepalmes-local-state.js`.
+- Extraction de la synchronisation console/Firebase dans `assets/livepalmes-console-sync.js`.
+- Extraction des libelles et affichages d'alertes dans `assets/livepalmes-alert-presenter.js`.
+- Extraction des fenetres programme/import dans `assets/livepalmes-program-modals.js`.
+- Extraction des actions admin dans `assets/livepalmes-admin-actions.js`.
+- Extraction des actions d'historique dans `assets/livepalmes-history-actions.js`.
+- Suppression des anciens secours internes temps/personnes maintenant fournis par modules dedies.
+- Extraction des helpers nageurs/recherche dans `assets/livepalmes-entrant-helpers.js`.
