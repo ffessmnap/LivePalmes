@@ -22,3 +22,18 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Extraction des actions d'historique dans `assets/livepalmes-history-actions.js`.
 - Suppression des anciens secours internes temps/personnes maintenant fournis par modules dedies.
 - Extraction des helpers nageurs/recherche dans `assets/livepalmes-entrant-helpers.js`.
+- Extraction de la synchronisation temps reel dans `assets/livepalmes-realtime-sync.js`.
+- Extraction de l'historique visible et des fiches alertes dans `assets/livepalmes-history-presenter.js`.
+- Extraction des decisions JA et files d'alertes dans `assets/livepalmes-decision-workflow.js`.
+- Extraction de la publication/relecture des resultats dans `assets/livepalmes-result-publication-workflow.js`.
+- Extraction de l'import PDF series dans `assets/livepalmes-series-import-workflow.js`.
+- Extraction du demarrage applicatif dans `assets/livepalmes-app-lifecycle.js`.
+- Extraction de la mise a jour Google Sheets dans `assets/livepalmes-speaker-info-workflow.js`.
+- Extraction de la maintenance resultats dans `assets/livepalmes-result-maintenance-workflow.js`.
+- Extraction des exports/rapports dans `assets/livepalmes-export-reports-workflow.js`.
+- Extraction de la session roles/codes dans `assets/livepalmes-role-session-workflow.js`.
+- Extraction de la position publique et des compteurs d'accueil dans `assets/livepalmes-public-progress-workflow.js`.
+- Extraction du rendu principal de console dans `assets/livepalmes-console-render-workflow.js`.
+- Extraction du stockage local dans `assets/livepalmes-app-storage-workflow.js`.
+- Correction du demarrage des evenements d'interface apres decoupage : les boutons des consoles depuis l'accueil repondent a nouveau.
+- `app.js` descend a 2195 lignes.

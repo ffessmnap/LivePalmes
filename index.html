@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8">
@@ -48,7 +48,7 @@
         </label>
       </div>
       <div class="top-actions">
-        <button id="roleLockBtn" class="footer-lock-button top-lock-button" type="button" title="G&eacute;rer les codes" aria-label="G&eacute;rer les codes">🔓</button>
+        <button id="roleLockBtn" class="footer-lock-button top-lock-button" type="button" title="G&eacute;rer les codes" aria-label="G&eacute;rer les codes">??</button>
         <button id="profileHomeBtn" class="ghost-button compact" type="button">Accueil</button>
         <button id="manualRefreshBtn" class="ghost-button compact" type="button" hidden>Actualiser</button>
         <button id="competitionModeTopBtn" class="sync-mode-toggle computer-only" type="button" aria-pressed="false">
@@ -267,13 +267,16 @@
     <script src="assets/livepalmes-admin-diagnostics.js?v=20260526-admin-cleanup"></script>
     <script src="assets/livepalmes-admin-archives.js?v=20260526-admin-cleanup"></script>
     <script src="assets/livepalmes-export-actions.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-export-reports-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-admin-actions.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-admin-modals.js?v=20260526-admin-cleanup"></script>
     <script src="assets/livepalmes-firebase.js?v=20260526-core-modules"></script>
     <script src="assets/livepalmes-firestore-refs.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-console-sync.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-realtime-sync.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-role-access.js?v=20260526-core-modules"></script>
     <script src="assets/livepalmes-role-state.js?v=20260526-cleanup-domains"></script>
+    <script src="assets/livepalmes-role-session-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-race-core.js?v=20260526-cleanup-domains"></script>
     <script src="assets/livepalmes-alerts.js?v=20260526-cleanup-domains"></script>
     <script src="assets/livepalmes-alert-presenter.js?v=20260527-cleanup"></script>
@@ -287,32 +290,42 @@
     <script src="assets/livepalmes-role-queue-view.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-history-view.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-history-actions.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-history-presenter.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-decision-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-header-view.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-alert-detail-view.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-alert-card-view.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-line-status-view.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-public-progress-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-time.js?v=20260526-modules"></script>
     <script src="assets/livepalmes-people.js?v=20260526-modules"></script>
     <script src="assets/livepalmes-pdf-import.js?v=20260526-modules"></script>
     <script src="assets/livepalmes-series-import.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-series-import-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-speaker-info.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-speaker-info-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-program-navigation.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-program-modals.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-entrant-helpers.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-swimmer-panel.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-results-admin-workflow.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-result-publication-workflow.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-result-maintenance-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-final-withdrawals-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-diagnostics-workflow.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-console-render-workflow.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-ui-navigation-events.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-ui-results-events.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-ui-admin-events.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-ui-alert-events.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-ui-events.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-app-lifecycle.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-result-parser.js?v=20260526-modules"></script>
     <script src="assets/livepalmes-results.js?v=20260526-admin-cleanup"></script>
     <script src="data.generated.js?v=20260516-arbitration-journal"></script>
     <script src="assets/livepalmes-app-config.js?v=20260527-cleanup"></script>
     <script src="assets/livepalmes-local-state.js?v=20260527-cleanup"></script>
-    <script src="app.js?v=20260527-cleanup"></script>
+    <script src="assets/livepalmes-app-storage-workflow.js?v=20260527-cleanup"></script>
+    <script src="app.js?v=20260527-cleanup3"></script>
   </body>
 </html>

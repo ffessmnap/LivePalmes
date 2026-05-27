@@ -21,21 +21,34 @@ Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands dom
 - `assets/livepalmes-result-parser.js` : lecture des resultats depuis les lignes extraites des PDF.
 - `assets/livepalmes-app-config.js` : configuration de demarrage, codes par defaut, Firebase, donnees de secours.
 - `assets/livepalmes-local-state.js` : chargement et sauvegarde du stockage local du navigateur.
+- `assets/livepalmes-app-storage-workflow.js` : stockage local des donnees, alertes et normalisation des donnees.
 - `assets/livepalmes-firestore-refs.js` : acces aux documents et collections Firestore.
 - `assets/livepalmes-console-sync.js` : presence console, verrous de roles, publication live et synchronisation Firebase.
+- `assets/livepalmes-realtime-sync.js` : abonnement direct Firebase, actualisation manuelle et fin de session.
+- `assets/livepalmes-role-session-workflow.js` : choix de console, codes, session locale et retour accueil.
+- `assets/livepalmes-public-progress-workflow.js` : presence, compteurs d'accueil et partage de position speaker.
 - `assets/livepalmes-alert-presenter.js` : libelles et affichage des alertes des consoles.
 - `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
+- `assets/livepalmes-series-import-workflow.js` : workflow d'import des PDF de series depuis la console.
 - `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
+- `assets/livepalmes-result-publication-workflow.js` : lecture/relecture des PDF resultats, performances et alertes finalistes.
+- `assets/livepalmes-result-maintenance-workflow.js` : suppression/RAZ des resultats publics et RAZ series.
 - `assets/livepalmes-admin-actions.js` : fenetres codes, RAZ, informations publiques et interrupteurs admin.
 - `assets/livepalmes-final-withdrawals-workflow.js` : finalistes, forfaits en finale, repechages, reintegrations.
 - `assets/livepalmes-export-actions.js` : telechargements JSON, ouverture et impression des archives.
+- `assets/livepalmes-export-reports-workflow.js` : exports journal d'arbitrage et archives resultats.
 - `assets/livepalmes-history-actions.js` : archivage historique, RAZ historique et alertes live masquees.
+- `assets/livepalmes-history-presenter.js` : historique visible, fiche alerte et journal des annonces.
+- `assets/livepalmes-decision-workflow.js` : decisions JA, file d'alertes et annulations.
 - `assets/livepalmes-swimmer-panel.js` : fiche nageur, records, affichage speaker/live.
+- `assets/livepalmes-speaker-info-workflow.js` : mise a jour des reperes depuis Google Sheets.
 - `assets/livepalmes-public-swimmers.js` : recherche nageur et fiche nageur sur les pages publiques.
 - `assets/livepalmes-program-navigation.js` : sessions, courses, series, finales, navigation.
 - `assets/livepalmes-program-modals.js` : boutons et fenetres programme/import.
 - `assets/livepalmes-entrant-helpers.js` : noms nageurs, recherche et affichage club court.
 - `assets/livepalmes-diagnostics-workflow.js` : diagnostic technique et diagnostic performance.
+- `assets/livepalmes-app-lifecycle.js` : demarrage, timers, actualisation locale et imports JSON/CSV.
+- `assets/livepalmes-console-render-workflow.js` : rendu principal de la console interne.
 
 ## Evenements interface
 
@@ -64,7 +77,7 @@ Avant de modifier ces zones, il faut faire les tests manuels du fichier `TESTS_M
 
 Le code est nettement plus sain qu'avant :
 
-- `app.js` est passe sous 5000 lignes.
+- `app.js` est passe sous 2500 lignes.
 - Les gros domaines sont separes.
 - Les pages publiques partagent une partie de la logique nageur.
 - Les diagnostics et la maintenance sont isoles.
