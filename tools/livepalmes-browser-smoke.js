@@ -186,7 +186,7 @@ async function testRoleOpening(client, baseUrl) {
       expression: `document.querySelector('button[data-home-role="${role}"]')?.click()`,
       awaitPromise: true
     });
-    await sleep(500);
+    await waitFor(client, `document.body.className.includes('role-${role}')`, 5000);
     const state = await evaluateJson(client, `
       return {
         role: ${JSON.stringify(role)},

@@ -1,6 +1,52 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      adminSeriesModal,
+      clearResultUploadState,
+      clearSeriesImportState,
+      closeAdminSeriesModal,
+      closeResultImportModal,
+      competitionModeEnabled,
+      computerFooterPanel,
+      deleteResultPdf,
+      finalRowsCount,
+      importSeriesPdf,
+      isFinalStage,
+      openAdminSeriesModal,
+      openFinalCompositionResultModal,
+      openFinalWithdrawalsModal,
+      openResultImportModal,
+      openSessionResultsImportModal,
+      programKey,
+      publishResultPdf,
+      publishSessionResultsPdf,
+      renderDataStatus,
+      renderPublicSessionInfosModal,
+      renderResetResultsModal,
+      renderResultsAdminPanel,
+      renderSecretaryFinalsPanel,
+      rereadPublishedResult,
+      resultForProgramRow,
+      resultImportModal,
+      resultPhaseLabelForProgramRow,
+      resultProgramRows,
+      resultSessions,
+      resultsAdminPanel,
+      resultUploadKeyForProgram,
+      resultUploadKeyForSessionResults,
+      secretaryFinalsPanel,
+      setResultUploadState,
+      setSeriesImportState,
+      sexDisplayLabel,
+      toggleCompetitionMode,
+      togglePublicResultsOnline,
+      updateLiveNotes
+    } = context;
+    const getData = () => context.data || { events: [], program: [] };
+    const getRaceResults = () => context.raceResults || [];
+    const getResultsAdminSession = () => context.resultsAdminSession || "";
+    const setResultsAdminSession = (value) => { context.resultsAdminSession = value; };
+
       resultsAdminPanel?.addEventListener("click", async (event) => {
         if (event.target.closest("[data-competition-mode]")) {
           toggleCompetitionMode();
@@ -33,12 +79,13 @@
         }
         const sessionResultsButton = event.target.closest("[data-session-results-import]");
         if (sessionResultsButton) {
-          openSessionResultsImportModal(sessionResultsButton.dataset.sessionResultsImport || resultsAdminSession);
+          openSessionResultsImportModal(sessionResultsButton.dataset.sessionResultsImport || getResultsAdminSession());
           return;
         }
         const rereadButton = event.target.closest("[data-result-reread]");
         if (rereadButton) {
-          const row = resultProgramRows(resultsAdminSession).find((item) => programKey(item) === rereadButton.dataset.resultReread)
+          const data = getData();
+          const row = resultProgramRows(getResultsAdminSession()).find((item) => programKey(item) === rereadButton.dataset.resultReread)
             || (data.program || []).find((item) => programKey(item) === rereadButton.dataset.resultReread);
           const result = row ? resultForProgramRow(row) : null;
           if (!row || !result) return;
@@ -75,7 +122,7 @@
         }
         const deleteButton = event.target.closest("[data-result-delete]");
         if (deleteButton) {
-          const result = raceResults.find((item) => item.id === deleteButton.dataset.resultDelete);
+          const result = getRaceResults().find((item) => item.id === deleteButton.dataset.resultDelete);
           const label = [result?.eventLabel, result?.sexLabel, result?.session ? `S${result.session}` : ""].filter(Boolean).join(" - ") || "ce résultat";
           const ok = window.confirm(`Supprimer le PDF publié pour ${label} ?\n\nIl disparaîtra aussi de la page publique.`);
           if (!ok) return;
@@ -93,7 +140,8 @@
         }
         const button = event.target.closest("[data-result-import]");
         if (!button) return;
-        const row = resultProgramRows(resultsAdminSession).find((item) => programKey(item) === button.dataset.resultImport)
+        const data = getData();
+        const row = resultProgramRows(getResultsAdminSession()).find((item) => programKey(item) === button.dataset.resultImport)
           || (data.program || []).find((item) => programKey(item) === button.dataset.resultImport);
         if (!row) return;
         openResultImportModal(row);
@@ -101,7 +149,7 @@
       
       resultsAdminPanel?.addEventListener("change", (event) => {
         if (event.target?.id !== "resultsAdminSessionSelect") return;
-        resultsAdminSession = event.target.value;
+        setResultsAdminSession(event.target.value);
         renderResultsAdminPanel();
       });
       
@@ -122,7 +170,7 @@
       
       secretaryFinalsPanel?.addEventListener("change", (event) => {
         if (event.target?.id !== "secretaryFinalsSessionSelect") return;
-        secretaryFinalsSession = event.target.value || "";
+        context.secretaryFinalsSession = event.target.value || "";
         renderSecretaryFinalsPanel();
       });
       
@@ -153,7 +201,7 @@
             ? resultSessions().map((session) => session.number)
             : (scope === "multiple"
               ? [...resultImportModal.querySelectorAll("input[name='sessionResultsSession']:checked")].map((input) => input.value)
-              : [currentSessionResultsImport?.defaultSession || resultsAdminSession].filter(Boolean));
+              : [context.currentSessionResultsImport?.defaultSession || getResultsAdminSession()].filter(Boolean));
           if (scope !== "full" && !selectedSessions.length) {
             window.alert("Sélectionne au moins une session.");
             return;
@@ -170,7 +218,7 @@
             "Le PDF sera visible sur la page publique, sans lecture automatique des finalistes."
           ].join("\n"));
           if (!ok) return;
-          const visibleSession = currentSessionResultsImport?.defaultSession || resultsAdminSession || selectedSessions[0] || "";
+          const visibleSession = context.currentSessionResultsImport?.defaultSession || getResultsAdminSession() || selectedSessions[0] || "";
           const uploadKey = resultUploadKeyForSessionResults(visibleSession);
           closeResultImportModal();
           setResultUploadState(uploadKey, "Chargement en cours...");
@@ -191,8 +239,8 @@
         }
         if (event.target?.id !== "resultPdfInput") return;
         const file = event.target.files?.[0];
-        if (!file || !currentResultImportRow) return;
-        const rowToImport = currentResultImportRow;
+        if (!file || !context.currentResultImportRow) return;
+        const rowToImport = context.currentResultImportRow;
         const existingResult = resultForProgramRow(rowToImport);
         const finalListMode = resultImportModal.querySelector("input[name='resultFinalListMode']:checked")?.value || "";
         const preserveFinalists = Boolean(existingResult?.hasFinal && finalListMode === "preserve");
@@ -213,7 +261,7 @@
             : `Publier ce résultat ${isPartial ? "partiel" : "complet"} sans finale ?`));
         const importLabel = [
           rowToImport.session ? `Session ${rowToImport.session}` : "",
-          data.events.find((item) => item.id === rowToImport.eventId)?.label || rowToImport.label || rowToImport.eventId,
+          (getData().events || []).find((item) => item.id === rowToImport.eventId)?.label || rowToImport.label || rowToImport.eventId,
           `${sexDisplayLabel(rowToImport.sex)} - ${resultPhaseLabelForProgramRow(rowToImport)}`
         ].filter(Boolean).join(" - ");
         if (!window.confirm([message, "", `Course : ${importLabel}`, `Fichier : ${file.name}`].join("\n"))) return;
@@ -282,7 +330,6 @@
           setSeriesImportState("Chargement impossible. Réessaie.", "error");
         }
       });
-    }
   }
 
   window.LivePalmesUiResultsEvents = { init };

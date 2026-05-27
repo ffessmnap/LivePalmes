@@ -1,6 +1,82 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      DECISION_LABELS,
+      alertCommentLabel,
+      alertDetailModal,
+      alertIdentityLabel,
+      alertRaceLabel,
+      alertSwimmerLabel,
+      compareAlertsForAction,
+      currentRoleAlertFilter,
+      decisionMotifLabel,
+      escapeHtml,
+      finalRowsForAnnouncementAlert,
+      finalStageLabel,
+      fullAlertIdentityLabel,
+      historySentence,
+      isDsqAlert,
+      isFinalStage,
+      isRequalificationAlert,
+      isSpeakerView,
+      livePalmesAlertDetailView,
+      livePalmesHistoryView,
+      officialAlerts,
+      openFinalCompositionModal,
+      renderAlertCard,
+      renderFinalistsAlertList,
+      renderVideoInfoCard,
+      roleHistory,
+      sexDisplayLabel,
+      speakerAlertSentence,
+      speakerHistory
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop],
+      set: (_, prop, value) => {
+        const nextAlerts = context.alerts || [];
+        nextAlerts[prop] = value;
+        context.alerts = nextAlerts;
+        return true;
+      }
+    });
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      }
+    });
+    const expandedHistories = new Proxy({}, {
+      get: (_, prop) => context.expandedHistories?.[prop],
+      set: (_, prop, value) => {
+        const nextHistories = context.expandedHistories || {};
+        nextHistories[prop] = value;
+        context.expandedHistories = nextHistories;
+        return true;
+      }
+    });
+    const historyFilters = new Proxy({}, {
+      get: (_, prop) => context.historyFilters?.[prop],
+      set: (_, prop, value) => {
+        const nextFilters = context.historyFilters || {};
+        nextFilters[prop] = value;
+        context.historyFilters = nextFilters;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       function renderOfficialAlerts() {
         if (!officialAlerts) return;
         const showVideoInfo = ["live", "speaker", "computer"].includes(state.role);
@@ -421,7 +497,6 @@
         renderRoleHistory,
         historyToggleButton
       };
-    }
   }
 
   window.LivePalmesHistoryPresenter = { init };

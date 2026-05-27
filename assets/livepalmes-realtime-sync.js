@@ -1,6 +1,36 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      COMPETITION_INACTIVITY_MS,
+      FIREBASE_CONFIG,
+      alertsCollection,
+      applyRemoteLiveData,
+      cleanupOrphanFinalResultAlerts,
+      cleanupResolvedSpeakerResultAlerts,
+      competitionModeEnabled,
+      ensurePendingFinalistsSpeakerAlerts,
+      ensurePendingReplacementSpeakerAlerts,
+      liveDataDocument,
+      migrateResultPdfsOutOfResults,
+      publishPublicResultsIndex,
+      realtimeSyncEnabled,
+      refreshPresenceCounts,
+      releaseConsolePresence,
+      releaseRoleLock,
+      render,
+      renderDataStatus,
+      renderResultsAdminPanel,
+      resultsCollection,
+      resultWithoutPdf,
+      saveAlerts,
+      saveCurrentRoleState,
+      saveLastActivityTimestamp,
+      saveUnlockedRoles,
+      shouldReturnHomeForInactivity,
+      updateLiveNotes,
+      window = globalThis.window
+    } = context;
+
       async function endCompetitionSession() {
         if (!competitionModeEnabled()) return;
         await updateLiveNotes("Actualisation manuelle activée", {
@@ -13,15 +43,15 @@
       }
       
       function markConsoleActivity() {
-        lastConsoleActivityAt = Date.now();
-        saveLastActivityTimestamp(lastConsoleActivityAt);
+        context.lastConsoleActivityAt = Date.now();
+        saveLastActivityTimestamp(context.lastConsoleActivityAt);
       }
       
       async function returnHomeAfterLocalInactivity() {
-        if (!shouldReturnHomeForInactivity() || profileHomeActive) return;
+        if (!shouldReturnHomeForInactivity() || context.profileHomeActive) return;
         saveCurrentRoleState();
-        profileHomeActive = true;
-        unlockedRoles = [];
+        context.profileHomeActive = true;
+        context.unlockedRoles = [];
         saveUnlockedRoles();
         await releaseRoleLock();
         await releaseConsolePresence();
@@ -30,10 +60,10 @@
       }
       
       async function disableCompetitionModeAfterInactivity() {
-        if (competitionAutoDisableRunning || !competitionModeEnabled()) return;
-        if (state.role !== "computer" || profileHomeActive || document.visibilityState !== "visible") return;
-        if (Date.now() - lastConsoleActivityAt < COMPETITION_INACTIVITY_MS) return;
-        competitionAutoDisableRunning = true;
+        if (context.competitionAutoDisableRunning || !competitionModeEnabled()) return;
+        if (context.state?.role !== "computer" || context.profileHomeActive || document.visibilityState !== "visible") return;
+        if (Date.now() - context.lastConsoleActivityAt < COMPETITION_INACTIVITY_MS) return;
+        context.competitionAutoDisableRunning = true;
         try {
           await updateLiveNotes("Actualisation manuelle activée automatiquement après 1h d'inactivité", {
             competitionMode: false,
@@ -43,23 +73,23 @@
           initFirebaseSync();
           render();
         } finally {
-          competitionAutoDisableRunning = false;
+          context.competitionAutoDisableRunning = false;
         }
       }
       
       function stopFirebaseRealtimeSync() {
-        firestoreUnsubscribe?.();
-        liveDataUnsubscribe?.();
-        resultsUnsubscribe?.();
-        firestoreUnsubscribe = null;
-        liveDataUnsubscribe = null;
-        resultsUnsubscribe = null;
+        context.firestoreUnsubscribe?.();
+        context.liveDataUnsubscribe?.();
+        context.resultsUnsubscribe?.();
+        context.firestoreUnsubscribe = null;
+        context.liveDataUnsubscribe = null;
+        context.resultsUnsubscribe = null;
       }
       
       function applyResultsSnapshot(snapshot) {
         const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        raceResults = rows.map(resultWithoutPdf);
-        resultsSnapshotReady = true;
+        context.raceResults = rows.map(resultWithoutPdf);
+        context.resultsSnapshotReady = true;
         cleanupOrphanFinalResultAlerts();
         cleanupResolvedSpeakerResultAlerts();
         ensurePendingFinalistsSpeakerAlerts();
@@ -72,38 +102,38 @@
       function startCompetitionSync() {
         stopFirebaseRealtimeSync();
         if (!realtimeSyncEnabled()) {
-          firebaseStatus = "manual";
+          context.firebaseStatus = "manual";
           refreshFirebaseOnce(false);
           renderDataStatus();
           return;
         }
-        firestoreUnsubscribe = alertsCollection()
+        context.firestoreUnsubscribe = alertsCollection()
           .orderBy("createdAt", "desc")
           .onSnapshot((snapshot) => {
-            firestoreReady = true;
-            firebaseStatus = "connected";
-            alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            context.firestoreReady = true;
+            context.firebaseStatus = "connected";
+            context.alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
             saveAlerts();
             cleanupOrphanFinalResultAlerts();
             render();
           }, (error) => {
             console.warn("Lecture Firebase impossible", error);
-            firebaseStatus = "error";
+            context.firebaseStatus = "error";
             renderDataStatus("Firebase n'est pas joignable. Les alertes restent locales sur cet appareil.");
           });
-        liveDataUnsubscribe = liveDataDocument().onSnapshot((snapshot) => {
+        context.liveDataUnsubscribe = liveDataDocument().onSnapshot((snapshot) => {
           if (!snapshot.exists) return;
           const remote = snapshot.data()?.data;
-          firebaseStatus = "connected";
-          if (!remote?.sourceVersion || remote.sourceVersion === data.sourceVersion) return;
+          context.firebaseStatus = "connected";
+          if (!remote?.sourceVersion || remote.sourceVersion === context.data?.sourceVersion) return;
           applyRemoteLiveData(remote);
-          if (state.role === "computer") publishPublicResultsIndex({ silent: true });
+          if (context.state?.role === "computer") publishPublicResultsIndex({ silent: true });
         }, (error) => {
           console.warn("Lecture des données live Firebase impossible", error);
-          firebaseStatus = "error";
+          context.firebaseStatus = "error";
           renderDataStatus();
         });
-        resultsUnsubscribe = resultsCollection()
+        context.resultsUnsubscribe = resultsCollection()
           .orderBy("updatedAt", "desc")
           .onSnapshot((snapshot) => {
             applyResultsSnapshot(snapshot);
@@ -114,8 +144,8 @@
       }
       
       async function refreshFirebaseOnce(showMessage = true) {
-        if (!firestoreDb) {
-          firebaseStatus = "local";
+        if (!context.firestoreDb) {
+          context.firebaseStatus = "local";
           renderDataStatus("Firebase n'est pas chargé. Les données restent locales sur cet appareil.");
           return;
         }
@@ -125,31 +155,31 @@
             liveDataDocument().get({ source: "server" }),
             resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" })
           ]);
-          firestoreReady = true;
-          alerts = alertSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          context.firestoreReady = true;
+          context.alerts = alertSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           saveAlerts();
           if (liveSnapshot.exists) {
             const remote = liveSnapshot.data()?.data;
-            if (remote?.sourceVersion && remote.sourceVersion !== data.sourceVersion) {
+            if (remote?.sourceVersion && remote.sourceVersion !== context.data?.sourceVersion) {
               applyRemoteLiveData(remote);
             }
           }
           applyResultsSnapshot(resultSnapshot);
-          firebaseStatus = "manual";
+          context.firebaseStatus = "manual";
           render();
-          if (showMessage && state.role === "computer") {
+          if (showMessage && context.state?.role === "computer") {
             renderDataStatus("Données Firebase actualisées. L'actualisation directe reste coupée tant que l'interrupteur est en manuel.");
           }
         } catch (error) {
           console.warn("Actualisation Firebase impossible", error);
-          firebaseStatus = window.navigator.onLine ? "error" : "offline";
+          context.firebaseStatus = window.navigator.onLine ? "error" : "offline";
           renderDataStatus("Actualisation impossible. Vérifie la connexion ou les règles Firebase.");
         }
       }
       
       function initFirebaseSync() {
         if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
-          firebaseStatus = "local";
+          context.firebaseStatus = "local";
           renderDataStatus("Firebase n'est pas chargé. Les alertes restent locales sur cet appareil.");
           return;
         }
@@ -157,41 +187,41 @@
           if (!window.firebase.apps.length) {
             window.firebase.initializeApp(FIREBASE_CONFIG);
           }
-          firestoreDb = window.firebase.firestore();
+          context.firestoreDb = window.firebase.firestore();
           startCompetitionSync();
         } catch (error) {
           console.warn("Initialisation Firebase impossible", error);
-          firebaseStatus = "error";
+          context.firebaseStatus = "error";
           renderDataStatus("Firebase n'est pas configuré correctement. Les alertes restent locales sur cet appareil.");
         }
       }
       
       async function checkFirebaseConnection() {
-        if (firebaseConnectionCheckRunning) return;
+        if (context.firebaseConnectionCheckRunning) return;
         if (!window.navigator.onLine) {
-          firebaseStatus = "offline";
+          context.firebaseStatus = "offline";
           renderDataStatus();
           return;
         }
         if (!realtimeSyncEnabled()) {
-          firebaseStatus = firestoreDb ? "manual" : "local";
+          context.firebaseStatus = context.firestoreDb ? "manual" : "local";
           renderDataStatus();
           return;
         }
         const doc = liveDataDocument();
         if (!doc) {
-          firebaseStatus = "local";
+          context.firebaseStatus = "local";
           renderDataStatus();
           return;
         }
-        firebaseConnectionCheckRunning = true;
+        context.firebaseConnectionCheckRunning = true;
         try {
           await doc.get({ source: "server" });
-          firebaseStatus = "connected";
+          context.firebaseStatus = "connected";
         } catch (error) {
-          firebaseStatus = window.navigator.onLine ? "error" : "offline";
+          context.firebaseStatus = window.navigator.onLine ? "error" : "offline";
         } finally {
-          firebaseConnectionCheckRunning = false;
+          context.firebaseConnectionCheckRunning = false;
           renderDataStatus();
         }
       }
@@ -208,7 +238,6 @@
         initFirebaseSync,
         checkFirebaseConnection
       };
-    }
   }
 
   window.LivePalmesRealtimeSync = { init };

@@ -1,6 +1,72 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      activeDsqAlertsForEntrant,
+      alertCommentLabel,
+      alertRaceLabel,
+      alertSwimmerLabel,
+      currentRoleAlertFilter,
+      decisionModal,
+      decisionMotifLabel,
+      decisionPanel,
+      entrantKey,
+      finalStageLabel,
+      formatAlertTime,
+      formatDisplayName,
+      isDsqAlert,
+      isFinalStage,
+      isRelayEntrant,
+      isRequalificationAlert,
+      isSpeakerView,
+      livePalmesRefereeView,
+      livePalmesRoleQueueView,
+      raceEntrants,
+      render,
+      renderEntrants,
+      roleQueue,
+      saveAlerts,
+      sexDisplayLabel,
+      shortClubName,
+      syncAlertChangesToFirestore,
+      syncAlertToFirestore
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop],
+      set: (_, prop, value) => {
+        const nextAlerts = context.alerts || [];
+        nextAlerts[prop] = value;
+        context.alerts = nextAlerts;
+        return true;
+      }
+    });
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      }
+    });
+    const decisionDraft = new Proxy({}, {
+      get: (_, prop) => context.decisionDraft?.[prop],
+      set: (_, prop, value) => {
+        const nextDraft = context.decisionDraft || {};
+        nextDraft[prop] = value;
+        context.decisionDraft = nextDraft;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       function selectedEntrant() {
         if (!state.selectedSwimmerId) return null;
         return raceEntrants().find((entrant) => (entrant.swimmerId || entrantKey(entrant)) === state.selectedSwimmerId) ||
@@ -78,7 +144,7 @@
       function openDecisionModal() {
         const entrant = selectedEntrant();
         if (!decisionModal || state.role !== "referee" || !entrant) return;
-        decisionDraft = createDecisionDraft();
+        context.decisionDraft = createDecisionDraft();
         renderDecisionModal();
       }
       
@@ -349,7 +415,6 @@
         cloneAlertForCancellation,
         cancelDecision
       };
-    }
   }
 
   window.LivePalmesDecisionWorkflow = { init };

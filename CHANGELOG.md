@@ -44,4 +44,7 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Suppression de l'heure dans le menu deroulant des courses de la page publique series.
 - Ajout d'un smoke test navigateur automatisé pour les consoles, les actions speaker et la page publique series.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules alertes, programme et actions admin.
+- Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules evenements UI, decisions JA, historique, synchronisation temps reel et import series.
+- Remplacement des acces implicites `with (context)` par des dependances explicites dans le module publication/relecture des resultats.
+- Stabilisation du smoke test navigateur : il attend maintenant l'ouverture effective des consoles avant de verifier les roles.
 - `app.js` reste autour de 2100 lignes.

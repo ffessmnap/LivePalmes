@@ -1,6 +1,82 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      buildPublicResultsIndex,
+      compactRaceTitle,
+      createFinalistReplacementSpeakerAlert,
+      deleteFinalResultAlerts,
+      extractPdfLines,
+      finalRowKey,
+      finalistRowName,
+      fixPdfEncoding,
+      formatDisplayName,
+      importedBirthYear,
+      importedSeriesTime,
+      isFinalStage,
+      livePalmesResults,
+      markAlertAlreadyClosedError,
+      markSpeakerAlertDoneLocally,
+      normalizePersonName,
+      programKey,
+      publishPublicResultsIndex,
+      raceOptionKey,
+      rebuildFinalistsFromParsedResult,
+      render,
+      renderDataStatus,
+      resultForProgramRow,
+      resultIdForProgramRow,
+      resultMetadataPayload,
+      resultPdfPayload,
+      resultPdfsCollection,
+      resultPhaseLabelForProgramRow,
+      resultsCollection,
+      resultWithoutPdf,
+      saveAlerts,
+      sexDisplayLabel,
+      splitImportedPersonName,
+      stampReplacementAnnouncement,
+      syncAlertChangesToFirestore,
+      syncAlertChangesToFirestoreStrict,
+      syncAlertToFirestore,
+      window = globalThis.window
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop],
+      set: (_, prop, value) => {
+        const nextAlerts = context.alerts || [];
+        nextAlerts[prop] = value;
+        context.alerts = nextAlerts;
+        return true;
+      }
+    });
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      }
+    });
+    const raceResults = new Proxy([], {
+      get: (_, prop) => context.raceResults?.[prop],
+      set: (_, prop, value) => {
+        const nextResults = context.raceResults || [];
+        nextResults[prop] = value;
+        context.raceResults = nextResults;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       async function fileToDataUrl(file) {
         return livePalmesResults.fileToDataUrl(file);
       }
@@ -35,14 +111,14 @@
       
       async function migrateResultPdfsOutOfResults(rows = [], options = {}) {
         const force = options.force === true;
-        if (resultPdfMigrationRunning || (!force && resultPdfMigrationAttempted) || (state.role !== "computer" && !force)) return 0;
+        if (context.resultPdfMigrationRunning || (!force && context.resultPdfMigrationAttempted) || (state.role !== "computer" && !force)) return 0;
         const withPdf = rows.filter((result) => result.id && result.pdfDataUrl);
         if (!withPdf.length) return 0;
         const pdfCollection = resultPdfsCollection();
         const resultCollection = resultsCollection();
         if (!pdfCollection || !resultCollection || !window.firebase?.firestore?.FieldValue) return 0;
-        resultPdfMigrationRunning = true;
-        if (!force) resultPdfMigrationAttempted = true;
+        context.resultPdfMigrationRunning = true;
+        if (!force) context.resultPdfMigrationAttempted = true;
         try {
           for (const result of withPdf) {
             await pdfCollection.doc(result.id).set(JSON.parse(JSON.stringify(resultPdfPayload(result, result.pdfDataUrl))));
@@ -55,7 +131,7 @@
           }
           return withPdf.length;
         } finally {
-          resultPdfMigrationRunning = false;
+          context.resultPdfMigrationRunning = false;
         }
       }
       
@@ -194,7 +270,7 @@
         result.performances = resultPerformanceRows(parsedRows.ranking, result, row);
         await saveResultPdfPayload(result, pdfDataUrl);
         await collection.doc(result.id).set(JSON.parse(JSON.stringify(resultMetadataPayload(result))));
-        raceResults = [
+        context.raceResults = [
           resultMetadataPayload(result),
           ...raceResults.filter((item) => item.id !== result.id)
         ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
@@ -292,8 +368,8 @@
       }
       
       async function ensurePendingFinalistsSpeakerAlerts() {
-        if (finalistAlertRepairRunning) return;
-        finalistAlertRepairRunning = true;
+        if (context.finalistAlertRepairRunning) return;
+        context.finalistAlertRepairRunning = true;
         try {
           for (const result of raceResults.filter((item) => item.hasFinal && finalRowsCount(item.finalists) > 0 && !item.finalistsAnnouncedAt)) {
             const relatedAlerts = alerts.filter((alert) => alert.type === "finalists_announcement" && alert.resultId === result.id);
@@ -315,7 +391,7 @@
           saveAlerts();
           render();
         } finally {
-          finalistAlertRepairRunning = false;
+          context.finalistAlertRepairRunning = false;
         }
       }
       
@@ -362,7 +438,7 @@
       }
       
       async function ensurePendingReplacementSpeakerAlerts() {
-        if (replacementAlertRepairRunning) return;
+        if (context.replacementAlertRepairRunning) return;
         await dedupePendingReplacementAlerts();
         const missing = [];
         for (const result of raceResults) {
@@ -390,7 +466,7 @@
           }
         }
         if (!missing.length) return;
-        replacementAlertRepairRunning = true;
+        context.replacementAlertRepairRunning = true;
         try {
           for (const item of missing) {
             const withdrawn = {
@@ -402,7 +478,7 @@
           saveAlerts();
           render();
         } finally {
-          replacementAlertRepairRunning = false;
+          context.replacementAlertRepairRunning = false;
         }
       }
       
@@ -441,7 +517,7 @@
             : null;
           const index = raceResults.findIndex((result) => result.id === alert.resultId);
           if (updatedResult) {
-            raceResults = [
+            context.raceResults = [
               updatedResult,
               ...raceResults.filter((result) => result.id !== alert.resultId)
             ].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
@@ -496,7 +572,6 @@
         ensurePendingReplacementSpeakerAlerts,
         publishFinalistsAfterSpeaker
       };
-    }
   }
 
   window.LivePalmesResultPublicationWorkflow = { init };
