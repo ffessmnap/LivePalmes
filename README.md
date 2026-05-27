@@ -14,6 +14,18 @@ Ce lanceur :
 
 Garde la fenetre ouverte pendant l'utilisation locale de la console.
 
+## Verification avant publication
+
+Avant de mettre en ligne une mise a jour importante, lance :
+
+```powershell
+node tools/verify-livepalmes.js
+```
+
+Cette commande verifie la syntaxe JavaScript, lance les tests automatiques simples et controle les erreurs d'espaces Git.
+
+Si la commande finit par `Verification LivePalmes OK.`, la base technique est saine. Il faut ensuite faire les tests manuels utiles de `TESTS_MANUELS.md`, surtout apres une modification sur les PDF, les resultats, les finalistes ou Firebase.
+
 ## Organisation du dossier
 
 Les fichiers visibles en ligne restent a la racine :

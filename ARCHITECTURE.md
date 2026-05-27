@@ -69,7 +69,16 @@ Il reste encore des points a ameliorer :
 
 1. Identifier le domaine concerne.
 2. Modifier le plus petit fichier possible.
-3. Lancer les tests automatiques simples.
+3. Lancer `node tools/verify-livepalmes.js`.
 4. Faire les tests manuels importants.
 5. Publier seulement quand les controles sont bons.
 
+## Commande de verification
+
+La commande `node tools/verify-livepalmes.js` est le controle technique rapide a lancer avant publication.
+
+Elle verifie :
+
+- la syntaxe de tous les fichiers JavaScript suivis dans le projet ;
+- les tests automatiques de base ;
+- les erreurs d'espaces detectees par Git.
