@@ -570,9 +570,8 @@ function syncSeriesPdfInlineLink() {
 }
 
 function raceSelectLabel(row) {
-  const time = row.startTime ? `${row.startTime} · ` : "";
   const phase = isFinalStage(row.stage) ? ` · ${finalStageLabel(row.stage)}` : "";
-  return `${time}${eventLabel(row.eventId, row.label)} ${sexLabel(row.sex)}${phase}`;
+  return `${eventLabel(row.eventId, row.label)} ${sexLabel(row.sex)}${phase}`;
 }
 
 function render() {

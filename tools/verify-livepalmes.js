@@ -50,6 +50,13 @@ function runUnitTests() {
   run(process.execPath, [path.join(rootDir, "tests", "livepalmes-basic-tests.js")]);
 }
 
+function runBrowserSmokeIfRequested() {
+  const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
+  if (!requested) return;
+  printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
+}
+
 function runDiffCheck() {
   printStep("Controle espaces Git");
   const gitCommand = findGitCommand();
@@ -105,6 +112,7 @@ function findGitCommand() {
 try {
   checkSyntax();
   runUnitTests();
+  runBrowserSmokeIfRequested();
   runDiffCheck();
   console.log("\nVerification LivePalmes OK.");
 } catch (error) {
