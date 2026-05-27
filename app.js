@@ -13,11 +13,11 @@ const livePalmesAppModules = window.LivePalmesAppModules || {};
 const {
   livePalmesLocalState, livePalmesAppStorageWorkflowModule, livePalmesFirebase, livePalmesFirestoreRefs,
   livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleState,
-  livePalmesRoleSessionWorkflowModule, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
-  livePalmesFinalists, livePalmesSecretaryFinals, livePalmesPublication, livePalmesDiagnostics,
+  livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
+  livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
   livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesAdminResults,
-  livePalmesResults, livePalmesPdfImport, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
+  livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
   livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesProgramNavigation, livePalmesSeriesControls,
   livePalmesProgramModalsModule, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesResultsAdminWorkflow,
   livePalmesResultPublicationWorkflowModule, livePalmesResultMaintenanceWorkflowModule, livePalmesFinalWithdrawalsWorkflow, livePalmesDiagnosticsWorkflow,
@@ -158,6 +158,28 @@ let lastPresenceWriteAt = 0;
 let consolePresenceActive = false;
 let lastPublicProgressSignature = "";
 const activeCompetitionId = FIRESTORE_COMPETITION_ID;
+const {
+  activeCompetitionDocument,
+  alertsCollection,
+  competitionDocument,
+  historyArchivesCollection,
+  liveDataDocument,
+  presenceCollection,
+  presenceDocument,
+  publicResultsIndexDocument,
+  resultArchivesCollection,
+  resultPdfsCollection,
+  resultsCollection,
+  roleLockDocument,
+  seriesPdfsCollection,
+  sessionResultsPdfsCollection
+} = livePalmesAppFirestoreAccess.init({
+  activeCompetitionId,
+  currentClientId,
+  getFirestoreDb: () => firestoreDb,
+  livePalmesFirebase,
+  livePalmesFirestoreRefs
+});
 
 const appDom = livePalmesAppDom.collect ? livePalmesAppDom.collect(document) : {};
 const {
@@ -244,62 +266,6 @@ function appStorageWorkflowOptions() {
   return options;
 }
 
-
-function activeCompetitionDocument() {
-  return competitionDocument();
-}
-
-function competitionDocument(competitionId = activeCompetitionId) {
-  return livePalmesFirestoreRefs.competitionDocument(livePalmesFirebase, firestoreDb, competitionId);
-}
-
-function alertsCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "alerts");
-}
-
-function historyArchivesCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "historyArchives");
-}
-
-function resultArchivesCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "resultArchives");
-}
-
-function resultsCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "results");
-}
-
-function resultPdfsCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "resultPdfs");
-}
-
-function seriesPdfsCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "seriesPdfs");
-}
-
-function sessionResultsPdfsCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "sessionResultsPdfs");
-}
-
-function publicResultsIndexDocument() {
-  return livePalmesFirestoreRefs.publicResultsIndexDocument(livePalmesFirebase, firestoreDb, activeCompetitionId);
-}
-
-function liveDataDocument(competitionId = activeCompetitionId) {
-  return livePalmesFirestoreRefs.liveDataDocument(livePalmesFirebase, firestoreDb, competitionId);
-}
-
-function roleLockDocument(role) {
-  return livePalmesFirestoreRefs.roleLockDocument(livePalmesFirebase, firestoreDb, activeCompetitionId, role);
-}
-
-function presenceCollection() {
-  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "presence");
-}
-
-function presenceDocument(id = `console-${currentClientId()}`) {
-  return livePalmesFirestoreRefs.presenceDocument(livePalmesFirebase, firestoreDb, activeCompetitionId, id);
-}
 
 const livePalmesPublicProgressWorkflow = livePalmesPublicProgressWorkflowModule.init(publicProgressWorkflowOptions());
 
@@ -690,90 +656,38 @@ function resultsAdminWorkflowOptions() {
 }
 
 
-function formatDeadlineTime(date) {
-  if (!date || Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
-}
+const {
+  canWithdrawBeforeReplacementAnnouncement,
+  canWithdrawFinalist,
+  finalResultSessions,
+  finalistAnnouncedAt,
+  finalWithdrawalLimitDate,
+  finalWithdrawalLimitLabel,
+  formatDeadlineTime,
+  hasFinalWithdrawalDeadline,
+  isFinalWithdrawalDeadlineExpired
+} = livePalmesFinalists;
 
-function finalistAnnouncedAt(row, result) {
-  return livePalmesFinalists.finalistAnnouncedAt(row, result);
-}
+const livePalmesSecretaryFinalsWorkflow = livePalmesSecretaryFinalsWorkflowModule.init(secretaryFinalsWorkflowOptions());
 
-function finalWithdrawalLimitDate(row, result) {
-  return livePalmesFinalists.finalWithdrawalLimitDate(row, result);
-}
-
-function finalWithdrawalLimitLabel(row, result) {
-  const date = finalWithdrawalLimitDate(row, result);
-  return date ? formatDeadlineTime(date) : "";
-}
-
-function canWithdrawFinalist(row, result, now = new Date()) {
-  return livePalmesFinalists.canWithdrawFinalist(row, result, now);
-}
-
-function hasFinalWithdrawalDeadline(row, result) {
-  return livePalmesFinalists.hasFinalWithdrawalDeadline(row, result);
-}
-
-function canWithdrawBeforeReplacementAnnouncement(row) {
-  return livePalmesFinalists.canWithdrawBeforeReplacementAnnouncement(row);
-}
-
-function isFinalWithdrawalDeadlineExpired(row, result, now = new Date()) {
-  return livePalmesFinalists.isFinalWithdrawalDeadlineExpired(row, result, now);
-}
-
-function finalResultSessions(results = []) {
-  return livePalmesFinalists.finalResultSessions(results);
+function secretaryFinalsWorkflowOptions() {
+  const options = {
+    finalResultSessions,
+    finalRowsCount,
+    livePalmesSecretaryFinals,
+    secretaryFinalsPanel,
+    sexDisplayLabel
+  };
+  bindOptionState(options, ["raceResults", "roleStates", "secretaryFinalsSession", "state"]);
+  return options;
 }
 
 function ensureSecretaryFinalsSession(finals = []) {
-  const available = finalResultSessions(finals);
-  if (!available.length) {
-    secretaryFinalsSession = "";
-    return "";
-  }
-  if (secretaryFinalsSession === "all" || available.includes(secretaryFinalsSession)) {
-    return secretaryFinalsSession;
-  }
-  const speakerSession = roleStates.speaker?.session && roleStates.speaker.session !== "all" ? String(roleStates.speaker.session) : "";
-  secretaryFinalsSession = [speakerSession, available.at(-1), available[0]]
-    .find((session) => session && available.includes(session)) || available[0];
-  return secretaryFinalsSession;
+  return livePalmesSecretaryFinalsWorkflow.ensureSession(finals);
 }
 
 function renderSecretaryFinalsPanel() {
-  if (!secretaryFinalsPanel) return;
-  if (state.role !== "secretary") {
-    secretaryFinalsPanel.hidden = true;
-    secretaryFinalsPanel.innerHTML = "";
-    return;
-  }
-  const finals = raceResults
-    .filter((result) => result.hasFinal)
-    .sort((a, b) => String(b.finalistsAnnouncedAt || b.updatedAt || "").localeCompare(String(a.finalistsAnnouncedAt || a.updatedAt || "")));
-  const availableSessions = finalResultSessions(finals);
-  const activeSession = ensureSecretaryFinalsSession(finals);
-  const visibleFinals = activeSession && activeSession !== "all"
-    ? finals.filter((result) => String(result.session || "") === activeSession)
-    : finals;
-  secretaryFinalsPanel.hidden = false;
-  secretaryFinalsPanel.innerHTML = livePalmesSecretaryFinals.renderPanelHtml({
-    activeSession,
-    availableSessions,
-    hasFinals: Boolean(finals.length),
-    visibleCardsHtml: visibleFinals.map((result) => livePalmesSecretaryFinals.renderFinalCardHtml({
-      announced: Boolean(result.finalistsAnnouncedAt),
-      eventLabel: result.eventLabel || result.eventId,
-      finalistCount: finalRowsCount(result.finalists),
-      resultId: result.id,
-      session: result.session || "",
-      sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
-      startTime: result.startTime || "",
-      withdrawals: (result.finalWithdrawals || []).length
-    })).join("")
-  });
+  return livePalmesSecretaryFinalsWorkflow.renderPanel();
 }
 
 const livePalmesHistoryPresenter = livePalmesHistoryPresenterModule.init(livePalmesHistoryPresenterOptions());
@@ -1177,27 +1091,7 @@ function noteKey() {
 }
 
 function parseCsv(text) {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (!lines.length) return [];
-  const separator = lines[0].includes(";") ? ";" : ",";
-  const headers = lines[0].split(separator).map((header) => header.trim().toLowerCase());
-  return lines.slice(1).map((line) => {
-    const cells = line.split(separator).map((cell) => cell.trim());
-    const row = Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""]));
-    return {
-      eventId: state.eventId,
-      sex: state.sex,
-      lane: row.ligne || row.couloir || row.lane,
-      lastName: row.nom || row.lastname || "",
-      firstName: row.prenom || row["prénom"] || row.firstname || "",
-      birthDate: row.naissance || row.birthdate || "",
-      swimmerId: [row.nom || row.lastname || "", row.prenom || row["prénom"] || row.firstname || "", row.naissance || row.birthdate || "", state.sex].join("|").toLowerCase(),
-      club: row.club || "",
-      category: row.categorie || row["catégorie"] || row.category || "",
-      seedTime: row.temps || row.time || row.seedtime || "",
-      note: row.note || ""
-    };
-  });
+  return livePalmesCsvParser.parse(text, { eventId: state.eventId, sex: state.sex });
 }
 
 const livePalmesSpeakerInfoWorkflow = livePalmesSpeakerInfoWorkflowModule.init(speakerInfoWorkflowOptions());
