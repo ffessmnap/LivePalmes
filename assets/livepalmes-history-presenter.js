@@ -371,11 +371,6 @@
           .filter((alert) => !isRequalificationAlert(alert))
           .filter((alert) => alert.speakerStatus === "done" || (alert.cancelledAt && alert.speakerAnnouncedAt))
           .sort((a, b) => String(b.speakerAnnouncedAt || b.updatedAt).localeCompare(String(a.speakerAnnouncedAt || a.updatedAt)));
-        if (!doneAlerts.length) {
-          speakerHistory.hidden = true;
-          speakerHistory.innerHTML = "";
-          return;
-        }
         const filterKey = historyFilterKey();
         const filteredAlerts = filteredHistoryRows(doneAlerts, filterKey);
         speakerHistory.hidden = false;
@@ -428,7 +423,7 @@
         const filterKey = historyFilterKey();
         const filteredRows = filteredHistoryRows(rows, filterKey);
         if (!rows.length) {
-          if (!["computer", "secretary"].includes(state.role)) {
+          if (!["referee", "video", "computer", "secretary"].includes(state.role)) {
             roleHistory.hidden = true;
             roleHistory.innerHTML = "";
             return;

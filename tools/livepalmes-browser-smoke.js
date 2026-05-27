@@ -196,13 +196,30 @@ async function testRoleOpening(client, baseUrl) {
         roleQueueText: (document.querySelector('#roleQueue')?.textContent || '').trim(),
         resultsAdminText: (document.querySelector('#resultsAdminPanel')?.textContent || '').trim(),
         roleHistoryHidden: Boolean(document.querySelector('#roleHistory')?.hidden),
-        roleHistoryText: (document.querySelector('#roleHistory')?.textContent || '').trim()
+        roleHistoryText: (document.querySelector('#roleHistory')?.textContent || '').trim(),
+        speakerHistoryHidden: Boolean(document.querySelector('#speakerHistory')?.hidden),
+        speakerHistoryText: (document.querySelector('#speakerHistory')?.textContent || '').trim()
       };
     `);
     results.push(state);
   }
   const failed = results.filter((item) => !item.ok);
   assert(!failed.length, `Ouverture console KO : ${failed.map((item) => item.role).join(", ")}`);
+  const speaker = results.find((item) => item.role === "speaker");
+  assert(
+    !speaker?.speakerHistoryHidden && speaker?.speakerHistoryText.includes("Journal des annonces"),
+    "Speaker : journal des annonces absent."
+  );
+  const live = results.find((item) => item.role === "live");
+  assert(
+    !live?.speakerHistoryHidden && live?.speakerHistoryText.includes("Journal des annonces"),
+    "Live : journal absent."
+  );
+  const referee = results.find((item) => item.role === "referee");
+  assert(
+    !referee?.roleHistoryHidden && referee?.roleHistoryText.includes("Historique"),
+    "Juge arbitre : historique absent."
+  );
   const computer = results.find((item) => item.role === "computer");
   assert(
     computer?.resultsAdminText.includes("Publication des résultats"),
@@ -216,6 +233,10 @@ async function testRoleOpening(client, baseUrl) {
   assert(
     video?.roleQueueText.includes("Demandes vidéo"),
     "Juge video : file des demandes absente."
+  );
+  assert(
+    !video?.roleHistoryHidden && video?.roleHistoryText.includes("Historique"),
+    "Juge video : historique absent."
   );
   console.log("Consoles : OK");
 }
