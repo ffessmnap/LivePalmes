@@ -40,6 +40,7 @@
     livePalmesSwimmerPanel: "LivePalmesSwimmerPanel",
     livePalmesSwimmerPanelOptions: "LivePalmesSwimmerPanelOptions",
     livePalmesResultsAdminWorkflow: "LivePalmesResultsAdminWorkflow",
+    livePalmesResultsAdminOptions: "LivePalmesResultsAdminOptions",
     livePalmesResultPublicationWorkflowModule: "LivePalmesResultPublicationWorkflow",
     livePalmesResultMaintenanceWorkflowModule: "LivePalmesResultMaintenanceWorkflow",
     livePalmesFinalWithdrawalsWorkflow: "LivePalmesFinalWithdrawalsWorkflow",
