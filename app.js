@@ -1,111 +1,94 @@
-const livePalmesAppConfig = window.LivePalmesAppConfig || {};
-const STORAGE_KEY = livePalmesAppConfig.storageKey || "napSpeakerFrance2026:v15";
-const ALERTS_KEY = livePalmesAppConfig.alertsKey || "napSpeakerFrance2026:alerts:v1";
-const LIVE_DISMISSED_ALERTS_KEY = livePalmesAppConfig.liveDismissedAlertsKey || "napSpeakerFrance2026:live-dismissed-alerts:v1";
-const UNLOCKED_ROLES_KEY = livePalmesAppConfig.unlockedRolesKey || "napSpeakerFrance2026:unlocked-roles:v1";
-const CLIENT_ID_KEY = livePalmesAppConfig.clientIdKey || "napSpeakerFrance2026:client-id:v1";
-const ACTIVE_VIEW_KEY = livePalmesAppConfig.activeViewKey || "napSpeakerFrance2026:active-view:v1";
-const ROLE_STATES_KEY = livePalmesAppConfig.roleStatesKey || "napSpeakerFrance2026:role-states:v1";
-const LAST_ACTIVITY_KEY = livePalmesAppConfig.lastActivityKey || "napSpeakerFrance2026:last-activity:v1";
-const FIRESTORE_COMPETITION_ID = livePalmesAppConfig.firestoreCompetitionId || "livepalmes-active";
-const SPEAKER_SHEET_ID = livePalmesAppConfig.speakerSheetId || "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
-const ADMIN_PIN = livePalmesAppConfig.adminPin || "2216!";
-const ROLE_PINS = livePalmesAppConfig.rolePins || { live: "0000", speaker: "0001", referee: "0002", video: "0003", computer: "0004", secretary: "0005" };
-const ROLE_LABELS = {
-  speaker: "Speaker",
-  live: "Live",
-  referee: "Juge arbitre",
-  video: "Juge vid\u00e9o",
-  computer: "Bureau des performances",
-  secretary: "Secr\u00e9tariat"
-};
-const DECISION_LABELS = {
-  forfait: "Forfait",
-  abandon: "Abandon",
-  false_start: "DSQ - faux d\u00e9part",
-  relay_early_start: "DSQ - d\u00e9part anticip\u00e9",
-  underwater_15m: "DSQ - coul\u00e9e sup\u00e9rieure \u00e0 15 m",
-  immersion: "DSQ - passage en immersion",
-  bottle_fault: "DSQ - faute de bouteille",
-  interference: "DSQ - g\u00eane d'un concurrent",
-  other_dsq: "DSQ - autre motif"
-};
-const SPEAKER_DECISION_REASONS = {
-  false_start: "faux d\u00e9part",
-  relay_early_start: "d\u00e9part anticip\u00e9",
-  underwater_15m: "coul\u00e9e sup\u00e9rieure \u00e0 15 m",
-  immersion: "passage en immersion",
-  bottle_fault: "faute de bouteille",
-  interference: "g\u00eane d'un concurrent",
-  other_dsq: "autre motif"
-};
-const LOCK_DURATION_MS = livePalmesAppConfig.lockDurationMs || 120000;
-const LOCK_RECOVERY_MS = livePalmesAppConfig.lockRecoveryMs || 75000;
-const LOCK_HEARTBEAT_MS = livePalmesAppConfig.lockHeartbeatMs || 30000;
-const FIREBASE_CONNECTION_CHECK_MS = livePalmesAppConfig.firebaseConnectionCheckMs || 15000;
-const HOME_AFTER_INACTIVITY_MS = livePalmesAppConfig.homeAfterInactivityMs || 15 * 60 * 1000;
-const COMPETITION_INACTIVITY_MS = livePalmesAppConfig.competitionInactivityMs || 60 * 60 * 1000;
-const COMPETITION_INACTIVITY_CHECK_MS = livePalmesAppConfig.competitionInactivityCheckMs || 60 * 1000;
-const PRESENCE_DURATION_MS = livePalmesAppConfig.presenceDurationMs || 3 * 60 * 1000;
-const PRESENCE_HEARTBEAT_MS = livePalmesAppConfig.presenceHeartbeatMs || 60 * 1000;
-const PRESENCE_WRITE_THROTTLE_MS = livePalmesAppConfig.presenceWriteThrottleMs || 30 * 1000;
-const SPEAKER_INFO_SHEETS = livePalmesAppConfig.speakerInfoSheets || {};
-const FIREBASE_CONFIG = livePalmesAppConfig.firebaseConfig || {};
-const sampleData = window.SPEAKER_DATA || livePalmesAppConfig.fallbackData || { meet: {}, events: [], entrants: [], qualifications: [], top2025: [], records: [], notes: {} };
-const livePalmesLocalState = window.LivePalmesLocalState || {};
-const livePalmesAppStorageWorkflowModule = window.LivePalmesAppStorageWorkflow || {};
-const livePalmesFirebase = window.LivePalmesFirebase || {};
-const livePalmesFirestoreRefs = window.LivePalmesFirestoreRefs || {};
-const livePalmesConsoleSyncModule = window.LivePalmesConsoleSync || {};
-const livePalmesRealtimeSyncModule = window.LivePalmesRealtimeSync || {};
-const livePalmesRoleAccess = window.LivePalmesRoleAccess || {};
-const livePalmesRoleState = window.LivePalmesRoleState || {};
-const livePalmesRoleSessionWorkflowModule = window.LivePalmesRoleSessionWorkflow || {};
-const livePalmesRaceCore = window.LivePalmesRaceCore || {};
-const livePalmesAlerts = window.LivePalmesAlerts || {};
-const livePalmesAlertPresenterModule = window.LivePalmesAlertPresenter || {};
-const livePalmesFinalists = window.LivePalmesFinalists || {};
-const livePalmesSecretaryFinals = window.LivePalmesSecretaryFinals || {};
-const livePalmesPublication = window.LivePalmesPublication || {};
-const livePalmesDiagnostics = window.LivePalmesDiagnostics || {};
-const livePalmesAdminDiagnostics = window.LivePalmesAdminDiagnostics || {};
-const livePalmesAdminMaintenance = window.LivePalmesAdminMaintenance || {};
-const livePalmesAdminActionsModule = window.LivePalmesAdminActions || {};
-const livePalmesAdminModals = window.LivePalmesAdminModals || {};
-const livePalmesAdminArchives = window.LivePalmesAdminArchives || {};
-const livePalmesExportActions = window.LivePalmesExportActions || {};
-const livePalmesExportReportsWorkflowModule = window.LivePalmesExportReportsWorkflow || {};
-const livePalmesAdminResults = window.LivePalmesAdminResults || {};
-const livePalmesResults = window.LivePalmesResults || {};
-const livePalmesPdfImport = window.LivePalmesPdfImport || {};
-const livePalmesSeriesImport = window.LivePalmesSeriesImport || {};
-const livePalmesSeriesImportWorkflowModule = window.LivePalmesSeriesImportWorkflow || {};
-const livePalmesSpeakerInfo = window.LivePalmesSpeakerInfo || {};
-const livePalmesSpeakerInfoWorkflowModule = window.LivePalmesSpeakerInfoWorkflow || {};
-const livePalmesProgramNavigation = window.LivePalmesProgramNavigation || {};
-const livePalmesProgramModalsModule = window.LivePalmesProgramModals || {};
-const livePalmesEntrantHelpersModule = window.LivePalmesEntrantHelpers || {};
-const livePalmesSwimmerPanel = window.LivePalmesSwimmerPanel || {};
-const livePalmesResultsAdminWorkflow = window.LivePalmesResultsAdminWorkflow || {};
-const livePalmesResultPublicationWorkflowModule = window.LivePalmesResultPublicationWorkflow || {};
-const livePalmesResultMaintenanceWorkflowModule = window.LivePalmesResultMaintenanceWorkflow || {};
-const livePalmesFinalWithdrawalsWorkflow = window.LivePalmesFinalWithdrawalsWorkflow || {};
-const livePalmesDiagnosticsWorkflow = window.LivePalmesDiagnosticsWorkflow || {};
-const livePalmesUiEvents = window.LivePalmesUiEvents || {};
-const livePalmesProgramView = window.LivePalmesProgramView || {};
-const livePalmesConsoleRenderWorkflowModule = window.LivePalmesConsoleRenderWorkflow || {};
-const livePalmesRefereeView = window.LivePalmesRefereeView || {};
-const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
-const livePalmesHistoryView = window.LivePalmesHistoryView || {};
-const livePalmesHistoryActionsModule = window.LivePalmesHistoryActions || {};
-const livePalmesHistoryPresenterModule = window.LivePalmesHistoryPresenter || {};
-const livePalmesDecisionWorkflowModule = window.LivePalmesDecisionWorkflow || {};
-const livePalmesHeaderView = window.LivePalmesHeaderView || {};
-const livePalmesAlertDetailView = window.LivePalmesAlertDetailView || {};
-const livePalmesAlertCardView = window.LivePalmesAlertCardView || {};
-const livePalmesLineStatusView = window.LivePalmesLineStatusView || {};
-const livePalmesPublicProgressWorkflowModule = window.LivePalmesPublicProgressWorkflow || {};
-const livePalmesAppLifecycleModule = window.LivePalmesAppLifecycle || {};
+const livePalmesAppSettings = window.LivePalmesAppSettings || {};
+const {
+  livePalmesAppConfig,
+  STORAGE_KEY,
+  ALERTS_KEY,
+  LIVE_DISMISSED_ALERTS_KEY,
+  UNLOCKED_ROLES_KEY,
+  CLIENT_ID_KEY,
+  ACTIVE_VIEW_KEY,
+  ROLE_STATES_KEY,
+  LAST_ACTIVITY_KEY,
+  FIRESTORE_COMPETITION_ID,
+  SPEAKER_SHEET_ID,
+  ADMIN_PIN,
+  ROLE_PINS,
+  ROLE_LABELS,
+  DECISION_LABELS,
+  SPEAKER_DECISION_REASONS,
+  LOCK_DURATION_MS,
+  LOCK_RECOVERY_MS,
+  LOCK_HEARTBEAT_MS,
+  FIREBASE_CONNECTION_CHECK_MS,
+  HOME_AFTER_INACTIVITY_MS,
+  COMPETITION_INACTIVITY_MS,
+  COMPETITION_INACTIVITY_CHECK_MS,
+  PRESENCE_DURATION_MS,
+  PRESENCE_HEARTBEAT_MS,
+  PRESENCE_WRITE_THROTTLE_MS,
+  SPEAKER_INFO_SHEETS,
+  FIREBASE_CONFIG,
+  sampleData
+} = livePalmesAppSettings.resolve ? livePalmesAppSettings.resolve(window) : {};
+const livePalmesAppModules = window.LivePalmesAppModules || {};
+const {
+  livePalmesLocalState,
+  livePalmesAppStorageWorkflowModule,
+  livePalmesFirebase,
+  livePalmesFirestoreRefs,
+  livePalmesConsoleSyncModule,
+  livePalmesRealtimeSyncModule,
+  livePalmesRoleAccess,
+  livePalmesRoleState,
+  livePalmesRoleSessionWorkflowModule,
+  livePalmesRaceCore,
+  livePalmesAlerts,
+  livePalmesAlertPresenterModule,
+  livePalmesFinalists,
+  livePalmesSecretaryFinals,
+  livePalmesPublication,
+  livePalmesDiagnostics,
+  livePalmesAdminDiagnostics,
+  livePalmesAdminMaintenance,
+  livePalmesAdminActionsModule,
+  livePalmesAdminModals,
+  livePalmesAdminArchives,
+  livePalmesExportActions,
+  livePalmesExportReportsWorkflowModule,
+  livePalmesAdminResults,
+  livePalmesResults,
+  livePalmesPdfImport,
+  livePalmesSeriesImport,
+  livePalmesSeriesImportWorkflowModule,
+  livePalmesSpeakerInfo,
+  livePalmesSpeakerInfoWorkflowModule,
+  livePalmesProgramNavigation,
+  livePalmesProgramModalsModule,
+  livePalmesEntrantHelpersModule,
+  livePalmesSwimmerPanel,
+  livePalmesResultsAdminWorkflow,
+  livePalmesResultPublicationWorkflowModule,
+  livePalmesResultMaintenanceWorkflowModule,
+  livePalmesFinalWithdrawalsWorkflow,
+  livePalmesDiagnosticsWorkflow,
+  livePalmesUiEvents,
+  livePalmesProgramView,
+  livePalmesConsoleRenderWorkflowModule,
+  livePalmesRefereeView,
+  livePalmesRoleQueueView,
+  livePalmesHistoryView,
+  livePalmesHistoryActionsModule,
+  livePalmesHistoryPresenterModule,
+  livePalmesDecisionWorkflowModule,
+  livePalmesHeaderView,
+  livePalmesAlertDetailView,
+  livePalmesAlertCardView,
+  livePalmesLineStatusView,
+  livePalmesPublicProgressWorkflowModule,
+  livePalmesAppLifecycleModule,
+  livePalmesAppState,
+  livePalmesAppDom
+} = livePalmesAppModules.collect ? livePalmesAppModules.collect(window) : {};
 
 const livePalmesAppStorageWorkflow = livePalmesAppStorageWorkflowModule.init(appStorageWorkflowOptions());
 let data = loadData();
@@ -225,81 +208,132 @@ let consolePresenceActive = false;
 let lastPublicProgressSignature = "";
 const activeCompetitionId = FIRESTORE_COMPETITION_ID;
 
-const eventSelect = document.querySelector("#eventSelect");
-const searchInput = document.querySelector("#searchInput");
-const categorySelect = document.querySelector("#categorySelect");
-const sessionControls = document.querySelector("#sessionControls");
-const publicPositionToggle = document.querySelector("#publicPositionToggle");
-const seriesControls = document.querySelector("#seriesControls");
-const roleSwitch = document.querySelector(".role-switch");
-const topActions = document.querySelector(".top-actions");
-const profileHome = document.querySelector("#profileHome");
-const profileModeStatus = document.querySelector("#profileModeStatus");
-const profileHomeBtn = document.querySelector("#profileHomeBtn");
-const manualRefreshBtn = document.querySelector("#manualRefreshBtn");
-const topbar = document.querySelector(".topbar");
-const appShell = document.querySelector(".app-shell");
-const sidebar = document.querySelector(".sidebar");
-const racePanel = document.querySelector(".race-panel");
-const competitionModeTopBtn = document.querySelector("#competitionModeTopBtn");
-const previousSeriesBtn = document.querySelector("#previousSeriesBtn");
-const nextSeriesBtn = document.querySelector("#nextSeriesBtn");
-const previousSeriesInlineBtn = document.querySelector("#previousSeriesInlineBtn");
-const nextSeriesInlineBtn = document.querySelector("#nextSeriesInlineBtn");
-const previousSeriesFloatBtn = document.querySelector("#previousSeriesFloatBtn");
-const nextSeriesFloatBtn = document.querySelector("#nextSeriesFloatBtn");
-const programBtn = document.querySelector("#programBtn");
-const programFloatBtn = document.querySelector("#programFloatBtn");
-const categoryField = document.querySelector(".category-field");
-const lineOrderBtn = document.querySelector("#lineOrderBtn");
-const entrantsBody = document.querySelector("#entrantsBody");
-const entrantCount = document.querySelector("#entrantCount");
-const entrantCountLabel = document.querySelector("#entrantCountLabel");
-const filteredCount = document.querySelector("#filteredCount");
-const bestEntry = document.querySelector("#bestEntry");
-const bestEntryName = document.querySelector("#bestEntryName");
-const entrantsTitle = document.querySelector("#entrantsTitle");
-const entrantsSubtitle = document.querySelector("#entrantsSubtitle");
-const rankHeader = document.querySelector("#rankHeader");
-const swimmerHeader = document.querySelector("#swimmerHeader");
-const searchLabel = document.querySelector("#searchLabel");
-const entrantsTableWrap = document.querySelector(".entrants-panel .table-wrap");
-const raceTitle = document.querySelector("#raceTitle");
-const raceMeta = document.querySelector("#raceMeta");
-const raceSexBadge = document.querySelector("#raceSexBadge");
-const headerRefs = document.querySelector("#headerRefs");
-const headerRefDetails = document.querySelector("#headerRefDetails");
-const top2025Box = document.querySelector("#top2025Box");
-const dataStatus = document.querySelector("#dataStatus");
-const firebaseHeaderStatus = document.querySelector("#firebaseHeaderStatus");
-const appConsoleTitle = document.querySelector("#appConsoleTitle");
-const officialAlerts = document.querySelector("#officialAlerts");
-const decisionPanel = document.querySelector("#decisionPanel");
-const decisionModal = document.querySelector("#decisionModal");
-const alertDetailModal = document.querySelector("#alertDetailModal");
-const programModal = document.querySelector("#programModal");
-const adminSeriesModal = document.querySelector("#adminSeriesModal");
-const resultImportModal = document.querySelector("#resultImportModal");
-const roleCodesModal = document.querySelector("#roleCodesModal");
-const roleQueue = document.querySelector("#roleQueue");
-const resultsAdminPanel = document.querySelector("#resultsAdminPanel");
-const secretaryFinalsPanel = document.querySelector("#secretaryFinalsPanel");
-const roleHistory = document.querySelector("#roleHistory");
-const computerFooterPanel = document.querySelector("#computerFooterPanel");
-const speakerHistory = document.querySelector("#speakerHistory");
-const roleBadge = document.querySelector("#roleBadge");
-const refereeProgressBtn = document.querySelector("#refereeProgressBtn");
-const fullscreenBtn = document.querySelector("#fullscreenBtn");
-const viewModeBtn = document.querySelector("#viewModeBtn");
-const roleLockBtn = document.querySelector("#roleLockBtn");
-const adminSeriesBtn = document.querySelector("#adminSeriesBtn");
-const archivesBtn = document.querySelector("#archivesBtn");
-const dataDiagnosticBtn = document.querySelector("#dataDiagnosticBtn");
-const jsonInput = document.querySelector("#jsonInput");
-const csvInput = document.querySelector("#csvInput");
-const swimmerDetails = document.querySelector("#swimmerDetails");
-const meetTitle = document.querySelector("#meetTitle");
-const antoineOverlay = document.querySelector("#antoineOverlay");
+const appDom = livePalmesAppDom.collect ? livePalmesAppDom.collect(document) : {};
+const {
+  eventSelect,
+  searchInput,
+  categorySelect,
+  sessionControls,
+  publicPositionToggle,
+  seriesControls,
+  roleSwitch,
+  topActions,
+  profileHome,
+  profileModeStatus,
+  profileHomeBtn,
+  manualRefreshBtn,
+  topbar,
+  appShell,
+  sidebar,
+  racePanel,
+  competitionModeTopBtn,
+  previousSeriesBtn,
+  nextSeriesBtn,
+  previousSeriesInlineBtn,
+  nextSeriesInlineBtn,
+  previousSeriesFloatBtn,
+  nextSeriesFloatBtn,
+  programBtn,
+  programFloatBtn,
+  categoryField,
+  lineOrderBtn,
+  entrantsBody,
+  entrantCount,
+  entrantCountLabel,
+  filteredCount,
+  bestEntry,
+  bestEntryName,
+  entrantsTitle,
+  entrantsSubtitle,
+  rankHeader,
+  swimmerHeader,
+  searchLabel,
+  entrantsTableWrap,
+  raceTitle,
+  raceMeta,
+  raceSexBadge,
+  headerRefs,
+  headerRefDetails,
+  top2025Box,
+  dataStatus,
+  firebaseHeaderStatus,
+  appConsoleTitle,
+  officialAlerts,
+  decisionPanel,
+  decisionModal,
+  alertDetailModal,
+  programModal,
+  adminSeriesModal,
+  resultImportModal,
+  roleCodesModal,
+  roleQueue,
+  resultsAdminPanel,
+  secretaryFinalsPanel,
+  roleHistory,
+  computerFooterPanel,
+  speakerHistory,
+  roleBadge,
+  refereeProgressBtn,
+  fullscreenBtn,
+  viewModeBtn,
+  roleLockBtn,
+  adminSeriesBtn,
+  archivesBtn,
+  dataDiagnosticBtn,
+  jsonInput,
+  csvInput,
+  swimmerDetails,
+  meetTitle,
+  antoineOverlay
+} = appDom;
+
+const appStateAccessors = {
+  activeRoleLock: { get: () => activeRoleLock, set: (value) => { activeRoleLock = value; } },
+  alerts: { get: () => alerts, set: (value) => { alerts = value; } },
+  applyingRemoteData: { get: () => applyingRemoteData, set: (value) => { applyingRemoteData = value; } },
+  competitionAutoDisableRunning: { get: () => competitionAutoDisableRunning, set: (value) => { competitionAutoDisableRunning = value; } },
+  consolePresenceActive: { get: () => consolePresenceActive, set: (value) => { consolePresenceActive = value; } },
+  currentResultImportRow: { get: () => currentResultImportRow, set: (value) => { currentResultImportRow = value; } },
+  currentSessionResultsImport: { get: () => currentSessionResultsImport, set: (value) => { currentSessionResultsImport = value; } },
+  data: { get: () => data, set: (value) => { data = value; } },
+  decisionDraft: { get: () => decisionDraft, set: (value) => { decisionDraft = value; } },
+  expandedHistories: { get: () => expandedHistories, set: (value) => { expandedHistories = value; } },
+  finalistAlertRepairRunning: { get: () => finalistAlertRepairRunning, set: (value) => { finalistAlertRepairRunning = value; } },
+  firebaseConnectionCheckRunning: { get: () => firebaseConnectionCheckRunning, set: (value) => { firebaseConnectionCheckRunning = value; } },
+  firebaseStatus: { get: () => firebaseStatus, set: (value) => { firebaseStatus = value; } },
+  firestoreDb: { get: () => firestoreDb, set: (value) => { firestoreDb = value; } },
+  firestoreReady: { get: () => firestoreReady, set: (value) => { firestoreReady = value; } },
+  firestoreUnsubscribe: { get: () => firestoreUnsubscribe, set: (value) => { firestoreUnsubscribe = value; } },
+  historyFilters: { get: () => historyFilters, set: (value) => { historyFilters = value; } },
+  isFullscreenMode: { get: () => isFullscreenMode, set: (value) => { isFullscreenMode = value; } },
+  lastConsoleActivityAt: { get: () => lastConsoleActivityAt, set: (value) => { lastConsoleActivityAt = value; } },
+  lastPresenceWriteAt: { get: () => lastPresenceWriteAt, set: (value) => { lastPresenceWriteAt = value; } },
+  lastPublicProgressSignature: { get: () => lastPublicProgressSignature, set: (value) => { lastPublicProgressSignature = value; } },
+  liveDataUnsubscribe: { get: () => liveDataUnsubscribe, set: (value) => { liveDataUnsubscribe = value; } },
+  liveDismissedAlertIds: { get: () => liveDismissedAlertIds, set: (value) => { liveDismissedAlertIds = value; } },
+  presenceCounts: { get: () => presenceCounts, set: (value) => { presenceCounts = value; } },
+  profileHomeActive: { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } },
+  raceResults: { get: () => raceResults, set: (value) => { raceResults = value; } },
+  replacementAlertRepairRunning: { get: () => replacementAlertRepairRunning, set: (value) => { replacementAlertRepairRunning = value; } },
+  resultPdfMigrationAttempted: { get: () => resultPdfMigrationAttempted, set: (value) => { resultPdfMigrationAttempted = value; } },
+  resultPdfMigrationRunning: { get: () => resultPdfMigrationRunning, set: (value) => { resultPdfMigrationRunning = value; } },
+  resultsAdminSession: { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } },
+  resultsSnapshotReady: { get: () => resultsSnapshotReady, set: (value) => { resultsSnapshotReady = value; } },
+  resultsUnsubscribe: { get: () => resultsUnsubscribe, set: (value) => { resultsUnsubscribe = value; } },
+  rolePinResolver: { get: () => rolePinResolver, set: (value) => { rolePinResolver = value; } },
+  roleStates: { get: () => roleStates, set: (value) => { roleStates = value; } },
+  secretaryFinalsSession: { get: () => secretaryFinalsSession, set: (value) => { secretaryFinalsSession = value; } },
+  seriesImportState: { get: () => seriesImportState, set: (value) => { seriesImportState = value; } },
+  state: { get: () => state, set: (value) => { state = value; } },
+  unlockedRoles: { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } }
+};
+
+function bindOptionState(options, keys = []) {
+  if (typeof livePalmesAppState.bindOptionState === "function") {
+    return livePalmesAppState.bindOptionState(options, appStateAccessors, keys);
+  }
+  return options;
+}
 
 function appStorageWorkflowOptions() {
   const options = {
@@ -395,12 +429,7 @@ function publicProgressWorkflowOptions() {
     topbar,
     updateLiveNotes
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "lastPublicProgressSignature", { get: () => lastPublicProgressSignature, set: (value) => { lastPublicProgressSignature = value; } });
-  Object.defineProperty(options, "presenceCounts", { get: () => presenceCounts, set: (value) => { presenceCounts = value; } });
-  Object.defineProperty(options, "roleStates", { get: () => roleStates, set: (value) => { roleStates = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["alerts", "data", "lastPublicProgressSignature", "presenceCounts", "roleStates", "state"]);
   return options;
 }
 
@@ -469,16 +498,7 @@ function consoleSyncOptions() {
     speakerAlertAlreadyResolvedByResult,
     state
   };
-  Object.defineProperty(options, "activeRoleLock", { get: () => activeRoleLock, set: (value) => { activeRoleLock = value; } });
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "applyingRemoteData", { get: () => applyingRemoteData, set: (value) => { applyingRemoteData = value; } });
-  Object.defineProperty(options, "consolePresenceActive", { get: () => consolePresenceActive, set: (value) => { consolePresenceActive = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "firebaseStatus", { get: () => firebaseStatus, set: (value) => { firebaseStatus = value; } });
-  Object.defineProperty(options, "lastPresenceWriteAt", { get: () => lastPresenceWriteAt, set: (value) => { lastPresenceWriteAt = value; } });
-  Object.defineProperty(options, "presenceCounts", { get: () => presenceCounts, set: (value) => { presenceCounts = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
+  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "lastPresenceWriteAt", "presenceCounts", "raceResults", "unlockedRoles"]);
   return options;
 }
 
@@ -537,10 +557,7 @@ function adminActionsOptions() {
     saveUnlockedRoles,
     updateLiveNotes
   };
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "lastConsoleActivityAt", { get: () => lastConsoleActivityAt, set: (value) => { lastConsoleActivityAt = value; } });
-  Object.defineProperty(options, "rolePinResolver", { get: () => rolePinResolver, set: (value) => { rolePinResolver = value; } });
-  Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
+  bindOptionState(options, ["data", "lastConsoleActivityAt", "rolePinResolver", "unlockedRoles"]);
   return options;
 }
 
@@ -596,22 +613,7 @@ function livePalmesRealtimeSyncOptions() {
     updateLiveNotes,
     window
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "competitionAutoDisableRunning", { get: () => competitionAutoDisableRunning, set: (value) => { competitionAutoDisableRunning = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "firebaseConnectionCheckRunning", { get: () => firebaseConnectionCheckRunning, set: (value) => { firebaseConnectionCheckRunning = value; } });
-  Object.defineProperty(options, "firebaseStatus", { get: () => firebaseStatus, set: (value) => { firebaseStatus = value; } });
-  Object.defineProperty(options, "firestoreDb", { get: () => firestoreDb, set: (value) => { firestoreDb = value; } });
-  Object.defineProperty(options, "firestoreReady", { get: () => firestoreReady, set: (value) => { firestoreReady = value; } });
-  Object.defineProperty(options, "firestoreUnsubscribe", { get: () => firestoreUnsubscribe, set: (value) => { firestoreUnsubscribe = value; } });
-  Object.defineProperty(options, "lastConsoleActivityAt", { get: () => lastConsoleActivityAt, set: (value) => { lastConsoleActivityAt = value; } });
-  Object.defineProperty(options, "liveDataUnsubscribe", { get: () => liveDataUnsubscribe, set: (value) => { liveDataUnsubscribe = value; } });
-  Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "resultsSnapshotReady", { get: () => resultsSnapshotReady, set: (value) => { resultsSnapshotReady = value; } });
-  Object.defineProperty(options, "resultsUnsubscribe", { get: () => resultsUnsubscribe, set: (value) => { resultsUnsubscribe = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
-  Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
+  bindOptionState(options, ["alerts", "competitionAutoDisableRunning", "data", "firebaseConnectionCheckRunning", "firebaseStatus", "firestoreDb", "firestoreReady", "firestoreUnsubscribe", "lastConsoleActivityAt", "liveDataUnsubscribe", "profileHomeActive", "raceResults", "resultsSnapshotReady", "resultsUnsubscribe", "state", "unlockedRoles"]);
   return options;
 }
 
@@ -647,10 +649,7 @@ function historyActionsOptions() {
     saveAlerts,
     saveLiveDismissedAlerts
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "liveDismissedAlertIds", { get: () => liveDismissedAlertIds, set: (value) => { liveDismissedAlertIds = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
+  bindOptionState(options, ["alerts", "data", "liveDismissedAlertIds", "raceResults"]);
   return options;
 }
 
@@ -697,7 +696,7 @@ function entrantHelperOptions() {
     searchInput,
     state
   };
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["state"]);
   return options;
 }
 
@@ -850,11 +849,7 @@ function consoleRenderWorkflowOptions() {
     updateStickyAlertOffset,
     viewModeBtn
   };
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "firestoreDb", { get: () => firestoreDb, set: (value) => { firestoreDb = value; } });
-  Object.defineProperty(options, "isFullscreenMode", { get: () => isFullscreenMode, set: (value) => { isFullscreenMode = value; } });
-  Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["data", "firestoreDb", "isFullscreenMode", "profileHomeActive", "state"]);
   return options;
 }
 
@@ -897,11 +892,7 @@ function alertPresenterOptions() {
     resultForProgramRow,
     sexDisplayLabel
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "liveDismissedAlertIds", { get: () => liveDismissedAlertIds, set: (value) => { liveDismissedAlertIds = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["alerts", "data", "liveDismissedAlertIds", "raceResults", "state"]);
   return options;
 }
 
@@ -990,8 +981,7 @@ function resultsAdminWorkflowOptions() {
     state,
     updateLiveNotes
   };
-  Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
-  Object.defineProperty(options, "seriesImportState", { get: () => seriesImportState, set: (value) => { seriesImportState = value; } });
+  bindOptionState(options, ["resultsAdminSession", "seriesImportState"]);
   return options;
 }
 
@@ -1165,10 +1155,7 @@ function livePalmesHistoryPresenterOptions() {
     speakerHistory,
     state
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "expandedHistories", { get: () => expandedHistories, set: (value) => { expandedHistories = value; } });
-  Object.defineProperty(options, "historyFilters", { get: () => historyFilters, set: (value) => { historyFilters = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["alerts", "expandedHistories", "historyFilters", "state"]);
   return options;
 }
 
@@ -1245,9 +1232,7 @@ function livePalmesDecisionWorkflowOptions() {
     syncAlertToFirestore,
     syncAlertToFirestoreStrict
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "decisionDraft", { get: () => decisionDraft, set: (value) => { decisionDraft = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["alerts", "decisionDraft", "state"]);
   return options;
 }
 
@@ -1477,11 +1462,7 @@ function programModalsOptions() {
     state,
     updateLiveNotes
   };
-  Object.defineProperty(options, "currentResultImportRow", { get: () => currentResultImportRow, set: (value) => { currentResultImportRow = value; } });
-  Object.defineProperty(options, "currentSessionResultsImport", { get: () => currentSessionResultsImport, set: (value) => { currentSessionResultsImport = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["currentResultImportRow", "currentSessionResultsImport", "data", "resultsAdminSession", "state"]);
   return options;
 }
 
@@ -1551,14 +1532,7 @@ function livePalmesResultPublicationWorkflowOptions() {
     syncAlertToFirestore,
     window
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "finalistAlertRepairRunning", { get: () => finalistAlertRepairRunning, set: (value) => { finalistAlertRepairRunning = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "replacementAlertRepairRunning", { get: () => replacementAlertRepairRunning, set: (value) => { replacementAlertRepairRunning = value; } });
-  Object.defineProperty(options, "resultPdfMigrationAttempted", { get: () => resultPdfMigrationAttempted, set: (value) => { resultPdfMigrationAttempted = value; } });
-  Object.defineProperty(options, "resultPdfMigrationRunning", { get: () => resultPdfMigrationRunning, set: (value) => { resultPdfMigrationRunning = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["alerts", "data", "finalistAlertRepairRunning", "raceResults", "replacementAlertRepairRunning", "resultPdfMigrationAttempted", "resultPdfMigrationRunning", "state"]);
   return options;
 }
 
@@ -1693,10 +1667,7 @@ function resultMaintenanceWorkflowOptions() {
     saveData,
     window
   };
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["data", "raceResults", "resultsAdminSession", "state"]);
   return options;
 }
 
@@ -1894,7 +1865,7 @@ function speakerInfoWorkflowOptions() {
     timeToMs,
     window
   };
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
+  bindOptionState(options, ["data"]);
   return options;
 }
 
@@ -1933,8 +1904,7 @@ function exportReportsWorkflowOptions() {
     sexDisplayLabel,
     window
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
+  bindOptionState(options, ["alerts", "data"]);
   return options;
 }
 
@@ -1952,20 +1922,15 @@ function escapeHtml(...args) { return livePalmesExportReportsWorkflow.escapeHtml
 
 function uiEventsOptions() {
   const options = {
+    ...appDom,
     ADMIN_PIN,
     ROLE_LABELS,
     acquireRoleLock,
-    adminSeriesBtn,
-    adminSeriesModal,
-    alertDetailModal,
     alerts,
-    antoineOverlay,
     applyProgramRow,
-    archivesBtn,
     askRolePin,
     availableSeriesNumbers,
     cancelDecision,
-    categorySelect,
     cleanLegacyResultPdfs,
     clearPublishedResults,
     clearPublishedResultsForSession,
@@ -1979,8 +1944,6 @@ function uiEventsOptions() {
     closeResultImportModal,
     closeRoleCodesModal,
     competitionModeEnabled,
-    competitionModeTopBtn,
-    computerFooterPanel,
     createDecisionAlert,
     currentResultImportRow,
     currentRolePins,
@@ -1988,16 +1951,12 @@ function uiEventsOptions() {
     data,
     decisionDraft,
     decisionDraftIsReady,
-    decisionModal,
     defaultDecisionDetail,
     deleteResultPdf,
     dismissLiveAlert,
     downloadJson,
     ensureResultsAdminSession,
-    entrantsBody,
-    entrantsSubtitle,
     eventLabel,
-    eventSelect,
     expandedHistories,
     exportDsqPdf,
     finalProgramRowsForRace,
@@ -2006,23 +1965,14 @@ function uiEventsOptions() {
     finishRolePin,
     firestoreDb,
     firstSeriesSelectionForCurrentRace,
-    fullscreenBtn,
     goToNextProgramRace,
     goToPreviousProgramRace,
-    headerRefDetails,
-    headerRefs,
     historyArchivesCollection,
     historyFilters,
     importSeriesPdf,
     isFinalStage,
-    lineOrderBtn,
-    manualRefreshBtn,
     markFinalistWithdrawn,
     markSpeakerAlertDoneLocally,
-    nextSeriesBtn,
-    nextSeriesFloatBtn,
-    nextSeriesInlineBtn,
-    officialAlerts,
     openAdminSeriesModal,
     openAlertDetail,
     openDecisionModal,
@@ -2036,18 +1986,9 @@ function uiEventsOptions() {
     openResultImportModal,
     openSessionResultsImportModal,
     performResetHistoryWithArchive,
-    previousSeriesBtn,
-    previousSeriesFloatBtn,
-    previousSeriesInlineBtn,
-    profileHome,
-    profileHomeBtn,
-    programBtn,
-    programFloatBtn,
     programKey,
-    programModal,
     programRowFromRaceOption,
     programRows,
-    publicPositionToggle,
     publishFinalistsAfterSpeaker,
     publishPublicResultsIndex,
     publishReplacementAfterSpeaker,
@@ -2055,7 +1996,6 @@ function uiEventsOptions() {
     publishSessionResultsPdf,
     raceResults,
     recordKey,
-    refereeProgressBtn,
     refreshFirebaseOnce,
     refreshPresenceCounts,
     reinstateFinalist,
@@ -2081,24 +2021,15 @@ function uiEventsOptions() {
     restoreAlertLocally,
     resultArchivesCollection,
     resultForProgramRow,
-    resultImportModal,
     resultPhaseLabelForProgramRow,
     resultProgramRows,
     resultSessions,
     resultUploadKeyForProgram,
     resultUploadKeyForSessionResults,
-    resultsAdminPanel,
-    roleCodesModal,
-    roleHistory,
-    roleQueue,
     saveRoleCodesFromModal,
     saveUnlockedRoles,
-    searchInput,
-    secretaryFinalsPanel,
     selectRecordForCategory,
     selectedEntrant,
-    seriesControls,
-    sessionControls,
     setPublicPositionEnabled,
     setRefereeProgressHere,
     setResultUploadState,
@@ -2107,9 +2038,7 @@ function uiEventsOptions() {
     showPerformanceDiagnosticModal,
     showTechnicalDiagnosticModal,
     showToast,
-    speakerHistory,
     state,
-    swimmerDetails,
     switchRoleUnlocked,
     syncAlertChangesToFirestoreStrict,
     toggleCompetitionMode,
@@ -2121,18 +2050,7 @@ function uiEventsOptions() {
     updateLiveNotes,
     updateSpeakerInfoFromGoogleSheet,
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "decisionDraft", { get: () => decisionDraft, set: (value) => { decisionDraft = value; } });
-  Object.defineProperty(options, "expandedHistories", { get: () => expandedHistories, set: (value) => { expandedHistories = value; } });
-  Object.defineProperty(options, "firestoreDb", { get: () => firestoreDb, set: (value) => { firestoreDb = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
-  Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
-  Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
-  Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
-  Object.defineProperty(options, "secretaryFinalsSession", { get: () => secretaryFinalsSession, set: (value) => { secretaryFinalsSession = value; } });
-  Object.defineProperty(options, "isFullscreenMode", { get: () => isFullscreenMode, set: (value) => { isFullscreenMode = value; } });
+  bindOptionState(options, ["alerts", "data", "decisionDraft", "expandedHistories", "firestoreDb", "raceResults", "state", "unlockedRoles", "profileHomeActive", "resultsAdminSession", "secretaryFinalsSession", "isFullscreenMode"]);
   return options;
 }
 
@@ -2169,9 +2087,7 @@ function seriesImportWorkflowOptions() {
     seedSourceTimeKey,
     window
   };
-  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
+  bindOptionState(options, ["alerts", "data", "raceResults"]);
   return options;
 }
 
@@ -2236,11 +2152,7 @@ function appLifecycleOptions() {
     updateStickyAlertOffset,
     window
   };
-  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
-  Object.defineProperty(options, "firebaseStatus", { get: () => firebaseStatus, set: (value) => { firebaseStatus = value; } });
-  Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
-  Object.defineProperty(options, "roleStates", { get: () => roleStates, set: (value) => { roleStates = value; } });
-  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
+  bindOptionState(options, ["data", "firebaseStatus", "profileHomeActive", "roleStates", "state"]);
   return options;
 }
 
