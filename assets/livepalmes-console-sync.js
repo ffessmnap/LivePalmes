@@ -1,15 +1,87 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      LOCK_DURATION_MS,
+      LOCK_RECOVERY_MS,
+      PRESENCE_DURATION_MS,
+      PRESENCE_WRITE_THROTTLE_MS,
+      ROLE_LABELS,
+      activeCompetitionId,
+      alertsCollection,
+      appendImportHistory,
+      applyFreshData,
+      clearPublicSessionResultsPdfs,
+      currentClientId,
+      emptyPresenceCounts,
+      formatAlertTime,
+      liveDataDocument,
+      livePalmesAdminMaintenance,
+      livePalmesFirebase,
+      normalizeData,
+      pinLockEnabled,
+      presenceCollection,
+      presenceDocument,
+      protectedRole,
+      publishPublicResultsIndex,
+      render,
+      renderDataStatus,
+      renderPresenceCounts,
+      resultPdfsCollection,
+      roleConnectionLimit,
+      roleLockDocument,
+      saveAlerts,
+      saveData,
+      saveUnlockedRoles,
+      speakerAlertAlreadyResolvedByResult
+    } = context;
+    const alerts = new Proxy([], {
+      get: (_, prop) => context.alerts?.[prop],
+      set: (_, prop, value) => {
+        const nextAlerts = context.alerts || [];
+        nextAlerts[prop] = value;
+        context.alerts = nextAlerts;
+        return true;
+      }
+    });
+    const data = new Proxy({}, {
+      get: (_, prop) => context.data?.[prop],
+      set: (_, prop, value) => {
+        const nextData = context.data || {};
+        nextData[prop] = value;
+        context.data = nextData;
+        return true;
+      },
+      ownKeys: () => Reflect.ownKeys(context.data || {}),
+      getOwnPropertyDescriptor: (_, prop) => Object.getOwnPropertyDescriptor(context.data || {}, prop) || { enumerable: true, configurable: true }
+    });
+    const raceResults = new Proxy([], {
+      get: (_, prop) => context.raceResults?.[prop],
+      set: (_, prop, value) => {
+        const nextResults = context.raceResults || [];
+        nextResults[prop] = value;
+        context.raceResults = nextResults;
+        return true;
+      }
+    });
+    const state = new Proxy({}, {
+      get: (_, prop) => context.state?.[prop],
+      set: (_, prop, value) => {
+        const nextState = context.state || {};
+        nextState[prop] = value;
+        context.state = nextState;
+        return true;
+      }
+    });
+
       async function updateConsolePresence(force = false) {
         const doc = presenceDocument();
         if (!doc) return;
-        if (profileHomeActive) {
-          if (consolePresenceActive) await releaseConsolePresence();
+        if (context.profileHomeActive) {
+          if (context.consolePresenceActive) await releaseConsolePresence();
           return;
         }
         const timestamp = Date.now();
-        if (!force && timestamp - lastPresenceWriteAt < PRESENCE_WRITE_THROTTLE_MS) return;
+        if (!force && timestamp - context.lastPresenceWriteAt < PRESENCE_WRITE_THROTTLE_MS) return;
         const now = new Date();
         try {
           await doc.set({
@@ -20,8 +92,8 @@
             updatedAt: now.toISOString(),
             expiresAt: new Date(now.getTime() + PRESENCE_DURATION_MS).toISOString()
           });
-          lastPresenceWriteAt = timestamp;
-          consolePresenceActive = true;
+          context.lastPresenceWriteAt = timestamp;
+          context.consolePresenceActive = true;
         } catch (error) {
           console.warn("Présence console impossible", error);
         }
@@ -29,10 +101,10 @@
       
       async function releaseConsolePresence() {
         const doc = presenceDocument();
-        if (!doc || !consolePresenceActive) return;
+        if (!doc || !context.consolePresenceActive) return;
         try {
           await doc.delete();
-          consolePresenceActive = false;
+          context.consolePresenceActive = false;
         } catch (error) {
           console.warn("Suppression présence console impossible", error);
         }
@@ -52,7 +124,7 @@
               counts[item.role] += 1;
             }
           });
-          presenceCounts = counts;
+          context.presenceCounts = counts;
           renderPresenceCounts();
         } catch (error) {
           console.warn("Lecture présence impossible", error);
@@ -129,11 +201,11 @@
         if (!resultId) return 0;
         const linkedAlerts = alerts.filter((alert) => isFinalResultAlert(alert) && alert.resultId === resultId);
         if (!linkedAlerts.length) return 0;
-        alerts = alerts.filter((alert) => !(isFinalResultAlert(alert) && alert.resultId === resultId));
+        context.alerts = alerts.filter((alert) => !(isFinalResultAlert(alert) && alert.resultId === resultId));
         saveAlerts();
         const collection = alertsCollection();
-        if (collection && firestoreDb) {
-          const batch = firestoreDb.batch();
+        if (collection && context.firestoreDb) {
+          const batch = context.firestoreDb.batch();
           linkedAlerts.forEach((alert) => batch.delete(collection.doc(alert.id)));
           await batch.commit();
         }
@@ -142,7 +214,7 @@
       }
       
       async function cleanupOrphanFinalResultAlerts() {
-        if (!resultsSnapshotReady) return;
+        if (!context.resultsSnapshotReady) return;
         const resultIds = new Set(raceResults.map((result) => result.id).filter(Boolean));
         const orphanResultIds = [...new Set(alerts
           .filter((alert) => isFinalResultAlert(alert) && alert.resultId && !resultIds.has(alert.resultId))
@@ -153,7 +225,7 @@
       }
       
       async function cleanupResolvedSpeakerResultAlerts() {
-        if (!resultsSnapshotReady) return;
+        if (!context.resultsSnapshotReady) return;
         const now = new Date().toISOString();
         const resolved = alerts.filter((alert) =>
           alert.speakerStatus === "pending" &&
@@ -178,28 +250,28 @@
         const collection = alertsCollection();
         if (!collection) return;
         const snapshot = await collection.get();
-        const batch = firestoreDb.batch();
+        const batch = context.firestoreDb.batch();
         snapshot.forEach((doc) => batch.delete(doc.ref));
         await batch.commit();
       }
       
       async function deleteCollectionDocuments(collectionRef, { nestedItems = false } = {}) {
         if (typeof livePalmesAdminMaintenance.deleteCollectionDocuments === "function") {
-          return livePalmesAdminMaintenance.deleteCollectionDocuments(collectionRef, { firestoreDb, nestedItems });
+          return livePalmesAdminMaintenance.deleteCollectionDocuments(collectionRef, { firestoreDb: context.firestoreDb, nestedItems });
         }
-        if (!collectionRef || !firestoreDb) return 0;
+        if (!collectionRef || !context.firestoreDb) return 0;
         const snapshot = await collectionRef.get();
         let deleted = 0;
         for (const doc of snapshot.docs) {
           if (nestedItems) {
             const items = await doc.ref.collection("items").get();
             if (!items.empty) {
-              const itemBatch = firestoreDb.batch();
+              const itemBatch = context.firestoreDb.batch();
               items.docs.forEach((item) => itemBatch.delete(item.ref));
               await itemBatch.commit();
             }
           }
-          const batch = firestoreDb.batch();
+          const batch = context.firestoreDb.batch();
           batch.delete(doc.ref);
           await batch.commit();
           deleted += 1;
@@ -214,7 +286,7 @@
       async function publishLiveDataToCompetition(nextData, source = "Import PDF séries", competitionId = activeCompetitionId) {
         const doc = liveDataDocument(competitionId);
         if (!doc) {
-          firebaseStatus = "local";
+          context.firebaseStatus = "local";
           return;
         }
         const payload = normalizeData(nextData);
@@ -246,7 +318,7 @@
         if (competitionId === activeCompetitionId) {
           await publishPublicResultsIndex({ silent: true });
         }
-        firebaseStatus = "connected";
+        context.firebaseStatus = "connected";
       }
       
       async function updateLiveNotes(label, notePatch = {}) {
@@ -259,7 +331,7 @@
           },
           sourceVersion: `notes-${Date.now()}`
         });
-        data = nextData;
+        context.data = nextData;
         saveData();
         renderDataStatus();
         try {
@@ -281,18 +353,18 @@
         return livePalmesRoleAccess.lockLooksAbandoned(lock, LOCK_RECOVERY_MS);
       }
       
-      async function releaseRoleLock(role = activeRoleLock?.role) {
-        if (!role || !activeRoleLock || activeRoleLock.role !== role) return;
-        if (activeRoleLock.adminBypass) {
-          activeRoleLock = null;
+      async function releaseRoleLock(role = context.activeRoleLock?.role) {
+        if (!role || !context.activeRoleLock || context.activeRoleLock.role !== role) return;
+        if (context.activeRoleLock.adminBypass) {
+          context.activeRoleLock = null;
           return;
         }
         const doc = roleLockDocument(role);
         if (!doc) return;
         const clientId = currentClientId();
         try {
-          if (roleConnectionLimit(role) > 1 && firestoreDb) {
-            await firestoreDb.runTransaction(async (transaction) => {
+          if (roleConnectionLimit(role) > 1 && context.firestoreDb) {
+            await context.firestoreDb.runTransaction(async (transaction) => {
               const snapshot = await transaction.get(doc);
               if (!snapshot.exists) return;
               const lock = snapshot.data() || {};
@@ -319,7 +391,7 @@
         } catch (error) {
           console.warn("Libération du verrou impossible", error);
         } finally {
-          if (activeRoleLock?.role === role) activeRoleLock = null;
+          if (context.activeRoleLock?.role === role) context.activeRoleLock = null;
         }
       }
       
@@ -330,12 +402,12 @@
         }
         if (options.adminBypass) {
           await releaseRoleLock();
-          activeRoleLock = { role, adminBypass: true };
+          context.activeRoleLock = { role, adminBypass: true };
           return true;
         }
         const doc = roleLockDocument(role);
-        if (!doc || !firestoreDb) {
-          activeRoleLock = { role, adminBypass: false };
+        if (!doc || !context.firestoreDb) {
+          context.activeRoleLock = { role, adminBypass: false };
           return true;
         }
         const clientId = currentClientId();
@@ -351,7 +423,7 @@
         };
         try {
           let blockingLock = null;
-          const allowed = await firestoreDb.runTransaction(async (transaction) => {
+          const allowed = await context.firestoreDb.runTransaction(async (transaction) => {
             const snapshot = await transaction.get(doc);
             const lock = snapshot.exists ? snapshot.data() : null;
             if (roleConnectionLimit(role) > 1) {
@@ -390,10 +462,10 @@
               ].join("\n"));
               if (ok) {
                 await doc.set(payload, { merge: false });
-                if (activeRoleLock?.role && activeRoleLock.role !== role) {
-                  await releaseRoleLock(activeRoleLock.role);
+                if (context.activeRoleLock?.role && context.activeRoleLock.role !== role) {
+                  await releaseRoleLock(context.activeRoleLock.role);
                 }
-                activeRoleLock = { role, adminBypass: false };
+                context.activeRoleLock = { role, adminBypass: false };
                 return true;
               }
             }
@@ -402,38 +474,38 @@
               : `La console ${ROLE_LABELS[role] || role} est déjà utilisée sur un autre appareil.`);
             return false;
           }
-          if (activeRoleLock?.role && activeRoleLock.role !== role) {
-            await releaseRoleLock(activeRoleLock.role);
+          if (context.activeRoleLock?.role && context.activeRoleLock.role !== role) {
+            await releaseRoleLock(context.activeRoleLock.role);
           }
-          activeRoleLock = { role, adminBypass: false };
+          context.activeRoleLock = { role, adminBypass: false };
           return true;
         } catch (error) {
           console.warn("Réservation de console impossible", error);
           window.alert("Impossible de vérifier si cette console est déjà utilisée. L'accès est autorisé sur cet appareil.");
-          activeRoleLock = { role, adminBypass: false };
+          context.activeRoleLock = { role, adminBypass: false };
           return true;
         }
       }
       
       async function heartbeatRoleLock() {
-        if (!activeRoleLock || activeRoleLock.adminBypass || !protectedRole(activeRoleLock.role) || !pinLockEnabled()) return;
-        const doc = roleLockDocument(activeRoleLock.role);
+        if (!context.activeRoleLock || context.activeRoleLock.adminBypass || !protectedRole(context.activeRoleLock.role) || !pinLockEnabled()) return;
+        const doc = roleLockDocument(context.activeRoleLock.role);
         if (!doc) return;
         const clientId = currentClientId();
         const now = new Date();
         const expiresAt = new Date(now.getTime() + LOCK_DURATION_MS).toISOString();
         try {
-          if (roleConnectionLimit(activeRoleLock.role) > 1 && firestoreDb) {
-            await firestoreDb.runTransaction(async (transaction) => {
+          if (roleConnectionLimit(context.activeRoleLock.role) > 1 && context.firestoreDb) {
+            await context.firestoreDb.runTransaction(async (transaction) => {
               const snapshot = await transaction.get(doc);
               if (!snapshot.exists) {
-                activeRoleLock = null;
+                context.activeRoleLock = null;
                 return;
               }
               const lock = snapshot.data() || {};
               const clients = livePalmesRoleAccess.activeClients(lock.clients || {});
               if (!clients[clientId]) {
-                activeRoleLock = null;
+                context.activeRoleLock = null;
                 return;
               }
               clients[clientId] = {
@@ -442,8 +514,8 @@
                 expiresAt
               };
               transaction.set(doc, {
-                role: activeRoleLock.role,
-                roleLabel: ROLE_LABELS[activeRoleLock.role] || activeRoleLock.role,
+                role: context.activeRoleLock.role,
+                roleLabel: ROLE_LABELS[context.activeRoleLock.role] || context.activeRoleLock.role,
                 clients,
                 updatedAt: now.toISOString(),
                 expiresAt
@@ -452,7 +524,7 @@
           } else {
             const snapshot = await doc.get();
             if (!snapshot.exists || snapshot.data()?.clientId !== clientId) {
-              activeRoleLock = null;
+              context.activeRoleLock = null;
               return;
             }
             await doc.set({
@@ -493,13 +565,13 @@
       function applyRemoteLiveData(remoteData) {
         if (!remoteData) return;
         const wasLocked = pinLockEnabled();
-        applyingRemoteData = true;
+        context.applyingRemoteData = true;
         // Les mises à jour live arrivent souvent pendant la compétition : elles ne doivent
         // pas ramener le JA, la vidéo ou le live sur la première série.
         applyFreshData(mergeRemoteLiveData(remoteData), false);
-        applyingRemoteData = false;
+        context.applyingRemoteData = false;
         if (wasLocked && !pinLockEnabled()) {
-          unlockedRoles = [];
+          context.unlockedRoles = [];
           saveUnlockedRoles();
         }
       }
@@ -533,7 +605,6 @@
         mergeRemoteLiveData,
         applyRemoteLiveData
       };
-    }
   }
 
   window.LivePalmesConsoleSync = { init };

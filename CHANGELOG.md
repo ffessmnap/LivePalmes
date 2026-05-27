@@ -46,5 +46,6 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules alertes, programme et actions admin.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules evenements UI, decisions JA, historique, synchronisation temps reel et import series.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans le module publication/relecture des resultats.
+- Suppression des derniers acces implicites `with (context)` dans les modules diagnostics, panneau nageur, administration resultats, forfaits/finales et synchronisation console.
 - Stabilisation du smoke test navigateur : il attend maintenant l'ouverture effective des consoles avant de verifier les roles.
 - `app.js` reste autour de 2100 lignes.

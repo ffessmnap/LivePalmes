@@ -1,7 +1,43 @@
 (function () {
   const context = {};
   let api;
-  with (context) {
+  let activeCompetitionDocument;
+  let activeCompetitionId;
+  let alertRaceLabel;
+  let alerts;
+  let alertsCollection;
+  let alertStatusLabel;
+  let competitionModeEnabled;
+  let data;
+  let dataStatus;
+  let dataUrlApproxBytes;
+  let decisionMotifLabel;
+  let escapeHtml;
+  let firebaseHeaderStatus;
+  let firebaseStatus;
+  let firestoreDb;
+  let formatAlertDateTime;
+  let formatByteSize;
+  let fullAlertIdentityLabel;
+  let liveDataDocument;
+  let liveDismissedAlertIds;
+  let livePalmesAdminDiagnostics;
+  let migrateResultPdfsOutOfResults;
+  let performanceDiagnosticLines;
+  let pinLockEnabled;
+  let presenceCollection;
+  let publicResultsIndexDocument;
+  let raceResults;
+  let realtimeSyncEnabled;
+  let resultPdfsCollection;
+  let resultsCollection;
+  let roleCodesModal;
+  let seriesPdfsCollection;
+  let sessionResultsPdfsCollection;
+  let sessionRows;
+  let speakerAlertAlreadyResolvedByResult;
+  let state;
+
   function renderDataStatus(message = "") {
     if (!dataStatus) return;
     renderFirebaseHeaderStatus();
@@ -423,11 +459,46 @@
     cleanLegacyResultPdfs,
     showDataDiagnostic
   };
-  }
 
   function useContext(nextContext = {}) {
     Object.keys(context).forEach((key) => { delete context[key]; });
     Object.assign(context, nextContext || {});
+    activeCompetitionDocument = context.activeCompetitionDocument;
+    activeCompetitionId = context.activeCompetitionId;
+    alertRaceLabel = context.alertRaceLabel;
+    alerts = context.alerts;
+    alertsCollection = context.alertsCollection;
+    alertStatusLabel = context.alertStatusLabel;
+    competitionModeEnabled = context.competitionModeEnabled;
+    data = context.data;
+    dataStatus = context.dataStatus;
+    dataUrlApproxBytes = context.dataUrlApproxBytes;
+    decisionMotifLabel = context.decisionMotifLabel;
+    escapeHtml = context.escapeHtml;
+    firebaseHeaderStatus = context.firebaseHeaderStatus;
+    firebaseStatus = context.firebaseStatus;
+    firestoreDb = context.firestoreDb;
+    formatAlertDateTime = context.formatAlertDateTime;
+    formatByteSize = context.formatByteSize;
+    fullAlertIdentityLabel = context.fullAlertIdentityLabel;
+    liveDataDocument = context.liveDataDocument;
+    liveDismissedAlertIds = context.liveDismissedAlertIds;
+    livePalmesAdminDiagnostics = context.livePalmesAdminDiagnostics;
+    migrateResultPdfsOutOfResults = context.migrateResultPdfsOutOfResults;
+    performanceDiagnosticLines = context.performanceDiagnosticLines;
+    pinLockEnabled = context.pinLockEnabled;
+    presenceCollection = context.presenceCollection;
+    publicResultsIndexDocument = context.publicResultsIndexDocument;
+    raceResults = context.raceResults;
+    realtimeSyncEnabled = context.realtimeSyncEnabled;
+    resultPdfsCollection = context.resultPdfsCollection;
+    resultsCollection = context.resultsCollection;
+    roleCodesModal = context.roleCodesModal;
+    seriesPdfsCollection = context.seriesPdfsCollection;
+    sessionResultsPdfsCollection = context.sessionResultsPdfsCollection;
+    sessionRows = context.sessionRows;
+    speakerAlertAlreadyResolvedByResult = context.speakerAlertAlreadyResolvedByResult;
+    state = context.state;
   }
 
   window.LivePalmesDiagnosticsWorkflow = {

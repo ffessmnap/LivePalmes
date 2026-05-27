@@ -429,9 +429,15 @@ const livePalmesConsoleSync = livePalmesConsoleSyncModule.init(consoleSyncOption
 
 function consoleSyncOptions() {
   const options = {
+    LOCK_DURATION_MS,
+    LOCK_RECOVERY_MS,
+    PRESENCE_DURATION_MS,
+    PRESENCE_WRITE_THROTTLE_MS,
+    ROLE_LABELS,
     activeCompetitionId,
     alertsCollection,
     appendImportHistory,
+    applyFreshData,
     clearPublicSessionResultsPdfs,
     currentClientId,
     dataStatus,
@@ -452,6 +458,7 @@ function consoleSyncOptions() {
     publishPublicResultsIndex,
     render,
     renderDataStatus,
+    renderPresenceCounts,
     resultPdfsCollection,
     resultsSnapshotReady,
     roleConnectionLimit,
@@ -470,6 +477,7 @@ function consoleSyncOptions() {
   Object.defineProperty(options, "firebaseStatus", { get: () => firebaseStatus, set: (value) => { firebaseStatus = value; } });
   Object.defineProperty(options, "lastPresenceWriteAt", { get: () => lastPresenceWriteAt, set: (value) => { lastPresenceWriteAt = value; } });
   Object.defineProperty(options, "presenceCounts", { get: () => presenceCounts, set: (value) => { presenceCounts = value; } });
+  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
   Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
   return options;
 }
@@ -958,6 +966,7 @@ function resultsAdminWorkflowOptions() {
     livePalmesAdminDiagnostics,
     livePalmesAdminResults,
     livePalmesPublication,
+    normalizeData,
     programKey,
     programRows,
     publicResultsIndexDocument,
@@ -970,10 +979,12 @@ function resultsAdminWorkflowOptions() {
     resultPdfsCollection,
     resultUploadStates,
     resultsAdminPanel,
+    roleStates,
     safeCountCollection,
     safeDocumentData,
     sessionResultsPdfsCollection,
     seriesPdfsCollection,
+    sessionRows,
     sexDisplayLabel,
     showToast,
     state,
@@ -1696,6 +1707,7 @@ function resetSeriesForNextCompetition(...args) { return livePalmesResultMainten
 
 function swimmerPanelOptions() {
   return {
+    activeLineAlertsForEntrant,
     alertDetailLabel,
     availableSeriesNumbers,
     categoryClass,
@@ -1703,6 +1715,7 @@ function swimmerPanelOptions() {
     categorySelect,
     compactRaceTitle,
     currentEvent,
+    currentRefereeProgressIsHere,
     currentSeriesRows,
     data,
     displayedWord,
@@ -1716,17 +1729,23 @@ function swimmerPanelOptions() {
     escapeHtml,
     filteredCount,
     finalStageLabel,
+    formatDisplayName,
     formatGap,
     formatName,
+    formatPersonNameParts,
     formatRank,
+    formatSeriesDisplayName,
     getBirthYearLabel,
     headerRefDetails,
     headerRefs,
     isFemaleContext,
     isFinalStage,
     isLastSeriesOfCurrentSession,
+    isLastRaceOfCurrentSession,
     isSpeakerView,
     lineOrderBtn,
+    livePalmesHeaderView,
+    livePalmesResults,
     matchesRace,
     normalizePersonName,
     programBtn,
@@ -1739,12 +1758,17 @@ function swimmerPanelOptions() {
     rankHeader,
     recordEventMatches,
     recordMatchesRace,
+    refereeProgress,
     refereeProgressBtn,
     refereeProgressLabel,
+    renderLineAlertBadges,
+    renderLineTimeStatus,
     sameCategory,
     selectedProgramRow,
     selectedSeriesLabel,
     selectedSeriesTime,
+    sexDisplayLabel,
+    shortClubName,
     state,
     swimmerDetails,
     swimmerHeader,

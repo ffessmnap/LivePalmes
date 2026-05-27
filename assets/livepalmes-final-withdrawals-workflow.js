@@ -1,7 +1,34 @@
 (function () {
   const context = {};
   let api;
-  with (context) {
+  let alertDetailModal;
+  let alerts;
+  let canWithdrawBeforeReplacementAnnouncement;
+  let canWithdrawFinalist;
+  let escapeHtml;
+  let finalRowCountsAsFinalist;
+  let finalWithdrawalLimitDate;
+  let finalWithdrawalLimitLabel;
+  let formatDeadlineTime;
+  let hasFinalWithdrawalDeadline;
+  let isFinalWithdrawalDeadlineExpired;
+  let livePalmesAlertDetailView;
+  let livePalmesSecretaryFinals;
+  let markAlertAlreadyClosedError;
+  let markSpeakerAlertDoneLocally;
+  let normalizePersonName;
+  let publishPublicResultsIndex;
+  let raceResults;
+  let render;
+  let replacementAlertMatches;
+  let resultParserFunction;
+  let resultParserOptions;
+  let resultsCollection;
+  let saveAlerts;
+  let sexDisplayLabel;
+  let syncAlertChangesToFirestoreStrict;
+  let syncAlertToFirestore;
+
   function finalRowKey(row) {
     return resultParserFunction("finalRowKey")(row, resultParserOptions());
   }
@@ -779,11 +806,37 @@
     stampReplacementAnnouncement,
     publishReplacementAfterSpeaker
   };
-  }
 
   function useContext(nextContext = {}) {
     Object.keys(context).forEach((key) => { delete context[key]; });
     Object.assign(context, nextContext || {});
+    alertDetailModal = context.alertDetailModal;
+    alerts = context.alerts;
+    canWithdrawBeforeReplacementAnnouncement = context.canWithdrawBeforeReplacementAnnouncement;
+    canWithdrawFinalist = context.canWithdrawFinalist;
+    escapeHtml = context.escapeHtml;
+    finalRowCountsAsFinalist = context.finalRowCountsAsFinalist;
+    finalWithdrawalLimitDate = context.finalWithdrawalLimitDate;
+    finalWithdrawalLimitLabel = context.finalWithdrawalLimitLabel;
+    formatDeadlineTime = context.formatDeadlineTime;
+    hasFinalWithdrawalDeadline = context.hasFinalWithdrawalDeadline;
+    isFinalWithdrawalDeadlineExpired = context.isFinalWithdrawalDeadlineExpired;
+    livePalmesAlertDetailView = context.livePalmesAlertDetailView;
+    livePalmesSecretaryFinals = context.livePalmesSecretaryFinals;
+    markAlertAlreadyClosedError = context.markAlertAlreadyClosedError;
+    markSpeakerAlertDoneLocally = context.markSpeakerAlertDoneLocally;
+    normalizePersonName = context.normalizePersonName;
+    publishPublicResultsIndex = context.publishPublicResultsIndex;
+    raceResults = context.raceResults;
+    render = context.render;
+    replacementAlertMatches = context.replacementAlertMatches;
+    resultParserFunction = context.resultParserFunction;
+    resultParserOptions = context.resultParserOptions;
+    resultsCollection = context.resultsCollection;
+    saveAlerts = context.saveAlerts;
+    sexDisplayLabel = context.sexDisplayLabel;
+    syncAlertChangesToFirestoreStrict = context.syncAlertChangesToFirestoreStrict;
+    syncAlertToFirestore = context.syncAlertToFirestore;
   }
 
   window.LivePalmesFinalWithdrawalsWorkflow = {
