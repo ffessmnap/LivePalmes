@@ -80,13 +80,67 @@ function testStatusRows() {
   assert.equal(abd.statusLabel, "ABD");
 }
 
+function testIntermediateTimesKeepFinalTime() {
+  const row = parser.parseResultRow(
+    "1 FOURTON BELLINI Kalliste 07 SEN * PAN 01:10.12 03:31.66 07:20.81 14:05.23",
+    parserOptions
+  );
+  assert.equal(row.displayName, "FOURTON BELLINI Kalliste");
+  assert.equal(row.time, "14:05.23");
+}
+
+function testPartialUnrankedResultKeepsTime() {
+  const row = parser.parseUnrankedResultRow(
+    "TREMBLY Yaelle 11 MV 04:32.11 09:01.24 17:57.21",
+    parserOptions
+  );
+  assert.equal(row.rank, "");
+  assert.equal(row.displayName, "TREMBLY Yaelle");
+  assert.equal(row.time, "17:57.21");
+}
+
+function testFinalistsAreSplitBetweenAAndB() {
+  const lines = Array.from({ length: 18 }, (_, index) => {
+    const rank = index + 1;
+    const finalMarker = rank <= 16 ? " (en finale)" : "";
+    return `${rank} NAGEUR${rank} Test 0${rank % 10} SEN * CLUB 20.${String(rank).padStart(2, "0")}${finalMarker} 40.${String(rank).padStart(2, "0")}`;
+  });
+  const parsed = parser.parseFinalistsFromResultLines(lines, parserOptions);
+  assert.equal(parsed.finalists.a.length, 8);
+  assert.equal(parsed.finalists.b.length, 8);
+  assert.equal(parsed.finalists.a[0].rank, 1);
+  assert.equal(parsed.finalists.b[0].rank, 9);
+  assert.equal(parsed.nextUnqualified.length, 2);
+}
+
+function testFinalPerformanceStageAndStatus() {
+  const result = { stage: "finales", phaseLabel: "Finales", programKey: "100is-f-finales", eventLabel: "100 m immersion" };
+  const row = { eventId: "100is", sex: "F", session: "4", finalStageCount: 2 };
+  const performances = parser.resultPerformanceRows([
+    { rank: 1, lastName: "GUILLE", firstName: "Lola", birthYear: "2006", club: "UEP", time: "40.62" },
+    { rank: 9, lastName: "ANDRE", firstName: "Camille", birthYear: "2009", club: "CLUB", time: "41.20" },
+    { rank: 8, lastName: "HAMON", firstName: "Maiwenn", birthYear: "2008", club: "CLUB", resultStatus: "dsq", statusLabel: "DSQ" }
+  ], result, row, {
+    isFinalStage: (stage) => String(stage || "").includes("final"),
+    normalizePersonName: people.normalizePersonName
+  });
+
+  assert.equal(performances[0].stage, "finale-a");
+  assert.equal(performances[1].stage, "finale-b");
+  assert.equal(performances[2].statusLabel, "DSQ");
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
   testResultParserKeepsFinalTimeAfterFinalMarker,
   testResultParserIgnoresInNsPrefix,
   testResultParserKeepsTimeBeforeRecordMarker,
-  testStatusRows
+  testStatusRows,
+  testIntermediateTimesKeepFinalTime,
+  testPartialUnrankedResultKeepsTime,
+  testFinalistsAreSplitBetweenAAndB,
+  testFinalPerformanceStageAndStatus
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");

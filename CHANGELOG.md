@@ -10,3 +10,6 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Ajout de `TESTS_MANUELS.md` pour securiser les publications.
 - Ajout de tests automatiques simples sur la lecture des resultats.
 - Ajout de `tools/verify-livepalmes.js`, une commande unique de verification avant publication.
+- Renforcement des tests automatiques sur les finales, resultats partiels, statuts DSQ/ABD et temps intermediaires.
+- Extraction de la configuration de demarrage dans `assets/livepalmes-app-config.js`.
+- Extraction des actions d'export et d'impression dans `assets/livepalmes-export-actions.js`.
