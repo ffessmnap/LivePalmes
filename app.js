@@ -1,94 +1,74 @@
 const livePalmesAppSettings = window.LivePalmesAppSettings || {};
 const {
-  livePalmesAppConfig,
-  STORAGE_KEY,
-  ALERTS_KEY,
-  LIVE_DISMISSED_ALERTS_KEY,
-  UNLOCKED_ROLES_KEY,
-  CLIENT_ID_KEY,
-  ACTIVE_VIEW_KEY,
-  ROLE_STATES_KEY,
-  LAST_ACTIVITY_KEY,
-  FIRESTORE_COMPETITION_ID,
-  SPEAKER_SHEET_ID,
-  ADMIN_PIN,
-  ROLE_PINS,
-  ROLE_LABELS,
-  DECISION_LABELS,
-  SPEAKER_DECISION_REASONS,
-  LOCK_DURATION_MS,
-  LOCK_RECOVERY_MS,
-  LOCK_HEARTBEAT_MS,
-  FIREBASE_CONNECTION_CHECK_MS,
-  HOME_AFTER_INACTIVITY_MS,
-  COMPETITION_INACTIVITY_MS,
-  COMPETITION_INACTIVITY_CHECK_MS,
-  PRESENCE_DURATION_MS,
-  PRESENCE_HEARTBEAT_MS,
-  PRESENCE_WRITE_THROTTLE_MS,
-  SPEAKER_INFO_SHEETS,
-  FIREBASE_CONFIG,
+  livePalmesAppConfig, STORAGE_KEY, ALERTS_KEY, LIVE_DISMISSED_ALERTS_KEY,
+  UNLOCKED_ROLES_KEY, CLIENT_ID_KEY, ACTIVE_VIEW_KEY, ROLE_STATES_KEY,
+  LAST_ACTIVITY_KEY, FIRESTORE_COMPETITION_ID, SPEAKER_SHEET_ID, ADMIN_PIN,
+  ROLE_PINS, ROLE_LABELS, DECISION_LABELS, SPEAKER_DECISION_REASONS,
+  LOCK_DURATION_MS, LOCK_RECOVERY_MS, LOCK_HEARTBEAT_MS, FIREBASE_CONNECTION_CHECK_MS,
+  HOME_AFTER_INACTIVITY_MS, COMPETITION_INACTIVITY_MS, COMPETITION_INACTIVITY_CHECK_MS, PRESENCE_DURATION_MS,
+  PRESENCE_HEARTBEAT_MS, PRESENCE_WRITE_THROTTLE_MS, SPEAKER_INFO_SHEETS, FIREBASE_CONFIG,
   sampleData
 } = livePalmesAppSettings.resolve ? livePalmesAppSettings.resolve(window) : {};
 const livePalmesAppModules = window.LivePalmesAppModules || {};
 const {
-  livePalmesLocalState,
-  livePalmesAppStorageWorkflowModule,
-  livePalmesFirebase,
-  livePalmesFirestoreRefs,
-  livePalmesConsoleSyncModule,
-  livePalmesRealtimeSyncModule,
-  livePalmesRoleAccess,
-  livePalmesRoleState,
-  livePalmesRoleSessionWorkflowModule,
-  livePalmesRaceCore,
-  livePalmesAlerts,
-  livePalmesAlertPresenterModule,
-  livePalmesFinalists,
-  livePalmesSecretaryFinals,
-  livePalmesPublication,
-  livePalmesDiagnostics,
-  livePalmesAdminDiagnostics,
-  livePalmesAdminMaintenance,
-  livePalmesAdminActionsModule,
-  livePalmesAdminModals,
-  livePalmesAdminArchives,
-  livePalmesExportActions,
-  livePalmesExportReportsWorkflowModule,
-  livePalmesAdminResults,
-  livePalmesResults,
-  livePalmesPdfImport,
-  livePalmesSeriesImport,
-  livePalmesSeriesImportWorkflowModule,
-  livePalmesSpeakerInfo,
-  livePalmesSpeakerInfoWorkflowModule,
-  livePalmesProgramNavigation,
-  livePalmesProgramModalsModule,
-  livePalmesEntrantHelpersModule,
-  livePalmesSwimmerPanel,
-  livePalmesResultsAdminWorkflow,
-  livePalmesResultPublicationWorkflowModule,
-  livePalmesResultMaintenanceWorkflowModule,
-  livePalmesFinalWithdrawalsWorkflow,
-  livePalmesDiagnosticsWorkflow,
-  livePalmesUiEvents,
-  livePalmesProgramView,
-  livePalmesConsoleRenderWorkflowModule,
-  livePalmesRefereeView,
-  livePalmesRoleQueueView,
-  livePalmesHistoryView,
-  livePalmesHistoryActionsModule,
-  livePalmesHistoryPresenterModule,
-  livePalmesDecisionWorkflowModule,
-  livePalmesHeaderView,
-  livePalmesAlertDetailView,
-  livePalmesAlertCardView,
-  livePalmesLineStatusView,
-  livePalmesPublicProgressWorkflowModule,
-  livePalmesAppLifecycleModule,
-  livePalmesAppState,
-  livePalmesAppDom
+  livePalmesLocalState, livePalmesAppStorageWorkflowModule, livePalmesFirebase, livePalmesFirestoreRefs,
+  livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleState,
+  livePalmesRoleSessionWorkflowModule, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
+  livePalmesFinalists, livePalmesSecretaryFinals, livePalmesPublication, livePalmesDiagnostics,
+  livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
+  livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesAdminResults,
+  livePalmesResults, livePalmesPdfImport, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
+  livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesProgramNavigation, livePalmesSeriesControls,
+  livePalmesProgramModalsModule, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesResultsAdminWorkflow,
+  livePalmesResultPublicationWorkflowModule, livePalmesResultMaintenanceWorkflowModule, livePalmesFinalWithdrawalsWorkflow, livePalmesDiagnosticsWorkflow,
+  livePalmesUiEvents, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
+  livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
+  livePalmesDecisionWorkflowModule, livePalmesHeaderView, livePalmesAlertDetailView, livePalmesAlertCardView,
+  livePalmesLineStatusView, livePalmesPublicProgressWorkflowModule, livePalmesAppLifecycleModule, livePalmesAppState,
+  livePalmesAppMethodBindings, livePalmesAppDom
 } = livePalmesAppModules.collect ? livePalmesAppModules.collect(window) : {};
+
+
+const appMethodTargetFactories = {
+  livePalmesRoleSessionWorkflow: () => livePalmesRoleSessionWorkflow,
+  livePalmesAppStorageWorkflow: () => livePalmesAppStorageWorkflow,
+  livePalmesPublicProgressWorkflow: () => livePalmesPublicProgressWorkflow,
+  livePalmesConsoleSync: () => livePalmesConsoleSync,
+  livePalmesAdminActions: () => livePalmesAdminActions,
+  livePalmesRealtimeSync: () => livePalmesRealtimeSync,
+  livePalmesHistoryActions: () => livePalmesHistoryActions,
+  livePalmesResults: () => livePalmesResults,
+  livePalmesDiagnostics: () => livePalmesDiagnostics,
+  livePalmesEntrantHelpers: () => livePalmesEntrantHelpers,
+  livePalmesProgramNavigation: () => livePalmesProgramNavigation,
+  livePalmesConsoleRenderWorkflow: () => livePalmesConsoleRenderWorkflow,
+  livePalmesAlertPresenter: () => livePalmesAlertPresenter,
+  livePalmesResultsAdminWorkflow: () => livePalmesResultsAdminWorkflow,
+  livePalmesHistoryPresenter: () => livePalmesHistoryPresenter,
+  livePalmesDecisionWorkflow: () => livePalmesDecisionWorkflow,
+  livePalmesDiagnosticsWorkflow: () => livePalmesDiagnosticsWorkflow,
+  livePalmesProgramModals: () => livePalmesProgramModals,
+  livePalmesResultPublicationWorkflow: () => livePalmesResultPublicationWorkflow,
+  livePalmesFinalWithdrawalsWorkflow: () => livePalmesFinalWithdrawalsWorkflow,
+  livePalmesResultMaintenanceWorkflow: () => livePalmesResultMaintenanceWorkflow,
+  livePalmesSwimmerPanel: () => livePalmesSwimmerPanel,
+  livePalmesSpeakerInfoWorkflow: () => livePalmesSpeakerInfoWorkflow,
+  livePalmesExportReportsWorkflow: () => livePalmesExportReportsWorkflow,
+  livePalmesSeriesImportWorkflow: () => livePalmesSeriesImportWorkflow,
+  livePalmesAppLifecycle: () => livePalmesAppLifecycle
+};
+const appMethodOptionFactories = {
+  programNavigationOptions,
+  resultsAdminWorkflowOptions,
+  diagnosticsWorkflowOptions,
+  finalWithdrawalsWorkflowOptions,
+  swimmerPanelOptions
+};
+livePalmesAppMethodBindings.bind({
+  targetFactories: appMethodTargetFactories,
+  optionFactories: appMethodOptionFactories,
+  window
+});
 
 const livePalmesAppStorageWorkflow = livePalmesAppStorageWorkflowModule.init(appStorageWorkflowOptions());
 let data = loadData();
@@ -123,35 +103,6 @@ function roleSessionWorkflowOptions() {
   return options;
 }
 
-function createRoleState(...args) { return livePalmesRoleSessionWorkflow.createRoleState(...args); }
-function cloneRoleState(...args) { return livePalmesRoleSessionWorkflow.cloneRoleState(...args); }
-function defaultRoleStates(...args) { return livePalmesRoleSessionWorkflow.defaultRoleStates(...args); }
-function normalizeRoleState(...args) { return livePalmesRoleSessionWorkflow.normalizeRoleState(...args); }
-function loadRoleStates(...args) { return livePalmesRoleSessionWorkflow.loadRoleStates(...args); }
-function saveRoleStates(...args) { return livePalmesRoleSessionWorkflow.saveRoleStates(...args); }
-function loadUnlockedRoles(...args) { return livePalmesRoleSessionWorkflow.loadUnlockedRoles(...args); }
-function saveUnlockedRoles(...args) { return livePalmesRoleSessionWorkflow.saveUnlockedRoles(...args); }
-function pinLockEnabled(...args) { return livePalmesRoleSessionWorkflow.pinLockEnabled(...args); }
-function competitionModeEnabled(...args) { return livePalmesRoleSessionWorkflow.competitionModeEnabled(...args); }
-function realtimeSyncEnabled(...args) { return livePalmesRoleSessionWorkflow.realtimeSyncEnabled(...args); }
-function publicPositionEnabled(...args) { return livePalmesRoleSessionWorkflow.publicPositionEnabled(...args); }
-function currentRolePins(...args) { return livePalmesRoleSessionWorkflow.currentRolePins(...args); }
-function knownRole(...args) { return livePalmesRoleSessionWorkflow.knownRole(...args); }
-function lastActivityTimestamp(...args) { return livePalmesRoleSessionWorkflow.lastActivityTimestamp(...args); }
-function saveLastActivityTimestamp(...args) { return livePalmesRoleSessionWorkflow.saveLastActivityTimestamp(...args); }
-function shouldReturnHomeForInactivity(...args) { return livePalmesRoleSessionWorkflow.shouldReturnHomeForInactivity(...args); }
-function loadActiveView(...args) { return livePalmesRoleSessionWorkflow.loadActiveView(...args); }
-function saveActiveView(...args) { return livePalmesRoleSessionWorkflow.saveActiveView(...args); }
-function unlockRole(...args) { return livePalmesRoleSessionWorkflow.unlockRole(...args); }
-function roleIsUnlocked(...args) { return livePalmesRoleSessionWorkflow.roleIsUnlocked(...args); }
-function requestRoleAccess(...args) { return livePalmesRoleSessionWorkflow.requestRoleAccess(...args); }
-function saveCurrentRoleState(...args) { return livePalmesRoleSessionWorkflow.saveCurrentRoleState(...args); }
-function currentClientId(...args) { return livePalmesRoleSessionWorkflow.currentClientId(...args); }
-function protectedRole(...args) { return livePalmesRoleSessionWorkflow.protectedRole(...args); }
-function roleConnectionLimit(...args) { return livePalmesRoleSessionWorkflow.roleConnectionLimit(...args); }
-function switchRoleUnlocked(...args) { return livePalmesRoleSessionWorkflow.switchRoleUnlocked(...args); }
-function switchRole(...args) { return livePalmesRoleSessionWorkflow.switchRole(...args); }
-function initializeRoleSession(...args) { return livePalmesRoleSessionWorkflow.initializeRoleSession(...args); }
 
 let state;
 let roleStates;
@@ -210,81 +161,25 @@ const activeCompetitionId = FIRESTORE_COMPETITION_ID;
 
 const appDom = livePalmesAppDom.collect ? livePalmesAppDom.collect(document) : {};
 const {
-  eventSelect,
-  searchInput,
-  categorySelect,
-  sessionControls,
-  publicPositionToggle,
-  seriesControls,
-  roleSwitch,
-  topActions,
-  profileHome,
-  profileModeStatus,
-  profileHomeBtn,
-  manualRefreshBtn,
-  topbar,
-  appShell,
-  sidebar,
-  racePanel,
-  competitionModeTopBtn,
-  previousSeriesBtn,
-  nextSeriesBtn,
-  previousSeriesInlineBtn,
-  nextSeriesInlineBtn,
-  previousSeriesFloatBtn,
-  nextSeriesFloatBtn,
-  programBtn,
-  programFloatBtn,
-  categoryField,
-  lineOrderBtn,
-  entrantsBody,
-  entrantCount,
-  entrantCountLabel,
-  filteredCount,
-  bestEntry,
-  bestEntryName,
-  entrantsTitle,
-  entrantsSubtitle,
-  rankHeader,
-  swimmerHeader,
-  searchLabel,
-  entrantsTableWrap,
-  raceTitle,
-  raceMeta,
-  raceSexBadge,
-  headerRefs,
-  headerRefDetails,
-  top2025Box,
-  dataStatus,
-  firebaseHeaderStatus,
-  appConsoleTitle,
-  officialAlerts,
-  decisionPanel,
-  decisionModal,
-  alertDetailModal,
-  programModal,
-  adminSeriesModal,
-  resultImportModal,
-  roleCodesModal,
-  roleQueue,
-  resultsAdminPanel,
-  secretaryFinalsPanel,
-  roleHistory,
-  computerFooterPanel,
-  speakerHistory,
-  roleBadge,
-  refereeProgressBtn,
-  fullscreenBtn,
-  viewModeBtn,
-  roleLockBtn,
-  adminSeriesBtn,
-  archivesBtn,
-  dataDiagnosticBtn,
-  jsonInput,
-  csvInput,
-  swimmerDetails,
-  meetTitle,
-  antoineOverlay
+  eventSelect, searchInput, categorySelect, sessionControls,
+  publicPositionToggle, seriesControls, roleSwitch, topActions,
+  profileHome, profileModeStatus, profileHomeBtn, manualRefreshBtn,
+  topbar, appShell, sidebar, racePanel,
+  competitionModeTopBtn, previousSeriesBtn, nextSeriesBtn, previousSeriesInlineBtn,
+  nextSeriesInlineBtn, previousSeriesFloatBtn, nextSeriesFloatBtn, programBtn,
+  programFloatBtn, categoryField, lineOrderBtn, entrantsBody,
+  entrantCount, entrantCountLabel, filteredCount, bestEntry,
+  bestEntryName, entrantsTitle, entrantsSubtitle, rankHeader,
+  swimmerHeader, searchLabel, entrantsTableWrap, raceTitle,
+  raceMeta, raceSexBadge, headerRefs, headerRefDetails,
+  top2025Box, dataStatus, firebaseHeaderStatus, appConsoleTitle,
+  officialAlerts, decisionPanel, decisionModal, alertDetailModal,
+  programModal, adminSeriesModal, resultImportModal, roleCodesModal,
+  roleQueue, resultsAdminPanel, secretaryFinalsPanel, roleHistory,
+  computerFooterPanel, speakerHistory, roleBadge, refereeProgressBtn,
+  fullscreenBtn, viewModeBtn, roleLockBtn, adminSeriesBtn,
+  archivesBtn, dataDiagnosticBtn, jsonInput, csvInput,
+  swimmerDetails, meetTitle, antoineOverlay
 } = appDom;
 
 const appStateAccessors = {
@@ -349,9 +244,6 @@ function appStorageWorkflowOptions() {
   return options;
 }
 
-function loadData(...args) { return livePalmesAppStorageWorkflow.loadData(...args); }
-function loadAlerts(...args) { return livePalmesAppStorageWorkflow.loadAlerts(...args); }
-function saveAlerts(...args) { return livePalmesAppStorageWorkflow.saveAlerts(...args); }
 
 function activeCompetitionDocument() {
   return competitionDocument();
@@ -433,26 +325,6 @@ function publicProgressWorkflowOptions() {
   return options;
 }
 
-function emptyPresenceCounts(...args) { return livePalmesPublicProgressWorkflow.emptyPresenceCounts(...args); }
-function presenceLabel(...args) { return livePalmesPublicProgressWorkflow.presenceLabel(...args); }
-function renderPresenceCounts(...args) { return livePalmesPublicProgressWorkflow.renderPresenceCounts(...args); }
-function refereeProgress(...args) { return livePalmesPublicProgressWorkflow.refereeProgress(...args); }
-function progressProgramRow(...args) { return livePalmesPublicProgressWorkflow.progressProgramRow(...args); }
-function refereeProgressLabel(...args) { return livePalmesPublicProgressWorkflow.refereeProgressLabel(...args); }
-function refereeProgressShortLabel(...args) { return livePalmesPublicProgressWorkflow.refereeProgressShortLabel(...args); }
-function currentRefereeProgressPayload(...args) { return livePalmesPublicProgressWorkflow.currentRefereeProgressPayload(...args); }
-function sameRefereeProgress(...args) { return livePalmesPublicProgressWorkflow.sameRefereeProgress(...args); }
-function currentRefereeProgressIsHere(...args) { return livePalmesPublicProgressWorkflow.currentRefereeProgressIsHere(...args); }
-function currentPublicProgressPayload(...args) { return livePalmesPublicProgressWorkflow.currentPublicProgressPayload(...args); }
-function programRowForRoleState(...args) { return livePalmesPublicProgressWorkflow.programRowForRoleState(...args); }
-function publicProgressPayloadFromState(...args) { return livePalmesPublicProgressWorkflow.publicProgressPayloadFromState(...args); }
-function publicProgressSignature(...args) { return livePalmesPublicProgressWorkflow.publicProgressSignature(...args); }
-function publishPublicProgressIfNeeded(...args) { return livePalmesPublicProgressWorkflow.publishPublicProgressIfNeeded(...args); }
-function setPublicPositionEnabled(...args) { return livePalmesPublicProgressWorkflow.setPublicPositionEnabled(...args); }
-function homeActionCounts(...args) { return livePalmesPublicProgressWorkflow.homeActionCounts(...args); }
-function actionCountLabel(...args) { return livePalmesPublicProgressWorkflow.actionCountLabel(...args); }
-function renderHomeActionCounts(...args) { return livePalmesPublicProgressWorkflow.renderHomeActionCounts(...args); }
-function updateStickyAlertOffset(...args) { return livePalmesPublicProgressWorkflow.updateStickyAlertOffset(...args); }
 
 const livePalmesConsoleSync = livePalmesConsoleSyncModule.init(consoleSyncOptions());
 
@@ -502,33 +374,6 @@ function consoleSyncOptions() {
   return options;
 }
 
-function updateConsolePresence(...args) { return livePalmesConsoleSync.updateConsolePresence(...args); }
-function releaseConsolePresence(...args) { return livePalmesConsoleSync.releaseConsolePresence(...args); }
-function refreshPresenceCounts(...args) { return livePalmesConsoleSync.refreshPresenceCounts(...args); }
-function sanitizeAlertForFirestore(...args) { return livePalmesConsoleSync.sanitizeAlertForFirestore(...args); }
-function syncAlertToFirestore(...args) { return livePalmesConsoleSync.syncAlertToFirestore(...args); }
-function syncAlertToFirestoreStrict(...args) { return livePalmesConsoleSync.syncAlertToFirestoreStrict(...args); }
-function syncAlertChangesToFirestore(...args) { return livePalmesConsoleSync.syncAlertChangesToFirestore(...args); }
-function syncAlertChangesToFirestoreStrict(...args) { return livePalmesConsoleSync.syncAlertChangesToFirestoreStrict(...args); }
-function markAlertAlreadyClosedError(...args) { return livePalmesConsoleSync.markAlertAlreadyClosedError(...args); }
-function showToast(...args) { return livePalmesConsoleSync.showToast(...args); }
-function isFinalResultAlert(...args) { return livePalmesConsoleSync.isFinalResultAlert(...args); }
-function deleteFinalResultAlerts(...args) { return livePalmesConsoleSync.deleteFinalResultAlerts(...args); }
-function cleanupOrphanFinalResultAlerts(...args) { return livePalmesConsoleSync.cleanupOrphanFinalResultAlerts(...args); }
-function cleanupResolvedSpeakerResultAlerts(...args) { return livePalmesConsoleSync.cleanupResolvedSpeakerResultAlerts(...args); }
-function clearFirestoreAlerts(...args) { return livePalmesConsoleSync.clearFirestoreAlerts(...args); }
-function deleteCollectionDocuments(...args) { return livePalmesConsoleSync.deleteCollectionDocuments(...args); }
-function publishLiveDataToFirestore(...args) { return livePalmesConsoleSync.publishLiveDataToFirestore(...args); }
-function publishLiveDataToCompetition(...args) { return livePalmesConsoleSync.publishLiveDataToCompetition(...args); }
-function updateLiveNotes(...args) { return livePalmesConsoleSync.updateLiveNotes(...args); }
-function lockExpired(...args) { return livePalmesConsoleSync.lockExpired(...args); }
-function lockLastActivityTime(...args) { return livePalmesConsoleSync.lockLastActivityTime(...args); }
-function lockLooksAbandoned(...args) { return livePalmesConsoleSync.lockLooksAbandoned(...args); }
-function releaseRoleLock(...args) { return livePalmesConsoleSync.releaseRoleLock(...args); }
-function acquireRoleLock(...args) { return livePalmesConsoleSync.acquireRoleLock(...args); }
-function heartbeatRoleLock(...args) { return livePalmesConsoleSync.heartbeatRoleLock(...args); }
-function mergeRemoteLiveData(...args) { return livePalmesConsoleSync.mergeRemoteLiveData(...args); }
-function applyRemoteLiveData(...args) { return livePalmesConsoleSync.applyRemoteLiveData(...args); }
 
 const livePalmesAdminActions = livePalmesAdminActionsModule.init(adminActionsOptions());
 
@@ -561,21 +406,6 @@ function adminActionsOptions() {
   return options;
 }
 
-function renderRoleCodesModal(...args) { return livePalmesAdminActions.renderRoleCodesModal(...args); }
-function renderRoleCodesAdminModal(...args) { return livePalmesAdminActions.renderRoleCodesAdminModal(...args); }
-function renderResetHistoryModal(...args) { return livePalmesAdminActions.renderResetHistoryModal(...args); }
-function renderResetResultsModal(...args) { return livePalmesAdminActions.renderResetResultsModal(...args); }
-function renderPublicSessionInfosModal(...args) { return livePalmesAdminActions.renderPublicSessionInfosModal(...args); }
-function renderHistoryArchivesModal(...args) { return livePalmesAdminActions.renderHistoryArchivesModal(...args); }
-function renderRolePinModal(...args) { return livePalmesAdminActions.renderRolePinModal(...args); }
-function askRolePin(...args) { return livePalmesAdminActions.askRolePin(...args); }
-function finishRolePin(...args) { return livePalmesAdminActions.finishRolePin(...args); }
-function closeRoleCodesModal(...args) { return livePalmesAdminActions.closeRoleCodesModal(...args); }
-function readRolePinsFromModal(...args) { return livePalmesAdminActions.readRolePinsFromModal(...args); }
-function saveRoleCodesFromModal(...args) { return livePalmesAdminActions.saveRoleCodesFromModal(...args); }
-function togglePublicResultsOnline(...args) { return livePalmesAdminActions.togglePublicResultsOnline(...args); }
-function toggleRoleLock(...args) { return livePalmesAdminActions.toggleRoleLock(...args); }
-function toggleCompetitionMode(...args) { return livePalmesAdminActions.toggleCompetitionMode(...args); }
 
 const livePalmesRealtimeSync = livePalmesRealtimeSyncModule.init(livePalmesRealtimeSyncOptions());
 
@@ -617,16 +447,6 @@ function livePalmesRealtimeSyncOptions() {
   return options;
 }
 
-function endCompetitionSession(...args) { return livePalmesRealtimeSync.endCompetitionSession(...args); }
-function markConsoleActivity(...args) { return livePalmesRealtimeSync.markConsoleActivity(...args); }
-function returnHomeAfterLocalInactivity(...args) { return livePalmesRealtimeSync.returnHomeAfterLocalInactivity(...args); }
-function disableCompetitionModeAfterInactivity(...args) { return livePalmesRealtimeSync.disableCompetitionModeAfterInactivity(...args); }
-function stopFirebaseRealtimeSync(...args) { return livePalmesRealtimeSync.stopFirebaseRealtimeSync(...args); }
-function applyResultsSnapshot(...args) { return livePalmesRealtimeSync.applyResultsSnapshot(...args); }
-function startCompetitionSync(...args) { return livePalmesRealtimeSync.startCompetitionSync(...args); }
-function refreshFirebaseOnce(...args) { return livePalmesRealtimeSync.refreshFirebaseOnce(...args); }
-function initFirebaseSync(...args) { return livePalmesRealtimeSync.initFirebaseSync(...args); }
-function checkFirebaseConnection(...args) { return livePalmesRealtimeSync.checkFirebaseConnection(...args); }
 
 const livePalmesHistoryActions = livePalmesHistoryActionsModule.init(historyActionsOptions());
 
@@ -653,22 +473,7 @@ function historyActionsOptions() {
   return options;
 }
 
-function loadLiveDismissedAlerts(...args) { return livePalmesHistoryActions.loadLiveDismissedAlerts(...args); }
-function saveLiveDismissedAlerts(...args) { return livePalmesHistoryActions.saveLiveDismissedAlerts(...args); }
-function archiveCurrentHistory(...args) { return livePalmesHistoryActions.archiveCurrentHistory(...args); }
-function archiveCurrentResults(...args) { return livePalmesHistoryActions.archiveCurrentResults(...args); }
-function resetHistory(...args) { return livePalmesHistoryActions.resetHistory(...args); }
-function performResetHistoryWithArchive(...args) { return livePalmesHistoryActions.performResetHistoryWithArchive(...args); }
-function clearHistoryAndAlertsForFullImport(...args) { return livePalmesHistoryActions.clearHistoryAndAlertsForFullImport(...args); }
-function dismissLiveAlert(...args) { return livePalmesHistoryActions.dismissLiveAlert(...args); }
 
-function normalizeData(...args) { return livePalmesAppStorageWorkflow.normalizeData(...args); }
-function saveData(...args) { return livePalmesAppStorageWorkflow.saveData(...args); }
-function resultWithoutPdf(...args) { return livePalmesResults.resultWithoutPdf(...args); }
-function resultMetadataPayload(...args) { return livePalmesResults.resultMetadataPayload(...args); }
-function dataUrlApproxBytes(...args) { return livePalmesDiagnostics.dataUrlApproxBytes(...args); }
-function formatByteSize(...args) { return livePalmesDiagnostics.formatByteSize(...args); }
-function performanceDiagnosticLines(...args) { return livePalmesDiagnostics.performanceDiagnosticLines(...args); }
 
 const livePalmesTime = window.LivePalmesTime;
 const livePalmesPeople = window.LivePalmesPeople;
@@ -700,13 +505,6 @@ function entrantHelperOptions() {
   return options;
 }
 
-function formatName(...args) { return livePalmesEntrantHelpers.formatName(...args); }
-function formatDisplayName(...args) { return livePalmesEntrantHelpers.formatDisplayName(...args); }
-function formatSeriesDisplayName(...args) { return livePalmesEntrantHelpers.formatSeriesDisplayName(...args); }
-function clearSearch(...args) { return livePalmesEntrantHelpers.clearSearch(...args); }
-function isSpeakerView(...args) { return livePalmesEntrantHelpers.isSpeakerView(...args); }
-function shortClubName(...args) { return livePalmesEntrantHelpers.shortClubName(...args); }
-function entrantPersonKey(...args) { return livePalmesEntrantHelpers.entrantPersonKey(...args); }
 
 function programNavigationOptions() {
   return {
@@ -724,65 +522,6 @@ function programNavigationOptions() {
     timeToMs
   };
 }
-function currentEvent(...args) { return livePalmesProgramNavigation.currentEvent(...args, programNavigationOptions()); }
-function matchesRace(...args) { return livePalmesProgramNavigation.matchesRace(...args, programNavigationOptions()); }
-function comparableEventId(...args) { return livePalmesProgramNavigation.comparableEventId(...args, programNavigationOptions()); }
-function eventSignature(...args) { return livePalmesProgramNavigation.eventSignature(...args, programNavigationOptions()); }
-function recordEventMatches(...args) { return livePalmesProgramNavigation.recordEventMatches(...args, programNavigationOptions()); }
-function recordMatchesRace(...args) { return livePalmesProgramNavigation.recordMatchesRace(...args, programNavigationOptions()); }
-function isFinalStage(...args) { return livePalmesProgramNavigation.isFinalStage(...args, programNavigationOptions()); }
-function finalStageLabel(...args) { return livePalmesProgramNavigation.finalStageLabel(...args, programNavigationOptions()); }
-function isFemaleContext(...args) { return livePalmesProgramNavigation.isFemaleContext(...args, programNavigationOptions()); }
-function sexDisplayLabel(...args) { return livePalmesProgramNavigation.sexDisplayLabel(...args, programNavigationOptions()); }
-function categoryLabel(...args) { return livePalmesProgramNavigation.categoryLabel(...args, programNavigationOptions()); }
-function entrantWord(...args) { return livePalmesProgramNavigation.entrantWord(...args, programNavigationOptions()); }
-function swimmerWord(...args) { return livePalmesProgramNavigation.swimmerWord(...args, programNavigationOptions()); }
-function displayedWord(...args) { return livePalmesProgramNavigation.displayedWord(...args, programNavigationOptions()); }
-function availableSexesForEvent(...args) { return livePalmesProgramNavigation.availableSexesForEvent(...args, programNavigationOptions()); }
-function raceEntrants(...args) { return livePalmesProgramNavigation.raceEntrants(...args, programNavigationOptions()); }
-function raceEntrantsForStats(...args) { return livePalmesProgramNavigation.raceEntrantsForStats(...args, programNavigationOptions()); }
-function updateEventSelect(...args) { return livePalmesProgramNavigation.updateEventSelect(...args, programNavigationOptions()); }
-function raceOptionKey(...args) { return livePalmesProgramNavigation.raceOptionKey(...args, programNavigationOptions()); }
-function raceProgramRowsForOption(...args) { return livePalmesProgramNavigation.raceProgramRowsForOption(...args, programNavigationOptions()); }
-function seriesNumbersForRaceOption(...args) { return livePalmesProgramNavigation.seriesNumbersForRaceOption(...args, programNavigationOptions()); }
-function finalRowsForRaceOption(...args) { return livePalmesProgramNavigation.finalRowsForRaceOption(...args, programNavigationOptions()); }
-function raceOptionPhaseLabel(...args) { return livePalmesProgramNavigation.raceOptionPhaseLabel(...args, programNavigationOptions()); }
-function programRowFromRaceOption(...args) { return livePalmesProgramNavigation.programRowFromRaceOption(...args, programNavigationOptions()); }
-function programKey(...args) { return livePalmesProgramNavigation.programKey(...args, programNavigationOptions()); }
-function programLabel(...args) { return livePalmesProgramNavigation.programLabel(...args, programNavigationOptions()); }
-function selectedProgramRow(...args) { return livePalmesProgramNavigation.selectedProgramRow(...args, programNavigationOptions()); }
-function applyProgramRow(...args) { return livePalmesProgramNavigation.applyProgramRow(...args, programNavigationOptions()); }
-function sessionRows(...args) { return livePalmesProgramNavigation.sessionRows(...args, programNavigationOptions()); }
-function firstSessionNumber(...args) { return livePalmesProgramNavigation.firstSessionNumber(...args, programNavigationOptions()); }
-function preferredInitialSession(...args) { return livePalmesProgramNavigation.preferredInitialSession(...args, programNavigationOptions()); }
-function firstProgramRowForSession(...args) { return livePalmesProgramNavigation.firstProgramRowForSession(...args, programNavigationOptions()); }
-function firstSeriesForRace(...args) { return livePalmesProgramNavigation.firstSeriesForRace(...args, programNavigationOptions()); }
-function initialProgramPosition(...args) { return livePalmesProgramNavigation.initialProgramPosition(...args, programNavigationOptions()); }
-function normalizeLivePosition(...args) { return livePalmesProgramNavigation.normalizeLivePosition(...args, programNavigationOptions()); }
-function programRowsForSession(...args) { return livePalmesProgramNavigation.programRowsForSession(...args, programNavigationOptions()); }
-function programRows(...args) { return livePalmesProgramNavigation.programRows(...args, programNavigationOptions()); }
-function currentProgramIndex(...args) { return livePalmesProgramNavigation.currentProgramIndex(...args, programNavigationOptions()); }
-function isLastRaceOfCurrentSession(...args) { return livePalmesProgramNavigation.isLastRaceOfCurrentSession(...args, programNavigationOptions()); }
-function isLastSeriesOfCurrentSession(...args) { return livePalmesProgramNavigation.isLastSeriesOfCurrentSession(...args, programNavigationOptions()); }
-function isSplitRaceAcrossSessions(...args) { return livePalmesProgramNavigation.isSplitRaceAcrossSessions(...args, programNavigationOptions()); }
-function shouldShowSplitRaceNote(...args) { return livePalmesProgramNavigation.shouldShowSplitRaceNote(...args, programNavigationOptions()); }
-function splitRaceNote(...args) { return livePalmesProgramNavigation.splitRaceNote(...args, programNavigationOptions()); }
-function raceSeries(...args) { return livePalmesProgramNavigation.raceSeries(...args, programNavigationOptions()); }
-function raceSeriesFor(...args) { return livePalmesProgramNavigation.raceSeriesFor(...args, programNavigationOptions()); }
-function availableSeriesNumbers(...args) { return livePalmesProgramNavigation.availableSeriesNumbers(...args, programNavigationOptions()); }
-function selectedSeriesTime(...args) { return livePalmesProgramNavigation.selectedSeriesTime(...args, programNavigationOptions()); }
-function selectedSeriesLabel(...args) { return livePalmesProgramNavigation.selectedSeriesLabel(...args, programNavigationOptions()); }
-function compactRaceTitle(...args) { return livePalmesProgramNavigation.compactRaceTitle(...args, programNavigationOptions()); }
-function hasNextProgramSeries(...args) { return livePalmesProgramNavigation.hasNextProgramSeries(...args, programNavigationOptions()); }
-function hasPreviousProgramSeries(...args) { return livePalmesProgramNavigation.hasPreviousProgramSeries(...args, programNavigationOptions()); }
-function goToNextProgramRace(...args) { return livePalmesProgramNavigation.goToNextProgramRace(...args, programNavigationOptions()); }
-function goToPreviousProgramRace(...args) { return livePalmesProgramNavigation.goToPreviousProgramRace(...args, programNavigationOptions()); }
-function currentSeriesRows(...args) { return livePalmesProgramNavigation.currentSeriesRows(...args, programNavigationOptions()); }
-function hasRowsForProgram(...args) { return livePalmesProgramNavigation.hasRowsForProgram(...args, programNavigationOptions()); }
-function programRowsForCurrentRace(...args) { return livePalmesProgramNavigation.programRowsForCurrentRace(...args, programNavigationOptions()); }
-function finalProgramRowsForRace(...args) { return livePalmesProgramNavigation.finalProgramRowsForRace(...args, programNavigationOptions()); }
-function firstSeriesSelectionForCurrentRace(...args) { return livePalmesProgramNavigation.firstSeriesSelectionForCurrentRace(...args, programNavigationOptions()); }
-function lastSeriesSelectionForCurrentRace(...args) { return livePalmesProgramNavigation.lastSeriesSelectionForCurrentRace(...args, programNavigationOptions()); }
 
 const initialRoleSession = initializeRoleSession();
 state = initialRoleSession.state;
@@ -853,10 +592,6 @@ function consoleRenderWorkflowOptions() {
   return options;
 }
 
-function render(...args) { return livePalmesConsoleRenderWorkflow.render(...args); }
-function syncProgramButtonPlacement(...args) { return livePalmesConsoleRenderWorkflow.syncProgramButtonPlacement(...args); }
-function syncLineOrderButtonPlacement(...args) { return livePalmesConsoleRenderWorkflow.syncLineOrderButtonPlacement(...args); }
-function renderSessionControls(...args) { return livePalmesConsoleRenderWorkflow.renderSessionControls(...args); }
 
 const livePalmesAlertPresenter = livePalmesAlertPresenterModule.init(alertPresenterOptions());
 
@@ -896,37 +631,6 @@ function alertPresenterOptions() {
   return options;
 }
 
-function currentRoleAlertFilter(...args) { return livePalmesAlertPresenter.currentRoleAlertFilter(...args); }
-function speakerAlertAlreadyResolvedByResult(...args) { return livePalmesAlertPresenter.speakerAlertAlreadyResolvedByResult(...args); }
-function isRequalificationAlert(...args) { return livePalmesAlertPresenter.isRequalificationAlert(...args); }
-function alertRaceLabel(...args) { return livePalmesAlertPresenter.alertRaceLabel(...args); }
-function alertSwimmerLabel(...args) { return livePalmesAlertPresenter.alertSwimmerLabel(...args); }
-function alertIdentityLabel(...args) { return livePalmesAlertPresenter.alertIdentityLabel(...args); }
-function fullAlertIdentityLabel(...args) { return livePalmesAlertPresenter.fullAlertIdentityLabel(...args); }
-function alertClubShortLabel(...args) { return livePalmesAlertPresenter.alertClubShortLabel(...args); }
-function alertDetailLabel(...args) { return livePalmesAlertPresenter.alertDetailLabel(...args); }
-function alertCommentLabel(...args) { return livePalmesAlertPresenter.alertCommentLabel(...args); }
-function decisionMotifLabel(...args) { return livePalmesAlertPresenter.decisionMotifLabel(...args); }
-function speakerAlertSentence(...args) { return livePalmesAlertPresenter.speakerAlertSentence(...args); }
-function isDsqAlert(...args) { return livePalmesAlertPresenter.isDsqAlert(...args); }
-function activeDsqAlertsForEntrant(...args) { return livePalmesAlertPresenter.activeDsqAlertsForEntrant(...args); }
-function activeLineAlertsForEntrant(...args) { return livePalmesAlertPresenter.activeLineAlertsForEntrant(...args); }
-function alertLineCode(...args) { return livePalmesAlertPresenter.alertLineCode(...args); }
-function renderLineAlertBadges(...args) { return livePalmesAlertPresenter.renderLineAlertBadges(...args); }
-function terminalLineStatus(...args) { return livePalmesAlertPresenter.terminalLineStatus(...args); }
-function importedLineStatusLabel(...args) { return livePalmesAlertPresenter.importedLineStatusLabel(...args); }
-function renderImportedLineStatusBadge(...args) { return livePalmesAlertPresenter.renderImportedLineStatusBadge(...args); }
-function renderLineTimeStatus(...args) { return livePalmesAlertPresenter.renderLineTimeStatus(...args); }
-function finalistRowName(...args) { return livePalmesAlertPresenter.finalistRowName(...args); }
-function finalRowsForAnnouncementAlert(...args) { return livePalmesAlertPresenter.finalRowsForAnnouncementAlert(...args); }
-function renderFinalistsAlertList(...args) { return livePalmesAlertPresenter.renderFinalistsAlertList(...args); }
-function alertPriority(...args) { return livePalmesAlertPresenter.alertPriority(...args); }
-function alertPriorityMeta(...args) { return livePalmesAlertPresenter.alertPriorityMeta(...args); }
-function compareAlertsForAction(...args) { return livePalmesAlertPresenter.compareAlertsForAction(...args); }
-function historySentence(...args) { return livePalmesAlertPresenter.historySentence(...args); }
-function renderAlertCard(...args) { return livePalmesAlertPresenter.renderAlertCard(...args); }
-function renderVideoInfoCard(...args) { return livePalmesAlertPresenter.renderVideoInfoCard(...args); }
-function renderRolePanels(...args) { return livePalmesAlertPresenter.renderRolePanels(...args); }
 
 function resultsAdminWorkflowOptions() {
   const options = {
@@ -985,47 +689,6 @@ function resultsAdminWorkflowOptions() {
   return options;
 }
 
-function resultIdForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultIdForProgramRow(...args, resultsAdminWorkflowOptions()); }
-function resultForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultForProgramRow(...args, resultsAdminWorkflowOptions()); }
-function resultPdfPayload(...args) { return livePalmesResultsAdminWorkflow.resultPdfPayload(...args, resultsAdminWorkflowOptions()); }
-function publicResultPayload(...args) { return livePalmesResultsAdminWorkflow.publicResultPayload(...args, resultsAdminWorkflowOptions()); }
-function buildPublicResultsIndex(...args) { return livePalmesResultsAdminWorkflow.buildPublicResultsIndex(...args, resultsAdminWorkflowOptions()); }
-function publishPublicResultsIndex(...args) { return livePalmesResultsAdminWorkflow.publishPublicResultsIndex(...args, resultsAdminWorkflowOptions()); }
-function publicSeriesPdfId(...args) { return livePalmesResultsAdminWorkflow.publicSeriesPdfId(...args, resultsAdminWorkflowOptions()); }
-function updatePublicSeriesPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.updatePublicSeriesPdfMetadata(...args, resultsAdminWorkflowOptions()); }
-function clearPublicSeriesPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.clearPublicSeriesPdfMetadata(...args, resultsAdminWorkflowOptions()); }
-function hydratePublicSeriesPdfMetadataIfNeeded(...args) { return livePalmesResultsAdminWorkflow.hydratePublicSeriesPdfMetadataIfNeeded(...args, resultsAdminWorkflowOptions()); }
-function clearPublicSeriesPdfs(...args) { return livePalmesResultsAdminWorkflow.clearPublicSeriesPdfs(...args, resultsAdminWorkflowOptions()); }
-function clearPublicSessionResultsPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfMetadata(...args, resultsAdminWorkflowOptions()); }
-function clearPublicSessionResultsPdfs(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfs(...args, resultsAdminWorkflowOptions()); }
-function clearPublicSessionResultsPdfsForSession(...args) { return livePalmesResultsAdminWorkflow.clearPublicSessionResultsPdfsForSession(...args, resultsAdminWorkflowOptions()); }
-function publishPublicSeriesPdf(...args) { return livePalmesResultsAdminWorkflow.publishPublicSeriesPdf(...args, resultsAdminWorkflowOptions()); }
-function sessionResultsPdfId(...args) { return livePalmesResultsAdminWorkflow.sessionResultsPdfId(...args, resultsAdminWorkflowOptions()); }
-function updatePublicSessionResultsPdfMetadata(...args) { return livePalmesResultsAdminWorkflow.updatePublicSessionResultsPdfMetadata(...args, resultsAdminWorkflowOptions()); }
-function hydratePublicSessionResultsPdfMetadataIfNeeded(...args) { return livePalmesResultsAdminWorkflow.hydratePublicSessionResultsPdfMetadataIfNeeded(...args, resultsAdminWorkflowOptions()); }
-function publishSessionResultsPdf(...args) { return livePalmesResultsAdminWorkflow.publishSessionResultsPdf(...args, resultsAdminWorkflowOptions()); }
-function isLastProgramPartForRace(...args) { return livePalmesResultsAdminWorkflow.isLastProgramPartForRace(...args, resultsAdminWorkflowOptions()); }
-function resultSessions(...args) { return livePalmesResultsAdminWorkflow.resultSessions(...args, resultsAdminWorkflowOptions()); }
-function sessionResultsPdfsForAdminSession(...args) { return livePalmesResultsAdminWorkflow.sessionResultsPdfsForAdminSession(...args, resultsAdminWorkflowOptions()); }
-function latestResultSession(...args) { return livePalmesResultsAdminWorkflow.latestResultSession(...args, resultsAdminWorkflowOptions()); }
-function ensureResultsAdminSession(...args) { return livePalmesResultsAdminWorkflow.ensureResultsAdminSession(...args, resultsAdminWorkflowOptions()); }
-function resultProgramRows(...args) { return livePalmesResultsAdminWorkflow.resultProgramRows(...args, resultsAdminWorkflowOptions()); }
-function resultPhaseLabelForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultPhaseLabelForProgramRow(...args, resultsAdminWorkflowOptions()); }
-function resultStatusForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultStatusForProgramRow(...args, resultsAdminWorkflowOptions()); }
-function resultStatusBadgeForProgramRow(...args) { return livePalmesResultsAdminWorkflow.resultStatusBadgeForProgramRow(...args, resultsAdminWorkflowOptions()); }
-function resultStatusControlHtml(...args) { return livePalmesResultsAdminWorkflow.resultStatusControlHtml(...args, resultsAdminWorkflowOptions()); }
-function resultUploadKeyForProgram(...args) { return livePalmesResultsAdminWorkflow.resultUploadKeyForProgram(...args, resultsAdminWorkflowOptions()); }
-function resultUploadKeyForSessionResults(...args) { return livePalmesResultsAdminWorkflow.resultUploadKeyForSessionResults(...args, resultsAdminWorkflowOptions()); }
-function setResultUploadState(...args) { return livePalmesResultsAdminWorkflow.setResultUploadState(...args, resultsAdminWorkflowOptions()); }
-function clearResultUploadState(...args) { return livePalmesResultsAdminWorkflow.clearResultUploadState(...args, resultsAdminWorkflowOptions()); }
-function setSeriesImportState(...args) { return livePalmesResultsAdminWorkflow.setSeriesImportState(...args, resultsAdminWorkflowOptions()); }
-function clearSeriesImportState(...args) { return livePalmesResultsAdminWorkflow.clearSeriesImportState(...args, resultsAdminWorkflowOptions()); }
-function resultUploadBadgeHtml(...args) { return livePalmesResultsAdminWorkflow.resultUploadBadgeHtml(...args, resultsAdminWorkflowOptions()); }
-function renderResultsAdminPanel(...args) { return livePalmesResultsAdminWorkflow.renderResultsAdminPanel(...args, resultsAdminWorkflowOptions()); }
-function renderCompetitionDiagnostic(...args) { return livePalmesResultsAdminWorkflow.renderCompetitionDiagnostic(...args, resultsAdminWorkflowOptions()); }
-function renderComputerFooterPanel(...args) { return livePalmesResultsAdminWorkflow.renderComputerFooterPanel(...args, resultsAdminWorkflowOptions()); }
-function renderSessionResultsImportRow(...args) { return livePalmesResultsAdminWorkflow.renderSessionResultsImportRow(...args, resultsAdminWorkflowOptions()); }
-function renderResultProgramRow(...args) { return livePalmesResultsAdminWorkflow.renderResultProgramRow(...args, resultsAdminWorkflowOptions()); }
 
 function formatDeadlineTime(date) {
   if (!date || Number.isNaN(date.getTime())) return "";
@@ -1159,27 +822,6 @@ function livePalmesHistoryPresenterOptions() {
   return options;
 }
 
-function renderOfficialAlerts(...args) { return livePalmesHistoryPresenter.renderOfficialAlerts(...args); }
-function formatAlertTime(...args) { return livePalmesHistoryPresenter.formatAlertTime(...args); }
-function formatAlertDateTime(...args) { return livePalmesHistoryPresenter.formatAlertDateTime(...args); }
-function alertStatusLabel(...args) { return livePalmesHistoryPresenter.alertStatusLabel(...args); }
-function alertStatusClass(...args) { return livePalmesHistoryPresenter.alertStatusClass(...args); }
-function alertTimeline(...args) { return livePalmesHistoryPresenter.alertTimeline(...args); }
-function alertTimelineItems(...args) { return livePalmesHistoryPresenter.alertTimelineItems(...args); }
-function renderHistoryItem(...args) { return livePalmesHistoryPresenter.renderHistoryItem(...args); }
-function openAlertDetail(...args) { return livePalmesHistoryPresenter.openAlertDetail(...args); }
-function closeAlertDetail(...args) { return livePalmesHistoryPresenter.closeAlertDetail(...args); }
-function openFinalistsAnnouncementModal(...args) { return livePalmesHistoryPresenter.openFinalistsAnnouncementModal(...args); }
-function historyActionForAlert(...args) { return livePalmesHistoryPresenter.historyActionForAlert(...args); }
-function historyFilterKey(...args) { return livePalmesHistoryPresenter.historyFilterKey(...args); }
-function historyFilterValue(...args) { return livePalmesHistoryPresenter.historyFilterValue(...args); }
-function historyAlertMatchesFilter(...args) { return livePalmesHistoryPresenter.historyAlertMatchesFilter(...args); }
-function filteredHistoryRows(...args) { return livePalmesHistoryPresenter.filteredHistoryRows(...args); }
-function historyFilterControl(...args) { return livePalmesHistoryPresenter.historyFilterControl(...args); }
-function historyEmptyLabel(...args) { return livePalmesHistoryPresenter.historyEmptyLabel(...args); }
-function renderSpeakerHistory(...args) { return livePalmesHistoryPresenter.renderSpeakerHistory(...args); }
-function renderRoleHistory(...args) { return livePalmesHistoryPresenter.renderRoleHistory(...args); }
-function historyToggleButton(...args) { return livePalmesHistoryPresenter.historyToggleButton(...args); }
 
 const livePalmesDecisionWorkflow = livePalmesDecisionWorkflowModule.init(livePalmesDecisionWorkflowOptions());
 
@@ -1236,28 +878,6 @@ function livePalmesDecisionWorkflowOptions() {
   return options;
 }
 
-function selectedEntrant(...args) { return livePalmesDecisionWorkflow.selectedEntrant(...args); }
-function entrantSeriesRow(...args) { return livePalmesDecisionWorkflow.entrantSeriesRow(...args); }
-function relayLegCount(...args) { return livePalmesDecisionWorkflow.relayLegCount(...args); }
-function decisionOptionsForEntrant(...args) { return livePalmesDecisionWorkflow.decisionOptionsForEntrant(...args); }
-function renderDecisionPanel(...args) { return livePalmesDecisionWorkflow.renderDecisionPanel(...args); }
-function createDecisionDraft(...args) { return livePalmesDecisionWorkflow.createDecisionDraft(...args); }
-function openDecisionModal(...args) { return livePalmesDecisionWorkflow.openDecisionModal(...args); }
-function closeDecisionModal(...args) { return livePalmesDecisionWorkflow.closeDecisionModal(...args); }
-function decisionNeedsDetail(...args) { return livePalmesDecisionWorkflow.decisionNeedsDetail(...args); }
-function decisionNeedsRelayLeg(...args) { return livePalmesDecisionWorkflow.decisionNeedsRelayLeg(...args); }
-function decisionNeedsLengthPosition(...args) { return livePalmesDecisionWorkflow.decisionNeedsLengthPosition(...args); }
-function decisionDraftIsReady(...args) { return livePalmesDecisionWorkflow.decisionDraftIsReady(...args); }
-function defaultDecisionDetail(...args) { return livePalmesDecisionWorkflow.defaultDecisionDetail(...args); }
-function renderDecisionModal(...args) { return livePalmesDecisionWorkflow.renderDecisionModal(...args); }
-function decisionRoute(...args) { return livePalmesDecisionWorkflow.decisionRoute(...args); }
-function createDecisionAlert(...args) { return livePalmesDecisionWorkflow.createDecisionAlert(...args); }
-function renderRoleQueue(...args) { return livePalmesDecisionWorkflow.renderRoleQueue(...args); }
-function updateAlert(...args) { return livePalmesDecisionWorkflow.updateAlert(...args); }
-function markSpeakerAlertDoneLocally(...args) { return livePalmesDecisionWorkflow.markSpeakerAlertDoneLocally(...args); }
-function restoreAlertLocally(...args) { return livePalmesDecisionWorkflow.restoreAlertLocally(...args); }
-function cloneAlertForCancellation(...args) { return livePalmesDecisionWorkflow.cloneAlertForCancellation(...args); }
-function cancelDecision(...args) { return livePalmesDecisionWorkflow.cancelDecision(...args); }
 
 function diagnosticsWorkflowOptions() {
   return {
@@ -1301,130 +921,29 @@ function diagnosticsWorkflowOptions() {
   };
 }
 
-function renderDataStatus(...args) { return livePalmesDiagnosticsWorkflow.renderDataStatus(...args, diagnosticsWorkflowOptions()); }
-function firebaseStatusMeta(...args) { return livePalmesDiagnosticsWorkflow.firebaseStatusMeta(...args, diagnosticsWorkflowOptions()); }
-function renderFirebaseHeaderStatus(...args) { return livePalmesDiagnosticsWorkflow.renderFirebaseHeaderStatus(...args, diagnosticsWorkflowOptions()); }
-function shortStatusDate(...args) { return livePalmesDiagnosticsWorkflow.shortStatusDate(...args, diagnosticsWorkflowOptions()); }
-function appendImportHistory(...args) { return livePalmesDiagnosticsWorkflow.appendImportHistory(...args, diagnosticsWorkflowOptions()); }
-function countCollectionDocuments(...args) { return livePalmesDiagnosticsWorkflow.countCollectionDocuments(...args, diagnosticsWorkflowOptions()); }
-function collectPerformanceDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.collectPerformanceDiagnostic(...args, diagnosticsWorkflowOptions()); }
-function renderPerformanceDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.renderPerformanceDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
-function showPerformanceDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.showPerformanceDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
-function safeCountCollection(...args) { return livePalmesDiagnosticsWorkflow.safeCountCollection(...args, diagnosticsWorkflowOptions()); }
-function safeDocumentData(...args) { return livePalmesDiagnosticsWorkflow.safeDocumentData(...args, diagnosticsWorkflowOptions()); }
-function alertPendingTargets(...args) { return livePalmesDiagnosticsWorkflow.alertPendingTargets(...args, diagnosticsWorkflowOptions()); }
-function alertPendingBreakdown(...args) { return livePalmesDiagnosticsWorkflow.alertPendingBreakdown(...args, diagnosticsWorkflowOptions()); }
-function alertTargetsLabel(...args) { return livePalmesDiagnosticsWorkflow.alertTargetsLabel(...args, diagnosticsWorkflowOptions()); }
-function collectTechnicalDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.collectTechnicalDiagnostic(...args, diagnosticsWorkflowOptions()); }
-function resultHasDetailsForDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.resultHasDetailsForDiagnostic(...args, diagnosticsWorkflowOptions()); }
-function renderTechnicalDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.renderTechnicalDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
-function showTechnicalDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.showTechnicalDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
-function cleanLegacyResultPdfs(...args) { return livePalmesDiagnosticsWorkflow.cleanLegacyResultPdfs(...args, diagnosticsWorkflowOptions()); }
-function showDataDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.showDataDiagnostic(...args, diagnosticsWorkflowOptions()); }
 
-function renderSeriesControls() {
-  const numbers = availableSeriesNumbers();
-  const finalRows = finalProgramRowsForRace();
-  const finalStages = finalRows.map((row) => row.stage);
-  if (isFinalStage(state.series) && !finalStages.includes(state.series)) {
-    state.series = String(numbers[0] || finalStages[0] || "all");
-  }
-  if (!isFinalStage(state.series) && state.series !== "all" && !numbers.includes(Number(state.series))) {
-    state.series = String(numbers[0] || finalStages[0] || "all");
-  }
-  if (!numbers.length && finalStages.length && state.series === "all") {
-    state.series = finalStages[0];
-  } else if (numbers.length && state.series === "all") {
-    state.series = String(numbers[0]);
-  }
-  const preview = raceSeries().some((row) => row.isPreview);
-  const programRow = selectedProgramRow();
-  if (programRow?.hasEntrants === false) {
-    const jaMark = seriesChipIsRefereeProgress(programRow, "", programRow.stage || "final") ? `<span class="series-ja-marker">JA</span>` : "";
-    seriesControls.innerHTML = `<span class="no-series-note">${escapeHtml(programRow.startTime ? `Finale - ${programRow.startTime}` : "Finale")}${jaMark}</span>`;
-    setSeriesNavigation(
-      !hasPreviousProgramSeries(),
-      "Course précédente",
-      !hasNextProgramSeries(),
-      "Course suivante"
-    );
-    return;
-  }
-  const controls = [
-    ...numbers.map((number) => {
-      const time = (data.series || [])
-        .filter(matchesRace)
-        .filter((row) => !isFinalStage(row.stage))
-        .find((row) => Number(row.series) === number)?.startTime || "";
-      const jaCurrent = seriesChipIsRefereeProgress(programRow, number, "series");
-      return `
-        <button class="series-chip ${Number(state.series) === number ? "active" : ""} ${jaCurrent ? "ja-current" : ""}" type="button" data-series="${number}">
-          <strong>${number}</strong>${time ? `<span>${escapeHtml(time)}</span>` : ""}${jaCurrent ? `<em>JA</em>` : ""}
-        </button>
-      `;
-    }),
-    ...finalRows.map((row) => {
-      const jaCurrent = seriesChipIsRefereeProgress(row, "", row.stage);
-      return `
-        <button class="series-chip final-chip ${state.series === row.stage ? "active" : ""} ${jaCurrent ? "ja-current" : ""}" type="button" data-series="${escapeHtml(row.stage)}">
-          <strong>${escapeHtml(finalStageLabel(row.stage))}</strong>${row.startTime ? `<span>${escapeHtml(row.startTime)}</span>` : ""}${jaCurrent ? `<em>JA</em>` : ""}
-        </button>
-      `;
-    })
-  ];
-  seriesControls.innerHTML = controls.length
-    ? controls.join("")
-    : `<span class="no-series-note">Aucune série disponible</span>`;
-  const atLastCurrentRace = isFinalStage(state.series)
-    ? finalStages.indexOf(state.series) >= finalStages.length - 1
-    : state.series !== "all" && Number(state.series) >= numbers[numbers.length - 1];
-  const atFirstCurrentRace = isFinalStage(state.series)
-    ? !numbers.length && finalStages.indexOf(state.series) <= 0
-    : Number(state.series) <= numbers[0];
-  setSeriesNavigation(
-    atFirstCurrentRace && !hasPreviousProgramSeries(),
-    atFirstCurrentRace ? "Course précédente" : "Série précédente",
-    (!numbers.length && !finalStages.length) || (atLastCurrentRace && !hasNextProgramSeries()),
-    atLastCurrentRace ? "Course suivante" : "Série suivante"
-  );
-  seriesControls.title = preview ? "Aperçu généré automatiquement en attendant le fichier officiel des séries" : "";
+function seriesControlsOptions() {
+  return {
+    ...appDom,
+    availableSeriesNumbers,
+    data,
+    escapeHtml,
+    finalProgramRowsForRace,
+    finalStageLabel,
+    hasNextProgramSeries,
+    hasPreviousProgramSeries,
+    isFinalStage,
+    matchesRace,
+    programKey,
+    raceSeries,
+    refereeProgress,
+    selectedProgramRow,
+    state
+  };
 }
 
-function seriesChipIsRefereeProgress(row, series, stage) {
-  const progress = refereeProgress();
-  if (!row || !progress?.programKey) return false;
-  return String(progress.programKey) === String(programKey(row)) &&
-    String(progress.stage || "series") === String(stage || "series") &&
-    String(progress.series || "") === String(series || "");
-}
-
-function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, nextLabel) {
-  [previousSeriesBtn, previousSeriesFloatBtn].forEach((button) => {
-    if (!button) return;
-    button.disabled = previousDisabled;
-    button.textContent = "<";
-    button.title = previousLabel;
-    button.setAttribute("aria-label", previousLabel);
-  });
-  [nextSeriesBtn, nextSeriesFloatBtn].forEach((button) => {
-    if (!button) return;
-    button.disabled = nextDisabled;
-    button.textContent = ">";
-    button.title = nextLabel;
-    button.setAttribute("aria-label", nextLabel);
-  });
-  if (previousSeriesInlineBtn) {
-    previousSeriesInlineBtn.disabled = previousDisabled;
-    previousSeriesInlineBtn.textContent = previousLabel;
-    previousSeriesInlineBtn.title = previousLabel;
-    previousSeriesInlineBtn.setAttribute("aria-label", previousLabel);
-  }
-  if (nextSeriesInlineBtn) {
-    nextSeriesInlineBtn.disabled = nextDisabled;
-    nextSeriesInlineBtn.textContent = nextLabel;
-    nextSeriesInlineBtn.title = nextLabel;
-    nextSeriesInlineBtn.setAttribute("aria-label", nextLabel);
-  }
+function renderSeriesControls(...args) {
+  return livePalmesSeriesControls.renderSeriesControls(...args, seriesControlsOptions());
 }
 
 const livePalmesProgramModals = livePalmesProgramModalsModule.init(programModalsOptions());
@@ -1466,26 +985,6 @@ function programModalsOptions() {
   return options;
 }
 
-function renderProgramButtons(...args) { return livePalmesProgramModals.renderProgramButtons(...args); }
-function programSeriesItems(...args) { return livePalmesProgramModals.programSeriesItems(...args); }
-function programItemMatchesState(...args) { return livePalmesProgramModals.programItemMatchesState(...args); }
-function programItemIsCurrent(...args) { return livePalmesProgramModals.programItemIsCurrent(...args); }
-function programItemIsSpeakerCurrent(...args) { return livePalmesProgramModals.programItemIsSpeakerCurrent(...args); }
-function programProgressValue(...args) { return livePalmesProgramModals.programProgressValue(...args); }
-function compareProgramProgressValues(...args) { return livePalmesProgramModals.compareProgramProgressValues(...args); }
-function progressValueFromMarker(...args) { return livePalmesProgramModals.progressValueFromMarker(...args); }
-function programItemProgressClass(...args) { return livePalmesProgramModals.programItemProgressClass(...args); }
-function programRowProgressClass(...args) { return livePalmesProgramModals.programRowProgressClass(...args); }
-function speakerProgramPositionLabel(...args) { return livePalmesProgramModals.speakerProgramPositionLabel(...args); }
-function renderProgramModal(...args) { return livePalmesProgramModals.renderProgramModal(...args); }
-function openProgramModal(...args) { return livePalmesProgramModals.openProgramModal(...args); }
-function closeProgramModal(...args) { return livePalmesProgramModals.closeProgramModal(...args); }
-function setRefereeProgressHere(...args) { return livePalmesProgramModals.setRefereeProgressHere(...args); }
-function openAdminSeriesModal(...args) { return livePalmesProgramModals.openAdminSeriesModal(...args); }
-function closeAdminSeriesModal(...args) { return livePalmesProgramModals.closeAdminSeriesModal(...args); }
-function openResultImportModal(...args) { return livePalmesProgramModals.openResultImportModal(...args); }
-function openSessionResultsImportModal(...args) { return livePalmesProgramModals.openSessionResultsImportModal(...args); }
-function closeResultImportModal(...args) { return livePalmesProgramModals.closeResultImportModal(...args); }
 
 const livePalmesResultPublicationWorkflow = livePalmesResultPublicationWorkflowModule.init(livePalmesResultPublicationWorkflowOptions());
 
@@ -1536,41 +1035,6 @@ function livePalmesResultPublicationWorkflowOptions() {
   return options;
 }
 
-function fileToDataUrl(...args) { return livePalmesResultPublicationWorkflow.fileToDataUrl(...args); }
-function loadResultPdfData(...args) { return livePalmesResultPublicationWorkflow.loadResultPdfData(...args); }
-function resultPdfDataUrl(...args) { return livePalmesResultPublicationWorkflow.resultPdfDataUrl(...args); }
-function saveResultPdfPayload(...args) { return livePalmesResultPublicationWorkflow.saveResultPdfPayload(...args); }
-function deleteResultPdfPayload(...args) { return livePalmesResultPublicationWorkflow.deleteResultPdfPayload(...args); }
-function migrateResultPdfsOutOfResults(...args) { return livePalmesResultPublicationWorkflow.migrateResultPdfsOutOfResults(...args); }
-function dataUrlToFile(...args) { return livePalmesResultPublicationWorkflow.dataUrlToFile(...args); }
-function resultParserOptions(...args) { return livePalmesResultPublicationWorkflow.resultParserOptions(...args); }
-function resultParserFunction(...args) { return livePalmesResultPublicationWorkflow.resultParserFunction(...args); }
-function normalizeResultLineText(...args) { return livePalmesResultPublicationWorkflow.normalizeResultLineText(...args); }
-function parseResultRow(...args) { return livePalmesResultPublicationWorkflow.parseResultRow(...args); }
-function parseUnrankedResultRow(...args) { return livePalmesResultPublicationWorkflow.parseUnrankedResultRow(...args); }
-function resultStatusFromText(...args) { return livePalmesResultPublicationWorkflow.resultStatusFromText(...args); }
-function parseResultStatusRow(...args) { return livePalmesResultPublicationWorkflow.parseResultStatusRow(...args); }
-function resultImportRowKey(...args) { return livePalmesResultPublicationWorkflow.resultImportRowKey(...args); }
-function parseFinalistsFromResultLines(...args) { return livePalmesResultPublicationWorkflow.parseFinalistsFromResultLines(...args); }
-function emptyParsedFinals(...args) { return livePalmesResultPublicationWorkflow.emptyParsedFinals(...args); }
-function resolveParsedFinals(...args) { return livePalmesResultPublicationWorkflow.resolveParsedFinals(...args); }
-function shouldPreserveFinalistsOnReread(...args) { return livePalmesResultPublicationWorkflow.shouldPreserveFinalistsOnReread(...args); }
-function buildPublishedResult(...args) { return livePalmesResultPublicationWorkflow.buildPublishedResult(...args); }
-function finalRowCountsAsFinalist(...args) { return livePalmesResultPublicationWorkflow.finalRowCountsAsFinalist(...args); }
-function finalRowsCount(...args) { return livePalmesResultPublicationWorkflow.finalRowsCount(...args); }
-function performanceStageForResultRow(...args) { return livePalmesResultPublicationWorkflow.performanceStageForResultRow(...args); }
-function resultPerformanceDuplicateKey(...args) { return livePalmesResultPublicationWorkflow.resultPerformanceDuplicateKey(...args); }
-function resultPerformanceRows(...args) { return livePalmesResultPublicationWorkflow.resultPerformanceRows(...args); }
-function publishResultPdf(...args) { return livePalmesResultPublicationWorkflow.publishResultPdf(...args); }
-function rereadPublishedResult(...args) { return livePalmesResultPublicationWorkflow.rereadPublishedResult(...args); }
-function createFinalistsSpeakerAlert(...args) { return livePalmesResultPublicationWorkflow.createFinalistsSpeakerAlert(...args); }
-function stampFinalistsAnnouncement(...args) { return livePalmesResultPublicationWorkflow.stampFinalistsAnnouncement(...args); }
-function ensurePendingFinalistsSpeakerAlerts(...args) { return livePalmesResultPublicationWorkflow.ensurePendingFinalistsSpeakerAlerts(...args); }
-function replacementAlertMatches(...args) { return livePalmesResultPublicationWorkflow.replacementAlertMatches(...args); }
-function replacementAlertKey(...args) { return livePalmesResultPublicationWorkflow.replacementAlertKey(...args); }
-function dedupePendingReplacementAlerts(...args) { return livePalmesResultPublicationWorkflow.dedupePendingReplacementAlerts(...args); }
-function ensurePendingReplacementSpeakerAlerts(...args) { return livePalmesResultPublicationWorkflow.ensurePendingReplacementSpeakerAlerts(...args); }
-function publishFinalistsAfterSpeaker(...args) { return livePalmesResultPublicationWorkflow.publishFinalistsAfterSpeaker(...args); }
 
 function finalWithdrawalsWorkflowOptions() {
   return {
@@ -1604,45 +1068,6 @@ function finalWithdrawalsWorkflowOptions() {
   };
 }
 
-function finalRowKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowKey(...args, finalWithdrawalsWorkflowOptions()); }
-function finalRowOrderValue(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowOrderValue(...args, finalWithdrawalsWorkflowOptions()); }
-function sortedFinalRows(...args) { return livePalmesFinalWithdrawalsWorkflow.sortedFinalRows(...args, finalWithdrawalsWorkflowOptions()); }
-function normalizeFinalistsOrder(...args) { return livePalmesFinalWithdrawalsWorkflow.normalizeFinalistsOrder(...args, finalWithdrawalsWorkflowOptions()); }
-function activeFinalPreWithdrawals(...args) { return livePalmesFinalWithdrawalsWorkflow.activeFinalPreWithdrawals(...args, finalWithdrawalsWorkflowOptions()); }
-function finalPreWithdrawalForRow(...args) { return livePalmesFinalWithdrawalsWorkflow.finalPreWithdrawalForRow(...args, finalWithdrawalsWorkflowOptions()); }
-function isFinalPreWithdrawn(...args) { return livePalmesFinalWithdrawalsWorkflow.isFinalPreWithdrawn(...args, finalWithdrawalsWorkflowOptions()); }
-function availableReplacementForResult(...args) { return livePalmesFinalWithdrawalsWorkflow.availableReplacementForResult(...args, finalWithdrawalsWorkflowOptions()); }
-function buildReplacementFinalistRow(...args) { return livePalmesFinalWithdrawalsWorkflow.buildReplacementFinalistRow(...args, finalWithdrawalsWorkflowOptions()); }
-function buildFinalWithdrawalEntry(...args) { return livePalmesFinalWithdrawalsWorkflow.buildFinalWithdrawalEntry(...args, finalWithdrawalsWorkflowOptions()); }
-function addReplacementChain(...args) { return livePalmesFinalWithdrawalsWorkflow.addReplacementChain(...args, finalWithdrawalsWorkflowOptions()); }
-function finalistRowsWithFinalKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistRowsWithFinalKey(...args, finalWithdrawalsWorkflowOptions()); }
-function finalistRowsMatch(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistRowsMatch(...args, finalWithdrawalsWorkflowOptions()); }
-function findPreservedFinalistRow(...args) { return livePalmesFinalWithdrawalsWorkflow.findPreservedFinalistRow(...args, finalWithdrawalsWorkflowOptions()); }
-function finalistPositionByRow(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistPositionByRow(...args, finalWithdrawalsWorkflowOptions()); }
-function applyPreservedReplacementAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.applyPreservedReplacementAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
-function rebuildFinalistsFromParsedResult(...args) { return livePalmesFinalWithdrawalsWorkflow.rebuildFinalistsFromParsedResult(...args, finalWithdrawalsWorkflowOptions()); }
-function firstActiveFinalistIndex(...args) { return livePalmesFinalWithdrawalsWorkflow.firstActiveFinalistIndex(...args, finalWithdrawalsWorkflowOptions()); }
-function finalCompositionRows(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionRows(...args, finalWithdrawalsWorkflowOptions()); }
-function finalCompositionKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionKey(...args, finalWithdrawalsWorkflowOptions()); }
-function finalCompositionIsDefinitive(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionIsDefinitive(...args, finalWithdrawalsWorkflowOptions()); }
-function finalCompositionDefinitiveDate(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionDefinitiveDate(...args, finalWithdrawalsWorkflowOptions()); }
-function finalCompositionPendingDeadlineLabel(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionPendingDeadlineLabel(...args, finalWithdrawalsWorkflowOptions()); }
-function renderFinalWithdrawalGroup(...args) { return livePalmesFinalWithdrawalsWorkflow.renderFinalWithdrawalGroup(...args, finalWithdrawalsWorkflowOptions()); }
-function finalRowIndexByKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowIndexByKey(...args, finalWithdrawalsWorkflowOptions()); }
-function nextUnqualifiedRowsForSecretary(...args) { return livePalmesFinalWithdrawalsWorkflow.nextUnqualifiedRowsForSecretary(...args, finalWithdrawalsWorkflowOptions()); }
-function renderSecretaryUnqualifiedGroup(...args) { return livePalmesFinalWithdrawalsWorkflow.renderSecretaryUnqualifiedGroup(...args, finalWithdrawalsWorkflowOptions()); }
-function openFinalWithdrawalsModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalWithdrawalsModal(...args, finalWithdrawalsWorkflowOptions()); }
-function toggleFinalPreWithdrawal(...args) { return livePalmesFinalWithdrawalsWorkflow.toggleFinalPreWithdrawal(...args, finalWithdrawalsWorkflowOptions()); }
-function renderFinalCompositionList(...args) { return livePalmesFinalWithdrawalsWorkflow.renderFinalCompositionList(...args, finalWithdrawalsWorkflowOptions()); }
-function openFinalCompositionResultModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalCompositionResultModal(...args, finalWithdrawalsWorkflowOptions()); }
-function openFinalCompositionModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalCompositionModal(...args, finalWithdrawalsWorkflowOptions()); }
-function markFinalistWithdrawn(...args) { return livePalmesFinalWithdrawalsWorkflow.markFinalistWithdrawn(...args, finalWithdrawalsWorkflowOptions()); }
-function reinstateFinalist(...args) { return livePalmesFinalWithdrawalsWorkflow.reinstateFinalist(...args, finalWithdrawalsWorkflowOptions()); }
-function createFinalistReplacementSpeakerAlert(...args) { return livePalmesFinalWithdrawalsWorkflow.createFinalistReplacementSpeakerAlert(...args, finalWithdrawalsWorkflowOptions()); }
-function cancelPendingReplacementSpeakerAlert(...args) { return livePalmesFinalWithdrawalsWorkflow.cancelPendingReplacementSpeakerAlert(...args, finalWithdrawalsWorkflowOptions()); }
-function updateReplacementRowAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.updateReplacementRowAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
-function stampReplacementAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.stampReplacementAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
-function publishReplacementAfterSpeaker(...args) { return livePalmesFinalWithdrawalsWorkflow.publishReplacementAfterSpeaker(...args, finalWithdrawalsWorkflowOptions()); }
 
 const livePalmesResultMaintenanceWorkflow = livePalmesResultMaintenanceWorkflowModule.init(resultMaintenanceWorkflowOptions());
 
@@ -1671,10 +1096,6 @@ function resultMaintenanceWorkflowOptions() {
   return options;
 }
 
-function deleteResultPdf(...args) { return livePalmesResultMaintenanceWorkflow.deleteResultPdf(...args); }
-function clearPublishedResults(...args) { return livePalmesResultMaintenanceWorkflow.clearPublishedResults(...args); }
-function clearPublishedResultsForSession(...args) { return livePalmesResultMaintenanceWorkflow.clearPublishedResultsForSession(...args); }
-function resetSeriesForNextCompetition(...args) { return livePalmesResultMaintenanceWorkflow.resetSeriesForNextCompetition(...args); }
 
 function swimmerPanelOptions() {
   return {
@@ -1750,64 +1171,6 @@ function swimmerPanelOptions() {
   };
 }
 
-function renderCategorySelect(...args) { return livePalmesSwimmerPanel.renderCategorySelect(...args, swimmerPanelOptions()); }
-function renderHeader(...args) { return livePalmesSwimmerPanel.renderHeader(...args, swimmerPanelOptions()); }
-function renderRefereeProgressControl(...args) { return livePalmesSwimmerPanel.renderRefereeProgressControl(...args, swimmerPanelOptions()); }
-function headerReferenceChipsHtml(...args) { return livePalmesSwimmerPanel.headerReferenceChipsHtml(...args, swimmerPanelOptions()); }
-function selectedHeaderReferenceDetailsHtml(...args) { return livePalmesSwimmerPanel.selectedHeaderReferenceDetailsHtml(...args, swimmerPanelOptions()); }
-function renderHeaderReferences(...args) { return livePalmesSwimmerPanel.renderHeaderReferences(...args, swimmerPanelOptions()); }
-function renderHeaderRefDetails(...args) { return livePalmesSwimmerPanel.renderHeaderRefDetails(...args, swimmerPanelOptions()); }
-function recordKey(...args) { return livePalmesSwimmerPanel.recordKey(...args, swimmerPanelOptions()); }
-function renderEntrants(...args) { return livePalmesSwimmerPanel.renderEntrants(...args, swimmerPanelOptions()); }
-function getEntrantReference(...args) { return livePalmesSwimmerPanel.getEntrantReference(...args, swimmerPanelOptions()); }
-function recordTargetsForEntrant(...args) { return livePalmesSwimmerPanel.recordTargetsForEntrant(...args, swimmerPanelOptions()); }
-function renderRecordGapAlert(...args) { return livePalmesSwimmerPanel.renderRecordGapAlert(...args, swimmerPanelOptions()); }
-function renderEdfBadges(...args) { return livePalmesSwimmerPanel.renderEdfBadges(...args, swimmerPanelOptions()); }
-function renderCompetitionStatBadges(...args) { return livePalmesSwimmerPanel.renderCompetitionStatBadges(...args, swimmerPanelOptions()); }
-function renderNonSelectableBadge(...args) { return livePalmesSwimmerPanel.renderNonSelectableBadge(...args, swimmerPanelOptions()); }
-function findEdfMemberships(...args) { return livePalmesSwimmerPanel.findEdfMemberships(...args, swimmerPanelOptions()); }
-function findCompetitionStatsForEntrant(...args) { return livePalmesSwimmerPanel.findCompetitionStatsForEntrant(...args, swimmerPanelOptions()); }
-function normalizeClubMatch(...args) { return livePalmesSwimmerPanel.normalizeClubMatch(...args, swimmerPanelOptions()); }
-function findSwimmerInfosForEntrant(...args) { return livePalmesSwimmerPanel.findSwimmerInfosForEntrant(...args, swimmerPanelOptions()); }
-function findInternationalMedals(...args) { return livePalmesSwimmerPanel.findInternationalMedals(...args, swimmerPanelOptions()); }
-function findInternationalMedalsForRace(...args) { return livePalmesSwimmerPanel.findInternationalMedalsForRace(...args, swimmerPanelOptions()); }
-function shortChampionshipLabel(...args) { return livePalmesSwimmerPanel.shortChampionshipLabel(...args, swimmerPanelOptions()); }
-function findRecordByTime(...args) { return livePalmesSwimmerPanel.findRecordByTime(...args, swimmerPanelOptions()); }
-function isRelayEntrant(...args) { return livePalmesSwimmerPanel.isRelayEntrant(...args, swimmerPanelOptions()); }
-function isNationalTeamRelayRecord(...args) { return livePalmesSwimmerPanel.isNationalTeamRelayRecord(...args, swimmerPanelOptions()); }
-function shouldKeepRecord(...args) { return livePalmesSwimmerPanel.shouldKeepRecord(...args, swimmerPanelOptions()); }
-function isBestClubRelayEntry(...args) { return livePalmesSwimmerPanel.isBestClubRelayEntry(...args, swimmerPanelOptions()); }
-function findRelayClubRecords(...args) { return livePalmesSwimmerPanel.findRelayClubRecords(...args, swimmerPanelOptions()); }
-function findRecordsHeldByEntrant(...args) { return livePalmesSwimmerPanel.findRecordsHeldByEntrant(...args, swimmerPanelOptions()); }
-function findAllRecordsHeldByEntrant(...args) { return livePalmesSwimmerPanel.findAllRecordsHeldByEntrant(...args, swimmerPanelOptions()); }
-function sameTime(...args) { return livePalmesSwimmerPanel.sameTime(...args, swimmerPanelOptions()); }
-function isQualificationEligible(...args) { return livePalmesSwimmerPanel.isQualificationEligible(...args, swimmerPanelOptions()); }
-function findTop2025ForEntrant(...args) { return livePalmesSwimmerPanel.findTop2025ForEntrant(...args, swimmerPanelOptions()); }
-function entrantPerformanceNameKey(...args) { return livePalmesSwimmerPanel.entrantPerformanceNameKey(...args, swimmerPanelOptions()); }
-function performanceBirthYear(...args) { return livePalmesSwimmerPanel.performanceBirthYear(...args, swimmerPanelOptions()); }
-function performanceMatchesEntrant(...args) { return livePalmesSwimmerPanel.performanceMatchesEntrant(...args, swimmerPanelOptions()); }
-function performanceStatusResultLabel(...args) { return livePalmesSwimmerPanel.performanceStatusResultLabel(...args, swimmerPanelOptions()); }
-function performanceDisplayValue(...args) { return livePalmesSwimmerPanel.performanceDisplayValue(...args, swimmerPanelOptions()); }
-function resultRankForPerformance(...args) { return livePalmesSwimmerPanel.resultRankForPerformance(...args, swimmerPanelOptions()); }
-function performanceRankLabel(...args) { return livePalmesSwimmerPanel.performanceRankLabel(...args, swimmerPanelOptions()); }
-function swimmerBestPerformanceForEntry(...args) { return livePalmesSwimmerPanel.swimmerBestPerformanceForEntry(...args, swimmerPanelOptions()); }
-function compactProgramPerformanceLabel(...args) { return livePalmesSwimmerPanel.compactProgramPerformanceLabel(...args, swimmerPanelOptions()); }
-function selectRecordForCategory(...args) { return livePalmesSwimmerPanel.selectRecordForCategory(...args, swimmerPanelOptions()); }
-function renderSwimmerDetails(...args) { return livePalmesSwimmerPanel.renderSwimmerDetails(...args, swimmerPanelOptions()); }
-function eventOrder(...args) { return livePalmesSwimmerPanel.eventOrder(...args, swimmerPanelOptions()); }
-function eventLabel(...args) { return livePalmesSwimmerPanel.eventLabel(...args, swimmerPanelOptions()); }
-function shortEventLabel(...args) { return livePalmesSwimmerPanel.shortEventLabel(...args, swimmerPanelOptions()); }
-function findFrance2025Results(...args) { return livePalmesSwimmerPanel.findFrance2025Results(...args, swimmerPanelOptions()); }
-function medalForRank(...args) { return livePalmesSwimmerPanel.medalForRank(...args, swimmerPanelOptions()); }
-function medalClass(...args) { return livePalmesSwimmerPanel.medalClass(...args, swimmerPanelOptions()); }
-function currentRecordRows(...args) { return livePalmesSwimmerPanel.currentRecordRows(...args, swimmerPanelOptions()); }
-function shortRecordLabel(...args) { return livePalmesSwimmerPanel.shortRecordLabel(...args, swimmerPanelOptions()); }
-function recordFlagText(...args) { return livePalmesSwimmerPanel.recordFlagText(...args, swimmerPanelOptions()); }
-function renderRecordFlag(...args) { return livePalmesSwimmerPanel.renderRecordFlag(...args, swimmerPanelOptions()); }
-function shortCategoryLabel(...args) { return livePalmesSwimmerPanel.shortCategoryLabel(...args, swimmerPanelOptions()); }
-function renderRecordCategoryFlag(...args) { return livePalmesSwimmerPanel.renderRecordCategoryFlag(...args, swimmerPanelOptions()); }
-function renderTop2025(...args) { return livePalmesSwimmerPanel.renderTop2025(...args, swimmerPanelOptions()); }
-function recordDescription(...args) { return livePalmesSwimmerPanel.recordDescription(...args, swimmerPanelOptions()); }
 
 function noteKey() {
   return `${state.eventId}:${state.sex}`;
@@ -1869,21 +1232,6 @@ function speakerInfoWorkflowOptions() {
   return options;
 }
 
-function speakerInfoOptions(...args) { return livePalmesSpeakerInfoWorkflow.speakerInfoOptions(...args); }
-function fetchSpeakerSheetRows(...args) { return livePalmesSpeakerInfoWorkflow.fetchSpeakerSheetRows(...args); }
-function parseTopSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseTopSheet(...args); }
-function parseRecordsSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseRecordsSheet(...args); }
-function parseEdfSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseEdfSheet(...args); }
-function parseCompetitionStatsSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseCompetitionStatsSheet(...args); }
-function parseInternationalSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseInternationalSheet(...args); }
-function parseQualificationsSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseQualificationsSheet(...args); }
-function parseClubSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseClubSheet(...args); }
-function parseSwimmerInfosSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseSwimmerInfosSheet(...args); }
-function parseSeedSourceSheet(...args) { return livePalmesSpeakerInfoWorkflow.parseSeedSourceSheet(...args); }
-function sheetSex(...args) { return livePalmesSpeakerInfoWorkflow.sheetSex(...args); }
-function seedSourceTimeKey(...args) { return livePalmesSpeakerInfoWorkflow.seedSourceTimeKey(...args); }
-function applySpeakerInfoToEntrants(...args) { return livePalmesSpeakerInfoWorkflow.applySpeakerInfoToEntrants(...args); }
-function updateSpeakerInfoFromGoogleSheet(...args) { return livePalmesSpeakerInfoWorkflow.updateSpeakerInfoFromGoogleSheet(...args); }
 
 const livePalmesExportReportsWorkflow = livePalmesExportReportsWorkflowModule.init(exportReportsWorkflowOptions());
 
@@ -1908,17 +1256,6 @@ function exportReportsWorkflowOptions() {
   return options;
 }
 
-function downloadJson(...args) { return livePalmesExportReportsWorkflow.downloadJson(...args); }
-function dsqReportRows(...args) { return livePalmesExportReportsWorkflow.dsqReportRows(...args); }
-function buildDsqReportHtml(...args) { return livePalmesExportReportsWorkflow.buildDsqReportHtml(...args); }
-function buildDsqReportHtmlFromRows(...args) { return livePalmesExportReportsWorkflow.buildDsqReportHtmlFromRows(...args); }
-function printDsqRows(...args) { return livePalmesExportReportsWorkflow.printDsqRows(...args); }
-function openDsqRows(...args) { return livePalmesExportReportsWorkflow.openDsqRows(...args); }
-function buildResultArchiveHtmlFromRows(...args) { return livePalmesExportReportsWorkflow.buildResultArchiveHtmlFromRows(...args); }
-function printResultArchiveRows(...args) { return livePalmesExportReportsWorkflow.printResultArchiveRows(...args); }
-function openResultArchiveRows(...args) { return livePalmesExportReportsWorkflow.openResultArchiveRows(...args); }
-function exportDsqPdf(...args) { return livePalmesExportReportsWorkflow.exportDsqPdf(...args); }
-function escapeHtml(...args) { return livePalmesExportReportsWorkflow.escapeHtml(...args); }
 
 function uiEventsOptions() {
   const options = {
@@ -2091,24 +1428,6 @@ function seriesImportWorkflowOptions() {
   return options;
 }
 
-function normalizePdfLabel(...args) { return livePalmesSeriesImportWorkflow.normalizePdfLabel(...args); }
-function fixPdfEncoding(...args) { return livePalmesSeriesImportWorkflow.fixPdfEncoding(...args); }
-function importedEventId(...args) { return livePalmesSeriesImportWorkflow.importedEventId(...args); }
-function importedEventInfo(...args) { return livePalmesSeriesImportWorkflow.importedEventInfo(...args); }
-function importedCategoryLabel(...args) { return livePalmesSeriesImportWorkflow.importedCategoryLabel(...args); }
-function importedBirthYear(...args) { return livePalmesSeriesImportWorkflow.importedBirthYear(...args); }
-function normalizePdfUppercaseEToken(...args) { return livePalmesSeriesImportWorkflow.normalizePdfUppercaseEToken(...args); }
-function splitImportedPersonName(...args) { return livePalmesSeriesImportWorkflow.splitImportedPersonName(...args); }
-function isImportedRelayEvent(...args) { return livePalmesSeriesImportWorkflow.isImportedRelayEvent(...args); }
-function seriesImportOptions(...args) { return livePalmesSeriesImportWorkflow.seriesImportOptions(...args); }
-function extractPdfLines(...args) { return livePalmesSeriesImportWorkflow.extractPdfLines(...args); }
-function parseImportedSeriesLines(...args) { return livePalmesSeriesImportWorkflow.parseImportedSeriesLines(...args); }
-function showPdfImportDebug(...args) { return livePalmesSeriesImportWorkflow.showPdfImportDebug(...args); }
-function prepareImportedSeriesForMode(...args) { return livePalmesSeriesImportWorkflow.prepareImportedSeriesForMode(...args); }
-function seedSourceLookupKeys(...args) { return livePalmesSeriesImportWorkflow.seedSourceLookupKeys(...args); }
-function inheritImportedSeedSources(...args) { return livePalmesSeriesImportWorkflow.inheritImportedSeedSources(...args); }
-function mergeImportedSeriesData(...args) { return livePalmesSeriesImportWorkflow.mergeImportedSeriesData(...args); }
-function importSeriesPdf(...args) { return livePalmesSeriesImportWorkflow.importSeriesPdf(...args); }
 
 const livePalmesAppLifecycle = livePalmesAppLifecycleModule.init(appLifecycleOptions());
 
@@ -2155,7 +1474,3 @@ function appLifecycleOptions() {
   bindOptionState(options, ["data", "firebaseStatus", "profileHomeActive", "roleStates", "state"]);
   return options;
 }
-
-function fetchGeneratedData(...args) { return livePalmesAppLifecycle.fetchGeneratedData(...args); }
-function applyFreshData(...args) { return livePalmesAppLifecycle.applyFreshData(...args); }
-function checkForGeneratedUpdates(...args) { return livePalmesAppLifecycle.checkForGeneratedUpdates(...args); }
