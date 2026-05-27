@@ -131,6 +131,7 @@ function roleSessionWorkflowOptions() {
     ROLE_STATES_KEY,
     UNLOCKED_ROLES_KEY
   };
+  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
   Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
   Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
   Object.defineProperty(options, "roleStates", { get: () => roleStates, set: (value) => { roleStates = value; } });
@@ -394,6 +395,7 @@ function publicProgressWorkflowOptions() {
     topbar,
     updateLiveNotes
   };
+  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
   Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
   Object.defineProperty(options, "lastPublicProgressSignature", { get: () => lastPublicProgressSignature, set: (value) => { lastPublicProgressSignature = value; } });
   Object.defineProperty(options, "presenceCounts", { get: () => presenceCounts, set: (value) => { presenceCounts = value; } });
@@ -595,6 +597,7 @@ function livePalmesRealtimeSyncOptions() {
   Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
   Object.defineProperty(options, "resultsSnapshotReady", { get: () => resultsSnapshotReady, set: (value) => { resultsSnapshotReady = value; } });
   Object.defineProperty(options, "resultsUnsubscribe", { get: () => resultsUnsubscribe, set: (value) => { resultsUnsubscribe = value; } });
+  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
   Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
   return options;
 }
@@ -2076,6 +2079,13 @@ function uiEventsOptions() {
     updateLiveNotes,
     updateSpeakerInfoFromGoogleSheet,
   };
+  Object.defineProperty(options, "alerts", { get: () => alerts, set: (value) => { alerts = value; } });
+  Object.defineProperty(options, "data", { get: () => data, set: (value) => { data = value; } });
+  Object.defineProperty(options, "decisionDraft", { get: () => decisionDraft, set: (value) => { decisionDraft = value; } });
+  Object.defineProperty(options, "expandedHistories", { get: () => expandedHistories, set: (value) => { expandedHistories = value; } });
+  Object.defineProperty(options, "firestoreDb", { get: () => firestoreDb, set: (value) => { firestoreDb = value; } });
+  Object.defineProperty(options, "raceResults", { get: () => raceResults, set: (value) => { raceResults = value; } });
+  Object.defineProperty(options, "state", { get: () => state, set: (value) => { state = value; } });
   Object.defineProperty(options, "unlockedRoles", { get: () => unlockedRoles, set: (value) => { unlockedRoles = value; } });
   Object.defineProperty(options, "profileHomeActive", { get: () => profileHomeActive, set: (value) => { profileHomeActive = value; } });
   Object.defineProperty(options, "resultsAdminSession", { get: () => resultsAdminSession, set: (value) => { resultsAdminSession = value; } });
