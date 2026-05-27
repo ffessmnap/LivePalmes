@@ -4,6 +4,8 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ## Test rapide obligatoire
 
+- Lancer `node tools/verify-livepalmes.js`.
+- Avant une publication sensible, lancer aussi `node tools/verify-livepalmes.js --browser`.
 - Ouvrir `index.html`.
 - Verifier qu'aucune erreur n'apparait dans la console navigateur.
 - Ouvrir la page publique `resultats.html`.
@@ -80,4 +82,3 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Ouvrir le diagnostic performance.
 - Verifier qu'il n'y a pas de vieux PDF resultats a nettoyer.
 - Ne lancer une RAZ que si la competition est terminee ou si c'est un vrai test.
-

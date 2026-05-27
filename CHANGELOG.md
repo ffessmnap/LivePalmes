@@ -39,4 +39,8 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Remplacement de plusieurs acces implicites `with (context)` par des dependances explicites dans les modules stockage, helpers nageurs, exports, demarrage, historique, roles, maintenance resultats, progression publique et infos speaker.
 - Correction du contexte de synchronisation temps reel pour eviter une erreur silencieuse sur la desactivation automatique du mode direct.
 - Correction du contexte des evenements d'interface : les clics speaker utilisent de nouveau la console active.
+- Remplacement des acces implicites du rendu principal de console par des dependances explicites.
+- Remplacement des fleches unicode fragiles des boutons de navigation par des caracteres ASCII.
+- Suppression de l'heure dans le menu deroulant des courses de la page publique series.
+- Ajout d'un smoke test navigateur automatisé pour les consoles, les actions speaker et la page publique series.
 - `app.js` descend a environ 2097 lignes.

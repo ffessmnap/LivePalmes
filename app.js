@@ -802,6 +802,7 @@ function consoleRenderWorkflowOptions() {
     meetTitle,
     normalizeLivePosition,
     pinLockEnabled,
+    preferredInitialSession,
     previousSeriesInlineBtn,
     profileHome,
     profileHomeActive,
@@ -825,6 +826,7 @@ function consoleRenderWorkflowOptions() {
     renderTop2025,
     ROLE_LABELS,
     roleBadge,
+    roleLockBtn,
     saveActiveView,
     saveCurrentRoleState,
     sessionControls,
@@ -1388,14 +1390,14 @@ function setSeriesNavigation(previousDisabled, previousLabel, nextDisabled, next
   [previousSeriesBtn, previousSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = previousDisabled;
-    button.textContent = "←";
+    button.textContent = "<";
     button.title = previousLabel;
     button.setAttribute("aria-label", previousLabel);
   });
   [nextSeriesBtn, nextSeriesFloatBtn].forEach((button) => {
     if (!button) return;
     button.disabled = nextDisabled;
-    button.textContent = "→";
+    button.textContent = ">";
     button.title = nextLabel;
     button.setAttribute("aria-label", nextLabel);
   });

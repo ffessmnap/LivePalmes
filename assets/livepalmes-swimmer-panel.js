@@ -161,7 +161,7 @@
     if (searchLabel) searchLabel.textContent = `Recherche ${entrantWord(1)}`;
     if (lineOrderBtn) {
       lineOrderBtn.hidden = !hasSeriesFilter || !["live", "speaker", "referee"].includes(state.role);
-      lineOrderBtn.textContent = state.lineOrder === "desc" ? "Lignes 8→1" : "Lignes 1→8";
+      lineOrderBtn.textContent = state.lineOrder === "desc" ? "Lignes 8-1" : "Lignes 1-8";
       lineOrderBtn.title = state.lineOrder === "desc" ? "Afficher les lignes de 1 à 8" : "Afficher les lignes de 8 à 1";
     }
     entrantsTableWrap?.classList.toggle("series-table", hasSeriesFilter);
