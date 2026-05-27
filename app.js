@@ -377,6 +377,7 @@ const livePalmesRealtimeSync = livePalmesRealtimeSyncModule.init(livePalmesRealt
 
 function livePalmesRealtimeSyncOptions() {
   const options = {
+    activeCompetitionId,
     alertsCollection,
     applyRemoteLiveData,
     cleanupOrphanFinalResultAlerts,
