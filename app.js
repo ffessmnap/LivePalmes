@@ -16,11 +16,11 @@ const {
   livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
   livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
   livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
-  livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesAdminResults,
+  livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
-  livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesProgramNavigation, livePalmesSeriesControls,
-  livePalmesProgramModalsModule, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
-  livePalmesResultPublicationWorkflowModule, livePalmesResultMaintenanceWorkflowModule, livePalmesFinalWithdrawalsWorkflow, livePalmesDiagnosticsWorkflow,
+  livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesSpeakerInfoOptions, livePalmesProgramNavigation, livePalmesSeriesControls,
+  livePalmesProgramModalsModule, livePalmesProgramModalsOptions, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
+  livePalmesResultPublicationWorkflowModule, livePalmesResultPublicationOptions, livePalmesResultMaintenanceWorkflowModule, livePalmesResultMaintenanceOptions, livePalmesFinalWithdrawalsWorkflow, livePalmesFinalWithdrawalsOptions, livePalmesDiagnosticsWorkflow,
   livePalmesUiEvents, livePalmesUiEventsOptions, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
   livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
   livePalmesDecisionWorkflowModule, livePalmesDecisionOptions, livePalmesHeaderView, livePalmesAlertDetailView, livePalmesAlertCardView,
@@ -793,151 +793,54 @@ function renderSeriesControls(...args) {
 const livePalmesProgramModals = livePalmesProgramModalsModule.init(programModalsOptions());
 
 function programModalsOptions() {
-  const options = {
-    adminSeriesModal,
-    compactRaceTitle,
-    currentRefereeProgressPayload,
+  return livePalmesProgramModalsOptions.create({
+    bindOptionState,
     data,
-    finalStageLabel,
-    hasRowsForProgram,
-    isFinalStage,
-    isLastProgramPartForRace,
-    isSplitRaceAcrossSessions,
-    livePalmesAdminModals,
-    livePalmesAdminResults,
-    livePalmesProgramView,
-    normalizeData,
-    programBtn,
-    programFloatBtn,
-    programKey,
-    programModal,
-    raceOptionKey,
-    refereeProgress,
-    refereeProgressLabel,
-    render,
-    resultForProgramRow,
-    resultImportModal,
-    resultPhaseLabelForProgramRow,
-    resultSessions,
+    dom: { adminSeriesModal, programBtn, programFloatBtn, programModal, resultImportModal },
+    modules: { livePalmesAdminModals, livePalmesAdminResults, livePalmesProgramView },
     roleStates,
-    sexDisplayLabel,
-    splitRaceNote,
-    state,
-    updateLiveNotes
-  };
-  bindOptionState(options, ["currentResultImportRow", "currentSessionResultsImport", "data", "resultsAdminSession", "state"]);
-  return options;
+    source: window,
+    state
+  });
 }
 
 
 const livePalmesResultPublicationWorkflow = livePalmesResultPublicationWorkflowModule.init(livePalmesResultPublicationWorkflowOptions());
 
 function livePalmesResultPublicationWorkflowOptions() {
-  const options = {
-    buildPublicResultsIndex,
-    compactRaceTitle,
-    createFinalistReplacementSpeakerAlert,
+  return livePalmesResultPublicationOptions.create({
+    bindOptionState,
+    collections: { resultPdfsCollection, resultsCollection },
     data,
-    deleteFinalResultAlerts,
-    extractPdfLines,
-    fileToDataUrl,
-    finalRowKey,
-    finalistRowName,
-    fixPdfEncoding,
-    formatDisplayName,
-    importedBirthYear,
-    importedSeriesTime,
-    isFinalStage,
     livePalmesResults: window.LivePalmesResults,
-    markAlertAlreadyClosedError,
-    markSpeakerAlertDoneLocally,
-    normalizePersonName,
-    programKey,
-    publishPublicResultsIndex,
-    raceOptionKey,
-    rebuildFinalistsFromParsedResult,
-    render,
-    renderDataStatus,
-    resultForProgramRow,
-    resultIdForProgramRow,
-    resultMetadataPayload,
-    resultPdfPayload,
-    resultPdfsCollection,
-    resultPhaseLabelForProgramRow,
-    resultsCollection,
-    resultWithoutPdf,
-    saveAlerts,
-    sexDisplayLabel,
-    splitImportedPersonName,
-    stampReplacementAnnouncement,
-    syncAlertChangesToFirestore,
-    syncAlertChangesToFirestoreStrict,
-    syncAlertToFirestore,
+    source: window,
     window
-  };
-  bindOptionState(options, ["alerts", "data", "finalistAlertRepairRunning", "raceResults", "replacementAlertRepairRunning", "resultPdfMigrationAttempted", "resultPdfMigrationRunning", "state"]);
-  return options;
+  });
 }
 
 
 function finalWithdrawalsWorkflowOptions() {
-  return {
-    alertDetailModal,
+  return livePalmesFinalWithdrawalsOptions.create({
     alerts,
-    canWithdrawBeforeReplacementAnnouncement,
-    canWithdrawFinalist,
-    escapeHtml,
-    finalRowCountsAsFinalist,
-    finalWithdrawalLimitDate,
-    finalWithdrawalLimitLabel,
-    formatDeadlineTime,
-    hasFinalWithdrawalDeadline,
-    isFinalWithdrawalDeadlineExpired,
-    livePalmesAlertDetailView,
-    livePalmesSecretaryFinals,
-    markAlertAlreadyClosedError,
-    markSpeakerAlertDoneLocally,
-    normalizePersonName,
-    publishPublicResultsIndex,
+    dom: { alertDetailModal },
+    modules: { livePalmesAlertDetailView, livePalmesSecretaryFinals },
     raceResults,
-    render,
-    replacementAlertMatches,
-    resultParserFunction,
-    resultParserOptions,
     resultsCollection,
-    saveAlerts,
-    sexDisplayLabel,
-    syncAlertChangesToFirestoreStrict,
-    syncAlertToFirestore
-  };
+    source: window
+  });
 }
 
 
 const livePalmesResultMaintenanceWorkflow = livePalmesResultMaintenanceWorkflowModule.init(resultMaintenanceWorkflowOptions());
 
 function resultMaintenanceWorkflowOptions() {
-  const options = {
-    appendImportHistory,
-    archiveCurrentResults,
-    clearPublicSessionResultsPdfs,
-    clearPublicSessionResultsPdfsForSession,
-    clearPublicSeriesPdfs,
-    competitionModeEnabled,
-    deleteFinalResultAlerts,
-    deleteResultPdfPayload,
+  return livePalmesResultMaintenanceOptions.create({
+    bindOptionState,
     livePalmesAdminMaintenance,
-    normalizeData,
-    publishLiveDataToFirestore,
-    publishPublicResultsIndex,
-    render,
-    renderResultsAdminPanel,
-    resultWithoutPdf,
     resultsCollection,
-    saveData,
+    source: window,
     window
-  };
-  bindOptionState(options, ["data", "raceResults", "resultsAdminSession", "state"]);
-  return options;
+  });
 }
 
 
@@ -964,11 +867,6 @@ function swimmerPanelOptions() {
   });
 }
 
-
-function noteKey() {
-  return `${state.eventId}:${state.sex}`;
-}
-
 function parseCsv(text) {
   return livePalmesCsvParser.parse(text, { eventId: state.eventId, sex: state.sex });
 }
@@ -976,57 +874,28 @@ function parseCsv(text) {
 const livePalmesSpeakerInfoWorkflow = livePalmesSpeakerInfoWorkflowModule.init(speakerInfoWorkflowOptions());
 
 function speakerInfoWorkflowOptions() {
-  const options = {
-    appendImportHistory,
-    applyFreshData,
-    categoryLabel,
+  return livePalmesSpeakerInfoOptions.create({
+    bindOptionState,
     document,
-    eventSignature,
-    fixPdfEncoding,
-    formatPersonNameParts,
-    importedEventId,
-    importedSeriesTime,
     livePalmesSpeakerInfo,
-    normalizeClubMatch,
-    normalizeData,
-    normalizePdfLabel,
-    normalizePersonName,
-    publishLiveDataToFirestore,
-    renderDataStatus,
-    sameCategory,
-    seedSourceLookupKeys,
-    shouldKeepRecord,
+    source: window,
     SPEAKER_INFO_SHEETS,
     SPEAKER_SHEET_ID,
-    timeToMs,
     window
-  };
-  bindOptionState(options, ["data"]);
-  return options;
+  });
 }
 
 
 const livePalmesExportReportsWorkflow = livePalmesExportReportsWorkflowModule.init(exportReportsWorkflowOptions());
 
 function exportReportsWorkflowOptions() {
-  const options = {
-    alertClubShortLabel,
-    alertStatusLabel,
-    alertTimelineItems,
-    archiveCurrentHistory,
-    decisionMotifLabel,
-    finalRowsCount,
-    finalStageLabel,
-    formatAlertDateTime,
-    isFinalStage,
-    isRequalificationAlert,
+  return livePalmesExportReportsOptions.create({
+    bindOptionState,
     livePalmesAdminArchives,
     livePalmesExportActions,
-    sexDisplayLabel,
+    source: window,
     window
-  };
-  bindOptionState(options, ["alerts", "data"]);
-  return options;
+  });
 }
 
 
