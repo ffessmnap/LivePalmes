@@ -307,7 +307,7 @@ async function testPublicResults(client, baseUrl) {
   assert(ready, "Page publique resultats : liste non chargee.");
   const state = await evaluateJson(client, `
     return {
-      script: document.querySelector('script[src^="resultats.js"]')?.getAttribute('src') || '',
+      script: document.querySelector('script[src*="resultats.js"]')?.getAttribute('src') || '',
       title: document.querySelector('#publicMeetTitle')?.textContent.trim() || '',
       hasList: document.querySelector('#publicResultsList')?.children.length > 0,
       hasRefresh: Boolean(document.querySelector('#refreshPublicResultsBtn')),

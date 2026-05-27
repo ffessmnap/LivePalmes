@@ -31,6 +31,7 @@
     livePalmesSpeakerInfo: "LivePalmesSpeakerInfo",
     livePalmesSpeakerInfoWorkflowModule: "LivePalmesSpeakerInfoWorkflow",
     livePalmesProgramNavigation: "LivePalmesProgramNavigation",
+    livePalmesSeriesControls: "LivePalmesSeriesControls",
     livePalmesProgramModalsModule: "LivePalmesProgramModals",
     livePalmesEntrantHelpersModule: "LivePalmesEntrantHelpers",
     livePalmesSwimmerPanel: "LivePalmesSwimmerPanel",
@@ -55,6 +56,7 @@
     livePalmesPublicProgressWorkflowModule: "LivePalmesPublicProgressWorkflow",
     livePalmesAppLifecycleModule: "LivePalmesAppLifecycle",
     livePalmesAppState: "LivePalmesAppState",
+    livePalmesAppMethodBindings: "LivePalmesAppMethodBindings",
     livePalmesAppDom: "LivePalmesAppDom"
   };
 
