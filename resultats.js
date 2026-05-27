@@ -41,6 +41,7 @@ const directResultSessionsLoaded = new Set();
 const swimmerResultDetailsLoading = new Set();
 
 const publicSwimmers = window.LivePalmesPublicSwimmers || {};
+const publicResultDocuments = window.LivePalmesPublicResultsDocuments || {};
 const {
   birthYearLabel,
   categoryClass,
@@ -770,77 +771,13 @@ function renderSessionInformation(session) {
   });
 }
 
-const seriesPdfForSession = (session) => publicSwimmers.seriesPdfForSession(publicSeriesPdfs, session);
-
-function sessionResultsPdfsForSession(session) {
-  return publicSessionResultsPdfs
-    .filter((pdf) => pdf.scope === "full" || (pdf.sessions || []).map(String).includes(String(session || "")) || String(pdf.session || "") === String(session || ""))
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-}
-
-function renderSeriesPdfLink(session) {
-  const pdf = seriesPdfForSession(session);
-  if (!pdf) return "";
-  const label = pdf.scope === "session" ? `Séries publiées - session ${session}` : "Séries publiées complètes";
-  const updated = pdf.updatedAt ? `Mis à jour le ${formatPublicDateTime(pdf.updatedAt)}` : "";
-  return `
-    <div class="public-series-pdf public-series-program-pdf">
-      <div>
-        <span class="public-document-kind">Séries</span>
-        <strong>${escapeHtml(label)}</strong>
-        ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
-      </div>
-      <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir les séries</a>
-    </div>
-  `;
-}
-
-function renderSessionResultsPdfLinks(session) {
-  const pdfs = sessionResultsPdfsForSession(session);
-  if (!pdfs.length) return "";
-  return `
-    <div class="public-series-pdf public-session-results-pdf">
-      <div>
-        <span class="public-document-kind">Résultats</span>
-        <strong>Résultats complets</strong>
-        <span>${escapeHtml(pdfs.length > 1 ? `${pdfs.length} PDF disponibles` : (pdfs[0].sourceLabel || "PDF de consultation"))}</span>
-      </div>
-      <div class="public-pdf-link-actions">
-        ${pdfs.map((pdf) => `
-          <a class="ghost-button compact confirm-button" href="pdf.html?type=session-result&id=${encodeURIComponent(pdf.id || "")}">
-            ${escapeHtml(pdfs.length > 1 ? (pdf.sourceLabel || "Voir") : "Voir")}
-          </a>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function renderPublicDocumentsSection(documentsHtml) {
-  if (!documentsHtml) return "";
-  return `
-    <div class="public-results-section-title public-documents-title">
-      <h3>Documents</h3>
-      <span>Séries et PDF publiés</span>
-    </div>
-    <section class="public-documents-section" aria-label="Documents de la session">
-      ${documentsHtml}
-    </section>
-  `;
-}
-
-function renderSessionResultsPdfSection(session) {
-  const pdfLinks = renderSessionResultsPdfLinks(session);
-  if (!pdfLinks) return "";
-  return `
-    <div class="public-results-section-title public-documents-title">
-      <h3>Résultats complets</h3>
-      <span>PDF de la session</span>
-    </div>
-    <section class="public-documents-section public-session-results-section" aria-label="PDF résultats de la session">
-      ${pdfLinks}
-    </section>
-  `;
+function publicDocumentOptions() {
+  return {
+    escapeHtml,
+    formatDate: formatPublicDateTime,
+    seriesPdfs: publicSeriesPdfs,
+    sessionResultsPdfs: publicSessionResultsPdfs
+  };
 }
 
 function renderPendingRows(rows = []) {
@@ -885,8 +822,9 @@ function renderResults() {
   const publishedRows = rows.filter((row) => resultIsVisible(resultForRow(row)));
   const pendingRows = rows.filter((row) => !resultIsVisible(resultForRow(row)));
   const sessionResults = resultsForRows(publishedRows);
-  const seriesDocumentsHtml = renderSeriesPdfLink(activeSession);
-  const sessionResultsPdfHtml = renderSessionResultsPdfSection(activeSession);
+  const documentOptions = publicDocumentOptions();
+  const seriesDocumentsHtml = publicResultDocuments.renderSeriesPdfLink(activeSession, documentOptions);
+  const sessionResultsPdfHtml = publicResultDocuments.renderSessionResultsPdfSection(activeSession, documentOptions);
   const sessionInformationHtml = renderSessionInformation(activeSession);
   if (sessionInfoHost) sessionInfoHost.innerHTML = sessionInformationHtml;
   if (!rows.length) {
@@ -911,7 +849,7 @@ function renderResults() {
     </div>
     ${publishedRows.map(renderRow).join("")}
     ${renderPendingRows(pendingRows)}
-    ${renderPublicDocumentsSection(seriesDocumentsHtml)}
+    ${publicResultDocuments.renderPublicDocumentsSection(seriesDocumentsHtml)}
     ${renderSwimmerSearchSection()}
   `;
   updateCollapseDetailsButton();

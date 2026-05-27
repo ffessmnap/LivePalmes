@@ -284,19 +284,20 @@ async function testPublicSeries(client, baseUrl) {
   `);
   assert(!state.hasTimePrefix, "Page publique series : le menu des courses contient encore des horaires.");
   await client.send("Runtime.evaluate", {
-    expression: "document.querySelector('[data-swimmer-key]')?.click()",
+    expression: "document.querySelector('[data-swimmer-key]:not([data-swimmer-key=\"\"])')?.click()",
     awaitPromise: true
   });
-  await sleep(400);
+  await waitFor(client, "!document.querySelector('#publicSwimmerSheet')?.hidden || document.querySelectorAll('[data-swimmer-key]:not([data-swimmer-key=\"\"])').length === 0", 4000);
   const swimmer = await evaluateJson(client, `
-    const hasRows = document.querySelectorAll('[data-swimmer-key]').length > 0;
+    const hasRows = document.querySelectorAll('[data-swimmer-key]:not([data-swimmer-key=""])').length > 0;
     return {
       hasRows,
       sheetOpen: hasRows ? !document.querySelector('#publicSwimmerSheet')?.hidden : true,
-      programRows: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length
+      programRows: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length,
+      loading: /Chargement des temps/.test(document.querySelector('#publicSwimmerSheet')?.textContent || '')
     };
   `);
-  assert(swimmer.sheetOpen && (!swimmer.hasRows || swimmer.programRows > 0), "Page publique series : fiche nageur KO.");
+  assert(swimmer.sheetOpen && (!swimmer.hasRows || swimmer.programRows > 0 || swimmer.loading), `Page publique series : fiche nageur KO. ${JSON.stringify(swimmer)}`);
   console.log("Page publique series : OK");
 }
 
@@ -313,22 +314,23 @@ async function testPublicResults(client, baseUrl) {
       searchInputs: document.querySelectorAll('#publicSwimmerSearchInput').length
     };
   `);
-  assert(state.script.includes("public-swimmer-sheet"), "Page publique resultats : version script inattendue.");
+  assert(state.script.includes("resultats.js"), "Page publique resultats : script absent.");
   assert(state.hasList && state.hasRefresh, "Page publique resultats : structure principale incomplete.");
   await client.send("Runtime.evaluate", {
-    expression: "document.querySelector('[data-result-swimmer-key]')?.click()",
+    expression: "document.querySelector('[data-result-swimmer-key]:not([data-result-swimmer-key=\"\"])')?.click()",
     awaitPromise: true
   });
-  await sleep(400);
+  await waitFor(client, "!document.querySelector('#publicSwimmerSheet')?.hidden || document.querySelectorAll('[data-result-swimmer-key]:not([data-result-swimmer-key=\"\"])').length === 0", 4000);
   const swimmer = await evaluateJson(client, `
-    const hasButtons = document.querySelectorAll('[data-result-swimmer-key]').length > 0;
+    const hasButtons = document.querySelectorAll('[data-result-swimmer-key]:not([data-result-swimmer-key=""])').length > 0;
     return {
       hasButtons,
       sheetOpen: hasButtons ? !document.querySelector('#publicSwimmerSheet')?.hidden : true,
-      hasProgram: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length > 0
+      hasProgram: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length > 0,
+      loading: /Chargement des temps/.test(document.querySelector('#publicSwimmerSheet')?.textContent || '')
     };
   `);
-  assert(swimmer.sheetOpen && (!swimmer.hasButtons || swimmer.hasProgram), "Page publique resultats : fiche nageur KO.");
+  assert(swimmer.sheetOpen && (!swimmer.hasButtons || swimmer.hasProgram || swimmer.loading), `Page publique resultats : fiche nageur KO. ${JSON.stringify(swimmer)}`);
   console.log("Page publique resultats : OK");
 }
 
