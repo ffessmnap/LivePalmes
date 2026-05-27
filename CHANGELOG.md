@@ -43,4 +43,5 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Remplacement des fleches unicode fragiles des boutons de navigation par des caracteres ASCII.
 - Suppression de l'heure dans le menu deroulant des courses de la page publique series.
 - Ajout d'un smoke test navigateur automatisé pour les consoles, les actions speaker et la page publique series.
-- `app.js` descend a environ 2097 lignes.
+- Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules alertes, programme et actions admin.
+- `app.js` reste autour de 2100 lignes.

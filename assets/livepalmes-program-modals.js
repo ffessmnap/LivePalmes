@@ -1,9 +1,43 @@
 (function () {
   function init(context = {}) {
-    with (context) {
+    const {
+      adminSeriesModal,
+      compactRaceTitle,
+      currentRefereeProgressPayload,
+      finalStageLabel,
+      hasRowsForProgram,
+      isFinalStage,
+      isLastProgramPartForRace,
+      isSplitRaceAcrossSessions,
+      livePalmesAdminModals,
+      livePalmesAdminResults,
+      livePalmesProgramView,
+      normalizeData,
+      programBtn,
+      programFloatBtn,
+      programKey,
+      programModal,
+      raceOptionKey,
+      refereeProgress,
+      refereeProgressLabel,
+      render,
+      resultForProgramRow,
+      resultImportModal,
+      resultPhaseLabelForProgramRow,
+      resultSessions,
+      sexDisplayLabel,
+      splitRaceNote,
+      updateLiveNotes
+    } = context;
+    const getData = () => context.data || { events: [], program: [], series: [], notes: {} };
+    const getResultsAdminSession = () => context.resultsAdminSession || "";
+    const getRoleStates = () => context.roleStates || {};
+    const getState = () => context.state || {};
+    const setData = (value) => { context.data = value; };
+
       function renderProgramButtons() {
         if (programBtn) {
-          const inlineProgram = ["speaker", "referee", "live"].includes(state.role);
+          const inlineProgram = ["speaker", "referee", "live"].includes(getState().role);
           programBtn.textContent = inlineProgram ? "Programme" : "P";
           programBtn.title = "Programme";
           programBtn.setAttribute("aria-label", "Programme");
@@ -25,7 +59,7 @@
             stage: row.stage || "finale"
           }];
         }
-        const rows = (data.series || [])
+        const rows = (getData().series || [])
           .filter((seriesRow) => seriesRow.eventId === row.eventId && seriesRow.sex === row.sex)
           .filter((seriesRow) => !row.session || !seriesRow.session || seriesRow.session === row.session)
           .filter((seriesRow) => !isFinalStage(seriesRow.stage))
@@ -55,13 +89,15 @@
       }
       
       function programItemIsCurrent(row, item) {
-        const viewState = ["video", "computer"].includes(state.role) ? (roleStates.speaker || state) : state;
+        const state = getState();
+        const viewState = ["video", "computer"].includes(state.role) ? (getRoleStates().speaker || state) : state;
         return programItemMatchesState(row, item, viewState);
       }
       
       function programItemIsSpeakerCurrent(row, item) {
+        const state = getState();
         if (state.role !== "referee") return false;
-        return programItemMatchesState(row, item, roleStates.speaker || state);
+        return programItemMatchesState(row, item, getRoleStates().speaker || state);
       }
       
       function programProgressValue(row, item = null) {
@@ -84,7 +120,7 @@
       
       function progressValueFromMarker(progress = refereeProgress()) {
         if (!progress?.programKey) return null;
-        const row = (data.program || []).find((item) => programKey(item) === progress.programKey);
+        const row = (getData().program || []).find((item) => programKey(item) === progress.programKey);
         if (!row) return null;
         return programProgressValue(row, {
           series: progress.series,
@@ -108,8 +144,8 @@
       }
       
       function speakerProgramPositionLabel() {
-        const speakerState = roleStates.speaker || state;
-        const event = data.events.find((item) => item.id === speakerState.eventId);
+        const speakerState = getRoleStates().speaker || getState();
+        const event = (getData().events || []).find((item) => item.id === speakerState.eventId);
         const seriesLabel = isFinalStage(speakerState.series)
           ? finalStageLabel(speakerState.series)
           : `Série ${speakerState.series || "-"}`;
@@ -118,10 +154,11 @@
       
       function renderProgramModal() {
         if (!programModal || programModal.hidden) return;
-        const viewState = ["video", "computer"].includes(state.role) ? (roleStates.speaker || state) : state;
+        const state = getState();
+        const viewState = ["video", "computer"].includes(state.role) ? (getRoleStates().speaker || state) : state;
         const readOnlyProgram = ["video", "computer"].includes(state.role);
         const compactProgram = false;
-        const rows = (data.program || [])
+        const rows = (getData().program || [])
           .filter((row) => viewState.session === "all" || !row.session || row.session === viewState.session)
           .filter((row) => row.hasEntrants === false || hasRowsForProgram(row))
           .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
@@ -130,7 +167,7 @@
           compactProgram,
           readOnlyProgram,
           rows: rows.map((row) => {
-            const event = data.events.find((item) => item.id === row.eventId);
+            const event = (getData().events || []).find((item) => item.id === row.eventId);
             const rowKey = raceOptionKey(row.eventId, row.sex);
             return {
               current: rowKey === currentKey && (!row.session || state.session === "all" || row.session === state.session),
@@ -169,17 +206,19 @@
       }
       
       async function setRefereeProgressHere() {
+        const state = getState();
         if (state.role !== "referee") return;
         const progress = currentRefereeProgressPayload();
         if (!progress) return;
         const label = refereeProgressLabel(progress);
-        data = normalizeData({
+        const data = getData();
+        setData(normalizeData({
           ...data,
           notes: {
             ...(data.notes || {}),
             refereeProgress: progress
           }
-        });
+        }));
         render();
         if (!programModal.hidden) renderProgramModal();
         updateLiveNotes(`Point JA : ${label || compactRaceTitle()}`, { refereeProgress: progress }).catch((error) => {
@@ -202,9 +241,9 @@
       
       function openResultImportModal(row) {
         if (!resultImportModal || !row) return;
-        currentResultImportRow = row;
-        currentSessionResultsImport = null;
-        const event = data.events.find((item) => item.id === row.eventId);
+        context.currentResultImportRow = row;
+        context.currentSessionResultsImport = null;
+        const event = (getData().events || []).find((item) => item.id === row.eventId);
         const phaseLabel = resultPhaseLabelForProgramRow(row);
         const isFinalResult = isFinalStage(row.stage);
         const defaultPartial = !isFinalResult && isSplitRaceAcrossSessions(row.eventId, row.sex) && !isLastProgramPartForRace(row);
@@ -229,10 +268,10 @@
       
       function openSessionResultsImportModal(defaultSession = "") {
         if (!resultImportModal) return;
-        currentResultImportRow = null;
+        context.currentResultImportRow = null;
         const sessions = resultSessions();
-        const selectedSession = defaultSession || resultsAdminSession || sessions[0]?.number || "";
-        currentSessionResultsImport = { defaultSession: selectedSession };
+        const selectedSession = defaultSession || getResultsAdminSession() || sessions[0]?.number || "";
+        context.currentSessionResultsImport = { defaultSession: selectedSession };
         resultImportModal.hidden = false;
         resultImportModal.innerHTML = livePalmesAdminResults.renderSessionResultsImportModalHtml({
           selectedSession,
@@ -244,8 +283,8 @@
         if (!resultImportModal) return;
         resultImportModal.hidden = true;
         resultImportModal.innerHTML = "";
-        currentResultImportRow = null;
-        currentSessionResultsImport = null;
+        context.currentResultImportRow = null;
+        context.currentSessionResultsImport = null;
       }
 
       return {
@@ -270,7 +309,6 @@
         openSessionResultsImportModal,
         closeResultImportModal
       };
-    }
   }
 
   window.LivePalmesProgramModals = { init };
