@@ -55,6 +55,7 @@
     livePalmesHistoryActionsModule: "LivePalmesHistoryActions",
     livePalmesHistoryPresenterModule: "LivePalmesHistoryPresenter",
     livePalmesDecisionWorkflowModule: "LivePalmesDecisionWorkflow",
+    livePalmesDecisionOptions: "LivePalmesDecisionOptions",
     livePalmesHeaderView: "LivePalmesHeaderView",
     livePalmesAlertDetailView: "LivePalmesAlertDetailView",
     livePalmesAlertCardView: "LivePalmesAlertCardView",
