@@ -23,7 +23,7 @@ const {
   livePalmesResultPublicationWorkflowModule, livePalmesResultMaintenanceWorkflowModule, livePalmesFinalWithdrawalsWorkflow, livePalmesDiagnosticsWorkflow,
   livePalmesUiEvents, livePalmesUiEventsOptions, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
   livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
-  livePalmesDecisionWorkflowModule, livePalmesHeaderView, livePalmesAlertDetailView, livePalmesAlertCardView,
+  livePalmesDecisionWorkflowModule, livePalmesDecisionOptions, livePalmesHeaderView, livePalmesAlertDetailView, livePalmesAlertCardView,
   livePalmesLineStatusView, livePalmesPublicProgressWorkflowModule, livePalmesAppLifecycleModule, livePalmesAppState,
   livePalmesAppMethodBindings, livePalmesAppDom
 } = livePalmesAppModules.collect ? livePalmesAppModules.collect(window) : {};
@@ -710,56 +710,16 @@ function livePalmesHistoryPresenterOptions() {
 const livePalmesDecisionWorkflow = livePalmesDecisionWorkflowModule.init(livePalmesDecisionWorkflowOptions());
 
 function livePalmesDecisionWorkflowOptions() {
-  const options = {
-    activeDsqAlertsForEntrant,
-    activeLineAlertsForEntrant,
-    alertCommentLabel,
-    alertDetailLabel,
-    alertIdentityLabel,
-    alertLineCode,
-    alertRaceLabel,
+  return livePalmesDecisionOptions.create({
     alerts,
-    alertSwimmerLabel,
-    alertStatusLabel,
-    categoryLabel,
-    closeAlertDetail,
-    currentEvent,
-    currentRoleAlertFilter,
-    currentSeriesRows,
+    bindOptionState,
     data,
-    decisionModal,
-    decisionPanel,
     DECISION_LABELS,
-    decisionMotifLabel,
-    entrantKey,
-    finalStageLabel,
-    formatAlertTime,
-    formatDisplayName,
-    isDsqAlert,
-    isFinalStage,
-    isRequalificationAlert,
-    isRelayEntrant,
-    isSpeakerView,
-    livePalmesRefereeView,
-    livePalmesRoleQueueView,
-    markAlertAlreadyClosedError,
-    openAlertDetail,
-    raceEntrants,
-    render,
-    renderEntrants,
-    renderDecisionModal,
-    roleQueue,
-    saveAlerts,
-    sexDisplayLabel,
-    shortClubName,
-    state,
-    syncAlertChangesToFirestore,
-    syncAlertChangesToFirestoreStrict,
-    syncAlertToFirestore,
-    syncAlertToFirestoreStrict
-  };
-  bindOptionState(options, ["alerts", "decisionDraft", "state"]);
-  return options;
+    dom: { decisionModal, decisionPanel, roleQueue },
+    modules: { livePalmesRefereeView, livePalmesRoleQueueView },
+    source: window,
+    state
+  });
 }
 
 
