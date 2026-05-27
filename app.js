@@ -120,6 +120,8 @@ const livePalmesSpeakerInfo = window.LivePalmesSpeakerInfo || {};
 const livePalmesProgramNavigation = window.LivePalmesProgramNavigation || {};
 const livePalmesSwimmerPanel = window.LivePalmesSwimmerPanel || {};
 const livePalmesResultsAdminWorkflow = window.LivePalmesResultsAdminWorkflow || {};
+const livePalmesFinalWithdrawalsWorkflow = window.LivePalmesFinalWithdrawalsWorkflow || {};
+const livePalmesDiagnosticsWorkflow = window.LivePalmesDiagnosticsWorkflow || {};
 const livePalmesProgramView = window.LivePalmesProgramView || {};
 const livePalmesRefereeView = window.LivePalmesRefereeView || {};
 const livePalmesRoleQueueView = window.LivePalmesRoleQueueView || {};
@@ -3274,405 +3276,68 @@ function cancelDecision(alertId, cancelledBy = "referee") {
   render();
 }
 
-function renderDataStatus(message = "") {
-  if (!dataStatus) return;
-  renderFirebaseHeaderStatus();
-  if (state.role !== "computer") {
-    dataStatus.hidden = true;
-    dataStatus.innerHTML = "";
-    return;
-  }
-  dataStatus.classList.remove("warning", "source");
-  if (message) {
-    dataStatus.hidden = false;
-    dataStatus.textContent = message;
-    dataStatus.classList.add("warning");
-    return;
-  }
-  if (state.role === "computer") {
-    dataStatus.hidden = true;
-    dataStatus.innerHTML = "";
-    return;
-  }
-  if (data.sourceVersion) {
-    const seriesSource = data.notes?.sourceLabel || "Données officielles chargées";
-    const sourceFile = data.notes?.sourceFile || "";
-    const speakerSource = data.notes?.speakerInfoSource
-      ? `${data.notes.speakerInfoSource}${data.notes.speakerInfoUpdatedAt ? ` - ${data.notes.speakerInfoUpdatedAt}` : ""}`
-      : "non mis à jour";
-    const firebaseMeta = firebaseStatusMeta();
-    const firebaseLabel = firebaseStatus === "local" ? "local seulement" : firebaseMeta.label.toLowerCase();
-    const firebaseClass = firebaseMeta.className;
-    const generatedAt = data.notes?.generatedAt || "";
-    const seriesCount = data.notes?.seriesLineCount || data.series?.length || 0;
-    const entrantTotal = data.notes?.entrantCount || data.entrants?.length || 0;
-    const updatedSession = data.notes?.lastImportedMode === "Mise à jour session" && data.notes?.lastUpdatedSession
-      ? `session ouverte par défaut : S${data.notes.lastUpdatedSession}`
-      : "session ouverte par défaut : S1";
-    const history = Array.isArray(data.notes?.importHistory) ? data.notes.importHistory.slice(-4).reverse() : [];
-    dataStatus.hidden = false;
-    dataStatus.innerHTML = `
-      <span><strong>Séries</strong> ${escapeHtml(seriesSource)}${sourceFile ? ` - ${escapeHtml(sourceFile)}` : ""}</span>
-      <span><strong>Infos speaker</strong> ${escapeHtml(speakerSource)}</span>
-      <span><strong>Actualisation</strong> ${competitionModeEnabled() ? "directe" : "manuelle"}</span>
-      <span><strong>Codes</strong> ${pinLockEnabled() ? "actifs" : "inactifs"}</span>
-      <span><i class="firebase-dot ${firebaseClass}" aria-hidden="true"></i><strong>Firebase</strong> ${escapeHtml(firebaseLabel)}</span>
-      <span>${escapeHtml(String(entrantTotal))} engagements</span>
-      <span>${escapeHtml(String(seriesCount))} lignes de séries</span>
-      <span>${escapeHtml(updatedSession)}</span>
-      ${generatedAt ? `<span>mise à jour ${escapeHtml(generatedAt)}</span>` : ""}
-      ${history.length ? `<span class="status-history"><strong>Historique</strong> ${history.map((item) => escapeHtml(item)).join(" | ")}</span>` : ""}
-    `;
-    dataStatus.classList.add("source");
-    return;
-  }
-  dataStatus.hidden = false;
-  dataStatus.textContent = "Données officielles non chargées. Sur GitHub Pages, vérifie que data.generated.js et donnees-speaker-france-2026.json sont bien publiés.";
-  dataStatus.classList.add("warning");
-}
-
-function firebaseStatusMeta() {
-  if (firebaseStatus === "connected") {
-    return { label: realtimeSyncEnabled() ? "Direct actif" : "Connecté", className: "ok" };
-  }
-  if (firebaseStatus === "error") {
-    return { label: "Connexion interrompue", className: "error" };
-  }
-  if (firebaseStatus === "offline") {
-    return { label: "Connexion interrompue", className: "error" };
-  }
-  if (firebaseStatus === "local") {
-    return { label: "Local", className: "pending" };
-  }
-  if (firebaseStatus === "manual") {
-    return { label: "Actualisation manuelle", className: "pending" };
-  }
-  return { label: "Connexion", className: "pending" };
-}
-
-function renderFirebaseHeaderStatus() {
-  if (!firebaseHeaderStatus) return;
-  const meta = firebaseStatusMeta();
-  firebaseHeaderStatus.className = `firebase-header-status ${meta.className}`;
-  firebaseHeaderStatus.innerHTML = `<i class="firebase-dot ${meta.className}" aria-hidden="true"></i>${escapeHtml(meta.label)}`;
-  firebaseHeaderStatus.title = firebaseStatus === "error" || firebaseStatus === "offline"
-    ? "Connexion interrompue - les actions peuvent ne pas être synchronisées."
-    : meta.label;
-}
-
-function shortStatusDate() {
-  return new Date().toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function appendImportHistory(notes, label) {
-  const history = Array.isArray(notes?.importHistory) ? notes.importHistory.slice(-7) : [];
-  return [...history, `${shortStatusDate()} - ${label}`].slice(-8);
-}
-
-async function countCollectionDocuments(collection) {
-  if (!collection) return 0;
-  if (typeof collection.count === "function") {
-    try {
-      const snapshot = await collection.count().get();
-      return Number(snapshot.data()?.count || 0);
-    } catch (error) {
-      console.warn("Comptage Firestore impossible, lecture classique utilisée", error);
-    }
-  }
-  const snapshot = await collection.get({ source: "server" });
-  return snapshot.size || snapshot.docs?.length || 0;
-}
-
-async function collectPerformanceDiagnostic() {
-  if (!firestoreDb) {
-    return {
-      available: false,
-      message: "Firebase indisponible sur cet appareil."
-    };
-  }
-  const startedAt = performance.now();
-  const resultSnapshot = await resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" });
-  const results = resultSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  const legacyPdfResults = results.filter((result) => result.pdfDataUrl);
-  const legacyBytes = legacyPdfResults.reduce((sum, result) => sum + dataUrlApproxBytes(result.pdfDataUrl), 0);
-  const resultPdfCount = await countCollectionDocuments(resultPdfsCollection());
-  const publicIndexSnapshot = await publicResultsIndexDocument().get({ source: "server" }).catch(() => null);
-  const publicIndex = publicIndexSnapshot?.data() || {};
-  const publicIndexBytes = JSON.stringify(publicIndex).length;
+function diagnosticsWorkflowOptions() {
   return {
-    available: true,
-    competitionId: activeCompetitionId,
-    resultCount: results.length,
-    publicResultCount: results.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length,
-    resultPdfCount,
-    legacyPdfCount: legacyPdfResults.length,
-    legacyBytes,
-    publicIndexBytes,
-    publicIndexUpdatedAt: publicIndex.updatedAt || "",
-    readMs: Math.round(performance.now() - startedAt),
-    status: legacyPdfResults.length ? "warn" : "ok"
-  };
-}
-
-function renderPerformanceDiagnosticModal(report) {
-  if (!roleCodesModal) return;
-  roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPerformanceDiagnosticModalHtml(report, {
-    formatByteSize
-  });
-}
-
-async function showPerformanceDiagnosticModal() {
-  if (!roleCodesModal) return;
-  roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPerformanceDiagnosticLoadingHtml();
-  const report = await collectPerformanceDiagnostic();
-  renderPerformanceDiagnosticModal(report);
-}
-
-async function safeCountCollection(collection) {
-  try {
-    return await countCollectionDocuments(collection);
-  } catch (error) {
-    console.warn("Comptage diagnostic impossible", error);
-    return null;
-  }
-}
-
-async function safeDocumentData(documentRef) {
-  try {
-    const snapshot = await documentRef?.get({ source: "server" });
-    return snapshot?.exists ? (snapshot.data() || {}) : null;
-  } catch (error) {
-    console.warn("Lecture diagnostic impossible", error);
-    return null;
-  }
-}
-
-function alertPendingTargets(alert, { respectLiveDismissed = true } = {}) {
-  if (typeof livePalmesAdminDiagnostics.alertPendingTargets === "function") {
-    return livePalmesAdminDiagnostics.alertPendingTargets(alert, {
-      isResolvedByResult: speakerAlertAlreadyResolvedByResult,
-      liveDismissedIds: liveDismissedAlertIds,
-      respectLiveDismissed
-    });
-  }
-  return [];
-}
-
-function alertPendingBreakdown(rows = [], options = {}) {
-  if (typeof livePalmesAdminDiagnostics.alertPendingBreakdown === "function") {
-    return livePalmesAdminDiagnostics.alertPendingBreakdown(rows, {
-      ...options,
-      alertRaceLabel,
-      alertStatusLabel,
-      decisionMotifLabel,
-      fullAlertIdentityLabel,
-      isResolvedByResult: speakerAlertAlreadyResolvedByResult,
-      liveDismissedIds: liveDismissedAlertIds
-    });
-  }
-  return { counts: {}, examples: [], total: 0 };
-}
-
-function alertTargetsLabel(targets = []) {
-  if (typeof livePalmesAdminDiagnostics.alertTargetsLabel === "function") {
-    return livePalmesAdminDiagnostics.alertTargetsLabel(targets);
-  }
-  return targets.join(", ");
-}
-
-async function collectTechnicalDiagnostic() {
-  const startedAt = performance.now();
-  const localResults = Array.isArray(raceResults) ? raceResults : [];
-  const localAlerts = Array.isArray(alerts) ? alerts : [];
-  const localAlertBreakdown = alertPendingBreakdown(localAlerts, { respectLiveDismissed: true });
-  const localResultPerformances = localResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
-  const localDetailedResults = localResults.filter(resultHasDetailsForDiagnostic).length;
-  const report = {
-    available: Boolean(firestoreDb),
-    competitionId: activeCompetitionId,
-    local: {
-      sessions: sessionRows().length,
-      program: data.program?.length || 0,
-      series: data.series?.length || 0,
-      entrants: data.entrants?.length || 0,
-      results: localResults.length,
-      detailedResults: localDetailedResults,
-      performances: localResultPerformances,
-      alerts: localAlerts.length,
-      pendingAlerts: localAlertBreakdown.total,
-      pendingAlertCounts: localAlertBreakdown.counts,
-      pendingAlertExamples: localAlertBreakdown.examples,
-      sourceVersion: data.sourceVersion || "",
-      lastUpdatedSession: data.notes?.lastUpdatedSession || ""
-    },
-    firebase: {},
-    recommendations: []
-  };
-  if (!firestoreDb) {
-    report.message = "Firebase indisponible sur cet appareil.";
-    report.readMs = Math.round(performance.now() - startedAt);
-    report.recommendations.push("Impossible de lire les compteurs serveur depuis cet appareil.");
-    return report;
-  }
-
-  const [
-    resultsSnapshot,
-    publicIndex,
-    liveData,
-    resultPdfCount,
-    seriesPdfCount,
-    sessionResultsPdfCount,
-    alertSnapshot,
-    presenceCount,
-    roleLockCount
-  ] = await Promise.all([
-    resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" }).catch((error) => {
-      console.warn("Lecture résultats diagnostic impossible", error);
-      return null;
-    }),
-    safeDocumentData(publicResultsIndexDocument()),
-    safeDocumentData(liveDataDocument()),
-    safeCountCollection(resultPdfsCollection()),
-    safeCountCollection(seriesPdfsCollection()),
-    safeCountCollection(sessionResultsPdfsCollection()),
-    alertsCollection()?.orderBy("createdAt", "desc").get({ source: "server" }).catch((error) => {
-      console.warn("Lecture alertes diagnostic impossible", error);
-      return null;
-    }),
-    safeCountCollection(presenceCollection()),
-    safeCountCollection(activeCompetitionDocument()?.collection("roleLocks"))
-  ]);
-
-  const serverResults = resultsSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
-  const serverAlerts = alertSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
-  const serverAlertBreakdown = alertPendingBreakdown(serverAlerts, { respectLiveDismissed: false });
-  const resultPerformances = serverResults.reduce((sum, result) => sum + (Array.isArray(result.performances) ? result.performances.length : 0), 0);
-  const detailedResults = serverResults.filter(resultHasDetailsForDiagnostic).length;
-  const legacyPdfResults = serverResults.filter((result) => result.pdfDataUrl);
-  const resultSessions = [...new Set(serverResults.map((result) => String(result.session || "").trim()).filter(Boolean))]
-    .sort((a, b) => Number(a) - Number(b));
-  const publicResults = Array.isArray(publicIndex?.results) ? publicIndex.results : [];
-  const livePayload = liveData?.data || {};
-  const publicIndexBytes = publicIndex ? JSON.stringify(publicIndex).length : 0;
-  const liveDataBytes = livePayload ? JSON.stringify(livePayload).length : 0;
-  const lastResultUpdatedAt = serverResults.map((result) => result.updatedAt).filter(Boolean).sort().at(-1) || "";
-  report.firebase = {
-    results: serverResults.length,
-    visibleResults: serverResults.filter((result) => !result.hasFinal || result.finalistsAnnouncedAt).length,
-    detailedResults,
-    resultPerformances,
-    partialResults: serverResults.filter((result) => result.isPartial).length,
-    waitingFinalAnnouncements: serverResults.filter((result) => result.hasFinal && !result.finalistsAnnouncedAt).length,
-    legacyPdfCount: legacyPdfResults.length,
-    legacyBytes: legacyPdfResults.reduce((sum, result) => sum + dataUrlApproxBytes(result.pdfDataUrl), 0),
-    resultPdfCount,
-    seriesPdfCount,
-    sessionResultsPdfCount,
-    alertCount: serverAlerts.length,
-    pendingAlertCount: serverAlertBreakdown.total,
-    pendingAlertCounts: serverAlertBreakdown.counts,
-    pendingAlertExamples: serverAlertBreakdown.examples,
-    presenceCount,
-    roleLockCount,
-    publicResults: publicResults.length,
-    publicIndexBytes,
-    publicIndexUpdatedAt: publicIndex?.updatedAt || "",
-    liveDataBytes,
-    liveSourceVersion: livePayload.sourceVersion || "",
-    livePublishedAt: livePayload.notes?.livePublishedAt || "",
-    resultSessions: resultSessions.join(", ") || "aucune",
-    lastResultUpdatedAt
-  };
-
-  if (report.firebase.legacyPdfCount) {
-    report.recommendations.push("Des PDF résultats sont encore stockés dans results : lancer le nettoyage PDF résultats.");
-  }
-  if (publicIndexBytes > 750000) {
-    report.recommendations.push("L'index public est lourd : surveiller le temps d'actualisation des pages publiques.");
-  }
-  if (liveDataBytes > 900000) {
-    report.recommendations.push("Les données live sont lourdes : éviter de republier inutilement pendant une session chargée.");
-  }
-  if (serverResults.length && detailedResults < serverResults.length / 2) {
-    report.recommendations.push("Beaucoup de résultats n'ont pas de détails nageurs : relire les PDF concernés si les fiches publiques sont incomplètes.");
-  }
-  if (!report.recommendations.length) {
-    report.recommendations.push("Aucun signal technique préoccupant détecté.");
-  }
-  report.readMs = Math.round(performance.now() - startedAt);
-  return report;
-}
-
-function resultHasDetailsForDiagnostic(result) {
-  if (typeof livePalmesAdminDiagnostics.resultHasDetails === "function") {
-    return livePalmesAdminDiagnostics.resultHasDetails(result);
-  }
-  return Boolean(result?.ranking?.length || result?.performances?.length);
-}
-
-function renderTechnicalDiagnosticModal(report) {
-  if (!roleCodesModal) return;
-  roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalDiagnosticModalHtml(report, {
-    alertTargetsLabel,
+    activeCompetitionDocument,
+    activeCompetitionId,
+    alertRaceLabel,
+    alerts,
+    alertsCollection,
+    alertStatusLabel,
+    competitionModeEnabled,
+    data,
+    dataStatus,
+    dataUrlApproxBytes,
+    decisionMotifLabel,
+    escapeHtml,
+    firebaseHeaderStatus,
+    firebaseStatus,
+    firestoreDb,
     formatAlertDateTime,
-    formatByteSize
-  });
+    formatByteSize,
+    fullAlertIdentityLabel,
+    liveDataDocument,
+    liveDismissedAlertIds,
+    livePalmesAdminDiagnostics,
+    migrateResultPdfsOutOfResults,
+    performanceDiagnosticLines,
+    pinLockEnabled,
+    presenceCollection,
+    publicResultsIndexDocument,
+    raceResults,
+    realtimeSyncEnabled,
+    resultHasDetailsForDiagnostic,
+    resultPdfsCollection,
+    resultsCollection,
+    roleCodesModal,
+    seriesPdfsCollection,
+    sessionResultsPdfsCollection,
+    sessionRows,
+    speakerAlertAlreadyResolvedByResult,
+    state
+  };
 }
 
-async function showTechnicalDiagnosticModal() {
-  if (!roleCodesModal) return;
-  roleCodesModal.hidden = false;
-  roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalDiagnosticLoadingHtml();
-  const report = await collectTechnicalDiagnostic();
-  renderTechnicalDiagnosticModal(report);
-}
-
-async function cleanLegacyResultPdfs() {
-  const snapshot = await resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" });
-  const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  return migrateResultPdfsOutOfResults(rows, { force: true });
-}
-
-async function showDataDiagnostic() {
-  const sessions = sessionRows().map((session) => `S${session.number}`).join(", ") || "aucune";
-  const seriesCount = data.series?.length || 0;
-  const programCount = data.program?.length || 0;
-  const entrantCount = data.entrants?.length || 0;
-  const locations = (data.entrants || []).filter((entrant) => entrant.seedSource).length;
-  const firebaseMeta = firebaseStatusMeta();
-  const firebaseLabel = firebaseStatus === "local" ? "local seulement" : firebaseMeta.label.toLowerCase();
-  const performanceReport = await collectPerformanceDiagnostic().catch((error) => ({
-    available: false,
-    message: error?.message || String(error)
-  }));
-  window.alert([
-    "Diagnostic LivePalmes",
-    "",
-    `Firebase : ${firebaseLabel}`,
-    `Sessions : ${sessions}`,
-    `Programme : ${programCount} courses`,
-    `Séries : ${seriesCount} lignes`,
-    `Engagés : ${entrantCount}`,
-    `Records : ${data.records?.length || 0}`,
-    `Qualifs EDF : ${data.qualifications?.length || 0}`,
-    `Membres EDF : ${data.edfMembers?.length || 0}`,
-    `France N-1 : ${data.top2025?.length || 0}`,
-    `Lieux rattachés : ${locations}`,
-    `Dernière mise à jour session : ${data.notes?.lastUpdatedSession ? `S${data.notes.lastUpdatedSession}` : "aucune"}`,
-    `Infos speaker : ${data.notes?.speakerInfoUpdatedAt || "non mises à jour"}`,
-    "",
-    "Performance résultats",
-    ...performanceDiagnosticLines(performanceReport)
-  ].join("\n"));
-}
+function renderDataStatus(...args) { return livePalmesDiagnosticsWorkflow.renderDataStatus(...args, diagnosticsWorkflowOptions()); }
+function firebaseStatusMeta(...args) { return livePalmesDiagnosticsWorkflow.firebaseStatusMeta(...args, diagnosticsWorkflowOptions()); }
+function renderFirebaseHeaderStatus(...args) { return livePalmesDiagnosticsWorkflow.renderFirebaseHeaderStatus(...args, diagnosticsWorkflowOptions()); }
+function shortStatusDate(...args) { return livePalmesDiagnosticsWorkflow.shortStatusDate(...args, diagnosticsWorkflowOptions()); }
+function appendImportHistory(...args) { return livePalmesDiagnosticsWorkflow.appendImportHistory(...args, diagnosticsWorkflowOptions()); }
+function countCollectionDocuments(...args) { return livePalmesDiagnosticsWorkflow.countCollectionDocuments(...args, diagnosticsWorkflowOptions()); }
+function collectPerformanceDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.collectPerformanceDiagnostic(...args, diagnosticsWorkflowOptions()); }
+function renderPerformanceDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.renderPerformanceDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
+function showPerformanceDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.showPerformanceDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
+function safeCountCollection(...args) { return livePalmesDiagnosticsWorkflow.safeCountCollection(...args, diagnosticsWorkflowOptions()); }
+function safeDocumentData(...args) { return livePalmesDiagnosticsWorkflow.safeDocumentData(...args, diagnosticsWorkflowOptions()); }
+function alertPendingTargets(...args) { return livePalmesDiagnosticsWorkflow.alertPendingTargets(...args, diagnosticsWorkflowOptions()); }
+function alertPendingBreakdown(...args) { return livePalmesDiagnosticsWorkflow.alertPendingBreakdown(...args, diagnosticsWorkflowOptions()); }
+function alertTargetsLabel(...args) { return livePalmesDiagnosticsWorkflow.alertTargetsLabel(...args, diagnosticsWorkflowOptions()); }
+function collectTechnicalDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.collectTechnicalDiagnostic(...args, diagnosticsWorkflowOptions()); }
+function resultHasDetailsForDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.resultHasDetailsForDiagnostic(...args, diagnosticsWorkflowOptions()); }
+function renderTechnicalDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.renderTechnicalDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
+function showTechnicalDiagnosticModal(...args) { return livePalmesDiagnosticsWorkflow.showTechnicalDiagnosticModal(...args, diagnosticsWorkflowOptions()); }
+function cleanLegacyResultPdfs(...args) { return livePalmesDiagnosticsWorkflow.cleanLegacyResultPdfs(...args, diagnosticsWorkflowOptions()); }
+function showDataDiagnostic(...args) { return livePalmesDiagnosticsWorkflow.showDataDiagnostic(...args, diagnosticsWorkflowOptions()); }
 
 function renderSeriesControls() {
   const numbers = availableSeriesNumbers();
@@ -4484,742 +4149,77 @@ async function publishFinalistsAfterSpeaker(alertId) {
   }
 }
 
-function finalRowKey(row) {
-  return resultParserFunction("finalRowKey")(row, resultParserOptions());
-}
-
-function finalRowOrderValue(row, fallback = 9999) {
-  return resultParserFunction("finalRowOrderValue")(row, fallback, resultParserOptions());
-}
-
-function sortedFinalRows(rows = []) {
-  return resultParserFunction("sortedFinalRows")(rows, resultParserOptions());
-}
-
-function normalizeFinalistsOrder(finalists = {}) {
-  return resultParserFunction("normalizeFinalistsOrder")(finalists, resultParserOptions());
-}
-
-function activeFinalPreWithdrawals(result) {
-  return (result?.finalPreWithdrawals || []).filter((item) => !item.cancelledAt);
-}
-
-function finalPreWithdrawalForRow(result, row) {
-  const key = finalRowKey(row);
-  return activeFinalPreWithdrawals(result).find((item) => item.rowKey === key);
-}
-
-function isFinalPreWithdrawn(result, row) {
-  return Boolean(finalPreWithdrawalForRow(result, row));
-}
-
-function availableReplacementForResult(result, finalists) {
-  const used = new Set(["a", "b"].flatMap((finalKey) => (finalists?.[finalKey] || []).map(finalRowKey)));
-  return (result.nextUnqualified || []).find((row) => row.time && !row.resultStatus && !used.has(finalRowKey(row))) || null;
-}
-
-function buildReplacementFinalistRow(result, row, reference, now) {
-  const preWithdrawal = finalPreWithdrawalForRow(result, row);
+function finalWithdrawalsWorkflowOptions() {
   return {
-    ...row,
-    qualified: true,
-    repechaged: true,
-    repechageAt: now,
-    repechageAnnouncedAt: preWithdrawal ? now : "",
-    withdrawnAt: preWithdrawal ? (preWithdrawal.at || now) : "",
-    preWithdrawnAt: preWithdrawal ? (preWithdrawal.at || now) : "",
-    replacesRank: reference?.rank || "",
-    replacesName: finalistRowName(reference)
+    alertDetailModal,
+    alerts,
+    canWithdrawBeforeReplacementAnnouncement,
+    canWithdrawFinalist,
+    escapeHtml,
+    finalRowCountsAsFinalist,
+    finalWithdrawalLimitDate,
+    finalWithdrawalLimitLabel,
+    formatDeadlineTime,
+    hasFinalWithdrawalDeadline,
+    isFinalWithdrawalDeadlineExpired,
+    livePalmesAlertDetailView,
+    livePalmesSecretaryFinals,
+    markAlertAlreadyClosedError,
+    markSpeakerAlertDoneLocally,
+    normalizePersonName,
+    publishPublicResultsIndex,
+    raceResults,
+    render,
+    replacementAlertMatches,
+    resultParserFunction,
+    resultParserOptions,
+    resultsCollection,
+    saveAlerts,
+    sexDisplayLabel,
+    syncAlertChangesToFirestoreStrict,
+    syncAlertToFirestore
   };
 }
 
-function buildFinalWithdrawalEntry({ at, finalKey, withdrawn, replacement = null, promoted = null, preWithdrawal = false }) {
-  return {
-    at,
-    final: String(finalKey || "").toUpperCase(),
-    preWithdrawal,
-    withdrawn: {
-      rank: withdrawn?.rank || "",
-      name: finalistRowName(withdrawn),
-      club: withdrawn?.club || "",
-      time: withdrawn?.time || ""
-    },
-    replacement: replacement ? {
-      final: String(replacement.finalKey || finalKey || "").toUpperCase(),
-      rank: replacement.row?.rank || "",
-      name: finalistRowName(replacement.row),
-      club: replacement.row?.club || "",
-      time: replacement.row?.time || ""
-    } : null,
-    promoted: promoted ? {
-      fromFinal: "B",
-      toFinal: "A",
-      rank: promoted.rank || "",
-      name: finalistRowName(promoted),
-      club: promoted.club || "",
-      time: promoted.time || ""
-    } : null
-  };
-}
-
-function addReplacementChain(result, finalists, finalKey, firstReference, now) {
-  const added = [];
-  let reference = firstReference;
-  while (true) {
-    const row = availableReplacementForResult(result, finalists);
-    if (!row) break;
-    const finalistRow = buildReplacementFinalistRow(result, row, reference, now);
-    finalists[finalKey].push(finalistRow);
-    const item = {
-      finalKey,
-      row,
-      finalistRow,
-      reference,
-      preWithdrawn: Boolean(finalistRow.withdrawnAt)
-    };
-    added.push(item);
-    if (!item.preWithdrawn) break;
-    reference = finalistRow;
-  }
-  return added;
-}
-
-function finalistRowsWithFinalKey(finalists = {}) {
-  return ["a", "b"].flatMap((finalKey) =>
-    (finalists?.[finalKey] || []).map((row) => ({ finalKey, row }))
-  );
-}
-
-function finalistRowsMatch(a, b) {
-  if (!a || !b) return false;
-  if (finalRowKey(a) === finalRowKey(b)) return true;
-  return normalizePersonName(finalistRowName(a)) === normalizePersonName(finalistRowName(b)) &&
-    String(a.time || "") === String(b.time || "");
-}
-
-function findPreservedFinalistRow(existingRows, row) {
-  return existingRows.find((item) => finalistRowsMatch(item.row, row))?.row || null;
-}
-
-function finalistPositionByRow(finalists, reference) {
-  for (const finalKey of ["a", "b"]) {
-    const index = (finalists?.[finalKey] || []).findIndex((row) => finalistRowsMatch(row, reference));
-    if (index !== -1) return { finalKey, index };
-  }
-  return null;
-}
-
-function applyPreservedReplacementAnnouncement(row, existingRows) {
-  const preserved = findPreservedFinalistRow(existingRows, row);
-  if (!preserved) return row;
-  if (preserved.repechageAnnouncedAt) row.repechageAnnouncedAt = preserved.repechageAnnouncedAt;
-  if (preserved.repechageAt) row.repechageAt = preserved.repechageAt;
-  return row;
-}
-
-function rebuildFinalistsFromParsedResult(parsedRows, existingResult, now) {
-  const parsedHasFinalists = Boolean(parsedRows?.finalists?.a?.length || parsedRows?.finalists?.b?.length);
-  if (!parsedHasFinalists) {
-    return {
-      finalists: existingResult?.finalists || { a: [], b: [] },
-      nextUnqualified: parsedRows?.nextUnqualified?.length ? parsedRows.nextUnqualified : (existingResult?.nextUnqualified || []),
-      finalWithdrawals: existingResult?.finalWithdrawals || []
-    };
-  }
-  const finalists = {
-    a: (parsedRows.finalists.a || []).map((row) => ({ ...row })),
-    b: (parsedRows.finalists.b || []).map((row) => ({ ...row }))
-  };
-  const draftResult = {
-    ...existingResult,
-    finalists,
-    nextUnqualified: parsedRows.nextUnqualified || [],
-    finalPreWithdrawals: existingResult?.finalPreWithdrawals || []
-  };
-  const existingRows = finalistRowsWithFinalKey(existingResult?.finalists || {});
-  const preservedWithdrawals = existingRows
-    .filter((item) => item.row?.withdrawnAt)
-    .sort((a, b) => String(a.row.withdrawnAt || "").localeCompare(String(b.row.withdrawnAt || "")));
-  const finalWithdrawals = [];
-  preservedWithdrawals.forEach(({ row: withdrawnReference }) => {
-    const position = finalistPositionByRow(finalists, withdrawnReference);
-    if (!position) return;
-    const sourceRow = finalists[position.finalKey][position.index];
-    const at = withdrawnReference.withdrawnAt || now;
-    finalists[position.finalKey][position.index] = {
-      ...sourceRow,
-      withdrawnAt: at,
-      preWithdrawnAt: withdrawnReference.preWithdrawnAt || sourceRow.preWithdrawnAt || ""
-    };
-    const withdrawn = finalists[position.finalKey][position.index];
-    let promoted = null;
-    let replacementFinalKey = position.finalKey;
-    let replacementReference = withdrawn;
-    if (position.finalKey === "a" && finalists.b.length) {
-      const promotedIndex = firstActiveFinalistIndex(finalists.b);
-      if (promotedIndex !== -1) {
-        const promotedSource = finalists.b.splice(promotedIndex, 1)[0];
-        promoted = {
-          ...promotedSource,
-          promotedFromFinal: "B",
-          promotedAt: at,
-          replacesRank: withdrawn.rank || "",
-          replacesName: finalistRowName(withdrawn)
-        };
-        finalists.a.push(promoted);
-        replacementFinalKey = "b";
-        replacementReference = promotedSource;
-      }
-    }
-    const replacements = addReplacementChain(draftResult, finalists, replacementFinalKey, replacementReference, at);
-    replacements.forEach((item) => applyPreservedReplacementAnnouncement(item.finalistRow, existingRows));
-    const firstReplacement = replacements[0] || null;
-    finalWithdrawals.push(
-      buildFinalWithdrawalEntry({
-        at,
-        finalKey: position.finalKey,
-        withdrawn,
-        replacement: firstReplacement,
-        promoted
-      }),
-      ...replacements
-        .filter((item) => item.preWithdrawn)
-        .map((item, index) => buildFinalWithdrawalEntry({
-          at: item.finalistRow.withdrawnAt || at,
-          finalKey: item.finalKey,
-          withdrawn: item.finalistRow,
-          replacement: replacements[index + 1] || null,
-          preWithdrawal: true
-        }))
-    );
-    draftResult.finalists = finalists;
-  });
-  return {
-    finalists: normalizeFinalistsOrder(finalists),
-    nextUnqualified: parsedRows.nextUnqualified || [],
-    finalWithdrawals
-  };
-}
-
-function firstActiveFinalistIndex(rows = []) {
-  let bestIndex = -1;
-  let bestOrder = Infinity;
-  rows.forEach((row, index) => {
-    if (!row || row.withdrawnAt) return;
-    const order = finalRowOrderValue(row, 20000 + index);
-    if (order < bestOrder) {
-      bestOrder = order;
-      bestIndex = index;
-    }
-  });
-  return bestIndex;
-}
-
-function finalCompositionRows(result) {
-  const finalists = normalizeFinalistsOrder(result.finalists || {});
-  const finalRows = ["a", "b"].flatMap((key) => (finalists[key] || []).map((row) => ({
-    ...row,
-    finalLabel: key.toUpperCase()
-  })));
-  return finalRows;
-}
-
-function finalCompositionKey(result) {
-  return finalCompositionRows(result)
-    .map((row) => [row.finalLabel, row.rank, finalistRowName(row), row.time, row.withdrawnAt ? "F" : "Q", row.repechaged ? "R" : ""].join("|"))
-    .join(";");
-}
-
-function finalCompositionIsDefinitive(result, now = new Date()) {
-  if (!result?.hasFinal || !result.finalistsAnnouncedAt) return false;
-  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
-  if (!activeRows.length) return false;
-  return activeRows.every((row) => {
-    const limit = finalWithdrawalLimitDate(row, result);
-    return Boolean(limit) && now > limit;
-  });
-}
-
-function finalCompositionDefinitiveDate(result) {
-  if (!result?.hasFinal || !result.finalistsAnnouncedAt) return null;
-  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
-  const limits = activeRows
-    .map((row) => finalWithdrawalLimitDate(row, result))
-    .filter((date) => date && !Number.isNaN(date.getTime()));
-  if (!activeRows.length || limits.length !== activeRows.length) return null;
-  return new Date(Math.max(...limits.map((date) => date.getTime())));
-}
-
-function finalCompositionPendingDeadlineLabel(result) {
-  if (!result?.finalistsAnnouncedAt) return "Définitif 30 min après annonce speaker";
-  const activeRows = finalCompositionRows(result).filter(finalRowCountsAsFinalist);
-  const unannouncedReplacementCount = activeRows.filter((row) => row.repechaged && !row.repechageAnnouncedAt).length;
-  if (unannouncedReplacementCount > 1) return "Définitif 30 min après annonce des repêchés";
-  if (unannouncedReplacementCount === 1) return "Définitif 30 min après annonce du repêché";
-  return "Définitif après fin des délais de forfait";
-}
-
-function renderFinalWithdrawalGroup(title, result, finalKey, rows = []) {
-  if (!rows.length) return "";
-  const now = new Date();
-  return livePalmesSecretaryFinals.renderWithdrawalGroupHtml(title, rows.map((row, index) => {
-    const limit = finalWithdrawalLimitLabel(row, result);
-    const canWithdraw = canWithdrawFinalist(row, result, now);
-    const hasDeadline = hasFinalWithdrawalDeadline(row, result);
-    const canWithdrawUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
-    const expired = isFinalWithdrawalDeadlineExpired(row, result, now);
-    return {
-      actionDisabled: !(hasDeadline || canWithdrawUnannouncedReplacement),
-      className: `${row.withdrawnAt ? "withdrawn" : ""}${!canWithdraw && !row.withdrawnAt ? " closed" : ""}`,
-      expired,
-      finalKey,
-      index,
-      label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
-      rank: row.rank || "",
-      repechaged: Boolean(row.repechaged && !row.withdrawnAt),
-      resultId: result.id,
-      rowKey: finalRowKey(row),
-      sex: result.sex,
-      status: row.withdrawnAt
-        ? `Forfait ${formatDeadlineTime(new Date(row.withdrawnAt))}`
-        : (limit ? (canWithdraw ? `Forfait possible jusqu'à ${limit}` : "Forfait fermé") : (canWithdrawUnannouncedReplacement ? "Repêchage non annoncé" : "En attente annonce speaker")),
-      withdrawn: Boolean(row.withdrawnAt)
-    };
-  }));
-}
-
-function finalRowIndexByKey(finalists, finalKey, finalIndex, rowKey = "") {
-  const rows = finalists?.[finalKey] || [];
-  if (rowKey) {
-    const byKey = rows.findIndex((row) => finalRowKey(row) === rowKey);
-    if (byKey !== -1) return byKey;
-  }
-  const index = Number(finalIndex);
-  return Number.isFinite(index) ? index : -1;
-}
-
-function nextUnqualifiedRowsForSecretary(result) {
-  const used = new Set(["a", "b"].flatMap((finalKey) => (result.finalists?.[finalKey] || []).map(finalRowKey)));
-  return (result.nextUnqualified || []).filter((row) => !used.has(finalRowKey(row)));
-}
-
-function renderSecretaryUnqualifiedGroup(result, { actions = true, open = false } = {}) {
-  const rows = nextUnqualifiedRowsForSecretary(result);
-  if (!rows.length) return "";
-  return livePalmesSecretaryFinals.renderUnqualifiedGroupHtml({
-    actions,
-    open,
-    rows: rows.map((row) => {
-      const preWithdrawal = finalPreWithdrawalForRow(result, row);
-      return {
-        actionAllowed: Boolean(!row.resultStatus && row.time),
-        label: [row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "),
-        preWithdrawal: Boolean(preWithdrawal),
-        rank: row.rank || "",
-        resultId: result.id,
-        rowKey: finalRowKey(row),
-        status: preWithdrawal ? `Pré-forfait déclaré à ${formatDeadlineTime(new Date(preWithdrawal.at))}` : (row.statusLabel || `Non qualifié${result.sex === "F" ? "e" : ""}`)
-      };
-    })
-  });
-}
-
-function openFinalWithdrawalsModal(resultId, options = {}) {
-  const result = raceResults.find((item) => item.id === resultId);
-  if (!result || !alertDetailModal) return;
-  const finalists = normalizeFinalistsOrder(result.finalists || {});
-  alertDetailModal.hidden = false;
-  alertDetailModal.innerHTML = livePalmesAlertDetailView.renderFinalWithdrawalsModalHtml({
-    eventLabel: result.eventLabel || result.eventId,
-    finalAHtml: renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || []),
-    finalBHtml: renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || []),
-    sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
-    unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })
-  });
-}
-
-async function toggleFinalPreWithdrawal(resultId, rowKey) {
-  const collection = resultsCollection();
-  if (!collection) throw new Error("Firebase n'est pas disponible pour gérer ce pré-forfait.");
-  const resultIndex = raceResults.findIndex((item) => item.id === resultId);
-  const result = raceResults[resultIndex];
-  if (resultIndex === -1 || !result) throw new Error("Résultat introuvable.");
-  const row = (result.nextUnqualified || []).find((item) => finalRowKey(item) === rowKey);
-  if (!row) throw new Error("Nageur non qualifié introuvable.");
-  const now = new Date().toISOString();
-  const active = finalPreWithdrawalForRow(result, row);
-  const finalPreWithdrawals = active
-    ? (result.finalPreWithdrawals || []).map((item) => item.rowKey === rowKey && !item.cancelledAt ? { ...item, cancelledAt: now } : item)
-    : [
-      ...(result.finalPreWithdrawals || []),
-      {
-        rowKey,
-        rank: row.rank || "",
-        name: finalistRowName(row),
-        club: row.club || "",
-        time: row.time || "",
-        at: now
-      }
-    ];
-  await collection.doc(result.id).update({
-    finalPreWithdrawals,
-    updatedAt: now
-  });
-  raceResults[resultIndex] = {
-    ...result,
-    finalPreWithdrawals,
-    updatedAt: now
-  };
-  render();
-  openFinalWithdrawalsModal(result.id, { openUnqualified: true });
-}
-
-function renderFinalCompositionList(result) {
-  const finalists = normalizeFinalistsOrder(result.finalists || {});
-  const renderRows = (title, rows = []) => rows.length ? `
-    <div class="final-withdrawal-group">
-      <strong>${escapeHtml(title)}</strong>
-      <ol>
-        ${rows.map((row) => `
-          <li value="${escapeHtml(row.rank || "")}" class="${row.withdrawnAt ? "withdrawn" : ""}">
-            <div>
-              <span>${escapeHtml([row.rank ? `${row.rank}. ${finalistRowName(row)}` : finalistRowName(row), row.club, row.time || row.statusLabel].filter(Boolean).join(" - "))}</span>
-              ${row.withdrawnAt ? `<small>Forfait à ${escapeHtml(formatDeadlineTime(new Date(row.withdrawnAt)))}</small>` : ""}
-              ${row.repechaged && !row.withdrawnAt ? `<small class="repechage-label">Repêché${result.sex === "F" ? "e" : ""}</small>` : ""}
-            </div>
-          </li>
-        `).join("")}
-      </ol>
-    </div>
-  ` : "";
-  return livePalmesSecretaryFinals.renderCompositionListHtml({
-    finalAHtml: renderRows("Finale A", finalists.a || []),
-    finalBHtml: renderRows("Finale B", finalists.b || []),
-    unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { actions: false })
-  });
-}
-
-function openFinalCompositionResultModal(resultId) {
-  const result = raceResults.find((item) => item.id === resultId);
-  if (!result || !alertDetailModal) return;
-  const definitive = finalCompositionIsDefinitive(result);
-  alertDetailModal.hidden = false;
-  alertDetailModal.innerHTML = `
-    <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Composition finale">
-      <div class="decision-modal-head">
-        <div>
-          <span>Bureau des performances</span>
-          <h2>${definitive ? "Finalistes définitifs" : "Finalistes provisoires"}</h2>
-          <p>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}</p>
-        </div>
-        <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
-      </div>
-      <div class="alert-detail-note">
-        <span>Info</span>
-        <strong>${definitive ? "Tous les délais de forfait sont passés." : "Des délais de forfait sont encore ouverts."} Voici les qualifiés, repêchés et forfaits.</strong>
-      </div>
-      ${renderFinalCompositionList(result)}
-      <div class="decision-actions">
-        <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
-      </div>
-    </div>
-  `;
-}
-
-function openFinalCompositionModal(alertId) {
-  const alert = alerts.find((item) => item.id === alertId);
-  if (alert?.resultId) openFinalCompositionResultModal(alert.resultId);
-}
-
-async function markFinalistWithdrawn(resultId, finalKey, finalIndex, { allowExpired = false, rowKey = "" } = {}) {
-  const collection = resultsCollection();
-  if (!collection) throw new Error("Firebase n'est pas disponible pour gérer les forfaits.");
-  const resultIndex = raceResults.findIndex((item) => item.id === resultId);
-  const result = raceResults[resultIndex];
-  const sourceIndex = finalRowIndexByKey(result?.finalists, finalKey, finalIndex, rowKey);
-  const row = result?.finalists?.[finalKey]?.[sourceIndex];
-  if (resultIndex === -1 || sourceIndex === -1 || !row) throw new Error("Finaliste introuvable.");
-  const isUnannouncedReplacement = canWithdrawBeforeReplacementAnnouncement(row);
-  if (!hasFinalWithdrawalDeadline(row, result) && !isUnannouncedReplacement) {
-    throw new Error("Le délai de ce finaliste n'a pas encore démarré.");
-  }
-  if (!isUnannouncedReplacement && !allowExpired && !canWithdrawFinalist(row, result)) {
-    throw new Error("Le délai de forfait de ce finaliste est terminé.");
-  }
-  const now = new Date().toISOString();
-  const finalists = {
-    a: (result.finalists?.a || []).map((item) => ({ ...item })),
-    b: (result.finalists?.b || []).map((item) => ({ ...item }))
-  };
-  finalists[finalKey][sourceIndex] = {
-    ...row,
-    withdrawnAt: now
-  };
-  let promoted = null;
-  let replacementFinalKey = finalKey;
-  let replacementReference = row;
-  if (finalKey === "a" && finalists.b.length) {
-    const promotedIndex = firstActiveFinalistIndex(finalists.b);
-    if (promotedIndex !== -1) {
-      promoted = finalists.b.splice(promotedIndex, 1)[0];
-      finalists.a.push({
-        ...promoted,
-        promotedFromFinal: "B",
-        promotedAt: now,
-        replacesRank: row.rank || "",
-        replacesName: finalistRowName(row)
-      });
-      replacementFinalKey = "b";
-      replacementReference = promoted;
-    }
-  }
-  const replacements = addReplacementChain(result, finalists, replacementFinalKey, replacementReference, now);
-  const announcedReplacement = replacements.find((item) => !item.preWithdrawn) || null;
-  const firstReplacement = replacements[0] || null;
-  const finalWithdrawals = [
-    ...(result.finalWithdrawals || []),
-    buildFinalWithdrawalEntry({
-      at: now,
-      finalKey,
-      withdrawn: row,
-      replacement: firstReplacement,
-      promoted
-    }),
-    ...replacements
-      .filter((item) => item.preWithdrawn)
-      .map((item, index) => buildFinalWithdrawalEntry({
-        at: item.finalistRow.withdrawnAt || now,
-        finalKey: item.finalKey,
-        withdrawn: item.finalistRow,
-        replacement: replacements[index + 1] || null,
-        preWithdrawal: true
-      }))
-  ];
-  const orderedFinalists = normalizeFinalistsOrder(finalists);
-  const updated = {
-    ...result,
-    finalists: orderedFinalists,
-    finalWithdrawals,
-    updatedAt: now
-  };
-  await collection.doc(result.id).update({
-    finalists: orderedFinalists,
-    finalWithdrawals,
-    updatedAt: now
-  });
-  raceResults[resultIndex] = updated;
-  if (isUnannouncedReplacement) {
-    await cancelPendingReplacementSpeakerAlert(result, row, now);
-  }
-  if (announcedReplacement) {
-    await createFinalistReplacementSpeakerAlert(updated, announcedReplacement.reference, announcedReplacement.row, now);
-  }
-  await publishPublicResultsIndex();
-  render();
-  openFinalWithdrawalsModal(result.id);
-}
-
-async function reinstateFinalist(resultId, finalKey, finalIndex, rowKey = "") {
-  const collection = resultsCollection();
-  if (!collection) throw new Error("Firebase n'est pas disponible pour réintégrer ce finaliste.");
-  const resultIndex = raceResults.findIndex((item) => item.id === resultId);
-  const result = raceResults[resultIndex];
-  const sourceIndex = finalRowIndexByKey(result?.finalists, finalKey, finalIndex, rowKey);
-  const row = result?.finalists?.[finalKey]?.[sourceIndex];
-  if (resultIndex === -1 || sourceIndex === -1 || !row?.withdrawnAt) throw new Error("Finaliste forfait introuvable.");
-  const now = new Date().toISOString();
-  const finalists = {
-    a: (result.finalists?.a || []).map((item) => ({ ...item })),
-    b: (result.finalists?.b || []).map((item) => ({ ...item }))
-  };
-  const reinstated = { ...row };
-  delete reinstated.withdrawnAt;
-  reinstated.reinstatedAt = now;
-  finalists[finalKey][sourceIndex] = reinstated;
-  const withdrawal = [...(result.finalWithdrawals || [])]
-    .reverse()
-    .find((item) => item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt);
-  const replacementName = withdrawal?.replacement?.name || "";
-  const replacementReferenceName = withdrawal?.promoted?.name || finalistRowName(row);
-  if (replacementName) {
-    for (const key of ["a", "b"]) {
-      const replacementIndex = finalists[key].findIndex((item) =>
-        item.repechaged &&
-        finalistRowName(item) === replacementName &&
-        String(item.replacesName || "") === replacementReferenceName
-      );
-      if (replacementIndex !== -1) {
-        const replacement = finalists[key][replacementIndex];
-        if (!replacement.repechageAnnouncedAt) {
-          await cancelPendingReplacementSpeakerAlert(result, replacement, now);
-        }
-        finalists[key].splice(replacementIndex, 1);
-      }
-    }
-  }
-  const promotedName = withdrawal?.promoted?.name || "";
-  if (promotedName) {
-    const promotedIndex = finalists.a.findIndex((item) =>
-      item.promotedFromFinal === "B" &&
-      finalistRowName(item) === promotedName &&
-      String(item.replacesName || "") === finalistRowName(row)
-    );
-    if (promotedIndex !== -1) {
-      const promoted = { ...finalists.a[promotedIndex] };
-      delete promoted.promotedFromFinal;
-      delete promoted.promotedAt;
-      delete promoted.replacesRank;
-      delete promoted.replacesName;
-      finalists.a.splice(promotedIndex, 1);
-      finalists.b.push(promoted);
-    }
-  }
-  const finalWithdrawals = (result.finalWithdrawals || []).map((item) => {
-    if (item === withdrawal || (item.withdrawn?.name === finalistRowName(row) && !item.reinstatedAt && item.at === withdrawal?.at)) {
-      return { ...item, reinstatedAt: now };
-    }
-    return item;
-  });
-  const orderedFinalists = normalizeFinalistsOrder(finalists);
-  await collection.doc(result.id).update({
-    finalists: orderedFinalists,
-    finalWithdrawals,
-    updatedAt: now
-  });
-  raceResults[resultIndex] = {
-    ...result,
-    finalists: orderedFinalists,
-    finalWithdrawals,
-    updatedAt: now
-  };
-  await publishPublicResultsIndex();
-  render();
-  openFinalWithdrawalsModal(result.id);
-}
-
-async function createFinalistReplacementSpeakerAlert(result, withdrawn, replacement, now = new Date().toISOString()) {
-  const existing = alerts.find((alert) =>
-    replacementAlertMatches(alert, result, replacement) &&
-    alert.speakerStatus === "pending"
-  );
-  if (existing) return existing;
-  const replacementRowKey = finalRowKey(replacement);
-  const alert = {
-    id: `replacement-${result.id}-${replacementRowKey.replace(/[^a-z0-9_-]+/gi, "-").slice(0, 80)}`,
-    type: "finalist_replacement_announcement",
-    roleSource: "secretary",
-    resultId: result.id,
-    eventId: result.eventId,
-    eventLabel: result.eventLabel,
-    sex: result.sex,
-    sexLabel: result.sexLabel,
-    session: result.session || "",
-    startTime: result.startTime || "",
-    withdrawnName: finalistRowName(withdrawn),
-    withdrawnClub: withdrawn.club || "",
-    replacementName: finalistRowName(replacement),
-    replacementClub: replacement.club || "",
-    replacementRowKey,
-    replacementRank: replacement.rank || "",
-    replacementTime: replacement.time || "",
-    requiresVideo: false,
-    videoStatus: "none",
-    speakerStatus: "pending",
-    informaticsStatus: "none",
-    createdAt: now,
-    updatedAt: now
-  };
-  alerts.unshift(alert);
-  saveAlerts();
-  await syncAlertToFirestore(alert);
-}
-
-async function cancelPendingReplacementSpeakerAlert(result, row, now = new Date().toISOString()) {
-  const pending = alerts.filter((alert) =>
-    replacementAlertMatches(alert, result, row) &&
-    alert.speakerStatus === "pending"
-  );
-  for (const alert of pending) {
-    alert.speakerStatus = "none";
-    alert.cancelledAt = now;
-    alert.updatedAt = now;
-    await syncAlertToFirestore(alert);
-  }
-  if (pending.length) {
-    saveAlerts();
-  }
-}
-
-async function updateReplacementRowAnnouncement(resultId, matcher, announcedAt) {
-  const index = raceResults.findIndex((result) => result.id === resultId);
-  const result = raceResults[index];
-  if (!result) return false;
-  const finalists = {
-    a: (result.finalists?.a || []).map((row) => ({ ...row })),
-    b: (result.finalists?.b || []).map((row) => ({ ...row }))
-  };
-  let changed = false;
-  ["a", "b"].forEach((key) => {
-    finalists[key] = finalists[key].map((row) => {
-      if (row.repechaged && matcher(row) && !row.repechageAnnouncedAt) {
-        changed = true;
-        return { ...row, repechageAnnouncedAt: announcedAt };
-      }
-      return row;
-    });
-  });
-  if (!changed) return false;
-  const orderedFinalists = normalizeFinalistsOrder(finalists);
-  const collection = resultsCollection();
-  if (collection) {
-    await collection.doc(result.id).update({
-      finalists: orderedFinalists,
-      updatedAt: announcedAt
-    });
-  }
-  raceResults[index] = {
-    ...result,
-    finalists: orderedFinalists,
-    updatedAt: announcedAt
-  };
-  await publishPublicResultsIndex();
-  return true;
-}
-
-async function stampReplacementAnnouncement(result, row, announcedAt) {
-  return updateReplacementRowAnnouncement(
-    result.id,
-    (candidate) => finalistRowName(candidate) === finalistRowName(row) &&
-      String(candidate.rank || "") === String(row.rank || "") &&
-      String(candidate.time || "") === String(row.time || ""),
-    announcedAt
-  );
-}
-
-async function publishReplacementAfterSpeaker(alertId) {
-  const alert = alerts.find((item) => item.id === alertId);
-  const now = new Date().toISOString();
-  const changes = { speakerStatus: "done", speakerAnnouncedAt: now, updatedAt: now };
-  await syncAlertChangesToFirestoreStrict(alertId, changes);
-  markSpeakerAlertDoneLocally(alertId, now);
-  if (!alert?.resultId) {
-    return;
-  }
-  try {
-    await updateReplacementRowAnnouncement(
-      alert.resultId,
-      (row) => {
-        const sameName = finalistRowName(row) === alert.replacementName;
-        const sameRank = !alert.replacementRank || String(row.rank || "") === String(alert.replacementRank || "");
-        const sameTime = !alert.replacementTime || String(row.time || "") === String(alert.replacementTime || "");
-        return sameName && sameRank && sameTime;
-      },
-      now
-    );
-  } catch (error) {
-    throw markAlertAlreadyClosedError(error);
-  }
-}
+function finalRowKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowKey(...args, finalWithdrawalsWorkflowOptions()); }
+function finalRowOrderValue(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowOrderValue(...args, finalWithdrawalsWorkflowOptions()); }
+function sortedFinalRows(...args) { return livePalmesFinalWithdrawalsWorkflow.sortedFinalRows(...args, finalWithdrawalsWorkflowOptions()); }
+function normalizeFinalistsOrder(...args) { return livePalmesFinalWithdrawalsWorkflow.normalizeFinalistsOrder(...args, finalWithdrawalsWorkflowOptions()); }
+function activeFinalPreWithdrawals(...args) { return livePalmesFinalWithdrawalsWorkflow.activeFinalPreWithdrawals(...args, finalWithdrawalsWorkflowOptions()); }
+function finalPreWithdrawalForRow(...args) { return livePalmesFinalWithdrawalsWorkflow.finalPreWithdrawalForRow(...args, finalWithdrawalsWorkflowOptions()); }
+function isFinalPreWithdrawn(...args) { return livePalmesFinalWithdrawalsWorkflow.isFinalPreWithdrawn(...args, finalWithdrawalsWorkflowOptions()); }
+function availableReplacementForResult(...args) { return livePalmesFinalWithdrawalsWorkflow.availableReplacementForResult(...args, finalWithdrawalsWorkflowOptions()); }
+function buildReplacementFinalistRow(...args) { return livePalmesFinalWithdrawalsWorkflow.buildReplacementFinalistRow(...args, finalWithdrawalsWorkflowOptions()); }
+function buildFinalWithdrawalEntry(...args) { return livePalmesFinalWithdrawalsWorkflow.buildFinalWithdrawalEntry(...args, finalWithdrawalsWorkflowOptions()); }
+function addReplacementChain(...args) { return livePalmesFinalWithdrawalsWorkflow.addReplacementChain(...args, finalWithdrawalsWorkflowOptions()); }
+function finalistRowsWithFinalKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistRowsWithFinalKey(...args, finalWithdrawalsWorkflowOptions()); }
+function finalistRowsMatch(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistRowsMatch(...args, finalWithdrawalsWorkflowOptions()); }
+function findPreservedFinalistRow(...args) { return livePalmesFinalWithdrawalsWorkflow.findPreservedFinalistRow(...args, finalWithdrawalsWorkflowOptions()); }
+function finalistPositionByRow(...args) { return livePalmesFinalWithdrawalsWorkflow.finalistPositionByRow(...args, finalWithdrawalsWorkflowOptions()); }
+function applyPreservedReplacementAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.applyPreservedReplacementAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
+function rebuildFinalistsFromParsedResult(...args) { return livePalmesFinalWithdrawalsWorkflow.rebuildFinalistsFromParsedResult(...args, finalWithdrawalsWorkflowOptions()); }
+function firstActiveFinalistIndex(...args) { return livePalmesFinalWithdrawalsWorkflow.firstActiveFinalistIndex(...args, finalWithdrawalsWorkflowOptions()); }
+function finalCompositionRows(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionRows(...args, finalWithdrawalsWorkflowOptions()); }
+function finalCompositionKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionKey(...args, finalWithdrawalsWorkflowOptions()); }
+function finalCompositionIsDefinitive(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionIsDefinitive(...args, finalWithdrawalsWorkflowOptions()); }
+function finalCompositionDefinitiveDate(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionDefinitiveDate(...args, finalWithdrawalsWorkflowOptions()); }
+function finalCompositionPendingDeadlineLabel(...args) { return livePalmesFinalWithdrawalsWorkflow.finalCompositionPendingDeadlineLabel(...args, finalWithdrawalsWorkflowOptions()); }
+function renderFinalWithdrawalGroup(...args) { return livePalmesFinalWithdrawalsWorkflow.renderFinalWithdrawalGroup(...args, finalWithdrawalsWorkflowOptions()); }
+function finalRowIndexByKey(...args) { return livePalmesFinalWithdrawalsWorkflow.finalRowIndexByKey(...args, finalWithdrawalsWorkflowOptions()); }
+function nextUnqualifiedRowsForSecretary(...args) { return livePalmesFinalWithdrawalsWorkflow.nextUnqualifiedRowsForSecretary(...args, finalWithdrawalsWorkflowOptions()); }
+function renderSecretaryUnqualifiedGroup(...args) { return livePalmesFinalWithdrawalsWorkflow.renderSecretaryUnqualifiedGroup(...args, finalWithdrawalsWorkflowOptions()); }
+function openFinalWithdrawalsModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalWithdrawalsModal(...args, finalWithdrawalsWorkflowOptions()); }
+function toggleFinalPreWithdrawal(...args) { return livePalmesFinalWithdrawalsWorkflow.toggleFinalPreWithdrawal(...args, finalWithdrawalsWorkflowOptions()); }
+function renderFinalCompositionList(...args) { return livePalmesFinalWithdrawalsWorkflow.renderFinalCompositionList(...args, finalWithdrawalsWorkflowOptions()); }
+function openFinalCompositionResultModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalCompositionResultModal(...args, finalWithdrawalsWorkflowOptions()); }
+function openFinalCompositionModal(...args) { return livePalmesFinalWithdrawalsWorkflow.openFinalCompositionModal(...args, finalWithdrawalsWorkflowOptions()); }
+function markFinalistWithdrawn(...args) { return livePalmesFinalWithdrawalsWorkflow.markFinalistWithdrawn(...args, finalWithdrawalsWorkflowOptions()); }
+function reinstateFinalist(...args) { return livePalmesFinalWithdrawalsWorkflow.reinstateFinalist(...args, finalWithdrawalsWorkflowOptions()); }
+function createFinalistReplacementSpeakerAlert(...args) { return livePalmesFinalWithdrawalsWorkflow.createFinalistReplacementSpeakerAlert(...args, finalWithdrawalsWorkflowOptions()); }
+function cancelPendingReplacementSpeakerAlert(...args) { return livePalmesFinalWithdrawalsWorkflow.cancelPendingReplacementSpeakerAlert(...args, finalWithdrawalsWorkflowOptions()); }
+function updateReplacementRowAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.updateReplacementRowAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
+function stampReplacementAnnouncement(...args) { return livePalmesFinalWithdrawalsWorkflow.stampReplacementAnnouncement(...args, finalWithdrawalsWorkflowOptions()); }
+function publishReplacementAfterSpeaker(...args) { return livePalmesFinalWithdrawalsWorkflow.publishReplacementAfterSpeaker(...args, finalWithdrawalsWorkflowOptions()); }
 
 async function deleteResultPdf(resultId) {
   const collection = resultsCollection();
