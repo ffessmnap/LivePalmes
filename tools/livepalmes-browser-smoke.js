@@ -394,7 +394,7 @@ async function testPublicSeries(client, baseUrl) {
 
 async function testPublicResults(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/resultats.html?smoke-results=${Date.now()}` });
-  const ready = await waitFor(client, "document.querySelector('#publicResultsList')?.children.length > 0", 12000);
+  const ready = await waitFor(client, "document.querySelector('#publicResultsList')?.children.length > 0 && document.querySelector('script[src*=\"resultats.js\"]')", 12000);
   assert(ready, "Page publique resultats : liste non chargee.");
   const state = await evaluateJson(client, `
     return {
