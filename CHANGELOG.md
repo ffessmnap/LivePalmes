@@ -13,3 +13,5 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Renforcement des tests automatiques sur les finales, resultats partiels, statuts DSQ/ABD et temps intermediaires.
 - Extraction de la configuration de demarrage dans `assets/livepalmes-app-config.js`.
 - Extraction des actions d'export et d'impression dans `assets/livepalmes-export-actions.js`.
+- Extraction des references Firestore dans `assets/livepalmes-firestore-refs.js`.
+- Extraction du stockage local navigateur dans `assets/livepalmes-local-state.js`.

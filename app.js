@@ -24,7 +24,9 @@ const PRESENCE_WRITE_THROTTLE_MS = livePalmesAppConfig.presenceWriteThrottleMs |
 const SPEAKER_INFO_SHEETS = livePalmesAppConfig.speakerInfoSheets || {};
 const FIREBASE_CONFIG = livePalmesAppConfig.firebaseConfig || {};
 const sampleData = window.SPEAKER_DATA || livePalmesAppConfig.fallbackData || { meet: {}, events: [], entrants: [], qualifications: [], top2025: [], records: [], notes: {} };
+const livePalmesLocalState = window.LivePalmesLocalState || {};
 const livePalmesFirebase = window.LivePalmesFirebase || {};
+const livePalmesFirestoreRefs = window.LivePalmesFirestoreRefs || {};
 const livePalmesRoleAccess = window.LivePalmesRoleAccess || {};
 const livePalmesRoleState = window.LivePalmesRoleState || {};
 const livePalmesRaceCore = window.LivePalmesRaceCore || {};
@@ -136,38 +138,28 @@ function knownRole(role) {
 }
 
 function lastActivityTimestamp() {
-  return Number(localStorage.getItem(LAST_ACTIVITY_KEY) || "0") || 0;
+  return livePalmesLocalState.lastActivityTimestamp(LAST_ACTIVITY_KEY);
 }
 
 function saveLastActivityTimestamp(timestamp = Date.now()) {
-  localStorage.setItem(LAST_ACTIVITY_KEY, String(timestamp));
+  livePalmesLocalState.saveLastActivityTimestamp(LAST_ACTIVITY_KEY, timestamp);
 }
 
 function shouldReturnHomeForInactivity() {
-  const last = lastActivityTimestamp();
-  return last > 0 && Date.now() - last > HOME_AFTER_INACTIVITY_MS;
+  return livePalmesLocalState.shouldReturnHomeForInactivity(LAST_ACTIVITY_KEY, HOME_AFTER_INACTIVITY_MS);
 }
 
 function loadActiveView() {
-  const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
-  if (shouldReturnHomeForInactivity()) return { role: "live", profileHomeActive: true };
-  if (!saved) return { role: "live", profileHomeActive: true };
-  try {
-    const parsed = JSON.parse(saved);
-    return {
-      role: knownRole(parsed?.role) ? parsed.role : "live",
-      profileHomeActive: parsed?.profileHomeActive !== false
-    };
-  } catch {
-    return { role: "live", profileHomeActive: true };
-  }
+  return livePalmesLocalState.loadActiveView({
+    activeViewKey: ACTIVE_VIEW_KEY,
+    homeAfterInactivityMs: HOME_AFTER_INACTIVITY_MS,
+    knownRole,
+    lastActivityKey: LAST_ACTIVITY_KEY
+  });
 }
 
 function saveActiveView() {
-  localStorage.setItem(ACTIVE_VIEW_KEY, JSON.stringify({
-    role: state.role,
-    profileHomeActive
-  }));
+  livePalmesLocalState.saveActiveView(ACTIVE_VIEW_KEY, state, profileHomeActive);
 }
 
 function unlockRole(role) {
@@ -193,12 +185,7 @@ function saveCurrentRoleState() {
 }
 
 function currentClientId() {
-  let id = localStorage.getItem(CLIENT_ID_KEY);
-  if (!id) {
-    id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    localStorage.setItem(CLIENT_ID_KEY, id);
-  }
-  return id;
+  return livePalmesLocalState.currentClientId(CLIENT_ID_KEY);
 }
 
 function protectedRole(role) {
@@ -360,83 +347,71 @@ const meetTitle = document.querySelector("#meetTitle");
 const antoineOverlay = document.querySelector("#antoineOverlay");
 
 function loadData() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return structuredClone(sampleData);
-  try {
-    return normalizeData(JSON.parse(saved));
-  } catch {
-    return structuredClone(sampleData);
-  }
+  return livePalmesLocalState.loadData(STORAGE_KEY, sampleData, normalizeData);
 }
 
 function loadAlerts() {
-  const saved = localStorage.getItem(ALERTS_KEY);
-  if (!saved) return [];
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return [];
-  }
+  return livePalmesLocalState.loadJson(ALERTS_KEY, []);
 }
 
 function saveAlerts() {
-  localStorage.setItem(ALERTS_KEY, JSON.stringify(alerts));
+  livePalmesLocalState.saveJson(ALERTS_KEY, alerts);
 }
 
 function activeCompetitionDocument() {
-  return livePalmesFirebase.competitionDocument(firestoreDb, activeCompetitionId);
+  return competitionDocument();
 }
 
 function competitionDocument(competitionId = activeCompetitionId) {
-  return livePalmesFirebase.competitionDocument(firestoreDb, competitionId);
+  return livePalmesFirestoreRefs.competitionDocument(livePalmesFirebase, firestoreDb, competitionId);
 }
 
 function alertsCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "alerts");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "alerts");
 }
 
 function historyArchivesCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "historyArchives");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "historyArchives");
 }
 
 function resultArchivesCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "resultArchives");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "resultArchives");
 }
 
 function resultsCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "results");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "results");
 }
 
 function resultPdfsCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "resultPdfs");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "resultPdfs");
 }
 
 function seriesPdfsCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "seriesPdfs");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "seriesPdfs");
 }
 
 function sessionResultsPdfsCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "sessionResultsPdfs");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "sessionResultsPdfs");
 }
 
 function publicResultsIndexDocument() {
-  return livePalmesFirebase.publicResultsIndexDocument(firestoreDb, activeCompetitionId);
+  return livePalmesFirestoreRefs.publicResultsIndexDocument(livePalmesFirebase, firestoreDb, activeCompetitionId);
 }
 
 function liveDataDocument(competitionId = activeCompetitionId) {
-  return livePalmesFirebase.liveDataDocument(firestoreDb, competitionId);
+  return livePalmesFirestoreRefs.liveDataDocument(livePalmesFirebase, firestoreDb, competitionId);
 }
 
 function roleLockDocument(role) {
-  return livePalmesFirebase.roleLockDocument(firestoreDb, activeCompetitionId, role);
+  return livePalmesFirestoreRefs.roleLockDocument(livePalmesFirebase, firestoreDb, activeCompetitionId, role);
 }
 
 function presenceCollection() {
-  return livePalmesFirebase.collectionRef(firestoreDb, activeCompetitionId, "presence");
+  return livePalmesFirestoreRefs.collectionRef(livePalmesFirebase, firestoreDb, activeCompetitionId, "presence");
 }
 
 function presenceDocument(id = `console-${currentClientId()}`) {
-  return livePalmesFirebase.presenceDocument(firestoreDb, activeCompetitionId, id);
+  return livePalmesFirestoreRefs.presenceDocument(livePalmesFirebase, firestoreDb, activeCompetitionId, id);
 }
 
 function emptyPresenceCounts() {

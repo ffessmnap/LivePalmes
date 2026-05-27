@@ -20,6 +20,8 @@ Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands dom
 
 - `assets/livepalmes-result-parser.js` : lecture des resultats depuis les lignes extraites des PDF.
 - `assets/livepalmes-app-config.js` : configuration de demarrage, codes par defaut, Firebase, donnees de secours.
+- `assets/livepalmes-local-state.js` : chargement et sauvegarde du stockage local du navigateur.
+- `assets/livepalmes-firestore-refs.js` : acces aux documents et collections Firestore.
 - `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
 - `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
 - `assets/livepalmes-final-withdrawals-workflow.js` : finalistes, forfaits en finale, repechages, reintegrations.
