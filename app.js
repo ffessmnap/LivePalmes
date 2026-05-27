@@ -19,7 +19,7 @@ const {
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
   livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesProgramNavigation, livePalmesSeriesControls,
-  livePalmesProgramModalsModule, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAdminWorkflow,
+  livePalmesProgramModalsModule, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
   livePalmesResultPublicationWorkflowModule, livePalmesResultMaintenanceWorkflowModule, livePalmesFinalWithdrawalsWorkflow, livePalmesDiagnosticsWorkflow,
   livePalmesUiEvents, livePalmesUiEventsOptions, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
   livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
@@ -599,60 +599,30 @@ function alertPresenterOptions() {
 
 
 function resultsAdminWorkflowOptions() {
-  const options = {
+  return livePalmesResultsAdminOptions.create({
     activeCompetitionId,
-    alertPendingBreakdown,
     alerts,
-    appendImportHistory,
-    categoryLabel,
-    clearPublishedResults,
-    competitionDocument,
-    competitionModeEnabled,
-    countCollectionDocuments,
+    bindOptionState,
+    collections: {
+      competitionDocument,
+      publicResultsIndexDocument,
+      resultArchivesCollection,
+      resultPdfsCollection,
+      sessionResultsPdfsCollection,
+      seriesPdfsCollection
+    },
     data,
-    deleteFinalResultAlerts,
-    deleteResultPdfPayload,
-    emptyPresenceCounts,
-    escapeHtml,
-    finalCompositionIsDefinitive,
-    finalCompositionPendingDeadlineLabel,
     finalResultSessions,
-    finalRowsCount,
     firestoreDb,
-    formatAlertDateTime,
-    formatByteSize,
-    formatDeadlineTime,
-    formatRank,
-    isFinalStage,
-    livePalmesAdminDiagnostics,
-    livePalmesAdminResults,
-    livePalmesPublication,
-    normalizeData,
-    programKey,
-    programRows,
-    publicResultsIndexDocument,
-    raceOptionKey,
+    modules: { livePalmesAdminDiagnostics, livePalmesAdminResults, livePalmesPublication },
     raceResults,
-    renderDataStatus,
-    resultArchivesCollection,
-    resultHasDetailsForDiagnostic,
     resultPdfMigrationRunning,
-    resultPdfsCollection,
     resultUploadStates,
     resultsAdminPanel,
     roleStates,
-    safeCountCollection,
-    safeDocumentData,
-    sessionResultsPdfsCollection,
-    seriesPdfsCollection,
-    sessionRows,
-    sexDisplayLabel,
-    showToast,
-    state,
-    updateLiveNotes
-  };
-  bindOptionState(options, ["resultsAdminSession", "seriesImportState"]);
-  return options;
+    source: window,
+    state
+  });
 }
 
 
