@@ -36,4 +36,7 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Extraction du rendu principal de console dans `assets/livepalmes-console-render-workflow.js`.
 - Extraction du stockage local dans `assets/livepalmes-app-storage-workflow.js`.
 - Correction du demarrage des evenements d'interface apres decoupage : les boutons des consoles depuis l'accueil repondent a nouveau.
-- `app.js` descend a 2195 lignes.
+- Remplacement de plusieurs acces implicites `with (context)` par des dependances explicites dans les modules stockage, helpers nageurs, exports, demarrage, historique, roles, maintenance resultats, progression publique et infos speaker.
+- Correction du contexte de synchronisation temps reel pour eviter une erreur silencieuse sur la desactivation automatique du mode direct.
+- Correction du contexte des evenements d'interface : les clics speaker utilisent de nouveau la console active.
+- `app.js` descend a environ 2097 lignes.
