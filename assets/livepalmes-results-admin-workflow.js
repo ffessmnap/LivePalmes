@@ -532,50 +532,27 @@
     return "";
   }
   
-  function resultUploadKeyForProgram(row) {
-    if (typeof livePalmesAdminResults.resultUploadKeyForProgram === "function") {
-      return livePalmesAdminResults.resultUploadKeyForProgram(programKey(row));
-    }
-    return `result:${programKey(row)}`;
+  function resultsUploadState() {
+    return window.LivePalmesResultsUploadState.create({
+      getSeriesImportState: () => seriesImportState,
+      livePalmesAdminResults,
+      programKey,
+      renderResultsAdminPanel,
+      resultUploadStates,
+      setSeriesImportStateValue(value) {
+        seriesImportState = value;
+        context.seriesImportState = seriesImportState;
+      }
+    });
   }
-  
-  function resultUploadKeyForSessionResults(session) {
-    if (typeof livePalmesAdminResults.resultUploadKeyForSessionResults === "function") {
-      return livePalmesAdminResults.resultUploadKeyForSessionResults(session);
-    }
-    return `session-results:${String(session || "current")}`;
-  }
-  
-  function setResultUploadState(key, label, tone = "loading") {
-    if (!key) return;
-    resultUploadStates.set(key, { label, tone });
-    renderResultsAdminPanel();
-  }
-  
-  function clearResultUploadState(key) {
-    if (!key) return;
-    resultUploadStates.delete(key);
-    renderResultsAdminPanel();
-  }
-  
-  function setSeriesImportState(label, tone = "loading") {
-    seriesImportState = { label, tone };
-    context.seriesImportState = seriesImportState;
-    renderResultsAdminPanel();
-  }
-  
-  function clearSeriesImportState() {
-    seriesImportState = null;
-    context.seriesImportState = seriesImportState;
-    renderResultsAdminPanel();
-  }
-  
-  function resultUploadBadgeHtml(uploadState) {
-    if (typeof livePalmesAdminResults.resultUploadBadgeHtml === "function") {
-      return livePalmesAdminResults.resultUploadBadgeHtml(uploadState);
-    }
-    return "";
-  }
+
+  function resultUploadKeyForProgram(row) { return resultsUploadState().resultUploadKeyForProgram(row); }
+  function resultUploadKeyForSessionResults(session) { return resultsUploadState().resultUploadKeyForSessionResults(session); }
+  function setResultUploadState(key, label, tone = "loading") { return resultsUploadState().setResultUploadState(key, label, tone); }
+  function clearResultUploadState(key) { return resultsUploadState().clearResultUploadState(key); }
+  function setSeriesImportState(label, tone = "loading") { return resultsUploadState().setSeriesImportState(label, tone); }
+  function clearSeriesImportState() { return resultsUploadState().clearSeriesImportState(); }
+  function resultUploadBadgeHtml(uploadState) { return resultsUploadState().resultUploadBadgeHtml(uploadState); }
   
   function renderResultsAdminPanel() {
     if (!resultsAdminPanel) return;
