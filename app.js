@@ -843,7 +843,6 @@ function resultMaintenanceWorkflowOptions() {
   });
 }
 
-
 function swimmerPanelOptions() {
   return livePalmesSwimmerPanelOptions.create({
     data,
@@ -854,6 +853,7 @@ function swimmerPanelOptions() {
       formatGap,
       formatPersonNameParts,
       formatRank,
+      getBirthYear,
       getBirthYearLabel,
       livePalmesHeaderView,
       livePalmesResults,

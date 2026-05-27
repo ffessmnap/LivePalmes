@@ -2,14 +2,14 @@
   const functionKeys = [
     "activeLineAlertsForEntrant", "alertDetailLabel", "availableSeriesNumbers",
     "categoryLabel", "compactRaceTitle", "currentEvent", "currentRefereeProgressIsHere",
-    "currentSeriesRows", "displayedWord", "entrantKey", "entrantWord",
+    "currentSeriesRows", "displayedWord", "entrantKey", "entrantPersonKey", "entrantWord",
     "finalStageLabel", "formatDisplayName", "formatName", "formatSeriesDisplayName",
     "isFemaleContext", "isFinalStage", "isLastSeriesOfCurrentSession", "isLastRaceOfCurrentSession",
     "isSpeakerView", "matchesRace", "programRows", "raceEntrants",
     "raceEntrantsForStats", "recordEventMatches", "recordMatchesRace", "refereeProgress",
     "refereeProgressLabel", "renderLineAlertBadges", "renderLineTimeStatus",
     "selectedProgramRow", "selectedSeriesLabel", "selectedSeriesTime",
-    "sexDisplayLabel", "shortClubName", "swimmerWord", "splitRaceNote"
+    "sexDisplayLabel", "sheetSex", "shortClubName", "swimmerWord", "splitRaceNote"
   ];
 
   function create(context = {}) {
