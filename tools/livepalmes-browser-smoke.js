@@ -220,6 +220,16 @@ async function testSpeakerActions(client, baseUrl) {
   `);
   assert(swimmer.selectedRows > 0 && swimmer.detailsText, "Speaker : clic nageur KO.");
 
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#swimmerDetails .close-details')?.click()", awaitPromise: true });
+  await sleep(200);
+  const swimmerClosed = await evaluateJson(client, `
+    return {
+      selectedRows: document.querySelectorAll('.selected-row').length,
+      hidden: Boolean(document.querySelector('#swimmerDetails')?.hidden)
+    };
+  `);
+  assert(swimmerClosed.selectedRows === 0 && swimmerClosed.hidden, "Speaker : fermeture fiche nageur KO.");
+
   await client.send("Runtime.evaluate", { expression: "document.querySelector('[data-record-key]')?.click()", awaitPromise: true });
   await sleep(300);
   const record = await evaluateJson(client, `
@@ -269,6 +279,40 @@ async function testSpeakerActions(client, baseUrl) {
   console.log("Actions speaker : OK");
 }
 
+async function testRefereeDecisionFlow(client, baseUrl) {
+  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-referee=${Date.now()}` });
+  await sleep(1500);
+  await client.send("Runtime.evaluate", {
+    expression: "document.querySelector('button[data-home-role=\"referee\"]')?.click()",
+    awaitPromise: true
+  });
+  await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
+  await client.send("Runtime.evaluate", {
+    expression: "Array.from(document.querySelectorAll('tr[data-swimmer-id]')).find((row) => row.dataset.importedForfait !== '1')?.querySelector('[data-swimmer-id]')?.click()",
+    awaitPromise: true
+  });
+  await waitFor(client, "!document.querySelector('#decisionModal')?.hidden", 4000);
+  const decision = await evaluateJson(client, `
+    return {
+      selectedRows: document.querySelectorAll('.selected-row').length,
+      modalOpen: !document.querySelector('#decisionModal')?.hidden,
+      choices: document.querySelectorAll('#decisionModal [data-decision-type]').length,
+      submitPresent: Boolean(document.querySelector('#decisionModal [data-submit-decision]'))
+    };
+  `);
+  assert(decision.selectedRows > 0 && decision.modalOpen && decision.choices > 0 && decision.submitPresent, "JA : ouverture decision nageur KO.");
+
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#decisionModal [data-close-decision]')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelector('#decisionModal')?.hidden", 4000);
+  const closed = await evaluateJson(client, `
+    return {
+      modalHidden: Boolean(document.querySelector('#decisionModal')?.hidden)
+    };
+  `);
+  assert(closed.modalHidden, "JA : fermeture decision KO.");
+  console.log("Actions JA : OK");
+}
+
 async function testPublicSeries(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/series-public.html?smoke-series=${Date.now()}` });
   const ready = await waitFor(client, "document.querySelectorAll('#publicSeriesRaceSelect option').length > 0", 12000);
@@ -279,10 +323,16 @@ async function testPublicSeries(client, baseUrl) {
       script: document.querySelector('script[src^="series-public.js"]')?.getAttribute('src') || '',
       count: options.length,
       sample: options.slice(0, 8),
+      hasRefresh: Boolean(document.querySelector('#refreshPublicSeriesBtn')),
+      hasFloatingRefresh: Boolean(document.querySelector('#refreshPublicSeriesFloatBtn')),
       hasTimePrefix: options.some((label) => /^\\d{1,2}:\\d{2}\\s*[·-]/.test(label))
     };
   `);
+  assert(state.script.includes("series-public.js"), "Page publique series : script absent.");
+  assert(state.hasRefresh && state.hasFloatingRefresh, "Page publique series : boutons actualiser absents.");
   assert(!state.hasTimePrefix, "Page publique series : le menu des courses contient encore des horaires.");
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#refreshPublicSeriesBtn')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelectorAll('#publicSeriesRaceSelect option').length > 0", 6000);
   await client.send("Runtime.evaluate", {
     expression: "document.querySelector('[data-swimmer-key]:not([data-swimmer-key=\"\"])')?.click()",
     awaitPromise: true
@@ -298,6 +348,8 @@ async function testPublicSeries(client, baseUrl) {
     };
   `);
   assert(swimmer.sheetOpen && (!swimmer.hasRows || swimmer.programRows > 0 || swimmer.loading), `Page publique series : fiche nageur KO. ${JSON.stringify(swimmer)}`);
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#publicSwimmerSheet [data-close-swimmer]')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelector('#publicSwimmerSheet')?.hidden", 4000);
   console.log("Page publique series : OK");
 }
 
@@ -316,6 +368,8 @@ async function testPublicResults(client, baseUrl) {
   `);
   assert(state.script.includes("resultats.js"), "Page publique resultats : script absent.");
   assert(state.hasList && state.hasRefresh, "Page publique resultats : structure principale incomplete.");
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#refreshPublicResultsBtn')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelector('#publicResultsList')?.children.length > 0", 6000);
   await client.send("Runtime.evaluate", {
     expression: "document.querySelector('[data-result-swimmer-key]:not([data-result-swimmer-key=\"\"])')?.click()",
     awaitPromise: true
@@ -331,6 +385,8 @@ async function testPublicResults(client, baseUrl) {
     };
   `);
   assert(swimmer.sheetOpen && (!swimmer.hasButtons || swimmer.hasProgram || swimmer.loading), `Page publique resultats : fiche nageur KO. ${JSON.stringify(swimmer)}`);
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('#publicSwimmerSheet [data-close-swimmer-sheet]')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelector('#publicSwimmerSheet')?.hidden", 4000);
   console.log("Page publique resultats : OK");
 }
 
@@ -340,6 +396,7 @@ async function main() {
   try {
     await testRoleOpening(browser.client, baseUrl);
     await testSpeakerActions(browser.client, baseUrl);
+    await testRefereeDecisionFlow(browser.client, baseUrl);
     await testPublicSeries(browser.client, baseUrl);
     await testPublicResults(browser.client, baseUrl);
     const errors = collectErrors(browser.client);
