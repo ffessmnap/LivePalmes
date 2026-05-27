@@ -280,9 +280,13 @@
               console.warn("Lecture REST des resultats impossible", fallbackError);
             });
           });
+        refreshFirebaseOnce(false, { successStatus: "connected" }).catch((error) => {
+          console.warn("Hydratation initiale Firebase impossible", error);
+        });
       }
 
-      async function refreshFirebaseOnce(showMessage = true) {
+      async function refreshFirebaseOnce(showMessage = true, options = {}) {
+        const successStatus = options.successStatus || "manual";
         if (!context.firestoreDb) {
           try {
             if (await refreshFirebaseFromRest(showMessage)) return;
@@ -351,7 +355,7 @@
           }
         }
         if (hasFreshData) {
-          context.firebaseStatus = "manual";
+          context.firebaseStatus = successStatus;
           render();
           if (showMessage && context.state?.role === "computer") {
             renderDataStatus("Donnees Firebase actualisees. L'actualisation directe reste coupee tant que l'interrupteur est en manuel.");
