@@ -186,28 +186,6 @@ function performancesForProgramRow(row) {
   return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions());
 }
 
-function resultPdfLinksForProgramRow(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.resultPdfLinksForProgramRow(row, performances, publicSwimmerOptions());
-}
-
-const resultPdfLabel = (result) => publicSwimmers.resultPdfLabel(result);
-
-function renderSwimmerResultPdfLinks(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerResultPdfLinks(row, performances, publicSwimmerOptions());
-}
-
-const performancePhaseLabel = (performance) => publicSwimmers.performancePhaseLabel(performance);
-
-const performanceInlinePhaseLabel = (performance) => publicSwimmers.performanceInlinePhaseLabel(performance);
-
-function renderPerformanceLines(row) {
-  return publicSwimmers.renderPerformanceLines(row, publicSwimmerOptions());
-}
-
-function renderSwimmerProgramMeta(row, forfait, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerProgramMeta(row, publicSwimmerOptions({ forfait, performances }));
-}
-
 function recordFlag(record) {
   if (sameCategory(record.category, "Cadet")) return "MPF";
   if (sameCategory(record.category, "Junior")) return "RFJ";
@@ -492,8 +470,6 @@ function goToPreviousPublicSeries() {
 
 const categoryLabel = (category, sex) => publicSwimmers.categoryLabel(category, sex);
 
-const swimmerCategoryBirthHtml = (row) => publicSwimmers.swimmerCategoryBirthHtml(row, { escapeHtml });
-
 function renderSeriesRows(rows) {
   if (!rows.length) {
     return `<tr><td colspan="4" class="public-series-empty-line">Aucune ligne trouvée pour cette série.</td></tr>`;
@@ -517,15 +493,7 @@ function renderSeriesRows(rows) {
   }).join("");
 }
 
-const allSearchSwimmers = () => publicSwimmers.allSearchSwimmers(publicSeries, { entrants: publicEntrants });
-
 const searchSwimmers = (query) => publicSwimmers.searchSwimmers(query, publicSeries, { entrants: publicEntrants, limit: 8 });
-
-const finalSessionsForRace = (eventId, sex) => publicSwimmers.finalSessionsForRace(eventId, sex, publicProgram);
-
-const swimmerProgramSortValue = (row) => publicSwimmers.swimmerProgramSortValue(row);
-
-const dedupeSwimmerProgramRows = (rows = []) => publicSwimmers.dedupeSwimmerProgramRows(rows, { program: publicProgram });
 
 function renderInlineSwimmerProgram(key) {
   return publicSwimmers.renderInlineSwimmerProgram(key, publicSwimmerOptions({
@@ -663,42 +631,17 @@ function swimmerProgramRows(key) {
 
 function renderSwimmerSheet(key) {
   const rows = swimmerProgramRows(key);
-  const swimmer = rows[0];
-  if (!swimmer || !swimmerSheet) return;
+  if (!rows[0] || !swimmerSheet) return;
   const loadingResults = swimmerResultsAreLoading(key);
   swimmerSheet.hidden = false;
-  swimmerSheet.innerHTML = `
-    <div class="public-swimmer-backdrop" data-close-swimmer></div>
-    <section class="public-swimmer-panel" role="dialog" aria-modal="true" aria-label="Programme nageur">
-      <div class="public-swimmer-head">
-        <div>
-          <span>${escapeHtml(clubLabel(swimmer))}</span>
-          <h2>${escapeHtml(swimmerName(swimmer))}</h2>
-          <em>${swimmerCategoryBirthHtml(swimmer)}</em>
-        </div>
-        <button class="decision-close" type="button" data-close-swimmer aria-label="Fermer">×</button>
-      </div>
-      <p class="panel-subtitle">Programme du week-end · horaires indicatifs</p>
-      <div class="public-swimmer-program">
-        ${loadingResults ? `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>` : rows.map((row) => {
-          const time = row.startTime || rowStartTime(row);
-          const forfait = isForfait(row);
-          const performances = performancesForProgramRow(row);
-          const timeLabel = performances.length ? "" : (time ? ` · ${escapeHtml(time)}` : "");
-          return `
-            <div class="public-swimmer-program-row ${forfait ? "is-forfait" : ""}">
-              <div class="public-swimmer-program-row-head">
-                <strong>S${escapeHtml(row.session || "-")}${timeLabel} · ${escapeHtml(eventLabel(row.eventId, row.label))} ${escapeHtml(sexLabel(row.sex))}</strong>
-                ${renderSwimmerResultPdfLinks(row, performances)}
-              </div>
-              ${renderSwimmerProgramMeta(row, forfait, performances)}
-              ${renderPerformanceLines(row)}
-            </div>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `;
+  swimmerSheet.innerHTML = publicSwimmers.renderSwimmerSheet(key, publicSwimmerOptions({
+    rows,
+    loading: loadingResults,
+    closeAttr: "data-close-swimmer",
+    closeButtonClass: "decision-close",
+    label: "Programme nageur",
+    subtitle: "Programme du week-end &middot; horaires indicatifs"
+  }));
 }
 
 async function openSwimmerSheet(key) {

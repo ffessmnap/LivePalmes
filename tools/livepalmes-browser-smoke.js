@@ -283,7 +283,53 @@ async function testPublicSeries(client, baseUrl) {
     };
   `);
   assert(!state.hasTimePrefix, "Page publique series : le menu des courses contient encore des horaires.");
+  await client.send("Runtime.evaluate", {
+    expression: "document.querySelector('[data-swimmer-key]')?.click()",
+    awaitPromise: true
+  });
+  await sleep(400);
+  const swimmer = await evaluateJson(client, `
+    const hasRows = document.querySelectorAll('[data-swimmer-key]').length > 0;
+    return {
+      hasRows,
+      sheetOpen: hasRows ? !document.querySelector('#publicSwimmerSheet')?.hidden : true,
+      programRows: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length
+    };
+  `);
+  assert(swimmer.sheetOpen && (!swimmer.hasRows || swimmer.programRows > 0), "Page publique series : fiche nageur KO.");
   console.log("Page publique series : OK");
+}
+
+async function testPublicResults(client, baseUrl) {
+  await client.send("Page.navigate", { url: `${baseUrl}/resultats.html?smoke-results=${Date.now()}` });
+  const ready = await waitFor(client, "document.querySelector('#publicResultsList')?.children.length > 0", 12000);
+  assert(ready, "Page publique resultats : liste non chargee.");
+  const state = await evaluateJson(client, `
+    return {
+      script: document.querySelector('script[src^="resultats.js"]')?.getAttribute('src') || '',
+      title: document.querySelector('#publicMeetTitle')?.textContent.trim() || '',
+      hasList: document.querySelector('#publicResultsList')?.children.length > 0,
+      hasRefresh: Boolean(document.querySelector('#refreshPublicResultsBtn')),
+      searchInputs: document.querySelectorAll('#publicSwimmerSearchInput').length
+    };
+  `);
+  assert(state.script.includes("public-swimmer-sheet"), "Page publique resultats : version script inattendue.");
+  assert(state.hasList && state.hasRefresh, "Page publique resultats : structure principale incomplete.");
+  await client.send("Runtime.evaluate", {
+    expression: "document.querySelector('[data-result-swimmer-key]')?.click()",
+    awaitPromise: true
+  });
+  await sleep(400);
+  const swimmer = await evaluateJson(client, `
+    const hasButtons = document.querySelectorAll('[data-result-swimmer-key]').length > 0;
+    return {
+      hasButtons,
+      sheetOpen: hasButtons ? !document.querySelector('#publicSwimmerSheet')?.hidden : true,
+      hasProgram: document.querySelectorAll('#publicSwimmerSheet .public-swimmer-program-row').length > 0
+    };
+  `);
+  assert(swimmer.sheetOpen && (!swimmer.hasButtons || swimmer.hasProgram), "Page publique resultats : fiche nageur KO.");
+  console.log("Page publique resultats : OK");
 }
 
 async function main() {
@@ -293,6 +339,7 @@ async function main() {
     await testRoleOpening(browser.client, baseUrl);
     await testSpeakerActions(browser.client, baseUrl);
     await testPublicSeries(browser.client, baseUrl);
+    await testPublicResults(browser.client, baseUrl);
     const errors = collectErrors(browser.client);
     assert(!errors.length, `Erreurs navigateur : ${errors.join(" | ")}`);
     console.log("\nSmoke navigateur LivePalmes OK.");

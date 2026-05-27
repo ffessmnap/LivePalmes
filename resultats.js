@@ -127,8 +127,6 @@ const sexLabel = (sex) => publicSwimmers.sexLabel(sex);
 
 const categoryLabel = (category, sex) => publicSwimmers.categoryLabel(category, sex);
 
-const swimmerCategoryBirthHtml = (row) => publicSwimmers.swimmerCategoryBirthHtml(row, { escapeHtml });
-
 const eventLabel = (eventId, fallback = "") => publicSwimmers.eventLabel(publicEvents, eventId, fallback);
 
 const sessions = () => publicSwimmers.publicSessions(publicProgram);
@@ -298,8 +296,6 @@ const displaySeriesRow = (row) => publicSwimmers.displaySeriesRow(row, publicEnt
 
 const swimmerName = (row) => publicSwimmers.swimmerName(row, publicEntrants);
 
-const clubLabel = (row) => publicSwimmers.clubLabel(row, publicEntrants);
-
 const lineLabel = (row) => publicSwimmers.lineLabel(row);
 
 const seedLabel = (row) => publicSwimmers.seedLabel(row, publicEntrants);
@@ -344,37 +340,7 @@ function performancesForProgramRow(row) {
   return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions());
 }
 
-function resultPdfLinksForProgramRow(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.resultPdfLinksForProgramRow(row, performances, publicSwimmerOptions());
-}
-
-const resultPdfLabel = (result) => publicSwimmers.resultPdfLabel(result);
-
-function renderSwimmerResultPdfLinks(row, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerResultPdfLinks(row, performances, publicSwimmerOptions());
-}
-
-const performancePhaseLabel = (performance) => publicSwimmers.performancePhaseLabel(performance);
-
-const performanceInlinePhaseLabel = (performance) => publicSwimmers.performanceInlinePhaseLabel(performance);
-
-function renderPerformanceLines(row) {
-  return publicSwimmers.renderPerformanceLines(row, publicSwimmerOptions());
-}
-
-function renderSwimmerProgramMeta(row, forfait, performances = performancesForProgramRow(row)) {
-  return publicSwimmers.renderSwimmerProgramMeta(row, publicSwimmerOptions({ forfait, performances }));
-}
-
-const allSearchSwimmers = () => publicSwimmers.allSearchSwimmers(publicSeries, { entrants: publicEntrants });
-
 const searchSwimmers = (query) => publicSwimmers.searchSwimmers(query, publicSeries, { entrants: publicEntrants, limit: 8 });
-
-const finalSessionsForRace = (eventId, sex) => publicSwimmers.finalSessionsForRace(eventId, sex, publicProgram);
-
-const swimmerProgramSortValue = (row) => publicSwimmers.swimmerProgramSortValue(row);
-
-const dedupeSwimmerProgramRows = (rows = []) => publicSwimmers.dedupeSwimmerProgramRows(rows, { program: publicProgram });
 
 function swimmerProgramRows(key) {
   return publicSwimmers.swimmerProgramRows(key, publicSeries, publicSwimmerOptions());
@@ -435,13 +401,13 @@ function renderSwimmerSheetContent(key) {
   if (!content) return;
   activeSheetSwimmerKey = key;
   swimmerSheet.hidden = false;
-  swimmerSheet.innerHTML = `
-    <div class="public-swimmer-backdrop" data-close-swimmer-sheet></div>
-    <div class="public-swimmer-panel" role="dialog" aria-modal="true" aria-label="Fiche nageur">
-      <button class="public-swimmer-close" type="button" data-close-swimmer-sheet aria-label="Fermer">×</button>
-      ${content}
-    </div>
-  `;
+  swimmerSheet.innerHTML = publicSwimmers.renderSwimmerSheet(key, publicSwimmerOptions({
+    content,
+    closeAttr: "data-close-swimmer-sheet",
+    closeButtonClass: "public-swimmer-close",
+    label: "Fiche nageur",
+    panelTag: "div"
+  }));
   document.body.classList.add("public-sheet-open");
 }
 
