@@ -44,6 +44,7 @@
     livePalmesFinalWithdrawalsWorkflow: "LivePalmesFinalWithdrawalsWorkflow",
     livePalmesDiagnosticsWorkflow: "LivePalmesDiagnosticsWorkflow",
     livePalmesUiEvents: "LivePalmesUiEvents",
+    livePalmesUiEventsOptions: "LivePalmesUiEventsOptions",
     livePalmesProgramView: "LivePalmesProgramView",
     livePalmesConsoleRenderWorkflowModule: "LivePalmesConsoleRenderWorkflow",
     livePalmesRefereeView: "LivePalmesRefereeView",
