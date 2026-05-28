@@ -42,6 +42,7 @@
     } = context;
     const alerts = new Proxy([], {
       get: (_, prop) => context.alerts?.[prop],
+      has: (_, prop) => prop in (context.alerts || []),
       set: (_, prop, value) => {
         const nextAlerts = context.alerts || [];
         nextAlerts[prop] = value;
@@ -60,6 +61,7 @@
     });
     const raceResults = new Proxy([], {
       get: (_, prop) => context.raceResults?.[prop],
+      has: (_, prop) => prop in (context.raceResults || []),
       set: (_, prop, value) => {
         const nextResults = context.raceResults || [];
         nextResults[prop] = value;

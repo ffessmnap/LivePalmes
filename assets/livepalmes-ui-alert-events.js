@@ -66,7 +66,8 @@
       showToast
     } = context;
     const alerts = new Proxy([], {
-      get: (_, prop) => context.alerts?.[prop]
+      get: (_, prop) => context.alerts?.[prop],
+      has: (_, prop) => prop in (context.alerts || [])
     });
     const decisionDraft = new Proxy({}, {
       get: (_, prop) => context.decisionDraft?.[prop],
