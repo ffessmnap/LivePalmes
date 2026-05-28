@@ -367,9 +367,10 @@ function adminActionsOptions() {
     roleIsUnlocked,
     saveData,
     saveUnlockedRoles,
+    state,
     updateLiveNotes
   };
-  bindOptionState(options, ["data", "lastConsoleActivityAt", "rolePinResolver", "unlockedRoles"]);
+  bindOptionState(options, ["data", "lastConsoleActivityAt", "rolePinResolver", "state", "unlockedRoles"]);
   return options;
 }
 

@@ -24,6 +24,7 @@
       updateLiveNotes
     } = context;
     const getData = () => context.data || { notes: {} };
+    const getState = () => context.state || {};
     const setData = (value) => { context.data = value; };
 
       function renderRoleCodesModal() {
@@ -34,6 +35,7 @@
         roleCodesModal.hidden = false;
         roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesModalHtml({
           active,
+          diagnosticsEnabled: getState().role === "computer",
           pins,
           roles: roleOrder.map((role) => ({ role, label: ROLE_LABELS[role] }))
         });

@@ -51,6 +51,10 @@ const resultPublicationScripts = [
   "assets/livepalmes-result-parser.js"
 ];
 
+const adminDiagnosticScripts = [
+  "assets/livepalmes-admin-diagnostics.js"
+];
+
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);
 const rolesWithSpeakerInfo = new Set(["speaker", "computer"]);
 const rolesWithoutSeriesImport = new Set(["live", "speaker", "referee", "video", "secretary"]);
@@ -58,6 +62,7 @@ const rolesWithoutResultsAdmin = new Set(["live", "speaker", "referee", "video",
 const rolesWithoutFinalWithdrawals = new Set(["live", "speaker", "referee", "video"]);
 const rolesWithoutResultMaintenance = new Set(["live", "speaker", "referee", "video", "secretary"]);
 const rolesWithoutResultPublication = new Set(["live", "referee", "video"]);
+const rolesWithoutAdminDiagnostics = new Set(["live", "speaker", "referee", "video", "secretary"]);
 
 function readProjectFile(filePath) {
   return fs.readFileSync(path.join(rootDir, filePath), "utf8");
@@ -87,6 +92,7 @@ function checkPage(page) {
   const loadedFinalWithdrawals = finalWithdrawalsScripts.filter((script) => sources.includes(script));
   const loadedResultMaintenance = resultMaintenanceScripts.filter((script) => sources.includes(script));
   const loadedResultPublication = resultPublicationScripts.filter((script) => sources.includes(script));
+  const loadedAdminDiagnostics = adminDiagnosticScripts.filter((script) => sources.includes(script));
 
   if (!hasDedicatedRole) {
     throw new Error(`${page.file} ne declare pas le role dedie ${page.role}.`);
@@ -138,6 +144,14 @@ function checkPage(page) {
 
   if ((page.role === "computer" || page.role === "speaker" || page.role === "secretary") && loadedResultPublication.length !== resultPublicationScripts.length) {
     throw new Error(`${page.file} doit charger la publication resultats.`);
+  }
+
+  if (rolesWithoutAdminDiagnostics.has(page.role) && loadedAdminDiagnostics.length) {
+    throw new Error(`${page.file} charge encore les diagnostics admin : ${loadedAdminDiagnostics.join(", ")}`);
+  }
+
+  if (page.role === "computer" && loadedAdminDiagnostics.length !== adminDiagnosticScripts.length) {
+    throw new Error(`${page.file} doit charger les diagnostics admin.`);
   }
 
   return {
