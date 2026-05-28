@@ -33,6 +33,7 @@
     } = context;
     const alerts = new Proxy([], {
       get: (_, prop) => context.alerts?.[prop],
+      has: (_, prop) => prop in (context.alerts || []),
       set: (_, prop, value) => {
         const nextAlerts = context.alerts || [];
         nextAlerts[prop] = value;
