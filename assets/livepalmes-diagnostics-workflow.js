@@ -22,6 +22,9 @@
   let liveDataDocument;
   let liveDismissedAlertIds;
   let livePalmesAdminDiagnostics;
+  let livePalmesAdminAuth;
+  let livePalmesPinAuth;
+  let livePalmesTechnicalLog;
   let migrateResultPdfsOutOfResults;
   let performanceDiagnosticLines;
   let pinLockEnabled;
@@ -277,6 +280,15 @@
         lastUpdatedSession: data.notes?.lastUpdatedSession || ""
       },
       firebase: {},
+      security: {
+        adminConfigured: Boolean(livePalmesAdminAuth?.status?.()?.configured),
+        adminEmail: livePalmesAdminAuth?.status?.()?.email || "",
+        adminSignedIn: Boolean(livePalmesAdminAuth?.isAdminAuthenticated?.()),
+        adminUid: livePalmesAdminAuth?.status?.()?.uid || "",
+        pinLockEnabled: pinLockEnabled(),
+        pinMode: data.notes?.pinAuthMode || (livePalmesPinAuth?.cloudPinModeEnabled?.(data.notes) ? "cloud" : "local")
+      },
+      technicalLog: technicalLogSummary(),
       recommendations: []
     };
     if (!firestoreDb) {
@@ -373,6 +385,14 @@
     report.readMs = Math.round(performance.now() - startedAt);
     return report;
   }
+
+  function technicalLogSummary() {
+    const summary = livePalmesTechnicalLog?.summary?.() || {};
+    return {
+      ...summary,
+      latestAt: summary.latest?.createdAt || ""
+    };
+  }
   
   function resultHasDetailsForDiagnostic(result) {
     if (typeof livePalmesAdminDiagnostics.resultHasDetails === "function") {
@@ -397,6 +417,18 @@
     roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalDiagnosticLoadingHtml();
     const report = await collectTechnicalDiagnostic();
     renderTechnicalDiagnosticModal(report);
+  }
+
+  function showTechnicalLogModal() {
+    if (!roleCodesModal) return;
+    roleCodesModal.hidden = false;
+    const entries = livePalmesTechnicalLog?.entries?.() || [];
+    roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderTechnicalLogModalHtml(entries);
+  }
+
+  function clearTechnicalLog() {
+    livePalmesTechnicalLog?.clear?.();
+    showTechnicalLogModal();
   }
   
   async function cleanLegacyResultPdfs() {
@@ -457,6 +489,8 @@
     renderTechnicalDiagnosticModal,
     showTechnicalDiagnosticModal,
     cleanLegacyResultPdfs,
+    showTechnicalLogModal,
+    clearTechnicalLog,
     showDataDiagnostic
   };
 
@@ -484,6 +518,9 @@
     liveDataDocument = context.liveDataDocument;
     liveDismissedAlertIds = context.liveDismissedAlertIds;
     livePalmesAdminDiagnostics = context.livePalmesAdminDiagnostics;
+    livePalmesAdminAuth = context.livePalmesAdminAuth;
+    livePalmesPinAuth = context.livePalmesPinAuth;
+    livePalmesTechnicalLog = context.livePalmesTechnicalLog;
     migrateResultPdfsOutOfResults = context.migrateResultPdfsOutOfResults;
     performanceDiagnosticLines = context.performanceDiagnosticLines;
     pinLockEnabled = context.pinLockEnabled;
@@ -521,6 +558,8 @@
     renderTechnicalDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.renderTechnicalDiagnosticModal(...args); },
     showTechnicalDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.showTechnicalDiagnosticModal(...args); },
     cleanLegacyResultPdfs: (...args) => { useContext(args.pop() || {}); return api.cleanLegacyResultPdfs(...args); },
+    showTechnicalLogModal: (...args) => { useContext(args.pop() || {}); return api.showTechnicalLogModal(...args); },
+    clearTechnicalLog: (...args) => { useContext(args.pop() || {}); return api.clearTechnicalLog(...args); },
     showDataDiagnostic: (...args) => { useContext(args.pop() || {}); return api.showDataDiagnostic(...args); }
   };
 }());

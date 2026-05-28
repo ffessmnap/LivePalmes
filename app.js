@@ -16,7 +16,7 @@ const {
   livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
   livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
   livePalmesAdminAuthModule, livePalmesPinAuthModule,
-  livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
+  livePalmesAdminDiagnostics, livePalmesTechnicalLog, livePalmesAdminBackups, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
   livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesSpeakerInfoOptions, livePalmesProgramNavigation, livePalmesSeriesControls,
@@ -370,6 +370,7 @@ function adminActionsOptions() {
     historyArchivesCollection,
     initFirebaseSync,
     livePalmesAdminAuth,
+    livePalmesAdminBackups,
     livePalmesAdminModals,
     livePalmesPinAuth,
     normalizeData,
@@ -382,12 +383,14 @@ function adminActionsOptions() {
     resultSessions,
     roleCodesModal,
     roleIsUnlocked,
+    saveAlerts,
     saveData,
+    saveRoleStates,
     saveUnlockedRoles,
     state,
     updateLiveNotes
   };
-  bindOptionState(options, ["data", "lastConsoleActivityAt", "rolePinResolver", "state", "unlockedRoles"]);
+  bindOptionState(options, ["alerts", "data", "lastConsoleActivityAt", "raceResults", "rolePinResolver", "roleStates", "state", "unlockedRoles"]);
   return options;
 }
 
@@ -794,6 +797,9 @@ function diagnosticsWorkflowOptions() {
     liveDataDocument,
     liveDismissedAlertIds,
     livePalmesAdminDiagnostics,
+    livePalmesAdminAuth,
+    livePalmesPinAuth,
+    livePalmesTechnicalLog,
     migrateResultPdfsOutOfResults,
     performanceDiagnosticLines,
     pinLockEnabled,
@@ -1044,6 +1050,7 @@ function appLifecycleOptions() {
     normalizeData,
     parseCsv,
     PRESENCE_HEARTBEAT_MS,
+    acquireRoleLock,
     refreshPresenceCounts,
     releaseConsolePresence,
     releaseRoleLock,
@@ -1054,6 +1061,7 @@ function appLifecycleOptions() {
     sampleData,
     saveCurrentRoleState,
     saveData,
+    technicalLog: livePalmesTechnicalLog,
     showDataDiagnostic,
     setInterval: window.setInterval.bind(window),
     toggleRoleLock,

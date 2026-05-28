@@ -1445,6 +1445,49 @@
   line-height: 1.35;
 }
 
+.technical-log-list {
+  display: grid;
+  gap: 8px;
+  max-height: 54vh;
+  overflow: auto;
+}
+
+.technical-log-item {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid #d8e7ec;
+  border-left: 5px solid #94a3b8;
+  border-radius: 8px;
+  background: #fbfdfe;
+}
+
+.technical-log-item.error {
+  border-left-color: #dc2626;
+}
+
+.technical-log-item.warn {
+  border-left-color: #f59e0b;
+}
+
+.technical-log-item span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.technical-log-item pre {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+  font: 0.78rem/1.35 Consolas, "Courier New", monospace;
+  white-space: pre-wrap;
+}
+
 .archive-list {
   display: grid;
   gap: 8px;
