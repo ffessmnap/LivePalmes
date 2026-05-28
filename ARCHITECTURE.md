@@ -9,6 +9,7 @@ LivePalmes est une application web simple en HTML, CSS et JavaScript. Il n'y a p
 Les pages principales sont a la racine :
 
 - `index.html` : consoles internes, bureau des performances, speaker, live, JA, video, secretariat.
+- `speaker.html` : premiere page dediee, qui ouvre la console speaker via le meme controle d'acces que l'accueil.
 - `resultats.html` et `resultats.js` : page publique des resultats.
 - `series-public.html` et `series-public.js` : page publique des series.
 - `styles.css`, `console.css`, `public.css` : styles visuels.
@@ -81,6 +82,7 @@ Le code est nettement plus sain qu'avant :
 - Les gros domaines sont separes.
 - Les pages publiques partagent une partie de la logique nageur.
 - Les diagnostics et la maintenance sont isoles.
+- Une premiere page dediee, `speaker.html`, existe sans supprimer l'acces historique depuis `index.html`.
 
 Il reste encore des points a ameliorer :
 
