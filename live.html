@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LivePalmes</title>
-    <meta name="description" content="LivePalmes est un outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
-    <meta property="og:title" content="LivePalmes">
-    <meta property="og:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
+    <title>Live - LivePalmes</title>
+    <meta name="description" content="Console live LivePalmes pour suivre la course et les informations sans action officielle.">
+    <meta property="og:title" content="Live - LivePalmes">
+    <meta property="og:description" content="Console live LivePalmes pour suivre la course et les informations sans action officielle.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="logo-livepalmes.png">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="LivePalmes">
-    <meta name="twitter:description" content="Outil de suivi en temps reel pour la nage avec palmes, le speaker et les officiels.">
+    <meta name="twitter:title" content="Live - LivePalmes">
+    <meta name="twitter:description" content="Console live LivePalmes pour suivre la course et les informations sans action officielle.">
     <meta name="theme-color" content="#0b7285">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="styles.css?v=20260528-console-pages">
     <link rel="stylesheet" href="console.css?v=20260528-console-pages">
   </head>
-  <body>
+  <body class="dedicated-console-page dedicated-live-page">
     <header class="topbar">
       <div>
         <p class="eyebrow app-name">
@@ -66,11 +66,11 @@
       <div class="profile-home-hero">
         <div>
           <p class="eyebrow">Choix du profil</p>
-          <h2>Bienvenue sur LivePalmes</h2>
-          <p>S&eacute;lectionne ta console pour suivre la comp&eacute;tition en temps r&eacute;el.</p>
+          <h2>Console live</h2>
+          <p>Ouverture de la console live LivePalmes.</p>
           <p id="profileModeStatus" class="profile-mode-status">Mode pr&eacute;paration</p>
         </div>
-        <a class="public-results-link" href="resultats.html?v=20260528-console-pages" target="_blank" rel="noopener">R&eacute;sultats publics</a>
+        <a class="public-results-link" href="index.html?v=20260528-console-pages">Accueil LivePalmes</a>
       </div>
       <div class="profile-grid">
         <button class="profile-card profile-live" type="button" data-home-role="live">
@@ -261,6 +261,7 @@
     <div id="resultImportModal" class="decision-modal result-import-modal" hidden></div>
     <div id="roleCodesModal" class="decision-modal role-codes-modal" hidden></div>
 
+    <script>window.LivePalmesDedicatedRole = "live";</script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="assets/livepalmes-diagnostics.js?v=20260528-console-pages"></script>

@@ -1215,11 +1215,16 @@
   grid-column: 1 / -1;
 }
 
-.dedicated-speaker-page.profile-home-active .profile-card:not([data-home-role="speaker"]) {
+.dedicated-live-page.profile-home-active .profile-card:not([data-home-role="live"]),
+.dedicated-speaker-page.profile-home-active .profile-card:not([data-home-role="speaker"]),
+.dedicated-referee-page.profile-home-active .profile-card:not([data-home-role="referee"]),
+.dedicated-video-page.profile-home-active .profile-card:not([data-home-role="video"]),
+.dedicated-computer-page.profile-home-active .profile-card:not([data-home-role="computer"]),
+.dedicated-secretary-page.profile-home-active .profile-card:not([data-home-role="secretary"]) {
   display: none;
 }
 
-.dedicated-speaker-page.profile-home-active .profile-grid {
+.dedicated-console-page.profile-home-active .profile-grid {
   grid-template-columns: minmax(260px, 420px);
 }
 

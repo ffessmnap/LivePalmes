@@ -4,7 +4,12 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..");
 const checkedFiles = [
   "index.html",
+  "live.html",
   "speaker.html",
+  "ja.html",
+  "video.html",
+  "bureau-perf.html",
+  "secretariat.html",
   "resultats.html",
   "series-public.html",
   "pdf.html",

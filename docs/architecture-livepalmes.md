@@ -2,71 +2,70 @@
 
 ## Objectif
 
-LivePalmes doit rester simple à utiliser en compétition, mais son code doit permettre de continuer à ajouter des fonctions sans fragiliser les consoles existantes.
+LivePalmes doit rester simple a utiliser en competition, mais son code doit permettre de continuer a ajouter des fonctions sans fragiliser les consoles existantes.
 
-L'architecture cible est une application composée de pages par rôle, appuyées sur des modules communs.
+L'architecture cible est une application composee de pages par role, appuyees sur des modules communs.
 
 ## Architecture cible
 
 Pages principales :
 
-- `speaker.html` : console speaker.
+- `index.html` : accueil et acces historique aux consoles.
 - `live.html` : console live.
+- `speaker.html` : console speaker.
 - `ja.html` : console juge arbitre.
-- `video.html` : console juge vidéo.
+- `video.html` : console juge video.
 - `bureau-perf.html` : bureau des performances.
-- `secretariat.html` : secrétariat.
-- `index.html` : accueil et accès aux consoles.
-- `speaker.html` : première page dédiée, avec ouverture sécurisée de la console speaker.
+- `secretariat.html` : secretariat.
 - `series-public.html` et `resultats.html` : pages publiques.
 
 Modules communs :
 
-- configuration : clés, rôles, délais, Firebase ;
-- accès Firebase et collections ;
-- état partagé de l'application ;
-- navigation programme, courses, séries et finales ;
+- configuration : cles, roles, delais, Firebase ;
+- acces Firebase et collections ;
+- etat partage de l'application ;
+- navigation programme, courses, series et finales ;
 - rendu des nageurs, records et fiches nageurs ;
 - alertes et annonces ;
 - publication publique ;
-- import séries et résultats ;
+- import series et resultats ;
 - tests navigateur.
 
 ## Etat actuel
 
-`app.js` est encore le point d'entrée principal des consoles internes, mais il ne doit plus recevoir de nouvelle logique métier.
+`app.js` est encore le point d'entree principal des consoles internes, mais il ne doit plus recevoir de nouvelle logique metier.
 
-`speaker.html` est le premier palier de page dédiée. Elle réutilise encore le moteur commun, mais elle cible directement le rôle speaker sans supprimer l'accès historique par `index.html`.
+Les pages dediees par role reutilisent encore le moteur commun, mais elles ciblent directement leur console sans supprimer l'acces historique par `index.html`.
 
-Il sert progressivement à assembler :
+`app.js` sert progressivement a assembler :
 
-- les réglages depuis `assets/livepalmes-app-settings.js` ;
+- les reglages depuis `assets/livepalmes-app-settings.js` ;
 - les modules depuis `assets/livepalmes-app-modules.js` ;
-- les éléments HTML depuis `assets/livepalmes-app-dom.js` ;
-- les accès à l'état partagé depuis `assets/livepalmes-app-state.js`.
+- les elements HTML depuis `assets/livepalmes-app-dom.js` ;
+- les acces a l'etat partage depuis `assets/livepalmes-app-state.js`.
 
-## Règles de développement
+## Regles de developpement
 
-1. Ne pas ajouter de nouvelle grosse fonction métier dans `app.js`.
-2. Créer ou compléter un module dédié dès qu'une fonction concerne un domaine précis.
-3. Garder les pages publiques isolées des consoles internes.
-4. Après chaque refactor important, lancer `node tools/verify-livepalmes.js --browser`.
-5. Publier uniquement après vérification complète.
+1. Ne pas ajouter de nouvelle grosse fonction metier dans `app.js`.
+2. Creer ou completer un module dedie des qu'une fonction concerne un domaine precis.
+3. Garder les pages publiques isolees des consoles internes.
+4. Apres chaque refactor important, lancer `node tools/verify-livepalmes.js --browser`.
+5. Publier uniquement apres verification complete.
 
-## Chemin de migration conseillé
+## Chemin de migration conseille
 
-1. Stabiliser `app.js` comme assembleur sous 2000 lignes.
-2. Sortir les options des workflows dans des modules d'assemblage.
-3. Créer une première page dédiée, probablement `speaker.html`.
-4. Une fois `speaker.html` validée, répéter pour `live`, `ja`, `video`, `bureau-perf`, puis `secretariat`.
-5. Garder `index.html` comme accueil et accès rapide aux consoles.
+1. Garder `app.js` comme assembleur court.
+2. Garder les pages dediees synchronisees avec le moteur commun.
+3. Extraire ensuite les modules utiles par role.
+4. Faire charger a chaque page uniquement ce dont elle a besoin.
+5. Garder `index.html` comme accueil et acces rapide aux consoles.
 
-## Critère "architecture propre finale"
+## Critere "architecture propre finale"
 
-LivePalmes pourra être considéré comme propre quand :
+LivePalmes pourra etre considere comme propre quand :
 
-- aucune console ne dépend d'un fichier géant commun difficile à lire ;
-- chaque page charge seulement les modules utiles à son rôle ;
-- les imports PDF, résultats, alertes, nageurs et publication publique sont dans des modules séparés ;
+- aucune console ne depend d'un fichier geant commun difficile a lire ;
+- chaque page charge seulement les modules utiles a son role ;
+- les imports PDF, resultats, alertes, nageurs et publication publique sont dans des modules separes ;
 - les tests navigateur couvrent l'ouverture des consoles et les actions critiques ;
-- `app.js` est un assembleur court, idéalement autour de 1000 lignes ou moins.
+- `app.js` est un assembleur court, idealement autour de 1000 lignes ou moins.

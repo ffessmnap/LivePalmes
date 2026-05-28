@@ -6,6 +6,14 @@ const { spawn } = require("node:child_process");
 
 const rootDir = path.resolve(__dirname, "..");
 const roles = ["live", "speaker", "referee", "video", "computer", "secretary"];
+const dedicatedPages = [
+  { file: "live.html", role: "live", label: "live" },
+  { file: "speaker.html", role: "speaker", label: "speaker" },
+  { file: "ja.html", role: "referee", label: "juge arbitre" },
+  { file: "video.html", role: "video", label: "juge video" },
+  { file: "bureau-perf.html", role: "computer", label: "bureau des performances" },
+  { file: "secretariat.html", role: "secretary", label: "secretariat" }
+];
 
 function mimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -318,27 +326,34 @@ async function testSpeakerActions(client, baseUrl) {
   console.log("Actions speaker : OK");
 }
 
-async function testDedicatedSpeakerPage(client, baseUrl) {
-  await client.send("Runtime.evaluate", {
-    expression: `localStorage.setItem("napSpeakerFrance2026:active-view:v1", ${JSON.stringify(JSON.stringify({ role: "computer", profileHomeActive: false }))})`,
-    awaitPromise: true
-  });
-  await client.send("Page.navigate", { url: `${baseUrl}/speaker.html?smoke-speaker-page=${Date.now()}` });
-  const ready = await waitFor(client, "document.body.className.includes('role-speaker') || !document.querySelector('#roleCodesModal')?.hidden", 8000);
-  assert(ready, "Page speaker : ouverture ou demande de code absente.");
-  const state = await evaluateJson(client, `
-    return {
-      isSpeaker: document.body.className.includes('role-speaker'),
-      pinOpen: !document.querySelector('#roleCodesModal')?.hidden,
-      profileHomeVisible: !document.querySelector('#profileHome')?.hidden,
-      hasOnlySpeakerCard: Array.from(document.querySelectorAll('.profile-card'))
-        .filter((card) => getComputedStyle(card).display !== 'none')
-        .every((card) => card.dataset.homeRole === 'speaker')
-    };
-  `);
-  assert(state.isSpeaker || state.pinOpen, "Page speaker : role speaker non declenche.");
-  assert(!state.profileHomeVisible || state.hasOnlySpeakerCard, "Page speaker : l'accueil dedie affiche d'autres consoles.");
-  console.log("Page speaker dediee : OK");
+async function testDedicatedConsolePages(client, baseUrl) {
+  const results = [];
+  for (const page of dedicatedPages) {
+    const otherRole = page.role === "computer" ? "speaker" : "computer";
+    await client.send("Runtime.evaluate", {
+      expression: `localStorage.setItem("napSpeakerFrance2026:active-view:v1", ${JSON.stringify(JSON.stringify({ role: otherRole, profileHomeActive: false }))})`,
+      awaitPromise: true
+    });
+    await client.send("Page.navigate", { url: `${baseUrl}/${page.file}?smoke-dedicated-page=${Date.now()}` });
+    const ready = await waitFor(client, `document.body.className.includes('role-${page.role}') || !document.querySelector('#roleCodesModal')?.hidden`, 8000);
+    assert(ready, `Page ${page.label} : ouverture ou demande de code absente.`);
+    const state = await evaluateJson(client, `
+      return {
+        role: ${JSON.stringify(page.role)},
+        file: ${JSON.stringify(page.file)},
+        isRole: document.body.className.includes('role-${page.role}'),
+        pinOpen: !document.querySelector('#roleCodesModal')?.hidden,
+        profileHomeVisible: !document.querySelector('#profileHome')?.hidden,
+        hasOnlyRoleCard: Array.from(document.querySelectorAll('.profile-card'))
+          .filter((card) => getComputedStyle(card).display !== 'none')
+          .every((card) => card.dataset.homeRole === '${page.role}')
+      };
+    `);
+    assert(state.isRole || state.pinOpen, `Page ${page.label} : role non declenche.`);
+    assert(!state.profileHomeVisible || state.hasOnlyRoleCard, `Page ${page.label} : l'accueil dedie affiche d'autres consoles.`);
+    results.push(page.label);
+  }
+  console.log(`Pages dediees : OK (${results.join(", ")})`);
 }
 
 async function testRefereeDecisionFlow(client, baseUrl) {
@@ -458,7 +473,7 @@ async function main() {
   try {
     await testRoleOpening(browser.client, baseUrl);
     await testSpeakerActions(browser.client, baseUrl);
-    await testDedicatedSpeakerPage(browser.client, baseUrl);
+    await testDedicatedConsolePages(browser.client, baseUrl);
     await testRefereeDecisionFlow(browser.client, baseUrl);
     await testPublicSeries(browser.client, baseUrl);
     await testPublicResults(browser.client, baseUrl);
