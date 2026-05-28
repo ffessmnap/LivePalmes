@@ -2,16 +2,19 @@
   function init(context = {}) {
     const {
       ADMIN_PIN,
+      FIRESTORE_COMPETITION_ID,
       cleanLegacyResultPdfs,
       clearPublishedResults,
       clearPublishedResultsForSession,
       closeRoleCodesModal,
       competitionModeEnabled,
+      currentClientId,
       currentRolePins,
       ensureResultsAdminSession,
       finishRolePin,
       historyArchivesCollection,
       livePalmesAdminAuth,
+      livePalmesPinAuth,
       openDsqRows,
       openResultArchiveRows,
       performResetHistoryWithArchive,
@@ -271,6 +274,20 @@
           const code = String(roleCodesModal.querySelector("#rolePinInput")?.value || "").trim();
           if (livePalmesAdminAuth?.isAdminAuthenticated?.() || (livePalmesAdminAuth?.legacyAdminPinFallbackEnabled?.() && code === ADMIN_PIN)) {
             finishRolePin({ allowed: true, adminBypass: true });
+          } else if (livePalmesPinAuth?.cloudPinModeEnabled?.(context.data?.notes)) {
+            try {
+              await livePalmesPinAuth.verifyRolePin({
+                clientId: currentClientId?.(),
+                competitionId: FIRESTORE_COMPETITION_ID,
+                pin: code,
+                role
+              });
+              unlockRole(role);
+              finishRolePin({ allowed: true, adminBypass: false });
+            } catch (error) {
+              console.error(error);
+              window.alert(`Code incorrect ou serveur PIN indisponible : ${error?.message || error}`);
+            }
           } else if (code === currentRolePins()[role]) {
             unlockRole(role);
             finishRolePin({ allowed: true, adminBypass: false });

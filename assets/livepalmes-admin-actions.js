@@ -8,6 +8,7 @@
       formatAlertDateTime,
       historyArchivesCollection,
       initFirebaseSync,
+      livePalmesPinAuth,
       livePalmesAdminAuth,
       livePalmesAdminModals,
       normalizeData,
@@ -25,6 +26,7 @@
       updateLiveNotes
     } = context;
     const getData = () => context.data || { notes: {} };
+    const serverPinModeEnabled = () => livePalmesPinAuth?.cloudPinModeEnabled?.(getData().notes);
     const getState = () => context.state || {};
     const setData = (value) => { context.data = value; };
 
@@ -39,6 +41,7 @@
           adminAuthStatus: livePalmesAdminAuth?.status?.(),
           diagnosticsEnabled: getState().role === "computer",
           pins,
+          serverPinMode: serverPinModeEnabled(),
           roles: roleOrder.map((role) => ({ role, label: ROLE_LABELS[role] }))
         });
       }
@@ -147,12 +150,13 @@
         roleCodesModal.innerHTML = "";
       }
       
-      function readRolePinsFromModal() {
+      function readRolePinsFromModal(options = {}) {
+        const required = options.required !== false;
         const pins = {};
         roleCodesModal?.querySelectorAll("[data-role-code]").forEach((input) => {
           pins[input.dataset.roleCode] = String(input.value || "").trim();
         });
-        const invalid = Object.entries(pins).find(([, value]) => !/^\d{4}$/.test(value));
+        const invalid = Object.entries(pins).find(([, value]) => required && !/^\d{4}$/.test(value));
         if (invalid) {
           window.alert("Chaque code doit contenir exactement 4 chiffres.");
           return null;
@@ -162,8 +166,42 @@
       
       async function saveRoleCodesFromModal(enableLock) {
         if (!roleCodesModal) return;
-        const pins = readRolePinsFromModal();
+        const pins = readRolePinsFromModal({ required: enableLock });
         if (!pins) return;
+        if (livePalmesPinAuth?.available?.() && livePalmesAdminAuth?.isAdminAuthenticated?.()) {
+          try {
+            await livePalmesPinAuth.saveRolePins({
+              competitionId: context.FIRESTORE_COMPETITION_ID,
+              enabled: enableLock,
+              pins
+            });
+          } catch (error) {
+            console.error(error);
+            window.alert(`Enregistrement serveur des codes impossible : ${error?.message || error}`);
+            return;
+          }
+          const data = getData();
+          const nextNotes = {
+            ...(data.notes || {}),
+            pinAuthMode: "cloud",
+            pinLockEnabled: enableLock,
+            pinLockUpdatedAt: new Date().toISOString()
+          };
+          delete nextNotes.rolePins;
+          const nextData = normalizeData({
+            ...data,
+            notes: nextNotes,
+            sourceVersion: `cloud-lock-${Date.now()}`
+          });
+          setData(nextData);
+          context.unlockedRoles = enableLock ? ["computer"] : [];
+          saveUnlockedRoles();
+          saveData();
+          closeRoleCodesModal();
+          render();
+          window.alert(enableLock ? "Codes enregistrés côté serveur et actifs." : "Codes désactivés côté serveur.");
+          return;
+        }
         const data = getData();
         const nextData = normalizeData({
           ...data,
