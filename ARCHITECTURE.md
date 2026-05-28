@@ -104,4 +104,18 @@ Elle verifie :
 
 - la syntaxe de tous les fichiers JavaScript suivis dans le projet ;
 - les tests automatiques de base ;
+- les regressions connues de lecture des resultats PDF ;
+- les textes HTML visibles pour eviter le retour de caracteres casses ;
+- les garde-fous d'architecture, dont `app.js` sous 1000 lignes utiles ;
 - les erreurs d'espaces detectees par Git.
+
+## Garde-fous automatiques
+
+Les fichiers `tools/check-livepalmes-text.js` et `tools/check-livepalmes-architecture.js` sont volontairement simples.
+
+Ils ne remplacent pas les tests manuels, mais ils evitent deux regressions dangereuses :
+
+- publier une page avec des caracteres visibles casses ;
+- refaire grossir `app.js` ou remettre une logique trop fragile dans le coeur de l'application.
+
+Si l'un de ces controles bloque, il faut corriger la cause avant de publier.

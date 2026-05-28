@@ -6,6 +6,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 - Lancer `node tools/verify-livepalmes.js`.
 - Avant une publication sensible, lancer aussi `node tools/verify-livepalmes.js --browser`.
+- Verifier que le controle indique aussi les tests de regression resultats, les textes HTML publics et l'architecture.
 - Ouvrir `index.html`.
 - Verifier qu'aucune erreur n'apparait dans la console navigateur.
 - Ouvrir la page publique `resultats.html`.
