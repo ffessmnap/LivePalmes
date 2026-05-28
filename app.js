@@ -884,7 +884,11 @@ function parseCsv(text) {
   return livePalmesCsvParser.parse(text, { eventId: state.eventId, sex: state.sex });
 }
 
-const livePalmesSpeakerInfoWorkflow = livePalmesSpeakerInfoWorkflowModule.init(speakerInfoWorkflowOptions());
+function initOptionalWorkflow(module, optionsFactory) {
+  return typeof module?.init === "function" ? module.init(optionsFactory()) : {};
+}
+
+const livePalmesSpeakerInfoWorkflow = initOptionalWorkflow(livePalmesSpeakerInfoWorkflowModule, speakerInfoWorkflowOptions);
 
 function speakerInfoWorkflowOptions() {
   return livePalmesSpeakerInfoOptions.create({
