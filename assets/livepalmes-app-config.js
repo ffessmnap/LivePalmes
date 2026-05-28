@@ -21,7 +21,7 @@ const ROLE_PINS = {
 const ADMIN_AUTH = {
   adminUids: ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"],
   adminEmails: [],
-  legacyAdminPinFallback: true
+  legacyAdminPinFallback: false
 };
 const LOCK_DURATION_MS = 120000;
 const LOCK_RECOVERY_MS = 75000;
