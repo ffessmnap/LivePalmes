@@ -823,7 +823,13 @@ function livePalmesResultPublicationWorkflowOptions() {
 function finalWithdrawalsWorkflowOptions() {
   return livePalmesFinalWithdrawalsOptions.create({
     alerts,
+    canWithdrawBeforeReplacementAnnouncement,
+    canWithdrawFinalist,
     dom: { alertDetailModal },
+    finalWithdrawalLimitDate,
+    finalWithdrawalLimitLabel,
+    hasFinalWithdrawalDeadline,
+    isFinalWithdrawalDeadlineExpired,
     modules: { livePalmesAlertDetailView, livePalmesSecretaryFinals },
     raceResults,
     resultsCollection,

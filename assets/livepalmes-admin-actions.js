@@ -216,6 +216,17 @@
         const enabled = !competitionModeEnabled();
         context.lastConsoleActivityAt = Date.now();
         const data = getData();
+        const hasCompetitionRows = Boolean(
+          data.program?.length ||
+          data.series?.length ||
+          data.entrants?.length
+        );
+        const isEmptyRescueData = data.notes?.sourceMode === "empty-rescue" ||
+          /comp[Ãé]tition\s+[Ãà]?\s*charger/i.test(String(data.meet?.name || ""));
+        if (enabled && !hasCompetitionRows && isEmptyRescueData) {
+          window.alert("Mode Direct impossible : aucune compétition n'est chargée sur cette console. Clique d'abord sur Actualiser ou réimporte les séries.");
+          return;
+        }
         const nextData = normalizeData({
           ...data,
           notes: {

@@ -292,6 +292,17 @@
           return;
         }
         const payload = normalizeData(nextData);
+        const hasCompetitionRows = Boolean(
+          payload.program?.length ||
+          payload.series?.length ||
+          payload.entrants?.length
+        );
+        const isEmptyRescueData = payload.notes?.sourceMode === "empty-rescue" ||
+          /comp[Ãé]tition\s+[Ãà]?\s*charger/i.test(String(payload.meet?.name || ""));
+        if (!hasCompetitionRows && isEmptyRescueData) {
+          context.firebaseStatus = "local";
+          throw new Error("Publication refusée : aucune compétition n'est chargée localement.");
+        }
         const livePayload = {
           meet: payload.meet,
           events: payload.events,
