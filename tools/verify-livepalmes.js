@@ -55,6 +55,16 @@ function runUnitTests() {
   });
 }
 
+function runTextChecks() {
+  printStep("Controle textes visibles");
+  run(process.execPath, [path.join(rootDir, "tools", "check-livepalmes-text.js")]);
+}
+
+function runArchitectureChecks() {
+  printStep("Controle architecture");
+  run(process.execPath, [path.join(rootDir, "tools", "check-livepalmes-architecture.js")]);
+}
+
 function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
@@ -117,6 +127,8 @@ function findGitCommand() {
 try {
   checkSyntax();
   runUnitTests();
+  runTextChecks();
+  runArchitectureChecks();
   runBrowserSmokeIfRequested();
   runDiffCheck();
   console.log("\nVerification LivePalmes OK.");
