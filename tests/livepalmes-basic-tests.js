@@ -130,6 +130,17 @@ function testFinalPerformanceStageAndStatus() {
   assert.equal(performances[2].statusLabel, "DSQ");
 }
 
+function testResultParserFallbacksIgnoreInvalidHelpers() {
+  const performances = parser.resultPerformanceRows([
+    { rank: 1, displayName: "NAGEUR Test", birthYear: "2010", club: "CLUB", time: "40.12" }
+  ], { stage: "series", phaseLabel: "Serie", programKey: "50ap-f-series", eventLabel: "50 m apnee" }, { eventId: "50ap", sex: "F" }, {
+    normalizePersonName: "not-a-function"
+  });
+
+  assert.equal(performances.length, 1);
+  assert.equal(performances[0].time, "40.12");
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
@@ -140,7 +151,8 @@ function testFinalPerformanceStageAndStatus() {
   testIntermediateTimesKeepFinalTime,
   testPartialUnrankedResultKeepsTime,
   testFinalistsAreSplitBetweenAAndB,
-  testFinalPerformanceStageAndStatus
+  testFinalPerformanceStageAndStatus,
+  testResultParserFallbacksIgnoreInvalidHelpers
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");
