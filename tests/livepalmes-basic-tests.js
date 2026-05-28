@@ -6,6 +6,7 @@ global.window = global;
 require(path.join(__dirname, "..", "assets", "livepalmes-time.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-people.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-result-parser.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-workflow.js"));
 
 const parser = global.LivePalmesResultParser;
 const time = global.LivePalmesTime;
@@ -141,6 +142,32 @@ function testResultParserFallbacksIgnoreInvalidHelpers() {
   assert.equal(performances[0].time, "40.12");
 }
 
+function testFinalResultRowMatchesLegacyFinalStage() {
+  const context = {
+    data: { program: [], events: [], series: [] },
+    isFinalStage: (stage) => String(stage || "").startsWith("finale"),
+    programKey: (row) => [row.session, row.eventId, row.sex, row.stage].filter(Boolean).join("-"),
+    raceOptionKey: (eventId, sex) => `${eventId}-${sex}`,
+    raceResults: [{
+      id: "result-50ap-h-finale-a",
+      raceKey: "50ap-H",
+      session: "2",
+      stage: "finale-a",
+      programKey: "2-50ap-H-finale-a"
+    }]
+  };
+
+  const result = global.LivePalmesResultsAdminWorkflow.resultForProgramRow({
+    eventId: "50ap",
+    sex: "H",
+    session: "2",
+    stage: "finales",
+    finalStages: ["finale-b", "finale-a"]
+  }, context);
+
+  assert.equal(result?.id, "result-50ap-h-finale-a");
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
@@ -152,7 +179,8 @@ function testResultParserFallbacksIgnoreInvalidHelpers() {
   testPartialUnrankedResultKeepsTime,
   testFinalistsAreSplitBetweenAAndB,
   testFinalPerformanceStageAndStatus,
-  testResultParserFallbacksIgnoreInvalidHelpers
+  testResultParserFallbacksIgnoreInvalidHelpers,
+  testFinalResultRowMatchesLegacyFinalStage
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");

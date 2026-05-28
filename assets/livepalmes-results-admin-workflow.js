@@ -66,7 +66,18 @@
       result.id === resultIdForProgramRow(row)
     );
     if (exact) return exact;
-    if (isFinalStage(row.stage)) return null;
+    if (isFinalStage(row.stage)) {
+      const rowStages = new Set([row.stage, ...(row.finalStages || [])].map((stage) => String(stage || "")));
+      return raceResults.find((result) => {
+        if (result.raceKey !== raceKey || !isFinalStage(result.stage)) return false;
+        if (row.session && result.session && String(row.session) !== String(result.session)) return false;
+        const resultStage = String(result.stage || "");
+        return rowStages.has(resultStage) ||
+          row.stage === "finales" ||
+          resultStage === "finales" ||
+          result.programKey === programKey(row);
+      }) || null;
+    }
     return raceResults.find((result) => result.raceKey === raceKey && !isFinalStage(result.stage)) || null;
   }
   
