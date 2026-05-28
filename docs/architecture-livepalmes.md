@@ -28,6 +28,7 @@ Modules communs :
 - rendu des nageurs, records et fiches nageurs ;
 - alertes et annonces ;
 - publication publique ;
+- acces commun aux resultats publies ;
 - import series et resultats ;
 - tests navigateur.
 

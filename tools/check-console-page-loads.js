@@ -25,9 +25,18 @@ const seriesImportScripts = [
   "assets/livepalmes-series-import-workflow.js"
 ];
 
+const resultsAdminScripts = [
+  "assets/livepalmes-admin-results.js",
+  "assets/livepalmes-results-admin-options.js",
+  "assets/livepalmes-results-admin-panel-view.js",
+  "assets/livepalmes-results-upload-state.js",
+  "assets/livepalmes-results-admin-workflow.js"
+];
+
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);
 const rolesWithSpeakerInfo = new Set(["speaker", "computer"]);
 const rolesWithoutSeriesImport = new Set(["live", "speaker", "referee", "video", "secretary"]);
+const rolesWithoutResultsAdmin = new Set(["live", "speaker", "referee", "video", "secretary"]);
 
 function readProjectFile(filePath) {
   return fs.readFileSync(path.join(rootDir, filePath), "utf8");
@@ -53,6 +62,7 @@ function checkPage(page) {
   const hasDedicatedRole = html.includes(`window.LivePalmesDedicatedRole = "${page.role}"`);
   const loadedSpeakerInfo = speakerInfoScripts.filter((script) => sources.includes(script));
   const loadedSeriesImport = seriesImportScripts.filter((script) => sources.includes(script));
+  const loadedResultsAdmin = resultsAdminScripts.filter((script) => sources.includes(script));
 
   if (!hasDedicatedRole) {
     throw new Error(`${page.file} ne declare pas le role dedie ${page.role}.`);
@@ -72,6 +82,14 @@ function checkPage(page) {
 
   if (page.role === "computer" && loadedSeriesImport.length !== seriesImportScripts.length) {
     throw new Error(`${page.file} doit charger l'import series.`);
+  }
+
+  if (rolesWithoutResultsAdmin.has(page.role) && loadedResultsAdmin.length) {
+    throw new Error(`${page.file} charge encore les resultats admin : ${loadedResultsAdmin.join(", ")}`);
+  }
+
+  if (page.role === "computer" && loadedResultsAdmin.length !== resultsAdminScripts.length) {
+    throw new Error(`${page.file} doit charger les resultats admin.`);
   }
 
   return {

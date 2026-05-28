@@ -19,7 +19,7 @@ const {
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
   livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesSpeakerInfoOptions, livePalmesProgramNavigation, livePalmesSeriesControls,
-  livePalmesProgramModalsModule, livePalmesProgramModalsOptions, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
+  livePalmesProgramModalsModule, livePalmesProgramModalsOptions, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAccessModule, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
   livePalmesResultPublicationWorkflowModule, livePalmesResultPublicationOptions, livePalmesResultMaintenanceWorkflowModule, livePalmesResultMaintenanceOptions, livePalmesFinalWithdrawalsWorkflow, livePalmesFinalWithdrawalsOptions, livePalmesDiagnosticsWorkflow,
   livePalmesUiEvents, livePalmesUiEventsOptions, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
   livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
@@ -43,6 +43,7 @@ const appMethodTargetFactories = {
   livePalmesProgramNavigation: () => livePalmesProgramNavigation,
   livePalmesConsoleRenderWorkflow: () => livePalmesConsoleRenderWorkflow,
   livePalmesAlertPresenter: () => livePalmesAlertPresenter,
+  livePalmesResultsAccess: () => livePalmesResultsAccess,
   livePalmesResultsAdminWorkflow: () => livePalmesResultsAdminWorkflow,
   livePalmesHistoryPresenter: () => livePalmesHistoryPresenter,
   livePalmesDecisionWorkflow: () => livePalmesDecisionWorkflow,
@@ -595,6 +596,33 @@ function alertPresenterOptions() {
     sexDisplayLabel
   };
   bindOptionState(options, ["alerts", "data", "liveDismissedAlertIds", "raceResults", "state"]);
+  return options;
+}
+
+
+const livePalmesResultsAccess = livePalmesResultsAccessModule.init(resultsAccessOptions());
+
+function resultsAccessOptions() {
+  const options = {
+    data,
+    isFinalStage,
+    isSplitRaceAcrossSessions,
+    livePalmesPublication,
+    livePalmesResults,
+    normalizeData,
+    programKey,
+    publicResultsIndexDocument,
+    raceOptionKey,
+    raceResults,
+    renderDataStatus,
+    saveData,
+    seriesPdfsCollection,
+    sessionResultsPdfsCollection,
+    sessionRows,
+    sexDisplayLabel,
+    state
+  };
+  bindOptionState(options, ["data", "raceResults", "roleStates", "state"]);
   return options;
 }
 

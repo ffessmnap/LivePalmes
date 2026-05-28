@@ -32,6 +32,7 @@ Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands dom
 - `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
 - `assets/livepalmes-series-import-workflow.js` : workflow d'import des PDF de series depuis la console.
 - `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
+- `assets/livepalmes-results-access.js` : acces commun aux resultats publies pour les consoles et les fiches nageurs.
 - `assets/livepalmes-result-publication-workflow.js` : lecture/relecture des PDF resultats, performances et alertes finalistes.
 - `assets/livepalmes-result-maintenance-workflow.js` : suppression/RAZ des resultats publics et RAZ series.
 - `assets/livepalmes-admin-actions.js` : fenetres codes, RAZ, informations publiques et interrupteurs admin.

@@ -42,6 +42,7 @@
     livePalmesEntrantHelpersModule: "LivePalmesEntrantHelpers",
     livePalmesSwimmerPanel: "LivePalmesSwimmerPanel",
     livePalmesSwimmerPanelOptions: "LivePalmesSwimmerPanelOptions",
+    livePalmesResultsAccessModule: "LivePalmesResultsAccess",
     livePalmesResultsAdminWorkflow: "LivePalmesResultsAdminWorkflow",
     livePalmesResultsAdminOptions: "LivePalmesResultsAdminOptions",
     livePalmesResultPublicationWorkflowModule: "LivePalmesResultPublicationWorkflow",
