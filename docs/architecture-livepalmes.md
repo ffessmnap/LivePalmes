@@ -52,6 +52,18 @@ Les pages dediees par role reutilisent encore le moteur commun, mais elles cible
 4. Apres chaque refactor important, lancer `node tools/verify-livepalmes.js --browser`.
 5. Publier uniquement apres verification complete.
 
+## Pages consoles
+
+Les pages dediees (`live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`) sont generees depuis `index.html`.
+
+Commande :
+
+```powershell
+node tools/build-console-pages.js
+```
+
+Le controle general verifie que les pages generees sont bien a jour.
+
 ## Chemin de migration conseille
 
 1. Garder `app.js` comme assembleur court.

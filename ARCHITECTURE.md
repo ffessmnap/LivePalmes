@@ -62,6 +62,18 @@ Les vrais branchements de boutons sont separes ici :
 - `assets/livepalmes-ui-admin-events.js` : fenetre codes, diagnostics, archives, RAZ.
 - `assets/livepalmes-ui-alert-events.js` : alertes speaker/live, decisions JA, historique, finalistes.
 
+## Pages consoles
+
+Les pages dediees par console sont generees depuis `index.html` avec `tools/build-console-pages.js`.
+
+Apres une modification du socle console dans `index.html`, lancer :
+
+```powershell
+node tools/build-console-pages.js
+```
+
+Le controle `node tools/verify-livepalmes.js` verifie que ces pages sont synchronisees.
+
 ## Zones sensibles
 
 Ces zones doivent etre modifiees avec prudence :

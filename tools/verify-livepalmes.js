@@ -65,6 +65,11 @@ function runArchitectureChecks() {
   run(process.execPath, [path.join(rootDir, "tools", "check-livepalmes-architecture.js")]);
 }
 
+function runGeneratedPageChecks() {
+  printStep("Controle pages consoles");
+  run(process.execPath, [path.join(rootDir, "tools", "build-console-pages.js"), "--check"]);
+}
+
 function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
@@ -129,6 +134,7 @@ try {
   runUnitTests();
   runTextChecks();
   runArchitectureChecks();
+  runGeneratedPageChecks();
   runBrowserSmokeIfRequested();
   runDiffCheck();
   console.log("\nVerification LivePalmes OK.");
