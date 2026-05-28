@@ -46,6 +46,19 @@
     const getState = () => context.state || {};
     const setState = (value) => { context.state = value; };
 
+    function hasCompetitionRows(value = {}) {
+      return Boolean(
+        value.program?.length ||
+        value.series?.length ||
+        value.entrants?.length
+      );
+    }
+
+    function isEmptyRescueData(value = {}) {
+      return value.notes?.sourceMode === "empty-rescue" ||
+        /comp[Ãé]tition\s+[Ãà]?\s*charger/i.test(String(value.meet?.name || ""));
+    }
+
     async function fetchGeneratedData() {
       try {
         const response = await fetch(`donnees-speaker-france-2026.json?v=${Date.now()}`);
@@ -66,7 +79,13 @@
     }
 
     function applyFreshData(freshData, resetView = false) {
-      setData(normalizeData(freshData || sampleData));
+      const nextData = normalizeData(freshData || sampleData);
+      const currentData = getData();
+      if (hasCompetitionRows(currentData) && !hasCompetitionRows(nextData) && isEmptyRescueData(nextData)) {
+        renderDataStatus();
+        return;
+      }
+      setData(nextData);
       const data = getData();
       const state = getState();
       if (resetView) {
@@ -91,12 +110,16 @@
 
     async function checkForGeneratedUpdates() {
       const data = getData();
-      if (data.notes?.sourceMode === "series-live") {
+      if (data.notes?.sourceMode === "series-live" || hasCompetitionRows(data)) {
         renderDataStatus();
         return;
       }
       const freshData = await fetchGeneratedData();
       if (!freshData?.sourceVersion) return;
+      if (!hasCompetitionRows(freshData) && isEmptyRescueData(freshData) && hasCompetitionRows(getData())) {
+        renderDataStatus();
+        return;
+      }
       if (freshData.sourceVersion === getData().sourceVersion) {
         renderDataStatus();
         return;
