@@ -537,6 +537,29 @@
     return global.firebase.firestore().collection("competitions").doc(competitionId);
   }
 
+  function loadPublicPageCache(key, maxAgeMs = 15 * 60 * 1000, storage = global.localStorage) {
+    if (!key || !storage) return null;
+    try {
+      const parsed = JSON.parse(storage.getItem(key) || "null");
+      if (!parsed?.cachedAt || Date.now() - Number(parsed.cachedAt) > maxAgeMs) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function savePublicPageCache(key, payload, storage = global.localStorage) {
+    if (!key || !storage) return;
+    try {
+      storage.setItem(key, JSON.stringify({
+        ...payload,
+        cachedAt: Date.now()
+      }));
+    } catch {
+      // Le cache est seulement un confort d'affichage.
+    }
+  }
+
   function seriesPdfForSession(seriesPdfs = [], session = "") {
     const exact = seriesPdfs.find((pdf) => pdf.scope === "session" && String(pdf.session || "") === String(session || ""));
     return exact || seriesPdfs.find((pdf) => pdf.scope === "full") || null;
@@ -656,6 +679,7 @@
     latestResultSession,
     lineLabel,
     liveDataIsNewerThanPublicIndex,
+    loadPublicPageCache,
     mergePublicResults,
     normalizeText,
     performanceClubKey,
@@ -689,6 +713,7 @@
     seriesPdfForSession,
     setStatus,
     sexLabel,
+    savePublicPageCache,
     publicSessions,
     rowStartTime,
     swimmerKey,

@@ -7,6 +7,8 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "718081132564",
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
+const PUBLIC_RESULTS_CACHE_KEY = "livepalmes:public-results-cache:v1";
+const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
 const meetTitle = document.querySelector("#publicMeetTitle");
 const meetMeta = document.querySelector("#publicMeetMeta");
@@ -79,6 +81,48 @@ function publicSwimmerOptions(extra = {}) {
 }
 
 const setStatus = (label, className = "pending") => publicSwimmers.setStatus(statusBadge, label, className, { escapeHtml });
+
+function publicResultsCachePayload() {
+  return {
+    meet: publicMeet,
+    program: publicProgram,
+    events: publicEvents,
+    entrants: publicEntrants,
+    series: publicSeries,
+    results: publicResults,
+    seriesPdfs: publicSeriesPdfs,
+    sessionResultsPdfs: publicSessionResultsPdfs,
+    sessionInfos: publicSessionInfos,
+    publicAccess,
+    publicIndexUpdatedAt
+  };
+}
+
+function applyPublicResultsSnapshot(snapshot = {}) {
+  publicMeet = snapshot.meet || {};
+  publicProgram = Array.isArray(snapshot.program) ? snapshot.program : [];
+  publicEvents = Array.isArray(snapshot.events) ? snapshot.events : [];
+  publicEntrants = Array.isArray(snapshot.entrants) ? snapshot.entrants : [];
+  publicSeries = Array.isArray(snapshot.series) ? snapshot.series : [];
+  publicResults = Array.isArray(snapshot.results) ? snapshot.results : [];
+  publicSeriesPdfs = Array.isArray(snapshot.seriesPdfs) ? snapshot.seriesPdfs : [];
+  publicSessionResultsPdfs = Array.isArray(snapshot.sessionResultsPdfs) ? snapshot.sessionResultsPdfs : [];
+  publicSessionInfos = snapshot.sessionInfos || {};
+  publicAccess = snapshot.publicAccess || { online: true, updatedAt: "" };
+  publicIndexUpdatedAt = snapshot.publicIndexUpdatedAt || "";
+}
+
+function restorePublicResultsCache() {
+  const cached = publicSwimmers.loadPublicPageCache?.(PUBLIC_RESULTS_CACHE_KEY, PUBLIC_CACHE_MAX_AGE_MS);
+  if (!cached?.program?.length) return false;
+  applyPublicResultsSnapshot(cached);
+  return true;
+}
+
+function savePublicResultsCache() {
+  if (!publicProgram.length) return;
+  publicSwimmers.savePublicPageCache?.(PUBLIC_RESULTS_CACHE_KEY, publicResultsCachePayload());
+}
 
 function renderPublicOffline() {
   renderMeetTitle();
@@ -1030,6 +1074,11 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
     : [];
   applyPublicLiveOverlay(remote, index, { force: forceDirect });
+  if (!forceDirect && !directSession) {
+    setStatus("Actualisation", "pending");
+    savePublicResultsCache();
+    renderResults();
+  }
   if (forceDirect) {
     await loadPublicResultsDirectData(competition);
   } else if (directSession) {
@@ -1045,6 +1094,7 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   }
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
+  savePublicResultsCache();
   renderResults();
 }
 
@@ -1074,10 +1124,15 @@ async function loadPublicResultsFallback(competition) {
     .at(-1) || "";
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
+  savePublicResultsCache();
   renderResults();
 }
 
 function init() {
+  if (restorePublicResultsCache()) {
+    setStatus("Actualisation", "pending");
+    if (ensurePublicAccess()) renderResults();
+  }
   loadPublicResultsIndex().catch((error) => {
     console.warn("Lecture index public impossible", error);
     setStatus("Erreur", "error");
