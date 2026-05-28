@@ -23,7 +23,7 @@
     "renderSpeakerHistory", "requestRoleAccess", "rereadPublishedResult", "resetHistory",
     "resetSeriesForNextCompetition", "restoreAlertLocally", "resultForProgramRow", "resultPhaseLabelForProgramRow",
     "resultProgramRows", "resultSessions", "resultUploadKeyForProgram", "resultUploadKeyForSessionResults",
-    "saveRoleCodesFromModal", "saveUnlockedRoles", "selectRecordForCategory", "selectedEntrant",
+    "saveActiveView", "saveRoleCodesFromModal", "saveUnlockedRoles", "selectRecordForCategory", "selectedEntrant",
     "setPublicPositionEnabled", "setRefereeProgressHere", "setResultUploadState", "setSeriesImportState",
     "sexDisplayLabel", "showPerformanceDiagnosticModal", "showTechnicalDiagnosticModal", "showToast",
     "switchRoleUnlocked", "syncAlertChangesToFirestoreStrict", "toggleCompetitionMode", "toggleFinalPreWithdrawal",

@@ -37,6 +37,7 @@
       renderHeaderReferences,
       renderHistoryArchivesModal,
       requestRoleAccess,
+      saveActiveView,
       saveUnlockedRoles,
       seriesControls,
       sessionControls,
@@ -82,6 +83,9 @@
     }
 
     function navigateToMainHome() {
+      context.profileHomeActive = true;
+      saveActiveView?.();
+      releaseConsolePresence?.();
       window.location.href = "index.html";
     }
 
@@ -275,7 +279,11 @@
       if (dedicatedRole && ROLE_LABELS[dedicatedRole]) {
         window.setTimeout(() => {
           if (context.profileHomeActive || context.state?.role !== dedicatedRole) {
-            openRoleConsole(dedicatedRole);
+            openRoleConsole(dedicatedRole).then(() => {
+              refreshFirebaseOnce?.(false);
+            }).catch((error) => {
+              console.warn("Ouverture de la console dediee impossible", error);
+            });
           }
         }, 0);
       }
