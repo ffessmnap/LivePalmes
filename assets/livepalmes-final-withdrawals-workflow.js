@@ -7,6 +7,7 @@
   let canWithdrawFinalist;
   let escapeHtml;
   let finalRowCountsAsFinalist;
+  let finalistRowName;
   let finalWithdrawalLimitDate;
   let finalWithdrawalLimitLabel;
   let formatDeadlineTime;
@@ -343,6 +344,33 @@
   const renderSecretaryUnqualifiedGroup = finalWithdrawalView.renderSecretaryUnqualifiedGroup || (() => "");
   const renderFinalCompositionList = finalWithdrawalView.renderFinalCompositionList || (() => "");
 
+  function setAlertDetailModalHtml(html) {
+    if (!alertDetailModal) return;
+    alertDetailModal.innerHTML = html;
+    alertDetailModal.hidden = false;
+  }
+
+  function renderAlertDetailErrorHtml(title, message) {
+    return `
+      <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+        <div class="decision-modal-head">
+          <div>
+            <span>Bureau des performances</span>
+            <h2>${escapeHtml(title)}</h2>
+          </div>
+          <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
+        </div>
+        <div class="alert-detail-note">
+          <span>Erreur</span>
+          <strong>${escapeHtml(message || "Impossible d'ouvrir cette fenetre pour le moment.")}</strong>
+        </div>
+        <div class="decision-actions">
+          <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
+        </div>
+      </div>
+    `;
+  }
+
   function openFinalWithdrawalsModal(resultId, options = {}) {
     const result = raceResults.find((item) => item.id === resultId);
     if (!result || !alertDetailModal) return;
@@ -396,9 +424,9 @@
   function openFinalCompositionResultModal(resultId) {
     const result = raceResults.find((item) => item.id === resultId);
     if (!result || !alertDetailModal) return;
-    const definitive = finalCompositionIsDefinitive(result);
-    alertDetailModal.hidden = false;
-    alertDetailModal.innerHTML = `
+    try {
+      const definitive = finalCompositionIsDefinitive(result);
+      const html = `
       <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Composition finale">
         <div class="decision-modal-head">
           <div>
@@ -417,7 +445,95 @@
           <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
         </div>
       </div>
+      `;
+      setAlertDetailModalHtml(html);
+    } catch (error) {
+      console.error("Impossible d'ouvrir la composition finale", error);
+      setAlertDetailModalHtml(renderAlertDetailErrorHtml("Finalistes indisponibles", error?.message || String(error || "")));
+    }
+  }
+
+  function resultDetailRows(result) {
+    const rankingRows = Array.isArray(result?.ranking) ? result.ranking : [];
+    if (rankingRows.length) return rankingRows;
+    return Array.isArray(result?.performances) ? result.performances : [];
+  }
+
+  function resultDetailRowName(row) {
+    return finalistRowName(row) || row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ") || "Concurrent";
+  }
+
+  function resultDetailRowValue(row) {
+    const status = String(row?.resultStatus || row?.status || "").trim().toLowerCase();
+    if (status === "dsq") return "DSQ";
+    if (status === "ab" || status === "abd") return "ABD";
+    if (status === "dns") return "Forfait";
+    return String(row?.statusLabel || row?.time || "").trim();
+  }
+
+  function renderResultDetailRows(title, rows = [], options = {}) {
+    if (!rows.length) return "";
+    const ordered = options.ordered !== false;
+    const tag = ordered ? "ol" : "ul";
+    const items = rows.map((row, index) => {
+      const rank = row.rank || (ordered ? index + 1 : "");
+      const valueAttr = ordered && rank ? ` value="${escapeHtml(rank)}"` : "";
+      const meta = [row.club, row.birthYear].filter(Boolean).join(" - ");
+      const value = resultDetailRowValue(row);
+      return `
+        <li${valueAttr}>
+          <span>${escapeHtml(resultDetailRowName(row))}${meta ? ` <small>${escapeHtml(meta)}</small>` : ""}</span>
+          ${value ? `<strong>${escapeHtml(value)}</strong>` : ""}
+        </li>
+      `;
+    }).join("");
+    return `
+      <div class="final-withdrawal-group">
+        <h3>${escapeHtml(title)}</h3>
+        <${tag} class="final-withdrawal-list">
+          ${items}
+        </${tag}>
+      </div>
     `;
+  }
+
+  function openResultDetailsModal(resultId) {
+    const result = raceResults.find((item) => item.id === resultId);
+    if (!result || !alertDetailModal) return;
+    try {
+      const rows = resultDetailRows(result);
+      const hasFinalRows = Boolean(result?.hasFinal && rows.length > 8);
+      const rowsHtml = hasFinalRows
+        ? [
+          renderResultDetailRows("Finale A", rows.slice(0, 8)),
+          renderResultDetailRows("Finale B", rows.slice(8, 16))
+        ].join("")
+        : renderResultDetailRows(result.isPartial ? "Resultat partiel" : "Resultat de la course", rows, { ordered: !result.isPartial });
+      const pdfLink = result.id
+        ? `<a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id)}" target="_blank" rel="noopener">PDF</a>`
+        : "";
+      const html = `
+        <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Detail du resultat">
+          <div class="decision-modal-head">
+            <div>
+              <span>Bureau des performances</span>
+              <h2>${escapeHtml(result.isPartial ? "Resultat partiel" : "Resultat publie")}</h2>
+              <p>${escapeHtml(result.eventLabel || result.eventId)} ${escapeHtml(result.sexLabel || sexDisplayLabel(result.sex))}${result.phaseLabel ? ` - ${escapeHtml(result.phaseLabel)}` : ""}</p>
+            </div>
+            <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
+          </div>
+          ${rowsHtml || `<p class="panel-subtitle">Aucun detail de resultat lu pour cette course.</p>`}
+          <div class="decision-actions">
+            ${pdfLink}
+            <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
+          </div>
+        </div>
+      `;
+      setAlertDetailModalHtml(html);
+    } catch (error) {
+      console.error("Impossible d'ouvrir le detail du resultat", error);
+      setAlertDetailModalHtml(renderAlertDetailErrorHtml("Resultat indisponible", error?.message || String(error || "")));
+    }
   }
   
   function openFinalCompositionModal(alertId) {
@@ -747,6 +863,7 @@
     renderFinalCompositionList,
     openFinalCompositionResultModal,
     openFinalCompositionModal,
+    openResultDetailsModal,
     markFinalistWithdrawn,
     reinstateFinalist,
     createFinalistReplacementSpeakerAlert,
@@ -765,6 +882,7 @@
     canWithdrawFinalist = context.canWithdrawFinalist;
     escapeHtml = context.escapeHtml;
     finalRowCountsAsFinalist = context.finalRowCountsAsFinalist;
+    finalistRowName = context.finalistRowName || ((row) => row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" "));
     finalWithdrawalLimitDate = context.finalWithdrawalLimitDate;
     finalWithdrawalLimitLabel = context.finalWithdrawalLimitLabel;
     formatDeadlineTime = context.formatDeadlineTime;
@@ -821,6 +939,7 @@
     renderFinalCompositionList: (...args) => { useContext(args.pop() || {}); return api.renderFinalCompositionList(...args); },
     openFinalCompositionResultModal: (...args) => { useContext(args.pop() || {}); return api.openFinalCompositionResultModal(...args); },
     openFinalCompositionModal: (...args) => { useContext(args.pop() || {}); return api.openFinalCompositionModal(...args); },
+    openResultDetailsModal: (...args) => { useContext(args.pop() || {}); return api.openResultDetailsModal(...args); },
     markFinalistWithdrawn: (...args) => { useContext(args.pop() || {}); return api.markFinalistWithdrawn(...args); },
     reinstateFinalist: (...args) => { useContext(args.pop() || {}); return api.reinstateFinalist(...args); },
     createFinalistReplacementSpeakerAlert: (...args) => { useContext(args.pop() || {}); return api.createFinalistReplacementSpeakerAlert(...args); },

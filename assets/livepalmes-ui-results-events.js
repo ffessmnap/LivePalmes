@@ -15,6 +15,7 @@
       openAdminSeriesModal,
       openFinalCompositionResultModal,
       openFinalWithdrawalsModal,
+      openResultDetailsModal,
       openResultImportModal,
       openSessionResultsImportModal,
       programKey,
@@ -75,6 +76,11 @@
         const compositionButton = event.target.closest("[data-final-composition-result]");
         if (compositionButton) {
           openFinalCompositionResultModal(compositionButton.dataset.finalCompositionResult);
+          return;
+        }
+        const resultDetailButton = event.target.closest("[data-result-detail]");
+        if (resultDetailButton) {
+          openResultDetailsModal(resultDetailButton.dataset.resultDetail);
           return;
         }
         const sessionResultsButton = event.target.closest("[data-session-results-import]");
