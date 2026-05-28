@@ -6,6 +6,7 @@
   }
 
   function currentRolePins(defaultPins = {}, notes = {}) {
+    if (notes?.pinAuthMode === "cloud") return {};
     return {
       ...(defaultPins || {}),
       ...(notes?.rolePins || {})

@@ -14,6 +14,7 @@
       adminAuthStatus = null,
       diagnosticsEnabled = false,
       pins = {},
+      serverPinMode = false,
       roles = []
     } = options;
     return `
@@ -30,10 +31,11 @@
           ${roles.map((item) => `
             <label>
               <span>${escapeHtml(item.label)}</span>
-              <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(item.role)}" value="${escapeHtml(pins[item.role] || "")}">
+              <input type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-role-code="${escapeHtml(item.role)}" value="${serverPinMode ? "" : escapeHtml(pins[item.role] || "")}" placeholder="${serverPinMode ? "Nouveau code" : ""}">
             </label>
           `).join("")}
         </div>
+        ${serverPinMode ? `<div class="admin-auth-status-box"><strong>Codes serveur actifs</strong><span>Les PIN ne sont plus affichés dans le navigateur. Pour les modifier, saisis les 6 nouveaux codes puis enregistre.</span></div>` : ""}
         <div class="admin-extra-zone">
           <span>Administration avancée</span>
           ${adminAuthStatus?.signedIn ? `

@@ -6,7 +6,7 @@ const {
   ROLE_PINS, ROLE_LABELS, DECISION_LABELS, SPEAKER_DECISION_REASONS,
   LOCK_DURATION_MS, LOCK_RECOVERY_MS, LOCK_HEARTBEAT_MS, FIREBASE_CONNECTION_CHECK_MS,
   HOME_AFTER_INACTIVITY_MS, COMPETITION_INACTIVITY_MS, COMPETITION_INACTIVITY_CHECK_MS, PRESENCE_DURATION_MS,
-  PRESENCE_HEARTBEAT_MS, PRESENCE_WRITE_THROTTLE_MS, SPEAKER_INFO_SHEETS, FIREBASE_CONFIG,
+  PRESENCE_HEARTBEAT_MS, PRESENCE_WRITE_THROTTLE_MS, SPEAKER_INFO_SHEETS, FIREBASE_CONFIG, FIREBASE_FUNCTIONS_REGION,
   sampleData
 } = livePalmesAppSettings.resolve ? livePalmesAppSettings.resolve(window) : {};
 const livePalmesAppModules = window.LivePalmesAppModules || {};
@@ -15,7 +15,7 @@ const {
   livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleState,
   livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
   livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
-  livePalmesAdminAuthModule,
+  livePalmesAdminAuthModule, livePalmesPinAuthModule,
   livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
@@ -141,6 +141,12 @@ const livePalmesAdminAuth = typeof livePalmesAdminAuthModule.init === "function"
   ? livePalmesAdminAuthModule.init({
       authConfig: ADMIN_AUTH_CONFIG,
       firebase: window.firebase
+    })
+  : {};
+const livePalmesPinAuth = typeof livePalmesPinAuthModule.init === "function"
+  ? livePalmesPinAuthModule.init({
+      firebase: window.firebase,
+      region: FIREBASE_FUNCTIONS_REGION
     })
   : {};
 let firebaseStatus = "connecting";
@@ -354,6 +360,7 @@ const livePalmesAdminActions = livePalmesAdminActionsModule.init(adminActionsOpt
 
 function adminActionsOptions() {
   const options = {
+    FIRESTORE_COMPETITION_ID,
     ROLE_LABELS,
     closeRoleCodesModal,
     competitionModeEnabled,
@@ -364,6 +371,7 @@ function adminActionsOptions() {
     initFirebaseSync,
     livePalmesAdminAuth,
     livePalmesAdminModals,
+    livePalmesPinAuth,
     normalizeData,
     pinLockEnabled,
     publishLiveDataToFirestore,
@@ -959,8 +967,9 @@ function uiEventsOptions() {
   return livePalmesUiEventsOptions.create({
     appDom,
     bindOptionState,
-    constants: { ADMIN_PIN, ROLE_LABELS },
+    constants: { ADMIN_PIN, FIRESTORE_COMPETITION_ID, ROLE_LABELS },
     helpers: {
+      livePalmesPinAuth,
       livePalmesAdminAuth,
       historyArchivesCollection,
       historyFilters,

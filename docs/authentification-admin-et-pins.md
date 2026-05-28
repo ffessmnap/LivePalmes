@@ -146,3 +146,24 @@ Prochaine bascule sure :
 5. Tester que le cadenas accepte la connexion Firebase.
 6. Desactiver le fallback `legacyAdminPinFallback`.
 7. Durcir progressivement les regles Firestore.
+
+## Palier 2 prepare dans le code
+
+Ce palier ajoute la verification serveur des codes PIN terrain.
+
+Ce qui est prepare :
+
+- `functions/index.js` cree deux Cloud Functions :
+  - `setRolePins`, reservee a l'admin Firebase ;
+  - `verifyPin`, appelee par les consoles terrain pour verifier un code PIN.
+- Les PIN terrain sont stockes dans Firestore sous forme de hash avec sel, dans `competitions/{competitionId}/secrets/rolePins`.
+- Le navigateur ne recoit plus les PIN lorsque le mode `pinAuthMode: "cloud"` est actif.
+- Apres verification d'un PIN, la Cloud Function renvoie un jeton temporaire Firebase Auth avec le role de la console.
+- Les regles Firestore sont preparees pour autoriser les ecritures sensibles seulement a l'admin ou a une console authentifiee avec le bon role.
+- L'ancien code admin front est neutralise et le fallback PIN admin est desactive.
+
+Important :
+
+- Les nouvelles regles Firestore ne doivent etre deployees qu'en meme temps que les Cloud Functions.
+- Si les regles durcies sont deployees sans les fonctions, les consoles terrain risquent de ne plus pouvoir ecrire.
+- Apres deploiement des fonctions, l'admin doit ouvrir le cadenas, saisir les 6 PIN terrain, puis enregistrer. Cette action bascule LivePalmes en mode PIN serveur.

@@ -9,15 +9,8 @@ const ROLE_STATES_KEY = "napSpeakerFrance2026:role-states:v1";
 const LAST_ACTIVITY_KEY = "napSpeakerFrance2026:last-activity:v1";
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
-const ADMIN_PIN = "2216!";
-const ROLE_PINS = {
-  live: "0000",
-  speaker: "0001",
-  referee: "0002",
-  video: "0003",
-  computer: "0004",
-  secretary: "0005"
-};
+const ADMIN_PIN = "";
+const ROLE_PINS = {};
 const ADMIN_AUTH = {
   adminUids: ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"],
   adminEmails: [],
@@ -52,6 +45,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "718081132564",
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
+const FIREBASE_FUNCTIONS_REGION = "europe-west1";
 const fallbackData = {
   meet: {
     name: "Championnat de France 2026",
@@ -133,6 +127,7 @@ const fallbackData = {
     presenceWriteThrottleMs: PRESENCE_WRITE_THROTTLE_MS,
     speakerInfoSheets: SPEAKER_INFO_SHEETS,
     firebaseConfig: FIREBASE_CONFIG,
+    firebaseFunctionsRegion: FIREBASE_FUNCTIONS_REGION,
     fallbackData
   };
 }());

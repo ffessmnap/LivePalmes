@@ -19,6 +19,7 @@
     livePalmesPublication: "LivePalmesPublication",
     livePalmesDiagnostics: "LivePalmesDiagnostics",
     livePalmesAdminAuthModule: "LivePalmesAdminAuth",
+    livePalmesPinAuthModule: "LivePalmesPinAuth",
     livePalmesAdminDiagnostics: "LivePalmesAdminDiagnostics",
     livePalmesAdminMaintenance: "LivePalmesAdminMaintenance",
     livePalmesAdminActionsModule: "LivePalmesAdminActions",

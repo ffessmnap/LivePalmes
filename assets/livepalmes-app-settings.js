@@ -13,9 +13,9 @@
       LAST_ACTIVITY_KEY: config.lastActivityKey || "napSpeakerFrance2026:last-activity:v1",
       FIRESTORE_COMPETITION_ID: config.firestoreCompetitionId || "livepalmes-active",
       SPEAKER_SHEET_ID: config.speakerSheetId || "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA",
-      ADMIN_PIN: config.adminPin || "2216!",
+      ADMIN_PIN: config.adminPin || "",
       ADMIN_AUTH_CONFIG: config.adminAuth || { adminUids: [], adminEmails: [], legacyAdminPinFallback: true },
-      ROLE_PINS: config.rolePins || { live: "0000", speaker: "0001", referee: "0002", video: "0003", computer: "0004", secretary: "0005" },
+      ROLE_PINS: config.rolePins || {},
       ROLE_LABELS: {
         speaker: "Speaker",
         live: "Live",
@@ -56,6 +56,7 @@
       PRESENCE_WRITE_THROTTLE_MS: config.presenceWriteThrottleMs || 30 * 1000,
       SPEAKER_INFO_SHEETS: config.speakerInfoSheets || {},
       FIREBASE_CONFIG: config.firebaseConfig || {},
+      FIREBASE_FUNCTIONS_REGION: config.firebaseFunctionsRegion || "europe-west1",
       sampleData: source.SPEAKER_DATA || config.fallbackData || { meet: {}, events: [], entrants: [], qualifications: [], top2025: [], records: [], notes: {} }
     };
   }
