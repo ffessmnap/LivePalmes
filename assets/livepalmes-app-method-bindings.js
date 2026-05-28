@@ -126,15 +126,22 @@
     ],
     },
     {
-      target: "livePalmesResultsAdminWorkflow",
+      target: "livePalmesResultsAccess",
       methods: [
       "resultIdForProgramRow", "resultForProgramRow", "resultPdfPayload", "publicResultPayload",
-      "buildPublicResultsIndex", "publishPublicResultsIndex", "publicSeriesPdfId", "updatePublicSeriesPdfMetadata",
+      "buildPublicResultsIndex", "publishPublicResultsIndex", "isLastProgramPartForRace", "resultSessions",
+      "latestResultSession", "resultProgramRows", "resultPhaseLabelForProgramRow"
+    ],
+    },
+    {
+      target: "livePalmesResultsAdminWorkflow",
+      methods: [
+      "publicSeriesPdfId", "updatePublicSeriesPdfMetadata",
       "clearPublicSeriesPdfMetadata", "hydratePublicSeriesPdfMetadataIfNeeded", "clearPublicSeriesPdfs", "clearPublicSessionResultsPdfMetadata",
       "clearPublicSessionResultsPdfs", "clearPublicSessionResultsPdfsForSession", "publishPublicSeriesPdf", "sessionResultsPdfId",
-      "updatePublicSessionResultsPdfMetadata", "hydratePublicSessionResultsPdfMetadataIfNeeded", "publishSessionResultsPdf", "isLastProgramPartForRace",
-      "resultSessions", "sessionResultsPdfsForAdminSession", "latestResultSession", "ensureResultsAdminSession",
-      "resultProgramRows", "resultPhaseLabelForProgramRow", "resultStatusForProgramRow", "resultStatusBadgeForProgramRow",
+      "updatePublicSessionResultsPdfMetadata", "hydratePublicSessionResultsPdfMetadataIfNeeded", "publishSessionResultsPdf",
+      "sessionResultsPdfsForAdminSession", "ensureResultsAdminSession",
+      "resultStatusForProgramRow", "resultStatusBadgeForProgramRow",
       "resultStatusControlHtml", "resultUploadKeyForProgram", "resultUploadKeyForSessionResults", "setResultUploadState",
       "clearResultUploadState", "setSeriesImportState", "clearSeriesImportState", "resultUploadBadgeHtml",
       "renderResultsAdminPanel", "renderCompetitionDiagnostic", "renderComputerFooterPanel", "renderSessionResultsImportRow",
@@ -288,6 +295,7 @@
       binding.methods.forEach((name) => {
         host[name] = (...args) => {
           const target = targetFactory();
+          if (typeof target?.[name] !== "function") return undefined;
           const options = optionFactory ? [optionFactory()] : [];
           return target[name](...args, ...options);
         };

@@ -73,24 +73,39 @@ const seriesImportScripts = [
   "assets/livepalmes-series-import-workflow.js"
 ];
 
+const resultsAdminScripts = [
+  "assets/livepalmes-admin-results.js",
+  "assets/livepalmes-results-admin-options.js",
+  "assets/livepalmes-results-admin-panel-view.js",
+  "assets/livepalmes-results-upload-state.js",
+  "assets/livepalmes-results-admin-workflow.js"
+];
+
 const roleScriptExclusions = {
   live: [
     ...speakerInfoScripts,
-    ...seriesImportScripts
+    ...seriesImportScripts,
+    ...resultsAdminScripts
   ],
   referee: [
     ...speakerInfoScripts,
-    ...seriesImportScripts
+    ...seriesImportScripts,
+    ...resultsAdminScripts
   ],
   video: [
     ...speakerInfoScripts,
-    ...seriesImportScripts
+    ...seriesImportScripts,
+    ...resultsAdminScripts
   ],
   secretary: [
     ...speakerInfoScripts,
-    ...seriesImportScripts
+    ...seriesImportScripts,
+    ...resultsAdminScripts
   ],
-  speaker: seriesImportScripts
+  speaker: [
+    ...seriesImportScripts,
+    ...resultsAdminScripts
+  ]
 };
 
 function replaceOne(content, pattern, replacement, label) {
