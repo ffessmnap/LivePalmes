@@ -48,7 +48,8 @@
       "renderRoleCodesModal", "renderRoleCodesAdminModal", "renderResetHistoryModal", "renderResetResultsModal",
       "renderPublicSessionInfosModal", "renderHistoryArchivesModal", "renderRolePinModal", "askRolePin",
       "finishRolePin", "closeRoleCodesModal", "readRolePinsFromModal", "saveRoleCodesFromModal",
-      "togglePublicResultsOnline", "toggleRoleLock", "toggleCompetitionMode"
+      "togglePublicResultsOnline", "toggleRoleLock", "downloadAdminBackup", "restoreAdminBackupFile",
+      "toggleCompetitionMode"
     ],
     },
     {
@@ -178,7 +179,8 @@
       "appendImportHistory", "countCollectionDocuments", "collectPerformanceDiagnostic", "renderPerformanceDiagnosticModal",
       "showPerformanceDiagnosticModal", "safeCountCollection", "safeDocumentData", "alertPendingTargets",
       "alertPendingBreakdown", "alertTargetsLabel", "collectTechnicalDiagnostic", "resultHasDetailsForDiagnostic",
-      "renderTechnicalDiagnosticModal", "showTechnicalDiagnosticModal", "cleanLegacyResultPdfs", "showDataDiagnostic"
+      "renderTechnicalDiagnosticModal", "showTechnicalDiagnosticModal", "cleanLegacyResultPdfs",
+      "showTechnicalLogModal", "clearTechnicalLog", "showDataDiagnostic"
     ],
       optionFactory: "diagnosticsWorkflowOptions"
     },

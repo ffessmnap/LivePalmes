@@ -101,7 +101,8 @@ const resultPublicationScripts = [
 ];
 
 const adminDiagnosticScripts = [
-  "assets/livepalmes-admin-diagnostics.js"
+  "assets/livepalmes-admin-diagnostics.js",
+  "assets/livepalmes-admin-backups.js"
 ];
 
 const roleScriptExclusions = {

@@ -1,12 +1,12 @@
 (function attachLivePalmesUiEventsOptions(global) {
   const functionKeys = [
     "acquireRoleLock", "applyProgramRow", "askRolePin", "availableSeriesNumbers",
-    "cancelDecision", "cleanLegacyResultPdfs", "clearPublishedResults", "clearPublishedResultsForSession",
+    "cancelDecision", "cleanLegacyResultPdfs", "clearPublishedResults", "clearPublishedResultsForSession", "clearTechnicalLog",
     "clearResultUploadState", "clearSearch", "clearSeriesImportState", "closeAdminSeriesModal",
     "closeAlertDetail", "closeDecisionModal", "closeProgramModal", "closeResultImportModal",
     "closeRoleCodesModal", "competitionModeEnabled", "createDecisionAlert", "currentClientId", "currentRolePins",
     "decisionDraftIsReady", "defaultDecisionDetail", "deleteResultPdf", "dismissLiveAlert",
-    "downloadJson", "ensureResultsAdminSession", "eventLabel", "exportDsqPdf",
+    "downloadAdminBackup", "downloadJson", "ensureResultsAdminSession", "eventLabel", "exportDsqPdf",
     "finalProgramRowsForRace", "finalRowKey", "finalRowsCount", "finishRolePin",
     "firstSeriesSelectionForCurrentRace", "goToNextProgramRace", "goToPreviousProgramRace",
     "importSeriesPdf", "isFinalStage", "markFinalistWithdrawn", "markSpeakerAlertDoneLocally",
@@ -21,11 +21,11 @@
     "renderHistoryArchivesModal", "renderPublicSessionInfosModal", "renderResetResultsModal",
     "renderResultsAdminPanel", "renderRoleCodesModal", "renderRoleHistory", "renderRolePanels",
     "renderSpeakerHistory", "requestRoleAccess", "rereadPublishedResult", "resetHistory",
-    "resetSeriesForNextCompetition", "restoreAlertLocally", "resultForProgramRow", "resultPhaseLabelForProgramRow",
+    "resetSeriesForNextCompetition", "restoreAdminBackupFile", "restoreAlertLocally", "resultForProgramRow", "resultPhaseLabelForProgramRow",
     "resultProgramRows", "resultSessions", "resultUploadKeyForProgram", "resultUploadKeyForSessionResults",
     "saveActiveView", "saveRoleCodesFromModal", "saveUnlockedRoles", "selectRecordForCategory", "selectedEntrant",
     "setPublicPositionEnabled", "setRefereeProgressHere", "setResultUploadState", "setSeriesImportState",
-    "sexDisplayLabel", "showPerformanceDiagnosticModal", "showTechnicalDiagnosticModal", "showToast",
+    "sexDisplayLabel", "showPerformanceDiagnosticModal", "showTechnicalDiagnosticModal", "showTechnicalLogModal", "showToast",
     "switchRoleUnlocked", "syncAlertChangesToFirestoreStrict", "toggleCompetitionMode", "toggleFinalPreWithdrawal",
     "togglePublicResultsOnline", "unlockRole", "updateAlert", "updateConsolePresence",
     "updateLiveNotes", "updateSpeakerInfoFromGoogleSheet"

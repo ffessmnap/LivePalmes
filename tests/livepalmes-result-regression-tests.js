@@ -53,6 +53,18 @@ function testFinalTimeWinsAfterIntermediateTimes() {
   });
 }
 
+function testPointsAndRecordLabelsAfterTimeAreIgnored() {
+  assertParsedRow("1 GUILLE Lola 06 SEN * UEP 18.42 38.52 40.62 742", {
+    displayName: "GUILLE Lola",
+    time: "40.62"
+  });
+  assertParsedRow("8 BADOR Chloe 10 JUN * SASNAP 18.60 (en finale) 40.28 RF 689", {
+    displayName: "BADOR Chloe",
+    time: "40.28",
+    qualified: true
+  });
+}
+
 function testPartialLongRaceWithoutRankKeepsSwimmerTime() {
   const rows = [
     parser.parseUnrankedResultRow("TREMBLY Yaille 11 MV 04:32.11 09:01.24 17:57.21", parserOptions),
@@ -150,6 +162,36 @@ function testFinalPerformanceStagesUseRankAThenB() {
   assert.deepEqual(performances.map((row) => row.stage), ["finale-a", "finale-a", "finale-b", "finale-b"]);
 }
 
+function testFinalDsqKeepsFinalSlotWithoutShiftingFinalB() {
+  const parsedRows = [
+    { rank: 7, lastName: "DURAND", firstName: "Emma", displayName: "DURAND Emma", birthYear: "2011", club: "CPBR", time: "41.00" },
+    { rank: 8, lastName: "HAMON", firstName: "Maiwenn", displayName: "HAMON Maiwenn", birthYear: "2008", club: "CLUB", resultStatus: "dsq", statusLabel: "DSQ", time: "" },
+    { rank: 9, lastName: "ANDRE", firstName: "Camille", displayName: "ANDRE Camille", birthYear: "2009", club: "CLUB", time: "41.20" }
+  ];
+  const performances = parser.resultPerformanceRows(parsedRows, {
+    eventLabel: "100 m immersion",
+    phaseLabel: "Finales",
+    programKey: "4-100is-F-finales",
+    stage: "finales",
+    updatedAt: "2026-05-28T10:00:00.000Z"
+  }, {
+    eventId: "100is",
+    finalStageCount: 2,
+    session: "4",
+    sex: "F",
+    stage: "finales"
+  }, {
+    isFinalStage: (stage) => String(stage || "").includes("final"),
+    normalizePersonName: people.normalizePersonName
+  });
+
+  assert.deepEqual(performances.map((row) => `${row.displayName}:${row.stage}:${row.statusLabel || row.time}`), [
+    "DURAND Emma:finale-a:41.00",
+    "HAMON Maiwenn:finale-a:DSQ",
+    "ANDRE Camille:finale-b:41.20"
+  ]);
+}
+
 function testRelaysAreIgnoredForSwimmerPerformances() {
   const performances = parser.resultPerformanceRows([
     { rank: 1, lastName: "RELAIS", firstName: "Equipe", birthYear: "2000", club: "CLUB", time: "03:20.00" }
@@ -185,11 +227,13 @@ function testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded() {
 
 [
   testFinalTimeWinsAfterIntermediateTimes,
+  testPointsAndRecordLabelsAfterTimeAreIgnored,
   testPartialLongRaceWithoutRankKeepsSwimmerTime,
   testFinalistsSplitOnlyWhenSixteenQualifiedRowsExist,
   testNsAndInMarkersDoNotPolluteNamesOrCreateDuplicates,
   testStatusesBecomePerformancesOnlyFromParsedResultRows,
   testFinalPerformanceStagesUseRankAThenB,
+  testFinalDsqKeepsFinalSlotWithoutShiftingFinalB,
   testRelaysAreIgnoredForSwimmerPerformances,
   testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded
 ].forEach((test) => test());

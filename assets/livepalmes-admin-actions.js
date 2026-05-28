@@ -8,6 +8,7 @@
       formatAlertDateTime,
       historyArchivesCollection,
       initFirebaseSync,
+      livePalmesAdminBackups,
       livePalmesPinAuth,
       livePalmesAdminAuth,
       livePalmesAdminModals,
@@ -21,7 +22,9 @@
       resultSessions,
       roleCodesModal,
       roleIsUnlocked,
+      saveAlerts,
       saveData,
+      saveRoleStates,
       saveUnlockedRoles,
       updateLiveNotes
     } = context;
@@ -126,6 +129,46 @@
         roleCodesModal.hidden = false;
         roleCodesModal.innerHTML = livePalmesAdminModals.renderRolePinModalHtml({ label, role });
         roleCodesModal.querySelector("#rolePinInput")?.focus();
+      }
+
+      function backupContext() {
+        return {
+          activeCompetitionId: context.FIRESTORE_COMPETITION_ID,
+          alerts: context.alerts,
+          data: getData(),
+          normalizeData,
+          raceResults: context.raceResults,
+          render,
+          roleStates: context.roleStates,
+          saveAlerts,
+          saveData,
+          saveRoleStates
+        };
+      }
+
+      function downloadAdminBackup() {
+        if (typeof livePalmesAdminBackups?.downloadBackup !== "function") {
+          window.alert("Sauvegarde indisponible sur cette version.");
+          return;
+        }
+        livePalmesAdminBackups.downloadBackup(backupContext());
+      }
+
+      async function restoreAdminBackupFile(file) {
+        if (!file) return null;
+        if (typeof livePalmesAdminBackups?.readBackupFile !== "function") {
+          window.alert("Restauration indisponible sur cette version.");
+          return null;
+        }
+        const backup = await livePalmesAdminBackups.readBackupFile(file);
+        const ok = window.confirm([
+          "Restaurer cette sauvegarde sur cette console ?",
+          "",
+          "Cela remplace les donnees locales LivePalmes de cet ordinateur : series, resultats lus, journaux et etats de consoles.",
+          "Les pages publiques en ligne ne sont pas modifiees automatiquement."
+        ].join("\n"));
+        if (!ok) return null;
+        return livePalmesAdminBackups.applyBackup(backup, backupContext());
       }
       
       async function askRolePin(role) {
@@ -319,6 +362,8 @@
         saveRoleCodesFromModal,
         togglePublicResultsOnline,
         toggleRoleLock,
+        downloadAdminBackup,
+        restoreAdminBackupFile,
         toggleCompetitionMode
       };
   }

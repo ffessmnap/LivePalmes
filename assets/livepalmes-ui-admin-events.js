@@ -6,10 +6,12 @@
       cleanLegacyResultPdfs,
       clearPublishedResults,
       clearPublishedResultsForSession,
+      clearTechnicalLog,
       closeRoleCodesModal,
       competitionModeEnabled,
       currentClientId,
       currentRolePins,
+      downloadAdminBackup,
       ensureResultsAdminSession,
       finishRolePin,
       historyArchivesCollection,
@@ -24,10 +26,12 @@
       renderRoleCodesModal,
       resetSeriesForNextCompetition,
       resultArchivesCollection,
+      restoreAdminBackupFile,
       roleCodesModal,
       saveRoleCodesFromModal,
       showPerformanceDiagnosticModal,
       showTechnicalDiagnosticModal,
+      showTechnicalLogModal,
       unlockRole,
       updateLiveNotes
     } = context;
@@ -82,6 +86,19 @@
           }
           return;
         }
+        if (event.target.closest("[data-technical-log]")) {
+          try {
+            showTechnicalLogModal?.();
+          } catch (error) {
+            console.error(error);
+            window.alert(`Journal technique impossible : ${error?.message || error}`);
+          }
+          return;
+        }
+        if (event.target.closest("[data-clear-technical-log]")) {
+          clearTechnicalLog?.();
+          return;
+        }
         if (event.target.closest("[data-clean-result-pdfs]")) {
           const ok = window.confirm("Nettoyer les anciens PDF résultats encore stockés dans results ?\n\nLes PDF resteront consultables, mais seront déplacés dans resultPdfs pour accélérer les consoles.");
           if (!ok) return;
@@ -103,6 +120,19 @@
             console.error(error);
             window.alert(`Republication impossible : ${error?.message || error}`);
           }
+          return;
+        }
+        if (event.target.closest("[data-download-livepalmes-backup]")) {
+          try {
+            downloadAdminBackup?.();
+          } catch (error) {
+            console.error(error);
+            window.alert(`Sauvegarde impossible : ${error?.message || error}`);
+          }
+          return;
+        }
+        if (event.target.closest("[data-restore-livepalmes-backup]")) {
+          roleCodesModal.querySelector("[data-restore-livepalmes-backup-input]")?.click();
           return;
         }
         if (event.target.closest("[data-role-codes-back]")) {
@@ -318,6 +348,24 @@
         }
         if (event.target?.matches("#resetHistoryInput, #resetResultsInput")) {
           event.target.value = String(event.target.value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+        }
+      });
+
+      roleCodesModal?.addEventListener("change", async (event) => {
+        const input = event.target?.closest("[data-restore-livepalmes-backup-input]");
+        if (!input) return;
+        const file = input.files?.[0];
+        input.value = "";
+        if (!file) return;
+        try {
+          const summary = await restoreAdminBackupFile?.(file);
+          if (summary) {
+            closeRoleCodesModal();
+            window.alert(`Sauvegarde restauree : ${summary.series} lignes de series, ${summary.entrants} engages, ${summary.results} resultats, ${summary.alerts} alertes.`);
+          }
+        } catch (error) {
+          console.error(error);
+          window.alert(`Restauration impossible : ${error?.message || error}`);
         }
       });
       

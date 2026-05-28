@@ -53,7 +53,8 @@ const resultPublicationScripts = [
 ];
 
 const adminDiagnosticScripts = [
-  "assets/livepalmes-admin-diagnostics.js"
+  "assets/livepalmes-admin-diagnostics.js",
+  "assets/livepalmes-admin-backups.js"
 ];
 
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);

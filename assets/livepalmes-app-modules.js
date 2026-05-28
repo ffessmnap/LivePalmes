@@ -21,6 +21,8 @@
     livePalmesAdminAuthModule: "LivePalmesAdminAuth",
     livePalmesPinAuthModule: "LivePalmesPinAuth",
     livePalmesAdminDiagnostics: "LivePalmesAdminDiagnostics",
+    livePalmesTechnicalLog: "LivePalmesTechnicalLog",
+    livePalmesAdminBackups: "LivePalmesAdminBackups",
     livePalmesAdminMaintenance: "LivePalmesAdminMaintenance",
     livePalmesAdminActionsModule: "LivePalmesAdminActions",
     livePalmesAdminModals: "LivePalmesAdminModals",

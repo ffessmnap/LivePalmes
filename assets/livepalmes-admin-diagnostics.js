@@ -129,6 +129,8 @@
       formatByteSize = (value) => String(value || 0)
     } = options;
     const firebase = report?.firebase || {};
+    const security = report?.security || {};
+    const technicalLog = report?.technicalLog || {};
     const localAlertCounts = report?.local?.pendingAlertCounts || {};
     const serverAlertCounts = firebase.pendingAlertCounts || {};
     const alertExamples = firebase.pendingAlertExamples?.length
@@ -178,6 +180,18 @@
             { label: "PDF séries", value: String(firebase.seriesPdfCount ?? "-"), status: firebase.seriesPdfCount ? "ok" : "neutral" },
             { label: "PDF résultats sessions", value: String(firebase.sessionResultsPdfCount ?? "-"), status: firebase.sessionResultsPdfCount ? "ok" : "neutral" }
           ])}
+          ${technicalDiagnosticSection("Sécurité", [
+            { label: "codes consoles", value: security.pinLockEnabled ? "actifs" : "inactifs", status: security.pinLockEnabled ? "ok" : "warn" },
+            { label: "mode PIN", value: security.pinMode || "local", status: security.pinMode === "cloud" ? "ok" : "warn" },
+            { label: "admin Firebase", value: security.adminSignedIn ? "connecté" : "non connecté", status: security.adminConfigured ? "ok" : "warn" },
+            { label: "compte admin", value: security.adminEmail || security.adminUid || "non renseigné", status: security.adminConfigured ? "ok" : "warn" }
+          ])}
+          ${technicalDiagnosticSection("Journal technique", [
+            { label: "lignes locales", value: String(technicalLog.count || 0), status: technicalLog.errors ? "warn" : "ok" },
+            { label: "erreurs", value: String(technicalLog.errors || 0), status: technicalLog.errors ? "warn" : "ok" },
+            { label: "avertissements", value: String(technicalLog.warnings || 0), status: technicalLog.warnings ? "warn" : "ok" },
+            { label: "dernière erreur", value: technicalLog.latestAt || "aucune", status: technicalLog.latestAt ? "neutral" : "ok" }
+          ])}
           ${technicalDiagnosticSection("Alertes en attente", [
             { label: "total local", value: String(report.local.pendingAlerts || 0), status: report.local.pendingAlerts ? "warn" : "ok" },
             { label: "total serveur", value: String(firebase.pendingAlertCount || 0), status: firebase.pendingAlertCount ? "warn" : "ok" },
@@ -217,7 +231,37 @@
         `}
         <div class="decision-modal-actions">
           <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+          <button class="ghost-button" type="button" data-technical-log>Journal technique</button>
           <button class="ghost-button" type="button" data-technical-diagnostic>Relire</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTechnicalLogModalHtml(entries = []) {
+    return `
+      <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Journal technique">
+        <div class="decision-modal-head">
+          <div>
+            <span>Diagnostic</span>
+            <h2>Journal technique</h2>
+            <p>Erreurs locales repérées par ce navigateur. Utile pour comprendre un bug sans fouiller la console développeur.</p>
+          </div>
+          <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
+        </div>
+        <div class="technical-log-list">
+          ${entries.length ? entries.map((entry) => `
+            <div class="technical-log-item ${escapeHtml(entry.level || "info")}">
+              <strong>${escapeHtml(entry.scope || "LivePalmes")} - ${escapeHtml(entry.message || "")}</strong>
+              <span>${escapeHtml(entry.createdAt || "")}</span>
+              ${entry.details ? `<pre>${escapeHtml(entry.details)}</pre>` : ""}
+            </div>
+          `).join("") : `<div class="admin-series-help"><strong>Aucune erreur enregistrée</strong><span>Le navigateur n'a pas capté d'erreur technique locale.</span></div>`}
+        </div>
+        <div class="decision-modal-actions">
+          <button class="ghost-button" type="button" data-technical-diagnostic>Retour diagnostic</button>
+          <button class="ghost-button danger-button" type="button" data-clear-technical-log ${entries.length ? "" : "disabled"}>Vider le journal</button>
+          <button class="primary-button" type="button" data-role-codes-close>Fermer</button>
         </div>
       </div>
     `;
@@ -333,6 +377,7 @@
     renderPerformanceDiagnosticModalHtml,
     renderTechnicalDiagnosticLoadingHtml,
     renderTechnicalDiagnosticModalHtml,
+    renderTechnicalLogModalHtml,
     resultHasDetails,
     technicalDiagnosticSection,
     technicalDiagnosticStatus

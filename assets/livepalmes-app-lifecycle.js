@@ -33,6 +33,7 @@
       sampleData,
       saveCurrentRoleState,
       saveData,
+      technicalLog,
       showDataDiagnostic,
       setInterval,
       toggleRoleLock,
@@ -128,6 +129,7 @@
       applyFreshData(freshData, false);
     }
 
+    technicalLog?.installGlobalHandlers?.();
     roleLockBtn?.addEventListener("click", toggleRoleLock);
     dataDiagnosticBtn?.addEventListener("click", () => {
       showDataDiagnostic().catch((error) => {
