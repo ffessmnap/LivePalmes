@@ -60,6 +60,29 @@ const consolePages = [
   }
 ];
 
+const roleScriptExclusions = {
+  live: [
+    "assets/livepalmes-speaker-info.js",
+    "assets/livepalmes-speaker-info-options.js",
+    "assets/livepalmes-speaker-info-workflow.js"
+  ],
+  referee: [
+    "assets/livepalmes-speaker-info.js",
+    "assets/livepalmes-speaker-info-options.js",
+    "assets/livepalmes-speaker-info-workflow.js"
+  ],
+  video: [
+    "assets/livepalmes-speaker-info.js",
+    "assets/livepalmes-speaker-info-options.js",
+    "assets/livepalmes-speaker-info-workflow.js"
+  ],
+  secretary: [
+    "assets/livepalmes-speaker-info.js",
+    "assets/livepalmes-speaker-info-options.js",
+    "assets/livepalmes-speaker-info-workflow.js"
+  ]
+};
+
 function replaceOne(content, pattern, replacement, label) {
   if (!pattern.test(content)) {
     throw new Error(`Repere introuvable : ${label}`);
@@ -90,6 +113,9 @@ function buildPage(source, page) {
     `$1<script>window.LivePalmesDedicatedRole = "${page.role}";</script>$1<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>`,
     "dedicated role script"
   );
+  (roleScriptExclusions[page.role] || []).forEach((scriptPath) => {
+    html = html.replace(new RegExp(`\\n\\s*<script src="${scriptPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=[^"]+"><\\/script>`, "g"), "");
+  });
   return html;
 }
 
