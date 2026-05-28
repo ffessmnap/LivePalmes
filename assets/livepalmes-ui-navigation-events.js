@@ -89,6 +89,20 @@
       window.location.href = "index.html";
     }
 
+    async function navigateToDedicatedConsole(role) {
+      const targetPage = dedicatedPageByRole[role];
+      if (!targetPage) return false;
+      if (!requestRoleAccess(role)) {
+        const access = await askRolePin(role);
+        if (!access?.allowed) return true;
+      }
+      context.profileHomeActive = false;
+      switchRoleUnlocked(role);
+      saveActiveView?.();
+      window.location.href = targetPage;
+      return true;
+    }
+
       eventSelect.addEventListener("change", () => {
         const row = programRowFromRaceOption(eventSelect.value);
         if (row.eventId) state.eventId = row.eventId;
@@ -168,7 +182,7 @@
         const button = event.target.closest("[data-home-role]");
         if (!button) return;
         const role = button.dataset.homeRole || "live";
-        if (!dedicatedRole && navigateToDedicatedPage(role)) return;
+        if (!dedicatedRole && await navigateToDedicatedConsole(role)) return;
         await openRoleConsole(role);
       });
       

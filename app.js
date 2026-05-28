@@ -398,6 +398,7 @@ function livePalmesRealtimeSyncOptions() {
   const options = {
     activeCompetitionId,
     alertsCollection,
+    acquireRoleLock,
     applyRemoteLiveData,
     cleanupOrphanFinalResultAlerts,
     cleanupResolvedSpeakerResultAlerts,
