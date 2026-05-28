@@ -19,7 +19,11 @@
       resultsCollection: context.resultsCollection
     };
     functionKeys.forEach((key) => {
-      if (typeof source[key] !== "undefined") options[key] = source[key];
+      if (typeof context[key] !== "undefined") {
+        options[key] = context[key];
+      } else if (typeof source[key] !== "undefined") {
+        options[key] = source[key];
+      }
     });
     return options;
   }
