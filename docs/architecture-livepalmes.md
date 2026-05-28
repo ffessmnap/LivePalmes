@@ -17,6 +17,7 @@ Pages principales :
 - `bureau-perf.html` : bureau des performances.
 - `secretariat.html` : secrétariat.
 - `index.html` : accueil et accès aux consoles.
+- `speaker.html` : première page dédiée, avec ouverture sécurisée de la console speaker.
 - `series-public.html` et `resultats.html` : pages publiques.
 
 Modules communs :
@@ -33,7 +34,9 @@ Modules communs :
 
 ## Etat actuel
 
-`app.js` est encore le point d'entrée des consoles internes, mais il ne doit plus recevoir de nouvelle logique métier.
+`app.js` est encore le point d'entrée principal des consoles internes, mais il ne doit plus recevoir de nouvelle logique métier.
+
+`speaker.html` est le premier palier de page dédiée. Elle réutilise encore le moteur commun, mais elle cible directement le rôle speaker sans supprimer l'accès historique par `index.html`.
 
 Il sert progressivement à assembler :
 

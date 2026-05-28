@@ -245,6 +245,15 @@
       archivesBtn?.addEventListener("click", () => {
         renderHistoryArchivesModal({ canDelete: false });
       });
+
+      const dedicatedRole = window.LivePalmesDedicatedRole || "";
+      if (dedicatedRole && ROLE_LABELS[dedicatedRole]) {
+        window.setTimeout(() => {
+          if (context.profileHomeActive || context.state?.role !== dedicatedRole) {
+            openRoleConsole(dedicatedRole);
+          }
+        }, 0);
+      }
   }
 
   window.LivePalmesUiNavigationEvents = { init };
