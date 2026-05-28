@@ -87,34 +87,54 @@ const finalWithdrawalsScripts = [
   "assets/livepalmes-final-withdrawals-workflow.js"
 ];
 
+const resultMaintenanceScripts = [
+  "assets/livepalmes-admin-maintenance.js",
+  "assets/livepalmes-result-maintenance-options.js",
+  "assets/livepalmes-result-maintenance-workflow.js"
+];
+
+const resultPublicationScripts = [
+  "assets/livepalmes-result-publication-options.js",
+  "assets/livepalmes-result-publication-workflow.js",
+  "assets/livepalmes-result-parser.js"
+];
+
 const roleScriptExclusions = {
   live: [
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
-    ...finalWithdrawalsScripts
+    ...finalWithdrawalsScripts,
+    ...resultMaintenanceScripts,
+    ...resultPublicationScripts
   ],
   referee: [
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
-    ...finalWithdrawalsScripts
+    ...finalWithdrawalsScripts,
+    ...resultMaintenanceScripts,
+    ...resultPublicationScripts
   ],
   video: [
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
-    ...finalWithdrawalsScripts
+    ...finalWithdrawalsScripts,
+    ...resultMaintenanceScripts,
+    ...resultPublicationScripts
   ],
   secretary: [
     ...speakerInfoScripts,
     ...seriesImportScripts,
-    ...resultsAdminScripts
+    ...resultsAdminScripts,
+    ...resultMaintenanceScripts
   ],
   speaker: [
     ...seriesImportScripts,
     ...resultsAdminScripts,
-    ...finalWithdrawalsScripts
+    ...finalWithdrawalsScripts,
+    ...resultMaintenanceScripts
   ]
 };
 
