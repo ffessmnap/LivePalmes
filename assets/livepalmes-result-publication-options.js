@@ -26,7 +26,11 @@
       window: context.window || global
     };
     functionKeys.forEach((key) => {
-      if (typeof source[key] !== "undefined") options[key] = source[key];
+      if (typeof context[key] !== "undefined") {
+        options[key] = context[key];
+      } else if (typeof source[key] !== "undefined") {
+        options[key] = source[key];
+      }
     });
     if (typeof context.bindOptionState === "function") context.bindOptionState(options, stateKeys);
     return options;

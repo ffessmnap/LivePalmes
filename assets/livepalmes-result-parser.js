@@ -1,14 +1,14 @@
 (function attachLivePalmesResultParser(global) {
   function dependencies(options = {}) {
     return {
-      fixPdfEncoding: options.fixPdfEncoding || ((value) => String(value || "")),
-      finalistRowName: options.finalistRowName || ((row) => row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ")),
-      formatDisplayName: options.formatDisplayName || ((row) => [row.lastName, row.firstName].filter(Boolean).join(" ")),
-      importedBirthYear: options.importedBirthYear || ((value) => String(value || "")),
-      importedSeriesTime: options.importedSeriesTime || ((value) => String(value || "").trim()),
-      isFinalStage: options.isFinalStage || ((stage) => String(stage || "").toLowerCase().includes("finale")),
-      normalizePersonName: options.normalizePersonName || ((value) => String(value || "").trim().toLowerCase()),
-      splitImportedPersonName: options.splitImportedPersonName || ((value) => ({
+      fixPdfEncoding: typeof options.fixPdfEncoding === "function" ? options.fixPdfEncoding : ((value) => String(value || "")),
+      finalistRowName: typeof options.finalistRowName === "function" ? options.finalistRowName : ((row) => row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ")),
+      formatDisplayName: typeof options.formatDisplayName === "function" ? options.formatDisplayName : ((row) => [row.lastName, row.firstName].filter(Boolean).join(" ")),
+      importedBirthYear: typeof options.importedBirthYear === "function" ? options.importedBirthYear : ((value) => String(value || "")),
+      importedSeriesTime: typeof options.importedSeriesTime === "function" ? options.importedSeriesTime : ((value) => String(value || "").trim()),
+      isFinalStage: typeof options.isFinalStage === "function" ? options.isFinalStage : ((stage) => String(stage || "").toLowerCase().includes("finale")),
+      normalizePersonName: typeof options.normalizePersonName === "function" ? options.normalizePersonName : ((value) => String(value || "").trim().toLowerCase()),
+      splitImportedPersonName: typeof options.splitImportedPersonName === "function" ? options.splitImportedPersonName : ((value) => ({
         firstName: "",
         lastName: String(value || "").trim()
       }))

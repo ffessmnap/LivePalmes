@@ -813,7 +813,9 @@ function livePalmesResultPublicationWorkflowOptions() {
     bindOptionState,
     collections: { resultPdfsCollection, resultsCollection },
     data,
+    importedSeriesTime,
     livePalmesResults: window.LivePalmesResults,
+    normalizePersonName,
     source: window,
     window
   });
@@ -831,6 +833,7 @@ function finalWithdrawalsWorkflowOptions() {
     hasFinalWithdrawalDeadline,
     isFinalWithdrawalDeadlineExpired,
     modules: { livePalmesAlertDetailView, livePalmesSecretaryFinals },
+    normalizePersonName,
     raceResults,
     resultsCollection,
     source: window
