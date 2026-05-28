@@ -209,7 +209,7 @@
       "rebuildFinalistsFromParsedResult", "firstActiveFinalistIndex", "finalCompositionRows", "finalCompositionKey",
       "finalCompositionIsDefinitive", "finalCompositionDefinitiveDate", "finalCompositionPendingDeadlineLabel", "renderFinalWithdrawalGroup",
       "finalRowIndexByKey", "nextUnqualifiedRowsForSecretary", "renderSecretaryUnqualifiedGroup", "openFinalWithdrawalsModal",
-      "toggleFinalPreWithdrawal", "renderFinalCompositionList", "openFinalCompositionResultModal", "openFinalCompositionModal",
+      "toggleFinalPreWithdrawal", "renderFinalCompositionList", "openFinalCompositionResultModal", "openFinalCompositionModal", "openResultDetailsModal",
       "markFinalistWithdrawn", "reinstateFinalist", "createFinalistReplacementSpeakerAlert", "cancelPendingReplacementSpeakerAlert",
       "updateReplacementRowAnnouncement", "stampReplacementAnnouncement", "publishReplacementAfterSpeaker"
     ],

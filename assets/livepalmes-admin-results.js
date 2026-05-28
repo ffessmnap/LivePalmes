@@ -69,7 +69,7 @@
     if (result.hasFinal) {
       return `<button class="${className} status-action" type="button" data-final-composition-result="${escapeHtml(resultId)}">${escapeHtml(statusBadge.label)}</button>`;
     }
-    return `<span class="${className}">${escapeHtml(statusBadge.label)}</span>`;
+    return `<button class="${className} status-action" type="button" data-result-detail="${escapeHtml(resultId)}">${escapeHtml(statusBadge.label)}</button>`;
   }
 
   function renderResultsAdminPanelHtml(options = {}) {

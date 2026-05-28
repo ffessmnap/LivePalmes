@@ -3,21 +3,21 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PDF résultat - LivePalmes</title>
-    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260528-live-data-stable">
-    <link rel="stylesheet" href="styles.css?v=20260528-live-data-stable">
-    <link rel="stylesheet" href="public.css?v=20260528-live-data-stable">
+    <title>PDF rÃ©sultat - LivePalmes</title>
+    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260528-result-detail-modal">
+    <link rel="stylesheet" href="styles.css?v=20260528-result-detail-modal">
+    <link rel="stylesheet" href="public.css?v=20260528-result-detail-modal">
   </head>
   <body class="public-results-page pdf-viewer-page">
     <header class="public-results-header">
       <div>
         <p class="eyebrow app-name">
           <span class="livepalmes-logo" aria-hidden="true">
-            <img src="logo-livepalmes.png?v=20260528-live-data-stable" alt="">
+            <img src="logo-livepalmes.png?v=20260528-result-detail-modal" alt="">
           </span>
           LivePalmes
         </p>
-        <h1 id="pdfTitle">Résultat</h1>
+        <h1 id="pdfTitle">RÃ©sultat</h1>
       </div>
       <a class="ghost-button compact" href="resultats.html">Retour</a>
     </header>
@@ -27,13 +27,13 @@
         <p class="panel-subtitle">Chargement du PDF...</p>
       </div>
       <div id="pdfCanvasViewer" class="pdf-canvas-viewer" hidden></div>
-      <iframe id="pdfFrame" class="pdf-frame" title="PDF résultat" hidden></iframe>
+      <iframe id="pdfFrame" class="pdf-frame" title="PDF rÃ©sultat" hidden></iframe>
       <div id="pdfFallback" class="panel pdf-fallback" hidden></div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="resultat-pdf.js?v=20260528-live-data-stable"></script>
+    <script src="resultat-pdf.js?v=20260528-result-detail-modal"></script>
   </body>
 </html>

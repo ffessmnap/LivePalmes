@@ -12,7 +12,7 @@
     "importSeriesPdf", "isFinalStage", "markFinalistWithdrawn", "markSpeakerAlertDoneLocally",
     "openAdminSeriesModal", "openAlertDetail", "openDecisionModal", "openDsqRows",
     "openFinalCompositionModal", "openFinalCompositionResultModal", "openFinalWithdrawalsModal",
-    "openFinalistsAnnouncementModal", "openProgramModal", "openResultArchiveRows", "openResultImportModal",
+    "openFinalistsAnnouncementModal", "openProgramModal", "openResultArchiveRows", "openResultDetailsModal", "openResultImportModal",
     "openSessionResultsImportModal", "performResetHistoryWithArchive", "programKey", "programRowFromRaceOption",
     "programRows", "publishFinalistsAfterSpeaker", "publishPublicResultsIndex", "publishReplacementAfterSpeaker",
     "publishResultPdf", "publishSessionResultsPdf", "recordKey", "refreshFirebaseOnce",
