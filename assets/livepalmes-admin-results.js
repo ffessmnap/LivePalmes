@@ -261,6 +261,7 @@
       definitiveLabel = "",
       eventLabel = "",
       finalistCount = 0,
+      finalCompositionResultId = "",
       hasFinal = false,
       phaseLabel = "",
       programKeyValue = "",
@@ -285,6 +286,11 @@
         <div class="result-admin-row-actions">
           ${uploadStateHtml}
           ${blockingUpload ? "" : statusControlHtml}
+          ${!blockingUpload && finalCompositionResultId ? `
+            <button class="ghost-button compact" type="button" data-final-composition-result="${escapeHtml(finalCompositionResultId)}">
+              Finalistes
+            </button>
+          ` : ""}
           ${!blockingUpload && result ? `
             <button class="ghost-button compact" type="button" data-result-reread="${escapeHtml(programKeyValue)}">
               Relire

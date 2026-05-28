@@ -84,14 +84,27 @@
       });
     }
 
+    function relatedFinalCompositionResult(row, result) {
+      if (result?.hasFinal) return result;
+      const isFinalRow = /^finale/i.test(String(row.stage || ""));
+      if (!isFinalRow) return null;
+      return raceResults.find((item) =>
+        item?.hasFinal &&
+        item.eventId === row.eventId &&
+        item.sex === row.sex &&
+        finalRowsCount(item.finalists) > 0
+      ) || null;
+    }
+
     function renderResultProgramRow(row) {
       const result = resultForProgramRow(row);
+      const finalCompositionResult = relatedFinalCompositionResult(row, result);
       const uploadState = resultUploadStates.get(resultUploadKeyForProgram(row));
       const blockingUpload = uploadState && uploadState.tone !== "error";
       const status = resultStatusForProgramRow(row);
       const event = data.events.find((item) => item.id === row.eventId);
       const phaseLabel = resultPhaseLabelForProgramRow(row);
-      const finalistCount = finalRowsCount(result?.finalists);
+      const finalistCount = finalRowsCount(finalCompositionResult?.finalists);
       const isFinalCompositionDefinitive = finalCompositionIsDefinitive(result);
       const definitiveDate = result?.hasFinal && !isFinalCompositionDefinitive
         ? finalCompositionDefinitiveDate(result)
@@ -104,6 +117,7 @@
         blockingUpload,
         definitiveLabel,
         eventLabel: event?.label || row.label || row.eventId,
+        finalCompositionResultId: finalCompositionResult && finalCompositionResult.id !== result?.id ? finalCompositionResult.id : "",
         finalistCount,
         hasFinal: Boolean(result?.hasFinal),
         phaseLabel,
