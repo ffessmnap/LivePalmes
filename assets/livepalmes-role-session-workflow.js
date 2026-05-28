@@ -25,6 +25,7 @@
     const setState = (value) => { context.state = value; };
     const getUnlockedRoles = () => context.unlockedRoles || [];
     const setUnlockedRoles = (value) => { context.unlockedRoles = value; };
+    const dedicatedRole = browserWindow.LivePalmesDedicatedRole || "";
 
     function createRoleState(role = "speaker") {
       const data = getData();
@@ -194,14 +195,21 @@
         setUnlockedRoles(nextUnlockedRoles);
         saveUnlockedRoles();
       }
-      const initialRole = knownRole(initialView.role) ? initialView.role : "live";
+      const pageRole = knownRole(dedicatedRole) ? dedicatedRole : "";
+      const initialRole = pageRole || (knownRole(initialView.role) ? initialView.role : "live");
       const loadedRoleStates = loadRoleStates();
       const initialState = cloneRoleState(loadedRoleStates[initialRole] || loadedRoleStates.live);
       initialState.role = initialRole;
+      const profileHomeActive = pageRole
+        ? !livePalmesRoleAccess.roleIsUnlocked(pageRole, {
+            notes: getData().notes,
+            unlockedRoles: nextUnlockedRoles
+          })
+        : initialView.profileHomeActive;
       return {
         initialRole,
         initialView,
-        profileHomeActive: initialView.profileHomeActive,
+        profileHomeActive,
         roleStates: loadedRoleStates,
         state: initialState,
         unlockedRoles: nextUnlockedRoles

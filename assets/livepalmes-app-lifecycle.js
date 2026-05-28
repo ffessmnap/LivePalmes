@@ -22,6 +22,7 @@
       normalizeData,
       parseCsv,
       PRESENCE_HEARTBEAT_MS,
+      acquireRoleLock,
       refreshPresenceCounts,
       releaseConsolePresence,
       releaseRoleLock,
@@ -191,6 +192,14 @@
     checkForGeneratedUpdates();
     checkFirebaseConnection();
     updateConsolePresence(true);
+    if (!context.profileHomeActive) {
+      acquireRoleLock?.(getState().role, { adminBypass: false }).then((reserved) => {
+        if (reserved !== false) return;
+        context.profileHomeActive = true;
+        render();
+        refreshPresenceCounts();
+      });
+    }
     if (context.profileHomeActive) refreshPresenceCounts();
 
     return {

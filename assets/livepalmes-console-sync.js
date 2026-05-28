@@ -583,7 +583,8 @@
         // pas ramener le JA, la vidéo ou le live sur la première série.
         applyFreshData(mergeRemoteLiveData(remoteData), false);
         context.applyingRemoteData = false;
-        if (wasLocked && !pinLockEnabled()) {
+        const isLockedNow = pinLockEnabled();
+        if (wasLocked !== isLockedNow) {
           context.unlockedRoles = [];
           saveUnlockedRoles();
         }
