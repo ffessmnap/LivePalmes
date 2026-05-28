@@ -99,8 +99,13 @@ const resultPublicationScripts = [
   "assets/livepalmes-result-parser.js"
 ];
 
+const adminDiagnosticScripts = [
+  "assets/livepalmes-admin-diagnostics.js"
+];
+
 const roleScriptExclusions = {
   live: [
+    ...adminDiagnosticScripts,
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
@@ -109,6 +114,7 @@ const roleScriptExclusions = {
     ...resultPublicationScripts
   ],
   referee: [
+    ...adminDiagnosticScripts,
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
@@ -117,6 +123,7 @@ const roleScriptExclusions = {
     ...resultPublicationScripts
   ],
   video: [
+    ...adminDiagnosticScripts,
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
@@ -125,12 +132,14 @@ const roleScriptExclusions = {
     ...resultPublicationScripts
   ],
   secretary: [
+    ...adminDiagnosticScripts,
     ...speakerInfoScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
     ...resultMaintenanceScripts
   ],
   speaker: [
+    ...adminDiagnosticScripts,
     ...seriesImportScripts,
     ...resultsAdminScripts,
     ...finalWithdrawalsScripts,

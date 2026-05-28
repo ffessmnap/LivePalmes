@@ -11,6 +11,7 @@
   function renderRoleCodesModalHtml(options = {}) {
     const {
       active = false,
+      diagnosticsEnabled = false,
       pins = {},
       roles = []
     } = options;
@@ -34,8 +35,10 @@
         </div>
         <div class="admin-extra-zone">
           <span>Administration avancée</span>
+          ${diagnosticsEnabled ? `
           <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
           <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
+          ` : ""}
           <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
           <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
         </div>
