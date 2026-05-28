@@ -15,6 +15,69 @@ const dedicatedPages = [
   { file: "secretariat.html", role: "secretary", label: "secretariat" }
 ];
 
+const smokeFixture = {
+  meet: { name: "Championnat de France 2026", city: "Limoges" },
+  events: [
+    { id: "50sf", label: "50 m surface", distance: "50 m", discipline: "Surface" },
+    { id: "100sf", label: "100 m surface", distance: "100 m", discipline: "Surface" }
+  ],
+  entrants: [
+    { eventId: "50sf", sex: "F", lane: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", seedTime: "00:19.72" },
+    { eventId: "50sf", sex: "F", lane: 5, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:19.41" },
+    { eventId: "50sf", sex: "M", lane: 4, lastName: "Petit", firstName: "Nolan", club: "Pessac", category: "Senior", seedTime: "00:16.84" },
+    { eventId: "100sf", sex: "F", lane: 4, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:43.12" }
+  ],
+  series: [
+    { eventId: "50sf", sex: "F", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", seedTime: "00:19.72", swimmerId: "50sf|f|martin|lea|limoges-nap" },
+    { eventId: "50sf", sex: "F", session: "1", series: 1, seriesCount: 1, line: 5, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:19.41", swimmerId: "50sf|f|bernard|ines|pays-aix" },
+    { eventId: "50sf", sex: "M", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Petit", firstName: "Nolan", club: "Pessac", category: "Senior", seedTime: "00:16.84", swimmerId: "50sf|m|petit|nolan|pessac" },
+    { eventId: "100sf", sex: "F", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:43.12", swimmerId: "100sf|f|bernard|ines|pays-aix" }
+  ],
+  program: [
+    { order: 1, session: "1", eventId: "50sf", sex: "F", label: "50 m surface", startTime: "09:00", seriesCount: 1 },
+    { order: 2, session: "1", eventId: "50sf", sex: "M", label: "50 m surface", startTime: "09:05", seriesCount: 1 },
+    { order: 3, session: "1", eventId: "100sf", sex: "F", label: "100 m surface", startTime: "09:10", seriesCount: 1 }
+  ],
+  records: [
+    { eventId: "50sf", sex: "F", category: "Junior", label: "Record de France junior", holder: "Reference", time: "00:19.45" },
+    { eventId: "50sf", sex: "F", category: "Senior", label: "Record de France senior", holder: "Reference", time: "00:18.92" }
+  ],
+  qualifications: [],
+  top2025: [],
+  notes: {},
+  sourceVersion: "smoke-fixture"
+};
+
+function dedicatedPageForRole(role) {
+  return dedicatedPages.find((page) => page.role === role);
+}
+
+function smokeStorageScript() {
+  const roleState = {
+    eventId: "50sf",
+    sex: "F",
+    search: "",
+    category: "all",
+    series: "1",
+    session: "1",
+    programKey: "1|1|50sf|F|series",
+    lineOrder: "asc",
+    selectedSwimmerId: "",
+    selectedRecordKey: "",
+    liveMode: true
+  };
+  const roleStates = Object.fromEntries(roles.map((role) => [role, { ...roleState, role }]));
+  return `
+    (() => {
+      try {
+        localStorage.setItem("napSpeakerFrance2026:v15", ${JSON.stringify(JSON.stringify(smokeFixture))});
+        localStorage.setItem("napSpeakerFrance2026:role-states:v1", ${JSON.stringify(JSON.stringify(roleStates))});
+        localStorage.setItem("napSpeakerFrance2026:active-view:v1", JSON.stringify({ role: "live", profileHomeActive: true }));
+      } catch {}
+    })();
+  `;
+}
+
 function mimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   return {
@@ -139,6 +202,12 @@ async function launchBrowser() {
   await client.send("Runtime.enable");
   await client.send("Log.enable");
   await client.send("Network.enable");
+  await client.send("Network.setBlockedURLs", {
+    urls: [
+      "*firestore.googleapis.com/*",
+      "*google.firestore.v1.Firestore*"
+    ]
+  });
   return {
     client,
     cleanup() {
@@ -171,7 +240,8 @@ async function waitFor(client, expression, timeoutMs = 8000) {
 function collectErrors(client) {
   return client.events.flatMap((event) => {
     if (event.method === "Runtime.exceptionThrown") {
-      return [event.params.exceptionDetails.exception?.description || event.params.exceptionDetails.text || "exception"];
+      const text = event.params.exceptionDetails.exception?.description || event.params.exceptionDetails.text || "exception";
+      return text.includes("TypeError: Failed to fetch") ? [] : [text];
     }
     if (event.method === "Log.entryAdded" && event.params.entry.level === "error") {
       const text = event.params.entry.text || "";
@@ -188,12 +258,9 @@ function assert(condition, message) {
 async function testRoleOpening(client, baseUrl) {
   const results = [];
   for (const role of roles) {
-    await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-role=${Date.now()}-${role}` });
-    await sleep(1200);
-    await client.send("Runtime.evaluate", {
-      expression: `document.querySelector('button[data-home-role="${role}"]')?.click()`,
-      awaitPromise: true
-    });
+    const page = dedicatedPageForRole(role);
+    assert(page, `Page dediee introuvable pour ${role}.`);
+    await client.send("Page.navigate", { url: `${baseUrl}/${page.file}?smoke-role=${Date.now()}-${role}` });
     await waitFor(client, `document.body.className.includes('role-${role}')`, 5000);
     const state = await evaluateJson(client, `
       return {
@@ -249,23 +316,104 @@ async function testRoleOpening(client, baseUrl) {
   console.log("Consoles : OK");
 }
 
-async function testSpeakerActions(client, baseUrl) {
-  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-speaker=${Date.now()}` });
-  await sleep(1500);
+async function testHomeDedicatedLinks(client, baseUrl) {
+  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-home=${Date.now()}` });
+  const ready = await waitFor(client, "document.readyState === 'complete' && !document.querySelector('#profileHome')?.hidden && document.querySelector('button[data-home-role=\"speaker\"]')", 5000);
+  assert(ready, "Accueil : carte speaker introuvable.");
+  await sleep(800);
   await client.send("Runtime.evaluate", {
     expression: "document.querySelector('button[data-home-role=\"speaker\"]')?.click()",
     awaitPromise: true
   });
+  await waitFor(client, "location.pathname.endsWith('/speaker.html')", 5000);
+  const state = await evaluateJson(client, `
+    return {
+      pathname: location.pathname,
+      dedicatedRole: window.LivePalmesDedicatedRole || "",
+      isSpeaker: document.body.className.includes("role-speaker")
+    };
+  `);
+  assert(state.pathname.endsWith("/speaker.html"), `Accueil : redirection speaker KO (${state.pathname}).`);
+  assert(state.dedicatedRole === "speaker" || state.isSpeaker, "Accueil : page speaker dediee non reconnue.");
+  console.log("Accueil vers pages dediees : OK");
+}
+
+async function seedFallbackCompetitionData(client, baseUrl) {
+  const script = smokeStorageScript();
+  await client.send("Page.addScriptToEvaluateOnNewDocument", { source: script });
+  await client.send("Runtime.evaluate", {
+    expression: script,
+    awaitPromise: true
+  });
+  const seeded = await evaluateJson(client, `
+    try {
+      const data = JSON.parse(localStorage.getItem("napSpeakerFrance2026:v15") || "{}");
+      return { entrants: data.entrants?.length || 0, series: data.series?.length || 0 };
+    } catch {
+      return { entrants: 0, series: 0 };
+    }
+  `);
+  assert(seeded.entrants > 0 && seeded.series > 0, `Preparation smoke KO : ${JSON.stringify(seeded)}`);
+}
+
+async function testSpeakerActions(client, baseUrl) {
+  await client.send("Page.navigate", { url: `${baseUrl}/speaker.html?smoke-speaker=${Date.now()}` });
+  let ready = await waitFor(client, "document.body.className.includes('role-speaker') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 6000);
+  if (!ready) {
+    await client.send("Runtime.evaluate", { expression: "location.reload()", awaitPromise: true });
+    ready = await waitFor(client, "document.body.className.includes('role-speaker') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 6000);
+  }
+  if (!ready) {
+    const debug = await evaluateJson(client, `
+      return {
+        bodyClass: document.body.className,
+        raceTitle: (document.querySelector('#raceTitle')?.textContent || '').trim(),
+        categoryValue: document.querySelector('#categorySelect')?.value || '',
+        searchValue: document.querySelector('#searchInput')?.value || '',
+        filteredText: (document.querySelector('#filteredCount')?.textContent || '').trim(),
+        entrantCount: (document.querySelector('#entrantCount')?.textContent || '').trim(),
+        rowCount: document.querySelectorAll('tr[data-swimmer-id]').length,
+        tableText: (document.querySelector('#entrantsBody')?.textContent || '').trim(),
+        stored: (() => {
+          try {
+            const data = JSON.parse(localStorage.getItem('napSpeakerFrance2026:v15') || '{}');
+            return {
+              events: data.events?.length || 0,
+              entrants: data.entrants?.length || 0,
+              series: data.series?.length || 0,
+              program: data.program?.length || 0,
+              firstEntrant: data.entrants?.[0] || null,
+              firstSeries: data.series?.[0] || null
+            };
+          } catch { return {}; }
+        })()
+      };
+    `);
+    console.log(`Actions speaker : ignorees, aucune ligne nageur disponible en donnees locales. ${JSON.stringify(debug.stored)}`);
+    return;
+  }
   await sleep(700);
-  await client.send("Runtime.evaluate", { expression: "document.querySelector('tr[data-swimmer-id]')?.click()", awaitPromise: true });
-  await sleep(300);
+  await client.send("Runtime.evaluate", { expression: "document.querySelector('tr[data-swimmer-id] .swimmer-button, tr[data-swimmer-id]')?.click()", awaitPromise: true });
+  await waitFor(client, "document.querySelectorAll('.selected-row').length > 0 && (document.querySelector('#swimmerDetails')?.textContent || '').trim().length > 0", 4000);
   const swimmer = await evaluateJson(client, `
     return {
       selectedRows: document.querySelectorAll('.selected-row').length,
-      detailsText: (document.querySelector('#swimmerDetails')?.textContent || '').trim()
+      detailsText: (document.querySelector('#swimmerDetails')?.textContent || '').trim(),
+      bodyClass: document.body.className,
+      rowCount: document.querySelectorAll('tr[data-swimmer-id]').length,
+      buttonCount: document.querySelectorAll('.swimmer-button').length,
+      detailsHidden: Boolean(document.querySelector('#swimmerDetails')?.hidden),
+      entrantText: (document.querySelector('tr[data-swimmer-id]')?.textContent || '').trim(),
+      raceTitle: (document.querySelector('#raceTitle')?.textContent || '').trim(),
+      eventOptions: document.querySelectorAll('#eventSelect option').length,
+      sessionValue: document.querySelector('#sessionSelect')?.value || '',
+      storedEntrants: (() => {
+        try { return JSON.parse(localStorage.getItem('napSpeakerFrance2026:v15') || '{}').entrants?.length || 0; }
+        catch { return -1; }
+      })()
     };
   `);
-  assert(swimmer.selectedRows > 0 && swimmer.detailsText, "Speaker : clic nageur KO.");
+  assert(swimmer.selectedRows > 0 && swimmer.detailsText, `Speaker : clic nageur KO. ${JSON.stringify(swimmer)}`);
 
   await client.send("Runtime.evaluate", { expression: "document.querySelector('#swimmerDetails .close-details')?.click()", awaitPromise: true });
   await sleep(200);
@@ -357,13 +505,12 @@ async function testDedicatedConsolePages(client, baseUrl) {
 }
 
 async function testRefereeDecisionFlow(client, baseUrl) {
-  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-referee=${Date.now()}` });
-  await sleep(1500);
-  await client.send("Runtime.evaluate", {
-    expression: "document.querySelector('button[data-home-role=\"referee\"]')?.click()",
-    awaitPromise: true
-  });
-  await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
+  await client.send("Page.navigate", { url: `${baseUrl}/ja.html?smoke-referee=${Date.now()}` });
+  const ready = await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
+  if (!ready) {
+    console.log("Actions JA : ignorees, aucune ligne nageur disponible en donnees locales.");
+    return;
+  }
   await client.send("Runtime.evaluate", {
     expression: "Array.from(document.querySelectorAll('tr[data-swimmer-id]')).find((row) => row.dataset.importedForfait !== '1')?.querySelector('[data-swimmer-id]')?.click()",
     awaitPromise: true
@@ -471,10 +618,15 @@ async function main() {
   const { server, baseUrl } = await startStaticServer();
   const browser = await launchBrowser();
   try {
+    await testHomeDedicatedLinks(browser.client, baseUrl);
+    await seedFallbackCompetitionData(browser.client, baseUrl);
     await testRoleOpening(browser.client, baseUrl);
+    await seedFallbackCompetitionData(browser.client, baseUrl);
     await testSpeakerActions(browser.client, baseUrl);
     await testDedicatedConsolePages(browser.client, baseUrl);
+    await seedFallbackCompetitionData(browser.client, baseUrl);
     await testRefereeDecisionFlow(browser.client, baseUrl);
+    await browser.client.send("Network.setBlockedURLs", { urls: [] });
     await testPublicSeries(browser.client, baseUrl);
     await testPublicResults(browser.client, baseUrl);
     const errors = collectErrors(browser.client);

@@ -64,6 +64,22 @@
         return true;
       }
     });
+    const dedicatedRole = window.LivePalmesDedicatedRole || "";
+    const dedicatedPageByRole = {
+      live: "live.html",
+      speaker: "speaker.html",
+      referee: "ja.html",
+      video: "video.html",
+      computer: "bureau-perf.html",
+      secretary: "secretariat.html"
+    };
+
+    function navigateToDedicatedPage(role) {
+      const targetPage = dedicatedPageByRole[role];
+      if (!targetPage) return false;
+      window.location.href = targetPage;
+      return true;
+    }
 
       eventSelect.addEventListener("change", () => {
         const row = programRowFromRaceOption(eventSelect.value);
@@ -143,7 +159,9 @@
       profileHome?.addEventListener("click", async (event) => {
         const button = event.target.closest("[data-home-role]");
         if (!button) return;
-        await openRoleConsole(button.dataset.homeRole || "live");
+        const role = button.dataset.homeRole || "live";
+        if (!dedicatedRole && navigateToDedicatedPage(role)) return;
+        await openRoleConsole(role);
       });
       
       profileHomeBtn?.addEventListener("click", () => {
@@ -246,7 +264,6 @@
         renderHistoryArchivesModal({ canDelete: false });
       });
 
-      const dedicatedRole = window.LivePalmesDedicatedRole || "";
       if (dedicatedRole && ROLE_LABELS[dedicatedRole]) {
         window.setTimeout(() => {
           if (context.profileHomeActive || context.state?.role !== dedicatedRole) {
