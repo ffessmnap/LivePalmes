@@ -32,6 +32,16 @@
       window = globalThis.window
     } = context;
 
+      function hasCompetitionRows(value = {}) {
+        return Boolean(value.program?.length || value.series?.length || value.entrants?.length);
+      }
+
+      function shouldApplyRemoteLiveData(remote = {}) {
+        if (!remote?.sourceVersion) return false;
+        if (remote.sourceVersion !== context.data?.sourceVersion) return true;
+        return !hasCompetitionRows(context.data) && hasCompetitionRows(remote);
+      }
+
       async function endCompetitionSession() {
         if (!competitionModeEnabled()) return;
         await updateLiveNotes("Actualisation manuelle activée", {
@@ -194,7 +204,7 @@
         }
         if (liveResult.status === "fulfilled" && liveResult.value?.data) {
           const remote = liveResult.value.data;
-          if (remote?.sourceVersion && remote.sourceVersion !== context.data?.sourceVersion) {
+          if (shouldApplyRemoteLiveData(remote)) {
             applyRemoteLiveData(remote);
           }
           hasFreshData = true;
@@ -254,7 +264,7 @@
           if (!snapshot.exists) return;
           const remote = snapshot.data()?.data;
           context.firebaseStatus = "connected";
-          if (!remote?.sourceVersion || remote.sourceVersion === context.data?.sourceVersion) return;
+          if (!shouldApplyRemoteLiveData(remote)) return;
           applyRemoteLiveData(remote);
           if (context.state?.role === "computer") publishPublicResultsIndex({ silent: true });
         }, (error) => {

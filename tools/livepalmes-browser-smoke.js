@@ -22,10 +22,10 @@ const smokeFixture = {
     { id: "100sf", label: "100 m surface", distance: "100 m", discipline: "Surface" }
   ],
   entrants: [
-    { eventId: "50sf", sex: "F", lane: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", seedTime: "00:19.72" },
-    { eventId: "50sf", sex: "F", lane: 5, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:19.41" },
-    { eventId: "50sf", sex: "M", lane: 4, lastName: "Petit", firstName: "Nolan", club: "Pessac", category: "Senior", seedTime: "00:16.84" },
-    { eventId: "100sf", sex: "F", lane: 4, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:43.12" }
+    { eventId: "50sf", sex: "F", lane: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", seedTime: "00:19.72", swimmerId: "50sf|f|martin|lea|limoges-nap" },
+    { eventId: "50sf", sex: "F", lane: 5, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:19.41", swimmerId: "50sf|f|bernard|ines|pays-aix" },
+    { eventId: "50sf", sex: "M", lane: 4, lastName: "Petit", firstName: "Nolan", club: "Pessac", category: "Senior", seedTime: "00:16.84", swimmerId: "50sf|m|petit|nolan|pessac" },
+    { eventId: "100sf", sex: "F", lane: 4, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:43.12", swimmerId: "100sf|f|bernard|ines|pays-aix" }
   ],
   series: [
     { eventId: "50sf", sex: "F", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", seedTime: "00:19.72", swimmerId: "50sf|f|martin|lea|limoges-nap" },
@@ -377,6 +377,17 @@ async function testSpeakerActions(client, baseUrl) {
     ready = await waitFor(client, "document.body.className.includes('role-speaker') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 6000);
   }
   if (!ready) {
+    await client.send("Runtime.evaluate", {
+      expression: `
+        window.applyFreshData?.(${JSON.stringify(smokeFixture)}, true);
+        window.switchRoleUnlocked?.("speaker");
+        window.render?.();
+      `,
+      awaitPromise: true
+    });
+    ready = await waitFor(client, "document.body.className.includes('role-speaker') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 6000);
+  }
+  if (!ready) {
     const debug = await evaluateJson(client, `
       return {
         bodyClass: document.body.className,
@@ -387,6 +398,24 @@ async function testSpeakerActions(client, baseUrl) {
         entrantCount: (document.querySelector('#entrantCount')?.textContent || '').trim(),
         rowCount: document.querySelectorAll('tr[data-swimmer-id]').length,
         tableText: (document.querySelector('#entrantsBody')?.textContent || '').trim(),
+        raceEntrantsCount: window.raceEntrants?.().length ?? -1,
+        raceSeriesForCount: window.raceSeriesFor?.('50sf', 'F').length ?? -1,
+        programRowsCount: window.programRows?.().length ?? -1,
+        currentSeriesRowsCount: window.currentSeriesRows?.().length ?? -1,
+        availableSeriesNumbers: window.availableSeriesNumbers?.() || [],
+        selectedSeriesLabel: window.selectedSeriesLabel?.() || '',
+        firstMatchesRace: (() => {
+          try {
+            const data = JSON.parse(localStorage.getItem('napSpeakerFrance2026:v15') || '{}');
+            return window.matchesRace?.(data.entrants?.[0]) ?? null;
+          } catch { return null; }
+        })(),
+        firstSeriesMatchesRace: (() => {
+          try {
+            const data = JSON.parse(localStorage.getItem('napSpeakerFrance2026:v15') || '{}');
+            return window.matchesRace?.(data.series?.[0]) ?? null;
+          } catch { return null; }
+        })(),
         stored: (() => {
           try {
             const data = JSON.parse(localStorage.getItem('napSpeakerFrance2026:v15') || '{}');
@@ -402,8 +431,7 @@ async function testSpeakerActions(client, baseUrl) {
         })()
       };
     `);
-    console.log(`Actions speaker : ignorees, aucune ligne nageur disponible en donnees locales. ${JSON.stringify(debug.stored)}`);
-    return;
+    assert(false, `Speaker : aucune ligne nageur disponible. ${JSON.stringify(debug)}`);
   }
   await sleep(700);
   await client.send("Runtime.evaluate", { expression: "document.querySelector('tr[data-swimmer-id] .swimmer-button, tr[data-swimmer-id]')?.click()", awaitPromise: true });
@@ -519,10 +547,20 @@ async function testDedicatedConsolePages(client, baseUrl) {
 
 async function testRefereeDecisionFlow(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/ja.html?smoke-referee=${Date.now()}` });
-  const ready = await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
+  let ready = await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
   if (!ready) {
-    console.log("Actions JA : ignorees, aucune ligne nageur disponible en donnees locales.");
-    return;
+    await client.send("Runtime.evaluate", {
+      expression: `
+        window.applyFreshData?.(${JSON.stringify(smokeFixture)}, true);
+        window.switchRoleUnlocked?.("referee");
+        window.render?.();
+      `,
+      awaitPromise: true
+    });
+    ready = await waitFor(client, "document.body.className.includes('role-referee') && document.querySelectorAll('tr[data-swimmer-id]').length > 0", 5000);
+  }
+  if (!ready) {
+    assert(false, "JA : aucune ligne nageur disponible.");
   }
   await client.send("Runtime.evaluate", {
     expression: "Array.from(document.querySelectorAll('tr[data-swimmer-id]')).find((row) => row.dataset.importedForfait !== '1')?.querySelector('[data-swimmer-id]')?.click()",

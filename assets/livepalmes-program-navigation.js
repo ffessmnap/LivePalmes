@@ -378,7 +378,7 @@
   function firstSeriesForRace(eventId, sex, sessionNumber) {
     const rows = (data.series || [])
       .filter((row) => row.eventId === eventId && row.sex === sex)
-      .filter((row) => sessionNumber === "all" || !row.session || row.session === sessionNumber);
+      .filter((row) => !sessionNumber || sessionNumber === "all" || !row.session || row.session === sessionNumber);
     const firstRegular = rows
       .filter((row) => !isFinalStage(row.stage))
       .map((row) => Number(row.series))
@@ -431,7 +431,7 @@
   
   function programRowsForSession() {
     const rows = data.program || [];
-    if (state.session === "all") return rows;
+    if (!state.session || state.session === "all") return rows;
     return rows.filter((row) => row.session === state.session);
   }
   
@@ -505,7 +505,7 @@
     } else {
       officialRows = officialRows
         .filter((row) => !isFinalStage(row.stage))
-        .filter((row) => state.session === "all" || state.series === "all" || !row.session || row.session === state.session);
+        .filter((row) => !state.session || state.session === "all" || state.series === "all" || !row.session || row.session === state.session);
     }
     if (officialRows.length) return officialRows;
     const entrants = data.entrants
@@ -528,7 +528,7 @@
   function availableSeriesNumbers() {
     const officialRows = (data.series || [])
       .filter(matchesRace)
-      .filter((row) => state.session === "all" || !row.session || row.session === state.session);
+      .filter((row) => !state.session || state.session === "all" || !row.session || row.session === state.session);
     const regularRows = officialRows.filter((row) => !isFinalStage(row.stage));
     const sourceRows = officialRows.length ? regularRows : raceSeries().filter((row) => !isFinalStage(row.stage));
     return [...new Set(sourceRows.map((row) => Number(row.series)).filter(Number.isFinite))].sort((a, b) => a - b);
