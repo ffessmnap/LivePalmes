@@ -881,6 +881,7 @@ function swimmerPanelOptions() {
 }
 
 function parseCsv(text) {
+  if (typeof livePalmesCsvParser?.parse !== "function") return [];
   return livePalmesCsvParser.parse(text, { eventId: state.eventId, sex: state.sex });
 }
 
@@ -937,7 +938,7 @@ function initializeUiEvents() {
   }
 }
 
-const livePalmesSeriesImportWorkflow = livePalmesSeriesImportWorkflowModule.init(seriesImportWorkflowOptions());
+const livePalmesSeriesImportWorkflow = initOptionalWorkflow(livePalmesSeriesImportWorkflowModule, seriesImportWorkflowOptions);
 
 function seriesImportWorkflowOptions() {
   const options = {

@@ -60,27 +60,37 @@ const consolePages = [
   }
 ];
 
+const speakerInfoScripts = [
+  "assets/livepalmes-speaker-info.js",
+  "assets/livepalmes-speaker-info-options.js",
+  "assets/livepalmes-speaker-info-workflow.js"
+];
+
+const seriesImportScripts = [
+  "assets/livepalmes-pdf-import.js",
+  "assets/livepalmes-csv-parser.js",
+  "assets/livepalmes-series-import.js",
+  "assets/livepalmes-series-import-workflow.js"
+];
+
 const roleScriptExclusions = {
   live: [
-    "assets/livepalmes-speaker-info.js",
-    "assets/livepalmes-speaker-info-options.js",
-    "assets/livepalmes-speaker-info-workflow.js"
+    ...speakerInfoScripts,
+    ...seriesImportScripts
   ],
   referee: [
-    "assets/livepalmes-speaker-info.js",
-    "assets/livepalmes-speaker-info-options.js",
-    "assets/livepalmes-speaker-info-workflow.js"
+    ...speakerInfoScripts,
+    ...seriesImportScripts
   ],
   video: [
-    "assets/livepalmes-speaker-info.js",
-    "assets/livepalmes-speaker-info-options.js",
-    "assets/livepalmes-speaker-info-workflow.js"
+    ...speakerInfoScripts,
+    ...seriesImportScripts
   ],
   secretary: [
-    "assets/livepalmes-speaker-info.js",
-    "assets/livepalmes-speaker-info-options.js",
-    "assets/livepalmes-speaker-info-workflow.js"
-  ]
+    ...speakerInfoScripts,
+    ...seriesImportScripts
+  ],
+  speaker: seriesImportScripts
 };
 
 function replaceOne(content, pattern, replacement, label) {

@@ -18,8 +18,16 @@ const speakerInfoScripts = [
   "assets/livepalmes-speaker-info-workflow.js"
 ];
 
+const seriesImportScripts = [
+  "assets/livepalmes-pdf-import.js",
+  "assets/livepalmes-csv-parser.js",
+  "assets/livepalmes-series-import.js",
+  "assets/livepalmes-series-import-workflow.js"
+];
+
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);
 const rolesWithSpeakerInfo = new Set(["speaker", "computer"]);
+const rolesWithoutSeriesImport = new Set(["live", "speaker", "referee", "video", "secretary"]);
 
 function readProjectFile(filePath) {
   return fs.readFileSync(path.join(rootDir, filePath), "utf8");
@@ -44,6 +52,7 @@ function checkPage(page) {
   const scriptBytes = sources.reduce((sum, source) => sum + fileSize(source), 0);
   const hasDedicatedRole = html.includes(`window.LivePalmesDedicatedRole = "${page.role}"`);
   const loadedSpeakerInfo = speakerInfoScripts.filter((script) => sources.includes(script));
+  const loadedSeriesImport = seriesImportScripts.filter((script) => sources.includes(script));
 
   if (!hasDedicatedRole) {
     throw new Error(`${page.file} ne declare pas le role dedie ${page.role}.`);
@@ -55,6 +64,14 @@ function checkPage(page) {
 
   if (rolesWithSpeakerInfo.has(page.role) && loadedSpeakerInfo.length !== speakerInfoScripts.length) {
     throw new Error(`${page.file} doit charger les reperes speaker.`);
+  }
+
+  if (rolesWithoutSeriesImport.has(page.role) && loadedSeriesImport.length) {
+    throw new Error(`${page.file} charge encore l'import series : ${loadedSeriesImport.join(", ")}`);
+  }
+
+  if (page.role === "computer" && loadedSeriesImport.length !== seriesImportScripts.length) {
+    throw new Error(`${page.file} doit charger l'import series.`);
   }
 
   return {
