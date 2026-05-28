@@ -8,6 +8,8 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "718081132564",
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
+const PUBLIC_SERIES_CACHE_KEY = "livepalmes:public-series-cache:v1";
+const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
 const meetTitle = document.querySelector("#publicSeriesMeetTitle");
 const meetMeta = document.querySelector("#publicSeriesMeetMeta");
@@ -87,6 +89,52 @@ function publicSwimmerOptions(extra = {}) {
 const formatPublicDateTime = (value) => publicSwimmers.formatPublicDateTime(value);
 
 const setStatus = (label, className = "pending") => publicSwimmers.setStatus(statusBadge, label, className, { escapeHtml });
+
+function publicSeriesCachePayload() {
+  return {
+    meet: publicMeet,
+    events: publicEvents,
+    program: publicProgram,
+    entrants: publicEntrants,
+    series: publicSeries,
+    results: publicResults,
+    forfaits: publicForfaits,
+    records: publicRecords,
+    qualifications: publicQualifications,
+    seriesPdfs: publicSeriesPdfs,
+    sessionInfos: publicSessionInfos,
+    progress: publicProgress,
+    publicIndexUpdatedAt
+  };
+}
+
+function applyPublicSeriesSnapshot(snapshot = {}) {
+  publicMeet = snapshot.meet || {};
+  publicEvents = Array.isArray(snapshot.events) ? snapshot.events : [];
+  publicProgram = Array.isArray(snapshot.program) ? snapshot.program : [];
+  publicEntrants = Array.isArray(snapshot.entrants) ? snapshot.entrants : [];
+  publicSeries = Array.isArray(snapshot.series) ? snapshot.series : [];
+  publicResults = Array.isArray(snapshot.results) ? snapshot.results : [];
+  publicForfaits = Array.isArray(snapshot.forfaits) ? snapshot.forfaits : [];
+  publicRecords = Array.isArray(snapshot.records) ? snapshot.records : [];
+  publicQualifications = Array.isArray(snapshot.qualifications) ? snapshot.qualifications : [];
+  publicSeriesPdfs = Array.isArray(snapshot.seriesPdfs) ? snapshot.seriesPdfs : [];
+  publicSessionInfos = snapshot.sessionInfos || {};
+  publicProgress = snapshot.progress || null;
+  publicIndexUpdatedAt = snapshot.publicIndexUpdatedAt || "";
+}
+
+function restorePublicSeriesCache() {
+  const cached = publicSwimmers.loadPublicPageCache?.(PUBLIC_SERIES_CACHE_KEY, PUBLIC_CACHE_MAX_AGE_MS);
+  if (!cached?.series?.length && !cached?.program?.length) return false;
+  applyPublicSeriesSnapshot(cached);
+  return true;
+}
+
+function savePublicSeriesCache() {
+  if (!publicSeries.length && !publicProgram.length) return;
+  publicSwimmers.savePublicPageCache?.(PUBLIC_SERIES_CACHE_KEY, publicSeriesCachePayload());
+}
 
 const sexLabel = (sex) => publicSwimmers.sexLabel(sex);
 
@@ -834,10 +882,16 @@ async function loadPublicSeries({ forceLive = false } = {}) {
   if (forceLive || !indexSnapshot.exists || !publicSeries.length || liveDataIsNewerThanPublicIndex(remote, index)) {
     applyLiveData(remote, index);
   }
-  await loadPublicForfaits(competition);
   clampState();
-  await loadPublicSessionResultsDirectData(competition, activeSession);
+  setStatus("Actualisation", "pending");
+  savePublicSeriesCache();
+  render();
+  await Promise.all([
+    loadPublicForfaits(competition),
+    loadPublicSessionResultsDirectData(competition, activeSession)
+  ]);
   setStatus("Connecté", "ok");
+  savePublicSeriesCache();
   render();
 }
 
@@ -979,6 +1033,12 @@ function refreshPublicSeries() {
 
 refreshBtn?.addEventListener("click", refreshPublicSeries);
 refreshFloatBtn?.addEventListener("click", refreshPublicSeries);
+
+if (restorePublicSeriesCache()) {
+  setStatus("Actualisation", "pending");
+  clampState();
+  render();
+}
 
 loadPublicSeries().catch((error) => {
   console.warn("Lecture séries publiques impossible", error);
