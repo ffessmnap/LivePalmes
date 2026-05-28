@@ -161,6 +161,7 @@ Ce qui est prepare :
 - Apres verification d'un PIN, la Cloud Function renvoie un jeton temporaire Firebase Auth avec le role de la console.
 - Les regles Firestore sont preparees pour autoriser les ecritures sensibles seulement a l'admin ou a une console authentifiee avec le bon role.
 - L'ancien code admin front est neutralise et le fallback PIN admin est desactive.
+- Les essais PIN incorrects sont limites cote serveur : 5 erreurs par role et appareil declenchent un blocage court, puis un blocage plus long si les erreurs continuent.
 
 Important :
 
