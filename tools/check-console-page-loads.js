@@ -39,11 +39,25 @@ const finalWithdrawalsScripts = [
   "assets/livepalmes-final-withdrawals-workflow.js"
 ];
 
+const resultMaintenanceScripts = [
+  "assets/livepalmes-admin-maintenance.js",
+  "assets/livepalmes-result-maintenance-options.js",
+  "assets/livepalmes-result-maintenance-workflow.js"
+];
+
+const resultPublicationScripts = [
+  "assets/livepalmes-result-publication-options.js",
+  "assets/livepalmes-result-publication-workflow.js",
+  "assets/livepalmes-result-parser.js"
+];
+
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);
 const rolesWithSpeakerInfo = new Set(["speaker", "computer"]);
 const rolesWithoutSeriesImport = new Set(["live", "speaker", "referee", "video", "secretary"]);
 const rolesWithoutResultsAdmin = new Set(["live", "speaker", "referee", "video", "secretary"]);
 const rolesWithoutFinalWithdrawals = new Set(["live", "speaker", "referee", "video"]);
+const rolesWithoutResultMaintenance = new Set(["live", "speaker", "referee", "video", "secretary"]);
+const rolesWithoutResultPublication = new Set(["live", "referee", "video"]);
 
 function readProjectFile(filePath) {
   return fs.readFileSync(path.join(rootDir, filePath), "utf8");
@@ -71,6 +85,8 @@ function checkPage(page) {
   const loadedSeriesImport = seriesImportScripts.filter((script) => sources.includes(script));
   const loadedResultsAdmin = resultsAdminScripts.filter((script) => sources.includes(script));
   const loadedFinalWithdrawals = finalWithdrawalsScripts.filter((script) => sources.includes(script));
+  const loadedResultMaintenance = resultMaintenanceScripts.filter((script) => sources.includes(script));
+  const loadedResultPublication = resultPublicationScripts.filter((script) => sources.includes(script));
 
   if (!hasDedicatedRole) {
     throw new Error(`${page.file} ne declare pas le role dedie ${page.role}.`);
@@ -106,6 +122,22 @@ function checkPage(page) {
 
   if ((page.role === "computer" || page.role === "secretary") && loadedFinalWithdrawals.length !== finalWithdrawalsScripts.length) {
     throw new Error(`${page.file} doit charger la gestion des forfaits finales.`);
+  }
+
+  if (rolesWithoutResultMaintenance.has(page.role) && loadedResultMaintenance.length) {
+    throw new Error(`${page.file} charge encore la maintenance resultats : ${loadedResultMaintenance.join(", ")}`);
+  }
+
+  if (page.role === "computer" && loadedResultMaintenance.length !== resultMaintenanceScripts.length) {
+    throw new Error(`${page.file} doit charger la maintenance resultats.`);
+  }
+
+  if (rolesWithoutResultPublication.has(page.role) && loadedResultPublication.length) {
+    throw new Error(`${page.file} charge encore la publication resultats : ${loadedResultPublication.join(", ")}`);
+  }
+
+  if ((page.role === "computer" || page.role === "speaker" || page.role === "secretary") && loadedResultPublication.length !== resultPublicationScripts.length) {
+    throw new Error(`${page.file} doit charger la publication resultats.`);
   }
 
   return {

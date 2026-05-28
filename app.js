@@ -834,7 +834,7 @@ function programModalsOptions() {
 }
 
 
-const livePalmesResultPublicationWorkflow = livePalmesResultPublicationWorkflowModule.init(livePalmesResultPublicationWorkflowOptions());
+const livePalmesResultPublicationWorkflow = initOptionalWorkflow(livePalmesResultPublicationWorkflowModule, livePalmesResultPublicationWorkflowOptions);
 
 function livePalmesResultPublicationWorkflowOptions() {
   return livePalmesResultPublicationOptions.create({
@@ -872,7 +872,7 @@ function finalWithdrawalsWorkflowOptions() {
 }
 
 
-const livePalmesResultMaintenanceWorkflow = livePalmesResultMaintenanceWorkflowModule.init(resultMaintenanceWorkflowOptions());
+const livePalmesResultMaintenanceWorkflow = initOptionalWorkflow(livePalmesResultMaintenanceWorkflowModule, resultMaintenanceWorkflowOptions);
 
 function resultMaintenanceWorkflowOptions() {
   return livePalmesResultMaintenanceOptions.create({
