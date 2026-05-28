@@ -33,10 +33,17 @@ const resultsAdminScripts = [
   "assets/livepalmes-results-admin-workflow.js"
 ];
 
+const finalWithdrawalsScripts = [
+  "assets/livepalmes-final-withdrawals-options.js",
+  "assets/livepalmes-final-withdrawals-view.js",
+  "assets/livepalmes-final-withdrawals-workflow.js"
+];
+
 const rolesWithoutSpeakerInfo = new Set(["live", "referee", "video", "secretary"]);
 const rolesWithSpeakerInfo = new Set(["speaker", "computer"]);
 const rolesWithoutSeriesImport = new Set(["live", "speaker", "referee", "video", "secretary"]);
 const rolesWithoutResultsAdmin = new Set(["live", "speaker", "referee", "video", "secretary"]);
+const rolesWithoutFinalWithdrawals = new Set(["live", "speaker", "referee", "video"]);
 
 function readProjectFile(filePath) {
   return fs.readFileSync(path.join(rootDir, filePath), "utf8");
@@ -63,6 +70,7 @@ function checkPage(page) {
   const loadedSpeakerInfo = speakerInfoScripts.filter((script) => sources.includes(script));
   const loadedSeriesImport = seriesImportScripts.filter((script) => sources.includes(script));
   const loadedResultsAdmin = resultsAdminScripts.filter((script) => sources.includes(script));
+  const loadedFinalWithdrawals = finalWithdrawalsScripts.filter((script) => sources.includes(script));
 
   if (!hasDedicatedRole) {
     throw new Error(`${page.file} ne declare pas le role dedie ${page.role}.`);
@@ -90,6 +98,14 @@ function checkPage(page) {
 
   if (page.role === "computer" && loadedResultsAdmin.length !== resultsAdminScripts.length) {
     throw new Error(`${page.file} doit charger les resultats admin.`);
+  }
+
+  if (rolesWithoutFinalWithdrawals.has(page.role) && loadedFinalWithdrawals.length) {
+    throw new Error(`${page.file} charge encore la gestion des forfaits finales : ${loadedFinalWithdrawals.join(", ")}`);
+  }
+
+  if ((page.role === "computer" || page.role === "secretary") && loadedFinalWithdrawals.length !== finalWithdrawalsScripts.length) {
+    throw new Error(`${page.file} doit charger la gestion des forfaits finales.`);
   }
 
   return {
