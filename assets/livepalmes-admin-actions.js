@@ -128,8 +128,12 @@
         roleCodesModal.querySelector("#rolePinInput")?.focus();
       }
       
-      function askRolePin(role) {
+      async function askRolePin(role) {
         if (roleIsUnlocked(role)) return Promise.resolve({ allowed: true, adminBypass: false });
+        await livePalmesAdminAuth?.whenReady?.();
+        if (livePalmesAdminAuth?.isAdminAuthenticated?.()) {
+          return { allowed: true, adminBypass: true };
+        }
         renderRolePinModal(role);
         return new Promise((resolve) => {
           context.rolePinResolver = resolve;
@@ -256,6 +260,7 @@
       }
       
       async function toggleRoleLock() {
+        await livePalmesAdminAuth?.whenReady?.();
         if (livePalmesAdminAuth?.isAdminAuthenticated?.()) {
           renderRoleCodesModal();
           return;

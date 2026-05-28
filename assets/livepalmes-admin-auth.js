@@ -18,17 +18,32 @@
     let currentUser = null;
     let authReady = false;
     let authUnsubscribe = null;
+    let persistenceReady = Promise.resolve();
+    let readyResolver = null;
+    const readyPromise = new Promise((resolve) => {
+      readyResolver = resolve;
+    });
     const listeners = new Set();
 
     function authService() {
       if (!firebase?.auth || !firebase.apps?.length) return null;
       try {
         const service = firebase.auth();
+        configurePersistence(service);
         attachAuthListener(service);
         return service;
       } catch {
         return null;
       }
+    }
+
+    function configurePersistence(service) {
+      if (!service?.setPersistence || !firebase?.auth?.Auth?.Persistence?.LOCAL) return;
+      if (persistenceReady.livePalmesConfigured) return;
+      persistenceReady = service.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((error) => {
+        console.warn("Persistance admin Firebase impossible", error);
+      });
+      persistenceReady.livePalmesConfigured = true;
     }
 
     function isConfigured() {
@@ -56,6 +71,8 @@
       authUnsubscribe = service.onAuthStateChanged((user) => {
         currentUser = user || null;
         authReady = true;
+        readyResolver?.();
+        readyResolver = null;
         notify();
       });
     }
@@ -84,6 +101,7 @@
       if (!cleanEmail || !password) {
         throw createAuthError("Email et mot de passe obligatoires.");
       }
+      await persistenceReady;
       const credential = await service.signInWithEmailAndPassword(cleanEmail, password);
       currentUser = credential.user || service.currentUser || null;
       if (!isAllowedUser(currentUser)) {
@@ -108,13 +126,18 @@
       return () => listeners.delete(listener);
     }
 
-    authService();
-    authReady = true;
+    const initialService = authService();
+    if (!initialService) {
+      authReady = true;
+      readyResolver?.();
+      readyResolver = null;
+    }
 
     return {
       isAdminAuthenticated: () => isAllowedUser(),
       legacyAdminPinFallbackEnabled: () => status().legacyFallbackEnabled,
       onChange,
+      whenReady: () => readyPromise,
       signIn,
       signOut,
       status
