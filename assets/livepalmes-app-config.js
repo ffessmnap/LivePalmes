@@ -19,7 +19,7 @@ const ROLE_PINS = {
   secretary: "0005"
 };
 const ADMIN_AUTH = {
-  adminUids: [],
+  adminUids: ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"],
   adminEmails: [],
   legacyAdminPinFallback: true
 };
