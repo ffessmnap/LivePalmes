@@ -74,6 +74,8 @@ node tools/build-console-pages.js
 
 Le controle `node tools/verify-livepalmes.js` verifie que ces pages sont synchronisees.
 
+Le controle `tools/check-console-page-loads.js` mesure aussi les scripts charges par chaque page dediee et verifie les exclusions par role. Il sert de compteur avant de retirer d'autres modules inutiles.
+
 ## Zones sensibles
 
 Ces zones doivent etre modifiees avec prudence :
