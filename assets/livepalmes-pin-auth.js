@@ -49,8 +49,15 @@
 
     async function verifyRolePin(options = {}) {
       const auth = authService();
-      if (!auth?.signInWithCustomToken) {
+      if (!auth?.signInAnonymously) {
         throw new Error("Authentification console indisponible.");
+      }
+      if (!auth.currentUser || !auth.currentUser.isAnonymous) {
+        try {
+          await auth.signInAnonymously();
+        } catch (error) {
+          throw new Error("Connexion console anonyme indisponible. Active le fournisseur Anonyme dans Firebase Authentication.");
+        }
       }
       const result = await callFunction("verifyPin", {
         clientId: options.clientId || "",
@@ -58,10 +65,10 @@
         pin: options.pin || "",
         role: options.role || ""
       });
-      if (!result.ok || !result.token) {
+      if (!result.ok) {
         throw new Error("Code PIN refuse.");
       }
-      await auth.signInWithCustomToken(result.token);
+      await auth.currentUser?.getIdToken?.(true);
       return result;
     }
 

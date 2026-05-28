@@ -146,9 +146,12 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
   const competitionId = competitionIdFrom(request.data || {});
   const role = cleanText(request.data?.role);
   const pin = cleanText(request.data?.pin);
-  const clientId = cleanText(request.data?.clientId);
   assertRole(role);
   assertPin(pin);
+  const uid = cleanText(request.auth?.uid);
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase console requise.");
+  }
 
   const snapshot = await rolePinsRef(competitionId).get();
   if (!snapshot.exists || snapshot.data()?.enabled !== true) {
@@ -160,7 +163,7 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
     throw new HttpsError("permission-denied", "Code PIN incorrect.");
   }
 
-  const token = await admin.auth().createCustomToken(roleUid(competitionId, role, clientId), {
+  await admin.auth().setCustomUserClaims(uid, {
     livepalmesRole: role,
     livepalmesCompetition: competitionId,
     livepalmesConsole: true
@@ -168,7 +171,6 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
 
   return {
     ok: true,
-    role,
-    token
+    role
   };
 });
