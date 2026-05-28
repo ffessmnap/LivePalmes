@@ -830,6 +830,7 @@ function finalWithdrawalsWorkflowOptions() {
     dom: { alertDetailModal },
     finalWithdrawalLimitDate,
     finalWithdrawalLimitLabel,
+    formatDeadlineTime,
     hasFinalWithdrawalDeadline,
     isFinalWithdrawalDeadlineExpired,
     modules: { livePalmesAlertDetailView, livePalmesSecretaryFinals },
