@@ -79,7 +79,7 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
-    if (/\b(dns|ns|absent|abs)\b/.test(text)) return "dns";
+    if (/\b(dns|absent|abs)\b/.test(text)) return "dns";
     if (/\b(abandon|abd|ab|dnf)\b/.test(text)) return "ab";
     if (/\b(disqualification|disqualifie|disqualifiee|dsq|dq)\b/.test(text)) return "dsq";
     if (/\b(forfait)\b/.test(text)) return "dns";

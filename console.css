@@ -1203,6 +1203,18 @@
   width: min(720px, 100%);
 }
 
+.result-detail-dialog {
+  width: min(1080px, 100%);
+}
+
+.result-detail-dialog .final-withdrawal-list {
+  grid-template-columns: 1fr;
+}
+
+.result-detail-dialog .final-withdrawal-group {
+  grid-column: 1 / -1;
+}
+
 .program-dialog {
   width: min(860px, 100%);
   max-height: min(86vh, 760px);
