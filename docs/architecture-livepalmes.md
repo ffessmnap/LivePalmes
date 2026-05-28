@@ -64,6 +64,8 @@ node tools/build-console-pages.js
 
 Le controle general verifie que les pages generees sont bien a jour.
 
+Le controle `tools/check-console-page-loads.js` mesure les scripts charges par page dediee et bloque le retour de modules inutiles sur certains roles. Il donne un compteur utile avant chaque nouvel allegement.
+
 ## Chemin de migration conseille
 
 1. Garder `app.js` comme assembleur court.

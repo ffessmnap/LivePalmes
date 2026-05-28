@@ -70,6 +70,11 @@ function runGeneratedPageChecks() {
   run(process.execPath, [path.join(rootDir, "tools", "build-console-pages.js"), "--check"]);
 }
 
+function runConsolePageLoadChecks() {
+  printStep("Controle chargement pages consoles");
+  run(process.execPath, [path.join(rootDir, "tools", "check-console-page-loads.js")]);
+}
+
 function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
@@ -135,6 +140,7 @@ try {
   runTextChecks();
   runArchitectureChecks();
   runGeneratedPageChecks();
+  runConsolePageLoadChecks();
   runBrowserSmokeIfRequested();
   runDiffCheck();
   console.log("\nVerification LivePalmes OK.");
