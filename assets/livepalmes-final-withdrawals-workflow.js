@@ -508,23 +508,27 @@
     const ordered = options.ordered !== false;
     const items = rows.map((row, index) => {
       const rank = row.rank || (ordered ? index + 1 : "");
-      const meta = [row.club, row.birthYear ? `(${row.birthYear})` : ""].filter(Boolean).join(" ");
       const value = resultDetailRowValue(row);
+      const label = [
+        rank ? `${rank}. ${resultDetailRowName(row)}` : resultDetailRowName(row),
+        row.club,
+        row.birthYear ? `(${row.birthYear})` : "",
+        value
+      ].filter(Boolean).join(" - ");
       return `
-        <li class="${row.resultStatus || row.status ? "status-row" : ""}">
-          <span class="admin-result-rank">${rank ? escapeHtml(rank) : ""}</span>
-          <span class="admin-result-name">${escapeHtml(resultDetailRowName(row))}</span>
-          <span class="admin-result-meta">${escapeHtml(meta)}</span>
-          <strong class="admin-result-time">${escapeHtml(value || "")}</strong>
+        <li ${ordered && rank ? `value="${escapeHtml(rank)}"` : ""} class="${row.resultStatus || row.status ? "closed" : ""}">
+          <div>
+            <span>${escapeHtml(label)}</span>
+          </div>
         </li>
       `;
     }).join("");
     return `
-      <div class="admin-result-ranking-group">
+      <div class="final-withdrawal-group">
         <strong>${escapeHtml(title)}</strong>
-        <ul class="admin-result-ranking-list">
+        <ol>
           ${items}
-        </ul>
+        </ol>
       </div>
     `;
   }
@@ -571,7 +575,7 @@
             </div>
             <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
           </div>
-          <div class="admin-result-ranking-modal">
+          <div class="final-withdrawal-list">
             ${rowsHtml || `<p class="panel-subtitle">Aucun detail de resultat lu pour cette course.</p>`}
           </div>
           <div class="decision-actions">
