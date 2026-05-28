@@ -11,6 +11,7 @@ const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
+const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 
 function cleanText(value) {
   return String(value || "").trim();
@@ -102,7 +103,7 @@ async function updatePublicPinNotes(competitionId, enabled) {
   });
 }
 
-exports.setRolePins = onCall({ region: REGION }, async (request) => {
+exports.setRolePins = onCall(CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
   const competitionId = competitionIdFrom(request.data || {});
   const enabled = request.data?.enabled !== false;
@@ -141,7 +142,7 @@ exports.setRolePins = onCall({ region: REGION }, async (request) => {
   };
 });
 
-exports.verifyPin = onCall({ region: REGION }, async (request) => {
+exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
   const competitionId = competitionIdFrom(request.data || {});
   const role = cleanText(request.data?.role);
   const pin = cleanText(request.data?.pin);
