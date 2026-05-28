@@ -47,7 +47,12 @@ function checkSyntax() {
 
 function runUnitTests() {
   printStep("Tests automatiques");
-  run(process.execPath, [path.join(rootDir, "tests", "livepalmes-basic-tests.js")]);
+  [
+    "livepalmes-basic-tests.js",
+    "livepalmes-result-regression-tests.js"
+  ].forEach((fileName) => {
+    run(process.execPath, [path.join(rootDir, "tests", fileName)]);
+  });
 }
 
 function runBrowserSmokeIfRequested() {
