@@ -18,6 +18,7 @@
     livePalmesSecretaryFinalsWorkflowModule: "LivePalmesSecretaryFinalsWorkflow",
     livePalmesPublication: "LivePalmesPublication",
     livePalmesDiagnostics: "LivePalmesDiagnostics",
+    livePalmesAdminAuthModule: "LivePalmesAdminAuth",
     livePalmesAdminDiagnostics: "LivePalmesAdminDiagnostics",
     livePalmesAdminMaintenance: "LivePalmesAdminMaintenance",
     livePalmesAdminActionsModule: "LivePalmesAdminActions",

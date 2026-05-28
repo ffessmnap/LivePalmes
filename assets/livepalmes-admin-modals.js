@@ -11,6 +11,7 @@
   function renderRoleCodesModalHtml(options = {}) {
     const {
       active = false,
+      adminAuthStatus = null,
       diagnosticsEnabled = false,
       pins = {},
       roles = []
@@ -35,6 +36,10 @@
         </div>
         <div class="admin-extra-zone">
           <span>Administration avancée</span>
+          ${adminAuthStatus?.signedIn ? `
+          <span class="admin-auth-chip">Admin connecte : ${escapeHtml(adminAuthStatus.email || "Firebase")}</span>
+          <button class="ghost-button compact" type="button" data-admin-auth-signout>Deconnexion admin</button>
+          ` : ""}
           ${diagnosticsEnabled ? `
           <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
           <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
@@ -54,9 +59,12 @@
   function renderRoleCodesAdminModalHtml(options = {}) {
     const {
       action = "codes",
+      adminAuthStatus = {},
       help = "",
       title = "Code administrateur"
     } = options;
+    const canUseFirebaseAuth = adminAuthStatus.available && adminAuthStatus.configured && !adminAuthStatus.signedIn;
+    const canUseLegacyCode = adminAuthStatus.legacyFallbackEnabled;
     return `
       <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
         <div class="decision-modal-head">
@@ -67,10 +75,34 @@
           </div>
           <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
         </div>
+        ${adminAuthStatus.signedIn ? `
+        <div class="admin-auth-status-box">
+          <strong>Admin Firebase connecte</strong>
+          <span>${escapeHtml(adminAuthStatus.email || "Compte admin")}</span>
+        </div>
+        ` : ""}
+        ${canUseFirebaseAuth ? `
+        <div class="admin-auth-fields">
+          <label class="role-code-admin-field">
+            Email admin
+            <input id="adminEmailInput" type="email" autocomplete="username" data-admin-auth-email>
+          </label>
+          <label class="role-code-admin-field">
+            Mot de passe
+            <input id="adminPasswordInput" type="password" autocomplete="current-password" data-admin-auth-password>
+          </label>
+        </div>
+        ` : ""}
+        ${canUseLegacyCode ? `
+        <div class="admin-auth-warning">Migration en cours : aucun admin Firebase n'est encore configure, l'ancien code admin reste temporairement accepte.</div>
         <label class="role-code-admin-field">
-          Code admin
+          Code admin temporaire
           <input id="roleCodeAdminInput" type="password" inputmode="text" maxlength="5" autocomplete="off">
         </label>
+        ` : ""}
+        ${!adminAuthStatus.signedIn && !canUseFirebaseAuth && !canUseLegacyCode ? `
+        <div class="admin-auth-warning">Connexion admin impossible : configure d'abord un UID ou email admin Firebase dans LivePalmes.</div>
+        ` : ""}
         <div class="decision-modal-actions">
           <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
           <button class="primary-button" type="button" data-confirm-role-code-admin="${escapeHtml(action)}">Continuer</button>

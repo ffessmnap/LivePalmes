@@ -18,6 +18,11 @@ const ROLE_PINS = {
   computer: "0004",
   secretary: "0005"
 };
+const ADMIN_AUTH = {
+  adminUids: [],
+  adminEmails: [],
+  legacyAdminPinFallback: true
+};
 const LOCK_DURATION_MS = 120000;
 const LOCK_RECOVERY_MS = 75000;
 const LOCK_HEARTBEAT_MS = 30000;
@@ -114,6 +119,7 @@ const fallbackData = {
     firestoreCompetitionId: FIRESTORE_COMPETITION_ID,
     speakerSheetId: SPEAKER_SHEET_ID,
     adminPin: ADMIN_PIN,
+    adminAuth: ADMIN_AUTH,
     rolePins: ROLE_PINS,
     lockDurationMs: LOCK_DURATION_MS,
     lockRecoveryMs: LOCK_RECOVERY_MS,

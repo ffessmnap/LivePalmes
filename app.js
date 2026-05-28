@@ -2,7 +2,7 @@ const livePalmesAppSettings = window.LivePalmesAppSettings || {};
 const {
   livePalmesAppConfig, STORAGE_KEY, ALERTS_KEY, LIVE_DISMISSED_ALERTS_KEY,
   UNLOCKED_ROLES_KEY, CLIENT_ID_KEY, ACTIVE_VIEW_KEY, ROLE_STATES_KEY,
-  LAST_ACTIVITY_KEY, FIRESTORE_COMPETITION_ID, SPEAKER_SHEET_ID, ADMIN_PIN,
+  LAST_ACTIVITY_KEY, FIRESTORE_COMPETITION_ID, SPEAKER_SHEET_ID, ADMIN_PIN, ADMIN_AUTH_CONFIG,
   ROLE_PINS, ROLE_LABELS, DECISION_LABELS, SPEAKER_DECISION_REASONS,
   LOCK_DURATION_MS, LOCK_RECOVERY_MS, LOCK_HEARTBEAT_MS, FIREBASE_CONNECTION_CHECK_MS,
   HOME_AFTER_INACTIVITY_MS, COMPETITION_INACTIVITY_MS, COMPETITION_INACTIVITY_CHECK_MS, PRESENCE_DURATION_MS,
@@ -15,6 +15,7 @@ const {
   livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleState,
   livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
   livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
+  livePalmesAdminAuthModule,
   livePalmesAdminDiagnostics, livePalmesAdminMaintenance, livePalmesAdminActionsModule, livePalmesAdminModals,
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
@@ -135,6 +136,13 @@ let firestoreUnsubscribe = null;
 let liveDataUnsubscribe = null;
 let resultsUnsubscribe = null;
 let firestoreReady = false;
+
+const livePalmesAdminAuth = typeof livePalmesAdminAuthModule.init === "function"
+  ? livePalmesAdminAuthModule.init({
+      authConfig: ADMIN_AUTH_CONFIG,
+      firebase: window.firebase
+    })
+  : {};
 let firebaseStatus = "connecting";
 let firebaseConnectionCheckRunning = false;
 let lastConsoleActivityAt = Date.now();
@@ -354,6 +362,7 @@ function adminActionsOptions() {
     formatAlertDateTime,
     historyArchivesCollection,
     initFirebaseSync,
+    livePalmesAdminAuth,
     livePalmesAdminModals,
     normalizeData,
     pinLockEnabled,
@@ -952,6 +961,7 @@ function uiEventsOptions() {
     bindOptionState,
     constants: { ADMIN_PIN, ROLE_LABELS },
     helpers: {
+      livePalmesAdminAuth,
       historyArchivesCollection,
       historyFilters,
       renderSecretaryFinalsPanel,

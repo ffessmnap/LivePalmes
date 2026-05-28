@@ -21,6 +21,10 @@
     return callDependency("fixPdfEncoding", (input) => String(input || ""), value);
   }
 
+  function cleanCell(value) {
+    return String(fixPdfEncoding(value) || "").trim();
+  }
+
   function importedEventId(value) {
     return callDependency("importedEventId", () => "", value);
   }
@@ -54,7 +58,17 @@
   }
 
   function seedSourceLookupKeys(row) {
-    return callDependency("seedSourceLookupKeys", () => [], row);
+    return callDependency("seedSourceLookupKeys", (input = {}) => {
+      const eventId = input.eventId || "";
+      const sex = input.sex || "";
+      const seedTime = seedSourceTimeKey(input.seedTime || "");
+      const swimmerId = input.swimmerId || "";
+      const name = normalizePersonName(displayNameFromParts(input.firstName, input.lastName, input.name));
+      return [
+        `${eventId}|${sex}|${swimmerId}|${seedTime}`,
+        `${eventId}|${sex}|${name}|${seedTime}`
+      ].filter((key) => !key.includes("undefined"));
+    }, row);
   }
 
   function normalizeClubMatch(value) {
@@ -154,9 +168,9 @@
   
   function splitRawTimingCells(cells) {
     if (String(cells?.[0] || "").includes(";")) {
-      return String(cells[0]).split(";").map((item) => fixPdfEncoding(item).trim());
+      return String(cells[0]).split(";").map(cleanCell);
     }
-    return (cells || []).map((item) => fixPdfEncoding(item).trim());
+    return (cells || []).map(cleanCell);
   }
   
   function displayNameFromParts(firstName, lastName, fallback = "") {
@@ -230,7 +244,7 @@
     const records = [];
     let context = null;
     rows.forEach((cells) => {
-      const [first = "", time = "", holder = "", club = "", date = "", place = ""] = cells.map((cell) => fixPdfEncoding(cell).trim());
+      const [first = "", time = "", holder = "", club = "", date = "", place = ""] = cells.map(cleanCell);
       const title = normalizeSheetHeader(first);
       if (!first) return;
       if (title.includes("jeunes_hommes")) context = { sex: "M", category: "Junior", label: "Record de France junior" };

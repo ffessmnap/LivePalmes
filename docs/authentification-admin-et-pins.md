@@ -118,3 +118,31 @@ Le bon plan serait de la réaliser hors urgence, sur une période de test, avec 
 - PIN : stockés en base et modifiables uniquement par l'admin ;
 - vérification PIN : idéalement via Cloud Function ;
 - pages publiques : aucun changement, elles restent accessibles sans connexion.
+
+## Palier 1 installe dans le code
+
+Ce palier prepare Firebase Authentication sans bloquer les consoles existantes.
+
+Ce qui est en place :
+
+- chargement du SDK Firebase Authentication sur les pages consoles ;
+- module `assets/livepalmes-admin-auth.js` pour connecter/deconnecter un admin Firebase ;
+- fenetre du cadenas compatible avec une connexion email + mot de passe ;
+- verification locale d'un UID ou email admin autorise via `adminAuth.adminUids` ou `adminAuth.adminEmails` dans `assets/livepalmes-app-config.js` ;
+- ancien code admin conserve temporairement uniquement si aucun admin Firebase n'est configure.
+
+Ce qui n'est pas encore bascule :
+
+- les regles Firestore ne sont pas encore durcies avec `request.auth`, pour eviter de couper les consoles avant d'avoir l'UID admin ;
+- les PIN des roles terrain restent dans le fonctionnement actuel ;
+- aucune Cloud Function `verifyPin` n'est encore creee.
+
+Prochaine bascule sure :
+
+1. Activer Email/Mot de passe dans Firebase Authentication.
+2. Creer le compte admin dans la console Firebase.
+3. Recuperer l'UID du compte admin.
+4. Ajouter cet UID dans `adminAuth.adminUids`.
+5. Tester que le cadenas accepte la connexion Firebase.
+6. Desactiver le fallback `legacyAdminPinFallback`.
+7. Durcir progressivement les regles Firestore.

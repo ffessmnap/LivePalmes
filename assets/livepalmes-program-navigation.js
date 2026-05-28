@@ -66,7 +66,7 @@
   }
   
   function eventSignature(value) {
-    const compact = normalizePdfLabel(value).replace(/[^a-z0-9x]+/g, "");
+    const compact = String(normalizePdfLabel(value) || "").replace(/[^a-z0-9x]+/g, "");
     const direct = compact.match(/(\d+x\d+|\d+)(?:m)?(apnee|ap|immersion|is|surface|sf|bipalmes|bipalme|bi|sb)/i);
     if (!direct) return "";
     const distance = direct[1].toLowerCase();
