@@ -335,6 +335,19 @@ async function testHomeDedicatedLinks(client, baseUrl) {
   `);
   assert(state.pathname.endsWith("/speaker.html"), `Accueil : redirection speaker KO (${state.pathname}).`);
   assert(state.dedicatedRole === "speaker" || state.isSpeaker, "Accueil : page speaker dediee non reconnue.");
+  await waitFor(client, "document.body.className.includes('role-speaker') || !document.querySelector('#roleCodesModal')?.hidden", 5000);
+  await client.send("Runtime.evaluate", {
+    expression: "document.querySelector('#profileHomeBtn')?.click()",
+    awaitPromise: true
+  });
+  await waitFor(client, "location.pathname.endsWith('/index.html')", 5000);
+  const homeState = await evaluateJson(client, `
+    return {
+      pathname: location.pathname,
+      dedicatedRole: window.LivePalmesDedicatedRole || ""
+    };
+  `);
+  assert(homeState.pathname.endsWith("/index.html") && !homeState.dedicatedRole, `Console : retour accueil KO (${JSON.stringify(homeState)}).`);
   console.log("Accueil vers pages dediees : OK");
 }
 

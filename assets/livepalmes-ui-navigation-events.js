@@ -81,6 +81,10 @@
       return true;
     }
 
+    function navigateToMainHome() {
+      window.location.href = "index.html";
+    }
+
       eventSelect.addEventListener("change", () => {
         const row = programRowFromRaceOption(eventSelect.value);
         if (row.eventId) state.eventId = row.eventId;
@@ -165,6 +169,10 @@
       });
       
       profileHomeBtn?.addEventListener("click", () => {
+        if (dedicatedRole) {
+          navigateToMainHome();
+          return;
+        }
         context.profileHomeActive = true;
         render();
         releaseConsolePresence();
