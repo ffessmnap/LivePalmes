@@ -374,15 +374,20 @@
   function openFinalWithdrawalsModal(resultId, options = {}) {
     const result = raceResults.find((item) => item.id === resultId);
     if (!result || !alertDetailModal) return;
-    const finalists = normalizeFinalistsOrder(result.finalists || {});
-    alertDetailModal.hidden = false;
-    alertDetailModal.innerHTML = livePalmesAlertDetailView.renderFinalWithdrawalsModalHtml({
-      eventLabel: result.eventLabel || result.eventId,
-      finalAHtml: renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || []),
-      finalBHtml: renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || []),
-      sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
-      unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })
-    });
+    try {
+      const finalists = normalizeFinalistsOrder(result.finalists || {});
+      const html = livePalmesAlertDetailView.renderFinalWithdrawalsModalHtml({
+        eventLabel: result.eventLabel || result.eventId,
+        finalAHtml: renderFinalWithdrawalGroup("Finale A", result, "a", finalists.a || []),
+        finalBHtml: renderFinalWithdrawalGroup("Finale B", result, "b", finalists.b || []),
+        sexLabel: result.sexLabel || sexDisplayLabel(result.sex),
+        unqualifiedHtml: renderSecretaryUnqualifiedGroup(result, { open: Boolean(options.openUnqualified) })
+      });
+      setAlertDetailModalHtml(html);
+    } catch (error) {
+      console.error("Impossible d'ouvrir la gestion des forfaits finales", error);
+      setAlertDetailModalHtml(renderAlertDetailErrorHtml("Finales indisponibles", error?.message || String(error || "")));
+    }
   }
   
   async function toggleFinalPreWithdrawal(resultId, rowKey) {
@@ -878,18 +883,65 @@
     Object.assign(context, nextContext || {});
     alertDetailModal = context.alertDetailModal;
     alerts = context.alerts;
-    canWithdrawBeforeReplacementAnnouncement = context.canWithdrawBeforeReplacementAnnouncement;
-    canWithdrawFinalist = context.canWithdrawFinalist;
-    escapeHtml = context.escapeHtml;
-    finalRowCountsAsFinalist = context.finalRowCountsAsFinalist;
+    canWithdrawBeforeReplacementAnnouncement = typeof context.canWithdrawBeforeReplacementAnnouncement === "function"
+      ? context.canWithdrawBeforeReplacementAnnouncement
+      : (() => false);
+    canWithdrawFinalist = typeof context.canWithdrawFinalist === "function"
+      ? context.canWithdrawFinalist
+      : (() => false);
+    escapeHtml = typeof context.escapeHtml === "function"
+      ? context.escapeHtml
+      : ((value) => String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;"));
+    finalRowCountsAsFinalist = typeof context.finalRowCountsAsFinalist === "function"
+      ? context.finalRowCountsAsFinalist
+      : ((row) => Boolean(row && !row.withdrawnAt && !row.resultStatus));
     finalistRowName = context.finalistRowName || ((row) => row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" "));
-    finalWithdrawalLimitDate = context.finalWithdrawalLimitDate;
-    finalWithdrawalLimitLabel = context.finalWithdrawalLimitLabel;
-    formatDeadlineTime = context.formatDeadlineTime;
-    hasFinalWithdrawalDeadline = context.hasFinalWithdrawalDeadline;
-    isFinalWithdrawalDeadlineExpired = context.isFinalWithdrawalDeadlineExpired;
-    livePalmesAlertDetailView = context.livePalmesAlertDetailView;
-    livePalmesSecretaryFinals = context.livePalmesSecretaryFinals;
+    finalWithdrawalLimitDate = typeof context.finalWithdrawalLimitDate === "function"
+      ? context.finalWithdrawalLimitDate
+      : (() => null);
+    finalWithdrawalLimitLabel = typeof context.finalWithdrawalLimitLabel === "function"
+      ? context.finalWithdrawalLimitLabel
+      : (() => "");
+    formatDeadlineTime = typeof context.formatDeadlineTime === "function"
+      ? context.formatDeadlineTime
+      : ((date) => {
+        const value = date instanceof Date ? date : new Date(date);
+        return Number.isNaN(value.getTime()) ? "" : value.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      });
+    hasFinalWithdrawalDeadline = typeof context.hasFinalWithdrawalDeadline === "function"
+      ? context.hasFinalWithdrawalDeadline
+      : ((row, result) => Boolean(finalWithdrawalLimitDate(row, result)));
+    isFinalWithdrawalDeadlineExpired = typeof context.isFinalWithdrawalDeadlineExpired === "function"
+      ? context.isFinalWithdrawalDeadlineExpired
+      : (() => false);
+    livePalmesAlertDetailView = {
+      renderFinalWithdrawalsModalHtml: ({ eventLabel = "", finalAHtml = "", finalBHtml = "", sexLabel = "", unqualifiedHtml = "" } = {}) => `
+        <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Forfaits finales">
+          <div class="decision-modal-head">
+            <div>
+              <span>Secretariat</span>
+              <h2>Forfaits finales</h2>
+              <p>${escapeHtml(eventLabel)} ${escapeHtml(sexLabel)}</p>
+            </div>
+            <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
+          </div>
+          <div class="final-withdrawal-list">${finalAHtml}${finalBHtml}${unqualifiedHtml}</div>
+          <div class="decision-actions"><button class="ghost-button" type="button" data-close-alert-detail>Fermer</button></div>
+        </div>
+      `,
+      ...(context.livePalmesAlertDetailView || {})
+    };
+    livePalmesSecretaryFinals = {
+      renderCompositionListHtml: (options = {}) => `<div class="final-withdrawal-list">${options.finalAHtml || ""}${options.finalBHtml || ""}${options.unqualifiedHtml || ""}</div>`,
+      renderUnqualifiedGroupHtml: () => "",
+      renderWithdrawalGroupHtml: () => "",
+      ...(context.livePalmesSecretaryFinals || {})
+    };
     markAlertAlreadyClosedError = context.markAlertAlreadyClosedError;
     markSpeakerAlertDoneLocally = context.markSpeakerAlertDoneLocally;
     normalizePersonName = context.normalizePersonName;
