@@ -11,6 +11,7 @@
       ensureResultsAdminSession,
       finishRolePin,
       historyArchivesCollection,
+      livePalmesAdminAuth,
       openDsqRows,
       openResultArchiveRows,
       performResetHistoryWithArchive,
@@ -28,6 +29,15 @@
       updateLiveNotes
     } = context;
 
+    async function openAuthenticatedAdminAction(action) {
+      if (action === "reset") {
+        closeRoleCodesModal();
+        await performResetHistoryWithArchive();
+        return;
+      }
+      renderRoleCodesModal();
+    }
+
       roleCodesModal?.addEventListener("click", async (event) => {
         if (event.target === roleCodesModal && roleCodesModal.querySelector(".session-infos-dialog")) {
           return;
@@ -38,6 +48,17 @@
         }
         if (event.target.closest("[data-open-history-archives]")) {
           await renderHistoryArchivesModal({ canDelete: true });
+          return;
+        }
+        if (event.target.closest("[data-admin-auth-signout]")) {
+          try {
+            await livePalmesAdminAuth?.signOut?.();
+            closeRoleCodesModal();
+            window.alert("Admin deconnecte.");
+          } catch (error) {
+            console.error(error);
+            window.alert(`Deconnexion impossible : ${error?.message || error}`);
+          }
           return;
         }
         if (event.target.closest("[data-technical-diagnostic]")) {
@@ -219,25 +240,36 @@
           return;
         }
         if (event.target.closest("[data-confirm-role-code-admin]")) {
-          const code = String(roleCodesModal.querySelector("#roleCodeAdminInput")?.value || "").trim();
-          if (code !== ADMIN_PIN) {
-            window.alert("Code admin incorrect.");
-            return;
-          }
           const action = event.target.closest("[data-confirm-role-code-admin]")?.dataset.confirmRoleCodeAdmin || "codes";
-          if (action === "reset") {
-            closeRoleCodesModal();
-            await performResetHistoryWithArchive();
+          if (livePalmesAdminAuth?.isAdminAuthenticated?.()) {
+            await openAuthenticatedAdminAction(action);
             return;
           }
-          renderRoleCodesModal();
+          const emailInput = roleCodesModal.querySelector("#adminEmailInput");
+          const passwordInput = roleCodesModal.querySelector("#adminPasswordInput");
+          if (emailInput || passwordInput) {
+            try {
+              await livePalmesAdminAuth?.signIn?.(emailInput?.value, passwordInput?.value);
+              await openAuthenticatedAdminAction(action);
+            } catch (error) {
+              console.error(error);
+              window.alert(`Connexion admin impossible : ${error?.message || error}`);
+            }
+            return;
+          }
+          const code = String(roleCodesModal.querySelector("#roleCodeAdminInput")?.value || "").trim();
+          if (!livePalmesAdminAuth?.legacyAdminPinFallbackEnabled?.() || code !== ADMIN_PIN) {
+            window.alert("Acces admin refuse.");
+            return;
+          }
+          await openAuthenticatedAdminAction(action);
           return;
         }
         const pinButton = event.target.closest("[data-confirm-role-pin]");
         if (pinButton) {
           const role = pinButton.dataset.confirmRolePin;
           const code = String(roleCodesModal.querySelector("#rolePinInput")?.value || "").trim();
-          if (code === ADMIN_PIN) {
+          if (livePalmesAdminAuth?.isAdminAuthenticated?.() || (livePalmesAdminAuth?.legacyAdminPinFallbackEnabled?.() && code === ADMIN_PIN)) {
             finishRolePin({ allowed: true, adminBypass: true });
           } else if (code === currentRolePins()[role]) {
             unlockRole(role);
@@ -275,7 +307,8 @@
       roleCodesModal?.addEventListener("keydown", (event) => {
         if (event.key !== "Enter") return;
         const adminInput = event.target?.closest("#roleCodeAdminInput");
-        if (adminInput) {
+        const adminAuthInput = event.target?.closest("#adminEmailInput, #adminPasswordInput");
+        if (adminInput || adminAuthInput) {
           event.preventDefault();
           roleCodesModal.querySelector("[data-confirm-role-code-admin]")?.click();
           return;

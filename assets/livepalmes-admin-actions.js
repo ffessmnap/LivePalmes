@@ -8,6 +8,7 @@
       formatAlertDateTime,
       historyArchivesCollection,
       initFirebaseSync,
+      livePalmesAdminAuth,
       livePalmesAdminModals,
       normalizeData,
       pinLockEnabled,
@@ -35,6 +36,7 @@
         roleCodesModal.hidden = false;
         roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesModalHtml({
           active,
+          adminAuthStatus: livePalmesAdminAuth?.status?.(),
           diagnosticsEnabled: getState().role === "computer",
           pins,
           roles: roleOrder.map((role) => ({ role, label: ROLE_LABELS[role] }))
@@ -47,9 +49,14 @@
         const title = action === "reset" ? "Confirmer le RAZ" : "Code administrateur";
         const help = action === "reset"
           ? "Entre le code administrateur pour archiver puis remettre l'historique à zéro."
-          : "Entre le code administrateur pour modifier les codes des consoles.";
-        roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesAdminModalHtml({ action, help, title });
-        roleCodesModal.querySelector("#roleCodeAdminInput")?.focus();
+          : "Connecte-toi comme administrateur pour modifier les codes des consoles.";
+        roleCodesModal.innerHTML = livePalmesAdminModals.renderRoleCodesAdminModalHtml({
+          action,
+          adminAuthStatus: livePalmesAdminAuth?.status?.(),
+          help,
+          title
+        });
+        roleCodesModal.querySelector("#adminEmailInput, #roleCodeAdminInput")?.focus();
       }
       
       function renderResetHistoryModal() {
@@ -211,6 +218,10 @@
       }
       
       async function toggleRoleLock() {
+        if (livePalmesAdminAuth?.isAdminAuthenticated?.()) {
+          renderRoleCodesModal();
+          return;
+        }
         renderRoleCodesAdminModal();
       }
       

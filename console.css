@@ -1374,6 +1374,43 @@
   min-height: 34px;
 }
 
+.admin-auth-chip {
+  align-items: center;
+  background: #ecfdf3;
+  border: 1px solid #9be7b2;
+  border-radius: 8px;
+  color: #087a36;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 0.35rem 0.55rem;
+}
+
+.admin-auth-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-auth-status-box,
+.admin-auth-warning {
+  background: #f6fbff;
+  border: 1px solid #cddce6;
+  border-radius: 8px;
+  color: #324b5c;
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.admin-auth-warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+  font-weight: 800;
+}
+
 .technical-diagnostic-section {
   display: grid;
   gap: 5px;

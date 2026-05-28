@@ -174,8 +174,8 @@ function buildPage(source, page) {
   );
   html = replaceOne(
     html,
-    /(\s+)<script src="https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.5\/firebase-app-compat\.js"><\/script>/,
-    `$1<script>window.LivePalmesDedicatedRole = "${page.role}";</script>$1<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>`,
+    /<script>window\.LivePalmesDedicatedRole = "";<\/script>/,
+    `<script>window.LivePalmesDedicatedRole = "${page.role}";</script>`,
     "dedicated role script"
   );
   (roleScriptExclusions[page.role] || []).forEach((scriptPath) => {

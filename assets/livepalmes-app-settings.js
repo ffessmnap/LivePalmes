@@ -14,6 +14,7 @@
       FIRESTORE_COMPETITION_ID: config.firestoreCompetitionId || "livepalmes-active",
       SPEAKER_SHEET_ID: config.speakerSheetId || "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA",
       ADMIN_PIN: config.adminPin || "2216!",
+      ADMIN_AUTH_CONFIG: config.adminAuth || { adminUids: [], adminEmails: [], legacyAdminPinFallback: true },
       ROLE_PINS: config.rolePins || { live: "0000", speaker: "0001", referee: "0002", video: "0003", computer: "0004", secretary: "0005" },
       ROLE_LABELS: {
         speaker: "Speaker",

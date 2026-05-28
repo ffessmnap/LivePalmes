@@ -7,10 +7,12 @@ require(path.join(__dirname, "..", "assets", "livepalmes-time.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-people.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-result-parser.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-workflow.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-speaker-info.js"));
 
 const parser = global.LivePalmesResultParser;
 const time = global.LivePalmesTime;
 const people = global.LivePalmesPeople;
+const speakerInfo = global.LivePalmesSpeakerInfo;
 
 function splitImportedPersonName(value) {
   const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
@@ -184,6 +186,21 @@ function testFinalResultRowMatchesLegacyFinalStage() {
   assert.equal(result?.id, "result-50ap-h-finale-a");
 }
 
+function testSpeakerInfoHandlesEmptyEncodedCells() {
+  const rows = [
+    ["REN", "Meeting 2026", "", "Paris, France"],
+    ["NAG", "DURAND", "Emma", "01/01/2010", "F", "CLUB", "", "50sf", "00:40.00", undefined, "", "", "", "", "", undefined]
+  ];
+  const sources = speakerInfo.parseSeedSourceSheet(rows, {
+    fixPdfEncoding: (value) => (typeof value === "undefined" ? undefined : String(value)),
+    normalizePersonName: people.normalizePersonName,
+    timeToMs: time.timeToMs
+  });
+
+  assert.equal(sources.get("50sf|F|durand|emma|2010|F|40000"), "Paris 2026");
+  assert.equal(sources.get("50sf|F|durand emma|40000"), "Paris 2026");
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
@@ -197,7 +214,8 @@ function testFinalResultRowMatchesLegacyFinalStage() {
   testNonSelectableRowsDoNotDuplicateRankedResults,
   testFinalPerformanceStageAndStatus,
   testResultParserFallbacksIgnoreInvalidHelpers,
-  testFinalResultRowMatchesLegacyFinalStage
+  testFinalResultRowMatchesLegacyFinalStage,
+  testSpeakerInfoHandlesEmptyEncodedCells
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");
