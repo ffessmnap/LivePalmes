@@ -79,6 +79,9 @@ function testStatusRows() {
   const abd = parser.parseResultStatusRow("5 DURAND Emma 11 CAD * CLUB abandon", parserOptions);
   assert.equal(abd.resultStatus, "ab");
   assert.equal(abd.statusLabel, "ABD");
+
+  const nonSelectable = parser.parseResultStatusRow("14 NS 2 PINO ALAMOS Pilar 95 CSAKB non selectionnable", parserOptions);
+  assert.equal(nonSelectable, null);
 }
 
 function testIntermediateTimesKeepFinalTime() {
@@ -112,6 +115,19 @@ function testFinalistsAreSplitBetweenAAndB() {
   assert.equal(parsed.finalists.a[0].rank, 1);
   assert.equal(parsed.finalists.b[0].rank, 9);
   assert.equal(parsed.nextUnqualified.length, 2);
+}
+
+function testNonSelectableRowsDoNotDuplicateRankedResults() {
+  const parsed = parser.parseFinalistsFromResultLines([
+    "2 PINO ALAMOS Pilar 95 SEN * CSAKB 14:13.70",
+    "14 NS 2 PINO ALAMOS Pilar 95 SEN * CSAKB",
+    "3 CORTES SUAREZ Juana Andrea 98 SEN * CSAKB 14:37.88",
+    "15 NS 3 CORTES SUAREZ Juana Andrea 98 SEN * CSAKB"
+  ], parserOptions);
+
+  assert.equal(parsed.ranking.length, 2);
+  assert.equal(parsed.ranking[0].displayName, "PINO ALAMOS Pilar");
+  assert.equal(parsed.ranking[1].displayName, "CORTES SUAREZ Juana Andrea");
 }
 
 function testFinalPerformanceStageAndStatus() {
@@ -178,6 +194,7 @@ function testFinalResultRowMatchesLegacyFinalStage() {
   testIntermediateTimesKeepFinalTime,
   testPartialUnrankedResultKeepsTime,
   testFinalistsAreSplitBetweenAAndB,
+  testNonSelectableRowsDoNotDuplicateRankedResults,
   testFinalPerformanceStageAndStatus,
   testResultParserFallbacksIgnoreInvalidHelpers,
   testFinalResultRowMatchesLegacyFinalStage

@@ -566,7 +566,7 @@
         ? `<a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id)}" target="_blank" rel="noopener">PDF</a>`
         : "";
       const html = `
-        <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog" role="dialog" aria-modal="true" aria-label="Detail du resultat">
+        <div class="decision-dialog alert-detail-dialog final-withdrawal-dialog result-detail-dialog" role="dialog" aria-modal="true" aria-label="Detail du resultat">
           <div class="decision-modal-head">
             <div>
               <span>Bureau des performances</span>
