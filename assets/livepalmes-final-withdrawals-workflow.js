@@ -460,8 +460,19 @@
 
   function resultDetailRows(result) {
     const rankingRows = Array.isArray(result?.ranking) ? result.ranking : [];
-    if (rankingRows.length) return rankingRows;
-    return Array.isArray(result?.performances) ? result.performances : [];
+    const sourceRows = rankingRows.length ? rankingRows : (Array.isArray(result?.performances) ? result.performances : []);
+    return [...sourceRows].sort((a, b) => {
+      if (result?.isPartial) {
+        return resultDetailTimeValue(a) - resultDetailTimeValue(b) ||
+          resultDetailRowName(a).localeCompare(resultDetailRowName(b), "fr");
+      }
+      if (resultDetailIsFinalStage(result?.stage)) {
+        return Number(a.sourceIndex ?? 9999) - Number(b.sourceIndex ?? 9999) ||
+          Number(a.rank || 9999) - Number(b.rank || 9999);
+      }
+      return Number(a.rank || 9999) - Number(b.rank || 9999) ||
+        Number(a.sourceIndex ?? 9999) - Number(b.sourceIndex ?? 9999);
+    });
   }
 
   function resultDetailRowName(row) {
@@ -476,30 +487,67 @@
     return String(row?.statusLabel || row?.time || "").trim();
   }
 
+  function resultDetailTimeValue(row) {
+    const text = String(row?.time || "").trim();
+    if (!text) return Number.POSITIVE_INFINITY;
+    const parts = text.split(":");
+    const last = parts.pop() || "0";
+    const seconds = Number(last.replace(",", "."));
+    if (!Number.isFinite(seconds)) return Number.POSITIVE_INFINITY;
+    const minutes = parts.length ? Number(parts.pop() || 0) : 0;
+    const hours = parts.length ? Number(parts.pop() || 0) : 0;
+    return (hours * 3600 + minutes * 60 + seconds) * 1000;
+  }
+
+  function resultDetailIsFinalStage(stage) {
+    return String(stage || "").toLowerCase().includes("final");
+  }
+
   function renderResultDetailRows(title, rows = [], options = {}) {
     if (!rows.length) return "";
     const ordered = options.ordered !== false;
-    const tag = ordered ? "ol" : "ul";
     const items = rows.map((row, index) => {
       const rank = row.rank || (ordered ? index + 1 : "");
-      const valueAttr = ordered && rank ? ` value="${escapeHtml(rank)}"` : "";
-      const meta = [row.club, row.birthYear].filter(Boolean).join(" - ");
+      const meta = [row.club, row.birthYear ? `(${row.birthYear})` : ""].filter(Boolean).join(" ");
       const value = resultDetailRowValue(row);
       return `
-        <li${valueAttr}>
-          <span>${escapeHtml(resultDetailRowName(row))}${meta ? ` <small>${escapeHtml(meta)}</small>` : ""}</span>
-          ${value ? `<strong>${escapeHtml(value)}</strong>` : ""}
+        <li class="${row.resultStatus || row.status ? "status-row" : ""}">
+          <span class="admin-result-rank">${rank ? escapeHtml(rank) : ""}</span>
+          <span class="admin-result-name">${escapeHtml(resultDetailRowName(row))}</span>
+          <span class="admin-result-meta">${escapeHtml(meta)}</span>
+          <strong class="admin-result-time">${escapeHtml(value || "")}</strong>
         </li>
       `;
     }).join("");
     return `
-      <div class="final-withdrawal-group">
-        <h3>${escapeHtml(title)}</h3>
-        <${tag} class="final-withdrawal-list">
+      <div class="admin-result-ranking-group">
+        <strong>${escapeHtml(title)}</strong>
+        <ul class="admin-result-ranking-list">
           ${items}
-        </${tag}>
+        </ul>
       </div>
     `;
+  }
+
+  function resultDetailGroups(result, rows = []) {
+    if (!resultDetailIsFinalStage(result?.stage)) {
+      return [{ title: result.isPartial ? "Resultat partiel" : "Resultats de la course", rows }];
+    }
+    if (rows.length <= 8) {
+      const phase = String(result.phaseLabel || "").trim();
+      const title = /finale\s+[ab]/i.test(phase)
+        ? `Resultats ${phase}`
+        : (String(result.stage || "").toLowerCase().includes("b") ? "Resultats Finale B" : "Resultats Finale A");
+      return [{ title, rows }];
+    }
+    const byRankA = rows.filter((row) => Number(row.rank || 0) >= 1 && Number(row.rank || 0) <= 8);
+    const byRankB = rows.filter((row) => Number(row.rank || 0) >= 9 && Number(row.rank || 0) <= 16);
+    const finalA = byRankA.length ? byRankA : rows.slice(0, 8);
+    const finalB = byRankB.length ? byRankB : rows.slice(8, 16);
+    return [
+      { title: "Resultats Finale A", rows: finalA },
+      { title: "Resultats Finale B", rows: finalB }
+    ].filter((group) => group.rows.length);
   }
 
   function openResultDetailsModal(resultId) {
@@ -507,13 +555,9 @@
     if (!result || !alertDetailModal) return;
     try {
       const rows = resultDetailRows(result);
-      const hasFinalRows = Boolean(result?.hasFinal && rows.length > 8);
-      const rowsHtml = hasFinalRows
-        ? [
-          renderResultDetailRows("Finale A", rows.slice(0, 8)),
-          renderResultDetailRows("Finale B", rows.slice(8, 16))
-        ].join("")
-        : renderResultDetailRows(result.isPartial ? "Resultat partiel" : "Resultat de la course", rows, { ordered: !result.isPartial });
+      const rowsHtml = resultDetailGroups(result, rows)
+        .map((group) => renderResultDetailRows(group.title, group.rows, { ordered: !result.isPartial }))
+        .join("");
       const pdfLink = result.id
         ? `<a class="ghost-button compact confirm-button" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id)}" target="_blank" rel="noopener">PDF</a>`
         : "";
@@ -527,7 +571,9 @@
             </div>
             <button class="icon-button decision-close" type="button" data-close-alert-detail aria-label="Fermer">×</button>
           </div>
-          ${rowsHtml || `<p class="panel-subtitle">Aucun detail de resultat lu pour cette course.</p>`}
+          <div class="admin-result-ranking-modal">
+            ${rowsHtml || `<p class="panel-subtitle">Aucun detail de resultat lu pour cette course.</p>`}
+          </div>
           <div class="decision-actions">
             ${pdfLink}
             <button class="ghost-button" type="button" data-close-alert-detail>Fermer</button>
