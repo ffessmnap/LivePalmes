@@ -1,5 +1,6 @@
 (function () {
   const context = {};
+  let contextSource = {};
   let api;
   let activeCompetitionId;
   let alertPendingBreakdown;
@@ -427,24 +428,37 @@
     }
     return "";
   }
+
+  function selectedResultsAdminSession() {
+    return String(contextSource?.resultsAdminSession || resultsAdminSession || "");
+  }
+
+  function setResultsAdminSessionValue(value) {
+    resultsAdminSession = String(value || "");
+    context.resultsAdminSession = resultsAdminSession;
+    if (contextSource && Object.prototype.hasOwnProperty.call(contextSource, "resultsAdminSession")) {
+      contextSource.resultsAdminSession = resultsAdminSession;
+    }
+  }
   
   function ensureResultsAdminSession() {
     const sessions = resultSessions();
     if (!sessions.length) {
-      resultsAdminSession = "";
-      context.resultsAdminSession = resultsAdminSession;
+      setResultsAdminSessionValue("");
       return "";
     }
-    if (resultsAdminSession && sessions.some((session) => session.number === resultsAdminSession)) {
-      return resultsAdminSession;
+    const selectedSession = selectedResultsAdminSession();
+    if (selectedSession && sessions.some((session) => session.number === selectedSession)) {
+      setResultsAdminSessionValue(selectedSession);
+      return selectedSession;
     }
     const speakerSession = roleStates.speaker?.session && roleStates.speaker.session !== "all" ? String(roleStates.speaker.session) : "";
     const currentSession = state.session && state.session !== "all" ? String(state.session) : "";
     const latestSession = latestResultSession();
-    resultsAdminSession = [speakerSession, currentSession, latestSession, "1", sessions[0].number]
+    const fallbackSession = [speakerSession, currentSession, latestSession, "1", sessions[0].number]
       .find((candidate) => candidate && sessions.some((session) => session.number === candidate)) || sessions[0].number;
-    context.resultsAdminSession = resultsAdminSession;
-    return resultsAdminSession;
+    setResultsAdminSessionValue(fallbackSession);
+    return fallbackSession;
   }
   
   function resultProgramRows(sessionNumber = "") {
@@ -727,8 +741,9 @@
   };
 
   function useContext(nextContext = {}) {
+    contextSource = nextContext || {};
     Object.keys(context).forEach((key) => { delete context[key]; });
-    Object.assign(context, nextContext || {});
+    Object.assign(context, contextSource);
     activeCompetitionId = context.activeCompetitionId;
     alertPendingBreakdown = context.alertPendingBreakdown;
     alerts = context.alerts;
@@ -766,7 +781,7 @@
     resultPdfsCollection = context.resultPdfsCollection;
     resultUploadStates = context.resultUploadStates;
     resultsAdminPanel = context.resultsAdminPanel;
-    resultsAdminSession = context.resultsAdminSession;
+    resultsAdminSession = selectedResultsAdminSession();
     roleStates = context.roleStates;
     safeCountCollection = context.safeCountCollection;
     safeDocumentData = context.safeDocumentData;

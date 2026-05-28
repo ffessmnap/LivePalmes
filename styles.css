@@ -1676,12 +1676,12 @@ textarea {
 }
 
 #previousSeriesInlineBtn::before {
-  content: "Ã¢â€ Â";
+  content: "\2190";
   margin-right: 6px;
 }
 
 #nextSeriesInlineBtn::after {
-  content: "Ã¢â€ â€™";
+  content: "\2192";
   margin-left: 6px;
 }
 
