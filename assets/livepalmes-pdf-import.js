@@ -112,6 +112,7 @@
 
   function importedCategoryLabel(code) {
     const clean = String(code || "").toUpperCase();
+    if (clean.includes("MI")) return "Minime";
     if (clean.includes("CA")) return "Cadet";
     if (clean.includes("JU")) return "Junior";
     if (clean.includes("SE")) return "Senior";

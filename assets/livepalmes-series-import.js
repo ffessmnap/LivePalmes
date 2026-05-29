@@ -196,15 +196,25 @@
     let order = 0;
     const meet = parseImportedMeetMetadata(normalizedLines);
   
-    const titlePattern = /^(.+?) - Seniors (Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: M\s*eilleure s[eé]rie.*))?$/i;
-    const finalTitlePattern = /^(.+?) - (?:Seniors )?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
+    const titlePattern = /^(.+?) - (?:(Minimes|Seniors|Masters)\s+)?(Femmes|Hommes)(?:(?: - Finale\(s\).*)|(?: M\s*eilleure s[eé]rie.*))?$/i;
+    const finalTitlePattern = /^(.+?) - (?:(Minimes|Seniors|Masters)\s+)?(Femmes|Hommes|Mixte).*Finale.*?(?:Horaire indicatif : (\d{2}:\d{2}))?.*$/i;
     const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?: \((\d+)\))?/i;
-    const relayTitlePattern = /^(.+?) - (Femmes|Hommes|Mixte)(?: M\s*eilleure s[eé]rie.*)?$/i;
+    const relayTitlePattern = /^(.+?) - (?:(Minimes|Seniors|Masters)\s+)?(Femmes|Hommes|Mixte)(?: M\s*eilleure s[eé]rie.*)?$/i;
     const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?:\s+\((\d+)\))?/i;
     const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+(IN|NS))?$/i;
     const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
     const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
     const forfaitLinePattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+FORFAIT\s+([0-9:.]+)(.*)$/i;
+    const groupedEventId = (eventId, categoryGroup = "") => /^minimes$/i.test(String(categoryGroup || "")) ? `${eventId}-mi` : eventId;
+    const groupedEventInfo = (eventId, label, categoryGroup = "") => {
+      const event = importedEventInfo(eventId, label);
+      if (!/^minimes$/i.test(String(categoryGroup || ""))) return event;
+      return {
+        ...event,
+        id: groupedEventId(eventId, categoryGroup),
+        label: `${event.label} - Minimes`
+      };
+    };
   
     const updateSessionFromLabel = (label) => {
       const cleanLabel = fixPdfEncoding(label);
@@ -242,14 +252,14 @@
   
       const finalTitleMatch = line.match(finalTitlePattern);
       if (finalTitleMatch) {
-        const [, rawLabel, sexText, startTime] = finalTitleMatch;
+        const [, rawLabel, categoryGroup, sexText, startTime] = finalTitleMatch;
         const label = fixPdfEncoding(rawLabel);
         const eventId = importedEventId(label);
         if (eventId) {
-          const event = importedEventInfo(eventId, label);
-          eventsById.set(eventId, event);
+          const event = groupedEventInfo(eventId, label, categoryGroup);
+          eventsById.set(event.id, event);
           pendingFinal = {
-            eventId,
+            eventId: event.id,
             sex: { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText],
             baseLabel: event.label,
             startTime: startTime || ""
@@ -297,7 +307,7 @@
       if (titleMatch) {
         pendingFinal = null;
         activeFinalContext = null;
-        const [, rawLabel, sexText] = titleMatch;
+        const [, rawLabel, categoryGroup, sexText] = titleMatch;
         const label = fixPdfEncoding(rawLabel);
         if (/Finale/i.test(line)) {
           current = null;
@@ -308,16 +318,16 @@
           current = null;
           return;
         }
-        const event = importedEventInfo(eventId, label);
-        eventsById.set(eventId, event);
+        const event = groupedEventInfo(eventId, label, categoryGroup);
+        eventsById.set(event.id, event);
         const sex = { Femmes: "F", Hommes: "M", Mixte: "X" }[sexText];
         const stage = /M\s*eilleure s[eé]rie/i.test(line) ? "meilleure-serie" : "series";
-        const programKeyValue = `${eventId}|${sex}|${currentSession.number}|series`;
+        const programKeyValue = `${event.id}|${sex}|${currentSession.number}|series`;
         if (!seenProgram.has(programKeyValue)) {
           order += 1;
           seenProgram.add(programKeyValue);
           program.push({
-            eventId,
+            eventId: event.id,
             sex,
             order,
             label: stage === "meilleure-serie" ? `${event.label} - Meilleure série` : event.label,
@@ -328,13 +338,13 @@
           });
         }
         current = {
-          eventId,
+          eventId: event.id,
           sex,
           series: null,
           seriesCount: null,
           heatOrder: null,
           startTime: "",
-          isRelay: isImportedRelayEvent(eventId),
+          isRelay: isImportedRelayEvent(event.id),
           session: currentSession.number,
           sessionLabel: currentSession.label,
           stage
