@@ -1,154 +1,25 @@
 (function attachLivePalmesPublicSwimmers(global) {
-  function cleanText(value) {
-    return String(value ?? "")
-      .replaceAll("ÃƒÆ’Ã‚Â©", "\u00e9")
-      .replaceAll("ÃƒÆ’Ã‚Â¨", "\u00e8")
-      .replaceAll("ÃƒÆ’Ã‚Âª", "\u00ea")
-      .replaceAll("ÃƒÆ’Ã‚Â«", "\u00eb")
-      .replaceAll("ÃƒÆ’ ", "\u00e0")
-      .replaceAll("ÃƒÆ’Ã‚Â¢", "\u00e2")
-      .replaceAll("ÃƒÆ’Ã‚Â¹", "\u00f9")
-      .replaceAll("ÃƒÆ’Ã‚Â»", "\u00fb")
-      .replaceAll("ÃƒÆ’Ã‚Â®", "\u00ee")
-      .replaceAll("ÃƒÆ’Ã‚Â¯", "\u00ef")
-      .replaceAll("ÃƒÆ’Ã‚Â´", "\u00f4")
-      .replaceAll("ÃƒÆ’Ã‚Â§", "\u00e7")
-      .replaceAll("ÃƒÂ©", "\u00e9")
-      .replaceAll("ÃƒÂ¨", "\u00e8")
-      .replaceAll("ÃƒÂª", "\u00ea")
-      .replaceAll("ÃƒÂ«", "\u00eb")
-      .replaceAll("Ãƒ ", "\u00e0")
-      .replaceAll("ÃƒÂ¢", "\u00e2")
-      .replaceAll("ÃƒÂ¹", "\u00f9")
-      .replaceAll("ÃƒÂ»", "\u00fb")
-      .replaceAll("ÃƒÂ®", "\u00ee")
-      .replaceAll("ÃƒÂ¯", "\u00ef")
-      .replaceAll("ÃƒÂ´", "\u00f4")
-      .replaceAll("ÃƒÂ§", "\u00e7")
-      .replace(/\bapn\s+e\b/gi, "apn\u00e9e")
-      .replace(/\br\s+sultats\b/gi, "r\u00e9sultats")
-      .replace(/\bcomp\s+tition\b/gi, "comp\u00e9tition");
-  }
-
-  function normalizeText(value) {
-    return cleanText(value)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-  }
-
-  function formatPersonNameParts(firstName, lastName, fallback = "") {
-    const last = cleanText(lastName).trim().toLocaleUpperCase("fr-FR");
-    const first = cleanText(firstName).trim();
-    return [last, first].filter(Boolean).join(" ").trim() || cleanText(fallback);
-  }
-
-  function sameCategory(a, b) {
-    return normalizeText(a) === normalizeText(b);
-  }
-
-  function categoryLabel(category, sex) {
-    if (sameCategory(category, "Cadet")) return sex === "F" ? "Cadette" : "Cadet";
-    if (sameCategory(category, "Junior")) return "Junior";
-    if (sameCategory(category, "Senior")) return "Senior";
-    return cleanText(category || "");
-  }
-
-  function sexLabel(sex) {
-    if (sex === "F") return "Femmes";
-    if (sex === "M") return "Hommes";
-    return "Mixte";
-  }
-
-  function eventLabel(events = [], eventId, fallback = "") {
-    return cleanText((Array.isArray(events) ? events : []).find((event) => event.id === eventId)?.label || fallback || eventId || "Course");
-  }
-
-  function programKey(row) {
-    return [row?.order, row?.session || "", row?.eventId, row?.sex, row?.stage || "series"].join("|");
-  }
-
-  function publicSessions(program = [], series = [], options = {}) {
-    const values = new Set([
-      ...(Array.isArray(program) ? program : []).map((row) => row.session),
-      ...(options.includeSeries ? (Array.isArray(series) ? series : []).map((row) => row.session) : [])
-    ].filter(Boolean));
-    return [...values].sort((a, b) => Number(a) - Number(b));
-  }
-
-  function rowStartTime(row, program = []) {
-    if (row?.startTime) return row.startTime;
-    const match = (Array.isArray(program) ? program : []).find((item) =>
-      item.eventId === row?.eventId &&
-      item.sex === row?.sex &&
-      (!row?.session || !item.session || item.session === row.session) &&
-      (!isFinalStage(item.stage) || item.stage === row?.stage)
-    );
-    return match?.startTime || "";
-  }
-
-  function categoryClass(category) {
-    if (sameCategory(category, "Cadet")) return "cat-cadet";
-    if (sameCategory(category, "Junior")) return "cat-junior";
-    if (sameCategory(category, "Senior")) return "cat-senior";
-    return "cat-other";
-  }
-
-  function isFinalStage(stage) {
-    const value = String(stage || "");
-    return value === "finalA" || value === "finalB" || value.startsWith("finale");
-  }
-
-  function finalStageLabel(stage) {
-    const value = String(stage || "").toLowerCase();
-    if (value.includes("b")) return "Finale B";
-    if (value.includes("a")) return "Finale A";
-    return "Finale";
-  }
-
-  function isRelayRow(row) {
-    return /^4x/i.test(String(row?.eventId || row?.label || ""));
-  }
-
-  function comparableEventId(value) {
-    return normalizeText(value).replace(/\s+/g, "");
-  }
-
-  function eventSignature(value) {
-    const text = comparableEventId(value);
-    const distance = (text.match(/\d+x?\d*/i) || [""])[0];
-    const discipline = text
-      .replace(distance, "")
-      .replace(/metres?|m$/g, "")
-      .replace(/surface/g, "sf")
-      .replace(/apnee/g, "ap")
-      .replace(/immersion/g, "is")
-      .replace(/bipalmes?/g, "bi")
-      .replace(/[^a-z0-9]/g, "");
-    return `${distance}${discipline}`;
-  }
-
-  function recordEventMatches(recordEventId, eventId) {
-    const recordId = comparableEventId(recordEventId);
-    const raceId = comparableEventId(eventId);
-    if (recordId && raceId && recordId === raceId) return true;
-    const recordSig = eventSignature(recordEventId);
-    const raceSig = eventSignature(eventId);
-    return Boolean(recordSig && raceSig && recordSig === raceSig);
-  }
-
-  function birthYearLabel(row) {
-    const value = cleanText(row?.birthDate || row?.birthYear || "");
-    const match = value.match(/\b(19|20)\d{2}\b/);
-    return match ? match[0] : value;
-  }
-
-  function swimmerKey(row) {
-    if (row?.swimmerId) return `id:${row.swimmerId}`;
-    return normalizeText([row?.lastName, row?.firstName, row?.name, row?.displayName, row?.club].filter(Boolean).join("|"));
-  }
+  const {
+    birthYearLabel,
+    categoryClass,
+    categoryLabel,
+    cleanText,
+    comparableEventId,
+    eventLabel,
+    eventSignature,
+    finalStageLabel,
+    formatPersonNameParts,
+    isFinalStage,
+    isRelayRow,
+    normalizeText,
+    programKey,
+    publicSessions,
+    recordEventMatches,
+    rowStartTime,
+    sameCategory,
+    sexLabel,
+    swimmerKey
+  } = global.LivePalmesPublicSwimmerCore;
 
   function entrantForSeriesRow(row, entrants = []) {
     if (!row) return null;
@@ -221,129 +92,32 @@
     return normalizeText(row?.importedStatus || row?.status || row?.statusLabel || row?.note).includes("forfait");
   }
 
-  function performanceNameKey(row) {
-    const parts = [row?.lastName, row?.firstName].filter(Boolean);
-    return normalizeText(parts.length ? parts.join(" ") : (row?.displayName || row?.name || ""));
-  }
+  const publicPerformanceApi = global.LivePalmesPublicSwimmerPerformances.create({
+    birthYearLabel,
+    cleanText,
+    displaySeriesRow,
+    isFinalStage,
+    normalizeText,
+    recordEventMatches
+  });
 
-  function performanceClubKey(row) {
-    return normalizeText(row?.clubCode || row?.club || "");
-  }
-
-  function performanceDuplicateKey(performance) {
-    return [
-      performance?.eventId || "",
-      performance?.sex || "",
-      performance?.stage || "",
-      performance?.phaseLabel || "",
-      performanceNameKey(performance),
-      birthYearLabel(performance),
-      performanceClubKey(performance),
-      cleanText(performance?.time || ""),
-      cleanText(performance?.status || ""),
-      cleanText(performance?.statusLabel || "")
-    ].join("|");
-  }
-
-  function uniquePerformances(rows) {
-    const seen = new Set();
-    return rows.filter((performance) => {
-      const key = performanceDuplicateKey(performance);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  function allPublicPerformances(results = []) {
-    return (Array.isArray(results) ? results : []).flatMap((result) =>
-      (result.performances || []).map((performance) => ({
-        ...performance,
-        resultId: result.id || "",
-        eventId: performance.eventId || result.eventId,
-        eventLabel: performance.eventLabel || result.eventLabel,
-        sex: performance.sex || result.sex,
-        stage: performance.stage || result.stage,
-        phaseLabel: performance.phaseLabel || result.phaseLabel,
-        updatedAt: performance.updatedAt || result.updatedAt
-      }))
-    );
-  }
-
-  function performanceMatchesRow(performance, row, options = {}) {
-    row = displaySeriesRow(row, options.entrants || []);
-    if (/^4x/i.test(String(performance?.eventId || row.eventId || ""))) return false;
-    if (!recordEventMatches(performance?.eventId, row.eventId)) return false;
-    if (performance?.sex && row.sex && performance.sex !== row.sex) return false;
-    if (performanceNameKey(performance) !== performanceNameKey(row)) return false;
-    const performanceBirth = birthYearLabel(performance);
-    const rowBirth = birthYearLabel(row);
-    if (performanceBirth && rowBirth && performanceBirth !== rowBirth) return false;
-    const performanceClub = performanceClubKey(performance);
-    const rowClub = performanceClubKey(row);
-    if (performanceClub && rowClub && performanceClub !== rowClub) return false;
-    return true;
-  }
-
-  function performancesForProgramRow(row, options = {}) {
-    const performances = allPublicPerformances(options.results || [])
-      .filter((performance) => performanceMatchesRow(performance, row, options))
-      .sort((a, b) => {
-        const finalA = isFinalStage(a.stage) ? 1 : 0;
-        const finalB = isFinalStage(b.stage) ? 1 : 0;
-        return finalA - finalB || String(a.updatedAt || "").localeCompare(String(b.updatedAt || ""));
-      });
-    return uniquePerformances(performances);
-  }
-
-  function resultPdfLinksForProgramRow(row, performances = [], options = {}) {
-    const seen = new Set();
-    const results = options.results || [];
-    const programKey = options.programKey || (() => "");
-    const matches = performances
-      .map((performance) => results.find((result) => String(result.id || "") === String(performance.resultId || "")))
-      .filter(Boolean);
-    if (!matches.length) {
-      matches.push(...results.filter((result) =>
-        result.id &&
-        result.eventId === row.eventId &&
-        result.sex === row.sex &&
-        !isFinalStage(result.stage) &&
-        (
-          result.programKey === programKey(row) ||
-          result.raceKey === `${row.eventId || ""}|${row.sex || ""}`
-        )
-      ));
-    }
-    return matches.filter((result) => {
-      const key = result.id || result.programKey || result.raceKey;
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  function resultPdfLabel(result) {
-    if (isFinalStage(result?.stage)) return "PDF finale";
-    return "PDF";
-  }
-
-  function performancePhaseLabel(performance) {
-    if (!isFinalStage(performance?.stage)) return "Série";
-    if (performance?.phaseLabel) return cleanText(performance.phaseLabel);
-    return "Finale";
-  }
-
-  function performanceInlinePhaseLabel(performance) {
-    const label = performancePhaseLabel(performance);
-    const stage = String(performance?.stage || "").toLowerCase();
-    if (stage.includes("b")) return "finale B";
-    if (stage.includes("a")) return "finale A";
-    if (/^finale\s+[AB]$/i.test(label)) {
-      return label.replace(/^finale/i, "finale").replace(/\s+([ab])$/i, (_, letter) => ` ${letter.toUpperCase()}`);
-    }
-    return label.toLowerCase();
-  }
+  const {
+    allPublicPerformances,
+    performanceClubKey,
+    performanceDeltaLabel,
+    performanceDuplicateKey,
+    performanceInlinePhaseLabel,
+    performanceMatchesRow,
+    performanceNameKey,
+    performancePhaseLabel,
+    performanceStatusLabel,
+    performanceValueLabel,
+    performancesForProgramRow,
+    resultPdfLabel,
+    resultPdfLinksForProgramRow,
+    timeToMs,
+    uniquePerformances
+  } = publicPerformanceApi;
 
   function finalSessionsForRace(eventId, sex, program = []) {
     return new Set((Array.isArray(program) ? program : [])
@@ -448,32 +222,6 @@
       .slice(0, options.limit || 8);
   }
 
-  function performanceStatusLabel(performance) {
-    const status = cleanText(performance?.status || performance?.resultStatus || "").toLowerCase();
-    const label = cleanText(performance?.statusLabel || "").trim();
-    const normalizedLabel = normalizeText(label);
-    if (status === "dsq" || /\b(dsq|dq|disqual)/.test(normalizedLabel)) return "DSQ";
-    if (status === "ab" || /\b(ab|abd|dnf|abandon)\b/.test(normalizedLabel)) return "ABD";
-    if (status === "dns" || /\b(dns|ns|abs|absent|forfait)\b/.test(normalizedLabel)) return "Forfait";
-    return label;
-  }
-
-  function performanceValueLabel(performance) {
-    return cleanText(performanceStatusLabel(performance) || performance?.time || "-");
-  }
-
-  function timeToMs(value) {
-    const text = String(value || "").trim();
-    const parts = text.split(":");
-    if (!text) return Number.POSITIVE_INFINITY;
-    if (parts.length === 2) {
-      const ms = (Number(parts[0]) * 60 + Number(parts[1].replace(",", "."))) * 1000;
-      return Number.isFinite(ms) ? ms : Number.POSITIVE_INFINITY;
-    }
-    const ms = Number(text.replace(",", ".")) * 1000;
-    return Number.isFinite(ms) ? ms : Number.POSITIVE_INFINITY;
-  }
-
   function formatPublicDateTime(value) {
     if (!value) return "";
     const date = new Date(value);
@@ -569,17 +317,6 @@
     if (!remote?.sourceVersion) return false;
     if (!index?.sourceVersion) return true;
     return remote.sourceVersion !== index.sourceVersion;
-  }
-
-  function performanceDeltaLabel(performance, referenceTime, referenceLabel = "") {
-    if (performance?.status || !performance?.time || !referenceTime) return "";
-    const performanceMs = timeToMs(performance.time);
-    const referenceMs = timeToMs(referenceTime);
-    if (!Number.isFinite(performanceMs) || !Number.isFinite(referenceMs)) return "";
-    const delta = (performanceMs - referenceMs) / 1000;
-    if (!Number.isFinite(delta)) return "";
-    const sign = delta >= 0 ? "+" : "-";
-    return `${sign}${Math.abs(delta).toFixed(2).replace(".", ",")}s${referenceLabel ? ` / ${referenceLabel}` : ""}`;
   }
 
   function escapeHtmlFallback(value) {
