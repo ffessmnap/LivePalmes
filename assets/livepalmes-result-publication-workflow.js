@@ -5,6 +5,7 @@
       compactRaceTitle,
       createFinalistReplacementSpeakerAlert,
       deleteFinalResultAlerts,
+      ensureComputerWriteAccess,
       extractPdfLines,
       finalRowKey,
       finalistRowName,
@@ -206,6 +207,9 @@
       }
       
       async function publishResultPdf(file, row, hasFinal, isPartial = false, options = {}) {
+        if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+          throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
+        }
         const collection = resultsCollection();
         if (!collection) throw new Error("Firebase n'est pas disponible pour publier ce résultat.");
         const now = new Date().toISOString();

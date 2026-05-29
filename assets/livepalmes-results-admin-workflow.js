@@ -15,6 +15,7 @@
   let deleteFinalResultAlerts;
   let deleteResultPdfPayload;
   let emptyPresenceCounts;
+  let ensureComputerWriteAccess;
   let escapeHtml;
   let finalCompositionIsDefinitive;
   let finalCompositionPendingDeadlineLabel;
@@ -112,6 +113,10 @@
   }
   
   async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
+    if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+      if (strict) throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
+      return;
+    }
     const doc = publicResultsIndexDocument();
     if (!doc) return;
     try {
@@ -243,6 +248,9 @@
   }
   
   async function publishPublicSeriesPdf(file, mode = "session", session = "") {
+    if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+      throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
+    }
     const collection = seriesPdfsCollection();
     if (!collection || !file) return null;
     const scope = mode === "full" ? "full" : "session";
@@ -308,6 +316,9 @@
   }
   
   async function publishSessionResultsPdf(file, scope = "session", sessions = []) {
+    if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+      throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
+    }
     const collection = sessionResultsPdfsCollection();
     if (!collection || !file) throw new Error("Firebase n'est pas disponible pour publier ce PDF.");
     const cleanSessions = typeof livePalmesAdminMaintenance.normalizeSessionList === "function"
@@ -573,6 +584,7 @@
     deleteFinalResultAlerts = context.deleteFinalResultAlerts;
     deleteResultPdfPayload = context.deleteResultPdfPayload;
     emptyPresenceCounts = context.emptyPresenceCounts;
+    ensureComputerWriteAccess = context.ensureComputerWriteAccess;
     escapeHtml = context.escapeHtml;
     finalCompositionIsDefinitive = context.finalCompositionIsDefinitive;
     finalCompositionPendingDeadlineLabel = context.finalCompositionPendingDeadlineLabel;

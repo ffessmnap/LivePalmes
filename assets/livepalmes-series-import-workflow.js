@@ -7,6 +7,7 @@
       clearHistoryAndAlertsForFullImport,
       clearPublishedResults,
       clearPublicSeriesPdfs,
+      ensureComputerWriteAccess,
       eventSignature,
       formatName,
       importedSeriesTime,
@@ -275,6 +276,9 @@
           });
           applyFreshData(nextData, true);
           try {
+            if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+              throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
+            }
             if (mode === "full") {
               await clearPublicSeriesPdfs();
             }
@@ -292,8 +296,17 @@
               : "";
             const publicPdfText = publishedSeriesPdf ? ` PDF public des séries mis à jour.` : "";
             window.alert(`${mode === "full" ? "PDF général publié" : "Session publiée"} : ${parsed.program.length} courses, ${parsed.series.length} lignes.${sessionText}${clearedText}${historyText}${publicPdfText}`);
-          } catch {
-            window.alert(`Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication. Il faut élargir les règles Firestore pour liveData.`);
+          } catch (error) {
+            console.error("Publication Firebase des séries impossible", error);
+            const details = [error?.code, error?.message].filter(Boolean).join(" - ") || String(error || "");
+            window.alert([
+              `Séries chargées sur cet appareil (${parsed.program.length} courses, ${parsed.series.length} lignes), mais Firebase n'a pas accepté la publication.`,
+              "",
+              "Cause probable : la console bureau des performances n'a pas de droit serveur actif, ou une règle Firestore bloque l'écriture.",
+              details ? `Détail Firebase : ${details}` : "",
+              "",
+              "Reconnecte la console bureau des performances avec son code PIN, puis relance l'import."
+            ].filter(Boolean).join("\n"));
           }
         } catch (error) {
           console.error(error);

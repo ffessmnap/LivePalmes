@@ -142,7 +142,7 @@
           if (!ok) return;
           try {
             await publishPublicResultsIndex({ silent: true, strict: true });
-            const archive = await archiveCurrentResults?.("Archive publique de la compétition");
+            const archive = await archiveCurrentResults?.("Archive publique de la compétition", undefined, { publicArchive: true });
             if (!archive?.id) {
               window.alert("Aucun résultat publié à archiver pour le moment.");
               return;
@@ -284,7 +284,7 @@
             window.alert("Suppression réservée à l'administrateur général.");
             return;
           }
-          const ok = window.confirm("Supprimer définitivement cette archive de résultats ?");
+          const ok = window.confirm("Supprimer définitivement cette archive de résultats ?\n\nSi elle est visible dans les archives publiques, elle disparaîtra aussi de la page Archives.");
           if (!ok) return;
           const collection = resultArchivesCollection();
           if (!collection || !context.firestoreDb) return;

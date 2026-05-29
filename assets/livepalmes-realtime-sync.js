@@ -97,6 +97,21 @@
         context.resultsUnsubscribe = null;
       }
 
+      async function ensureFirebaseConsoleAuth() {
+        const auth = window.firebase?.auth ? window.firebase.auth() : null;
+        if (!auth?.signInAnonymously) return false;
+        try {
+          if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
+            await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
+          }
+          if (!auth.currentUser) await auth.signInAnonymously();
+          return Boolean(auth.currentUser);
+        } catch (error) {
+          console.warn("Connexion Firebase console anonyme impossible", error);
+          return false;
+        }
+      }
+
       function applyResultsRows(rows = []) {
         context.raceResults = rows.map(resultWithoutPdf);
         context.resultsSnapshotReady = true;
@@ -107,6 +122,20 @@
         migrateResultPdfsOutOfResults(rows).catch((error) => {
           console.warn("Migration des PDF resultats impossible", error);
         });
+      }
+
+      function mergePendingLocalAlerts(rows = []) {
+        const serverRows = Array.isArray(rows) ? rows : [];
+        const pending = context.pendingLocalAlerts instanceof Map ? context.pendingLocalAlerts : null;
+        if (!pending?.size) return serverRows;
+        const serverIds = new Set(serverRows.map((alert) => alert.id).filter(Boolean));
+        serverIds.forEach((id) => pending.delete(id));
+        if (!pending.size) return serverRows;
+        const merged = [...serverRows];
+        pending.forEach((alert, id) => {
+          if (!serverIds.has(id)) merged.unshift(alert);
+        });
+        return merged.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
       }
 
       function applyResultsSnapshot(snapshot) {
@@ -180,7 +209,7 @@
       async function applyAlertsRestFallback(showMessage = false) {
         const rows = await fetchAlertsWithRestFallback();
         if (!rows) return false;
-        context.alerts = rows;
+        context.alerts = mergePendingLocalAlerts(rows);
         saveAlerts();
         context.firebaseStatus = "manual";
         render();
@@ -198,7 +227,7 @@
         ]);
         let hasFreshData = false;
         if (alertsResult.status === "fulfilled" && alertsResult.value) {
-          context.alerts = alertsResult.value;
+          context.alerts = mergePendingLocalAlerts(alertsResult.value);
           saveAlerts();
           hasFreshData = true;
         }
@@ -238,12 +267,12 @@
           .onSnapshot((snapshot) => {
             context.firestoreReady = true;
             context.firebaseStatus = "connected";
-            context.alerts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            context.alerts = mergePendingLocalAlerts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
             saveAlerts();
             if (!context.alerts.length) {
               fetchAlertsWithRestFallback().then((rows) => {
                 if (!rows?.length) return;
-                context.alerts = rows;
+                context.alerts = mergePendingLocalAlerts(rows);
                 saveAlerts();
                 render();
               }).catch((error) => {
@@ -316,10 +345,10 @@
         if (alertResult.status === "fulfilled") {
           context.firestoreReady = true;
           const loadedAlerts = alertResult.value.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-          context.alerts = loadedAlerts;
+          context.alerts = mergePendingLocalAlerts(loadedAlerts);
           if (!loadedAlerts.length) {
             const fallbackAlerts = await fetchAlertsWithRestFallback();
-            if (fallbackAlerts?.length) context.alerts = fallbackAlerts;
+            if (fallbackAlerts?.length) context.alerts = mergePendingLocalAlerts(fallbackAlerts);
           }
           saveAlerts();
           hasFreshData = true;
@@ -327,7 +356,7 @@
           console.warn("Actualisation des alertes Firebase impossible", alertResult.reason);
           const fallbackAlerts = await fetchAlertsWithRestFallback();
           if (fallbackAlerts) {
-            context.alerts = fallbackAlerts;
+            context.alerts = mergePendingLocalAlerts(fallbackAlerts);
             saveAlerts();
             hasFreshData = true;
           }
@@ -390,7 +419,9 @@
             window.firebase.initializeApp(FIREBASE_CONFIG);
           }
           context.firestoreDb = window.firebase.firestore();
-          startCompetitionSync();
+          ensureFirebaseConsoleAuth().finally(() => {
+            startCompetitionSync();
+          });
         } catch (error) {
           console.warn("Initialisation Firebase impossible", error);
           refreshFirebaseFromRest(false).catch((fallbackError) => {

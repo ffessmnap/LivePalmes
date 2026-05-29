@@ -58,7 +58,7 @@
   }
 
   function seedSourceLookupKeys(row) {
-    return callDependency("seedSourceLookupKeys", (input = {}) => {
+    const fallback = (input = {}) => {
       const eventId = input.eventId || "";
       const sex = input.sex || "";
       const seedTime = seedSourceTimeKey(input.seedTime || "");
@@ -68,7 +68,13 @@
         `${eventId}|${sex}|${swimmerId}|${seedTime}`,
         `${eventId}|${sex}|${name}|${seedTime}`
       ].filter((key) => !key.includes("undefined"));
-    }, row);
+    };
+    try {
+      const keys = typeof context.seedSourceLookupKeys === "function" ? context.seedSourceLookupKeys(row || {}) : fallback(row || {});
+      return Array.isArray(keys) ? keys : fallback(row || {});
+    } catch {
+      return fallback(row || {});
+    }
   }
 
   function normalizeClubMatch(value) {
@@ -629,9 +635,12 @@
   }
   
   function applySpeakerInfoToEntrants(entrants, seedSources, clubs) {
-    return entrants.map((entrant) => {
-      const seedSource = seedSourceLookupKeys(entrant).map((key) => seedSources.get(key)).find(Boolean);
-      const clubName = clubs.get(String(entrant.clubCode || "").toUpperCase());
+    const sourceEntrants = Array.isArray(entrants) ? entrants : [];
+    const sourceSeedSources = seedSources instanceof Map ? seedSources : new Map();
+    const sourceClubs = clubs instanceof Map ? clubs : new Map();
+    return sourceEntrants.map((entrant) => {
+      const seedSource = seedSourceLookupKeys(entrant).map((key) => sourceSeedSources.get(key)).find(Boolean);
+      const clubName = sourceClubs.get(String(entrant.clubCode || "").toUpperCase());
       return {
         ...entrant,
         seedSource: seedSource || entrant.seedSource || "",

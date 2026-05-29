@@ -7,6 +7,7 @@
       buildPublicResultsIndex,
       clearFirestoreAlerts,
       dsqReportRows,
+      ensureComputerWriteAccess,
       historyArchivesCollection,
       livePalmesExportActions,
       render,
@@ -65,6 +66,10 @@
     async function archiveCurrentHistory() {
       const rows = dsqReportRows();
       if (!rows.length) return null;
+      if (typeof ensureComputerWriteAccess === "function") {
+        const ready = await ensureComputerWriteAccess();
+        if (!ready) throw new Error("Connexion Firebase computer requise pour archiver le journal.");
+      }
       const collection = historyArchivesCollection();
       if (!collection) throw new Error("Firebase n'est pas disponible pour archiver l'historique.");
       const now = new Date();
@@ -80,7 +85,7 @@
       return archive;
     }
 
-    async function archiveCurrentResults(reason = "Archivage des r\u00e9sultats publics", sourceResults = getRaceResults()) {
+    async function archiveCurrentResults(reason = "Archivage des r\u00e9sultats publics", sourceResults = getRaceResults(), options = {}) {
       const sourceRows = Array.isArray(sourceResults) ? sourceResults : [];
       const rows = sourceRows.map(resultWithoutPdf);
       if (!rows.length) return null;
@@ -93,6 +98,7 @@
         createdAt: now.toISOString(),
         createdLabel: now.toLocaleString("fr-FR"),
         reason,
+        publicArchive: options.publicArchive === true,
         meet: getData().meet || {},
         count: rows.length,
         publicIndex: sanitizeAlertForFirestore(buildPublicResultsIndex())
