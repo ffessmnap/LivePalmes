@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LivePalmes records de France</title>
+    <link rel="stylesheet" href="public/styles.css?v=20260530-livepalmes-perf1" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">LivePalmes public &middot; Performances</p>
+        <h1>Records de France</h1>
+      </div>
+      <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="active" href="records.html">Records de France</a>
+        <a href="mpf.html">MPF</a>
+        <a href="tops.html">TOP</a>
+        <a href="nageur.html">Nageur</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="toolbar records-toolbar" aria-label="Filtres des records de France">
+        <div class="field">
+          <span>Rubrique</span>
+          <div class="segmented rf-segments" id="rfTypeFilter" role="group" aria-label="Rubrique">
+            <button type="button" class="segment active" data-type="RFJ" data-sex="M">RFJ Hommes</button>
+            <button type="button" class="segment" data-type="RFJ" data-sex="F">RFJ Femmes</button>
+            <button type="button" class="segment" data-type="RF" data-sex="M">RF Hommes</button>
+            <button type="button" class="segment" data-type="RF" data-sex="F">RF Femmes</button>
+          </div>
+        </div>
+        <label>
+          Course
+          <select id="courseFilter"></select>
+        </label>
+      </section>
+
+      <section class="records-shell">
+        <div class="table-head">
+          <div>
+            <h2 id="tableTitle">Records de France Juniors Hommes</h2>
+          </div>
+          <span id="cutoffText"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Temps</th>
+                <th>Nageur</th>
+                <th>Club</th>
+                <th>Lieu</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="public/data/records-data.js?v=20260530-last-update1"></script>
+    <script src="public/records.js?v=20260530-last-update1"></script>
+  </body>
+</html>
