@@ -126,7 +126,7 @@
             eventId,
             sex: section.sex,
             category: section.category,
-            label: `MPF M${String(section.category).match(/\d+/)?.[0] || ""}+`,
+            label: `MPF ${section.category}`,
             holder: String(holder || "").trim(),
             club: String(club || "").trim(),
             time: fallbackRecordTime(time),
