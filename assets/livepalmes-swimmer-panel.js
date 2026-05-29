@@ -427,7 +427,6 @@
       eventLabel,
       formatName,
       formatRank,
-      france2025: findFrance2025Results(swimmer),
       getBirthYearLabel,
       heldRecords: findAllRecordsHeldByEntrant(swimmer),
       internationalMedals: findInternationalMedals(swimmer),
@@ -505,6 +504,7 @@
   }
   
   function renderTop2025() {
+    if (!top2025Box) return;
     top2025Box.innerHTML = window.LivePalmesSwimmerTop2025View.render({
       categoryClass,
       categoryLabel,

@@ -9,8 +9,6 @@
       escapeHtml,
       eventLabel,
       formatName,
-      formatRank,
-      france2025 = [],
       getBirthYearLabel,
       heldRecords = [],
       internationalMedals = [],
@@ -82,20 +80,6 @@
                 </div>
               `;
             }).join("")}
-          </div>
-        </div>
-      ` : ""}
-      ${france2025.length ? `
-        <div class="detail-section">
-          <h5>France 2025</h5>
-          <div class="compact-achievement-list france-compact">
-            ${france2025.map((row) => `
-              <div class="compact-achievement ${categoryClass(row.category)}">
-                <span><strong>${escapeHtml(formatRank(row.rank))}</strong> ${escapeHtml(categoryLabel(row.category, row.sex))}</span>
-                <span>${escapeHtml(eventLabel(row.eventId))}</span>
-                <span>${escapeHtml(row.time || "-")}</span>
-              </div>
-            `).join("")}
           </div>
         </div>
       ` : ""}

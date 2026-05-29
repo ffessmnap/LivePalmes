@@ -354,7 +354,7 @@ function consoleSyncOptions() {
     speakerAlertAlreadyResolvedByResult,
     state
   };
-  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "lastPresenceWriteAt", "pendingLocalAlerts", "presenceCounts", "raceResults", "unlockedRoles"]);
+  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "firestoreDb", "lastPresenceWriteAt", "pendingLocalAlerts", "presenceCounts", "raceResults", "unlockedRoles"]);
   return options;
 }
 

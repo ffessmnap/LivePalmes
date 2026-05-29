@@ -247,8 +247,9 @@
         context.alerts = alerts.filter((alert) => !(isFinalResultAlert(alert) && alert.resultId === resultId));
         saveAlerts();
         const collection = alertsCollection();
-        if (collection && context.firestoreDb) {
-          const batch = context.firestoreDb.batch();
+        const db = context.firestoreDb || collection?.firestore;
+        if (collection && db?.batch) {
+          const batch = db.batch();
           linkedAlerts.forEach((alert) => batch.delete(collection.doc(alert.id)));
           await batch.commit();
         }
@@ -301,9 +302,13 @@
         }
         const docs = snapshot.docs || [];
         if (!docs.length) return 0;
+        const db = context.firestoreDb || collection.firestore;
+        if (!db?.batch) {
+          throw new Error("Firebase n'est pas initialisé pour vider les alertes. Actualise le bureau des performances puis relance la RAZ.");
+        }
         try {
           for (let index = 0; index < docs.length; index += 450) {
-            const batch = context.firestoreDb.batch();
+            const batch = db.batch();
             docs.slice(index, index + 450).forEach((doc) => batch.delete(doc.ref));
             await batch.commit();
           }
@@ -315,22 +320,23 @@
       }
       
       async function deleteCollectionDocuments(collectionRef, { nestedItems = false } = {}) {
+        const db = context.firestoreDb || collectionRef?.firestore;
         if (typeof livePalmesAdminMaintenance.deleteCollectionDocuments === "function") {
-          return livePalmesAdminMaintenance.deleteCollectionDocuments(collectionRef, { firestoreDb: context.firestoreDb, nestedItems });
+          return livePalmesAdminMaintenance.deleteCollectionDocuments(collectionRef, { firestoreDb: db, nestedItems });
         }
-        if (!collectionRef || !context.firestoreDb) return 0;
+        if (!collectionRef || !db?.batch) return 0;
         const snapshot = await collectionRef.get();
         let deleted = 0;
         for (const doc of snapshot.docs) {
           if (nestedItems) {
             const items = await doc.ref.collection("items").get();
             if (!items.empty) {
-              const itemBatch = context.firestoreDb.batch();
+              const itemBatch = db.batch();
               items.docs.forEach((item) => itemBatch.delete(item.ref));
               await itemBatch.commit();
             }
           }
-          const batch = context.firestoreDb.batch();
+          const batch = db.batch();
           batch.delete(doc.ref);
           await batch.commit();
           deleted += 1;

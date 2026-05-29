@@ -3,7 +3,7 @@
     "appendImportHistory", "applyFreshData", "categoryLabel", "eventSignature",
     "fixPdfEncoding", "formatPersonNameParts", "importedEventId", "importedSeriesTime",
     "normalizeClubMatch", "normalizeData", "normalizePdfLabel", "normalizePersonName",
-    "publishLiveDataToFirestore", "renderDataStatus", "sameCategory", "seedSourceLookupKeys",
+    "ensureConsoleWriteAccess", "publishLiveDataToFirestore", "renderDataStatus", "sameCategory", "seedSourceLookupKeys",
     "shouldKeepRecord", "timeToMs"
   ];
   const stateKeys = ["data"];

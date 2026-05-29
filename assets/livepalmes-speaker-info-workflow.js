@@ -4,6 +4,7 @@
       appendImportHistory,
       applyFreshData,
       document,
+      ensureConsoleWriteAccess,
       eventSignature,
       fixPdfEncoding,
       formatPersonNameParts,
@@ -133,6 +134,9 @@
           }
         });
         applyFreshData(nextData, false);
+        if (typeof ensureConsoleWriteAccess === "function" && !await ensureConsoleWriteAccess()) {
+          throw new Error("Connexion Firebase console requise pour publier les repères.");
+        }
         await publishLiveDataToFirestore(nextData, "Infos speaker Google Sheets");
         window.alert(`Infos speaker mises \u00e0 jour : ${nextData.top2025.length} lignes France N-1, ${nextData.records.length} records, ${nextData.qualifications.length} qualifs, ${nextData.edfMembers.length} membres EDF, ${nextData.internationalMedals.length} rep\u00e8res internationaux, ${nextData.competitionStats.length} stats comp\u00e9tition, ${nextData.swimmerInfos.length} infos nageurs, ${attachedSeedSources} lieux rattach\u00e9s aux engag\u00e9s (${seedSources.size} rep\u00e8res trouv\u00e9s).`);
       } catch (error) {
