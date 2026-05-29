@@ -152,11 +152,28 @@
       function sanitizeAlertForFirestore(alert) {
         return livePalmesFirebase.sanitizeForFirestore(alert);
       }
+
+      function pendingLocalAlerts() {
+        if (!(context.pendingLocalAlerts instanceof Map)) context.pendingLocalAlerts = new Map();
+        return context.pendingLocalAlerts;
+      }
+
+      async function ensureFirebaseAuthForWrite() {
+        const auth = window.firebase?.auth ? window.firebase.auth() : null;
+        if (!auth?.signInAnonymously) return;
+        if (auth.currentUser) return;
+        if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
+          await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+        }
+        await auth.signInAnonymously();
+      }
       
       async function syncAlertToFirestore(alert) {
         const collection = alertsCollection();
         if (!collection || !alert?.id) return;
+        pendingLocalAlerts().set(alert.id, { ...alert });
         try {
+          await ensureFirebaseAuthForWrite();
           await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
         } catch (error) {
           console.warn("Synchronisation Firebase impossible", error);
@@ -167,13 +184,18 @@
       async function syncAlertToFirestoreStrict(alert) {
         const collection = alertsCollection();
         if (!collection || !alert?.id) throw new Error("Firebase n'est pas disponible.");
+        pendingLocalAlerts().set(alert.id, { ...alert });
+        await ensureFirebaseAuthForWrite();
         await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
       }
       
       async function syncAlertChangesToFirestore(alertId, changes) {
         const collection = alertsCollection();
         if (!collection || !alertId) return;
+        const currentAlert = alerts.find((alert) => alert.id === alertId);
+        if (currentAlert) pendingLocalAlerts().set(alertId, { ...currentAlert, ...changes });
         try {
+          await ensureFirebaseAuthForWrite();
           await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
         } catch (error) {
           console.warn("Synchronisation Firebase impossible", error);
@@ -184,6 +206,9 @@
       async function syncAlertChangesToFirestoreStrict(alertId, changes) {
         const collection = alertsCollection();
         if (!collection || !alertId) throw new Error("Firebase n'est pas disponible.");
+        const currentAlert = alerts.find((alert) => alert.id === alertId);
+        if (currentAlert) pendingLocalAlerts().set(alertId, { ...currentAlert, ...changes });
+        await ensureFirebaseAuthForWrite();
         await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
       }
       

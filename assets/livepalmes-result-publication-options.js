@@ -1,7 +1,7 @@
 (function attachLivePalmesResultPublicationOptions(global) {
   const functionKeys = [
     "buildPublicResultsIndex", "compactRaceTitle", "createFinalistReplacementSpeakerAlert",
-    "deleteFinalResultAlerts", "extractPdfLines", "fileToDataUrl", "finalRowKey",
+    "deleteFinalResultAlerts", "ensureComputerWriteAccess", "extractPdfLines", "fileToDataUrl", "finalRowKey",
     "finalistRowName", "fixPdfEncoding", "formatDisplayName", "importedBirthYear",
     "importedSeriesTime", "isFinalStage", "markAlertAlreadyClosedError", "markSpeakerAlertDoneLocally",
     "normalizePersonName", "programKey", "publishPublicResultsIndex", "raceOptionKey",

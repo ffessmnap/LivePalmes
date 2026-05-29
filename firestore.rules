@@ -68,16 +68,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
     }
 
+    function isAuthenticatedConsole() {
+      return request.auth != null;
+    }
+
     function canWriteConsole(competitionId) {
-      return isAdmin() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
+      return isAdmin() || isAuthenticatedConsole() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
     }
 
     function canWriteComputer(competitionId) {
-      return isAdmin() || isConsoleRole(competitionId, "computer") || isConsoleGrant(competitionId, "computer");
+      return canWriteConsole(competitionId);
     }
 
     function canWriteRole(competitionId, role) {
-      return isAdmin() || isConsoleRole(competitionId, role) || isConsoleGrant(competitionId, role);
+      return canWriteConsole(competitionId);
     }
 
     match /competitions/{competitionId} {
@@ -131,6 +135,9 @@ service cloud.firestore {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteConsole(competitionId)
+          && documentId == "current";
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteConsole(competitionId)
           && documentId == "current"
           && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
           && request.resource.data.data is map
@@ -142,6 +149,9 @@ service cloud.firestore {
 
       match /public/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId)
+          && documentId == "resultsIndex";
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && documentId == "resultsIndex"
@@ -184,6 +194,8 @@ service cloud.firestore {
       match /seriesPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -208,6 +220,8 @@ service cloud.firestore {
 
       match /sessionResultsPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
@@ -295,6 +309,8 @@ service cloud.firestore {
       match /historyArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -318,12 +334,15 @@ service cloud.firestore {
       match /resultArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
             "createdAt",
             "createdLabel",
             "reason",
+            "publicArchive",
             "meet",
             "count",
             "publicIndex"
@@ -333,6 +352,7 @@ service cloud.firestore {
           && validText(request.resource.data.createdAt, 40)
           && validOptionalText("createdLabel", 80)
           && validOptionalText("reason", 160)
+          && (!("publicArchive" in request.resource.data) || request.resource.data.publicArchive is bool)
           && request.resource.data.meet is map
           && request.resource.data.count is int
           && request.resource.data.publicIndex is map;
@@ -341,6 +361,8 @@ service cloud.firestore {
 
         match /items/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasAll([
@@ -369,6 +391,8 @@ service cloud.firestore {
 
         match /resultPdfs/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
@@ -399,6 +423,8 @@ service cloud.firestore {
         match /sessionResultsPdfs/{pdfId} {
           allow read: if isLivePalmesCompetition(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
               "id",
@@ -426,6 +452,8 @@ service cloud.firestore {
 
       match /resultPdfs/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
@@ -455,6 +483,8 @@ service cloud.firestore {
 
       match /results/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasAll([

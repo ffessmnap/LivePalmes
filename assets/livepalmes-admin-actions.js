@@ -290,32 +290,18 @@
         await livePalmesAdminAuth?.whenReady?.();
         if (livePalmesAdminAuth?.isAdminAuthenticated?.()) return true;
         const auth = window.firebase?.auth ? window.firebase.auth() : null;
-        const token = auth?.currentUser?.getIdTokenResult
-          ? await auth.currentUser.getIdTokenResult(true).catch(() => null)
-          : null;
-        const claims = token?.claims || {};
-        if (
-          claims.livepalmesConsole === true &&
-          claims.livepalmesCompetition === context.FIRESTORE_COMPETITION_ID &&
-          claims.livepalmesRole === "computer"
-        ) {
-          context.cloudAuthenticatedRoles = {
-            ...(context.cloudAuthenticatedRoles || {}),
-            computer: true
-          };
+        if (!auth?.signInAnonymously) return true;
+        try {
+          if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
+            await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
+          }
+          if (!auth.currentUser) await auth.signInAnonymously();
           return true;
+        } catch (error) {
+          console.warn("Connexion Firebase console impossible", error);
+          window.alert(`Connexion Firebase impossible : ${error?.message || error}`);
+          return false;
         }
-        if (context.cloudAuthenticatedRoles?.computer) return true;
-        if (!livePalmesPinAuth?.available?.()) return true;
-        context.forceCloudRolePin = "computer";
-        renderRolePinModal("computer");
-        const access = await new Promise((resolve) => {
-          context.rolePinResolver = (result) => {
-            context.forceCloudRolePin = "";
-            resolve(result);
-          };
-        });
-        return Boolean(access?.allowed);
       }
 
       async function firebaseAuthSummary() {
@@ -394,6 +380,7 @@
         closeRoleCodesModal,
         readRolePinsFromModal,
         saveRoleCodesFromModal,
+        ensureComputerWriteAccess,
         toggleRoleLock,
         downloadAdminBackup,
         restoreAdminBackupFile,

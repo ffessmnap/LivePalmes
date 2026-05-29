@@ -109,6 +109,7 @@ function roleSessionWorkflowOptions() {
 let state;
 let roleStates;
 let alerts = loadAlerts();
+let pendingLocalAlerts = new Map();
 let liveDismissedAlertIds = livePalmesLocalState.loadJson(LIVE_DISMISSED_ALERTS_KEY, []);
 let decisionDraft = {
   type: "",
@@ -353,7 +354,7 @@ function consoleSyncOptions() {
     speakerAlertAlreadyResolvedByResult,
     state
   };
-  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "lastPresenceWriteAt", "presenceCounts", "raceResults", "unlockedRoles"]);
+  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "lastPresenceWriteAt", "pendingLocalAlerts", "presenceCounts", "raceResults", "unlockedRoles"]);
   return options;
 }
 
@@ -435,7 +436,7 @@ function livePalmesRealtimeSyncOptions() {
     updateLiveNotes,
     window
   };
-  bindOptionState(options, ["alerts", "competitionAutoDisableRunning", "data", "firebaseConnectionCheckRunning", "firebaseStatus", "firestoreDb", "firestoreReady", "firestoreUnsubscribe", "lastConsoleActivityAt", "liveDataUnsubscribe", "profileHomeActive", "raceResults", "resultsSnapshotReady", "resultsUnsubscribe", "state", "unlockedRoles"]);
+  bindOptionState(options, ["alerts", "competitionAutoDisableRunning", "data", "firebaseConnectionCheckRunning", "firebaseStatus", "firestoreDb", "firestoreReady", "firestoreUnsubscribe", "lastConsoleActivityAt", "liveDataUnsubscribe", "pendingLocalAlerts", "profileHomeActive", "raceResults", "resultsSnapshotReady", "resultsUnsubscribe", "state", "unlockedRoles"]);
   return options;
 }
 
@@ -451,6 +452,7 @@ function historyActionsOptions() {
     clearFirestoreAlerts,
     data,
     dsqReportRows,
+    ensureComputerWriteAccess,
     firestoreDb,
     historyArchivesCollection,
     render,
@@ -1013,7 +1015,7 @@ function seriesImportWorkflowOptions() {
     availableSexesForEvent,
     clearHistoryAndAlertsForFullImport,
     clearPublishedResults,
-    clearPublicSeriesPdfs,
+    clearPublicSeriesPdfs, ensureComputerWriteAccess,
     eventSignature,
     formatName,
     importedSeriesTime,

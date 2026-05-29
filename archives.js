@@ -71,6 +71,10 @@ function renderArchives(archives = []) {
   `;
 }
 
+function isPublicArchive(archive = {}) {
+  return archive.publicArchive === true || archive.reason === "Archive publique de la compétition";
+}
+
 async function loadArchives() {
   if (directArchiveId) {
     window.location.replace(`resultats.html?archive=${encodeURIComponent(directArchiveId)}`);
@@ -90,7 +94,7 @@ async function loadArchives() {
     .orderBy("createdAt", "desc")
     .limit(50)
     .get({ source: "server" });
-  renderArchives(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  renderArchives(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter(isPublicArchive));
 }
 
 loadArchives().catch((error) => {

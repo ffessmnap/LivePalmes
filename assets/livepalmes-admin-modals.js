@@ -234,6 +234,12 @@
     return parts.length ? parts.join(" - ") : "Compétition non renseignée";
   }
 
+  function resultArchiveScopeLabel(archive) {
+    return archive?.publicArchive === true || archive?.reason === "Archive publique de la compétition"
+      ? "Visible dans Archives publiques"
+      : "Archive interne";
+  }
+
   function renderHistoryArchivesModalHtml(options = {}) {
     const {
       canDelete = false,
@@ -274,6 +280,7 @@
               <div>
                 <strong>${escapeHtml(archive.createdLabel || formatDateTime(archive.createdAt) || archive.createdAt || "-")}</strong>
                 <span>${escapeHtml(archiveMeetLabel(archive))}</span>
+                <span>${escapeHtml(resultArchiveScopeLabel(archive))}</span>
                 <span>${escapeHtml(String(archive.count || 0))} résultats archivés${archive.reason ? ` - ${escapeHtml(archive.reason)}` : ""}</span>
               </div>
               <div class="archive-actions">
