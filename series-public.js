@@ -241,12 +241,17 @@ function recordFlag(record) {
   return "REC";
 }
 
+function recordDisplayLabel(record) {
+  return cleanText(record.label || "")
+    .replace(/(^|[^A-Z0-9])M(\d+\+)(?=$|[^A-Z0-9])/gi, "$1H$2");
+}
+
 function shortRecordTitle(record) {
   const category = cleanText(record.category || "");
   if (sameCategory(category, "Cadet")) return record.sex === "F" ? "MPF cadette" : "MPF cadet";
   if (sameCategory(category, "Junior")) return "RFJ";
   if (sameCategory(category, "Senior")) return "RF";
-  return cleanText(record.label || category || "Record");
+  return recordDisplayLabel(record) || categoryLabel(category, record.sex) || category || "Record";
 }
 
 function recordKey(record) {
@@ -349,11 +354,23 @@ function isForfait(row) {
 }
 
 function recordsForSeries(program, rows = []) {
-  const categories = new Set(rows.map((row) => normalizeText(row.category)).filter(Boolean));
+  const categoryKey = (category, sex = program.sex) => normalizeText(categoryLabel(category, sex) || category);
+  const recordCategory = (record) => {
+    const direct = cleanText(record.category || "");
+    if (direct) return direct;
+    const label = recordDisplayLabel(record);
+    if (/\bminimes?\b/i.test(label)) return "Minime";
+    const master = label.match(/\b([FH]\d+\+)\b/i);
+    return master ? master[1].toUpperCase() : "";
+  };
+  const categories = new Set(rows.map((row) => categoryKey(row.category, row.sex)).filter(Boolean));
   return publicRecords
     .filter((record) => recordEventMatches(record.eventId, program.eventId))
     .filter((record) => !record.sex || record.sex === program.sex || program.sex === "X")
-    .filter((record) => !categories.size || !record.category || categories.has(normalizeText(record.category)))
+    .filter((record) => {
+      const category = recordCategory(record);
+      return !categories.size || !category || categories.has(categoryKey(category, record.sex || program.sex));
+    })
     .sort((a, b) => {
       const order = { cadet: 1, junior: 2, senior: 3 };
       return (order[normalizeText(a.category)] || 99) - (order[normalizeText(b.category)] || 99);
