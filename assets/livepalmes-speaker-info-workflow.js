@@ -157,6 +157,25 @@
       } : null;
     }
 
+    function parseFallbackMinimeRelayRecord(line, context) {
+      if (!context?.category || context.sex !== "X") return null;
+      const match = String(line || "").replace(/\s+/g, " ").trim().match(/^(4x\d+)\s+(BI|SB|SF)\s+(\d{1,2}:\d{2}\.\d{2})\s+(.+?)\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(.+))?$/i);
+      if (!match) return null;
+      const [, distance, discipline, time, holder, club, date, place = ""] = match;
+      const eventId = fallbackRecordEventId(distance, discipline);
+      return eventId ? {
+        eventId,
+        sex: "X",
+        category: "Minime",
+        label: "MPF relais minimes",
+        holder: holder.trim(),
+        club: club.trim(),
+        time: fallbackRecordTime(time),
+        date,
+        place: place.trim()
+      } : null;
+    }
+
     function parseFallbackRecordsSheet(rows) {
       const records = [];
       let context = null;
@@ -169,6 +188,12 @@
           context = { category: "Minime", sex: fallbackRecordSex(minimeMatch[1]) };
           return;
         }
+        if (/^Relais\s+Mixtes?\s+Minimes$/i.test(first)) {
+          context = { category: "Minime", sex: "X" };
+          return;
+        }
+        const minimeRelayRecord = parseFallbackMinimeRelayRecord(first, context);
+        if (minimeRelayRecord) records.push(minimeRelayRecord);
         const minimeRecord = parseFallbackMinimeRecord(first, context);
         if (minimeRecord) records.push(minimeRecord);
       });
