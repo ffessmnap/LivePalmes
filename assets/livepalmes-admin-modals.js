@@ -49,6 +49,7 @@
           <button class="ghost-button compact" type="button" data-download-livepalmes-backup>Sauvegarde</button>
           <button class="ghost-button compact" type="button" data-restore-livepalmes-backup>Restaurer</button>
           <input type="file" accept="application/json,.json" data-restore-livepalmes-backup-input hidden>
+          <button class="ghost-button compact" type="button" data-public-competition-archive>Archiver comp&eacute;tition</button>
           <button class="ghost-button compact" type="button" data-public-index-republish>Republier public</button>
           <button class="ghost-button compact" type="button" data-open-history-archives>Archives historiques</button>
         </div>

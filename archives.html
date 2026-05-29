@@ -35,11 +35,16 @@
     </header>
 
     <main class="public-home-shell">
-      <section class="panel public-archive-empty">
-        <h2>Archives LivePalmes</h2>
-        <p>La premi&egrave;re archive sera cr&eacute;&eacute;e depuis les r&eacute;sultats de la comp&eacute;tition termin&eacute;e.</p>
-        <a class="ghost-button compact" href="public.html">Retour accueil public</a>
-      </section>
+      <div id="publicArchivesList">
+        <section class="panel public-archive-empty">
+          <h2>Archives LivePalmes</h2>
+          <p>Chargement des archives...</p>
+        </section>
+      </div>
     </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="archives.js?v=20260529-archives-public"></script>
   </body>
 </html>

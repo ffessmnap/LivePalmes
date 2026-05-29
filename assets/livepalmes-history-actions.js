@@ -12,7 +12,9 @@
       renderOfficialAlerts,
       renderResetHistoryModal,
       resultArchivesCollection,
+      resultPdfsCollection,
       resultWithoutPdf,
+      sessionResultsPdfsCollection,
       sanitizeAlertForFirestore
     } = context;
     const browserWindow = context.window || window;
@@ -58,7 +60,8 @@
     }
 
     async function archiveCurrentResults(reason = "Archivage des r\u00e9sultats publics", sourceResults = getRaceResults()) {
-      const rows = Array.isArray(sourceResults) ? sourceResults.map(resultWithoutPdf) : [];
+      const sourceRows = Array.isArray(sourceResults) ? sourceResults : [];
+      const rows = sourceRows.map(resultWithoutPdf);
       if (!rows.length) return null;
       const collection = resultArchivesCollection();
       if (!collection || !firestoreDb) throw new Error("Firebase n'est pas disponible pour archiver les r\u00e9sultats.");
@@ -80,6 +83,47 @@
         batch.set(archiveRef.collection("items").doc(itemId), sanitizeAlertForFirestore({ ...result, id: itemId }));
       });
       await batch.commit();
+
+      const resultPdfCollection = typeof resultPdfsCollection === "function" ? resultPdfsCollection() : null;
+      const resultPdfArchive = archiveRef.collection("resultPdfs");
+      if (resultPdfCollection) {
+        for (const result of rows) {
+          if (!result.id) continue;
+          const pdfSnapshot = await resultPdfCollection.doc(result.id).get().catch(() => null);
+          if (pdfSnapshot?.exists) {
+            await resultPdfArchive.doc(result.id).set(sanitizeAlertForFirestore({ id: result.id, ...pdfSnapshot.data() }));
+          } else {
+            const sourceResult = sourceRows.find((item) => item?.id === result.id);
+            if (sourceResult?.pdfDataUrl) {
+              await resultPdfArchive.doc(result.id).set(sanitizeAlertForFirestore({
+                id: result.id,
+                resultId: result.id,
+                pdfName: result.pdfName || "resultat.pdf",
+                pdfSize: result.pdfSize || 0,
+                pdfDataUrl: sourceResult.pdfDataUrl,
+                updatedAt: result.updatedAt || new Date().toISOString(),
+                eventLabel: result.eventLabel || "",
+                sexLabel: result.sexLabel || "",
+                session: result.session || ""
+              }));
+            }
+          }
+        }
+      }
+
+      const sessionPdfCollection = typeof sessionResultsPdfsCollection === "function" ? sessionResultsPdfsCollection() : null;
+      const sessionPdfArchive = archiveRef.collection("sessionResultsPdfs");
+      const sessionPdfIds = (getData().notes?.publicSessionResultsPdfs || [])
+        .map((pdf) => String(pdf?.id || "").trim())
+        .filter(Boolean);
+      if (sessionPdfCollection && sessionPdfIds.length) {
+        for (const pdfId of [...new Set(sessionPdfIds)]) {
+          const pdfSnapshot = await sessionPdfCollection.doc(pdfId).get().catch(() => null);
+          if (pdfSnapshot?.exists) {
+            await sessionPdfArchive.doc(pdfId).set(sanitizeAlertForFirestore({ id: pdfId, ...pdfSnapshot.data() }));
+          }
+        }
+      }
       return archive;
     }
 

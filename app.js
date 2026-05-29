@@ -455,11 +455,13 @@ function historyActionsOptions() {
     renderOfficialAlerts,
     renderResetHistoryModal,
     resultArchivesCollection,
+    resultPdfsCollection,
     resultWithoutPdf,
     raceResults,
     sanitizeAlertForFirestore,
     saveAlerts,
-    saveLiveDismissedAlerts
+    saveLiveDismissedAlerts,
+    sessionResultsPdfsCollection
   };
   bindOptionState(options, ["alerts", "data", "liveDismissedAlertIds", "raceResults"]);
   return options;

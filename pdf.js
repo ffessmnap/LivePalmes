@@ -46,6 +46,26 @@ const PDF_TYPES = {
   }
 };
 
+PDF_TYPES["archive-result"] = {
+  collection: "resultPdfs",
+  archive: true,
+  defaultTitle: "Archive resultat",
+  missingId: "PDF d'archive introuvable : aucun identifiant de resultat.",
+  missingDoc: "PDF d'archive introuvable.",
+  downloadName: "resultat-archive.pdf",
+  titleFromData: (data) => `${data.eventLabel || "Archive resultat"} ${data.sexLabel || ""}`.trim()
+};
+
+PDF_TYPES["archive-session-result"] = {
+  collection: "sessionResultsPdfs",
+  archive: true,
+  defaultTitle: "Archive resultats complets",
+  missingId: "PDF de resultats complets archive introuvable.",
+  missingDoc: "PDF de resultats complets archive introuvable.",
+  downloadName: "resultats-complets-archive.pdf",
+  titleFromData: (data) => data.sourceLabel || "Archive resultats complets"
+};
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -161,6 +181,7 @@ async function init() {
   const params = new URLSearchParams(window.location.search);
   const type = params.get("type") || "resultat";
   const id = params.get("id");
+  const archiveId = params.get("archive") || "";
   const config = PDF_TYPES[type] || PDF_TYPES.resultat;
   if (pdfTitle) pdfTitle.textContent = config.defaultTitle;
   if (!id) {
@@ -176,21 +197,29 @@ async function init() {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
+  const archiveRef = config.archive && archiveId
+    ? competition.collection("resultArchives").doc(archiveId)
+    : null;
+  const mainCollection = archiveRef
+    ? archiveRef.collection(config.collection)
+    : competition.collection(config.collection);
   const resultPdfRequest = type === "resultat"
     ? competition.collection("resultPdfs").doc(id).get().catch(() => null)
     : Promise.resolve(null);
+  const publicIndexRequest = archiveRef
+    ? archiveRef.get().catch(() => null)
+    : competition.collection("public").doc("resultsIndex").get().catch(() => null);
   const [snapshot, pdfSnapshot, indexSnapshot, liveSnapshot] = await Promise.all([
-    competition
-      .collection(config.collection)
-      .doc(id)
-      .get(),
+    mainCollection.doc(id).get(),
     resultPdfRequest,
-    competition.collection("public").doc("resultsIndex").get().catch(() => null),
-    competition.collection("liveData").doc("current").get().catch(() => null)
+    publicIndexRequest,
+    archiveRef ? Promise.resolve(null) : competition.collection("liveData").doc("current").get().catch(() => null)
   ]);
-  const publicIndex = indexSnapshot?.data() || {};
+  const publicIndex = archiveRef
+    ? (indexSnapshot?.data()?.publicIndex || indexSnapshot?.data() || {})
+    : (indexSnapshot?.data() || {});
   const livePublicOnline = liveSnapshot?.data()?.data?.notes?.publicResultsOnline;
-  if (livePublicOnline === false || publicIndex.publicAccess?.online === false) {
+  if (!archiveRef && (livePublicOnline === false || publicIndex.publicAccess?.online === false)) {
     showMessage("La page publique des résultats est temporairement hors ligne.");
     return;
   }

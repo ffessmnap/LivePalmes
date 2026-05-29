@@ -9,7 +9,7 @@
     "downloadAdminBackup", "downloadJson", "ensureResultsAdminSession", "eventLabel", "exportDsqPdf",
     "finalProgramRowsForRace", "finalRowKey", "finalRowsCount", "finishRolePin",
     "firstSeriesSelectionForCurrentRace", "goToNextProgramRace", "goToPreviousProgramRace",
-    "importSeriesPdf", "isFinalStage", "markFinalistWithdrawn", "markSpeakerAlertDoneLocally",
+    "importSeriesPdf", "isFinalStage", "archiveCurrentResults", "markFinalistWithdrawn", "markSpeakerAlertDoneLocally",
     "openAdminSeriesModal", "openAlertDetail", "openDecisionModal", "openDsqRows",
     "openFinalCompositionModal", "openFinalCompositionResultModal", "openFinalWithdrawalsModal",
     "openFinalistsAnnouncementModal", "openProgramModal", "openResultArchiveRows", "openResultDetailsModal", "openResultImportModal",
