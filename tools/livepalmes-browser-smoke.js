@@ -317,7 +317,7 @@ async function testRoleOpening(client, baseUrl) {
 }
 
 async function testHomeDedicatedLinks(client, baseUrl) {
-  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-home=${Date.now()}` });
+  await client.send("Page.navigate", { url: `${baseUrl}/pilotage-livepalmes.html?smoke-home=${Date.now()}` });
   const ready = await waitFor(client, "document.readyState === 'complete' && !document.querySelector('#profileHome')?.hidden && document.querySelector('button[data-home-role=\"speaker\"]')", 5000);
   assert(ready, "Accueil : carte speaker introuvable.");
   await sleep(800);
@@ -340,14 +340,17 @@ async function testHomeDedicatedLinks(client, baseUrl) {
     expression: "document.querySelector('#profileHomeBtn')?.click()",
     awaitPromise: true
   });
-  await waitFor(client, "location.pathname.endsWith('/index.html')", 5000);
+  await waitFor(client, "location.pathname.endsWith('/pilotage-livepalmes.html')", 5000);
   const homeState = await evaluateJson(client, `
     return {
       pathname: location.pathname,
       dedicatedRole: window.LivePalmesDedicatedRole || ""
     };
   `);
-  assert(homeState.pathname.endsWith("/index.html") && !homeState.dedicatedRole, `Console : retour accueil KO (${JSON.stringify(homeState)}).`);
+  assert(homeState.pathname.endsWith("/pilotage-livepalmes.html") && !homeState.dedicatedRole, `Console : retour accueil KO (${JSON.stringify(homeState)}).`);
+  await client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-root-public=${Date.now()}` });
+  const publicReady = await waitFor(client, "document.querySelector('#publicHomeTitle') && !document.querySelector('#profileHome')", 5000);
+  assert(publicReady, "Racine LivePalmes : l'accueil public doit remplacer l'accueil consoles.");
   console.log("Accueil vers pages dediees : OK");
 }
 
@@ -628,6 +631,37 @@ async function testPublicSeries(client, baseUrl) {
   console.log("Page publique series : OK");
 }
 
+async function testPublicHome(client, baseUrl) {
+  await client.send("Page.navigate", { url: `${baseUrl}/public.html?smoke-public-home=${Date.now()}` });
+  const ready = await waitFor(client, "document.querySelector('#publicHomeTitle') && document.querySelector('script[src*=\"public-home.js\"]')", 6000);
+  assert(ready, "Accueil public : page non chargee.");
+  const desktop = await evaluateJson(client, `
+    return {
+      title: document.querySelector('#publicHomeTitle')?.textContent.trim() || '',
+      resultLink: document.querySelector('a[href="resultats.html"]')?.textContent.trim() || '',
+      seriesLink: document.querySelector('a[href="series-public.html"]')?.textContent.trim() || '',
+      archiveLink: Boolean(document.querySelector('a[href="archives.html"]')),
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+    };
+  `);
+  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.archiveLink, "Accueil public : liens principaux absents.");
+  assert(!desktop.overflow, "Accueil public : debordement horizontal desktop.");
+  await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+  await sleep(250);
+  const mobile = await evaluateJson(client, `
+    return {
+      cardCount: document.querySelectorAll('.public-home-card').length,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+    };
+  `);
+  assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
+  await client.send("Emulation.clearDeviceMetricsOverride");
+  await client.send("Page.navigate", { url: `${baseUrl}/archives.html?smoke-archives=${Date.now()}` });
+  const archiveReady = await waitFor(client, "document.querySelector('.public-archive-empty')", 4000);
+  assert(archiveReady, "Archives publiques : page non chargee.");
+  console.log("Accueil public : OK");
+}
+
 async function testPublicResults(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/resultats.html?smoke-results=${Date.now()}` });
   const ready = await waitFor(client, "document.querySelector('#publicResultsList')?.children.length > 0 && document.querySelector('script[src*=\"resultats.js\"]')", 12000);
@@ -678,6 +712,7 @@ async function main() {
     await seedFallbackCompetitionData(browser.client, baseUrl);
     await testRefereeDecisionFlow(browser.client, baseUrl);
     await browser.client.send("Network.setBlockedURLs", { urls: [] });
+    await testPublicHome(browser.client, baseUrl);
     await testPublicSeries(browser.client, baseUrl);
     await testPublicResults(browser.client, baseUrl);
     const errors = collectErrors(browser.client);

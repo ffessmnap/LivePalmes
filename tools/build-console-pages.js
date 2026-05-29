@@ -176,7 +176,7 @@ function buildPage(source, page) {
   html = replaceOne(
     html,
     /<a class="public-results-link" href="resultats\.html\?v=([^"]+)" target="_blank" rel="noopener">R&eacute;sultats publics<\/a>/,
-    '<a class="public-results-link" href="index.html?v=$1">Accueil LivePalmes</a>',
+    '<a class="public-results-link" href="pilotage-livepalmes.html?v=$1">Accueil LivePalmes</a>',
     "home link"
   );
   html = replaceOne(
@@ -193,7 +193,7 @@ function buildPage(source, page) {
 
 function main() {
   const checkOnly = process.argv.includes("--check");
-  const source = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  const source = fs.readFileSync(path.join(rootDir, "pilotage-livepalmes.html"), "utf8");
   const mismatches = [];
 
   consolePages.forEach((page) => {

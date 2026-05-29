@@ -2,7 +2,7 @@
   "name": "LivePalmes",
   "short_name": "LivePalmes",
   "description": "Outil de suivi en temps reel pour la nage avec palmes.",
-  "start_url": "index.html",
+  "start_url": "pilotage-livepalmes.html",
   "scope": ".",
   "display": "standalone",
   "background_color": "#f4f8fb",
