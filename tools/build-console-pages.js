@@ -99,6 +99,7 @@ const resultMaintenanceScripts = [
 ];
 
 const resultPublicationScripts = [
+  "assets/livepalmes-result-alert-workflow.js",
   "assets/livepalmes-result-pdf-storage.js",
   "assets/livepalmes-result-publication-options.js",
   "assets/livepalmes-result-publication-workflow.js",

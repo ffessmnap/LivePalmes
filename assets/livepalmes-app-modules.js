@@ -50,6 +50,7 @@
     livePalmesResultsAccessModule: "LivePalmesResultsAccess",
     livePalmesResultsAdminWorkflow: "LivePalmesResultsAdminWorkflow",
     livePalmesResultsAdminOptions: "LivePalmesResultsAdminOptions",
+    livePalmesResultAlertWorkflow: "LivePalmesResultAlertWorkflow",
     livePalmesResultPdfStorage: "LivePalmesResultPdfStorage",
     livePalmesResultPublicationWorkflowModule: "LivePalmesResultPublicationWorkflow",
     livePalmesResultPublicationOptions: "LivePalmesResultPublicationOptions",
