@@ -22,6 +22,7 @@
     const options = {
       ...(context.collections || {}),
       data: context.data,
+      livePalmesResultPdfStorage: context.livePalmesResultPdfStorage || global.LivePalmesResultPdfStorage,
       livePalmesResults: context.livePalmesResults || global.LivePalmesResults,
       window: context.window || global
     };

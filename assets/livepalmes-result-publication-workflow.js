@@ -13,6 +13,7 @@
       importedBirthYear,
       importedSeriesTime,
       isFinalStage,
+      livePalmesResultPdfStorage,
       livePalmesResults,
       markAlertAlreadyClosedError,
       markSpeakerAlertDoneLocally,
@@ -78,67 +79,42 @@
         return true;
       }
     });
+    const resultPdfStorage = livePalmesResultPdfStorage.init({
+      context,
+      livePalmesResults,
+      renderDataStatus,
+      resultPdfPayload,
+      resultPdfsCollection,
+      resultsCollection,
+      window
+    });
 
       async function fileToDataUrl(file) {
-        return livePalmesResults.fileToDataUrl(file);
+        return resultPdfStorage.fileToDataUrl(file);
       }
       
       async function loadResultPdfData(result) {
-        return livePalmesResults.loadResultPdfData(result, {
-          collection: resultPdfsCollection(),
-          resultPdfPayload
-        });
+        return resultPdfStorage.loadResultPdfData(result);
       }
       
       async function resultPdfDataUrl(result) {
-        return livePalmesResults.resultPdfDataUrl(result, {
-          collection: resultPdfsCollection(),
-          resultPdfPayload
-        });
+        return resultPdfStorage.resultPdfDataUrl(result);
       }
       
       async function saveResultPdfPayload(result, pdfDataUrl) {
-        return livePalmesResults.saveResultPdfPayload(result, pdfDataUrl, {
-          collection: resultPdfsCollection(),
-          resultPdfPayload
-        });
+        return resultPdfStorage.saveResultPdfPayload(result, pdfDataUrl);
       }
       
       async function deleteResultPdfPayload(resultId) {
-        return livePalmesResults.deleteResultPdfPayload(resultId, {
-          collection: resultPdfsCollection(),
-          onError: (error) => console.warn("Suppression du PDF résultat séparé impossible", error)
-        });
+        return resultPdfStorage.deleteResultPdfPayload(resultId);
       }
       
       async function migrateResultPdfsOutOfResults(rows = [], options = {}) {
-        const force = options.force === true;
-        if (context.resultPdfMigrationRunning || (!force && context.resultPdfMigrationAttempted) || (state.role !== "computer" && !force)) return 0;
-        const withPdf = rows.filter((result) => result.id && result.pdfDataUrl);
-        if (!withPdf.length) return 0;
-        const pdfCollection = resultPdfsCollection();
-        const resultCollection = resultsCollection();
-        if (!pdfCollection || !resultCollection || !window.firebase?.firestore?.FieldValue) return 0;
-        context.resultPdfMigrationRunning = true;
-        if (!force) context.resultPdfMigrationAttempted = true;
-        try {
-          for (const result of withPdf) {
-            await pdfCollection.doc(result.id).set(JSON.parse(JSON.stringify(resultPdfPayload(result, result.pdfDataUrl))));
-            await resultCollection.doc(result.id).update({
-              pdfDataUrl: window.firebase.firestore.FieldValue.delete()
-            });
-          }
-          if (options.showStatus !== false) {
-            renderDataStatus(`${withPdf.length} PDF résultat déplacé${withPdf.length > 1 ? "s" : ""} hors de la liste principale.`);
-          }
-          return withPdf.length;
-        } finally {
-          context.resultPdfMigrationRunning = false;
-        }
+        return resultPdfStorage.migrateResultPdfsOutOfResults(rows, options);
       }
       
       async function dataUrlToFile(dataUrl, name = "resultat.pdf", type = "application/pdf") {
-        return livePalmesResults.dataUrlToFile(dataUrl, name, type);
+        return resultPdfStorage.dataUrlToFile(dataUrl, name, type);
       }
       
       const livePalmesResultParser = window.LivePalmesResultParser;

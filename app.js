@@ -12,7 +12,7 @@ const {
 const livePalmesAppModules = window.LivePalmesAppModules || {};
 const {
   livePalmesLocalState, livePalmesAppStorageWorkflowModule, livePalmesFirebase, livePalmesFirestoreRefs,
-  livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleState,
+  livePalmesConsoleSyncModule, livePalmesRealtimeSyncModule, livePalmesRoleAccess, livePalmesRoleLockSync, livePalmesRoleState,
   livePalmesRoleSessionWorkflowModule, livePalmesAppFirestoreAccess, livePalmesRaceCore, livePalmesAlerts, livePalmesAlertPresenterModule,
   livePalmesFinalists, livePalmesSecretaryFinals, livePalmesSecretaryFinalsWorkflowModule, livePalmesPublication, livePalmesDiagnostics,
   livePalmesAdminAuthModule, livePalmesPinAuthModule,
@@ -20,7 +20,7 @@ const {
   livePalmesAdminArchives, livePalmesExportActions, livePalmesExportReportsWorkflowModule, livePalmesExportReportsOptions, livePalmesAdminResults,
   livePalmesResults, livePalmesPdfImport, livePalmesCsvParser, livePalmesSeriesImport, livePalmesSeriesImportWorkflowModule,
   livePalmesSpeakerInfo, livePalmesSpeakerInfoWorkflowModule, livePalmesSpeakerInfoOptions, livePalmesProgramNavigation, livePalmesSeriesControls,
-  livePalmesProgramModalsModule, livePalmesProgramModalsOptions, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAccessModule, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions,
+  livePalmesProgramModalsModule, livePalmesProgramModalsOptions, livePalmesEntrantHelpersModule, livePalmesSwimmerPanel, livePalmesSwimmerPanelOptions, livePalmesResultsAccessModule, livePalmesResultsAdminWorkflow, livePalmesResultsAdminOptions, livePalmesResultPdfStorage,
   livePalmesResultPublicationWorkflowModule, livePalmesResultPublicationOptions, livePalmesResultMaintenanceWorkflowModule, livePalmesResultMaintenanceOptions, livePalmesFinalWithdrawalsWorkflow, livePalmesFinalWithdrawalsOptions, livePalmesDiagnosticsWorkflow,
   livePalmesUiEvents, livePalmesUiEventsOptions, livePalmesProgramView, livePalmesConsoleRenderWorkflowModule, livePalmesRefereeView,
   livePalmesRoleQueueView, livePalmesHistoryView, livePalmesHistoryActionsModule, livePalmesHistoryPresenterModule,
@@ -331,6 +331,8 @@ function consoleSyncOptions() {
     liveDataDocument,
     livePalmesAdminMaintenance,
     livePalmesFirebase,
+    livePalmesRoleAccess,
+    livePalmesRoleLockSync,
     normalizeData,
     pinLockEnabled,
     presenceCollection,
@@ -746,6 +748,7 @@ function livePalmesHistoryPresenterOptions() {
     renderAlertCard,
     renderFinalistsAlertList,
     renderVideoInfoCard,
+    raceResults,
     roleHistory,
     sexDisplayLabel,
     speakerAlertAlreadyResolvedByResult,
@@ -753,7 +756,7 @@ function livePalmesHistoryPresenterOptions() {
     speakerHistory,
     state
   };
-  bindOptionState(options, ["alerts", "expandedHistories", "historyFilters", "state"]);
+  bindOptionState(options, ["alerts", "expandedHistories", "historyFilters", "raceResults", "state"]);
   return options;
 }
 
@@ -867,6 +870,7 @@ function livePalmesResultPublicationWorkflowOptions() {
     collections: { resultPdfsCollection, resultsCollection },
     data,
     importedSeriesTime,
+    livePalmesResultPdfStorage,
     livePalmesResults: window.LivePalmesResults,
     normalizePersonName,
     source: window,
