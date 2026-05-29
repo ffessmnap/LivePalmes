@@ -269,6 +269,25 @@
     return row.eventId && row.sex && row.time && shouldKeepRecord(row) ? row : null;
   }
 
+  function parseCompactMinimeRelayRecord(line, context) {
+    if (!context || !/minime/i.test(context.category || "") || context.sex !== "X") return null;
+    const match = cleanCell(line).match(/^(4x\d+)\s+(BI|SB|SF)\s+(\d{1,2}:\d{2}\.\d{2})\s+(.+?)\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(.+))?$/i);
+    if (!match) return null;
+    const [, distance, discipline, time, holder, club, date, place] = match;
+    const row = {
+      eventId: compactRecordEventId(distance, discipline),
+      sex: "X",
+      category: "Minime",
+      label: "MPF relais minimes",
+      holder: cleanCell(holder),
+      club: cleanCell(club),
+      time: sheetTime(time),
+      date,
+      place: cleanCell(place)
+    };
+    return row.eventId && row.time && shouldKeepRecord(row) ? row : null;
+  }
+
   function parseCompactRelayRecord(cells, context) {
     if (!context?.eventId) return null;
     const first = cleanCell(cells[0]);
@@ -311,8 +330,14 @@
         context = { category: "Minime", sex: sheetSex(minimeMatch[1]) };
         return;
       }
+      if (/^Relais\s+Mixtes?\s+Minimes$/i.test(first)) {
+        context = { category: "Minime", sex: "X" };
+        return;
+      }
       const relayRecord = parseCompactRelayRecord(cells, context);
       if (relayRecord) records.push(relayRecord);
+      const minimeRelayRecord = parseCompactMinimeRelayRecord(first, context);
+      if (minimeRelayRecord) records.push(minimeRelayRecord);
       const minimeRecord = parseCompactMinimeRecord(first, context);
       if (minimeRecord) records.push(minimeRecord);
     });
