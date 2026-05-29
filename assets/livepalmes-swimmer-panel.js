@@ -453,7 +453,7 @@
   }
   
   function shortEventLabel(eventId) {
-    return String(eventId || "").toUpperCase();
+    return String(eventId || "").replace(/-mi$/i, "").toUpperCase();
   }
   
   function findFrance2025Results(entrant) {
