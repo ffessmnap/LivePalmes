@@ -851,6 +851,10 @@ td span {
   overflow-wrap: anywhere;
 }
 
+.relay-summary {
+  display: none;
+}
+
 .swimmer-meta {
   display: flex;
   align-items: center;
@@ -1292,6 +1296,93 @@ tbody tr.relay-mixed td:first-child strong::after {
 
   .placeholder {
     min-height: 140px;
+  }
+
+  .records-page tbody {
+    gap: 5px;
+  }
+
+  .records-page tbody tr.sex-f,
+  .records-page tbody tr.sex-m,
+  .records-page tbody tr.relay-mixed {
+    position: relative;
+    display: grid;
+    grid-template-columns: 82px 72px minmax(0, 1fr);
+    gap: 0;
+    cursor: pointer;
+  }
+
+  .records-page tbody tr.sex-f::after,
+  .records-page tbody tr.sex-m::after,
+  .records-page tbody tr.relay-mixed::after {
+    content: "+";
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 850;
+  }
+
+  .records-page tbody tr.expanded::after {
+    content: "-";
+  }
+
+  .records-page tbody tr:not(.expanded) td {
+    display: none;
+  }
+
+  .records-page tbody tr:not(.expanded) td[data-label="Course"],
+  .records-page tbody tr:not(.expanded) td[data-label="Temps"],
+  .records-page tbody tr:not(.expanded) td[data-label="Nageur"],
+  .records-page tbody tr:not(.expanded) td[data-label="Relayeurs"] {
+    display: block;
+    min-width: 0;
+    padding: 9px 6px;
+    border-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .records-page tbody tr:not(.expanded) td[data-label="Nageur"],
+  .records-page tbody tr:not(.expanded) td[data-label="Relayeurs"] {
+    padding-right: 22px;
+  }
+
+  .records-page tbody tr:not(.expanded) td::before {
+    content: none;
+  }
+
+  .records-page tbody tr:not(.expanded) td strong,
+  .records-page tbody tr:not(.expanded) td .relay-summary {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .records-page tbody tr:not(.expanded) .relay-swimmers {
+    display: none;
+  }
+
+  .records-page tbody tr.expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .records-page tbody tr.expanded td {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 8px;
+    padding-right: 28px;
+  }
+
+  .records-page tbody tr.expanded td::before {
+    content: attr(data-label);
+  }
+
+  .records-page tbody tr.expanded .relay-summary {
+    display: none;
   }
 }
 
