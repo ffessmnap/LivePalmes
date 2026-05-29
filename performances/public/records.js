@@ -157,18 +157,18 @@ function renderRecordRow(record) {
 
   return `
       <tr class="${rowClasses.join(" ")}">
-        <td>
+        <td data-label="Course">
           <strong>${record.courseShortLabel}</strong>
         </td>
-        <td class="time">${record.time}</td>
-        <td>
+        <td class="time" data-label="Temps">${record.time}</td>
+        <td data-label="Nageur">
           <strong>${record.swimmer}</strong>
         </td>
-        <td>${record.club}</td>
-        <td>
+        <td data-label="Club">${record.club}</td>
+        <td data-label="Lieu">
           <strong>${record.location || "Lieu non renseigné"}</strong>
         </td>
-        <td>${formatDate(record.date)}</td>
+        <td data-label="Date">${formatDate(record.date)}</td>
       </tr>
     `;
 }

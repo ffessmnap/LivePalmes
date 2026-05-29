@@ -208,24 +208,24 @@ function renderRecords(filtered) {
       const badges = [record.bassin ? `<b>${record.bassin} m</b>` : "", chronoLabel ? `<b>${chronoLabel}</b>` : ""].filter(Boolean).join("");
       return `
         <tr class="sex-${record.sex.toLowerCase()}">
-          <td>
+          <td data-label="Course">
             <strong>${record.courseShortLabel}</strong>
           </td>
-          <td>
+          <td data-label="Categorie">
             <strong>${categoryCode(record)}</strong>
           </td>
-          <td class="time">${record.time}</td>
-          <td>
+          <td class="time" data-label="Temps">${record.time}</td>
+          <td data-label="Nageur">
             <strong>${record.swimmer}</strong>
           </td>
-          <td>${record.club}</td>
-          <td>
+          <td data-label="Club">${record.club}</td>
+          <td data-label="Lieu">
             <div class="location-line">
               <strong>${record.location || "-"}</strong>
               ${badges ? `<span class="meta-badges">${badges}</span>` : ""}
             </div>
           </td>
-          <td>${formatDate(record.date)}</td>
+          <td data-label="Date">${formatDate(record.date)}</td>
         </tr>
       `;
     }));
@@ -234,7 +234,7 @@ function renderRecords(filtered) {
   elements.recordsBody.innerHTML = rows.join("");
 
   if (!filtered.length) {
-    elements.recordsBody.innerHTML = `<tr><td class="empty" colspan="7">Sélectionnez Femmes ou Hommes pour afficher les performances.</td></tr>`;
+    elements.recordsBody.innerHTML = `<tr><td class="empty" colspan="7">Choisissez Femmes ou Hommes.</td></tr>`;
   }
 }
 
