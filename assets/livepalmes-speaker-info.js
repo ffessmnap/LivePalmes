@@ -14,11 +14,13 @@
   }
 
   function normalizePdfLabel(value) {
-    return callDependency("normalizePdfLabel", (input) => String(input || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase(), value);
+    const normalized = callDependency("normalizePdfLabel", (input) => String(input || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase(), value);
+    return String(normalized || "");
   }
 
   function fixPdfEncoding(value) {
-    return callDependency("fixPdfEncoding", (input) => String(input || ""), value);
+    const fixed = callDependency("fixPdfEncoding", (input) => String(input || ""), value);
+    return String(fixed || "");
   }
 
   function cleanCell(value) {
@@ -30,7 +32,8 @@
   }
 
   function importedSeriesTime(value) {
-    return callDependency("importedSeriesTime", (input) => String(input || "").trim(), value);
+    const time = callDependency("importedSeriesTime", (input) => String(input || "").trim(), value);
+    return String(time || "");
   }
 
   function eventSignature(value) {
@@ -136,7 +139,7 @@
   }
   
   function sheetEventId(value) {
-    const normalized = normalizePdfLabel(value);
+    const normalized = String(normalizePdfLabel(value) || "");
     const compact = normalized.replace(/[^a-z0-9]+/g, "");
     const signature = eventSignature(value);
     return importedEventId(value) ||

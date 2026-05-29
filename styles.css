@@ -335,6 +335,10 @@ body.role-computer.computer-tablet-mode .role-chip[data-role="computer"]::after 
   flex: 1 1 auto;
 }
 
+.footer-speaker-info-button {
+  flex: 0 0 auto;
+}
+
 .app-version {
   margin: 0;
   color: #8a98a2;

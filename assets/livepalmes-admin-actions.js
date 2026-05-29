@@ -304,6 +304,10 @@
         }
       }
 
+      async function ensureConsoleWriteAccess() {
+        return ensureComputerWriteAccess();
+      }
+
       async function firebaseAuthSummary() {
         const auth = window.firebase?.auth ? window.firebase.auth() : null;
         const user = auth?.currentUser || null;
@@ -381,6 +385,7 @@
         readRolePinsFromModal,
         saveRoleCodesFromModal,
         ensureComputerWriteAccess,
+        ensureConsoleWriteAccess,
         toggleRoleLock,
         downloadAdminBackup,
         restoreAdminBackupFile,
