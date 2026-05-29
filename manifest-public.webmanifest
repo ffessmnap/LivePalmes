@@ -2,7 +2,7 @@
   "name": "LP Public",
   "short_name": "LP Public",
   "description": "Espace public LivePalmes.",
-  "start_url": "resultats.html",
+  "start_url": "public.html",
   "scope": ".",
   "display": "standalone",
   "background_color": "#f4f8fb",

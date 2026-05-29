@@ -86,7 +86,7 @@
       context.profileHomeActive = true;
       saveActiveView?.();
       releaseConsolePresence?.();
-      window.location.href = "index.html";
+      window.location.href = "pilotage-livepalmes.html";
     }
 
     async function navigateToDedicatedConsole(role) {
