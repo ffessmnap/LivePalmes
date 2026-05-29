@@ -77,6 +77,7 @@ const resultsAdminScripts = [
   "assets/livepalmes-admin-results.js",
   "assets/livepalmes-results-admin-options.js",
   "assets/livepalmes-results-admin-panel-view.js",
+  "assets/livepalmes-results-admin-program.js",
   "assets/livepalmes-results-upload-state.js",
   "assets/livepalmes-results-admin-workflow.js"
 ];
@@ -86,6 +87,7 @@ const finalWithdrawalsScripts = [
   "assets/livepalmes-final-withdrawals-view.js",
   "assets/livepalmes-result-detail-view.js",
   "assets/livepalmes-final-withdrawals-core.js",
+  "assets/livepalmes-final-withdrawals-modals.js",
   "assets/livepalmes-final-withdrawals-workflow.js"
 ];
 

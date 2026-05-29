@@ -4,7 +4,7 @@
     "competitionModeEnabled", "countCollectionDocuments", "deleteFinalResultAlerts", "deleteResultPdfPayload",
     "emptyPresenceCounts", "escapeHtml", "finalCompositionIsDefinitive", "finalCompositionPendingDeadlineLabel",
     "finalRowsCount", "formatAlertDateTime", "formatByteSize", "formatDeadlineTime",
-    "formatRank", "isFinalStage", "normalizeData", "programKey",
+    "formatRank", "isFinalStage", "isSplitRaceAcrossSessions", "normalizeData", "programKey",
     "programRows", "raceOptionKey", "renderDataStatus", "resultHasDetailsForDiagnostic",
     "safeCountCollection", "safeDocumentData", "sessionRows", "sexDisplayLabel",
     "showToast", "updateLiveNotes"
