@@ -33,6 +33,7 @@
       showPerformanceDiagnosticModal,
       showTechnicalDiagnosticModal,
       showTechnicalLogModal,
+      toggleCompetitionMode,
       unlockRole,
       updateLiveNotes
     } = context;
@@ -44,6 +45,19 @@
         return;
       }
       renderRoleCodesModal();
+    }
+
+    function prepareManualModeForReset() {
+      if (!competitionModeEnabled()) return true;
+      const ok = window.confirm([
+        "L'actualisation directe est active.",
+        "",
+        "Pour faire une RAZ, LivePalmes doit d'abord passer en Manuel.",
+        "Passer en Manuel et continuer la RAZ ?"
+      ].join("\n"));
+      if (!ok) return false;
+      toggleCompetitionMode?.();
+      return true;
     }
 
       roleCodesModal?.addEventListener("click", async (event) => {
@@ -174,11 +188,7 @@
             window.alert("RAZ annulée : il faut écrire RAZ.");
             return;
           }
-          if (competitionModeEnabled()) {
-            window.alert("RAZ indisponible quand l'actualisation directe est active.");
-            closeRoleCodesModal();
-            return;
-          }
+          if (!prepareManualModeForReset()) return;
           const scope = roleCodesModal.querySelector("input[name='resetResultsScope']:checked")?.value || "results-session";
           const selectedResetSession = String(roleCodesModal.querySelector("#resetResultsSessionSelect")?.value || ensureResultsAdminSession() || "").trim();
           closeRoleCodesModal();

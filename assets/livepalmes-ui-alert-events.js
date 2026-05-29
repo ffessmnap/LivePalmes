@@ -60,6 +60,7 @@
       speakerHistory,
       swimmerDetails,
       syncAlertChangesToFirestoreStrict,
+      toggleCompetitionMode,
       toggleFinalPreWithdrawal,
       updateAlert,
       updateSpeakerInfoFromGoogleSheet,
@@ -96,6 +97,19 @@
         return true;
       }
     });
+
+    function prepareManualModeForReset() {
+      if (!competitionModeEnabled()) return true;
+      const ok = window.confirm([
+        "L'actualisation directe est active.",
+        "",
+        "Pour faire une RAZ, LivePalmes doit d'abord passer en Manuel.",
+        "Passer en Manuel et continuer la RAZ ?"
+      ].join("\n"));
+      if (!ok) return false;
+      toggleCompetitionMode?.();
+      return true;
+    }
     const state = new Proxy({}, {
       get: (_, prop) => context.state?.[prop],
       set: (_, prop, value) => {
@@ -312,10 +326,7 @@
       
       roleHistory?.addEventListener("click", (event) => {
         if (event.target.closest("[data-results-reset]")) {
-          if (competitionModeEnabled()) {
-            window.alert("RAZ indisponible quand l'actualisation directe est active.");
-            return;
-          }
+          if (!prepareManualModeForReset()) return;
           renderResetResultsModal();
           return;
         }
