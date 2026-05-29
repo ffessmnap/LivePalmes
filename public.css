@@ -1576,6 +1576,13 @@
   font-weight: 800;
 }
 
+.public-result-head .public-update-meta {
+  margin-top: 2px;
+  color: #7d8c95;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
 .public-finalists-summary .withdrawal-limit {
   color: #075866;
   font-size: 0.86rem;

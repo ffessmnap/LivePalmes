@@ -328,6 +328,40 @@ function resultStatus(row, result) {
 
 const formatPublicDateTime = (value) => publicSwimmers.formatPublicDateTime(value);
 
+function raceSingleCategory(row, result) {
+  const categories = new Map();
+  const addCategory = (value) => {
+    const label = cleanText(value || "");
+    if (!label) return;
+    categories.set(normalizeText(label), label);
+  };
+  addCategory(row?.category);
+  [result?.category, result?.categoryLabel].forEach(addCategory);
+  [
+    result?.ranking,
+    result?.performances,
+    result?.nextUnqualified,
+    result?.finalists?.a,
+    result?.finalists?.b
+  ].forEach((rows) => (Array.isArray(rows) ? rows : []).forEach((item) => addCategory(item.category || item.categoryLabel)));
+  publicSeries
+    .filter((item) => item.eventId === row.eventId && item.sex === row.sex)
+    .filter((item) => !row.session || !item.session || String(item.session) === String(row.session))
+    .forEach((item) => addCategory(item.category));
+  return categories.size === 1 ? [...categories.values()][0] : "";
+}
+
+function sexPillLabel(row, result) {
+  const base = sexLabel(row.sex);
+  const category = raceSingleCategory(row, result);
+  if (!category) return base;
+  const label = categoryLabel(category, row.sex);
+  if (!label) return base;
+  if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return `Minimes ${base}`;
+  if (/^[fh]\d+\+$/i.test(label)) return label.toUpperCase();
+  return `${label} ${base}`;
+}
+
 function resultsForRows(rows = []) {
   const seen = new Set();
   return rows
@@ -825,15 +859,16 @@ function renderRow(row) {
   const result = resultForRow(row);
   const status = resultStatus(row, result);
   const hideResultMeta = result?.hasFinal && !result.finalistsAnnouncedAt;
-  const updated = !hideResultMeta && result?.updatedAt ? `Mis à jour le ${formatPublicDateTime(result.updatedAt)}` : "";
+  const updated = !hideResultMeta && result?.updatedAt ? `MAJ le ${formatPublicDateTime(result.updatedAt)}` : "";
   const sexClass = row.sex === "F" ? "sex-female" : (row.sex === "M" ? "sex-male" : "sex-mixed");
   const phaseLabel = resultIsVisible(result) ? "" : publicRacePhaseLabel(row);
   const pdfVisible = result && (!result.hasFinal || result.finalistsAnnouncedAt);
+  const pillLabel = sexPillLabel(row, result);
   return `
     <article class="public-result-card ${result ? "published" : "not-published"} ${sexClass}">
       <div class="public-result-head">
         <div>
-          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(sexLabel(row.sex))}</span>${phaseLabel ? ` <span class="public-phase-label">${escapeHtml(phaseLabel)}</span>` : ""}</h2>
+          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(pillLabel)}</span>${phaseLabel ? ` <span class="public-phase-label">${escapeHtml(phaseLabel)}</span>` : ""}</h2>
           ${updated ? `<p class="public-update-meta">${escapeHtml(updated)}</p>` : ""}
         </div>
         <div class="public-result-tools">
