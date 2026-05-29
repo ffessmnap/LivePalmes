@@ -900,16 +900,19 @@ function renderResults() {
   const seriesDocumentsHtml = publicResultDocuments.renderSeriesPdfLink(activeSession, documentOptions);
   const sessionResultsPdfHtml = publicResultDocuments.renderSessionResultsPdfSection(activeSession, documentOptions);
   const sessionInformationHtml = renderSessionInformation(activeSession);
+  const swimmerSearchHtml = renderSwimmerSearchSection();
   if (sessionInfoHost) sessionInfoHost.innerHTML = sessionInformationHtml;
   if (!rows.length) {
     list.innerHTML = `
+      ${PUBLIC_ARCHIVE_MODE ? swimmerSearchHtml : ""}
       <p class="panel-subtitle">Aucune course trouvée pour cette session.</p>
       ${sessionResultsPdfHtml}
-      ${renderSwimmerSearchSection()}
+      ${PUBLIC_ARCHIVE_MODE ? "" : swimmerSearchHtml}
     `;
     return;
   }
   list.innerHTML = `
+    ${PUBLIC_ARCHIVE_MODE ? swimmerSearchHtml : ""}
     <div class="public-session-title">
       <div>
         <h2>Session ${escapeHtml(activeSession)}</h2>
@@ -924,7 +927,7 @@ function renderResults() {
     ${publishedRows.map(renderRow).join("")}
     ${renderPendingRows(pendingRows)}
     ${publicResultDocuments.renderPublicDocumentsSection(seriesDocumentsHtml)}
-    ${renderSwimmerSearchSection()}
+    ${PUBLIC_ARCHIVE_MODE ? "" : swimmerSearchHtml}
   `;
   updateCollapseDetailsButton();
 }

@@ -144,6 +144,15 @@
   line-height: 1.35;
 }
 
+.public-home-current-meet {
+  padding: 8px 10px;
+  border: 1px solid #cfe3ea;
+  border-radius: 8px;
+  background: #f4fafc;
+  color: var(--accent-dark) !important;
+  font-size: 0.88rem;
+}
+
 .public-home-card-icon {
   width: 28px;
   height: 28px;
