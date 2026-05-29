@@ -149,8 +149,50 @@ function renderRecords(filtered) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;"
+  })[char]);
+}
+
+function isRelayRecord(record) {
+  return record.style?.startsWith("RELAY");
+}
+
+function relaySwimmerNames(value) {
+  const cleaned = String(value || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return [];
+
+  const slashParts = cleaned.split(/\s*\/\s*/).map((part) => part.trim()).filter(Boolean);
+  if (slashParts.length > 1) return slashParts;
+
+  const dashParts = cleaned.split(/\s*-\s*/).map((part) => part.trim()).filter(Boolean);
+  if (dashParts.length >= 4) return dashParts;
+
+  return [cleaned];
+}
+
+function renderSwimmerCell(record) {
+  if (!isRelayRecord(record)) {
+    return `<strong>${escapeHtml(record.swimmer)}</strong>`;
+  }
+
+  return `
+    <div class="relay-swimmers">
+      ${relaySwimmerNames(record.swimmer).map((name) => `<span>${escapeHtml(name)}</span>`).join("")}
+    </div>
+  `;
+}
+
 function renderRecordRow(record) {
   const rowClasses = [`sex-${record.sex.toLowerCase()}`];
+  if (isRelayRecord(record)) {
+    rowClasses.push("relay-record");
+  }
   if (record.style?.startsWith("RELAY") && /(?:BIX|SB)$/.test(record.course)) {
     rowClasses.push("relay-mixed");
   }
@@ -161,8 +203,8 @@ function renderRecordRow(record) {
           <strong>${record.courseShortLabel}</strong>
         </td>
         <td class="time" data-label="Temps">${record.time}</td>
-        <td data-label="Nageur">
-          <strong>${record.swimmer}</strong>
+        <td data-label="${isRelayRecord(record) ? "Relayeurs" : "Nageur"}">
+          ${renderSwimmerCell(record)}
         </td>
         <td data-label="Club">${record.club}</td>
         <td data-label="Lieu">
