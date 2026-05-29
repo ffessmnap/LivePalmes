@@ -109,6 +109,30 @@
     };
   }
 
+  function resultCategoryFromHeader(line, options = {}) {
+    const text = normalizeResultLineText(line, options);
+    const match = text.match(/^\s*(?:\d+x\d+|\d{2,4})\s*m?\s+.+?\s+(?:(Masters?)\s+)?((?:\d{2,3}\+)|Minimes?|Cadets?|Cadettes?|Juniors?|Seniors?|Masters?)\s+(Femmes|Hommes|Mixte)\s*$/i);
+    if (!match) return null;
+    const [, masterLabel = "", rawCategory = "", rawSex = ""] = match;
+    const sex = /^hommes$/i.test(rawSex) ? "M" : (/^femmes$/i.test(rawSex) ? "F" : "X");
+    const cleanCategory = String(rawCategory || "").trim();
+    let category = cleanCategory;
+    if (/^\d{2,3}\+$/i.test(cleanCategory)) {
+      const prefix = sex === "F" ? "F" : (sex === "M" ? "H" : "X");
+      category = `${prefix}${cleanCategory}`;
+    } else if (/^minimes?$/i.test(cleanCategory)) category = "Minime";
+    else if (/^cadettes?$/i.test(cleanCategory) || /^cadets?$/i.test(cleanCategory)) category = "Cadet";
+    else if (/^juniors?$/i.test(cleanCategory)) category = "Junior";
+    else if (/^seniors?$/i.test(cleanCategory)) category = "Senior";
+    else if (/^masters?$/i.test(cleanCategory) || masterLabel) category = "Masters";
+    return {
+      category,
+      categoryLabel: category,
+      sex,
+      sectionTitle: text
+    };
+  }
+
   function resultImportRowKey(row) {
     return [
       row.rank || "",
@@ -123,10 +147,21 @@
 
   function parseFinalistsFromResultLines(lines, options = {}) {
     const seen = new Set();
+    let categoryContext = null;
     const ranking = lines
       .map((line, sourceIndex) => {
+        const nextCategory = resultCategoryFromHeader(line, options);
+        if (nextCategory) {
+          categoryContext = nextCategory;
+          return null;
+        }
         const row = parseResultRow(line, options) || parseUnrankedResultRow(line, options) || parseResultStatusRow(line, options);
-        return row ? { ...row, sourceIndex } : null;
+        return row ? {
+          ...row,
+          category: row.category || categoryContext?.category || "",
+          categoryLabel: row.categoryLabel || categoryContext?.categoryLabel || "",
+          sourceIndex
+        } : null;
       })
       .filter(Boolean)
       .filter((row) => {
@@ -136,6 +171,9 @@
         return true;
       })
       .sort((a, b) => {
+        if (a.category || b.category) {
+          return Number(a.sourceIndex || 0) - Number(b.sourceIndex || 0);
+        }
         if (Number.isFinite(a.sourceIndex) && Number.isFinite(b.sourceIndex) && (a.resultStatus || b.resultStatus || !a.rank || !b.rank)) {
           return Number(a.sourceIndex || 0) - Number(b.sourceIndex || 0);
         }
@@ -381,6 +419,7 @@
     parseFinalistsFromResultLines,
     parseResultRow,
     parseResultStatusRow,
+    resultCategoryFromHeader,
     parseUnrankedResultRow,
     resolveParsedFinals,
     resultPerformanceDuplicateKey,

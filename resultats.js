@@ -583,7 +583,7 @@ function renderFinalistRows(title, rows, result) {
 function renderNextUnqualified(rows, result = {}) {
   if (!rows?.length) return "";
   const renderRows = (items) => items.map((row) => `
-    <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+    <li ${row.rank && !resultRowStatusLabel(row) ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
       ${renderResultSwimmerName(row, result)}
       <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
     </li>
@@ -611,8 +611,10 @@ function resultRowStatusLabel(row) {
 function renderPublishedRanking(rows, { ordered = true, title = "Résultats de la course" } = {}) {
   if (!rows?.length) return "";
   const listTag = ordered ? "ol" : "ul";
+  const categoryGroups = rankingCategoryGroups(rows);
+  const grouped = categoryGroups.length > 1 || categoryGroups.some((group) => group.title);
   const renderRows = (items) => items.map((row) => `
-    <li ${ordered && row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+    <li ${ordered && row.rank && !resultRowStatusLabel(row) ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
       ${renderResultSwimmerName(row, row)}
       <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
     </li>
@@ -620,11 +622,40 @@ function renderPublishedRanking(rows, { ordered = true, title = "Résultats de l
   return `
     <details class="public-unqualified-block public-ranking-block">
       <summary>${escapeHtml(title)}</summary>
-      <${listTag}>
-        ${renderRows(rows)}
-      </${listTag}>
+      ${grouped ? categoryGroups.map((group) => `
+        <section class="public-ranking-category-section">
+          ${group.title ? `<strong class="public-ranking-category">${escapeHtml(group.title)}</strong>` : ""}
+          <${listTag}>
+            ${renderRows(group.rows)}
+          </${listTag}>
+        </section>
+      `).join("") : `
+        <${listTag}>
+          ${renderRows(rows)}
+        </${listTag}>
+      `}
     </details>
   `;
+}
+
+function rankingCategoryTitle(row) {
+  return cleanText(row?.categoryLabel || row?.category || "");
+}
+
+function rankingCategoryGroups(rows = []) {
+  const groups = [];
+  const byTitle = new Map();
+  rows.forEach((row) => {
+    const title = rankingCategoryTitle(row);
+    const key = title || "__uncategorized";
+    if (!byTitle.has(key)) {
+      const group = { title, rows: [] };
+      byTitle.set(key, group);
+      groups.push(group);
+    }
+    byTitle.get(key).rows.push(row);
+  });
+  return groups;
 }
 
 function renderFinalRankingGroup(group) {
@@ -634,7 +665,7 @@ function renderFinalRankingGroup(group) {
       <strong>${escapeHtml(group.title)}</strong>
       <ol>
         ${group.rows.map((row) => `
-          <li ${row.rank ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
+          <li ${row.rank && !resultRowStatusLabel(row) ? `value="${escapeHtml(row.rank)}"` : ""} class="${row.resultStatus ? "public-result-status-row" : ""}">
             ${renderResultSwimmerName(row, group.result || row)}
             <span>${escapeHtml(row.time || resultRowStatusLabel(row) || "")}</span>
           </li>

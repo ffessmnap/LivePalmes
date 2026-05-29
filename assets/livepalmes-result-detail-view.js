@@ -48,11 +48,32 @@
       });
     }
 
+    function rowCategoryTitle(row) {
+      return String(row?.categoryLabel || row?.category || "").trim();
+    }
+
+    function categoryGroups(rows = []) {
+      const groups = [];
+      const byTitle = new Map();
+      rows.forEach((row) => {
+        const title = rowCategoryTitle(row);
+        const key = title || "__uncategorized";
+        if (!byTitle.has(key)) {
+          const group = { title, rows: [] };
+          byTitle.set(key, group);
+          groups.push(group);
+        }
+        byTitle.get(key).rows.push(row);
+      });
+      return groups;
+    }
+
     function renderRows(title, rows = [], options = {}) {
       if (!rows.length) return "";
       const ordered = options.ordered !== false;
       const items = rows.map((row, index) => {
-        const rank = row.rank || (ordered ? index + 1 : "");
+        const closed = Boolean(row.resultStatus || row.status);
+        const rank = closed ? "" : (row.rank || (ordered ? index + 1 : ""));
         const value = rowValue(row);
         const label = [
           rank ? `${rank}. ${rowName(row)}` : rowName(row),
@@ -61,7 +82,7 @@
           value
         ].filter(Boolean).join(" - ");
         return `
-          <li ${ordered && rank ? `value="${escapeHtml(rank)}"` : ""} class="${row.resultStatus || row.status ? "closed" : ""}">
+          <li ${ordered && rank ? `value="${escapeHtml(rank)}"` : ""} class="${closed ? "closed" : ""}">
             <div>
               <span>${escapeHtml(label)}</span>
             </div>
@@ -80,7 +101,15 @@
 
     function detailGroups(result, rows = []) {
       if (!isFinalStage(result?.stage)) {
-        return [{ title: result.isPartial ? "Resultat partiel" : "Resultats de la course", rows }];
+        const baseTitle = result.isPartial ? "Resultat partiel" : "Resultats de la course";
+        const groups = categoryGroups(rows);
+        if (groups.length > 1 || groups.some((group) => group.title)) {
+          return groups.map((group) => ({
+            title: group.title ? `${baseTitle} - ${group.title}` : baseTitle,
+            rows: group.rows
+          }));
+        }
+        return [{ title: baseTitle, rows }];
       }
       if (rows.length <= 8) {
         const phase = String(result.phaseLabel || "").trim();

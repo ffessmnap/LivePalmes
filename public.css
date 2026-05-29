@@ -766,10 +766,12 @@
 }
 
 .public-progress-card::after {
-  content: "â†’";
-  color: var(--accent-dark);
-  font-size: 1rem;
-  font-weight: 950;
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--accent-dark);
+  border-right: 2px solid var(--accent-dark);
+  transform: rotate(45deg);
 }
 
 .public-progress-card:hover,
@@ -1724,6 +1726,27 @@
 .public-unqualified-block ul {
   list-style: none;
   padding-left: 0;
+}
+
+.public-ranking-category-section {
+  display: grid;
+  gap: 5px;
+}
+
+.public-ranking-category-section + .public-ranking-category-section {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed #c7d8df;
+}
+
+.public-ranking-category {
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.public-result-status-row {
+  list-style: none;
 }
 
 .public-final-ranking-section {
