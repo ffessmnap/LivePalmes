@@ -2,7 +2,9 @@
   function init(context = {}) {
     const {
       appendImportHistory,
+      archiveCurrentHistory,
       archiveCurrentResults,
+      clearFirestoreAlerts,
       clearPublicSessionResultsPdfs,
       clearPublicSessionResultsPdfsForSession,
       clearPublicSeriesPdfs,
@@ -17,11 +19,16 @@
       renderResultsAdminPanel,
       resultWithoutPdf,
       resultsCollection,
+      saveAlerts,
       saveData,
+      saveLiveDismissedAlerts,
       window
     } = context;
+    const getAlerts = () => context.alerts || [];
+    const setAlerts = (value) => { context.alerts = value; };
     const getData = () => context.data || {};
     const setData = (value) => { context.data = value; };
+    const setLiveDismissedAlertIds = (value) => { context.liveDismissedAlertIds = value; };
     const getRaceResults = () => context.raceResults || [];
     const setRaceResults = (value) => { context.raceResults = value; };
     const getState = () => context.state || {};
@@ -92,6 +99,20 @@
         return;
       }
       const data = getData();
+      let archivedHistoryCount = 0;
+      let clearedAlerts = 0;
+      if (typeof archiveCurrentHistory === "function") {
+        const archive = await archiveCurrentHistory();
+        archivedHistoryCount = archive?.count || 0;
+      }
+      if (typeof clearFirestoreAlerts === "function") {
+        clearedAlerts = await clearFirestoreAlerts();
+      }
+      clearedAlerts = Math.max(clearedAlerts || 0, getAlerts().length);
+      setAlerts([]);
+      setLiveDismissedAlertIds([]);
+      if (typeof saveAlerts === "function") saveAlerts();
+      if (typeof saveLiveDismissedAlerts === "function") saveLiveDismissedAlerts();
       const clearedSeriesPdfs = await clearPublicSeriesPdfs();
       const clearedResults = await clearPublishedResults();
       const nextData = normalizeData(livePalmesAdminMaintenance.buildResetSeriesData
@@ -140,7 +161,10 @@
       render();
       await publishLiveDataToFirestore(nextData, "RAZ s\u00e9ries");
       await publishPublicResultsIndex({ silent: true });
-      window.alert(`RAZ s\u00e9ries effectu\u00e9e : programme, s\u00e9ries et engag\u00e9s vid\u00e9s. ${clearedSeriesPdfs} PDF s\u00e9ries public${clearedSeriesPdfs > 1 ? "s" : ""} supprim\u00e9${clearedSeriesPdfs > 1 ? "s" : ""}. ${clearedResults} r\u00e9sultat${clearedResults > 1 ? "s" : ""} public${clearedResults > 1 ? "s" : ""} archiv\u00e9${clearedResults > 1 ? "s" : ""} puis supprim\u00e9${clearedResults > 1 ? "s" : ""}.`);
+      const historyMessage = archivedHistoryCount || clearedAlerts
+        ? ` ${archivedHistoryCount} ligne${archivedHistoryCount > 1 ? "s" : ""} du journal archiv\u00e9e${archivedHistoryCount > 1 ? "s" : ""}. ${clearedAlerts} alerte${clearedAlerts > 1 ? "s" : ""} Firebase supprim\u00e9e${clearedAlerts > 1 ? "s" : ""}.`
+        : "";
+      window.alert(`RAZ s\u00e9ries effectu\u00e9e : programme, s\u00e9ries et engag\u00e9s vid\u00e9s.${historyMessage} ${clearedSeriesPdfs} PDF s\u00e9ries public${clearedSeriesPdfs > 1 ? "s" : ""} supprim\u00e9${clearedSeriesPdfs > 1 ? "s" : ""}. ${clearedResults} r\u00e9sultat${clearedResults > 1 ? "s" : ""} public${clearedResults > 1 ? "s" : ""} archiv\u00e9${clearedResults > 1 ? "s" : ""} puis supprim\u00e9${clearedResults > 1 ? "s" : ""}.`);
     }
 
     return {

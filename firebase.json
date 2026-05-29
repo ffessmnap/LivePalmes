@@ -1,4 +1,23 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "functions/**",
+      "docs/**",
+      "tests/**",
+      "tools/**",
+      "archives/**",
+      "sauvegardes/**",
+      "sources/**",
+      "ARCHITECTURE.md",
+      "CHANGELOG.md",
+      "FIREBASE_REGLES.md",
+      "README.md",
+      "TESTS_MANUELS.md"
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules"
   },

@@ -12,6 +12,7 @@
       render,
       renderOfficialAlerts,
       renderResetHistoryModal,
+      toggleCompetitionMode,
       resultArchivesCollection,
       resultPdfsCollection,
       resultWithoutPdf,
@@ -155,6 +156,10 @@
     }
 
     async function performResetHistoryWithArchive() {
+      if (typeof toggleCompetitionMode === "function" && getData().notes?.competitionMode === true) {
+        const ready = await toggleCompetitionMode(false);
+        if (!ready) return;
+      }
       let archive = null;
       try {
         archive = await archiveCurrentHistory();
@@ -170,14 +175,17 @@
         browserWindow.alert("RAZ annul\u00e9e.");
         return;
       }
+      const previousDismissedAlertIds = [...getLiveDismissedAlertIds()];
       setAlerts([]);
-      setLiveDismissedAlertIds([]);
       context.saveAlerts();
-      saveLiveDismissedAlerts();
       try {
         await clearFirestoreAlerts();
-      } catch {
-        browserWindow.alert("L'historique local est remis \u00e0 z\u00e9ro, mais Firebase n'a pas pu \u00eatre vid\u00e9. V\u00e9rifie ta connexion.");
+        setLiveDismissedAlertIds([]);
+        saveLiveDismissedAlerts();
+      } catch (error) {
+        setLiveDismissedAlertIds(previousDismissedAlertIds);
+        saveLiveDismissedAlerts();
+        browserWindow.alert(`L'historique local est remis \u00e0 z\u00e9ro, mais Firebase n'a pas pu \u00eatre vid\u00e9 (${error?.livePalmesOperation || "operation inconnue"}). Les alertes d\u00e9j\u00e0 masqu\u00e9es restent masqu\u00e9es sur ce poste. ${error?.message || "V\u00e9rifie ta connexion."}`);
       }
       render();
       browserWindow.alert(archive ? "Historique archiv\u00e9 puis remis \u00e0 z\u00e9ro." : "Historique remis \u00e0 z\u00e9ro.");

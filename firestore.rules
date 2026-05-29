@@ -51,16 +51,33 @@ service cloud.firestore {
         && request.auth.token.livepalmesCompetition == competitionId;
     }
 
+    function isConsoleGrant(competitionId, role) {
+      return request.auth != null
+        && validRole(role)
+        && exists(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid))
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.role == role
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.competitionId == competitionId
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
+    }
+
+    function isAnyConsoleGrant(competitionId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid))
+        && validRole(get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.role)
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.competitionId == competitionId
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
+    }
+
     function canWriteConsole(competitionId) {
-      return isAdmin() || isAnyConsoleRole(competitionId);
+      return isAdmin() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
     }
 
     function canWriteComputer(competitionId) {
-      return isAdmin() || isConsoleRole(competitionId, "computer");
+      return isAdmin() || isConsoleRole(competitionId, "computer") || isConsoleGrant(competitionId, "computer");
     }
 
     function canWriteRole(competitionId, role) {
-      return isAdmin() || isConsoleRole(competitionId, role);
+      return isAdmin() || isConsoleRole(competitionId, role) || isConsoleGrant(competitionId, role);
     }
 
     match /competitions/{competitionId} {
@@ -88,6 +105,10 @@ service cloud.firestore {
 
       match /secrets/{documentId} {
         allow read, write: if isAdmin();
+      }
+
+      match /consoleGrants/{documentId} {
+        allow read, write: if false;
       }
 
       match /alerts/{alertId} {

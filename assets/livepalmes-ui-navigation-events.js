@@ -197,8 +197,13 @@
         refreshPresenceCounts();
       });
       
-      competitionModeTopBtn?.addEventListener("click", () => {
-        toggleCompetitionMode();
+      competitionModeTopBtn?.addEventListener("click", async () => {
+        competitionModeTopBtn.disabled = true;
+        try {
+          await toggleCompetitionMode();
+        } finally {
+          competitionModeTopBtn.disabled = false;
+        }
       });
       
       manualRefreshBtn?.addEventListener("click", async () => {

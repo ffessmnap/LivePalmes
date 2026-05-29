@@ -17,6 +17,7 @@
       finishRolePin,
       historyArchivesCollection,
       livePalmesAdminAuth,
+      initFirebaseSync,
       livePalmesPinAuth,
       openDsqRows,
       openResultArchiveRows,
@@ -47,7 +48,7 @@
       renderRoleCodesModal();
     }
 
-    function prepareManualModeForReset() {
+    async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
       const ok = window.confirm([
         "L'actualisation directe est active.",
@@ -56,8 +57,7 @@
         "Passer en Manuel et continuer la RAZ ?"
       ].join("\n"));
       if (!ok) return false;
-      toggleCompetitionMode?.();
-      return true;
+      return await toggleCompetitionMode?.(false) === true;
     }
 
       roleCodesModal?.addEventListener("click", async (event) => {
@@ -188,7 +188,7 @@
             window.alert("RAZ annulée : il faut écrire RAZ.");
             return;
           }
-          if (!prepareManualModeForReset()) return;
+          if (!await prepareManualModeForReset()) return;
           const scope = roleCodesModal.querySelector("input[name='resetResultsScope']:checked")?.value || "results-session";
           const selectedResetSession = String(roleCodesModal.querySelector("#resetResultsSessionSelect")?.value || ensureResultsAdminSession() || "").trim();
           closeRoleCodesModal();
@@ -337,7 +337,7 @@
           const code = String(roleCodesModal.querySelector("#rolePinInput")?.value || "").trim();
           if (livePalmesAdminAuth?.isAdminAuthenticated?.() || (livePalmesAdminAuth?.legacyAdminPinFallbackEnabled?.() && code === ADMIN_PIN)) {
             finishRolePin({ allowed: true, adminBypass: true });
-          } else if (livePalmesPinAuth?.cloudPinModeEnabled?.(context.data?.notes)) {
+          } else if (context.forceCloudRolePin === role || livePalmesPinAuth?.cloudPinModeEnabled?.(context.data?.notes)) {
             try {
               await livePalmesPinAuth.verifyRolePin({
                 clientId: currentClientId?.(),
@@ -345,6 +345,11 @@
                 pin: code,
                 role
               });
+              context.cloudAuthenticatedRoles = {
+                ...(context.cloudAuthenticatedRoles || {}),
+                [role]: true
+              };
+              initFirebaseSync?.();
               unlockRole(role);
               finishRolePin({ allowed: true, adminBypass: false });
             } catch (error) {

@@ -463,7 +463,8 @@ function historyActionsOptions() {
     sanitizeAlertForFirestore,
     saveAlerts,
     saveLiveDismissedAlerts,
-    sessionResultsPdfsCollection
+    sessionResultsPdfsCollection,
+    toggleCompetitionMode
   };
   bindOptionState(options, ["alerts", "data", "firestoreDb", "liveDismissedAlertIds", "raceResults"]);
   return options;

@@ -16,14 +16,66 @@
       return [row.eventId, row.sex, row.category, row.label].join("|").toLowerCase();
     }
 
+    function sameSession(row) {
+      return !state.session || state.session === "all" || !row.session || row.session === state.session;
+    }
+
+    function sameSeriesSelection(row) {
+      if (!state.series || state.series === "all") return true;
+      if (String(state.series).startsWith("finale-")) return row.stage === state.series;
+      return Number(row.series) === Number(state.series);
+    }
+
+    function visibleSeriesRows() {
+      return (data.series || [])
+        .filter((row) => row.eventId === state.eventId && row.sex === state.sex)
+        .filter(sameSession)
+        .filter(sameSeriesSelection);
+    }
+
+    function seriesEntrantLookup() {
+      const lookup = new Map();
+      (data.entrants || [])
+        .filter(matchesRace)
+        .filter(sameSession)
+        .forEach((entrant) => {
+          const swimmerId = entrant.swimmerId || "";
+          if (!swimmerId) return;
+          lookup.set(`${entrant.eventId}|${entrant.sex}|${entrant.session || ""}|${swimmerId}`, entrant);
+          lookup.set(`${entrant.eventId}|${entrant.sex}|${swimmerId}`, entrant);
+        });
+      return lookup;
+    }
+
+    function visibleSeriesCategories() {
+      const rows = visibleSeriesRows();
+      if (!rows.length) return null;
+      const entrantsByKey = seriesEntrantLookup();
+      const categories = rows
+        .map((row) => {
+          const swimmerId = row.swimmerId || "";
+          return entrantsByKey.get(`${row.eventId}|${row.sex}|${row.session || ""}|${swimmerId}`) ||
+            entrantsByKey.get(`${row.eventId}|${row.sex}|${swimmerId}`);
+        })
+        .map((entrant) => entrant?.category)
+        .filter(Boolean);
+      return categories.length ? [...new Set(categories)] : null;
+    }
+
+    function categoryIsVisible(record, categories) {
+      return !categories || categories.some((category) => sameCategory(record.category, category));
+    }
+
     function currentRecordRows() {
       const order = { Cadet: 1, Junior: 2, Senior: 3 };
+      const visibleCategories = visibleSeriesCategories();
       const relayCategories = isRelayEntrant({ eventId: state.eventId })
         ? new Set((data.entrants || []).filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))
         : null;
       return (data.records || [])
         .filter(shouldKeepRecord)
         .filter((record) => recordMatchesRace(record))
+        .filter((record) => categoryIsVisible(record, visibleCategories))
         .filter((record) => !relayCategories || relayCategories.has(record.category))
         .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
     }
