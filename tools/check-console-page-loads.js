@@ -37,6 +37,7 @@ const finalWithdrawalsScripts = [
   "assets/livepalmes-final-withdrawals-options.js",
   "assets/livepalmes-final-withdrawals-view.js",
   "assets/livepalmes-result-detail-view.js",
+  "assets/livepalmes-final-withdrawals-core.js",
   "assets/livepalmes-final-withdrawals-workflow.js"
 ];
 
