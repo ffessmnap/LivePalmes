@@ -237,7 +237,7 @@
           eventId: compactRecordEventId(distance, discipline),
           sex: sheetSex(section.sex),
           category: section.category,
-          label: `MPF ${String(section.category || "").replace(/^[FHX]/, "M")}`,
+          label: `MPF ${String(section.category || "")}`,
           holder: cleanCell(holder),
           club: cleanCell(club),
           time: sheetTime(time),

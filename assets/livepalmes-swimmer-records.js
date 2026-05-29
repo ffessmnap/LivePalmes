@@ -114,7 +114,7 @@
       if (sameCategory(category, "Junior")) return "JUN";
       if (sameCategory(category, "Senior")) return "SEN";
       const master = String(category || "").match(/^(?:m?(\d+)\+?|([fhm])(\d+)\+?)$/i);
-      if (master) return `${master[2] ? master[2].toUpperCase().replace("H", "M") : ""}${master[1] || master[3]}+`;
+      if (master) return `${master[2] ? master[2].toUpperCase() : ""}${master[1] || master[3]}+`;
       if (/^masters?$/i.test(String(category || ""))) return "MAS";
       return String(category || "").slice(0, 3).toUpperCase();
     }
