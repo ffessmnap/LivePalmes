@@ -82,6 +82,105 @@
       return livePalmesSpeakerInfo.applySpeakerInfoToEntrants(entrants, seedSources, clubs, speakerInfoOptions());
     }
 
+    function fallbackRecordEventId(distance, discipline) {
+      const cleanDistance = String(distance || "").trim().toLowerCase();
+      const cleanDiscipline = String(discipline || "").trim().toUpperCase();
+      const suffixes = { AP: "ap", BI: "bi", IS: "is", SB: "sb", SF: "sf" };
+      return cleanDistance && suffixes[cleanDiscipline] ? `${cleanDistance}${suffixes[cleanDiscipline]}` : "";
+    }
+
+    function fallbackRecordTime(value) {
+      const clean = String(value || "").trim().replace(",", ".");
+      if (!clean) return "";
+      return typeof importedSeriesTime === "function" ? importedSeriesTime(clean) : clean;
+    }
+
+    function fallbackRecordSex(value) {
+      return /^hommes$/i.test(String(value || "")) ? "M" : (/^femmes$/i.test(String(value || "")) ? "F" : "");
+    }
+
+    function fallbackMasterCategory(sectionSex, masterCode) {
+      const sex = fallbackRecordSex(sectionSex);
+      const number = String(masterCode || "").match(/\d+/)?.[0] || "";
+      return sex && number ? `${sex}${number}+` : "";
+    }
+
+    function parseFallbackMasterRecords(text) {
+      const source = String(text || "").replace(/\s+/g, " ");
+      const sections = [];
+      let match = null;
+      const sectionPattern = /(Femmes|Hommes)\s+M(\d{2})\+\s*\(\d{2}\s*-\s*\d{2}\)/gi;
+      while ((match = sectionPattern.exec(source))) {
+        sections.push({ index: match.index, sex: fallbackRecordSex(match[1]), category: fallbackMasterCategory(match[1], match[2]) });
+      }
+      const records = [];
+      sections.forEach((section, index) => {
+        const body = source.slice(section.index, sections[index + 1]?.index ?? source.length);
+        const recordPattern = /\b(\d{2,4})\s+(AP|BI|IS|SB|SF)\s+(.+?\(\d{4}\))\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{1,2}:\d{2}\.\d{2})/gi;
+        let recordMatch = null;
+        while ((recordMatch = recordPattern.exec(body))) {
+          const [, distance, discipline, holder, club, date, time] = recordMatch;
+          const eventId = fallbackRecordEventId(distance, discipline);
+          if (!eventId || !section.sex || !section.category) continue;
+          records.push({
+            eventId,
+            sex: section.sex,
+            category: section.category,
+            label: `MPF M${String(section.category).match(/\d+/)?.[0] || ""}+`,
+            holder: String(holder || "").trim(),
+            club: String(club || "").trim(),
+            time: fallbackRecordTime(time),
+            date,
+            place: ""
+          });
+        }
+      });
+      return records;
+    }
+
+    function parseFallbackMinimeRecord(line, context) {
+      if (!context?.category) return null;
+      const match = String(line || "").replace(/\s+/g, " ").trim().match(/^(\d{2,4})\s+(AP|BI|IS|SB|SF)\s+(\d{1,2}:\d{2}\.\d{2})\s+(.+?)\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(.+))?$/i);
+      if (!match) return null;
+      const [, distance, discipline, time, holder, club, date, place = ""] = match;
+      const eventId = fallbackRecordEventId(distance, discipline);
+      return eventId ? {
+        eventId,
+        sex: context.sex,
+        category: "Minime",
+        label: context.sex === "F" ? "MPF minime filles" : "MPF minime garcons",
+        holder: holder.trim(),
+        club: club.trim(),
+        time: fallbackRecordTime(time),
+        date,
+        place: place.trim()
+      } : null;
+    }
+
+    function parseFallbackRecordsSheet(rows) {
+      const records = [];
+      let context = null;
+      (rows || []).forEach((cells) => {
+        const first = String(cells?.[0] || "").trim();
+        if (!first) return;
+        records.push(...parseFallbackMasterRecords(first));
+        const minimeMatch = first.match(/^Minimes\s+(Femmes|Hommes)$/i);
+        if (minimeMatch) {
+          context = { category: "Minime", sex: fallbackRecordSex(minimeMatch[1]) };
+          return;
+        }
+        const minimeRecord = parseFallbackMinimeRecord(first, context);
+        if (minimeRecord) records.push(minimeRecord);
+      });
+      const seen = new Set();
+      return records.filter((record) => {
+        const key = [record.eventId, record.sex, record.category, record.time, record.holder].join("|").toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return record.eventId && record.sex && record.category && record.time;
+      });
+    }
+
     async function updateSpeakerInfoFromGoogleSheet() {
       const buttons = [
         document.querySelector("#updateSpeakerInfoBtn"),
@@ -122,7 +221,10 @@
         const seedSources = parseSeedSourceSheet(seedRows);
         const entrantsWithSpeakerInfo = applySpeakerInfoToEntrants(data.entrants || [], seedSources, clubs);
         const attachedSeedSources = entrantsWithSpeakerInfo.filter((entrant) => entrant.seedSource).length;
-        const parsedRecords = parseRecordsSheet(recordRows);
+        let parsedRecords = parseRecordsSheet(recordRows);
+        if (!parsedRecords.length) {
+          parsedRecords = parseFallbackRecordsSheet(recordRows);
+        }
         let nextData = normalizeData({
           ...data,
           top2025: parseTopSheet(franceRows),
