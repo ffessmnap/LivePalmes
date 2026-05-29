@@ -2626,6 +2626,16 @@ tbody tr:hover,
   font-size: 0.76rem;
 }
 
+.result-detail-dialog .final-withdrawal-group + .final-withdrawal-group {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line);
+}
+
+.result-detail-dialog li.closed {
+  list-style: none;
+}
+
 .ranking-list .muted-text {
   display: inline;
   margin-left: 4px;
