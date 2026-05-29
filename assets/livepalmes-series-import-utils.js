@@ -51,7 +51,7 @@
       const markers = [
         /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i,
         /\bfinale\s+[AB]\s+Horaire indicatif/i,
-        /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i
+        /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:(?:Minimes|Seniors|Masters)\s+)?(?:Femmes|Hommes|Mixte)/i
       ];
       const queue = [line];
       while (queue.length) {
