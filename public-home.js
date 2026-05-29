@@ -11,13 +11,29 @@ const FIREBASE_CONFIG = {
 const meetMeta = document.querySelector("#publicHomeMeetMeta");
 const currentMeet = document.querySelector("#publicHomeCurrentMeet");
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function meetLabel(meet = {}) {
   return [meet.name, meet.city, meet.year].filter(Boolean).join(" - ");
 }
 
 function setHomeMeet(label, detail = "") {
   if (meetMeta) meetMeta.textContent = "Live, r\u00e9sultats, performances et archives";
-  if (currentMeet) currentMeet.textContent = detail || label || "Aucune comp\u00e9tition en direct pour le moment";
+  if (!currentMeet) return;
+  const title = label || "Aucune comp\u00e9tition en direct pour le moment";
+  const extra = detail && detail !== label ? detail.replace(label, "").replace(/^\s*-\s*/, "") : "";
+  currentMeet.innerHTML = `
+    <span>Comp\u00e9tition en cours</span>
+    <strong>${escapeHtml(title)}</strong>
+    ${extra ? `<em>${escapeHtml(extra)}</em>` : ""}
+  `;
 }
 
 async function loadPublicHome() {
