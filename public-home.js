@@ -25,7 +25,7 @@ function meetLabel(meet = {}) {
 }
 
 function setHomeMeet(label, detail = "") {
-  if (meetMeta) meetMeta.textContent = "Live, r\u00e9sultats, performances et archives";
+  if (meetMeta) meetMeta.textContent = "Live, performances et archives";
   if (!currentMeet) return;
   const title = label || "Aucune comp\u00e9tition en direct pour le moment";
   const extra = detail && detail !== label ? detail.replace(label, "").replace(/^\s*-\s*/, "") : "";
