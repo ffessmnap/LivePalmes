@@ -776,6 +776,7 @@ table {
   width: 100%;
   min-width: 1050px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th,
@@ -799,6 +800,7 @@ th {
 
 td {
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
 }
 
 td span {
@@ -806,6 +808,23 @@ td span {
   margin-top: 2px;
   color: var(--muted);
   font-size: 0.76rem;
+}
+
+.relay-swimmers {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.relay-swimmers span {
+  display: block;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .swimmer-meta {
