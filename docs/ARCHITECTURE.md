@@ -10,8 +10,8 @@ Les pages principales sont a la racine :
 
 - `index.html` : accueil historique avec acces a toutes les consoles.
 - `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : pages dediees par console, avec le meme controle d'acces que l'accueil.
-- `resultats.html` et `resultats.js` : page publique des resultats.
-- `series-public.html` et `series-public.js` : page publique des series.
+- `resultats.html` et `assets/pages/resultats.js` : page publique des resultats.
+- `series-public.html` et `assets/pages/series-public.js` : page publique des series.
 - `styles.css`, `console.css`, `public.css` : styles visuels.
 - `app.js` : coeur de la console interne.
 

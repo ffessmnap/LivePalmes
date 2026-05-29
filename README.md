@@ -24,32 +24,25 @@ node tools/verify-livepalmes.js
 
 Cette commande verifie la syntaxe JavaScript, lance les tests automatiques simples et controle les erreurs d'espaces Git.
 
-Si la commande finit par `Verification LivePalmes OK.`, la base technique est saine. Il faut ensuite faire les tests manuels utiles de `TESTS_MANUELS.md`, surtout apres une modification sur les PDF, les resultats, les finalistes ou Firebase.
+Si la commande finit par `Verification LivePalmes OK.`, la base technique est saine. Il faut ensuite faire les tests manuels utiles de `docs/TESTS_MANUELS.md`, surtout apres une modification sur les PDF, les resultats, les finalistes ou Firebase.
 
 ## Organisation du dossier
 
-Les fichiers visibles en ligne restent a la racine :
+Les pages accessibles en ligne restent a la racine pour garder des URL simples et stables :
 
-- `index.html`
-- `styles.css`
-- `app.js`
-- `data.generated.js`
-- `donnees-speaker-france-2026.json`
+- `index.html`, `public.html`, `resultats.html`, `series-public.html`, `archives.html`
+- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`
+- `pdf.html`, `resultat-pdf.html`, `series-pdf.html`
 
-Les fichiers de travail sont ranges dans `sources` :
+Les scripts applicatifs sont ranges dans `assets/`.
 
-- `sources/series` : PDF des series. Le plus recent est utilise comme mise a jour active.
-- `sources/resultats` : resultats des meetings et protocole France 2025.
-- `sources/engagements` : fichiers TXT d'engagements, utiles si aucun PDF de series n'est disponible.
-- `sources/records` : pages FFESSM records et MPF.
-- `sources/qualifs` : temps EDF TSP/TRP.
-- `sources/edf` : membres EDF et medailles internationales.
-
-Les scripts sont ranges dans `outils` :
-
-- `outils/build_data.py` : regenere les donnees.
-- `outils/start_console.py` : demarre la console locale.
-- `outils/watch_data.py` : surveille les sources.
+- `assets/livepalmes-*.js` : modules des consoles et du coeur LivePalmes.
+- `assets/pages/` : scripts propres aux pages publiques autonomes.
+- `performances/` : espace public des records, MPF, TOP et fiches nageurs.
+- `functions/` : fonctions Firebase cote serveur.
+- `tools/` : scripts de verification et maintenance.
+- `tests/` : tests automatiques.
+- `docs/` : documentation technique et notes de suivi.
 
 ## Utilisation simple
 
@@ -70,6 +63,7 @@ Pour GitHub ou Firebase Hosting, publie au minimum :
 - `index.html`
 - `styles.css`
 - `app.js`
+- `assets/`
 - `data.generated.js`
 - `donnees-speaker-france-2026.json`
 

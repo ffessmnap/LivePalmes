@@ -598,7 +598,7 @@ async function testPublicSeries(client, baseUrl) {
   const state = await evaluateJson(client, `
     const options = Array.from(document.querySelectorAll('#publicSeriesRaceSelect option')).map((option) => option.textContent.trim());
     return {
-      script: document.querySelector('script[src^="series-public.js"]')?.getAttribute('src') || '',
+      script: document.querySelector('script[src*="series-public.js"]')?.getAttribute('src') || '',
       count: options.length,
       sample: options.slice(0, 8),
       hasRefresh: Boolean(document.querySelector('#refreshPublicSeriesBtn')),
