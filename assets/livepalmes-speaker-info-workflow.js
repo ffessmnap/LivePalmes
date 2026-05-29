@@ -122,10 +122,11 @@
         const seedSources = parseSeedSourceSheet(seedRows);
         const entrantsWithSpeakerInfo = applySpeakerInfoToEntrants(data.entrants || [], seedSources, clubs);
         const attachedSeedSources = entrantsWithSpeakerInfo.filter((entrant) => entrant.seedSource).length;
-        const nextData = normalizeData({
+        const parsedRecords = parseRecordsSheet(recordRows);
+        let nextData = normalizeData({
           ...data,
           top2025: parseTopSheet(franceRows),
-          records: parseRecordsSheet(recordRows),
+          records: parsedRecords,
           edfMembers: parseEdfSheet(edfRows),
           internationalMedals: parseInternationalSheet(internationalRows),
           competitionStats: parseCompetitionStatsSheet(competitionStatRows),
@@ -141,6 +142,9 @@
             importHistory: appendImportHistory(data.notes || {}, "infos speaker Google Sheet")
           }
         });
+        if (parsedRecords.length && !nextData.records.length) {
+          nextData = { ...nextData, records: parsedRecords };
+        }
         applyFreshData(nextData, false);
         if (typeof ensureConsoleWriteAccess === "function" && !await ensureConsoleWriteAccess()) {
           throw new Error("Connexion Firebase console requise pour publier les repères.");
