@@ -159,8 +159,14 @@
       return Number.isFinite(ms) ? ms : Number.POSITIVE_INFINITY;
     }
 
+    function isPlaceholderSeedTime(value) {
+      const digits = String(value || "").replace(/\D/g, "");
+      return digits === "595999";
+    }
+
     function performanceDeltaLabel(performance, referenceTime, referenceLabel = "") {
       if (performance?.status || !performance?.time || !referenceTime) return "";
+      if (isPlaceholderSeedTime(referenceTime)) return "";
       const performanceMs = timeToMs(performance.time);
       const referenceMs = timeToMs(referenceTime);
       if (!Number.isFinite(performanceMs) || !Number.isFinite(referenceMs)) return "";
@@ -184,6 +190,7 @@
       performancesForProgramRow,
       resultPdfLabel,
       resultPdfLinksForProgramRow,
+      isPlaceholderSeedTime,
       timeToMs,
       uniquePerformances
     };
