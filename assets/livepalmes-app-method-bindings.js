@@ -48,7 +48,7 @@
       "renderRoleCodesModal", "renderRoleCodesAdminModal", "renderResetHistoryModal", "renderResetResultsModal",
       "renderPublicSessionInfosModal", "renderHistoryArchivesModal", "renderRolePinModal", "askRolePin",
       "finishRolePin", "closeRoleCodesModal", "readRolePinsFromModal", "saveRoleCodesFromModal",
-      "togglePublicResultsOnline", "toggleRoleLock", "downloadAdminBackup", "restoreAdminBackupFile",
+      "toggleRoleLock", "downloadAdminBackup", "restoreAdminBackupFile",
       "toggleCompetitionMode"
     ],
     },

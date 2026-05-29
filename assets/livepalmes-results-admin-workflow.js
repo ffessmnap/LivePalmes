@@ -396,11 +396,9 @@
     const sessions = resultSessions();
     const activeSession = ensureResultsAdminSession();
     const rows = resultProgramRows(activeSession);
-    const publicResultsOnline = data.notes?.publicResultsOnline !== false;
     resultsAdminPanel.hidden = false;
     resultsAdminPanel.innerHTML = livePalmesAdminResults.renderResultsAdminPanelHtml({
       activeSession,
-      publicResultsOnline,
       rowsHtml: rows.map((row) => renderResultProgramRow(row)).join(""),
       seriesImportBusy: seriesImportState?.tone === "loading",
       seriesImportStateHtml: seriesImportState ? resultUploadBadgeHtml(seriesImportState) : "",

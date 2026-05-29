@@ -40,7 +40,6 @@
       setSeriesImportState,
       sexDisplayLabel,
       toggleCompetitionMode,
-      togglePublicResultsOnline,
       updateLiveNotes
     } = context;
     const getData = () => context.data || { events: [], program: [] };
@@ -72,10 +71,6 @@
         }
         if (event.target.closest("[data-computer-admin-series]")) {
           openAdminSeriesModal();
-          return;
-        }
-        if (event.target.closest("[data-public-results-online-toggle]")) {
-          togglePublicResultsOnline();
           return;
         }
         if (event.target.closest("[data-results-reset]")) {
