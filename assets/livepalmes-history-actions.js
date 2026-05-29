@@ -2,6 +2,8 @@
   function init(context = {}) {
     const {
       LIVE_DISMISSED_ALERTS_KEY,
+      FIREBASE_CONFIG,
+      FIRESTORE_COMPETITION_ID,
       buildPublicResultsIndex,
       clearFirestoreAlerts,
       dsqReportRows,
@@ -40,6 +42,25 @@
       storage.setItem(LIVE_DISMISSED_ALERTS_KEY, JSON.stringify(getLiveDismissedAlertIds()));
     }
 
+    function ensureFirestoreDb() {
+      if (context.firestoreDb) return context.firestoreDb;
+      if (!browserWindow.firebase?.initializeApp || !browserWindow.firebase?.firestore) return null;
+      if (!browserWindow.firebase.apps?.length) {
+        if (!FIREBASE_CONFIG) return null;
+        browserWindow.firebase.initializeApp(FIREBASE_CONFIG);
+      }
+      context.firestoreDb = browserWindow.firebase.firestore();
+      return context.firestoreDb;
+    }
+
+    function collectionOrFallback(collectionGetter, collectionName) {
+      const direct = typeof collectionGetter === "function" ? collectionGetter() : null;
+      if (direct) return direct;
+      const db = ensureFirestoreDb();
+      if (!db || !FIRESTORE_COMPETITION_ID) return null;
+      return db.collection("competitions").doc(FIRESTORE_COMPETITION_ID).collection(collectionName);
+    }
+
     async function archiveCurrentHistory() {
       const rows = dsqReportRows();
       if (!rows.length) return null;
@@ -62,8 +83,8 @@
       const sourceRows = Array.isArray(sourceResults) ? sourceResults : [];
       const rows = sourceRows.map(resultWithoutPdf);
       if (!rows.length) return null;
-      const collection = resultArchivesCollection();
-      const db = context.firestoreDb;
+      const db = ensureFirestoreDb();
+      const collection = collectionOrFallback(resultArchivesCollection, "resultArchives");
       if (!collection || !db) throw new Error("Firebase n'est pas disponible pour archiver les r\u00e9sultats.");
       const now = new Date();
       const archive = {
@@ -84,7 +105,7 @@
       });
       await batch.commit();
 
-      const resultPdfCollection = typeof resultPdfsCollection === "function" ? resultPdfsCollection() : null;
+      const resultPdfCollection = collectionOrFallback(resultPdfsCollection, "resultPdfs");
       const resultPdfArchive = archiveRef.collection("resultPdfs");
       if (resultPdfCollection) {
         for (const result of rows) {
@@ -111,7 +132,7 @@
         }
       }
 
-      const sessionPdfCollection = typeof sessionResultsPdfsCollection === "function" ? sessionResultsPdfsCollection() : null;
+      const sessionPdfCollection = collectionOrFallback(sessionResultsPdfsCollection, "sessionResultsPdfs");
       const sessionPdfArchive = archiveRef.collection("sessionResultsPdfs");
       const sessionPdfIds = (getData().notes?.publicSessionResultsPdfs || [])
         .map((pdf) => String(pdf?.id || "").trim())

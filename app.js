@@ -444,6 +444,8 @@ const livePalmesHistoryActions = livePalmesHistoryActionsModule.init(historyActi
 
 function historyActionsOptions() {
   const options = {
+    FIREBASE_CONFIG,
+    FIRESTORE_COMPETITION_ID,
     LIVE_DISMISSED_ALERTS_KEY,
     buildPublicResultsIndex,
     clearFirestoreAlerts,
