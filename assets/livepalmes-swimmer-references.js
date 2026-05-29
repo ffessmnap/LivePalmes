@@ -156,7 +156,8 @@
         shortClubName(entrant)
       ].map(normalizeClubMatch).filter(Boolean);
       return (data.swimmerInfos || []).filter((item) => {
-        if (!item.info || item.personKey !== entrantName) return false;
+        const infoName = normalizePersonName(item.personKey || item.name || "");
+        if (!item.info || infoName !== entrantName) return false;
         if (!item.clubKey) return true;
         return clubKeys.includes(item.clubKey);
       });
