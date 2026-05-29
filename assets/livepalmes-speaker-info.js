@@ -179,6 +179,7 @@
   
   function categoryFromCodeOrText(value) {
     const text = String(value || "").toUpperCase();
+    if (text.includes("MI") || text.includes("MINIME")) return "Minime";
     if (text.includes("CA") || text.includes("CADET")) return "Cadet";
     if (text.includes("JU") || text.includes("JUNIOR")) return "Junior";
     if (text.includes("SE") || text.includes("SENIOR")) return "Senior";
@@ -192,6 +193,129 @@
     return `${sheetSex(sex || rowValue(row, ["sexe", "sex"]) || "")}|${normalizePersonName(displayNameFromParts(firstName, lastName, fullName))}`;
   }
   
+  function compactRecordEventId(distance, discipline) {
+    const cleanDistance = String(distance || "").trim().toLowerCase();
+    const cleanDiscipline = String(discipline || "").trim().toUpperCase();
+    const labels = { AP: "Apnee", BI: "Bipalmes", IS: "Immersion", SB: "SB", SF: "Surface" };
+    const fromLabel = sheetEventId(`${cleanDistance}m ${labels[cleanDiscipline] || cleanDiscipline}`);
+    if (fromLabel) return fromLabel;
+    const suffix = { AP: "ap", BI: "bi", IS: "is", SB: "sb", SF: "sf" }[cleanDiscipline] || cleanDiscipline.toLowerCase();
+    return `${cleanDistance}${suffix}`;
+  }
+
+  function masterCategory(sectionSex, masterCode) {
+    const sex = /^hommes$/i.test(String(sectionSex || "")) ? "H" : (/^femmes$/i.test(String(sectionSex || "")) ? "F" : "");
+    const number = String(masterCode || "").match(/\d+/)?.[0] || "";
+    return sex && number ? `${sex}${number}+` : "";
+  }
+
+  function parseMasterRecordBlocks(text) {
+    const source = cleanCell(text).replace(/\s+/g, " ");
+    const sectionPattern = /(Femmes|Hommes)\s+M(\d{2})\+\s*\(\d{2}\s*-\s*\d{2}\)/gi;
+    const sections = [];
+    let match = null;
+    while ((match = sectionPattern.exec(source))) {
+      sections.push({ index: match.index, sex: match[1], category: masterCategory(match[1], match[2]) });
+    }
+    const records = [];
+    sections.forEach((section, index) => {
+      const body = source.slice(section.index, sections[index + 1]?.index ?? source.length);
+      const recordPattern = /\b(\d{2,4})\s+(AP|BI|IS|SB|SF)\s+(.+?\(\d{4}\))\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{1,2}:\d{2}\.\d{2})/gi;
+      let recordMatch = null;
+      while ((recordMatch = recordPattern.exec(body))) {
+        const [, distance, discipline, holder, club, date, time] = recordMatch;
+        const row = {
+          eventId: compactRecordEventId(distance, discipline),
+          sex: sheetSex(section.sex),
+          category: section.category,
+          label: `MPF ${String(section.category || "").replace(/^[FHX]/, "M")}`,
+          holder: cleanCell(holder),
+          club: cleanCell(club),
+          time: sheetTime(time),
+          date,
+          place: ""
+        };
+        if (row.eventId && row.sex && row.category && row.time && shouldKeepRecord(row)) records.push(row);
+      }
+    });
+    return records;
+  }
+
+  function parseCompactMinimeRecord(line, context) {
+    if (!context || !/minime/i.test(context.category || "")) return null;
+    const match = cleanCell(line).match(/^(\d{2,4})\s+(AP|BI|IS|SB|SF)\s+(\d{1,2}:\d{2}\.\d{2})\s+(.+?)\s+([A-Z0-9]{2,8})\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(.+))?$/i);
+    if (!match) return null;
+    const [, distance, discipline, time, holder, club, date, place] = match;
+    const row = {
+      eventId: compactRecordEventId(distance, discipline),
+      sex: context.sex,
+      category: "Minime",
+      label: context.sex === "F" ? "MPF minime filles" : "MPF minime garcons",
+      holder: cleanCell(holder),
+      club: cleanCell(club),
+      time: sheetTime(time),
+      date,
+      place: cleanCell(place)
+    };
+    return row.eventId && row.sex && row.time && shouldKeepRecord(row) ? row : null;
+  }
+
+  function parseCompactRelayRecord(cells, context) {
+    if (!context?.eventId) return null;
+    const first = cleanCell(cells[0]);
+    const date = cleanCell(cells[1]);
+    const time = sheetTime(cells[2]);
+    const match = first.match(/^(R\d{3})\s+([A-Z0-9]+)\s*(?:\((.+)\))?$/i);
+    if (!match || !time) return null;
+    const [, category, club, swimmers] = match;
+    const row = {
+      eventId: context.eventId,
+      sex: "X",
+      category: category.toUpperCase(),
+      label: `${context.kind === "federal" ? "Record federal" : "MPF relais club"} ${category.toUpperCase()}`,
+      holder: swimmers ? `${club} (${cleanCell(swimmers)})` : club,
+      club,
+      time,
+      date,
+      place: ""
+    };
+    return shouldKeepRecord(row) ? row : null;
+  }
+
+  function parseCompactRecordsSheet(rows) {
+    const records = [];
+    let context = null;
+    rows.forEach((cells) => {
+      const first = cleanCell(cells[0]);
+      if (!first) return;
+      records.push(...parseMasterRecordBlocks(first));
+      const relayKindMatch = first.match(/Relais\s+(Club|Equipe\s+F[Ã©e]d[Ã©e]rale)/i);
+      if (relayKindMatch) {
+        context = { kind: /equipe/i.test(relayKindMatch[1]) ? "federal" : "club", eventId: context?.eventId || "" };
+      }
+      const eventMatch = first.match(/\b(4x\d+|\d{2,4})\s+(AP|BI|IS|SB|SF)\s+Mixte\b/i);
+      if (eventMatch) {
+        context = { ...(context || { kind: "club" }), eventId: compactRecordEventId(eventMatch[1], eventMatch[2]) };
+      }
+      const minimeMatch = first.match(/^Minimes\s+(Femmes|Hommes)$/i);
+      if (minimeMatch) {
+        context = { category: "Minime", sex: sheetSex(minimeMatch[1]) };
+        return;
+      }
+      const relayRecord = parseCompactRelayRecord(cells, context);
+      if (relayRecord) records.push(relayRecord);
+      const minimeRecord = parseCompactMinimeRecord(first, context);
+      if (minimeRecord) records.push(minimeRecord);
+    });
+    const seen = new Set();
+    return records.filter((row) => {
+      const key = [row.eventId, row.sex, row.category, row.time, row.holder].join("|").toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   async function fetchSpeakerSheetRows(sheetName) {
     const url = `https://docs.google.com/spreadsheets/d/${SPEAKER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cache=${Date.now()}`;
     const response = await fetch(url, { cache: "no-store" });
@@ -240,6 +364,8 @@
       };
     }).filter((row) => row.eventId && row.sex && row.category && row.time && shouldKeepRecord(row));
     if (directRows.length) return directRows;
+    const compactRows = parseCompactRecordsSheet(rows);
+    if (compactRows.length) return compactRows;
   
     const records = [];
     let context = null;
