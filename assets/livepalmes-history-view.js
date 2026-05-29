@@ -30,6 +30,8 @@
     const motif = helpers.decisionMotifLabel?.(alert) || "";
     const identity = alert.type === "finalists_announcement"
       ? `${alert.finalistCount || 0} finaliste${Number(alert.finalistCount || 0) > 1 ? "s" : ""}`
+      : alert.type === "finalist_replacement_announcement"
+      ? `${alert.replacementName || alert.displayName || "Concurrent"}${alert.replacementClub || alert.clubCode ? ` - ${alert.replacementClub || alert.clubCode}` : ""}`
       : options.showIdentity ? helpers.fullAlertIdentityLabel?.(alert) : helpers.alertIdentityLabel?.(alert);
     const action = helpers.historyActionForAlert?.(alert);
     const comment = helpers.alertCommentLabel?.(alert) || "";

@@ -10,11 +10,14 @@ require(path.join(__dirname, "..", "assets", "livepalmes-results.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-program.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-workflow.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-speaker-info.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-history-view.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-history-presenter.js"));
 
 const parser = global.LivePalmesResultParser;
 const time = global.LivePalmesTime;
 const people = global.LivePalmesPeople;
 const speakerInfo = global.LivePalmesSpeakerInfo;
+const historyPresenter = global.LivePalmesHistoryPresenter;
 
 function splitImportedPersonName(value) {
   const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
@@ -203,6 +206,34 @@ function testSpeakerInfoHandlesEmptyEncodedCells() {
   assert.equal(sources.get("50sf|F|durand emma|40000"), "Paris 2026");
 }
 
+function testHistoryRebuildsFinalAnnouncementsFromResults() {
+  const presenter = historyPresenter.init({
+    alerts: [],
+    raceResults: [{
+      id: "result-50sf-F",
+      eventId: "50sf",
+      eventLabel: "50 m surface",
+      sex: "F",
+      sexLabel: "Femmes",
+      finalistsAnnouncedAt: "2026-05-24T07:47:31.243Z",
+      finalists: {
+        a: [{ rank: 1, lastName: "MARTIN", firstName: "Lea", clubCode: "CLUB", time: "20.00" }],
+        b: [{ rank: 9, lastName: "DURAND", firstName: "Emma", clubCode: "CLUB", time: "21.00", repechaged: true, repechageAnnouncedAt: "2026-05-24T08:31:36.985Z" }]
+      }
+    }],
+    livePalmesHistoryView: global.LivePalmesHistoryView,
+    escapeHtml: (value) => String(value ?? ""),
+    isRequalificationAlert: () => false,
+    sexDisplayLabel: (sex) => sex
+  });
+  const rows = presenter.syntheticFinalHistoryRows();
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].type, "finalists_announcement");
+  assert.equal(rows[0].speakerStatus, "done");
+  assert.equal(rows[1].type, "finalist_replacement_announcement");
+  assert.equal(rows[1].replacementName, "DURAND Emma");
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
@@ -217,7 +248,8 @@ function testSpeakerInfoHandlesEmptyEncodedCells() {
   testFinalPerformanceStageAndStatus,
   testResultParserFallbacksIgnoreInvalidHelpers,
   testFinalResultRowMatchesLegacyFinalStage,
-  testSpeakerInfoHandlesEmptyEncodedCells
+  testSpeakerInfoHandlesEmptyEncodedCells,
+  testHistoryRebuildsFinalAnnouncementsFromResults
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");

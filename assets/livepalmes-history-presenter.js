@@ -77,6 +77,7 @@
         return true;
       }
     });
+    const getRaceResults = () => context.raceResults || [];
 
       function renderOfficialAlerts() {
         if (!officialAlerts) return;
@@ -221,9 +222,121 @@
           }
         });
       }
+
+      function finalHistoryRowName(row = {}) {
+        return [row.lastName, row.firstName].filter(Boolean).join(" ") ||
+          row.displayName ||
+          row.name ||
+          "Concurrent";
+      }
+
+      function finalHistoryRowClub(row = {}) {
+        return String(row.clubCode || row.club || "").toUpperCase();
+      }
+
+      function finalHistoryRows(result = {}) {
+        return [
+          ...(Array.isArray(result.finalists?.a) ? result.finalists.a.map((row) => ({ ...row, finalKey: "a" })) : []),
+          ...(Array.isArray(result.finalists?.b) ? result.finalists.b.map((row) => ({ ...row, finalKey: "b" })) : [])
+        ];
+      }
+
+      function finalHistoryReplacementKey(row = {}) {
+        return [
+          row.finalKey || "",
+          String(row.rank || ""),
+          finalHistoryRowName(row).toLocaleUpperCase("fr-FR"),
+          String(row.time || "")
+        ].join("|");
+      }
+
+      function replacementHistoryKeyForAlert(alert = {}) {
+        return [
+          alert.finalKey || "",
+          String(alert.replacementRank || ""),
+          String(alert.replacementName || alert.displayName || "").toLocaleUpperCase("fr-FR"),
+          String(alert.replacementTime || "")
+        ].join("|");
+      }
+
+      function syntheticFinalHistoryRows() {
+        const doneFinalAnnouncements = new Set(alerts
+          .filter((alert) => alert.type === "finalists_announcement" && alert.speakerStatus === "done" && alert.speakerAnnouncedAt)
+          .map((alert) => alert.resultId)
+          .filter(Boolean));
+        const doneReplacements = new Set(alerts
+          .filter((alert) => alert.type === "finalist_replacement_announcement" && alert.speakerStatus === "done" && alert.speakerAnnouncedAt)
+          .map((alert) => `${alert.resultId || ""}|${replacementHistoryKeyForAlert(alert)}`));
+        const rows = [];
+        getRaceResults().forEach((result) => {
+          if (!result?.id) return;
+          const finalists = finalHistoryRows(result);
+          if (result.finalistsAnnouncedAt && !doneFinalAnnouncements.has(result.id)) {
+            const activeCount = finalists.filter((row) => !row.withdrawnAt).length || finalists.length;
+            rows.push({
+              id: `history-finalists-${result.id}`,
+              syntheticHistory: true,
+              type: "finalists_announcement",
+              roleSource: "computer",
+              resultId: result.id,
+              eventId: result.eventId,
+              eventLabel: result.eventLabel,
+              sex: result.sex,
+              sexLabel: result.sexLabel,
+              session: result.session || "",
+              startTime: result.startTime || "",
+              finalistCount: activeCount,
+              finalists: result.finalists || { a: [], b: [] },
+              nextUnqualified: result.nextUnqualified || [],
+              speakerStatus: "done",
+              speakerAnnouncedAt: result.finalistsAnnouncedAt,
+              createdAt: result.finalistsAnnouncedAt,
+              updatedAt: result.finalistsAnnouncedAt
+            });
+          }
+          finalists
+            .filter((row) => row.repechaged && row.repechageAnnouncedAt && !row.withdrawnAt)
+            .forEach((row) => {
+              const key = finalHistoryReplacementKey(row);
+              if (doneReplacements.has(`${result.id}|${key}`)) return;
+              const name = finalHistoryRowName(row);
+              const club = finalHistoryRowClub(row);
+              rows.push({
+                id: `history-replacement-${result.id}-${key}`,
+                syntheticHistory: true,
+                type: "finalist_replacement_announcement",
+                roleSource: "computer",
+                resultId: result.id,
+                eventId: result.eventId,
+                eventLabel: result.eventLabel,
+                sex: result.sex,
+                sexLabel: result.sexLabel,
+                session: result.session || "",
+                startTime: result.startTime || "",
+                finalKey: row.finalKey,
+                displayName: name,
+                clubCode: club,
+                replacementName: name,
+                replacementClub: club,
+                replacementRank: row.rank || "",
+                replacementTime: row.time || "",
+                speakerStatus: "done",
+                speakerAnnouncedAt: row.repechageAnnouncedAt,
+                createdAt: row.repechageAnnouncedAt,
+                updatedAt: row.repechageAnnouncedAt
+              });
+            });
+        });
+        return rows;
+      }
+
+      function historyAlertById(alertId) {
+        return alerts.find((item) => item.id === alertId) ||
+          syntheticFinalHistoryRows().find((item) => item.id === alertId);
+      }
       
       function openAlertDetail(alertId) {
-        const clickedAlert = alerts.find((item) => item.id === alertId);
+        const clickedAlert = historyAlertById(alertId);
         if (!clickedAlert || !alertDetailModal) return;
         if (clickedAlert.type === "final_composition_ready") {
           openFinalCompositionModal(clickedAlert.id, { fromHistory: true });
@@ -280,7 +393,7 @@
       }
       
       function openFinalistsAnnouncementModal(alertId) {
-        const alert = alerts.find((item) => item.id === alertId);
+        const alert = historyAlertById(alertId);
         if (!alert || !alertDetailModal) return;
         const canMarkAnnounced = state.role === "speaker" && alert.speakerStatus === "pending";
         const finalists = finalRowsForAnnouncementAlert(alert);
@@ -368,7 +481,10 @@
           speakerHistory.innerHTML = "";
           return;
         }
-        const doneAlerts = alerts
+        const doneAlerts = [
+          ...alerts,
+          ...syntheticFinalHistoryRows()
+        ]
           .filter((alert) => !isRequalificationAlert(alert))
           .filter((alert) => alert.speakerStatus === "done" || (alert.cancelledAt && alert.speakerAnnouncedAt))
           .sort((a, b) => String(b.speakerAnnouncedAt || b.updatedAt).localeCompare(String(a.speakerAnnouncedAt || a.updatedAt)));
@@ -408,13 +524,19 @@
           rows = alerts.filter((alert) => isDsqAlert(alert));
         } else if (state.role === "computer") {
           title = "Journal d'arbitrage et annonces";
-          rows = alerts.filter((alert) => alert.roleSource === "referee" || (
+          rows = [
+            ...alerts,
+            ...syntheticFinalHistoryRows()
+          ].filter((alert) => alert.roleSource === "referee" || (
             (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") &&
             alert.speakerStatus === "done"
           ));
         } else if (state.role === "secretary") {
           title = "Journal d'arbitrage et annonces";
-          rows = alerts.filter((alert) => alert.roleSource === "referee" || (
+          rows = [
+            ...alerts,
+            ...syntheticFinalHistoryRows()
+          ].filter((alert) => alert.roleSource === "referee" || (
             (alert.type === "finalists_announcement" || alert.type === "finalist_replacement_announcement") &&
             alert.speakerStatus === "done"
           ));
@@ -491,7 +613,8 @@
         historyEmptyLabel,
         renderSpeakerHistory,
         renderRoleHistory,
-        historyToggleButton
+        historyToggleButton,
+        syntheticFinalHistoryRows
       };
   }
 
