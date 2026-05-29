@@ -72,7 +72,10 @@
       const masterSexAge = String(category || "").trim().match(/^([fhm])(\d+\+)$/i);
       if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return "Minime";
       if (sameCategory(category, "Master") || sameCategory(category, "Masters")) return "Masters";
-      if (masterSexAge) return `${masterSexAge[1].toUpperCase()}${masterSexAge[2]}`;
+      if (masterSexAge) {
+        const prefix = masterSexAge[1].toUpperCase() === "M" ? "H" : masterSexAge[1].toUpperCase();
+        return `${prefix}${masterSexAge[2]}`;
+      }
       if (/^\d+\+$/i.test(String(category || ""))) return String(category || "");
       if (isFemaleContext(sex)) {
         if (sameCategory(category, "Cadet")) return "Cadette";

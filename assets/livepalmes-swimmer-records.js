@@ -62,8 +62,24 @@
       return categories.length ? [...new Set(categories)] : null;
     }
 
+    function recordDisplayLabel(row) {
+      return String(row?.label || "").replace(/(^|[^A-Z0-9])M(\d+\+)(?=$|[^A-Z0-9])/gi, "$1H$2");
+    }
+
+    function categoryMatchKey(category) {
+      const value = String(category || "").trim();
+      const master = value.match(/^([fhm])(\d+\+)$/i);
+      if (master) {
+        const prefix = master[1].toUpperCase() === "M" ? "H" : master[1].toUpperCase();
+        return `${prefix}${master[2]}`.toLowerCase();
+      }
+      return value.toLowerCase();
+    }
+
     function categoryIsVisible(record, categories) {
-      return !categories || categories.some((category) => sameCategory(record.category, category));
+      if (!categories) return true;
+      const recordCategory = categoryMatchKey(record.category);
+      return categories.some((category) => categoryMatchKey(category) === recordCategory);
     }
 
     function comparableRecordRaceId(value) {
@@ -112,7 +128,7 @@
       if (sameCategory(row.category, "Cadet")) return state.sex === "F" ? "MPF cadette" : "MPF cadet";
       if (sameCategory(row.category, "Junior")) return "RF junior";
       if (sameCategory(row.category, "Senior")) return "RF senior";
-      return row.label || row.category || "Record";
+      return recordDisplayLabel(row) || row.category || "Record";
     }
 
     function recordFlagText(row) {
@@ -133,7 +149,10 @@
       if (sameCategory(category, "Junior")) return "JUN";
       if (sameCategory(category, "Senior")) return "SEN";
       const master = String(category || "").match(/^(?:m?(\d+)\+?|([fhm])(\d+)\+?)$/i);
-      if (master) return `${master[2] ? master[2].toUpperCase() : ""}${master[1] || master[3]}+`;
+      if (master) {
+        const prefix = master[2] ? (master[2].toUpperCase() === "M" ? "H" : master[2].toUpperCase()) : "";
+        return `${prefix}${master[1] || master[3]}+`;
+      }
       if (/^masters?$/i.test(String(category || ""))) return "MAS";
       return String(category || "").slice(0, 3).toUpperCase();
     }
