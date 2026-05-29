@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Accueil public - LivePalmes</title>
-    <meta name="description" content="Accueil public LivePalmes : live comp&eacute;tition, performances et historique.">
+    <title>LivePalmes public</title>
+    <meta name="description" content="LivePalmes public : live comp&eacute;tition, performances et historique.">
     <meta name="theme-color" content="#0b7285">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260529-public-home">
     <link rel="manifest" href="manifest-public.webmanifest?v=20260529-public-home">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="public.css?v=20260529-public-home">
+    <link rel="stylesheet" href="public.css?v=20260529-home-wording-1">
   </head>
   <body class="public-results-page public-home-page">
     <header class="public-results-header public-home-header">
@@ -25,25 +25,19 @@
           </span>
           LivePalmes
         </p>
-        <h1>Accueil public</h1>
-        <p id="publicHomeMeetMeta" class="public-meet-meta">Live, r&eacute;sultats, performances et archives</p>
+        <h1>Espace public</h1>
+        <p id="publicHomeMeetMeta" class="public-meet-meta">Live, performances et archives</p>
       </div>
-      <div class="public-header-actions">
-        <a class="ghost-button compact public-page-switch" href="resultats.html">R&eacute;sultats</a>
-        <a class="ghost-button compact public-page-switch" href="series-public.html">S&eacute;ries</a>
+      <div class="public-home-partner" aria-label="Nage avec palmes FFESSM">
+        <img src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM">
       </div>
     </header>
 
     <main class="public-home-shell">
       <section class="public-home-hero" aria-labelledby="publicHomeTitle">
         <div class="public-home-hero-copy">
-          <p class="eyebrow">LivePalmes public</p>
-          <h2 id="publicHomeTitle">Live, performances et historique</h2>
-          <p>Suivez les comp&eacute;titions en direct, consultez les performances et retrouvez les archives publi&eacute;es.</p>
-          <div class="public-home-actions">
-            <a class="primary-button" href="resultats.html">R&eacute;sultats en direct</a>
-            <a class="ghost-button" href="series-public.html">S&eacute;ries en direct</a>
-          </div>
+          <h2 id="publicHomeTitle">LivePalmes</h2>
+          <p>Retrouvez les s&eacute;ries, r&eacute;sultats, fiches nageurs, performances et archives dans les rubriques ci-dessous.</p>
         </div>
         <div class="public-home-logo-card" aria-hidden="true">
           <img src="logo-livepalmes.png?v=20260529-public-home" alt="">
@@ -53,6 +47,9 @@
       <section class="public-home-grid" aria-label="Rubriques publiques">
         <article class="public-home-card live-card">
           <span class="public-home-card-icon live-icon" aria-hidden="true"></span>
+          <div class="public-home-status-row">
+            <span class="public-home-status available">Disponible</span>
+          </div>
           <h3>Live comp&eacute;tition</h3>
           <p>R&eacute;sultats, s&eacute;ries, fiches nageurs et PDF publi&eacute;s.</p>
           <p id="publicHomeCurrentMeet" class="public-home-current-meet">Chargement de la comp&eacute;tition en cours...</p>
@@ -64,13 +61,19 @@
 
         <article class="public-home-card performance-card">
           <span class="public-home-card-icon performance-icon" aria-hidden="true"></span>
+          <div class="public-home-status-row">
+            <span class="public-home-status available">Disponible</span>
+          </div>
           <h3>Performances</h3>
           <p>Records, meilleures performances et rep&egrave;res sportifs.</p>
-          <span class="public-home-badge">En pr&eacute;paration</span>
+          <a class="ghost-button compact" href="performances/">Performances</a>
         </article>
 
         <article class="public-home-card archive-card">
           <span class="public-home-card-icon archive-icon" aria-hidden="true"></span>
+          <div class="public-home-status-row">
+            <span class="public-home-status available">Disponible</span>
+          </div>
           <h3>Historique comp&eacute;titions</h3>
           <p>Archives des r&eacute;sultats, fiches nageurs et PDF officiels.</p>
           <a class="ghost-button compact" href="archives.html">Archives</a>
@@ -80,6 +83,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="public-home.js?v=20260529-public-home"></script>
+    <script src="public-home.js?v=20260529-home-wording-1"></script>
   </body>
 </html>
