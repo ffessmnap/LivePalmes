@@ -50,10 +50,17 @@
   }
 
   function categoryLabel(category, sex) {
+    const cleanCategory = cleanText(category).trim();
+    const masterSexAge = cleanCategory.match(/^([fhm])(\d+\+)$/i);
+    const masterAge = cleanCategory.match(/^(\d+\+)$/);
+    if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return "Minime";
     if (sameCategory(category, "Cadet")) return sex === "F" ? "Cadette" : "Cadet";
     if (sameCategory(category, "Junior")) return "Junior";
     if (sameCategory(category, "Senior")) return "Senior";
-    return cleanText(category || "");
+    if (sameCategory(category, "Master") || sameCategory(category, "Masters")) return "Masters";
+    if (masterSexAge) return `${masterSexAge[1].toUpperCase().replace("H", "M")}${masterSexAge[2]}`;
+    if (masterAge) return masterAge[1];
+    return cleanCategory;
   }
 
   function sexLabel(sex) {
@@ -95,9 +102,25 @@
   }
 
   function categoryClass(category) {
+    const normalized = normalizeText(category);
+    const directMaster = normalized.match(/^m(\d+)\+?$/);
+    const sexAgeMaster = normalized.match(/^[fhm](\d+)\+?$/);
+    const ageOnlyMaster = normalized.match(/^(\d+)\+?$/);
+    const masterNumber = Number(directMaster?.[1] || sexAgeMaster?.[1] || ageOnlyMaster?.[1] || 0);
+    if (normalized === "minime" || normalized === "minimes") return "cat-minime";
     if (sameCategory(category, "Cadet")) return "cat-cadet";
     if (sameCategory(category, "Junior")) return "cat-junior";
     if (sameCategory(category, "Senior")) return "cat-senior";
+    if (Number.isFinite(masterNumber) && masterNumber > 0) {
+      const age = masterNumber < 30 ? masterNumber * 10 + 20 : masterNumber;
+      if (age >= 80) return "cat-master-80";
+      if (age >= 70) return "cat-master-70";
+      if (age >= 60) return "cat-master-60";
+      if (age >= 50) return "cat-master-50";
+      if (age >= 40) return "cat-master-40";
+      return "cat-master-30";
+    }
+    if (normalized === "master" || normalized === "masters") return "cat-master";
     return "cat-other";
   }
 

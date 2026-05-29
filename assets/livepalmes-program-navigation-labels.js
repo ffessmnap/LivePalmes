@@ -69,6 +69,11 @@
     }
 
     function categoryLabel(category, sex = state.sex) {
+      const masterSexAge = String(category || "").trim().match(/^([fhm])(\d+\+)$/i);
+      if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return "Minime";
+      if (sameCategory(category, "Master") || sameCategory(category, "Masters")) return "Masters";
+      if (masterSexAge) return `${masterSexAge[1].toUpperCase().replace("H", "M")}${masterSexAge[2]}`;
+      if (/^\d+\+$/i.test(String(category || ""))) return String(category || "");
       if (isFemaleContext(sex)) {
         if (sameCategory(category, "Cadet")) return "Cadette";
         if (sameCategory(category, "Junior")) return "Junior";

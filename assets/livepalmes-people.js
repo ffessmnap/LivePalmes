@@ -41,10 +41,37 @@
     return String(a || "").toLowerCase() === String(b || "").toLowerCase();
   }
 
+  function normalizedCategory(category) {
+    return String(category || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function masterCategoryClass(normalized) {
+    const direct = normalized.match(/^m(\d+)\+?$/);
+    const sexAge = normalized.match(/^[fhm](\d+)\+?$/);
+    const ageOnly = normalized.match(/^(\d+)\+?$/);
+    const rawNumber = Number(direct?.[1] || sexAge?.[1] || ageOnly?.[1] || 0);
+    if (!Number.isFinite(rawNumber) || rawNumber <= 0) return "cat-master";
+    const age = rawNumber < 30 ? rawNumber * 10 + 20 : rawNumber;
+    if (age >= 80) return "cat-master-80";
+    if (age >= 70) return "cat-master-70";
+    if (age >= 60) return "cat-master-60";
+    if (age >= 50) return "cat-master-50";
+    if (age >= 40) return "cat-master-40";
+    return "cat-master-30";
+  }
+
   function categoryClass(category) {
+    const normalized = normalizedCategory(category);
+    if (normalized === "minime" || normalized === "minimes") return "cat-minime";
     if (sameCategory(category, "Cadet")) return "cat-cadet";
     if (sameCategory(category, "Junior")) return "cat-junior";
     if (sameCategory(category, "Senior")) return "cat-senior";
+    if (/^[fhm]?\d+\+?$/.test(normalized)) return masterCategoryClass(normalized);
+    if (normalized === "master" || normalized === "masters") return "cat-master";
     return "cat-other";
   }
 

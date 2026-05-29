@@ -66,8 +66,17 @@
       return !categories || categories.some((category) => sameCategory(record.category, category));
     }
 
+    function categoryOrder(category) {
+      if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return 1;
+      if (sameCategory(category, "Cadet")) return 2;
+      if (sameCategory(category, "Junior")) return 3;
+      if (sameCategory(category, "Senior")) return 4;
+      const master = String(category || "").match(/^(?:master|masters|m?(\d+)\+?|[fhm](\d+)\+?)$/i);
+      if (master) return 5 + (Number(master[1] || master[2] || 0) / 100);
+      return 99;
+    }
+
     function currentRecordRows() {
-      const order = { Cadet: 1, Junior: 2, Senior: 3 };
       const visibleCategories = visibleSeriesCategories();
       const relayCategories = isRelayEntrant({ eventId: state.eventId })
         ? new Set((data.entrants || []).filter(matchesRace).map((entrant) => entrant.category).filter(Boolean))
@@ -77,7 +86,7 @@
         .filter((record) => recordMatchesRace(record))
         .filter((record) => categoryIsVisible(record, visibleCategories))
         .filter((record) => !relayCategories || relayCategories.has(record.category))
-        .sort((a, b) => (order[a.category] || 99) - (order[b.category] || 99));
+        .sort((a, b) => categoryOrder(a.category) - categoryOrder(b.category));
     }
 
     function shortRecordLabel(row) {
@@ -100,9 +109,13 @@
     }
 
     function shortCategoryLabel(category) {
+      if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return "MIN";
       if (sameCategory(category, "Cadet")) return "CAD";
       if (sameCategory(category, "Junior")) return "JUN";
       if (sameCategory(category, "Senior")) return "SEN";
+      const master = String(category || "").match(/^(?:m?(\d+)\+?|([fhm])(\d+)\+?)$/i);
+      if (master) return `${master[2] ? master[2].toUpperCase().replace("H", "M") : ""}${master[1] || master[3]}+`;
+      if (/^masters?$/i.test(String(category || ""))) return "MAS";
       return String(category || "").slice(0, 3).toUpperCase();
     }
 
