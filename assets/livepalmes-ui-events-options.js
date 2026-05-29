@@ -27,7 +27,7 @@
     "setPublicPositionEnabled", "setRefereeProgressHere", "setResultUploadState", "setSeriesImportState",
     "sexDisplayLabel", "showPerformanceDiagnosticModal", "showTechnicalDiagnosticModal", "showTechnicalLogModal", "showToast",
     "switchRoleUnlocked", "syncAlertChangesToFirestoreStrict", "toggleCompetitionMode", "toggleFinalPreWithdrawal",
-    "togglePublicResultsOnline", "unlockRole", "updateAlert", "updateConsolePresence",
+    "unlockRole", "updateAlert", "updateConsolePresence",
     "updateLiveNotes", "updateSpeakerInfoFromGoogleSheet"
   ];
 

@@ -15,9 +15,7 @@
       normalizeData,
       pinLockEnabled,
       publishLiveDataToFirestore,
-      publishPublicResultsIndex,
       render,
-      renderDataStatus,
       resultArchivesCollection,
       resultSessions,
       roleCodesModal,
@@ -278,30 +276,6 @@
         }
         window.alert(enableLock ? "Codes enregistrés et actifs." : "Codes désactivés.");
       }
-      
-      async function togglePublicResultsOnline() {
-        const data = getData();
-        const online = data.notes?.publicResultsOnline === false;
-        const nextData = normalizeData({
-          ...data,
-          notes: {
-            ...(data.notes || {}),
-            publicResultsOnline: online,
-            publicResultsOnlineUpdatedAt: new Date().toISOString()
-          },
-          sourceVersion: `public-online-${Date.now()}`
-        });
-        setData(nextData);
-        saveData();
-        render();
-        try {
-          await publishLiveDataToFirestore(nextData, online ? "Page résultats publics en ligne" : "Page résultats publics hors ligne");
-          await publishPublicResultsIndex({ silent: true });
-        } catch {
-          renderDataStatus("Le statut de la page publique a été modifié sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
-        }
-      }
-      
       async function toggleRoleLock() {
         await livePalmesAdminAuth?.whenReady?.();
         if (livePalmesAdminAuth?.isAdminAuthenticated?.()) {
@@ -360,7 +334,6 @@
         closeRoleCodesModal,
         readRolePinsFromModal,
         saveRoleCodesFromModal,
-        togglePublicResultsOnline,
         toggleRoleLock,
         downloadAdminBackup,
         restoreAdminBackupFile,

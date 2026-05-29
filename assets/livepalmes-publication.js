@@ -20,8 +20,8 @@
       sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
       sessionInfos: data.notes?.publicSessionInfos || {},
       publicAccess: {
-        online: data.notes?.publicResultsOnline !== false,
-        updatedAt: data.notes?.publicResultsOnlineUpdatedAt || ""
+        online: true,
+        updatedAt: data.notes?.livePublishedAt || updatedAt
       },
       updatedAt,
       sourceVersion: data.sourceVersion || "",

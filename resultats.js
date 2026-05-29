@@ -151,27 +151,8 @@ function resultPdfHref(result = {}) {
   return publicPdfHref("resultat", result.id || "");
 }
 
-function renderPublicOffline() {
-  renderMeetTitle();
-  if (sessionControls) sessionControls.innerHTML = "";
-  if (collapseDetailsBtn) collapseDetailsBtn.hidden = true;
-  if (!list) return;
-  list.innerHTML = `
-    <div class="public-lock-panel">
-      <div>
-        <h2>Résultats temporairement hors ligne</h2>
-        <p class="panel-subtitle">La page publique des résultats n'est pas ouverte pour le moment.</p>
-      </div>
-    </div>
-  `;
-}
-
 function ensurePublicAccess() {
-  if (publicAccess?.online === false) {
-    setStatus("Hors ligne", "pending");
-    renderPublicOffline();
-    return false;
-  }
+  publicAccess = { ...(publicAccess || {}), online: true };
   updateCollapseDetailsButton();
   return true;
 }
@@ -182,11 +163,7 @@ function updateCollapseDetailsButton() {
 }
 
 function applyPublicAccessFromLiveData(remote) {
-  if (!remote?.notes || !Object.prototype.hasOwnProperty.call(remote.notes, "publicResultsOnline")) return;
-  publicAccess = {
-    online: remote.notes.publicResultsOnline !== false,
-    updatedAt: remote.notes.publicResultsOnlineUpdatedAt || publicAccess.updatedAt || ""
-  };
+  publicAccess = { online: true, updatedAt: publicAccess.updatedAt || remote?.notes?.livePublishedAt || "" };
 }
 
 function raceKey(eventId, sex) {
@@ -1110,7 +1087,7 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   ]);
   const index = snapshot.data() || {};
   const remote = liveSnapshot.data()?.data || {};
-  publicAccess = index.publicAccess || { online: true, updatedAt: "" };
+  publicAccess = { ...(index.publicAccess || {}), online: true };
   applyPublicAccessFromLiveData(remote);
   if (!ensurePublicAccess()) return;
   if (!snapshot.exists || !Array.isArray(index.program) || !index.program.length) {
@@ -1175,10 +1152,7 @@ async function loadPublicResultsFallback(competition) {
   publicSeries = Array.isArray(remote.series) ? remote.series : [];
   publicResults = resultsSnapshot.docs.map(publicResultFromDoc);
   publicSessionInfos = remote.notes?.publicSessionInfos || {};
-  publicAccess = {
-    online: remote.notes?.publicResultsOnline !== false,
-    updatedAt: remote.notes?.publicResultsOnlineUpdatedAt || ""
-  };
+  publicAccess = { online: true, updatedAt: remote.notes?.livePublishedAt || "" };
   await loadPublicSeriesPdfs(competition);
   publicSessionResultsPdfs = [];
   publicIndexUpdatedAt = publicResults
