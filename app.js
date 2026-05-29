@@ -463,7 +463,7 @@ function historyActionsOptions() {
     saveLiveDismissedAlerts,
     sessionResultsPdfsCollection
   };
-  bindOptionState(options, ["alerts", "data", "liveDismissedAlertIds", "raceResults"]);
+  bindOptionState(options, ["alerts", "data", "firestoreDb", "liveDismissedAlertIds", "raceResults"]);
   return options;
 }
 
