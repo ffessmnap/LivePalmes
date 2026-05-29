@@ -20,6 +20,7 @@
   function renderSeriesPdfLink(session, options = {}) {
     const escapeHtml = options.escapeHtml || escapeHtmlFallback;
     const formatDate = options.formatDate || ((value) => String(value || ""));
+    const pdfHref = options.pdfHref || ((type, id) => `pdf.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id || "")}`);
     const pdf = publicSwimmers.seriesPdfForSession(options.seriesPdfs || [], session);
     if (!pdf) return "";
     const label = pdf.scope === "session" ? `S&eacute;ries publi&eacute;es - session ${session}` : "S&eacute;ries publi&eacute;es compl&egrave;tes";
@@ -31,13 +32,14 @@
           <strong>${label}</strong>
           ${updated ? `<span>${escapeHtml(updated)}</span>` : ""}
         </div>
-        <a class="ghost-button compact" href="pdf.html?type=series&id=${encodeURIComponent(pdf.id || "")}">Voir les s&eacute;ries</a>
+        <a class="ghost-button compact" href="${escapeHtml(pdfHref("series", pdf.id || ""))}">Voir les s&eacute;ries</a>
       </div>
     `;
   }
 
   function renderSessionResultsPdfLinks(session, options = {}) {
     const escapeHtml = options.escapeHtml || escapeHtmlFallback;
+    const pdfHref = options.pdfHref || ((type, id) => `pdf.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id || "")}`);
     const pdfs = sessionResultsPdfsForSession(session, options);
     if (!pdfs.length) return "";
     return `
@@ -49,7 +51,7 @@
         </div>
         <div class="public-pdf-link-actions">
           ${pdfs.map((pdf) => `
-            <a class="ghost-button compact confirm-button" href="pdf.html?type=session-result&id=${encodeURIComponent(pdf.id || "")}">
+            <a class="ghost-button compact confirm-button" href="${escapeHtml(pdfHref("session-result", pdf.id || ""))}">
               ${escapeHtml(pdfs.length > 1 ? (pdf.sourceLabel || "Voir") : "Voir")}
             </a>
           `).join("")}

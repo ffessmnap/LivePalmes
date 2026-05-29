@@ -3,6 +3,7 @@
     const {
       ADMIN_PIN,
       FIRESTORE_COMPETITION_ID,
+      archiveCurrentResults,
       cleanLegacyResultPdfs,
       clearPublishedResults,
       clearPublishedResultsForSession,
@@ -119,6 +120,24 @@
           } catch (error) {
             console.error(error);
             window.alert(`Republication impossible : ${error?.message || error}`);
+          }
+          return;
+        }
+        if (event.target.closest("[data-public-competition-archive]")) {
+          const ok = window.confirm("Créer une archive publique de la compétition actuelle ?\n\nLes résultats, fiches nageurs et PDF résultats seront copiés dans l'historique consultable.");
+          if (!ok) return;
+          try {
+            await publishPublicResultsIndex({ silent: true, strict: true });
+            const archive = await archiveCurrentResults?.("Archive publique de la compétition");
+            if (!archive?.id) {
+              window.alert("Aucun résultat publié à archiver pour le moment.");
+              return;
+            }
+            window.alert(`Archive créée : ${archive.count} résultat${archive.count > 1 ? "s" : ""} archivé${archive.count > 1 ? "s" : ""}.\n\nElle sera visible depuis la page Archives publiques.`);
+            window.open(`archives.html?archive=${encodeURIComponent(archive.id)}`, "_blank", "noopener");
+          } catch (error) {
+            console.error(error);
+            window.alert(`Archivage impossible : ${error?.message || error}`);
           }
           return;
         }
@@ -261,8 +280,12 @@
           if (!collection || !context.firestoreDb) return;
           const archiveRef = collection.doc(deleteResultArchiveButton.dataset.deleteResultArchive);
           const itemSnapshot = await archiveRef.collection("items").get();
+          const pdfSnapshot = await archiveRef.collection("resultPdfs").get();
+          const sessionPdfSnapshot = await archiveRef.collection("sessionResultsPdfs").get();
           const batch = context.firestoreDb.batch();
           itemSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          pdfSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          sessionPdfSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
           batch.delete(archiveRef);
           await batch.commit();
           await renderHistoryArchivesModal({ canDelete: true });

@@ -200,6 +200,32 @@
   font-weight: 800;
 }
 
+.public-archive-list {
+  display: grid;
+  gap: 10px;
+}
+
+.public-archive-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.public-archive-card h2 {
+  margin: 3px 0;
+  color: var(--accent-dark);
+  font-size: 1.25rem;
+}
+
+.public-archive-card p,
+.public-archive-card span {
+  display: block;
+  margin: 0;
+  color: #60717c;
+  font-weight: 850;
+}
+
 .public-results-shell {
   width: min(1060px, calc(100% - 24px));
   margin: 18px auto 40px;
@@ -1851,6 +1877,11 @@
   .public-home-card {
     min-height: 0;
     padding: 14px;
+  }
+
+  .public-archive-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .public-header-actions {

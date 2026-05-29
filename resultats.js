@@ -9,6 +9,12 @@ const FIREBASE_CONFIG = {
 };
 const PUBLIC_RESULTS_CACHE_KEY = "livepalmes:public-results-cache:v1";
 const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+const PAGE_PARAMS = new URLSearchParams(window.location.search);
+const PUBLIC_ARCHIVE_ID = String(PAGE_PARAMS.get("archive") || "").trim();
+const PUBLIC_ARCHIVE_MODE = Boolean(PUBLIC_ARCHIVE_ID);
+const publicResultsCacheKey = PUBLIC_ARCHIVE_MODE
+  ? `${PUBLIC_RESULTS_CACHE_KEY}:archive:${PUBLIC_ARCHIVE_ID}`
+  : PUBLIC_RESULTS_CACHE_KEY;
 
 const meetTitle = document.querySelector("#publicMeetTitle");
 const meetMeta = document.querySelector("#publicMeetMeta");
@@ -34,6 +40,7 @@ let publicSessionResultsPdfs = [];
 let publicSessionInfos = {};
 let publicAccess = { online: true, updatedAt: "" };
 let publicIndexUpdatedAt = "";
+let publicArchiveMeta = null;
 let activeSession = "";
 let activeSessionChosen = false;
 let swimmerSearchQuery = "";
@@ -76,6 +83,7 @@ function publicSwimmerOptions(extra = {}) {
     eventLabel,
     sexLabel,
     isForfait,
+    resultPdfHref,
     ...extra
   };
 }
@@ -94,7 +102,8 @@ function publicResultsCachePayload() {
     sessionResultsPdfs: publicSessionResultsPdfs,
     sessionInfos: publicSessionInfos,
     publicAccess,
-    publicIndexUpdatedAt
+    publicIndexUpdatedAt,
+    archiveMeta: publicArchiveMeta
   };
 }
 
@@ -110,10 +119,11 @@ function applyPublicResultsSnapshot(snapshot = {}) {
   publicSessionInfos = snapshot.sessionInfos || {};
   publicAccess = snapshot.publicAccess || { online: true, updatedAt: "" };
   publicIndexUpdatedAt = snapshot.publicIndexUpdatedAt || "";
+  publicArchiveMeta = snapshot.archiveMeta || null;
 }
 
 function restorePublicResultsCache() {
-  const cached = publicSwimmers.loadPublicPageCache?.(PUBLIC_RESULTS_CACHE_KEY, PUBLIC_CACHE_MAX_AGE_MS);
+  const cached = publicSwimmers.loadPublicPageCache?.(publicResultsCacheKey, PUBLIC_CACHE_MAX_AGE_MS);
   if (!cached?.program?.length) return false;
   applyPublicResultsSnapshot(cached);
   return true;
@@ -121,7 +131,19 @@ function restorePublicResultsCache() {
 
 function savePublicResultsCache() {
   if (!publicProgram.length) return;
-  publicSwimmers.savePublicPageCache?.(PUBLIC_RESULTS_CACHE_KEY, publicResultsCachePayload());
+  publicSwimmers.savePublicPageCache?.(publicResultsCacheKey, publicResultsCachePayload());
+}
+
+function publicPdfHref(type, id) {
+  const cleanId = String(id || "");
+  if (!cleanId) return "#";
+  if (!PUBLIC_ARCHIVE_MODE) return `pdf.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(cleanId)}`;
+  const archiveType = type === "session-result" ? "archive-session-result" : "archive-result";
+  return `pdf.html?type=${encodeURIComponent(archiveType)}&archive=${encodeURIComponent(PUBLIC_ARCHIVE_ID)}&id=${encodeURIComponent(cleanId)}`;
+}
+
+function resultPdfHref(result = {}) {
+  return publicPdfHref("resultat", result.id || "");
 }
 
 function renderPublicOffline() {
@@ -781,7 +803,7 @@ function renderRow(row) {
         </div>
         <div class="public-result-tools">
           <span class="public-result-status ${status.className}">${escapeHtml(status.label)}</span>
-          ${pdfVisible ? `<a class="ghost-button compact confirm-button public-result-pdf" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}">PDF</a>` : ""}
+          ${pdfVisible ? `<a class="ghost-button compact confirm-button public-result-pdf" href="${escapeHtml(resultPdfHref(result))}">PDF</a>` : ""}
         </div>
       </div>
       ${renderResultDetails(row, result)}
@@ -819,6 +841,7 @@ function publicDocumentOptions() {
   return {
     escapeHtml,
     formatDate: formatPublicDateTime,
+    pdfHref: publicPdfHref,
     seriesPdfs: publicSeriesPdfs,
     sessionResultsPdfs: publicSessionResultsPdfs
   };
@@ -846,6 +869,13 @@ function renderMeetTitle() {
   const title = [city, year, "Résultats"].filter(Boolean).join(" · ");
   meetTitle.textContent = cleanText(title || "Résultats");
   if (meetMeta) {
+    if (PUBLIC_ARCHIVE_MODE) {
+      const archiveDate = publicArchiveMeta?.createdAt || "";
+      meetMeta.textContent = archiveDate
+        ? `Archive du ${formatPublicDateTime(archiveDate)}`
+        : "Archive de competition";
+      return;
+    }
     const lastUpdate = publicIndexUpdatedAt || publicResults
       .map((result) => result.updatedAt)
       .filter(Boolean)
@@ -1040,6 +1070,10 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
+  if (PUBLIC_ARCHIVE_MODE) {
+    await loadPublicArchiveResultsIndex(competition);
+    return;
+  }
   const [snapshot, liveSnapshot] = await Promise.all([
     competition.collection("public").doc("resultsIndex").get({ source: "server" }),
     competition.collection("liveData").doc("current").get({ source: "server" })
@@ -1124,6 +1158,42 @@ async function loadPublicResultsFallback(competition) {
     .at(-1) || "";
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
+  savePublicResultsCache();
+  renderResults();
+}
+
+async function loadPublicArchiveResultsIndex(competition) {
+  const archiveRef = competition.collection("resultArchives").doc(PUBLIC_ARCHIVE_ID);
+  const [archiveSnapshot, itemsSnapshot] = await Promise.all([
+    archiveRef.get({ source: "server" }),
+    archiveRef.collection("items").get({ source: "server" }).catch(() => null)
+  ]);
+  if (!archiveSnapshot.exists) {
+    setStatus("Archive introuvable", "error");
+    if (list) list.innerHTML = `<p class="panel-subtitle">Archive introuvable.</p>`;
+    return;
+  }
+  const archive = archiveSnapshot.data() || {};
+  const index = archive.publicIndex || {};
+  publicArchiveMeta = archive;
+  publicMeet = index.meet || archive.meet || {};
+  publicProgram = Array.isArray(index.program) ? index.program : [];
+  publicEvents = Array.isArray(index.events) ? index.events : [];
+  publicEntrants = Array.isArray(index.entrants) ? index.entrants : [];
+  publicSeries = Array.isArray(index.series) ? index.series : [];
+  publicResults = Array.isArray(index.results) && index.results.length
+    ? index.results
+    : (itemsSnapshot?.docs || []).map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicSeriesPdfs = [];
+  publicSessionResultsPdfs = Array.isArray(index.sessionResultsPdfs)
+    ? index.sessionResultsPdfs
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+    : [];
+  publicSessionInfos = index.sessionInfos || {};
+  publicAccess = { online: true, updatedAt: archive.createdAt || "" };
+  publicIndexUpdatedAt = index.updatedAt || archive.createdAt || "";
+  setStatus("Archive", "ok");
   savePublicResultsCache();
   renderResults();
 }

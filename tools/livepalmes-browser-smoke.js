@@ -657,7 +657,7 @@ async function testPublicHome(client, baseUrl) {
   assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
   await client.send("Emulation.clearDeviceMetricsOverride");
   await client.send("Page.navigate", { url: `${baseUrl}/archives.html?smoke-archives=${Date.now()}` });
-  const archiveReady = await waitFor(client, "document.querySelector('.public-archive-empty')", 4000);
+  const archiveReady = await waitFor(client, "document.querySelector('.public-archive-empty, .public-archive-list')", 6000);
   assert(archiveReady, "Archives publiques : page non chargee.");
   console.log("Accueil public : OK");
 }

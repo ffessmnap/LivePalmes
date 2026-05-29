@@ -11,8 +11,12 @@ LivePalmes utilise seulement ces zones dans Firestore :
 - `competitions/livepalmes-active/roleLocks`
 - `competitions/livepalmes-active/historyArchives`
 - `competitions/livepalmes-active/resultArchives`
+- `competitions/livepalmes-active/resultArchives/{archiveId}/items`
+- `competitions/livepalmes-active/resultArchives/{archiveId}/resultPdfs`
+- `competitions/livepalmes-active/resultArchives/{archiveId}/sessionResultsPdfs`
 - `competitions/livepalmes-active/results`
 - `competitions/livepalmes-active/resultPdfs`
+- `competitions/livepalmes-active/sessionResultsPdfs`
 - `competitions/livepalmes-active/public/resultsIndex`
 
 Les regles dans `firestore.rules` bloquent tout le reste.
@@ -29,7 +33,7 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
 - Publication d'un index public leger pour limiter les lectures de la page resultats, avec etat public et infos de session.
 - Gestion des finalistes, forfaits, pre-forfaits et repechages dans les resultats.
 - Archivage du journal d'arbitrage avant RAZ.
-- Archivage des resultats publics avant remise a zero.
+- Archivage public durable des resultats, des fiches nageurs et des PDF resultats avant nouvelle competition.
 
 ## Ce que les regles bloquent
 

@@ -38,12 +38,13 @@
 
     function renderSwimmerResultPdfLinks(row, performances = [], options = {}) {
       const escapeHtml = options.escapeHtml || escapeHtmlFallback;
+      const resultPdfHref = options.resultPdfHref || ((result) => `pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}`);
       const results = resultPdfLinksForProgramRow(row, performances, options);
       if (!results.length) return "";
       return `
         <span class="public-swimmer-pdf-actions">
           ${results.map((result) => `
-            <a class="public-swimmer-pdf-link" href="pdf.html?type=resultat&id=${encodeURIComponent(result.id || "")}" aria-label="Voir le PDF r&eacute;sultat">
+            <a class="public-swimmer-pdf-link" href="${escapeHtml(resultPdfHref(result))}" aria-label="Voir le PDF r&eacute;sultat">
               ${escapeHtml(resultPdfLabel(result))}
             </a>
           `).join("")}
