@@ -351,6 +351,25 @@ function raceSingleCategory(row, result) {
   return categories.size === 1 ? [...categories.values()][0] : "";
 }
 
+function categoryTitleVariants(category, label) {
+  const variants = new Set([category, label].map((value) => cleanText(value || "")).filter(Boolean));
+  if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) variants.add("Minimes");
+  if (/^[fh]\d+\+$/i.test(label || "")) variants.add(label.slice(1));
+  return [...variants].map((value) => normalizeText(value)).filter(Boolean);
+}
+
+function resultTitleLabel(row, result) {
+  const title = eventLabel(row.eventId, row.label);
+  const category = raceSingleCategory(row, result);
+  const label = category ? categoryLabel(category, row.sex) : "";
+  const variants = categoryTitleVariants(category, label);
+  if (!variants.length) return title;
+  const parts = cleanText(title).split(/\s+[-·]\s+/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length <= 1) return title;
+  const kept = parts.filter((part) => !variants.includes(normalizeText(part)));
+  return kept.length ? kept.join(" - ") : title;
+}
+
 function sexPillLabel(row, result) {
   const base = sexLabel(row.sex);
   const category = raceSingleCategory(row, result);
@@ -863,12 +882,13 @@ function renderRow(row) {
   const sexClass = row.sex === "F" ? "sex-female" : (row.sex === "M" ? "sex-male" : "sex-mixed");
   const phaseLabel = resultIsVisible(result) ? "" : publicRacePhaseLabel(row);
   const pdfVisible = result && (!result.hasFinal || result.finalistsAnnouncedAt);
+  const title = resultTitleLabel(row, result);
   const pillLabel = sexPillLabel(row, result);
   return `
     <article class="public-result-card ${result ? "published" : "not-published"} ${sexClass}">
       <div class="public-result-head">
         <div>
-          <h2>${escapeHtml(eventLabel(row.eventId, row.label))} <span class="public-sex-label">${escapeHtml(pillLabel)}</span>${phaseLabel ? ` <span class="public-phase-label">${escapeHtml(phaseLabel)}</span>` : ""}</h2>
+          <h2>${escapeHtml(title)} <span class="public-sex-label">${escapeHtml(pillLabel)}</span>${phaseLabel ? ` <span class="public-phase-label">${escapeHtml(phaseLabel)}</span>` : ""}</h2>
           ${updated ? `<p class="public-update-meta">${escapeHtml(updated)}</p>` : ""}
         </div>
         <div class="public-result-tools">
