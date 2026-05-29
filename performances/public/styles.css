@@ -46,6 +46,30 @@ body {
   min-height: 112px;
 }
 
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-home-link {
+  display: inline-flex;
+  width: max-content;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.topbar-home-link::before {
+  content: "←";
+  margin-right: 6px;
+}
+
+.topbar-home-link:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
 .topbar-logo {
   position: absolute;
   top: 22px;
@@ -1063,6 +1087,11 @@ tbody tr.relay-mixed td:first-child strong::after {
     max-width: 100%;
     font-size: 1.55rem;
     line-height: 1.05;
+  }
+
+  .topbar-home-link {
+    margin-bottom: 6px;
+    font-size: 0.74rem;
   }
 
   .eyebrow {
