@@ -5,7 +5,6 @@
       buildPublicResultsIndex,
       clearFirestoreAlerts,
       dsqReportRows,
-      firestoreDb,
       historyArchivesCollection,
       livePalmesExportActions,
       render,
@@ -64,7 +63,8 @@
       const rows = sourceRows.map(resultWithoutPdf);
       if (!rows.length) return null;
       const collection = resultArchivesCollection();
-      if (!collection || !firestoreDb) throw new Error("Firebase n'est pas disponible pour archiver les r\u00e9sultats.");
+      const db = context.firestoreDb;
+      if (!collection || !db) throw new Error("Firebase n'est pas disponible pour archiver les r\u00e9sultats.");
       const now = new Date();
       const archive = {
         id: `${now.getTime()}-${Math.random().toString(16).slice(2)}`,
@@ -76,7 +76,7 @@
         publicIndex: sanitizeAlertForFirestore(buildPublicResultsIndex())
       };
       const archiveRef = collection.doc(archive.id);
-      const batch = firestoreDb.batch();
+      const batch = db.batch();
       batch.set(archiveRef, sanitizeAlertForFirestore(archive));
       rows.forEach((result) => {
         const itemId = result.id || `${result.raceKey || "result"}-${Math.random().toString(16).slice(2)}`;
