@@ -58,7 +58,10 @@
     if (sameCategory(category, "Junior")) return "Junior";
     if (sameCategory(category, "Senior")) return "Senior";
     if (sameCategory(category, "Master") || sameCategory(category, "Masters")) return "Masters";
-    if (masterSexAge) return `${masterSexAge[1].toUpperCase()}${masterSexAge[2]}`;
+    if (masterSexAge) {
+      const prefix = masterSexAge[1].toUpperCase() === "M" ? "H" : masterSexAge[1].toUpperCase();
+      return `${prefix}${masterSexAge[2]}`;
+    }
     if (masterAge) return masterAge[1];
     return cleanCategory;
   }
