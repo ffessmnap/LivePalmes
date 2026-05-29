@@ -66,6 +66,25 @@
       return !categories || categories.some((category) => sameCategory(record.category, category));
     }
 
+    function comparableRecordRaceId(value) {
+      const compact = String(value || "")
+        .toLowerCase()
+        .replace(/-mi\b/g, "")
+        .replace(/[^a-z0-9x]+/g, "");
+      return /^4x/i.test(compact) && compact.endsWith("x") ? compact.slice(0, -1) : compact;
+    }
+
+    function recordMatchesCurrentRace(record) {
+      if (recordMatchesRace(record)) return true;
+      const recordId = comparableRecordRaceId(record.eventId);
+      const raceId = comparableRecordRaceId(state.eventId);
+      if (!recordId || !raceId || recordId !== raceId) return false;
+      if (state.sex === "X" && isRelayEntrant({ eventId: state.eventId })) {
+        return ["F", "M", "X"].includes(String(record.sex || ""));
+      }
+      return String(record.sex || "") === String(state.sex || "");
+    }
+
     function categoryOrder(category) {
       if (sameCategory(category, "Minime") || sameCategory(category, "Minimes")) return 1;
       if (sameCategory(category, "Cadet")) return 2;
@@ -83,7 +102,7 @@
         : null;
       return (data.records || [])
         .filter(shouldKeepRecord)
-        .filter((record) => recordMatchesRace(record))
+        .filter(recordMatchesCurrentRace)
         .filter((record) => categoryIsVisible(record, visibleCategories))
         .filter((record) => !relayCategories || relayCategories.has(record.category))
         .sort((a, b) => categoryOrder(a.category) - categoryOrder(b.category));
