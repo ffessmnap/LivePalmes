@@ -245,41 +245,37 @@
         : "";
     }
   
-    entrantsBody.innerHTML = visibleEntrants.length ? visibleEntrants.map((entrant, index) => {
-      const importedForfait = entrant.importedStatus === "forfait";
-      const reference = state.role === "referee"
-        ? (importedForfait ? `<span class="badge muted">Forfait déclaré</span>` : `<span class="badge muted">Cliquer pour décider</span>`)
-        : (isSpeakerView() ? getEntrantReference(entrant) : "");
-      const swimmerId = entrant.swimmerId || entrantKey(entrant);
-      const lineLabel = hasSeriesFilter ? (entrant.seriesInfo?.line || "-") : index + 1;
-      const clubLabel = state.role === "referee" ? shortClubName(entrant) : (entrant.club || "-");
-      const displayName = state.role === "referee" && isRelayEntrant(entrant)
-        ? (shortClubName(entrant) || formatDisplayName(entrant))
-        : formatSeriesDisplayName(entrant);
-      const lineAlerts = activeLineAlertsForEntrant(entrant);
-      const lineTimeStatus = renderLineTimeStatus(entrant, lineAlerts);
-      const rowDisabled = lineAlerts.length || importedForfait;
-      return `
-        <tr class="${state.selectedSwimmerId === swimmerId ? "selected-row" : ""} ${rowDisabled ? "dsq-row" : ""} ${importedForfait ? "imported-forfait-row" : ""} category-row ${categoryClass(entrant.category)}" data-swimmer-id="${escapeHtml(swimmerId)}" data-imported-forfait="${importedForfait ? "1" : "0"}">
-          <td><span class="lane">${escapeHtml(lineLabel)}</span></td>
-          <td class="name-cell">
-            <button class="swimmer-button" data-swimmer-id="${escapeHtml(swimmerId)}">${escapeHtml(displayName)}${!isRelayEntrant(entrant) ? ` <span class="birth-year">(${escapeHtml(getBirthYearLabel(entrant.birthDate))})</span>${renderNonSelectableBadge(entrant)}${renderCompetitionStatBadges(entrant)}` : ""}${isSpeakerView() ? renderEdfBadges(entrant) : ""}</button>
-            ${!isRelayEntrant(entrant) || state.role === "referee" ? `<span class="club-name">${escapeHtml(clubLabel || "-")}</span>` : ""}
-          </td>
-          <td><span class="category-pill">${escapeHtml(categoryLabel(entrant.category, entrant.sex))}</span></td>
-          <td class="time-cell">
-            ${lineTimeStatus
-              ? lineTimeStatus
-              : lineAlerts.length
-              ? renderLineAlertBadges(lineAlerts)
-              : `<span class="time">${escapeHtml(entrant.seedTime || "-")}</span>`}
-            ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() ? renderRecordGapAlert(entrant) : ""}
-            ${!lineTimeStatus && !lineAlerts.length && isSpeakerView() && entrant.seedSource ? `<span class="seed-source">${escapeHtml(entrant.seedSource)}</span>` : ""}
-          </td>
-          <td>${reference}</td>
-        </tr>
-      `;
-    }).join("") : `<tr><td colspan="5" class="empty">${programRow?.hasEntrants === false ? `Finale à afficher, ${entrantWord(2)} non disponibles pour le moment.` : `Aucun${isFemaleContext() ? "e" : ""} ${entrantWord(1)} pour cette sélection.`}</td></tr>`;
+    entrantsBody.innerHTML = window.LivePalmesSwimmerPanelRows.renderRows({
+      emptyHtml: `<tr><td colspan="5" class="empty">${programRow?.hasEntrants === false ? `Finale à afficher, ${entrantWord(2)} non disponibles pour le moment.` : `Aucun${isFemaleContext() ? "e" : ""} ${entrantWord(1)} pour cette sélection.`}</td></tr>`,
+      hasSeriesFilter,
+      state,
+      visibleEntrants,
+      helpers: {
+        activeLineAlertsForEntrant,
+        categoryClass,
+        categoryLabel,
+        entrantKey,
+        escapeHtml,
+        formatDisplayName,
+        formatSeriesDisplayName,
+        getBirthYearLabel,
+        isRelayEntrant,
+        isSpeakerView,
+        renderCompetitionStatBadges,
+        renderEdfBadges,
+        renderLineAlertBadges,
+        renderLineTimeStatus,
+        renderNonSelectableBadge,
+        renderRecordGapAlert,
+        shortClubName,
+        rowReference: (entrant) => {
+          const importedForfait = entrant.importedStatus === "forfait";
+          return state.role === "referee"
+            ? (importedForfait ? `<span class="badge muted">Forfait déclaré</span>` : `<span class="badge muted">Cliquer pour décider</span>`)
+            : (isSpeakerView() ? getEntrantReference(entrant) : "");
+        }
+      }
+    });
     if (isSpeakerView()) {
       renderSwimmerDetails();
     } else {
@@ -508,30 +504,14 @@
   }
   
   function renderTop2025() {
-    const categories = ["Cadet", "Junior", "Senior"];
-    top2025Box.innerHTML = categories.map((category) => {
-      const rows = data.top2025
-        .filter((item) => matchesRace(item) && sameCategory(item.category, category))
-        .sort((a, b) => (a.rank || 99) - (b.rank || 99))
-        .slice(0, 5);
-      return `
-        <div class="ranking-list ${categoryClass(category)}">
-          <h4>${escapeHtml(categoryLabel(category))}</h4>
-          <ol>
-            ${rows.length ? rows.map((row) => `
-              <li>
-                <span class="rank">${escapeHtml(row.rank || "-")}</span>
-                <span>
-                  <strong>${escapeHtml(row.name || "-")}</strong>
-                  <span class="muted-text">${escapeHtml(row.club || "")}</span>
-                </span>
-                <span class="time">${escapeHtml(row.time || "-")}</span>
-              </li>
-            `).join("") : `<li class="empty">À renseigner</li>`}
-          </ol>
-        </div>
-      `;
-    }).join("");
+    top2025Box.innerHTML = window.LivePalmesSwimmerTop2025View.render({
+      categoryClass,
+      categoryLabel,
+      data,
+      escapeHtml,
+      matchesRace,
+      sameCategory
+    });
   }
   
   function recordDescription(row) {
