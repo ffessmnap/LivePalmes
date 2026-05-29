@@ -116,7 +116,7 @@
     if (clean.includes("CA")) return "Cadet";
     if (clean.includes("JU")) return "Junior";
     if (clean.includes("SE")) return "Senior";
-    if (/^[FHM]\d+\+?$/.test(clean)) return clean.replace(/^H/, "M").replace(/(\d)$/, "$1+");
+    if (/^[FHM]\d+\+?$/.test(clean)) return clean.replace(/(\d)$/, "$1+");
     if (/^\d+\+?$/.test(clean)) return clean.endsWith("+") ? clean : `${clean}+`;
     if (clean.includes("MA")) return "Masters";
     return clean || "";
