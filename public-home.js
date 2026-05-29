@@ -16,8 +16,8 @@ function meetLabel(meet = {}) {
 }
 
 function setHomeMeet(label, detail = "") {
-  if (meetMeta) meetMeta.textContent = label || "Comp\u00e9tition en direct";
-  if (currentMeet) currentMeet.textContent = detail || label || "Comp\u00e9tition en direct";
+  if (meetMeta) meetMeta.textContent = "Live, r\u00e9sultats, performances et archives";
+  if (currentMeet) currentMeet.textContent = detail || label || "Aucune comp\u00e9tition en direct pour le moment";
 }
 
 async function loadPublicHome() {
