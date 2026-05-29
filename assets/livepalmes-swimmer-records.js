@@ -39,6 +39,7 @@
       if (sameCategory(row.category, "Cadet")) return "MPF";
       if (sameCategory(row.category, "Junior")) return "RFJ";
       if (sameCategory(row.category, "Senior")) return "RF";
+      if (/^mpf\b/i.test(String(row.label || ""))) return "MPF";
       return "REC";
     }
 
