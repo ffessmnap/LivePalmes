@@ -6,6 +6,7 @@ global.window = global;
 require(path.join(__dirname, "..", "assets", "livepalmes-time.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-people.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-result-parser.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-results.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-workflow.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-speaker-info.js"));
 
