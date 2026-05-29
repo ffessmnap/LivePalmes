@@ -48,6 +48,14 @@
 
     function fetchSpeakerSheetRows(sheetName) { return livePalmesSpeakerInfo.fetchSpeakerSheetRows(sheetName, speakerInfoOptions()); }
 
+    async function fetchOptionalSpeakerSheetRows(sheetName) {
+      try {
+        return await fetchSpeakerSheetRows(sheetName);
+      } catch {
+        return [];
+      }
+    }
+
     function parseTopSheet(rows) { return livePalmesSpeakerInfo.parseTopSheet(rows, speakerInfoOptions()); }
 
     function parseRecordsSheet(rows) { return livePalmesSpeakerInfo.parseRecordsSheet(rows, speakerInfoOptions()); }
@@ -101,13 +109,13 @@
         ] = await Promise.all([
           fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
           fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.records),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.edf),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.clubs),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.competitionStats),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.swimmerInfos).catch(() => [])
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.edf),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.clubs),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.seedSources),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.competitionStats),
+          fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.swimmerInfos)
         ]);
         const data = getData();
         const clubs = parseClubSheet(clubRows);
