@@ -182,6 +182,7 @@ function renderSwimmerCell(record) {
   }
 
   return `
+    <strong class="relay-summary">${escapeHtml(record.club || "Relais")}</strong>
     <div class="relay-swimmers">
       ${relaySwimmerNames(record.swimmer).map((name) => `<span>${escapeHtml(name)}</span>`).join("")}
     </div>
@@ -198,7 +199,7 @@ function renderRecordRow(record) {
   }
 
   return `
-      <tr class="${rowClasses.join(" ")}">
+      <tr class="${rowClasses.join(" ")}" tabindex="0" role="button" aria-expanded="false">
         <td data-label="Course">
           <strong>${record.courseShortLabel}</strong>
         </td>
@@ -233,4 +234,21 @@ elements.rfTypeFilter.querySelectorAll(".segment").forEach((button) => {
 });
 
 elements.courseFilter.addEventListener("input", applyFilters);
+
+elements.recordsBody.addEventListener("click", (event) => {
+  const row = event.target.closest("tr");
+  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+  const expanded = !row.classList.contains("expanded");
+  row.classList.toggle("expanded", expanded);
+  row.setAttribute("aria-expanded", expanded ? "true" : "false");
+});
+
+elements.recordsBody.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const row = event.target.closest("tr");
+  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+  event.preventDefault();
+  row.click();
+});
+
 resetFilters();
