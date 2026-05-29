@@ -198,11 +198,33 @@ const eventLabel = (eventId, fallback = "") => publicSwimmers.eventLabel(publicE
 
 const sessions = () => publicSwimmers.publicSessions(publicProgram);
 
+function resultIdForProgramRow(row = {}) {
+  const base = `result-${raceKey(row.eventId, row.sex).replace(/[^a-z0-9_-]+/gi, "-")}`;
+  if (!isFinalStage(row.stage)) return base;
+  const stage = String(row.stage || "finale").replace(/[^a-z0-9_-]+/gi, "-");
+  return `${base}-${stage}`;
+}
+
 function resultForRow(row) {
   const key = raceKey(row.eventId, row.sex);
-  const exact = publicResults.find((result) => result.programKey === programKey(row));
+  const rowProgramKey = programKey(row);
+  const exact = publicResults.find((result) =>
+    result.programKey === rowProgramKey ||
+    result.id === resultIdForProgramRow(row)
+  );
   if (exact) return exact;
-  if (isFinalStage(row.stage)) return null;
+  if (isFinalStage(row.stage)) {
+    const rowStages = new Set([row.stage, ...(row.finalStages || [])].map((stage) => String(stage || "")));
+    return publicResults.find((result) => {
+      if (result.raceKey !== key || !isFinalStage(result.stage)) return false;
+      if (row.session && result.session && String(row.session) !== String(result.session)) return false;
+      const resultStage = String(result.stage || "");
+      return rowStages.has(resultStage) ||
+        row.stage === "finales" ||
+        resultStage === "finales" ||
+        result.programKey === rowProgramKey;
+    }) || null;
+  }
   return publicResults.find((result) => result.raceKey === key && !isFinalStage(result.stage)) || null;
 }
 
