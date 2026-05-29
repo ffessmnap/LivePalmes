@@ -1181,9 +1181,10 @@ async function loadPublicArchiveResultsIndex(competition) {
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicEntrants = Array.isArray(index.entrants) ? index.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
-  publicResults = Array.isArray(index.results) && index.results.length
-    ? index.results
-    : (itemsSnapshot?.docs || []).map((doc) => ({ id: doc.id, ...doc.data() }));
+  const archivedItems = (itemsSnapshot?.docs || []).map((doc) => ({ id: doc.id, ...doc.data() }));
+  publicResults = archivedItems.length
+    ? archivedItems
+    : (Array.isArray(index.results) ? index.results : []);
   publicSeriesPdfs = [];
   publicSessionResultsPdfs = Array.isArray(index.sessionResultsPdfs)
     ? index.sessionResultsPdfs
