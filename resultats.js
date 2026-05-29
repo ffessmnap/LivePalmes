@@ -28,6 +28,7 @@ const collapseDetailsBtn = document.querySelector("#collapsePublicDetailsBtn");
 const refreshResultsBtn = document.querySelector("#refreshPublicResultsBtn");
 const refreshResultsFloatBtn = document.querySelector("#refreshPublicResultsFloatBtn");
 const swimmerSheet = document.querySelector("#publicSwimmerSheet");
+const seriesSwitchLink = document.querySelector("#publicSeriesSwitchLink");
 
 let publicProgram = [];
 let publicEvents = [];
@@ -48,6 +49,10 @@ let selectedSearchSwimmerKey = "";
 let activeSheetSwimmerKey = "";
 const directResultSessionsLoaded = new Set();
 const swimmerResultDetailsLoading = new Set();
+
+if (PUBLIC_ARCHIVE_MODE && seriesSwitchLink) {
+  seriesSwitchLink.hidden = true;
+}
 
 const publicSwimmers = window.LivePalmesPublicSwimmers || {};
 const publicResultDocuments = window.LivePalmesPublicResultsDocuments || {};
