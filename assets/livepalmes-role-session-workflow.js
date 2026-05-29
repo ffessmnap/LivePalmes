@@ -88,6 +88,10 @@
       return livePalmesRoleAccess.pinLockEnabled(getData().notes);
     }
 
+    function cloudPinModeEnabled() {
+      return getData().notes?.pinAuthMode === "cloud";
+    }
+
     function competitionModeEnabled() {
       return getData().notes?.competitionMode === true;
     }
@@ -139,6 +143,9 @@
     }
 
     function roleIsUnlocked(role) {
+      if (cloudPinModeEnabled()) {
+        return Boolean((context.cloudAuthenticatedRoles || {})[role]);
+      }
       return livePalmesRoleAccess.roleIsUnlocked(role, {
         notes: getData().notes,
         unlockedRoles: getUnlockedRoles()
@@ -201,10 +208,7 @@
       const initialState = cloneRoleState(loadedRoleStates[initialRole] || loadedRoleStates.live);
       initialState.role = initialRole;
       const profileHomeActive = pageRole
-        ? !livePalmesRoleAccess.roleIsUnlocked(pageRole, {
-            notes: getData().notes,
-            unlockedRoles: nextUnlockedRoles
-          })
+        ? !roleIsUnlocked(pageRole)
         : initialView.profileHomeActive;
       return {
         initialRole,

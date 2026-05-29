@@ -1,12 +1,12 @@
 (function attachLivePalmesResultMaintenanceOptions(global) {
   const functionKeys = [
-    "appendImportHistory", "archiveCurrentResults", "clearPublicSessionResultsPdfs",
-    "clearPublicSessionResultsPdfsForSession", "clearPublicSeriesPdfs", "competitionModeEnabled",
+    "appendImportHistory", "archiveCurrentHistory", "archiveCurrentResults", "clearFirestoreAlerts",
+    "clearPublicSessionResultsPdfs", "clearPublicSessionResultsPdfsForSession", "clearPublicSeriesPdfs", "competitionModeEnabled",
     "deleteFinalResultAlerts", "deleteResultPdfPayload", "normalizeData", "publishLiveDataToFirestore",
     "publishPublicResultsIndex", "render", "renderResultsAdminPanel", "resultWithoutPdf",
-    "saveData"
+    "saveAlerts", "saveData", "saveLiveDismissedAlerts"
   ];
-  const stateKeys = ["data", "raceResults", "resultsAdminSession", "state"];
+  const stateKeys = ["alerts", "data", "liveDismissedAlertIds", "raceResults", "resultsAdminSession", "state"];
 
   function create(context = {}) {
     const source = context.source || global;

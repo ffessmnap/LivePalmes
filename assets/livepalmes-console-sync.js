@@ -266,11 +266,27 @@
       
       async function clearFirestoreAlerts() {
         const collection = alertsCollection();
-        if (!collection) return;
-        const snapshot = await collection.get();
-        const batch = context.firestoreDb.batch();
-        snapshot.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
+        if (!collection) return 0;
+        let snapshot = null;
+        try {
+          snapshot = await collection.get();
+        } catch (error) {
+          error.livePalmesOperation = "alerts/read-before-clear";
+          throw error;
+        }
+        const docs = snapshot.docs || [];
+        if (!docs.length) return 0;
+        try {
+          for (let index = 0; index < docs.length; index += 450) {
+            const batch = context.firestoreDb.batch();
+            docs.slice(index, index + 450).forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
+          }
+        } catch (error) {
+          error.livePalmesOperation = "alerts/delete";
+          throw error;
+        }
+        return docs.length;
       }
       
       async function deleteCollectionDocuments(collectionRef, { nestedItems = false } = {}) {
@@ -367,6 +383,8 @@
           await publishLiveDataToFirestore(nextData, label || "Mise à jour LivePalmes");
         } catch (error) {
           console.warn("Publication des notes impossible", error);
+          renderDataStatus("Firebase a refuse cette mise a jour. Reconnecte la console ou verifie les permissions Firebase.");
+          throw error;
         }
       }
       

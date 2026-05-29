@@ -96,6 +96,14 @@ function pinAttemptRef(competitionId, role, uid, clientId) {
     .doc(key);
 }
 
+function consoleGrantRef(competitionId, uid) {
+  return admin.firestore()
+    .collection("competitions")
+    .doc(competitionId)
+    .collection("consoleGrants")
+    .doc(uid);
+}
+
 function lockRemainingSeconds(attempt = {}, nowMs = Date.now()) {
   const lockedUntilMs = Date.parse(attempt.lockedUntil || "");
   if (!Number.isFinite(lockedUntilMs) || lockedUntilMs <= nowMs) return 0;
@@ -256,6 +264,15 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
     livepalmesCompetition: competitionId,
     livepalmesConsole: true
   });
+  const now = new Date();
+  await consoleGrantRef(competitionId, uid).set({
+    uid,
+    role,
+    competitionId,
+    clientIdHash: stableHash(clientId),
+    updatedAt: now.toISOString(),
+    expiresAt: admin.firestore.Timestamp.fromMillis(now.getTime() + 12 * 60 * 60 * 1000)
+  }, { merge: false });
 
   return {
     ok: true,

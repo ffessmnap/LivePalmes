@@ -68,8 +68,28 @@
       if (!result.ok) {
         throw new Error("Code PIN refuse.");
       }
-      await auth.currentUser?.getIdToken?.(true);
-      return result;
+      const competitionId = options.competitionId || "livepalmes-active";
+      const expectedRole = options.role || "";
+      let tokenResult = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await auth.currentUser?.getIdToken?.(true);
+        tokenResult = await auth.currentUser?.getIdTokenResult?.(true);
+        const claims = tokenResult?.claims || {};
+        if (
+          claims.livepalmesConsole === true &&
+          claims.livepalmesCompetition === competitionId &&
+          claims.livepalmesRole === expectedRole
+        ) {
+          return result;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+      const claims = tokenResult?.claims || {};
+      throw new Error([
+        "Droits Firebase non recus apres validation du PIN.",
+        `Role attendu : ${expectedRole || "console"}.`,
+        `Role recu : ${claims.livepalmesRole || "aucun"}.`
+      ].join(" "));
     }
 
     async function saveRolePins(options = {}) {

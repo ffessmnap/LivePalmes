@@ -47,7 +47,7 @@
     const getResultsAdminSession = () => context.resultsAdminSession || "";
     const setResultsAdminSession = (value) => { context.resultsAdminSession = value; };
 
-    function prepareManualModeForReset() {
+    async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
       const ok = window.confirm([
         "L'actualisation directe est active.",
@@ -56,13 +56,12 @@
         "Passer en Manuel et continuer la RAZ ?"
       ].join("\n"));
       if (!ok) return false;
-      toggleCompetitionMode();
-      return true;
+      return await toggleCompetitionMode(false) === true;
     }
 
       resultsAdminPanel?.addEventListener("click", async (event) => {
         if (event.target.closest("[data-competition-mode]")) {
-          toggleCompetitionMode();
+          await toggleCompetitionMode();
           return;
         }
         if (event.target.closest("[data-public-session-infos]")) {
@@ -74,7 +73,7 @@
           return;
         }
         if (event.target.closest("[data-results-reset]")) {
-          if (!prepareManualModeForReset()) return;
+          if (!await prepareManualModeForReset()) return;
           renderResetResultsModal();
           return;
         }
@@ -164,9 +163,9 @@
         renderResultsAdminPanel();
       });
       
-      computerFooterPanel?.addEventListener("click", (event) => {
+      computerFooterPanel?.addEventListener("click", async (event) => {
         if (!event.target.closest("[data-results-reset]")) return;
-        if (!prepareManualModeForReset()) return;
+        if (!await prepareManualModeForReset()) return;
         renderResetResultsModal();
       });
       

@@ -98,7 +98,7 @@
       }
     });
 
-    function prepareManualModeForReset() {
+    async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
       const ok = window.confirm([
         "L'actualisation directe est active.",
@@ -107,8 +107,7 @@
         "Passer en Manuel et continuer la RAZ ?"
       ].join("\n"));
       if (!ok) return false;
-      toggleCompetitionMode?.();
-      return true;
+      return await toggleCompetitionMode?.(false) === true;
     }
     const state = new Proxy({}, {
       get: (_, prop) => context.state?.[prop],
@@ -324,9 +323,9 @@
         }
       });
       
-      roleHistory?.addEventListener("click", (event) => {
+      roleHistory?.addEventListener("click", async (event) => {
         if (event.target.closest("[data-results-reset]")) {
-          if (!prepareManualModeForReset()) return;
+          if (!await prepareManualModeForReset()) return;
           renderResetResultsModal();
           return;
         }

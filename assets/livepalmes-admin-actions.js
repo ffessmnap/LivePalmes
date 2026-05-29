@@ -182,6 +182,7 @@
       }
       
       function finishRolePin(result) {
+        context.forceCloudRolePin = "";
         if (context.rolePinResolver) {
           context.rolePinResolver(result);
           context.rolePinResolver = null;
@@ -284,11 +285,59 @@
         }
         renderRoleCodesAdminModal();
       }
+
+      async function ensureComputerWriteAccess() {
+        await livePalmesAdminAuth?.whenReady?.();
+        if (livePalmesAdminAuth?.isAdminAuthenticated?.()) return true;
+        const auth = window.firebase?.auth ? window.firebase.auth() : null;
+        const token = auth?.currentUser?.getIdTokenResult
+          ? await auth.currentUser.getIdTokenResult(true).catch(() => null)
+          : null;
+        const claims = token?.claims || {};
+        if (
+          claims.livepalmesConsole === true &&
+          claims.livepalmesCompetition === context.FIRESTORE_COMPETITION_ID &&
+          claims.livepalmesRole === "computer"
+        ) {
+          context.cloudAuthenticatedRoles = {
+            ...(context.cloudAuthenticatedRoles || {}),
+            computer: true
+          };
+          return true;
+        }
+        if (context.cloudAuthenticatedRoles?.computer) return true;
+        if (!livePalmesPinAuth?.available?.()) return true;
+        context.forceCloudRolePin = "computer";
+        renderRolePinModal("computer");
+        const access = await new Promise((resolve) => {
+          context.rolePinResolver = (result) => {
+            context.forceCloudRolePin = "";
+            resolve(result);
+          };
+        });
+        return Boolean(access?.allowed);
+      }
+
+      async function firebaseAuthSummary() {
+        const auth = window.firebase?.auth ? window.firebase.auth() : null;
+        const user = auth?.currentUser || null;
+        const token = user?.getIdTokenResult ? await user.getIdTokenResult(true).catch(() => null) : null;
+        const claims = token?.claims || {};
+        return [
+          `uid: ${user?.uid || "aucun"}`,
+          `role: ${claims.livepalmesRole || "aucun"}`,
+          `competition: ${claims.livepalmesCompetition || "aucune"}`,
+          `console: ${claims.livepalmesConsole === true ? "oui" : "non"}`,
+          `grant local computer: ${context.cloudAuthenticatedRoles?.computer ? "oui" : "non"}`
+        ].join("\n");
+      }
       
-      function toggleCompetitionMode() {
-        const enabled = !competitionModeEnabled();
+      async function toggleCompetitionMode(targetEnabled) {
+        if (!await ensureComputerWriteAccess()) return false;
+        const enabled = typeof targetEnabled === "boolean" ? targetEnabled : !competitionModeEnabled();
+        const previousData = getData();
         context.lastConsoleActivityAt = Date.now();
-        const data = getData();
+        const data = previousData;
         const hasCompetitionRows = Boolean(
           data.program?.length ||
           data.series?.length ||
@@ -298,7 +347,7 @@
           /comp[Ãé]tition\s+[Ãà]?\s*charger/i.test(String(data.meet?.name || ""));
         if (enabled && !hasCompetitionRows && isEmptyRescueData) {
           window.alert("Mode Direct impossible : aucune compétition n'est chargée sur cette console. Clique d'abord sur Actualiser ou réimporte les séries.");
-          return;
+          return false;
         }
         const nextData = normalizeData({
           ...data,
@@ -312,13 +361,24 @@
         setData(nextData);
         saveData();
         render();
-        updateLiveNotes(enabled ? "Actualisation directe activée" : "Actualisation manuelle activée", {
-          competitionMode: enabled,
-          competitionModeUpdatedAt: nextData.notes.competitionModeUpdatedAt
-        }).then(() => {
+        try {
+          await updateLiveNotes(enabled ? "Actualisation directe activée" : "Actualisation manuelle activée", {
+            competitionMode: enabled,
+            competitionModeUpdatedAt: nextData.notes.competitionModeUpdatedAt
+          });
           initFirebaseSync();
           render();
-        });
+          return true;
+        } catch (error) {
+          setData(previousData);
+          saveData();
+          render();
+          const permissionHint = /permission|insufficient|denied/i.test(String(error?.message || error))
+            ? `\n\nFirebase refuse l'ecriture.\n${await firebaseAuthSummary()}`
+            : "";
+          window.alert(`Changement de mode impossible : ${error?.message || error}${permissionHint}`);
+          return false;
+        }
       }
 
       return {
