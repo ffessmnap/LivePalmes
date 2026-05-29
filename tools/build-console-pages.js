@@ -69,6 +69,7 @@ const speakerInfoScripts = [
 const seriesImportScripts = [
   "assets/livepalmes-pdf-import.js",
   "assets/livepalmes-csv-parser.js",
+  "assets/livepalmes-series-import-utils.js",
   "assets/livepalmes-series-import.js",
   "assets/livepalmes-series-import-workflow.js"
 ];
