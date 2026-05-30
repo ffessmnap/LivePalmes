@@ -61,7 +61,7 @@ function categoryOptionLabel(category, sex = selectedSegmentValue(elements.sexFi
     C: female ? "FCA · Cadette" : "HCA · Cadet",
     J: female ? "FJU · Junior" : "HJU · Junior",
     S: female ? "FSE · Senior" : "HSE · Senior",
-    "M30+": female ? "F30+ · Master 30+" : "H30+ · Master 30+",
+    "M30+": female ? "F30+ · Senior 30+" : "H30+ · Senior 30+",
     "M40+": female ? "F40+ · Master 40+" : "H40+ · Master 40+",
     "M50+": female ? "F50+ · Master 50+" : "H50+ · Master 50+",
     "M60+": female ? "F60+ · Master 60+" : "H60+ · Master 60+",
@@ -116,7 +116,7 @@ function categoryName(category, sex) {
     C: female ? "Cadettes" : "Cadets",
     J: female ? "Juniors Femmes" : "Juniors Hommes",
     S: female ? "Seniors Femmes" : "Seniors Hommes",
-    "M30+": "Master 30+",
+    "M30+": "Senior 30+",
     "M40+": "Master 40+",
     "M50+": "Master 50+",
     "M60+": "Master 60+",
@@ -207,7 +207,7 @@ function renderRecords(filtered) {
       const chronoLabel = record.chrono === "E" ? "ELEC" : record.chrono === "M" ? "MAN" : "";
       const badges = [record.bassin ? `<b>${record.bassin} m</b>` : "", chronoLabel ? `<b>${chronoLabel}</b>` : ""].filter(Boolean).join("");
       return `
-        <tr class="sex-${record.sex.toLowerCase()}">
+        <tr class="sex-${record.sex.toLowerCase()}" tabindex="0" role="button" aria-expanded="false">
           <td data-label="Course">
             <strong>${record.courseShortLabel}</strong>
           </td>
@@ -234,7 +234,7 @@ function renderRecords(filtered) {
   elements.recordsBody.innerHTML = rows.join("");
 
   if (!filtered.length) {
-    elements.recordsBody.innerHTML = `<tr><td class="empty" colspan="7">Choisissez Femmes ou Hommes.</td></tr>`;
+    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="7">Choisissez Femmes ou Hommes.</td></tr>`;
   }
 }
 
@@ -281,4 +281,21 @@ elements.sexFilter.querySelectorAll(".segment").forEach((button) => {
 });
 
 elements.resetButton.addEventListener("click", resetFilters);
+
+elements.recordsBody.addEventListener("click", (event) => {
+  const row = event.target.closest("tr");
+  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+  const expanded = !row.classList.contains("expanded");
+  row.classList.toggle("expanded", expanded);
+  row.setAttribute("aria-expanded", expanded ? "true" : "false");
+});
+
+elements.recordsBody.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const row = event.target.closest("tr");
+  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+  event.preventDefault();
+  row.click();
+});
+
 applyFilters();

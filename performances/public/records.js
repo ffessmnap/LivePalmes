@@ -145,7 +145,7 @@ function renderRecords(filtered) {
   elements.recordsBody.innerHTML = rows.join("");
 
   if (!filtered.length) {
-    elements.recordsBody.innerHTML = `<tr><td class="empty" colspan="6">Aucun record ne correspond aux filtres.</td></tr>`;
+    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Aucun record ne correspond aux filtres.</td></tr>`;
   }
 }
 

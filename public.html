@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LivePalmes public</title>
-    <meta name="description" content="LivePalmes public : live comp&eacute;tition, performances et historique.">
+    <meta name="description" content="LivePalmes public : comp&eacute;titions en direct, performances fran&ccedil;aises et archives.">
     <meta name="theme-color" content="#0b7285">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260529-public-home">
     <link rel="manifest" href="manifest-public.webmanifest?v=20260529-public-home">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="public.css?v=20260529-home-wording-1">
+    <link rel="stylesheet" href="public.css?v=20260530-home-buttons-1">
   </head>
   <body class="public-results-page public-home-page">
     <header class="public-results-header public-home-header">
@@ -25,8 +25,8 @@
           </span>
           LivePalmes
         </p>
-        <h1>Espace public</h1>
-        <p id="publicHomeMeetMeta" class="public-meet-meta">Live, performances et archives</p>
+        <h1>LivePalmes public</h1>
+        <p id="publicHomeMeetMeta" class="public-meet-meta">Comp&eacute;titions, performances et archives</p>
       </div>
       <div class="public-home-partner" aria-label="Nage avec palmes FFESSM">
         <img src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM">
@@ -37,7 +37,7 @@
       <section class="public-home-hero" aria-labelledby="publicHomeTitle">
         <div class="public-home-hero-copy">
           <h2 id="publicHomeTitle">LivePalmes</h2>
-          <p>Retrouvez les s&eacute;ries, r&eacute;sultats, fiches nageurs, performances et archives dans les rubriques ci-dessous.</p>
+          <p>Suivez les comp&eacute;titions en cours, consultez les r&eacute;sultats publi&eacute;s et explorez les performances fran&ccedil;aises.</p>
         </div>
         <div class="public-home-logo-card" aria-hidden="true">
           <img src="logo-livepalmes.png?v=20260529-public-home" alt="">
@@ -46,11 +46,15 @@
 
       <section class="public-home-grid" aria-label="Rubriques publiques">
         <article class="public-home-card live-card">
-          <span class="public-home-card-icon live-icon" aria-hidden="true"></span>
+          <span class="public-home-card-icon live-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </span>
           <div class="public-home-status-row">
-            <span class="public-home-status available">Disponible</span>
+            <span id="publicHomeLiveStatus" class="public-home-status live">En direct</span>
           </div>
-          <h3>Live comp&eacute;tition</h3>
+          <h3>Comp&eacute;tition en direct</h3>
           <p>R&eacute;sultats, s&eacute;ries, fiches nageurs et PDF publi&eacute;s.</p>
           <p id="publicHomeCurrentMeet" class="public-home-current-meet">Chargement de la comp&eacute;tition en cours...</p>
           <div class="public-home-card-actions">
@@ -60,29 +64,44 @@
         </article>
 
         <article class="public-home-card performance-card">
-          <span class="public-home-card-icon performance-icon" aria-hidden="true"></span>
+          <span class="public-home-card-icon performance-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M8 4h8v3h3v2a5 5 0 0 1-4.2 4.9A4 4 0 0 1 13 15.7V18h3v2H8v-2h3v-2.3a4 4 0 0 1-1.8-1.8A5 5 0 0 1 5 9V7h3V4zm-1 5a3 3 0 0 0 1.2 2.4A8.4 8.4 0 0 1 8 9V9H7zm9 0a8.4 8.4 0 0 1-.2 2.4A3 3 0 0 0 17 9h-1z"></path>
+            </svg>
+          </span>
           <div class="public-home-status-row">
-            <span class="public-home-status available">Disponible</span>
+            <span class="public-home-status available">Ouvert</span>
           </div>
-          <h3>Performances</h3>
-          <p>Records, meilleures performances et rep&egrave;res sportifs.</p>
-          <a class="ghost-button compact" href="performances/records.html">Performances</a>
+          <h3>Performances fran&ccedil;aises</h3>
+          <p>Records de France, meilleures performances, tops et recherche nageur.</p>
+          <div class="public-home-card-actions">
+            <a class="ghost-button compact" href="performances/records.html">Records de France</a>
+            <a class="ghost-button compact" href="performances/mpf.html">Meilleures performances fran&ccedil;aises</a>
+            <a class="ghost-button compact" href="performances/tops.html">TOP nageurs</a>
+            <a class="ghost-button compact" href="performances/nageur.html">Recherche nageur</a>
+          </div>
         </article>
 
         <article class="public-home-card archive-card">
-          <span class="public-home-card-icon archive-icon" aria-hidden="true"></span>
+          <span class="public-home-card-icon archive-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-10zm2.5-.5a.5.5 0 0 0-.5.5V8h14a.5.5 0 0 0-.5-.5h-7.3l-2-2H5.5zM5 10v6.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V10H5z"></path>
+            </svg>
+          </span>
           <div class="public-home-status-row">
-            <span class="public-home-status available">Disponible</span>
+            <span class="public-home-status available">Ouvert</span>
           </div>
-          <h3>Historique comp&eacute;titions</h3>
-          <p>Archives des r&eacute;sultats, fiches nageurs et PDF officiels.</p>
-          <a class="ghost-button compact" href="archives.html">Archives</a>
+          <h3>Archives des comp&eacute;titions</h3>
+          <p>Retrouvez les comp&eacute;titions pass&eacute;es, r&eacute;sultats et documents officiels.</p>
+          <div class="public-home-card-actions">
+            <a class="ghost-button compact" href="archives.html">Archives</a>
+          </div>
         </article>
       </section>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="assets/pages/public-home.js?v=20260529-home-wording-1"></script>
+    <script src="assets/pages/public-home.js?v=20260530-home-friendly-1"></script>
   </body>
 </html>

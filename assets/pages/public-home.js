@@ -10,6 +10,7 @@ const FIREBASE_CONFIG = {
 
 const meetMeta = document.querySelector("#publicHomeMeetMeta");
 const currentMeet = document.querySelector("#publicHomeCurrentMeet");
+const liveStatus = document.querySelector("#publicHomeLiveStatus");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -25,7 +26,12 @@ function meetLabel(meet = {}) {
 }
 
 function setHomeMeet(label, detail = "") {
-  if (meetMeta) meetMeta.textContent = "Live, performances et archives";
+  if (meetMeta) meetMeta.textContent = "Comp\u00e9titions, performances et archives";
+  if (liveStatus) {
+    liveStatus.textContent = label ? "En direct" : "Ouvert";
+    liveStatus.classList.toggle("live", Boolean(label));
+    liveStatus.classList.toggle("available", !label);
+  }
   if (!currentMeet) return;
   const title = label || "Aucune comp\u00e9tition en direct pour le moment";
   const extra = detail && detail !== label ? detail.replace(label, "").replace(/^\s*-\s*/, "") : "";
