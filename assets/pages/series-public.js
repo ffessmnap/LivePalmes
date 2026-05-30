@@ -711,8 +711,6 @@ function renderSwimmerSheet(key) {
 
 async function openSwimmerSheet(key) {
   renderSwimmerSheet(key);
-  await ensureSwimmerResultDetails(key);
-  renderSwimmerSheet(key);
 }
 function closeSwimmerSheet() {
   if (!swimmerSheet) return;
@@ -814,40 +812,6 @@ function swimmerResultsAreLoading(key) {
   }));
 }
 
-async function ensureSwimmerResultDetails(key) {
-  if (!key || swimmerResultDetailsLoading.has(key)) return;
-  const sessionsToLoad = swimmerResultSessionsToLoad(key);
-  if (!sessionsToLoad.length) return;
-  const competition = publicCompetitionDocument();
-  if (!competition) return;
-  swimmerResultDetailsLoading.add(key);
-  try {
-    await Promise.all(sessionsToLoad.map((session) => loadPublicSessionResultsDirectData(competition, session)));
-  } finally {
-    swimmerResultDetailsLoading.delete(key);
-  }
-}
-
-async function refreshPublicSeriesSessionResults(session) {
-  const cleanSession = String(session || "").trim();
-  if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
-  if (!window.firebase?.initializeApp || !window.firebase?.firestore) return;
-  if (!window.firebase.apps?.length) {
-    window.firebase.initializeApp(FIREBASE_CONFIG);
-  }
-  const db = window.firebase.firestore();
-  const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  try {
-    setStatus("Actualisation", "pending");
-    await loadPublicSessionResultsDirectData(competition, cleanSession);
-    setStatus("ConnectÃ©", "ok");
-    render();
-  } catch (error) {
-    console.warn("Lecture des rÃ©sultats de session impossible", error);
-    setStatus("Erreur", "error");
-  }
-}
-
 const liveDataIsNewerThanPublicIndex = (remote, index) => publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
 
 function applyLiveData(remote, index = {}) {
@@ -921,7 +885,6 @@ sessionsHost?.addEventListener("click", (event) => {
   activeSeriesIndex = 0;
   activeRecordKey = "";
   render();
-  refreshPublicSeriesSessionResults(activeSession);
 });
 
 sessionSelect?.addEventListener("change", (event) => {
@@ -931,7 +894,6 @@ sessionSelect?.addEventListener("change", (event) => {
   activeSeriesIndex = 0;
   activeRecordKey = "";
   render();
-  refreshPublicSeriesSessionResults(activeSession);
 });
 
 app?.addEventListener("click", (event) => {
@@ -978,17 +940,6 @@ app?.addEventListener("click", (event) => {
     selectedSearchSwimmerKey = searchSwimmerButton.dataset.searchSwimmerKey || "";
     const output = document.querySelector("#publicSwimmerSearchOutput");
     if (output) output.innerHTML = renderSwimmerSearchContent();
-    ensureSwimmerResultDetails(selectedSearchSwimmerKey)
-      .then(() => {
-        const refreshedOutput = document.querySelector("#publicSwimmerSearchOutput");
-        if (refreshedOutput && selectedSearchSwimmerKey === searchSwimmerButton.dataset.searchSwimmerKey) {
-          refreshedOutput.innerHTML = renderSwimmerSearchContent();
-        }
-      })
-      .catch((error) => {
-        console.warn("Chargement des résultats nageur impossible", error);
-        setStatus("Erreur", "error");
-      });
     return;
   }
   const swimmerButton = event.target.closest("[data-swimmer-key]");

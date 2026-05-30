@@ -538,8 +538,6 @@ function renderSwimmerSheetContent(key) {
 async function openSwimmerSheet(key) {
   if (!swimmerSheet || !key) return;
   renderSwimmerSheetContent(key);
-  await ensureSwimmerResultDetails(key);
-  if (activeSheetSwimmerKey === key) renderSwimmerSheetContent(key);
 }
 
 function latestSessionUpdateLabel(results = []) {
@@ -1033,16 +1031,6 @@ function sessionHasDetailedResults(session) {
   });
 }
 
-function refreshPublicSessionResultsIfMissing(session) {
-  const cleanSession = String(session || "").trim();
-  if (!cleanSession || (directResultSessionsLoaded.has(cleanSession) && sessionHasDetailedResults(cleanSession))) return;
-  setStatus("Actualisation", "pending");
-  loadPublicResultsIndex({ directSession: cleanSession }).catch((error) => {
-    console.warn("Actualisation résultats session impossible", error);
-    setStatus("Erreur", "error");
-  });
-}
-
 async function loadPublicSeriesPdfs(competition) {
   try {
     const snapshot = await competition.collection("seriesPdfs").get({ source: "server" });
@@ -1099,31 +1087,6 @@ async function loadPublicSessionResultsDirectData(competition, session) {
 
 function swimmerResultSessions(key) {
   return publicSwimmers.swimmerResultSessions(key, publicSwimmerOptions({ series: publicSeries }));
-}
-
-async function ensureSwimmerResultDetails(key) {
-  if (!key || swimmerResultDetailsLoading.has(key)) return;
-  const sessionsToLoad = swimmerResultSessionsToLoad(key);
-  if (!sessionsToLoad.length) return;
-  const competition = publicCompetitionDocument();
-  if (!competition) return;
-  swimmerResultDetailsLoading.add(key);
-  try {
-    await Promise.all(sessionsToLoad.map((session) => loadPublicSessionResultsDirectData(competition, session)));
-  } finally {
-    swimmerResultDetailsLoading.delete(key);
-  }
-}
-
-async function latestVisibleResultSessionFromServer(competition) {
-  const snapshot = await competition.collection("results")
-    .orderBy("updatedAt", "desc")
-    .limit(5)
-    .get({ source: "server" });
-  const latest = snapshot.docs
-    .map(publicResultFromDoc)
-    .find((result) => result.session && resultIsVisible(result));
-  return latest?.session || "";
 }
 
 const liveDataIsNewerThanPublicIndex = (remote, index) => publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
@@ -1210,14 +1173,6 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
     await loadPublicResultsDirectData(competition);
   } else if (directSession) {
     await loadPublicSessionResultsDirectData(competition, directSession);
-  } else if (!activeSessionChosen) {
-    const latestServerSession = await latestVisibleResultSessionFromServer(competition).catch((error) => {
-      console.warn("Lecture de la dernière session résultat impossible", error);
-      return "";
-    });
-    if (latestServerSession && (!sessionHasDetailedResults(latestServerSession) || latestServerSession !== latestResultSession())) {
-      await loadPublicSessionResultsDirectData(competition, latestServerSession);
-    }
   }
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
@@ -1307,14 +1262,12 @@ sessionControls?.addEventListener("click", (event) => {
   activeSession = button.dataset.publicSession;
   activeSessionChosen = true;
   renderResults();
-  refreshPublicSessionResultsIfMissing(activeSession);
 });
 
 sessionSelect?.addEventListener("change", (event) => {
   activeSession = event.target.value || "";
   activeSessionChosen = true;
   renderResults();
-  refreshPublicSessionResultsIfMissing(activeSession);
 });
 
 collapseDetailsBtn?.addEventListener("click", () => {
@@ -1353,17 +1306,6 @@ list?.addEventListener("click", (event) => {
   selectedSearchSwimmerKey = button.dataset.searchSwimmerKey || "";
   const output = document.querySelector("#publicSwimmerSearchOutput");
   if (output) output.innerHTML = renderSwimmerSearchContent();
-  ensureSwimmerResultDetails(selectedSearchSwimmerKey)
-    .then(() => {
-      const refreshedOutput = document.querySelector("#publicSwimmerSearchOutput");
-      if (refreshedOutput && selectedSearchSwimmerKey === button.dataset.searchSwimmerKey) {
-        refreshedOutput.innerHTML = renderSwimmerSearchContent();
-      }
-    })
-    .catch((error) => {
-      console.warn("Chargement des résultats nageur impossible", error);
-      setStatus("Erreur", "error");
-    });
 });
 
 swimmerSheet?.addEventListener("click", (event) => {
