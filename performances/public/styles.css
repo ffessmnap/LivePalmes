@@ -1299,7 +1299,38 @@ tbody tr.relay-mixed td:first-child strong::after {
   }
 
   .records-page tbody {
-    gap: 5px;
+    gap: 6px;
+  }
+
+  .records-page tbody tr.section-row {
+    margin: 14px 0 4px;
+    border: 0;
+    border-radius: 8px;
+    background: #e8f4f2;
+  }
+
+  .records-page tbody tr.section-row:first-child {
+    margin-top: 0;
+  }
+
+  .records-page .section-row td {
+    padding: 8px 10px;
+    color: var(--accent-strong);
+    background: transparent;
+    border: 0;
+    font-size: 0.84rem;
+    letter-spacing: 0;
+  }
+
+  .records-page .section-row td::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    vertical-align: 2px;
   }
 
   .records-page tbody tr.sex-f,
@@ -1328,14 +1359,14 @@ tbody tr.relay-mixed td:first-child strong::after {
     content: "-";
   }
 
-  .records-page tbody tr:not(.expanded) td {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td {
     display: none;
   }
 
-  .records-page tbody tr:not(.expanded) td[data-label="Course"],
-  .records-page tbody tr:not(.expanded) td[data-label="Temps"],
-  .records-page tbody tr:not(.expanded) td[data-label="Nageur"],
-  .records-page tbody tr:not(.expanded) td[data-label="Relayeurs"] {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Course"],
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Temps"],
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"],
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Relayeurs"] {
     display: block;
     min-width: 0;
     padding: 9px 6px;
@@ -1345,24 +1376,24 @@ tbody tr.relay-mixed td:first-child strong::after {
     text-overflow: ellipsis;
   }
 
-  .records-page tbody tr:not(.expanded) td[data-label="Nageur"],
-  .records-page tbody tr:not(.expanded) td[data-label="Relayeurs"] {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"],
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Relayeurs"] {
     padding-right: 22px;
   }
 
-  .records-page tbody tr:not(.expanded) td::before {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td::before {
     content: none;
   }
 
-  .records-page tbody tr:not(.expanded) td strong,
-  .records-page tbody tr:not(.expanded) td .relay-summary {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td strong,
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td .relay-summary {
     display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .records-page tbody tr:not(.expanded) .relay-swimmers {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) .relay-swimmers {
     display: none;
   }
 
