@@ -298,9 +298,7 @@
       if (dedicatedRole && ROLE_LABELS[dedicatedRole]) {
         window.setTimeout(() => {
           if (context.profileHomeActive || context.state?.role !== dedicatedRole) {
-            openRoleConsole(dedicatedRole).then(() => {
-              refreshFirebaseOnce?.(false);
-            }).catch((error) => {
+            openRoleConsole(dedicatedRole).catch((error) => {
               console.warn("Ouverture de la console dediee impossible", error);
             });
           }
