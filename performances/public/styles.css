@@ -1367,22 +1367,58 @@ tbody tr.relay-mixed td:first-child strong::after {
   }
 
   .records-page tbody tr.expanded {
-    grid-template-columns: 1fr;
+    grid-template-columns: 82px 72px minmax(0, 1fr);
+    row-gap: 0;
   }
 
   .records-page tbody tr.expanded td {
-    display: grid;
-    grid-template-columns: 78px minmax(0, 1fr);
-    gap: 8px;
-    padding-right: 28px;
+    display: block;
+    min-width: 0;
+    padding: 8px 6px;
+    border-bottom: 0;
+    overflow-wrap: anywhere;
   }
 
   .records-page tbody tr.expanded td::before {
-    content: attr(data-label);
+    content: none;
   }
 
   .records-page tbody tr.expanded .relay-summary {
     display: none;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Nageur"],
+  .records-page tbody tr.expanded td[data-label="Relayeurs"] {
+    padding-right: 24px;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Club"],
+  .records-page tbody tr.expanded td[data-label="Lieu"],
+  .records-page tbody tr.expanded td[data-label="Date"] {
+    padding-top: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Club"] {
+    grid-column: 1 / 2;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Lieu"] {
+    grid-column: 2 / 3;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Date"] {
+    grid-column: 3 / 4;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Club"]::after,
+  .records-page tbody tr.expanded td[data-label="Lieu"]::after {
+    content: " ·";
+  }
+
+  .records-page tbody tr.expanded .relay-swimmers {
+    grid-column: 1 / -1;
   }
 }
 
