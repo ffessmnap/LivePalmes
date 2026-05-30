@@ -1482,6 +1482,170 @@ tbody tr.relay-mixed td:first-child strong::after {
   .records-page tbody tr.expanded .relay-swimmers {
     grid-column: 1 / -1;
   }
+
+  .mpf-page tbody {
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .mpf-page tbody tr.section-row {
+    margin: 10px 0 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: #e8f4f2;
+  }
+
+  .mpf-page tbody tr.section-row:first-child {
+    margin-top: 0;
+    border-top: 0;
+  }
+
+  .mpf-page .section-row td {
+    padding: 8px 10px;
+    color: var(--accent-strong);
+    background: transparent;
+    border: 0;
+    font-size: 0.84rem;
+    letter-spacing: 0;
+  }
+
+  .mpf-page .section-row td::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    vertical-align: 2px;
+  }
+
+  .mpf-page tbody tr.sex-f,
+  .mpf-page tbody tr.sex-m {
+    position: relative;
+    display: grid;
+    grid-template-columns: 66px 58px 78px minmax(0, 1fr);
+    gap: 0;
+    border: 0;
+    border-left: 5px solid var(--accent);
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  .mpf-page tbody tr.sex-f {
+    border-left-color: var(--women);
+  }
+
+  .mpf-page tbody tr.sex-m {
+    border-left-color: var(--men);
+  }
+
+  .mpf-page tbody tr.sex-f::after,
+  .mpf-page tbody tr.sex-m::after {
+    content: "+";
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 850;
+  }
+
+  .mpf-page tbody tr.expanded::after {
+    content: "-";
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td {
+    display: none;
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Course"],
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Categorie"],
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Temps"],
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"] {
+    display: block;
+    min-width: 0;
+    padding: 9px 4px;
+    border-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"] {
+    padding-right: 22px;
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Temps"] {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td::before {
+    content: none;
+  }
+
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td strong {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mpf-page tbody tr.expanded {
+    grid-template-columns: 66px 58px 78px minmax(0, 1fr);
+    row-gap: 0;
+    background: #fbfdfc;
+  }
+
+  .mpf-page tbody tr.expanded td {
+    display: block;
+    min-width: 0;
+    padding: 8px 6px;
+    border-bottom: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mpf-page tbody tr.expanded td::before {
+    content: none;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Nageur"] {
+    padding-right: 24px;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Club"],
+  .mpf-page tbody tr.expanded td[data-label="Lieu"],
+  .mpf-page tbody tr.expanded td[data-label="Date"] {
+    padding-top: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Club"] {
+    grid-column: 1 / 2;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Lieu"] {
+    grid-column: 2 / 4;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Date"] {
+    grid-column: 4 / 5;
+  }
+
+  .mpf-page tbody tr.expanded td[data-label="Club"]::after,
+  .mpf-page tbody tr.expanded td[data-label="Lieu"]::after {
+    content: " ·";
+  }
 }
 
 @media (max-width: 420px) {
