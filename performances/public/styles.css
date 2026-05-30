@@ -1338,7 +1338,7 @@ tbody tr.relay-mixed td:first-child strong::after {
   .records-page tbody tr.relay-mixed {
     position: relative;
     display: grid;
-    grid-template-columns: 82px 72px minmax(0, 1fr);
+    grid-template-columns: 78px 88px minmax(0, 1fr);
     gap: 0;
     cursor: pointer;
   }
@@ -1369,7 +1369,7 @@ tbody tr.relay-mixed td:first-child strong::after {
   .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Relayeurs"] {
     display: block;
     min-width: 0;
-    padding: 9px 6px;
+    padding: 9px 4px;
     border-bottom: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -1379,6 +1379,11 @@ tbody tr.relay-mixed td:first-child strong::after {
   .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"],
   .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Relayeurs"] {
     padding-right: 22px;
+  }
+
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Temps"] {
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td::before {
@@ -1398,7 +1403,7 @@ tbody tr.relay-mixed td:first-child strong::after {
   }
 
   .records-page tbody tr.expanded {
-    grid-template-columns: 82px 72px minmax(0, 1fr);
+    grid-template-columns: 78px 88px minmax(0, 1fr);
     row-gap: 0;
   }
 
