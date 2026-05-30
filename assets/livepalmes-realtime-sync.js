@@ -264,6 +264,7 @@
         }
         context.firestoreUnsubscribe = alertsCollection()
           .orderBy("createdAt", "desc")
+          .limit(300)
           .onSnapshot((snapshot) => {
             context.firestoreReady = true;
             context.firebaseStatus = "connected";
@@ -319,9 +320,6 @@
               console.warn("Lecture REST des resultats impossible", fallbackError);
             });
           });
-        refreshFirebaseOnce(false, { successStatus: "connected" }).catch((error) => {
-          console.warn("Hydratation initiale Firebase impossible", error);
-        });
       }
 
       async function refreshFirebaseOnce(showMessage = true, options = {}) {
@@ -337,7 +335,7 @@
           return;
         }
         const [alertResult, liveResult, resultResult] = await Promise.allSettled([
-          alertsCollection().orderBy("createdAt", "desc").get({ source: "server" }),
+          alertsCollection().orderBy("createdAt", "desc").limit(300).get({ source: "server" }),
           liveDataDocument().get({ source: "server" }),
           resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" })
         ]);
@@ -441,6 +439,11 @@
         }
         if (!realtimeSyncEnabled()) {
           context.firebaseStatus = context.firestoreDb ? "manual" : "local";
+          renderDataStatus();
+          return;
+        }
+        if (context.firestoreUnsubscribe || context.liveDataUnsubscribe || context.resultsUnsubscribe) {
+          context.firebaseStatus = "connected";
           renderDataStatus();
           return;
         }
