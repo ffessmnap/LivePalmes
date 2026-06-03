@@ -8,7 +8,6 @@ const FIREBASE_CONFIG = {
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
 
-const meetMeta = document.querySelector("#publicHomeMeetMeta");
 const currentMeet = document.querySelector("#publicHomeCurrentMeet");
 const liveStatus = document.querySelector("#publicHomeLiveStatus");
 
@@ -26,7 +25,6 @@ function meetLabel(meet = {}) {
 }
 
 function setHomeMeet(label, detail = "") {
-  if (meetMeta) meetMeta.textContent = "Comp\u00e9titions, performances et archives";
   if (liveStatus) {
     liveStatus.textContent = label ? "En direct" : "Ouvert";
     liveStatus.classList.toggle("live", Boolean(label));

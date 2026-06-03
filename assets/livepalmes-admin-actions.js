@@ -198,13 +198,20 @@
       
       function readRolePinsFromModal(options = {}) {
         const required = options.required !== false;
+        const allowPartial = options.allowPartial === true;
         const pins = {};
         roleCodesModal?.querySelectorAll("[data-role-code]").forEach((input) => {
           pins[input.dataset.roleCode] = String(input.value || "").trim();
         });
-        const invalid = Object.entries(pins).find(([, value]) => required && !/^\d{4}$/.test(value));
+        const invalid = Object.entries(pins).find(([, value]) => {
+          if (!required && !value) return false;
+          if (allowPartial && !value) return false;
+          return required && !/^\d{4}$/.test(value);
+        });
         if (invalid) {
-          window.alert("Chaque code doit contenir exactement 4 chiffres.");
+          window.alert(allowPartial
+            ? "Chaque code modifié doit contenir exactement 4 chiffres. Les champs vides seront conservés."
+            : "Chaque code doit contenir exactement 4 chiffres.");
           return null;
         }
         return pins;
@@ -212,9 +219,13 @@
       
       async function saveRoleCodesFromModal(enableLock) {
         if (!roleCodesModal) return;
-        const pins = readRolePinsFromModal({ required: enableLock });
+        const serverPinMode = livePalmesPinAuth?.available?.() && livePalmesAdminAuth?.isAdminAuthenticated?.();
+        const pins = readRolePinsFromModal({
+          required: enableLock,
+          allowPartial: Boolean(enableLock && serverPinMode && serverPinModeEnabled())
+        });
         if (!pins) return;
-        if (livePalmesPinAuth?.available?.() && livePalmesAdminAuth?.isAdminAuthenticated?.()) {
+        if (serverPinMode) {
           try {
             await livePalmesPinAuth.saveRolePins({
               competitionId: context.FIRESTORE_COMPETITION_ID,
@@ -286,6 +297,26 @@
         renderRoleCodesAdminModal();
       }
 
+      function waitForInitialFirebaseUser(auth) {
+        if (!auth?.onAuthStateChanged) return Promise.resolve(auth?.currentUser || null);
+        if (auth.currentUser) return Promise.resolve(auth.currentUser);
+        return new Promise((resolve) => {
+          let done = false;
+          let unsubscribe = () => {};
+          const finish = (user) => {
+            if (done) return;
+            done = true;
+            unsubscribe();
+            resolve(user || auth.currentUser || null);
+          };
+          const timer = setTimeout(() => finish(auth.currentUser || null), 900);
+          unsubscribe = auth.onAuthStateChanged((user) => {
+            clearTimeout(timer);
+            finish(user);
+          });
+        });
+      }
+
       async function ensureComputerWriteAccess() {
         await livePalmesAdminAuth?.whenReady?.();
         if (livePalmesAdminAuth?.isAdminAuthenticated?.()) return true;
@@ -295,6 +326,7 @@
           if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
             await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
           }
+          await waitForInitialFirebaseUser(auth);
           if (!auth.currentUser) await auth.signInAnonymously();
           return true;
         } catch (error) {

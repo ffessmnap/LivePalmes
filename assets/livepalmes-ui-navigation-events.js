@@ -16,6 +16,7 @@
       firstSeriesSelectionForCurrentRace,
       headerRefDetails,
       headerRefs,
+      initFirebaseSync,
       isFinalStage,
       manualRefreshBtn,
       openAdminSeriesModal,
@@ -149,6 +150,9 @@
       
       async function openRoleConsole(nextRole) {
         if (!ROLE_LABELS[nextRole]) return;
+        if (dedicatedRole && context.profileHomeActive && typeof refreshFirebaseOnce === "function") {
+          await refreshFirebaseOnce(false, { includeResults: false });
+        }
         if (!requestRoleAccess(nextRole)) {
           const access = await askRolePin(nextRole);
           if (!access?.allowed) return;
@@ -168,6 +172,7 @@
         }
         context.profileHomeActive = false;
         switchRoleUnlocked(nextRole);
+        initFirebaseSync?.();
         render();
         updateConsolePresence(true);
       }

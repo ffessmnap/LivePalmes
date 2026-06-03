@@ -1,17 +1,17 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes MPF</title>
-    <link rel="stylesheet" href="public/styles.css?v=20260530-mpf-mobile1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260603-mpf-filter-height-1" />
   </head>
   <body class="mpf-page">
     <header class="topbar">
       <div class="topbar-title">
-        <a class="topbar-home-link" href="../public.html">Accueil LivePalmes</a>
-        <p class="eyebrow">LivePalmes public &middot; Performances</p>
-        <h1>Meilleures Performances Francaises</h1>
+        <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
+        <p class="eyebrow">LivePalmes &middot; Performances</p>
+        <h1>Meilleures Performances Françaises</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
       <nav class="main-nav" aria-label="Navigation principale">
@@ -25,27 +25,26 @@
     <main>
       <section class="toolbar" aria-label="Filtres des MPF">
         <label>
-          Categorie
+          Catégorie
           <select id="categoryFilter"></select>
         </label>
         <div class="field">
           <span>Sexe</span>
           <div class="segmented two-segments" id="sexFilter" role="group" aria-label="Sexe">
-            <button type="button" class="segment" data-value="F">Femmes</button>
-            <button type="button" class="segment" data-value="M">Hommes</button>
+            <button type="button" class="segment sex-f" data-value="F">Femmes</button>
+            <button type="button" class="segment sex-m" data-value="M">Hommes</button>
           </div>
         </div>
         <label>
           Course
           <select id="courseFilter"></select>
         </label>
-        <button id="resetButton" type="button">Reinitialiser</button>
       </section>
 
       <section class="records-shell">
         <div class="table-head">
           <div>
-            <h2 id="mpfTitle">Meilleures Performances Francaises</h2>
+            <h2 id="mpfTitle">MPF</h2>
           </div>
           <span id="cutoffText"></span>
         </div>
@@ -55,9 +54,9 @@
             <thead>
               <tr>
                 <th>Course</th>
-                <th>Categorie</th>
+                <th>Catégorie</th>
                 <th>Temps</th>
-                <th>Nageur</th>
+                <th id="swimmerHeader">Nageur</th>
                 <th>Club</th>
                 <th>Lieu</th>
                 <th>Date</th>
@@ -69,7 +68,16 @@
       </section>
     </main>
 
-    <script src="public/data/records-data.js?v=20260530-last-update1"></script>
-    <script src="public/app.js?v=20260530-mpf-mobile5"></script>
+    <script src="public/data/records-data.js?v=20260603-record-splits-1"></script>
+    <script src="public/record-placeholders.js?v=20260601-relay-mixed-labels-2"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="../assets/livepalmes-app-config.js?v=20260603-public-record-store-1"></script>
+    <script src="public/store.js?v=20260603-public-record-store-1"></script>
+    <script src="public/app.js?v=20260603-public-record-store-1"></script>
+    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="performance-admin-footer">
+      <a class="performance-admin-link" href="/administration.html">Administration</a>
+    </footer>
   </body>
 </html>

@@ -9,9 +9,44 @@
   }
 
   function sessionResultsPdfsForSession(items = [], session = "") {
-    return (Array.isArray(items) ? items : [])
-      .filter((pdf) => pdf.scope === "full" || (pdf.sessions || []).map(String).includes(String(session || "")) || String(pdf.session || "") === String(session || ""))
+    const sortedItems = (Array.isArray(items) ? items : [])
+      .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    const competitionDocuments = sortedItems.filter((pdf) => pdf.scope === "full" || pdf.scope === "protocol" || pdf.documentType === "protocol");
+    if (competitionDocuments.length) return competitionDocuments;
+    return sortedItems.filter((pdf) =>
+      (pdf.sessions || []).map(String).includes(String(session || "")) ||
+      String(pdf.session || "") === String(session || "")
+    );
+  }
+
+  function sessionResultsSourceLabel(pdf) {
+    if (!pdf) return "";
+    if (pdf.scope === "full") return "PDF complet de la compétition";
+    if (pdf.scope === "protocol" || pdf.documentType === "protocol") return "Protocole complet de la compétition";
+    return pdf.sourceLabel || "";
+  }
+
+  function sessionResultsScopeLabel(pdf, activeSession = "") {
+    if (!pdf) return "";
+    if (pdf.scope === "full" || pdf.scope === "protocol" || pdf.documentType === "protocol") return "Compétition complète";
+    const sessions = Array.isArray(pdf.sessions) ? pdf.sessions.filter(Boolean) : [];
+    if (sessions.length > 1) return `Sessions ${sessions.map((session) => `S${session}`).join(", ")}`;
+    return `Session S${pdf.session || sessions[0] || activeSession || "-"}`;
+  }
+
+  function renderSessionResultsPublishedSummaryHtml(latest, activeSession = "", latestUpdatedLabel = "") {
+    if (!latest) return "";
+    const label = sessionResultsSourceLabel(latest);
+    const scope = sessionResultsScopeLabel(latest, activeSession);
+    return `
+      <div class="result-admin-document-summary">
+        <span><strong>Publié</strong> ${escapeHtml(scope)}</span>
+        ${latestUpdatedLabel ? `<span><strong>MAJ</strong> ${escapeHtml(latestUpdatedLabel)}</span>` : ""}
+        ${latest.pdfName ? `<span><strong>Fichier</strong> ${escapeHtml(latest.pdfName)}</span>` : ""}
+        ${label ? `<span><strong>Type</strong> ${escapeHtml(label)}</span>` : ""}
+      </div>
+    `;
   }
 
   function latestResultSession(results = []) {
@@ -106,8 +141,8 @@
         </div>
       </div>
       <div class="results-admin-list">
-        ${rowsHtml || `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
         ${sessionResultsImportHtml}
+        ${rowsHtml || `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
       </div>
     `;
   }
@@ -125,14 +160,50 @@
       <div class="result-admin-row session-results-import-row ${latest ? "published" : ""} ${uploadState ? "waiting" : ""}">
         <div>
           <strong>${activeSession ? `S${escapeHtml(activeSession)} · ` : ""}Résultats complets de session</strong>
-          <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([latest.sourceLabel, latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes.")}</span>
+          <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([sessionResultsSourceLabel(latest), latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt simple d'un PDF complet, sans lecture des finalistes.")}</span>
           ${!uploadState && latestUpdatedLabel ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(latestUpdatedLabel)}</small>` : ""}
+          ${!uploadState && latest ? renderSessionResultsPublishedSummaryHtml(latest, activeSession, latestUpdatedLabel) : ""}
         </div>
         <div class="result-admin-row-actions">
           ${uploadStateHtml}
           ${blockingUpload ? "" : `
             <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-session-results-import="${escapeHtml(activeSession || "")}">
               ${latest ? "Remplacer PDF complet" : "Importer PDF complet"}
+            </button>
+            ${latest?.id ? `
+              <a class="ghost-button compact" href="pdf.html?type=session-result&id=${encodeURIComponent(latest.id)}" target="_blank" rel="noopener">
+                Voir
+              </a>
+              <button class="ghost-button compact danger-button" type="button" data-session-results-delete="${escapeHtml(latest.id)}">
+                Supprimer
+              </button>
+            ` : ""}
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCompetitionProtocolImportRowHtml(options = {}) {
+    const {
+      blockingUpload = false,
+      latest = null,
+      latestUpdatedLabel = "",
+      uploadState = null,
+      uploadStateHtml = ""
+    } = options;
+    return `
+      <div class="result-admin-row session-results-import-row protocol-results-import-row ${latest ? "published" : ""} ${uploadState ? "waiting" : ""}">
+        <div>
+          <strong>Protocole complet de la compétition</strong>
+          <span>${uploadState ? (uploadState.tone === "error" ? "Le PDF n'a pas pu être envoyé. Tu peux réessayer." : "Le PDF est en cours d'envoi vers la page publique.") : (latest ? escapeHtml([sessionResultsSourceLabel(latest), latest.pdfName].filter(Boolean).join(" - ")) : "Dépôt du protocole complet, consultable par le public.")}</span>
+          ${!uploadState && latestUpdatedLabel ? `<small class="result-admin-note result-definitive-note">Mis à jour le ${escapeHtml(latestUpdatedLabel)}</small>` : ""}
+        </div>
+        <div class="result-admin-row-actions">
+          ${uploadStateHtml}
+          ${blockingUpload ? "" : `
+            <button class="result-status-badge ${latest ? "done" : "missing"} status-action" type="button" data-competition-protocol-import>
+              ${latest ? "Remplacer protocole" : "Importer protocole"}
             </button>
           `}
         </div>
@@ -206,9 +277,28 @@
 
   function renderSessionResultsImportModalHtml(options = {}) {
     const {
+      protocolOnly = false,
       selectedSession = "",
       sessions = []
     } = options;
+    if (protocolOnly) {
+      return `
+      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer le protocole complet">
+        <div class="decision-modal-head">
+          <div>
+            <span>Protocole complet</span>
+            <h2>PDF public de la compétition</h2>
+            <p>Le PDF sera consultable par le public dès sa publication.</p>
+          </div>
+          <button class="decision-close" type="button" data-result-import-close aria-label="Fermer">×</button>
+        </div>
+        <label class="file-button admin-series-file">
+          Choisir le PDF protocole
+          <input id="sessionResultsPdfInput" type="file" accept="application/pdf">
+        </label>
+      </div>
+    `;
+    }
     return `
       <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Importer des résultats complets">
         <div class="decision-modal-head">
@@ -240,8 +330,8 @@
           </div>
           <label class="admin-series-option">
             <input type="radio" name="sessionResultsScope" value="full">
-            <strong>Résultats complets de la compétition</strong>
-            <span>Le PDF sera visible sur toutes les sessions de la page publique.</span>
+            <strong>PDF complet de la compétition</strong>
+            <span>Remplace les PDF de session et devient le document final visible sur la page publique.</span>
           </label>
         </div>
         <label class="file-button admin-series-file">
@@ -310,6 +400,7 @@
 
   global.LivePalmesAdminResults = {
     latestResultSession,
+    renderCompetitionProtocolImportRowHtml,
     renderResultProgramRowHtml,
     renderResultImportModalHtml,
     renderResultsAdminPanelHtml,

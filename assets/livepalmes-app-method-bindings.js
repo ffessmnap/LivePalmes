@@ -140,6 +140,7 @@
       "publicSeriesPdfId", "updatePublicSeriesPdfMetadata",
       "clearPublicSeriesPdfMetadata", "hydratePublicSeriesPdfMetadataIfNeeded", "clearPublicSeriesPdfs", "clearPublicSessionResultsPdfMetadata",
       "clearPublicSessionResultsPdfs", "clearPublicSessionResultsPdfsForSession", "publishPublicSeriesPdf", "sessionResultsPdfId",
+      "deleteSessionResultsPdf",
       "updatePublicSessionResultsPdfMetadata", "hydratePublicSessionResultsPdfMetadataIfNeeded", "publishSessionResultsPdf",
       "sessionResultsPdfsForAdminSession", "ensureResultsAdminSession",
       "resultStatusForProgramRow", "resultStatusBadgeForProgramRow",

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administration - LivePalmes</title>
+    <meta name="description" content="Portail d'administration LivePalmes.">
+    <meta name="theme-color" content="#0b7285">
+    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260602-admin-portal-1">
+    <link rel="stylesheet" href="styles.css?v=20260529-public-home">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260602-current-user-info-4">
+  </head>
+  <body class="admin-portal-page" data-admin-auth="loading">
+    <header class="admin-portal-topbar">
+      <a class="admin-portal-home" href="./">Accueil LivePalmes</a>
+      <div>
+        <p class="eyebrow">LivePalmes</p>
+        <h1>Administration</h1>
+      </div>
+      <img src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="LivePalmes">
+    </header>
+
+    <main class="admin-portal-shell">
+      <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion administrateur">
+        <div>
+          <span>Acces protege</span>
+          <strong>Connexion administrateur</strong>
+        </div>
+        <form id="adminPortalLoginForm" class="admin-portal-form">
+          <label>
+            Email
+            <input id="adminPortalEmail" type="email" autocomplete="username" required>
+          </label>
+          <label>
+            Mot de passe
+            <input id="adminPortalPassword" type="password" autocomplete="current-password" required>
+          </label>
+          <div class="admin-portal-actions">
+            <button type="submit">Connexion</button>
+            <button id="adminPortalResetButton" class="ghost-button" type="button">Mot de passe oublie</button>
+          </div>
+        </form>
+        <p id="adminPortalMessage" class="admin-portal-message" aria-live="polite"></p>
+      </section>
+
+      <section id="adminPortalDashboard" class="admin-portal-dashboard" hidden>
+        <div class="admin-portal-session">
+          <div class="admin-portal-session-main">
+            <div>
+              <span>Connecte</span>
+              <strong id="adminPortalSessionLabel">Compte administrateur</strong>
+            </div>
+            <section id="adminCurrentUserPanel" class="admin-current-user-panel" aria-label="Informations du compte connecte">
+              <dl class="admin-current-user-grid">
+                <div>
+                  <dt>Email</dt>
+                  <dd id="adminCurrentUserEmail">-</dd>
+                </div>
+                <div>
+                  <dt>Club</dt>
+                  <dd id="adminCurrentUserClub">-</dd>
+                </div>
+                <div>
+                  <dt>Licence</dt>
+                  <dd id="adminCurrentUserLicense">-</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+          <button id="adminPortalSignOutButton" class="ghost-button" type="button">Deconnexion</button>
+        </div>
+
+        <section class="admin-portal-grid" aria-label="Modules d'administration">
+          <a class="admin-portal-card" href="performances/admin.html" data-capability-card="records.manage">
+            <span>Records / MPF</span>
+            <strong>Mise a jour des performances</strong>
+            <small>Records de France, MPF, brouillons et journal des corrections.</small>
+          </a>
+          <a class="admin-portal-card" href="pilotage-livepalmes.html" data-capability-card="consoles.manage">
+            <span>Pilotage LivePalmes</span>
+            <strong>Consoles de competition</strong>
+            <small>Acces au pilotage, aux codes de consoles et aux outils de competition.</small>
+          </a>
+          <a class="admin-portal-card" href="performances/import.html" data-capability-card="competitions.import">
+            <span>Base performances</span>
+            <strong>Import de competitions</strong>
+            <small>Ajout de competitions dans la base additionnelle LivePalmes, sans modifier INTRANAP.</small>
+          </a>
+          <section class="admin-portal-card admin-portal-card-muted" data-capability-card="admin.full">
+            <span>Gestion des acces</span>
+            <strong>Administrateurs et droits</strong>
+            <small>Creation de comptes, droits records, droits consoles, puis regions et clubs.</small>
+          </section>
+        </section>
+
+        <section id="adminAccessPanel" class="admin-access-preview" aria-label="Creation d'acces administrateur" data-capability-panel="admin.full">
+          <div class="admin-access-preview-head">
+            <span>Gestion des acces</span>
+            <strong>Creer ou mettre a jour un administrateur</strong>
+          </div>
+          <form id="adminAccessForm" class="admin-access-form">
+            <label>
+              Nom
+              <input id="adminAccessLastName" type="text" autocomplete="family-name" required>
+            </label>
+            <label>
+              Prenom
+              <input id="adminAccessFirstName" type="text" autocomplete="given-name" required>
+            </label>
+            <label>
+              Email
+              <input id="adminAccessEmail" type="email" autocomplete="email" required>
+            </label>
+            <label>
+              Club
+              <input id="adminAccessClubName" type="text" autocomplete="organization">
+            </label>
+            <label>
+              Numero de licence
+              <input id="adminAccessLicenseNumber" type="text">
+            </label>
+            <fieldset class="admin-access-rights">
+              <legend>Droits</legend>
+              <label>
+                <input type="checkbox" name="capability" value="records.manage">
+                <span>Records / MPF</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="consoles.manage">
+                <span>Pilotage LivePalmes</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="competitions.import">
+                <span>Import competitions</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="admin.full">
+                <span>Administration generale</span>
+              </label>
+            </fieldset>
+            <label class="admin-access-reset-choice">
+              <input id="adminAccessSendReset" type="checkbox" checked>
+              <span>Envoyer l'email de creation/reinitialisation du mot de passe</span>
+            </label>
+            <div class="admin-portal-actions admin-access-submit">
+              <button type="submit">Enregistrer l'acces</button>
+              <button id="adminAccessCancelEdit" class="ghost-button" type="button" hidden>Annuler la modification</button>
+            </div>
+            <p id="adminAccessMessage" class="admin-portal-message" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Acces existants" data-capability-panel="admin.full">
+          <div class="admin-access-list-head">
+            <div>
+              <span>Acces existants</span>
+              <strong>Administrateurs LivePalmes</strong>
+            </div>
+            <button id="adminAccessRefreshButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+          <div id="adminAccessList" class="admin-access-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
+    <script src="assets/livepalmes-admin-auth.js?v=20260602-import-competitions-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260602-import-competitions-1"></script>
+  </body>
+</html>

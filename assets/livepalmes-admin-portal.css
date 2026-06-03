@@ -1,0 +1,446 @@
+.admin-portal-page {
+  min-height: 100vh;
+  margin: 0;
+  background: #f5f8f7;
+  color: #12312d;
+}
+
+.admin-portal-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px clamp(16px, 4vw, 42px);
+  border-bottom: 1px solid #dce7e4;
+  background: #ffffff;
+}
+
+.admin-portal-topbar h1 {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.3rem);
+}
+
+.admin-portal-topbar img {
+  width: 82px;
+  max-width: 18vw;
+}
+
+.admin-portal-home {
+  color: #0b7285;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.admin-portal-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 28px auto 52px;
+}
+
+.admin-portal-login,
+.admin-portal-session,
+.admin-portal-card,
+.admin-access-preview,
+.admin-access-list-panel {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(12, 47, 42, 0.08);
+}
+
+.admin-portal-login {
+  display: grid;
+  gap: 18px;
+  width: min(620px, 100%);
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.admin-portal-login span,
+.admin-portal-session span,
+.admin-portal-card span,
+.admin-access-preview-head span {
+  display: block;
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-access-list-head span,
+.admin-access-status {
+  display: block;
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-portal-login strong,
+.admin-portal-session strong,
+.admin-portal-card strong,
+.admin-access-preview-head strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.08rem;
+}
+
+.admin-access-list-head strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.08rem;
+}
+
+.admin-portal-form,
+.admin-access-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-portal-form label,
+.admin-access-form label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.admin-portal-form input,
+.admin-access-form input {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #cbd9d6;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-access-form input:disabled {
+  background: #eef4f2;
+  color: #7d8e8a;
+}
+
+.admin-portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-portal-actions button,
+.admin-portal-session button,
+.admin-portal-card,
+.ghost-button {
+  min-height: 40px;
+}
+
+.admin-portal-actions button[type="submit"] {
+  border: 0;
+  border-radius: 8px;
+  padding: 0 18px;
+  background: #0b7285;
+  color: #ffffff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ghost-button {
+  border: 1px solid #cbd9d6;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #12312d;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-portal-message {
+  min-height: 20px;
+  margin: 0;
+  color: #9a3412;
+  font-weight: 760;
+}
+
+.admin-portal-page[data-admin-auth="unlocked"] #adminPortalLoginPanel {
+  display: none;
+}
+
+.admin-portal-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-portal-session {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.admin-portal-session-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.admin-portal-session-main > div {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.admin-portal-session-main > div span,
+.admin-portal-session-main > div strong {
+  display: inline;
+}
+
+.admin-portal-session-main > div strong {
+  margin-top: 0;
+  font-size: 0.98rem;
+}
+
+.admin-current-user-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #455d58;
+  font-size: 0.82rem;
+}
+
+.admin-current-user-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.admin-current-user-grid div {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.admin-current-user-grid dt {
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-current-user-grid dt::after {
+  content: "";
+}
+
+.admin-current-user-grid dd {
+  margin: 0;
+  color: #12312d;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+
+.admin-portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.admin-portal-card {
+  display: grid;
+  gap: 8px;
+  min-height: 148px;
+  padding: 18px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-portal-card:hover {
+  border-color: #0b7285;
+  transform: translateY(-1px);
+}
+
+.admin-portal-card small {
+  color: #5f746f;
+  line-height: 1.45;
+}
+
+.admin-portal-card-muted {
+  opacity: 0.78;
+}
+
+.admin-access-preview {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.admin-access-list-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.admin-access-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-access-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-access-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fbfa;
+}
+
+.admin-access-row.inactive {
+  opacity: 0.68;
+}
+
+.admin-access-row strong,
+.admin-access-row small {
+  display: block;
+}
+
+.admin-access-row small {
+  color: #5f746f;
+  line-height: 1.35;
+}
+
+.admin-access-row .admin-access-login {
+  margin-top: 3px;
+  color: #31524c;
+  font-weight: 780;
+}
+
+.admin-access-right-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.admin-access-right-tags span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #e9f5f2;
+  color: #0f5f57;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-access-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-access-row-actions button {
+  min-height: 36px;
+}
+
+.admin-access-empty {
+  margin: 0;
+  color: #5f746f;
+  font-weight: 760;
+}
+
+.admin-access-form {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-access-rights,
+.admin-access-reset-choice,
+.admin-access-submit,
+#adminAccessMessage {
+  grid-column: 1 / -1;
+}
+
+.admin-access-rights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.admin-access-rights legend {
+  padding: 0 6px;
+  color: #5f746f;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-access-rights label,
+.admin-access-reset-choice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #12312d;
+}
+
+.admin-access-rights input,
+.admin-access-reset-choice input {
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.admin-portal-card[hidden],
+[data-capability-panel][hidden] {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .admin-portal-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .admin-portal-home {
+    grid-column: 1 / -1;
+  }
+
+  .admin-portal-grid,
+  .admin-access-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-portal-session {
+    align-items: stretch;
+  }
+
+  .admin-access-list-head,
+  .admin-access-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-access-row-actions {
+    justify-content: stretch;
+  }
+
+  .admin-access-row-actions button {
+    flex: 1 1 auto;
+  }
+}

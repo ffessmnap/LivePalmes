@@ -16,6 +16,8 @@
       entrants: data.entrants || [],
       series: data.series || [],
       results: raceResults.map(publicResultPayload).filter(Boolean),
+      records: data.records || [],
+      qualifications: data.qualifications || [],
       seriesPdfs: (data.notes?.publicSeriesPdfs || []).map(publicSeriesPdfPayload).filter(Boolean),
       sessionResultsPdfs: (data.notes?.publicSessionResultsPdfs || []).map(publicSessionResultsPdfPayload).filter(Boolean),
       sessionInfos: data.notes?.publicSessionInfos || {},

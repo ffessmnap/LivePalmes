@@ -1,8 +1,8 @@
 {
-  "name": "LP Public",
-  "short_name": "LP Public",
-  "description": "Espace public LivePalmes.",
-  "start_url": "public.html",
+  "name": "LivePalmes",
+  "short_name": "LivePalmes",
+  "description": "LivePalmes : compétitions, performances et archives.",
+  "start_url": "./",
   "scope": ".",
   "display": "standalone",
   "background_color": "#f4f8fb",

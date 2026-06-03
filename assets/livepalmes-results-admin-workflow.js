@@ -47,6 +47,7 @@
   let safeDocumentData;
   let seriesImportState;
   let sessionResultsPdfsCollection;
+  let sessionResultsHydrationRequested = false;
   let seriesPdfsCollection;
   let sessionRows;
   let sexDisplayLabel;
@@ -101,6 +102,12 @@
   
   const publicSeriesPdfPayload = livePalmesResults.publicSeriesPdfPayload.bind(livePalmesResults);
   const publicSessionResultsPdfPayload = livePalmesResults.publicSessionResultsPdfPayload.bind(livePalmesResults);
+
+  function setWorkflowData(nextData) {
+    data = nextData;
+    context.data = data;
+    if (contextSource) contextSource.data = data;
+  }
   
   function buildPublicResultsIndex() {
     return livePalmesPublication.buildPublicResultsIndex({
@@ -144,26 +151,24 @@
     if (!metadata) return;
     const current = Array.isArray(data.notes?.publicSeriesPdfs) ? data.notes.publicSeriesPdfs : [];
     const next = livePalmesPublication.nextPublicSeriesPdfMetadata(current, metadata);
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSeriesPdfs: next
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
   function clearPublicSeriesPdfMetadata() {
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSeriesPdfs: []
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
@@ -176,14 +181,13 @@
       .map((doc) => publicSeriesPdfPayload({ id: doc.id, ...doc.data() }))
       .filter(Boolean)
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSeriesPdfs: metadata
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
@@ -197,14 +201,13 @@
   }
   
   function clearPublicSessionResultsPdfMetadata() {
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSessionResultsPdfs: []
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
@@ -235,16 +238,36 @@
     await Promise.all(docs.map((doc) => doc.ref.delete()));
     const deletedIds = new Set(docs.map((doc) => doc.id));
     const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSessionResultsPdfs: current.filter((pdf) => !deletedIds.has(pdf.id))
       }
-    });
-    context.data = data;
+    }));
     saveData();
     return docs.length;
+  }
+
+  async function deleteSessionResultsPdf(id) {
+    if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
+      throw new Error("Accès bureau des performances requis pour supprimer ce PDF.");
+    }
+    const cleanId = String(id || "").trim();
+    const collection = sessionResultsPdfsCollection();
+    if (!collection || !cleanId) return false;
+    await collection.doc(cleanId).delete();
+    const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
+    setWorkflowData(normalizeData({
+      ...data,
+      notes: {
+        ...(data.notes || {}),
+        publicSessionResultsPdfs: current.filter((pdf) => pdf.id !== cleanId)
+      }
+    }));
+    saveData();
+    await publishPublicResultsIndex();
+    return true;
   }
   
   async function publishPublicSeriesPdf(file, mode = "session", session = "") {
@@ -265,6 +288,11 @@
       updatedAt: now,
       sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
     };
+    if (["full", "protocol"].includes(finalScope)) {
+      const snapshot = await collection.get();
+      await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+      clearPublicSessionResultsPdfMetadata();
+    }
     await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
     updatePublicSeriesPdfMetadata(payload);
     return payload;
@@ -274,6 +302,7 @@
     if (typeof livePalmesAdminMaintenance.sessionResultsPdfId === "function") {
       return livePalmesAdminMaintenance.sessionResultsPdfId(scope, sessions);
     }
+    if (scope === "protocol") return "competition-protocol-full";
     if (scope === "full") return "complete-results-full";
     const safeSessions = sessions.map((session) => String(session || "").replace(/[^a-z0-9_-]+/gi, "-")).filter(Boolean);
     return `complete-results-${safeSessions.join("-") || "session"}`;
@@ -284,19 +313,18 @@
     if (!metadata) return;
     const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
     const next = livePalmesPublication.nextPublicSessionResultsPdfMetadata(current, metadata);
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSessionResultsPdfs: next
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
-  async function hydratePublicSessionResultsPdfMetadataIfNeeded() {
-    if (Array.isArray(data.notes?.publicSessionResultsPdfs)) return;
+  async function hydratePublicSessionResultsPdfMetadataIfNeeded({ force = false } = {}) {
+    if (!force && Array.isArray(data.notes?.publicSessionResultsPdfs) && data.notes.publicSessionResultsPdfs.length) return;
     const collection = sessionResultsPdfsCollection();
     if (!collection) return;
     const snapshot = await collection.get();
@@ -304,14 +332,13 @@
       .map((doc) => publicSessionResultsPdfPayload({ id: doc.id, ...doc.data() }))
       .filter(Boolean)
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-    data = normalizeData({
+    setWorkflowData(normalizeData({
       ...data,
       notes: {
         ...(data.notes || {}),
         publicSessionResultsPdfs: metadata
       }
-    });
-    context.data = data;
+    }));
     saveData();
   }
   
@@ -325,20 +352,23 @@
       ? livePalmesAdminMaintenance.normalizeSessionList(sessions)
       : [...new Set((sessions || []).map((session) => String(session || "").trim()).filter(Boolean))]
         .sort((a, b) => Number(a) - Number(b));
-    const finalScope = scope === "full" ? "full" : "sessions";
-    if (finalScope !== "full" && !cleanSessions.length) {
+    const finalScope = scope === "protocol" ? "protocol" : (scope === "full" ? "full" : "sessions");
+    if (!["full", "protocol"].includes(finalScope) && !cleanSessions.length) {
       throw new Error("Sélectionne au moins une session pour publier ce PDF.");
     }
     const now = new Date().toISOString();
     const id = sessionResultsPdfId(finalScope, cleanSessions);
-    const sessionLabel = finalScope === "full"
-      ? "Résultats complets de la compétition"
-      : `Résultats complets ${cleanSessions.map((session) => `S${session}`).join(" + ")}`;
+    const sessionLabel = finalScope === "protocol"
+      ? "Protocole complet de la compétition"
+      : (finalScope === "full"
+        ? "PDF complet de la compétition"
+        : `Résultats complets ${cleanSessions.map((session) => `S${session}`).join(" + ")}`);
     const payload = {
       id,
       scope: finalScope,
       session: finalScope === "sessions" && cleanSessions.length === 1 ? cleanSessions[0] : "",
-      sessions: finalScope === "full" ? [] : cleanSessions,
+      sessions: finalScope === "sessions" ? cleanSessions : [],
+      documentType: finalScope === "protocol" ? "protocol" : "session-results",
       pdfName: file.name,
       pdfDataUrl: await fileToDataUrl(file),
       updatedAt: now,
@@ -407,12 +437,19 @@
     const sessions = resultSessions();
     const activeSession = ensureResultsAdminSession();
     const rows = resultProgramRows(activeSession);
+    if (!sessionResultsHydrationRequested) {
+      sessionResultsHydrationRequested = true;
+      hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true })
+        .then(() => renderResultsAdminPanel())
+        .catch((error) => console.warn("Hydratation PDF résultats complets impossible", error));
+    }
     resultsAdminPanel.hidden = false;
     resultsAdminPanel.innerHTML = livePalmesAdminResults.renderResultsAdminPanelHtml({
       activeSession,
       rowsHtml: rows.map((row) => renderResultProgramRow(row)).join(""),
       seriesImportBusy: seriesImportState?.tone === "loading",
       seriesImportStateHtml: seriesImportState ? resultUploadBadgeHtml(seriesImportState) : "",
+      competitionProtocolImportHtml: renderCompetitionProtocolImportRow(),
       sessionResultsImportHtml: renderSessionResultsImportRow(activeSession),
       sessions
     });
@@ -520,6 +557,7 @@
 
   function renderCompetitionDiagnostic() { return resultsAdminPanelView().renderCompetitionDiagnostic(); }
   function renderComputerFooterPanel() { return resultsAdminPanelView().renderComputerFooterPanel(); }
+  function renderCompetitionProtocolImportRow() { return resultsAdminPanelView().renderCompetitionProtocolImportRow(); }
   function renderSessionResultsImportRow(activeSession) { return resultsAdminPanelView().renderSessionResultsImportRow(activeSession); }
   function renderResultProgramRow(row) { return resultsAdminPanelView().renderResultProgramRow(row); }
   api = {
@@ -537,6 +575,7 @@
     clearPublicSessionResultsPdfMetadata,
     clearPublicSessionResultsPdfs,
     clearPublicSessionResultsPdfsForSession,
+    deleteSessionResultsPdf,
     publishPublicSeriesPdf,
     sessionResultsPdfId,
     updatePublicSessionResultsPdfMetadata,
@@ -562,6 +601,7 @@
     renderResultsAdminPanel,
     renderCompetitionDiagnostic,
     renderComputerFooterPanel,
+    renderCompetitionProtocolImportRow,
     renderSessionResultsImportRow,
     renderResultProgramRow
   };
@@ -639,6 +679,7 @@
     clearPublicSessionResultsPdfMetadata: (...args) => { useContext(args.pop() || {}); return api.clearPublicSessionResultsPdfMetadata(...args); },
     clearPublicSessionResultsPdfs: (...args) => { useContext(args.pop() || {}); return api.clearPublicSessionResultsPdfs(...args); },
     clearPublicSessionResultsPdfsForSession: (...args) => { useContext(args.pop() || {}); return api.clearPublicSessionResultsPdfsForSession(...args); },
+    deleteSessionResultsPdf: (...args) => { useContext(args.pop() || {}); return api.deleteSessionResultsPdf(...args); },
     publishPublicSeriesPdf: (...args) => { useContext(args.pop() || {}); return api.publishPublicSeriesPdf(...args); },
     sessionResultsPdfId: (...args) => { useContext(args.pop() || {}); return api.sessionResultsPdfId(...args); },
     updatePublicSessionResultsPdfMetadata: (...args) => { useContext(args.pop() || {}); return api.updatePublicSessionResultsPdfMetadata(...args); },
@@ -664,6 +705,7 @@
     renderResultsAdminPanel: (...args) => { useContext(args.pop() || {}); return api.renderResultsAdminPanel(...args); },
     renderCompetitionDiagnostic: (...args) => { useContext(args.pop() || {}); return api.renderCompetitionDiagnostic(...args); },
     renderComputerFooterPanel: (...args) => { useContext(args.pop() || {}); return api.renderComputerFooterPanel(...args); },
+    renderCompetitionProtocolImportRow: (...args) => { useContext(args.pop() || {}); return api.renderCompetitionProtocolImportRow(...args); },
     renderSessionResultsImportRow: (...args) => { useContext(args.pop() || {}); return api.renderSessionResultsImportRow(...args); },
     renderResultProgramRow: (...args) => { useContext(args.pop() || {}); return api.renderResultProgramRow(...args); }
   };

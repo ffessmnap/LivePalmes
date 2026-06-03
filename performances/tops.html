@@ -1,16 +1,16 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes TOP</title>
-    <link rel="stylesheet" href="public/styles.css?v=20260530-mpf-mobile1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260603-mobile-polish-1" />
   </head>
   <body class="tops-page">
     <header class="topbar simple">
       <div class="topbar-title">
-        <a class="topbar-home-link" href="../public.html">Accueil LivePalmes</a>
-        <p class="eyebrow">LivePalmes public &middot; Performances</p>
+        <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
+        <p class="eyebrow">LivePalmes &middot; Performances</p>
         <h1>TOP</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
@@ -23,14 +23,72 @@
     </header>
 
     <main>
-      <section class="records-shell placeholder">
-        <div class="table-head">
-          <div>
-            <h2>En cours de construction</h2>
-            <p>Les classements TOP seront disponibles prochainement.</p>
+      <section class="toolbar top-toolbar" aria-label="Filtres des TOP">
+        <label class="top-filter-category">
+          Cat&eacute;gorie
+          <select id="topCategoryFilter"></select>
+        </label>
+        <div class="field top-filter-sex">
+          <span>Sexe</span>
+          <div class="segmented two-segments" id="topSexFilter" role="group" aria-label="Sexe">
+            <button type="button" class="segment sex-f" data-value="F">Femmes</button>
+            <button type="button" class="segment sex-m" data-value="M">Hommes</button>
+          </div>
+        </div>
+        <label class="top-filter-season">
+          Saison
+          <select id="topSeasonFilter"></select>
+        </label>
+        <label class="top-filter-region">
+          R&eacute;gion
+          <select id="topRegionFilter"></select>
+        </label>
+        <div class="field top-filter-limit">
+          Limite
+          <div class="segmented two-segments" id="topLimitFilter" role="group" aria-label="Limite">
+            <button type="button" class="segment active" data-value="25" aria-pressed="true">TOP25</button>
+            <button type="button" class="segment" data-value="all" aria-pressed="false">Tous</button>
           </div>
         </div>
       </section>
+
+      <section class="top-course-strip" aria-label="Choix de la course">
+        <div id="topCourseButtons" class="top-course-buttons"></div>
+      </section>
+
+      <section class="records-shell">
+        <div class="table-head">
+          <div>
+            <h2 id="topTitle">TOP</h2>
+          </div>
+          <span id="topStatus"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="top-results-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Temps</th>
+                <th id="topSwimmerHeader">Nageur</th>
+                <th>Club</th>
+                <th>Lieu</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="topBody"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
+    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="performance-admin-footer">
+      <a class="performance-admin-link" href="/administration.html">Administration</a>
+    </footer>
+    <script src="public/data/intranap-summary.js?v=20260602-intranap-6"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="../assets/livepalmes-app-config.js?v=20260602-public-admin-gate-1"></script>
+    <script src="public/tops.js?v=20260603-top-mobile-filters-1"></script>
   </body>
 </html>

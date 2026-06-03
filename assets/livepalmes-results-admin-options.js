@@ -10,7 +10,7 @@
     "showToast", "updateLiveNotes"
   ];
 
-  const stateKeys = ["resultsAdminSession", "seriesImportState"];
+  const stateKeys = ["data", "resultsAdminSession", "seriesImportState"];
 
   function create(context = {}) {
     const source = context.source || global;

@@ -28,6 +28,14 @@
     return counts;
   }
 
+  function isRealtimeActiveAlert(alert = {}) {
+    if (!alert || alert.cancelledAt || alert.type === "final_composition_ready") return false;
+    return alert.speakerStatus !== "none" ||
+      (alert.requiresVideo && alert.videoStatus === "pending") ||
+      alert.informaticsStatus === "pending" ||
+      (alert.type === "forfait" && alert.secretaryStatus === "pending");
+  }
+
   function speakerAlertAlreadyResolvedByResult(alert, results = [], finalistRowName = () => "") {
     if (alert?.type === "finalists_announcement") {
       const result = results.find((item) => item.id === alert.resultId);
@@ -89,6 +97,7 @@
     alertLineCode,
     currentRoleAlertFilter,
     homeActionCounts,
+    isRealtimeActiveAlert,
     isDsqAlert,
     isFinalResultAlert,
     isRequalificationAlert,

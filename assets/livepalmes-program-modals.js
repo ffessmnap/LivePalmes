@@ -266,14 +266,15 @@
         });
       }
       
-      function openSessionResultsImportModal(defaultSession = "") {
+      function openSessionResultsImportModal(defaultSession = "", mode = "session-results") {
         if (!resultImportModal) return;
         context.currentResultImportRow = null;
         const sessions = resultSessions();
         const selectedSession = defaultSession || getResultsAdminSession() || sessions[0]?.number || "";
-        context.currentSessionResultsImport = { defaultSession: selectedSession };
+        context.currentSessionResultsImport = { defaultSession: selectedSession, mode };
         resultImportModal.hidden = false;
         resultImportModal.innerHTML = livePalmesAdminResults.renderSessionResultsImportModalHtml({
+          protocolOnly: mode === "protocol",
           selectedSession,
           sessions
         });

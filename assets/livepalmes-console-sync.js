@@ -7,6 +7,7 @@
       PRESENCE_WRITE_THROTTLE_MS,
       ROLE_LABELS,
       activeCompetitionId,
+      alertSummaryDocument,
       alertsCollection,
       appendImportHistory,
       applyFreshData,
@@ -16,6 +17,7 @@
       formatAlertTime,
       liveDataDocument,
       livePalmesAdminMaintenance,
+      livePalmesAlerts,
       livePalmesFirebase,
       livePalmesRoleAccess,
       livePalmesRoleLockSync,
@@ -153,14 +155,64 @@
         return livePalmesFirebase.sanitizeForFirestore(alert);
       }
 
+      function emptyAlertCounts() {
+        return { live: 0, speaker: 0, referee: 0, video: 0, computer: 0, secretary: 0 };
+      }
+
+      function alertCountsForSummary(rows = alerts) {
+        return livePalmesAlerts.homeActionCounts(rows, emptyAlertCounts());
+      }
+
+      function alertWithRealtimeState(alert = {}) {
+        return {
+          ...alert,
+          active: livePalmesAlerts.isRealtimeActiveAlert(alert)
+        };
+      }
+
+      async function publishAlertSummary() {
+        const doc = typeof alertSummaryDocument === "function" ? alertSummaryDocument() : null;
+        if (!doc) return;
+        try {
+          await doc.set(sanitizeAlertForFirestore({
+            counts: alertCountsForSummary(),
+            activeCount: alerts.filter((alert) => livePalmesAlerts.isRealtimeActiveAlert(alert)).length,
+            updatedAt: new Date().toISOString()
+          }));
+        } catch (error) {
+          console.warn("Publication du résumé alertes impossible", error);
+        }
+      }
+
       function pendingLocalAlerts() {
         if (!(context.pendingLocalAlerts instanceof Map)) context.pendingLocalAlerts = new Map();
         return context.pendingLocalAlerts;
       }
 
+      function waitForInitialFirebaseUser(auth) {
+        if (!auth?.onAuthStateChanged) return Promise.resolve(auth?.currentUser || null);
+        if (auth.currentUser) return Promise.resolve(auth.currentUser);
+        return new Promise((resolve) => {
+          let done = false;
+          let unsubscribe = () => {};
+          const finish = (user) => {
+            if (done) return;
+            done = true;
+            unsubscribe();
+            resolve(user || auth.currentUser || null);
+          };
+          const timer = setTimeout(() => finish(auth.currentUser || null), 900);
+          unsubscribe = auth.onAuthStateChanged((user) => {
+            clearTimeout(timer);
+            finish(user);
+          });
+        });
+      }
+
       async function ensureFirebaseAuthForWrite() {
         const auth = window.firebase?.auth ? window.firebase.auth() : null;
         if (!auth?.signInAnonymously) return;
+        await waitForInitialFirebaseUser(auth);
         if (auth.currentUser) return;
         if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
           await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
@@ -171,10 +223,12 @@
       async function syncAlertToFirestore(alert) {
         const collection = alertsCollection();
         if (!collection || !alert?.id) return;
-        pendingLocalAlerts().set(alert.id, { ...alert });
+        const payload = alertWithRealtimeState(alert);
+        pendingLocalAlerts().set(alert.id, { ...payload });
         try {
           await ensureFirebaseAuthForWrite();
-          await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
+          await collection.doc(alert.id).set(sanitizeAlertForFirestore(payload));
+          await publishAlertSummary();
         } catch (error) {
           console.warn("Synchronisation Firebase impossible", error);
           renderDataStatus("Firebase n'a pas pu enregistrer cette action. L'outil continue en local sur cet appareil.");
@@ -184,19 +238,24 @@
       async function syncAlertToFirestoreStrict(alert) {
         const collection = alertsCollection();
         if (!collection || !alert?.id) throw new Error("Firebase n'est pas disponible.");
-        pendingLocalAlerts().set(alert.id, { ...alert });
+        const payload = alertWithRealtimeState(alert);
+        pendingLocalAlerts().set(alert.id, { ...payload });
         await ensureFirebaseAuthForWrite();
-        await collection.doc(alert.id).set(sanitizeAlertForFirestore(alert));
+        await collection.doc(alert.id).set(sanitizeAlertForFirestore(payload));
+        await publishAlertSummary();
       }
       
       async function syncAlertChangesToFirestore(alertId, changes) {
         const collection = alertsCollection();
         if (!collection || !alertId) return;
         const currentAlert = alerts.find((alert) => alert.id === alertId);
-        if (currentAlert) pendingLocalAlerts().set(alertId, { ...currentAlert, ...changes });
+        const mergedAlert = currentAlert ? alertWithRealtimeState({ ...currentAlert, ...changes }) : null;
+        if (mergedAlert) pendingLocalAlerts().set(alertId, mergedAlert);
+        const payload = mergedAlert ? { ...changes, active: mergedAlert.active } : changes;
         try {
           await ensureFirebaseAuthForWrite();
-          await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
+          await collection.doc(alertId).set(sanitizeAlertForFirestore(payload), { merge: true });
+          await publishAlertSummary();
         } catch (error) {
           console.warn("Synchronisation Firebase impossible", error);
           renderDataStatus("Firebase n'a pas pu enregistrer cette action. L'outil continue en local sur cet appareil.");
@@ -207,9 +266,12 @@
         const collection = alertsCollection();
         if (!collection || !alertId) throw new Error("Firebase n'est pas disponible.");
         const currentAlert = alerts.find((alert) => alert.id === alertId);
-        if (currentAlert) pendingLocalAlerts().set(alertId, { ...currentAlert, ...changes });
+        const mergedAlert = currentAlert ? alertWithRealtimeState({ ...currentAlert, ...changes }) : null;
+        if (mergedAlert) pendingLocalAlerts().set(alertId, mergedAlert);
+        const payload = mergedAlert ? { ...changes, active: mergedAlert.active } : changes;
         await ensureFirebaseAuthForWrite();
-        await collection.doc(alertId).set(sanitizeAlertForFirestore(changes), { merge: true });
+        await collection.doc(alertId).set(sanitizeAlertForFirestore(payload), { merge: true });
+        await publishAlertSummary();
       }
       
       function markAlertAlreadyClosedError(error) {
@@ -252,6 +314,7 @@
           const batch = db.batch();
           linkedAlerts.forEach((alert) => batch.delete(collection.doc(alert.id)));
           await batch.commit();
+          await publishAlertSummary();
         }
         render();
         return linkedAlerts.length;
@@ -312,6 +375,7 @@
             docs.slice(index, index + 450).forEach((doc) => batch.delete(doc.ref));
             await batch.commit();
           }
+          await publishAlertSummary();
         } catch (error) {
           error.livePalmesOperation = "alerts/delete";
           throw error;

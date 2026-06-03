@@ -47,11 +47,32 @@
       return result.data || {};
     }
 
+    function waitForInitialFirebaseUser(auth) {
+      if (!auth?.onAuthStateChanged) return Promise.resolve(auth?.currentUser || null);
+      if (auth.currentUser) return Promise.resolve(auth.currentUser);
+      return new Promise((resolve) => {
+        let done = false;
+        let unsubscribe = () => {};
+        const finish = (user) => {
+          if (done) return;
+          done = true;
+          unsubscribe();
+          resolve(user || auth.currentUser || null);
+        };
+        const timer = setTimeout(() => finish(auth.currentUser || null), 900);
+        unsubscribe = auth.onAuthStateChanged((user) => {
+          clearTimeout(timer);
+          finish(user);
+        });
+      });
+    }
+
     async function verifyRolePin(options = {}) {
       const auth = authService();
       if (!auth?.signInAnonymously) {
         throw new Error("Authentification console indisponible.");
       }
+      await waitForInitialFirebaseUser(auth);
       if (!auth.currentUser || !auth.currentUser.isAnonymous) {
         try {
           await auth.signInAnonymously();

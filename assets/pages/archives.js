@@ -48,14 +48,14 @@ function renderArchives(archives = []) {
   if (!archives.length) {
     archiveList.innerHTML = `
       <section class="panel public-archive-empty">
-        <h2>Archives LivePalmes</h2>
-        <p>Aucune competition archivee pour le moment.</p>
+        <h2>Archives nationales</h2>
+        <p>Aucune competition nationale archivee pour le moment.</p>
       </section>
     `;
     return;
   }
   archiveList.innerHTML = `
-    <section class="public-archive-list" aria-label="Competitions archivees">
+    <section class="public-archive-list" aria-label="Competitions nationales archivees">
       ${archives.map((archive) => `
         <article class="panel public-archive-card">
           <div>

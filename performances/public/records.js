@@ -1,11 +1,12 @@
-const data = window.LIVEPALMES_RECORDS;
-const records = data.franceRecords;
+let data = window.LIVEPALMES_RECORDS;
+let records = data.franceRecords;
 
 const elements = {
   rfTypeFilter: document.querySelector("#rfTypeFilter"),
   courseFilter: document.querySelector("#courseFilter"),
   tableTitle: document.querySelector("#tableTitle"),
   cutoffText: document.querySelector("#cutoffText"),
+  swimmerHeader: document.querySelector("#swimmerHeader"),
   recordsBody: document.querySelector("#recordsBody")
 };
 
@@ -32,6 +33,18 @@ const styleSections = [
   ["RELAY_FRANCE", "Relais France"]
 ];
 
+function franceFlag() {
+  return `<span class="france-flag" aria-hidden="true"></span>`;
+}
+
+function relaySectionLabel(style, label) {
+  return style === "RELAY_FRANCE" ? `${franceFlag()}<span>${label}</span>` : label;
+}
+
+const relayCourseOrder = ["4X50SF", "4X100SF", "4X200SF", "4X100SB", "4X100BIX"];
+const individualCourseOrder = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
+const courseOrder = new Map([...individualCourseOrder, ...relayCourseOrder].map((course, index) => [course, index]));
+
 function formatDate(value) {
   if (!value) return "-";
   if (value.includes("/")) return value;
@@ -46,7 +59,20 @@ function addOptions(select, values, allLabel, labeler = (value) => value) {
 }
 
 function courseLabel(value) {
+  if (String(value).endsWith("BIX")) return String(value).replace(/^4X(\d+)BIX$/, "4x$1 Bi-palmes mixte");
+  if (String(value).endsWith("SB")) return String(value).replace(/^4X(\d+)SB$/, "4x$1 Surface/Bi-palmes mixte");
   return records.find((record) => record.course === value)?.courseLabel ?? value;
+}
+
+function compareCourse(a, b) {
+  if (window.LivePalmesRecordPlaceholders?.compareCourses) {
+    return window.LivePalmesRecordPlaceholders.compareCourses(a, b);
+  }
+  return (courseOrder.get(a) ?? 999) - (courseOrder.get(b) ?? 999) || String(a).localeCompare(String(b), "fr-FR");
+}
+
+function compareRecordRows(a, b) {
+  return compareCourse(a.course, b.course) || String(a.key || "").localeCompare(String(b.key || ""), "fr-FR");
 }
 
 function activeSegment() {
@@ -64,18 +90,22 @@ function setActiveSegment(button) {
 function currentFilters() {
   const segment = activeSegment();
   return {
-    recordType: segment.dataset.type,
-    sex: segment.dataset.sex,
+    recordType: segment?.dataset.type || "",
+    sex: segment?.dataset.sex || "",
     course: elements.courseFilter.value
   };
 }
 
+function swimmerColumnLabel(sex) {
+  return sex === "F" ? "Nageuse" : "Nageur";
+}
+
 function applyFilters() {
   const filters = currentFilters();
-  if (filters.course) {
-    const filtered = records.filter((record) => record.course === filters.course);
-    elements.tableTitle.textContent = `Records de France ${courseLabel(filters.course)}`;
-    renderCourseRecords(filtered);
+  if (elements.swimmerHeader) elements.swimmerHeader.textContent = swimmerColumnLabel(filters.sex);
+  if (!filters.recordType || !filters.sex) {
+    elements.tableTitle.textContent = "Sélectionnez une rubrique";
+    elements.recordsBody.innerHTML = "";
     return;
   }
 
@@ -87,7 +117,9 @@ function applyFilters() {
     );
   });
 
-  elements.tableTitle.textContent = titles[`${filters.recordType}|${filters.sex}`];
+  elements.tableTitle.textContent = filters.course
+    ? `${titles[`${filters.recordType}|${filters.sex}`]} · ${courseLabel(filters.course)}`
+    : titles[`${filters.recordType}|${filters.sex}`];
   renderRecords(filtered);
 }
 
@@ -95,7 +127,9 @@ function renderCourseRecords(filtered) {
   const rows = [];
 
   for (const [recordType, sex] of rubricOrder) {
-    const sectionRecords = filtered.filter((record) => record.recordType === recordType && record.sex === sex);
+    const sectionRecords = filtered
+      .filter((record) => record.recordType === recordType && record.sex === sex)
+      .sort(compareRecordRows);
     rows.push(`
       <tr class="section-row">
         <td colspan="6">${titles[`${recordType}|${sex}`]}</td>
@@ -121,12 +155,14 @@ function renderRecords(filtered) {
   const rows = [];
 
   for (const [style, label] of styleSections) {
-    const sectionRecords = filtered.filter((record) => record.style === style);
+    const sectionRecords = filtered
+      .filter((record) => record.style === style)
+      .sort(compareRecordRows);
     if (!sectionRecords.length && !style.startsWith("RELAY")) continue;
 
     rows.push(`
       <tr class="section-row">
-        <td colspan="6">${label}</td>
+        <td colspan="6">${relaySectionLabel(style, label)}</td>
       </tr>
     `);
 
@@ -159,8 +195,23 @@ function escapeHtml(value) {
   })[char]);
 }
 
+function isPlaceholderTime(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("fr-FR");
+  return !normalized || normalized === "-" || normalized.includes("tablir");
+}
+
+function timeCellClass(value) {
+  return `time${isPlaceholderTime(value) ? " time-placeholder" : ""}`;
+}
+
 function isRelayRecord(record) {
   return record.style?.startsWith("RELAY");
+}
+
+function participantLabel(record) {
+  if (!isRelayRecord(record)) return swimmerColumnLabel(record.sex);
+  const mixedRelay = /(?:BIX|SB)$/.test(String(record.course || ""));
+  return record.sex === "F" && !mixedRelay ? "Relayeuses" : "Relayeurs";
 }
 
 function relaySwimmerNames(value) {
@@ -176,16 +227,70 @@ function relaySwimmerNames(value) {
   return [cleaned];
 }
 
+function recordMobileMeta(record) {
+  return [displayClub(record), record.location, formatDate(record.date)]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function displayClub(record) {
+  if (record?.style === "RELAY_FRANCE") {
+    const club = String(record.club || "");
+    if (record.recordType === "RFJ" || record.category === "J" || /^EDF\s*J\b/i.test(club) || /^EDFJ\b/i.test(club)) {
+      return "Equipe de France Junior";
+    }
+    return "Equipe de France";
+  }
+  return record?.club || "";
+}
+
+function displayCourseShortLabel(record) {
+  const course = String(record?.course || "");
+  const label = String(record?.courseShortLabel || course);
+  if (course.endsWith("BIX") || /BIX$/i.test(label)) return label.replace(/^4x?(\d+)BIX$/i, "4x$1 BI");
+  if (course.endsWith("SB") && /^4x?\d+SB$/i.test(label)) return label.replace(/^4x?(\d+)SB$/i, "4x$1 SB");
+  if (course.endsWith("SF") || /^4x?\d+SF$/i.test(label)) return label.replace(/^4x?(\d+)SF$/i, "4x$1 SF");
+  return label;
+}
+
+function splitDistanceLabel(split) {
+  const codeDistances = { TI1: 100, TI2: 200, TI3: 400, TI4: 800 };
+  const distance = split?.distance || codeDistances[String(split?.code || "").toUpperCase()] || Number(String(split?.code || "").replace(/\D/g, "")) || "";
+  return distance ? `${distance} m` : "Passage";
+}
+
+function splitMetaHtml(record) {
+  const splits = Array.isArray(record?.intermediateTimes) ? record.intermediateTimes.filter((split) => split?.time) : [];
+  if (!splits.length) return "";
+  return `
+    <small class="record-split-meta">
+      <span>Passages</span>
+      ${splits.map((split) => `
+        <b class="record-split-chip"><span>${escapeHtml(splitDistanceLabel(split))}</span><strong>${escapeHtml(split.time)}</strong></b>
+      `).join("")}
+    </small>
+  `;
+}
+
 function renderSwimmerCell(record) {
+  const meta = recordMobileMeta(record);
+  const splitMeta = splitMetaHtml(record);
   if (!isRelayRecord(record)) {
-    return `<strong>${escapeHtml(record.swimmer)}</strong>`;
+    return `
+      <strong>${escapeHtml(record.swimmer)}</strong>
+      ${meta ? `<small class="record-mobile-meta">${escapeHtml(meta)}</small>` : ""}
+      ${splitMeta}
+    `;
   }
 
   return `
-    <strong class="relay-summary">${escapeHtml(record.club || "Relais")}</strong>
+    <strong class="relay-summary">${record.style === "RELAY_FRANCE" ? franceFlag() : ""}${escapeHtml(displayClub(record) || "Relais")}</strong>
     <div class="relay-swimmers">
       ${relaySwimmerNames(record.swimmer).map((name) => `<span>${escapeHtml(name)}</span>`).join("")}
     </div>
+    ${meta ? `<small class="record-mobile-meta">${escapeHtml(meta)}</small>` : ""}
+    ${splitMeta}
   `;
 }
 
@@ -201,13 +306,13 @@ function renderRecordRow(record) {
   return `
       <tr class="${rowClasses.join(" ")}" tabindex="0" role="button" aria-expanded="false">
         <td data-label="Course">
-          <strong>${record.courseShortLabel}</strong>
+          <strong>${displayCourseShortLabel(record)}</strong>
         </td>
-        <td class="time" data-label="Temps">${record.time}</td>
-        <td data-label="${isRelayRecord(record) ? "Relayeurs" : "Nageur"}">
+        <td class="${timeCellClass(record.time)}" data-label="Temps">${record.time}</td>
+        <td data-label="${participantLabel(record)}">
           ${renderSwimmerCell(record)}
         </td>
-        <td data-label="Club">${record.club}</td>
+        <td data-label="Club">${displayClub(record)}</td>
         <td data-label="Lieu">
           <strong>${record.location || "Lieu non renseigné"}</strong>
         </td>
@@ -217,38 +322,61 @@ function renderRecordRow(record) {
 }
 
 function resetFilters() {
-  setActiveSegment(elements.rfTypeFilter.querySelector('.segment[data-type="RFJ"][data-sex="M"]'));
+  setActiveSegment(null);
   elements.courseFilter.value = "";
   applyFilters();
 }
 
-elements.cutoffText.textContent = "Dernière mise à jour : 25 mai 2026";
-addOptions(elements.courseFilter, data.filters.franceCourses, "Toutes", courseLabel);
+function refreshData(nextData) {
+  data = nextData || window.LIVEPALMES_RECORDS || data;
+  records = data.franceRecords || [];
+  elements.cutoffText.textContent = data.updatedAt
+    ? `Dernière mise à jour : ${formatDate(String(data.updatedAt).slice(0, 10))}`
+    : "Dernière mise à jour : 25 mai 2026";
+  addOptions(elements.courseFilter, (data.filters.franceCourses || []).slice().sort(compareCourse), "Toutes", courseLabel);
+}
 
-elements.rfTypeFilter.querySelectorAll(".segment").forEach((button) => {
-  button.addEventListener("click", () => {
-    setActiveSegment(button);
-    elements.courseFilter.value = "";
+function initPage() {
+  refreshData(data);
+
+  elements.rfTypeFilter.querySelectorAll(".segment").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveSegment(button);
+      elements.courseFilter.value = "";
+      applyFilters();
+    });
+  });
+
+  elements.courseFilter.addEventListener("input", applyFilters);
+
+  elements.recordsBody.addEventListener("click", (event) => {
+    const row = event.target.closest("tr");
+    if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+    const expanded = !row.classList.contains("expanded");
+    row.classList.toggle("expanded", expanded);
+    row.setAttribute("aria-expanded", expanded ? "true" : "false");
+  });
+
+  elements.recordsBody.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const row = event.target.closest("tr");
+    if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
+    event.preventDefault();
+    row.click();
+  });
+
+  window.addEventListener("livepalmes:performance-data-updated", (event) => {
+    refreshData(event.detail);
     applyFilters();
   });
-});
 
-elements.courseFilter.addEventListener("input", applyFilters);
+  resetFilters();
+}
 
-elements.recordsBody.addEventListener("click", (event) => {
-  const row = event.target.closest("tr");
-  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
-  const expanded = !row.classList.contains("expanded");
-  row.classList.toggle("expanded", expanded);
-  row.setAttribute("aria-expanded", expanded ? "true" : "false");
-});
-
-elements.recordsBody.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const row = event.target.closest("tr");
-  if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
-  event.preventDefault();
-  row.click();
-});
-
-resetFilters();
+(async function start() {
+  if (window.LivePalmesPerformanceStore?.loadData) {
+    refreshData(await window.LivePalmesPerformanceStore.loadData());
+    window.LIVEPALMES_RECORDS = data;
+  }
+  initPage();
+})();

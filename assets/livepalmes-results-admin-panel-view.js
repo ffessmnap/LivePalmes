@@ -84,6 +84,22 @@
       });
     }
 
+    function renderCompetitionProtocolImportRow() {
+      const published = (data.notes?.publicSessionResultsPdfs || [])
+        .filter((pdf) => pdf.scope === "protocol" || pdf.documentType === "protocol")
+        .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+      const latest = published[0];
+      const uploadState = resultUploadStates.get(resultUploadKeyForSessionResults("protocol"));
+      const blockingUpload = uploadState && uploadState.tone !== "error";
+      return livePalmesAdminResults.renderCompetitionProtocolImportRowHtml({
+        blockingUpload,
+        latest,
+        latestUpdatedLabel: latest?.updatedAt ? new Date(latest.updatedAt).toLocaleString("fr-FR") : "",
+        uploadState,
+        uploadStateHtml: uploadState ? resultUploadBadgeHtml(uploadState) : ""
+      });
+    }
+
     function relatedFinalCompositionResult(row, result) {
       if (result?.hasFinal) return result;
       const isFinalRow = /^finale/i.test(String(row.stage || ""));
@@ -136,6 +152,7 @@
     return {
       renderCompetitionDiagnostic,
       renderComputerFooterPanel,
+      renderCompetitionProtocolImportRow,
       renderResultProgramRow,
       renderSessionResultsImportRow
     };

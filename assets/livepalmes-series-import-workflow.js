@@ -263,6 +263,8 @@
               sourceMode: "series-live",
               sourceLabel: mode === "full" ? "PDF général importé depuis LivePalmes" : "Session mise à jour depuis LivePalmes",
               sourceFile: parsed.sourceFile,
+              competitionMode: true,
+              competitionModeUpdatedAt: new Date().toISOString(),
               seriesLineCount: mergedSeriesData.series.length,
               entrantCount: mergedSeriesData.entrants.length,
               programCount: mergedSeriesData.program.length,

@@ -100,14 +100,12 @@
 
     async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
-      const ok = window.confirm([
+      return window.confirm([
         "L'actualisation directe est active.",
         "",
-        "Pour faire une RAZ, LivePalmes doit d'abord passer en Manuel.",
-        "Passer en Manuel et continuer la RAZ ?"
+        "Cette RAZ sera envoyée immédiatement aux consoles connectées.",
+        "Continuer ?"
       ].join("\n"));
-      if (!ok) return false;
-      return await toggleCompetitionMode?.(false) === true;
     }
     const state = new Proxy({}, {
       get: (_, prop) => context.state?.[prop],

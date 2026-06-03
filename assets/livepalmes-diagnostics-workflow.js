@@ -25,6 +25,7 @@
   let livePalmesAdminAuth;
   let livePalmesPinAuth;
   let livePalmesTechnicalLog;
+  let lastConsoleActivityAt;
   let migrateResultPdfsOutOfResults;
   let performanceDiagnosticLines;
   let pinLockEnabled;
@@ -120,11 +121,23 @@
   function renderFirebaseHeaderStatus() {
     if (!firebaseHeaderStatus) return;
     const meta = firebaseStatusMeta();
+    const lastActivityLabel = lastConsoleActivityAt
+      ? new Date(lastConsoleActivityAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+      : "";
+    const label = lastActivityLabel ? `${meta.label} · ${lastActivityLabel}` : meta.label;
+    const syncModeLabel = realtimeSyncEnabled() ? "Direct" : "Manuel";
+    const roleLabel = state?.role || "accueil";
     firebaseHeaderStatus.className = `firebase-header-status ${meta.className}`;
-    firebaseHeaderStatus.innerHTML = `<i class="firebase-dot ${meta.className}" aria-hidden="true"></i>${escapeHtml(meta.label)}`;
+    firebaseHeaderStatus.innerHTML = `<i class="firebase-dot ${meta.className}" aria-hidden="true"></i>${escapeHtml(label)}`;
     firebaseHeaderStatus.title = firebaseStatus === "error" || firebaseStatus === "offline"
       ? "Connexion interrompue - les actions peuvent ne pas être synchronisées."
-      : meta.label;
+      : [
+        `Firebase : ${meta.label}`,
+        `Actualisation : ${syncModeLabel}`,
+        `Codes PIN : ${pinLockEnabled() ? "actifs" : "inactifs"}`,
+        `Console : ${roleLabel}`,
+        lastActivityLabel ? `Dernière activité : ${lastActivityLabel}` : ""
+      ].filter(Boolean).join(" | ");
   }
   
   function shortStatusDate() {
@@ -521,6 +534,7 @@
     livePalmesAdminAuth = context.livePalmesAdminAuth;
     livePalmesPinAuth = context.livePalmesPinAuth;
     livePalmesTechnicalLog = context.livePalmesTechnicalLog;
+    lastConsoleActivityAt = context.lastConsoleActivityAt;
     migrateResultPdfsOutOfResults = context.migrateResultPdfsOutOfResults;
     performanceDiagnosticLines = context.performanceDiagnosticLines;
     pinLockEnabled = context.pinLockEnabled;

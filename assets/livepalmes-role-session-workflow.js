@@ -92,8 +92,22 @@
       return getData().notes?.pinAuthMode === "cloud";
     }
 
+    function hasCompetitionRows(value = {}) {
+      return Boolean(value.program?.length || value.series?.length || value.entrants?.length);
+    }
+
+    function isEmptyCompetitionData(value = {}) {
+      return value.notes?.sourceMode === "empty-rescue" ||
+        value.notes?.sourceMode === "empty" ||
+        /comp[ÃƒÃ©]tition\s+[ÃƒÃ ]?\s*charger/i.test(String(value.meet?.name || ""));
+    }
+
     function competitionModeEnabled() {
-      return getData().notes?.competitionMode === true;
+      const data = getData();
+      if (Object.prototype.hasOwnProperty.call(data.notes || {}, "competitionMode")) {
+        return data.notes?.competitionMode === true;
+      }
+      return hasCompetitionRows(data) && !isEmptyCompetitionData(data);
     }
 
     function realtimeSyncEnabled() {

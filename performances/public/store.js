@@ -1,0 +1,81 @@
+(function attachPerformanceStore(global) {
+  const COMPETITION_ID = "livepalmes-active";
+  const COLLECTION = "performanceData";
+  const DOCUMENT = "records";
+
+  function ensureFirebase() {
+    const firebase = global.firebase;
+    const config = global.LivePalmesAppConfig?.firebaseConfig || {};
+    if (!firebase?.initializeApp || !firebase?.firestore) return null;
+    if (!firebase.apps?.length) firebase.initializeApp(config);
+    return firebase;
+  }
+
+  function documentRef() {
+    const firebase = ensureFirebase();
+    if (!firebase) return null;
+    return firebase.firestore()
+      .collection("competitions")
+      .doc(COMPETITION_ID)
+      .collection(COLLECTION)
+      .doc(DOCUMENT);
+  }
+
+  function cloneData(data) {
+    return JSON.parse(JSON.stringify(data || {}));
+  }
+
+  function completeData(data) {
+    return global.LivePalmesRecordPlaceholders?.completeData
+      ? global.LivePalmesRecordPlaceholders.completeData(data)
+      : data;
+  }
+
+  function usefulArray(remoteValue, fallbackValue) {
+    if (!Array.isArray(remoteValue)) return fallbackValue;
+    if (remoteValue.length > 0 || !Array.isArray(fallbackValue) || fallbackValue.length === 0) return remoteValue;
+    return fallbackValue;
+  }
+
+  async function loadData() {
+    const fallback = global.LIVEPALMES_RECORDS || {};
+    const ref = documentRef();
+    if (!ref) return completeData(fallback);
+    try {
+      const snapshot = await ref.get({ source: "server" });
+      const remote = snapshot.exists ? snapshot.data() : null;
+      if (!remote?.records && !remote?.franceRecords) return completeData(fallback);
+      return completeData({
+        ...cloneData(fallback),
+        ...cloneData(remote),
+        records: usefulArray(remote.records, fallback.records),
+        franceRecords: usefulArray(remote.franceRecords, fallback.franceRecords),
+        filters: remote.filters || fallback.filters || {},
+        sourceDate: remote.sourceDate || fallback.sourceDate,
+        updatedAt: remote.updatedAt || fallback.updatedAt || fallback.generatedAt
+      });
+    } catch (error) {
+      console.warn("Lecture des performances Firebase impossible", error);
+      return completeData(fallback);
+    }
+  }
+
+  async function saveData(nextData) {
+    const ref = documentRef();
+    if (!ref) throw new Error("Firebase Firestore n'est pas disponible.");
+    const payload = {
+      ...completeData(cloneData(nextData)),
+      id: DOCUMENT,
+      updatedAt: new Date().toISOString()
+    };
+    await ref.set(payload, { merge: false });
+    global.LIVEPALMES_RECORDS = payload;
+    global.dispatchEvent(new CustomEvent("livepalmes:performance-data-updated", { detail: payload }));
+    return payload;
+  }
+
+  global.LivePalmesPerformanceStore = {
+    loadData,
+    saveData
+  };
+})(window);

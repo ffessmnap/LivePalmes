@@ -49,6 +49,13 @@ let selectedSearchSwimmerKey = "";
 let activeSheetSwimmerKey = "";
 const directResultSessionsLoaded = new Set();
 const swimmerResultDetailsLoading = new Set();
+const directResultSessionLoads = new Map();
+let publicResultsIndexSource = null;
+let publicResultsIndexCache = null;
+let publicPerformancesSource = null;
+let publicPerformancesCache = null;
+let publicSeriesRaceSource = null;
+let publicSeriesRaceCache = null;
 
 if (PUBLIC_ARCHIVE_MODE && seriesSwitchLink) {
   seriesSwitchLink.hidden = true;
@@ -89,6 +96,7 @@ function publicSwimmerOptions(extra = {}) {
     sexLabel,
     isForfait,
     resultPdfHref,
+    allPerformances: allPublicPerformances(),
     ...extra
   };
 }
@@ -187,18 +195,53 @@ function resultIdForProgramRow(row = {}) {
   return `${base}-${stage}`;
 }
 
+function publicResultIndex() {
+  if (publicResultsIndexSource === publicResults && publicResultsIndexCache) return publicResultsIndexCache;
+  const byId = new Map();
+  const byProgramKey = new Map();
+  const initialByRaceKey = new Map();
+  const finalsByRaceKey = new Map();
+  publicResults.forEach((result) => {
+    if (result.id) byId.set(String(result.id), result);
+    if (result.programKey) byProgramKey.set(String(result.programKey), result);
+    const key = result.raceKey || raceKey(result.eventId, result.sex);
+    if (!key.trim()) return;
+    if (isFinalStage(result.stage)) {
+      if (!finalsByRaceKey.has(key)) finalsByRaceKey.set(key, []);
+      finalsByRaceKey.get(key).push(result);
+      return;
+    }
+    if (!initialByRaceKey.has(key)) initialByRaceKey.set(key, result);
+  });
+  publicResultsIndexSource = publicResults;
+  publicResultsIndexCache = { byId, byProgramKey, initialByRaceKey, finalsByRaceKey };
+  return publicResultsIndexCache;
+}
+
+function seriesRowsByRace() {
+  if (publicSeriesRaceSource === publicSeries && publicSeriesRaceCache) return publicSeriesRaceCache;
+  const byRace = new Map();
+  publicSeries.forEach((row) => {
+    const key = raceKey(row.eventId, row.sex);
+    if (!key.trim()) return;
+    if (!byRace.has(key)) byRace.set(key, []);
+    byRace.get(key).push(row);
+  });
+  publicSeriesRaceSource = publicSeries;
+  publicSeriesRaceCache = byRace;
+  return byRace;
+}
+
 function resultForRow(row) {
   const key = raceKey(row.eventId, row.sex);
   const rowProgramKey = programKey(row);
-  const exact = publicResults.find((result) =>
-    result.programKey === rowProgramKey ||
-    result.id === resultIdForProgramRow(row)
-  );
+  const index = publicResultIndex();
+  const exact = index.byProgramKey.get(rowProgramKey) || index.byId.get(resultIdForProgramRow(row));
   if (exact) return exact;
   if (isFinalStage(row.stage)) {
     const rowStages = new Set([row.stage, ...(row.finalStages || [])].map((stage) => String(stage || "")));
-    return publicResults.find((result) => {
-      if (result.raceKey !== key || !isFinalStage(result.stage)) return false;
+    return (index.finalsByRaceKey.get(key) || []).find((result) => {
+      if ((result.raceKey || raceKey(result.eventId, result.sex)) !== key || !isFinalStage(result.stage)) return false;
       if (row.session && result.session && String(row.session) !== String(result.session)) return false;
       const resultStage = String(result.stage || "");
       return rowStages.has(resultStage) ||
@@ -207,7 +250,7 @@ function resultForRow(row) {
         result.programKey === rowProgramKey;
     }) || null;
   }
-  return publicResults.find((result) => result.raceKey === key && !isFinalStage(result.stage)) || null;
+  return index.initialByRaceKey.get(key) || null;
 }
 
 function isLastProgramPartForRace(row) {
@@ -344,8 +387,7 @@ function raceSingleCategory(row, result) {
     result?.finalists?.a,
     result?.finalists?.b
   ].forEach((rows) => (Array.isArray(rows) ? rows : []).forEach((item) => addCategory(item.category || item.categoryLabel)));
-  publicSeries
-    .filter((item) => item.eventId === row.eventId && item.sex === row.sex)
+  (seriesRowsByRace().get(raceKey(row.eventId, row.sex)) || [])
     .filter((item) => !row.session || !item.session || String(item.session) === String(row.session))
     .forEach((item) => addCategory(item.category));
   return categories.size === 1 ? [...categories.values()][0] : "";
@@ -430,7 +472,12 @@ function isForfait(row) {
   return publicSwimmers.isForfait(row);
 }
 
-const allPublicPerformances = () => publicSwimmers.allPublicPerformances(publicResults);
+function allPublicPerformances() {
+  if (publicPerformancesSource === publicResults && publicPerformancesCache) return publicPerformancesCache;
+  publicPerformancesSource = publicResults;
+  publicPerformancesCache = publicSwimmers.allPublicPerformances(publicResults);
+  return publicPerformancesCache;
+}
 
 function performanceMatchesRow(performance, row) {
   return publicSwimmers.performanceMatchesRow(performance, row, publicSwimmerOptions());
@@ -443,7 +490,7 @@ function swimmerKeyForResultRow(row, result = {}) {
     sex: row.sex || result.sex || "",
     session: row.session || result.session || ""
   };
-  const match = publicSeries
+  const match = (seriesRowsByRace().get(raceKey(probe.eventId, probe.sex)) || [])
     .filter((seriesRow) => !isFinalStage(seriesRow.stage) && !isRelayRow(seriesRow))
     .find((seriesRow) => performanceMatchesRow(probe, seriesRow));
   return match ? swimmerKey(match) : "";
@@ -461,7 +508,7 @@ function renderResultSwimmerName(row, result = {}) {
 }
 
 function performancesForProgramRow(row) {
-  return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions());
+  return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions({ allPerformances: allPublicPerformances() }));
 }
 
 const searchSwimmers = (query) => publicSwimmers.searchSwimmers(query, publicSeries, { entrants: publicEntrants, limit: 8 });
@@ -488,7 +535,7 @@ function swimmerResultsAreLoading(key) {
 function renderInlineSwimmerProgram(key) {
   return publicSwimmers.renderInlineSwimmerProgram(key, publicSwimmerOptions({
     rows: swimmerProgramRows(key),
-    loading: swimmerResultsAreLoading(key)
+    loading: swimmerResultDetailsLoading.has(key)
   }));
 }
 
@@ -535,9 +582,58 @@ function renderSwimmerSheetContent(key) {
   document.body.classList.add("public-sheet-open");
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function loadSwimmerResultDetails(key) {
+  const sessionsToLoad = swimmerResultSessionsToLoad(key);
+  if (!sessionsToLoad.length || swimmerResultDetailsLoading.has(key)) return;
+  const competition = publicCompetitionDocument();
+  if (!competition) return;
+  swimmerResultDetailsLoading.add(key);
+  renderSwimmerSheetContent(key);
+  try {
+    const loaders = sessionsToLoad.map((session) =>
+      loadPublicSessionResultsDirectData(competition, session)
+        .then(() => {
+          if (activeSheetSwimmerKey === key) renderSwimmerSheetContent(key);
+          const output = document.querySelector("#publicSwimmerSearchOutput");
+          if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
+        })
+        .catch((error) => {
+          console.warn("Chargement des resultats nageur impossible", error);
+        })
+    );
+    await Promise.race([
+      Promise.allSettled(loaders),
+      wait(4500)
+    ]);
+  } finally {
+    swimmerResultDetailsLoading.delete(key);
+    if (activeSheetSwimmerKey === key) renderSwimmerSheetContent(key);
+    const output = document.querySelector("#publicSwimmerSearchOutput");
+    if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
+  }
+  return;
+  try {
+    const results = await Promise.allSettled(sessionsToLoad.map((session) => loadPublicSessionResultsDirectData(competition, session)));
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.warn("Chargement des résultats nageur impossible", result.reason);
+        directResultSessionsLoaded.add(sessionsToLoad[index]);
+      }
+    });
+  } finally {
+    swimmerResultDetailsLoading.delete(key);
+    if (activeSheetSwimmerKey === key) renderSwimmerSheetContent(key);
+    const output = document.querySelector("#publicSwimmerSearchOutput");
+    if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
+  }
+}
+
 async function openSwimmerSheet(key) {
   if (!swimmerSheet || !key) return;
   renderSwimmerSheetContent(key);
+  await loadSwimmerResultDetails(key);
 }
 
 function latestSessionUpdateLabel(results = []) {
@@ -772,7 +868,7 @@ function publishedRankingRows(result) {
 function finalResultsForRow(row, result) {
   if (!row || !isFinalStage(row.stage)) return [];
   const seen = new Set();
-  const matches = publicResults
+  const matches = (publicResultIndex().finalsByRaceKey.get(raceKey(row.eventId, row.sex)) || [])
     .filter((item) =>
       item.eventId === row.eventId &&
       item.sex === row.sex &&
@@ -986,6 +1082,7 @@ function renderResults() {
   const sessionResults = resultsForRows(publishedRows);
   const documentOptions = publicDocumentOptions();
   const seriesDocumentsHtml = publicResultDocuments.renderSeriesPdfLink(activeSession, documentOptions);
+  const competitionProtocolPdfHtml = publicResultDocuments.renderCompetitionProtocolPdfSection(documentOptions);
   const sessionResultsPdfHtml = publicResultDocuments.renderSessionResultsPdfSection(activeSession, documentOptions);
   const sessionInformationHtml = renderSessionInformation(activeSession);
   const swimmerSearchHtml = renderSwimmerSearchSection();
@@ -993,6 +1090,7 @@ function renderResults() {
   if (!rows.length) {
     list.innerHTML = `
       ${PUBLIC_ARCHIVE_MODE ? swimmerSearchHtml : ""}
+      ${competitionProtocolPdfHtml}
       <p class="panel-subtitle">Aucune course trouvée pour cette session.</p>
       ${sessionResultsPdfHtml}
       ${PUBLIC_ARCHIVE_MODE ? "" : swimmerSearchHtml}
@@ -1001,6 +1099,7 @@ function renderResults() {
   }
   list.innerHTML = `
     ${PUBLIC_ARCHIVE_MODE ? swimmerSearchHtml : ""}
+    ${competitionProtocolPdfHtml}
     <div class="public-session-title">
       <div>
         <h2>Session ${escapeHtml(activeSession)}</h2>
@@ -1062,6 +1161,7 @@ async function loadPublicResultsDirectData(competition) {
     loadPublicSessionResultsPdfs(competition)
   ]);
   publicResults = resultsSnapshot.docs.map(publicResultFromDoc);
+  markResultSessionsLoaded(publicResults);
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
     .filter(Boolean)
@@ -1075,14 +1175,29 @@ function mergePublicResults(results = []) {
   publicIndexUpdatedAt = merged.latestUpdatedAt || publicIndexUpdatedAt;
 }
 
+function markResultSessionsLoaded(results = []) {
+  (Array.isArray(results) ? results : []).forEach((result) => {
+    const session = String(result?.session || "").trim();
+    if (session && resultHasDetails(result)) directResultSessionsLoaded.add(session);
+  });
+}
+
 async function loadPublicSessionResultsDirectData(competition, session) {
   const cleanSession = String(session || "").trim();
-  if (!cleanSession) return;
-  const snapshot = await competition.collection("results")
+  if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
+  if (directResultSessionLoads.has(cleanSession)) return directResultSessionLoads.get(cleanSession);
+  const promise = competition.collection("results")
     .where("session", "==", cleanSession)
-    .get({ source: "server" });
-  mergePublicResults(snapshot.docs.map(publicResultFromDoc));
-  directResultSessionsLoaded.add(cleanSession);
+    .get({ source: "server" })
+    .then((snapshot) => {
+      mergePublicResults(snapshot.docs.map(publicResultFromDoc));
+      directResultSessionsLoaded.add(cleanSession);
+    })
+    .finally(() => {
+      directResultSessionLoads.delete(cleanSession);
+    });
+  directResultSessionLoads.set(cleanSession, promise);
+  return promise;
 }
 
 function swimmerResultSessions(key) {
@@ -1090,6 +1205,11 @@ function swimmerResultSessions(key) {
 }
 
 const liveDataIsNewerThanPublicIndex = (remote, index) => publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
+
+async function loadPublicLiveData(competition) {
+  const snapshot = await competition.collection("liveData").doc("current").get({ source: "server" });
+  return snapshot.data()?.data || {};
+}
 
 function applyPublicLiveOverlay(remote, index = {}, { force = false } = {}) {
   applyPublicAccessFromLiveData(remote);
@@ -1130,14 +1250,10 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
     await loadPublicArchiveResultsIndex(competition);
     return;
   }
-  const [snapshot, liveSnapshot] = await Promise.all([
-    competition.collection("public").doc("resultsIndex").get({ source: "server" }),
-    competition.collection("liveData").doc("current").get({ source: "server" })
-  ]);
+  const snapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
   const index = snapshot.data() || {};
-  const remote = liveSnapshot.data()?.data || {};
+  let remote = {};
   publicAccess = { ...(index.publicAccess || {}), online: true };
-  applyPublicAccessFromLiveData(remote);
   if (!ensurePublicAccess()) return;
   if (!snapshot.exists || !Array.isArray(index.program) || !index.program.length) {
     await loadPublicResultsFallback(competition);
@@ -1146,9 +1262,10 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
-  publicEntrants = Array.isArray(index.entrants) ? index.entrants : (Array.isArray(remote.entrants) ? remote.entrants : []);
+  publicEntrants = Array.isArray(index.entrants) ? index.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
+  markResultSessionsLoaded(publicResults);
   publicSessionInfos = index.sessionInfos || {};
   publicIndexUpdatedAt = index.updatedAt || "";
   if (Array.isArray(index.seriesPdfs)) {
@@ -1158,22 +1275,28 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   } else {
     await loadPublicSeriesPdfs(competition);
   }
-  publicSessionResultsPdfs = Array.isArray(index.sessionResultsPdfs)
-    ? index.sessionResultsPdfs
+  if (Array.isArray(index.sessionResultsPdfs) && index.sessionResultsPdfs.length) {
+    publicSessionResultsPdfs = index.sessionResultsPdfs
       .slice()
-      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
-    : [];
-  applyPublicLiveOverlay(remote, index, { force: forceDirect });
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  } else {
+    await loadPublicSessionResultsPdfs(competition);
+  }
   if (!forceDirect && !directSession) {
     setStatus("Actualisation", "pending");
     savePublicResultsCache();
     renderResults();
   }
-  if (forceDirect) {
-    await loadPublicResultsDirectData(competition);
-  } else if (directSession) {
-    await loadPublicSessionResultsDirectData(competition, directSession);
-  }
+  const liveDataPromise = loadPublicLiveData(competition).catch((error) => {
+    console.warn("Lecture live public impossible", error);
+    return null;
+  });
+  const directTargetSession = directSession || (!forceDirect ? activeSession : "");
+  const directDataPromise = forceDirect
+    ? loadPublicResultsDirectData(competition)
+    : (directTargetSession ? loadPublicSessionResultsDirectData(competition, directTargetSession) : Promise.resolve());
+  [remote] = await Promise.all([liveDataPromise, directDataPromise]);
+  if (remote) applyPublicLiveOverlay(remote, index, { force: forceDirect });
   if (!ensurePublicAccess()) return;
   setStatus("Connecté", "ok");
   savePublicResultsCache();
@@ -1194,8 +1317,10 @@ async function loadPublicResultsFallback(competition) {
   publicResults = resultsSnapshot.docs.map(publicResultFromDoc);
   publicSessionInfos = remote.notes?.publicSessionInfos || {};
   publicAccess = { online: true, updatedAt: remote.notes?.livePublishedAt || "" };
-  await loadPublicSeriesPdfs(competition);
-  publicSessionResultsPdfs = [];
+  await Promise.all([
+    loadPublicSeriesPdfs(competition),
+    loadPublicSessionResultsPdfs(competition)
+  ]);
   publicIndexUpdatedAt = publicResults
     .map((result) => result.updatedAt)
     .filter(Boolean)

@@ -12,10 +12,13 @@
   function init(options = {}) {
     const firebase = options.firebase || global.firebase;
     const authConfig = options.authConfig || {};
+    const requiredCapability = String(options.requiredCapability || "").trim();
     const allowedUids = new Set((authConfig.adminUids || []).map((uid) => String(uid || "").trim()).filter(Boolean));
     const allowedEmails = new Set((authConfig.adminEmails || []).map(normalizeEmail).filter(Boolean));
     const legacyFallback = authConfig.legacyAdminPinFallback !== false;
     let currentUser = null;
+    let currentClaims = {};
+    let currentProfile = null;
     let authReady = false;
     let authUnsubscribe = null;
     let persistenceReady = Promise.resolve();
@@ -37,6 +40,42 @@
       }
     }
 
+    function functionsService() {
+      if (!firebase?.functions || !firebase.apps?.length) return null;
+      try {
+        return firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+      } catch {
+        try {
+          return firebase.functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+        } catch {
+          return null;
+        }
+      }
+    }
+
+    async function refreshAccessFromServer() {
+      if (!currentUser) return;
+      const functions = functionsService();
+      if (!functions?.httpsCallable) return;
+      try {
+        const result = await functions.httpsCallable("getCurrentAccessUser")({});
+        const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
+        currentProfile = result.data || null;
+        if (!capabilities.length) return;
+        currentClaims = {
+          ...currentClaims,
+          livepalmesAccess: true,
+          livepalmesCapabilities: capabilities.reduce((acc, capability) => {
+            acc[capability] = true;
+            return acc;
+          }, {})
+        };
+      } catch {
+        currentProfile = null;
+        // No server-side access found; keep the local auth status unchanged.
+      }
+    }
+
     function configurePersistence(service) {
       if (!service?.setPersistence || !firebase?.auth?.Auth?.Persistence?.LOCAL) return;
       if (persistenceReady.livePalmesConfigured) return;
@@ -50,9 +89,25 @@
       return allowedUids.size > 0 || allowedEmails.size > 0;
     }
 
+    function hasLivePalmesCapability(claims = currentClaims) {
+      const capabilities = claims?.livepalmesCapabilities || {};
+      if (requiredCapability) {
+        return claims?.livepalmesAccess === true && (
+          capabilities["admin.full"] === true ||
+          capabilities[requiredCapability] === true
+        );
+      }
+      return claims?.livepalmesAccess === true && (
+        capabilities["admin.full"] === true ||
+        capabilities["records.manage"] === true ||
+        capabilities["consoles.manage"] === true
+      );
+    }
+
     function isAllowedUser(user = currentUser) {
-      if (!user || !isConfigured()) return false;
-      return allowedUids.has(user.uid) || allowedEmails.has(normalizeEmail(user.email));
+      if (!user) return false;
+      if (!isConfigured()) return hasLivePalmesCapability();
+      return allowedUids.has(user.uid) || allowedEmails.has(normalizeEmail(user.email)) || hasLivePalmesCapability();
     }
 
     function notify() {
@@ -68,8 +123,18 @@
 
     function attachAuthListener(service) {
       if (authUnsubscribe || !service?.onAuthStateChanged) return;
-      authUnsubscribe = service.onAuthStateChanged((user) => {
+      authUnsubscribe = service.onAuthStateChanged(async (user) => {
         currentUser = user || null;
+        currentClaims = {};
+        currentProfile = null;
+        if (currentUser?.getIdTokenResult) {
+          try {
+            currentClaims = (await currentUser.getIdTokenResult(true))?.claims || {};
+          } catch (error) {
+            console.warn("Lecture des droits admin LivePalmes impossible", error);
+          }
+        }
+        await refreshAccessFromServer();
         authReady = true;
         readyResolver?.();
         readyResolver = null;
@@ -81,8 +146,10 @@
       const service = authService();
       return {
         available: Boolean(service),
-        configured: isConfigured(),
+        configured: isConfigured() || hasLivePalmesCapability(),
+        claims: currentClaims,
         email: currentUser?.email || "",
+        profile: currentProfile,
         ready: authReady,
         signedIn: isAllowedUser(),
         legacyFallbackEnabled: legacyFallback && !isConfigured()
@@ -104,13 +171,39 @@
       await persistenceReady;
       const credential = await service.signInWithEmailAndPassword(cleanEmail, password);
       currentUser = credential.user || service.currentUser || null;
+      currentClaims = {};
+      currentProfile = null;
+      if (currentUser?.getIdTokenResult) {
+        currentClaims = (await currentUser.getIdTokenResult(true))?.claims || {};
+      }
+      await refreshAccessFromServer();
       if (!isAllowedUser(currentUser)) {
         await service.signOut().catch(() => {});
         currentUser = null;
+        currentClaims = {};
+        currentProfile = null;
         throw createAuthError("Ce compte Firebase n'est pas autorise comme admin LivePalmes.");
       }
       notify();
       return currentUser;
+    }
+
+    async function sendPasswordReset(email) {
+      const service = authService();
+      if (!service?.sendPasswordResetEmail) {
+        throw createAuthError("Firebase Authentication n'est pas charge.");
+      }
+      if (!isConfigured()) {
+        throw createAuthError("Aucun admin Firebase n'est encore configure dans LivePalmes.");
+      }
+      const cleanEmail = normalizeEmail(email);
+      if (!cleanEmail) {
+        throw createAuthError("Renseigne l'email admin avant de demander la reinitialisation.");
+      }
+      if (allowedEmails.size && !allowedEmails.has(cleanEmail)) {
+        throw createAuthError("Cet email n'est pas autorise comme admin LivePalmes.");
+      }
+      await service.sendPasswordResetEmail(cleanEmail);
     }
 
     async function signOut() {
@@ -135,9 +228,14 @@
 
     return {
       isAdminAuthenticated: () => isAllowedUser(),
+      hasCapability: (capability) => {
+        if (isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
+        return currentClaims?.livepalmesCapabilities?.[capability] === true;
+      },
       legacyAdminPinFallbackEnabled: () => status().legacyFallbackEnabled,
       onChange,
       whenReady: () => readyPromise,
+      sendPasswordReset,
       signIn,
       signOut,
       status

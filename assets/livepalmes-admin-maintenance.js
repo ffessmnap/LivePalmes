@@ -46,6 +46,7 @@
   }
 
   function sessionResultsPdfId(scope, sessions = []) {
+    if (scope === "protocol") return "competition-protocol-full";
     if (scope === "full") return "complete-results-full";
     const safeSessions = normalizeSessionList(sessions)
       .map((session) => String(session || "").replace(/[^a-z0-9_-]+/gi, "-"))
@@ -55,7 +56,7 @@
 
   function sessionResultsPdfMatchesSession(pdf, session) {
     const cleanSession = String(session || "").trim();
-    if (!cleanSession || pdf?.scope === "full") return false;
+    if (!cleanSession || pdf?.scope === "full" || pdf?.scope === "protocol" || pdf?.documentType === "protocol") return false;
     const sessions = Array.isArray(pdf?.sessions) ? pdf.sessions.map(String) : [];
     return String(pdf?.session || "") === cleanSession || sessions.includes(cleanSession);
   }

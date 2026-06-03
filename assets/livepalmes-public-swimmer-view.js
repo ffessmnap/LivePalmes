@@ -120,7 +120,9 @@
         return `
           <div class="public-search-program">
             ${programHead}
-            <p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>
+            <div class="public-swimmer-program">
+              ${rows.map((row) => renderProgramRow(row, options)).join("")}
+            </div>
           </div>
         `;
       }
@@ -154,9 +156,7 @@
         </div>
         ${options.subtitle ? `<p class="panel-subtitle">${options.subtitle}</p>` : ""}
         <div class="public-swimmer-program">
-          ${options.loading
-            ? `<p class="panel-subtitle public-search-empty">Chargement des temps du nageur...</p>`
-            : renderSwimmerProgramRows(rows, options)}
+          ${renderSwimmerProgramRows(rows, options)}
         </div>
       `;
     }

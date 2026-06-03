@@ -4,6 +4,7 @@
       COMPETITION_INACTIVITY_MS,
       FIREBASE_CONFIG,
       activeCompetitionId = "livepalmes-active",
+      alertSummaryDocument,
       alertsCollection,
       applyRemoteLiveData,
       cleanupOrphanFinalResultAlerts,
@@ -12,6 +13,7 @@
       ensurePendingFinalistsSpeakerAlerts = () => {},
       ensurePendingReplacementSpeakerAlerts = () => {},
       liveDataDocument,
+      livePalmesAlerts,
       migrateResultPdfsOutOfResults = async () => 0,
       publishPublicResultsIndex,
       realtimeSyncEnabled,
@@ -34,6 +36,13 @@
 
       function hasCompetitionRows(value = {}) {
         return Boolean(value.program?.length || value.series?.length || value.entrants?.length);
+      }
+
+      function remoteCompetitionModeEnabled(remote = {}) {
+        if (Object.prototype.hasOwnProperty.call(remote.notes || {}, "competitionMode")) {
+          return remote.notes?.competitionMode === true;
+        }
+        return hasCompetitionRows(remote) && remote.notes?.sourceMode !== "empty" && remote.notes?.sourceMode !== "empty-rescue";
       }
 
       function shouldApplyRemoteLiveData(remote = {}) {
@@ -92,9 +101,31 @@
         context.firestoreUnsubscribe?.();
         context.liveDataUnsubscribe?.();
         context.resultsUnsubscribe?.();
+        context.alertSummaryUnsubscribe?.();
         context.firestoreUnsubscribe = null;
         context.liveDataUnsubscribe = null;
         context.resultsUnsubscribe = null;
+        context.alertSummaryUnsubscribe = null;
+      }
+
+      function waitForInitialFirebaseUser(auth) {
+        if (!auth?.onAuthStateChanged) return Promise.resolve(auth?.currentUser || null);
+        if (auth.currentUser) return Promise.resolve(auth.currentUser);
+        return new Promise((resolve) => {
+          let done = false;
+          let unsubscribe = () => {};
+          const finish = (user) => {
+            if (done) return;
+            done = true;
+            unsubscribe();
+            resolve(user || auth.currentUser || null);
+          };
+          const timer = setTimeout(() => finish(auth.currentUser || null), 900);
+          unsubscribe = auth.onAuthStateChanged((user) => {
+            clearTimeout(timer);
+            finish(user);
+          });
+        });
       }
 
       async function ensureFirebaseConsoleAuth() {
@@ -104,6 +135,7 @@
           if (auth.setPersistence && window.firebase?.auth?.Auth?.Persistence?.LOCAL) {
             await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
           }
+          await waitForInitialFirebaseUser(auth);
           if (!auth.currentUser) await auth.signInAnonymously();
           return Boolean(auth.currentUser);
         } catch (error) {
@@ -136,6 +168,43 @@
           if (!serverIds.has(id)) merged.unshift(alert);
         });
         return merged.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      }
+
+      function shouldSubscribeResultsRealtime() {
+        return ["computer", "speaker", "secretary"].includes(context.state?.role);
+      }
+
+      function activeAlertsQuery() {
+        const collection = alertsCollection();
+        return collection.orderBy("createdAt", "desc").limit(160);
+      }
+
+      function applyAlertSummaryData(summary = {}) {
+        context.alertSummaryCounts = summary?.counts || null;
+        render();
+      }
+
+      function startHomeSummarySync(doc) {
+        context.firebaseStatus = "connected";
+        context.liveDataUnsubscribe = doc.onSnapshot((snapshot) => {
+          if (!snapshot.exists) return;
+          const remote = snapshot.data()?.data;
+          context.firebaseStatus = "connected";
+          if (shouldApplyRemoteLiveData(remote)) applyRemoteLiveData(remote);
+        }, (error) => {
+          console.warn("Lecture des donnees live Firebase impossible", error);
+          context.firebaseStatus = "error";
+          renderDataStatus();
+        });
+        const summaryDoc = typeof alertSummaryDocument === "function" ? alertSummaryDocument() : null;
+        if (summaryDoc) {
+          context.alertSummaryUnsubscribe = summaryDoc.onSnapshot((snapshot) => {
+            applyAlertSummaryData(snapshot.exists ? snapshot.data() : {});
+          }, (error) => {
+            console.warn("Lecture du résumé alertes impossible", error);
+          });
+        }
+        renderDataStatus();
       }
 
       function applyResultsSnapshot(snapshot) {
@@ -256,30 +325,47 @@
 
       function startCompetitionSync() {
         stopFirebaseRealtimeSync();
-        if (!realtimeSyncEnabled()) {
-          context.firebaseStatus = "manual";
-          refreshFirebaseOnce(false);
+        const doc = liveDataDocument();
+        if (!doc) {
+          context.firebaseStatus = "local";
           renderDataStatus();
           return;
         }
-        context.firestoreUnsubscribe = alertsCollection()
-          .orderBy("createdAt", "desc")
-          .limit(300)
+        if (context.profileHomeActive) {
+          startHomeSummarySync(doc);
+          return;
+        }
+        if (!realtimeSyncEnabled()) {
+          context.firebaseStatus = "manual";
+          refreshFirebaseOnce(false).finally(() => {
+            if (realtimeSyncEnabled() && context.liveDataUnsubscribe) startCompetitionSync();
+          });
+          context.liveDataUnsubscribe = doc.onSnapshot((snapshot) => {
+            if (!snapshot.exists) return;
+            const remote = snapshot.data()?.data;
+            context.firebaseStatus = "manual";
+            if (!remoteCompetitionModeEnabled(remote)) return;
+            applyRemoteLiveData(remote);
+            startCompetitionSync();
+          }, (error) => {
+            console.warn("Lecture du mode direct Firebase impossible", error);
+            context.firebaseStatus = "error";
+            refreshFirebaseFromRest(false).catch((fallbackError) => {
+              console.warn("Lecture REST Firebase impossible", fallbackError);
+            });
+            renderDataStatus();
+          });
+          renderDataStatus();
+          return;
+        }
+        context.firestoreUnsubscribe = activeAlertsQuery()
           .onSnapshot((snapshot) => {
             context.firestoreReady = true;
             context.firebaseStatus = "connected";
-            context.alerts = mergePendingLocalAlerts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+            context.alerts = mergePendingLocalAlerts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
+              .filter((alert) => alert.active === true || livePalmesAlerts.isRealtimeActiveAlert(alert))
+              .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
             saveAlerts();
-            if (!context.alerts.length) {
-              fetchAlertsWithRestFallback().then((rows) => {
-                if (!rows?.length) return;
-                context.alerts = mergePendingLocalAlerts(rows);
-                saveAlerts();
-                render();
-              }).catch((error) => {
-                console.warn("Lecture REST Firebase impossible", error);
-              });
-            }
             cleanupOrphanFinalResultAlerts();
             render();
           }, (error) => {
@@ -305,21 +391,25 @@
           });
           renderDataStatus();
         });
-        context.resultsUnsubscribe = resultsCollection()
-          .orderBy("updatedAt", "desc")
-          .onSnapshot((snapshot) => {
-            applyResultsSnapshot(snapshot);
-            renderResultsAdminPanel();
-          }, (error) => {
-            console.warn("Lecture des resultats Firebase impossible", error);
-            fetchResultsWithRestFallback().then((rows) => {
-              if (!rows) return;
-              applyResultsRows(rows);
+        if (shouldSubscribeResultsRealtime()) {
+          context.resultsUnsubscribe = resultsCollection()
+            .orderBy("updatedAt", "desc")
+            .onSnapshot((snapshot) => {
+              applyResultsSnapshot(snapshot);
               renderResultsAdminPanel();
-            }).catch((fallbackError) => {
-              console.warn("Lecture REST des resultats impossible", fallbackError);
+            }, (error) => {
+              console.warn("Lecture des resultats Firebase impossible", error);
+              fetchResultsWithRestFallback().then((rows) => {
+                if (!rows) return;
+                applyResultsRows(rows);
+                renderResultsAdminPanel();
+              }).catch((fallbackError) => {
+                console.warn("Lecture REST des resultats impossible", fallbackError);
+              });
             });
-          });
+        } else {
+          context.resultsSnapshotReady = false;
+        }
       }
 
       async function refreshFirebaseOnce(showMessage = true, options = {}) {
@@ -334,10 +424,11 @@
           renderDataStatus("Firebase n'est pas charge. Les donnees restent locales sur cet appareil.");
           return;
         }
+        const shouldReadResults = options.includeResults !== false && shouldSubscribeResultsRealtime();
         const [alertResult, liveResult, resultResult] = await Promise.allSettled([
           alertsCollection().orderBy("createdAt", "desc").limit(300).get({ source: "server" }),
           liveDataDocument().get({ source: "server" }),
-          resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" })
+          shouldReadResults ? resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" }) : Promise.resolve(null)
         ]);
         let hasFreshData = false;
         if (alertResult.status === "fulfilled") {
@@ -379,11 +470,11 @@
             hasFreshData = true;
           }
         }
-        if (resultResult.status === "fulfilled") {
+        if (shouldReadResults && resultResult.status === "fulfilled") {
           context.firestoreReady = true;
           applyResultsSnapshot(resultResult.value);
           hasFreshData = true;
-        } else {
+        } else if (shouldReadResults) {
           console.warn("Actualisation des resultats Firebase impossible", resultResult.reason);
           const fallbackResults = await fetchResultsWithRestFallback();
           if (fallbackResults) {
@@ -444,12 +535,6 @@
         }
         if (context.firestoreUnsubscribe || context.liveDataUnsubscribe || context.resultsUnsubscribe) {
           context.firebaseStatus = "connected";
-          renderDataStatus();
-          return;
-        }
-        const doc = liveDataDocument();
-        if (!doc) {
-          context.firebaseStatus = "local";
           renderDataStatus();
           return;
         }
