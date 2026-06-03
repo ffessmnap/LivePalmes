@@ -169,6 +169,9 @@
     }
 
     function homeActionCounts() {
+      if (context.alertSummaryCounts && typeof context.alertSummaryCounts === "object") {
+        return { ...emptyPresenceCounts(), ...context.alertSummaryCounts };
+      }
       return livePalmesAlerts.homeActionCounts(getAlerts(), emptyPresenceCounts());
     }
 

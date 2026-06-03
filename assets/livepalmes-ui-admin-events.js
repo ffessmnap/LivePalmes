@@ -50,14 +50,12 @@
 
     async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
-      const ok = window.confirm([
+      return window.confirm([
         "L'actualisation directe est active.",
         "",
-        "Pour faire une RAZ, LivePalmes doit d'abord passer en Manuel.",
-        "Passer en Manuel et continuer la RAZ ?"
+        "Cette RAZ sera envoyée immédiatement aux consoles connectées.",
+        "Continuer ?"
       ].join("\n"));
-      if (!ok) return false;
-      return await toggleCompetitionMode?.(false) === true;
     }
 
       roleCodesModal?.addEventListener("click", async (event) => {
@@ -303,6 +301,18 @@
         }
         if (event.target.closest("[data-role-pin-cancel]")) {
           finishRolePin(false);
+          return;
+        }
+        if (event.target.closest("[data-admin-auth-reset]")) {
+          const emailInput = roleCodesModal.querySelector("#adminEmailInput");
+          const email = String(emailInput?.value || "").trim();
+          try {
+            await livePalmesAdminAuth?.sendPasswordReset?.(email);
+            window.alert("Email de reinitialisation envoye. Verifie la boite mail du compte admin.");
+          } catch (error) {
+            console.error(error);
+            window.alert(`Reinitialisation impossible : ${error?.message || error}`);
+          }
           return;
         }
         if (event.target.closest("[data-confirm-role-code-admin]")) {

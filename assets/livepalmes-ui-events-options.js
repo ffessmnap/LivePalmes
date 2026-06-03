@@ -5,7 +5,7 @@
     "clearResultUploadState", "clearSearch", "clearSeriesImportState", "closeAdminSeriesModal",
     "closeAlertDetail", "closeDecisionModal", "closeProgramModal", "closeResultImportModal",
     "closeRoleCodesModal", "competitionModeEnabled", "createDecisionAlert", "currentClientId", "currentRolePins",
-    "decisionDraftIsReady", "defaultDecisionDetail", "deleteResultPdf", "dismissLiveAlert",
+    "decisionDraftIsReady", "defaultDecisionDetail", "deleteResultPdf", "deleteSessionResultsPdf", "dismissLiveAlert",
     "downloadAdminBackup", "downloadJson", "ensureResultsAdminSession", "eventLabel", "exportDsqPdf",
     "finalProgramRowsForRace", "finalRowKey", "finalRowsCount", "finishRolePin",
     "firstSeriesSelectionForCurrentRace", "goToNextProgramRace", "goToPreviousProgramRace",

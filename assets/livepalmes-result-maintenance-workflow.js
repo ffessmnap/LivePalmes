@@ -94,10 +94,6 @@
     }
 
     async function resetSeriesForNextCompetition() {
-      if (competitionModeEnabled()) {
-        window.alert("RAZ s\u00e9ries indisponible quand l'actualisation directe est active.");
-        return;
-      }
       const data = getData();
       let archivedHistoryCount = 0;
       let clearedAlerts = 0;
@@ -115,7 +111,7 @@
       if (typeof saveLiveDismissedAlerts === "function") saveLiveDismissedAlerts();
       const clearedSeriesPdfs = await clearPublicSeriesPdfs();
       const clearedResults = await clearPublishedResults();
-      const nextData = normalizeData(livePalmesAdminMaintenance.buildResetSeriesData
+      const resetData = livePalmesAdminMaintenance.buildResetSeriesData
         ? livePalmesAdminMaintenance.buildResetSeriesData(data, { appendImportHistory })
         : {
           ...data,
@@ -141,7 +137,15 @@
             generatedAt: new Date().toLocaleString("fr-FR"),
             importHistory: appendImportHistory(data.notes || {}, "RAZ s\u00e9ries")
           }
-        });
+        };
+      const nextData = normalizeData({
+        ...resetData,
+        notes: {
+          ...(resetData.notes || {}),
+          competitionMode: false,
+          competitionModeUpdatedAt: new Date().toISOString()
+        }
+      });
       setData(nextData);
       const state = getState();
       if (typeof livePalmesAdminMaintenance.resetSeriesViewState === "function") {

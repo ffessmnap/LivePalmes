@@ -1,16 +1,16 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes records de France</title>
-    <link rel="stylesheet" href="public/styles.css?v=20260530-mpf-mobile1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260603-mpf-mobile-nageuse-1" />
   </head>
   <body class="records-page">
     <header class="topbar">
       <div class="topbar-title">
-        <a class="topbar-home-link" href="../public.html">Accueil LivePalmes</a>
-        <p class="eyebrow">LivePalmes public &middot; Performances</p>
+        <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
+        <p class="eyebrow">LivePalmes &middot; Performances</p>
         <h1>Records de France</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
@@ -27,10 +27,10 @@
         <div class="field">
           <span>Rubrique</span>
           <div class="segmented rf-segments" id="rfTypeFilter" role="group" aria-label="Rubrique">
-            <button type="button" class="segment active" data-type="RFJ" data-sex="M">RFJ Hommes</button>
-            <button type="button" class="segment" data-type="RFJ" data-sex="F">RFJ Femmes</button>
-            <button type="button" class="segment" data-type="RF" data-sex="M">RF Hommes</button>
-            <button type="button" class="segment" data-type="RF" data-sex="F">RF Femmes</button>
+            <button type="button" class="segment sex-m" data-type="RFJ" data-sex="M">Juniors Hommes</button>
+            <button type="button" class="segment sex-f" data-type="RFJ" data-sex="F">Juniors Femmes</button>
+            <button type="button" class="segment sex-m" data-type="RF" data-sex="M">Toutes cat. Hommes</button>
+            <button type="button" class="segment sex-f" data-type="RF" data-sex="F">Toutes cat. Femmes</button>
           </div>
         </div>
         <label>
@@ -42,7 +42,7 @@
       <section class="records-shell">
         <div class="table-head">
           <div>
-            <h2 id="tableTitle">Records de France Juniors Hommes</h2>
+            <h2 id="tableTitle">Sélectionnez une rubrique</h2>
           </div>
           <span id="cutoffText"></span>
         </div>
@@ -53,7 +53,7 @@
               <tr>
                 <th>Course</th>
                 <th>Temps</th>
-                <th>Nageur</th>
+                <th id="swimmerHeader">Nageur</th>
                 <th>Club</th>
                 <th>Lieu</th>
                 <th>Date</th>
@@ -65,7 +65,16 @@
       </section>
     </main>
 
-    <script src="public/data/records-data.js?v=20260530-last-update1"></script>
-    <script src="public/records.js?v=20260530-mpf-mobile1"></script>
+    <script src="public/data/records-data.js?v=20260603-record-splits-1"></script>
+    <script src="public/record-placeholders.js?v=20260601-relay-mixed-labels-2"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="../assets/livepalmes-app-config.js?v=20260603-public-record-store-1"></script>
+    <script src="public/store.js?v=20260603-public-record-store-1"></script>
+    <script src="public/records.js?v=20260603-public-record-store-1"></script>
+    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="performance-admin-footer">
+      <a class="performance-admin-link" href="/administration.html">Administration</a>
+    </footer>
   </body>
 </html>

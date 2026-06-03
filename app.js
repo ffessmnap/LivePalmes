@@ -150,32 +150,20 @@ const livePalmesPinAuth = typeof livePalmesPinAuthModule.init === "function"
       region: FIREBASE_FUNCTIONS_REGION
     })
   : {};
-let firebaseStatus = "connecting";
-let firebaseConnectionCheckRunning = false;
-let lastConsoleActivityAt = Date.now();
-let competitionAutoDisableRunning = false;
-let applyingRemoteData = false;
-let rolePinResolver = null;
-let activeRoleLock = null;
-let raceResults = [];
-let resultsSnapshotReady = false;
-let resultPdfMigrationRunning = false;
-let resultPdfMigrationAttempted = false;
-let currentResultImportRow = null;
-let currentSessionResultsImport = null;
+let firebaseStatus = "connecting", firebaseConnectionCheckRunning = false, lastConsoleActivityAt = Date.now();
+let competitionAutoDisableRunning = false, applyingRemoteData = false, rolePinResolver = null, activeRoleLock = null;
+let raceResults = [], resultsSnapshotReady = false, resultPdfMigrationRunning = false, resultPdfMigrationAttempted = false;
+let currentResultImportRow = null, currentSessionResultsImport = null;
 let resultUploadStates = new Map();
 let seriesImportState = null;
-let resultsAdminSession = "";
-let secretaryFinalsSession = "";
-let finalistAlertRepairRunning = false;
-let replacementAlertRepairRunning = false;
-let presenceCounts = {};
-let lastPresenceWriteAt = 0;
-let consolePresenceActive = false;
+let resultsAdminSession = "", secretaryFinalsSession = "";
+let finalistAlertRepairRunning = false, replacementAlertRepairRunning = false;
+let presenceCounts = {}, alertSummaryCounts = null, lastPresenceWriteAt = 0, consolePresenceActive = false;
 let lastPublicProgressSignature = "";
 const activeCompetitionId = FIRESTORE_COMPETITION_ID;
 const {
   activeCompetitionDocument,
+  alertSummaryDocument,
   alertsCollection,
   competitionDocument,
   historyArchivesCollection,
@@ -223,6 +211,7 @@ const {
 const appStateAccessors = {
   activeRoleLock: { get: () => activeRoleLock, set: (value) => { activeRoleLock = value; } },
   alerts: { get: () => alerts, set: (value) => { alerts = value; } },
+  alertSummaryCounts: { get: () => alertSummaryCounts, set: (value) => { alertSummaryCounts = value; } },
   applyingRemoteData: { get: () => applyingRemoteData, set: (value) => { applyingRemoteData = value; } },
   competitionAutoDisableRunning: { get: () => competitionAutoDisableRunning, set: (value) => { competitionAutoDisableRunning = value; } },
   consolePresenceActive: { get: () => consolePresenceActive, set: (value) => { consolePresenceActive = value; } },
@@ -303,7 +292,7 @@ function publicProgressWorkflowOptions() {
     topbar,
     updateLiveNotes
   };
-  bindOptionState(options, ["alerts", "data", "lastPublicProgressSignature", "presenceCounts", "roleStates", "state"]);
+  bindOptionState(options, ["alerts", "alertSummaryCounts", "data", "lastPublicProgressSignature", "presenceCounts", "roleStates", "state"]);
   return options;
 }
 
@@ -318,6 +307,7 @@ function consoleSyncOptions() {
     PRESENCE_WRITE_THROTTLE_MS,
     ROLE_LABELS,
     activeCompetitionId,
+    alertSummaryDocument,
     alertsCollection,
     appendImportHistory,
     applyFreshData,
@@ -331,6 +321,7 @@ function consoleSyncOptions() {
     isFinalResultAlert,
     liveDataDocument,
     livePalmesAdminMaintenance,
+    livePalmesAlerts,
     livePalmesFirebase,
     livePalmesRoleAccess,
     livePalmesRoleLockSync,
@@ -354,7 +345,7 @@ function consoleSyncOptions() {
     speakerAlertAlreadyResolvedByResult,
     state
   };
-  bindOptionState(options, ["activeRoleLock", "alerts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "firestoreDb", "lastPresenceWriteAt", "pendingLocalAlerts", "presenceCounts", "raceResults", "unlockedRoles"]);
+  bindOptionState(options, ["activeRoleLock", "alerts", "alertSummaryCounts", "applyingRemoteData", "consolePresenceActive", "data", "firebaseStatus", "firestoreDb", "lastPresenceWriteAt", "pendingLocalAlerts", "presenceCounts", "raceResults", "unlockedRoles"]);
   return options;
 }
 
@@ -403,6 +394,7 @@ const livePalmesRealtimeSync = livePalmesRealtimeSyncModule.init(livePalmesRealt
 function livePalmesRealtimeSyncOptions() {
   const options = {
     activeCompetitionId,
+    alertSummaryDocument,
     alertsCollection,
     acquireRoleLock,
     applyRemoteLiveData,
@@ -414,6 +406,7 @@ function livePalmesRealtimeSyncOptions() {
     ensurePendingReplacementSpeakerAlerts,
     FIREBASE_CONFIG,
     liveDataDocument,
+    livePalmesAlerts,
     migrateResultPdfsOutOfResults,
     normalizeData,
     publishPublicResultsIndex,
@@ -436,7 +429,7 @@ function livePalmesRealtimeSyncOptions() {
     updateLiveNotes,
     window
   };
-  bindOptionState(options, ["alerts", "competitionAutoDisableRunning", "data", "firebaseConnectionCheckRunning", "firebaseStatus", "firestoreDb", "firestoreReady", "firestoreUnsubscribe", "lastConsoleActivityAt", "liveDataUnsubscribe", "pendingLocalAlerts", "profileHomeActive", "raceResults", "resultsSnapshotReady", "resultsUnsubscribe", "state", "unlockedRoles"]);
+  bindOptionState(options, ["alerts", "alertSummaryCounts", "competitionAutoDisableRunning", "data", "firebaseConnectionCheckRunning", "firebaseStatus", "firestoreDb", "firestoreReady", "firestoreUnsubscribe", "lastConsoleActivityAt", "liveDataUnsubscribe", "pendingLocalAlerts", "profileHomeActive", "raceResults", "resultsSnapshotReady", "resultsUnsubscribe", "state", "unlockedRoles"]);
   return options;
 }
 
@@ -810,6 +803,7 @@ function diagnosticsWorkflowOptions() {
     livePalmesAdminAuth,
     livePalmesPinAuth,
     livePalmesTechnicalLog,
+    lastConsoleActivityAt,
     migrateResultPdfsOutOfResults,
     performanceDiagnosticLines,
     pinLockEnabled,

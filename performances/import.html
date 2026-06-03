@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LivePalmes import competitions</title>
+    <link rel="stylesheet" href="public/styles.css?v=20260602-intermediate-1" />
+    <link rel="stylesheet" href="../assets/livepalmes-admin-portal.css?v=20260602-import-competitions-1" />
+    <link rel="stylesheet" href="public/import-competitions.css?v=20260603-international-xlsx-1" />
+  </head>
+  <body class="admin-portal-page import-admin-page" data-admin-auth="loading">
+    <header class="admin-portal-topbar">
+      <a class="admin-portal-home" href="../administration.html">Administration</a>
+      <div>
+        <p class="eyebrow">LivePalmes &middot; Base performances</p>
+        <h1>Import de competitions</h1>
+      </div>
+      <img src="../logo-livepalmes.png?v=20260602-admin-portal-1" alt="LivePalmes" />
+    </header>
+
+    <main class="admin-portal-shell">
+      <section id="importLoginPanel" class="admin-portal-login" aria-label="Connexion administrateur">
+        <div>
+          <span>Acces protege</span>
+          <strong>Connexion administrateur</strong>
+        </div>
+        <form id="importLoginForm" class="admin-portal-form">
+          <label>
+            Email
+            <input id="importLoginEmail" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            Mot de passe
+            <input id="importLoginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <div class="admin-portal-actions">
+            <button type="submit">Connexion</button>
+          </div>
+        </form>
+        <p id="importLoginMessage" class="admin-portal-message" aria-live="polite"></p>
+      </section>
+
+      <section id="importWorkbench" class="import-workbench" hidden>
+        <section class="admin-portal-session">
+          <div class="admin-portal-session-main">
+            <div>
+              <span>Connecte</span>
+              <strong id="importSessionLabel">Profil LivePalmes</strong>
+            </div>
+          </div>
+          <button id="importSignOutButton" class="ghost-button" type="button">Deconnexion</button>
+        </section>
+
+        <section class="import-card">
+          <div class="import-card-head">
+            <span>Etape 1</span>
+            <strong>Charger un fichier de resultats</strong>
+            <p>Le fichier TXT federal ou la trame Excel internationale est analyse avant validation. La base INTRANAP d'origine n'est pas modifiee.</p>
+          </div>
+          <form id="competitionImportForm" class="competition-import-form">
+            <label>
+              Fichier TXT ou Excel
+              <input id="competitionImportFile" type="file" accept=".txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+            </label>
+            <label>
+              Encodage TXT
+              <select id="competitionImportEncoding">
+                <option value="utf-8" selected>UTF-8 / export federal recent</option>
+                <option value="windows-1252">Windows-1252 / ancien export</option>
+              </select>
+            </label>
+            <div class="admin-portal-actions">
+              <button type="submit">Previsualiser</button>
+            </div>
+          </form>
+          <p id="competitionImportMessage" class="admin-portal-message" aria-live="polite"></p>
+        </section>
+
+        <section id="competitionImportPreview" class="import-card" hidden>
+          <div class="import-card-head">
+            <span>Etape 2</span>
+            <strong>Previsualisation</strong>
+            <p>Controle les informations detectees avant d'ajouter la competition dans la base additionnelle.</p>
+          </div>
+          <div id="competitionImportSummary" class="import-summary-grid"></div>
+          <div id="competitionImportWarnings" class="import-warnings"></div>
+          <div class="import-table-wrap">
+            <table class="import-preview-table">
+              <thead>
+                <tr>
+                  <th>Nageur</th>
+                  <th>Course</th>
+                  <th>Temps</th>
+                  <th>Passage</th>
+                  <th>Categorie</th>
+                  <th>Club</th>
+                </tr>
+              </thead>
+              <tbody id="competitionImportSample"></tbody>
+            </table>
+          </div>
+          <div class="admin-portal-actions">
+            <button id="competitionImportValidateButton" type="button">Valider l'import</button>
+          </div>
+        </section>
+
+        <section class="import-card">
+          <div class="import-card-head import-card-head-inline">
+            <div>
+              <span>Historique</span>
+              <strong>Imports deja stockes</strong>
+            </div>
+            <button id="competitionImportsRefreshButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+          <div id="competitionImportsList" class="competition-imports-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1"></script>
+    <script src="../assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
+    <script src="../assets/livepalmes-admin-auth.js?v=20260602-import-competitions-1"></script>
+    <script src="public/import-competitions.js?v=20260603-international-xlsx-2"></script>
+  </body>
+</html>

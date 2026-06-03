@@ -36,6 +36,16 @@ service cloud.firestore {
         && request.auth.uid in ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"];
     }
 
+    function hasCapability(capability) {
+      return request.auth != null
+        && request.auth.token.livepalmesAccess == true
+        && request.auth.token.livepalmesCapabilities[capability] == true;
+    }
+
+    function canManageRecords() {
+      return isAdmin() || hasCapability("admin.full") || hasCapability("records.manage");
+    }
+
     function isConsoleRole(competitionId, role) {
       return request.auth != null
         && validRole(role)
@@ -131,6 +141,19 @@ service cloud.firestore {
           && canWriteConsole(competitionId);
       }
 
+      match /summaries/{documentId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canWriteConsole(competitionId)
+          && documentId == "alerts"
+          && request.resource.data.keys().hasOnly(["counts", "activeCount", "updatedAt"])
+          && request.resource.data.counts is map
+          && request.resource.data.activeCount is int
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && isAdmin();
+      }
+
       match /liveData/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
@@ -163,6 +186,8 @@ service cloud.firestore {
             "entrants",
             "series",
             "results",
+            "records",
+            "qualifications",
             "seriesPdfs",
             "sessionResultsPdfs",
             "sessionInfos",
@@ -179,6 +204,8 @@ service cloud.firestore {
           && request.resource.data.entrants is list
           && request.resource.data.series is list
           && request.resource.data.results is list
+          && request.resource.data.records is list
+          && request.resource.data.qualifications is list
           && request.resource.data.seriesPdfs is list
           && request.resource.data.sessionResultsPdfs is list
           && request.resource.data.sessionInfos is map
@@ -189,6 +216,30 @@ service cloud.firestore {
           && validOptionalText("lastUpdatedSession", 20);
         allow delete: if isLivePalmesTestCompetition(competitionId)
           && canWriteComputer(competitionId);
+      }
+
+      match /performanceData/{documentId} {
+        allow read: if isLivePalmesCompetition(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
+          && canManageRecords()
+          && documentId == "records"
+          && request.resource.data.keys().hasAll([
+            "id",
+            "records",
+            "franceRecords",
+            "filters",
+            "updatedAt"
+          ])
+          && request.resource.data.id == "records"
+          && request.resource.data.records is list
+          && request.resource.data.franceRecords is list
+          && request.resource.data.filters is map
+          && validText(request.resource.data.updatedAt, 40)
+          && validOptionalText("sourceDate", 40)
+          && validOptionalText("generatedAt", 40)
+          && validOptionalText("cutoffDate", 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && canManageRecords();
       }
 
       match /seriesPdfs/{pdfId} {

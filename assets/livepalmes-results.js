@@ -110,6 +110,7 @@
     return {
       id: pdf.id || "",
       scope: pdf.scope || "",
+      documentType: pdf.documentType || "",
       session: pdf.session || "",
       pdfName: pdf.pdfName || "",
       updatedAt: pdf.updatedAt || "",
@@ -122,14 +123,22 @@
     const sessions = Array.isArray(pdf.sessions)
       ? pdf.sessions.map((session) => String(session || "").trim()).filter(Boolean)
       : [];
+    const scope = pdf.scope || "";
+    const documentType = pdf.documentType || "";
+    const sourceLabel = scope === "full"
+      ? "PDF complet de la compétition"
+      : ((scope === "protocol" || documentType === "protocol")
+        ? "Protocole complet de la compétition"
+        : (pdf.sourceLabel || ""));
     return {
       id: pdf.id || "",
-      scope: pdf.scope || "",
+      scope,
+      documentType,
       session: pdf.session || "",
       sessions,
       pdfName: pdf.pdfName || "",
       updatedAt: pdf.updatedAt || "",
-      sourceLabel: pdf.sourceLabel || ""
+      sourceLabel
     };
   }
 

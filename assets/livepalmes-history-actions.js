@@ -162,10 +162,6 @@
     }
 
     async function performResetHistoryWithArchive() {
-      if (typeof toggleCompetitionMode === "function" && getData().notes?.competitionMode === true) {
-        const ready = await toggleCompetitionMode(false);
-        if (!ready) return;
-      }
       let archive = null;
       try {
         archive = await archiveCurrentHistory();

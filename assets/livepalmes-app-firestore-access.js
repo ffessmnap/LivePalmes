@@ -36,12 +36,17 @@
       return livePalmesFirestoreRefs.publicResultsIndexDocument(livePalmesFirebase, firestoreDb(), activeCompetitionId);
     }
 
+    function alertSummaryDocument() {
+      return collectionRef("summaries")?.doc("alerts");
+    }
+
     function presenceDocument(id = `console-${currentClientId()}`) {
       return livePalmesFirestoreRefs.presenceDocument(livePalmesFirebase, firestoreDb(), activeCompetitionId, id);
     }
 
     return {
       activeCompetitionDocument,
+      alertSummaryDocument,
       alertsCollection: () => collectionRef("alerts"),
       competitionDocument,
       historyArchivesCollection: () => collectionRef("historyArchives"),

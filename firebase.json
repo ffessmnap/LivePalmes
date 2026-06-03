@@ -1,6 +1,84 @@
 {
   "hosting": {
     "public": ".",
+    "redirects": [
+      {
+        "source": "/public.html",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "/public",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "/Public",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "/Public.html",
+        "destination": "/",
+        "type": 301
+      }
+    ],
+    "headers": [
+      {
+        "source": "/administration.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/admin.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/admin-records.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/store.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/records-data.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

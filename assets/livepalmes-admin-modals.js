@@ -35,7 +35,7 @@
             </label>
           `).join("")}
         </div>
-        ${serverPinMode ? `<div class="admin-auth-status-box"><strong>Codes serveur actifs</strong><span>Les PIN ne sont plus affichés dans le navigateur. Pour les modifier, saisis les 6 nouveaux codes puis enregistre.</span></div>` : ""}
+        ${serverPinMode ? `<div class="admin-auth-status-box"><strong>Codes serveur actifs</strong><span>Les PIN ne sont plus affichés dans le navigateur. Renseigne uniquement les codes à modifier ; laisse les autres champs vides pour les conserver.</span></div>` : ""}
         <div class="admin-extra-zone">
           <span>Administration avancée</span>
           ${adminAuthStatus?.signedIn ? `
@@ -97,6 +97,7 @@
             Mot de passe
             <input id="adminPasswordInput" type="password" autocomplete="current-password" data-admin-auth-password>
           </label>
+          <button class="admin-auth-reset-link" type="button" data-admin-auth-reset>Mot de passe oubli&eacute; ?</button>
         </div>
         ` : ""}
         ${canUseLegacyCode ? `
@@ -152,7 +153,7 @@
           <div>
             <span>Remise à zéro</span>
             <h2>RAZ LivePalmes</h2>
-            <p>Disponible uniquement en actualisation manuelle. Chaque RAZ archive ce qu'il efface avant suppression.</p>
+            <p>Chaque RAZ archive ce qu'il efface avant suppression. En direct, les consoles connectées sont mises à jour immédiatement.</p>
           </div>
           <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">×</button>
         </div>

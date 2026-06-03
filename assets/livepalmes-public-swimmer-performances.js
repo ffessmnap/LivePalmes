@@ -74,7 +74,10 @@
     }
 
     function performancesForProgramRow(row, performanceOptions = {}) {
-      const performances = allPublicPerformances(performanceOptions.results || [])
+      const sourcePerformances = Array.isArray(performanceOptions.allPerformances)
+        ? performanceOptions.allPerformances
+        : allPublicPerformances(performanceOptions.results || []);
+      const performances = sourcePerformances
         .filter((performance) => performanceMatchesRow(performance, row, performanceOptions))
         .sort((a, b) => {
           const finalA = isFinalStage(a.stage) ? 1 : 0;

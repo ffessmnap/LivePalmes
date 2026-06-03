@@ -8,28 +8,25 @@
     <meta name="theme-color" content="#0b7285">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="LP Public">
+    <meta name="apple-mobile-web-app-title" content="LivePalmes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260528-public-fast-load">
     <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260528-public-fast-load">
     <link rel="manifest" href="manifest-public.webmanifest?v=20260528-public-fast-load">
     <link rel="stylesheet" href="styles.css?v=20260529-records-master-2">
-    <link rel="stylesheet" href="public.css?v=20260530-home-icons-1">
+    <link rel="stylesheet" href="public.css?v=20260601-public-logo-blend-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-session-badge.css?v=20260602-public-admin-badge-1">
   </head>
   <body class="public-results-page public-series-page">
-    <header class="public-results-header public-series-header">
-      <div>
-        <p class="eyebrow app-name">
-          <span class="livepalmes-logo" aria-hidden="true">
-            <img src="logo-livepalmes.png?v=20260528-public-fast-load" alt="">
-          </span>
-          LivePalmes
-        </p>
+    <header class="public-results-header public-series-header public-topbar public-live-topbar">
+      <div class="public-topbar-title">
+        <a class="public-topbar-home-link" href="./">Accueil LivePalmes</a>
+        <p class="eyebrow">LivePalmes &middot; Comp&eacute;tition en direct</p>
         <h1 id="publicSeriesMeetTitle">S&eacute;ries</h1>
         <p id="publicSeriesMeetMeta" class="public-meet-meta">S&eacute;ries non mises &agrave; jour</p>
       </div>
+      <img class="public-topbar-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM">
       <div class="public-header-actions">
-        <a class="ghost-button compact public-page-switch" href="public.html">Accueil LivePalmes</a>
         <a class="ghost-button compact public-page-switch" href="resultats.html">Voir les r&eacute;sultats</a>
         <span id="publicSeriesStatus" class="firebase-header-status pending">
           <i class="firebase-dot pending" aria-hidden="true"></i>
@@ -63,16 +60,22 @@
       </section>
     </main>
 
+    <footer class="public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+
     <div id="publicSwimmerSheet" class="public-swimmer-sheet" hidden></div>
     <div id="publicProgramSheet" class="public-swimmer-sheet" hidden></div>
     <button id="refreshPublicSeriesFloatBtn" class="public-floating-refresh" type="button" title="Actualiser" aria-label="Actualiser">&orarr;</button>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="assets/livepalmes-public-swimmer-view.js?v=20260528-public-fast-load"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="assets/livepalmes-app-config.js?v=20260602-public-admin-badge-1"></script>
+    <script src="assets/livepalmes-admin-session-badge.js?v=20260602-public-admin-badge-1"></script>
+    <script src="assets/livepalmes-public-swimmer-view.js?v=20260530-no-swimmer-loading-text-1"></script>
     <script src="assets/livepalmes-public-swimmer-core.js?v=20260529-category-h-master-1"></script>
-    <script src="assets/livepalmes-public-swimmer-performances.js?v=20260529-seed-placeholder-1"></script>
+    <script src="assets/livepalmes-public-swimmer-performances.js?v=20260530-public-result-speed-1"></script>
     <script src="assets/livepalmes-public-swimmers.js?v=20260528-public-fast-load"></script>
-    <script src="assets/pages/series-public.js?v=20260530-public-static-1"></script>
+    <script src="assets/pages/series-public.js?v=20260601-frozen-series-2"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-const FIRESTORE_COMPETITION_ID = "livepalmes-active";
+﻿const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const PUBLIC_PROGRESS_MAX_AGE_MS = 30 * 60 * 1000;
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
@@ -8,7 +8,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "718081132564",
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
-const PUBLIC_SERIES_CACHE_KEY = "livepalmes:public-series-cache:v1";
+const PUBLIC_SERIES_CACHE_KEY = "livepalmes:public-series-cache:v2";
 const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
 const meetTitle = document.querySelector("#publicSeriesMeetTitle");
@@ -44,10 +44,13 @@ let activeSeriesIndex = 0;
 let activeRecordKey = "";
 let swimmerSearchQuery = "";
 let selectedSearchSwimmerKey = "";
-let followPublicProgress = true;
+let followPublicProgress = false;
 let lastAppliedPublicProgressKey = "";
 const directResultSessionsLoaded = new Set();
 const swimmerResultDetailsLoading = new Set();
+const directResultSessionLoads = new Map();
+let publicPerformancesSource = null;
+let publicPerformancesCache = null;
 
 const publicSwimmers = window.LivePalmesPublicSwimmers || {};
 const {
@@ -82,6 +85,7 @@ function publicSwimmerOptions(extra = {}) {
     eventLabel,
     sexLabel,
     isForfait,
+    allPerformances: allPublicPerformances(),
     ...extra
   };
 }
@@ -98,12 +102,10 @@ function publicSeriesCachePayload() {
     entrants: publicEntrants,
     series: publicSeries,
     results: publicResults,
-    forfaits: publicForfaits,
     records: publicRecords,
     qualifications: publicQualifications,
     seriesPdfs: publicSeriesPdfs,
     sessionInfos: publicSessionInfos,
-    progress: publicProgress,
     publicIndexUpdatedAt
   };
 }
@@ -115,12 +117,12 @@ function applyPublicSeriesSnapshot(snapshot = {}) {
   publicEntrants = Array.isArray(snapshot.entrants) ? snapshot.entrants : [];
   publicSeries = Array.isArray(snapshot.series) ? snapshot.series : [];
   publicResults = Array.isArray(snapshot.results) ? snapshot.results : [];
-  publicForfaits = Array.isArray(snapshot.forfaits) ? snapshot.forfaits : [];
+  publicForfaits = [];
   publicRecords = Array.isArray(snapshot.records) ? snapshot.records : [];
   publicQualifications = Array.isArray(snapshot.qualifications) ? snapshot.qualifications : [];
   publicSeriesPdfs = Array.isArray(snapshot.seriesPdfs) ? snapshot.seriesPdfs : [];
   publicSessionInfos = snapshot.sessionInfos || {};
-  publicProgress = snapshot.progress || null;
+  publicProgress = null;
   publicIndexUpdatedAt = snapshot.publicIndexUpdatedAt || "";
 }
 
@@ -224,14 +226,19 @@ const lineLabel = (row) => publicSwimmers.lineLabel(row);
 
 const seedLabel = (row) => publicSwimmers.seedLabel(row, publicEntrants);
 
-const allPublicPerformances = () => publicSwimmers.allPublicPerformances(publicResults);
+function allPublicPerformances() {
+  if (publicPerformancesSource === publicResults && publicPerformancesCache) return publicPerformancesCache;
+  publicPerformancesSource = publicResults;
+  publicPerformancesCache = publicSwimmers.allPublicPerformances(publicResults);
+  return publicPerformancesCache;
+}
 
 function performanceMatchesRow(performance, row) {
   return publicSwimmers.performanceMatchesRow(performance, row, publicSwimmerOptions());
 }
 
 function performancesForProgramRow(row) {
-  return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions());
+  return publicSwimmers.performancesForProgramRow(row, publicSwimmerOptions({ allPerformances: allPublicPerformances() }));
 }
 
 function recordFlag(record) {
@@ -281,6 +288,23 @@ const publicCompetitionDocument = () => publicSwimmers.publicCompetitionDocument
 
 function mergePublicResults(results = []) {
   publicResults = publicSwimmers.mergePublicResults(publicResults, results).results;
+}
+
+function publicResultHasDetails(result) {
+  return Boolean(result && (
+    (Array.isArray(result.ranking) && result.ranking.length) ||
+    (Array.isArray(result.performances) && result.performances.length) ||
+    (Array.isArray(result.nextUnqualified) && result.nextUnqualified.length) ||
+    (Array.isArray(result.finalists?.a) && result.finalists.a.length) ||
+    (Array.isArray(result.finalists?.b) && result.finalists.b.length)
+  ));
+}
+
+function markResultSessionsLoaded(results = []) {
+  (Array.isArray(results) ? results : []).forEach((result) => {
+    const session = String(result?.session || "").trim();
+    if (session && publicResultHasDetails(result)) directResultSessionsLoaded.add(session);
+  });
 }
 
 function rowsForSession(session) {
@@ -341,16 +365,7 @@ function rowsForCurrentSeries(program, number) {
 }
 
 function isForfait(row) {
-  if (publicSwimmers.isForfait(row)) return true;
-  const key = swimmerKey(row);
-  return publicForfaits.some((alert) =>
-    alert.key === key ||
-    (
-      normalizeText(alert.name) === normalizeText(swimmerName(row)) &&
-      (!alert.eventId || alert.eventId === row.eventId) &&
-      (!alert.sex || alert.sex === row.sex)
-    )
-  );
+  return publicSwimmers.isForfait(row);
 }
 
 function recordsForSeries(program, rows = []) {
@@ -467,23 +482,12 @@ function renderSessions() {
 function clampState() {
   const availableSessions = sessions();
   if (!activeSession || !availableSessions.includes(activeSession)) {
-    const progressSession = publicProgressIsFresh() ? String(publicProgress.session || "") : "";
-    activeSession = (progressSession && availableSessions.includes(progressSession))
-      ? progressSession
-      : (latestResultSession() || availableSessions[0] || "");
+    activeSession = latestResultSession() || availableSessions[0] || "";
   }
   const races = raceRows();
   activeRaceIndex = Math.max(0, Math.min(activeRaceIndex, Math.max(0, races.length - 1)));
   const numbers = seriesNumbers(seriesRowsForProgram(races[activeRaceIndex] || {}));
   activeSeriesIndex = Math.max(0, Math.min(activeSeriesIndex, Math.max(0, numbers.length - 1)));
-  const progress = publicProgressTarget();
-  const progressKey = publicProgressKey();
-  if (progress && progressKey && String(publicProgress.session || "") === String(activeSession || "") && (followPublicProgress || progressKey !== lastAppliedPublicProgressKey)) {
-    activeRaceIndex = progress.raceIndex;
-    activeSeriesIndex = progress.seriesIndex;
-    lastAppliedPublicProgressKey = progressKey;
-    followPublicProgress = true;
-  }
 }
 
 function publicNavigationState(races, numbers) {
@@ -563,7 +567,7 @@ const searchSwimmers = (query) => publicSwimmers.searchSwimmers(query, publicSer
 function renderInlineSwimmerProgram(key) {
   return publicSwimmers.renderInlineSwimmerProgram(key, publicSwimmerOptions({
     rows: swimmerProgramRows(key),
-    loading: swimmerResultsAreLoading(key)
+    loading: swimmerResultDetailsLoading.has(key)
   }));
 }
 
@@ -697,11 +701,10 @@ function swimmerProgramRows(key) {
 function renderSwimmerSheet(key) {
   const rows = swimmerProgramRows(key);
   if (!rows[0] || !swimmerSheet) return;
-  const loadingResults = swimmerResultsAreLoading(key);
   swimmerSheet.hidden = false;
   swimmerSheet.innerHTML = publicSwimmers.renderSwimmerSheet(key, publicSwimmerOptions({
     rows,
-    loading: loadingResults,
+    loading: swimmerResultDetailsLoading.has(key),
     closeAttr: "data-close-swimmer",
     closeButtonClass: "decision-close",
     label: "Programme nageur",
@@ -709,8 +712,42 @@ function renderSwimmerSheet(key) {
   }));
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function loadSwimmerResultDetails(key) {
+  const sessionsToLoad = swimmerResultSessionsToLoad(key);
+  if (!sessionsToLoad.length || swimmerResultDetailsLoading.has(key)) return;
+  const competition = publicCompetitionDocument();
+  if (!competition) return;
+  swimmerResultDetailsLoading.add(key);
+  renderSwimmerSheet(key);
+  try {
+    const loaders = sessionsToLoad.map((session) =>
+      loadPublicSessionResultsDirectData(competition, session)
+        .then(() => {
+          renderSwimmerSheet(key);
+          const output = document.querySelector("#publicSwimmerSearchOutput");
+          if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
+        })
+        .catch((error) => {
+          console.warn("Chargement des resultats nageur impossible", error);
+        })
+    );
+    await Promise.race([
+      Promise.allSettled(loaders),
+      wait(4500)
+    ]);
+  } finally {
+    swimmerResultDetailsLoading.delete(key);
+    renderSwimmerSheet(key);
+    const output = document.querySelector("#publicSwimmerSearchOutput");
+    if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
+  }
+}
+
 async function openSwimmerSheet(key) {
   renderSwimmerSheet(key);
+  await loadSwimmerResultDetails(key);
 }
 function closeSwimmerSheet() {
   if (!swimmerSheet) return;
@@ -756,16 +793,6 @@ function closeProgramSheet() {
   programSheet.innerHTML = "";
 }
 
-function sanitizeForfaitAlert(alert) {
-  if (!alert || alert.type !== "forfait" || alert.cancelledAt) return null;
-  return {
-    key: alert.swimmerId ? `id:${alert.swimmerId}` : "",
-    name: alert.swimmerName || alert.identity || alert.displayName || "",
-    eventId: alert.eventId || "",
-    sex: alert.sex || ""
-  };
-}
-
 function sessionInfosFromLiveOrIndex(remote = {}, index = {}, fallback = {}) {
   if (remote.notes && Object.prototype.hasOwnProperty.call(remote.notes, "publicSessionInfos")) {
     return remote.notes.publicSessionInfos || {};
@@ -773,24 +800,22 @@ function sessionInfosFromLiveOrIndex(remote = {}, index = {}, fallback = {}) {
   return index.sessionInfos || fallback || {};
 }
 
-async function loadPublicForfaits(competition) {
-  try {
-    const snapshot = await competition.collection("alerts").where("type", "==", "forfait").get({ source: "server" });
-    publicForfaits = snapshot.docs.map((doc) => sanitizeForfaitAlert(doc.data())).filter(Boolean);
-  } catch (error) {
-    console.warn("Lecture forfaits publics impossible", error);
-    publicForfaits = [];
-  }
-}
-
 async function loadPublicSessionResultsDirectData(competition, session) {
   const cleanSession = String(session || "").trim();
   if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
-  const snapshot = await competition.collection("results")
+  if (directResultSessionLoads.has(cleanSession)) return directResultSessionLoads.get(cleanSession);
+  const promise = competition.collection("results")
     .where("session", "==", cleanSession)
-    .get({ source: "server" });
-  mergePublicResults(snapshot.docs.map(publicResultFromDoc));
-  directResultSessionsLoaded.add(cleanSession);
+    .get({ source: "server" })
+    .then((snapshot) => {
+      mergePublicResults(snapshot.docs.map(publicResultFromDoc));
+      directResultSessionsLoaded.add(cleanSession);
+    })
+    .finally(() => {
+      directResultSessionLoads.delete(cleanSession);
+    });
+  directResultSessionLoads.set(cleanSession, promise);
+  return promise;
 }
 
 function swimmerResultSessions(key) {
@@ -812,26 +837,7 @@ function swimmerResultsAreLoading(key) {
   }));
 }
 
-const liveDataIsNewerThanPublicIndex = (remote, index) => publicSwimmers.liveDataIsNewerThanPublicIndex(remote, index);
-
-function applyLiveData(remote, index = {}) {
-  publicMeet = remote.meet || publicMeet;
-  publicProgram = Array.isArray(remote.program) ? remote.program : publicProgram;
-  publicEvents = Array.isArray(remote.events) ? remote.events : publicEvents;
-  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : publicEntrants;
-  publicSeries = Array.isArray(remote.series) ? remote.series : publicSeries;
-  publicResults = Array.isArray(index.results) ? index.results : publicResults;
-  publicSeriesPdfs = Array.isArray(remote.notes?.publicSeriesPdfs)
-    ? remote.notes.publicSeriesPdfs
-    : (Array.isArray(index.seriesPdfs) ? index.seriesPdfs : publicSeriesPdfs);
-  publicSessionInfos = sessionInfosFromLiveOrIndex(remote, index, publicSessionInfos);
-  publicProgress = remote.notes?.publicProgress || publicProgress;
-  publicRecords = Array.isArray(remote.records) ? remote.records : publicRecords;
-  publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : publicQualifications;
-  publicIndexUpdatedAt = remote.notes?.livePublishedAt || index.updatedAt || publicIndexUpdatedAt || "";
-}
-
-async function loadPublicSeries({ forceLive = false } = {}) {
+async function loadPublicSeries() {
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (app) app.innerHTML = `<section class="panel"><p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p></section>`;
@@ -842,35 +848,22 @@ async function loadPublicSeries({ forceLive = false } = {}) {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const [indexSnapshot, liveSnapshot] = await Promise.all([
-    competition.collection("public").doc("resultsIndex").get({ source: "server" }),
-    competition.collection("liveData").doc("current").get({ source: "server" })
-  ]);
+  const indexSnapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
   const index = indexSnapshot.data() || {};
-  const remote = liveSnapshot.data()?.data || {};
+  directResultSessionsLoaded.clear();
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
-  publicEntrants = Array.isArray(remote.entrants) ? remote.entrants : [];
+  publicEntrants = Array.isArray(index.entrants) ? index.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
   publicResults = Array.isArray(index.results) ? index.results : [];
+  markResultSessionsLoaded(publicResults);
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
-  publicSessionInfos = sessionInfosFromLiveOrIndex(remote, index, {});
-  publicProgress = remote.notes?.publicProgress || null;
-  publicRecords = Array.isArray(remote.records) ? remote.records : [];
-  publicQualifications = Array.isArray(remote.qualifications) ? remote.qualifications : [];
+  publicRecords = Array.isArray(index.records) ? index.records : [];
+  publicQualifications = Array.isArray(index.qualifications) ? index.qualifications : [];
+  publicSessionInfos = sessionInfosFromLiveOrIndex({}, index, {});
   publicIndexUpdatedAt = index.updatedAt || "";
-  if (forceLive || !indexSnapshot.exists || !publicSeries.length || liveDataIsNewerThanPublicIndex(remote, index)) {
-    applyLiveData(remote, index);
-  }
   clampState();
-  setStatus("Actualisation", "pending");
-  savePublicSeriesCache();
-  render();
-  await Promise.all([
-    loadPublicForfaits(competition),
-    loadPublicSessionResultsDirectData(competition, activeSession)
-  ]);
   setStatus("Connecté", "ok");
   savePublicSeriesCache();
   render();
@@ -992,8 +985,7 @@ programBtn?.addEventListener("click", renderProgramSheet);
 
 function refreshPublicSeries() {
   setStatus("Actualisation", "pending");
-  if (activeSession) directResultSessionsLoaded.delete(String(activeSession));
-  loadPublicSeries({ forceLive: true }).catch((error) => {
+  loadPublicSeries().catch((error) => {
     console.warn("Actualisation séries publiques impossible", error);
     setStatus("Erreur", "error");
   });

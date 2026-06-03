@@ -9,6 +9,7 @@
       competitionModeEnabled,
       computerFooterPanel,
       deleteResultPdf,
+      deleteSessionResultsPdf,
       finalRowsCount,
       importSeriesPdf,
       isFinalStage,
@@ -49,14 +50,12 @@
 
     async function prepareManualModeForReset() {
       if (!competitionModeEnabled()) return true;
-      const ok = window.confirm([
+      return window.confirm([
         "L'actualisation directe est active.",
         "",
-        "Pour faire une RAZ, LivePalmes doit d'abord passer en Manuel.",
-        "Passer en Manuel et continuer la RAZ ?"
+        "Cette RAZ sera envoyée immédiatement aux consoles connectées.",
+        "Continuer ?"
       ].join("\n"));
-      if (!ok) return false;
-      return await toggleCompetitionMode(false) === true;
     }
 
       resultsAdminPanel?.addEventListener("click", async (event) => {
@@ -90,6 +89,27 @@
         const sessionResultsButton = event.target.closest("[data-session-results-import]");
         if (sessionResultsButton) {
           openSessionResultsImportModal(sessionResultsButton.dataset.sessionResultsImport || getResultsAdminSession());
+          return;
+        }
+        const sessionResultsDeleteButton = event.target.closest("[data-session-results-delete]");
+        if (sessionResultsDeleteButton) {
+          const ok = window.confirm("Supprimer ce PDF de consultation de la page publique ?");
+          if (!ok) return;
+          try {
+            renderDataStatus("Suppression du PDF de consultation...");
+            await deleteSessionResultsPdf(sessionResultsDeleteButton.dataset.sessionResultsDelete);
+            renderDataStatus();
+            renderResultsAdminPanel();
+            window.alert("PDF supprimé de la page publique.");
+          } catch (error) {
+            console.error(error);
+            renderDataStatus();
+            window.alert(`Suppression impossible : ${error?.message || error}`);
+          }
+          return;
+        }
+        if (event.target.closest("[data-competition-protocol-import]")) {
+          openSessionResultsImportModal("", "protocol");
           return;
         }
         const rereadButton = event.target.closest("[data-result-reread]");
@@ -203,6 +223,35 @@
           const file = event.target.files?.[0];
           event.target.value = "";
           if (!file) return;
+          const importMode = context.currentSessionResultsImport?.mode || "session-results";
+          if (importMode === "protocol") {
+            const ok = window.confirm([
+              "Publier ce PDF comme protocole complet de la compétition ?",
+              "",
+              `Fichier : ${file.name}`,
+              "",
+              "Le PDF sera visible sur la page publique."
+            ].join("\n"));
+            if (!ok) return;
+            const uploadKey = resultUploadKeyForSessionResults("protocol");
+            closeResultImportModal();
+            setResultUploadState(uploadKey, "Chargement en cours...");
+            try {
+              renderDataStatus("Publication du protocole complet...");
+              const pdf = await publishSessionResultsPdf(file, "protocol", []);
+              clearResultUploadState(uploadKey);
+              renderDataStatus();
+              updateLiveNotes(`Protocole complet publié : ${pdf.pdfName}`).catch((error) => console.warn("Note de publication non mise à jour", error));
+              renderResultsAdminPanel();
+              window.alert("Protocole complet publié sur la page publique.");
+            } catch (error) {
+              console.error(error);
+              renderDataStatus();
+              setResultUploadState(uploadKey, "Chargement impossible. Réessaie.", "error");
+              window.alert(`Publication impossible : ${error?.message || error}`);
+            }
+            return;
+          }
           const scope = resultImportModal.querySelector("input[name='sessionResultsScope']:checked")?.value || "current";
           const selectedSessions = scope === "full"
             ? resultSessions().map((session) => session.number)
@@ -235,6 +284,7 @@
             clearResultUploadState(uploadKey);
             renderDataStatus();
             updateLiveNotes(`PDF résultats complets publié : ${pdf.sourceLabel}`).catch((error) => console.warn("Note de publication non mise à jour", error));
+            renderResultsAdminPanel();
             window.alert("PDF résultats complets publié sur la page publique.");
           } catch (error) {
             console.error(error);
