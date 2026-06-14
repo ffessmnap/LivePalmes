@@ -28,6 +28,15 @@ function cleanIntermediateTimes(value) {
     : [];
 }
 
+function compactObject(object = {}) {
+  return Object.fromEntries(Object.entries(object).filter(([, value]) => {
+    if (value === "" || value === null || value === undefined) return false;
+    if (value === false) return false;
+    if (Array.isArray(value) && !value.length) return false;
+    return true;
+  }));
+}
+
 function stableHash(value) {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex");
 }
@@ -156,10 +165,8 @@ function publicRow(row = {}) {
 }
 
 function topRow(row = {}) {
-  const top = {
+  const top = compactObject({
     id: cleanText(row.id),
-    source: cleanText(row.source || "intranap"),
-    publicKey: cleanText(row.publicKey),
     swimmerId: cleanText(row.swimmerId),
     swimmerIdentityKey: cleanText(row.swimmerIdentityKey),
     swimmer: cleanText(row.swimmer),
@@ -170,51 +177,36 @@ function topRow(row = {}) {
     club: cleanText(row.club),
     clubName: cleanText(row.clubName),
     regionId: cleanText(row.regionId),
-    regionLabel: cleanText(row.regionLabel),
-    competitionId: cleanText(row.competitionId),
     competition: cleanText(row.competition),
     location: cleanText(row.location),
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
     course: cleanText(row.course),
     courseShortLabel: cleanText(row.courseShortLabel),
-    style: cleanText(row.style),
     isIntermediate: row.isIntermediate === true,
     originCourse: cleanText(row.originCourse),
-    originCourseShortLabel: cleanText(row.originCourseShortLabel),
-    originPerformanceId: cleanText(row.originPerformanceId),
     category: cleanText(row.category),
     categoryCode: cleanText(row.categoryCode),
-    categoryLabel: cleanText(row.categoryLabel),
     timeValue: Number(row.timeValue || 0) || 0,
     time: cleanText(row.time)
-  };
+  });
   const intermediateTimes = cleanIntermediateTimes(row.intermediateTimes);
   if (intermediateTimes.length) top.intermediateTimes = intermediateTimes;
   return top;
 }
 
 function swimmerRow(row = {}) {
-  return {
+  return compactObject({
     id: cleanText(row.id),
-    source: cleanText(row.source || "intranap"),
-    publicKey: cleanText(row.publicKey),
     clubId: cleanText(row.clubId),
     club: cleanText(row.club),
     clubName: cleanText(row.clubName),
-    regionId: cleanText(row.regionId),
-    regionLabel: cleanText(row.regionLabel),
-    competitionId: cleanText(row.competitionId),
     competition: cleanText(row.competition),
     location: cleanText(row.location),
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
-    pool: cleanText(row.pool),
-    chrono: cleanText(row.chrono),
     course: cleanText(row.course),
-    courseLabel: cleanText(row.courseLabel),
     courseShortLabel: cleanText(row.courseShortLabel),
-    style: cleanText(row.style),
     length: Number(row.length || 0) || 0,
     isIntermediate: row.isIntermediate === true,
     originCourse: cleanText(row.originCourse),
@@ -222,12 +214,9 @@ function swimmerRow(row = {}) {
     originPerformanceId: cleanText(row.originPerformanceId),
     category: cleanText(row.category),
     categoryCode: cleanText(row.categoryCode),
-    categoryLabel: cleanText(row.categoryLabel),
     timeValue: Number(row.timeValue || 0) || 0,
-    time: cleanText(row.time),
-    points: cleanText(row.points),
-    rank: cleanText(row.rank)
-  };
+    time: cleanText(row.time)
+  });
 }
 
 function readArgs(argv) {
