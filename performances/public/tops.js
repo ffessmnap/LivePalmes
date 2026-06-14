@@ -1,6 +1,11 @@
 (function attachIntranapTopsPage(global) {
   const summary = global.LIVEPALMES_INTRANAP_SUMMARY || { filters: { courses: [], categories: [], seasons: [], regions: [] }, counts: {} };
-  const dataVersion = encodeURIComponent(summary.generatedAt || "20260602-intranap-4");
+  const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-intranap-4";
+  const dataVersion = encodeURIComponent(publicVersion);
+  const publicPerformanceBase = "public/data/performance-public";
+  const usesConsolidatedData = true;
+  const publicAdditionalDataUrl = global.LivePalmesAppConfig?.performanceAdditionalDataUrl ||
+    "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
 
   const elements = {
     season: document.querySelector("#topSeasonFilter"),
@@ -25,6 +30,7 @@
   const bucketErrors = new Map();
   let selectedCourse = "";
   let additionalRows = [];
+  let performanceCorrections = [];
   let additionalLoaded = false;
   let additionalError = null;
   let additionalLoad = null;
@@ -42,6 +48,71 @@
   function formatDate(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "-");
+  }
+
+  function birthYearLabel(value) {
+    const match = String(value || "").match(/^(\d{4})/);
+    return match ? match[1] : "";
+  }
+
+  function swimmerNameHtml(row) {
+    const year = birthYearLabel(row?.birthDate);
+    const name = escapeHtml(row?.swimmer || "-");
+    return year ? `${name} <small class="performance-birth-year">(${year})</small>` : name;
+  }
+
+  function normalizeIdentityPart(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Za-z0-9]+/g, " ")
+      .toUpperCase()
+      .trim();
+  }
+
+  function rowSwimmerKey(row) {
+    if (row.swimmerIdentityKey) return row.swimmerIdentityKey;
+    const first = normalizeIdentityPart(row.firstName);
+    const last = normalizeIdentityPart(row.lastName);
+    const birth = String(row.birthDate || "").trim();
+    if (first && last && birth) return `${last}|${first}|${birth}`;
+    return String(row.swimmerId || row.swimmer || "");
+  }
+
+  function performanceCorrectionKey(row) {
+    if (row?.id) return `${row.source || "intranap"}|${row.id}`;
+    return [
+      row?.swimmerIdentityKey || row?.swimmerId || row?.swimmer,
+      row?.date,
+      row?.course,
+      row?.timeValue,
+      row?.club || row?.clubName,
+      row?.competitionId || row?.location
+    ].map((value) => String(value || "").trim()).join("|");
+  }
+
+  function correctedRows(rows) {
+    if (!performanceCorrections.length) return rows;
+    const byKey = new Map(performanceCorrections.map((correction) => [correction.targetKey, correction]));
+    return rows
+      .map((row) => {
+        const correction = byKey.get(performanceCorrectionKey(row));
+        if (!correction) return row;
+        if (correction.hidden) return null;
+        if (correctionMovesSwimmer(correction, row)) return null;
+        return { ...row, ...(correction.patch || {}) };
+      })
+      .filter(Boolean);
+  }
+
+  function correctionMovesSwimmer(correction, row = {}) {
+    const patch = correction?.patch || {};
+    return Boolean(patch.swimmerId) && String(patch.swimmerId) !== String(row.swimmerId || "");
+  }
+
+  function rowFromCorrection(correction) {
+    if (!correction || correction.hidden || !correction.targetRow || !correctionMovesSwimmer(correction, correction.targetRow)) return null;
+    return { ...correction.targetRow, ...(correction.patch || {}) };
   }
 
   function addOptions(select, values, allLabel, labeler = (value) => value) {
@@ -94,53 +165,39 @@
     return String(category || "").replace(/\+/g, "");
   }
 
-  function ensureFirebaseApp() {
-    const firebase = global.firebase;
-    const config = global.LivePalmesAppConfig?.firebaseConfig;
-    if (!firebase?.initializeApp || !config) return null;
-    if (!firebase.apps?.length) firebase.initializeApp(config);
-    return firebase.app();
+  function publicTopUrl(bucket) {
+    return `${publicPerformanceBase}/tops/${encodeURIComponent(bucket.course)}/${encodeURIComponent(bucket.sex)}-${encodeURIComponent(categoryFileSlug(bucket.category))}.json?v=${dataVersion}`;
   }
 
-  function functionsService() {
-    const firebase = global.firebase;
-    const app = ensureFirebaseApp();
-    const region = global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1";
-    if (app?.functions) return app.functions(region);
-    if (firebase?.functions) {
-      const service = firebase.functions();
-      if (service?.useRegion) service.useRegion(region);
-      return service;
-    }
-    return null;
+  function withCacheBust(url, param = "publicCache") {
+    return `${url}${url.includes("?") ? "&" : "?"}${param}=${encodeURIComponent(`${publicVersion}-${Date.now()}`)}`;
   }
 
   function loadAdditionalRows() {
     if (additionalLoaded) return Promise.resolve(additionalRows);
     if (additionalLoad) return additionalLoad;
-    const functions = functionsService();
-    if (!functions?.httpsCallable) {
+    if (!usesConsolidatedData || !publicAdditionalDataUrl) {
       additionalLoaded = true;
       additionalRows = [];
+      performanceCorrections = [];
       return Promise.resolve(additionalRows);
     }
 
-    additionalLoad = functions.httpsCallable("listAdditionalPerformanceData")({})
-      .then((result) => {
-        additionalRows = Array.isArray(result.data?.performances) ? result.data.performances : [];
+    additionalLoad = fetch(withCacheBust(publicAdditionalDataUrl), { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { performances: [], corrections: [] })
+      .then((payload) => {
+        additionalRows = Array.isArray(payload?.performances) ? payload.performances : [];
+        performanceCorrections = Array.isArray(payload?.corrections) ? payload.corrections : [];
         additionalLoaded = true;
-        additionalError = null;
         refreshAdditionalFilterOptions();
         return additionalRows;
       })
       .catch((error) => {
-        additionalRows = [];
-        additionalLoaded = true;
         additionalError = error;
+        additionalRows = [];
+        performanceCorrections = [];
+        additionalLoaded = true;
         return additionalRows;
-      })
-      .finally(() => {
-        additionalLoad = null;
       });
     return additionalLoad;
   }
@@ -166,7 +223,7 @@
   }
 
   function bucketKey(bucket) {
-    return `${bucket.course}|${bucket.sex}|${bucket.category}`;
+    return `${bucket.course}|${bucket.sex}|${bucket.category}|${bucket.season || ""}|${bucket.region || ""}|${bucket.limit || ""}`;
   }
 
   function categoriesForSex(sex) {
@@ -221,7 +278,10 @@
       return categories.map((category) => ({
         course: filters.course,
         sex,
-        category
+        category,
+        season: filters.season,
+        region: filters.region,
+        limit: Number.isFinite(filters.limit) ? filters.limit : 1000
       }));
     });
   }
@@ -232,18 +292,15 @@
     if (bucketRows.has(key)) return Promise.resolve(bucketRows.get(key));
     if (bucketLoads.has(key)) return bucketLoads.get(key);
 
-    const fileName = `${bucket.sex}-${categoryFileSlug(bucket.category)}.json`;
-    const promise = fetch(`public/data/intranap-top-source/${encodeURIComponent(bucket.course)}/${encodeURIComponent(fileName)}?v=${dataVersion}`)
-      .then((response) => {
-        if (response.status === 404) return [];
-        if (!response.ok) throw new Error(`Impossible de charger ${key}`);
-        return response.json();
-      })
-      .then((rows) => {
-        bucketRows.set(key, Array.isArray(rows) ? rows : []);
-        bucketErrors.delete(key);
-        return bucketRows.get(key);
-      })
+    const promise = fetch(publicTopUrl(bucket), { cache: "force-cache" }).then((response) => {
+      if (response.status === 404) return [];
+      if (!response.ok) throw new Error("Fichier TOP indisponible.");
+      return response.json();
+    }).then((rows) => {
+      bucketRows.set(key, Array.isArray(rows) ? rows : []);
+      bucketErrors.delete(key);
+      return bucketRows.get(key);
+    })
       .catch((error) => {
         bucketErrors.set(key, error);
         throw error;
@@ -295,7 +352,20 @@
       row.sex === filters.sex &&
       (!filters.category || row.category === filters.category)
     );
-    const rows = [...intranapRows, ...importedRows];
+    const reassignedRows = performanceCorrections
+      .map(rowFromCorrection)
+      .filter((row) =>
+        row &&
+        row.course === filters.course &&
+        row.sex === filters.sex &&
+        (!filters.category || row.category === filters.category)
+      );
+    const rows = [...correctedRows([...intranapRows, ...importedRows]), ...reassignedRows]
+      .filter((row) =>
+        row.course === filters.course &&
+        row.sex === filters.sex &&
+        (!filters.category || row.category === filters.category)
+      );
     const season = filters.season ? Number(filters.season) : null;
     const bestBySwimmer = new Map();
 
@@ -303,9 +373,10 @@
       if (season && Number(row.seasonYear) !== season) return;
       if (filters.region && String(row.regionId) !== filters.region) return;
 
-      const current = bestBySwimmer.get(row.swimmerId);
+      const swimmerKey = rowSwimmerKey(row);
+      const current = bestBySwimmer.get(swimmerKey);
       if (betterPerformance(row, current)) {
-        bestBySwimmer.set(row.swimmerId, row);
+        bestBySwimmer.set(swimmerKey, row);
       }
     });
 
@@ -364,7 +435,7 @@
         <td data-label="Rang"><strong>${escapeHtml(row.topRank)}</strong></td>
         <td class="time" data-label="Temps">${escapeHtml(row.time)}</td>
         <td data-label="${swimmerLabel(row.sex)}">
-          <strong class="performance-name-link">${escapeHtml(row.swimmer)}</strong>
+          <strong class="performance-name-link">${swimmerNameHtml(row)}</strong>
           <small class="record-mobile-meta">${escapeHtml(mobileMeta(row))}</small>
           ${splitMeta(row) ? `<small class="top-split-meta">${escapeHtml(splitMeta(row))}</small>` : ""}
         </td>
@@ -433,7 +504,7 @@
     updateCategoryOptions("");
     setSegmentValue(elements.sex, "");
     setSegmentValue(elements.limit, "25");
-    loadAdditionalRows().then(render).catch(render);
+    render();
 
     elements.category.addEventListener("input", () => {
       const rawCategory = elements.category.value;

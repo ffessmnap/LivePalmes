@@ -40,6 +40,7 @@
   let resultPdfMigrationRunning;
   let resultPdfsCollection;
   let resultUploadStates;
+  let resultsCollection;
   let resultsAdminPanel;
   let resultsAdminSession;
   let roleStates;
@@ -107,6 +108,7 @@
     data = nextData;
     context.data = data;
     if (contextSource) contextSource.data = data;
+    programAdminApi = null;
   }
   
   function buildPublicResultsIndex() {
@@ -118,8 +120,59 @@
       publicSessionResultsPdfPayload
     });
   }
+
+  function buildPublicSeriesIndex() {
+    if (typeof livePalmesPublication.buildPublicSeriesIndex !== "function") return null;
+    return livePalmesPublication.buildPublicSeriesIndex({
+      data,
+      publicSeriesPdfPayload
+    });
+  }
+
+  function publicIndexByteSize(payload) {
+    const json = JSON.stringify(payload || {});
+    if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
+    return json.length;
+  }
+
+  function assertPublicIndexSize(label, payload) {
+    const bytes = publicIndexByteSize(payload);
+    const limit = 980000;
+    if (bytes > limit) {
+      throw new Error(`${label} trop lourd : ${bytes.toLocaleString("fr-FR")} octets. Limite de securite LivePalmes : ${limit.toLocaleString("fr-FR")} octets.`);
+    }
+    return bytes;
+  }
+
+  async function currentPublicResultsIndex(doc) {
+    const snapshot = await doc.get({ source: "server" }).catch(() => null);
+    return snapshot?.exists ? (snapshot.data() || {}) : {};
+  }
+
+  async function assertPublicResultsIndexCanBeReplaced(currentIndex, nextIndex, options = {}) {
+    if (options.allowResultRegression) return;
+    if (typeof livePalmesPublication.publicResultsRegressions !== "function") return;
+    const regressions = livePalmesPublication.publicResultsRegressions(currentIndex || {}, nextIndex || {});
+    if (!regressions.length) return;
+    const details = regressions
+      .map((item) => `session ${item.session}: ${item.after}/${item.before}`)
+      .join(", ");
+    throw new Error(`Publication interrompue : l'index public perd des resultats (${details}). Recharge le bureau des performances puis republie.`);
+  }
+
+  async function hydrateRaceResultsFromServer() {
+    const collection = typeof resultsCollection === "function" ? resultsCollection() : null;
+    if (!collection) return false;
+    const snapshot = await collection.orderBy("updatedAt", "desc").get();
+    const rows = snapshot.docs.map((doc) => resultWithoutPdf({ id: doc.id, ...doc.data() }));
+    if (!rows.length) return;
+    raceResults = rows;
+    context.raceResults = rows;
+    if (contextSource) contextSource.raceResults = rows;
+    programAdminApi = null;
+  }
   
-  async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
+  async function publishPublicResultsIndex({ silent = false, strict = false, allowResultRegression = false } = {}) {
     if (typeof ensureComputerWriteAccess === "function" && !await ensureComputerWriteAccess()) {
       if (strict) throw new Error("Accès bureau des performances requis pour publier dans Firebase.");
       return;
@@ -127,9 +180,23 @@
     const doc = publicResultsIndexDocument();
     if (!doc) return;
     try {
-      await hydratePublicSeriesPdfMetadataIfNeeded();
-      await hydratePublicSessionResultsPdfMetadataIfNeeded();
-      await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
+      await hydrateRaceResultsFromServer();
+      const currentIndex = await currentPublicResultsIndex(doc);
+      await hydratePublicSeriesPdfMetadataIfNeeded({ force: true });
+      await hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true });
+      let nextIndex = JSON.parse(JSON.stringify(buildPublicResultsIndex()));
+      const directDisabled = data.notes?.publicDirectDisabled === true;
+      if (!allowResultRegression && !directDisabled && typeof livePalmesPublication.mergePublicResultsPreservingCurrent === "function") {
+        nextIndex = livePalmesPublication.mergePublicResultsPreservingCurrent(currentIndex, nextIndex);
+      }
+      await assertPublicResultsIndexCanBeReplaced(currentIndex, nextIndex, { allowResultRegression: allowResultRegression || directDisabled });
+      assertPublicIndexSize("Index resultats public", nextIndex);
+      await doc.set(nextIndex);
+      const seriesIndex = JSON.parse(JSON.stringify(buildPublicSeriesIndex()));
+      if (seriesIndex && doc.parent?.doc) {
+        assertPublicIndexSize("Index series public", seriesIndex);
+        await doc.parent.doc("seriesIndex").set(seriesIndex);
+      }
     } catch (error) {
       console.warn("Publication de l'index public impossible", error);
       if (!silent) {
@@ -159,6 +226,7 @@
       }
     }));
     saveData();
+    return true;
   }
   
   function clearPublicSeriesPdfMetadata() {
@@ -172,8 +240,8 @@
     saveData();
   }
   
-  async function hydratePublicSeriesPdfMetadataIfNeeded() {
-    if (Array.isArray(data.notes?.publicSeriesPdfs)) return;
+  async function hydratePublicSeriesPdfMetadataIfNeeded({ force = false } = {}) {
+    if (!force && Array.isArray(data.notes?.publicSeriesPdfs)) return;
     const collection = seriesPdfsCollection();
     if (!collection) return;
     const snapshot = await collection.get();
@@ -288,11 +356,6 @@
       updatedAt: now,
       sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
     };
-    if (["full", "protocol"].includes(finalScope)) {
-      const snapshot = await collection.get();
-      await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
-      clearPublicSessionResultsPdfMetadata();
-    }
     await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
     updatePublicSeriesPdfMetadata(payload);
     return payload;
@@ -374,6 +437,11 @@
       updatedAt: now,
       sourceLabel: sessionLabel
     };
+    if (["full", "protocol"].includes(finalScope)) {
+      const snapshot = await collection.get();
+      await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+      clearPublicSessionResultsPdfMetadata();
+    }
     await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
     updatePublicSessionResultsPdfMetadata(payload);
     await publishPublicResultsIndex();
@@ -438,10 +506,13 @@
     const activeSession = ensureResultsAdminSession();
     const rows = resultProgramRows(activeSession);
     if (!sessionResultsHydrationRequested) {
-      sessionResultsHydrationRequested = true;
-      hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true })
+      const collectionReady = Boolean(sessionResultsPdfsCollection());
+      if (collectionReady) {
+        sessionResultsHydrationRequested = true;
+        hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true })
         .then(() => renderResultsAdminPanel())
         .catch((error) => console.warn("Hydratation PDF résultats complets impossible", error));
+    }
     }
     resultsAdminPanel.hidden = false;
     resultsAdminPanel.innerHTML = livePalmesAdminResults.renderResultsAdminPanelHtml({
@@ -649,6 +720,7 @@
     resultPdfMigrationRunning = context.resultPdfMigrationRunning;
     resultPdfsCollection = context.resultPdfsCollection;
     resultUploadStates = context.resultUploadStates;
+    resultsCollection = context.resultsCollection;
     resultsAdminPanel = context.resultsAdminPanel;
     resultsAdminSession = selectedResultsAdminSession();
     roleStates = context.roleStates;

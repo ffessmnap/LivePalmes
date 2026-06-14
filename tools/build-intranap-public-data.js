@@ -179,6 +179,29 @@ function cleanText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeIdentityText(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .toUpperCase()
+    .trim();
+}
+
+function swimmerIdentityKey(firstName, lastName, birthDate) {
+  const first = normalizeIdentityText(firstName);
+  const last = normalizeIdentityText(lastName);
+  const birth = cleanText(birthDate);
+  return first && last && birth ? `${last}|${first}|${birth}` : "";
+}
+
+function canonicalSwimmerId(ids) {
+  return ids
+    .map((id) => String(id || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr-FR", { numeric: true }))[0] || "";
+}
+
 function parseCompactTime(value) {
   const raw = String(value || "").trim();
   if (!/^\d+$/.test(raw)) return null;
@@ -207,6 +230,14 @@ function competitionYear(date) {
   return match ? Number(match[1]) : 0;
 }
 
+function competitionSeasonYear(date) {
+  const match = String(date || "").match(/^(\d{4})-(\d{2})-/);
+  if (!match) return competitionYear(date);
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  return month >= 9 ? year + 1 : year;
+}
+
 function birthYear(date) {
   const match = String(date || "").match(/^(\d{4})-/);
   const year = match ? Number(match[1]) : 0;
@@ -214,18 +245,18 @@ function birthYear(date) {
 }
 
 function seasonAge(competitionDate, birthDate) {
-  const year = competitionYear(competitionDate);
+  const year = competitionSeasonYear(competitionDate);
   const born = birthYear(birthDate);
   return year && born ? year - born : null;
 }
 
 function categoryFromAge(age) {
   if (!Number.isFinite(age) || age < 0 || age > 120) return "";
-  if (age <= 10) return "P";
-  if (age <= 12) return "B";
-  if (age <= 14) return "M";
-  if (age <= 16) return "C";
-  if (age <= 18) return "J";
+  if (age <= 9) return "P";
+  if (age <= 11) return "B";
+  if (age <= 13) return "M";
+  if (age <= 15) return "C";
+  if (age <= 17) return "J";
   if (age <= 29) return "S";
   if (age <= 39) return "M30+";
   if (age <= 49) return "M40+";
@@ -243,7 +274,7 @@ function fallbackCategoryFromSource(sourceCategory) {
   if (code.endsWith("CA")) return "C";
   if (code.endsWith("JU")) return "J";
   if (code.endsWith("SE") || code.endsWith("S1")) return "S";
-  if (/^[FH](30|35)\+$/.test(code) || /^[FH][MV][01]$/.test(code)) return "M30+";
+  if (/^[FH](30|35)\+$/.test(code) || /^[FH][MV][01]$/.test(code) || code === "M30+") return "M30+";
   if (/^[FH](40|45)\+$/.test(code) || /^[FH][MV]2$/.test(code)) return "M40+";
   if (/^[FH](50|55)\+$/.test(code) || /^[FH][MV]3$/.test(code)) return "M50+";
   if (/^[FH](60|65)\+$/.test(code) || /^[FH][MV]4$/.test(code)) return "M60+";
@@ -253,7 +284,11 @@ function fallbackCategoryFromSource(sourceCategory) {
 }
 
 function normalizePerformanceCategory(sourceCategory, swimmer, competition) {
-  return categoryFromAge(seasonAge(competition.date, swimmer.birthDate)) || fallbackCategoryFromSource(sourceCategory);
+  const calculated = categoryFromAge(seasonAge(competition.date, swimmer.birthDate));
+  if (calculated) return calculated;
+
+  const source = fallbackCategoryFromSource(sourceCategory);
+  return source;
 }
 
 function categoryCode(category, sex) {
@@ -372,7 +407,7 @@ function build() {
   const competitionsRows = readCsv("competitions_202605151706.csv");
   const perfsRows = readCsv("perfs_202605151707.csv");
 
-  const swimmers = new Map(swimmersRows.map((row) => [row.id, {
+  const rawSwimmers = new Map(swimmersRows.map((row) => [row.id, {
     id: row.id,
     lastName: cleanText(row.nom),
     firstName: cleanText(row.prenom),
@@ -380,6 +415,32 @@ function build() {
     sex: row.sexe,
     clubId: row.club
   }]));
+
+  const identityGroups = new Map();
+  rawSwimmers.forEach((swimmer) => {
+    const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate);
+    const groupKey = key || `id:${swimmer.id}`;
+    if (!identityGroups.has(groupKey)) identityGroups.set(groupKey, []);
+    identityGroups.get(groupKey).push(swimmer);
+  });
+
+  const swimmers = new Map();
+  const canonicalGroups = new Map();
+  identityGroups.forEach((group, identityKey) => {
+    const canonicalId = canonicalSwimmerId(group.map((swimmer) => swimmer.id));
+    const canonical = group.find((swimmer) => String(swimmer.id) === String(canonicalId)) || group[0];
+    const aliases = group.map((swimmer) => String(swimmer.id)).filter((id) => id && id !== String(canonicalId));
+    const merged = {
+      ...canonical,
+      id: String(canonicalId),
+      identityKey,
+      aliases,
+      sourceIds: group.map((swimmer) => String(swimmer.id)).filter(Boolean),
+      sourceClubIds: Array.from(new Set(group.map((swimmer) => swimmer.clubId).filter(Boolean)))
+    };
+    canonicalGroups.set(String(canonicalId), merged);
+    group.forEach((swimmer) => swimmers.set(String(swimmer.id), merged));
+  });
 
   const clubs = new Map(clubsRows.map((row) => [row.num_club, {
     id: row.num_club,
@@ -446,6 +507,7 @@ function build() {
     }
 
     const swimmer = swimmers.get(row.nageur);
+    const sourceSwimmer = rawSwimmers.get(row.nageur);
     if (!swimmer) {
       stats.ignoredUnknownSwimmer += 1;
       continue;
@@ -461,7 +523,10 @@ function build() {
       continue;
     }
 
-    const club = clubs.get(row.club) || clubs.get(swimmer.clubId) || { id: row.club || swimmer.clubId, code: "", name: "", committeeId: "", committeeLabel: "" };
+    const club = clubs.get(row.club) ||
+      clubs.get(sourceSwimmer?.clubId) ||
+      clubs.get(swimmer.clubId) ||
+      { id: row.club || sourceSwimmer?.clubId || swimmer.clubId, code: "", name: "", committeeId: "", committeeLabel: "" };
     const course = coursePayload(row.course);
     const category = normalizePerformanceCategory(row.cat, swimmer, competition);
     if (!category) {
@@ -473,7 +538,11 @@ function build() {
     const perf = {
       id: row.id,
       swimmerId: swimmer.id,
+      originalSwimmerId: row.nageur,
+      swimmerIdentityKey: swimmer.identityKey || swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate),
       swimmer: `${swimmer.firstName} ${swimmer.lastName}`.trim(),
+      firstName: swimmer.firstName,
+      lastName: swimmer.lastName,
       birthDate: swimmer.birthDate,
       sex: swimmer.sex,
       clubId: club.id,
@@ -485,7 +554,7 @@ function build() {
       competition: competition.name,
       location: competition.location,
       date: competition.date,
-      seasonYear: competitionYear(competition.date),
+      seasonYear: competitionSeasonYear(competition.date),
       pool: competition.pool,
       chrono: competition.chrono,
       course: course.code,
@@ -530,7 +599,12 @@ function build() {
     topSourceBuckets.get(topSourceKey).push({
       id: perf.id,
       swimmerId: perf.swimmerId,
+      originalSwimmerId: perf.originalSwimmerId,
+      swimmerIdentityKey: perf.swimmerIdentityKey,
       swimmer: perf.swimmer,
+      firstName: perf.firstName,
+      lastName: perf.lastName,
+      birthDate: perf.birthDate,
       sex: perf.sex,
       clubId: perf.clubId,
       club: perf.club,
@@ -560,24 +634,32 @@ function build() {
 
   ensureDir(OUT_DIR);
   fs.rmSync(TOP_SOURCE_DIR, { recursive: true, force: true });
+  fs.rmSync(SWIMMER_PERFS_DIR, { recursive: true, force: true });
   ensureDir(SWIMMER_PERFS_DIR);
   ensureDir(TOP_SOURCE_DIR);
 
-  const swimmerIndex = swimmersRows
-    .map((row) => {
-      const club = clubs.get(row.club);
+  const swimmerIndex = Array.from(canonicalGroups.values())
+    .map((swimmer) => {
+      const perfs = swimmerPerfs.get(swimmer.id) || [];
+      const latestPerf = perfs
+        .filter((perf) => perf.club || perf.clubName)
+        .sort((a, b) => String(b.date).localeCompare(a.date))[0];
+      const club = clubs.get(latestPerf?.clubId || swimmer.clubId);
       return {
-        id: row.id,
-        name: `${cleanText(row.prenom)} ${cleanText(row.nom)}`.trim(),
-        lastName: cleanText(row.nom),
-        firstName: cleanText(row.prenom),
-        birthDate: row.date,
-        sex: row.sexe,
-        clubId: row.club,
-        club: club?.code || "",
-        clubName: club?.name || "",
-        performanceCount: swimmerPerfs.get(row.id)?.length || 0,
-        chunk: swimmerChunkId(row.id)
+        id: swimmer.id,
+        aliases: swimmer.aliases || [],
+        sourceIds: swimmer.sourceIds || [swimmer.id],
+        identityKey: swimmer.identityKey,
+        name: `${swimmer.firstName} ${swimmer.lastName}`.trim(),
+        lastName: swimmer.lastName,
+        firstName: swimmer.firstName,
+        birthDate: swimmer.birthDate,
+        sex: swimmer.sex,
+        clubId: latestPerf?.clubId || swimmer.clubId,
+        club: latestPerf?.club || club?.code || "",
+        clubName: latestPerf?.clubName || club?.name || "",
+        performanceCount: perfs.length || 0,
+        chunk: swimmerChunkId(swimmer.id)
       };
     })
     .filter((row) => row.performanceCount > 0)
@@ -620,12 +702,14 @@ function build() {
       pools: ["25", "50"],
       minTimeByCourse: MIN_TIME_BY_COURSE,
       topLimit: "computed in browser after selected filters",
-      topCategorySource: "season age normalized from swimmer birth year and competition year",
+      topCategorySource: "season age normalized from swimmer birth year and sport season year",
       topRegionSource: "clubs.comite_club",
-      sourceCategoryField: "perfs.cat"
+      sourceCategoryField: "perfs.cat",
+      swimmerMergeKey: "normalized firstName + lastName + birthDate; club is kept on each performance"
     },
     counts: {
       swimmers: swimmersRows.length,
+      mergedSwimmers: canonicalGroups.size,
       swimmersWithPerformances: swimmerIndex.length,
       clubs: clubsRows.length,
       competitions: competitionsRows.length,

@@ -22,7 +22,7 @@
     }
 
     function normalizeData(nextData = {}) {
-      return {
+      const normalized = {
         meet: nextData.meet || sampleData.meet,
         events: Array.isArray(nextData.events) ? nextData.events : [],
         entrants: Array.isArray(nextData.entrants) ? nextData.entrants : [],
@@ -38,10 +38,59 @@
         sourceVersion: nextData.sourceVersion || sampleData.sourceVersion || "",
         notes: nextData.notes || {}
       };
+      return window.LivePalmesPublicRecordsSource?.mergeIntoLiveData?.(normalized) || normalized;
+    }
+
+    function localStorageSafeData(value) {
+      const strip = (item) => {
+        if (Array.isArray(item)) return item.map(strip);
+        if (!item || typeof item !== "object") return item;
+        return Object.entries(item).reduce((clean, [key, entry]) => {
+          if (key === "pdfDataUrl") return clean;
+          clean[key] = strip(entry);
+          return clean;
+        }, {});
+      };
+      const clean = strip(value || {});
+      if (Array.isArray(clean.notes?.importHistory) && clean.notes.importHistory.length > 80) {
+        clean.notes.importHistory = clean.notes.importHistory.slice(-80);
+      }
+      return clean;
+    }
+
+    function localStorageFallbackData(value) {
+      const clean = localStorageSafeData(value);
+      return {
+        meet: clean.meet,
+        events: clean.events,
+        entrants: clean.entrants,
+        series: clean.series,
+        program: clean.program,
+        qualifications: clean.qualifications,
+        sourceVersion: clean.sourceVersion,
+        notes: {
+          ...(clean.notes || {}),
+          publicSeriesPdfs: [],
+          publicSessionResultsPdfs: []
+        }
+      };
     }
 
     function saveData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(context.data, null, 2));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localStorageSafeData(context.data), null, 2));
+      } catch (error) {
+        console.warn("Sauvegarde locale LivePalmes impossible, tentative allegee", error);
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(localStorageFallbackData(context.data), null, 2));
+        } catch (fallbackError) {
+          console.warn("Sauvegarde locale LivePalmes ignoree", fallbackError);
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {}
+        }
+      }
     }
 
     return {

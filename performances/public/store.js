@@ -37,6 +37,44 @@
     return fallbackValue;
   }
 
+  function rowMergeKey(row) {
+    return String(row?.key || [
+      row?.recordType,
+      row?.sex,
+      row?.category,
+      row?.course,
+      row?.swimmer,
+      row?.time,
+      row?.date,
+      row?.club
+    ].map((value) => String(value || "").trim()).join("|"));
+  }
+
+  function rowFallbackSignature(row) {
+    return [
+      row?.recordType,
+      row?.sex,
+      row?.category,
+      row?.course,
+      row?.swimmer,
+      row?.time,
+      row?.date,
+      row?.club
+    ].map((value) => String(value || "").trim()).join("|");
+  }
+
+  function withFallbackBirthDates(remoteValue, fallbackValue) {
+    const rows = usefulArray(remoteValue, fallbackValue);
+    if (!Array.isArray(rows) || rows !== remoteValue || !Array.isArray(fallbackValue)) return rows;
+    const fallbackByKey = new Map(fallbackValue.map((row) => [rowMergeKey(row), row]));
+    const fallbackBySignature = new Map(fallbackValue.map((row) => [rowFallbackSignature(row), row]));
+    return rows.map((row) => {
+      if (row?.birthDate) return row;
+      const fallbackRow = fallbackByKey.get(rowMergeKey(row)) || fallbackBySignature.get(rowFallbackSignature(row));
+      return fallbackRow?.birthDate ? { ...row, birthDate: fallbackRow.birthDate } : row;
+    });
+  }
+
   async function loadData() {
     const fallback = global.LIVEPALMES_RECORDS || {};
     const ref = documentRef();
@@ -48,8 +86,8 @@
       return completeData({
         ...cloneData(fallback),
         ...cloneData(remote),
-        records: usefulArray(remote.records, fallback.records),
-        franceRecords: usefulArray(remote.franceRecords, fallback.franceRecords),
+        records: withFallbackBirthDates(remote.records, fallback.records),
+        franceRecords: withFallbackBirthDates(remote.franceRecords, fallback.franceRecords),
         filters: remote.filters || fallback.filters || {},
         sourceDate: remote.sourceDate || fallback.sourceDate,
         updatedAt: remote.updatedAt || fallback.updatedAt || fallback.generatedAt

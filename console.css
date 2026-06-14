@@ -136,6 +136,87 @@
   color: #9a5a00;
 }
 
+.trophy-provisional-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.trophy-provisional-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.trophy-provisional-head h3,
+.trophy-ranking-group h4 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.trophy-provisional-head h3 {
+  font-size: 0.9rem;
+}
+
+.trophy-ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trophy-ranking-group {
+  min-width: 0;
+}
+
+.trophy-ranking-group h4 {
+  margin-bottom: 5px;
+  font-size: 0.74rem;
+}
+
+.trophy-ranking-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.72rem;
+}
+
+.trophy-ranking-table th,
+.trophy-ranking-table td {
+  padding: 5px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trophy-ranking-table th:nth-child(1),
+.trophy-ranking-table td:nth-child(1) {
+  width: 34px;
+}
+
+.trophy-ranking-table th:nth-child(3),
+.trophy-ranking-table td:nth-child(3) {
+  width: 58px;
+}
+
+.trophy-ranking-table th:nth-child(4),
+.trophy-ranking-table td:nth-child(4) {
+  width: 54px;
+  text-align: right;
+}
+
+.trophy-ranking-table th:nth-child(5),
+.trophy-ranking-table td:nth-child(5) {
+  width: 150px;
+}
+
+.trophy-ranking-table small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
 .result-admin-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1206,6 +1287,17 @@
 
 .result-detail-dialog .final-withdrawal-group {
   grid-column: 1 / -1;
+}
+
+.result-detail-relay-legs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.35;
 }
 
 .dedicated-live-page.profile-home-active .profile-card:not([data-home-role="live"]),

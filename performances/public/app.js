@@ -1,5 +1,6 @@
 ﻿let data = window.LIVEPALMES_RECORDS;
 let records = data.records;
+let franceRecords = data.franceRecords || [];
 const MASTER_RELAY_CATEGORY = window.LivePalmesRecordPlaceholders?.masterRelayCategory || "MASTER_RELAYS_MIXED";
 const MASTER_RELAY_LABEL = window.LivePalmesRecordPlaceholders?.masterRelayLabel || "Relais Masters mixtes";
 const MASTER_RELAY_COURSES = ["4X50SF", "4X100SB"];
@@ -14,6 +15,7 @@ const elements = {
   title: document.querySelector("#mpfTitle"),
   cutoffText: document.querySelector("#cutoffText"),
   swimmerHeader: document.querySelector("#swimmerHeader"),
+  tableHeaderRow: document.querySelector("thead tr"),
   recordsBody: document.querySelector("#recordsBody")
 };
 
@@ -21,13 +23,26 @@ const styleSections = [
   ["SF", "Surface"],
   ["AP", "Apnée"],
   ["IS", "Immersion"],
-  ["BI", "Bi-palmes"]
+  ["BI", "Bi-palmes"],
+  ["RELAY_CLUB", "Relais Club"],
+  ["RELAY_FRANCE", "Relais Équipe de France"]
 ];
 
 function formatDate(value) {
   if (!value) return "-";
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
+}
+
+function birthYearLabel(value) {
+  const match = String(value || "").match(/^(\d{4})/);
+  return match ? match[1] : "";
+}
+
+function swimmerNameHtml(record) {
+  const year = birthYearLabel(record?.birthDate);
+  const name = escapeHtml(record?.swimmer || "-");
+  return year ? `${name} <small class="performance-birth-year">(${year})</small>` : name;
 }
 
 function addOptions(select, values, allLabel, labeler = (value) => value) {
@@ -61,6 +76,19 @@ function sexLabel(value) {
 
 function swimmerLabel(sex) {
   return sex === "F" ? "Nageuse" : "Nageur";
+}
+
+function isRelayRecord(record) {
+  return String(record?.style || "").startsWith("RELAY");
+}
+
+function isMixedRelayRecord(record) {
+  return isRelayRecord(record) && (record.mixedRelay === true || isMasterRelayRecord(record) || /(?:BIX|SB)$/.test(String(record.course || "")));
+}
+
+function participantLabel(record) {
+  if (!isRelayRecord(record)) return swimmerLabel(record.sex);
+  return record.sex === "F" && !isMixedRelayRecord(record) ? "Relayeuses" : "Relayeurs";
 }
 
 function categoryLabel(value) {
@@ -159,7 +187,7 @@ function updateCourseOptions(filters = currentFilters()) {
   const current = elements.courseFilter.value;
   const values = filters.category === MASTER_RELAY_CATEGORY
     ? MASTER_RELAY_COURSES
-    : (data.filters.courses || []).filter((course) => !MASTER_RELAY_COURSES.includes(course));
+    : (data.filters.courses || []);
   addOptions(elements.courseFilter, values, "Toutes", courseLabel);
   elements.courseFilter.value = values.includes(current) ? current : "";
 }
@@ -215,29 +243,166 @@ function timeCellClass(value) {
   return `time${isPlaceholderTime(value) ? " time-placeholder" : ""}`;
 }
 
+function recordTieKey(record) {
+  return [
+    "MPF",
+    record.sex || "",
+    record.category || "",
+    record.style || "",
+    record.course || "",
+    String(record.time || "").trim()
+  ].join("|");
+}
+
+function isTieRecord(record, rows) {
+  const time = String(record.time || "").trim();
+  if (!time || isPlaceholderTime(time)) return false;
+  const key = recordTieKey(record);
+  return rows.filter((item) => recordTieKey(item) === key).length > 1;
+}
+
+function franceRecordTypeForMpf(record) {
+  if (record.category === "S") return "RF";
+  if (record.category === "J") return "RFJ";
+  return "";
+}
+
+function recordComparableValue(record) {
+  const value = Number(record?.value);
+  return Number.isFinite(value) ? value : String(record?.rawTime || record?.time || "").trim();
+}
+
+function sameRecordKind(record, franceRecord) {
+  const recordIsRelay = isRelayRecord(record);
+  const franceRecordIsRelay = isRelayRecord(franceRecord);
+  if (recordIsRelay !== franceRecordIsRelay) return false;
+  return !recordIsRelay || record.style === franceRecord.style;
+}
+
+function matchingFranceRecord(record) {
+  const recordType = franceRecordTypeForMpf(record);
+  if (!recordType || isPlaceholderTime(record.time)) return null;
+  const value = recordComparableValue(record);
+  return franceRecords.find((franceRecord) =>
+    franceRecord.recordType === recordType &&
+    franceRecord.sex === record.sex &&
+    franceRecord.category === record.category &&
+    franceRecord.course === record.course &&
+    sameRecordKind(record, franceRecord) &&
+    recordComparableValue(franceRecord) === value
+  ) || null;
+}
+
+function renderFranceRecordBadge(record) {
+  const franceRecord = matchingFranceRecord(record);
+  if (!franceRecord) return "";
+  const label = franceRecord.recordType === "RFJ" ? "RFJ" : "RF";
+  const title = label === "RFJ"
+    ? "Cette MPF est aussi le Record de France Junior"
+    : "Cette MPF est aussi le Record de France";
+  return `<span class="record-france-badge" title="${title}" aria-label="${title}">${franceFlag()}<span>${label}</span></span>`;
+}
+
+function renderTimeContent(record, extraBadge = "") {
+  return `${escapeHtml(record.time || "")}${renderFranceRecordBadge(record)}${extraBadge}`;
+}
+
+function compareRecordRows(a, b) {
+  return (window.LivePalmesRecordPlaceholders?.compareCourses
+    ? window.LivePalmesRecordPlaceholders.compareCourses(a.course, b.course)
+    : String(a.course || "").localeCompare(String(b.course || ""), "fr-FR"))
+    || (Number(a.value ?? 999999999) - Number(b.value ?? 999999999))
+    || String(a.date || "").localeCompare(String(b.date || ""), "fr-FR")
+    || String(a.swimmer || "").localeCompare(String(b.swimmer || ""), "fr-FR")
+    || String(a.key || "").localeCompare(String(b.key || ""), "fr-FR");
+}
+
 function relaySwimmerNames(value) {
   const cleaned = String(value || "").replace(/\s+/g, " ").trim();
   if (!cleaned || cleaned === "À établir") return [];
-  return cleaned.split(/\s*\/\s*/).map((part) => part.trim()).filter(Boolean);
+  return cleaned.split(/\s*\/\s*/).map((part) => formatRelaySwimmerName(part.trim())).filter(Boolean);
+}
+
+function formatRelayInitials(value) {
+  return String(value || "")
+    .replace(/\./g, "")
+    .replace(/\s+/g, "")
+    .split("")
+    .filter(Boolean)
+    .map((letter) => `${letter.toLocaleUpperCase("fr-FR")}.`)
+    .join("");
+}
+
+function formatRelaySwimmerName(value) {
+  const cleaned = String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^[/-]+|[/-]+$/g, "")
+    .trim();
+  if (!cleaned || cleaned.toLocaleLowerCase("fr-FR").includes("tablir")) return cleaned;
+
+  const compactInitials = cleaned.match(/^((?:\p{L}\.){1,4})\s+(.+)$/u);
+  if (compactInitials) {
+    return `${formatRelayInitials(compactInitials[1])} ${compactInitials[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const gluedInitial = cleaned.match(/^(\p{L})\.\s*(\p{L}{2,}.*)$/u);
+  if (gluedInitial) {
+    return `${formatRelayInitials(gluedInitial[1])} ${gluedInitial[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  const trailingInitial = tokens.length >= 2 && /^\p{L}\.?$/u.test(tokens[tokens.length - 1]);
+  if (trailingInitial && tokens.slice(0, -1).some((token) => token.replace(/[.'-]/g, "").length > 1)) {
+    const initial = tokens.pop();
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const trailingFirstName = tokens.length >= 2 &&
+    tokens.slice(0, -1).every((token) => token === token.toLocaleUpperCase("fr-FR") && /\p{L}/u.test(token)) &&
+    tokens[tokens.length - 1] !== tokens[tokens.length - 1].toLocaleUpperCase("fr-FR");
+  if (trailingFirstName) {
+    const firstName = tokens.pop();
+    const initial = firstName.match(/\p{L}/u)?.[0] || "";
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const initials = [];
+  while (tokens.length && /^\p{L}\.?$/u.test(tokens[0])) {
+    initials.push(tokens.shift());
+  }
+  if (initials.length && tokens.length) {
+    return `${formatRelayInitials(initials.join(""))} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+  if (tokens.length < 2) return cleaned.toLocaleUpperCase("fr-FR");
+
+  const firstName = tokens.shift();
+  const initial = firstName.match(/\p{L}/u)?.[0] || "";
+  return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
 }
 
 function renderSwimmerCell(record) {
-  if (!isMasterRelayRecord(record)) {
+  if (!isRelayRecord(record)) {
     const mobileMeta = [record.club, record.location, formatDate(record.date)]
       .map((value) => String(value || "").trim())
       .filter(Boolean)
       .join(" - ");
     return `
-      <strong>${escapeHtml(record.swimmer)}</strong>
+      <strong>${swimmerNameHtml(record)}</strong>
       ${mobileMeta ? `<small class="record-mobile-meta">${escapeHtml(mobileMeta)}</small>` : ""}
       ${splitMetaHtml(record)}
     `;
   }
 
   const names = relaySwimmerNames(record.swimmer);
+  const summary = record.style === "RELAY_FRANCE" ? "FFESSM" : (record.club || record.swimmer || "-");
+  const mobileMeta = [record.location, record.date ? formatDate(record.date) : ""]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" - ");
   return `
-    <strong class="relay-summary">${escapeHtml(record.club || record.swimmer || "-")}</strong>
-    ${names.length ? `<div class="relay-swimmers">${names.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</div>` : ""}
+    <strong class="relay-summary">${escapeHtml(summary)}</strong>
+    ${names.length ? `<div class="relay-swimmers">${names.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</div>` : `<strong>${escapeHtml(record.swimmer || "À établir")}</strong>`}
+    ${mobileMeta ? `<small class="record-mobile-meta">${escapeHtml(mobileMeta)}</small>` : ""}
     ${splitMetaHtml(record)}
   `;
 }
@@ -261,15 +426,37 @@ function splitMetaHtml(record) {
   `;
 }
 
+function updateTableHeader(isMasterRelayView, sex) {
+  document.body.classList.toggle("mpf-master-relay-view", isMasterRelayView);
+  if (!elements.tableHeaderRow) return;
+  elements.tableHeaderRow.innerHTML = isMasterRelayView
+    ? `
+      <th>Course</th>
+      <th>Catégorie</th>
+      <th>Temps</th>
+      <th id="swimmerHeader">Equipe</th>
+      <th>Club</th>
+      <th>Lieu</th>
+      <th>Date</th>
+    `
+    : `
+      <th>Course</th>
+      <th>Temps</th>
+      <th id="swimmerHeader">${swimmerLabel(sex)}</th>
+      <th>Club</th>
+      <th>Lieu</th>
+      <th>Date</th>
+    `;
+  elements.swimmerHeader = document.querySelector("#swimmerHeader");
+}
+
 function applyFilters() {
   const filters = currentFilters();
   updateCategoryOptions(selectedSegmentValue(elements.sexFilter));
   updateSexControlState(filters.category === MASTER_RELAY_CATEGORY);
   updateCourseOptions(filters);
   updateTitle(filters);
-  if (elements.swimmerHeader) {
-    elements.swimmerHeader.textContent = filters.category === MASTER_RELAY_CATEGORY ? "Equipe" : swimmerLabel(filters.sex);
-  }
+  updateTableHeader(filters.category === MASTER_RELAY_CATEGORY, filters.sex);
   const filtered = records.filter((record) => {
     if (filters.category === MASTER_RELAY_CATEGORY) {
       return (
@@ -328,12 +515,12 @@ function renderRecords(filtered) {
   const rows = [];
 
   for (const [style, label] of styleSections) {
-    const sectionRecords = filtered.filter((record) => record.style === style);
+    const sectionRecords = filtered.filter((record) => record.style === style).sort(compareRecordRows);
     if (!sectionRecords.length) continue;
 
     rows.push(`
       <tr class="section-row">
-        <td colspan="7">${label}</td>
+        <td colspan="6">${label}</td>
       </tr>
     `);
 
@@ -344,20 +531,16 @@ function renderRecords(filtered) {
         .map((value) => String(value || "").trim())
         .filter(Boolean)
         .join(" · ");
+      const rowClasses = [`sex-${record.sex.toLowerCase()}`];
+      if (isRelayRecord(record)) rowClasses.push("relay-record");
+      if (isMixedRelayRecord(record)) rowClasses.push("relay-mixed");
       return `
-        <tr class="sex-${record.sex.toLowerCase()}" tabindex="0" role="button" aria-expanded="false">
+        <tr class="${rowClasses.join(" ")}" tabindex="0" role="button" aria-expanded="false">
           <td data-label="Course">
             <strong>${record.courseShortLabel}</strong>
           </td>
-          <td data-label="Catégorie">
-            <strong>${categoryCode(record)}</strong>
-          </td>
-          <td class="${timeCellClass(record.time)}" data-label="Temps">${record.time}</td>
-          <td data-label="${swimmerLabel(record.sex)}">
-            <strong>${record.swimmer}</strong>
-            ${mobileMeta ? `<small class="record-mobile-meta">${mobileMeta}</small>` : ""}
-            ${splitMetaHtml(record)}
-          </td>
+          <td class="${timeCellClass(record.time)}" data-label="Temps">${renderTimeContent(record)}</td>
+          <td data-label="${participantLabel(record)}">${renderSwimmerCell(record)}</td>
           <td data-label="Club">${record.club}</td>
           <td data-label="Lieu">
             <div class="location-line">
@@ -374,20 +557,12 @@ function renderRecords(filtered) {
   elements.recordsBody.innerHTML = rows.join("");
 
   if (!filtered.length) {
-    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="7">Choisissez une cat&eacute;gorie.</td></tr>`;
+    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Choisissez une cat&eacute;gorie.</td></tr>`;
   }
 }
 
 function renderMasterRelayTeam(record) {
-  const teamName = record.club || "-";
-  const meta = [record.location, formatDate(record.date)]
-    .map((value) => String(value || "").trim())
-    .filter((value) => value && value !== "-")
-    .join(" - ");
-  return `
-    <strong class="relay-summary">${escapeHtml(teamName)}</strong>
-    ${meta ? `<small class="master-relay-meta">${escapeHtml(meta)}</small>` : ""}
-  `;
+  return renderRelayNames(record);
 }
 
 function franceFlag() {
@@ -441,10 +616,12 @@ function renderMasterRelayRecords(filtered) {
       `);
       rows.push(...sectionRecords.map((record) => `
         <tr class="sex-${record.sex.toLowerCase()} relay-record relay-mixed master-relay-data-row" tabindex="0" role="button" aria-expanded="false">
+          <td data-label="Course"><span class="master-relay-course-cell">${escapeHtml(record.courseShortLabel || record.course || "-")}</span></td>
           <td data-label="Catégorie"><strong class="master-relay-category">${escapeHtml(masterRelayCategoryCode(record.category))}</strong></td>
-          <td class="${timeCellClass(record.time)}" data-label="Temps">${escapeHtml(record.time)}</td>
+          <td class="${timeCellClass(record.time)}" data-label="Temps">${renderTimeContent(record)}</td>
           <td data-label="Équipe">${renderMasterRelayTeam(record)}</td>
-          <td colspan="3" data-label="Relayeurs">${renderRelayNames(record)}</td>
+          <td data-label="Club"><strong class="relay-summary">${escapeHtml(record.club || "-")}</strong></td>
+          <td data-label="Lieu">${escapeHtml(record.location || "-")}</td>
           <td data-label="Date">${formatDate(record.date)}</td>
         </tr>
       `));
@@ -461,6 +638,7 @@ function renderMasterRelayRecords(filtered) {
 function refreshData(nextData) {
   data = nextData || window.LIVEPALMES_RECORDS || data;
   records = data.records || [];
+  franceRecords = data.franceRecords || [];
   if (elements.recordCount) elements.recordCount.textContent = records.length.toLocaleString("fr-FR");
   if (elements.sourceDate) elements.sourceDate.textContent = formatDate(data.sourceDate);
   elements.cutoffText.textContent = data.updatedAt

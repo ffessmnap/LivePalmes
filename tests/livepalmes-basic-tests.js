@@ -9,6 +9,7 @@ require(path.join(__dirname, "..", "assets", "livepalmes-result-parser.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-program.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-results-admin-workflow.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-result-detail-view.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-speaker-info.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-history-view.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-history-presenter.js"));
@@ -18,6 +19,7 @@ const time = global.LivePalmesTime;
 const people = global.LivePalmesPeople;
 const speakerInfo = global.LivePalmesSpeakerInfo;
 const historyPresenter = global.LivePalmesHistoryPresenter;
+const resultDetailView = global.LivePalmesResultDetailView;
 
 function splitImportedPersonName(value) {
   const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
@@ -69,12 +71,13 @@ function testResultParserIgnoresInNsPrefix() {
 
 function testResultParserKeepsTimeBeforeRecordMarker() {
   const row = parser.parseResultRow(
-    "8 BADOR Chloe 10 JUN * SASNAP 18.60 (en finale) 40.28 RF",
+    "8 BADOR Chloe 10 JUN * SASNAP 18.60 (en finale) 40.28 RF 689",
     parserOptions
   );
   assert.equal(row.rank, 8);
   assert.equal(row.displayName, "BADOR Chloe");
   assert.equal(row.time, "40.28");
+  assert.equal(row.points, "689");
   assert.equal(row.qualified, true);
 }
 
@@ -234,6 +237,61 @@ function testHistoryRebuildsFinalAnnouncementsFromResults() {
   assert.equal(rows[1].replacementName, "DURAND Emma");
 }
 
+function testResultDetailGroupsMasterRelaysBySectionCategory() {
+  const view = resultDetailView.create({
+    escapeHtml: (value) => String(value ?? ""),
+    finalistRowName: (row) => row.displayName || ""
+  });
+  const html = view.renderModalHtml({
+    eventLabel: "4x100 m surface",
+    sexLabel: "Mixte",
+    phaseLabel: "series",
+    stage: "series",
+    ranking: [
+      {
+        rank: 1,
+        displayName: "Groupe Subaquatique Morlaix Plouezoc'h X40+",
+        club: "GSMP",
+        time: "04:01.99",
+        points: "286",
+        sourceIndex: 4
+      },
+      {
+        rank: 3,
+        displayName: "Pays Solesmois Palmes X220",
+        club: "PSP",
+        time: "04:48.89",
+        points: "184",
+        sourceIndex: 14,
+        relayLegs: [{ name: "VERNHOLLES J.", time: "01:03.12" }]
+      },
+      {
+        rank: 1,
+        displayName: "Club Sportif et Athletique X40+",
+        club: "CSAKB",
+        time: "03:19.25",
+        points: "465",
+        sourceIndex: 36
+      },
+      {
+        rank: 5,
+        displayName: "Palmes En Cornouaille X140",
+        club: "PEC",
+        time: "04:19.24",
+        points: "241",
+        sourceIndex: 58,
+        relayLegs: [{ name: "LE GALL H.", time: "01:07.44" }]
+      }
+    ]
+  });
+
+  assert.match(html, /Resultats de la course - R220/);
+  assert.match(html, /Resultats de la course - R140/);
+  assert.match(html, /Groupe Subaquatique Morlaix Plouezoc'h - GSMP - 04:01.99/);
+  assert.doesNotMatch(html, /Plouezoc'h X40\+/);
+  assert.match(html, /VERNHOLLES J\. 01:03\.12/);
+}
+
 [
   testTimeHelpers,
   testPersonHelpers,
@@ -249,7 +307,8 @@ function testHistoryRebuildsFinalAnnouncementsFromResults() {
   testResultParserFallbacksIgnoreInvalidHelpers,
   testFinalResultRowMatchesLegacyFinalStage,
   testSpeakerInfoHandlesEmptyEncodedCells,
-  testHistoryRebuildsFinalAnnouncementsFromResults
+  testHistoryRebuildsFinalAnnouncementsFromResults,
+  testResultDetailGroupsMasterRelaysBySectionCategory
 ].forEach((test) => test());
 
 console.log("LivePalmes basic tests OK");

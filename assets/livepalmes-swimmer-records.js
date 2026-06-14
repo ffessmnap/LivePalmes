@@ -49,17 +49,18 @@
 
     function visibleSeriesCategories() {
       const rows = visibleSeriesRows();
-      if (!rows.length) return null;
+      if (!rows.length) return [];
       const entrantsByKey = seriesEntrantLookup();
       const categories = rows
         .map((row) => {
           const swimmerId = row.swimmerId || "";
           return entrantsByKey.get(`${row.eventId}|${row.sex}|${row.session || ""}|${swimmerId}`) ||
-            entrantsByKey.get(`${row.eventId}|${row.sex}|${swimmerId}`);
+            entrantsByKey.get(`${row.eventId}|${row.sex}|${swimmerId}`) ||
+            row;
         })
         .map((entrant) => entrant?.category)
         .filter(Boolean);
-      return categories.length ? [...new Set(categories)] : null;
+      return [...new Set(categories)];
     }
 
     function recordDisplayLabel(row) {
@@ -77,7 +78,8 @@
     }
 
     function categoryIsVisible(record, categories) {
-      if (!categories) return true;
+      if (!Array.isArray(categories)) return true;
+      if (!categories.length) return false;
       const recordCategory = categoryMatchKey(record.category);
       return categories.some((category) => categoryMatchKey(category) === recordCategory);
     }

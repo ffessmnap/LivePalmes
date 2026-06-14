@@ -232,7 +232,7 @@
           swimmerInfoRows
         ] = await Promise.all([
           fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
-          fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.records),
+          Promise.resolve([]),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.edf),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),
@@ -246,14 +246,16 @@
         const seedSources = parseSeedSourceSheet(seedRows);
         const entrantsWithSpeakerInfo = applySpeakerInfoToEntrants(data.entrants || [], seedSources, clubs);
         const attachedSeedSources = entrantsWithSpeakerInfo.filter((entrant) => entrant.seedSource).length;
-        let parsedRecords = parseRecordsSheet(recordRows);
+        let parsedRecords = window.LivePalmesPublicRecordsSource?.toConsoleRecords?.() || [];
+        if (!parsedRecords.length) parsedRecords = parseRecordsSheet(recordRows);
         if (!parsedRecords.length) {
           parsedRecords = parseFallbackRecordsSheet(recordRows);
         }
+        const recordsForUpdate = parsedRecords.length ? parsedRecords : (Array.isArray(data.records) ? data.records : []);
         let nextData = normalizeData({
           ...data,
           top2025: parseTopSheet(franceRows),
-          records: parsedRecords,
+          records: recordsForUpdate,
           edfMembers: parseEdfSheet(edfRows),
           internationalMedals: parseInternationalSheet(internationalRows),
           competitionStats: parseCompetitionStatsSheet(competitionStatRows),
@@ -265,6 +267,9 @@
             ...(data.notes || {}),
             sourceMode: data.notes?.sourceMode || "series-live",
             speakerInfoSource: "Google Sheets",
+            recordsSource: parsedRecords.length ? "LivePalmes performances" : (data.notes?.recordsSource || "inchangé"),
+            recordsSourceDate: window.LIVEPALMES_RECORDS?.sourceDate || "",
+            recordsUpdatedAt: window.LIVEPALMES_RECORDS?.updatedAt || "",
             speakerInfoUpdatedAt: new Date().toLocaleString("fr-FR"),
             importHistory: appendImportHistory(data.notes || {}, "infos speaker Google Sheet")
           }

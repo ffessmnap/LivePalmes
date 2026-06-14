@@ -46,6 +46,7 @@ const FIREBASE_CONFIG = {
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
 const FIREBASE_FUNCTIONS_REGION = "europe-west1";
+const PERFORMANCE_ADDITIONAL_DATA_URL = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
 const fallbackData = {
   meet: {
     name: "Championnat de France 2026",
@@ -128,6 +129,7 @@ const fallbackData = {
     speakerInfoSheets: SPEAKER_INFO_SHEETS,
     firebaseConfig: FIREBASE_CONFIG,
     firebaseFunctionsRegion: FIREBASE_FUNCTIONS_REGION,
+    performanceAdditionalDataUrl: PERFORMANCE_ADDITIONAL_DATA_URL,
     fallbackData
   };
 }());

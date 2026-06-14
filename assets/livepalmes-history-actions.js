@@ -63,6 +63,142 @@
       return db.collection("competitions").doc(FIRESTORE_COMPETITION_ID).collection(collectionName);
     }
 
+    function archiveRaceKeyFromParts(eventId, sex) {
+      return `${eventId || ""}|${sex || ""}`;
+    }
+
+    function archiveRaceDocId(key) {
+      const clean = String(key || "")
+        .trim()
+        .replace(/[^a-z0-9_-]+/gi, "-")
+        .replace(/^-+|-+$/g, "");
+      return clean || `race-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function raceKeyFromProgramRow(row = {}) {
+      return archiveRaceKeyFromParts(row.eventId, row.sex);
+    }
+
+    function raceKeyFromResult(result = {}) {
+      return String(result.raceKey || archiveRaceKeyFromParts(result.eventId, result.sex) || "");
+    }
+
+    function buildArchiveRacePayloads(rows = []) {
+      const data = getData();
+      const program = Array.isArray(data.program) ? data.program : [];
+      const series = Array.isArray(data.series) ? data.series : [];
+      const raceKeys = new Set();
+      program.forEach((row) => {
+        const key = raceKeyFromProgramRow(row);
+        if (key.trim()) raceKeys.add(key);
+      });
+      rows.forEach((result) => {
+        const key = raceKeyFromResult(result);
+        if (key.trim()) raceKeys.add(key);
+      });
+      return [...raceKeys].map((key) => {
+        const [eventId, sex] = key.split("|");
+        const programRows = program
+          .filter((row) => raceKeyFromProgramRow(row) === key)
+          .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || Number(a.order || 9999) - Number(b.order || 9999));
+        const seriesRows = series
+          .filter((row) => row.eventId === eventId && row.sex === sex)
+          .sort((a, b) => Number(a.series || 0) - Number(b.series || 0) || Number(a.lane || 0) - Number(b.lane || 0));
+        const results = rows
+          .filter((result) => raceKeyFromResult(result) === key)
+          .sort((a, b) => Number(a.session || 0) - Number(b.session || 0) || String(a.stage || "").localeCompare(String(b.stage || "")));
+        const representative = programRows[0] || results[0] || {};
+        const latestUpdatedAt = results
+          .map((result) => result.updatedAt)
+          .filter(Boolean)
+          .sort()
+          .at(-1) || "";
+        return {
+          id: archiveRaceDocId(key),
+          raceKey: key,
+          eventId: eventId || representative.eventId || "",
+          sex: sex || representative.sex || "",
+          label: representative.label || representative.eventLabel || "",
+          session: representative.session || results[0]?.session || "",
+          order: Number(representative.order || 9999),
+          resultCount: results.length,
+          latestUpdatedAt,
+          programRows,
+          seriesRows,
+          results
+        };
+      }).filter((race) => race.raceKey.trim());
+    }
+
+    function buildArchiveIndex(races = [], updatedAt = new Date().toISOString()) {
+      const data = getData();
+      const raceSummaries = races
+        .map((race) => ({
+          id: race.id,
+          raceKey: race.raceKey,
+          eventId: race.eventId,
+          sex: race.sex,
+          label: race.label,
+          session: race.session,
+          order: race.order,
+          resultCount: race.resultCount,
+          latestUpdatedAt: race.latestUpdatedAt
+        }))
+        .sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
+      return {
+        meet: data.meet || {},
+        events: data.events || [],
+        program: Array.isArray(data.program) ? data.program : [],
+        raceSummaries,
+        seriesPdfs: data.notes?.publicSeriesPdfs || [],
+        sessionResultsPdfs: data.notes?.publicSessionResultsPdfs || [],
+        sessionInfos: data.notes?.publicSessionInfos || {},
+        publicAccess: {
+          online: true,
+          updatedAt: data.notes?.livePublishedAt || updatedAt
+        },
+        updatedAt,
+        sourceVersion: data.sourceVersion || "",
+        sourceLabel: data.notes?.sourceLabel || "",
+        lastUpdatedSession: data.notes?.lastUpdatedSession || ""
+      };
+    }
+
+    function buildArchiveExtras(rows = []) {
+      const data = getData();
+      const extras = {};
+      const tdh = browserWindow.LivePalmesDamienHebertTrophy;
+      if (tdh && typeof tdh.buildSnapshot === "function") {
+        const snapshot = tdh.buildSnapshot(rows);
+        const count = Number(snapshot?.rankings?.all?.length || 0);
+        if (count > 0) {
+          extras.tdh = {
+            ...snapshot,
+            id: "tdh",
+            title: "Trophée Damien Hébert",
+            count
+          };
+        }
+      }
+      const medals = browserWindow.LivePalmesPublicMedalsCore;
+      if (medals && typeof medals.buildSnapshot === "function") {
+        const snapshot = medals.buildSnapshot(rows, {
+          events: data.events || [],
+          entrants: data.entrants || []
+        });
+        const count = Number(snapshot?.rows?.length || 0);
+        if (count > 0) {
+          extras.medals = {
+            ...snapshot,
+            id: "medals",
+            title: "Tableau des médailles",
+            count
+          };
+        }
+      }
+      return extras;
+    }
+
     async function archiveCurrentHistory() {
       const rows = dsqReportRows();
       if (!rows.length) return null;
@@ -93,19 +229,32 @@
       const collection = collectionOrFallback(resultArchivesCollection, "resultArchives");
       if (!collection || !db) throw new Error("Firebase n'est pas disponible pour archiver les r\u00e9sultats.");
       const now = new Date();
+      const racePayloads = buildArchiveRacePayloads(rows);
+      const archiveIndex = buildArchiveIndex(racePayloads, now.toISOString());
+      const archiveExtras = buildArchiveExtras(rows);
       const archive = {
         id: `${now.getTime()}-${Math.random().toString(16).slice(2)}`,
+        archiveVersion: 2,
         createdAt: now.toISOString(),
         createdLabel: now.toLocaleString("fr-FR"),
         reason,
         publicArchive: options.publicArchive === true,
         meet: getData().meet || {},
         count: rows.length,
-        publicIndex: sanitizeAlertForFirestore(buildPublicResultsIndex())
+        raceCount: racePayloads.length,
+        extras: Object.keys(archiveExtras),
+        archiveIndex: sanitizeAlertForFirestore(archiveIndex),
+        publicIndex: sanitizeAlertForFirestore(archiveIndex)
       };
       const archiveRef = collection.doc(archive.id);
       const batch = db.batch();
       batch.set(archiveRef, sanitizeAlertForFirestore(archive));
+      racePayloads.forEach((race) => {
+        batch.set(archiveRef.collection("races").doc(race.id), sanitizeAlertForFirestore(race));
+      });
+      Object.entries(archiveExtras).forEach(([id, extra]) => {
+        batch.set(archiveRef.collection("extras").doc(id), sanitizeAlertForFirestore(extra));
+      });
       rows.forEach((result) => {
         const itemId = result.id || `${result.raceKey || "result"}-${Math.random().toString(16).slice(2)}`;
         batch.set(archiveRef.collection("items").doc(itemId), sanitizeAlertForFirestore({ ...result, id: itemId }));

@@ -108,6 +108,31 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
+.public-medals-page .public-topbar .eyebrow {
+  display: none;
+}
+
+.public-topbar .public-medals-title {
+  display: grid;
+  gap: 4px;
+  line-height: 1.02;
+}
+
+.public-medals-title span {
+  min-width: 0;
+}
+
+.public-medals-title-event {
+  display: block;
+  font-size: 1.28rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.public-medals-page .public-meet-meta {
+  margin-top: 8px;
+}
+
 .public-topbar-logo {
   position: absolute;
   top: 22px;
@@ -570,6 +595,62 @@ body:not(.public-home-page) .public-footer {
 
 .public-results-toolbar {
   margin: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.public-results-toolbar .public-series-toolbar-text {
+  display: none;
+}
+
+.public-archive-results-page .public-results-toolbar {
+  grid-template-columns: minmax(320px, 620px) auto;
+}
+
+.public-archive-results-page .public-session-select {
+  width: min(620px, 100%);
+  flex: 1 1 420px;
+}
+
+.public-archive-results-page .public-session-select select {
+  width: 100%;
+}
+
+.public-results-actions {
+  align-self: start;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.public-results-actions .ghost-button {
+  min-height: 48px;
+}
+
+.public-results-actions [hidden],
+.public-results-toolbar .public-results-actions #refreshPublicResultsBtn[hidden],
+.public-floating-refresh[hidden] {
+  display: none !important;
+}
+
+.public-medals-link {
+  line-height: 1.05;
+  text-align: center;
+  text-decoration: none;
+}
+
+#tdhRankingBtn {
+  line-height: 1.05;
+  text-align: center;
+}
+
+.public-medals-link:hover,
+.public-medals-link:focus-visible {
+  text-decoration: none;
 }
 
 .public-results-actions .active-public-page {
@@ -578,12 +659,741 @@ body:not(.public-home-page) .public-footer {
   color: #ffffff;
 }
 
+.tdh-public-modal[hidden] {
+  display: none;
+}
+
+.tdh-public-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7, 20, 31, 0.58);
+}
+
+.public-tdh-open {
+  overflow: hidden;
+}
+
+.tdh-public-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(860px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.28);
+}
+
+.tdh-public-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tdh-public-head span {
+  color: var(--accent-dark);
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.tdh-public-head h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 1.35rem;
+}
+
+.tdh-public-head p,
+.tdh-public-note {
+  margin: 0;
+  color: #4d606a;
+  font-size: 0.86rem;
+  font-weight: 820;
+}
+
+.tdh-public-note {
+  padding: 9px 11px;
+  border: 1px solid #cfe0e7;
+  border-radius: 8px;
+  background: #f7fbfc;
+}
+
+.tdh-public-jump {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tdh-public-jump .ghost-button {
+  min-height: 32px;
+}
+
+.tdh-public-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.tdh-public-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tdh-public-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tdh-public-group-head h3,
+.trophy-ranking-group h4 {
+  margin: 0;
+  color: var(--accent-dark);
+}
+
+.tdh-public-group-head h3 {
+  font-size: 1rem;
+}
+
+.tdh-public-group-head span {
+  display: block;
+  margin-top: 2px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: left;
+}
+
+.trophy-ranking-group {
+  min-width: 0;
+}
+
+.trophy-ranking-group h4 {
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+.trophy-ranking-table {
+  table-layout: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.trophy-ranking-table thead {
+  display: none;
+}
+
+.trophy-ranking-table th,
+.trophy-ranking-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid #e3edf1;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  text-align: left;
+}
+
+.trophy-ranking-table th {
+  color: #52646e;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.trophy-ranking-table th:nth-child(1),
+.trophy-ranking-table td:nth-child(1) {
+  width: 38px;
+  color: var(--accent-dark);
+  font-weight: 950;
+  vertical-align: top;
+}
+
+.trophy-points-cell,
+.trophy-ranking-table th:nth-child(4),
+.trophy-ranking-table td:nth-child(4) {
+  width: 78px;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.trophy-club-cell,
+.trophy-events-cell,
+.trophy-ranking-table th:nth-child(3),
+.trophy-ranking-table th:nth-child(5) {
+  display: none;
+}
+
+.trophy-ranking-table small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.trophy-ranking-table tr.trophy-podium-gold {
+  background: #fff7d6;
+}
+
+.trophy-ranking-table tr.trophy-podium-silver {
+  background: #f2f5f7;
+}
+
+.trophy-ranking-table tr.trophy-podium-bronze {
+  background: #fff0df;
+}
+
+.trophy-ranking-table tr.trophy-podium-gold td {
+  border-bottom-color: #f2df99;
+}
+
+.trophy-ranking-table tr.trophy-podium-silver td {
+  border-bottom-color: #d8e0e6;
+}
+
+.trophy-ranking-table tr.trophy-podium-bronze td {
+  border-bottom-color: #edc8a4;
+}
+
+.trophy-name-cell {
+  min-width: 0;
+}
+
+.trophy-row-name {
+  display: inline;
+  color: var(--ink);
+  font-weight: 950;
+  line-height: 1.18;
+}
+
+.trophy-mobile-club,
+.trophy-row-birth {
+  display: inline;
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.trophy-mobile-events {
+  display: block;
+  margin-top: 4px;
+  color: #52646e;
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.trophy-row-name {
+  min-width: 0;
+}
+
 .public-refresh-button {
-  width: 36px;
-  min-width: 36px;
+  width: 54px;
+  min-width: 54px;
   padding-inline: 0;
   font-size: 1.08rem;
   font-weight: 950;
+}
+
+.public-medals-shell {
+  width: min(1120px, calc(100% - 24px));
+}
+
+.public-medals-overview {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.public-medals-overview h2 {
+  margin: 0 0 4px;
+  color: var(--accent-dark);
+  font-size: 1.18rem;
+}
+
+.public-medals-page .public-topbar .public-header-actions {
+  flex-wrap: nowrap;
+}
+
+.public-medals-page .public-topbar .public-page-switch {
+  min-width: 0;
+  text-align: center;
+}
+
+.public-medals-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.public-medals-stat {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d8e7ec;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.public-medals-stat span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #52646e;
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-medals-stat strong {
+  color: var(--ink);
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.public-medals-ranking-panel {
+  overflow: visible;
+}
+
+.public-medals-ranking {
+  min-width: 0;
+}
+
+.public-medals-help {
+  margin: 0 0 8px;
+  color: #70808a;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.public-medals-help span {
+  display: block;
+}
+
+.public-medals-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.public-medals-table th,
+.public-medals-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e3edf1;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.public-medals-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f8fbfc;
+  box-shadow: 0 1px 0 #e3edf1, 0 6px 12px rgba(15, 23, 42, 0.06);
+  color: #52646e;
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.public-medals-table th span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.public-medals-table th .public-medal-label-short {
+  display: none;
+}
+
+.public-medals-table tbody tr:nth-child(odd) {
+  background: #f8fbfc;
+}
+
+.public-medals-table tbody tr:first-child {
+  background: #fff9e8;
+}
+
+.public-medals-table tbody tr[data-club-row-key] {
+  cursor: pointer;
+}
+
+.public-medals-rank {
+  width: 54px;
+  color: var(--accent-dark);
+  font-weight: 950;
+}
+
+.public-medals-table tbody tr.is-tied .public-medals-rank::after {
+  content: "=";
+  display: inline-block;
+  margin-left: 4px;
+  color: #70808a;
+  font-size: 0.74em;
+  font-weight: 850;
+  transform: translateY(-1px);
+}
+
+.public-medals-club-cell {
+  min-width: 220px;
+}
+
+.public-medals-club-actions {
+  display: grid;
+  gap: 1px;
+  justify-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.public-medals-club-code {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 950;
+  line-height: 1.05;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.public-medals-club-code:hover,
+.public-medals-club-code:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.public-medals-club-name-inline {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #52646e;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-medals-count,
+.public-medals-total {
+  width: 84px;
+  text-align: center;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.public-medals-total {
+  color: var(--accent-dark);
+  font-size: 1.04rem;
+}
+
+.public-medals-count.gold {
+  color: #93660b;
+}
+
+.public-medals-count.silver {
+  color: #667085;
+}
+
+.public-medals-count.bronze {
+  color: #9a5b22;
+}
+
+.club-medal-icon {
+  position: relative;
+  display: inline-grid;
+  width: 18px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: end center;
+  vertical-align: -6px;
+}
+
+.club-medal-ribbon {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  width: 10px;
+  height: 11px;
+  border-radius: 2px 2px 1px 1px;
+  background:
+    linear-gradient(90deg, #0b7285 0 34%, #ffffff 34% 66%, #0b7285 66% 100%);
+  clip-path: polygon(0 0, 100% 0, 86% 100%, 50% 72%, 14% 100%);
+}
+
+.club-medal-disc {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.75), inset 0 -2px 3px rgba(55, 65, 81, 0.18), 0 1px 3px rgba(15, 23, 42, 0.22);
+}
+
+.club-medal-disc::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: inherit;
+}
+
+.club-medal-icon.gold .club-medal-disc {
+  background: linear-gradient(135deg, #ffe39b, #d99a18 60%, #fff0b8);
+}
+
+.club-medal-icon.silver .club-medal-disc {
+  background: linear-gradient(135deg, #f4f6f8, #aab2bd 60%, #ffffff);
+}
+
+.club-medal-icon.bronze .club-medal-disc {
+  background: linear-gradient(135deg, #f0b27a, #a75f2b 60%, #ffd0a4);
+}
+
+.public-club-medal-metal,
+.public-club-medal-race,
+.public-club-medal-name,
+.public-club-medal-time {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.public-club-medal-metal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.public-club-medal-race {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.public-club-medal-name {
+  color: #52646e;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.public-club-medal-time {
+  color: var(--accent-dark);
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.public-club-medals-modal[hidden] {
+  display: none;
+}
+
+.public-club-medals-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7, 20, 31, 0.58);
+}
+
+.public-club-medals-open {
+  overflow: hidden;
+}
+
+.public-club-medals-dialog {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(460px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.28);
+}
+
+.public-club-medals-close {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  justify-self: end;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: -4px 0 -42px;
+  border: 1px solid #dce8ed;
+  border-radius: 999px;
+  background: rgba(239, 246, 248, 0.96);
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  font-size: 1.35rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.public-club-medals-close:hover,
+.public-club-medals-close:focus-visible {
+  border-color: rgba(11, 114, 133, 0.38);
+  background: #ffffff;
+  color: var(--accent-dark);
+  outline: none;
+}
+
+.public-club-medals-head {
+  min-width: 0;
+  padding-right: 42px;
+}
+
+.public-club-medals-head span {
+  color: var(--accent-dark);
+  font-size: 0.76rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-club-medals-head h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.public-club-medals-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.public-club-medals-group {
+  display: grid;
+  gap: 8px;
+}
+
+.public-club-medals-group h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.95rem;
+}
+
+.public-club-medals-lines {
+  display: grid;
+  gap: 5px;
+}
+
+.public-club-medalist-group {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e3edf1;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.public-club-medal-line {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 38px 54px 60px;
+  gap: 6px;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 7px;
+  color: #52646e;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.public-club-medal-line.is-relay {
+  grid-template-columns: minmax(130px, 1fr) 58px 48px 68px;
+}
+
+.public-club-medal-line + .public-club-medal-line {
+  min-height: 24px;
+  padding-top: 1px;
+}
+
+.public-club-medal-line strong {
+  min-width: 0;
+  color: var(--ink);
+  line-height: 1.18;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-club-medal-line strong.repeat-name {
+  visibility: hidden;
+}
+
+.public-club-medal-line .public-club-medal-race {
+  color: var(--ink);
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.public-club-medal-sex {
+  color: #52646e;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.public-club-medal-category {
+  display: inline;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.public-club-medal-time {
+  text-align: right;
+}
+
+.public-club-medal-line.sex-female .public-club-medal-category {
+  color: #a61e4d;
+}
+
+.public-club-medal-line.sex-male .public-club-medal-category {
+  color: #075985;
+}
+
+.public-club-medal-line.sex-mixed .public-club-medal-category {
+  color: #52646e;
 }
 
 .public-floating-refresh {
@@ -631,8 +1441,11 @@ body:not(.public-home-page) .public-footer {
 }
 
 .public-session-title > div {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .public-session-update {
@@ -2045,6 +2858,32 @@ body:not(.public-home-page) .public-footer {
   font-size: 0.82rem;
 }
 
+.public-ranking-block li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: start;
+}
+
+.public-result-ranking-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 6px;
+  align-items: start;
+  min-width: 0;
+}
+
+.public-result-rank {
+  min-width: 1.35em;
+  color: var(--accent-dark);
+  font-weight: 950;
+  text-align: right;
+}
+
+.public-result-ranking-entry {
+  min-width: 0;
+}
+
 .public-result-swimmer-button {
   display: inline;
   max-width: 100%;
@@ -2063,12 +2902,35 @@ body:not(.public-home-page) .public-footer {
   color: var(--accent-dark);
 }
 
+.public-relay-legs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 2px;
+  color: #7b8b94;
+  font-size: 0.68rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.public-relay-legs span {
+  margin-left: 0;
+  color: inherit;
+  font-weight: inherit;
+}
+
 .public-finalists-block li span,
 .public-unqualified-block li span,
 .public-unqualified-more li span {
   margin-left: 6px;
   color: var(--muted);
   font-weight: 850;
+}
+
+.public-unqualified-block .public-relay-legs span {
+  margin-left: 0;
+  color: inherit;
+  font-weight: inherit;
 }
 
 .public-finalists-block li span small {
@@ -2144,7 +3006,64 @@ body:not(.public-home-page) .public-footer {
 }
 
 
-@media (max-width: 720px) {
+@media (max-width: 920px) {
+  .tdh-public-modal {
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .tdh-public-dialog {
+    max-height: calc(100vh - 20px);
+    padding: 12px;
+  }
+
+  .tdh-public-head h2 {
+    font-size: 1.12rem;
+  }
+
+  .tdh-public-group-head {
+    align-items: start;
+    flex-direction: row;
+    gap: 3px;
+  }
+
+  .tdh-public-group-head span {
+    text-align: left;
+  }
+
+  .tdh-public-jump {
+    gap: 5px;
+  }
+
+  .tdh-public-jump .ghost-button {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .trophy-ranking-table {
+    table-layout: auto;
+    font-size: 0.78rem;
+  }
+
+  .trophy-ranking-table th,
+  .trophy-ranking-table td {
+    padding: 8px 6px;
+  }
+
+  .trophy-ranking-table th:nth-child(1),
+  .trophy-ranking-table td:nth-child(1) {
+    width: 34px;
+  }
+
+  .trophy-points-cell,
+  .trophy-ranking-table th:nth-child(4),
+  .trophy-ranking-table td:nth-child(4) {
+    width: 70px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
   .public-finalists-grid {
     grid-template-columns: 1fr;
   }
@@ -2167,7 +3086,7 @@ body:not(.public-home-page) .public-footer {
   .public-topbar {
     align-items: flex-start;
     min-height: 0;
-    padding: 14px 86px 14px 12px;
+    padding: 14px 84px 14px 12px;
   }
 
   .public-topbar-title {
@@ -2176,6 +3095,14 @@ body:not(.public-home-page) .public-footer {
 
   .public-topbar h1 {
     font-size: 1.55rem;
+  }
+
+  .public-topbar .public-medals-title {
+    gap: 3px;
+  }
+
+  .public-medals-title-event {
+    font-size: 0.88rem;
   }
 
   .public-topbar-logo {
@@ -2187,19 +3114,30 @@ body:not(.public-home-page) .public-footer {
   }
 
   .public-topbar .public-header-actions {
-    width: 100%;
-    justify-content: flex-start;
-    margin: 10px 0 0;
+    position: absolute;
+    right: 10px;
+    top: 58px;
+    z-index: 1;
+    width: auto;
+    justify-content: flex-end;
+    margin: 0;
   }
 
   .public-topbar .public-page-switch {
-    min-height: 34px;
-    padding: 7px 10px;
-    font-size: 0.8rem;
+    min-height: 28px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 0.72rem;
+    line-height: 1.1;
   }
 
   .public-topbar .firebase-header-status {
-    min-height: 28px;
+    display: none;
+  }
+
+  .public-medals-page .public-meet-meta {
+    margin-top: 6px;
+    font-size: 0.72rem;
   }
 
   .public-home-header {
@@ -2276,22 +3214,61 @@ body:not(.public-home-page) .public-footer {
     margin-top: 10px;
   }
 
+  .public-results-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+  }
+
+  .public-results-toolbar .public-results-actions {
+    order: 1;
+  }
+
+  .public-results-toolbar .public-session-select {
+    order: 2;
+  }
+
   .public-results-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 42px;
     width: 100%;
     justify-content: stretch;
+    align-self: start;
+    gap: 6px;
+    margin-top: 0;
   }
 
   .public-results-actions .ghost-button {
-    flex: 1 1 130px;
-    min-height: 38px;
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .public-results-actions .public-medals-link {
+    font-size: 0.68rem;
+  }
+
+  .public-results-actions .public-refresh-button {
+    width: 100%;
+    min-width: 0;
+    font-size: 1rem;
+  }
+
+  #tdhRankingBtn {
+    font-size: 0.68rem;
   }
 
   .public-series-toolbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: end;
     gap: 6px;
     padding: 8px;
+  }
+
+  .public-series-toolbar > * {
+    min-width: 0;
   }
 
   .public-series-toolbar-text {
@@ -2301,18 +3278,66 @@ body:not(.public-home-page) .public-footer {
   .public-session-select {
     flex: none;
     width: auto;
+    min-width: 0;
   }
 
   .public-series-toolbar-actions {
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: end;
+    justify-content: stretch;
     gap: 5px;
+    width: 100%;
+    min-width: 0;
   }
 
   .public-series-toolbar-actions .ghost-button {
     flex: 0 0 auto;
     min-height: 32px;
+    padding: 0 6px;
+    font-size: 0.74rem;
+  }
+
+  .public-results-actions.public-series-toolbar-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 42px;
+  }
+
+  .public-results-actions.public-series-toolbar-actions .ghost-button {
+    min-height: 34px;
     padding: 0 8px;
-    font-size: 0.76rem;
+  }
+
+  .public-series-toolbar-actions .public-refresh-button {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .public-results-actions.public-series-toolbar-actions .public-refresh-button {
+    width: 42px;
+    min-width: 42px;
+  }
+
+  .public-results-toolbar .public-results-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 42px !important;
+  }
+
+  .public-results-toolbar .public-results-actions #refreshPublicResultsBtn {
+    display: inline-flex !important;
+    width: 42px !important;
+    min-width: 42px !important;
+  }
+
+  #publicSeriesProgramBtn {
+    width: auto;
+    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #publicSeriesProgramBtn {
+    font-size: 0.74rem;
   }
 
   .public-session-select {
@@ -2324,6 +3349,8 @@ body:not(.public-home-page) .public-footer {
   }
 
   .public-session-select select {
+    width: 100%;
+    min-width: 0;
     min-height: 32px;
     font-size: 0.8rem;
     padding: 0 8px;
@@ -2440,8 +3467,171 @@ body:not(.public-home-page) .public-footer {
     overflow-x: hidden;
   }
 
+  .public-medals-overview {
+    align-items: stretch;
+  }
+
+  .public-medals-overview .public-refresh-button {
+    margin-top: 0;
+  }
+
+  .public-medals-page .public-topbar .public-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, auto));
+    justify-content: end;
+    gap: 8px;
+  }
+
+  .public-medals-page .public-topbar .public-page-switch {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.76rem;
+  }
+
+  .public-medals-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-medals-stat {
+    padding: 10px 12px;
+  }
+
+  .public-medals-stat strong {
+    font-size: 1.35rem;
+  }
+
+  .public-medals-ranking-panel {
+    overflow-x: visible;
+  }
+
+  .public-medals-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 0.78rem;
+  }
+
+  .public-medals-table th,
+  .public-medals-table td {
+    padding: 8px 2px;
+  }
+
+  .public-medals-table th {
+    font-size: 0.58rem;
+    white-space: normal;
+  }
+
+  .public-medals-table th span {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .public-medals-table th .public-medal-label-full,
+  .public-medals-table th .public-medal-label-short {
+    display: none;
+  }
+
+  .public-medals-table th:nth-child(1),
+  .public-medals-table td:nth-child(1) {
+    width: 22px;
+  }
+
+  .public-medals-table th:nth-child(2),
+  .public-medals-table td:nth-child(2) {
+    width: auto;
+  }
+
+  .public-medals-table th:nth-child(n+3),
+  .public-medals-table td:nth-child(n+3) {
+    width: 26px;
+    text-align: center;
+  }
+
+  .public-medals-club-cell {
+    min-width: 0;
+  }
+
+  .public-medals-club-actions {
+    gap: 1px;
+  }
+
+  .public-medals-club-code {
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+  }
+
+  .public-medals-club-name-inline {
+    font-size: 0.5rem;
+  }
+
+  .public-medals-count,
+  .public-medals-total {
+    width: auto;
+    font-size: 0.82rem;
+  }
+
+  .club-medal-icon {
+    width: 14px;
+    height: 18px;
+  }
+
+  .club-medal-ribbon {
+    left: 3px;
+    width: 8px;
+    height: 9px;
+  }
+
+  .club-medal-disc {
+    width: 13px;
+    height: 13px;
+  }
+
+  .public-club-medal-time {
+    white-space: normal;
+  }
+
+  .public-club-medals-modal {
+    padding: 10px;
+  }
+
+  .public-club-medals-dialog {
+    max-height: calc(100vh - 20px);
+    padding: 12px;
+  }
+
+  .public-club-medals-head {
+    display: grid;
+  }
+
+  .public-club-medals-head h2 {
+    font-size: 1rem;
+  }
+
+  .public-club-medal-line {
+    grid-template-columns: minmax(92px, 1fr) 38px 50px 47px;
+    gap: 5px;
+    min-height: 28px;
+    padding: 4px 6px;
+    font-size: 0.66rem;
+  }
+
+  .public-club-medal-line.is-relay {
+    grid-template-columns: minmax(92px, 1fr) 43px 38px 47px;
+  }
+
+  .public-club-medal-line strong {
+    white-space: nowrap;
+  }
+
+  .public-club-medal-line .public-club-medal-time {
+    font-size: 0.7rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+
   #refreshPublicResultsBtn,
-  #refreshPublicSeriesBtn {
+  #refreshPublicSeriesBtn,
+  #refreshPublicMedalsBtn {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
@@ -2449,11 +3639,6 @@ body:not(.public-home-page) .public-footer {
 
   .public-floating-refresh {
     display: flex;
-  }
-
-  .public-session-title {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .public-session-title span {
@@ -2502,4 +3687,10 @@ body:not(.public-home-page) .public-footer {
     padding: 4px;
   }
 
+}
+
+@media (max-width: 380px) {
+  .public-medals-title-event {
+    font-size: 0.78rem;
+  }
 }

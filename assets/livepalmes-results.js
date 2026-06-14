@@ -81,6 +81,13 @@
 
   function publicResultPayload(result, options = {}) {
     if (!result) return null;
+    const safeRows = (rows) => Array.isArray(rows) ? rows.map(resultWithoutPdf) : [];
+    const finalists = result.finalists && typeof result.finalists === "object"
+      ? {
+        a: safeRows(result.finalists.a),
+        b: safeRows(result.finalists.b)
+      }
+      : { a: [], b: [] };
     return {
       id: result.id || "",
       raceKey: result.raceKey || "",
@@ -101,7 +108,11 @@
       updatedAt: result.updatedAt || "",
       isPartial: Boolean(result.isPartial),
       status: result.status || "",
-      finalistsAnnouncedAt: result.finalistsAnnouncedAt || ""
+      finalistsAnnouncedAt: result.finalistsAnnouncedAt || "",
+      ranking: safeRows(result.ranking),
+      performances: safeRows(result.performances),
+      nextUnqualified: safeRows(result.nextUnqualified),
+      finalists
     };
   }
 

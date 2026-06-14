@@ -32,6 +32,7 @@
       roleCodesModal,
       saveRoleCodesFromModal,
       showPerformanceDiagnosticModal,
+      showPublicPublicationDiagnosticModal,
       showTechnicalDiagnosticModal,
       showTechnicalLogModal,
       toggleCompetitionMode,
@@ -99,6 +100,15 @@
           }
           return;
         }
+        if (event.target.closest("[data-public-publication-diagnostic]")) {
+          try {
+            await showPublicPublicationDiagnosticModal();
+          } catch (error) {
+            console.error(error);
+            window.alert(`Diagnostic public impossible : ${error?.message || error}`);
+          }
+          return;
+        }
         if (event.target.closest("[data-technical-log]")) {
           try {
             showTechnicalLogModal?.();
@@ -127,7 +137,7 @@
         }
         if (event.target.closest("[data-public-index-republish]")) {
           try {
-            await publishPublicResultsIndex();
+            await publishPublicResultsIndex({ strict: true });
             window.alert("Index public republié. Les pages Séries/Résultats peuvent utiliser les données à jour sans modifier l'heure des séries.");
           } catch (error) {
             console.error(error);
@@ -136,17 +146,26 @@
           return;
         }
         if (event.target.closest("[data-public-competition-archive]")) {
-          const ok = window.confirm("Créer une archive publique de la compétition actuelle ?\n\nLes résultats, fiches nageurs et PDF résultats seront copiés dans l'historique consultable.");
+          const ok = window.confirm("Créer une archive publique de la compétition actuelle puis retirer la compétition du direct public ?\n\nLes résultats, fiches nageurs et PDF seront copiés dans l'historique consultable. Les pages publiques directes seront ensuite vidées pour ne plus mélanger archive et direct.");
           if (!ok) return;
           try {
             await publishPublicResultsIndex({ silent: true, strict: true });
             const archive = await archiveCurrentResults?.("Archive publique de la compétition", undefined, { publicArchive: true });
             if (!archive?.id) {
-              window.alert("Aucun résultat publié à archiver pour le moment.");
-              return;
+              const cleanOnly = window.confirm("Aucun résultat publié n'a été trouvé à archiver.\n\nRetirer quand même la compétition du direct public ?");
+              if (!cleanOnly) return;
             }
-            window.alert(`Archive créée : ${archive.count} résultat${archive.count > 1 ? "s" : ""} archivé${archive.count > 1 ? "s" : ""}.\n\nElle sera visible depuis la page Archives publiques.`);
-            window.open(`archives.html?archive=${encodeURIComponent(archive.id)}`, "_blank", "noopener");
+            const cleared = await clearPublishedResults?.({
+              skipArchive: true,
+              unpublishPublicIndexes: true,
+              clearSeriesPdfs: true,
+              reason: "Compétition archivée"
+            });
+            await updateLiveNotes?.("Compétition archivée et retirée du direct public", { publicDirectDisabled: true });
+            window.alert(archive?.id
+              ? `Archive créée : ${archive.count} résultat${archive.count > 1 ? "s" : ""} archivé${archive.count > 1 ? "s" : ""}.\n\nDirect public vidé : ${cleared || 0} résultat${(cleared || 0) > 1 ? "s" : ""} retiré${(cleared || 0) > 1 ? "s" : ""}. Elle reste visible depuis la page Archives publiques.`
+              : "Direct public retiré. Les pages directes ne doivent plus annoncer cette compétition.");
+            if (archive?.id) window.open(`archives.html?archive=${encodeURIComponent(archive.id)}`, "_blank", "noopener");
           } catch (error) {
             console.error(error);
             window.alert(`Archivage impossible : ${error?.message || error}`);
@@ -378,10 +397,6 @@
         if (saveButton) {
           await saveRoleCodesFromModal(true);
           return;
-        }
-        if (event.target.closest("[data-disable-role-codes]")) {
-          const ok = window.confirm("Désactiver les codes pour toutes les consoles ?");
-          if (ok) await saveRoleCodesFromModal(false);
         }
       });
       

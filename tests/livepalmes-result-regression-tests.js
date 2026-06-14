@@ -6,8 +6,10 @@ global.window = global;
 require(path.join(__dirname, "..", "assets", "livepalmes-time.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-people.js"));
 require(path.join(__dirname, "..", "assets", "livepalmes-result-parser.js"));
+require(path.join(__dirname, "..", "assets", "livepalmes-damien-hebert-trophy.js"));
 
 const parser = global.LivePalmesResultParser;
+const trophy = global.LivePalmesDamienHebertTrophy;
 const time = global.LivePalmesTime;
 const people = global.LivePalmesPeople;
 
@@ -56,11 +58,13 @@ function testFinalTimeWinsAfterIntermediateTimes() {
 function testPointsAndRecordLabelsAfterTimeAreIgnored() {
   assertParsedRow("1 GUILLE Lola 06 SEN * UEP 18.42 38.52 40.62 742", {
     displayName: "GUILLE Lola",
-    time: "40.62"
+    time: "40.62",
+    points: "742"
   });
   assertParsedRow("8 BADOR Chloe 10 JUN * SASNAP 18.60 (en finale) 40.28 RF 689", {
     displayName: "BADOR Chloe",
     time: "40.28",
+    points: "689",
     qualified: true
   });
 }
@@ -73,6 +77,12 @@ function testPartialLongRaceWithoutRankKeepsSwimmerTime() {
   ];
   assert.deepEqual(rows.map((row) => row?.time), ["17:57.21", "16:15.81", "18:36.65"]);
   assert.deepEqual(rows.map((row) => row?.rank), ["", "", ""]);
+}
+
+function testUnrankedLongRaceKeepsPoints() {
+  const row = parser.parseUnrankedResultRow("TREMBLY Yaille 11 MV 04:32.11 09:01.24 17:57.21 512", parserOptions);
+  assert.equal(row?.time, "17:57.21");
+  assert.equal(row?.points, "512");
 }
 
 function testFinalistsSplitOnlyWhenSixteenQualifiedRowsExist() {
@@ -210,6 +220,74 @@ function testRelaysAreIgnoredForSwimmerPerformances() {
   assert.equal(performances.length, 0);
 }
 
+function testRelayResultRowsAreParsedForPublicRaceDetails() {
+  const parsed = parser.parseFinalistsFromResultLines([
+    "4x100 m surface Seniors Hommes",
+    "1 PAN SEN * PAN 17.10 34.42 51.90 01:08.25 RF 812",
+    "2 CPBR SEN * CPBR 17.88 36.10 54.20 01:11.34",
+    "3 UEP SEN * UEP disqualifie"
+  ], parserOptions);
+
+  assert.equal(parsed.ranking.length, 3);
+  assert.deepEqual(parsed.ranking.map((row) => `${row.rank}:${row.displayName}:${row.club}:${row.time || row.statusLabel}`), [
+    "1:PAN:PAN:01:08.25",
+    "2:CPBR:CPBR:01:11.34",
+    "3:UEP:UEP:DSQ"
+  ]);
+  assert.equal(parsed.ranking[0].relay, true);
+  assert.equal(parsed.ranking[0].points, "812");
+  assert.equal(parsed.ranking[0].categoryLabel, "Senior");
+}
+
+function testRelayResultRowsReadPlainCategoryBeforeClub() {
+  const parsed = parser.parseFinalistsFromResultLines([
+    "4x100m SB Minimes Mixte",
+    "1 Pays d'Aix Natation XMI PAN 3:53.00 357",
+    "2 Club Sportif Gravenchon XMI CSG 3:53.63 355",
+    "3 Club Nautique de Houilles Carrières XMI CNHC disqualifie"
+  ], parserOptions);
+
+  assert.equal(parsed.ranking.length, 3);
+  assert.deepEqual(parsed.ranking.map((row) => `${row.rank}:${row.displayName}:${row.categoryLabel}:${row.club}:${row.time || row.statusLabel}`), [
+    "1:Pays d'Aix Natation:Minime Mixte:PAN:03:53.00",
+    "2:Club Sportif Gravenchon:Minime Mixte:CSG:03:53.63",
+    "3:Club Nautique de Houilles Carrières:Minime Mixte:CNHC:DSQ"
+  ]);
+  assert.equal(parsed.ranking[0].categoryCode, "XMI");
+  assert.equal(parsed.ranking[0].points, "357");
+}
+
+function testMasterRelayCategoryComesFromSectionTitleAndLegsAreRead() {
+  const parsed = parser.parseFinalistsFromResultLines([
+    "4x100m Surface Masters R220 Mixte",
+    "1 Groupe Subaquatique Morlaix Plouezoc'h X40+ GSMP 4:01.99 286",
+    "MESSAGER Philippe 54 H70+ 1:03.90",
+    "QUEAU Corinne 77 F40+ [1:02.90] 2:06.80",
+    "LAURENT Ronan 75 H50+ [57.51] 3:04.31",
+    "LE GOUARD Dotothee 77 F40+ [57.68]",
+    "2 Pays Solesmois Palmes X220 PSP 4:48.89 184",
+    "VERNHOLLES Jean-Pierre 64 H60+ 1:03.12",
+    "DEDIEU Corinne 56 F70+ [1:35.49] 2:38.61"
+  ], parserOptions);
+
+  assert.equal(parsed.ranking.length, 2);
+  assert.deepEqual(parsed.ranking.map((row) => `${row.rank}:${row.displayName}:${row.categoryCode}:${row.categoryLabel}:${row.club}:${row.time}`), [
+    "1:Groupe Subaquatique Morlaix Plouezoc'h:R220:R220:GSMP:04:01.99",
+    "2:Pays Solesmois Palmes:R220:R220:PSP:04:48.89"
+  ]);
+  assert.deepEqual(parsed.ranking.map((row) => row.sectionCategoryLabel), ["R220", "R220"]);
+  assert.deepEqual(parsed.ranking[0].relayLegs.map((leg) => `${leg.order}:${leg.name}:${leg.time}`), [
+    "1:MESSAGER P.:01:03.90",
+    "2:QUEAU C.:01:02.90",
+    "3:LAURENT R.:57.51",
+    "4:LE G.:57.68"
+  ]);
+  assert.deepEqual(parsed.ranking[1].relayLegs.map((leg) => `${leg.order}:${leg.name}:${leg.time}`), [
+    "1:VERNHOLLES J.:01:03.12",
+    "2:DEDIEU C.:01:35.49"
+  ]);
+}
+
 function testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded() {
   assert.equal(parser.shouldPreserveFinalistsOnReread({
     hasFinal: true,
@@ -225,17 +303,72 @@ function testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded() {
   }), false);
 }
 
+function testDamienHebertRankingUsesMinimePoints() {
+  const rankings = trophy.provisionalRankings([{
+    id: "result-50sf-f",
+    eventId: "50sf",
+    eventLabel: "50 m surface Minimes Femmes",
+    sex: "F",
+    ranking: [
+      { rank: 1, displayName: "DURAND Emma", birthYear: "2011", club: "CLUB", category: "Minime", time: "20.10", points: "742" },
+      { rank: 2, displayName: "MARTIN Lea", birthYear: "2011", club: "CLUB", categoryCode: "FMI", time: "20.40", points: "731" },
+      { rank: 3, displayName: "SENIOR Test", birthYear: "2000", club: "CLUB", category: "Senior", time: "20.50", points: "900" }
+    ]
+  }, {
+    id: "result-100is-f",
+    eventId: "100is",
+    eventLabel: "100 m immersion Minimes Femmes",
+    sex: "F",
+    ranking: [
+      { rank: 1, displayName: "DURAND Emma", birthYear: "2011", club: "CLUB", category: "Minime", time: "45.10", points: "700" }
+    ]
+  }, {
+    id: "result-200sf-f",
+    eventId: "200sf",
+    eventLabel: "200 m surface Minimes Femmes",
+    sex: "F",
+    ranking: [
+      { rank: 1, displayName: "DURAND Emma", birthYear: "2011", club: "CLUB", category: "Minime", time: "1:40.10", points: "999" }
+    ]
+  }], { normalizePersonName: people.normalizePersonName });
+
+  assert.equal(rankings.female.length, 2);
+  assert.equal(rankings.female[0].name, "DURAND Emma");
+  assert.equal(rankings.female[0].totalPoints, 1442);
+  assert.equal(rankings.female[0].eventCount, 2);
+  assert.equal(rankings.female[1].totalPoints, 731);
+
+  const html = trophy.renderPublicProvisionalHtml([{
+    eventId: "50sf",
+    eventLabel: "50 m surface Minimes Femmes",
+    sex: "F",
+    ranking: [
+      { displayName: "DURAND Emma", birthYear: "2011", club: "CLUB", category: "Minime", points: "742" }
+    ]
+  }], { normalizePersonName: people.normalizePersonName });
+  assert.match(html, /Classement provisoire/);
+  assert.match(html, /TDH Filles/);
+  assert.match(html, /TDH Gar/);
+  assert.match(html, /Courses nag/);
+  assert.match(html, /50SF/);
+}
+
 [
   testFinalTimeWinsAfterIntermediateTimes,
   testPointsAndRecordLabelsAfterTimeAreIgnored,
   testPartialLongRaceWithoutRankKeepsSwimmerTime,
+  testUnrankedLongRaceKeepsPoints,
   testFinalistsSplitOnlyWhenSixteenQualifiedRowsExist,
   testNsAndInMarkersDoNotPolluteNamesOrCreateDuplicates,
   testStatusesBecomePerformancesOnlyFromParsedResultRows,
   testFinalPerformanceStagesUseRankAThenB,
   testFinalDsqKeepsFinalSlotWithoutShiftingFinalB,
   testRelaysAreIgnoredForSwimmerPerformances,
-  testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded
+  testRelayResultRowsAreParsedForPublicRaceDetails,
+  testRelayResultRowsReadPlainCategoryBeforeClub,
+  testMasterRelayCategoryComesFromSectionTitleAndLegsAreRead,
+  testRereadPreservesAnnouncedFinalistsOnlyWhenNeeded,
+  testDamienHebertRankingUsesMinimePoints
 ].forEach((test) => test());
 
 console.log("LivePalmes result regression tests OK");

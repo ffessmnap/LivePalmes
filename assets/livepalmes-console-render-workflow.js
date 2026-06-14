@@ -123,8 +123,10 @@
         roleLockBtn.classList.toggle("confirm-button", pinLockEnabled());
       }
       if (publicPositionToggle) {
-        publicPositionToggle.checked = publicPositionEnabled();
-        publicPositionToggle.disabled = state.role !== "speaker" || !getFirestoreDb();
+        publicPositionToggle.checked = false;
+        publicPositionToggle.disabled = true;
+        const publicPositionLabel = publicPositionToggle.closest(".public-position-toggle");
+        if (publicPositionLabel) publicPositionLabel.hidden = true;
       }
       if (adminSeriesBtn) adminSeriesBtn.hidden = state.role !== "computer";
       if (archivesBtn) archivesBtn.hidden = profileHomeActive || state.role !== "computer";

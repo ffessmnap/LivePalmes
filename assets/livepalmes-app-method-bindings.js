@@ -179,7 +179,8 @@
       "renderDataStatus", "firebaseStatusMeta", "renderFirebaseHeaderStatus", "shortStatusDate",
       "appendImportHistory", "countCollectionDocuments", "collectPerformanceDiagnostic", "renderPerformanceDiagnosticModal",
       "showPerformanceDiagnosticModal", "safeCountCollection", "safeDocumentData", "alertPendingTargets",
-      "alertPendingBreakdown", "alertTargetsLabel", "collectTechnicalDiagnostic", "resultHasDetailsForDiagnostic",
+      "alertPendingBreakdown", "alertTargetsLabel", "collectTechnicalDiagnostic", "collectPublicPublicationDiagnostic",
+      "resultHasDetailsForDiagnostic", "renderPublicPublicationDiagnosticModal", "showPublicPublicationDiagnosticModal",
       "renderTechnicalDiagnosticModal", "showTechnicalDiagnosticModal", "cleanLegacyResultPdfs",
       "showTechnicalLogModal", "clearTechnicalLog", "showDataDiagnostic"
     ],

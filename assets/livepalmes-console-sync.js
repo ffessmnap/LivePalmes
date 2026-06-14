@@ -430,6 +430,13 @@
           context.firebaseStatus = "local";
           throw new Error("Publication refusée : aucune compétition n'est chargée localement.");
         }
+        const liveNotes = {
+          ...(payload.notes || {}),
+          livePublishedAt: new Date().toISOString(),
+          liveSource: source
+        };
+        delete liveNotes.publicPositionEnabled;
+        delete liveNotes.publicProgress;
         const livePayload = {
           meet: payload.meet,
           events: payload.events,
@@ -444,11 +451,7 @@
           competitionStats: payload.competitionStats,
           swimmerInfos: payload.swimmerInfos,
           sourceVersion: payload.sourceVersion,
-          notes: {
-            ...(payload.notes || {}),
-            livePublishedAt: new Date().toISOString(),
-            liveSource: source
-          }
+          notes: liveNotes
         };
         await doc.set({
           data: sanitizeAlertForFirestore(livePayload),
@@ -462,13 +465,16 @@
       }
       
       async function updateLiveNotes(label, notePatch = {}) {
+        const nextNotes = {
+          ...(data.notes || {}),
+          ...notePatch,
+          importHistory: label ? appendImportHistory(data.notes || {}, label) : (data.notes?.importHistory || [])
+        };
+        delete nextNotes.publicPositionEnabled;
+        delete nextNotes.publicProgress;
         const nextData = normalizeData({
           ...data,
-          notes: {
-            ...(data.notes || {}),
-            ...notePatch,
-            importHistory: label ? appendImportHistory(data.notes || {}, label) : (data.notes?.importHistory || [])
-          },
+          notes: nextNotes,
           sourceVersion: `notes-${Date.now()}`
         });
         context.data = nextData;
@@ -498,9 +504,23 @@
       async function heartbeatRoleLock() {
         return roleLockSync.heartbeatRoleLock();
       }
+
+      function mergedPublicPdfMetadata(remoteNotes = {}, localNotes = {}) {
+        return {
+          publicSeriesPdfs: Array.isArray(remoteNotes.publicSeriesPdfs) && remoteNotes.publicSeriesPdfs.length
+            ? remoteNotes.publicSeriesPdfs
+            : (Array.isArray(localNotes.publicSeriesPdfs) ? localNotes.publicSeriesPdfs : []),
+          publicSessionResultsPdfs: Array.isArray(remoteNotes.publicSessionResultsPdfs) && remoteNotes.publicSessionResultsPdfs.length
+            ? remoteNotes.publicSessionResultsPdfs
+            : (Array.isArray(localNotes.publicSessionResultsPdfs) ? localNotes.publicSessionResultsPdfs : [])
+        };
+      }
       
       function mergeRemoteLiveData(remoteData) {
-        return normalizeData({
+        const localNotes = data.notes || {};
+        const remoteNotes = remoteData.notes || {};
+        const publicPdfMetadata = mergedPublicPdfMetadata(remoteNotes, localNotes);
+        const mergedData = normalizeData({
           ...data,
           meet: remoteData.meet || data.meet,
           events: Array.isArray(remoteData.events) ? remoteData.events : data.events,
@@ -516,12 +536,14 @@
           swimmerInfos: Array.isArray(remoteData.swimmerInfos) ? remoteData.swimmerInfos : data.swimmerInfos,
           sourceVersion: remoteData.sourceVersion || data.sourceVersion,
           notes: {
-            ...(data.notes || {}),
-            ...(remoteData.notes || {}),
+            ...localNotes,
+            ...remoteNotes,
+            ...publicPdfMetadata,
             sourceMode: remoteData.notes?.sourceMode || "series-live",
             sourceLabel: remoteData.notes?.sourceLabel || "Séries importées depuis LivePalmes"
           }
         });
+        return window.LivePalmesPublicRecordsSource?.mergeIntoLiveData?.(mergedData) || mergedData;
       }
       
       function applyRemoteLiveData(remoteData) {

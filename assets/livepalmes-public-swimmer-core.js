@@ -157,11 +157,12 @@
   }
 
   function recordEventMatches(recordEventId, eventId) {
-    const recordId = comparableEventId(recordEventId);
-    const raceId = comparableEventId(eventId);
+    const comparableRecordRaceId = (value) => comparableEventId(String(value || "").replace(/-mi\b/gi, ""));
+    const recordId = comparableRecordRaceId(recordEventId);
+    const raceId = comparableRecordRaceId(eventId);
     if (recordId && raceId && recordId === raceId) return true;
-    const recordSig = eventSignature(recordEventId);
-    const raceSig = eventSignature(eventId);
+    const recordSig = eventSignature(String(recordEventId || "").replace(/-mi\b/gi, ""));
+    const raceSig = eventSignature(String(eventId || "").replace(/-mi\b/gi, ""));
     return Boolean(recordSig && raceSig && recordSig === raceSig);
   }
 

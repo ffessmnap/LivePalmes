@@ -3,7 +3,7 @@
     "appendImportHistory", "archiveCurrentHistory", "archiveCurrentResults", "clearFirestoreAlerts",
     "clearPublicSessionResultsPdfs", "clearPublicSessionResultsPdfsForSession", "clearPublicSeriesPdfs", "competitionModeEnabled",
     "deleteFinalResultAlerts", "deleteResultPdfPayload", "normalizeData", "publishLiveDataToFirestore",
-    "publishPublicResultsIndex", "render", "renderResultsAdminPanel", "resultWithoutPdf",
+    "publicResultsIndexDocument", "publishPublicResultsIndex", "render", "renderResultsAdminPanel", "resultWithoutPdf",
     "saveAlerts", "saveData", "saveLiveDismissedAlerts"
   ];
   const stateKeys = ["alerts", "data", "liveDismissedAlertIds", "raceResults", "resultsAdminSession", "state"];

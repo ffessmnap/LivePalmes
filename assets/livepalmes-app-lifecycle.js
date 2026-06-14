@@ -129,86 +129,122 @@
       applyFreshData(freshData, false);
     }
 
-    technicalLog?.installGlobalHandlers?.();
-    roleLockBtn?.addEventListener("click", toggleRoleLock);
-    dataDiagnosticBtn?.addEventListener("click", () => {
-      showDataDiagnostic().catch((error) => {
-        console.error(error);
-        window.alert(`Diagnostic impossible : ${error?.message || error}`);
-      });
-    });
-    setInterval(checkForGeneratedUpdates, 5000);
-    setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
-    setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
-    setInterval(disableCompetitionModeAfterInactivity, COMPETITION_INACTIVITY_CHECK_MS);
-    setInterval(updateConsolePresence, PRESENCE_HEARTBEAT_MS);
-    setInterval(() => {
-      if (context.profileHomeActive) refreshPresenceCounts();
-    }, PRESENCE_HEARTBEAT_MS);
-    ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
-      window.addEventListener(eventName, markConsoleActivity, { passive: true });
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        returnHomeAfterLocalInactivity();
+    let started = false;
+
+    function applyConsoleGateRole() {
+      const gateRole = window.LivePalmesConsoleGate?.unlockedRole?.() || "";
+      if (!gateRole) return;
+      context.cloudAuthenticatedRoles = {
+        ...(context.cloudAuthenticatedRoles || {}),
+        [gateRole]: true
+      };
+      context.consoleGateAdminBypass = window.LivePalmesConsoleGate?.adminBypass?.() === true;
+      const roleStates = getRoleStates();
+      const currentState = getState();
+      const nextState = cloneRoleState(roleStates[gateRole] || currentState || {});
+      nextState.role = gateRole;
+      if (!isSpeakerView() && nextState.series === "all") {
+        nextState.series = firstSeriesSelectionForCurrentRace();
       }
-    });
-    window.addEventListener("online", checkFirebaseConnection);
-    window.addEventListener("offline", () => {
-      context.firebaseStatus = "offline";
-      renderDataStatus();
-    });
-    window.addEventListener("resize", updateStickyAlertOffset);
-    window.addEventListener("pagehide", () => {
-      saveCurrentRoleState();
-      releaseRoleLock();
-      releaseConsolePresence();
-    });
-
-    jsonInput?.addEventListener("change", async () => {
-      const file = jsonInput.files[0];
-      if (!file) return;
-      const text = await file.text();
-      setData(normalizeData(JSON.parse(text)));
-      const data = getData();
-      const state = getState();
-      state.eventId = data.events[0]?.id || sampleData.events[0].id;
-      state.series = "all";
-      saveData();
-      render();
-      jsonInput.value = "";
-    });
-
-    document.querySelector("#importCsvBtn")?.addEventListener("click", () => {
-      const imported = parseCsv(csvInput.value);
-      if (!imported.length) return;
-      getData().entrants = getData().entrants.concat(imported);
-      csvInput.value = "";
-      saveData();
-      render();
-    });
-
-    initializeUiEvents();
-    render();
-    initFirebaseSync();
-    checkForGeneratedUpdates();
-    checkFirebaseConnection();
-    updateConsolePresence(true);
-    if (!context.profileHomeActive) {
-      acquireRoleLock?.(getState().role, { adminBypass: false }).then((reserved) => {
-        if (reserved !== false) return;
-        context.profileHomeActive = true;
-        render();
-        refreshPresenceCounts();
-      });
+      nextState.selectedSwimmerId = "";
+      nextState.selectedRecordKey = "";
+      setState(nextState);
+      context.profileHomeActive = false;
     }
-    if (context.profileHomeActive) refreshPresenceCounts();
 
-    return {
+    function startApplication() {
+      if (started) return;
+      started = true;
+      applyConsoleGateRole();
+      technicalLog?.installGlobalHandlers?.();
+      roleLockBtn?.addEventListener("click", toggleRoleLock);
+      dataDiagnosticBtn?.addEventListener("click", () => {
+        showDataDiagnostic().catch((error) => {
+          console.error(error);
+          window.alert(`Diagnostic impossible : ${error?.message || error}`);
+        });
+      });
+      setInterval(checkForGeneratedUpdates, 5000);
+      setInterval(heartbeatRoleLock, LOCK_HEARTBEAT_MS);
+      setInterval(checkFirebaseConnection, FIREBASE_CONNECTION_CHECK_MS);
+      setInterval(disableCompetitionModeAfterInactivity, COMPETITION_INACTIVITY_CHECK_MS);
+      setInterval(updateConsolePresence, PRESENCE_HEARTBEAT_MS);
+      setInterval(() => {
+        if (context.profileHomeActive) refreshPresenceCounts();
+      }, PRESENCE_HEARTBEAT_MS);
+      ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
+        window.addEventListener(eventName, markConsoleActivity, { passive: true });
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          returnHomeAfterLocalInactivity();
+        }
+      });
+      window.addEventListener("online", checkFirebaseConnection);
+      window.addEventListener("offline", () => {
+        context.firebaseStatus = "offline";
+        renderDataStatus();
+      });
+      window.addEventListener("resize", updateStickyAlertOffset);
+      window.addEventListener("pagehide", () => {
+        saveCurrentRoleState();
+        releaseRoleLock();
+        releaseConsolePresence();
+      });
+
+      jsonInput?.addEventListener("change", async () => {
+        const file = jsonInput.files[0];
+        if (!file) return;
+        const text = await file.text();
+        setData(normalizeData(JSON.parse(text)));
+        const data = getData();
+        const state = getState();
+        state.eventId = data.events[0]?.id || sampleData.events[0].id;
+        state.series = "all";
+        saveData();
+        render();
+        jsonInput.value = "";
+      });
+
+      document.querySelector("#importCsvBtn")?.addEventListener("click", () => {
+        const imported = parseCsv(csvInput.value);
+        if (!imported.length) return;
+        getData().entrants = getData().entrants.concat(imported);
+        csvInput.value = "";
+        saveData();
+        render();
+      });
+
+      initializeUiEvents();
+      render();
+      initFirebaseSync();
+      checkForGeneratedUpdates();
+      checkFirebaseConnection();
+      updateConsolePresence(true);
+      if (!context.profileHomeActive) {
+        acquireRoleLock?.(getState().role, { adminBypass: context.consoleGateAdminBypass === true }).then((reserved) => {
+          if (reserved !== false) return;
+          context.profileHomeActive = true;
+          render();
+          refreshPresenceCounts();
+        });
+      }
+      if (context.profileHomeActive) refreshPresenceCounts();
+    }
+
+    const api = {
       fetchGeneratedData,
       applyFreshData,
       checkForGeneratedUpdates
     };
+
+    if (window.LivePalmesConsoleGate?.waitUntilUnlocked) {
+      window.LivePalmesConsoleGate.waitUntilUnlocked().then(startApplication);
+    } else {
+      startApplication();
+    }
+
+    return api;
   }
 
   window.LivePalmesAppLifecycle = { init };

@@ -217,19 +217,20 @@
         return pins;
       }
       
-      async function saveRoleCodesFromModal(enableLock) {
+      async function saveRoleCodesFromModal(enableLock = true) {
         if (!roleCodesModal) return;
+        enableLock = true;
         const serverPinMode = livePalmesPinAuth?.available?.() && livePalmesAdminAuth?.isAdminAuthenticated?.();
         const pins = readRolePinsFromModal({
           required: enableLock,
-          allowPartial: Boolean(enableLock && serverPinMode && serverPinModeEnabled())
+          allowPartial: Boolean(enableLock && serverPinMode)
         });
         if (!pins) return;
         if (serverPinMode) {
           try {
             await livePalmesPinAuth.saveRolePins({
               competitionId: context.FIRESTORE_COMPETITION_ID,
-              enabled: enableLock,
+              enabled: true,
               pins
             });
           } catch (error) {
@@ -241,7 +242,7 @@
           const nextNotes = {
             ...(data.notes || {}),
             pinAuthMode: "cloud",
-            pinLockEnabled: enableLock,
+            pinLockEnabled: true,
             pinLockUpdatedAt: new Date().toISOString()
           };
           delete nextNotes.rolePins;
@@ -251,12 +252,12 @@
             sourceVersion: `cloud-lock-${Date.now()}`
           });
           setData(nextData);
-          context.unlockedRoles = enableLock ? ["computer"] : [];
+          context.unlockedRoles = ["computer"];
           saveUnlockedRoles();
           saveData();
           closeRoleCodesModal();
           render();
-          window.alert(enableLock ? "Codes enregistrés côté serveur et actifs." : "Codes désactivés côté serveur.");
+          window.alert("Codes enregistrés côté serveur et actifs.");
           return;
         }
         const data = getData();
@@ -265,28 +266,24 @@
           notes: {
             ...(data.notes || {}),
             rolePins: pins,
-            pinLockEnabled: enableLock,
+            pinLockEnabled: true,
             pinLockUpdatedAt: new Date().toISOString()
           },
           sourceVersion: `lock-${Date.now()}`
         });
         setData(nextData);
-        if (enableLock) {
-          context.unlockedRoles = ["computer"];
-        } else {
-          context.unlockedRoles = [];
-        }
+        context.unlockedRoles = ["computer"];
         saveUnlockedRoles();
         saveData();
         closeRoleCodesModal();
         render();
         try {
-          await publishLiveDataToFirestore(nextData, enableLock ? "Codes activés" : "Codes désactivés");
+          await publishLiveDataToFirestore(nextData, "Codes activés");
         } catch {
           window.alert("Les codes ont été modifiés sur cet appareil, mais Firebase n'a pas accepté la mise à jour.");
           return;
         }
-        window.alert(enableLock ? "Codes enregistrés et actifs." : "Codes désactivés.");
+        window.alert("Codes enregistrés et actifs.");
       }
       async function toggleRoleLock() {
         await livePalmesAdminAuth?.whenReady?.();

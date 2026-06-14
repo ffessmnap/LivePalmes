@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tableau des m&eacute;dailles - Championnat de France Masters 2026</title>
+    <meta name="description" content="Tableau des m&eacute;dailles par club du Championnat de France Masters 2026.">
+    <meta name="theme-color" content="#0b7285">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="LivePalmes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260528-public-fast-load">
+    <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260528-public-fast-load">
+    <link rel="manifest" href="manifest-public.webmanifest?v=20260528-public-fast-load">
+    <link rel="stylesheet" href="styles.css?v=20260529-result-categories-1">
+    <link rel="stylesheet" href="public.css?v=20260606-medals-clubs-30">
+  </head>
+  <body class="public-results-page public-medals-page">
+    <header class="public-results-header public-topbar public-live-topbar">
+      <div class="public-topbar-title">
+        <a class="public-topbar-home-link" href="resultats.html">Retour aux r&eacute;sultats</a>
+        <p class="eyebrow">LivePalmes &middot; Comp&eacute;tition en direct</p>
+        <h1 id="publicMeetTitle" class="public-medals-title">
+          <span>Tableau des m&eacute;dailles</span>
+          <span class="public-medals-title-event">Championnat de France Masters 2026</span>
+        </h1>
+        <p id="publicMeetMeta" class="public-meet-meta"></p>
+      </div>
+      <img class="public-topbar-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM">
+    </header>
+
+    <main class="public-results-shell public-medals-shell">
+      <section class="panel public-medals-ranking-panel" aria-label="Classement des clubs">
+        <div id="publicMedalsRanking" class="public-medals-ranking">
+          <p class="panel-subtitle">Chargement du classement...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+
+    <div id="publicClubMedalsModal" class="public-club-medals-modal" hidden></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="assets/livepalmes-app-config.js?v=20260602-public-admin-badge-1"></script>
+    <script src="assets/livepalmes-public-swimmer-core.js?v=20260606-medals-clubs-1"></script>
+    <script src="assets/livepalmes-public-medals-core.js?v=20260608-archive-extras-1"></script>
+    <script src="assets/pages/medailles.js?v=20260608-archive-extras-2"></script>
+  </body>
+</html>

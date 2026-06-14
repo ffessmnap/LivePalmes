@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8">
@@ -14,8 +14,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260528-public-fast-load">
     <link rel="manifest" href="manifest-public.webmanifest?v=20260528-public-fast-load">
     <link rel="stylesheet" href="styles.css?v=20260529-result-categories-1">
-    <link rel="stylesheet" href="public.css?v=20260601-public-logo-blend-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-session-badge.css?v=20260602-public-admin-badge-1">
+    <link rel="stylesheet" href="public.css?v=20260608-archive-extras-1">
   </head>
   <body class="public-results-page">
     <header class="public-results-header public-topbar public-live-topbar">
@@ -27,7 +26,7 @@
       </div>
       <img class="public-topbar-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM">
       <div class="public-header-actions">
-        <a id="publicSeriesSwitchLink" class="ghost-button compact public-page-switch" href="series-public.html">Voir les s&eacute;ries</a>
+        <a id="publicSeriesSwitchLink" class="ghost-button compact public-page-switch" href="series" aria-label="Voir les s&eacute;ries">S&eacute;ries</a>
         <span id="publicResultsStatus" class="firebase-header-status pending">
           <i class="firebase-dot pending" aria-hidden="true"></i>
           Connexion
@@ -36,6 +35,8 @@
     </header>
 
     <main class="public-results-shell">
+      <div id="publicArchiveSwimmerSearchHost" hidden></div>
+
       <section class="panel public-series-toolbar public-results-toolbar">
         <label class="public-session-select">
           <span>Session</span>
@@ -46,8 +47,9 @@
           <h2>R&eacute;sultats</h2>
         </div>
         <div class="public-series-toolbar-actions public-results-actions">
+          <button id="tdhRankingBtn" class="ghost-button compact" type="button" aria-label="Troph&eacute;e Damien H&eacute;bert">Troph&eacute;e<br>Damien H&eacute;bert</button>
+          <a id="publicMedalsLink" class="ghost-button compact public-medals-link" href="medailles.html" aria-label="Tableau des m&eacute;dailles">Tableau des<br>m&eacute;dailles</a>
           <button id="refreshPublicResultsBtn" class="ghost-button compact public-refresh-button" type="button" title="Actualiser" aria-label="Actualiser">&orarr;</button>
-          <button id="collapsePublicDetailsBtn" class="ghost-button compact" type="button">Tout replier</button>
         </div>
       </section>
 
@@ -66,18 +68,19 @@
     <button id="refreshPublicResultsFloatBtn" class="public-floating-refresh" type="button" title="Actualiser" aria-label="Actualiser">&orarr;</button>
 
     <div id="publicSwimmerSheet" class="public-swimmer-sheet" hidden></div>
+    <div id="tdhRankingModal" class="tdh-public-modal" hidden></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260602-public-admin-badge-1"></script>
-    <script src="assets/livepalmes-admin-session-badge.js?v=20260602-public-admin-badge-1"></script>
     <script src="assets/livepalmes-public-swimmer-view.js?v=20260530-no-swimmer-loading-text-1"></script>
     <script src="assets/livepalmes-public-swimmer-core.js?v=20260529-category-h-master-1"></script>
     <script src="assets/livepalmes-public-swimmer-performances.js?v=20260530-public-result-speed-1"></script>
-    <script src="assets/livepalmes-public-swimmers.js?v=20260528-public-fast-load"></script>
+    <script src="assets/livepalmes-public-swimmers.js?v=20260612-club-code-1"></script>
     <script src="assets/livepalmes-public-results-documents.js?v=20260601-document-encoding-1"></script>
-    <script src="assets/pages/resultats.js?v=20260530-mobile-swimmer-progressive-1"></script>
+    <script src="assets/livepalmes-damien-hebert-trophy.js?v=20260608-archive-extras-1"></script>
+    <script src="assets/pages/resultats.js?v=20260612-public-offline-1"></script>
   </body>
 </html>

@@ -44,23 +44,16 @@ async function loadPublicHome() {
   if (!window.firebase?.apps?.length) window.firebase.initializeApp(FIREBASE_CONFIG);
   const db = window.firebase.firestore();
   const base = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const [liveSnapshot, resultsSnapshot] = await Promise.allSettled([
-    base.collection("liveData").doc("current").get(),
-    base.collection("public").doc("resultsIndex").get()
-  ]);
-  const liveData = liveSnapshot.status === "fulfilled" && liveSnapshot.value.exists
-    ? liveSnapshot.value.data()?.data || {}
-    : {};
-  const resultsData = resultsSnapshot.status === "fulfilled" && resultsSnapshot.value.exists
-    ? resultsSnapshot.value.data() || {}
-    : {};
-  const meet = resultsData.meet || liveData.meet || {};
+  const resultsSnapshot = await base.collection("public").doc("resultsIndex").get();
+  const resultsData = resultsSnapshot.exists ? resultsSnapshot.data() || {} : {};
+  const online = resultsData.publicAccess?.online !== false;
+  const meet = online ? (resultsData.meet || {}) : {};
   const label = meetLabel(meet);
-  const resultCount = Array.isArray(resultsData.results) ? resultsData.results.length : 0;
+  const resultCount = online && Array.isArray(resultsData.results) ? resultsData.results.length : 0;
   const fallback = "Comp\u00e9tition en direct";
-  const detail = resultCount
+  const detail = online && resultCount
     ? `${label || fallback} - ${resultCount} r\u00e9sultat${resultCount > 1 ? "s" : ""} publi\u00e9${resultCount > 1 ? "s" : ""}`
-    : (label || fallback);
+    : (online && label ? label : "");
   setHomeMeet(label, detail);
 }
 

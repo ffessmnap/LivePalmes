@@ -69,6 +69,7 @@
     if (explicit) return explicit.toLocaleUpperCase("fr-FR");
     const club = cleanText(row.club || "").trim();
     if (!club) return "";
+    if (/^[A-Z0-9-]{2,10}$/.test(club)) return club.toLocaleUpperCase("fr-FR");
     const initials = club
       .replace(/['\u2019]/g, " ")
       .split(/\s+/)

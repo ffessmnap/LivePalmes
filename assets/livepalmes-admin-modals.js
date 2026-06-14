@@ -45,6 +45,7 @@
           ${diagnosticsEnabled ? `
           <button class="ghost-button compact" type="button" data-technical-diagnostic>Diagnostic technique</button>
           <button class="ghost-button compact" type="button" data-performance-diagnostic>Diagnostic perf</button>
+          <button class="ghost-button compact" type="button" data-public-publication-diagnostic>Diagnostic public</button>
           ` : ""}
           <button class="ghost-button compact" type="button" data-download-livepalmes-backup>Sauvegarde</button>
           <button class="ghost-button compact" type="button" data-restore-livepalmes-backup>Restaurer</button>
@@ -55,8 +56,7 @@
         </div>
         <div class="decision-modal-actions">
           <button class="ghost-button" type="button" data-role-codes-close>Annuler</button>
-          ${active ? `<button class="ghost-button danger-button" type="button" data-disable-role-codes>Désactiver les codes</button>` : ""}
-          <button class="primary-button" type="button" data-save-role-codes="${active ? "keep" : "enable"}">${active ? "Enregistrer les codes" : "Enregistrer et activer"}</button>
+          <button class="primary-button" type="button" data-save-role-codes="keep">Enregistrer les codes</button>
         </div>
       </div>
     `;
