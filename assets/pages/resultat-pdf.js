@@ -106,18 +106,12 @@ async function init() {
   const competition = db
     .collection("competitions")
     .doc(FIRESTORE_COMPETITION_ID);
-  const [snapshot, pdfSnapshot] = await Promise.all([
-    competition.collection("results").doc(id).get(),
-    competition.collection("resultPdfs").doc(id).get().catch(() => null)
-  ]);
+  const snapshot = await competition.collection("resultPdfs").doc(id).get();
   if (!snapshot.exists) {
     showMessage("PDF introuvable ou résultat non publié.");
     return;
   }
-  const result = {
-    ...snapshot.data(),
-    ...(pdfSnapshot?.exists ? pdfSnapshot.data() : {})
-  };
+  const result = snapshot.data() || {};
   const title = `${result.eventLabel || "Résultat"} ${result.sexLabel || ""}`.trim();
   if (pdfTitle) pdfTitle.textContent = title;
   const rendered = await renderPdfInline(result.pdfDataUrl);

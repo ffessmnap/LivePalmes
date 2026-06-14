@@ -116,9 +116,63 @@
       });
     }
 
-    async function hydratePublicSeriesPdfMetadataIfNeeded() {
+    function buildPublicSeriesIndex() {
+      if (typeof livePalmesPublication.buildPublicSeriesIndex !== "function") return null;
+      return livePalmesPublication.buildPublicSeriesIndex({
+        data: getData(),
+        publicSeriesPdfPayload
+      });
+    }
+
+    function publicIndexByteSize(payload) {
+      const json = JSON.stringify(payload || {});
+      if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
+      return json.length;
+    }
+
+    function assertPublicIndexSize(label, payload) {
+      const bytes = publicIndexByteSize(payload);
+      const limit = 980000;
+      if (bytes > limit) {
+        throw new Error(`${label} trop lourd : ${bytes.toLocaleString("fr-FR")} octets. Limite de securite LivePalmes : ${limit.toLocaleString("fr-FR")} octets.`);
+      }
+      return bytes;
+    }
+
+    async function currentPublicResultsIndex(doc) {
+      const snapshot = await doc.get({ source: "server" }).catch(() => null);
+      return snapshot?.exists ? (snapshot.data() || {}) : {};
+    }
+
+    async function assertPublicResultsIndexCanBeReplaced(currentIndex, nextIndex, options = {}) {
+      if (options.allowResultRegression) return;
+      if (typeof livePalmesPublication.publicResultsRegressions !== "function") return;
+      const regressions = livePalmesPublication.publicResultsRegressions(currentIndex || {}, nextIndex || {});
+      if (!regressions.length) return;
+      const details = regressions
+        .map((item) => `session ${item.session}: ${item.after}/${item.before}`)
+        .join(", ");
+      throw new Error(`Publication interrompue : l'index public perd des resultats (${details}). Recharge le bureau des performances puis republie.`);
+    }
+
+    async function hydrateRaceResultsFromServer() {
+      const collection = typeof context.resultsCollection === "function" ? context.resultsCollection() : null;
+      const stripPdf = typeof livePalmesResults.resultWithoutPdf === "function"
+        ? livePalmesResults.resultWithoutPdf
+        : ((result) => {
+          const clean = { ...(result || {}) };
+          delete clean.pdfDataUrl;
+          return clean;
+        });
+      if (!collection) return;
+      const snapshot = await collection.orderBy("updatedAt", "desc").get();
+      const rows = snapshot.docs.map((doc) => stripPdf({ id: doc.id, ...doc.data() }));
+      if (rows.length) context.raceResults = rows;
+    }
+
+    async function hydratePublicSeriesPdfMetadataIfNeeded({ force = false } = {}) {
       const data = getData();
-      if (Array.isArray(data.notes?.publicSeriesPdfs)) return;
+      if (!force && Array.isArray(data.notes?.publicSeriesPdfs)) return;
       const collection = typeof context.seriesPdfsCollection === "function" ? context.seriesPdfsCollection() : null;
       if (!collection) return;
       const snapshot = await collection.get();
@@ -133,9 +187,9 @@
       if (typeof context.saveData === "function") context.saveData();
     }
 
-    async function hydratePublicSessionResultsPdfMetadataIfNeeded() {
+    async function hydratePublicSessionResultsPdfMetadataIfNeeded({ force = false } = {}) {
       const data = getData();
-      if (Array.isArray(data.notes?.publicSessionResultsPdfs)) return;
+      if (!force && Array.isArray(data.notes?.publicSessionResultsPdfs)) return;
       const collection = typeof context.sessionResultsPdfsCollection === "function" ? context.sessionResultsPdfsCollection() : null;
       if (!collection) return;
       const snapshot = await collection.get();
@@ -150,13 +204,27 @@
       if (typeof context.saveData === "function") context.saveData();
     }
 
-    async function publishPublicResultsIndex({ silent = false, strict = false } = {}) {
+    async function publishPublicResultsIndex({ silent = false, strict = false, allowResultRegression = false } = {}) {
       const doc = typeof context.publicResultsIndexDocument === "function" ? context.publicResultsIndexDocument() : null;
       if (!doc) return;
       try {
-        await hydratePublicSeriesPdfMetadataIfNeeded();
-        await hydratePublicSessionResultsPdfMetadataIfNeeded();
-        await doc.set(JSON.parse(JSON.stringify(buildPublicResultsIndex())));
+        await hydrateRaceResultsFromServer();
+        const currentIndex = await currentPublicResultsIndex(doc);
+        await hydratePublicSeriesPdfMetadataIfNeeded({ force: true });
+        await hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true });
+        let nextIndex = JSON.parse(JSON.stringify(buildPublicResultsIndex()));
+        const directDisabled = getData().notes?.publicDirectDisabled === true;
+        if (!allowResultRegression && !directDisabled && typeof livePalmesPublication.mergePublicResultsPreservingCurrent === "function") {
+          nextIndex = livePalmesPublication.mergePublicResultsPreservingCurrent(currentIndex, nextIndex);
+        }
+        await assertPublicResultsIndexCanBeReplaced(currentIndex, nextIndex, { allowResultRegression: allowResultRegression || directDisabled });
+        assertPublicIndexSize("Index resultats public", nextIndex);
+        await doc.set(nextIndex);
+        const seriesIndex = JSON.parse(JSON.stringify(buildPublicSeriesIndex()));
+        if (seriesIndex && doc.parent?.doc) {
+          assertPublicIndexSize("Index series public", seriesIndex);
+          await doc.parent.doc("seriesIndex").set(seriesIndex);
+        }
       } catch (error) {
         console.warn("Publication de l'index public impossible", error);
         if (!silent && typeof context.renderDataStatus === "function") {

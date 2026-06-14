@@ -39,6 +39,13 @@
     "4X50SF": ["4x50 SF mixte", "4x50 SF mixte", "RELAY_CLUB", "Relais Club", "4X50"],
     "4X100SB": ["4x100 SB mixte", "4x100 SB mixte", "RELAY_CLUB", "Relais Club", "4X100"]
   };
+  const RELAY_COURSE_META = {
+    "4X50SF": ["4x50 Surface", "4x50 SF", "RELAY_CLUB", "Relais Club", "4X50"],
+    "4X100SF": ["4x100 Surface", "4x100 SF", "RELAY_CLUB", "Relais Club", "4X100"],
+    "4X200SF": ["4x200 Surface", "4x200 SF", "RELAY_CLUB", "Relais Club", "4X200"],
+    "4X100SB": ["4x100 Surface/Bi-palmes mixte", "4x100 SB", "RELAY_CLUB", "Relais Club", "4X100"],
+    "4X100BIX": ["4x100 Bi-palmes mixte", "4x100 BI", "RELAY_CLUB", "Relais Club", "4X100"]
+  };
   const CATEGORY_LABELS = {
     P: "Poussin",
     B: "Benjamin",
@@ -55,6 +62,8 @@
   };
   const MASTER_RELAY_CATEGORIES = ["X140", "X180", "X220", "X260"];
   const MASTER_RELAY_COURSES = ["4X50SF", "4X100SB"];
+  const MPF_RELAY_CATEGORIES = ["M", "C", "J", "S"];
+  const MPF_RELAY_COURSES = ["4X50SF", "4X100SF", "4X200SF", "4X100SB", "4X100BIX"];
   const FRANCE_RELAY_COURSES = ["4X50SF", "4X100SF", "4X200SF", "4X100SB", "4X100BIX"];
   const MASTER_RELAY_STYLES = [
     ["RELAY_CLUB", "Relais Club", "club"],
@@ -156,6 +165,56 @@
       && String(row?.style || "").startsWith("RELAY");
   }
 
+  function mpfRelayKey({ style, sex, category, course }) {
+    return `MPF|${style}|${sex}|${category}|${course}`;
+  }
+
+  function isMpfRelayRow(row) {
+    return MPF_RELAY_CATEGORIES.includes(row?.category)
+      && MPF_RELAY_COURSES.includes(row?.course)
+      && String(row?.style || "").startsWith("RELAY");
+  }
+
+  function mpfRelayRow({ style, sex, category, course }) {
+    const courseMeta = RELAY_COURSE_META[course];
+    const styleLabel = style === "RELAY_FRANCE" ? "Relais \u00c9quipe de France" : "Relais Club";
+    return {
+      key: `placeholder-mpf-relay|${style}|${sex}|${category}|${course}`,
+      manualFrozen: true,
+      placeholderRecord: true,
+      value: null,
+      rawTime: "",
+      time: PLACEHOLDER_TIME,
+      course,
+      courseLabel: courseMeta[0],
+      courseShortLabel: courseMeta[1],
+      style,
+      styleLabel,
+      length: courseMeta[4],
+      sex,
+      bassin: "",
+      category,
+      categoryLabel: CATEGORY_LABELS[category] || category,
+      age: "",
+      seasonYear: "",
+      sourceCategory: "MPF relais \u00e0 \u00e9tablir",
+      swimmerId: "",
+      swimmer: PLACEHOLDER_TIME,
+      birthDate: "",
+      clubId: "",
+      club: style === "RELAY_FRANCE" ? "FFESSM" : "",
+      region: "",
+      competitionId: "",
+      competition: PLACEHOLDER_TIME,
+      location: "",
+      date: "",
+      chrono: "",
+      points: "",
+      relayType: style === "RELAY_FRANCE" ? "france" : "club",
+      mixedRelay: /(?:SB|BIX)$/.test(course)
+    };
+  }
+
   function masterRelayRow({ style, course, category, club = "", swimmer = "", date = "", time = PLACEHOLDER_TIME }) {
     const styleInfo = MASTER_RELAY_STYLES.find((item) => item[0] === style) || MASTER_RELAY_STYLES[0];
     const courseMeta = MASTER_RELAY_COURSE_META[course];
@@ -215,7 +274,26 @@
       }
     }
 
-    return completeMasterRelayRows(completed).sort(compareRows);
+    return completeMpfRelayRows(completeMasterRelayRows(completed)).sort(compareRows);
+  }
+
+  function completeMpfRelayRows(rows) {
+    const completed = cloneRows(rows);
+    const existing = new Set(completed.filter(isMpfRelayRow).map((row) => mpfRelayKey(row)));
+
+    for (const category of MPF_RELAY_CATEGORIES) {
+      for (const course of MPF_RELAY_COURSES) {
+        for (const sex of SEXES) {
+          const clubKey = mpfRelayKey({ style: "RELAY_CLUB", sex, category, course });
+          if (!existing.has(clubKey)) {
+            completed.push(mpfRelayRow({ style: "RELAY_CLUB", sex, category, course }));
+            existing.add(clubKey);
+          }
+        }
+      }
+    }
+
+    return completed;
   }
 
   function completeMasterRelayRows(rows) {
@@ -246,6 +324,9 @@
       ...completed.map((row) => existingIndividualKey(row, "RF")).filter(Boolean),
       ...completed.map((row) => existingIndividualKey(row, "RFJ")).filter(Boolean)
     ]);
+    const existingRelayFrance = new Set(completed
+      .filter((row) => row.style === "RELAY_FRANCE" && row.course === "4X50SF")
+      .map((row) => `${row.recordType}|${row.sex}|${row.category}|${row.course}`));
     const scopes = [
       ["RF", "S"],
       ["RFJ", "J"]
@@ -262,7 +343,56 @@
       }
     }
 
+    for (const [scope, category] of scopes) {
+      for (const sex of SEXES) {
+        const key = `${scope}|${sex}|${category}|4X50SF`;
+        if (existingRelayFrance.has(key)) continue;
+        completed.push(franceRelayRow({ scope, sex, category, course: "4X50SF", style: "RELAY_FRANCE" }));
+        existingRelayFrance.add(key);
+      }
+    }
+
     return completed.sort(compareRows);
+  }
+
+  function franceRelayRow({ scope, sex, category, course, style }) {
+    const courseMeta = RELAY_COURSE_META[course];
+    return {
+      key: `placeholder-${scope.toLowerCase()}-relay-france|${sex}|${category}|${course}`,
+      manualFrozen: true,
+      placeholderRecord: true,
+      value: null,
+      rawTime: "",
+      time: PLACEHOLDER_TIME,
+      course,
+      courseLabel: courseMeta[0],
+      courseShortLabel: courseMeta[1],
+      style,
+      styleLabel: "Relais France",
+      length: courseMeta[4],
+      sex,
+      bassin: "",
+      category,
+      categoryLabel: CATEGORY_LABELS[category] || category,
+      age: "",
+      seasonYear: "",
+      sourceCategory: `${scope} relais France \u00e0 \u00e9tablir`,
+      swimmerId: "",
+      swimmer: PLACEHOLDER_TIME,
+      birthDate: "",
+      clubId: "",
+      club: "FFESSM",
+      region: "",
+      competitionId: "",
+      competition: PLACEHOLDER_TIME,
+      location: "",
+      date: "",
+      chrono: "",
+      points: "",
+      relayType: "france",
+      recordType: scope,
+      recordTypeLabel: scope === "RFJ" ? "Record de France Junior" : "Record de France"
+    };
   }
 
   function compareRows(a, b) {
@@ -290,7 +420,7 @@
       filters: {
         ...filters,
         sexes: unique([...(filters.sexes || []), ...SEXES]),
-        courses: unique([...(filters.courses || []), ...INDIVIDUAL_COURSES, ...MASTER_RELAY_COURSES]),
+        courses: sortCourses(unique([...(filters.courses || []), ...INDIVIDUAL_COURSES, ...MASTER_RELAY_COURSES, ...MPF_RELAY_COURSES])),
         categories: unique([...categories, MASTER_RELAY_CATEGORY]),
         franceCourses: sortCourses(unique([...(filters.franceCourses || []), ...INDIVIDUAL_COURSES, ...FRANCE_RELAY_COURSES]))
       }

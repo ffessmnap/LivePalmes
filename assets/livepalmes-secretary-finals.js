@@ -33,7 +33,7 @@
               </select>
             </label>
           ` : ""}
-          <a class="ghost-button compact" href="resultats.html?v=20260519-public-offline-footer" target="_blank" rel="noopener">Page publique</a>
+          <a class="ghost-button compact" href="resultats" target="_blank" rel="noopener">Page publique</a>
         </div>
       </div>
       <div class="secretary-finals-list">

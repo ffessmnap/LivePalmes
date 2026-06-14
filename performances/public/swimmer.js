@@ -1,8 +1,14 @@
 (function attachIntranapSwimmerPage(global) {
   const summary = global.LIVEPALMES_INTRANAP_SUMMARY || { counts: {}, filters: { courses: [] } };
-  const swimmers = global.LIVEPALMES_INTRANAP_SWIMMERS || [];
-  const chunkCache = new Map();
-  const dataVersion = encodeURIComponent(summary.generatedAt || "20260602-swimmer-card-2");
+  let recordData = global.LIVEPALMES_RECORDS || { records: [], franceRecords: [] };
+  const swimmerRowsCache = new Map();
+  const swimmerSearchCache = new Map();
+  const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-swimmer-card-2";
+  const dataVersion = encodeURIComponent(publicVersion);
+  const publicPerformanceBase = "public/data/performance-public";
+  const usesConsolidatedData = true;
+  const publicAdditionalDataUrl = global.LivePalmesAppConfig?.performanceAdditionalDataUrl ||
+    "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
 
   const elements = {
     search: document.querySelector("#swimmerSearchInput"),
@@ -13,6 +19,7 @@
     progress: document.querySelector("#progressPanel"),
     title: document.querySelector("#swimmerTitle"),
     status: document.querySelector("#swimmerStatus"),
+    profile: document.querySelector("#swimmerProfilePanel"),
     body: document.querySelector("#swimmerBestBody"),
     card: document.querySelector("#swimmerCard")
   };
@@ -28,10 +35,15 @@
 
   let selectedSwimmer = null;
   let selectedPerfs = [];
+  let swimmerSearchMatches = [];
+  let swimmerSearchRequestId = 0;
   let additionalPerfs = [];
   let additionalSwimmers = [];
+  let performanceCorrections = [];
   let additionalLoaded = false;
   let additionalLoad = null;
+  const publicSwimmerSearchShards = new Map();
+  const publicSwimmerIdShards = new Map();
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -51,25 +63,339 @@
       .trim();
   }
 
+  function normalizeSearchToken(value) {
+    return normalize(value).replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function searchShardFromQuery(value) {
+    const token = normalizeSearchToken(value).split(/\s+/).find((item) => item.length >= 2) || "";
+    return token.slice(0, 2);
+  }
+
+  function idShardFromValue(value) {
+    const id = String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (!id) return "";
+    if (id.length === 1) return `0${id}`;
+    return id.slice(0, 2);
+  }
+
+  function normalizeIdentityPart(value) {
+    return normalize(value).replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function swimmerIdentityKey(swimmer) {
+    const first = normalizeIdentityPart(swimmer?.firstName);
+    const last = normalizeIdentityPart(swimmer?.lastName);
+    const birth = String(swimmer?.birthDate || "").trim();
+    return first && last && birth ? `${last}|${first}|${birth}` : "";
+  }
+
+  function swimmerKnownIds(swimmer) {
+    return Array.from(new Set([
+      swimmer?.id,
+      ...(Array.isArray(swimmer?.aliases) ? swimmer.aliases : []),
+      ...(Array.isArray(swimmer?.sourceIds) ? swimmer.sourceIds : [])
+    ].map((id) => String(id || "").trim()).filter(Boolean)));
+  }
+
   function formatDate(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "-");
+  }
+
+  function realAgeFromBirthDate(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return "";
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (!Number.isFinite(year) || year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return "";
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    const birthdayPassed = today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
+    if (!birthdayPassed) age -= 1;
+    return age >= 0 && age <= 130 ? `${age} an${age > 1 ? "s" : ""}` : "";
   }
 
   function displayName(swimmer) {
     return swimmer?.name || [swimmer?.firstName, swimmer?.lastName].filter(Boolean).join(" ");
   }
 
+  function displayClubLabel(perfOrSwimmer) {
+    const club = String(perfOrSwimmer?.club || "").trim();
+    const clubName = String(perfOrSwimmer?.clubName || "").trim();
+    if (club && clubName && normalize(club) !== normalize(clubName)) return `${club} · ${clubName}`;
+    return club || clubName || "";
+  }
+
+  function latestKnownClub(swimmer, perfs) {
+    const latestPerf = perfs.find((perf) => displayClubLabel(perf));
+    return displayClubLabel(latestPerf) || displayClubLabel(swimmer) || "-";
+  }
+
+  function competitionCount(perfs) {
+    const competitions = new Set();
+    perfs
+      .filter((perf) => !perf.isIntermediate)
+      .forEach((perf) => {
+        const id = String(perf.competitionId || "").trim();
+        const fallback = [perf.competition, perf.date, perf.location].map((value) => String(value || "").trim()).filter(Boolean).join("|");
+        if (id) competitions.add(`id:${id}`);
+        else if (fallback) competitions.add(`fallback:${fallback}`);
+      });
+    return competitions.size;
+  }
+
+  function performanceCount(perfs) {
+    return perfs.filter((perf) => !perf.isIntermediate).length;
+  }
+
+  function isIndividualRecord(record) {
+    return record &&
+      !String(record.style || "").startsWith("RELAY") &&
+      !String(record.course || "").startsWith("4X");
+  }
+
+  function swimmerMatchesRecord(swimmer, record) {
+    if (!isIndividualRecord(record)) return false;
+    if (record.sex && swimmer.sex && record.sex !== swimmer.sex) return false;
+    if (record.swimmerId && String(record.swimmerId) === String(swimmer.id)) return true;
+    if (normalize(record.swimmer) !== normalize(displayName(swimmer))) return false;
+    if (!record.birthDate || !swimmer.birthDate) return true;
+    if (record.birthDate === swimmer.birthDate) return true;
+    const recordYear = String(record.birthDate).slice(0, 4);
+    const swimmerYear = String(swimmer.birthDate).slice(0, 4);
+    return recordYear === swimmerYear && String(record.birthDate).endsWith("-01-01");
+  }
+
+  function categoryDisplayCode(record) {
+    if (record.categoryCode) return record.categoryCode;
+    const prefix = record.sex === "M" ? "H" : "F";
+    const codes = {
+      P: `${prefix}PO`,
+      B: `${prefix}BE`,
+      M: `${prefix}MI`,
+      C: `${prefix}CA`,
+      J: `${prefix}JU`,
+      S: `${prefix}SE`,
+      "M30+": `${prefix}30+`,
+      "M40+": `${prefix}40+`,
+      "M50+": `${prefix}50+`,
+      "M60+": `${prefix}60+`,
+      "M70+": `${prefix}70+`,
+      "M80+": `${prefix}80+`
+    };
+    return codes[record.category] || record.category || "";
+  }
+
+  function categoryDisplayLabel(record) {
+    const female = record.sex === "F";
+    const labels = {
+      P: female ? "Poussine" : "Poussin",
+      B: female ? "Benjamine" : "Benjamin",
+      M: "Minime",
+      C: female ? "Cadette" : "Cadet",
+      J: "Junior",
+      S: "Senior",
+      "M30+": "Senior 30+",
+      "M40+": "Master 40+",
+      "M50+": "Master 50+",
+      "M60+": "Master 60+",
+      "M70+": "Master 70+",
+      "M80+": "Master 80+"
+    };
+    return labels[record.category] || record.categoryLabel || record.category || "";
+  }
+
+  function recordLabel(record) {
+    const scope = record.recordType === "RFJ" ? "RFJ" : record.recordType === "RF" ? "RF" : "MPF";
+    return [scope, record.courseShortLabel || record.course, categoryDisplayCode(record)]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  function recordScopeRank(record) {
+    if (record.recordType === "RF") return 0;
+    if (record.recordType === "RFJ") return 1;
+    return 2;
+  }
+
+  function recordScopeLabel(record) {
+    if (record.recordType === "RF") return "Record de France";
+    if (record.recordType === "RFJ") return "Record de France Junior";
+    return "MPF";
+  }
+
+  function recordGroupKey(record) {
+    if (record.recordType === "RF") return "RF";
+    if (record.recordType === "RFJ") return "RFJ";
+    return "MPF";
+  }
+
+  function recordGroupLabel(key) {
+    const labels = {
+      RF: "Records de France",
+      RFJ: "Records de France Juniors",
+      MPF: "MPF"
+    };
+    return labels[key] || key;
+  }
+
+  function swimmerRecords(swimmer) {
+    const franceRecords = (recordData.franceRecords || [])
+      .filter((record) => swimmerMatchesRecord(swimmer, record));
+    const mpfRecords = (recordData.records || [])
+      .filter((record) => swimmerMatchesRecord(swimmer, record));
+    return [...franceRecords, ...mpfRecords].sort((a, b) =>
+      recordScopeRank(a) - recordScopeRank(b) ||
+      compareCourse(a, b) ||
+      String(categoryDisplayCode(a)).localeCompare(String(categoryDisplayCode(b)), "fr-FR", { numeric: true })
+    );
+  }
+
+  function renderSwimmerProfile(swimmer, perfs) {
+    if (!elements.profile) return;
+    const records = swimmerRecords(swimmer);
+    const rfCount = records.filter((record) => record.recordType === "RF").length;
+    const rfjCount = records.filter((record) => record.recordType === "RFJ").length;
+    const mpfCount = records.filter((record) => !record.recordType).length;
+    const birthDate = swimmer.birthDate ? formatDate(swimmer.birthDate) : "-";
+    const realAge = realAgeFromBirthDate(swimmer.birthDate);
+    const birthDateWithAge = realAge ? `${birthDate} (${realAge})` : birthDate;
+    const perfsCount = performanceCount(perfs);
+    const competitions = competitionCount(perfs);
+    const latestClub = latestKnownClub(swimmer, perfs);
+    const recordGroups = ["RF", "RFJ", "MPF"].map((key) => {
+      const rows = records
+        .map((record, index) => ({ record, index }))
+        .filter((item) => recordGroupKey(item.record) === key);
+      return { key, rows };
+    }).filter((group) => group.rows.length);
+
+    elements.profile.hidden = false;
+    elements.profile.innerHTML = `
+      <div class="swimmer-profile-stats">
+        <div><span>Date de naissance</span><strong>${escapeHtml(birthDateWithAge)}</strong></div>
+        <div><span>Dernier club connu</span><strong>${escapeHtml(latestClub)}</strong></div>
+        <div><span>Performances bassin</span><strong>${perfsCount.toLocaleString("fr-FR")}</strong></div>
+        <div><span>Comp&eacute;titions</span><strong>${competitions.toLocaleString("fr-FR")}</strong></div>
+      </div>
+      <div class="swimmer-profile-honors">
+        <div class="swimmer-profile-honors-head">
+          <span>MPF et records d&eacute;tenus</span>
+          <strong>${records.length ? `RF ${rfCount} · RFJ ${rfjCount} · MPF ${mpfCount}` : "Aucun record individuel connu"}</strong>
+        </div>
+        ${records.length ? `
+          <div class="swimmer-profile-records">
+            ${recordGroups.map((group) => `
+              <section class="swimmer-record-group${group.rows.some((item) => item.index < 5) ? "" : " is-extra"}">
+                <h3>${escapeHtml(recordGroupLabel(group.key))}</h3>
+                ${group.rows.map(({ record, index }) => `
+                  <div class="swimmer-record-line${index >= 5 ? " is-extra" : ""}">
+                    <span>${escapeHtml(categoryDisplayLabel(record) || "-")}</span>
+                    <strong>${escapeHtml(record.courseShortLabel || record.course || "-")}</strong>
+                    <strong>${escapeHtml(record.time || "-")}</strong>
+                    <span>${escapeHtml(formatDate(record.date))}</span>
+                  </div>
+                `).join("")}
+              </section>
+            `).join("")}
+          </div>
+          ${records.length > 5 ? `<button type="button" class="swimmer-records-toggle" data-swimmer-records-toggle data-collapsed-label="Afficher tout le palmar&egrave;s" data-expanded-label="Masquer le d&eacute;tail">Afficher tout le palmar&egrave;s</button>` : ""}
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function rawSwimmers() {
+    return swimmerSearchMatches;
+  }
+
+  function mergeSwimmerProfiles(base, next) {
+    const ids = Array.from(new Set([...swimmerKnownIds(base), ...swimmerKnownIds(next)]));
+    return {
+      ...base,
+      aliases: ids.filter((id) => id !== String(base.id)),
+      sourceIds: ids,
+      clubId: base.clubId || next.clubId || "",
+      club: base.club || next.club || "",
+      clubName: base.clubName || next.clubName || "",
+      performanceCount: Number(base.performanceCount || 0) + Number(next.performanceCount || 0)
+    };
+  }
+
   function allSwimmers() {
-    const byId = new Map(swimmers.map((swimmer) => [String(swimmer.id), swimmer]));
-    additionalSwimmers.forEach((swimmer) => {
-      if (!byId.has(String(swimmer.id))) byId.set(String(swimmer.id), swimmer);
+    return rawSwimmers();
+  }
+
+  function swimmerMergeKey(swimmer) {
+    return swimmer?.identityKey || swimmerIdentityKey(swimmer) || String(swimmer?.id || "");
+  }
+
+  function uniqueSwimmers(swimmers) {
+    const byKey = new Map();
+    swimmers.forEach((swimmer) => {
+      const key = swimmerMergeKey(swimmer);
+      if (!key) return;
+      byKey.set(key, byKey.has(key) ? mergeSwimmerProfiles(byKey.get(key), swimmer) : swimmer);
     });
-    return Array.from(byId.values());
+    return Array.from(byKey.values());
   }
 
   function findSwimmerById(id) {
-    return allSwimmers().find((swimmer) => String(swimmer.id) === String(id));
+    const needle = String(id || "");
+    return allSwimmers().find((swimmer) => swimmerKnownIds(swimmer).includes(needle));
+  }
+
+  function relatedSwimmers(swimmer) {
+    return [swimmer];
+  }
+
+  function performanceMatchesSwimmer(perf, swimmer, knownIds, identityKey) {
+    if (knownIds.has(String(perf.swimmerId || ""))) return true;
+    if (knownIds.has(String(perf.originalSwimmerId || ""))) return true;
+    const perfKey = perf.swimmerIdentityKey || swimmerIdentityKey(perf);
+    return identityKey && perfKey === identityKey;
+  }
+
+  function performanceCorrectionKey(row) {
+    if (row?.id) return `${row.source || "intranap"}|${row.id}`;
+    return [
+      row?.swimmerIdentityKey || row?.swimmerId || row?.swimmer,
+      row?.date,
+      row?.course,
+      row?.timeValue,
+      row?.club || row?.clubName,
+      row?.competitionId || row?.location
+    ].map((value) => String(value || "").trim()).join("|");
+  }
+
+  function correctedRows(rows) {
+    if (!performanceCorrections.length) return rows;
+    const byKey = new Map(performanceCorrections.map((correction) => [correction.targetKey, correction]));
+    return rows
+      .map((row) => {
+        const correction = byKey.get(performanceCorrectionKey(row));
+        if (!correction) return row;
+        if (correction.hidden) return null;
+        if (correctionMovesSwimmer(correction, row)) return null;
+        return { ...row, ...(correction.patch || {}) };
+      })
+      .filter(Boolean);
+  }
+
+  function correctionMovesSwimmer(correction, row = {}) {
+    const patch = correction?.patch || {};
+    return Boolean(patch.swimmerId) && String(patch.swimmerId) !== String(row.swimmerId || "");
+  }
+
+  function rowFromCorrection(correction) {
+    if (!correction || correction.hidden || !correction.targetRow || !correctionMovesSwimmer(correction, correction.targetRow)) return null;
+    return { ...correction.targetRow, ...(correction.patch || {}) };
+  }
+
+  function withCacheBust(url, param = "publicCache") {
+    return `${url}${url.includes("?") ? "&" : "?"}${param}=${encodeURIComponent(`${publicVersion}-${Date.now()}`)}`;
   }
 
   function addOptions(select, values, allLabel, labeler = (value) => value) {
@@ -101,65 +427,170 @@
       String(a.course || "").localeCompare(String(b.course || ""), "fr-FR", { numeric: true });
   }
 
-  async function loadChunk(chunk) {
-    if (!chunk) return {};
-    if (chunkCache.has(chunk)) return chunkCache.get(chunk);
-    const response = await fetch(`public/data/intranap-swimmer-perfs/chunk-${encodeURIComponent(chunk)}.json?v=${dataVersion}`);
-    if (!response.ok) throw new Error(`Chunk nageur introuvable : ${chunk}`);
-    const data = await response.json();
-    chunkCache.set(chunk, data);
-    return data;
-  }
+  async function loadPerformanceBaseRowsForSwimmer(swimmer, related) {
+    const file = swimmer?.perfFile || related.find((item) => item?.perfFile)?.perfFile || "";
+    const knownIds = new Set(swimmerKnownIds(swimmer));
+    const identityKey = swimmer.identityKey || swimmerIdentityKey(swimmer);
+    const overlayRowsForSwimmer = () => {
+      const importedRows = additionalPerfs.filter((perf) => performanceMatchesSwimmer(perf, swimmer, knownIds, identityKey));
+      const reassignedRows = performanceCorrections
+        .map(rowFromCorrection)
+        .filter((row) => row && performanceMatchesSwimmer(row, swimmer, knownIds, identityKey));
+      return [...correctedRows(importedRows), ...reassignedRows];
+    };
 
-  function ensureFirebaseApp() {
-    const firebase = global.firebase;
-    const config = global.LivePalmesAppConfig?.firebaseConfig;
-    if (!firebase?.initializeApp || !config) return null;
-    if (!firebase.apps?.length) firebase.initializeApp(config);
-    return firebase.app();
-  }
-
-  function functionsService() {
-    const firebase = global.firebase;
-    const app = ensureFirebaseApp();
-    const region = global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1";
-    if (app?.functions) return app.functions(region);
-    if (firebase?.functions) {
-      const service = firebase.functions();
-      if (service?.useRegion) service.useRegion(region);
-      return service;
+    if (file) {
+      const cacheKey = `file:${file}`;
+      if (swimmerRowsCache.has(cacheKey)) return swimmerRowsCache.get(cacheKey);
+      const promise = Promise.all([
+        fetch(`${publicPerformanceBase}/${file}?v=${dataVersion}`, { cache: "force-cache" })
+          .then((response) => {
+            if (response.status === 404) return { rows: [] };
+            if (!response.ok) throw new Error("Fiche nageur indisponible.");
+            return response.json();
+          }),
+        loadAdditionalData()
+      ])
+        .then(([payload]) => {
+          const baseRows = Array.isArray(payload?.rows) ? payload.rows.map((row) => ({
+            ...row,
+            swimmerId: swimmer.id,
+            originalSwimmerId: row.originalSwimmerId || swimmer.id,
+            swimmerIdentityKey: swimmer.identityKey,
+            swimmer: displayName(swimmer),
+            firstName: swimmer.firstName,
+            lastName: swimmer.lastName,
+            birthDate: swimmer.birthDate,
+            sex: swimmer.sex
+          })) : [];
+          return [...correctedRows(baseRows), ...overlayRowsForSwimmer()];
+        });
+      swimmerRowsCache.set(cacheKey, promise);
+      return promise;
     }
-    return null;
+
+    await loadAdditionalData();
+    const rows = overlayRowsForSwimmer();
+    if (rows.length) return rows;
+    throw new Error("Fiche nageur indisponible.");
+  }
+
+  function loadPublicSwimmerSearchShard(shard) {
+    if (!shard) return Promise.resolve([]);
+    if (publicSwimmerSearchShards.has(shard)) return publicSwimmerSearchShards.get(shard);
+    const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${dataVersion}`, { cache: "force-cache" })
+        .then((response) => {
+          if (response.status === 404) return [];
+          if (!response.ok) throw new Error("Index nageurs indisponible.");
+          return response.json();
+        })
+      .then((rows) => Array.isArray(rows) ? rows : []);
+    publicSwimmerSearchShards.set(shard, promise);
+    return promise;
+  }
+
+  function loadPublicSwimmerIdShard(shard) {
+    if (!shard) return Promise.resolve({});
+    if (publicSwimmerIdShards.has(shard)) return publicSwimmerIdShards.get(shard);
+    const promise = fetch(`${publicPerformanceBase}/ids/${encodeURIComponent(shard)}.json?v=${dataVersion}`, { cache: "force-cache" })
+      .then((response) => {
+        if (response.status === 404) return {};
+        if (!response.ok) throw new Error("Index identifiants nageurs indisponible.");
+        return response.json();
+      })
+      .then((rows) => rows && typeof rows === "object" && !Array.isArray(rows) ? rows : {});
+    publicSwimmerIdShards.set(shard, promise);
+    return promise;
+  }
+
+  async function searchPerformanceBaseSwimmers(query) {
+    const cleanQuery = normalize(query);
+    if (swimmerSearchCache.has(cleanQuery)) return swimmerSearchCache.get(cleanQuery);
+    const tokens = cleanQuery.split(/\s+/).filter((token) => token.length >= 2);
+    const shard = searchShardFromQuery(query);
+    const promise = Promise.all([loadPublicSwimmerSearchShard(shard), loadAdditionalData()])
+      .then(([rows]) => uniqueSwimmers([
+        ...rows,
+        ...additionalSwimmers
+      ])
+        .filter((swimmer) => {
+          const haystack = normalize(swimmer.searchText || [swimmer.name, swimmer.firstName, swimmer.lastName, swimmer.birthDate, swimmer.club].join(" "));
+          return tokens.every((token) => haystack.includes(token));
+        })
+        .sort((a, b) => scoreSwimmer(a, tokens) - scoreSwimmer(b, tokens) ||
+          String(a.lastName || "").localeCompare(String(b.lastName || ""), "fr-FR") ||
+          String(a.firstName || "").localeCompare(String(b.firstName || ""), "fr-FR"))
+        .slice(0, 10));
+    swimmerSearchCache.set(cleanQuery, promise);
+    return promise;
+  }
+
+  async function loadPerformanceBaseSwimmerById(swimmerId) {
+    const index = await loadPublicSwimmerIdShard(idShardFromValue(swimmerId));
+    const swimmer = index[String(swimmerId || "").trim()] || null;
+    if (swimmer) return swimmer;
+    await loadAdditionalData();
+    const needle = String(swimmerId || "").trim();
+    return additionalSwimmers.find((candidate) => swimmerKnownIds(candidate).includes(needle)) || null;
   }
 
   function loadAdditionalData() {
     if (additionalLoaded) return Promise.resolve(additionalPerfs);
     if (additionalLoad) return additionalLoad;
-    const functions = functionsService();
-    if (!functions?.httpsCallable) {
+    if (!usesConsolidatedData || !publicAdditionalDataUrl) {
       additionalLoaded = true;
       additionalPerfs = [];
       additionalSwimmers = [];
+      performanceCorrections = [];
       return Promise.resolve(additionalPerfs);
     }
 
-    additionalLoad = functions.httpsCallable("listAdditionalPerformanceData")({})
-      .then((result) => {
-        additionalPerfs = Array.isArray(result.data?.performances) ? result.data.performances : [];
-        additionalSwimmers = Array.isArray(result.data?.swimmers) ? result.data.swimmers : [];
+    additionalLoad = fetch(withCacheBust(publicAdditionalDataUrl), { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { performances: [], swimmers: [], corrections: [] })
+      .then((payload) => {
+        additionalPerfs = Array.isArray(payload?.performances) ? payload.performances : [];
+        additionalSwimmers = Array.isArray(payload?.swimmers) ? payload.swimmers : [];
+        performanceCorrections = Array.isArray(payload?.corrections) ? payload.corrections : [];
         additionalLoaded = true;
         return additionalPerfs;
       })
       .catch(() => {
         additionalPerfs = [];
         additionalSwimmers = [];
+        performanceCorrections = [];
         additionalLoaded = true;
         return additionalPerfs;
-      })
-      .finally(() => {
-        additionalLoad = null;
       });
     return additionalLoad;
+  }
+
+  function uniquePerformanceRows(rows) {
+    const seen = new Set();
+    return rows.filter((perf) => {
+      const key = [
+        perf.id,
+        perf.swimmerIdentityKey || perf.swimmerId || perf.swimmer,
+        perf.date,
+        perf.course,
+        perf.timeValue,
+        perf.club || perf.clubName,
+        perf.competition || perf.location
+      ].map((value) => String(value || "").trim()).join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function loadRecordData() {
+    if (!global.LivePalmesPerformanceStore?.loadData) return Promise.resolve(recordData);
+    return global.LivePalmesPerformanceStore.loadData()
+      .then((data) => {
+        recordData = data || recordData;
+        global.LIVEPALMES_RECORDS = recordData;
+        return recordData;
+      })
+      .catch(() => recordData);
   }
 
   function resetFilters() {
@@ -195,24 +626,28 @@
   function searchSwimmers() {
     const query = normalize(elements.search.value);
     if (query.length < 2) {
+      swimmerSearchMatches = [];
       elements.suggestions.innerHTML = "";
       return;
     }
-    const tokens = query.split(/\s+/).filter(Boolean);
-    const matches = allSwimmers()
-      .filter((swimmer) => {
-        const haystack = normalize([displayName(swimmer), swimmer.lastName, swimmer.firstName].join(" "));
-        return tokens.every((token) => haystack.includes(token));
+    const requestId = ++swimmerSearchRequestId;
+    elements.suggestions.innerHTML = `<button type="button" class="suggestion-button">Recherche...</button>`;
+    searchPerformanceBaseSwimmers(elements.search.value)
+      .then((matches) => {
+        if (requestId !== swimmerSearchRequestId) return;
+        swimmerSearchMatches = matches;
+        elements.suggestions.innerHTML = matches.length ? matches.map((swimmer) => `
+          <button type="button" class="suggestion-button" data-swimmer-id="${escapeHtml(swimmer.id)}">
+            <strong>${escapeHtml(displayName(swimmer))}</strong>
+            <span>${escapeHtml([swimmer.sex === "F" ? "Femme" : "Homme", swimmer.club].filter(Boolean).join(" - "))}</span>
+          </button>
+        `).join("") : `<button type="button" class="suggestion-button">Aucun nageur trouv&eacute;</button>`;
       })
-      .sort((a, b) => scoreSwimmer(a, tokens) - scoreSwimmer(b, tokens) || a.lastName.localeCompare(b.lastName, "fr-FR") || a.firstName.localeCompare(b.firstName, "fr-FR"))
-      .slice(0, 10);
-
-    elements.suggestions.innerHTML = matches.length ? matches.map((swimmer) => `
-      <button type="button" class="suggestion-button" data-swimmer-id="${escapeHtml(swimmer.id)}">
-        <strong>${escapeHtml(displayName(swimmer))}</strong>
-        <span>${escapeHtml([swimmer.sex === "F" ? "Femme" : "Homme", swimmer.club].filter(Boolean).join(" - "))}</span>
-      </button>
-    `).join("") : `<button type="button" class="suggestion-button">Aucun nageur trouv&eacute;</button>`;
+      .catch((error) => {
+        if (requestId !== swimmerSearchRequestId) return;
+        swimmerSearchMatches = [];
+        elements.suggestions.innerHTML = `<button type="button" class="suggestion-button">Recherche impossible : ${escapeHtml(error?.message || error)}</button>`;
+      });
   }
 
   function currentFilters() {
@@ -448,6 +883,10 @@
       elements.title.textContent = "Performances du nageur";
       elements.status.textContent = "Recherchez puis s\u00e9lectionnez un nageur.";
       elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Choisissez un nageur.</td></tr>`;
+      if (elements.profile) {
+        elements.profile.hidden = true;
+        elements.profile.innerHTML = "";
+      }
       elements.progress.classList.remove("active");
       elements.progress.innerHTML = "";
       return;
@@ -480,20 +919,14 @@
     elements.status.textContent = "Chargement des performances...";
     elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Chargement des performances...</td></tr>`;
 
-    const chunk = await loadChunk(swimmer.chunk);
-    await loadAdditionalData();
-    const intranapPerfs = chunk[String(swimmer.id)] || [];
-    const importedPerfs = additionalPerfs.filter((perf) => String(perf.swimmerId) === String(swimmer.id));
-    selectedPerfs = [...intranapPerfs, ...importedPerfs]
+    const related = relatedSwimmers(swimmer);
+    const basePerfs = await loadPerformanceBaseRowsForSwimmer(swimmer, related);
+    selectedPerfs = uniquePerformanceRows(basePerfs)
       .sort((a, b) => String(b.date).localeCompare(a.date) || compareCourse(a, b));
     updateFilters(selectedPerfs);
     setSegmentValue(elements.displayMode, "best");
     elements.title.textContent = displayName(swimmer);
-    elements.status.textContent = [
-      swimmer.birthDate ? `N\u00e9(e) le ${formatDate(swimmer.birthDate)}` : "",
-      swimmer.club,
-      `${selectedPerfs.length} performance${selectedPerfs.length > 1 ? "s" : ""} bassin`
-    ].filter(Boolean).join(" - ");
+    renderSwimmerProfile(swimmer, selectedPerfs);
     render();
 
     const params = new URLSearchParams(window.location.search);
@@ -543,6 +976,15 @@
       elements.card.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
+    elements.profile?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-swimmer-records-toggle]");
+      if (!button) return;
+      const honors = button.closest(".swimmer-profile-honors");
+      const expanded = !honors?.classList.contains("is-expanded");
+      honors?.classList.toggle("is-expanded", expanded);
+      button.textContent = expanded ? button.dataset.expandedLabel : button.dataset.collapsedLabel;
+    });
+
     elements.body.addEventListener("click", (event) => {
       const progressTrigger = event.target.closest("[data-progress-course]");
       if (progressTrigger) {
@@ -579,21 +1021,19 @@
 
     const directId = new URLSearchParams(window.location.search).get("id");
     if (directId) {
-      const swimmer = findSwimmerById(directId);
-      if (swimmer) selectSwimmer(swimmer).catch((error) => {
+      loadPerformanceBaseSwimmerById(directId).then((swimmer) => {
+        if (!swimmer) return;
+        return selectSwimmer(swimmer);
+      }).catch((error) => {
         elements.status.textContent = `Chargement impossible : ${error.message || error}`;
       });
     }
 
-    loadAdditionalData().then(() => {
-      if (elements.search.value) searchSwimmers();
-      if (directId && !selectedSwimmer) {
-        const swimmer = findSwimmerById(directId);
-        if (swimmer) selectSwimmer(swimmer).catch((error) => {
-          elements.status.textContent = `Chargement impossible : ${error.message || error}`;
-        });
-      }
+    loadRecordData().then(() => {
+      if (selectedSwimmer) renderSwimmerProfile(selectedSwimmer, selectedPerfs);
     });
+
+    if (elements.search.value) searchSwimmers();
   }
 
   if (document.readyState === "loading") {

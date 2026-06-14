@@ -9,6 +9,7 @@ const FIREBASE_CONFIG = {
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
 const PUBLIC_SERIES_CACHE_KEY = "livepalmes:public-series-cache:v2";
+const PUBLIC_SERIES_SESSION_KEY = "livepalmes:public-series-session:v1";
 const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
 const meetTitle = document.querySelector("#publicSeriesMeetTitle");
@@ -51,6 +52,24 @@ const swimmerResultDetailsLoading = new Set();
 const directResultSessionLoads = new Map();
 let publicPerformancesSource = null;
 let publicPerformancesCache = null;
+
+function storedPublicSeriesSession() {
+  try {
+    return String(window.localStorage?.getItem(PUBLIC_SERIES_SESSION_KEY) || "").trim();
+  } catch (error) {
+    return "";
+  }
+}
+
+function rememberPublicSeriesSession(session) {
+  const cleanSession = String(session || "").trim();
+  try {
+    if (cleanSession) window.localStorage?.setItem(PUBLIC_SERIES_SESSION_KEY, cleanSession);
+    else window.localStorage?.removeItem(PUBLIC_SERIES_SESSION_KEY);
+  } catch (error) {
+    // Le choix de session reste fonctionnel même si le stockage local est bloque.
+  }
+}
 
 const publicSwimmers = window.LivePalmesPublicSwimmers || {};
 const {
@@ -118,7 +137,7 @@ function applyPublicSeriesSnapshot(snapshot = {}) {
   publicSeries = Array.isArray(snapshot.series) ? snapshot.series : [];
   publicResults = Array.isArray(snapshot.results) ? snapshot.results : [];
   publicForfaits = [];
-  publicRecords = Array.isArray(snapshot.records) ? snapshot.records : [];
+  publicRecords = window.LivePalmesPublicRecordsSource?.toConsoleRecords?.() || (Array.isArray(snapshot.records) ? snapshot.records : []);
   publicQualifications = Array.isArray(snapshot.qualifications) ? snapshot.qualifications : [];
   publicSeriesPdfs = Array.isArray(snapshot.seriesPdfs) ? snapshot.seriesPdfs : [];
   publicSessionInfos = snapshot.sessionInfos || {};
@@ -156,6 +175,7 @@ function progressMatchesRace(row) {
 }
 
 function publicProgressIsFresh() {
+  return false;
   if (!publicProgress?.programKey || !publicProgress.updatedAt) return false;
   const updated = new Date(publicProgress.updatedAt);
   if (Number.isNaN(updated.getTime())) return false;
@@ -195,21 +215,7 @@ function leavePublicProgressFollow() {
 }
 
 function renderPublicProgress() {
-  if (!publicProgressIsFresh()) return "";
-  const row = raceRows().find((item) => progressMatchesRace(item));
-  const target = publicProgressTarget();
-  const eventName = eventLabel(publicProgress.eventId, publicProgress.eventLabel || row?.label || "");
-  const session = publicProgress.session ? `S${publicProgress.session}` : "";
-  const phase = publicProgress.stage && isFinalStage(publicProgress.stage)
-    ? "Finale"
-    : `Série ${publicProgress.series || "-"}`;
-  const sex = sexLabel(publicProgress.sex || row?.sex || "");
-  return `
-    <button class="panel public-progress-card" type="button" ${target ? `data-public-progress-race="${escapeHtml(String(target.raceIndex))}" data-public-progress-series="${escapeHtml(String(target.seriesIndex))}"` : "disabled"} aria-label="Aller à la série en cours">
-      <span>En cours</span>
-      <strong>${escapeHtml([session, eventName, sex, phase].filter(Boolean).join(" · "))}</strong>
-    </button>
-  `;
+  return "";
 }
 
 const swimmerKey = (row) => publicSwimmers.swimmerKey(row);
@@ -369,6 +375,7 @@ function isForfait(row) {
 }
 
 function recordsForSeries(program, rows = []) {
+  if (!rows.length) return [];
   const categoryKey = (category, sex = program.sex) => normalizeText(categoryLabel(category, sex) || category);
   const recordCategory = (record) => {
     const direct = cleanText(record.category || "");
@@ -378,13 +385,17 @@ function recordsForSeries(program, rows = []) {
     const master = label.match(/\b([FH]\d+\+)\b/i);
     return master ? master[1].toUpperCase() : "";
   };
-  const categories = new Set(rows.map((row) => categoryKey(row.category, row.sex)).filter(Boolean));
+  const categories = new Set(rows
+    .map((row) => displaySeriesRow(row))
+    .map((row) => categoryKey(row.category, row.sex))
+    .filter(Boolean));
+  if (!categories.size) return [];
   return publicRecords
     .filter((record) => recordEventMatches(record.eventId, program.eventId))
     .filter((record) => !record.sex || record.sex === program.sex || program.sex === "X")
     .filter((record) => {
       const category = recordCategory(record);
-      return !categories.size || !category || categories.has(categoryKey(category, record.sex || program.sex));
+      return category && categories.has(categoryKey(category, record.sex || program.sex));
     })
     .sort((a, b) => {
       const order = { cadet: 1, junior: 2, senior: 3 };
@@ -482,7 +493,11 @@ function renderSessions() {
 function clampState() {
   const availableSessions = sessions();
   if (!activeSession || !availableSessions.includes(activeSession)) {
-    activeSession = latestResultSession() || availableSessions[0] || "";
+    const stored = storedPublicSeriesSession();
+    activeSession = stored && availableSessions.includes(stored)
+      ? stored
+      : (latestResultSession() || availableSessions[0] || "");
+    rememberPublicSeriesSession(activeSession);
   }
   const races = raceRows();
   activeRaceIndex = Math.max(0, Math.min(activeRaceIndex, Math.max(0, races.length - 1)));
@@ -715,34 +730,7 @@ function renderSwimmerSheet(key) {
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function loadSwimmerResultDetails(key) {
-  const sessionsToLoad = swimmerResultSessionsToLoad(key);
-  if (!sessionsToLoad.length || swimmerResultDetailsLoading.has(key)) return;
-  const competition = publicCompetitionDocument();
-  if (!competition) return;
-  swimmerResultDetailsLoading.add(key);
-  renderSwimmerSheet(key);
-  try {
-    const loaders = sessionsToLoad.map((session) =>
-      loadPublicSessionResultsDirectData(competition, session)
-        .then(() => {
-          renderSwimmerSheet(key);
-          const output = document.querySelector("#publicSwimmerSearchOutput");
-          if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
-        })
-        .catch((error) => {
-          console.warn("Chargement des resultats nageur impossible", error);
-        })
-    );
-    await Promise.race([
-      Promise.allSettled(loaders),
-      wait(4500)
-    ]);
-  } finally {
-    swimmerResultDetailsLoading.delete(key);
-    renderSwimmerSheet(key);
-    const output = document.querySelector("#publicSwimmerSearchOutput");
-    if (output && selectedSearchSwimmerKey === key) output.innerHTML = renderSwimmerSearchContent();
-  }
+  return;
 }
 
 async function openSwimmerSheet(key) {
@@ -803,19 +791,7 @@ function sessionInfosFromLiveOrIndex(remote = {}, index = {}, fallback = {}) {
 async function loadPublicSessionResultsDirectData(competition, session) {
   const cleanSession = String(session || "").trim();
   if (!cleanSession || directResultSessionsLoaded.has(cleanSession)) return;
-  if (directResultSessionLoads.has(cleanSession)) return directResultSessionLoads.get(cleanSession);
-  const promise = competition.collection("results")
-    .where("session", "==", cleanSession)
-    .get({ source: "server" })
-    .then((snapshot) => {
-      mergePublicResults(snapshot.docs.map(publicResultFromDoc));
-      directResultSessionsLoaded.add(cleanSession);
-    })
-    .finally(() => {
-      directResultSessionLoads.delete(cleanSession);
-    });
-  directResultSessionLoads.set(cleanSession, promise);
-  return promise;
+  directResultSessionsLoaded.add(cleanSession);
 }
 
 function swimmerResultSessions(key) {
@@ -848,21 +824,43 @@ async function loadPublicSeries() {
   }
   const db = window.firebase.firestore();
   const competition = db.collection("competitions").doc(FIRESTORE_COMPETITION_ID);
-  const indexSnapshot = await competition.collection("public").doc("resultsIndex").get({ source: "server" });
-  const index = indexSnapshot.data() || {};
+  const [seriesIndexSnapshot, resultsIndexSnapshot] = await Promise.all([
+    competition.collection("public").doc("seriesIndex").get({ source: "server" }).catch(() => null),
+    competition.collection("public").doc("resultsIndex").get({ source: "server" }).catch(() => null)
+  ]);
+  const resultsIndex = resultsIndexSnapshot?.data?.() || {};
+  const index = seriesIndexSnapshot?.exists ? (seriesIndexSnapshot.data() || {}) : resultsIndex;
+  if (resultsIndex.publicAccess?.online === false || index.publicAccess?.online === false) {
+    directResultSessionsLoaded.clear();
+    publicMeet = {};
+    publicProgram = [];
+    publicEvents = [];
+    publicEntrants = [];
+    publicSeries = [];
+    publicResults = [];
+    publicSeriesPdfs = [];
+    publicRecords = [];
+    publicQualifications = [];
+    publicSessionInfos = {};
+    publicIndexUpdatedAt = resultsIndex.updatedAt || index.updatedAt || "";
+    setStatus("Non publié", "pending");
+    savePublicSeriesCache();
+    render();
+    return;
+  }
   directResultSessionsLoaded.clear();
   publicMeet = index.meet || {};
   publicProgram = Array.isArray(index.program) ? index.program : [];
   publicEvents = Array.isArray(index.events) ? index.events : [];
   publicEntrants = Array.isArray(index.entrants) ? index.entrants : [];
   publicSeries = Array.isArray(index.series) ? index.series : [];
-  publicResults = Array.isArray(index.results) ? index.results : [];
+  publicResults = Array.isArray(resultsIndex.results) ? resultsIndex.results : (Array.isArray(index.results) ? index.results : []);
   markResultSessionsLoaded(publicResults);
   publicSeriesPdfs = Array.isArray(index.seriesPdfs) ? index.seriesPdfs : [];
-  publicRecords = Array.isArray(index.records) ? index.records : [];
+  publicRecords = window.LivePalmesPublicRecordsSource?.toConsoleRecords?.() || (Array.isArray(index.records) ? index.records : []);
   publicQualifications = Array.isArray(index.qualifications) ? index.qualifications : [];
-  publicSessionInfos = sessionInfosFromLiveOrIndex({}, index, {});
-  publicIndexUpdatedAt = index.updatedAt || "";
+  publicSessionInfos = sessionInfosFromLiveOrIndex({}, index, resultsIndex);
+  publicIndexUpdatedAt = resultsIndex.updatedAt || index.updatedAt || "";
   clampState();
   setStatus("Connecté", "ok");
   savePublicSeriesCache();
@@ -874,6 +872,7 @@ sessionsHost?.addEventListener("click", (event) => {
   if (!button) return;
   leavePublicProgressFollow();
   activeSession = button.dataset.seriesSession;
+  rememberPublicSeriesSession(activeSession);
   activeRaceIndex = 0;
   activeSeriesIndex = 0;
   activeRecordKey = "";
@@ -883,6 +882,7 @@ sessionsHost?.addEventListener("click", (event) => {
 sessionSelect?.addEventListener("change", (event) => {
   leavePublicProgressFollow();
   activeSession = event.target.value || "";
+  rememberPublicSeriesSession(activeSession);
   activeRaceIndex = 0;
   activeSeriesIndex = 0;
   activeRecordKey = "";

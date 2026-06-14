@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes nageur</title>
-    <link rel="stylesheet" href="public/styles.css?v=20260603-swimmer-date-spacing-2" />
+    <link rel="icon" type="image/png" href="/logo-livepalmes.png?v=20260529-raz-batch-1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260603-swimmer-honors-groups-1" />
   </head>
   <body class="swimmer-page">
     <header class="topbar simple">
@@ -28,6 +29,9 @@
           Nageur
           <input id="swimmerSearchInput" type="search" autocomplete="off" placeholder="Nom ou pr&eacute;nom..." />
         </label>
+        <div class="swimmer-search-panel" aria-label="R&eacute;sultats de recherche nageur">
+          <div id="swimmerSearchResults" class="suggestions-list"></div>
+        </div>
         <label class="swimmer-filter-season">
           Saison
           <select id="swimmerSeasonFilter"></select>
@@ -45,10 +49,6 @@
         </div>
       </section>
 
-      <section class="swimmer-search-panel" aria-label="R&eacute;sultats de recherche nageur">
-        <div id="swimmerSearchResults" class="suggestions-list"></div>
-      </section>
-
       <section id="progressPanel" class="progress-panel" aria-label="Progression par saison"></section>
 
       <section class="records-shell swimmer-card-shell" id="swimmerCard">
@@ -58,6 +58,8 @@
             <p id="swimmerStatus">Recherchez puis s&eacute;lectionnez un nageur.</p>
           </div>
         </div>
+
+        <section id="swimmerProfilePanel" class="swimmer-profile-panel" aria-label="Profil du nageur" hidden></section>
 
         <div class="table-wrap">
           <table class="swimmer-best-table">
@@ -79,14 +81,10 @@
       </section>
     </main>
     <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
-    <footer class="performance-admin-footer">
-      <a class="performance-admin-link" href="/administration.html">Administration</a>
-    </footer>
-    <script src="public/data/intranap-summary.js?v=20260602-intranap-6"></script>
-    <script src="public/data/intranap-swimmers-index.js?v=20260602-intranap-6"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
-    <script src="../assets/livepalmes-app-config.js?v=20260602-public-admin-gate-1"></script>
-    <script src="public/swimmer.js?v=20260603-swimmer-expanded-meta-1"></script>
+    <script src="public/data/intranap-summary.js?v=consolidated-20260603140205"></script>
+    <script src="public/data/performance-public/version.js"></script>
+    <script src="public/data/records-data.js?v=records-firestore-20260613220745"></script>
+    <script src="public/store.js?v=20260603-swimmer-record-store-1"></script>
+    <script src="public/swimmer.js?v=20260609-swimmer-real-age-1"></script>
   </body>
 </html>

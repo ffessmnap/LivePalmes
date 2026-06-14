@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes administration records</title>
-    <link rel="stylesheet" href="public/styles.css?v=20260602-record-admin-topbar-right-1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260613-delete-record-draft-1" />
   </head>
   <body class="performance-admin-page" data-admin-auth="loading">
     <header class="topbar simple performance-admin-topbar">
       <div>
-        <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
+        <a class="topbar-home-link" href="../administration.html">Administration</a>
         <p class="eyebrow">LivePalmes · Administration</p>
         <h1>Administration des records</h1>
       </div>
@@ -191,6 +191,11 @@
               <span id="recordNameLabel">Nageur</span>
               <input id="recordName" list="swimmerOptions" type="text" />
             </label>
+            <label id="recordBirthDateField" class="admin-birth-field" hidden>
+              Année de naissance
+              <input id="recordBirthDate" type="text" inputmode="numeric" placeholder="ex. 2008" />
+              <small id="recordBirthDateHelp">À renseigner uniquement si le nageur n'est pas reconnu automatiquement.</small>
+            </label>
             <label>
               Club
               <input id="recordClub" list="clubOptions" type="text" />
@@ -217,7 +222,9 @@
           </div>
 
           <div class="admin-actions">
+            <button type="button" id="deleteDraftButton" class="danger-button">Supprimer cette ligne</button>
             <button type="button" id="saveDraftButton">Ajouter aux brouillons</button>
+            <button type="button" id="saveTieDraftButton" class="secondary-button">Ajouter ex aequo</button>
             <button type="button" id="validateButton" class="admin-hidden-filter">Valider</button>
           </div>
         </aside>
@@ -233,10 +240,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="../assets/livepalmes-app-config.js?v=20260602-access-users-2"></script>
     <script src="../assets/livepalmes-admin-auth.js?v=20260602-record-admin-profile-name-2"></script>
-    <script src="public/data/records-data.js?v=20260603-record-splits-1"></script>
-    <script src="public/record-placeholders.js?v=20260601-relay-mixed-labels-2"></script>
+    <script src="public/data/records-data.js?v=records-firestore-20260613220745"></script>
+    <script src="public/record-placeholders.js?v=20260613-mpf-relays-mixed-1"></script>
     <script src="public/data/admin-reference.js?v=20260601-performance-admin-page-1"></script>
-    <script src="public/store.js?v=20260602-empty-remote-fallback-1"></script>
-    <script src="public/admin-records.js?v=20260603-record-splits-1"></script>
+    <script src="public/store.js?v=20260613-birth-year-restore-1"></script>
+    <script src="public/admin-records.js?v=20260613-rf-mpf-alert-1"></script>
   </body>
 </html>

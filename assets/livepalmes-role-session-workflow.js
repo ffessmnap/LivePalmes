@@ -157,6 +157,10 @@
     }
 
     function roleIsUnlocked(role) {
+      if (browserWindow.LivePalmesConsoleGate?.isUnlocked?.() &&
+        browserWindow.LivePalmesConsoleGate?.unlockedRole?.() === role) {
+        return true;
+      }
       if (cloudPinModeEnabled()) {
         return Boolean((context.cloudAuthenticatedRoles || {})[role]);
       }
@@ -217,6 +221,13 @@
         saveUnlockedRoles();
       }
       const pageRole = knownRole(dedicatedRole) ? dedicatedRole : "";
+      if (pageRole && browserWindow.LivePalmesConsoleGate?.isUnlocked?.() &&
+        browserWindow.LivePalmesConsoleGate?.unlockedRole?.() === pageRole) {
+        context.cloudAuthenticatedRoles = {
+          ...(context.cloudAuthenticatedRoles || {}),
+          [pageRole]: true
+        };
+      }
       const initialRole = pageRole || (knownRole(initialView.role) ? initialView.role : "live");
       const loadedRoleStates = loadRoleStates();
       const initialState = cloneRoleState(loadedRoleStates[initialRole] || loadedRoleStates.live);

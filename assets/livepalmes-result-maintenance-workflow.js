@@ -15,6 +15,7 @@
       normalizeData,
       publishLiveDataToFirestore,
       publishPublicResultsIndex,
+      publicResultsIndexDocument,
       render,
       renderResultsAdminPanel,
       resultWithoutPdf,
@@ -43,14 +44,45 @@
       await publishPublicResultsIndex();
     }
 
-    async function clearPublishedResults() {
+    async function clearPublicCompetitionIndexes(reason = "Compétition archivée") {
+      const doc = typeof publicResultsIndexDocument === "function" ? publicResultsIndexDocument() : null;
+      if (!doc) throw new Error("Firebase n'est pas disponible pour vider les index publics.");
+      const updatedAt = new Date().toISOString();
+      const base = {
+        meet: {},
+        events: [],
+        program: [],
+        entrants: [],
+        series: [],
+        results: [],
+        records: [],
+        qualifications: [],
+        seriesPdfs: [],
+        sessionResultsPdfs: [],
+        sessionInfos: {},
+        publicAccess: {
+          online: false,
+          updatedAt
+        },
+        updatedAt,
+        sourceVersion: "",
+        sourceLabel: reason,
+        lastUpdatedSession: ""
+      };
+      await doc.set({ id: "resultsIndex", ...base });
+      if (doc.parent?.doc) {
+        await doc.parent.doc("seriesIndex").set({ id: "seriesIndex", ...base });
+      }
+    }
+
+    async function clearPublishedResults(options = {}) {
       const collection = resultsCollection();
       if (!collection) throw new Error("Firebase n'est pas disponible pour effacer les r\u00e9sultats publics.");
       const snapshot = await collection.get();
       const docs = snapshot.docs || [];
       const raceResults = getRaceResults();
       const rowsToArchive = raceResults.length ? raceResults.map(resultWithoutPdf) : docs.map((doc) => resultWithoutPdf({ id: doc.id, ...doc.data() }));
-      if (rowsToArchive.length) {
+      if (rowsToArchive.length && !options.skipArchive) {
         await archiveCurrentResults("Avant remise \u00e0 z\u00e9ro des r\u00e9sultats publics", rowsToArchive);
       }
       for (const result of rowsToArchive) {
@@ -58,8 +90,15 @@
       }
       await Promise.all(docs.map((doc) => Promise.all([doc.ref.delete(), deleteResultPdfPayload(doc.id)])));
       await clearPublicSessionResultsPdfs();
+      if (options.clearSeriesPdfs) {
+        await clearPublicSeriesPdfs();
+      }
       setRaceResults([]);
-      await publishPublicResultsIndex();
+      if (options.unpublishPublicIndexes) {
+        await clearPublicCompetitionIndexes(options.reason || "Compétition archivée");
+      } else {
+        await publishPublicResultsIndex();
+      }
       renderResultsAdminPanel();
       return docs.length;
     }
@@ -175,6 +214,7 @@
       deleteResultPdf,
       clearPublishedResults,
       clearPublishedResultsForSession,
+      clearPublicCompetitionIndexes,
       resetSeriesForNextCompetition
     };
   }

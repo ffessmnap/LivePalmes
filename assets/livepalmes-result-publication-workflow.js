@@ -35,6 +35,7 @@
       resultsCollection,
       resultWithoutPdf,
       saveAlerts,
+      saveData,
       sexDisplayLabel,
       splitImportedPersonName,
       stampReplacementAnnouncement,
@@ -89,6 +90,18 @@
       syncAlertChangesToFirestoreStrict,
       syncAlertToFirestore
     });
+
+      function reopenPublicDirectIfDisabled() {
+        if (data.notes?.publicDirectDisabled !== true) return;
+        context.data = {
+          ...context.data,
+          notes: {
+            ...(context.data?.notes || {}),
+            publicDirectDisabled: false
+          }
+        };
+        if (typeof saveData === "function") saveData();
+      }
 
       async function fileToDataUrl(file) {
         return resultPdfStorage.fileToDataUrl(file);
@@ -259,7 +272,8 @@
         if (hasFinal && !preserveFinalists) {
           await createFinalistsSpeakerAlert(result);
         }
-        await publishPublicResultsIndex();
+        reopenPublicDirectIfDisabled();
+        await publishPublicResultsIndex({ strict: true });
         return result;
       }
       

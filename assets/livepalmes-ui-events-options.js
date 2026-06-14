@@ -25,7 +25,7 @@
     "resultProgramRows", "resultSessions", "resultUploadKeyForProgram", "resultUploadKeyForSessionResults",
     "saveActiveView", "saveRoleCodesFromModal", "saveUnlockedRoles", "selectRecordForCategory", "selectedEntrant",
     "setPublicPositionEnabled", "setRefereeProgressHere", "setResultUploadState", "setSeriesImportState",
-    "sexDisplayLabel", "showPerformanceDiagnosticModal", "showTechnicalDiagnosticModal", "showTechnicalLogModal", "showToast",
+    "sexDisplayLabel", "showPerformanceDiagnosticModal", "showPublicPublicationDiagnosticModal", "showTechnicalDiagnosticModal", "showTechnicalLogModal", "showToast",
     "switchRoleUnlocked", "syncAlertChangesToFirestoreStrict", "toggleCompetitionMode", "toggleFinalPreWithdrawal",
     "unlockRole", "updateAlert", "updateConsolePresence",
     "updateLiveNotes", "updateSpeakerInfoFromGoogleSheet"

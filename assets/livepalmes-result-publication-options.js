@@ -7,7 +7,7 @@
     "normalizePersonName", "programKey", "publishPublicResultsIndex", "raceOptionKey",
     "rebuildFinalistsFromParsedResult", "render", "renderDataStatus", "resultForProgramRow",
     "resultIdForProgramRow", "resultMetadataPayload", "resultPdfPayload", "resultPhaseLabelForProgramRow",
-    "resultWithoutPdf", "saveAlerts", "sexDisplayLabel", "splitImportedPersonName",
+    "resultWithoutPdf", "saveAlerts", "saveData", "sexDisplayLabel", "splitImportedPersonName",
     "stampReplacementAnnouncement", "syncAlertChangesToFirestore", "syncAlertChangesToFirestoreStrict",
     "syncAlertToFirestore"
   ];

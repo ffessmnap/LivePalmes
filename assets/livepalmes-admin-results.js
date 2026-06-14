@@ -110,6 +110,7 @@
   function renderResultsAdminPanelHtml(options = {}) {
     const {
       activeSession = "",
+      competitionProtocolImportHtml = "",
       rowsHtml = "",
       seriesImportBusy = false,
       seriesImportStateHtml = "",
@@ -136,11 +137,12 @@
           ` : ""}
           <button class="ghost-button compact" type="button" data-public-session-infos>Informations</button>
           <button class="ghost-button compact" type="button" data-computer-admin-series ${seriesImportBusy ? "disabled" : ""}>Importer séries</button>
-          <a class="ghost-button compact" href="resultats.html?v=20260520-session-infos-light" target="_blank" rel="noopener">Page publique</a>
+          <a class="ghost-button compact" href="resultats" target="_blank" rel="noopener">Page publique</a>
           <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
         </div>
       </div>
       <div class="results-admin-list">
+        ${competitionProtocolImportHtml}
         ${sessionResultsImportHtml}
         ${rowsHtml || `<p class="panel-subtitle">Aucune course trouvée dans le programme.</p>`}
       </div>

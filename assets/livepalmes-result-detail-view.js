@@ -5,7 +5,13 @@
     const sexDisplayLabel = helpers.sexDisplayLabel || ((sex) => sex || "");
 
     function rowName(row) {
-      return finalistRowName(row) || row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ") || "Concurrent";
+      let name = finalistRowName(row) || row?.displayName || row?.name || [row?.lastName, row?.firstName].filter(Boolean).join(" ") || "Concurrent";
+      const club = String(row?.club || "").trim();
+      if (row?.relay || legacyRelayCodeFromRow(row)) {
+        name = String(name || "").replace(/\s+(?:[FHX](?:MI|CA|JU|SE|MA|\d{2,3}\+?)|X\d{2,3}\+?|X\d{3})\s*$/i, "").trim();
+        if (club) name = name.replace(new RegExp(`\\s+${club.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i"), "").trim();
+      }
+      return name || "Concurrent";
     }
 
     function rowValue(row) {
@@ -13,7 +19,9 @@
       if (status === "dsq") return "DSQ";
       if (status === "ab" || status === "abd") return "ABD";
       if (status === "dns") return "Forfait";
-      return String(row?.statusLabel || row?.time || "").trim();
+      const value = String(row?.statusLabel || row?.time || "").trim();
+      const points = String(row?.points || "").trim();
+      return points && value ? `${value} (${points} pts)` : (value || (points ? `${points} pts` : ""));
     }
 
     function timeValue(row) {
@@ -49,7 +57,78 @@
     }
 
     function rowCategoryTitle(row) {
-      return String(row?.categoryLabel || row?.category || "").trim();
+      const section = String(row?.sectionCategoryLabel || row?.sectionCategory || "").trim();
+      if (/^R\s*\d{3}$/i.test(section)) return section.replace(/\s+/g, "").toUpperCase();
+      const direct = String(row?.categoryLabel || row?.category || "").trim();
+      if (/^R\s*\d{3}$/i.test(direct)) return direct.replace(/\s+/g, "").toUpperCase();
+      const name = String(finalistRowName(row) || row?.displayName || row?.name || "").trim();
+      const codeMatch = name.match(/\bX(140|160|180|220)\b/i) || String(row?.categoryCode || "").match(/^X(140|160|180|220)$/i);
+      if (row?.relay && codeMatch) return `R${codeMatch[1]}`;
+      return direct;
+    }
+
+    function legacyRelayCodeFromRow(row = {}) {
+      const text = [row.displayName, row.name, row.lastName, row.categoryCode]
+        .map((value) => String(value || "").trim().toUpperCase())
+        .join(" ");
+      return /\bX(?:MI|CA|JU|SE|MA|\d{2,3}\+?|\d{3})\b/.test(text);
+    }
+
+    function relayMasterSectionCodeFromRow(row = {}) {
+      const direct = [row.sectionCategoryLabel, row.sectionCategory, row.categoryLabel, row.category]
+        .map((value) => String(value || "").trim().toUpperCase().replace(/\s+/g, ""))
+        .find((value) => /^R\d{3}$/.test(value));
+      if (direct) return direct;
+      const text = [row.displayName, row.name, row.lastName, row.categoryCode]
+        .map((value) => String(value || "").trim().toUpperCase())
+        .join(" ");
+      const match = text.match(/\bX(140|160|180|220)\b/);
+      return match ? `R${match[1]}` : "";
+    }
+
+    function inferRelayMasterSectionLabels(groups = []) {
+      const labels = groups.map((group) => group.label || "");
+      if (!labels.some(Boolean)) return labels;
+      if (groups.length === 3 && labels[0] === "R220" && labels[2] === "R140") return ["R220", "R180", "R140"];
+      if (groups.length === 4 && labels[0] === "R220" && labels[3] === "R140") return ["R220", "R180", "R160", "R140"];
+      return labels;
+    }
+
+    function hydrateLegacyRelayMasterSections(rows = []) {
+      if (!rows.length || rows.some((row) => /^R\d{3}$/i.test(String(row?.sectionCategoryLabel || row?.sectionCategory || "").trim()))) {
+        return rows;
+      }
+      const relayRows = rows.filter((row) => row?.relay || legacyRelayCodeFromRow(row));
+      if (relayRows.length < 2) return rows;
+      const sourceRows = rows.some((row) => Number.isFinite(Number(row?.sourceIndex)))
+        ? [...rows].sort((a, b) => Number(a?.sourceIndex ?? 9999) - Number(b?.sourceIndex ?? 9999))
+        : rows;
+      const groups = [];
+      let current = null;
+      sourceRows.forEach((row) => {
+        const startsSection = current && Number(row?.rank || 0) === 1 && legacyRelayCodeFromRow(row);
+        if (!current || startsSection) {
+          current = { rows: [], label: "" };
+          groups.push(current);
+        }
+        current.rows.push(row);
+        current.label = current.label || relayMasterSectionCodeFromRow(row);
+      });
+      if (groups.length < 2) return rows;
+      const labels = inferRelayMasterSectionLabels(groups);
+      return sourceRows.map((row) => {
+        const groupIndex = groups.findIndex((group) => group.rows.includes(row));
+        const label = labels[groupIndex] || groups[groupIndex]?.label || "";
+        if (!label || !/^R\d{3}$/.test(label)) return row;
+        return {
+          ...row,
+          categoryCode: label,
+          category: label,
+          categoryLabel: label,
+          sectionCategory: label,
+          sectionCategoryLabel: label
+        };
+      });
     }
 
     function categoryGroups(rows = []) {
@@ -66,6 +145,18 @@
         byTitle.get(key).rows.push(row);
       });
       return groups;
+    }
+
+    function renderRelayLegs(row) {
+      const legs = Array.isArray(row?.relayLegs) ? row.relayLegs.filter((leg) => leg?.name || leg?.time) : [];
+      if (!legs.length) return "";
+      return `
+        <small class="result-detail-relay-legs">
+          ${legs.map((leg, index) => `
+            <span>${escapeHtml(`${index + 1}. ${[leg.name, leg.time].filter(Boolean).join(" ")}`)}</span>
+          `).join("")}
+        </small>
+      `;
     }
 
     function renderRows(title, rows = [], options = {}) {
@@ -85,6 +176,7 @@
           <li ${ordered && rank ? `value="${escapeHtml(rank)}"` : ""} class="${closed ? "closed" : ""}">
             <div>
               <span>${escapeHtml(label)}</span>
+              ${renderRelayLegs(row)}
             </div>
           </li>
         `;
@@ -102,7 +194,7 @@
     function detailGroups(result, rows = []) {
       if (!isFinalStage(result?.stage)) {
         const baseTitle = result.isPartial ? "Resultat partiel" : "Resultats de la course";
-        const groups = categoryGroups(rows);
+        const groups = categoryGroups(hydrateLegacyRelayMasterSections(rows));
         if (groups.length > 1 || groups.some((group) => group.title)) {
           return groups.map((group) => ({
             title: group.title ? `${baseTitle} - ${group.title}` : baseTitle,

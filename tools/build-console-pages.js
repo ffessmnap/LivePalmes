@@ -61,6 +61,8 @@ const consolePages = [
 ];
 
 const speakerInfoScripts = [
+  "performances/public/data/records-data.js",
+  "assets/livepalmes-public-records-source.js",
   "assets/livepalmes-speaker-info.js",
   "assets/livepalmes-speaker-info-options.js",
   "assets/livepalmes-speaker-info-workflow.js"
@@ -175,8 +177,8 @@ function buildPage(source, page) {
   html = replaceOne(html, /<p>S&eacute;lectionne ta console pour suivre la comp&eacute;tition en temps r&eacute;el\.<\/p>/, `<p>${page.intro}</p>`, "home intro");
   html = replaceOne(
     html,
-    /<a class="public-results-link" href="resultats\.html\?v=([^"]+)" target="_blank" rel="noopener">R&eacute;sultats publics<\/a>/,
-    '<a class="public-results-link" href="pilotage-livepalmes.html?v=$1">Accueil LivePalmes</a>',
+    /<a class="public-results-link" href="resultats(?:\.html\?v=[^"]+)?" target="_blank" rel="noopener">R&eacute;sultats publics<\/a>/,
+    '<a class="public-results-link" href="pilotage-livepalmes.html">Accueil LivePalmes</a>',
     "home link"
   );
   html = replaceOne(

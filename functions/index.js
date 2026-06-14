@@ -4,6 +4,7 @@ const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 
 admin.initializeApp();
+admin.firestore().settings({ ignoreUndefinedProperties: true });
 
 const REGION = "europe-west1";
 const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
@@ -15,8 +16,25 @@ const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
+const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
+const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
 const PIN_MAX_FAILED_ATTEMPTS = 5;
 const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
+const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
+const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
+const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
+const PERFORMANCE_BASE_COLLECTION = "performances";
+const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
+const PERFORMANCE_BASE_MIGRATION_COLLECTION = "performanceMigrationJobs";
+const PERFORMANCE_SWIMMERS_COLLECTION = "performanceSwimmerIndex";
+const PERFORMANCE_SWIMMER_PAGES_COLLECTION = "performanceSwimmerPages";
+const PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION = "performanceSwimmerIndexState";
+const PERFORMANCE_TOP_BUCKETS_COLLECTION = "performanceTopViews";
+const PERFORMANCE_TOP_INDEX_STATE_COLLECTION = "performanceTopIndexState";
+const PERFORMANCE_TOP_INDEX_LIMIT = 500;
+const PERFORMANCE_SWIMMER_PAGE_SIZE = 500;
+const PERFORMANCE_PUBLIC_DATA_URL = "https://livepalmes.web.app/performances/public/data";
+const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
 const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
 const COURSE_META = {
   "50SF": ["50 m Surface", "50 SF", "SF", 50],
@@ -67,6 +85,24 @@ const CATEGORY_LABELS = {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function cleanFirestoreValue(value) {
+  if (value === undefined || typeof value === "function") return undefined;
+  if (value === null) return null;
+  if (Array.isArray(value)) {
+    return value
+      .map(cleanFirestoreValue)
+      .filter((item) => item !== undefined);
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).reduce((acc, [key, item]) => {
+      const cleaned = cleanFirestoreValue(item);
+      if (cleaned !== undefined) acc[key] = cleaned;
+      return acc;
+    }, {});
+  }
+  return value;
 }
 
 function competitionIdFrom(data = {}) {
@@ -152,8 +188,20 @@ function activeCapabilitiesFromMap(map = {}) {
   return ACCESS_CAPABILITIES.filter((capability) => map?.[capability] === true);
 }
 
+function displayNameFromProfile(profile = {}) {
+  return [cleanText(profile.firstName), cleanText(profile.lastName)].filter(Boolean).join(" ");
+}
+
+async function accessUserDisplayName(uid, fallbackToken = {}) {
+  const cleanUid = cleanText(uid);
+  if (!cleanUid) return "";
+  const snapshot = await admin.firestore().collection("users").doc(cleanUid).get().catch(() => null);
+  const data = snapshot?.exists ? snapshot.data() || {} : {};
+  return displayNameFromProfile(data) || cleanText(fallbackToken.name);
+}
+
 async function userByEmailOrCreate(profile) {
-  const displayName = [profile.firstName, profile.lastName].filter(Boolean).join(" ");
+  const displayName = displayNameFromProfile(profile);
   if (profile.uid) {
     const existing = await admin.auth().getUser(profile.uid);
     await admin.auth().updateUser(existing.uid, { email: profile.email, displayName, disabled: false });
@@ -332,13 +380,19 @@ function normalizeIdentityText(value) {
     .trim();
 }
 
-function swimmerIdentityKey(firstName, lastName, birthDate, sex) {
+function swimmerIdentityKey(firstName, lastName, birthDate) {
   const first = normalizeIdentityText(firstName);
   const last = normalizeIdentityText(lastName);
   const birth = cleanText(birthDate);
-  const normalizedSex = normalizeCategoryCode(sex);
-  if (!first || !last || !birth || (normalizedSex !== "F" && normalizedSex !== "M")) return "";
-  return `${last}|${first}|${birth}|${normalizedSex}`;
+  if (!first || !last || !birth) return "";
+  return `${last}|${first}|${birth}`;
+}
+
+function canonicalSwimmerId(ids) {
+  return ids
+    .map((id) => cleanText(id))
+    .filter(Boolean)
+    .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr-FR", { numeric: true }))[0] || "";
 }
 
 function competitionYear(date) {
@@ -353,15 +407,15 @@ function birthYear(date) {
 }
 
 function ageCategoryFromDates(competitionDate, birthDate) {
-  const year = competitionYear(competitionDate);
+  const year = importSeasonYear(competitionDate) || competitionYear(competitionDate);
   const born = birthYear(birthDate);
   const age = year && born ? year - born : null;
   if (!Number.isFinite(age) || age < 0 || age > 120) return "";
-  if (age <= 10) return "P";
-  if (age <= 12) return "B";
-  if (age <= 14) return "M";
-  if (age <= 16) return "C";
-  if (age <= 18) return "J";
+  if (age <= 9) return "P";
+  if (age <= 11) return "B";
+  if (age <= 13) return "M";
+  if (age <= 15) return "C";
+  if (age <= 17) return "J";
   if (age <= 29) return "S";
   if (age <= 39) return "M30+";
   if (age <= 49) return "M40+";
@@ -369,6 +423,13 @@ function ageCategoryFromDates(competitionDate, birthDate) {
   if (age <= 69) return "M60+";
   if (age <= 79) return "M70+";
   return "M80+";
+}
+
+function performanceCategoryFromRow(row = {}, dateOverride = "") {
+  const date = cleanText(dateOverride || row.date || row.metadata?.date);
+  return ageCategoryFromDates(date, row.birthDate) ||
+    cleanText(row.category) ||
+    fallbackCategoryFromSource(row.categoryCode || row.categoryLabel || row.importedCategoryCode || row.classificationCategory);
 }
 
 function fallbackCategoryFromSource(sourceCategory) {
@@ -379,7 +440,7 @@ function fallbackCategoryFromSource(sourceCategory) {
   if (code.endsWith("CA")) return "C";
   if (code.endsWith("JU")) return "J";
   if (code.endsWith("SE") || code.endsWith("S1")) return "S";
-  if (/^[FH](30|35)\+$/.test(code) || /^[FH][MV][01]$/.test(code)) return "M30+";
+  if (/^[FH](30|35)\+$/.test(code) || /^[FH][MV][01]$/.test(code) || code === "M30+") return "M30+";
   if (/^[FH](40|45)\+$/.test(code) || /^[FH][MV]2$/.test(code)) return "M40+";
   if (/^[FH](50|55)\+$/.test(code) || /^[FH][MV]3$/.test(code)) return "M50+";
   if (/^[FH](60|65)\+$/.test(code) || /^[FH][MV]4$/.test(code)) return "M60+";
@@ -388,22 +449,204 @@ function fallbackCategoryFromSource(sourceCategory) {
   return "";
 }
 
+function importPerformanceCategory(perf = {}) {
+  return ageCategoryFromDates(perf.date, perf.birthDate) ||
+    fallbackCategoryFromSource(perf.categoryCode || perf.importedCategoryCode || perf.classificationCategory);
+}
+
+async function loadPerformanceRecordsData() {
+  const snapshot = await admin.firestore()
+    .collection("competitions")
+    .doc("livepalmes-active")
+    .collection("performanceData")
+    .doc("records")
+    .get();
+  return snapshot.exists ? snapshot.data() || {} : {};
+}
+
+function recordReferenceRows(recordsData = {}) {
+  return [
+    ...(Array.isArray(recordsData.franceRecords) ? recordsData.franceRecords : []).map((row) => ({
+      ...row,
+      alertType: row.recordType === "RFJ" ? "RFJ" : "RF",
+      alertLabel: row.recordType === "RFJ" ? "Record de France Jeunes" : "Record de France"
+    })),
+    ...(Array.isArray(recordsData.records) ? recordsData.records : []).map((row) => ({
+      ...row,
+      alertType: "MPF",
+      alertLabel: "Meilleure Performance Francaise"
+    }))
+  ].filter((row) =>
+    !String(row.course || "").startsWith("4X") &&
+    normalizeCourseCode(row.course) &&
+    (row.sex === "F" || row.sex === "M") &&
+    Number(row.value || 0) > 0 &&
+    cleanText(row.time) &&
+    cleanText(row.time) !== "A etablir" &&
+    cleanText(row.time) !== "À établir"
+  );
+}
+
+function recordReferenceKey(row = {}) {
+  return [
+    cleanText(row.alertType || row.recordType || "MPF"),
+    cleanText(row.sex),
+    cleanText(row.alertType) === "MPF" ? cleanText(row.category) : "",
+    normalizeCourseCode(row.course)
+  ].join("|");
+}
+
+function recordReferenceMap(recordsData = {}) {
+  const byKey = new Map();
+  recordReferenceRows(recordsData).forEach((row) => {
+    const key = recordReferenceKey(row);
+    const existing = byKey.get(key);
+    if (!existing || Number(row.value || 0) < Number(existing.value || 0)) byKey.set(key, row);
+  });
+  return byKey;
+}
+
+function recordReferenceForPerformance(referenceMap, type, perf, category) {
+  const sex = normalizeCategoryCode(perf.sex);
+  const course = normalizeCourseCode(perf.course);
+  const key = [type, sex, type === "MPF" ? category : "", course].join("|");
+  return referenceMap.get(key) || null;
+}
+
+function isYouthCategory(category) {
+  return ["P", "B", "M", "C", "J"].includes(cleanText(category));
+}
+
+function normalizedRecordAlertName(value) {
+  const normalized = normalizeIdentityText(value);
+  if (!normalized) return "";
+  return normalized.split(/\s+/).filter(Boolean).sort().join(" ");
+}
+
+function sameRecordAlertSwimmer(left, right) {
+  const leftRaw = normalizeIdentityText(left);
+  const rightRaw = normalizeIdentityText(right);
+  if (!leftRaw || !rightRaw) return false;
+  return leftRaw === rightRaw || normalizedRecordAlertName(leftRaw) === normalizedRecordAlertName(rightRaw);
+}
+
+function isAlreadyPublishedRecordAlert(alert = {}) {
+  return cleanText(alert.status) === "equal" &&
+    Number(alert.timeValue || 0) === Number(alert.referenceValue || 0) &&
+    sameRecordAlertSwimmer(alert.swimmer, alert.referenceSwimmer);
+}
+
+function buildRecordAlert(perf, category, reference) {
+  const timeValue = Number(perf.timeValue || 0);
+  const referenceValue = Number(reference.value || 0);
+  if (!timeValue || !referenceValue || timeValue > referenceValue) return null;
+  const status = timeValue < referenceValue ? "improved" : "equal";
+  const sourceLine = Number(perf.sourceLine || perf.originSourceLine || 0) || "";
+  const swimmer = [perf.firstName, perf.lastName].filter(Boolean).join(" ").trim();
+  const referenceSwimmer = cleanText(reference.swimmer);
+  if (status === "equal" && sameRecordAlertSwimmer(swimmer, referenceSwimmer)) return null;
+  return {
+    type: reference.alertType,
+    label: reference.alertLabel,
+    status,
+    swimmer,
+    firstName: cleanText(perf.firstName),
+    lastName: cleanText(perf.lastName),
+    birthDate: cleanText(perf.birthDate),
+    sex: normalizeCategoryCode(perf.sex),
+    category,
+    categoryCode: categoryCodeFromCategory(category, normalizeCategoryCode(perf.sex)),
+    course: normalizeCourseCode(perf.course),
+    time: cleanText(perf.time) || formatTimeValue(timeValue),
+    timeValue,
+    referenceTime: cleanText(reference.time) || formatTimeValue(referenceValue),
+    referenceValue,
+    referenceSwimmer,
+    referenceDate: cleanText(reference.date),
+    referenceLocation: cleanText(reference.location),
+    referenceKey: cleanText(reference.key),
+    date: cleanText(perf.date),
+    location: cleanText(perf.location),
+    club: cleanText(perf.club),
+    clubName: cleanText(perf.clubName),
+    isIntermediate: perf.isIntermediate === true,
+    originCourse: normalizeCourseCode(perf.originCourse),
+    originTime: cleanText(perf.originTime),
+    splitCode: cleanText(perf.splitCode),
+    splitDistance: Number(perf.splitDistance || 0) || "",
+    sourceLine
+  };
+}
+
+function detectRecordAlerts(performances = [], recordsData = {}) {
+  const referenceMap = recordReferenceMap(recordsData);
+  const alerts = [];
+  const seen = new Set();
+  performances.forEach((perf) => {
+    const timeValue = Number(perf.timeValue || 0);
+    const sex = normalizeCategoryCode(perf.sex);
+    const course = normalizeCourseCode(perf.course);
+    if (!timeValue || (sex !== "F" && sex !== "M") || !POOL_COURSES.includes(course)) return;
+    const category = importPerformanceCategory(perf);
+    if (!category) return;
+    const candidates = [
+      recordReferenceForPerformance(referenceMap, "MPF", perf, category),
+      recordReferenceForPerformance(referenceMap, "RF", perf, category),
+      isYouthCategory(category) ? recordReferenceForPerformance(referenceMap, "RFJ", perf, category) : null
+    ].filter(Boolean);
+    candidates.forEach((reference) => {
+      const alert = buildRecordAlert(perf, category, reference);
+      if (!alert) return;
+      const key = [
+        alert.type,
+        alert.course,
+        alert.sex,
+        alert.category,
+        alert.timeValue,
+        alert.swimmer,
+        alert.date,
+        alert.sourceLine,
+        alert.isIntermediate ? alert.originCourse : ""
+      ].join("|");
+      if (seen.has(key)) return;
+      seen.add(key);
+      alerts.push(alert);
+    });
+  });
+  return alerts.sort((a, b) =>
+    ["RF", "RFJ", "MPF"].indexOf(a.type) - ["RF", "RFJ", "MPF"].indexOf(b.type) ||
+    a.course.localeCompare(b.course, "fr-FR", { numeric: true }) ||
+    a.timeValue - b.timeValue
+  );
+}
+
 function buildIntranapSwimmerReference() {
   const byId = new Map();
   const byIdentity = new Map();
-  const ambiguousIdentities = new Set();
+  const groupedByIdentity = new Map();
   intranapSwimmersReference.forEach((swimmer) => {
-    byId.set(String(swimmer.id), swimmer);
-    const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate, swimmer.sex);
+    const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate);
     if (!key) return;
-    if (byIdentity.has(key)) {
-      ambiguousIdentities.add(key);
-      byIdentity.delete(key);
-      return;
-    }
-    if (!ambiguousIdentities.has(key)) byIdentity.set(key, swimmer);
+    if (!groupedByIdentity.has(key)) groupedByIdentity.set(key, []);
+    groupedByIdentity.get(key).push(swimmer);
   });
-  return { byId, byIdentity, ambiguousIdentities };
+  groupedByIdentity.forEach((group, key) => {
+    const canonicalId = canonicalSwimmerId(group.map((swimmer) => swimmer.id));
+    const canonical = group.find((swimmer) => String(swimmer.id) === String(canonicalId)) || group[0];
+    const merged = {
+      ...canonical,
+      id: String(canonicalId || canonical.id),
+      identityKey: key,
+      aliases: group.map((swimmer) => String(swimmer.id)).filter((id) => id && id !== String(canonicalId)),
+      sourceIds: group.map((swimmer) => String(swimmer.id)).filter(Boolean)
+    };
+    byIdentity.set(key, merged);
+    group.forEach((swimmer) => byId.set(String(swimmer.id), merged));
+  });
+  intranapSwimmersReference.forEach((swimmer) => {
+    if (!byId.has(String(swimmer.id))) byId.set(String(swimmer.id), swimmer);
+  });
+  return { byId, byIdentity };
 }
 
 const intranapSwimmerLookup = buildIntranapSwimmerReference();
@@ -413,10 +656,8 @@ function resolveIntranapSwimmer(perf, sex) {
   const byIdMatch = rawId ? intranapSwimmerLookup.byId.get(rawId) : null;
   if (byIdMatch) return { swimmer: byIdMatch, method: "id" };
 
-  const key = swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate, sex);
-  if (!key || intranapSwimmerLookup.ambiguousIdentities.has(key)) {
-    return { swimmer: null, method: key ? "ambiguous_identity" : "none" };
-  }
+  const key = swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
+  if (!key) return { swimmer: null, method: "none" };
   const identityMatch = intranapSwimmerLookup.byIdentity.get(key) || null;
   return identityMatch ? { swimmer: identityMatch, method: "identity" } : { swimmer: null, method: "none" };
 }
@@ -866,7 +1107,7 @@ function parseInternationalWorkbookImport(workbookPayload) {
     }
 
     const regionId = federationCode || nationality || "INT";
-    const categoryCode = normalizeInternationalCategory(categoryDeclared) || ageCategoryFromDates(raceDate, birthDate);
+    const categoryCode = ageCategoryFromDates(raceDate, birthDate) || normalizeInternationalCategory(categoryDeclared);
     const intermediateTimes = parseInternationalIntermediateTimes(row, headerMap);
     const entryTimeRaw = cellByHeader(row, headerMap, "entry_time");
     const entryTimeValue = parseTimeValue(entryTimeRaw);
@@ -1201,7 +1442,10 @@ async function updatePublicPinNotes(competitionId, enabled) {
 exports.setRolePins = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "consoles.manage");
   const competitionId = competitionIdFrom(request.data || {});
-  const enabled = request.data?.enabled !== false;
+  if (request.data?.enabled === false) {
+    throw new HttpsError("failed-precondition", "Les codes PIN des consoles ne peuvent plus etre desactives.");
+  }
+  const enabled = true;
   const now = new Date().toISOString();
   const pins = request.data?.pins || {};
   const ref = rolePinsRef(competitionId);
@@ -1480,15 +1724,19 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const fileHash = stableHash(parsed.fileHashSeed || "");
   const importId = importDocumentId(parsed.metadata, fileHash);
   const existing = await admin.firestore().collection("performanceImports").doc(importId).get();
+  const existingData = existing.exists ? existing.data() || {} : {};
+  const recordAlerts = detectRecordAlerts(parsed.performances, await loadPerformanceRecordsData());
   return {
     ok: true,
     importId,
-    alreadyImported: existing.exists,
+    alreadyImported: existing.exists && existingData.status !== "deleted",
     fileHash,
     sourceType: parsed.sourceType,
     metadata: parsed.metadata,
     summary: parsed.summary,
     warnings: parsed.warnings,
+    recordAlerts: recordAlerts.slice(0, 100),
+    recordAlertCount: recordAlerts.length,
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
     samplePerformances: parsed.performances.slice(0, 20)
   };
@@ -1504,13 +1752,15 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   }
   const fileHash = stableHash(parsed.fileHashSeed || "");
   const importId = importDocumentId(parsed.metadata, fileHash);
+  const recordAlerts = detectRecordAlerts(parsed.performances, await loadPerformanceRecordsData());
   if (confirmImportId && confirmImportId !== importId) {
     throw new HttpsError("invalid-argument", "Le fichier ne correspond plus a la previsualisation.");
   }
 
   const importRef = admin.firestore().collection("performanceImports").doc(importId);
   const existing = await importRef.get();
-  if (existing.exists && request.data?.overwrite !== true) {
+  const existingData = existing.exists ? existing.data() || {} : {};
+  if (existing.exists && existingData.status !== "deleted" && request.data?.overwrite !== true) {
     throw new HttpsError("already-exists", "Cette competition semble deja importee.");
   }
 
@@ -1530,6 +1780,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     }
   }
 
+  const rawImportedPerformances = [];
+
   batch.set(importRef, {
     importId,
     status: "stored",
@@ -1540,6 +1792,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     metadata: parsed.metadata,
     summary: parsed.summary,
     warnings: parsed.warnings,
+    recordAlerts: recordAlerts.slice(0, 100),
+    recordAlertCount: recordAlerts.length,
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
     importedBy: actorUid,
     importedByEmail: actorEmail,
@@ -1571,16 +1825,22 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
       perf.club
     ].join("|")).slice(0, 32);
     const perfRef = importRef.collection("performances").doc(perfId);
-    batch.set(perfRef, {
+    const storedPerf = {
       ...perf,
       performanceId: perfId,
       importId,
       competitionName: parsed.metadata.competitionName,
+      metadata: parsed.metadata,
       importedBy: actorUid,
       importedAt: now,
       updatedAt: now,
       updatedBy: actorUid
-    }, { merge: false });
+    };
+    rawImportedPerformances.push({
+      id: perfId,
+      ...storedPerf
+    });
+    batch.set(perfRef, storedPerf, { merge: false });
     batchSize += 1;
     commitIfNeeded();
   });
@@ -1588,14 +1848,52 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   commitIfNeeded(true);
   await Promise.all(batches);
 
+  let performanceBaseSync = null;
+  const normalizedImportedPerformances = normalizeLivePalmesImportPerformances(rawImportedPerformances);
+  try {
+    performanceBaseSync = await writePerformanceBaseRows(normalizedImportedPerformances, {
+      actorUid,
+      actorEmail,
+      now,
+      importId,
+      action: "performanceImport.synced",
+      changeSeed: importId
+    });
+    await importRef.set({
+      performanceBaseSyncedAt: now,
+      performanceBaseCount: performanceBaseSync.written
+    }, { merge: true });
+  } catch (error) {
+    console.error("Synchronisation performances impossible apres import", {
+      importId,
+      message: error?.message || String(error)
+    });
+    performanceBaseSync = {
+      ok: false,
+      error: error?.message || "Synchronisation performances impossible."
+    };
+  }
+
   await writeAuditLog("performanceImport.created", actorUid, {
     importId,
     fileName,
     fileHash,
     competitionName: parsed.metadata.competitionName,
     date: parsed.metadata.date,
-    importedPerformances: parsed.summary.importedPerformances
+    importedPerformances: parsed.summary.importedPerformances,
+    performanceBaseSync
   });
+
+  let publicSnapshot = null;
+  try {
+    publicSnapshot = await publishIncrementalPerformanceImport(normalizedImportedPerformances, importId);
+  } catch (error) {
+    console.warn("Publication publique des performances LivePalmes impossible", error);
+    publicSnapshot = {
+      ok: false,
+      error: error?.message || String(error)
+    };
+  }
 
   return {
     ok: true,
@@ -1604,7 +1902,11 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     metadata: parsed.metadata,
     summary: parsed.summary,
     warnings: parsed.warnings,
-    duplicateDetails: parsed.duplicateDetails.slice(0, 50)
+    recordAlerts: recordAlerts.slice(0, 100),
+    recordAlertCount: recordAlerts.length,
+    duplicateDetails: parsed.duplicateDetails.slice(0, 50),
+    performanceBaseSync,
+    publicSnapshot
   };
 });
 
@@ -1619,6 +1921,9 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
     ok: true,
     imports: snapshot.docs.map((doc) => {
       const data = doc.data() || {};
+      const recordAlerts = Array.isArray(data.recordAlerts)
+        ? data.recordAlerts.filter((alert) => !isAlreadyPublishedRecordAlert(alert))
+        : [];
       return {
         importId: doc.id,
         status: data.status || "",
@@ -1627,6 +1932,8 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
         metadata: data.metadata || {},
         summary: data.summary || {},
         warnings: data.warnings || [],
+        recordAlertCount: recordAlerts.length,
+        recordAlerts: recordAlerts.slice(0, 20),
         duplicateDetails: data.duplicateDetails || [],
         importedByEmail: data.importedByEmail || "",
         importedAt: data.importedAt || ""
@@ -1635,34 +1942,239 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
-exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
-  const importsSnapshot = await admin.firestore()
-    .collection("performanceImports")
-    .orderBy("importedAt", "desc")
-    .limit(200)
-    .get();
-
-  const rawPerformances = [];
-  for (const importDoc of importsSnapshot.docs) {
-    const importData = importDoc.data() || {};
-    if (importData.status !== "stored") continue;
-    const metadata = importData.metadata || {};
-    const performancesSnapshot = await importDoc.ref
-      .collection("performances")
-      .where("active", "==", true)
-      .get();
-    performancesSnapshot.docs.forEach((perfDoc) => {
-      rawPerformances.push({
-        id: perfDoc.id,
-        importId: importDoc.id,
-        metadata,
-        competitionName: importData.competitionName || metadata.competitionName || "",
-        importedAt: importData.importedAt || "",
-        ...perfDoc.data()
-      });
-    });
+async function markCompetitionImportDeleted(importId, context = {}) {
+  const db = admin.firestore();
+  const now = context.now || new Date().toISOString();
+  const importRef = db.collection("performanceImports").doc(importId);
+  const importDoc = await importRef.get();
+  if (!importDoc.exists) {
+    throw new HttpsError("not-found", "Import introuvable.");
+  }
+  const importData = importDoc.data() || {};
+  if (importData.status === "deleted") {
+    return {
+      ok: true,
+      alreadyDeleted: true,
+      importId,
+      importPerformanceCount: 0,
+      performanceBaseCount: 0
+    };
   }
 
+  let batch = db.batch();
+  let batchSize = 0;
+  const commits = [];
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 450 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+
+  batch.set(importRef, {
+    status: "deleted",
+    deletedAt: now,
+    deletedBy: context.actorUid || "",
+    deletedByEmail: context.actorEmail || "",
+    updatedAt: now
+  }, { merge: true });
+  batchSize += 1;
+
+  const importPerformancesSnapshot = await importRef.collection("performances").get();
+  importPerformancesSnapshot.docs.forEach((doc) => {
+    batch.set(doc.ref, {
+      active: false,
+      status: "deleted",
+      deletedAt: now,
+      deletedBy: context.actorUid || "",
+      updatedAt: now
+    }, { merge: true });
+    batchSize += 1;
+    commitIfNeeded();
+  });
+
+  const performanceBaseSnapshot = await db.collection(PERFORMANCE_BASE_COLLECTION)
+    .where("importId", "==", importId)
+    .get();
+  const performanceBaseDocs = performanceBaseSnapshot.docs
+    .filter((doc) => (doc.data() || {}).source === "livepalmes-import");
+  performanceBaseDocs.forEach((doc) => {
+    const data = doc.data() || {};
+    batch.set(doc.ref, {
+      active: false,
+      status: "deleted",
+      deletedAt: now,
+      deletedBy: context.actorUid || "",
+      deletedByEmail: context.actorEmail || "",
+      updatedAt: now,
+      updatedBy: context.actorUid || "",
+      updatedByEmail: context.actorEmail || "",
+      sourceAction: "performanceImport.deleted"
+    }, { merge: true });
+    const changeId = stableHash([doc.id, "performanceImport.deleted", now, importId].join("|")).slice(0, 40);
+    batch.set(db.collection(PERFORMANCE_BASE_CHANGES_COLLECTION).doc(changeId), {
+      performanceBaseId: doc.id,
+      publicKey: cleanText(data.publicKey),
+      action: "performanceImport.deleted",
+      importId,
+      status: "deleted",
+      row: cleanFirestoreValue({
+        ...data,
+        performanceBaseId: doc.id,
+        active: false,
+        status: "deleted"
+      }),
+      actorUid: context.actorUid || "",
+      actorEmail: context.actorEmail || "",
+      createdAt: now
+    }, { merge: false });
+    batchSize += 2;
+    commitIfNeeded();
+  });
+
+  commitIfNeeded(true);
+  await Promise.all(commits);
+  return {
+    ok: true,
+    importId,
+    importPerformanceCount: importPerformancesSnapshot.size,
+    performanceBaseCount: performanceBaseDocs.length
+  };
+}
+
+exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const importId = cleanText(request.data?.importId).slice(0, 160);
+  if (!importId) {
+    throw new HttpsError("invalid-argument", "Import inconnu.");
+  }
+  const now = new Date().toISOString();
+  const actorUid = request.auth.uid;
+  const actorEmail = request.auth.token?.email || "";
+  const result = await markCompetitionImportDeleted(importId, {
+    now,
+    actorUid,
+    actorEmail
+  });
+
+  let publicSnapshot = null;
+  try {
+    publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
+  } catch (error) {
+    console.error("Publication publique impossible apres suppression import", {
+      importId,
+      message: error?.message || String(error)
+    });
+    publicSnapshot = {
+      ok: false,
+      error: error?.message || "Publication publique impossible."
+    };
+  }
+
+  await writeAuditLog("performanceImport.deleted", actorUid, {
+    importId,
+    actorEmail,
+    importPerformanceCount: result.importPerformanceCount,
+    performanceBaseCount: result.performanceBaseCount,
+    publicSnapshot
+  });
+
+  return {
+    ...result,
+    publicSnapshot
+  };
+});
+
+exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const importId = cleanText(request.data?.importId).slice(0, 160);
+  const alertIndex = Number(request.data?.alertIndex);
+  const status = cleanText(request.data?.status);
+  const allowedStatuses = new Set(["pending", "accepted", "rejected"]);
+  if (!importId) {
+    throw new HttpsError("invalid-argument", "Import inconnu.");
+  }
+  if (!Number.isInteger(alertIndex) || alertIndex < 0) {
+    throw new HttpsError("invalid-argument", "Alerte inconnue.");
+  }
+  if (!allowedStatuses.has(status)) {
+    throw new HttpsError("invalid-argument", "Decision inconnue.");
+  }
+
+  const importRef = admin.firestore().collection("performanceImports").doc(importId);
+  const importDoc = await importRef.get();
+  if (!importDoc.exists) {
+    throw new HttpsError("not-found", "Import introuvable.");
+  }
+  const data = importDoc.data() || {};
+  const recordAlerts = Array.isArray(data.recordAlerts) ? data.recordAlerts.slice() : [];
+  if (!recordAlerts[alertIndex]) {
+    throw new HttpsError("not-found", "Alerte introuvable.");
+  }
+
+  const now = new Date().toISOString();
+  const updatedByName = await accessUserDisplayName(request.auth.uid, request.auth.token || {});
+  const nextAlert = { ...recordAlerts[alertIndex] };
+  if (status === "pending") {
+    delete nextAlert.decision;
+  } else {
+    nextAlert.decision = {
+      status,
+      updatedAt: now,
+      updatedBy: request.auth.uid,
+      updatedByEmail: request.auth.token?.email || "",
+      updatedByName
+    };
+  }
+  recordAlerts[alertIndex] = cleanFirestoreValue(nextAlert);
+
+  await importRef.set({
+    recordAlerts,
+    recordAlertDecisionUpdatedAt: now,
+    updatedAt: now
+  }, { merge: true });
+
+  await writeAuditLog("performanceImport.recordAlertDecision", request.auth.uid, {
+    importId,
+    alertIndex,
+    status,
+    alert: {
+      type: nextAlert.type || "",
+      swimmer: nextAlert.swimmer || "",
+      course: nextAlert.course || "",
+      time: nextAlert.time || "",
+      referenceTime: nextAlert.referenceTime || ""
+    }
+  });
+
+  return {
+    ok: true,
+    importId,
+    alertIndex,
+    status,
+    recordAlerts: recordAlerts.slice(0, 20)
+  };
+});
+
+function performancePublicKey(row = {}) {
+  if (row.publicKey) return cleanText(row.publicKey);
+  if (row.id) return `${row.source || "intranap"}|${row.id}`;
+  return [
+    row.swimmerIdentityKey || row.swimmerId || row.swimmer,
+    row.date,
+    row.course,
+    row.timeValue,
+    row.club || row.clubName,
+    row.competitionId || row.location
+  ].map((value) => cleanText(value)).join("|");
+}
+
+function performanceBaseDocId(row = {}) {
+  return stableHash(performancePublicKey(row)).slice(0, 40);
+}
+
+function normalizeLivePalmesImportPerformances(rawPerformances = []) {
   const finalByImportLine = new Map();
   rawPerformances.forEach((perf) => {
     if (!perf.isIntermediate) {
@@ -1670,7 +2182,7 @@ exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request)
     }
   });
 
-  const performances = rawPerformances
+  return rawPerformances
     .map((perf) => {
       const course = normalizeCourseCode(perf.course);
       if (!POOL_COURSES.includes(course)) return null;
@@ -1688,8 +2200,9 @@ exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request)
       const originMeta = originCourse ? coursePayload(originCourse) : null;
       const swimmerMatch = resolveIntranapSwimmer(perf, sex);
       const matchedSwimmer = swimmerMatch.swimmer;
-      const fallbackSwimmerId = `imported:${stableHash([perf.firstName, perf.lastName, perf.birthDate, sex].join("|")).slice(0, 16)}`;
-      const swimmerId = matchedSwimmer?.id || cleanText(perf.swimmerId) || fallbackSwimmerId;
+      const identityKey = swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
+      const fallbackSwimmerId = `imported:${stableHash(identityKey || [perf.firstName, perf.lastName, perf.birthDate].join("|")).slice(0, 16)}`;
+      const swimmerId = matchedSwimmer?.id || fallbackSwimmerId;
       const firstName = cleanText(matchedSwimmer?.firstName || perf.firstName);
       const lastName = cleanText(matchedSwimmer?.lastName || perf.lastName);
       const swimmerName = cleanText(matchedSwimmer?.name) || [firstName, lastName].filter(Boolean).join(" ").trim();
@@ -1699,7 +2212,10 @@ exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request)
         source: "livepalmes-import",
         importId: perf.importId,
         swimmerId,
+        aliases: Array.isArray(matchedSwimmer?.aliases) ? matchedSwimmer.aliases : [],
+        sourceIds: Array.isArray(matchedSwimmer?.sourceIds) ? matchedSwimmer.sourceIds : [swimmerId],
         originalSwimmerId: cleanText(perf.swimmerId),
+        swimmerIdentityKey: matchedSwimmer?.identityKey || identityKey,
         swimmerMatchMethod: swimmerMatch.method,
         swimmer: swimmerName,
         firstName,
@@ -1736,12 +2252,856 @@ exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request)
       };
     })
     .filter((perf) => perf && perf.timeValue > 0 && perf.date);
+}
 
+function cleanPerformanceBaseRow(row = {}, status = "active") {
+  const course = normalizeCourseCode(row.course);
+  const courseMeta = coursePayload(course);
+  const sex = normalizeCategoryCode(row.sex);
+  const date = cleanText(row.date);
+  const category = performanceCategoryFromRow(row, date);
+  const seasonYear = Number(row.seasonYear || 0) || importSeasonYear(date);
+  return cleanFirestoreValue({
+    ...row,
+    source: cleanText(row.source || "livepalmes"),
+    course,
+    courseLabel: cleanText(row.courseLabel || courseMeta.label),
+    courseShortLabel: cleanText(row.courseShortLabel || courseMeta.shortLabel),
+    style: cleanText(row.style || courseMeta.style),
+    length: Number(row.length || courseMeta.length || 0) || 0,
+    sex,
+    category,
+    categoryCode: cleanText(categoryCodeFromCategory(category, sex) || row.categoryCode),
+    categoryLabel: cleanText(CATEGORY_LABELS[sex]?.[category] || row.categoryLabel || category),
+    date,
+    seasonYear,
+    timeValue: Number(row.timeValue || 0) || 0,
+    time: cleanText(row.time),
+    publicKey: performancePublicKey(row),
+    status,
+    active: status === "active",
+    baseVersion: 1
+  });
+}
+
+async function writePerformanceBaseRows(rows = [], context = {}) {
+  const db = admin.firestore();
+  const now = context.now || new Date().toISOString();
+  const logChanges = context.logChanges !== false;
+  let batch = db.batch();
+  let batchSize = 0;
+  let written = 0;
+  const commits = [];
+
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 450 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+
+  rows.forEach((inputRow) => {
+    const status = inputRow.status || context.status || "active";
+    const row = cleanPerformanceBaseRow(inputRow, status);
+    const docId = performanceBaseDocId(row);
+    const ref = db.collection(PERFORMANCE_BASE_COLLECTION).doc(docId);
+    batch.set(ref, {
+      ...row,
+      performanceBaseId: docId,
+      updatedAt: now,
+      updatedBy: context.actorUid || "",
+      updatedByEmail: context.actorEmail || "",
+      sourceAction: context.action || "sync"
+    }, { merge: true });
+    batchSize += 1;
+    written += 1;
+
+    if (logChanges) {
+      const changeId = stableHash([docId, context.action || "sync", now, context.changeSeed || "", written].join("|")).slice(0, 40);
+      const changeRef = db.collection(PERFORMANCE_BASE_CHANGES_COLLECTION).doc(changeId);
+      batch.set(changeRef, {
+        performanceBaseId: docId,
+        publicKey: row.publicKey,
+        action: context.action || "sync",
+        importId: row.importId || context.importId || "",
+        status,
+        row,
+        actorUid: context.actorUid || "",
+        actorEmail: context.actorEmail || "",
+        createdAt: now
+      }, { merge: false });
+      batchSize += 1;
+    }
+    commitIfNeeded();
+  });
+
+  commitIfNeeded(true);
+  await Promise.all(commits);
+  return { ok: true, written };
+}
+
+function publicPerformanceBaseRow(row = {}) {
+  const sex = normalizeCategoryCode(row.sex);
+  const date = cleanText(row.date);
+  const category = performanceCategoryFromRow(row, date);
+  return cleanFirestoreValue({
+    id: cleanText(row.id),
+    source: cleanText(row.source || "livepalmes"),
+    importId: cleanText(row.importId),
+    publicKey: cleanText(row.publicKey),
+    performanceBaseId: cleanText(row.performanceBaseId),
+    status: cleanText(row.status || "active"),
+    active: row.active !== false && row.status !== "hidden",
+    swimmerId: cleanText(row.swimmerId),
+    originalSwimmerId: cleanText(row.originalSwimmerId),
+    swimmerIdentityKey: cleanText(row.swimmerIdentityKey),
+    swimmer: cleanText(row.swimmer),
+    firstName: cleanText(row.firstName),
+    lastName: cleanText(row.lastName),
+    birthDate: cleanText(row.birthDate),
+    sex,
+    clubId: cleanText(row.clubId),
+    club: cleanText(row.club),
+    clubName: cleanText(row.clubName),
+    regionId: cleanText(row.regionId),
+    regionLabel: cleanText(row.regionLabel),
+    competitionId: cleanText(row.competitionId),
+    competition: cleanText(row.competition),
+    location: cleanText(row.location),
+    date,
+    seasonYear: Number(row.seasonYear || 0) || 0,
+    pool: cleanText(row.pool),
+    chrono: cleanText(row.chrono),
+    course: cleanText(row.course),
+    courseLabel: cleanText(row.courseLabel),
+    courseShortLabel: cleanText(row.courseShortLabel),
+    style: cleanText(row.style),
+    length: Number(row.length || 0) || 0,
+    isIntermediate: row.isIntermediate === true,
+    originCourse: cleanText(row.originCourse),
+    originCourseShortLabel: cleanText(row.originCourseShortLabel),
+    originPerformanceId: cleanText(row.originPerformanceId),
+    category,
+    categoryCode: cleanText(categoryCodeFromCategory(category, sex) || row.categoryCode),
+    categoryLabel: cleanText(CATEGORY_LABELS[sex]?.[category] || row.categoryLabel || category),
+    timeValue: Number(row.timeValue || 0) || 0,
+    time: cleanText(row.time),
+    points: cleanText(row.points),
+    rank: cleanText(row.rank),
+    intermediateTimes: Array.isArray(row.intermediateTimes)
+      ? row.intermediateTimes.map((split) => ({
+        code: cleanText(split?.code),
+        distance: Number(split?.distance || 0) || 0,
+        time: cleanText(split?.time),
+        timeValue: Number(split?.timeValue || 0) || 0
+      })).filter((split) => split.time)
+      : []
+  });
+}
+
+function uniquePublicPerformanceRows(rows = []) {
+  const byKey = new Map();
+  rows.forEach((row) => {
+    const key = cleanText(row.publicKey || performancePublicKey(row) || row.performanceBaseId || row.id);
+    if (!key) return;
+    byKey.set(key, row);
+  });
+  return Array.from(byKey.values());
+}
+
+function publicSwimmerKey(row = {}) {
+  if (row.swimmerIdentityKey) return row.swimmerIdentityKey;
+  const first = cleanText(row.firstName).toUpperCase();
+  const last = cleanText(row.lastName).toUpperCase();
+  const birth = cleanText(row.birthDate);
+  return first && last && birth ? `${last}|${first}|${birth}` : cleanText(row.swimmerId || row.swimmer);
+}
+
+function publicBetterPerformance(candidate, current) {
+  if (!current) return true;
+  return Number(candidate.timeValue || 0) < Number(current.timeValue || 0) ||
+    (Number(candidate.timeValue || 0) === Number(current.timeValue || 0) && cleanText(candidate.date).localeCompare(cleanText(current.date)) < 0);
+}
+
+function publicTopIndexRow(row = {}) {
+  const sex = normalizeCategoryCode(row.sex);
+  const date = cleanText(row.date);
+  const category = performanceCategoryFromRow(row, date);
+  return cleanFirestoreValue({
+    id: cleanText(row.id),
+    source: cleanText(row.source || "livepalmes"),
+    importId: cleanText(row.importId),
+    publicKey: cleanText(row.publicKey),
+    performanceBaseId: cleanText(row.performanceBaseId),
+    swimmerId: cleanText(row.swimmerId),
+    originalSwimmerId: cleanText(row.originalSwimmerId),
+    swimmerIdentityKey: cleanText(row.swimmerIdentityKey),
+    swimmer: cleanText(row.swimmer),
+    firstName: cleanText(row.firstName),
+    lastName: cleanText(row.lastName),
+    birthDate: cleanText(row.birthDate),
+    sex,
+    club: cleanText(row.club),
+    clubName: cleanText(row.clubName),
+    regionId: cleanText(row.regionId),
+    regionLabel: cleanText(row.regionLabel),
+    competitionId: cleanText(row.competitionId),
+    competition: cleanText(row.competition),
+    location: cleanText(row.location),
+    date,
+    seasonYear: Number(row.seasonYear || 0) || 0,
+    course: cleanText(row.course),
+    courseShortLabel: cleanText(row.courseShortLabel),
+    style: cleanText(row.style),
+    isIntermediate: row.isIntermediate === true,
+    originCourse: cleanText(row.originCourse),
+    originCourseShortLabel: cleanText(row.originCourseShortLabel),
+    originPerformanceId: cleanText(row.originPerformanceId),
+    category,
+    categoryCode: cleanText(categoryCodeFromCategory(category, sex) || row.categoryCode),
+    categoryLabel: cleanText(CATEGORY_LABELS[sex]?.[category] || row.categoryLabel || category),
+    timeValue: Number(row.timeValue || 0) || 0,
+    time: cleanText(row.time),
+    status: cleanText(row.status || "active"),
+    active: row.active !== false && row.status !== "hidden",
+    intermediateTimes: Array.isArray(row.intermediateTimes)
+      ? row.intermediateTimes.map((split) => ({
+        code: cleanText(split?.code),
+        distance: Number(split?.distance || 0) || 0,
+        time: cleanText(split?.time),
+        timeValue: Number(split?.timeValue || 0) || 0
+      })).filter((split) => split.time)
+      : []
+  });
+}
+
+function performanceTopBucketKey(filters = {}) {
+  return [
+    cleanText(filters.course),
+    cleanText(filters.sex),
+    cleanText(filters.category),
+    Number(filters.seasonYear || 0) || 0,
+    cleanText(filters.regionId)
+  ].join("|");
+}
+
+function performanceTopBucketId(bucketKey) {
+  return stableHash(bucketKey).slice(0, 40);
+}
+
+function performanceTopBucketVariants(row = {}) {
+  const course = cleanText(row.course);
+  const sex = cleanText(row.sex);
+  if (!course || (sex !== "F" && sex !== "M")) return [];
+  const categoryValues = Array.from(new Set([cleanText(row.category), ""].filter((value, index, values) => value || index === values.length - 1)));
+  const seasonValues = Array.from(new Set([Number(row.seasonYear || 0) || 0, 0]));
+  const regionValues = Array.from(new Set([cleanText(row.regionId), ""]));
+  const variants = [];
+  categoryValues.forEach((category) => {
+    seasonValues.forEach((seasonYear) => {
+      regionValues.forEach((regionId) => {
+        const key = performanceTopBucketKey({ course, sex, category, seasonYear, regionId });
+        variants.push({
+          key,
+          id: performanceTopBucketId(key),
+          course,
+          sex,
+          category,
+          seasonYear,
+          regionId
+        });
+      });
+    });
+  });
+  return variants;
+}
+
+function bestTopRows(rows = []) {
+  const latestByPublicKey = new Map();
+  rows.forEach((row) => {
+    const key = cleanText(row.publicKey || row.performanceBaseId || row.id || performancePublicKey(row));
+    if (!key) return;
+    latestByPublicKey.set(key, row);
+  });
+  const bestBySwimmer = new Map();
+  latestByPublicKey.forEach((rawRow) => {
+    if (rawRow.active === false || rawRow.status === "hidden") return;
+    const row = publicTopIndexRow(rawRow);
+    if (!row.timeValue) return;
+    const swimmerKey = publicSwimmerKey(row);
+    if (!swimmerKey) return;
+    if (publicBetterPerformance(row, bestBySwimmer.get(swimmerKey))) bestBySwimmer.set(swimmerKey, row);
+  });
+  return Array.from(bestBySwimmer.values())
+    .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.date).localeCompare(cleanText(b.date)))
+    .slice(0, PERFORMANCE_TOP_INDEX_LIMIT);
+}
+
+async function writePerformanceTopIndexRows(rows = [], context = {}) {
+  const byBucket = new Map();
+  rows.forEach((rawRow) => {
+    if (!rawRow) return;
+    const row = publicTopIndexRow(rawRow);
+    if (!row.course || !row.sex || !row.timeValue) return;
+    performanceTopBucketVariants(row).forEach((bucket) => {
+      if (!byBucket.has(bucket.id)) byBucket.set(bucket.id, { ...bucket, rows: [] });
+      byBucket.get(bucket.id).rows.push(row);
+    });
+  });
+  if (!byBucket.size) return { ok: true, writtenRows: 0, touchedBucketIds: [] };
+
+  const db = admin.firestore();
+  const now = context.now || new Date().toISOString();
+  const bucketEntries = Array.from(byBucket.values());
+  const refs = bucketEntries.map((bucket) => db.collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucket.id));
+  const snapshots = refs.length ? await db.getAll(...refs) : [];
+  let batch = db.batch();
+  let batchSize = 0;
+  const commits = [];
+  let writtenRows = 0;
+
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 10 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+
+  bucketEntries.forEach((bucket, index) => {
+    const existing = snapshots[index].exists ? snapshots[index].data() || {} : {};
+    const existingRows = Array.isArray(existing.rows) ? existing.rows : [];
+    const topRows = bestTopRows([...existingRows, ...bucket.rows]);
+    batch.set(refs[index], {
+      bucketId: bucket.id,
+      bucketKey: bucket.key,
+      course: bucket.course,
+      sex: bucket.sex,
+      category: bucket.category,
+      seasonYear: bucket.seasonYear,
+      regionId: bucket.regionId,
+      rows: topRows,
+      rowCount: topRows.length,
+      sourceRowCount: Number(existing.sourceRowCount || 0) + bucket.rows.length,
+      updatedAt: now
+    }, { merge: false });
+    batchSize += 1;
+    writtenRows += bucket.rows.length;
+    commitIfNeeded();
+  });
+
+  commitIfNeeded(true);
+  await Promise.all(commits);
+  return { ok: true, writtenRows, touchedBucketIds: bucketEntries.map((bucket) => bucket.id) };
+}
+
+async function performanceTopRowsFromIndex(filters = {}) {
+  const bucketKey = performanceTopBucketKey({
+    course: filters.course,
+    sex: filters.sex,
+    category: filters.category,
+    seasonYear: filters.season,
+    regionId: filters.region
+  });
+  const bucketId = performanceTopBucketId(bucketKey);
+  const snapshot = await admin.firestore().collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucketId).get();
+  if (!snapshot.exists) return null;
+  const view = snapshot.data() || {};
+  const rows = Array.isArray(view.rows) ? view.rows : [];
+  return {
+    ok: true,
+    bucketId,
+    rows,
+    indexReads: 1,
+    indexedRows: rows.length
+  };
+}
+
+function normalizePerformanceSearchText(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .toUpperCase()
+    .trim();
+}
+
+function performanceSearchTokens(value) {
+  return Array.from(new Set(normalizePerformanceSearchText(value).split(/\s+/).filter((token) => token.length >= 2)));
+}
+
+function performanceSearchPrefixes(value) {
+  const prefixes = new Set();
+  performanceSearchTokens(value).forEach((token) => {
+    const max = Math.min(token.length, 18);
+    for (let length = 2; length <= max; length += 1) {
+      prefixes.add(token.slice(0, length));
+    }
+  });
+  return Array.from(prefixes).slice(0, 300);
+}
+
+function performanceSwimmerIndexKey(row = {}) {
+  const identity = cleanText(row.swimmerIdentityKey);
+  if (identity) return identity;
+  const first = normalizePerformanceSearchText(row.firstName);
+  const last = normalizePerformanceSearchText(row.lastName);
+  const birth = cleanText(row.birthDate);
+  if (first && last && birth) return `${last}|${first}|${birth}`;
+  return cleanText(row.swimmerId || row.originalSwimmerId || row.swimmer);
+}
+
+function performanceSwimmerIndexDocId(row = {}) {
+  return stableHash(performanceSwimmerIndexKey(row)).slice(0, 40);
+}
+
+function swimmerDisplayNameFromRow(row = {}) {
+  return cleanText(row.swimmer) || [cleanText(row.firstName), cleanText(row.lastName)].filter(Boolean).join(" ");
+}
+
+function aggregateSwimmerIndexRows(rows = []) {
+  const byKey = new Map();
+  rows.forEach((inputRow) => {
+    if (!inputRow || inputRow.active === false || inputRow.status === "hidden") return;
+    const row = publicPerformanceBaseRow(inputRow);
+    const key = performanceSwimmerIndexKey(row);
+    if (!key) return;
+    const current = byKey.get(key) || {
+      id: cleanText(row.swimmerId || row.originalSwimmerId),
+      aliases: new Set(),
+      sourceIds: new Set(),
+      identityKey: cleanText(row.swimmerIdentityKey),
+      name: swimmerDisplayNameFromRow(row),
+      lastName: cleanText(row.lastName),
+      firstName: cleanText(row.firstName),
+      birthDate: cleanText(row.birthDate),
+      sex: cleanText(row.sex),
+      clubId: cleanText(row.clubId),
+      club: cleanText(row.club),
+      clubName: cleanText(row.clubName),
+      latestDate: cleanText(row.date),
+      performanceCount: 0
+    };
+    [row.swimmerId, row.originalSwimmerId, ...(Array.isArray(row.sourceIds) ? row.sourceIds : [])]
+      .map(cleanText)
+      .filter(Boolean)
+      .forEach((id) => current.sourceIds.add(id));
+    if (row.swimmerId && current.id && row.swimmerId !== current.id) current.aliases.add(row.swimmerId);
+    const rowDate = cleanText(row.date);
+    if (!current.latestDate || rowDate > current.latestDate) {
+      current.latestDate = rowDate;
+      current.clubId = cleanText(row.clubId) || current.clubId;
+      current.club = cleanText(row.club) || current.club;
+      current.clubName = cleanText(row.clubName) || current.clubName;
+    }
+    current.id = current.id || cleanText(row.swimmerId || row.originalSwimmerId);
+    current.identityKey = current.identityKey || cleanText(row.swimmerIdentityKey);
+    current.name = current.name || swimmerDisplayNameFromRow(row);
+    current.lastName = current.lastName || cleanText(row.lastName);
+    current.firstName = current.firstName || cleanText(row.firstName);
+    current.birthDate = current.birthDate || cleanText(row.birthDate);
+    current.sex = current.sex || cleanText(row.sex);
+    current.performanceCount += 1;
+    byKey.set(key, current);
+  });
+
+  return Array.from(byKey.entries()).map(([key, swimmer]) => {
+    const sourceIds = Array.from(swimmer.sourceIds);
+    const aliases = Array.from(new Set([...swimmer.aliases, ...sourceIds.filter((id) => id !== swimmer.id)]));
+    const searchText = normalizePerformanceSearchText([
+      swimmer.name,
+      swimmer.firstName,
+      swimmer.lastName,
+      swimmer.birthDate,
+      swimmer.sex,
+      swimmer.club,
+      swimmer.clubName,
+      swimmer.id,
+      ...sourceIds
+    ].filter(Boolean).join(" "));
+    return cleanFirestoreValue({
+      indexKey: key,
+      id: swimmer.id || sourceIds[0] || stableHash(key).slice(0, 16),
+      aliases,
+      sourceIds,
+      identityKey: swimmer.identityKey || key,
+      name: swimmer.name,
+      lastName: swimmer.lastName,
+      firstName: swimmer.firstName,
+      birthDate: swimmer.birthDate,
+      sex: swimmer.sex,
+      clubId: swimmer.clubId,
+      club: swimmer.club,
+      clubName: swimmer.clubName,
+      performanceCount: swimmer.performanceCount,
+      latestDate: swimmer.latestDate,
+      searchText,
+      searchPrefixes: performanceSearchPrefixes(searchText),
+      source: "performances"
+    });
+  });
+}
+
+async function writePerformanceSwimmerIndexRows(rows = [], context = {}) {
+  const swimmers = aggregateSwimmerIndexRows(rows);
+  if (!swimmers.length) return { ok: true, written: 0 };
+  const db = admin.firestore();
+  const now = context.now || new Date().toISOString();
+  let batch = db.batch();
+  let batchSize = 0;
+  let written = 0;
+  const commits = [];
+
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 420 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+
+  swimmers.forEach((swimmer) => {
+    const ref = db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(stableHash(swimmer.indexKey).slice(0, 40));
+    const payload = {
+      ...swimmer,
+      updatedAt: now,
+      sourceAction: context.action || "performance.indexed"
+    };
+    if (context.mode !== "replace") {
+      delete payload.performanceCount;
+      if ((swimmer.aliases || []).length) payload.aliases = admin.firestore.FieldValue.arrayUnion(...swimmer.aliases);
+      if ((swimmer.sourceIds || []).length) payload.sourceIds = admin.firestore.FieldValue.arrayUnion(...swimmer.sourceIds);
+      if ((swimmer.searchPrefixes || []).length) payload.searchPrefixes = admin.firestore.FieldValue.arrayUnion(...swimmer.searchPrefixes);
+    }
+    batch.set(ref, payload, { merge: context.mode !== "replace" });
+    batchSize += 1;
+    written += 1;
+    commitIfNeeded();
+  });
+
+  commitIfNeeded(true);
+  await Promise.all(commits);
+  return { ok: true, written };
+}
+
+function performanceSwimmerPageId(indexDocId, pageIndex) {
+  return `${indexDocId}_${String(pageIndex).padStart(4, "0")}`;
+}
+
+function sortSwimmerPerformanceRows(rows = []) {
+  return rows.sort((a, b) =>
+    cleanText(b.date).localeCompare(cleanText(a.date)) ||
+    cleanText(a.course).localeCompare(cleanText(b.course), "fr-FR", { numeric: true }) ||
+    Number(a.timeValue || 0) - Number(b.timeValue || 0)
+  );
+}
+
+async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
+  const bySwimmer = new Map();
+  rows.forEach((rawRow) => {
+    const row = publicPerformanceBaseRow(rawRow);
+    const key = performanceSwimmerIndexKey(row);
+    if (!key) return;
+    if (!bySwimmer.has(key)) bySwimmer.set(key, []);
+    bySwimmer.get(key).push(row);
+  });
+  if (!bySwimmer.size) return { ok: true, writtenPages: 0 };
+
+  const db = admin.firestore();
+  const now = context.now || new Date().toISOString();
+  let writtenPages = 0;
+
+  for (const [indexKey, swimmerRows] of bySwimmer.entries()) {
+    const indexDocId = stableHash(indexKey).slice(0, 40);
+    const indexRef = db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(indexDocId);
+    const indexSnapshot = await indexRef.get();
+    const existingPageCount = Number(indexSnapshot.data()?.pageCount || 0) || 0;
+    const pageRefs = Array.from({ length: existingPageCount }, (_, pageIndex) =>
+      db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(indexDocId, pageIndex))
+    );
+    const pageSnapshots = pageRefs.length ? await db.getAll(...pageRefs) : [];
+    const existingRows = pageSnapshots.flatMap((snapshot) => {
+      const page = snapshot.exists ? snapshot.data() || {} : {};
+      return Array.isArray(page.rows) ? page.rows : [];
+    });
+    const mergedByPublicKey = new Map();
+    [...existingRows, ...swimmerRows].forEach((row) => {
+      const key = cleanText(row.publicKey || row.performanceBaseId || row.id || performancePublicKey(row));
+      if (!key) return;
+      mergedByPublicKey.set(key, row);
+    });
+    const activeRows = sortSwimmerPerformanceRows(Array.from(mergedByPublicKey.values())
+      .filter((row) => row.active !== false && row.status !== "hidden")
+      .map(publicPerformanceBaseRow));
+    const pageCount = Math.ceil(activeRows.length / PERFORMANCE_SWIMMER_PAGE_SIZE);
+    let batch = db.batch();
+    let batchSize = 0;
+    const commits = [];
+
+    function commitIfNeeded(force = false) {
+      if (batchSize >= 420 || (force && batchSize > 0)) {
+        commits.push(batch.commit());
+        batch = db.batch();
+        batchSize = 0;
+      }
+    }
+
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      const pageRef = db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(indexDocId, pageIndex));
+      const pageRows = activeRows.slice(pageIndex * PERFORMANCE_SWIMMER_PAGE_SIZE, (pageIndex + 1) * PERFORMANCE_SWIMMER_PAGE_SIZE);
+      batch.set(pageRef, {
+        swimmerIndexId: indexDocId,
+        indexKey,
+        pageIndex,
+        rowCount: pageRows.length,
+        rows: pageRows,
+        updatedAt: now
+      }, { merge: false });
+      batchSize += 1;
+      writtenPages += 1;
+      commitIfNeeded();
+    }
+    for (let pageIndex = pageCount; pageIndex < existingPageCount; pageIndex += 1) {
+      batch.delete(db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(indexDocId, pageIndex)));
+      batchSize += 1;
+      commitIfNeeded();
+    }
+    batch.set(indexRef, {
+      pageCount,
+      performanceCount: activeRows.filter((row) => !row.isIntermediate).length,
+      rowCount: activeRows.length,
+      updatedAt: now,
+      sourceAction: context.action || "performance.pages"
+    }, { merge: true });
+    batchSize += 1;
+    commitIfNeeded(true);
+    await Promise.all(commits);
+  }
+
+  return { ok: true, writtenPages };
+}
+
+async function getPerformanceBaseRowsBySwimmer(data = {}) {
+  const db = admin.firestore();
+  const ids = Array.from(new Set([
+    ...(Array.isArray(data.swimmerIds) ? data.swimmerIds : []),
+    data.swimmerId
+  ].map((id) => cleanText(id)).filter(Boolean))).slice(0, 25);
+  const identityKey = cleanText(data.identityKey);
+
+  const candidateIndexRefs = [];
+  if (identityKey) {
+    candidateIndexRefs.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(stableHash(identityKey).slice(0, 40)));
+  }
+  ids.slice(0, 10).forEach((id) => {
+    candidateIndexRefs.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(stableHash(id).slice(0, 40)));
+  });
+  const directSnapshots = candidateIndexRefs.length ? await db.getAll(...candidateIndexRefs) : [];
+  const indexDocs = new Map();
+  directSnapshots.forEach((snapshot) => {
+    if (snapshot.exists) indexDocs.set(snapshot.id, { id: snapshot.id, ...(snapshot.data() || {}) });
+  });
+  if (!indexDocs.size && identityKey) {
+    const snapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("identityKey", "==", identityKey)
+      .limit(3)
+      .get();
+    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { id: doc.id, ...(doc.data() || {}) }));
+  }
+  for (const id of ids.slice(0, 5)) {
+    if (indexDocs.size) break;
+    const snapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("sourceIds", "array-contains", id)
+      .limit(3)
+      .get();
+    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { id: doc.id, ...(doc.data() || {}) }));
+  }
+
+  const pageRefs = [];
+  indexDocs.forEach((doc) => {
+    const pageCount = Number(doc.pageCount || 0) || 0;
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      pageRefs.push(db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(doc.id, pageIndex)));
+    }
+  });
+  if (pageRefs.length) {
+    const snapshots = await db.getAll(...pageRefs);
+    return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) => {
+      const page = snapshot.exists ? snapshot.data() || {} : {};
+      return Array.isArray(page.rows) ? page.rows : [];
+    }).map(publicPerformanceBaseRow));
+  }
+
+  const reads = [];
+
+  for (let index = 0; index < ids.length; index += 10) {
+    const chunk = ids.slice(index, index + 10);
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).get());
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).get());
+  }
+  if (identityKey) {
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).get());
+  }
+
+  const snapshots = await Promise.all(reads);
+  return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) =>
+    snapshot.docs
+      .map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
+      .filter((row) => row.active !== false)
+      .map(publicPerformanceBaseRow)
+  ));
+}
+
+exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  const db = admin.firestore();
+  const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
+  const stateSnapshot = await stateRef.get();
+  const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+  const reset = request.data?.reset === true;
+  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 2500) || 2500, 250), 5000);
+  const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
+  const cursor = reset ? "" : cleanText(state.cursor);
+  let query = db.collection(PERFORMANCE_BASE_COLLECTION)
+    .orderBy(admin.firestore.FieldPath.documentId())
+    .limit(pageSize);
+  if (cursor) query = query.startAfter(cursor);
+  const snapshot = await query.get();
+  const rows = snapshot.docs.map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }));
+  const includePages = request.data?.includePages !== false;
+  const indexResult = await writePerformanceSwimmerIndexRows(rows, {
+    now: new Date().toISOString(),
+    action: reset ? "performanceSwimmerIndex.rebuild.reset" : "performanceSwimmerIndex.rebuild",
+    mode: "incremental"
+  });
+  const pageResult = includePages
+    ? await writePerformanceSwimmerPageRows(rows, {
+      now: new Date().toISOString(),
+      action: reset ? "performanceSwimmerPages.rebuild.reset" : "performanceSwimmerPages.rebuild"
+    })
+    : { writtenPages: 0 };
+  const nextCursor = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1].id : cursor;
+  const done = snapshot.size < pageSize;
+  const indexedPerformanceCount = (reset ? 0 : Number(state.indexedPerformanceCount || 0) || 0) + rows.length;
+  const indexedSwimmerPageCount = (reset ? 0 : Number(state.indexedSwimmerPageCount || 0) || 0) + indexResult.written;
+  await stateRef.set({
+    startedAt,
+    updatedAt: new Date().toISOString(),
+    cursor: nextCursor,
+    done,
+    indexedPerformanceCount,
+    indexedSwimmerPageCount,
+    lastPagePerformanceCount: rows.length,
+    lastPageSwimmerCount: indexResult.written,
+    lastWrittenPerformancePages: pageResult.writtenPages || 0
+  }, { merge: true });
+  return {
+    ok: true,
+    done,
+    cursor: nextCursor,
+    pagePerformanceCount: rows.length,
+    pageSwimmerCount: indexResult.written,
+    writtenPerformancePages: pageResult.writtenPages || 0,
+    indexedPerformanceCount,
+    indexedSwimmerPageCount
+  };
+});
+
+exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  const db = admin.firestore();
+  const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
+  const stateSnapshot = await stateRef.get();
+  const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+  const reset = request.data?.reset === true;
+  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 1000) || 1000, 250), 2000);
+  const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
+  const cursor = reset ? "" : cleanText(state.cursor);
+  let query = db.collection(PERFORMANCE_BASE_COLLECTION)
+    .orderBy(admin.firestore.FieldPath.documentId())
+    .limit(pageSize);
+  if (cursor) query = query.startAfter(cursor);
+  const snapshot = await query.get();
+  const rows = snapshot.docs.map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }));
+  const indexResult = await writePerformanceTopIndexRows(rows, {
+    now: new Date().toISOString()
+  });
+  const nextCursor = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1].id : cursor;
+  const done = snapshot.size < pageSize;
+  const indexedPerformanceCount = (reset ? 0 : Number(state.indexedPerformanceCount || 0) || 0) + rows.length;
+  const touchedBucketIds = Array.from(new Set([
+    ...(!reset && Array.isArray(state.touchedBucketIds) ? state.touchedBucketIds.map(cleanText) : []),
+    ...(indexResult.touchedBucketIds || [])
+  ].filter(Boolean)));
+  await stateRef.set({
+    startedAt,
+    cursor: nextCursor,
+    done,
+    indexedPerformanceCount,
+    touchedBucketIds,
+    touchedBucketCount: touchedBucketIds.length,
+    lastPagePerformanceCount: rows.length,
+    lastPageIndexedRows: indexResult.writtenRows || 0,
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+  return {
+    ok: true,
+    done,
+    cursor: nextCursor,
+    pagePerformanceCount: rows.length,
+    pageIndexedRows: indexResult.writtenRows || 0,
+    indexedPerformanceCount,
+    touchedBucketCount: touchedBucketIds.length
+  };
+});
+
+async function normalizedImportPerformances(importId) {
+  const importRef = admin.firestore().collection("performanceImports").doc(importId);
+  const importDoc = await importRef.get();
+  if (!importDoc.exists) return [];
+  const importData = importDoc.data() || {};
+  if (importData.status !== "stored") return [];
+  const metadata = importData.metadata || {};
+  const performancesSnapshot = await importRef
+    .collection("performances")
+    .where("active", "==", true)
+    .get();
+  const rawPerformances = performancesSnapshot.docs.map((perfDoc) => ({
+    id: perfDoc.id,
+    importId,
+    metadata,
+    competitionName: importData.competitionName || metadata.competitionName || "",
+    importedAt: importData.importedAt || "",
+    ...perfDoc.data()
+  }));
+  return normalizeLivePalmesImportPerformances(rawPerformances);
+}
+
+async function syncImportToPerformanceBase(importId, context = {}) {
+  const performances = await normalizedImportPerformances(importId);
+  const result = await writePerformanceBaseRows(performances, {
+    ...context,
+    importId,
+    action: "performanceImport.synced",
+    changeSeed: importId
+  });
+  await admin.firestore().collection("performanceImports").doc(importId).set({
+    performanceBaseSyncedAt: context.now || new Date().toISOString(),
+    performanceBaseCount: result.written
+  }, { merge: true });
+  return result;
+}
+
+function buildAdditionalPerformanceSwimmers(performances = []) {
   const swimmersById = new Map();
   performances.forEach((perf) => {
     if (!swimmersById.has(perf.swimmerId)) {
       swimmersById.set(perf.swimmerId, {
         id: perf.swimmerId,
+        aliases: Array.isArray(perf.aliases) ? perf.aliases : [],
+        sourceIds: Array.from(new Set([...(Array.isArray(perf.sourceIds) ? perf.sourceIds : []), perf.swimmerId, perf.originalSwimmerId].filter(Boolean))),
+        identityKey: perf.swimmerIdentityKey || "",
         name: perf.swimmer,
         lastName: perf.lastName,
         firstName: perf.firstName,
@@ -1757,13 +3117,658 @@ exports.listAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request)
     }
     swimmersById.get(perf.swimmerId).performanceCount += 1;
   });
+  return Array.from(swimmersById.values());
+}
+
+function emptyAdditionalPerformanceDataSnapshot() {
+  return {
+    ok: true,
+    generatedAt: "",
+    importCount: 0,
+    performanceCount: 0,
+    correctionCount: 0,
+    swimmers: [],
+    performances: [],
+    corrections: []
+  };
+}
+
+function normalizeAdditionalPerformanceDataSnapshot(snapshot = {}) {
+  const performances = (Array.isArray(snapshot.performances) ? snapshot.performances : [])
+    .map(publicPerformanceBaseRow);
+  const corrections = Array.isArray(snapshot.corrections) ? snapshot.corrections : [];
+  const swimmers = Array.isArray(snapshot.swimmers) ? snapshot.swimmers : buildAdditionalPerformanceSwimmers(performances);
+  const importCount = Array.from(new Set(performances.map((row) => cleanText(row.importId)).filter(Boolean))).length;
+  return {
+    ok: snapshot.ok !== false,
+    generatedAt: cleanText(snapshot.generatedAt),
+    importCount: importCount || Number(snapshot.importCount || 0) || 0,
+    performanceCount: performances.length,
+    correctionCount: corrections.length,
+    swimmers,
+    performances,
+    corrections
+  };
+}
+
+function additionalPerformanceFile() {
+  return admin.storage().bucket(PUBLIC_PERFORMANCE_BUCKET).file(PUBLIC_ADDITIONAL_PERFORMANCE_PATH);
+}
+
+async function readPublishedAdditionalPerformanceDataSnapshot() {
+  const file = additionalPerformanceFile();
+  try {
+    const [buffer] = await file.download();
+    return normalizeAdditionalPerformanceDataSnapshot(JSON.parse(buffer.toString("utf8")));
+  } catch (error) {
+    if (error?.code === 404 || error?.code === 403 || /No such object|not found/i.test(error?.message || "")) {
+      return emptyAdditionalPerformanceDataSnapshot();
+    }
+    throw error;
+  }
+}
+
+function additionalPerformanceRowKey(row = {}) {
+  return cleanText(row.publicKey || performancePublicKey(row) || row.performanceBaseId || row.id);
+}
+
+function mergeAdditionalPerformanceRows(existingRows = [], incomingRows = [], replaceImportId = "") {
+  const byKey = new Map();
+  existingRows.forEach((row) => {
+    if (replaceImportId && cleanText(row.importId) === replaceImportId) return;
+    const key = additionalPerformanceRowKey(row);
+    if (key) byKey.set(key, row);
+  });
+  incomingRows.forEach((row) => {
+    const key = additionalPerformanceRowKey(row);
+    if (key) byKey.set(key, row);
+  });
+  return Array.from(byKey.values());
+}
+
+function upsertAdditionalCorrection(corrections = [], correction = {}) {
+  const key = cleanText(correction.id || correction.targetKey);
+  if (!key) return corrections;
+  const byKey = new Map();
+  corrections.forEach((item) => {
+    const itemKey = cleanText(item.id || item.targetKey);
+    if (itemKey) byKey.set(itemKey, item);
+  });
+  byKey.set(key, correction);
+  return Array.from(byKey.values())
+    .sort((a, b) => cleanText(b.updatedAt).localeCompare(cleanText(a.updatedAt)))
+    .slice(0, 2000);
+}
+
+async function saveAdditionalPerformanceDataSnapshot(snapshot = {}) {
+  const normalized = normalizeAdditionalPerformanceDataSnapshot({
+    ...snapshot,
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    swimmers: buildAdditionalPerformanceSwimmers(snapshot.performances || [])
+  });
+  const file = additionalPerformanceFile();
+  await file.save(JSON.stringify(normalized), {
+    resumable: false,
+    contentType: "application/json; charset=utf-8",
+    metadata: {
+      cacheControl: "public, max-age=300",
+      metadata: {
+        firebaseStorageDownloadTokens: PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN
+      }
+    }
+  });
+  return {
+    ok: true,
+    path: PUBLIC_ADDITIONAL_PERFORMANCE_PATH,
+    generatedAt: normalized.generatedAt,
+    importCount: normalized.importCount,
+    performanceCount: normalized.performanceCount,
+    correctionCount: normalized.correctionCount,
+    incremental: snapshot.incremental !== false
+  };
+}
+
+async function publishIncrementalPerformanceImport(performances = [], importId = "") {
+  const current = await readPublishedAdditionalPerformanceDataSnapshot();
+  const mergedPerformances = mergeAdditionalPerformanceRows(current.performances, performances, cleanText(importId));
+  return saveAdditionalPerformanceDataSnapshot({
+    ...current,
+    performances: mergedPerformances
+  });
+}
+
+async function publishIncrementalPerformanceCorrection(correction = {}) {
+  const current = await readPublishedAdditionalPerformanceDataSnapshot();
+  const corrections = upsertAdditionalCorrection(current.corrections, correction);
+  return saveAdditionalPerformanceDataSnapshot({
+    ...current,
+    corrections
+  });
+}
+
+async function performanceBaseMigrationManifest() {
+  const response = await fetch(`${PERFORMANCE_PUBLIC_DATA_URL}/performance-base-migration-manifest.json?cache=${Date.now()}`);
+  if (!response.ok) {
+    throw new HttpsError("failed-precondition", "Manifeste de migration historique introuvable.");
+  }
+  const manifest = await response.json();
+  const chunks = Array.isArray(manifest.chunks) ? manifest.chunks : [];
+  return {
+    ...manifest,
+    chunks: chunks
+      .map((chunk) => ({
+        name: cleanText(chunk.name),
+        performanceCount: Number(chunk.performanceCount || 0) || 0,
+        swimmerCount: Number(chunk.swimmerCount || 0) || 0,
+        bytes: Number(chunk.bytes || 0) || 0
+      }))
+      .filter((chunk) => /^chunk-[A-Za-z0-9-]+\.json$/.test(chunk.name))
+  };
+}
+
+async function migrationChunkStatuses(chunks = []) {
+  const db = admin.firestore();
+  const refs = chunks.map((chunk) => db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(chunk.name));
+  const snapshots = refs.length ? await db.getAll(...refs) : [];
+  const byName = new Map();
+  snapshots.forEach((snapshot) => {
+    byName.set(snapshot.id, snapshot.exists ? snapshot.data() || {} : {});
+  });
+  return chunks.map((chunk) => ({
+    ...chunk,
+    status: byName.get(chunk.name)?.status || "pending",
+    migratedCount: Number(byName.get(chunk.name)?.migratedCount || 0) || 0,
+    totalCount: Number(byName.get(chunk.name)?.totalCount || chunk.performanceCount || 0) || 0,
+    lastBatchCount: Number(byName.get(chunk.name)?.lastBatchCount || 0) || 0,
+    updatedAt: byName.get(chunk.name)?.updatedAt || "",
+    completedAt: byName.get(chunk.name)?.completedAt || "",
+    error: byName.get(chunk.name)?.error || ""
+  }));
+}
+
+function historicalRowsFromChunkPayload(payload = {}) {
+  const rows = [];
+  Object.entries(payload || {}).forEach(([swimmerId, performances]) => {
+    if (!Array.isArray(performances)) return;
+    performances.forEach((perf) => {
+      rows.push({
+        ...perf,
+        source: perf.source || "intranap",
+        swimmerId: String(perf.swimmerId || swimmerId)
+      });
+    });
+  });
+  return rows;
+}
+
+exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  const data = request.data || {};
+  const source = cleanText(data.source || "intranap").slice(0, 80);
+  const rawRows = Array.isArray(data.rows)
+    ? data.rows
+    : historicalRowsFromChunkPayload(data.payload && typeof data.payload === "object" ? data.payload : {});
+  const rows = rawRows
+    .slice(0, 2000)
+    .map((row) => ({
+      ...row,
+      source: cleanText(row.source || source || "intranap")
+    }))
+    .filter((row) => POOL_COURSES.includes(normalizeCourseCode(row.course)) && Number(row.timeValue || 0) > 0);
+  if (!rows.length) {
+    throw new HttpsError("invalid-argument", "Aucune performance historique valide dans le lot.");
+  }
+  const now = new Date().toISOString();
+  const result = await writePerformanceBaseRows(rows, {
+    actorUid: request.auth.uid,
+    actorEmail: request.auth.token?.email || "",
+    now,
+    action: "historicalImport.batch",
+    changeSeed: cleanText(data.batchId || now),
+    status: "active",
+    logChanges: false
+  });
+  await admin.firestore().collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanText(data.batchId || stableHash(now).slice(0, 24))).set({
+    source,
+    status: "completed",
+    importedCount: result.written,
+    updatedAt: now,
+    importedBy: request.auth.uid,
+    importedByEmail: request.auth.token?.email || ""
+  }, { merge: true });
+  return {
+    ok: true,
+    written: result.written
+  };
+});
+
+async function migrateHistoricalPerformanceBaseChunk(chunkName, request) {
+  const cleanChunkName = cleanText(chunkName);
+  if (!/^chunk-[A-Za-z0-9-]+\.json$/.test(cleanChunkName)) {
+    throw new HttpsError("invalid-argument", "Lot historique invalide.");
+  }
+  const db = admin.firestore();
+  const migrationRef = db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanChunkName);
+  const existing = await migrationRef.get();
+  const existingData = existing.exists ? existing.data() || {} : {};
+  if (existingData.status === "completed") {
+    return {
+      ok: true,
+      chunk: cleanChunkName,
+      alreadyCompleted: true,
+      migratedCount: Number(existingData.migratedCount || 0) || 0
+    };
+  }
+
+  const now = new Date().toISOString();
+  const startIndex = Math.max(0, Number(existingData.migratedCount || 0) || 0);
+  await migrationRef.set({
+    chunk: cleanChunkName,
+    status: "running",
+    startedAt: existingData.startedAt || now,
+    lastRunStartedAt: now,
+    startedBy: request.auth.uid,
+    updatedAt: now,
+    batchSize: PERFORMANCE_BASE_MIGRATION_BATCH_SIZE,
+    migratedCount: startIndex
+  }, { merge: true });
+
+  try {
+    const response = await fetch(`${PERFORMANCE_PUBLIC_DATA_URL}/intranap-swimmer-perfs/${encodeURIComponent(cleanChunkName)}?cache=${Date.now()}`);
+    if (!response.ok) {
+      throw new Error(`Fichier ${cleanChunkName} introuvable.`);
+    }
+    const payload = await response.json();
+    const rows = historicalRowsFromChunkPayload(payload);
+    const batchRows = rows.slice(startIndex, startIndex + PERFORMANCE_BASE_MIGRATION_BATCH_SIZE);
+    if (!batchRows.length) {
+      const completedAt = new Date().toISOString();
+      await migrationRef.set({
+        chunk: cleanChunkName,
+        status: "completed",
+        migratedCount: rows.length,
+        totalCount: rows.length,
+        completedAt,
+        updatedAt: completedAt,
+        error: ""
+      }, { merge: true });
+      return {
+        ok: true,
+        chunk: cleanChunkName,
+        migratedCount: rows.length,
+        totalCount: rows.length,
+        completedAt,
+        doneWithChunk: true
+      };
+    }
+    const sync = await writePerformanceBaseRows(batchRows, {
+      actorUid: request.auth.uid,
+      actorEmail: request.auth.token?.email || "",
+      now: new Date().toISOString(),
+      action: "historicalMigration.chunk",
+      changeSeed: cleanChunkName,
+      status: "active",
+      logChanges: false
+    });
+    const nextIndex = startIndex + sync.written;
+    const doneWithChunk = nextIndex >= rows.length;
+    const completedAt = doneWithChunk ? new Date().toISOString() : "";
+    const updatedAt = new Date().toISOString();
+    await migrationRef.set({
+      chunk: cleanChunkName,
+      status: doneWithChunk ? "completed" : "partial",
+      migratedCount: nextIndex,
+      totalCount: rows.length,
+      lastBatchCount: sync.written,
+      completedAt,
+      updatedAt,
+      error: ""
+    }, { merge: true });
+    return {
+      ok: true,
+      chunk: cleanChunkName,
+      migratedCount: nextIndex,
+      totalCount: rows.length,
+      batchStart: startIndex,
+      batchCount: sync.written,
+      doneWithChunk,
+      completedAt
+    };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    await migrationRef.set({
+      chunk: cleanChunkName,
+      status: "error",
+      error: error?.message || String(error),
+      failedAt,
+      updatedAt: failedAt
+    }, { merge: true });
+    throw new HttpsError("internal", error?.message || "Migration du lot impossible.");
+  }
+}
+
+async function buildAdditionalPerformanceDataSnapshot() {
+  const performanceSnapshot = await admin.firestore()
+    .collection(PERFORMANCE_BASE_COLLECTION)
+    .where("source", "==", "livepalmes-import")
+    .get();
+
+  const performances = performanceSnapshot.docs
+    .map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
+    .filter((row) => row.active !== false && row.status !== "hidden");
+
+  const correctionsSnapshot = await admin.firestore()
+    .collection("performanceCorrections")
+    .orderBy("updatedAt", "desc")
+    .limit(2000)
+    .get();
+  const correctionUserIds = Array.from(new Set(correctionsSnapshot.docs
+    .map((doc) => cleanText((doc.data() || {}).updatedBy))
+    .filter(Boolean)));
+  const correctionUserNames = new Map();
+  for (let index = 0; index < correctionUserIds.length; index += 10) {
+    const chunk = correctionUserIds.slice(index, index + 10);
+    const usersSnapshot = await admin.firestore()
+      .collection("users")
+      .where("uid", "in", chunk)
+      .get();
+    usersSnapshot.docs.forEach((doc) => {
+      const data = doc.data() || {};
+      correctionUserNames.set(doc.id, displayNameFromProfile(data));
+    });
+  }
+  const corrections = correctionsSnapshot.docs
+    .map((doc) => {
+      const data = doc.data() || {};
+      const updatedBy = cleanText(data.updatedBy);
+      return {
+        id: doc.id,
+        targetKey: cleanText(data.targetKey),
+        targetId: cleanText(data.targetId),
+        targetSource: cleanText(data.targetSource),
+        targetRow: data.targetRow && typeof data.targetRow === "object" ? data.targetRow : {},
+        hidden: data.hidden === true,
+        patch: data.patch && typeof data.patch === "object" ? data.patch : {},
+        updatedAt: cleanText(data.updatedAt),
+        updatedByName: cleanText(data.updatedByName) || correctionUserNames.get(updatedBy) || ""
+      };
+    })
+    .filter((correction) => correction.targetKey);
 
   return {
     ok: true,
     generatedAt: new Date().toISOString(),
-    importCount: importsSnapshot.size,
+    importCount: Array.from(new Set(performances.map((row) => cleanText(row.importId)).filter(Boolean))).length,
     performanceCount: performances.length,
-    swimmers: Array.from(swimmersById.values()),
-    performances
+    correctionCount: corrections.length,
+    source: PERFORMANCE_BASE_COLLECTION,
+    swimmers: buildAdditionalPerformanceSwimmers(performances),
+    performances,
+    corrections
+  };
+}
+
+async function publishAdditionalPerformanceDataSnapshot() {
+  const snapshot = await buildAdditionalPerformanceDataSnapshot();
+  return saveAdditionalPerformanceDataSnapshot({
+    ...snapshot,
+    incremental: false
+  });
+}
+
+exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  return buildAdditionalPerformanceDataSnapshot();
+});
+
+exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  try {
+    const publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
+    await writeAuditLog("performancePublicData.published", request.auth.uid, {
+      path: publicSnapshot.path,
+      importCount: publicSnapshot.importCount,
+      performanceCount: publicSnapshot.performanceCount
+    });
+    return publicSnapshot;
+  } catch (error) {
+    console.error("Publication publique des performances impossible", {
+      message: error?.message || String(error),
+      code: error?.code || "",
+      stack: error?.stack || ""
+    });
+    throw new HttpsError("failed-precondition", error?.message || "Publication publique impossible.");
+  }
+});
+
+exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  const manifest = await performanceBaseMigrationManifest();
+  const chunks = await migrationChunkStatuses(manifest.chunks);
+  const completed = chunks.filter((chunk) => chunk.status === "completed").length;
+  return {
+    ok: true,
+    generatedAt: manifest.generatedAt || "",
+    totalChunks: chunks.length,
+    completedChunks: completed,
+    pendingChunks: chunks.length - completed,
+    totalPerformances: chunks.reduce((sum, chunk) => sum + Number(chunk.performanceCount || 0), 0),
+    migratedPerformances: chunks.reduce((sum, chunk) => sum + Number(chunk.migratedCount || 0), 0),
+    chunks
+  };
+});
+
+exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  assertAdmin(request);
+  const manifest = await performanceBaseMigrationManifest();
+  const chunks = await migrationChunkStatuses(manifest.chunks);
+  const next = chunks.find((chunk) => chunk.status !== "completed");
+  if (!next) {
+    return {
+      ok: true,
+      done: true,
+      message: "Tous les lots historiques sont deja migres."
+    };
+  }
+  const result = await migrateHistoricalPerformanceBaseChunk(next.name, request);
+  const updatedChunks = await migrationChunkStatuses(manifest.chunks);
+  return {
+    ...result,
+    done: false,
+    completedChunks: updatedChunks.filter((chunk) => chunk.status === "completed").length,
+    totalChunks: updatedChunks.length,
+    migratedPerformances: updatedChunks.reduce((sum, chunk) => sum + Number(chunk.migratedCount || 0), 0),
+    totalPerformances: updatedChunks.reduce((sum, chunk) => sum + Number(chunk.performanceCount || 0), 0)
+  };
+});
+
+exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const data = request.data || {};
+  const targetKey = cleanText(data.targetKey).slice(0, 240);
+  if (!targetKey) {
+    throw new HttpsError("invalid-argument", "Performance cible manquante.");
+  }
+  const reason = cleanText(data.reason).slice(0, 500);
+  if (!reason) {
+    throw new HttpsError("invalid-argument", "Motif obligatoire.");
+  }
+  const allowedPatchFields = new Set([
+    "time",
+    "timeValue",
+    "club",
+    "clubName",
+    "location",
+    "date",
+    "rank",
+    "points",
+    "intermediateTimes"
+  ]);
+  const rawPatch = data.patch && typeof data.patch === "object" ? data.patch : {};
+  const patch = {};
+  Object.keys(rawPatch).forEach((key) => {
+    if (!allowedPatchFields.has(key)) return;
+    if (key === "timeValue") {
+      const value = Number(rawPatch[key]);
+      if (Number.isFinite(value) && value > 0) patch[key] = value;
+      return;
+    }
+    if (key === "intermediateTimes") {
+      patch[key] = Array.isArray(rawPatch[key])
+        ? rawPatch[key].slice(0, 12).map((split) => ({
+          distance: Number(split?.distance || 0) || "",
+          code: cleanText(split?.code).slice(0, 20),
+          time: cleanText(split?.time).slice(0, 20),
+          timeValue: Number(split?.timeValue || 0) || 0
+        })).filter((split) => split.code || split.time)
+        : [];
+      return;
+    }
+    patch[key] = cleanText(rawPatch[key]).slice(0, key === "location" || key === "clubName" ? 160 : 80);
+  });
+
+  const targetRowKeys = new Set([
+    "id", "source", "swimmerId", "originalSwimmerId", "swimmerIdentityKey", "swimmer", "firstName", "lastName", "birthDate",
+    "sex", "clubId", "club", "clubName", "regionId", "regionLabel", "competitionId", "competition", "location", "date",
+    "seasonYear", "pool", "chrono", "course", "courseLabel", "courseShortLabel", "style", "length", "isIntermediate",
+    "originCourse", "originCourseShortLabel", "originPerformanceId", "category", "categoryCode", "categoryLabel",
+    "timeValue", "time", "rank", "points", "intermediateTimes"
+  ]);
+  const rawTargetRow = data.targetRow && typeof data.targetRow === "object" ? data.targetRow : {};
+  const targetRow = {};
+  Object.keys(rawTargetRow).forEach((key) => {
+    if (!targetRowKeys.has(key)) return;
+    if (key === "timeValue" || key === "seasonYear" || key === "length") {
+      const value = Number(rawTargetRow[key]);
+      if (Number.isFinite(value)) targetRow[key] = value;
+      return;
+    }
+    if (key === "isIntermediate") {
+      targetRow[key] = rawTargetRow[key] === true;
+      return;
+    }
+    if (key === "intermediateTimes") {
+      targetRow[key] = Array.isArray(rawTargetRow[key])
+        ? rawTargetRow[key].slice(0, 12).map((split) => ({
+          distance: Number(split?.distance || 0) || "",
+          code: cleanText(split?.code).slice(0, 20),
+          time: cleanText(split?.time).slice(0, 20),
+          timeValue: Number(split?.timeValue || 0) || 0
+        })).filter((split) => split.code || split.time)
+        : [];
+      return;
+    }
+    targetRow[key] = cleanText(rawTargetRow[key]).slice(0, 180);
+  });
+
+  const hidden = data.hidden === true;
+  if (!hidden && !Object.keys(patch).length) {
+    throw new HttpsError("invalid-argument", "Aucune correction a enregistrer.");
+  }
+
+  const now = new Date().toISOString();
+  const updatedByName = await accessUserDisplayName(request.auth.uid, request.auth.token || {});
+  const correctionId = stableHash(targetKey).slice(0, 32);
+  const ref = admin.firestore().collection("performanceCorrections").doc(correctionId);
+  const existing = await ref.get();
+  const payload = {
+    id: correctionId,
+    targetKey,
+    targetId: cleanText(data.targetId).slice(0, 180),
+    targetSource: cleanText(data.targetSource).slice(0, 80),
+    targetSummary: cleanFirestoreValue(data.targetSummary && typeof data.targetSummary === "object" ? data.targetSummary : {}),
+    targetRow: cleanFirestoreValue(targetRow),
+    hidden,
+    patch: cleanFirestoreValue(patch),
+    reason,
+    updatedAt: now,
+    updatedBy: request.auth.uid,
+    updatedByEmail: request.auth.token?.email || "",
+    updatedByName,
+    createdAt: existing.exists ? existing.data()?.createdAt || now : now,
+    createdBy: existing.exists ? existing.data()?.createdBy || request.auth.uid : request.auth.uid
+  };
+  const safePayload = cleanFirestoreValue(payload);
+  await ref.set(safePayload, { merge: false });
+  await ref.collection("history").add({
+    ...safePayload,
+    correctionId,
+    savedAt: now
+  });
+  await writeAuditLog(hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated", request.auth.uid, {
+    correctionId,
+    targetKey,
+    targetId: payload.targetId,
+    targetSource: payload.targetSource,
+    hidden,
+    reason
+  });
+
+  let performanceBaseSync = null;
+  try {
+    const baseRow = {
+      ...(safePayload.targetRow || {}),
+      ...(hidden ? {} : safePayload.patch || {}),
+      publicKey: targetKey,
+      source: safePayload.targetSource || safePayload.targetRow?.source || "intranap",
+      id: safePayload.targetId || safePayload.targetRow?.id || ""
+    };
+    performanceBaseSync = await writePerformanceBaseRows([baseRow], {
+      actorUid: request.auth.uid,
+      actorEmail: request.auth.token?.email || "",
+      now,
+      action: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
+      changeSeed: correctionId,
+      status: hidden ? "hidden" : "active",
+      topIndexIncludeTombstones: hidden
+    });
+  } catch (error) {
+    console.error("Synchronisation performances impossible apres correction", {
+      correctionId,
+      targetKey,
+      message: error?.message || String(error)
+    });
+    performanceBaseSync = {
+      ok: false,
+      error: error?.message || "Synchronisation performances impossible."
+    };
+  }
+
+  let publicSnapshot;
+  try {
+    publicSnapshot = await publishIncrementalPerformanceCorrection({
+      id: correctionId,
+      targetKey: safePayload.targetKey,
+      targetId: safePayload.targetId,
+      targetSource: safePayload.targetSource,
+      targetRow: safePayload.targetRow || {},
+      hidden: safePayload.hidden === true,
+      patch: safePayload.patch || {},
+      updatedAt: safePayload.updatedAt,
+      updatedByName: safePayload.updatedByName || ""
+    });
+  } catch (error) {
+    console.error("Publication publique des corrections impossible", {
+      correctionId,
+      targetKey,
+      message: error?.message || String(error)
+    });
+    publicSnapshot = {
+      ok: false,
+      error: error?.message || "Publication publique impossible."
+    };
+  }
+  return {
+    ok: true,
+    correction: {
+      id: correctionId,
+      targetKey,
+      hidden,
+      patch,
+      updatedAt: now
+    },
+    performanceBaseSync,
+    publicSnapshot
   };
 });

@@ -33,6 +33,19 @@
     return deps.importedSeriesTime(time) || time || "";
   }
 
+  function resultPointsFromTail(value) {
+    const tokens = String(value || "").trim().split(/\s+/).filter(Boolean);
+    const points = [...tokens].reverse().find((token) => /^\d{1,4}$/.test(token));
+    return points || "";
+  }
+
+  function resultPointsFromMatch(match) {
+    const time = String(match.groups?.time || "").trim();
+    const splitTimes = String(match.groups?.splitTimes || "").trim().split(/\s+/).filter(Boolean);
+    if (!match.groups?.finalMarker && /^\d{1,4}$/.test(time) && splitTimes.length) return time;
+    return resultPointsFromTail(match.groups?.tail);
+  }
+
   function parsedIdentity(rawName, birthYear, options = {}) {
     const deps = dependencies(options);
     const split = deps.splitImportedPersonName(deps.fixPdfEncoding(rawName));
@@ -46,7 +59,7 @@
 
   function parseResultRow(line, options = {}) {
     const text = normalizeResultLineText(line, options);
-    const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
+    const match = text.match(/^\s*(\d+)\s+(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<finalMarker>\(.*?finale.*?\)\s+)?(?<time>[0-9:.]+)(?<tail>(?:\s+(?:\d+|[A-Z0-9]+))*)\s*$/i);
     if (!match) return null;
     const identity = parsedIdentity(match[2], match[3], options);
     return {
@@ -55,13 +68,14 @@
       categoryCode: match.groups?.category || "",
       club: match.groups?.club || match[4],
       time: resultTimeFromMatch(match, options),
+      points: resultPointsFromMatch(match),
       qualified: Boolean(match.groups?.finalMarker)
     };
   }
 
   function parseUnrankedResultRow(line, options = {}) {
     const text = normalizeResultLineText(line, options);
-    const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?:\s+(?:\d+|[A-Z0-9]+))*\s*$/i);
+    const match = text.match(/^\s*(.+?)\s+(\d{2})\s+(?:(?<category>[A-Z][A-Z0-9+]{1,5})\s+\*\s+)?(?<club>[A-Z0-9]+)\s+(?:(?<splitTimes>(?:[0-9:.]+\s+)*))(?<time>[0-9:.]+)(?<tail>(?:\s+(?:\d+|[A-Z0-9]+))*)\s*$/i);
     if (!match || !match.groups?.splitTimes?.trim()) return null;
     const identity = parsedIdentity(match[1], match[2], options);
     return {
@@ -70,7 +84,86 @@
       categoryCode: match.groups?.category || "",
       club: match.groups?.club || match[4],
       time: resultTimeFromMatch(match, options),
+      points: resultPointsFromMatch(match),
       qualified: false
+    };
+  }
+
+  function relayResultIdentity(rawName, club = "", options = {}) {
+    const deps = dependencies(options);
+    const displayName = deps.fixPdfEncoding(rawName)
+      .replace(/\s+/g, " ")
+      .trim();
+    return {
+      lastName: displayName,
+      firstName: "",
+      displayName,
+      birthYear: "",
+      club: club || displayName
+    };
+  }
+
+  const RELAY_CATEGORY_CODE_PATTERN = "(?:[FHX](?:MI|CA|JU|SE|MA|M\\d{2}\\+?|\\d{2,3}\\+?)|SEN|JUN|CAD|MIN|MI|CA|JU|SE|MA|R\\d{3}|\\d{2,3}\\+?)";
+
+  function relayCategoryFromCode(code) {
+    const clean = String(code || "").trim().toUpperCase();
+    if (!clean) return { categoryCode: "", category: "", categoryLabel: "" };
+    let category = "";
+    if (clean.includes("MI") || clean === "MIN") category = "Minime";
+    else if (clean.includes("CA") || clean === "CAD") category = "Cadet";
+    else if (clean.includes("JU") || clean === "JUN") category = "Junior";
+    else if (clean.includes("SE") || clean === "SEN") category = "Senior";
+    else if (clean.includes("MA")) category = "Masters";
+    else if (/^R\d{3}$/.test(clean)) category = clean;
+    else if (/^\d{2,3}\+?$/.test(clean)) category = clean.endsWith("+") ? clean : `${clean}+`;
+    const sex = clean.startsWith("X") ? "Mixte" : (clean.startsWith("F") ? "Femmes" : (clean.startsWith("H") ? "Hommes" : ""));
+    return {
+      categoryCode: clean,
+      category,
+      categoryLabel: [category, sex].filter(Boolean).join(" ")
+    };
+  }
+
+  function compactRelayLegName(rawName, options = {}) {
+    const deps = dependencies(options);
+    const split = deps.splitImportedPersonName(deps.fixPdfEncoding(rawName));
+    const lastName = String(split.lastName || "").trim();
+    const firstInitial = String(split.firstName || "").trim().charAt(0).toUpperCase();
+    return [lastName, firstInitial ? `${firstInitial}.` : ""].filter(Boolean).join(" ");
+  }
+
+  function parseRelayLegRow(line, options = {}) {
+    const text = normalizeResultLineText(line, options);
+    const match = text.match(/^\s*(?<name>.+?)\s+(?<birthYear>\d{2})\s+(?<category>[FHX][A-Z0-9+]{1,5})\s+(?:\[(?<splitTime>[0-9:.]+)\]|(?<firstLegTime>[0-9:.]+))(?:\s+(?<cumulativeTime>[0-9:.]+))?\s*$/i);
+    if (!match) return null;
+    const legTime = match.groups?.splitTime || match.groups?.firstLegTime || "";
+    return {
+      name: compactRelayLegName(match.groups?.name || "", options),
+      time: dependencies(options).importedSeriesTime(legTime) || legTime,
+      cumulativeTime: dependencies(options).importedSeriesTime(match.groups?.cumulativeTime || "") || match.groups?.cumulativeTime || "",
+      birthYear: dependencies(options).importedBirthYear(match.groups?.birthYear || ""),
+      categoryCode: match.groups?.category || ""
+    };
+  }
+
+  function parseRelayResultRow(line, options = {}) {
+    const text = normalizeResultLineText(line, options);
+    const match = text.match(new RegExp("^\\s*(?<rank>\\d+)\\s+(?<name>.+?)\\s+(?:(?<categoryStar>[A-Z][A-Z0-9+]{1,5})\\s+\\*\\s+|(?<categoryPlain>" + RELAY_CATEGORY_CODE_PATTERN + ")\\s+)?(?<club>[A-Z0-9]{2,})\\s+(?:(?<splitTimes>(?:[0-9:.]+\\s+)*))(?<time>[0-9:.]+)(?<tail>(?:\\s+(?:\\d+|[A-Z0-9]+))*)\\s*$"));
+    if (!match) return null;
+    const name = String(match.groups?.name || "").trim();
+    if (!name || /\b\d{2}\b/.test(name)) return null;
+    const identity = relayResultIdentity(name, match.groups?.club || "", options);
+    const category = relayCategoryFromCode(match.groups?.categoryStar || match.groups?.categoryPlain || "");
+    return {
+      rank: Number(match.groups?.rank || 0),
+      ...identity,
+      categoryCode: category.categoryCode,
+      category: category.category,
+      categoryLabel: category.categoryLabel,
+      time: resultTimeFromMatch(match, options),
+      points: resultPointsFromMatch(match),
+      qualified: false,
+      relay: true
     };
   }
 
@@ -109,15 +202,44 @@
     };
   }
 
+  function parseRelayResultStatusRow(line, options = {}) {
+    const text = normalizeResultLineText(line, options);
+    const status = resultStatusFromText(text);
+    if (!status) return null;
+    const match = text.match(new RegExp("^\\s*(?:(?<rank>\\d+)\\s+)?(?<name>.+?)\\s+(?:(?<categoryStar>[A-Z][A-Z0-9+]{1,5})\\s+\\*\\s+|(?<categoryPlain>" + RELAY_CATEGORY_CODE_PATTERN + ")\\s+)?(?<club>[A-Z0-9]{2,})\\s+(.+?)\\s*$"));
+    if (!match) return null;
+    const name = String(match.groups?.name || "").trim();
+    if (!name || /\b\d{2}\b/.test(name)) return null;
+    const identity = relayResultIdentity(name, match.groups?.club || "", options);
+    const category = relayCategoryFromCode(match.groups?.categoryStar || match.groups?.categoryPlain || "");
+    return {
+      rank: match.groups?.rank ? Number(match.groups.rank) : "",
+      ...identity,
+      categoryCode: category.categoryCode,
+      category: category.category,
+      categoryLabel: category.categoryLabel,
+      time: "",
+      resultStatus: status,
+      statusLabel: {
+        dns: "Forfait",
+        ab: "ABD",
+        dsq: "DSQ"
+      }[status],
+      qualified: false,
+      relay: true
+    };
+  }
+
   function resultCategoryFromHeader(line, options = {}) {
     const text = normalizeResultLineText(line, options);
-    const match = text.match(/^\s*(?:\d+x\d+|\d{2,4})\s*m?\s+.+?\s+(?:(Masters?)\s+)?((?:\d{2,3}\+)|Minimes?|Cadets?|Cadettes?|Juniors?|Seniors?|Masters?)\s+(Femmes|Hommes|Mixte)\s*$/i);
+    const match = text.match(/^\s*(?:\d+x\d+|\d{2,4})\s*m?\s+.+?\s+(?:(Masters?)\s+)?(R\s*\d{3}|(?:\d{2,3}\+)|Minimes?|Cadets?|Cadettes?|Juniors?|Seniors?|Masters?)\s+(Femmes|Hommes|Mixte)\s*$/i);
     if (!match) return null;
     const [, masterLabel = "", rawCategory = "", rawSex = ""] = match;
     const sex = /^hommes$/i.test(rawSex) ? "M" : (/^femmes$/i.test(rawSex) ? "F" : "X");
-    const cleanCategory = String(rawCategory || "").trim();
+    const cleanCategory = String(rawCategory || "").trim().replace(/^R\s+(\d{3})$/i, "R$1");
     let category = cleanCategory;
-    if (/^\d{2,3}\+$/i.test(cleanCategory)) {
+    if (/^R\d{3}$/i.test(cleanCategory)) category = cleanCategory.toUpperCase();
+    else if (/^\d{2,3}\+$/i.test(cleanCategory)) {
       const prefix = sex === "F" ? "F" : (sex === "M" ? "H" : "X");
       category = `${prefix}${cleanCategory}`;
     } else if (/^minimes?$/i.test(cleanCategory)) category = "Minime";
@@ -148,21 +270,40 @@
   function parseFinalistsFromResultLines(lines, options = {}) {
     const seen = new Set();
     let categoryContext = null;
-    const ranking = lines
-      .map((line, sourceIndex) => {
+    let lastRelayRow = null;
+    const parsedRows = [];
+    lines.forEach((line, sourceIndex) => {
         const nextCategory = resultCategoryFromHeader(line, options);
         if (nextCategory) {
           categoryContext = nextCategory;
-          return null;
+          lastRelayRow = null;
+          return;
         }
-        const row = parseResultRow(line, options) || parseUnrankedResultRow(line, options) || parseResultStatusRow(line, options);
-        return row ? {
+        const relayLeg = lastRelayRow ? parseRelayLegRow(line, options) : null;
+        if (relayLeg) {
+          lastRelayRow.relayLegs = [...(lastRelayRow.relayLegs || []), { ...relayLeg, order: lastRelayRow.relayLegs?.length + 1 || 1 }];
+          return;
+        }
+        const row = parseResultRow(line, options) || parseUnrankedResultRow(line, options) || parseResultStatusRow(line, options) || parseRelayResultRow(line, options) || parseRelayResultStatusRow(line, options);
+        if (!row) {
+          lastRelayRow = null;
+          return;
+        }
+        const masterRelayContext = row.relay && /^R\d{3}$/i.test(String(categoryContext?.category || ""));
+        const parsedRow = {
           ...row,
-          category: row.category || categoryContext?.category || "",
-          categoryLabel: row.categoryLabel || categoryContext?.categoryLabel || "",
+          categoryCode: masterRelayContext ? categoryContext.category : (row.categoryCode || ""),
+          category: masterRelayContext ? categoryContext.category : (row.category || categoryContext?.category || ""),
+          categoryLabel: masterRelayContext ? categoryContext.categoryLabel : (row.categoryLabel || categoryContext?.categoryLabel || ""),
+          sectionCategory: categoryContext?.category || "",
+          sectionCategoryLabel: categoryContext?.categoryLabel || "",
+          sectionTitle: categoryContext?.sectionTitle || "",
           sourceIndex
-        } : null;
-      })
+        };
+        parsedRows.push(parsedRow);
+        lastRelayRow = parsedRow.relay ? parsedRow : null;
+      });
+    const ranking = parsedRows
       .filter(Boolean)
       .filter((row) => {
         const key = resultImportRowKey(row);
@@ -364,6 +505,7 @@
       String(item?.birthYear || "").trim(),
       deps.normalizePersonName(item?.club || ""),
       String(item?.time || "").trim(),
+      String(item?.points || "").trim(),
       String(item?.status || "").trim(),
       String(item?.statusLabel || "").trim()
     ].join("|");
@@ -393,6 +535,7 @@
           club: item.club || "",
           rank: item.rank || "",
           time: item.time || "",
+          points: item.points || "",
           status: item.resultStatus || "",
           statusLabel: item.statusLabel || "",
           updatedAt: result.updatedAt
@@ -417,8 +560,13 @@
     finalRowsCount,
     performanceStageForResultRow,
     parseFinalistsFromResultLines,
+    parseRelayLegRow,
+    parseRelayResultRow,
+    parseRelayResultStatusRow,
     parseResultRow,
     parseResultStatusRow,
+    resultPointsFromMatch,
+    resultPointsFromTail,
     resultCategoryFromHeader,
     parseUnrankedResultRow,
     resolveParsedFinals,

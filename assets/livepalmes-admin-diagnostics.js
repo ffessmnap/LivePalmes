@@ -122,6 +122,77 @@
     `;
   }
 
+  function renderPublicPublicationDiagnosticModalHtml(report, options = {}) {
+    const {
+      formatByteSize = (value) => String(value || 0)
+    } = options;
+    const sessions = Array.isArray(report?.sessions) ? report.sessions : [];
+    const sizeStatus = (bytes) => Number(bytes || 0) > 900000 ? "warn" : "ok";
+    return `
+      <div class="decision-dialog role-codes-dialog technical-diagnostic-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic publication publique">
+        <div class="decision-modal-head">
+          <div>
+            <span>Publication publique</span>
+            <h2>Diagnostic public</h2>
+            <p>ContrÃ´le les index publics, les rÃ©sultats dÃ©taillÃ©s et les PDF de session.</p>
+          </div>
+          <button class="decision-close" type="button" data-role-codes-close aria-label="Fermer">Ã—</button>
+        </div>
+        ${report?.available ? `
+          ${technicalDiagnosticSection("Index publics", [
+            { label: "index rÃ©sultats", value: formatByteSize(report.resultsIndexBytes || 0), status: sizeStatus(report.resultsIndexBytes) },
+            { label: "index sÃ©ries", value: formatByteSize(report.seriesIndexBytes || 0), status: sizeStatus(report.seriesIndexBytes) },
+            { label: "rÃ©sultats dÃ©taillÃ©s", value: String(report.publicResults || 0), status: report.publicResults ? "ok" : "warn" },
+            { label: "PDF sessions", value: String(report.sessionPdfCount || 0), status: report.sessionPdfCount ? "ok" : "neutral" }
+          ])}
+          <div class="technical-diagnostic-section">
+            <h3>Sessions</h3>
+            <div class="public-publication-session-list">
+              ${sessions.map((session) => `
+                <div class="admin-series-help">
+                  <strong>Session ${escapeHtml(session.session)} - ${escapeHtml(String(session.publicResults))}/${escapeHtml(String(session.expectedResults))} rÃ©sultat${Number(session.expectedResults || 0) > 1 ? "s" : ""} dÃ©taillÃ©${Number(session.publicResults || 0) > 1 ? "s" : ""}</strong>
+                  <span>PDF complet : ${session.hasSessionPdf ? "oui" : "non"} - serveur : ${escapeHtml(String(session.serverResults))} rÃ©sultat${Number(session.serverResults || 0) > 1 ? "s" : ""}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+          <div class="admin-series-help technical-diagnostic-notes">
+            <strong>Analyse</strong>
+            ${report.recommendations.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+          </div>
+        ` : `
+          <div class="admin-series-help">
+            <strong>Diagnostic indisponible</strong>
+            <span>${escapeHtml(report?.message || "Firebase n'est pas disponible.")}</span>
+          </div>
+        `}
+        <div class="decision-modal-actions">
+          <button class="ghost-button" type="button" data-role-codes-back>Retour</button>
+          <button class="ghost-button" type="button" data-public-publication-diagnostic>Relire</button>
+          <button class="primary-button" type="button" data-public-index-republish>Republier public</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPublicPublicationDiagnosticLoadingHtml() {
+    return `
+      <div class="decision-dialog role-codes-dialog" role="dialog" aria-modal="true" aria-label="Diagnostic publication publique">
+        <div class="decision-modal-head">
+          <div>
+            <span>Publication publique</span>
+            <h2>Diagnostic public</h2>
+            <p>Lecture des index publics en cours...</p>
+          </div>
+        </div>
+        <div class="admin-series-help">
+          <strong>Analyse en cours</strong>
+          <span>LivePalmes vÃ©rifie les tailles d'index et les rÃ©sultats disponibles par session.</span>
+        </div>
+      </div>
+    `;
+  }
+
   function renderTechnicalDiagnosticModalHtml(report, options = {}) {
     const {
       alertTargetsLabel = (targets) => (targets || []).join(", "),
@@ -375,6 +446,8 @@
     renderCompetitionDiagnosticHtml,
     renderPerformanceDiagnosticLoadingHtml,
     renderPerformanceDiagnosticModalHtml,
+    renderPublicPublicationDiagnosticLoadingHtml,
+    renderPublicPublicationDiagnosticModalHtml,
     renderTechnicalDiagnosticLoadingHtml,
     renderTechnicalDiagnosticModalHtml,
     renderTechnicalLogModalHtml,

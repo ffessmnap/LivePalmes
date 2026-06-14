@@ -27,6 +27,7 @@
       state = {},
       programKey
     } = context;
+    const damienHebertTrophy = global.LivePalmesDamienHebertTrophy;
 
     function renderCompetitionDiagnostic() {
       const sessions = sessionRows();
@@ -63,6 +64,9 @@
       computerFooterPanel.hidden = false;
       computerFooterPanel.innerHTML = `
         ${renderCompetitionDiagnostic()}
+        ${damienHebertTrophy ? damienHebertTrophy.renderProvisionalHtml(raceResults, {
+          normalizePersonName: global.LivePalmesPeople?.normalizePersonName
+        }) : ""}
         <div class="results-admin-danger-zone">
           <button class="ghost-button compact danger-button" type="button" data-results-reset>RAZ</button>
         </div>

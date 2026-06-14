@@ -1,5 +1,5 @@
 let data = window.LIVEPALMES_RECORDS;
-let records = data.franceRecords;
+let records = normalizeMixedRelayRecords(data.franceRecords || []);
 
 const elements = {
   rfTypeFilter: document.querySelector("#rfTypeFilter"),
@@ -52,6 +52,17 @@ function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function birthYearLabel(value) {
+  const match = String(value || "").match(/^(\d{4})/);
+  return match ? match[1] : "";
+}
+
+function swimmerNameHtml(record) {
+  const year = birthYearLabel(record?.birthDate);
+  const name = escapeHtml(record?.swimmer || "-");
+  return year ? `${name} <small class="performance-birth-year">(${year})</small>` : name;
+}
+
 function addOptions(select, values, allLabel, labeler = (value) => value) {
   select.innerHTML = "";
   select.append(new Option(allLabel, ""));
@@ -72,7 +83,61 @@ function compareCourse(a, b) {
 }
 
 function compareRecordRows(a, b) {
-  return compareCourse(a.course, b.course) || String(a.key || "").localeCompare(String(b.key || ""), "fr-FR");
+  return compareCourse(a.course, b.course)
+    || (Number(a.value ?? 999999999) - Number(b.value ?? 999999999))
+    || String(a.date || "").localeCompare(String(b.date || ""), "fr-FR")
+    || String(a.swimmer || "").localeCompare(String(b.swimmer || ""), "fr-FR")
+    || String(a.key || "").localeCompare(String(b.key || ""), "fr-FR");
+}
+
+function isMixedRelayRecord(record) {
+  return String(record?.style || "").startsWith("RELAY") && /(?:SB|BIX)$/.test(String(record?.course || ""));
+}
+
+function mixedRelayPairKey(record) {
+  return [
+    record.recordType || "",
+    record.style || "",
+    record.course || ""
+  ].join("|");
+}
+
+function mixedRelayValue(record) {
+  const value = Number(record?.value);
+  return Number.isFinite(value) ? value : 999999999;
+}
+
+function normalizeMixedRelayRecords(rows) {
+  const groups = new Map();
+  rows.filter(isMixedRelayRecord).forEach((record) => {
+    const key = mixedRelayPairKey(record);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  });
+
+  const canonical = new Map();
+  groups.forEach((items, key) => {
+    canonical.set(key, items.slice().sort((a, b) =>
+      mixedRelayValue(a) - mixedRelayValue(b)
+      || String(a.date || "").localeCompare(String(b.date || ""), "fr-FR")
+      || String(a.key || "").localeCompare(String(b.key || ""), "fr-FR")
+    )[0]);
+  });
+
+  return rows.map((record) => {
+    if (!isMixedRelayRecord(record)) return record;
+    const best = canonical.get(mixedRelayPairKey(record));
+    if (!best) return record;
+    return {
+      ...best,
+      key: record.key,
+      sex: record.sex,
+      recordType: record.recordType,
+      recordTypeLabel: record.recordTypeLabel,
+      category: record.category,
+      categoryLabel: record.categoryLabel
+    };
+  });
 }
 
 function activeSegment() {
@@ -204,13 +269,31 @@ function timeCellClass(value) {
   return `time${isPlaceholderTime(value) ? " time-placeholder" : ""}`;
 }
 
+function recordTieKey(record) {
+  return [
+    record.recordType || "",
+    record.sex || "",
+    record.category || "",
+    record.style || "",
+    record.course || "",
+    String(record.time || "").trim()
+  ].join("|");
+}
+
+function isTieRecord(record, rows = records) {
+  const time = String(record.time || "").trim();
+  if (!time || isPlaceholderTime(time)) return false;
+  const key = recordTieKey(record);
+  return rows.filter((item) => recordTieKey(item) === key).length > 1;
+}
+
 function isRelayRecord(record) {
   return record.style?.startsWith("RELAY");
 }
 
 function participantLabel(record) {
   if (!isRelayRecord(record)) return swimmerColumnLabel(record.sex);
-  const mixedRelay = /(?:BIX|SB)$/.test(String(record.course || ""));
+  const mixedRelay = isMixedRelayRecord(record);
   return record.sex === "F" && !mixedRelay ? "Relayeuses" : "Relayeurs";
 }
 
@@ -219,12 +302,69 @@ function relaySwimmerNames(value) {
   if (!cleaned) return [];
 
   const slashParts = cleaned.split(/\s*\/\s*/).map((part) => part.trim()).filter(Boolean);
-  if (slashParts.length > 1) return slashParts;
+  if (slashParts.length > 1) return slashParts.map(formatRelaySwimmerName);
 
   const dashParts = cleaned.split(/\s*-\s*/).map((part) => part.trim()).filter(Boolean);
-  if (dashParts.length >= 4) return dashParts;
+  if (dashParts.length >= 4) return dashParts.map(formatRelaySwimmerName);
 
-  return [cleaned];
+  return [formatRelaySwimmerName(cleaned)];
+}
+
+function formatRelayInitials(value) {
+  return String(value || "")
+    .replace(/\./g, "")
+    .replace(/\s+/g, "")
+    .split("")
+    .filter(Boolean)
+    .map((letter) => `${letter.toLocaleUpperCase("fr-FR")}.`)
+    .join("");
+}
+
+function formatRelaySwimmerName(value) {
+  const cleaned = String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^[/-]+|[/-]+$/g, "")
+    .trim();
+  if (!cleaned || cleaned.toLocaleLowerCase("fr-FR").includes("tablir")) return cleaned;
+
+  const compactInitials = cleaned.match(/^((?:\p{L}\.){1,4})\s+(.+)$/u);
+  if (compactInitials) {
+    return `${formatRelayInitials(compactInitials[1])} ${compactInitials[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const gluedInitial = cleaned.match(/^(\p{L})\.\s*(\p{L}{2,}.*)$/u);
+  if (gluedInitial) {
+    return `${formatRelayInitials(gluedInitial[1])} ${gluedInitial[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  const trailingInitial = tokens.length >= 2 && /^\p{L}\.?$/u.test(tokens[tokens.length - 1]);
+  if (trailingInitial && tokens.slice(0, -1).some((token) => token.replace(/[.'-]/g, "").length > 1)) {
+    const initial = tokens.pop();
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const trailingFirstName = tokens.length >= 2 &&
+    tokens.slice(0, -1).every((token) => token === token.toLocaleUpperCase("fr-FR") && /\p{L}/u.test(token)) &&
+    tokens[tokens.length - 1] !== tokens[tokens.length - 1].toLocaleUpperCase("fr-FR");
+  if (trailingFirstName) {
+    const firstName = tokens.pop();
+    const initial = firstName.match(/\p{L}/u)?.[0] || "";
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const initials = [];
+  while (tokens.length && /^\p{L}\.?$/u.test(tokens[0])) {
+    initials.push(tokens.shift());
+  }
+  if (initials.length && tokens.length) {
+    return `${formatRelayInitials(initials.join(""))} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+  if (tokens.length < 2) return cleaned.toLocaleUpperCase("fr-FR");
+
+  const firstName = tokens.shift();
+  const initial = firstName.match(/\p{L}/u)?.[0] || "";
+  return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
 }
 
 function recordMobileMeta(record) {
@@ -236,13 +376,20 @@ function recordMobileMeta(record) {
 
 function displayClub(record) {
   if (record?.style === "RELAY_FRANCE") {
+    return "FFESSM";
+  }
+  return record?.club || "";
+}
+
+function displayRelayTeam(record) {
+  if (record?.style === "RELAY_FRANCE") {
     const club = String(record.club || "");
     if (record.recordType === "RFJ" || record.category === "J" || /^EDF\s*J\b/i.test(club) || /^EDFJ\b/i.test(club)) {
       return "Equipe de France Junior";
     }
     return "Equipe de France";
   }
-  return record?.club || "";
+  return displayClub(record) || "Relais";
 }
 
 function displayCourseShortLabel(record) {
@@ -278,14 +425,14 @@ function renderSwimmerCell(record) {
   const splitMeta = splitMetaHtml(record);
   if (!isRelayRecord(record)) {
     return `
-      <strong>${escapeHtml(record.swimmer)}</strong>
+      <strong>${swimmerNameHtml(record)}</strong>
       ${meta ? `<small class="record-mobile-meta">${escapeHtml(meta)}</small>` : ""}
       ${splitMeta}
     `;
   }
 
   return `
-    <strong class="relay-summary">${record.style === "RELAY_FRANCE" ? franceFlag() : ""}${escapeHtml(displayClub(record) || "Relais")}</strong>
+    <strong class="relay-summary">${record.style === "RELAY_FRANCE" ? franceFlag() : ""}${escapeHtml(displayRelayTeam(record))}</strong>
     <div class="relay-swimmers">
       ${relaySwimmerNames(record.swimmer).map((name) => `<span>${escapeHtml(name)}</span>`).join("")}
     </div>
@@ -299,7 +446,7 @@ function renderRecordRow(record) {
   if (isRelayRecord(record)) {
     rowClasses.push("relay-record");
   }
-  if (record.style?.startsWith("RELAY") && /(?:BIX|SB)$/.test(record.course)) {
+  if (isMixedRelayRecord(record)) {
     rowClasses.push("relay-mixed");
   }
 
@@ -329,7 +476,7 @@ function resetFilters() {
 
 function refreshData(nextData) {
   data = nextData || window.LIVEPALMES_RECORDS || data;
-  records = data.franceRecords || [];
+  records = normalizeMixedRelayRecords(data.franceRecords || []);
   elements.cutoffText.textContent = data.updatedAt
     ? `Dernière mise à jour : ${formatDate(String(data.updatedAt).slice(0, 10))}`
     : "Dernière mise à jour : 25 mai 2026";

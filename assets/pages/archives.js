@@ -64,7 +64,7 @@ function renderArchives(archives = []) {
             <p>${escapeHtml(archiveDateLabel(archive.createdAt) || archive.createdLabel || "")}</p>
             <span>${escapeHtml(String(archive.count || 0))} resultat${Number(archive.count || 0) > 1 ? "s" : ""} archive${Number(archive.count || 0) > 1 ? "s" : ""}</span>
           </div>
-          <a class="ghost-button compact confirm-button" href="resultats.html?archive=${encodeURIComponent(archive.id || "")}">Consulter</a>
+          <a class="ghost-button compact confirm-button" href="resultats?archive=${encodeURIComponent(archive.id || "")}">Consulter</a>
         </article>
       `).join("")}
     </section>
@@ -77,7 +77,7 @@ function isPublicArchive(archive = {}) {
 
 async function loadArchives() {
   if (directArchiveId) {
-    window.location.replace(`resultats.html?archive=${encodeURIComponent(directArchiveId)}`);
+    window.location.replace(`resultats?archive=${encodeURIComponent(directArchiveId)}`);
     return;
   }
   if (!archiveList) return;

@@ -106,7 +106,7 @@
     }
 
     function currentPublicProgressPayload() {
-      return publicProgressPayloadFromState(getState(), { requireSpeaker: true });
+      return null;
     }
 
     function programRowForRoleState(roleState = getState()) {
@@ -123,6 +123,7 @@
     }
 
     function publicProgressPayloadFromState(roleState = getState(), options = {}) {
+      return null;
       const data = getData();
       if (options.requireSpeaker && roleState.role !== "speaker") return null;
       if (!publicPositionEnabled() && options.requireSpeaker) return null;
@@ -146,25 +147,14 @@
     }
 
     function publishPublicProgressIfNeeded() {
-      const progress = currentPublicProgressPayload();
-      if (!progress || !liveDataDocument()) return;
-      const signature = publicProgressSignature(progress);
-      if (!signature || signature === getLastPublicProgressSignature()) return;
-      setLastPublicProgressSignature(signature);
-      updateLiveNotes("Rep\u00e8re public comp\u00e9tition", { publicProgress: progress }).catch((error) => {
-        console.warn("Publication du rep\u00e8re public impossible", error);
-        setLastPublicProgressSignature("");
-      });
+      return;
     }
 
     async function setPublicPositionEnabled(enabled) {
-      const state = getState();
-      const sourceState = state.role === "speaker" ? state : (getRoleStates().speaker || state);
-      const nextProgress = enabled ? publicProgressPayloadFromState(sourceState) : null;
       setLastPublicProgressSignature("");
-      await updateLiveNotes(enabled ? "Rep\u00e8re public activ\u00e9" : "Rep\u00e8re public d\u00e9sactiv\u00e9", {
-        publicPositionEnabled: Boolean(enabled),
-        publicProgress: nextProgress
+      await updateLiveNotes("Rep\u00e8re public d\u00e9sactiv\u00e9", {
+        publicPositionEnabled: false,
+        publicProgress: null
       });
     }
 

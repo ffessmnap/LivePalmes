@@ -1,138 +1,379 @@
 # Architecture LivePalmes
 
-Ce document sert de carte simple du code. Il est fait pour pouvoir reprendre LivePalmes sans devoir tout comprendre d'un coup.
+Ce document explique l'organisation de LivePalmes avec des mots simples.
 
-## Principe general
+Il sert a comprendre :
 
-LivePalmes est une application web simple en HTML, CSS et JavaScript. Il n'y a pas de framework comme React ou Vue.
+- ce qui pilote une competition ;
+- ce qui est visible par le public ;
+- ou sont stockees les donnees ;
+- quelles zones sont sensibles ;
+- quelles verifications faire avant de publier.
 
-Les pages principales sont a la racine :
+## Idee generale
 
-- `index.html` : accueil historique avec acces a toutes les consoles.
-- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : pages dediees par console, avec le meme controle d'acces que l'accueil.
-- `resultats.html` et `assets/pages/resultats.js` : page publique des resultats.
-- `series-public.html` et `assets/pages/series-public.js` : page publique des series.
-- `styles.css`, `console.css`, `public.css` : styles visuels.
-- `app.js` : coeur de la console interne.
+LivePalmes est une application web statique.
 
-Les modules JavaScript sont dans `assets/`. Ils servent a separer les grands domaines fonctionnels.
+Cela veut dire qu'elle est faite principalement avec :
 
-## Modules principaux
+- des pages HTML ;
+- des fichiers CSS pour l'apparence ;
+- des fichiers JavaScript pour les actions ;
+- Firebase pour partager les donnees en direct.
 
-- `assets/livepalmes-result-parser.js` : lecture des resultats depuis les lignes extraites des PDF.
-- `assets/livepalmes-app-config.js` : configuration de demarrage, codes par defaut, Firebase, donnees de secours.
-- `assets/livepalmes-local-state.js` : chargement et sauvegarde du stockage local du navigateur.
-- `assets/livepalmes-app-storage-workflow.js` : stockage local des donnees, alertes et normalisation des donnees.
-- `assets/livepalmes-firestore-refs.js` : acces aux documents et collections Firestore.
-- `assets/livepalmes-console-sync.js` : presence console, verrous de roles, publication live et synchronisation Firebase.
-- `assets/livepalmes-realtime-sync.js` : abonnement direct Firebase, actualisation manuelle et fin de session.
-- `assets/livepalmes-role-session-workflow.js` : choix de console, codes, session locale et retour accueil.
-- `assets/livepalmes-public-progress-workflow.js` : presence, compteurs d'accueil et partage de position speaker.
-- `assets/livepalmes-alert-presenter.js` : libelles et affichage des alertes des consoles.
-- `assets/livepalmes-series-import.js` : lecture et import des PDF de series.
-- `assets/livepalmes-series-import-workflow.js` : workflow d'import des PDF de series depuis la console.
-- `assets/livepalmes-results-admin-workflow.js` : publication des resultats cote bureau des performances.
-- `assets/livepalmes-results-access.js` : acces commun aux resultats publies pour les consoles et les fiches nageurs.
-- `assets/livepalmes-result-publication-workflow.js` : lecture/relecture des PDF resultats, performances et alertes finalistes.
-- `assets/livepalmes-result-maintenance-workflow.js` : suppression/RAZ des resultats publics et RAZ series.
-- `assets/livepalmes-admin-actions.js` : fenetres codes, RAZ, informations publiques et interrupteurs admin.
-- `assets/livepalmes-final-withdrawals-workflow.js` : finalistes, forfaits en finale, repechages, reintegrations.
-- `assets/livepalmes-export-actions.js` : telechargements JSON, ouverture et impression des archives.
-- `assets/livepalmes-export-reports-workflow.js` : exports journal d'arbitrage et archives resultats.
-- `assets/livepalmes-history-actions.js` : archivage historique, RAZ historique et alertes live masquees.
-- `assets/livepalmes-history-presenter.js` : historique visible, fiche alerte et journal des annonces.
-- `assets/livepalmes-decision-workflow.js` : decisions JA, file d'alertes et annulations.
-- `assets/livepalmes-swimmer-panel.js` : fiche nageur, records, affichage speaker/live.
-- `assets/livepalmes-speaker-info-workflow.js` : mise a jour des reperes depuis Google Sheets.
-- `assets/livepalmes-public-swimmers.js` : recherche nageur et fiche nageur sur les pages publiques.
-- `assets/livepalmes-program-navigation.js` : sessions, courses, series, finales, navigation.
-- `assets/livepalmes-program-modals.js` : boutons et fenetres programme/import.
-- `assets/livepalmes-entrant-helpers.js` : noms nageurs, recherche et affichage club court.
-- `assets/livepalmes-diagnostics-workflow.js` : diagnostic technique et diagnostic performance.
-- `assets/livepalmes-app-lifecycle.js` : demarrage, timers, actualisation locale et imports JSON/CSV.
-- `assets/livepalmes-console-render-workflow.js` : rendu principal de la console interne.
+Il n'y a pas de framework comme React, Vue ou Angular.
 
-## Evenements interface
+Les pages HTML restent a la racine du projet pour garder des adresses simples et stables.
 
-Le fichier `assets/livepalmes-ui-events.js` est seulement un chef d'orchestre.
+## Deux parties a bien distinguer
 
-Les vrais branchements de boutons sont separes ici :
+LivePalmes a deux grandes familles de pages.
 
-- `assets/livepalmes-ui-navigation-events.js` : changement de console, session, course, serie, clavier.
-- `assets/livepalmes-ui-results-events.js` : boutons resultats, relecture, import PDF resultats, import PDF series.
-- `assets/livepalmes-ui-admin-events.js` : fenetre codes, diagnostics, archives, RAZ.
-- `assets/livepalmes-ui-alert-events.js` : alertes speaker/live, decisions JA, historique, finalistes.
+### 1. Les pages de pilotage
 
-## Pages consoles
+Ces pages servent aux personnes qui organisent ou pilotent la competition.
 
-Les pages dediees par console sont generees depuis `index.html` avec `tools/build-console-pages.js`.
+Exemples :
 
-Apres une modification du socle console dans `index.html`, lancer :
+- `pilotage-livepalmes.html` : acces global au pilotage ;
+- `live.html` : console Live ;
+- `speaker.html` : console Speaker ;
+- `ja.html` : console Juge Arbitre ;
+- `video.html` : console Juge Video ;
+- `bureau-perf.html` : bureau des performances ;
+- `secretariat.html` : secretariat.
+
+Ces pages utilisent le moteur interne de LivePalmes :
+
+- `app.js` ;
+- les modules `assets/livepalmes-*.js` ;
+- Firebase Authentication ;
+- Firestore ;
+- les Cloud Functions.
+
+Elles peuvent lire et ecrire des donnees, selon les droits de l'utilisateur.
+
+### 2. Les pages publiques
+
+Ces pages sont faites pour les visiteurs, nageurs, clubs, entraineurs et familles.
+
+Exemples :
+
+- `public.html` ou `/` : accueil public ;
+- `series-public.html` ou `/series` : series publiees ;
+- `resultats.html` ou `/resultats` : resultats publies ;
+- `medailles.html` : tableau des medailles ;
+- `archives.html` : archives.
+
+Ces pages utilisent surtout :
+
+- `public.css` ;
+- les scripts `assets/pages/*.js` ;
+- des donnees publiees dans Firebase ou dans des fichiers publics.
+
+Elles ne chargent pas `app.js`.
+
+Elles ne doivent pas permettre de piloter la competition.
+
+## Relation entre pilotage et public
+
+La partie pilotage et les pages publiques sont separees cote interface.
+
+Mais elles partagent certaines donnees, ce qui est normal.
+
+Schema simple :
+
+```text
+Consoles de pilotage
+  -> publient series, resultats, medailles, archives
+  -> Firebase / fichiers publics
+  -> pages publiques affichent ces informations
+```
+
+Autrement dit :
+
+- le pilotage ecrit les informations ;
+- Firebase ou les fichiers publics servent de tableau d'affichage ;
+- les pages publiques lisent et affichent.
+
+Une erreur de publication cote pilotage peut donc etre visible cote public.
+
+Mais un visiteur public ne doit pas pouvoir modifier ou piloter la competition.
+
+## Organisation des fichiers
+
+### Pages HTML principales
+
+- `index.html` : accueil historique et acces aux consoles ;
+- `public.html` : accueil public ;
+- `pilotage-livepalmes.html` : page de pilotage ;
+- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : consoles dediees ;
+- `resultats.html`, `series-public.html`, `medailles.html`, `archives.html` : pages publiques ;
+- `pdf.html`, `resultat-pdf.html`, `series-pdf.html` : vues PDF.
+
+### Styles
+
+- `styles.css` : styles communs ;
+- `console.css` : styles des consoles internes ;
+- `public.css` : styles des pages publiques ;
+- `assets/livepalmes-admin-portal.css` : administration ;
+- `performances/public/styles.css` : espace performances.
+
+### JavaScript des consoles
+
+- `app.js` : assembleur principal des consoles ;
+- `assets/livepalmes-app-*.js` : demarrage, etat, stockage, modules, DOM ;
+- `assets/livepalmes-ui-*.js` : boutons et interactions ;
+- `assets/livepalmes-series-*.js` : import et gestion des series ;
+- `assets/livepalmes-results-*.js` : resultats et publication ;
+- `assets/livepalmes-result-*.js` : lecture PDF, publication, maintenance ;
+- `assets/livepalmes-final-*.js` : finalistes, forfaits, repechages ;
+- `assets/livepalmes-admin-*.js` : administration ;
+- `assets/livepalmes-publication.js` : preparation des donnees publiees ;
+- `assets/livepalmes-firestore-refs.js` : acces aux chemins Firestore.
+
+Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y remettre de grosse logique metier.
+
+### JavaScript des pages publiques
+
+- `assets/pages/public-home.js` ;
+- `assets/pages/series-public.js` ;
+- `assets/pages/resultats.js` ;
+- `assets/pages/medailles.js` ;
+- `assets/pages/archives.js` ;
+- `assets/pages/pdf.js` ;
+- `assets/pages/resultat-pdf.js` ;
+- `assets/pages/series-pdf.js`.
+
+Ces fichiers doivent rester separes du pilotage autant que possible.
+
+### Espace performances
+
+Le dossier `performances/` contient les pages liees aux performances historiques :
+
+- records ;
+- MPF ;
+- TOP ;
+- fiches nageurs ;
+- import et administration.
+
+Les visiteurs ne doivent pas lire directement une enorme base Firestore pour ces pages.
+
+Les pages publiques utilisent des fichiers optimises dans :
+
+```text
+performances/public/data/
+```
+
+## Donnees et Firebase
+
+Firebase est utilise pour :
+
+- Firestore ;
+- Firebase Authentication ;
+- Cloud Functions ;
+- Firebase Hosting.
+
+La configuration principale est dans :
+
+- `firebase.json` ;
+- `firestore.rules` ;
+- `assets/livepalmes-app-config.js` ;
+- `functions/index.js`.
+
+### Donnees de competition
+
+Les donnees actives sont rattachees a une competition Firestore.
+
+La competition principale actuelle est :
+
+```text
+competitions/livepalmes-active
+```
+
+On y trouve notamment :
+
+- les donnees live ;
+- les resultats publics ;
+- les series PDF ;
+- les resultats PDF ;
+- les archives ;
+- les presences ;
+- les verrous de roles ;
+- les records et MPF.
+
+### Records et MPF
+
+La source officielle des Records / MPF est :
+
+```text
+competitions/livepalmes-active/performanceData/records
+```
+
+Il existe aussi un fichier de secours statique :
+
+```text
+performances/public/data/records-data.js
+```
+
+Apres une modification officielle des Records / MPF, il faut synchroniser ce fichier de secours avec :
+
+```powershell
+node tools/sync-records-from-firestore.js --write
+```
+
+### Performances historiques
+
+Les performances historiques peuvent representer plusieurs centaines de milliers de lignes.
+
+Il ne faut donc pas brancher une page publique directement sur une grosse requete Firestore.
+
+Le principe a respecter est :
+
+```text
+Administration / import / correction
+  -> base interne ou donnees de travail
+  -> generation de fichiers publics optimises
+  -> lecture rapide par les visiteurs
+```
+
+## Cloud Functions
+
+Les Cloud Functions sont dans :
+
+```text
+functions/index.js
+```
+
+Elles utilisent Node.js 20.
+
+Elles gerent notamment :
+
+- les PIN des roles ;
+- les droits d'acces ;
+- l'administration des utilisateurs ;
+- les imports de competitions ;
+- les imports et corrections de performances ;
+- la publication de donnees publiques de performances ;
+- certaines operations longues ou sensibles.
+
+Ces fonctions font partie des zones sensibles.
+
+## Pages consoles generees
+
+Les pages consoles dediees sont generees depuis `index.html`.
+
+Commande :
 
 ```powershell
 node tools/build-console-pages.js
 ```
 
-Le controle `node tools/verify-livepalmes.js` verifie que ces pages sont synchronisees.
+Pages concernees :
 
-Le controle `tools/check-console-page-loads.js` mesure aussi les scripts charges par chaque page dediee et verifie les exclusions par role. Il sert de compteur avant de retirer d'autres modules inutiles.
+- `live.html` ;
+- `speaker.html` ;
+- `ja.html` ;
+- `video.html` ;
+- `bureau-perf.html` ;
+- `secretariat.html`.
+
+Apres une modification du socle console dans `index.html`, il faut regenerer ou verifier ces pages.
+
+La verification globale le controle automatiquement.
 
 ## Zones sensibles
 
-Ces zones doivent etre modifiees avec prudence :
+Ces zones doivent etre modifiees avec prudence.
 
-- Import PDF series : `assets/livepalmes-series-import.js`.
-- Lecture PDF resultats : `assets/livepalmes-result-parser.js`.
-- Finalistes et repechages : `assets/livepalmes-final-withdrawals-workflow.js`.
-- Publication Firebase : `app.js`, `assets/livepalmes-results-admin-workflow.js`, `assets/livepalmes-publication.js`.
-- Regles Firestore : `firestore.rules`.
+Demander validation avant une modification importante sur :
 
-Avant de modifier ces zones, il faut faire les tests manuels du fichier `TESTS_MANUELS.md`.
+- authentification ;
+- codes PIN ;
+- droits d'acces ;
+- regles Firestore ;
+- configuration Firebase ;
+- Cloud Functions ;
+- structure des donnees Firestore ;
+- import PDF des series ;
+- lecture PDF des resultats ;
+- publication des resultats ;
+- finalistes, forfaits, repechages ;
+- records et MPF ;
+- categories sportives ;
+- classements ;
+- medailles ;
+- performances historiques ;
+- fichiers generes dans `performances/public/data/` ;
+- cache et rewrites dans `firebase.json`.
 
-## Etat actuel
+## Regles simples pour modifier LivePalmes
 
-Le code est nettement plus sain qu'avant :
+1. Identifier si la demande concerne le pilotage, le public, les performances ou Firebase.
+2. Lire le fichier existant le plus proche du besoin.
+3. Modifier le plus petit nombre de fichiers possible.
+4. Ne pas creer une nouvelle architecture si un module existe deja.
+5. Ne pas ajouter de grosse logique metier dans `app.js`.
+6. Ne pas brancher les pages publiques sur des lectures Firestore volumineuses.
+7. Verifier avant de publier.
 
-- `app.js` est passe sous 2500 lignes.
-- Les gros domaines sont separes.
-- Les pages publiques partagent une partie de la logique nageur.
-- Les diagnostics et la maintenance sont isoles.
-- Les pages dediees par console existent sans supprimer l'acces historique depuis `index.html`.
+## Verification technique
 
-Il reste encore des points a ameliorer :
+La commande principale est :
 
-- Il ne reste plus d'acces implicite `with (context)`.
-- Il y a peu de tests automatiques.
-- Les imports PDF restent complexes car les formats PDF changent selon les competitions.
-
-## Regle simple pour modifier LivePalmes
-
-1. Identifier le domaine concerne.
-2. Modifier le plus petit fichier possible.
-3. Lancer `node tools/verify-livepalmes.js`.
-4. Faire les tests manuels importants.
-5. Publier seulement quand les controles sont bons.
-
-## Commande de verification
-
-La commande `node tools/verify-livepalmes.js` est le controle technique rapide a lancer avant publication.
+```powershell
+node tools/verify-livepalmes.js
+```
 
 Elle verifie :
 
-- la syntaxe de tous les fichiers JavaScript suivis dans le projet ;
-- les tests automatiques de base ;
-- les regressions connues de lecture des resultats PDF ;
-- les textes HTML visibles pour eviter le retour de caracteres casses ;
-- les garde-fous d'architecture, dont `app.js` sous 1000 lignes utiles ;
-- les erreurs d'espaces detectees par Git.
+- la syntaxe JavaScript ;
+- les tests automatiques ;
+- les textes visibles casses ;
+- les garde-fous d'architecture ;
+- la synchronisation des pages consoles generees ;
+- les scripts charges par role ;
+- les erreurs d'espaces Git quand Git est disponible.
 
-## Garde-fous automatiques
+Pour ajouter un test navigateur :
 
-Les fichiers `tools/check-livepalmes-text.js` et `tools/check-livepalmes-architecture.js` sont volontairement simples.
+```powershell
+node tools/verify-livepalmes.js --browser
+```
 
-Ils ne remplacent pas les tests manuels, mais ils evitent deux regressions dangereuses :
+## Tests manuels
 
-- publier une page avec des caracteres visibles casses ;
-- refaire grossir `app.js` ou remettre une logique trop fragile dans le coeur de l'application.
+Les tests automatiques ne suffisent pas pour tout.
 
-Si l'un de ces controles bloque, il faut corriger la cause avant de publier.
+Apres une modification sensible, consulter :
+
+```text
+docs/TESTS_MANUELS.md
+```
+
+Tester manuellement en particulier apres une modification sur :
+
+- PDF ;
+- resultats ;
+- series ;
+- finalistes ;
+- medailles ;
+- records / MPF ;
+- Firebase ;
+- droits d'acces ;
+- pages publiques.
+
+## Resume ultra court
+
+```text
+Pilotage competition
+  -> ecrit et publie
+  -> Firebase / fichiers publics
+  -> pages publiques lisent et affichent
+```
+
+Le pilotage et le public sont separes cote interface.
+
+Ils sont relies par les donnees publiees.
+
+Les pages publiques ne doivent jamais devenir des pages de pilotage.

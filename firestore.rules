@@ -46,28 +46,11 @@ service cloud.firestore {
       return isAdmin() || hasCapability("admin.full") || hasCapability("records.manage");
     }
 
-    function isConsoleRole(competitionId, role) {
-      return request.auth != null
-        && validRole(role)
-        && request.auth.token.livepalmesConsole == true
-        && request.auth.token.livepalmesCompetition == competitionId
-        && request.auth.token.livepalmesRole == role;
-    }
-
     function isAnyConsoleRole(competitionId) {
       return request.auth != null
         && validRole(request.auth.token.livepalmesRole)
         && request.auth.token.livepalmesConsole == true
         && request.auth.token.livepalmesCompetition == competitionId;
-    }
-
-    function isConsoleGrant(competitionId, role) {
-      return request.auth != null
-        && validRole(role)
-        && exists(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid))
-        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.role == role
-        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.competitionId == competitionId
-        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
     }
 
     function isAnyConsoleGrant(competitionId) {
@@ -78,19 +61,19 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
     }
 
-    function isAuthenticatedConsole() {
-      return request.auth != null;
+    function canReadConsole(competitionId) {
+      return isAdmin() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
     }
 
     function canWriteConsole(competitionId) {
-      return isAdmin() || isAuthenticatedConsole() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
+      return canReadConsole(competitionId);
     }
 
     function canWriteComputer(competitionId) {
       return canWriteConsole(competitionId);
     }
 
-    function canWriteRole(competitionId, role) {
+    function canWriteRole(competitionId) {
       return canWriteConsole(competitionId);
     }
 
@@ -126,7 +109,8 @@ service cloud.firestore {
       }
 
       match /alerts/{alertId} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteConsole(competitionId)
           && request.resource.data.keys().hasAny(["id"])
@@ -142,7 +126,8 @@ service cloud.firestore {
       }
 
       match /summaries/{documentId} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteConsole(competitionId)
           && documentId == "alerts"
@@ -155,7 +140,8 @@ service cloud.firestore {
       }
 
       match /liveData/{documentId} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteConsole(competitionId)
           && documentId == "current";
@@ -174,10 +160,10 @@ service cloud.firestore {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && documentId == "resultsIndex";
+          && documentId in ["resultsIndex", "seriesIndex"];
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && documentId == "resultsIndex"
+          && documentId in ["resultsIndex", "seriesIndex"]
           && request.resource.data.keys().hasOnly([
             "id",
             "meet",
@@ -197,7 +183,7 @@ service cloud.firestore {
             "sourceLabel",
             "lastUpdatedSession"
           ])
-          && request.resource.data.id == "resultsIndex"
+          && request.resource.data.id == documentId
           && request.resource.data.meet is map
           && request.resource.data.events is list
           && request.resource.data.program is list
@@ -299,10 +285,11 @@ service cloud.firestore {
       }
 
       match /roleLocks/{role} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && validRole(role)
-          && canWriteRole(competitionId, role)
+          && canWriteRole(competitionId)
           && request.resource.data.keys().hasOnly([
             "role",
             "clientId",
@@ -331,11 +318,12 @@ service cloud.firestore {
           );
         allow delete: if isLivePalmesCompetition(competitionId)
           && validRole(role)
-          && canWriteRole(competitionId, role);
+          && canWriteRole(competitionId);
       }
 
       match /presence/{presenceId} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -349,7 +337,7 @@ service cloud.firestore {
           && validText(presenceId, 180)
           && validText(request.resource.data.clientId, 120)
           && validPresenceRole(request.resource.data.role)
-          && canWriteRole(competitionId, request.resource.data.role)
+          && canWriteRole(competitionId)
           && request.resource.data.page == "console"
           && validText(request.resource.data.updatedAt, 40)
           && validText(request.resource.data.expiresAt, 40);
@@ -436,6 +424,22 @@ service cloud.firestore {
             && validText(request.resource.data.pdfName, 220)
             && validOptionalText("pdfDataUrl", 900000)
             && validText(request.resource.data.updatedAt, 40);
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
+        }
+
+        match /races/{raceId} {
+          allow read: if isLivePalmesCompetition(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
+        }
+
+        match /extras/{extraId} {
+          allow read: if isLivePalmesCompetition(competitionId);
+          allow create, update: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
           allow delete: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId);
         }
@@ -533,7 +537,8 @@ service cloud.firestore {
       }
 
       match /results/{resultId} {
-        allow read: if isLivePalmesCompetition(competitionId);
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)

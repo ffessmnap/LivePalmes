@@ -3,6 +3,7 @@ const reference = window.LIVEPALMES_ADMIN_REFERENCE || { swimmers: [], clubs: []
 const MASTER_RELAY_CATEGORY = window.LivePalmesRecordPlaceholders?.masterRelayCategory || "MASTER_RELAYS_MIXED";
 const MASTER_RELAY_LABEL = window.LivePalmesRecordPlaceholders?.masterRelayLabel || "Relais Masters mixtes";
 const RECORD_HISTORY_LIMIT = 50;
+const RECORD_ALERT_DRAFT_STORAGE_KEY = "livepalmes:record-alert-drafts";
 let adminAuth = null;
 let currentAccessUser = null;
 let currentAccessUserLoading = false;
@@ -40,6 +41,9 @@ const elements = {
   fieldTime: document.querySelector("#recordTime"),
   fieldNameLabel: document.querySelector("#recordNameLabel"),
   fieldName: document.querySelector("#recordName"),
+  fieldBirthDateWrap: document.querySelector("#recordBirthDateField"),
+  fieldBirthDate: document.querySelector("#recordBirthDate"),
+  fieldBirthDateHelp: document.querySelector("#recordBirthDateHelp"),
   fieldClub: document.querySelector("#recordClub"),
   fieldDate: document.querySelector("#recordDate"),
   fieldLocation: document.querySelector("#recordLocation"),
@@ -54,6 +58,8 @@ const elements = {
   mpfGlobalAlertText: document.querySelector("#mpfGlobalAlertText"),
   mpfGlobalAlertList: document.querySelector("#mpfGlobalAlertList"),
   saveDraft: document.querySelector("#saveDraftButton"),
+  saveTieDraft: document.querySelector("#saveTieDraftButton"),
+  deleteDraft: document.querySelector("#deleteDraftButton"),
   validate: document.querySelector("#validateButton"),
   newRecord: document.querySelector("#newRecordButton"),
   publish: document.querySelector("#publishButton"),
@@ -189,14 +195,14 @@ async function loadLocalRecordsData() {
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `public/data/records-data.js?v=20260603-record-splits-1&reload=${Date.now()}`;
+    script.src = `public/data/records-data.js?v=records-firestore-20260613220745&reload=${Date.now()}`;
     script.onload = () => resolve();
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   try {
-    const response = await fetch("public/data/records-data.js?v=20260603-record-splits-1", { cache: "no-store" });
+    const response = await fetch("public/data/records-data.js?v=records-firestore-20260613220745", { cache: "no-store" });
     if (!response.ok) return window.LIVEPALMES_RECORDS || {};
     const text = await response.text();
     const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
@@ -362,19 +368,145 @@ function displayCourseShortLabel(label, course = "") {
 }
 
 function displayClub(row) {
-  if (row.scope === "MPF" && row.style === "RELAY_FRANCE" && isMasterRelayRow(row)) return row.club || "FFESSM";
+  if (row.scope === "MPF" && row.style === "RELAY_FRANCE") return row.club || "FFESSM";
   if (row.style === "RELAY_FRANCE" && ["RF", "RFJ"].includes(row.scope)) {
-    const club = String(row.club || "");
-    if (row.scope === "RFJ" || row.category === "J" || /^EDF\s*J\b/i.test(club) || /^EDFJ\b/i.test(club)) {
-      return "Equipe de France Junior";
-    }
-    return "Equipe de France";
+    return "FFESSM";
   }
   return row.club || "-";
 }
 
 function isMixedRelay(row) {
-  return row.kind !== "individual" && (isMasterRelayRow(row) || /(?:BIX|SB)$/.test(row.course || ""));
+  return row.kind !== "individual" && (
+    row.mixedRelay === true
+    || isMasterRelayRow(row)
+    || (["RF", "RFJ", "MPF"].includes(row.scope) && /(?:BIX|SB)$/.test(row.course || ""))
+  );
+}
+
+function isRelayRow(row = {}) {
+  return row.kind !== "individual" || String(row.style || "").startsWith("RELAY") || /^4X/i.test(String(row.course || ""));
+}
+
+function formatRelayInitials(value) {
+  return String(value || "")
+    .replace(/\./g, "")
+    .replace(/\s+/g, "")
+    .split("")
+    .filter(Boolean)
+    .map((letter) => `${letter.toLocaleUpperCase("fr-FR")}.`)
+    .join("");
+}
+
+function formatRelaySwimmerName(value) {
+  const cleaned = String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^[/-]+|[/-]+$/g, "")
+    .trim();
+  if (!cleaned || cleaned.toLocaleLowerCase("fr-FR").includes("tablir")) return cleaned;
+
+  const compactInitials = cleaned.match(/^((?:\p{L}\.){1,4})\s+(.+)$/u);
+  if (compactInitials) {
+    return `${formatRelayInitials(compactInitials[1])} ${compactInitials[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const gluedInitial = cleaned.match(/^(\p{L})\.\s*(\p{L}{2,}.*)$/u);
+  if (gluedInitial) {
+    return `${formatRelayInitials(gluedInitial[1])} ${gluedInitial[2].toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  const trailingInitial = tokens.length >= 2 && /^\p{L}\.?$/u.test(tokens[tokens.length - 1]);
+  if (trailingInitial && tokens.slice(0, -1).some((token) => token.replace(/[.'-]/g, "").length > 1)) {
+    const initial = tokens.pop();
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const trailingFirstName = tokens.length >= 2 &&
+    tokens.slice(0, -1).every((token) => token === token.toLocaleUpperCase("fr-FR") && /\p{L}/u.test(token)) &&
+    tokens[tokens.length - 1] !== tokens[tokens.length - 1].toLocaleUpperCase("fr-FR");
+  if (trailingFirstName) {
+    const firstName = tokens.pop();
+    const initial = firstName.match(/\p{L}/u)?.[0] || "";
+    return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+
+  const initials = [];
+  while (tokens.length && /^\p{L}\.?$/u.test(tokens[0])) {
+    initials.push(tokens.shift());
+  }
+  if (initials.length && tokens.length) {
+    return `${formatRelayInitials(initials.join(""))} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+  }
+  if (tokens.length < 2) return cleaned.toLocaleUpperCase("fr-FR");
+
+  const firstName = tokens.shift();
+  const initial = firstName.match(/\p{L}/u)?.[0] || "";
+  return `${formatRelayInitials(initial)} ${tokens.join(" ").toLocaleUpperCase("fr-FR")}`;
+}
+
+function formatRelaySwimmerList(value) {
+  const cleaned = String(value || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  return cleaned
+    .split(/\s*\/\s*/)
+    .map(formatRelaySwimmerName)
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function displayRecordSwimmer(row = {}) {
+  return isRelayRow(row) ? formatRelaySwimmerList(row.swimmer) : (row.swimmer || "");
+}
+
+function isSharedMixedRelayRow(row) {
+  return ["RF", "RFJ", "MPF"].includes(row.scope) && row.kind !== "individual" && /(?:BIX|SB)$/.test(String(row.course || ""));
+}
+
+function mixedRelayPairKey(row) {
+  return [
+    row.scope || "",
+    row.style || "",
+    row.category || "",
+    row.course || ""
+  ].join("|");
+}
+
+function normalizeMixedRelayPublishRows(rows) {
+  const groups = new Map();
+  rows.filter(isSharedMixedRelayRow).forEach((row) => {
+    const key = mixedRelayPairKey(row);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+
+  const canonical = new Map();
+  groups.forEach((items, key) => {
+    canonical.set(key, items.slice().sort((a, b) =>
+      (parseTimeValue(a.time) ?? 999999999) - (parseTimeValue(b.time) ?? 999999999)
+      || String(a.date || "").localeCompare(String(b.date || ""), "fr-FR")
+      || String(a.id || "").localeCompare(String(b.id || ""), "fr-FR")
+    )[0]);
+  });
+
+  return rows.map((row) => {
+    if (!isSharedMixedRelayRow(row)) return row;
+    const best = canonical.get(mixedRelayPairKey(row));
+    if (!best) return row;
+    return {
+      ...row,
+      time: best.time,
+      rawTime: best.rawTime,
+      value: parseTimeValue(best.time) ?? best.value ?? row.value,
+      swimmer: best.swimmer,
+      club: best.club,
+      location: best.location,
+      date: best.date,
+      source: best.source,
+      note: best.note,
+      intermediateTimes: best.intermediateTimes,
+      mixedRelay: true
+    };
+  });
 }
 
 function nameFieldLabel(row) {
@@ -405,6 +537,97 @@ function updateSwimmerOptions(row) {
     .join("");
 }
 
+function normalizeLookup(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .toUpperCase()
+    .trim();
+}
+
+function isUsableBirthDate(value) {
+  return /^(19|20)\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+
+function normalizeBirthDateInput(value) {
+  const clean = String(value || "").trim();
+  if (/^(19|20)\d{2}$/.test(clean)) return `${clean}-01-01`;
+  if (/^(19|20)\d{2}-\d{2}-\d{2}$/.test(clean)) return clean;
+  const french = clean.match(/^(\d{2})\/(\d{2})\/((?:19|20)\d{2})$/);
+  return french ? `${french[3]}-${french[2]}-${french[1]}` : "";
+}
+
+function clubIdForCode(code) {
+  const normalized = normalizeLookup(code);
+  if (!normalized) return "";
+  return String((reference.clubs || []).find((club) => normalizeLookup(club[1]) === normalized)?.[0] || "");
+}
+
+function uniqueBirthDate(swimmers) {
+  const dates = Array.from(new Set(swimmers.map((swimmer) => swimmer[3]).filter(isUsableBirthDate)));
+  return dates.length === 1 ? dates[0] : "";
+}
+
+function swimmerBirthDateForRow(row) {
+  if (!row || row.kind !== "individual") return "";
+  const name = normalizeLookup(row.swimmer);
+  if (!name || name === "A ETABLIR") return "";
+  const allowedSexes = new Set(allowedSwimmerSexes(row));
+  const candidates = (reference.swimmers || [])
+    .filter((swimmer) => normalizeLookup(swimmer[1]) === name)
+    .filter((swimmer) => allowedSexes.has(swimmer[2]))
+    .filter((swimmer) => isUsableBirthDate(swimmer[3]));
+  if (!candidates.length) return "";
+
+  const clubId = clubIdForCode(row.club);
+  if (clubId) {
+    const clubBirthDate = uniqueBirthDate(candidates.filter((swimmer) => String(swimmer[4]) === clubId));
+    if (clubBirthDate) return clubBirthDate;
+  }
+  return uniqueBirthDate(candidates);
+}
+
+function editorPreviewRow() {
+  return {
+    id: state.selectedId || "",
+    scope: elements.fieldScope.value,
+    sex: elements.fieldSex.value,
+    category: elements.fieldCategory.value,
+    kind: elements.fieldKind.value,
+    course: elements.fieldCourse.value,
+    swimmer: elements.fieldName.value.trim(),
+    club: elements.fieldClub.value.trim()
+  };
+}
+
+function updateBirthDateField(row = editorPreviewRow()) {
+  if (!elements.fieldBirthDate || !elements.fieldBirthDateWrap) return "";
+  const resolved = swimmerBirthDateForRow(row);
+  const current = allRows().find((item) => item.id === state.selectedId);
+  const sameSwimmer = current &&
+    normalizeLookup(current.swimmer) === normalizeLookup(row.swimmer) &&
+    current.sex === row.sex &&
+    current.kind === row.kind;
+  const currentBirthDate = sameSwimmer && isUsableBirthDate(current.birthDate) ? current.birthDate : "";
+  const manualBirthDate = normalizeBirthDateInput(elements.fieldBirthDate.value);
+  const nextBirthDate = resolved || currentBirthDate || manualBirthDate;
+
+  elements.fieldBirthDate.value = nextBirthDate || "";
+  const needsManualBirthDate = row.kind === "individual" &&
+    normalizeLookup(row.swimmer) &&
+    normalizeLookup(row.swimmer) !== "A ETABLIR" &&
+    !resolved &&
+    !currentBirthDate;
+  elements.fieldBirthDateWrap.hidden = !needsManualBirthDate;
+  if (elements.fieldBirthDateHelp) {
+    elements.fieldBirthDateHelp.textContent = needsManualBirthDate
+      ? "Saisissez seulement l'année si la date complète n'est pas connue."
+      : "Date de naissance reconnue automatiquement.";
+  }
+  return nextBirthDate;
+}
+
 function categoryCode(category, sex) {
   if (/^R\d+$/.test(String(category || ""))) return String(category).replace(/^R/, "X");
   const prefix = sex === "M" ? "H" : "F";
@@ -430,9 +653,9 @@ function normalizedCategoryForPublish(row) {
 }
 
 function normalizedClubForPublish(row) {
-  if (row.scope === "MPF" && row.style === "RELAY_FRANCE" && isMasterRelayRow(row)) return row.club || "FFESSM";
+  if (row.scope === "MPF" && row.style === "RELAY_FRANCE") return row.club || "FFESSM";
   if (row.style === "RELAY_FRANCE" && ["RF", "RFJ"].includes(row.scope)) {
-    return row.scope === "RFJ" ? "Equipe de France Junior" : "Equipe de France";
+    return "FFESSM";
   }
   return row.club || "";
 }
@@ -511,6 +734,131 @@ function normalizeTimeInput(value) {
   if (seconds >= 60 || centiseconds >= 100) return cleaned;
 
   return minutes > 0 ? `${minutes}:${compact[2]}.${compact[3]}` : `${seconds}.${compact[3]}`;
+}
+
+function keySafePart(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "ligne";
+}
+
+function comparableText(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function readQueuedRecordAlertDrafts() {
+  try {
+    const parsed = JSON.parse(window.localStorage?.getItem(RECORD_ALERT_DRAFT_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeQueuedRecordAlertDrafts(rows) {
+  try {
+    window.localStorage?.setItem(RECORD_ALERT_DRAFT_STORAGE_KEY, JSON.stringify(rows.slice(0, 100)));
+  } catch {
+    // Les brouillons deja charges restent disponibles dans la session courante.
+  }
+}
+
+function clearQueuedRecordAlertDrafts(sourceKeys = []) {
+  const keys = new Set(sourceKeys.filter(Boolean));
+  if (!keys.size) return;
+  writeQueuedRecordAlertDrafts(readQueuedRecordAlertDrafts().filter((row) => !keys.has(row.sourceKey)));
+}
+
+function findRecordAlertDraftTarget(draft = {}) {
+  const referenceKey = String(draft.referenceKey || "").trim();
+  if (referenceKey) {
+    const exact = sourceRows.find((row) => row.id === referenceKey || row.key === referenceKey);
+    if (exact) return exact;
+  }
+  return sourceRows.find((row) =>
+    row.scope === draft.scope &&
+    row.sex === draft.sex &&
+    row.category === draft.category &&
+    row.course === draft.course &&
+    row.kind === "individual"
+  ) || null;
+}
+
+function queuedDraftMatchesExistingRecord(target, draft = {}) {
+  if (!target) return false;
+  return parseTimeValue(target.time) === parseTimeValue(draft.time) &&
+    comparableText(target.swimmer) === comparableText(draft.swimmer) &&
+    String(target.date || "") === String(draft.date || "");
+}
+
+function queuedRecordAlertDraftId(draft = {}) {
+  return [
+    "new",
+    "alert",
+    keySafePart(draft.sourceKey),
+    keySafePart(draft.scope),
+    keySafePart(draft.sex),
+    keySafePart(draft.category),
+    keySafePart(draft.course)
+  ].join("|");
+}
+
+function rowFromQueuedRecordAlertDraft(draft = {}) {
+  if (!draft.scope || !draft.sex || !draft.category || !draft.course || !draft.time) return null;
+  const target = findRecordAlertDraftTarget(draft);
+  if (draft.alertStatus === "equal" && queuedDraftMatchesExistingRecord(target, draft)) return null;
+  const createTie = draft.alertStatus === "equal" && target;
+  const id = createTie ? queuedRecordAlertDraftId(draft) : (target?.id || queuedRecordAlertDraftId(draft));
+  const row = {
+    ...(createTie ? {} : (target || {})),
+    id,
+    scope: draft.scope,
+    adminKind: draft.scope,
+    recordType: draft.scope === "MPF" ? "" : draft.scope,
+    sex: draft.sex,
+    category: draft.category,
+    kind: "individual",
+    style: draft.style || String(draft.course).match(/[A-Z]+$/)?.[0] || "",
+    course: draft.course,
+    courseLabel: courseLabel(draft.course),
+    courseShortLabel: courseShortLabel(draft.course),
+    time: normalizeTimeInput(draft.time),
+    swimmer: draft.swimmer || "",
+    birthDate: normalizeBirthDateInput(draft.birthDate || "") || draft.birthDate || "",
+    club: draft.club || "",
+    date: draft.date || "",
+    location: draft.location || "",
+    source: "import-alert",
+    note: [draft.note, createTie ? "Ex aequo" : "", draft.competitionName].filter(Boolean).join(" · "),
+    status: "Brouillon",
+    recordAlertSourceKey: draft.sourceKey || ""
+  };
+  if (createTie || !target) {
+    row.key = `manual-alert|${keySafePart(draft.sourceKey)}|${keySafePart(draft.scope)}|${keySafePart(draft.course)}|${keySafePart(draft.swimmer)}|${keySafePart(draft.date)}`;
+  }
+  return row;
+}
+
+function applyQueuedRecordAlertDrafts() {
+  const queued = readQueuedRecordAlertDrafts();
+  if (!queued.length) return;
+  const converted = queued.map((draft) => ({ draft, row: rowFromQueuedRecordAlertDraft(draft) }));
+  const appliedRows = converted.map((item) => item.row).filter(Boolean);
+  clearQueuedRecordAlertDrafts(converted.filter((item) => !item.row).map((item) => item.draft.sourceKey));
+  if (!appliedRows.length) return;
+  appliedRows.forEach((row) => state.drafts.set(row.id, row));
+  openRestoredDraft(appliedRows[0]);
 }
 
 function isoDate(value) {
@@ -712,7 +1060,7 @@ function draftSummaryLine(row) {
   if (!row) return "Ligne supprimée";
   return [
     row.time || "À établir",
-    row.swimmer || "-",
+    displayRecordSwimmer(row) || "-",
     row.club || "-",
     formatDate(row.date)
   ].join(" · ");
@@ -774,7 +1122,9 @@ function openDraft(id) {
 }
 
 function removeDraft(id) {
+  const draft = state.drafts.get(id);
   state.drafts.delete(id);
+  clearQueuedRecordAlertDrafts([draft?.recordAlertSourceKey]);
   if (state.selectedId === id) state.selectedId = "";
   renderTable();
 }
@@ -793,15 +1143,34 @@ function setDraftIfChanged(id, value) {
   }
 }
 
+function recordTieKey(row) {
+  return [
+    row.scope || "",
+    row.recordType || "",
+    row.sex || "",
+    normalizedCategoryForPublish(row),
+    row.style || "",
+    row.course || "",
+    normalizeTimeInput(row.time || "")
+  ].join("|");
+}
+
+function hasTie(row, rows = allRows()) {
+  const key = recordTieKey(row);
+  if (!normalizeTimeInput(row.time || "")) return false;
+  return rows.filter((item) => item.id !== row.id && recordTieKey(item) === key).length > 0;
+}
+
 function renderAdminRow(row) {
   const selected = row.id === state.selectedId;
   const mixed = isMixedRelay(row);
   const displayClubValue = displayClub(row);
+  const tieBadge = hasTie(row) ? `<span class="record-tie-badge">Ex aequo</span>` : "";
   const rowHtml = `
     <tr class="admin-table-row sex-${row.sex.toLowerCase()}${selected ? " active" : ""}${mixed ? " relay-mixed" : ""}" data-id="${row.id}">
       <td data-label="Course"><strong>${courseShortLabel(row.course)}</strong>${mixed ? `<span>Mixte</span>` : ""}</td>
-      <td class="time" data-label="Temps">${row.time || "-"}</td>
-      <td data-label="Nageur / relais"><strong>${row.swimmer || "-"}</strong></td>
+      <td class="time" data-label="Temps">${row.time || "-"}${tieBadge}</td>
+      <td data-label="Nageur / relais"><strong>${displayRecordSwimmer(row) || "-"}</strong></td>
       <td data-label="Catégorie">${categoryCode(row.category, row.sex)}</td>
       <td data-label="Club">${displayClubValue}</td>
       <td data-label="Lieu">${row.location || "-"}</td>
@@ -823,13 +1192,15 @@ function resetEditor() {
   elements.editorTitle.textContent = "Sélectionnez une ligne";
   elements.editorSubtitle.textContent = "Les modifications restent en brouillon jusqu'à publication.";
   elements.editorStatus.textContent = "-";
-  [elements.fieldTime, elements.fieldName, elements.fieldClub, elements.fieldDate, elements.fieldLocation, elements.fieldNote].forEach((field) => {
+  [elements.fieldTime, elements.fieldName, elements.fieldBirthDate, elements.fieldClub, elements.fieldDate, elements.fieldLocation, elements.fieldNote].filter(Boolean).forEach((field) => {
     field.value = "";
   });
+  if (elements.fieldBirthDateWrap) elements.fieldBirthDateWrap.hidden = true;
   if (elements.mpfSyncAlert) {
     elements.mpfSyncAlert.hidden = true;
     elements.mpfSyncCheckbox.checked = false;
   }
+  if (elements.deleteDraft) elements.deleteDraft.disabled = true;
 }
 
 function selectRow(id) {
@@ -854,6 +1225,7 @@ function fillEditor(row) {
   elements.editorSubtitle.textContent = `${row.sex === "M" ? "Hommes" : "Femmes"} · ${categoryLabel(row.category, row.sex)} · ${courseLabel(row.course)}`;
   elements.editorStatus.textContent = rowStatus(row);
   if (elements.fieldNameLabel) elements.fieldNameLabel.textContent = nameFieldLabel(row);
+  if (elements.deleteDraft) elements.deleteDraft.disabled = false;
   updateSwimmerOptions(row);
   elements.fieldScope.value = row.scope;
   elements.fieldSex.value = row.sex;
@@ -862,11 +1234,13 @@ function fillEditor(row) {
   elements.fieldCourse.value = row.course;
   elements.fieldTime.value = row.time || "";
   elements.fieldName.value = row.swimmer || "";
+  if (elements.fieldBirthDate) elements.fieldBirthDate.value = row.birthDate || "";
   elements.fieldClub.value = row.club || "";
   elements.fieldDate.value = isoDate(row.date);
   elements.fieldLocation.value = row.location || "";
   elements.fieldSource.value = row.source || "frozen";
   elements.fieldNote.value = row.note || "";
+  updateBirthDateField(row);
   updateMpfSyncAlert();
 }
 
@@ -890,6 +1264,7 @@ function editorValue(status = "Brouillon") {
     courseShortLabel: courseShortLabel(course),
     time: normalizedTime,
     swimmer: elements.fieldName.value.trim(),
+    birthDate: elements.fieldBirthDate ? updateBirthDateField(editorPreviewRow()) : "",
     club: elements.fieldClub.value.trim(),
     date: elements.fieldDate.value,
     location: elements.fieldLocation.value.trim(),
@@ -919,15 +1294,25 @@ function validateSwimmerSelection(row) {
 }
 
 function findLinkedMpf(row) {
-  if (!["RF", "RFJ"].includes(row.scope) || row.kind !== "individual") return null;
+  if (!["RF", "RFJ"].includes(row.scope)) return null;
+  if (!["individual", "relayClub"].includes(row.kind)) return null;
   const category = row.scope === "RFJ" ? "J" : "S";
   return allRows().find((item) =>
     item.scope === "MPF" &&
     item.sex === row.sex &&
     item.category === category &&
     item.course === row.course &&
-    item.kind === "individual"
+    item.kind === row.kind &&
+    (row.kind === "individual" || item.style === row.style)
   );
+}
+
+function isMpfToEstablish(row) {
+  const time = String(row?.time || "").trim();
+  return row?.placeholderRecord === true ||
+    rowStatus(row) === "À établir" ||
+    time === window.LivePalmesRecordPlaceholders?.placeholderTime ||
+    /tablir/i.test(time);
 }
 
 function linkedMpfDraft(row, status) {
@@ -935,23 +1320,26 @@ function linkedMpfDraft(row, status) {
   if (!mpf) return null;
   const newValue = parseTimeValue(row.time);
   const currentValue = parseTimeValue(mpf.time);
-  if (newValue === null || currentValue === null || newValue >= currentValue) return null;
+  const shouldComplete = currentValue === null && isMpfToEstablish(mpf);
+  if (newValue === null || (!shouldComplete && (currentValue === null || newValue >= currentValue))) return null;
   return {
     ...mpf,
     time: row.time,
     swimmer: row.swimmer,
+    birthDate: row.birthDate || swimmerBirthDateForRow(row) || mpf.birthDate || "",
     club: row.club,
     date: row.date,
     location: row.location,
     source: row.source,
     note: row.note,
+    mixedRelay: row.mixedRelay || mpf.mixedRelay || false,
     status
   };
 }
 
 function mpfImprovementAlerts() {
   return allRows()
-    .filter((row) => ["RF", "RFJ"].includes(row.scope) && row.kind === "individual")
+    .filter((row) => ["RF", "RFJ"].includes(row.scope))
     .map((row) => {
       const mpf = findLinkedMpf(row);
       const draft = linkedMpfDraft(row, "Brouillon");
@@ -977,13 +1365,13 @@ function renderGlobalMpfAlert() {
   }
 
   const count = alerts.length;
-  elements.mpfGlobalAlertTitle.textContent = `${count} record${count > 1 ? "s" : ""} améliore${count > 1 ? "nt" : ""} une MPF`;
+  elements.mpfGlobalAlertTitle.textContent = `${count} record${count > 1 ? "s" : ""} améliore${count > 1 ? "nt" : ""} ou complète${count > 1 ? "nt" : ""} une MPF`;
   elements.mpfGlobalAlertText.textContent = "Ouvrez la ligne concernée pour ajouter la mise à jour MPF aux brouillons.";
   elements.mpfGlobalAlertList.innerHTML = alerts.slice(0, 6).map(({ row, mpf, code }) => `
     <li>
       <button type="button" data-alert-row="${row.id}">
         <strong>${row.scope} · ${courseShortLabel(row.course)} · ${categoryCode(row.category, row.sex)}</strong>
-        <span>${row.time} améliore la MPF ${code} (${mpf.time})</span>
+        <span>${isMpfToEstablish(mpf) ? `${row.time} complète la MPF ${code} à établir` : `${row.time} améliore la MPF ${code} (${mpf.time})`}</span>
       </button>
     </li>
   `).join("");
@@ -1025,8 +1413,13 @@ function updateMpfSyncAlert() {
 
   const code = categoryCode(mpf.category, mpf.sex);
   elements.mpfSyncAlert.hidden = false;
-  elements.mpfSyncTitle.textContent = `Cette performance améliore aussi la MPF ${code}.`;
-  elements.mpfSyncText.textContent = `MPF actuelle ${courseShortLabel(mpf.course)} : ${mpf.time} par ${mpf.swimmer}. Nouveau temps proposé : ${row.time}.`;
+  const completesMpf = isMpfToEstablish(mpf);
+  elements.mpfSyncTitle.textContent = completesMpf
+    ? `Cette performance peut établir la MPF ${code}.`
+    : `Cette performance améliore aussi la MPF ${code}.`;
+  elements.mpfSyncText.textContent = completesMpf
+    ? `MPF actuelle ${courseShortLabel(mpf.course)} : à établir. Nouveau temps proposé : ${row.time}.`
+    : `MPF actuelle ${courseShortLabel(mpf.course)} : ${mpf.time} par ${mpf.swimmer}. Nouveau temps proposé : ${row.time}.`;
 }
 
 function saveDraft(status) {
@@ -1039,6 +1432,61 @@ function saveDraft(status) {
     if (mpfDraft) setDraftIfChanged(mpfDraft.id, mpfDraft);
   }
   fillEditor(value);
+  renderTable();
+}
+
+function saveTieDraft(status) {
+  if (!state.selectedId) return;
+  const selected = allRows().find((row) => row.id === state.selectedId);
+  const value = editorValue(status);
+  if (!selected) return;
+  if (!validateSwimmerSelection(value)) return;
+
+  const selectedValue = parseTimeValue(selected.time);
+  const nextValue = parseTimeValue(value.time);
+  if (selectedValue === null || nextValue === null || selectedValue !== nextValue) {
+    window.alert("Le bouton ex aequo est réservé aux performances exactement égales au record sélectionné.");
+    return;
+  }
+
+  const suffix = `${Date.now()}-${keySafePart(value.swimmer)}-${keySafePart(value.date)}`;
+  const id = `new|tie|${value.scope}|${value.sex}|${value.category}|${value.course}|${suffix}`;
+  const row = {
+    ...value,
+    id,
+    key: `manual-${value.scope.toLowerCase()}-tie|${value.scope}|${value.sex}|${value.category}|${value.course}|${parseTimeValue(value.time) ?? keySafePart(value.time)}|${suffix}`,
+    source: "frozen",
+    note: [value.note, "Ex aequo"].filter(Boolean).join(" · "),
+    status
+  };
+  state.drafts.set(id, row);
+  state.selectedId = id;
+  fillEditor(row);
+  renderTable();
+}
+
+function deleteSelectedRecordDraft() {
+  if (!state.selectedId) return;
+  const row = allRows().find((item) => item.id === state.selectedId) ||
+    sourceRows.find((item) => item.id === state.selectedId) ||
+    state.drafts.get(state.selectedId);
+  if (!row) return;
+  const label = `${row.scope || ""} ${courseShortLabel(row.course)} - ${displayRecordSwimmer(row) || row.club || "ligne selectionnee"} - ${row.time || ""}`.trim();
+  if (!window.confirm(`Supprimer cette ligne des records/MPF ?\n\n${label}\n\nLa suppression sera ajoutee aux brouillons et ne sera effective qu'apres publication.`)) {
+    return;
+  }
+
+  if (String(state.selectedId).startsWith("new|") && !sourceRows.some((item) => item.id === state.selectedId)) {
+    clearQueuedRecordAlertDrafts([row.recordAlertSourceKey]);
+    state.drafts.delete(state.selectedId);
+  } else {
+    state.drafts.set(state.selectedId, {
+      ...row,
+      status: "Supprimé"
+    });
+  }
+  state.selectedId = "";
+  resetEditor();
   renderTable();
 }
 
@@ -1057,6 +1505,7 @@ function createRecord() {
     course: elements.courseFilter.value || visibleRows[0]?.course || allRows().find((item) => item.scope === scope)?.course || "",
     time: "",
     swimmer: "",
+    birthDate: "",
     club: "",
     date: "",
     location: "",
@@ -1086,7 +1535,7 @@ function publicRecordFromAdminRow(row) {
     sex: row.sex || "",
     category: normalizedCategoryForPublish(row),
     categoryLabel: isMasterRelayRow(row) ? normalizedCategoryForPublish(row) : (row.categoryLabel || row.category || ""),
-    swimmer: row.swimmer || "",
+    swimmer: isRelayRow(row) ? formatRelaySwimmerList(row.swimmer) : (row.swimmer || ""),
     club: normalizedClubForPublish(row),
     location: row.location || "",
     date: row.date || "",
@@ -1102,6 +1551,7 @@ function publicRecordFromAdminRow(row) {
   delete base.source;
   delete base.note;
   delete base.adminKind;
+  delete base.recordAlertSourceKey;
   if (!base.placeholderRecord) delete base.placeholderRecord;
   if (row.scope === "MPF") {
     delete base.recordType;
@@ -1128,7 +1578,7 @@ function historySnapshot(row) {
     courseLabel: row.courseLabel || courseLabel(row.course),
     courseShortLabel: row.courseShortLabel || courseShortLabel(row.course),
     time: row.time || "",
-    swimmer: row.swimmer || "",
+    swimmer: displayRecordSwimmer(row) || "",
     club: row.club || "",
     date: row.date || "",
     location: row.location || "",
@@ -1141,7 +1591,7 @@ function historySnapshot(row) {
 }
 
 function historyChanged(before, after) {
-  const fields = ["scope", "sex", "category", "kind", "style", "course", "time", "swimmer", "club", "date", "location", "placeholderRecord"];
+  const fields = ["scope", "sex", "category", "kind", "style", "course", "time", "swimmer", "birthDate", "club", "date", "location", "placeholderRecord"];
   if (!before || !after) return true;
   return fields.some((field) => String(before[field] ?? "") !== String(after[field] ?? ""));
 }
@@ -1183,7 +1633,7 @@ function historyLine(row) {
   if (!row) return "Ligne absente";
   return [
     row.time || "À établir",
-    row.swimmer || "-",
+    displayRecordSwimmer(row) || "-",
     row.club || "-",
     row.location || "-",
     formatDate(row.date)
@@ -1259,9 +1709,10 @@ async function publishDrafts() {
   elements.publish.disabled = true;
   elements.publish.textContent = "Publication...";
   try {
-    const rows = allRows();
+    const rows = normalizeMixedRelayPublishRows(allRows());
     const publishedAt = new Date().toISOString();
     const historyEntries = buildPublicationHistoryEntries(publishedAt);
+    const publishedAlertDraftKeys = Array.from(state.drafts.values()).map((draft) => draft.recordAlertSourceKey).filter(Boolean);
     const previousHistory = Array.isArray(data.recordHistory) ? data.recordHistory : [];
     const nextData = {
       ...data,
@@ -1271,6 +1722,7 @@ async function publishDrafts() {
       sourceDate: publishedAt.slice(0, 10)
     };
     data = await store.saveData(nextData);
+    clearQueuedRecordAlertDrafts(publishedAlertDraftKeys);
     state.drafts.clear();
     rebuildSourceRows();
     updateFilterOptions();
@@ -1416,6 +1868,7 @@ async function startAdmin() {
       applyRecordsData(mergeRecordsData(firstData, storeData), { loaded: true });
     }
   }
+  applyQueuedRecordAlertDrafts();
 }
 
 elements.scopeFilter.querySelectorAll(".segment").forEach((button) => {
@@ -1470,9 +1923,17 @@ elements.fieldTime.addEventListener("blur", () => {
   elements.fieldTime.value = normalizeTimeInput(elements.fieldTime.value);
   updateMpfSyncAlert();
 });
+[elements.fieldName, elements.fieldClub]
+  .forEach((field) => field.addEventListener("input", () => updateBirthDateField()));
+[elements.fieldBirthDate].filter(Boolean)
+  .forEach((field) => field.addEventListener("blur", () => {
+    field.value = normalizeBirthDateInput(field.value) || field.value.trim();
+  }));
 [elements.fieldTime, elements.fieldName, elements.fieldClub, elements.fieldDate, elements.fieldLocation]
   .forEach((field) => field.addEventListener("input", updateMpfSyncAlert));
 elements.saveDraft.addEventListener("click", () => saveDraft("Brouillon"));
+elements.saveTieDraft?.addEventListener("click", () => saveTieDraft("Brouillon"));
+elements.deleteDraft?.addEventListener("click", deleteSelectedRecordDraft);
 elements.validate.addEventListener("click", () => saveDraft("Validé"));
 elements.newRecord?.addEventListener("click", createRecord);
 elements.publish.addEventListener("click", publishDrafts);

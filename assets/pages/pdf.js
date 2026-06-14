@@ -21,7 +21,7 @@ const meetMeta = document.querySelector("#pdfMeetMeta");
 
 const PDF_TYPES = {
   resultat: {
-    collection: "results",
+    collection: "resultPdfs",
     defaultTitle: "Résultat",
     missingId: "PDF introuvable : aucun identifiant de résultat.",
     missingDoc: "PDF introuvable ou résultat non publié.",
@@ -162,7 +162,7 @@ function closeOrReturn() {
   if (window.opener) {
     window.close();
     setTimeout(() => {
-      if (!window.closed) window.location.href = "resultats.html?v=20260519-pdf-same-tab";
+      if (!window.closed) window.location.href = "resultats";
     }, 120);
     return;
   }
@@ -170,7 +170,7 @@ function closeOrReturn() {
     window.history.back();
     return;
   }
-  window.location.href = "resultats.html?v=20260519-pdf-same-tab";
+  window.location.href = "resultats";
 }
 
 async function init() {
@@ -203,23 +203,17 @@ async function init() {
   const mainCollection = archiveRef
     ? archiveRef.collection(config.collection)
     : competition.collection(config.collection);
-  const resultPdfRequest = type === "resultat"
-    ? competition.collection("resultPdfs").doc(id).get().catch(() => null)
-    : Promise.resolve(null);
   const publicIndexRequest = archiveRef
     ? archiveRef.get().catch(() => null)
     : competition.collection("public").doc("resultsIndex").get().catch(() => null);
-  const [snapshot, pdfSnapshot, indexSnapshot, liveSnapshot] = await Promise.all([
+  const [snapshot, indexSnapshot] = await Promise.all([
     mainCollection.doc(id).get(),
-    resultPdfRequest,
-    publicIndexRequest,
-    archiveRef ? Promise.resolve(null) : competition.collection("liveData").doc("current").get().catch(() => null)
+    publicIndexRequest
   ]);
   const publicIndex = archiveRef
     ? (indexSnapshot?.data()?.publicIndex || indexSnapshot?.data() || {})
     : (indexSnapshot?.data() || {});
-  const livePublicOnline = liveSnapshot?.data()?.data?.notes?.publicResultsOnline;
-  if (!archiveRef && (livePublicOnline === false || publicIndex.publicAccess?.online === false)) {
+  if (!archiveRef && publicIndex.publicAccess?.online === false) {
     showMessage("La page publique des résultats est temporairement hors ligne.");
     return;
   }
@@ -227,10 +221,7 @@ async function init() {
     showMessage(config.missingDoc);
     return;
   }
-  const data = {
-    ...snapshot.data(),
-    ...(pdfSnapshot?.exists ? pdfSnapshot.data() : {})
-  };
+  const data = snapshot.data() || {};
   const metaLabel = meetMetaLabel(publicIndex.meet || data.meet || {});
   if (meetMeta) {
     meetMeta.textContent = metaLabel;

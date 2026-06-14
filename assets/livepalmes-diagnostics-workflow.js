@@ -19,6 +19,7 @@
   let formatAlertDateTime;
   let formatByteSize;
   let fullAlertIdentityLabel;
+  let isFinalStage;
   let liveDataDocument;
   let liveDismissedAlertIds;
   let livePalmesAdminDiagnostics;
@@ -413,6 +414,125 @@
     }
     return Boolean(result?.ranking?.length || result?.performances?.length);
   }
+
+  function byteSize(value) {
+    const json = JSON.stringify(value || {});
+    if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
+    return json.length;
+  }
+
+  function publicResultExpectedKey(row = {}) {
+    const stage = isFinalStage?.(row.stage) ? "finales" : "series";
+    return [row.session || "", row.eventId || "", row.sex || "", stage].join("|");
+  }
+
+  function expectedResultsBySession(program = []) {
+    const map = new Map();
+    (Array.isArray(program) ? program : [])
+      .filter((row) => row.session && row.eventId && row.sex)
+      .forEach((row) => {
+        const session = String(row.session || "").trim();
+        const key = publicResultExpectedKey(row);
+        if (!map.has(session)) map.set(session, new Set());
+        map.get(session).add(key);
+      });
+    return map;
+  }
+
+  function resultCountsBySession(results = []) {
+    return (Array.isArray(results) ? results : []).reduce((counts, result) => {
+      const session = String(result?.session || "").trim();
+      if (!session) return counts;
+      counts[session] = (counts[session] || 0) + 1;
+      return counts;
+    }, {});
+  }
+
+  function sessionPdfSessions(pdf = {}) {
+    const sessions = new Set();
+    if (pdf.scope === "full") {
+      sessionRows().forEach((session) => sessions.add(String(session.number || "").trim()));
+    }
+    if (pdf.session) sessions.add(String(pdf.session || "").trim());
+    (Array.isArray(pdf.sessions) ? pdf.sessions : []).forEach((session) => sessions.add(String(session || "").trim()));
+    return sessions;
+  }
+
+  async function collectPublicPublicationDiagnostic() {
+    if (!firestoreDb) {
+      return {
+        available: false,
+        message: "Firebase indisponible sur cet appareil."
+      };
+    }
+    const publicDoc = publicResultsIndexDocument();
+    const seriesDoc = publicDoc?.parent?.doc ? publicDoc.parent.doc("seriesIndex") : null;
+    const [
+      publicIndex,
+      seriesIndex,
+      resultsSnapshot,
+      sessionPdfsSnapshot
+    ] = await Promise.all([
+      safeDocumentData(publicDoc),
+      safeDocumentData(seriesDoc),
+      resultsCollection().orderBy("updatedAt", "desc").get({ source: "server" }).catch(() => null),
+      sessionResultsPdfsCollection().get({ source: "server" }).catch(() => null)
+    ]);
+    const serverResults = resultsSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
+    const publicResults = Array.isArray(publicIndex?.results) ? publicIndex.results : [];
+    const sessionPdfs = sessionPdfsSnapshot?.docs?.map((doc) => ({ id: doc.id, ...doc.data() })) || [];
+    const expected = expectedResultsBySession(data.program || []);
+    const publicCounts = resultCountsBySession(publicResults);
+    const serverCounts = resultCountsBySession(serverResults);
+    const pdfSessions = new Set();
+    sessionPdfs.forEach((pdf) => sessionPdfSessions(pdf).forEach((session) => { if (session) pdfSessions.add(session); }));
+    const allSessions = [...new Set([
+      ...sessionRows().map((session) => String(session.number || "").trim()).filter(Boolean),
+      ...Object.keys(publicCounts),
+      ...Object.keys(serverCounts),
+      ...pdfSessions
+    ])].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr"));
+    const sessions = allSessions.map((session) => ({
+      session,
+      expectedResults: expected.get(session)?.size || 0,
+      publicResults: publicCounts[session] || 0,
+      serverResults: serverCounts[session] || 0,
+      hasSessionPdf: pdfSessions.has(session)
+    }));
+    const recommendations = [];
+    sessions
+      .filter((session) => session.expectedResults && session.publicResults < session.expectedResults)
+      .forEach((session) => recommendations.push(`Session ${session.session} : ${session.publicResults}/${session.expectedResults} resultats detailles dans l'index public.`));
+    if (byteSize(publicIndex) > 900000) recommendations.push("L'index resultats approche de la limite Firestore : surveiller avant de republier.");
+    if (byteSize(seriesIndex) > 900000) recommendations.push("L'index series approche de la limite Firestore : il faudra decouper par session si la competition grossit.");
+    if (!recommendations.length) recommendations.push("Publication publique stable : tailles correctes et aucun manque evident par session.");
+    return {
+      available: true,
+      resultsIndexBytes: byteSize(publicIndex),
+      seriesIndexBytes: byteSize(seriesIndex),
+      publicResults: publicResults.length,
+      serverResults: serverResults.length,
+      sessionPdfCount: sessionPdfs.length,
+      sessions,
+      recommendations
+    };
+  }
+
+  function renderPublicPublicationDiagnosticModal(report) {
+    if (!roleCodesModal) return;
+    roleCodesModal.hidden = false;
+    roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPublicPublicationDiagnosticModalHtml(report, {
+      formatByteSize
+    });
+  }
+
+  async function showPublicPublicationDiagnosticModal() {
+    if (!roleCodesModal) return;
+    roleCodesModal.hidden = false;
+    roleCodesModal.innerHTML = livePalmesAdminDiagnostics.renderPublicPublicationDiagnosticLoadingHtml();
+    const report = await collectPublicPublicationDiagnostic();
+    renderPublicPublicationDiagnosticModal(report);
+  }
   
   function renderTechnicalDiagnosticModal(report) {
     if (!roleCodesModal) return;
@@ -498,7 +618,10 @@
     alertPendingBreakdown,
     alertTargetsLabel,
     collectTechnicalDiagnostic,
+    collectPublicPublicationDiagnostic,
     resultHasDetailsForDiagnostic,
+    renderPublicPublicationDiagnosticModal,
+    showPublicPublicationDiagnosticModal,
     renderTechnicalDiagnosticModal,
     showTechnicalDiagnosticModal,
     cleanLegacyResultPdfs,
@@ -528,6 +651,7 @@
     formatAlertDateTime = context.formatAlertDateTime;
     formatByteSize = context.formatByteSize;
     fullAlertIdentityLabel = context.fullAlertIdentityLabel;
+    isFinalStage = context.isFinalStage;
     liveDataDocument = context.liveDataDocument;
     liveDismissedAlertIds = context.liveDismissedAlertIds;
     livePalmesAdminDiagnostics = context.livePalmesAdminDiagnostics;
@@ -568,7 +692,10 @@
     alertPendingBreakdown: (...args) => { useContext(args.pop() || {}); return api.alertPendingBreakdown(...args); },
     alertTargetsLabel: (...args) => { useContext(args.pop() || {}); return api.alertTargetsLabel(...args); },
     collectTechnicalDiagnostic: (...args) => { useContext(args.pop() || {}); return api.collectTechnicalDiagnostic(...args); },
+    collectPublicPublicationDiagnostic: (...args) => { useContext(args.pop() || {}); return api.collectPublicPublicationDiagnostic(...args); },
     resultHasDetailsForDiagnostic: (...args) => { useContext(args.pop() || {}); return api.resultHasDetailsForDiagnostic(...args); },
+    renderPublicPublicationDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.renderPublicPublicationDiagnosticModal(...args); },
+    showPublicPublicationDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.showPublicPublicationDiagnosticModal(...args); },
     renderTechnicalDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.renderTechnicalDiagnosticModal(...args); },
     showTechnicalDiagnosticModal: (...args) => { useContext(args.pop() || {}); return api.showTechnicalDiagnosticModal(...args); },
     cleanLegacyResultPdfs: (...args) => { useContext(args.pop() || {}); return api.cleanLegacyResultPdfs(...args); },

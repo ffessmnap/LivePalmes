@@ -69,6 +69,22 @@ Pour GitHub ou Firebase Hosting, publie au minimum :
 
 Firebase/GitHub ne relisent pas automatiquement les PDF ou les TXT. Il faut d'abord regenerer les donnees en local, puis publier les fichiers generes.
 
+## Records et MPF
+
+Firestore est la source officielle des Records / MPF :
+
+- document : `competitions/livepalmes-active/performanceData/records` ;
+- fichier statique de secours : `performances/public/data/records-data.js` ;
+- pages concernees : `performances/records.html`, `performances/mpf.html`, `performances/nageur.html` et l'administration records.
+
+Apres une modification publiee depuis l'administration Records / MPF, synchronise le fallback statique :
+
+```powershell
+node tools/sync-records-from-firestore.js --write
+```
+
+Sans `--write`, le script fait un dry-run. Avec `--write`, il sauvegarde l'ancien `records-data.js`, reecrit le fallback depuis Firestore et met a jour les versions de cache des pages qui chargent ce fichier.
+
 ## Historique DSQ
 
 L'historique des disqualifications, forfaits et abandons est stocke dans le navigateur pendant l'utilisation. Le bouton `RAZ historique` est disponible sur la console Informatique.
