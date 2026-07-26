@@ -100,7 +100,9 @@
       return claims?.livepalmesAccess === true && (
         capabilities["admin.full"] === true ||
         capabilities["records.manage"] === true ||
-        capabilities["consoles.manage"] === true
+        capabilities["consoles.manage"] === true ||
+        capabilities["competitions.import"] === true ||
+        capabilities["dtn.view"] === true
       );
     }
 

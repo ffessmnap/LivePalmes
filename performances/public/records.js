@@ -1,4 +1,4 @@
-let data = window.LIVEPALMES_RECORDS;
+﻿let data = window.LIVEPALMES_RECORDS;
 let records = normalizeMixedRelayRecords(data.franceRecords || []);
 
 const elements = {
@@ -33,6 +33,43 @@ const styleSections = [
   ["RELAY_FRANCE", "Relais France"]
 ];
 
+const recordLocationLabels = new Map([
+  ["Aix en Prov.", "Aix-en-Provence, France"],
+  ["Aix en Provence", "Aix-en-Provence, France"],
+  ["Annemasse", "Annemasse, France"],
+  ["Barcelone (ESP)", "Barcelone, Espagne"],
+  ["Belgrade (SRB)", "Belgrade, Serbie"],
+  ["Birmingham (USA)", "Birmingham, États-Unis"],
+  ["Cali (COL)", "Cali, Colombie"],
+  ["Chania (GRE)", "Chania, Grèce"],
+  ["Chios (GRE)", "Chios, Grèce"],
+  ["Chios, Grece", "Chios, Grèce"],
+  ["Chios, Grèce", "Chios, Grèce"],
+  ["Istanbul (TUR)", "Istanbul, Turquie"],
+  ["Klaipeda (LTU)", "Klaipėda, Lituanie"],
+  ["Le Caire (EGY)", "Le Caire, Égypte"],
+  ["Lignano (ITA)", "Lignano Sabbiadoro, Italie"],
+  ["Limoges", "Limoges, France"],
+  ["LIMOGES", "Limoges, France"],
+  ["Metz", "Metz, France"],
+  ["Milskolc (HUN)", "Miskolc, Hongrie"],
+  ["Montlucon", "Montluçon, France"],
+  ["Olstyn (POL)", "Olsztyn, Pologne"],
+  ["Olsztyn (POL)", "Olsztyn, Pologne"],
+  ["Rennes", "Rennes, France"],
+  ["St Petersbourg (RUS)", "Saint-Pétersbourg, Russie"],
+  ["Tomsk (RU)", "Tomsk, Russie"],
+  ["Tomsk (RUS)", "Tomsk, Russie"],
+  ["Vittel", "Vittel, France"],
+  ["Volos (GRE)", "Volos, Grèce"],
+  ["Worclaw (POL)", "Wrocław, Pologne"]
+]);
+
+function formatRecordLocation(value) {
+  const location = String(value || "").trim();
+  return recordLocationLabels.get(location) || location;
+}
+
 function franceFlag() {
   return `<span class="france-flag" aria-hidden="true"></span>`;
 }
@@ -63,6 +100,26 @@ function swimmerNameHtml(record) {
   return year ? `${name} <small class="performance-birth-year">(${year})</small>` : name;
 }
 
+function swimmerProfileHref(record) {
+  if (isRelayRecord(record) || !record?.swimmer || record.swimmer === "À établir") return "";
+  const params = new URLSearchParams();
+  if (record.swimmerId) {
+    params.set("id", record.swimmerId);
+  } else {
+    params.set("name", record.swimmer);
+    if (record.birthDate) params.set("birth", record.birthDate);
+    if (record.sex) params.set("sex", record.sex);
+  }
+  return `nageur.html?${params.toString()}`;
+}
+
+function swimmerNameLinkHtml(record) {
+  const href = swimmerProfileHref(record);
+  return href
+    ? `<a class="performance-name-link" href="${escapeHtml(href)}" data-swimmer-name="${escapeHtml(record.swimmer)}">${swimmerNameHtml(record)}</a>`
+    : swimmerNameHtml(record);
+}
+
 function addOptions(select, values, allLabel, labeler = (value) => value) {
   select.innerHTML = "";
   select.append(new Option(allLabel, ""));
@@ -73,6 +130,14 @@ function courseLabel(value) {
   if (String(value).endsWith("BIX")) return String(value).replace(/^4X(\d+)BIX$/, "4x$1 Bi-palmes mixte");
   if (String(value).endsWith("SB")) return String(value).replace(/^4X(\d+)SB$/, "4x$1 Surface/Bi-palmes mixte");
   return records.find((record) => record.course === value)?.courseLabel ?? value;
+}
+
+function courseShortLabel(value) {
+  const record = records.find((item) => item.course === value);
+  return displayCourseShortLabel({
+    course: value,
+    courseShortLabel: record?.courseShortLabel || value
+  });
 }
 
 function compareCourse(a, b) {
@@ -183,7 +248,7 @@ function applyFilters() {
   });
 
   elements.tableTitle.textContent = filters.course
-    ? `${titles[`${filters.recordType}|${filters.sex}`]} · ${courseLabel(filters.course)}`
+    ? `${titles[`${filters.recordType}|${filters.sex}`]} · ${courseShortLabel(filters.course)}`
     : titles[`${filters.recordType}|${filters.sex}`];
   renderRecords(filtered);
 }
@@ -368,7 +433,7 @@ function formatRelaySwimmerName(value) {
 }
 
 function recordMobileMeta(record) {
-  return [displayClub(record), record.location, formatDate(record.date)]
+  return [displayClub(record), formatRecordLocation(record.location), formatDate(record.date)]
     .map((value) => String(value || "").trim())
     .filter(Boolean)
     .join(" · ");
@@ -395,6 +460,8 @@ function displayRelayTeam(record) {
 function displayCourseShortLabel(record) {
   const course = String(record?.course || "");
   const label = String(record?.courseShortLabel || course);
+  const compactPoolCourse = label.match(/^(\d+)(SF|AP|IS|BI)$/i) || course.match(/^(\d+)(SF|AP|IS|BI)$/i);
+  if (compactPoolCourse) return `${compactPoolCourse[1]} ${compactPoolCourse[2].toUpperCase()}`;
   if (course.endsWith("BIX") || /BIX$/i.test(label)) return label.replace(/^4x?(\d+)BIX$/i, "4x$1 BI");
   if (course.endsWith("SB") && /^4x?\d+SB$/i.test(label)) return label.replace(/^4x?(\d+)SB$/i, "4x$1 SB");
   if (course.endsWith("SF") || /^4x?\d+SF$/i.test(label)) return label.replace(/^4x?(\d+)SF$/i, "4x$1 SF");
@@ -425,7 +492,7 @@ function renderSwimmerCell(record) {
   const splitMeta = splitMetaHtml(record);
   if (!isRelayRecord(record)) {
     return `
-      <strong>${swimmerNameHtml(record)}</strong>
+      <strong>${swimmerNameLinkHtml(record)}</strong>
       ${meta ? `<small class="record-mobile-meta">${escapeHtml(meta)}</small>` : ""}
       ${splitMeta}
     `;
@@ -461,7 +528,7 @@ function renderRecordRow(record) {
         </td>
         <td data-label="Club">${displayClub(record)}</td>
         <td data-label="Lieu">
-          <strong>${record.location || "Lieu non renseigné"}</strong>
+          <strong>${escapeHtml(formatRecordLocation(record.location) || "Lieu non renseigné")}</strong>
         </td>
         <td data-label="Date">${formatDate(record.date)}</td>
       </tr>
@@ -480,7 +547,7 @@ function refreshData(nextData) {
   elements.cutoffText.textContent = data.updatedAt
     ? `Dernière mise à jour : ${formatDate(String(data.updatedAt).slice(0, 10))}`
     : "Dernière mise à jour : 25 mai 2026";
-  addOptions(elements.courseFilter, (data.filters.franceCourses || []).slice().sort(compareCourse), "Toutes", courseLabel);
+  addOptions(elements.courseFilter, (data.filters.franceCourses || []).slice().sort(compareCourse), "Toutes", courseShortLabel);
 }
 
 function initPage() {
@@ -497,6 +564,14 @@ function initPage() {
   elements.courseFilter.addEventListener("input", applyFilters);
 
   elements.recordsBody.addEventListener("click", (event) => {
+    const swimmerLink = event.target.closest(".performance-name-link");
+    if (swimmerLink) {
+      event.stopPropagation();
+      const swimmerName = swimmerLink.dataset.swimmerName || "ce nageur";
+      if (!window.confirm(`Ouvrir la fiche de ${swimmerName} ?`)) event.preventDefault();
+      return;
+    }
+    if (event.target.closest("a, button, input, select, textarea")) return;
     const row = event.target.closest("tr");
     if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
     const expanded = !row.classList.contains("expanded");
@@ -506,6 +581,7 @@ function initPage() {
 
   elements.recordsBody.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target.closest("a, button, input, select, textarea")) return;
     const row = event.target.closest("tr");
     if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
     event.preventDefault();

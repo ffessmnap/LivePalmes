@@ -1,34 +1,37 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LivePalmes nageur</title>
+    <title>LivePalmes - Performances du nageur</title>
     <link rel="icon" type="image/png" href="/logo-livepalmes.png?v=20260529-raz-batch-1" />
-    <link rel="stylesheet" href="public/styles.css?v=20260603-swimmer-honors-groups-1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260722-swimmer-search-clear-2" />
   </head>
   <body class="swimmer-page">
     <header class="topbar simple">
       <div class="topbar-title">
         <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
         <p class="eyebrow">LivePalmes &middot; Performances</p>
-        <h1>Performances nageur</h1>
+        <h1>Performances du nageur</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
       <nav class="main-nav" aria-label="Navigation principale">
         <a href="records.html">Records de France</a>
         <a href="mpf.html">MPF</a>
         <a href="tops.html">TOP</a>
-        <a class="active" href="nageur.html">Nageur</a>
+        <a class="active" href="nageur.html">Fiches nageurs</a>
       </nav>
     </header>
 
     <main>
       <section class="toolbar swimmer-toolbar" aria-label="Filtres nageur">
-        <label class="swimmer-filter-search">
-          Nageur
-          <input id="swimmerSearchInput" type="search" autocomplete="off" placeholder="Nom ou pr&eacute;nom..." />
-        </label>
+        <div class="field swimmer-filter-search">
+          <label for="swimmerSearchInput">Nageur</label>
+          <span class="swimmer-search-input-wrap">
+            <input id="swimmerSearchInput" type="search" autocomplete="off" placeholder="Nom ou pr&eacute;nom..." />
+            <button id="swimmerSearchClear" class="swimmer-search-clear" type="button" aria-label="Effacer le nageur" title="Effacer le nageur" hidden><span aria-hidden="true">&times;</span></button>
+          </span>
+        </div>
         <div class="swimmer-search-panel" aria-label="R&eacute;sultats de recherche nageur">
           <div id="swimmerSearchResults" class="suggestions-list"></div>
         </div>
@@ -40,6 +43,14 @@
           Course
           <select id="swimmerCourseFilter"></select>
         </label>
+        <div class="field swimmer-filter-pool">
+          <span>Bassin</span>
+          <div class="segmented swimmer-pool-segments" id="swimmerPoolFilter" role="group" aria-label="Bassin">
+            <button type="button" class="segment active" data-value="" aria-pressed="true">Tous</button>
+            <button type="button" class="segment" data-value="25" aria-pressed="false">25</button>
+            <button type="button" class="segment" data-value="50" aria-pressed="false">50</button>
+          </div>
+        </div>
         <div class="field swimmer-filter-display">
           <span>Affichage</span>
           <div class="segmented two-segments" id="swimmerDisplayMode" role="group" aria-label="Affichage">
@@ -53,7 +64,7 @@
 
       <section class="records-shell swimmer-card-shell" id="swimmerCard">
         <div class="table-head">
-          <div>
+          <div class="swimmer-identity-head">
             <h2 id="swimmerTitle">Performances du nageur</h2>
             <p id="swimmerStatus">Recherchez puis s&eacute;lectionnez un nageur.</p>
           </div>
@@ -80,11 +91,12 @@
         </div>
       </section>
     </main>
-    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
     <script src="public/data/intranap-summary.js?v=consolidated-20260603140205"></script>
     <script src="public/data/performance-public/version.js"></script>
-    <script src="public/data/records-data.js?v=records-firestore-20260613220745"></script>
+    <script src="public/data/records-data.js?v=records-firestore-20260722080552"></script>
+    <script src="../assets/public/livepalmes-public-analytics.js?v=20260614-ga-public-1"></script>
     <script src="public/store.js?v=20260603-swimmer-record-store-1"></script>
-    <script src="public/swimmer.js?v=20260609-swimmer-real-age-1"></script>
+    <script src="public/swimmer.js?v=20260722-swimmer-search-clear-1"></script>
   </body>
 </html>

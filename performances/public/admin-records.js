@@ -195,14 +195,14 @@ async function loadLocalRecordsData() {
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `public/data/records-data.js?v=records-firestore-20260613220745&reload=${Date.now()}`;
+    script.src = `public/data/records-data.js?v=records-firestore-20260722080552&reload=${Date.now()}`;
     script.onload = () => resolve();
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   try {
-    const response = await fetch("public/data/records-data.js?v=records-firestore-20260613220745", { cache: "no-store" });
+    const response = await fetch("public/data/records-data.js?v=records-firestore-20260722080552", { cache: "no-store" });
     if (!response.ok) return window.LIVEPALMES_RECORDS || {};
     const text = await response.text();
     const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
@@ -1823,7 +1823,8 @@ function ensureAdminAuth() {
 function updateAuthView(nextStatus) {
   const status = nextStatus || ensureAdminAuth()?.status?.() || {};
   const signedIn = Boolean(status.signedIn);
-  document.body.dataset.adminAuth = !status.ready ? "loading" : (signedIn ? "unlocked" : "locked");
+  const authView = elements.loginPanel ? document.body : document.querySelector("#adminRecordsView");
+  if (authView) authView.dataset.adminAuth = !status.ready ? "loading" : (signedIn ? "unlocked" : "locked");
   if (elements.loginPanel) elements.loginPanel.hidden = signedIn;
   if (elements.sessionPanel) elements.sessionPanel.hidden = !signedIn;
   if (signedIn) {
@@ -1849,10 +1850,11 @@ async function startAdmin() {
     return;
   }
   recordsDataLoaded = false;
-  state.scope = "";
+  state.scope = "RF";
   state.selectedId = "";
-  setSegmentValue(elements.scopeFilter, "");
-  setSexValue("");
+  setSegmentValue(elements.scopeFilter, "RF");
+  elements.recordLevelFilter.value = "RF";
+  setSexValue("F");
   elements.categoryFilter.value = "";
   elements.courseFilter.value = "";
   updateAuthView();
@@ -1945,12 +1947,12 @@ elements.historyButton?.addEventListener("click", () => {
 elements.historyClose?.addEventListener("click", () => {
   elements.historyPanel.hidden = true;
 });
-elements.signOut.addEventListener("click", async () => {
+elements.signOut?.addEventListener("click", async () => {
   updateAuthView({ signedIn: false, ready: true });
   await ensureAdminAuth()?.signOut?.();
   updateAuthView({ signedIn: false, ready: true });
 });
-elements.resetPassword.addEventListener("click", async () => {
+elements.resetPassword?.addEventListener("click", async () => {
   try {
     await ensureAdminAuth()?.sendPasswordReset?.(elements.loginEmail.value);
     elements.loginMessage.textContent = "Email de réinitialisation envoyé.";
@@ -1958,7 +1960,7 @@ elements.resetPassword.addEventListener("click", async () => {
     elements.loginMessage.textContent = error?.message || String(error);
   }
 });
-elements.loginForm.addEventListener("submit", async (event) => {
+elements.loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     elements.loginMessage.textContent = "Connexion...";

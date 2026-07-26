@@ -10,7 +10,7 @@
 
   const dedicatedRole = String(global.LivePalmesDedicatedRole || "").trim();
   const gateRole = dedicatedRole || "computer";
-  const pageLabel = dedicatedRole ? (ROLE_LABELS[gateRole] || "Console") : "Pilotage LivePalmes";
+  const pageLabel = dedicatedRole ? (ROLE_LABELS[gateRole] || "Console") : "Consoles compétition";
   const pinLabel = dedicatedRole ? (ROLE_LABELS[gateRole] || "console") : "Bureau des performances";
   let unlocked = false;
   let unlockedRole = "";

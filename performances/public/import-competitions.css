@@ -5,6 +5,7 @@
 
 .import-admin-page #importLoginPanel[hidden],
 .import-admin-page #importWorkbench[hidden],
+.import-admin-page #correctionWorkbench[hidden],
 .import-admin-page #competitionImportPreview[hidden] {
   display: none !important;
 }
@@ -73,6 +74,43 @@
 
 .super-admin-maintenance-actions .admin-portal-message {
   margin: 0;
+}
+
+.advanced-tools-summary {
+  position: relative;
+  padding-right: 42px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.advanced-tools-summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-tools-summary::after {
+  content: "+";
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #dff1ed;
+  color: #0f5f57;
+  font-size: 1rem;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.super-admin-maintenance[open] .advanced-tools-summary::after {
+  content: "−";
+}
+
+.super-admin-maintenance[open] .super-admin-maintenance-actions {
+  border-top: 1px solid #dce7e4;
+  padding-top: 14px;
 }
 
 .performance-migration-status {
@@ -438,6 +476,41 @@
   gap: 8px;
 }
 
+.competition-import-history-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(150px, 0.35fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.competition-import-history-filters label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.competition-import-history-filters input,
+.competition-import-history-filters select {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #cbd9d6;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.competition-imports-filter-summary {
+  min-height: 20px;
+  margin: -4px 0 0;
+  color: #5f746f;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
 .competition-import-row {
   border: 1px solid #dce7e4;
   border-radius: 8px;
@@ -698,6 +771,7 @@
 
 @media (max-width: 760px) {
   .competition-import-form,
+  .competition-import-history-filters,
   .performance-correction-search,
   .performance-correction-grid,
   .performance-correction-split,

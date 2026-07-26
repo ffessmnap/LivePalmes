@@ -62,7 +62,7 @@ const consolePages = [
 
 const speakerInfoScripts = [
   "performances/public/data/records-data.js",
-  "assets/livepalmes-public-records-source.js",
+  "assets/public/livepalmes-public-records-source.js",
   "assets/livepalmes-speaker-info.js",
   "assets/livepalmes-speaker-info-options.js",
   "assets/livepalmes-speaker-info-workflow.js"

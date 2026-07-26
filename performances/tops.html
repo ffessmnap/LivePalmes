@@ -1,11 +1,11 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes TOP</title>
     <link rel="icon" type="image/png" href="/logo-livepalmes.png?v=20260529-raz-batch-1" />
-    <link rel="stylesheet" href="public/styles.css?v=20260612-birth-year-1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260721-performance-responsive-1" />
   </head>
   <body class="tops-page">
     <header class="topbar simple">
@@ -19,7 +19,7 @@
         <a href="records.html">Records de France</a>
         <a href="mpf.html">MPF</a>
         <a class="active" href="tops.html">TOP</a>
-        <a href="nageur.html">Nageur</a>
+        <a href="nageur.html">Fiches nageurs</a>
       </nav>
     </header>
 
@@ -44,11 +44,12 @@
           R&eacute;gion
           <select id="topRegionFilter"></select>
         </label>
-        <div class="field top-filter-limit">
-          Limite
-          <div class="segmented two-segments" id="topLimitFilter" role="group" aria-label="Limite">
-            <button type="button" class="segment active" data-value="25" aria-pressed="true">TOP25</button>
-            <button type="button" class="segment" data-value="all" aria-pressed="false">Tous</button>
+        <div class="field top-filter-pool">
+          Bassin
+          <div class="segmented" id="topPoolFilter" role="group" aria-label="Bassin">
+            <button type="button" class="segment active" data-value="" aria-pressed="true">Tous</button>
+            <button type="button" class="segment" data-value="25" aria-pressed="false">25 m</button>
+            <button type="button" class="segment" data-value="50" aria-pressed="false">50 m</button>
           </div>
         </div>
       </section>
@@ -80,11 +81,15 @@
             <tbody id="topBody"></tbody>
           </table>
         </div>
+        <div class="top-load-more" id="topLoadMore" hidden>
+          <button type="button" id="topLoadMoreButton">Afficher la suite</button>
+        </div>
       </section>
     </main>
-    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:antoine.fauveau@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="performance-public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
     <script src="public/data/intranap-summary.js?v=consolidated-20260603140205"></script>
     <script src="public/data/performance-public/version.js"></script>
-    <script src="public/tops.js?v=20260612-birth-year-1"></script>
+    <script src="../assets/public/livepalmes-public-analytics.js?v=20260614-ga-public-1"></script>
+    <script src="public/tops.js?v=20260721-swimmer-link-confirm-1"></script>
   </body>
 </html>

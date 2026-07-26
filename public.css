@@ -336,6 +336,7 @@ body:not(.public-home-page) .public-footer {
 
 .public-home-card {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   align-content: start;
   min-height: 186px;
@@ -384,6 +385,64 @@ body:not(.public-home-page) .public-footer {
   background: linear-gradient(180deg, #ffffff 0%, #effbfc 100%);
 }
 
+.public-home-card.live-card.is-inactive {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-self: start;
+  justify-self: start;
+  order: 3;
+  width: min(100%, 430px);
+  min-height: 0;
+  gap: 8px;
+  padding: 14px;
+  border-color: #dce5e9;
+  border-left-width: 1px;
+  background: #f8fafb;
+  box-shadow: 0 5px 12px rgba(14, 56, 70, 0.035);
+}
+
+.live-card.is-inactive .public-home-card-icon {
+  width: 28px;
+  height: 28px;
+  background: #e9eef1;
+  color: #7a8c96;
+}
+
+.live-card.is-inactive .public-home-card-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.live-card.is-inactive .public-home-status.available {
+  background: #e9eef1;
+  color: #657782;
+}
+
+.live-card.is-inactive h3 {
+  grid-column: 2;
+  color: #52646e;
+  font-size: 1rem;
+}
+
+.live-card.is-inactive .public-home-live-description,
+.live-card.is-inactive .public-home-card-actions {
+  display: none;
+}
+
+.live-card.is-inactive .public-home-current-meet {
+  display: none;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .public-home-grid.has-no-live {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-home-grid.has-no-live .live-card.is-inactive {
+    grid-column: 1 / -1;
+  }
+}
+
 .public-home-card.performance-card {
   border-color: #9fd4d5;
   border-left: 5px solid #0f8b8d;
@@ -397,11 +456,14 @@ body:not(.public-home-page) .public-footer {
 }
 
 .public-home-card h3 {
+  grid-column: 2;
+  align-self: center;
   color: #102331;
   font-size: 1.16rem;
 }
 
 .public-home-card p {
+  grid-column: 1 / -1;
   margin: 0;
   color: #526876;
   font-size: 0.92rem;
@@ -466,6 +528,7 @@ body:not(.public-home-page) .public-footer {
 }
 
 .public-home-card-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -487,6 +550,26 @@ body:not(.public-home-page) .public-footer {
   background: rgba(15, 139, 141, 0.12);
   color: #0b6668;
   box-shadow: inset 0 -1px 0 rgba(11, 102, 104, 0.08);
+}
+
+.performance-card .performance-card-summary {
+  color: #58717b;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.performance-card .public-home-card-actions .performance-records-button {
+  border: 1px solid rgba(35, 92, 165, 0.2);
+  background: #eaf2fc;
+  color: #215b9d;
+  box-shadow: inset 3px 0 0 #2f6fb5;
+}
+
+.performance-card .public-home-card-actions .performance-mpf-button {
+  border: 1px solid rgba(190, 48, 57, 0.18);
+  background: #fff0f1;
+  color: #a52d36;
+  box-shadow: inset -3px 0 0 #c83f49;
 }
 
 .archive-card .public-home-card-actions .ghost-button {

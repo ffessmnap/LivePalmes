@@ -8,22 +8,42 @@
     reset: document.querySelector("#adminPortalResetButton"),
     sessionLabel: document.querySelector("#adminPortalSessionLabel"),
     signOut: document.querySelector("#adminPortalSignOutButton"),
+    accountControl: document.querySelector("#adminPortalAccount"),
+    accountToggle: document.querySelector("#adminPortalAccountToggle"),
+    accountActions: document.querySelector("#adminPortalAccountActions"),
+    navToggle: document.querySelector("#adminPortalNavToggle"),
+    navCurrent: document.querySelector("#adminPortalNavCurrent"),
+    navigation: document.querySelector("#adminPortalNavigation"),
     accessForm: document.querySelector("#adminAccessForm"),
     accessMessage: document.querySelector("#adminAccessMessage"),
     accessList: document.querySelector("#adminAccessList"),
     accessRefresh: document.querySelector("#adminAccessRefreshButton"),
     cancelEdit: document.querySelector("#adminAccessCancelEdit"),
-    currentName: document.querySelector("#adminCurrentUserName"),
-    currentEmail: document.querySelector("#adminCurrentUserEmail"),
-    currentClub: document.querySelector("#adminCurrentUserClub"),
-    currentLicense: document.querySelector("#adminCurrentUserLicense"),
-    currentRights: document.querySelector("#adminCurrentUserRights")
+    accountEmailForm: document.querySelector("#adminAccountEmailForm"),
+    accountEmail: document.querySelector("#adminAccountEmail"),
+    accountEmailPassword: document.querySelector("#adminAccountEmailPassword"),
+    accountEmailMessage: document.querySelector("#adminAccountEmailMessage"),
+    accountPasswordForm: document.querySelector("#adminAccountPasswordForm"),
+    accountCurrentPassword: document.querySelector("#adminAccountCurrentPassword"),
+    accountNewPassword: document.querySelector("#adminAccountNewPassword"),
+    accountConfirmPassword: document.querySelector("#adminAccountConfirmPassword"),
+    accountPasswordMessage: document.querySelector("#adminAccountPasswordMessage"),
+    recordModuleStatus: document.querySelector("#adminRecordModuleStatus"),
+    performanceStyles: document.querySelector("#adminPerformanceStyles"),
+    recordWorkbench: document.querySelector("#adminWorkbench"),
+    importModuleStatus: document.querySelector("#adminImportModuleStatus"),
+    importStyles: document.querySelector("#adminImportStyles"),
+    importWorkbench: document.querySelector("#importWorkbench"),
+    correctionModuleStatus: document.querySelector("#adminCorrectionModuleStatus"),
+    correctionWorkbench: document.querySelector("#correctionWorkbench")
   };
 
   let adminAuth = null;
   let accessUsers = [];
   let editingUid = "";
   let currentUserLoading = false;
+  let recordModuleLoadPromise = null;
+  let importModuleLoadPromise = null;
 
   function ensureFirebaseApp() {
     const firebase = global.firebase;
@@ -72,38 +92,250 @@
     elements.accessMessage.dataset.tone = tone;
   }
 
+  function setAccountMessage(element, message, tone = "error") {
+    if (!element) return;
+    element.textContent = message || "";
+    element.dataset.tone = tone;
+  }
+
+  function closeAccountMenu() {
+    elements.accountToggle?.setAttribute("aria-expanded", "false");
+    if (elements.accountActions) elements.accountActions.hidden = true;
+  }
+
+  function firebaseAccountError(error) {
+    const code = String(error?.code || "");
+    if (code.includes("wrong-password") || code.includes("invalid-credential")) return "Le mot de passe actuel est incorrect.";
+    if (code.includes("email-already-in-use") || code.includes("already-exists")) return "Cette adresse email est déjà utilisée.";
+    if (code.includes("invalid-email")) return "L’adresse email n’est pas valide.";
+    if (code.includes("weak-password")) return "Le nouveau mot de passe n’est pas assez sécurisé.";
+    if (code.includes("too-many-requests")) return "Trop de tentatives. Réessayez dans quelques minutes.";
+    if (code.includes("requires-recent-login") || code.includes("failed-precondition")) return "Votre session doit être confirmée à nouveau. Vérifiez votre mot de passe actuel.";
+    return error?.message || String(error);
+  }
+
+  async function reauthenticateCurrentUser(password) {
+    const firebase = global.firebase;
+    const user = firebase?.auth?.().currentUser;
+    if (!user?.email || !firebase?.auth?.EmailAuthProvider?.credential || !user.reauthenticateWithCredential) {
+      throw new Error("Compte Firebase indisponible.");
+    }
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(credential);
+    await user.getIdToken?.(true);
+    return user;
+  }
+
   function canUse(capability) {
     const auth = ensureAdminAuth();
+    if (capability === "dtn.view") return Boolean(auth?.hasCapability?.("dtn.view"));
     return Boolean(auth?.hasCapability?.("admin.full") || auth?.hasCapability?.(capability));
   }
 
   function updateCapabilityView() {
-    document.querySelectorAll("[data-capability-card]").forEach((item) => {
-      item.hidden = !canUse(item.dataset.capabilityCard);
+    document.querySelectorAll("[data-capability-nav]").forEach((item) => {
+      item.hidden = !canUse(item.dataset.capabilityNav);
+    });
+    document.querySelectorAll(".admin-portal-nav-group").forEach((group) => {
+      group.hidden = !Array.from(group.querySelectorAll("a")).some((link) => !link.hidden);
     });
     document.querySelectorAll("[data-capability-panel]").forEach((item) => {
       item.hidden = !canUse(item.dataset.capabilityPanel);
     });
+    updateNavigationView();
+  }
+
+  function requestedNavigationView() {
+    if (global.location.hash === "#gestion-acces") return "access";
+    if (global.location.hash === "#mon-compte") return "account";
+    if (global.location.hash === "#records-mpf") return "records";
+    if (global.location.hash === "#import-competitions") return "import";
+    if (global.location.hash === "#correction-performance") return "correction";
+    if (["#espace-dtn", "#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
+    if (canUse("records.manage")) return "records";
+    if (canUse("competitions.import")) return "import";
+    if (canUse("dtn.view")) return "dtn";
+    if (canUse("admin.full")) return "access";
+    return "account";
+  }
+
+  function updateNavigationView() {
+    const requestedView = requestedNavigationView();
+    const accessDenied = requestedView === "access" && !canUse("admin.full");
+    const recordsDenied = requestedView === "records" && !canUse("records.manage");
+    const importDenied = requestedView === "import" && !canUse("competitions.import");
+    const correctionDenied = requestedView === "correction" && !canUse("competitions.import");
+    const dtnDenied = requestedView === "dtn" && !canUse("dtn.view");
+    const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || dtnDenied
+      ? (canUse("records.manage") ? "records" : canUse("competitions.import") ? "import" : canUse("dtn.view") ? "dtn" : "account")
+      : requestedView;
+    document.querySelectorAll("[data-admin-view]").forEach((section) => {
+      section.hidden = section.dataset.adminView !== activeView;
+    });
+    document.querySelectorAll("[data-admin-view-link]").forEach((link) => {
+      const dtnHash = link.dataset.dtnGridLink ? `#espace-dtn-${link.dataset.dtnGridLink}` : "";
+      const legacyDtnFrance = link.dataset.dtnGridLink === "france" && global.location.hash === "#espace-dtn";
+      const isActive = link.dataset.adminViewLink === activeView && (!dtnHash || global.location.hash === dtnHash || legacyDtnFrance);
+      link.classList.toggle("active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+    const activeLink = document.querySelector("[data-admin-view-link].active");
+    if (elements.navCurrent) elements.navCurrent.textContent = activeLink?.textContent?.trim() || "Navigation";
+    const recordsActive = activeView === "records";
+    const importActive = activeView === "import";
+    const correctionActive = activeView === "correction";
+    const importModuleActive = importActive || correctionActive;
+    const performanceModuleActive = recordsActive || importModuleActive;
+    if (elements.performanceStyles) elements.performanceStyles.disabled = !performanceModuleActive;
+    if (elements.importStyles) elements.importStyles.disabled = !importModuleActive;
+    document.body.classList.toggle("performance-admin-page", performanceModuleActive);
+    if (recordsActive) loadRecordModule();
+    if (importModuleActive) loadImportModule();
+  }
+
+  function loadScriptOnce(src, id) {
+    const existing = document.querySelector(`#${id}`);
+    if (existing?.dataset.loaded === "true") return Promise.resolve();
+    if (existing?.livePalmesLoadPromise) return existing.livePalmesLoadPromise;
+    const script = existing || document.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.async = false;
+    script.livePalmesLoadPromise = new Promise((resolve, reject) => {
+      script.addEventListener("load", () => {
+        script.dataset.loaded = "true";
+        resolve();
+      }, { once: true });
+      script.addEventListener("error", () => reject(new Error(`Chargement impossible : ${src}`)), { once: true });
+    });
+    if (!existing) document.body.appendChild(script);
+    return script.livePalmesLoadPromise;
+  }
+
+  function watchRecordWorkbench() {
+    if (!elements.recordWorkbench || !elements.recordModuleStatus) return;
+    const updateStatus = () => {
+      if (!elements.recordWorkbench.hidden) {
+        elements.recordModuleStatus.hidden = true;
+        observer.disconnect();
+      }
+    };
+    const observer = new MutationObserver(updateStatus);
+    observer.observe(elements.recordWorkbench, { attributes: true, attributeFilter: ["hidden"] });
+    updateStatus();
+  }
+
+  function loadRecordModule() {
+    if (recordModuleLoadPromise) return recordModuleLoadPromise;
+    if (elements.recordModuleStatus) {
+      elements.recordModuleStatus.hidden = false;
+      elements.recordModuleStatus.textContent = "Chargement du module Records / MPF…";
+      elements.recordModuleStatus.dataset.tone = "loading";
+    }
+    recordModuleLoadPromise = (async () => {
+      if (!global.firebase?.firestore) {
+        await loadScriptOnce(
+          "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
+          "adminRecordFirestoreScript"
+        );
+      }
+      const scripts = [
+        ["performances/public/data/records-data.js?v=records-firestore-20260629060432", "adminRecordDataScript"],
+        ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
+        ["performances/public/data/admin-reference.js?v=20260601-performance-admin-page-1", "adminRecordReferenceScript"],
+        ["performances/public/store.js?v=20260613-birth-year-restore-1", "adminRecordStoreScript"],
+        ["performances/public/admin-records.js?v=20260721-default-filters-1", "adminRecordModuleScript"]
+      ];
+      for (const [src, id] of scripts) await loadScriptOnce(src, id);
+      watchRecordWorkbench();
+    })().catch((error) => {
+      recordModuleLoadPromise = null;
+      if (elements.recordModuleStatus) {
+        elements.recordModuleStatus.hidden = false;
+        elements.recordModuleStatus.textContent = `Module Records / MPF indisponible : ${error?.message || error}`;
+        elements.recordModuleStatus.dataset.tone = "error";
+      }
+      return null;
+    });
+    return recordModuleLoadPromise;
+  }
+
+  function watchImportWorkbench() {
+    const pairs = [
+      [elements.importWorkbench, elements.importModuleStatus],
+      [elements.correctionWorkbench, elements.correctionModuleStatus]
+    ];
+    pairs.forEach(([workbench, status]) => {
+      if (!workbench || !status) return;
+      const updateStatus = () => {
+        if (!workbench.hidden) {
+          status.hidden = true;
+          observer.disconnect();
+        }
+      };
+      const observer = new MutationObserver(updateStatus);
+      observer.observe(workbench, { attributes: true, attributeFilter: ["hidden"] });
+      updateStatus();
+    });
+  }
+
+  function loadImportModule() {
+    if (importModuleLoadPromise) return importModuleLoadPromise;
+    if (elements.importModuleStatus) {
+      elements.importModuleStatus.hidden = false;
+      elements.importModuleStatus.textContent = "Chargement du module d’import…";
+      elements.importModuleStatus.dataset.tone = "loading";
+    }
+    if (elements.correctionModuleStatus) {
+      elements.correctionModuleStatus.hidden = false;
+      elements.correctionModuleStatus.textContent = "Chargement du module de correction…";
+      elements.correctionModuleStatus.dataset.tone = "loading";
+    }
+    importModuleLoadPromise = (async () => {
+      const scripts = [
+        ["performances/public/data/intranap-summary.js?v=consolidated-20260603140205", "adminImportSummaryScript"],
+        ["performances/public/data/performance-public/version.js", "adminImportVersionScript"],
+        ["performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1", "adminImportXlsxScript"],
+        ["performances/public/import-competitions.js?v=20260721-import-history-1", "adminImportModuleScript"]
+      ];
+      for (const [src, id] of scripts) await loadScriptOnce(src, id);
+      watchImportWorkbench();
+    })().catch((error) => {
+      importModuleLoadPromise = null;
+      if (elements.importModuleStatus) {
+        elements.importModuleStatus.hidden = false;
+        elements.importModuleStatus.textContent = `Module d’import indisponible : ${error?.message || error}`;
+        elements.importModuleStatus.dataset.tone = "error";
+      }
+      if (elements.correctionModuleStatus) {
+        elements.correctionModuleStatus.hidden = false;
+        elements.correctionModuleStatus.textContent = `Module de correction indisponible : ${error?.message || error}`;
+        elements.correctionModuleStatus.dataset.tone = "error";
+      }
+      return null;
+    });
+    return importModuleLoadPromise;
   }
 
   function capabilityLabel(capability) {
     return {
       "admin.full": "Administration generale",
       "records.manage": "Records / MPF",
-      "consoles.manage": "Pilotage LivePalmes",
-      "competitions.import": "Import competitions"
+      "consoles.manage": "Consoles compétition",
+      "competitions.import": "Import des compétitions",
+      "dtn.view": "Espace DTN"
     }[capability] || capability;
   }
 
   function renderCurrentUser(user = {}) {
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
-    if (elements.currentName) elements.currentName.textContent = name;
-    if (elements.currentEmail) elements.currentEmail.textContent = user.email || "-";
-    if (elements.currentClub) elements.currentClub.textContent = user.clubName || "-";
-    if (elements.currentLicense) elements.currentLicense.textContent = user.licenseNumber || "-";
-    if (elements.currentRights) {
-      elements.currentRights.textContent = (user.capabilities || []).map(capabilityLabel).join(", ") || "-";
+    if (elements.accountEmail && document.activeElement !== elements.accountEmail) {
+      elements.accountEmail.value = user.email || ensureAdminAuth()?.status?.().email || "";
     }
   }
 
@@ -124,7 +356,8 @@
     const signedIn = Boolean(status.signedIn);
     document.body.dataset.adminAuth = signedIn ? "unlocked" : "locked";
     if (elements.dashboard) elements.dashboard.hidden = !signedIn;
-    if (elements.sessionLabel) elements.sessionLabel.textContent = signedIn ? "Profil LivePalmes" : "Compte administrateur";
+    if (elements.accountControl) elements.accountControl.hidden = !signedIn;
+    if (elements.sessionLabel) elements.sessionLabel.textContent = "Profil LivePalmes";
     if (signedIn) {
       updateCapabilityView();
       loadCurrentUser();
@@ -135,6 +368,7 @@
     } else if (!status.configured) {
       setMessage("Aucun administrateur Firebase n'est configure.");
     } else if (!signedIn) {
+      closeAccountMenu();
       setMessage("");
     }
   }
@@ -173,6 +407,81 @@
       await ensureAdminAuth()?.signOut?.();
     } catch (error) {
       setMessage(`Deconnexion impossible : ${error?.message || error}`);
+    }
+  }
+
+  async function updateAccountEmail(event) {
+    event?.preventDefault?.();
+    const nextEmail = String(elements.accountEmail?.value || "").trim().toLowerCase();
+    const currentPassword = elements.accountEmailPassword?.value || "";
+    const currentEmail = String(global.firebase?.auth?.().currentUser?.email || "").trim().toLowerCase();
+    if (!nextEmail || !currentPassword) return;
+    if (nextEmail === currentEmail) {
+      setAccountMessage(elements.accountEmailMessage, "Cette adresse est déjà celle de votre compte.");
+      return;
+    }
+    const button = elements.accountEmailForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    setAccountMessage(elements.accountEmailMessage, "Mise à jour en cours…", "loading");
+    try {
+      const user = await reauthenticateCurrentUser(currentPassword);
+      await callFunction("updateCurrentAccountEmail", { email: nextEmail });
+      await user.reload?.();
+      await user.getIdToken?.(true);
+      let verificationSent = false;
+      try {
+        await user.sendEmailVerification?.();
+        verificationSent = true;
+      } catch (error) {
+        console.warn("Envoi de la vérification email impossible", error);
+      }
+      elements.accountEmailPassword.value = "";
+      renderCurrentUser({ ...(ensureAdminAuth()?.status?.().profile || {}), email: nextEmail });
+      await loadCurrentUser();
+      setAccountMessage(
+        elements.accountEmailMessage,
+        verificationSent
+          ? "Adresse mise à jour. Un email de vérification vient de vous être envoyé."
+          : "Adresse mise à jour.",
+        "ok"
+      );
+    } catch (error) {
+      setAccountMessage(elements.accountEmailMessage, `Modification impossible : ${firebaseAccountError(error)}`);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function updateAccountPassword(event) {
+    event?.preventDefault?.();
+    const currentPassword = elements.accountCurrentPassword?.value || "";
+    const nextPassword = elements.accountNewPassword?.value || "";
+    const confirmation = elements.accountConfirmPassword?.value || "";
+    if (nextPassword.length < 8) {
+      setAccountMessage(elements.accountPasswordMessage, "Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (nextPassword !== confirmation) {
+      setAccountMessage(elements.accountPasswordMessage, "La confirmation ne correspond pas au nouveau mot de passe.");
+      return;
+    }
+    if (currentPassword === nextPassword) {
+      setAccountMessage(elements.accountPasswordMessage, "Le nouveau mot de passe doit être différent de l’ancien.");
+      return;
+    }
+    const button = elements.accountPasswordForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    setAccountMessage(elements.accountPasswordMessage, "Mise à jour en cours…", "loading");
+    try {
+      const user = await reauthenticateCurrentUser(currentPassword);
+      await user.updatePassword(nextPassword);
+      await user.getIdToken?.(true);
+      elements.accountPasswordForm.reset();
+      setAccountMessage(elements.accountPasswordMessage, "Mot de passe modifié.", "ok");
+    } catch (error) {
+      setAccountMessage(elements.accountPasswordMessage, `Modification impossible : ${firebaseAccountError(error)}`);
+    } finally {
+      if (button) button.disabled = false;
     }
   }
 
@@ -329,9 +638,34 @@
     elements.form?.addEventListener("submit", signIn);
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.signOut?.addEventListener("click", signOut);
+    elements.accountToggle?.addEventListener("click", () => {
+      const open = elements.accountToggle.getAttribute("aria-expanded") !== "true";
+      elements.accountToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      if (elements.accountActions) elements.accountActions.hidden = !open;
+    });
+    elements.accountActions?.addEventListener("click", closeAccountMenu);
+    document.addEventListener("click", (event) => {
+      if (!elements.accountControl?.contains(event.target)) closeAccountMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeAccountMenu();
+    });
+    elements.navToggle?.addEventListener("click", () => {
+      const open = elements.navToggle.getAttribute("aria-expanded") !== "true";
+      elements.navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      document.querySelector(".admin-portal-sidebar")?.classList.toggle("is-open", open);
+    });
+    elements.navigation?.addEventListener("click", (event) => {
+      if (!event.target.closest("a")) return;
+      elements.navToggle?.setAttribute("aria-expanded", "false");
+      document.querySelector(".admin-portal-sidebar")?.classList.remove("is-open");
+    });
+    elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);
+    elements.accountPasswordForm?.addEventListener("submit", updateAccountPassword);
     elements.accessForm?.addEventListener("submit", saveAccessUser);
     elements.accessRefresh?.addEventListener("click", loadAccessUsers);
     elements.cancelEdit?.addEventListener("click", resetAccessForm);
+    global.addEventListener("hashchange", updateNavigationView);
     elements.accessList?.addEventListener("click", (event) => {
       const edit = event.target.closest("[data-access-edit]");
       if (edit) {
