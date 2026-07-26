@@ -9,7 +9,9 @@ const FIREBASE_CONFIG = {
 };
 
 const currentMeet = document.querySelector("#publicHomeCurrentMeet");
-const liveStatus = document.querySelector("#publicHomeLiveStatus");
+const liveCard = document.querySelector("#publicHomeLiveCard");
+const liveTitle = document.querySelector("#publicHomeLiveTitle");
+const homeGrid = document.querySelector(".public-home-grid");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -25,12 +27,17 @@ function meetLabel(meet = {}) {
 }
 
 function setHomeMeet(label, detail = "") {
-  if (liveStatus) {
-    liveStatus.textContent = label ? "En direct" : "Ouvert";
-    liveStatus.classList.toggle("live", Boolean(label));
-    liveStatus.classList.toggle("available", !label);
+  const hasLiveMeet = Boolean(label);
+  liveCard?.classList.toggle("is-inactive", !hasLiveMeet);
+  homeGrid?.classList.toggle("has-no-live", !hasLiveMeet);
+  if (liveTitle) {
+    liveTitle.textContent = hasLiveMeet ? "Comp\u00e9tition en direct" : "Aucune comp\u00e9tition en direct actuellement";
   }
   if (!currentMeet) return;
+  if (!hasLiveMeet) {
+    currentMeet.textContent = "";
+    return;
+  }
   const title = label || "Aucune comp\u00e9tition en direct pour le moment";
   const extra = detail && detail !== label ? detail.replace(label, "").replace(/^\s*-\s*/, "") : "";
   currentMeet.innerHTML = `

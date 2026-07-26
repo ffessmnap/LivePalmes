@@ -1,20 +1,90 @@
 (function attachIntranapSwimmerPage(global) {
-  const summary = global.LIVEPALMES_INTRANAP_SUMMARY || { counts: {}, filters: { courses: [] } };
+  let summary = global.LIVEPALMES_INTRANAP_SUMMARY || { counts: {}, filters: { courses: [] } };
   let recordData = global.LIVEPALMES_RECORDS || { records: [], franceRecords: [] };
   const swimmerRowsCache = new Map();
   const swimmerSearchCache = new Map();
   const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-swimmer-card-2";
-  const dataVersion = encodeURIComponent(publicVersion);
-  const publicPerformanceBase = "public/data/performance-public";
-  const usesConsolidatedData = true;
+  const params = new URLSearchParams(global.location.search);
+  const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
+  const usesFirestorePublicData = !usesLegacyPublicData;
+  const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
+  const isLocalPublicDataHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(global.location.hostname);
+  const dataVersion = encodeURIComponent(usesFirestorePublicData ? `firestore-${Date.now()}` : publicVersion);
+  const publicPerformanceBase = usesFirestorePublicData
+    ? (isLocalPublicDataHost ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
+    : "public/data/performance-public";
+  const usesConsolidatedData = usesLegacyPublicData;
   const publicAdditionalDataUrl = global.LivePalmesAppConfig?.performanceAdditionalDataUrl ||
     "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
 
+  function categoryMetaFromManifest(value) {
+    const [sex, code] = String(value || "").split("|");
+    const existing = (summary.filters.categories || []).find((category) => category.sex === sex && category.code === code);
+    if (existing) return existing;
+    const prefix = sex === "F" ? "F" : "H";
+    const suffixes = {
+      P: "PO",
+      B: "BE",
+      M: "MI",
+      C: "CA",
+      J: "JU",
+      S: "SE",
+      "M30+": "30+",
+      "M40+": "40+",
+      "M50+": "50+",
+      "M60+": "60+",
+      "M70+": "70+",
+      "M80+": "80+"
+    };
+    return {
+      code,
+      displayCode: `${prefix}${suffixes[code] || code}`,
+      label: code,
+      sex
+    };
+  }
+
+  function applyPublicManifest(manifest = {}) {
+    const currentFilters = summary.filters || {};
+    const currentCourses = new Map((currentFilters.courses || []).map((course) => [course.code, course]));
+    const manifestCourses = Array.isArray(manifest.courses) ? manifest.courses.map(String).filter(Boolean) : [];
+    const manifestCategories = Array.isArray(manifest.categories) ? manifest.categories.map(String).filter(Boolean) : [];
+    summary = {
+      ...summary,
+      generatedAt: manifest.generatedAt || summary.generatedAt,
+      filters: {
+        ...currentFilters,
+        courses: manifestCourses.length
+          ? manifestCourses.map((code) => currentCourses.get(code) || { code, label: code, shortLabel: code, style: "", length: 0 })
+          : (currentFilters.courses || []),
+        seasons: Array.isArray(manifest.seasons) ? manifest.seasons : (currentFilters.seasons || []),
+        regions: Array.isArray(manifest.regions) ? manifest.regions : (currentFilters.regions || []),
+        categories: manifestCategories.length
+          ? manifestCategories.map(categoryMetaFromManifest).filter((category) => category.sex && category.code)
+          : (currentFilters.categories || [])
+      }
+    };
+    courseOrder = buildCourseOrder(summary.filters.courses || []);
+  }
+
+  async function loadSelectedPublicManifest() {
+    if (!usesFirestorePublicData) return;
+    try {
+      const response = await fetch(`${publicPerformanceBase}/manifest.json?v=${dataVersion}`, { cache: "no-store" });
+      if (!response.ok) return;
+      applyPublicManifest(await response.json());
+    } catch (error) {
+      console.warn("Lecture du manifeste public Firestore impossible", error);
+    }
+  }
+
   const elements = {
     search: document.querySelector("#swimmerSearchInput"),
+    clearSearch: document.querySelector("#swimmerSearchClear"),
     suggestions: document.querySelector("#swimmerSearchResults"),
     season: document.querySelector("#swimmerSeasonFilter"),
     course: document.querySelector("#swimmerCourseFilter"),
+    pool: document.querySelector("#swimmerPoolFilter"),
     displayMode: document.querySelector("#swimmerDisplayMode"),
     progress: document.querySelector("#progressPanel"),
     title: document.querySelector("#swimmerTitle"),
@@ -31,7 +101,22 @@
     { key: "BI", label: "Bi-palmes" }
   ];
 
-  const courseOrder = new Map((summary.filters.courses || []).map((course, index) => [course.code, index]));
+  const STANDARD_COURSE_ORDER = [
+    "50SF", "100SF", "200SF", "400SF", "800SF", "1500SF",
+    "50AP",
+    "100IS", "200IS", "400IS",
+    "50BI", "100BI", "200BI", "400BI"
+  ];
+
+  function buildCourseOrder(courses) {
+    const codes = [
+      ...STANDARD_COURSE_ORDER,
+      ...courses.map((course) => course.code).filter(Boolean)
+    ];
+    return new Map(Array.from(new Set(codes)).map((course, index) => [course, index]));
+  }
+
+  let courseOrder = buildCourseOrder(summary.filters.courses || []);
 
   let selectedSwimmer = null;
   let selectedPerfs = [];
@@ -100,7 +185,7 @@
 
   function formatDate(value) {
     const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "-");
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value || "-");
   }
 
   function realAgeFromBirthDate(value) {
@@ -115,6 +200,12 @@
     const birthdayPassed = today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
     if (!birthdayPassed) age -= 1;
     return age >= 0 && age <= 130 ? `${age} an${age > 1 ? "s" : ""}` : "";
+  }
+
+  function swimmerBirthSummary(swimmer) {
+    const birthDate = swimmer?.birthDate ? formatDate(swimmer.birthDate) : "Date de naissance non renseignée";
+    const age = realAgeFromBirthDate(swimmer?.birthDate);
+    return age ? `${birthDate} (${age})` : birthDate;
   }
 
   function displayName(swimmer) {
@@ -259,51 +350,47 @@
     const rfCount = records.filter((record) => record.recordType === "RF").length;
     const rfjCount = records.filter((record) => record.recordType === "RFJ").length;
     const mpfCount = records.filter((record) => !record.recordType).length;
-    const birthDate = swimmer.birthDate ? formatDate(swimmer.birthDate) : "-";
-    const realAge = realAgeFromBirthDate(swimmer.birthDate);
-    const birthDateWithAge = realAge ? `${birthDate} (${realAge})` : birthDate;
     const perfsCount = performanceCount(perfs);
     const competitions = competitionCount(perfs);
     const latestClub = latestKnownClub(swimmer, perfs);
-    const recordGroups = ["RF", "RFJ", "MPF"].map((key) => {
-      const rows = records
-        .map((record, index) => ({ record, index }))
-        .filter((item) => recordGroupKey(item.record) === key);
-      return { key, rows };
-    }).filter((group) => group.rows.length);
+    const recordCards = mergedSwimmerRecordCards(records);
+    const franceRecordCount = rfCount + rfjCount;
+    const recordSummaryParts = [];
+    if (franceRecordCount) {
+      recordSummaryParts.push(`${franceRecordCount} record${franceRecordCount > 1 ? "s" : ""} de France détenu${franceRecordCount > 1 ? "s" : ""}`);
+    }
+    if (mpfCount) {
+      recordSummaryParts.push(`${mpfCount} MPF détenue${mpfCount > 1 ? "s" : ""}`);
+    }
 
     elements.profile.hidden = false;
     elements.profile.innerHTML = `
       <div class="swimmer-profile-stats">
-        <div><span>Date de naissance</span><strong>${escapeHtml(birthDateWithAge)}</strong></div>
         <div><span>Dernier club connu</span><strong>${escapeHtml(latestClub)}</strong></div>
         <div><span>Performances bassin</span><strong>${perfsCount.toLocaleString("fr-FR")}</strong></div>
         <div><span>Comp&eacute;titions</span><strong>${competitions.toLocaleString("fr-FR")}</strong></div>
       </div>
-      <div class="swimmer-profile-honors">
+      ${records.length ? `<div class="swimmer-profile-honors">
         <div class="swimmer-profile-honors-head">
-          <span>MPF et records d&eacute;tenus</span>
-          <strong>${records.length ? `RF ${rfCount} · RFJ ${rfjCount} · MPF ${mpfCount}` : "Aucun record individuel connu"}</strong>
+          <strong class="swimmer-profile-record-summary">${escapeHtml(recordSummaryParts.join(" · "))}</strong>
+          <button type="button" class="swimmer-records-toggle" data-swimmer-records-toggle aria-expanded="false" aria-controls="swimmerRecordsPanel" data-collapsed-label="Afficher les records" data-expanded-label="Masquer les records">Afficher les records</button>
         </div>
-        ${records.length ? `
-          <div class="swimmer-profile-records">
-            ${recordGroups.map((group) => `
-              <section class="swimmer-record-group${group.rows.some((item) => item.index < 5) ? "" : " is-extra"}">
-                <h3>${escapeHtml(recordGroupLabel(group.key))}</h3>
-                ${group.rows.map(({ record, index }) => `
-                  <div class="swimmer-record-line${index >= 5 ? " is-extra" : ""}">
-                    <span>${escapeHtml(categoryDisplayLabel(record) || "-")}</span>
-                    <strong>${escapeHtml(record.courseShortLabel || record.course || "-")}</strong>
-                    <strong>${escapeHtml(record.time || "-")}</strong>
-                    <span>${escapeHtml(formatDate(record.date))}</span>
-                  </div>
-                `).join("")}
-              </section>
-            `).join("")}
-          </div>
-          ${records.length > 5 ? `<button type="button" class="swimmer-records-toggle" data-swimmer-records-toggle data-collapsed-label="Afficher tout le palmar&egrave;s" data-expanded-label="Masquer le d&eacute;tail">Afficher tout le palmar&egrave;s</button>` : ""}
-        ` : ""}
-      </div>
+        <div class="swimmer-profile-records" id="swimmerRecordsPanel">
+          ${recordCards.map((card) => `
+            <article class="swimmer-record-card">
+              <div class="swimmer-record-card-head">
+                <strong>${escapeHtml(card.courseShortLabel || card.course || "-")}</strong>
+                <div class="swimmer-record-card-badges">${card.badges.map((badge) => recordScopeBadgeHtml(badge.scope, badge.category)).join("")}</div>
+              </div>
+              <div class="swimmer-record-card-details">
+                <strong>${escapeHtml(card.time || "-")}</strong>
+                <span>${escapeHtml(recordCardLocation(card.records))}</span>
+                <span>${escapeHtml(recordCardDate(card.records))}</span>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      </div>` : ""}
     `;
   }
 
@@ -421,6 +508,11 @@
     return course?.label || course?.shortLabel || code;
   }
 
+  function courseShortLabel(code) {
+    const course = (summary.filters.courses || []).find((item) => item.code === code);
+    return course?.shortLabel || course?.label || code;
+  }
+
   function compareCourse(a, b) {
     return (courseOrder.get(a.course) ?? 999) - (courseOrder.get(b.course) ?? 999) ||
       Number(a.length || 0) - Number(b.length || 0) ||
@@ -534,6 +626,21 @@
     return additionalSwimmers.find((candidate) => swimmerKnownIds(candidate).includes(needle)) || null;
   }
 
+  async function loadPerformanceBaseSwimmerByIdentity(name, birthDate = "", sex = "") {
+    const matches = await searchPerformanceBaseSwimmers(name);
+    const normalizedName = normalize(name);
+    const exactMatches = matches.filter((candidate) => normalize(displayName(candidate)) === normalizedName);
+    const exactIdentity = exactMatches.find((candidate) =>
+      (!birthDate || String(candidate.birthDate || "") === String(birthDate)) &&
+      (!sex || String(candidate.sex || "").toUpperCase() === String(sex).toUpperCase())
+    );
+    if (exactIdentity) return exactIdentity;
+    const sameBirthDate = exactMatches.find((candidate) =>
+      !birthDate || String(candidate.birthDate || "") === String(birthDate)
+    );
+    return sameBirthDate || (exactMatches.length === 1 ? exactMatches[0] : null);
+  }
+
   function loadAdditionalData() {
     if (additionalLoaded) return Promise.resolve(additionalPerfs);
     if (additionalLoad) return additionalLoad;
@@ -596,6 +703,7 @@
   function resetFilters() {
     addOptions(elements.season, [], "Toutes");
     addOptions(elements.course, [], "Toutes");
+    setSegmentValue(elements.pool, "");
     setSegmentValue(elements.displayMode, "best");
   }
 
@@ -610,7 +718,7 @@
       )
       .map((course) => course.code);
     addOptions(elements.season, seasons, "Toutes", (season) => `Saison ${season}`);
-    addOptions(elements.course, courses, "Toutes", courseLabel);
+    addOptions(elements.course, courses, "Toutes", courseShortLabel);
   }
 
   function scoreSwimmer(swimmer, tokens) {
@@ -654,15 +762,180 @@
     return {
       season: elements.season.value,
       course: elements.course.value,
+      pool: selectedSegmentValue(elements.pool),
       mode: selectedSegmentValue(elements.displayMode)
     };
+  }
+
+  function updateSearchClearButton() {
+    if (elements.clearSearch) elements.clearSearch.hidden = !elements.search.value;
+  }
+
+  function clearSwimmerSearch() {
+    swimmerSearchRequestId += 1;
+    swimmerSearchMatches = [];
+    selectedSwimmer = null;
+    selectedPerfs = [];
+    elements.search.value = "";
+    elements.suggestions.innerHTML = "";
+    resetFilters();
+    render();
+    updateSearchClearButton();
+
+    const nextParams = new URLSearchParams(window.location.search);
+    ["id", "name", "birth", "sex"].forEach((name) => nextParams.delete(name));
+    const query = nextParams.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    elements.search.focus();
+  }
+
+  function performancePool(perf) {
+    const candidates = [perf?.pool, perf?.poolLength, perf?.poolSize, perf?.bassin, perf?.basin];
+    for (const value of candidates) {
+      const text = String(value ?? "").trim().toLowerCase();
+      if (!text) continue;
+      const match = text.match(/(?:^|[^0-9])(25|50)(?:[^0-9]|$)/) || text.match(/^(25|50)$/);
+      if (match) return match[1];
+    }
+    return "";
   }
 
   function filteredPerfs(perfs, filters) {
     return perfs.filter((perf) =>
       (!filters.season || String(perf.seasonYear) === filters.season) &&
-      (!filters.course || perf.course === filters.course)
+      (!filters.course || perf.course === filters.course) &&
+      (!filters.pool || performancePool(perf) === filters.pool)
     );
+  }
+
+  function recordScope(record) {
+    if (record.recordType === "RF") return "RF";
+    if (record.recordType === "RFJ") return "RFJ";
+    return "MPF";
+  }
+
+  function mergedSwimmerRecordCards(records) {
+    const cards = new Map();
+    records.forEach((record) => {
+      const timeKey = Number.isFinite(Number(record.value)) ? Number(record.value) : String(record.time || "").trim();
+      const key = `${record.course || ""}|${timeKey}|${record.date || ""}`;
+      if (!cards.has(key)) {
+        cards.set(key, {
+          course: record.course,
+          courseShortLabel: record.courseShortLabel,
+          time: record.time,
+          records: [],
+          scopes: new Set(),
+          mpfCategories: new Set()
+        });
+      }
+      const card = cards.get(key);
+      card.records.push(record);
+      card.scopes.add(recordScope(record));
+      if (!record.recordType) {
+        const category = categoryDisplayLabel(record);
+        if (category) card.mpfCategories.add(category);
+      }
+    });
+    const scopeRanks = { RF: 0, RFJ: 1, MPF: 2 };
+    return Array.from(cards.values())
+      .map((card) => {
+        const scopes = Array.from(card.scopes).sort((a, b) => scopeRanks[a] - scopeRanks[b]);
+        const mpfCategories = Array.from(card.mpfCategories);
+        return {
+          ...card,
+          scopes,
+          mpfCategories,
+          badges: [
+            ...scopes.filter((scope) => scope !== "MPF").map((scope) => ({ scope, category: "" })),
+            ...(scopes.includes("MPF") ? (mpfCategories.length ? mpfCategories : [""])
+              .map((category) => ({ scope: "MPF", category })) : [])
+          ],
+          sortGroup: scopes.some((scope) => scope === "RF" || scope === "RFJ") ? 0 : 1,
+          sortDate: card.records.reduce((latest, record) => validRecordDate(record.date) && record.date > latest ? record.date : latest, "")
+        };
+      })
+      .sort((a, b) =>
+        a.sortGroup - b.sortGroup ||
+        String(b.sortDate).localeCompare(String(a.sortDate)) ||
+        compareCourse(a, b)
+      );
+  }
+
+  function validRecordDate(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    return date.getUTCFullYear() === Number(match[1]) &&
+      date.getUTCMonth() === Number(match[2]) - 1 &&
+      date.getUTCDate() === Number(match[3]);
+  }
+
+  function recordCardDate(records) {
+    const datedRecord = records
+      .filter((record) => validRecordDate(record.date))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    return datedRecord ? formatDate(datedRecord.date) : "Date à confirmer";
+  }
+
+  function recordCardLocation(records) {
+    const locations = Array.from(new Set(records
+      .map((record) => String(record.location || "").trim())
+      .filter(Boolean)));
+    return locations.length ? locations.join(" / ") : "Lieu non renseigné";
+  }
+
+  function recordScopeBadgeHtml(scope, category = "") {
+    if (scope === "MPF") {
+      const label = ["MPF", category].filter(Boolean).join(" · ");
+      return `<span class="swimmer-record-scope-badge is-mpf">${escapeHtml(label)}</span>`;
+    }
+    const title = scope === "RFJ" ? "Record de France Junior" : "Record de France";
+    return `<span class="record-france-badge" title="${title}" aria-label="${title}"><span class="france-flag" aria-hidden="true"></span><span>${title}</span></span>`;
+  }
+
+  function matchingFranceRecordsForPerformance(perf) {
+    if (!selectedSwimmer || !perf || perf.isIntermediate) return [];
+    return (recordData.franceRecords || []).filter((record) => {
+      if (!isIndividualRecord(record) || !["RF", "RFJ"].includes(record.recordType)) return false;
+      if (!swimmerMatchesRecord(selectedSwimmer, record)) return false;
+      if (record.course !== perf.course || (record.sex && selectedSwimmer.sex && record.sex !== selectedSwimmer.sex)) return false;
+      const candidates = selectedPerfs.filter((candidate) =>
+        !candidate.isIntermediate &&
+        candidate.course === record.course &&
+        samePerformanceTime(candidate, record)
+      );
+      if (!candidates.length) return false;
+      const exactDate = candidates.find((candidate) => record.date && candidate.date === record.date);
+      if (exactDate) return exactDate === perf;
+      const recordTimestamp = Date.parse(record.date || "");
+      const closest = Number.isFinite(recordTimestamp)
+        ? candidates.slice().sort((a, b) =>
+          Math.abs(Date.parse(a.date || "") - recordTimestamp) - Math.abs(Date.parse(b.date || "") - recordTimestamp)
+        )[0]
+        : candidates[0];
+      return closest === perf;
+    });
+  }
+
+  function samePerformanceTime(perf, record) {
+    const perfTimeValue = Number(perf.timeValue);
+    const recordTimeValue = Number(record.value);
+    return Number.isFinite(perfTimeValue) && Number.isFinite(recordTimeValue)
+      ? perfTimeValue === recordTimeValue
+      : String(perf.time || "").trim() === String(record.time || "").trim();
+  }
+
+  function renderFranceRecordBadges(perf) {
+    const recordTypes = Array.from(new Set(
+      matchingFranceRecordsForPerformance(perf).map((record) => record.recordType)
+    ));
+    return recordTypes.map((recordType) => {
+      const title = recordType === "RFJ"
+        ? "Cette performance est le Record de France Junior"
+        : "Cette performance est le Record de France";
+      return `<span class="record-france-badge" title="${title}" aria-label="${title}"><span class="france-flag" aria-hidden="true"></span><span>${recordType}</span></span>`;
+    }).join("");
   }
 
   function bestByCourse(perfs) {
@@ -682,7 +955,9 @@
     if (filters.mode === "best") return bestByCourse(filtered);
     return filtered.sort((a, b) => {
       if (filters.course) return a.timeValue - b.timeValue || String(b.date).localeCompare(a.date);
-      return String(b.date).localeCompare(a.date) || compareCourse(a, b);
+      return compareCourse(a, b) ||
+        Number(a.timeValue || 0) - Number(b.timeValue || 0) ||
+        String(b.date).localeCompare(a.date);
     });
   }
 
@@ -699,7 +974,7 @@
 
   function originMeta(perf) {
     if (!perf.isIntermediate) return "";
-    const origin = perf.originCourseShortLabel || perf.originCourse || "";
+    const origin = perf.originCourse ? courseShortLabel(perf.originCourse) : "";
     return origin ? `Passage du ${origin}` : "Temps de passage";
   }
 
@@ -772,11 +1047,11 @@
       <tr class="sex-${escapeHtml(String(perf.sex || "").toLowerCase())}" tabindex="0" role="button" aria-expanded="false">
         <td data-label="Course">
           <button class="course-progress-trigger" type="button" data-progress-course="${escapeHtml(perf.course)}">
-            ${escapeHtml(perf.courseShortLabel || perf.course)}
+            ${escapeHtml(perf.courseShortLabel || courseShortLabel(perf.course) || perf.course)}
           </button>
           ${origin ? `<small class="performance-origin-meta">${escapeHtml(origin)}</small>` : ""}
         </td>
-        <td class="time" data-label="Temps">${escapeHtml(perf.time)}</td>
+        <td class="time" data-label="Temps">${escapeHtml(perf.time)}${renderFranceRecordBadges(perf)}</td>
         <td data-label="Cat&eacute;gorie"><strong>${escapeHtml(perf.categoryCode || perf.category || "-")}</strong></td>
         <td data-label="Club">
           <strong>${escapeHtml(perf.club || "-")}</strong>
@@ -811,6 +1086,37 @@
     const minutes = Math.floor(totalSeconds / 60);
     const base = `${String(seconds).padStart(2, "0")}.${String(centiseconds).padStart(2, "0")}`;
     return minutes > 0 ? `${minutes}:${base}` : base;
+  }
+
+  function progressPointAttributes(point, index) {
+    const date = formatDate(point.date);
+    const location = point.location || "Lieu non renseign\u00e9";
+    const competition = point.competition || point.competitionName || "";
+    const label = [`Saison ${point.seasonYear}`, point.time, date, location].filter(Boolean).join(" - ");
+    return [
+      `data-progress-point="${index}"`,
+      `data-progress-season="${escapeHtml(point.seasonYear || "")}"`,
+      `data-progress-time="${escapeHtml(point.time || "")}"`,
+      `data-progress-date="${escapeHtml(date)}"`,
+      `data-progress-location="${escapeHtml(location)}"`,
+      `data-progress-competition="${escapeHtml(competition)}"`,
+      `aria-label="${escapeHtml(label)}"`
+    ].join(" ");
+  }
+
+  function showProgressPointDetail(source) {
+    const detail = elements.progress.querySelector("[data-progress-detail]");
+    if (!detail || !source?.dataset) return;
+    const { progressPoint, progressSeason, progressTime, progressDate, progressLocation, progressCompetition } = source.dataset;
+    const meta = [progressDate, progressLocation, progressCompetition].filter(Boolean).join(" · ");
+    detail.hidden = false;
+    detail.innerHTML = `
+      <strong>Saison ${escapeHtml(progressSeason || "-")} · ${escapeHtml(progressTime || "-")}</strong>
+      <span>${escapeHtml(meta || "-")}</span>
+    `;
+    elements.progress.querySelectorAll("[data-progress-point]").forEach((item) => {
+      item.classList.toggle("is-active", item.dataset.progressPoint === progressPoint);
+    });
   }
 
   function renderProgress() {
@@ -854,7 +1160,7 @@
     elements.progress.classList.add("active");
     elements.progress.innerHTML = `
       <div class="progress-head">
-        <div><h2>Progression ${escapeHtml(courseLabel(filters.course))}</h2><span>Meilleure performance par saison</span></div>
+        <div><h2>Progression ${escapeHtml(courseShortLabel(filters.course))}</h2><span>Meilleure performance par saison</span></div>
         <div class="progress-actions">
           <span>${trend}</span>
           <button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button>
@@ -864,16 +1170,20 @@
         <line class="progress-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
         <line class="progress-axis" x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}"></line>
         <path class="progress-line" d="${path}"></path>
-        ${coords.map((point) => `
-          <circle class="progress-point${point === best ? " best" : ""}" cx="${point.x}" cy="${point.y}" r="4">
-            <title>${escapeHtml(`${point.seasonYear} - ${point.time} - ${point.location || "Lieu non renseign\u00e9"}`)}</title>
-          </circle>
+        ${coords.map((point, index) => `
+          <g class="progress-point-group" tabindex="0" role="button" ${progressPointAttributes(point, index)}>
+            <circle class="progress-hit" cx="${point.x}" cy="${point.y}" r="13"></circle>
+            <circle class="progress-point${point === best ? " best" : ""}" cx="${point.x}" cy="${point.y}" r="4">
+              <title>${escapeHtml(`${point.seasonYear} - ${point.time} - ${formatDate(point.date)} - ${point.location || "Lieu non renseign\u00e9"}`)}</title>
+            </circle>
+          </g>
           <text class="progress-time" x="${point.x}" y="${Math.max(14, point.y - 9)}" text-anchor="middle">${escapeHtml(point.time)}</text>
           <text class="progress-label" x="${point.x}" y="${height - 17}" text-anchor="middle">${escapeHtml(point.seasonYear)}</text>
         `).join("")}
       </svg>
+      <div class="progress-detail" data-progress-detail hidden></div>
       <div class="progress-list">
-        ${coords.map((point) => `<span><strong>${escapeHtml(point.seasonYear)}</strong>${escapeHtml(point.time)}</span>`).join("")}
+        ${coords.map((point, index) => `<button class="progress-list-item" type="button" ${progressPointAttributes(point, index)}><strong>${escapeHtml(point.seasonYear)}</strong>${escapeHtml(point.time)}</button>`).join("")}
       </div>
     `;
   }
@@ -895,14 +1205,13 @@
     const filters = currentFilters();
     const rows = rowsForFilters();
     renderProgress();
+    elements.status.textContent = swimmerBirthSummary(selectedSwimmer);
 
     if (!rows.length) {
-      elements.status.textContent = "Aucune performance ne correspond aux filtres.";
       elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Aucune performance ne correspond aux filtres.</td></tr>`;
       return;
     }
 
-    elements.status.textContent = `${rows.length} performance${rows.length > 1 ? "s" : ""} affich\u00e9e${rows.length > 1 ? "s" : ""}.`;
     if (filters.mode === "best" && !filters.course) {
       renderSectionedRows(rows);
     } else {
@@ -914,6 +1223,7 @@
     selectedSwimmer = swimmer;
     selectedPerfs = [];
     elements.search.value = displayName(swimmer);
+    updateSearchClearButton();
     elements.suggestions.innerHTML = "";
     elements.title.textContent = displayName(swimmer);
     elements.status.textContent = "Chargement des performances...";
@@ -938,8 +1248,10 @@
   function init() {
     resetFilters();
     render();
+    updateSearchClearButton();
 
     elements.search.addEventListener("input", () => {
+      updateSearchClearButton();
       if (selectedSwimmer && normalize(elements.search.value) !== normalize(displayName(selectedSwimmer))) {
         selectedSwimmer = null;
         selectedPerfs = [];
@@ -948,6 +1260,8 @@
       }
       searchSwimmers();
     });
+
+    elements.clearSearch?.addEventListener("click", clearSwimmerSearch);
 
     elements.suggestions.addEventListener("click", (event) => {
       const button = event.target.closest("[data-swimmer-id]");
@@ -960,6 +1274,12 @@
 
     elements.season.addEventListener("input", render);
     elements.course.addEventListener("input", render);
+    elements.pool.querySelectorAll(".segment").forEach((button) => {
+      button.addEventListener("click", () => {
+        setSegmentValue(elements.pool, button.dataset.value);
+        render();
+      });
+    });
     elements.displayMode.querySelectorAll(".segment").forEach((button) => {
       button.addEventListener("click", () => {
         setSegmentValue(elements.displayMode, button.dataset.value);
@@ -968,6 +1288,11 @@
     });
 
     elements.progress.addEventListener("click", (event) => {
+      const point = event.target.closest("[data-progress-point]");
+      if (point) {
+        showProgressPointDetail(point);
+        return;
+      }
       const resetButton = event.target.closest("[data-progress-reset]");
       if (!resetButton) return;
       elements.course.value = "";
@@ -976,12 +1301,21 @@
       elements.card.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
+    elements.progress.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const point = event.target.closest("[data-progress-point]");
+      if (!point) return;
+      event.preventDefault();
+      showProgressPointDetail(point);
+    });
+
     elements.profile?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-swimmer-records-toggle]");
       if (!button) return;
       const honors = button.closest(".swimmer-profile-honors");
       const expanded = !honors?.classList.contains("is-expanded");
       honors?.classList.toggle("is-expanded", expanded);
+      button.setAttribute("aria-expanded", expanded ? "true" : "false");
       button.textContent = expanded ? button.dataset.expandedLabel : button.dataset.collapsedLabel;
     });
 
@@ -1019,26 +1353,50 @@
       row.click();
     });
 
-    const directId = new URLSearchParams(window.location.search).get("id");
+    const directParams = new URLSearchParams(window.location.search);
+    const directId = directParams.get("id");
+    const directName = directParams.get("name");
     if (directId) {
       loadPerformanceBaseSwimmerById(directId).then((swimmer) => {
-        if (!swimmer) return;
+        if (!swimmer) {
+          elements.status.textContent = "Fiche nageur introuvable.";
+          return;
+        }
         return selectSwimmer(swimmer);
       }).catch((error) => {
         elements.status.textContent = `Chargement impossible : ${error.message || error}`;
       });
+    } else if (directName) {
+      elements.search.value = directName;
+      updateSearchClearButton();
+      loadPerformanceBaseSwimmerByIdentity(directName, directParams.get("birth") || "", directParams.get("sex") || "")
+        .then((swimmer) => {
+          if (swimmer) return selectSwimmer(swimmer);
+          elements.status.textContent = "Sélectionnez le nageur correspondant dans les résultats proposés.";
+          searchSwimmers();
+        })
+        .catch((error) => {
+          elements.status.textContent = `Chargement impossible : ${error.message || error}`;
+        });
     }
 
     loadRecordData().then(() => {
-      if (selectedSwimmer) renderSwimmerProfile(selectedSwimmer, selectedPerfs);
+      if (selectedSwimmer) {
+        renderSwimmerProfile(selectedSwimmer, selectedPerfs);
+        render();
+      }
     });
 
     if (elements.search.value) searchSwimmers();
   }
 
+  function start() {
+    loadSelectedPublicManifest().then(init);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
+    document.addEventListener("DOMContentLoaded", start, { once: true });
   } else {
-    init();
+    start();
   }
 })(window);

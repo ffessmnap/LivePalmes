@@ -115,9 +115,24 @@ function readJsonFiles(dir) {
 }
 
 function readHistoricalData(dataDir = DEFAULT_DATA_DIR) {
-  const summary = parseJsGlobal(path.join(dataDir, "intranap-summary.js"), "LIVEPALMES_INTRANAP_SUMMARY");
-  const swimmers = parseJsGlobal(path.join(dataDir, "intranap-swimmers-index.js"), "LIVEPALMES_INTRANAP_SWIMMERS");
+  const summaryPath = path.join(dataDir, "intranap-summary.js");
+  const swimmersPath = path.join(dataDir, "intranap-swimmers-index.js");
   const swimmerPerfsDir = path.join(dataDir, "intranap-swimmer-perfs");
+  const missing = [
+    summaryPath,
+    swimmersPath,
+    swimmerPerfsDir
+  ].filter((sourcePath) => !fs.existsSync(sourcePath));
+  if (missing.length) {
+    throw new Error([
+      "Source historique INTRANAP incomplete.",
+      "Regenerer d'abord les fichiers intermediaires avec : node tools/build-intranap-public-data.js",
+      `Elements manquants : ${missing.map((sourcePath) => path.relative(process.cwd(), sourcePath)).join(", ")}`
+    ].join(" "));
+  }
+
+  const summary = parseJsGlobal(summaryPath, "LIVEPALMES_INTRANAP_SUMMARY");
+  const swimmers = parseJsGlobal(swimmersPath, "LIVEPALMES_INTRANAP_SWIMMERS");
   const perfsBySwimmer = new Map();
   const allPerfs = [];
 
