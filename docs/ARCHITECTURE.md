@@ -216,7 +216,7 @@ Il existe aussi un fichier de secours statique :
 performances/public/data/records-data.js
 ```
 
-Apres une modification officielle des Records / MPF, il faut synchroniser ce fichier de secours avec :
+Avant chaque déploiement Firebase Hosting, le hook `hosting.predeploy` synchronise automatiquement ce fichier de secours depuis Firestore. La commande reste disponible pour lancer la synchronisation manuellement :
 
 ```powershell
 node tools/sync-records-from-firestore.js --write

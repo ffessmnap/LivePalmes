@@ -1,0 +1,1410 @@
+{
+  "description": "Corrections manuelles des competitions INTRANAP dont le bassin ou le chrono est absent dans la base source. Les lignes non renseignees dans le tableur sont ignorees.",
+  "sourceWorkbook": "C:\\Users\\ITIFP\\OneDrive - SNCF\\Documents\\GitHub\\LivePalmes\\outputs\\intranap-corrections\\competitions-intranap-a-completer.xlsx",
+  "overrides": {
+    "1": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "3e meeting international j. bunoz",
+      "location": "Stade nautique d'antibes",
+      "date": "2004-05-15",
+      "note": ""
+    },
+    "2": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "5ème coupe internationale de nage avec palmes - challenge jean bunoz",
+      "location": "Antibes",
+      "date": "2006-04-15",
+      "note": ""
+    },
+    "3": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "1er interclub meusien",
+      "location": "Verdun",
+      "date": "2002-11-10",
+      "note": ""
+    },
+    "4": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat inter-regional est de nage avec palmes 2003",
+      "location": "Chalons en champagne",
+      "date": "2003-06-01",
+      "note": ""
+    },
+    "5": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat 54",
+      "location": "Longwy",
+      "date": "2003-06-15",
+      "note": ""
+    },
+    "6": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "journee du demi fond 2003",
+      "location": "Longwy",
+      "date": "2003-11-30",
+      "note": ""
+    },
+    "7": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "open/championnat du doubs 2004",
+      "location": "Montbeliard",
+      "date": "2004-01-11",
+      "note": ""
+    },
+    "8": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "open/championnat d'alsace 2004",
+      "location": "Mulhouse",
+      "date": "2004-01-25",
+      "note": ""
+    },
+    "9": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "open/championnat de meuse de nage avec palmes 2004",
+      "location": "Verdun",
+      "date": "2004-02-29",
+      "note": ""
+    },
+    "11": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "open/championnat de moselle 2004",
+      "location": "Forbach",
+      "date": "2004-03-21",
+      "note": ""
+    },
+    "12": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub - coupe de la ville d'uckange",
+      "location": "Uckange",
+      "date": "2004-04-04",
+      "note": ""
+    },
+    "14": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "journee du demi fond",
+      "location": "Longwy",
+      "date": "2002-12-01",
+      "note": ""
+    },
+    "15": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat regionaux de nage avec palmes 2004",
+      "location": "Longwy",
+      "date": "2004-06-06",
+      "note": ""
+    },
+    "16": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "journee du demi fond 2004",
+      "location": "Longwy",
+      "date": "2004-11-21",
+      "note": ""
+    },
+    "17": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub de la ville d'uckange",
+      "location": "Uckange",
+      "date": "2004-12-05",
+      "note": ""
+    },
+    "18": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub de la ville d'uckange",
+      "location": "Uckange",
+      "date": "2004-12-05",
+      "note": ""
+    },
+    "19": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub de la ville de moyeuvre grande",
+      "location": "Moyeuvre grande",
+      "date": "2005-01-23",
+      "note": ""
+    },
+    "20": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnats d'alsace 2005 de nage avec palmes",
+      "location": "Schiltigheim",
+      "date": "2005-01-30",
+      "note": ""
+    },
+    "21": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnats 2005 de meurthe et moselle - nage avec palmes",
+      "location": "Longwy",
+      "date": "2005-02-20",
+      "note": ""
+    },
+    "22": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "open - championnat de meuse 2005 de nage avec palmes",
+      "location": "Verdun",
+      "date": "2005-02-27",
+      "note": ""
+    },
+    "23": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "open-championnat de moselle 2005 de nage avec palmes",
+      "location": "Creutzwald",
+      "date": "2005-04-03",
+      "note": ""
+    },
+    "24": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub - open 2005 de nage avec palmes",
+      "location": "Vittel",
+      "date": "2005-05-22",
+      "note": ""
+    },
+    "25": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "2ème interclub de nage avec palmes - vittel",
+      "location": "Vittel",
+      "date": "2003-01-12",
+      "note": ""
+    },
+    "26": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "open / championnat regional 2005 de nage avec palmes",
+      "location": "Forbach",
+      "date": "2005-06-05",
+      "note": ""
+    },
+    "27": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs uckange",
+      "location": "Uckange",
+      "date": "2005-11-20",
+      "note": ""
+    },
+    "28": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "journee du demi fond 2005",
+      "location": "Longwy",
+      "date": "2005-12-04",
+      "note": ""
+    },
+    "29": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub vittel 2006",
+      "location": "Vittel",
+      "date": "2006-01-15",
+      "note": ""
+    },
+    "30": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "challenge de selestat",
+      "location": "Selestat",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "31": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub moyeuvre grande 2006",
+      "location": "Moyeuvre grande",
+      "date": "2006-03-12",
+      "note": ""
+    },
+    "32": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs hayange 2006",
+      "location": "Hayange",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "33": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "championnat regionaux piscine ile de france-picardie / competition de reference cnnp",
+      "location": "Nogent sur marne",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "34": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub moyeuvre grande",
+      "location": "Moyeuvre grande",
+      "date": "2003-01-19",
+      "note": ""
+    },
+    "35": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "open - championnat de moselle 2006",
+      "location": "Moyeuvre grande",
+      "date": "2006-05-21",
+      "note": ""
+    },
+    "36": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "intercomites 2006 de nage avec palmes",
+      "location": "Uckange",
+      "date": "2006-06-04",
+      "note": ""
+    },
+    "37": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub vittel 2006",
+      "location": "Vittel",
+      "date": "2006-01-15",
+      "note": ""
+    },
+    "38": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnats de meurthe et moselle 2006",
+      "location": "Longwy",
+      "date": "2006-06-18",
+      "note": ""
+    },
+    "39": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat d'alsace 2003",
+      "location": "Schiltigheim",
+      "date": "2003-01-26",
+      "note": ""
+    },
+    "40": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat de meuse 2003",
+      "location": "Verdun",
+      "date": "2003-02-09",
+      "note": ""
+    },
+    "41": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub forbach 2003",
+      "location": "Forbach",
+      "date": "2003-02-16",
+      "note": ""
+    },
+    "42": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "open/championnat de moselle 2003 de nage avec palmes",
+      "location": "Uckange",
+      "date": "2003-04-13",
+      "note": ""
+    },
+    "43": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub vittel 2006",
+      "location": "Vittel",
+      "date": "2006-01-15",
+      "note": ""
+    },
+    "44": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe du sprint",
+      "location": "Sceaux, piscine des blagis",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "45": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°1",
+      "location": "Villeneuve saint georges",
+      "date": "2005-11-27",
+      "note": ""
+    },
+    "46": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub n°2",
+      "location": "Saint germain en laye",
+      "date": "2005-12-10",
+      "note": ""
+    },
+    "47": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°3",
+      "location": "Corbie",
+      "date": "2006-01-14",
+      "note": ""
+    },
+    "48": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°4",
+      "location": "Houilles / carrières sur seine",
+      "date": "2006-01-29",
+      "note": ""
+    },
+    "49": {
+      "pool": "33",
+      "chrono": "M",
+      "name": "interclub n°5",
+      "location": "Paris (piscine rouvet)",
+      "date": "2006-03-05",
+      "note": ""
+    },
+    "50": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°6",
+      "location": "Albert",
+      "date": "2006-03-12",
+      "note": ""
+    },
+    "51": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "championnat regionaux piscine ile de france-picardie / competition de reference cnnp",
+      "location": "Nogent sur marne",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "52": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "les soirées de la palme à palaiseau, soirée du demi-fond",
+      "location": "Palaiseau",
+      "date": "2006-05-13",
+      "note": ""
+    },
+    "53": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "les soirées de la palme à palaiseau, soirée de l'immersion",
+      "location": "Piscine municipale de palaiseau",
+      "date": "2006-05-20",
+      "note": ""
+    },
+    "54": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "les soirées de la palmes à palaiseau, soirée du sprint",
+      "location": "Palaiseau",
+      "date": "2006-06-10",
+      "note": ""
+    },
+    "55": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "les soirées de la palmes à palaiseau, soirée du print",
+      "location": "Piscine de palaiseau",
+      "date": "2006-06-10",
+      "note": ""
+    },
+    "56": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "coupe novigod 2005",
+      "location": "Toulouse",
+      "date": "2005-12-18",
+      "note": ""
+    },
+    "57": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat codep 34 - master 2006",
+      "location": "Sète",
+      "date": "2006-02-12",
+      "note": ""
+    },
+    "58": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "trophée philippe izard",
+      "location": "Piscine léo lagrange - toulouse",
+      "date": "2006-02-19",
+      "note": ""
+    },
+    "60": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "5ème critérium des jeunes",
+      "location": "Aqualuna à lunel (34)",
+      "date": "2006-03-19",
+      "note": ""
+    },
+    "61": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat régional des jeunes",
+      "location": "Maubeuge",
+      "date": "2005-10-23",
+      "note": ""
+    },
+    "62": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat régional hiver",
+      "location": "Cambrai",
+      "date": "2005-11-27",
+      "note": ""
+    },
+    "63": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnats du nord par équipes",
+      "location": "Fourmies",
+      "date": "2006-01-15",
+      "note": ""
+    },
+    "64": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnats régional des jeunes 2ème partie",
+      "location": "Douai",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "65": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat régional",
+      "location": "Maubeuge",
+      "date": "2006-03-12",
+      "note": ""
+    },
+    "66": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat du nord",
+      "location": "Valenciennes",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "67": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "championnat régional",
+      "location": "Hautmont",
+      "date": "2006-05-14",
+      "note": ""
+    },
+    "68": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter clubs aix",
+      "location": "C.s.u. aix en provence",
+      "date": "2006-05-07",
+      "note": ""
+    },
+    "69": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter zone sud 2006 invites",
+      "location": "La ciotat",
+      "date": "2006-06-11",
+      "note": ""
+    },
+    "70": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter zone sud 2006",
+      "location": "La ciotat",
+      "date": "2006-06-11",
+      "note": ""
+    },
+    "71": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inters clubs exceptionnels 2006",
+      "location": "Piscine municipale jean boiteux",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "72": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "10ème critérium d'hiver des jeunes - trophée robert gautier",
+      "location": "Piscine caneton - sorgues - 84700",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "73": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe du roy rene",
+      "location": "Piscine c.s.u.- aix",
+      "date": "2006-03-05",
+      "note": ""
+    },
+    "74": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat regional 2006",
+      "location": "Piscine yves blanc aix en provence",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "75": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club vitrolles 2005",
+      "location": "Vitrolles",
+      "date": "2005-11-13",
+      "note": ""
+    },
+    "76": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe de noel 2005",
+      "location": "La ciotat",
+      "date": "2005-12-10",
+      "note": ""
+    },
+    "77": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club piscine bonsecours",
+      "location": "Bonsecours",
+      "date": "2006-01-28",
+      "note": ""
+    },
+    "78": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club bonsecours",
+      "location": "Bonsecours",
+      "date": "2005-12-17",
+      "note": ""
+    },
+    "79": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs cherbourg",
+      "location": "Cherbourg",
+      "date": "2006-01-15",
+      "note": ""
+    },
+    "80": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club piscine cherbourg",
+      "location": "Cherbourg",
+      "date": "2005-12-04",
+      "note": ""
+    },
+    "81": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnats de normandie piscine",
+      "location": "Notre dame de gravenchon",
+      "date": "2006-06-03",
+      "note": ""
+    },
+    "82": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs gravenchon",
+      "location": "Notre dame de gravenchon",
+      "date": "2005-11-27",
+      "note": ""
+    },
+    "83": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "inter club piscine gravenchon",
+      "location": "Notre dame de gravenchon",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "84": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club hérouville",
+      "location": "Hérouville saint clair",
+      "date": "2005-11-13",
+      "note": ""
+    },
+    "85": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub hérouville",
+      "location": "Hérouville saint clair",
+      "date": "2006-03-05",
+      "note": ""
+    },
+    "86": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "inter clubs palmos",
+      "location": "Pont saint pierre",
+      "date": "2006-03-18",
+      "note": ""
+    },
+    "87": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs gravenchon",
+      "location": "Notre dame de gravenchon",
+      "date": "2006-04-09",
+      "note": ""
+    },
+    "88": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "inter club piscine pt saint pierre",
+      "location": "Pont saint pierre",
+      "date": "2006-02-18",
+      "note": ""
+    },
+    "89": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "1° manche interclubs régionaux 2005/2006 - région centre - chambray lès tours - nap",
+      "location": "Chambray lès tours",
+      "date": "2005-11-20",
+      "note": ""
+    },
+    "90": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "challenge buchard 2005 - issoudun - cr centre  nap",
+      "location": "Issoudun",
+      "date": "2005-12-10",
+      "note": ""
+    },
+    "91": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "2ème manche interclubs région centre - orléans - nap",
+      "location": "Orléans la source",
+      "date": "2006-01-08",
+      "note": ""
+    },
+    "92": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "3ème manche interclubs région centre 2005/2006 - tours - nap",
+      "location": "Tours",
+      "date": "2006-01-22",
+      "note": ""
+    },
+    "93": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "finale interclubs région centre 2005/2006 - nap",
+      "location": "Chalette sur loing",
+      "date": "2006-02-05",
+      "note": ""
+    },
+    "94": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "critérium régional jeunes 2006 - région centre",
+      "location": "Chateauneuf/loire",
+      "date": "2006-05-14",
+      "note": ""
+    },
+    "95": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat régional centre 2006",
+      "location": "Gien",
+      "date": "2006-06-11",
+      "note": ""
+    },
+    "96": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°01",
+      "location": "Pointe a pitre",
+      "date": "2005-10-15",
+      "note": ""
+    },
+    "97": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°02",
+      "location": "Pointe à pitre",
+      "date": "2005-11-12",
+      "note": ""
+    },
+    "98": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°03",
+      "location": "Pointe a pitre",
+      "date": "2005-12-11",
+      "note": ""
+    },
+    "99": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°04",
+      "location": "Pointe a pitre",
+      "date": "2006-01-14",
+      "note": ""
+    },
+    "100": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°05",
+      "location": "Pointe à pitre",
+      "date": "2006-01-29",
+      "note": ""
+    },
+    "101": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°06",
+      "location": "Pointe a pitre",
+      "date": "2006-02-11",
+      "note": ""
+    },
+    "102": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°11",
+      "location": "Pointe à pitre",
+      "date": "2006-06-10",
+      "note": ""
+    },
+    "103": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°10",
+      "location": "Pointe à pitre",
+      "date": "2006-06-03",
+      "note": ""
+    },
+    "104": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscin n°11 bis",
+      "location": "Pointe à pitre",
+      "date": "2006-06-10",
+      "note": ""
+    },
+    "105": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°07",
+      "location": "Pointe a pitre",
+      "date": "2006-03-11",
+      "note": ""
+    },
+    "106": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°08",
+      "location": "Pointe a pitre",
+      "date": "2006-04-02",
+      "note": ""
+    },
+    "107": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°09 championnat de guadeloupe",
+      "location": "Pointe a pitre",
+      "date": "2006-04-29",
+      "note": ""
+    },
+    "108": {
+      "pool": "25",
+      "chrono": "E",
+      "name": "1ère coupe de france des clubs",
+      "location": "Antibes",
+      "date": "2006-03-25",
+      "note": ""
+    },
+    "109": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "45 ème championnat de france d'eté et critériums nationaux de nage avec palmes",
+      "location": "Forbach",
+      "date": "2005-06-24",
+      "note": ""
+    },
+    "110": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "29ème championnats de france et critériums nationaux d'hiver de nage avec palmes",
+      "location": "Clermont-ferrand",
+      "date": "2005-03-05",
+      "note": ""
+    },
+    "111": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "prise de temps - compétitions de référence",
+      "location": "Antibes",
+      "date": "2006-05-14",
+      "note": ""
+    },
+    "114": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs uckange",
+      "location": "Uckange",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "116": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnats 54",
+      "location": "Longwy",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "118": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "championnat d'alsace 2007",
+      "location": "Schiltigheim",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "119": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub moyeuvre grande",
+      "location": "Moyeuvre grande",
+      "date": "2007-01-21",
+      "note": ""
+    },
+    "123": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "compétition départementale nord",
+      "location": "Maubeuge",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "124": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "coupe novigod 2006",
+      "location": "Toulouse",
+      "date": "2006-12-17",
+      "note": ""
+    },
+    "125": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "1er inter-clubs spilliaert",
+      "location": "Montpellier",
+      "date": "2006-11-19",
+      "note": ""
+    },
+    "126": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub n° 1",
+      "location": "Paris, piscine montherlant",
+      "date": "2006-11-26",
+      "note": ""
+    },
+    "127": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs gravenchon",
+      "location": "Notre dame de gravenchon",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "128": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub uckange",
+      "location": "Uckange",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "129": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "critérium régional jeunes",
+      "location": "Chateauneuf/loire",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "130": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "2ème mancheinterclubs région centre - 2006/2007 - saint avertin",
+      "location": "Saint avertin",
+      "date": "2006-12-17",
+      "note": ""
+    },
+    "131": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "journee du demi fond 2006",
+      "location": "Longwy",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "132": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs hérouville",
+      "location": "Hérouville saint clair",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "133": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "journée des jeunes",
+      "location": "Le perreux",
+      "date": "2006-12-10",
+      "note": ""
+    },
+    "134": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "2ème inter-clubs spilliaert",
+      "location": "Montpellier",
+      "date": "2006-12-03",
+      "note": ""
+    },
+    "135": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "compétition départementale 62",
+      "location": "Harnes",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "136": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club vitrolles",
+      "location": "Vitrolles",
+      "date": "2006-11-19",
+      "note": ""
+    },
+    "137": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°4 saison 2006-2007",
+      "location": "Auray",
+      "date": "2006-12-17",
+      "note": ""
+    },
+    "138": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "1ère manche interclubs région centre - chambray-lès-tours",
+      "location": "Chambray-lès-tours",
+      "date": "2006-11-26",
+      "note": ""
+    },
+    "139": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°01",
+      "location": "Pointe à pitre",
+      "date": "2006-10-21",
+      "note": ""
+    },
+    "140": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°02",
+      "location": "Pointe à pitre",
+      "date": "2006-11-18",
+      "note": ""
+    },
+    "141": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°03",
+      "location": "Pointe à pitre",
+      "date": "2006-12-02",
+      "note": ""
+    },
+    "142": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n°1 saison 2006-2007",
+      "location": "Baud",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "143": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n° 2 - saison 2006-2007",
+      "location": "Quimper",
+      "date": "2006-11-26",
+      "note": ""
+    },
+    "144": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub n°3 - saison 2006-2007",
+      "location": "Brest",
+      "date": "2006-12-10",
+      "note": ""
+    },
+    "145": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe du sprint",
+      "location": "Sceaux, piscine des blagis",
+      "date": "2007-02-04",
+      "note": ""
+    },
+    "147": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub n° 3",
+      "location": "Piscine de l'école polytechnique",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "149": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "4ème manche interclubs région centre 2006/2007",
+      "location": "Orleans",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "150": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "3ème manche interclubs région centre 2006/2007",
+      "location": "Tours",
+      "date": "2007-01-21",
+      "note": ""
+    },
+    "151": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°07",
+      "location": "Pointe a pitre",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "152": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°6",
+      "location": "Pointe a pitre",
+      "date": "2007-01-27",
+      "note": ""
+    },
+    "153": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°5",
+      "location": "Pointe a pitre",
+      "date": "2007-01-13",
+      "note": ""
+    },
+    "155": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "rencontre départementale nord",
+      "location": "Douai",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "156": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclub numéro 2",
+      "location": "Houilles",
+      "date": "2007-01-14",
+      "note": ""
+    },
+    "157": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe d'hiver des jeunes",
+      "location": "Quimper",
+      "date": "2007-01-28",
+      "note": ""
+    },
+    "158": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "rencontre départementale",
+      "location": "Fourmies",
+      "date": "2007-01-14",
+      "note": ""
+    },
+    "159": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclub n5 - saison 2006-2007",
+      "location": "Rennes",
+      "date": "2007-01-14",
+      "note": ""
+    },
+    "160": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "3ème inter-clubs spilliaert",
+      "location": "Montpellier",
+      "date": "2007-01-14",
+      "note": ""
+    },
+    "161": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "46ème championnat de france et critériums nationaux de nage avec palmes",
+      "location": "Mennecy",
+      "date": "2006-06-23",
+      "note": ""
+    },
+    "162": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "compétition départementale 62",
+      "location": "Harnes",
+      "date": "2006-11-12",
+      "note": ""
+    },
+    "163": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "rd 070211",
+      "location": "Maubeuge",
+      "date": "2007-02-11",
+      "note": ""
+    },
+    "164": {
+      "pool": "33",
+      "chrono": "M",
+      "name": "challenge clubs",
+      "location": "Paris piscine rouvet",
+      "date": "2007-02-11",
+      "note": ""
+    },
+    "165": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "trophée philippe izard",
+      "location": "Piscine léo lagrnge à toulouse",
+      "date": "2007-02-18",
+      "note": ""
+    },
+    "168": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°09",
+      "location": "Point a pitre",
+      "date": "2007-02-11",
+      "note": ""
+    },
+    "169": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "finale interclubs régionaux 2006/2007",
+      "location": "Chalette sur loing",
+      "date": "2007-02-11",
+      "note": ""
+    },
+    "170": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "rencontre amicale inter-club",
+      "location": "Lunel - piscine aqualuna",
+      "date": "2007-02-18",
+      "note": ""
+    },
+    "180": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "inter club n° 4, finale",
+      "location": "Piscine calypso, corbie",
+      "date": "2007-03-25",
+      "note": ""
+    },
+    "187": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs pont saint pierre",
+      "location": "Pont saint pierre",
+      "date": "2007-03-24",
+      "note": ""
+    },
+    "196": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs",
+      "location": "Harnes",
+      "date": "2007-03-24",
+      "note": ""
+    },
+    "207": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe du roy rene 2007",
+      "location": "Aix en provence csu",
+      "date": "2007-02-18",
+      "note": ""
+    },
+    "208": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "interclubs hérouville",
+      "location": "Hérouville saint clair",
+      "date": "2006-12-10",
+      "note": ""
+    },
+    "210": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "coupe de noel 2006",
+      "location": "La ciotat",
+      "date": "2006-12-09",
+      "note": ""
+    },
+    "211": {
+      "pool": "50",
+      "chrono": "M",
+      "name": "interclubs guadeloupe piscine n°04",
+      "location": "Abymes",
+      "date": "2006-12-17",
+      "note": ""
+    },
+    "293": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Berlin",
+      "location": "Allemagne",
+      "date": "2008-01-18",
+      "note": ""
+    },
+    "294": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Ravenne",
+      "location": "Ravenne",
+      "date": "2008-01-28",
+      "note": ""
+    },
+    "298": {
+      "pool": "25",
+      "chrono": "E",
+      "name": "8ème coupe de Sprint",
+      "location": "Leipzig",
+      "date": "2007-11-27",
+      "note": ""
+    },
+    "300": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Berlin",
+      "location": "Berlin",
+      "date": "2007-02-17",
+      "note": ""
+    },
+    "322": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Manche Coupe du Monde",
+      "location": "Ravennes(Italie)",
+      "date": "2008-03-29",
+      "note": ""
+    },
+    "327": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "LUGO",
+      "location": "LUGO",
+      "date": "2007-12-16",
+      "note": ""
+    },
+    "328": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Berlin",
+      "location": "Berlin",
+      "date": "2008-02-08",
+      "note": ""
+    },
+    "362": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Geneve",
+      "location": "Geneve",
+      "date": "2008-03-09",
+      "note": ""
+    },
+    "379": {
+      "pool": "50",
+      "chrono": "E",
+      "name": "Eindhoven",
+      "location": "Eindhoven",
+      "date": "2008-06-01",
+      "note": ""
+    },
+    "494": {
+      "pool": "25",
+      "chrono": "E",
+      "name": "Ordizia",
+      "location": "Ordizia",
+      "date": "2009-03-14",
+      "note": ""
+    },
+    "3999": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "1ère étape  championnat regional piscine",
+      "location": "Hérouville",
+      "date": "2020-02-23",
+      "note": ""
+    },
+    "4000": {
+      "pool": "25",
+      "chrono": "M",
+      "name": "2ème étape championnat  regional piscine",
+      "location": "Carentan",
+      "date": "2020-03-01",
+      "note": ""
+    }
+  },
+  "ignoredPartialRows": [
+    {
+      "id": "329",
+      "pool": "",
+      "chrono": "E"
+    },
+    {
+      "id": "59",
+      "pool": "",
+      "chrono": "M"
+    }
+  ]
+}

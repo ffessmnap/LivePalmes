@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const rootDir = process.cwd();
 const defaultSeed = path.join(rootDir, "outputs", "performance-base-seed.ndjson");
 const defaultOutDir = path.join(rootDir, "performances", "public", "data", "performance-public");
+const TOP_PREVIEW_LIMIT = 100;
 let activeOutDir = "";
 let expectedFiles = new Set();
 const writeStats = {
@@ -181,6 +182,7 @@ function topRow(row = {}) {
     location: cleanText(row.location),
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
+    pool: cleanText(row.pool),
     course: cleanText(row.course),
     courseShortLabel: cleanText(row.courseShortLabel),
     isIntermediate: row.isIntermediate === true,
@@ -196,24 +198,22 @@ function topRow(row = {}) {
 }
 
 function swimmerRow(row = {}) {
+  const isIntermediate = row.isIntermediate === true;
   return compactObject({
     id: cleanText(row.id),
-    clubId: cleanText(row.clubId),
     club: cleanText(row.club),
-    clubName: cleanText(row.clubName),
-    competition: cleanText(row.competition),
     location: cleanText(row.location),
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
+    pool: cleanText(row.pool),
     course: cleanText(row.course),
-    courseShortLabel: cleanText(row.courseShortLabel),
-    length: Number(row.length || 0) || 0,
-    isIntermediate: row.isIntermediate === true,
-    originCourse: cleanText(row.originCourse),
-    originCourseShortLabel: cleanText(row.originCourseShortLabel),
-    originPerformanceId: cleanText(row.originPerformanceId),
-    category: cleanText(row.category),
-    categoryCode: cleanText(row.categoryCode),
+    ...(isIntermediate ? {
+      length: Number(row.length || 0) || 0,
+      isIntermediate: true,
+      originCourse: cleanText(row.originCourse),
+      originPerformanceId: cleanText(row.originPerformanceId)
+    } : {}),
+    categoryCode: cleanText(row.categoryCode || row.category),
     timeValue: Number(row.timeValue || 0) || 0,
     time: cleanText(row.time)
   });
@@ -554,14 +554,20 @@ function main() {
     : writeSearchIndexes(outDir, swimmerIndex);
 
   let topFileCount = 0;
+  let topPreviewFileCount = 0;
   let topCandidateCount = 0;
+  let topPreviewCandidateCount = 0;
   topBuckets.forEach((bucket, key) => {
     const [course, sex, category] = key.split("|");
     const rows = Array.from(bucket.values())
       .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.date).localeCompare(cleanText(b.date)));
+    const previewRows = rows.slice(0, TOP_PREVIEW_LIMIT);
     topCandidateCount += rows.length;
+    topPreviewCandidateCount += previewRows.length;
     topFileCount += 1;
+    topPreviewFileCount += 1;
     writeJson(path.join(outDir, "tops", course, topFileName(sex, category)), rows);
+    writeJson(path.join(outDir, "tops-preview", course, topFileName(sex, category)), previewRows);
   });
 
   const generatedAt = new Date().toISOString();
@@ -580,7 +586,7 @@ function main() {
     }
   } : {
     generatedAt,
-    source: "performance-base-seed.ndjson",
+    source: path.basename(seedPath),
     rowCount,
     swimmers: swimmerIndex.length,
     swimmerFiles: swimmerIndex.length,
@@ -589,6 +595,9 @@ function main() {
     largestSearchFile: searchIndexStats.largestSearchFile,
     topFiles: topFileCount,
     topCandidates: topCandidateCount,
+    topPreviewFiles: topPreviewFileCount,
+    topPreviewCandidates: topPreviewCandidateCount,
+    topPreviewLimit: TOP_PREVIEW_LIMIT,
     seasons: Array.from(seasons).sort((a, b) => b - a),
     regions: Array.from(regions.entries()).map(([id, label]) => ({ id, label })).sort((a, b) => String(a.label).localeCompare(String(b.label), "fr-FR")),
     courses: Array.from(courses).sort(),

@@ -6,6 +6,13 @@ const INTRANAP_DIR = process.env.INTRANAP_DIR || DEFAULT_INTRANAP_DIR;
 const OUT_DIR = path.resolve(process.cwd(), "performances", "public", "data");
 const SWIMMER_PERFS_DIR = path.join(OUT_DIR, "intranap-swimmer-perfs");
 const TOP_SOURCE_DIR = path.join(OUT_DIR, "intranap-top-source");
+const COMPETITION_OVERRIDES_FILE = path.resolve(__dirname, "intranap-competition-overrides.json");
+const SOURCE_CSV_SPECS = {
+  swimmers: "nageurs_",
+  clubs: "clubs_",
+  competitions: "competitions_",
+  perfs: "perfs_"
+};
 
 const CURRENT_POOL_COURSES = [
   "50SF",
@@ -23,6 +30,9 @@ const CURRENT_POOL_COURSES = [
   "200BI",
   "400BI"
 ];
+
+const SUPPORTED_POOLS = ["25", "33", "50"];
+const SUPPORTED_CHRONOS = ["M", "E"];
 
 const COURSE_META = {
   "50SF": ["50 m Surface", "50 SF", "SF", 50],
@@ -171,12 +181,40 @@ function readCsv(fileName) {
   });
 }
 
+function findLatestCsvFile(prefix) {
+  if (!fs.existsSync(INTRANAP_DIR)) {
+    throw new Error(`Dossier INTRANAP introuvable : ${INTRANAP_DIR}`);
+  }
+  const matches = fs.readdirSync(INTRANAP_DIR)
+    .filter((name) => name.startsWith(prefix) && name.toLowerCase().endsWith(".csv"))
+    .sort((a, b) => b.localeCompare(a));
+  if (!matches.length) {
+    throw new Error(`CSV INTRANAP introuvable : ${prefix}*.csv dans ${INTRANAP_DIR}`);
+  }
+  return matches[0];
+}
+
+function resolveSourceCsvFiles() {
+  return Object.fromEntries(
+    Object.entries(SOURCE_CSV_SPECS).map(([key, prefix]) => [key, findLatestCsvFile(prefix)])
+  );
+}
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
 function cleanText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function loadCompetitionOverrides() {
+  if (!fs.existsSync(COMPETITION_OVERRIDES_FILE)) {
+    return { overrides: {}, count: 0 };
+  }
+  const payload = JSON.parse(fs.readFileSync(COMPETITION_OVERRIDES_FILE, "utf8"));
+  const overrides = payload.overrides && typeof payload.overrides === "object" ? payload.overrides : {};
+  return { overrides, count: Object.keys(overrides).length };
 }
 
 function normalizeIdentityText(value) {
@@ -402,10 +440,13 @@ function writeJsGlobal(fileName, globalName, data) {
 }
 
 function build() {
-  const swimmersRows = readCsv("nageurs_202605151707.csv");
-  const clubsRows = readCsv("clubs_202605151706.csv");
-  const competitionsRows = readCsv("competitions_202605151706.csv");
-  const perfsRows = readCsv("perfs_202605151707.csv");
+  const sourceFiles = resolveSourceCsvFiles();
+  const swimmersRows = readCsv(sourceFiles.swimmers);
+  const clubsRows = readCsv(sourceFiles.clubs);
+  const competitionsRows = readCsv(sourceFiles.competitions);
+  const perfsRows = readCsv(sourceFiles.perfs);
+  const competitionOverrides = loadCompetitionOverrides();
+  let appliedCompetitionOverrides = 0;
 
   const rawSwimmers = new Map(swimmersRows.map((row) => [row.id, {
     id: row.id,
@@ -451,20 +492,36 @@ function build() {
     committeeLabel: committeeLabel(row.comite_club)
   }]));
 
-  const competitions = new Map(competitionsRows.map((row) => [row.id, {
-    id: row.id,
-    name: cleanText(row.libelle),
-    location: cleanText(row.lieu),
-    date: row.date,
-    endDate: row.enddate,
-    pool: cleanText(row.bassin),
-    chrono: cleanText(row.chrono),
-    type: cleanText(row.type),
-    wid: cleanText(row.wid)
-  }]));
+  const competitions = new Map(competitionsRows.map((row) => {
+    const override = competitionOverrides.overrides[String(row.id)] || {};
+    const sourcePool = cleanText(row.bassin);
+    const sourceChrono = cleanText(row.chrono).toUpperCase();
+    const overridePool = cleanText(override.pool);
+    const overrideChrono = cleanText(override.chrono).toUpperCase();
+    const pool = SUPPORTED_POOLS.includes(sourcePool)
+      ? sourcePool
+      : (SUPPORTED_POOLS.includes(overridePool) ? overridePool : sourcePool);
+    const chrono = SUPPORTED_CHRONOS.includes(sourceChrono)
+      ? sourceChrono
+      : (SUPPORTED_CHRONOS.includes(overrideChrono) ? overrideChrono : sourceChrono);
+    if (pool !== sourcePool || chrono !== sourceChrono) {
+      appliedCompetitionOverrides += 1;
+    }
+    return [row.id, {
+      id: row.id,
+      name: cleanText(row.libelle),
+      location: cleanText(row.lieu),
+      date: row.date,
+      endDate: row.enddate,
+      pool,
+      chrono,
+      type: cleanText(row.type),
+      wid: cleanText(row.wid)
+    }];
+  }));
 
   const keptCourses = new Set(CURRENT_POOL_COURSES);
-  const keptPools = new Set(["25", "50"]);
+  const keptPools = new Set(SUPPORTED_POOLS);
   const swimmerPerfs = new Map();
   const topSourceBuckets = new Map();
   const courseSet = new Set();
@@ -692,20 +749,21 @@ function build() {
     generatedAt: new Date().toISOString(),
     source: {
       intranapDir: INTRANAP_DIR,
-      perfs: "perfs_202605151707.csv",
-      swimmers: "nageurs_202605151707.csv",
-      competitions: "competitions_202605151706.csv",
-      clubs: "clubs_202605151706.csv"
+      perfs: sourceFiles.perfs,
+      swimmers: sourceFiles.swimmers,
+      competitions: sourceFiles.competitions,
+      clubs: sourceFiles.clubs
     },
     rules: {
       poolCourses: CURRENT_POOL_COURSES,
-      pools: ["25", "50"],
+      pools: SUPPORTED_POOLS,
       minTimeByCourse: MIN_TIME_BY_COURSE,
       topLimit: "computed in browser after selected filters",
       topCategorySource: "season age normalized from swimmer birth year and sport season year",
       topRegionSource: "clubs.comite_club",
       sourceCategoryField: "perfs.cat",
-      swimmerMergeKey: "normalized firstName + lastName + birthDate; club is kept on each performance"
+      swimmerMergeKey: "normalized firstName + lastName + birthDate; club is kept on each performance",
+      competitionOverrides: competitionOverrides.count
     },
     counts: {
       swimmers: swimmersRows.length,
@@ -713,6 +771,7 @@ function build() {
       swimmersWithPerformances: swimmerIndex.length,
       clubs: clubsRows.length,
       competitions: competitionsRows.length,
+      appliedCompetitionOverrides,
       ...stats
     },
     filters: {

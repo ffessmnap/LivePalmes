@@ -28,10 +28,113 @@ const styleSections = [
   ["RELAY_FRANCE", "Relais Équipe de France"]
 ];
 
+const mpfLocationLabels = new Map([
+  ["Aix en Pprovence", "Aix-en-Provence, France"],
+  ["Aix en Prov.", "Aix-en-Provence, France"],
+  ["Aix en Provence", "Aix-en-Provence, France"],
+  ["Amiens", "Amiens, France"],
+  ["Angers", "Angers, France"],
+  ["Annemasse", "Annemasse, France"],
+  ["Antibes", "Antibes, France"],
+  ["Barcelone ( ESP)", "Barcelone, Espagne"],
+  ["Bari (ITA)", "Bari, Italie"],
+  ["Baud", "Baud, France"],
+  ["Belgrade (SRB)", "Belgrade, Serbie"],
+  ["Birmingham (USA)", "Birmingham, États-Unis"],
+  ["Caen", "Caen, France"],
+  ["Cali (COL)", "Cali, Colombie"],
+  ["Cambrai", "Cambrai, France"],
+  ["Carentan", "Carentan, France"],
+  ["Chania (GRE)", "Chania, Grèce"],
+  ["Chartres", "Chartres, France"],
+  ["Châteaubriant", "Châteaubriant, France"],
+  ["Chios (GRE)", "Chios, Grèce"],
+  ["Chios, Grece", "Chios, Grèce"],
+  ["Dijon", "Dijon, France"],
+  ["Douai", "Douai, France"],
+  ["Eindhoven (NED)", "Eindhoven, Pays-Bas"],
+  ["Epinal", "Épinal, France"],
+  ["Fontenay sous bois", "Fontenay-sous-Bois, France"],
+  ["Gravenchon", "Notre-Dame-de-Gravenchon, France"],
+  ["Herouville", "Hérouville-Saint-Clair, France"],
+  ["Hérouville St Clair", "Hérouville-Saint-Clair, France"],
+  ["Houilles", "Houilles, France"],
+  ["Ioannina (GRE)", "Ioannina, Grèce"],
+  ["Istanbul (TUR)", "Istanbul, Turquie"],
+  ["Kecskemét (HUN)", "Kecskemét, Hongrie"],
+  ["Klaipeda (LTU)", "Klaipėda, Lituanie"],
+  ["Klaipeda, Lituanie", "Klaipėda, Lituanie"],
+  ["Kremlin-Bicêtre", "Le Kremlin-Bicêtre, France"],
+  ["La Ciotat", "La Ciotat, France"],
+  ["La Roche sur Yon", "La Roche-sur-Yon, France"],
+  ["Le Caire (EGY)", "Le Caire, Égypte"],
+  ["Le Kremlin-Bicêtre", "Le Kremlin-Bicêtre, France"],
+  ["Lignano (ITA)", "Lignano Sabbiadoro, Italie"],
+  ["Lignano(ITA)", "Lignano Sabbiadoro, Italie"],
+  ["Limoges", "Limoges, France"],
+  ["LIMOGES", "Limoges, France"],
+  ["Longwy", "Longwy, France"],
+  ["Lorient", "Lorient, France"],
+  ["Mennecy", "Mennecy, France"],
+  ["Merignac", "Mérignac, France"],
+  ["Mérignac", "Mérignac, France"],
+  ["Metz", "Metz, France"],
+  ["Miskolc (HUN)", "Miskolc, Hongrie"],
+  ["Monluçon", "Montluçon, France"],
+  ["Montluçon", "Montluçon, France"],
+  ["N.D. de Gravenchon", "Notre-Dame-de-Gravenchon, France"],
+  ["ND Gravenchon", "Notre-Dame-de-Gravenchon, France"],
+  ["Nice", "Nice, France"],
+  ["Nogent sur Marne", "Nogent-sur-Marne, France"],
+  ["Nogent/Marne", "Nogent-sur-Marne, France"],
+  ["Olsztyn (POL)", "Olsztyn, Pologne"],
+  ["Olsztyn(POL)", "Olsztyn, Pologne"],
+  ["Ordizia (ESP)", "Ordizia, Espagne"],
+  ["Orléans", "Orléans, France"],
+  ["Palaiseau", "Palaiseau, France"],
+  ["Palma de Mallorca (ESP)", "Palma de Majorque, Espagne"],
+  ["Paris", "Paris, France"],
+  ["Pertuis", "Pertuis, France"],
+  ["Poznan (POL)", "Poznań, Pologne"],
+  ["Quimper", "Quimper, France"],
+  ["Ravenna (ITA)", "Ravenne, Italie"],
+  ["Raven, Italie", "Ravenne, Italie"],
+  ["Rennes", "Rennes, France"],
+  ["Seremange", "Sérémange-Erzange, France"],
+  ["Sète", "Sète, France"],
+  ["Sharm El-Sheikh (EGY)", "Sharm el-Sheikh, Égypte"],
+  ["St Jean de V.", "Saint-Jean-de-Védas, France"],
+  ["St Jean de V., France", "Saint-Jean-de-Védas, France"],
+  ["St Malo", "Saint-Malo, France"],
+  ["St. Chely d'Apcher", "Saint-Chély-d’Apcher, France"],
+  ["St. Germain en Laye", "Saint-Germain-en-Laye, France"],
+  ["Strasbourg", "Strasbourg, France"],
+  ["Tomsk (RUS)", "Tomsk, Russie"],
+  ["Toulon", "Toulon, France"],
+  ["Toulouse", "Toulouse, France"],
+  ["Valence", "Valence, France"],
+  ["Valence (Drôme)", "Valence, France"],
+  ["Venelles", "Venelles, France"],
+  ["Versailles", "Versailles, France"],
+  ["Villeneuve d'Ornon", "Villenave-d’Ornon, France"],
+  ["Villeneuve St G.", "Villeneuve-Saint-Georges, France"],
+  ["Villeneuve St. Georges", "Villeneuve-Saint-Georges, France"],
+  ["Vitré", "Vitré, France"],
+  ["Vittel", "Vittel, France"],
+  ["VITTEL", "Vittel, France"],
+  ["Volos (GRE)", "Volos, Grèce"],
+  ["Worclaw (POL)", "Wrocław, Pologne"]
+]);
+
+function formatMpfLocation(value) {
+  const location = String(value || "").trim();
+  return mpfLocationLabels.get(location) || location;
+}
+
 function formatDate(value) {
   if (!value) return "-";
-  const [year, month, day] = value.split("-");
-  return `${day}/${month}/${year}`;
+  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return isoMatch ? `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}` : String(value);
 }
 
 function birthYearLabel(value) {
@@ -43,6 +146,26 @@ function swimmerNameHtml(record) {
   const year = birthYearLabel(record?.birthDate);
   const name = escapeHtml(record?.swimmer || "-");
   return year ? `${name} <small class="performance-birth-year">(${year})</small>` : name;
+}
+
+function swimmerProfileHref(record) {
+  if (isRelayRecord(record) || !record?.swimmer || record.swimmer === "À établir") return "";
+  const params = new URLSearchParams();
+  if (record.swimmerId) {
+    params.set("id", record.swimmerId);
+  } else {
+    params.set("name", record.swimmer);
+    if (record.birthDate) params.set("birth", record.birthDate);
+    if (record.sex) params.set("sex", record.sex);
+  }
+  return `nageur.html?${params.toString()}`;
+}
+
+function swimmerNameLinkHtml(record) {
+  const href = swimmerProfileHref(record);
+  return href
+    ? `<a class="performance-name-link" href="${escapeHtml(href)}" data-swimmer-name="${escapeHtml(record.swimmer)}">${swimmerNameHtml(record)}</a>`
+    : swimmerNameHtml(record);
 }
 
 function addOptions(select, values, allLabel, labeler = (value) => value) {
@@ -140,6 +263,25 @@ function courseLabel(value) {
   return records.find((record) => record.course === value)?.courseLabel ?? value;
 }
 
+function displayCourseShortLabel(record) {
+  const course = String(record?.course || "");
+  const label = String(record?.courseShortLabel || course);
+  const compactPoolCourse = label.match(/^(\d+)(SF|AP|IS|BI)$/i) || course.match(/^(\d+)(SF|AP|IS|BI)$/i);
+  if (compactPoolCourse) return `${compactPoolCourse[1]} ${compactPoolCourse[2].toUpperCase()}`;
+  if (course.endsWith("BIX") || /BIX$/i.test(label)) return label.replace(/^4x?(\d+)BIX$/i, "4x$1 BI");
+  if (course.endsWith("SB") && /^4x?\d+SB$/i.test(label)) return label.replace(/^4x?(\d+)SB$/i, "4x$1 SB");
+  if (course.endsWith("SF") || /^4x?\d+SF$/i.test(label)) return label.replace(/^4x?(\d+)SF$/i, "4x$1 SF");
+  return label;
+}
+
+function courseShortLabel(value) {
+  const record = records.find((item) => item.course === value);
+  return displayCourseShortLabel({
+    course: value,
+    courseShortLabel: record?.courseShortLabel || value
+  });
+}
+
 function currentFilters() {
   const rawCategory = elements.categoryFilter.value;
   const [categorySex, category] = rawCategory.includes("|") ? rawCategory.split("|") : ["", rawCategory];
@@ -188,7 +330,7 @@ function updateCourseOptions(filters = currentFilters()) {
   const values = filters.category === MASTER_RELAY_CATEGORY
     ? MASTER_RELAY_COURSES
     : (data.filters.courses || []);
-  addOptions(elements.courseFilter, values, "Toutes", courseLabel);
+  addOptions(elements.courseFilter, values, "Toutes", courseShortLabel);
   elements.courseFilter.value = values.includes(current) ? current : "";
 }
 
@@ -382,12 +524,12 @@ function formatRelaySwimmerName(value) {
 
 function renderSwimmerCell(record) {
   if (!isRelayRecord(record)) {
-    const mobileMeta = [record.club, record.location, formatDate(record.date)]
+    const mobileMeta = [birthYearLabel(record.birthDate), record.club, formatMpfLocation(record.location), formatDate(record.date)]
       .map((value) => String(value || "").trim())
       .filter(Boolean)
-      .join(" - ");
+      .join(" · ");
     return `
-      <strong>${swimmerNameHtml(record)}</strong>
+        <strong>${swimmerNameLinkHtml(record)}</strong>
       ${mobileMeta ? `<small class="record-mobile-meta">${escapeHtml(mobileMeta)}</small>` : ""}
       ${splitMetaHtml(record)}
     `;
@@ -395,7 +537,7 @@ function renderSwimmerCell(record) {
 
   const names = relaySwimmerNames(record.swimmer);
   const summary = record.style === "RELAY_FRANCE" ? "FFESSM" : (record.club || record.swimmer || "-");
-  const mobileMeta = [record.location, record.date ? formatDate(record.date) : ""]
+  const mobileMeta = [formatMpfLocation(record.location), record.date ? formatDate(record.date) : ""]
     .map((value) => String(value || "").trim())
     .filter(Boolean)
     .join(" - ");
@@ -527,7 +669,7 @@ function renderRecords(filtered) {
     rows.push(...sectionRecords.map((record) => {
       const chronoLabel = record.chrono === "E" ? "ELEC" : record.chrono === "M" ? "MAN" : "";
       const badges = [record.bassin ? `<b>${record.bassin} m</b>` : "", chronoLabel ? `<b>${chronoLabel}</b>` : ""].filter(Boolean).join(" - ");
-      const mobileMeta = [record.club, record.location, formatDate(record.date)]
+      const mobileMeta = [record.club, formatMpfLocation(record.location), formatDate(record.date)]
         .map((value) => String(value || "").trim())
         .filter(Boolean)
         .join(" · ");
@@ -537,14 +679,14 @@ function renderRecords(filtered) {
       return `
         <tr class="${rowClasses.join(" ")}" tabindex="0" role="button" aria-expanded="false">
           <td data-label="Course">
-            <strong>${record.courseShortLabel}</strong>
+            <strong>${displayCourseShortLabel(record)}</strong>
           </td>
           <td class="${timeCellClass(record.time)}" data-label="Temps">${renderTimeContent(record)}</td>
           <td data-label="${participantLabel(record)}">${renderSwimmerCell(record)}</td>
           <td data-label="Club">${record.club}</td>
           <td data-label="Lieu">
             <div class="location-line">
-              <strong>${record.location || "-"}</strong>
+              <strong>${escapeHtml(formatMpfLocation(record.location) || "-")}</strong>
               ${badges ? `<span class="meta-badges">${badges}</span>` : ""}
             </div>
           </td>
@@ -616,12 +758,12 @@ function renderMasterRelayRecords(filtered) {
       `);
       rows.push(...sectionRecords.map((record) => `
         <tr class="sex-${record.sex.toLowerCase()} relay-record relay-mixed master-relay-data-row" tabindex="0" role="button" aria-expanded="false">
-          <td data-label="Course"><span class="master-relay-course-cell">${escapeHtml(record.courseShortLabel || record.course || "-")}</span></td>
+          <td data-label="Course"><span class="master-relay-course-cell">${escapeHtml(displayCourseShortLabel(record) || "-")}</span></td>
           <td data-label="Catégorie"><strong class="master-relay-category">${escapeHtml(masterRelayCategoryCode(record.category))}</strong></td>
           <td class="${timeCellClass(record.time)}" data-label="Temps">${renderTimeContent(record)}</td>
           <td data-label="Équipe">${renderMasterRelayTeam(record)}</td>
           <td data-label="Club"><strong class="relay-summary">${escapeHtml(record.club || "-")}</strong></td>
-          <td data-label="Lieu">${escapeHtml(record.location || "-")}</td>
+          <td data-label="Lieu">${escapeHtml(formatMpfLocation(record.location) || "-")}</td>
           <td data-label="Date">${formatDate(record.date)}</td>
         </tr>
       `));
@@ -688,6 +830,14 @@ function initPage() {
   });
 
   elements.recordsBody.addEventListener("click", (event) => {
+    const swimmerLink = event.target.closest(".performance-name-link");
+    if (swimmerLink) {
+      event.stopPropagation();
+      const swimmerName = swimmerLink.dataset.swimmerName || "ce nageur";
+      if (!window.confirm(`Ouvrir la fiche de ${swimmerName} ?`)) event.preventDefault();
+      return;
+    }
+    if (event.target.closest("a, button, input, select, textarea")) return;
     const row = event.target.closest("tr");
     if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
     const expanded = !row.classList.contains("expanded");
@@ -697,6 +847,7 @@ function initPage() {
 
   elements.recordsBody.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target.closest("a, button, input, select, textarea")) return;
     const row = event.target.closest("tr");
     if (!row || row.classList.contains("section-row") || row.classList.contains("pending-row")) return;
     event.preventDefault();
