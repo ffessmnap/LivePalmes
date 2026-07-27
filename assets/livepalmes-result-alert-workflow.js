@@ -75,7 +75,6 @@
           updatedAt: announcedAt
         };
       }
-      await context.publishPublicResultsIndex({ silent: true });
       return true;
     }
 
@@ -240,7 +239,6 @@
             updatedAt: now
           };
         }
-        await context.publishPublicResultsIndex({ strict: true });
       } catch (error) {
         throw context.markAlertAlreadyClosedError(error);
       }

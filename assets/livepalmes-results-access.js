@@ -212,6 +212,11 @@
         const currentIndex = await currentPublicResultsIndex(doc);
         await hydratePublicSeriesPdfMetadataIfNeeded({ force: true });
         await hydratePublicSessionResultsPdfMetadataIfNeeded({ force: true });
+        const seriesIndex = JSON.parse(JSON.stringify(buildPublicSeriesIndex()));
+        if (seriesIndex && doc.parent?.doc) {
+          assertPublicIndexSize("Index series public", seriesIndex);
+          await doc.parent.doc("seriesIndex").set(seriesIndex);
+        }
         let nextIndex = JSON.parse(JSON.stringify(buildPublicResultsIndex()));
         const directDisabled = getData().notes?.publicDirectDisabled === true;
         if (!allowResultRegression && !directDisabled && typeof livePalmesPublication.mergePublicResultsPreservingCurrent === "function") {
@@ -220,11 +225,6 @@
         await assertPublicResultsIndexCanBeReplaced(currentIndex, nextIndex, { allowResultRegression: allowResultRegression || directDisabled });
         assertPublicIndexSize("Index resultats public", nextIndex);
         await doc.set(nextIndex);
-        const seriesIndex = JSON.parse(JSON.stringify(buildPublicSeriesIndex()));
-        if (seriesIndex && doc.parent?.doc) {
-          assertPublicIndexSize("Index series public", seriesIndex);
-          await doc.parent.doc("seriesIndex").set(seriesIndex);
-        }
       } catch (error) {
         console.warn("Publication de l'index public impossible", error);
         if (!silent && typeof context.renderDataStatus === "function") {

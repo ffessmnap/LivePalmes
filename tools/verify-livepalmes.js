@@ -49,7 +49,8 @@ function runUnitTests() {
   printStep("Tests automatiques");
   [
     "livepalmes-basic-tests.js",
-    "livepalmes-result-regression-tests.js"
+    "livepalmes-result-regression-tests.js",
+    "livepalmes-public-results-index-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
   });
