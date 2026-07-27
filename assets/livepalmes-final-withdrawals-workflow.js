@@ -18,7 +18,6 @@
   let markAlertAlreadyClosedError;
   let markSpeakerAlertDoneLocally;
   let normalizePersonName;
-  let publishPublicResultsIndex;
   let raceResults;
   let render;
   let replacementAlertMatches;
@@ -258,7 +257,6 @@
     if (announcedReplacement) {
       await createFinalistReplacementSpeakerAlert(updated, announcedReplacement.reference, announcedReplacement.row, now);
     }
-    await publishPublicResultsIndex();
     render();
     openFinalWithdrawalsModal(result.id);
   }
@@ -336,7 +334,6 @@
       finalWithdrawals,
       updatedAt: now
     };
-    await publishPublicResultsIndex();
     render();
     openFinalWithdrawalsModal(result.id);
   }
@@ -426,7 +423,6 @@
       finalists: orderedFinalists,
       updatedAt: announcedAt
     };
-    await publishPublicResultsIndex();
     return true;
   }
   
@@ -575,7 +571,6 @@
     markAlertAlreadyClosedError = context.markAlertAlreadyClosedError;
     markSpeakerAlertDoneLocally = context.markSpeakerAlertDoneLocally;
     normalizePersonName = context.normalizePersonName;
-    publishPublicResultsIndex = context.publishPublicResultsIndex;
     raceResults = context.raceResults;
     render = context.render;
     replacementAlertMatches = context.replacementAlertMatches;

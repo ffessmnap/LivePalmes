@@ -218,6 +218,7 @@ service cloud.firestore {
     function speakerFinalistListAnnouncement(before, after) {
       return before is list
         && after is list
+        && before.size() == after.size()
         && before.size() <= 8
         && after.size() <= 8
         && before != after
@@ -416,7 +417,7 @@ service cloud.firestore {
                 (
                   documentId == "resultsIndex"
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                    "results", "updatedAt", "sourceVersion", "sourceLabel", "lastUpdatedSession", "publicAccess"
+                    "updatedAt", "sourceVersion", "sourceLabel", "lastUpdatedSession", "publicAccess"
                   ])
                 )
                 || (
@@ -433,19 +434,6 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                 "updatedAt", "sourceVersion", "publicAccess"
               ])
-            )
-            || (
-              hasConsoleRole(competitionId, "secretary")
-              && (
-                (
-                  documentId == "resultsIndex"
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["results", "updatedAt"])
-                )
-                || (
-                  documentId == "seriesIndex"
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["updatedAt"])
-                )
-              )
             )
           );
         allow delete: if isLivePalmesTestCompetition(competitionId)

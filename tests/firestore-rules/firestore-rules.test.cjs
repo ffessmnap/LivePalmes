@@ -215,25 +215,52 @@ test("speaker : seules les métadonnées d'annonce initiale sont modifiables", a
   await assertFails(updateDoc(ref, { status: "cancelled", updatedAt: "2026-07-27T09:06:00.000Z" }));
 });
 
-test("speaker : une annonce de repêchage peut ajouter uniquement repechageAnnouncedAt à une seule finaliste", async () => {
-  const db = roleDb("speaker");
-  const ref = competitionDoc(db, "results", "result-1");
+test("speaker : ajoute uniquement repechageAnnouncedAt à une finaliste déjà repêchée", async () => {
+  const ref = competitionDoc(roleDb("speaker"), "results", "result-1");
   const allowed = validResult();
   allowed.finalists.a[1] = { ...allowed.finalists.a[1], repechageAnnouncedAt: "2026-07-27T09:10:00.000Z" };
   allowed.updatedAt = "2026-07-27T09:10:00.000Z";
   await assertSucceeds(setDoc(ref, allowed));
+});
 
-  await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(competitionDoc(context.firestore(), "results", "result-1"), validResult());
-  });
-  const forbidden = validResult();
-  forbidden.finalists.a[1] = {
-    ...forbidden.finalists.a[1],
-    time: "38.00",
+test("speaker : ajout d'une finaliste pendant l'annonce refusé", async () => {
+  const ref = competitionDoc(roleDb("speaker"), "results", "result-1");
+  const added = validResult();
+  added.finalists.a.push({
+    rank: 3,
+    firstName: "Eva",
+    lastName: "BERNARD",
+    club: "CLUB C",
+    time: "42.00",
+    repechaged: true,
     repechageAnnouncedAt: "2026-07-27T09:11:00.000Z"
+  });
+  added.updatedAt = "2026-07-27T09:11:00.000Z";
+  await assertFails(setDoc(ref, added));
+});
+
+test("speaker : suppression d'une finaliste pendant l'annonce refusée", async () => {
+  const ref = competitionDoc(roleDb("speaker"), "results", "result-1");
+  const removed = validResult();
+  removed.finalists.a.pop();
+  removed.updatedAt = "2026-07-27T09:12:00.000Z";
+  await assertFails(setDoc(ref, removed));
+});
+
+test("speaker : remplacement d'une finaliste pendant l'annonce refusé", async () => {
+  const ref = competitionDoc(roleDb("speaker"), "results", "result-1");
+  const replaced = validResult();
+  replaced.finalists.a[1] = {
+    rank: 2,
+    firstName: "Mallory",
+    lastName: "ATTAQUANTE",
+    club: "CLUB X",
+    time: "38.00",
+    repechaged: true,
+    repechageAnnouncedAt: "2026-07-27T09:13:00.000Z"
   };
-  forbidden.updatedAt = "2026-07-27T09:11:00.000Z";
-  await assertFails(setDoc(ref, forbidden));
+  replaced.updatedAt = "2026-07-27T09:13:00.000Z";
+  await assertFails(setDoc(ref, replaced));
 });
 
 test("speaker : PDF, archives, séries et index hors republication sont refusés", async () => {
@@ -252,7 +279,7 @@ test("speaker : PDF, archives, séries et index hors republication sont refusés
   await assertFails(updateDoc(competitionDoc(db, "public", "resultsIndex"), {
     events: [{ id: "forbidden" }], updatedAt: "2026-07-27T09:10:00.000Z"
   }));
-  await assertSucceeds(updateDoc(competitionDoc(db, "public", "resultsIndex"), {
+  await assertFails(updateDoc(competitionDoc(db, "public", "resultsIndex"), {
     results: [validResult({ finalistsAnnouncedAt: "2026-07-27T09:05:00.000Z", status: "published" })],
     updatedAt: "2026-07-27T09:10:00.000Z"
   }));
@@ -342,6 +369,10 @@ test("secretary : gestion des forfaits/finalistes autorisée, chrono et PDF refu
     ranking: [{ rank: 1, time: "35.00" }], updatedAt: "2026-07-27T09:25:00.000Z"
   }));
   await assertFails(setDoc(competitionDoc(db, "resultPdfs", "secretary-pdf"), { id: "secretary-pdf" }));
+  await assertFails(updateDoc(competitionDoc(db, "public", "resultsIndex"), {
+    results: [validResult({ status: "published" })],
+    updatedAt: "2026-07-27T09:25:00.000Z"
+  }));
 });
 
 test("présences et verrous : chaque console écrit son propre rôle, jamais celui d'une autre", async () => {
