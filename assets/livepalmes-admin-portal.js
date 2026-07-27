@@ -14,6 +14,11 @@
     navToggle: document.querySelector("#adminPortalNavToggle"),
     navCurrent: document.querySelector("#adminPortalNavCurrent"),
     navigation: document.querySelector("#adminPortalNavigation"),
+    performanceMenu: document.querySelector("[data-admin-performance-menu]"),
+    performanceToggle: document.querySelector("#adminPortalPerformanceToggle"),
+    performanceSubmenu: document.querySelector("#adminPortalPerformanceSubmenu"),
+    dtnToggle: document.querySelector("#adminPortalDtnToggle"),
+    dtnSubmenu: document.querySelector("#adminPortalDtnSubmenu"),
     accessForm: document.querySelector("#adminAccessForm"),
     accessMessage: document.querySelector("#adminAccessMessage"),
     accessList: document.querySelector("#adminAccessList"),
@@ -103,6 +108,22 @@
     if (elements.accountActions) elements.accountActions.hidden = true;
   }
 
+  function canManagePerformances() {
+    return canUse("records.manage") || canUse("competitions.import");
+  }
+
+  function setPerformanceMenuOpen(open) {
+    const expanded = Boolean(open && canManagePerformances());
+    elements.performanceToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (elements.performanceSubmenu) elements.performanceSubmenu.hidden = !expanded;
+  }
+
+  function setDtnMenuOpen(open) {
+    const expanded = Boolean(open && canUse("dtn.view"));
+    elements.dtnToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (elements.dtnSubmenu) elements.dtnSubmenu.hidden = !expanded;
+  }
+
   function firebaseAccountError(error) {
     const code = String(error?.code || "");
     if (code.includes("wrong-password") || code.includes("invalid-credential")) return "Le mot de passe actuel est incorrect.";
@@ -142,6 +163,9 @@
     document.querySelectorAll("[data-capability-panel]").forEach((item) => {
       item.hidden = !canUse(item.dataset.capabilityPanel);
     });
+    if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
+    if (!canManagePerformances()) setPerformanceMenuOpen(false);
+    if (!canUse("dtn.view")) setDtnMenuOpen(false);
     updateNavigationView();
   }
 
@@ -300,7 +324,7 @@
         ["performances/public/data/intranap-summary.js?v=consolidated-20260603140205", "adminImportSummaryScript"],
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"],
         ["performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1", "adminImportXlsxScript"],
-        ["performances/public/import-competitions.js?v=20260721-import-history-1", "adminImportModuleScript"]
+        ["performances/public/import-competitions.js?v=20260727-portal-name-1", "adminImportModuleScript"]
       ];
       for (const [src, id] of scripts) await loadScriptOnce(src, id);
       watchImportWorkbench();
@@ -323,7 +347,7 @@
 
   function capabilityLabel(capability) {
     return {
-      "admin.full": "Administration generale",
+      "admin.full": "Gestion generale",
       "records.manage": "Records / MPF",
       "consoles.access": "Accès aux consoles",
       "consoles.manage": "Consoles compétition",
@@ -655,6 +679,12 @@
       const open = elements.navToggle.getAttribute("aria-expanded") !== "true";
       elements.navToggle.setAttribute("aria-expanded", open ? "true" : "false");
       document.querySelector(".admin-portal-sidebar")?.classList.toggle("is-open", open);
+    });
+    elements.performanceToggle?.addEventListener("click", () => {
+      setPerformanceMenuOpen(elements.performanceToggle.getAttribute("aria-expanded") !== "true");
+    });
+    elements.dtnToggle?.addEventListener("click", () => {
+      setDtnMenuOpen(elements.dtnToggle.getAttribute("aria-expanded") !== "true");
     });
     elements.navigation?.addEventListener("click", (event) => {
       if (!event.target.closest("a")) return;

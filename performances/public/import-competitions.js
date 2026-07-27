@@ -1113,7 +1113,7 @@
           <strong>Alertes RF / MPF</strong>
           <span>${escapeHtml(alerts.length)} affichee(s) sur ${escapeHtml(total)}</span>
         </div>
-        <p>Valider une alerte marque qu'elle a ete controlee. Les records et MPF restent a mettre a jour dans la page d'administration dediee.</p>
+        <p>Valider une alerte marque qu'elle a ete controlee. Les records et MPF restent a mettre a jour dans le portail.</p>
         ${alerts.map((alert, index) => {
           const status = alert.status === "equal" ? "egale" : "ameliore";
           const decision = recordAlertDecisionStatus(alert);
@@ -1282,7 +1282,7 @@
         status === "rejected"
           ? "Alerte ignoree."
           : status === "accepted"
-            ? "Alerte validee. Un brouillon est prepare dans l'administration records / MPF."
+            ? "Alerte validee. Un brouillon est prepare dans le portail, rubrique Records / MPF."
             : "Alerte remise a verifier.",
         "ok"
       );

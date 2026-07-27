@@ -4,7 +4,7 @@
 
 Ce document cadre la premiere version du futur module d'engagements LivePalmes.
 
-Le module doit permettre aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une administration regionale et nationale pour gerer les competitions, les acces, les documents et les exports.
+Le module doit permettre aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une gestion regionale et nationale des competitions, des acces, des documents et des exports.
 
 Les priorites restent celles du projet LivePalmes :
 
@@ -34,6 +34,40 @@ Le module couvre :
 - les notifications mail principales.
 
 Le format exact de l'export TXT et la configuration technique des mails seront definis plus tard.
+
+## Droits independants du portail
+
+Les droits du portail doivent rester des capacites metier independantes.
+
+Un droit general d'administration du portail permet de gerer les comptes, les demandes et les droits, mais il ne doit pas etre considere comme un droit automatique sur tous les modules sensibles.
+
+Les modules suivants doivent rester separes :
+
+- gestion des records et MPF ;
+- acces aux consoles ;
+- import ou correction des competitions ;
+- espace DTN ;
+- module engagements.
+
+Un meme compte peut cumuler plusieurs capacites, mais chaque capacite correspond a une casquette distincte et doit etre tracee separement.
+
+## Hors perimetre DTN
+
+Le droit `dtn.view` existe dans le portail LivePalmes pour l'espace DTN.
+
+Il est independant du module engagements :
+
+- il ne donne aucun droit pour creer ou modifier des engagements ;
+- il ne donne aucun droit pour creer ou modifier une competition d'engagements ;
+- il ne donne aucun droit sur les exports ou la GED des engagements.
+
+Un meme compte peut cumuler `dtn.view` et un droit engagements, mais les deux droits correspondent a des usages separes.
+
+Les engagements doivent utiliser des capacites dediees, par exemple :
+
+- `engagements.club.manage` ;
+- `engagements.region.manage` ;
+- `engagements.national.manage`.
 
 ## Niveaux d'acces
 
@@ -441,7 +475,7 @@ Il est impossible de saisir un temps inferieur au record de France club applicab
 - junior pour les relais juniors ;
 - toutes categories pour les relais seniors.
 
-## Administration des competitions
+## Gestion des competitions
 
 Pour une competition, un niveau 2 ou 3 peut consulter :
 

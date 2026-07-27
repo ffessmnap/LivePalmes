@@ -9,10 +9,12 @@ Les consoles de competition utilisent deux niveaux d'acces :
 1. un compte LivePalmes actif avec email et mot de passe ;
 2. le PIN temporaire du role utilise pendant la competition.
 
-Le compte doit disposer de `consoles.access`, `consoles.manage` ou `admin.full`.
+Le compte doit disposer de `consoles.access` ou `consoles.manage`.
+
+Comportement actuel de transition : `admin.full` est encore accepte comme fallback pour l'acces console. La cible fonctionnelle est de rendre l'acces console explicite avec `consoles.access` ou `consoles.manage`.
 La validation du PIN ajoute ensuite un claim `livepalmesConsoleAccess`, le role et la competition, sans supprimer les claims permanents du compte. Les regles Firestore exigent ce claim et un grant console non expire.
 
-Une session Firebase anonyme ne peut pas verifier un PIN. Les comptes console doivent etre crees ou approuves depuis l'administration LivePalmes. Un compte distinct par personne ou tablette reste recommande afin de conserver le cloisonnement des roles et la possibilite de revoquer un seul appareil.
+Une session Firebase anonyme ne peut pas verifier un PIN. Les comptes console doivent etre crees ou approuves depuis le Portail LivePalmes. Un compte distinct par personne ou tablette reste recommande afin de conserver le cloisonnement des roles et la possibilite de revoquer un seul appareil.
 
 Faire évoluer LivePalmes pour que le code admin ne soit plus présent ni vérifiable directement dans le front.
 
