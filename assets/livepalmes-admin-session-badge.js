@@ -31,7 +31,7 @@
     badge.hidden = true;
     badge.setAttribute("aria-label", "Session administrateur LivePalmes");
     badge.innerHTML = `
-      <a href="/administration.html">Admin</a>
+      <a href="/portail.html">Portail</a>
       <strong data-admin-session-name>Profil LivePalmes</strong>
       <button type="button" data-admin-session-signout>Deconnexion</button>
     `;

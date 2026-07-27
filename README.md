@@ -75,9 +75,9 @@ Firestore est la source officielle des Records / MPF :
 
 - document : `competitions/livepalmes-active/performanceData/records` ;
 - fichier statique de secours : `performances/public/data/records-data.js` ;
-- pages concernees : `performances/records.html`, `performances/mpf.html`, `performances/nageur.html` et l'administration records.
+- pages concernees : `performances/records.html`, `performances/mpf.html`, `performances/nageur.html` et la rubrique Records / MPF du portail.
 
-Apres une modification publiee depuis l'administration Records / MPF, synchronise le fallback statique :
+Apres une modification publiee depuis la rubrique Records / MPF du portail, synchronise le fallback statique :
 
 ```powershell
 node tools/sync-records-from-firestore.js --write

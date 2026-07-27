@@ -173,7 +173,7 @@
         ]
       },
       {
-        "source": "/administration.html",
+        "source": "/portail.html",
         "headers": [
           {
             "key": "Cache-Control",

@@ -9,7 +9,7 @@ L'idee importante : LivePalmes a maintenant une base active unique pour les perf
 LivePalmes utilise trois familles de donnees :
 
 1. **La base active des performances**
-   - C'est la base principale utilisee pour l'administration.
+   - C'est la base principale utilisee pour la gestion depuis le portail.
    - Elle contient les performances historiques INTRANAP et les competitions importees ensuite.
    - Elle peut etre alimentee et corrigee par les administrateurs habilites.
    - Elle est stockee dans Firestore dans la collection `performances`.
@@ -145,7 +145,7 @@ Sur la fiche nageur, on peut distinguer une performance normale d'une performanc
 
 ## Imports de nouvelles competitions
 
-Les imports se font depuis la page administration, avec le droit :
+Les imports se font depuis le portail, avec le droit :
 
 `competitions.import`
 
@@ -273,7 +273,7 @@ Ils sont aussi accompagnes d'un fichier statique de secours :
 Cela permet :
 
 - d'afficher les MPF et records meme si la base distante est temporairement indisponible ;
-- de modifier les MPF et records depuis l'administration ;
+- de modifier les MPF et records depuis le portail ;
 - de ne pas recalculer automatiquement les MPF et records depuis les performances.
 
 Important :
@@ -340,7 +340,7 @@ performances
 TOP et fiches nageurs
 
 
-Administration MPF / Records
+Portail MPF / Records
         |
         v
 performanceData/records

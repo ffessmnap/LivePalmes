@@ -34,7 +34,7 @@ Pages principales :
 - `bureau-perf.html`
 - `secretariat.html`
 - `pilotage-livepalmes.html`
-- `administration.html`
+- `portail.html`
 
 Styles principaux :
 
@@ -123,10 +123,10 @@ Pages principales :
 - `performances/nageur.html`
 - `performances/construction.html`
 
-Les interfaces d'administration des performances sont integrees au portail principal :
+Les interfaces de gestion des performances sont integrees au portail principal :
 
-- `administration.html#records-mpf`
-- `administration.html#import-competitions`
+- `portail.html#records-mpf`
+- `portail.html#import-competitions`
 
 Scripts et styles principaux :
 
