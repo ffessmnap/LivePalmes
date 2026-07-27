@@ -1,7 +1,9 @@
 const crypto = require("node:crypto");
 const admin = require("firebase-admin");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
+const { nextPublicResultsIndex } = require("./public-results-index");
 
 admin.initializeApp();
 admin.firestore().settings({ ignoreUndefinedProperties: true });
@@ -18,6 +20,11 @@ const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
+const PUBLIC_RESULT_TRIGGER_OPTIONS = {
+  region: REGION,
+  document: "competitions/{competitionId}/results/{resultId}",
+  retry: true
+};
 const PIN_MAX_FAILED_ATTEMPTS = 5;
 const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
@@ -1438,6 +1445,25 @@ async function updatePublicPinNotes(competitionId, enabled) {
     }, { merge: true });
   });
 }
+
+exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async (event) => {
+  const competitionId = cleanText(event.params?.competitionId);
+  const resultId = cleanText(event.params?.resultId);
+  if (!COMPETITION_IDS.has(competitionId) || !resultId || !event.data?.after?.exists) return;
+  const officialResult = event.data.after.data() || {};
+  const indexRef = admin.firestore()
+    .collection("competitions")
+    .doc(competitionId)
+    .collection("public")
+    .doc("resultsIndex");
+  await admin.firestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(indexRef);
+    if (!snapshot.exists) return;
+    const nextIndex = nextPublicResultsIndex(snapshot.data() || {}, resultId, officialResult);
+    if (!nextIndex) return;
+    transaction.update(indexRef, nextIndex);
+  });
+});
 
 exports.setRolePins = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "consoles.manage");
