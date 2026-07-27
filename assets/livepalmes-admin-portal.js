@@ -325,6 +325,7 @@
     return {
       "admin.full": "Administration generale",
       "records.manage": "Records / MPF",
+      "consoles.access": "Accès aux consoles",
       "consoles.manage": "Consoles compétition",
       "competitions.import": "Import des compétitions",
       "dtn.view": "Espace DTN"

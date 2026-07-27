@@ -22,6 +22,10 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Ouvrir la console Bureau des performances.
 - Ouvrir la console Secretariat.
 - Verifier que les codes PIN fonctionnent si les codes sont actifs.
+- Verifier qu'une console affiche la connexion email/mot de passe avant le PIN.
+- Verifier qu'un compte sans `consoles.access`, `consoles.manage` ou `admin.full` est refuse.
+- Verifier qu'un compte avec `consoles.access` peut saisir le PIN speaker, referee, video, computer ou secretary sans perdre ses droits permanents.
+- Verifier qu'une ancienne session anonyme ne peut plus appeler la verification du PIN.
 
 ## Series
 

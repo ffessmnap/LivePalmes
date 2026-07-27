@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const admin = require("firebase-admin");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
 
@@ -13,7 +14,7 @@ const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
-const ACCESS_CAPABILITIES = ["admin.full", "records.manage", "consoles.manage", "competitions.import", "dtn.view"];
+const ACCESS_CAPABILITIES = ["admin.full", "records.manage", "consoles.manage", "consoles.access", "competitions.import", "dtn.view"];
 const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
@@ -1456,6 +1457,23 @@ async function updatePublicPinNotes(competitionId, enabled) {
   });
 }
 
+async function assertConsolePortalAccess(request) {
+  const uid = cleanText(request.auth?.uid);
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion au portail LivePalmes requise.");
+  }
+  if (ADMIN_UIDS.has(uid)) return;
+  const token = request.auth?.token || {};
+  if (token.livepalmesAccess !== true || !hasConsolePortalCapability(token.livepalmesCapabilities || {})) {
+    throw new HttpsError("permission-denied", "Acces aux consoles LivePalmes requis.");
+  }
+  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active" || !hasConsolePortalCapability(data.capabilities || {})) {
+    throw new HttpsError("permission-denied", "Acces aux consoles LivePalmes inactif.");
+  }
+}
+
 exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async (event) => {
   const competitionId = cleanText(event.params?.competitionId);
   const resultId = cleanText(event.params?.resultId);
@@ -1557,6 +1575,7 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion Firebase console requise.");
   }
+  await assertConsolePortalAccess(request);
   const attemptsRef = pinAttemptRef(competitionId, role, uid, clientId);
   await assertPinAttemptAllowed(attemptsRef);
 
@@ -1572,11 +1591,12 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
   }
 
   await clearPinAttempts(attemptsRef);
-  await admin.auth().setCustomUserClaims(uid, {
-    livepalmesRole: role,
-    livepalmesCompetition: competitionId,
-    livepalmesConsole: true
-  });
+  const authUser = await admin.auth().getUser(uid);
+  await admin.auth().setCustomUserClaims(uid, consoleRoleClaims(
+    authUser.customClaims || {},
+    role,
+    competitionId
+  ));
   const now = new Date();
   await consoleGrantRef(competitionId, uid).set({
     uid,
@@ -1603,6 +1623,7 @@ exports.createOrUpdateAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   await admin.auth().setCustomUserClaims(user.uid, {
     ...(user.customClaims || {}),
     livepalmesAccess: true,
+    livepalmesConsoleAccess: hasConsolePortalCapability(capabilityMap),
     livepalmesCapabilities: capabilityMap
   });
 
@@ -1691,6 +1712,7 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   await admin.auth().setCustomUserClaims(uid, {
     ...(authUser.customClaims || {}),
     livepalmesAccess: status === "active",
+    livepalmesConsoleAccess: status === "active" && hasConsolePortalCapability(capabilitiesMap(capabilities)),
     livepalmesCapabilities: status === "active" ? capabilitiesMap(capabilities) : capabilitiesMap([])
   });
   await userRef.set({

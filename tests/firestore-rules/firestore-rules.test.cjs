@@ -25,6 +25,9 @@ let testEnv;
 
 function consoleClaims(role, competitionId = COMPETITION_ID) {
   return {
+    livepalmesAccess: true,
+    livepalmesConsoleAccess: true,
+    livepalmesCapabilities: { "consoles.access": true },
     livepalmesRole: role,
     livepalmesCompetition: competitionId,
     livepalmesConsole: true
@@ -221,6 +224,19 @@ test("speaker : ajoute uniquement repechageAnnouncedAt à une finaliste déjà r
   allowed.finalists.a[1] = { ...allowed.finalists.a[1], repechageAnnouncedAt: "2026-07-27T09:10:00.000Z" };
   allowed.updatedAt = "2026-07-27T09:10:00.000Z";
   await assertSucceeds(setDoc(ref, allowed));
+});
+
+test("console : claim et grant de rôle restent refusés sans accès portail", async () => {
+  const claimsWithoutPortal = {
+    livepalmesRole: "speaker",
+    livepalmesCompetition: COMPETITION_ID,
+    livepalmesConsole: true
+  };
+  await assertFails(getDoc(competitionDoc(
+    roleDb("speaker", claimsWithoutPortal, "speaker-uid"),
+    "results",
+    "result-1"
+  )));
 });
 
 test("speaker : ajout d'une finaliste pendant l'annonce refusé", async () => {
