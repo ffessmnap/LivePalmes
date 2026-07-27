@@ -2,12 +2,24 @@
 
 ## Objectif
 
+## Acces actuel aux consoles
+
+Les consoles de competition utilisent deux niveaux d'acces :
+
+1. un compte LivePalmes actif avec email et mot de passe ;
+2. le PIN temporaire du role utilise pendant la competition.
+
+Le compte doit disposer de `consoles.access`, `consoles.manage` ou `admin.full`.
+La validation du PIN ajoute ensuite un claim `livepalmesConsoleAccess`, le role et la competition, sans supprimer les claims permanents du compte. Les regles Firestore exigent ce claim et un grant console non expire.
+
+Une session Firebase anonyme ne peut pas verifier un PIN. Les comptes console doivent etre crees ou approuves depuis l'administration LivePalmes. Un compte distinct par personne ou tablette reste recommande afin de conserver le cloisonnement des roles et la possibilite de revoquer un seul appareil.
+
 Faire évoluer LivePalmes pour que le code admin ne soit plus présent ni vérifiable directement dans le front.
 
 L'idée retenue :
 
 - l'administrateur se connecte avec un email et un mot de passe via Firebase Authentication ;
-- les autres rôles gardent une connexion simple par code PIN ;
+- les autres rôles utilisent un compte LivePalmes puis leur code PIN ;
 - l'administrateur authentifié est le seul à pouvoir modifier les PIN et lancer les actions sensibles.
 
 ## Architecture cible
@@ -27,7 +39,7 @@ Les règles Firestore doivent vérifier `request.auth` pour autoriser ces action
 
 ### Rôles terrain
 
-Les autres consoles restent simples :
+Les autres consoles utilisent une connexion en deux etapes :
 
 - speaker ;
 - live ;
@@ -36,7 +48,7 @@ Les autres consoles restent simples :
 - bureau des performances ;
 - secrétariat.
 
-Chaque rôle saisit seulement un code PIN.
+Chaque utilisateur se connecte d'abord avec son compte LivePalmes, puis saisit le code PIN du rôle.
 
 Les PIN ne doivent plus être codés en dur dans le JavaScript public.
 
@@ -112,7 +124,7 @@ Le bon plan serait de la réaliser hors urgence, sur une période de test, avec 
 À terme :
 
 - admin : email + mot de passe Firebase Authentication ;
-- consoles terrain : PIN simples ;
+- consoles terrain : compte LivePalmes actif puis PIN du role ;
 - PIN : stockés en base et modifiables uniquement par l'admin ;
 - vérification PIN : idéalement via Cloud Function ;
 - pages publiques : aucun changement, elles restent accessibles sans connexion.

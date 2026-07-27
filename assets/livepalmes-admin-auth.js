@@ -101,6 +101,7 @@
         capabilities["admin.full"] === true ||
         capabilities["records.manage"] === true ||
         capabilities["consoles.manage"] === true ||
+        capabilities["consoles.access"] === true ||
         capabilities["competitions.import"] === true ||
         capabilities["dtn.view"] === true
       );
@@ -232,6 +233,7 @@
       isAdminAuthenticated: () => isAllowedUser(),
       hasCapability: (capability) => {
         if (isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
+        if (capability === "consoles.access" && currentClaims?.livepalmesCapabilities?.["consoles.manage"] === true) return true;
         return currentClaims?.livepalmesCapabilities?.[capability] === true;
       },
       legacyAdminPinFallbackEnabled: () => status().legacyFallbackEnabled,

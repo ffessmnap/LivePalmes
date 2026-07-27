@@ -69,16 +69,12 @@
 
     async function verifyRolePin(options = {}) {
       const auth = authService();
-      if (!auth?.signInAnonymously) {
+      if (!auth) {
         throw new Error("Authentification console indisponible.");
       }
       await waitForInitialFirebaseUser(auth);
-      if (!auth.currentUser || !auth.currentUser.isAnonymous) {
-        try {
-          await auth.signInAnonymously();
-        } catch (error) {
-          throw new Error("Connexion console anonyme indisponible. Active le fournisseur Anonyme dans Firebase Authentication.");
-        }
+      if (!auth.currentUser || auth.currentUser.isAnonymous) {
+        throw new Error("Connecte-toi au portail LivePalmes avant de saisir le code PIN.");
       }
       const result = await callFunction("verifyPin", {
         clientId: options.clientId || "",
