@@ -121,7 +121,11 @@
 
   function ensurePanel() {
     document.body.dataset.consoleGate = "locked";
-    if (document.querySelector("#consolePageGate")) return;
+    if (document.querySelector("#consolePageGate")) {
+      document.documentElement.removeAttribute("data-console-access");
+      document.querySelector("#consoleAccessPending")?.remove();
+      return;
+    }
     const style = document.createElement("style");
     style.textContent = `
       body[data-console-gate="locked"] > :not(#consolePageGate) { display: none !important; }
@@ -146,7 +150,7 @@
     panel.className = "console-page-gate";
     panel.innerHTML = `
       <div>
-        <form class="console-page-gate-card" data-console-account-form>
+        <form class="console-page-gate-card" data-console-account-form hidden>
           <h1>Connexion LivePalmes</h1>
           <p>Connecte-toi avec ton compte autorise avant d'ouvrir ${pageLabel}.</p>
           <label>Adresse email<input type="email" autocomplete="username" required data-console-gate-email></label>
@@ -162,10 +166,12 @@
             <button type="submit">Ouvrir</button>
           </div>
         </form>
-        <div class="console-page-gate-status" data-console-gate-status aria-live="polite"></div>
+        <div class="console-page-gate-status" data-console-gate-status aria-live="polite">V&eacute;rification de la connexion&hellip;</div>
       </div>
     `;
     document.body.appendChild(panel);
+    document.documentElement.removeAttribute("data-console-access");
+    document.querySelector("#consoleAccessPending")?.remove();
   }
 
   function unlock(options = {}) {
