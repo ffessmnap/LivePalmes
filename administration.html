@@ -3,28 +3,41 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Administration - LivePalmes</title>
-    <meta name="description" content="Portail d'administration LivePalmes.">
+    <title>Portail LivePalmes</title>
+    <meta name="description" content="Espace connecté de LivePalmes, adapté aux autorisations de chaque profil.">
     <meta name="theme-color" content="#0b7285">
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260602-admin-portal-1">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260602-current-user-info-4">
+    <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
+    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260722-dtn-refresh-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
-      <a class="admin-portal-home" href="./">Accueil LivePalmes</a>
-      <div>
-        <p class="eyebrow">LivePalmes</p>
-        <h1>Administration</h1>
+      <img class="admin-portal-federal-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260722-admin-portal-1" alt="FFESSM Nage avec palmes">
+      <div class="admin-portal-brand">
+        <h1>Portail LivePalmes</h1>
+        <img class="admin-portal-livepalmes-logo" src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="">
       </div>
-      <img src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="LivePalmes">
+      <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
+        <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
+          <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
+          <span class="admin-portal-account-short">Profil</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+        <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
+          <a href="#mon-compte" role="menuitem">Mon compte</a>
+          <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
+          <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
+        </div>
+      </div>
     </header>
 
     <main class="admin-portal-shell">
-      <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion administrateur">
+      <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion au portail LivePalmes">
         <div>
           <span>Acces protege</span>
-          <strong>Connexion administrateur</strong>
+          <strong>Connexion au portail</strong>
         </div>
         <form id="adminPortalLoginForm" class="admin-portal-form">
           <label>
@@ -44,98 +57,596 @@
       </section>
 
       <section id="adminPortalDashboard" class="admin-portal-dashboard" hidden>
-        <div class="admin-portal-session">
-          <div class="admin-portal-session-main">
-            <div>
-              <span>Connecte</span>
-              <strong id="adminPortalSessionLabel">Compte administrateur</strong>
-            </div>
-            <section id="adminCurrentUserPanel" class="admin-current-user-panel" aria-label="Informations du compte connecte">
-              <dl class="admin-current-user-grid">
-                <div>
-                  <dt>Email</dt>
-                  <dd id="adminCurrentUserEmail">-</dd>
+        <div class="admin-portal-layout">
+          <aside class="admin-portal-sidebar" aria-label="Navigation du portail">
+            <button id="adminPortalNavToggle" class="admin-portal-nav-toggle" type="button" aria-expanded="false" aria-controls="adminPortalNavigation">
+              <span>Menu</span>
+              <strong id="adminPortalNavCurrent">Navigation</strong>
+              <span aria-hidden="true">⌄</span>
+            </button>
+            <nav id="adminPortalNavigation" class="admin-portal-nav">
+              <span class="admin-portal-nav-title">Navigation</span>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavGeneral">
+                <h2 id="adminNavGeneral">Général</h2>
+                <a href="#mon-compte" data-admin-view-link="account">Mon compte</a>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavPerformances">
+                <h2 id="adminNavPerformances">Performances</h2>
+                <a href="#records-mpf" data-admin-view-link="records" data-capability-nav="records.manage">Records / MPF</a>
+                <a href="#import-competitions" data-admin-view-link="import" data-capability-nav="competitions.import">Import des compétitions</a>
+                <a href="#correction-performance" data-admin-view-link="correction" data-capability-nav="competitions.import">Correction d’une performance</a>
+                <div class="admin-portal-nav-submenu" aria-label="Espace DTN">
+                  <span>Espace DTN</span>
+                  <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
+                  <a href="#espace-dtn-edf" data-admin-view-link="dtn" data-dtn-grid-link="edf" data-capability-nav="dtn.view">Équipe de France</a>
                 </div>
-                <div>
-                  <dt>Club</dt>
-                  <dd id="adminCurrentUserClub">-</dd>
-                </div>
-                <div>
-                  <dt>Licence</dt>
-                  <dd id="adminCurrentUserLicense">-</dd>
-                </div>
-              </dl>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
+                <h2 id="adminNavCompetition">Compétitions</h2>
+                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.manage">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavAdministration">
+                <h2 id="adminNavAdministration">Administration</h2>
+                <a href="#gestion-acces" data-admin-view-link="access" data-capability-nav="admin.full">Gestion des accès</a>
+              </section>
+            </nav>
+          </aside>
+
+          <div class="admin-portal-workspace">
+            <section id="adminAccountView" class="admin-portal-account-view" data-admin-view="account" aria-labelledby="adminAccountViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span>Général</span>
+                <h2 id="adminAccountViewTitle">Mon compte</h2>
+                <p>Modifiez les identifiants utilisés pour vous connecter à LivePalmes.</p>
+              </div>
+
+              <div class="admin-account-grid">
+                <section class="admin-account-card" aria-labelledby="adminAccountEmailTitle">
+                  <div>
+                    <span>Adresse de connexion</span>
+                    <h3 id="adminAccountEmailTitle">Modifier mon adresse email</h3>
+                    <p>Votre mot de passe actuel est demandé pour sécuriser la modification.</p>
+                  </div>
+                  <form id="adminAccountEmailForm" class="admin-account-form">
+                    <label>
+                      Nouvelle adresse email
+                      <input id="adminAccountEmail" type="email" autocomplete="email" required>
+                    </label>
+                    <label>
+                      Mot de passe actuel
+                      <input id="adminAccountEmailPassword" type="password" autocomplete="current-password" required>
+                    </label>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Mettre à jour l’adresse</button>
+                    </div>
+                    <p id="adminAccountEmailMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </form>
+                </section>
+
+                <section class="admin-account-card" aria-labelledby="adminAccountPasswordTitle">
+                  <div>
+                    <span>Sécurité</span>
+                    <h3 id="adminAccountPasswordTitle">Modifier mon mot de passe</h3>
+                    <p>Choisissez un mot de passe d’au moins 8 caractères.</p>
+                  </div>
+                  <form id="adminAccountPasswordForm" class="admin-account-form">
+                    <label>
+                      Mot de passe actuel
+                      <input id="adminAccountCurrentPassword" type="password" autocomplete="current-password" required>
+                    </label>
+                    <label>
+                      Nouveau mot de passe
+                      <input id="adminAccountNewPassword" type="password" autocomplete="new-password" minlength="8" required>
+                    </label>
+                    <label>
+                      Confirmer le nouveau mot de passe
+                      <input id="adminAccountConfirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+                    </label>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Modifier le mot de passe</button>
+                    </div>
+                    <p id="adminAccountPasswordMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </form>
+                </section>
+              </div>
             </section>
-          </div>
-          <button id="adminPortalSignOutButton" class="ghost-button" type="button">Deconnexion</button>
-        </div>
 
-        <section class="admin-portal-grid" aria-label="Modules d'administration">
-          <a class="admin-portal-card" href="performances/admin.html" data-capability-card="records.manage">
-            <span>Records / MPF</span>
-            <strong>Mise a jour des performances</strong>
-            <small>Records de France, MPF, brouillons et journal des corrections.</small>
-          </a>
-          <a class="admin-portal-card" href="pilotage-livepalmes.html" data-capability-card="consoles.manage">
-            <span>Pilotage LivePalmes</span>
-            <strong>Consoles de competition</strong>
-            <small>Acces au pilotage, aux codes de consoles et aux outils de competition.</small>
-          </a>
-          <a class="admin-portal-card" href="performances/import.html" data-capability-card="competitions.import">
-            <span>Base performances</span>
-            <strong>Import de competitions</strong>
-            <small>Ajout de competitions dans la base additionnelle LivePalmes, sans modifier INTRANAP.</small>
-          </a>
-          <section class="admin-portal-card admin-portal-card-muted" data-capability-card="admin.full">
-            <span>Gestion des acces</span>
-            <strong>Administrateurs et droits</strong>
-            <small>Creation de comptes, droits records, droits consoles, puis regions et clubs.</small>
-          </section>
-        </section>
+            <section id="adminRecordsView" class="admin-portal-records-view" data-admin-view="records" aria-labelledby="adminRecordsViewTitle" hidden>
+              <div class="admin-portal-workspace-head admin-records-workspace-head">
+                <div>
+                  <h2 id="adminRecordsViewTitle">Mise à jour des records de France et MPF</h2>
+                </div>
+                <button type="button" id="recordHistoryButton" class="ghost-button">Journal des mises à jour</button>
+              </div>
 
-        <section id="adminAccessPanel" class="admin-access-preview" aria-label="Creation d'acces administrateur" data-capability-panel="admin.full">
+              <p id="adminRecordModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module Records / MPF…</p>
+
+              <section id="recordHistoryPanel" class="admin-history-panel admin-history-panel-global" hidden>
+                <div class="admin-history-head">
+                  <div>
+                    <strong>Journal des mises à jour</strong>
+                    <p>Anciennes valeurs et corrections publiées depuis l'administration.</p>
+                  </div>
+                  <button type="button" id="recordHistoryCloseButton" class="ghost-button">Fermer</button>
+                </div>
+                <div id="recordHistoryList" class="admin-history-list"></div>
+              </section>
+
+              <section id="adminWorkbench" class="admin-workbench" hidden>
+                <section id="adminDraftsPanel" class="admin-drafts-panel" hidden>
+                  <div class="admin-drafts-head">
+                    <div>
+                      <span>Brouillons en cours</span>
+                      <strong id="adminDraftsTitle">0 brouillon</strong>
+                      <p>Relisez les modifications avant de publier.</p>
+                    </div>
+                    <button type="button" id="adminDraftsPublishButton">Publier les brouillons</button>
+                  </div>
+                  <div id="adminDraftsList" class="admin-drafts-list"></div>
+                </section>
+
+                <section id="mpfGlobalAlert" class="admin-global-alert" aria-live="polite" hidden>
+                  <div>
+                    <span>Alerte MPF</span>
+                    <strong id="mpfGlobalAlertTitle"></strong>
+                    <p id="mpfGlobalAlertText"></p>
+                  </div>
+                  <ul id="mpfGlobalAlertList"></ul>
+                </section>
+
+                <section class="admin-finder-card" aria-label="Recherche de records">
+                  <div class="admin-filter-grid">
+                    <div class="admin-filter-scope">
+                      <span class="admin-label">Référentiel</span>
+                      <div class="segmented two-segments" id="adminScopeFilter" role="group" aria-label="Référentiel">
+                        <button type="button" class="segment" data-value="RF">Records de France</button>
+                        <button type="button" class="segment" data-value="MPF">MPF</button>
+                      </div>
+                    </div>
+                    <label class="admin-sex-field">
+                      Sexe
+                      <select id="adminSexFilter" class="admin-hidden-select">
+                        <option value=""></option>
+                        <option value="F">Femmes</option>
+                        <option value="M">Hommes</option>
+                      </select>
+                      <div class="segmented two-segments admin-sex-toggle" id="adminSexToggle" role="group" aria-label="Sexe">
+                        <button type="button" class="segment sex-f" data-sex="F">Femmes</button>
+                        <button type="button" class="segment sex-m" data-sex="M">Hommes</button>
+                      </div>
+                    </label>
+                    <label id="adminRecordLevelField">
+                      Catégorie
+                      <select id="adminRecordLevelFilter">
+                        <option value="RF">Toutes catégories</option>
+                        <option value="RFJ">Junior</option>
+                      </select>
+                    </label>
+                    <label id="adminMpfCategoryField">
+                      Catégorie
+                      <select id="adminCategoryFilter"></select>
+                    </label>
+                    <label class="admin-hidden-filter">
+                      Type
+                      <select id="adminKindFilter">
+                        <option value="">Tous</option>
+                        <option value="individual">Individuel</option>
+                        <option value="relayClub">Relais Club</option>
+                        <option value="relayFrance">Relais France</option>
+                      </select>
+                    </label>
+                    <label>
+                      Course
+                      <select id="adminCourseFilter"></select>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="admin-table-card" aria-label="Records figés" hidden>
+                  <div class="table-head">
+                    <div>
+                      <span class="admin-label">Étape 2</span>
+                      <h2 id="adminTableTitle">Records de France</h2>
+                      <p id="adminTableMeta">0 ligne affichée</p>
+                    </div>
+                    <div class="admin-table-actions">
+                      <button type="button" id="publishButton">Publier les brouillons</button>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="admin-record-table">
+                      <thead>
+                        <tr>
+                          <th>Course</th>
+                          <th>Temps</th>
+                          <th>Nageur / relais</th>
+                          <th>Catégorie</th>
+                          <th>Club</th>
+                          <th>Lieu</th>
+                          <th>Date</th>
+                          <th>Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody id="adminTableBody"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <aside id="adminInlineEditor" class="admin-edit-card" aria-label="Édition record" hidden>
+                  <div class="admin-edit-head">
+                    <div>
+                      <span class="admin-label">Étape 3</span>
+                      <h2 id="adminEditorTitle">Sélectionnez une ligne</h2>
+                      <p id="adminEditorSubtitle">Les modifications restent en brouillon jusqu'à publication.</p>
+                    </div>
+                    <span id="adminEditorStatus">Figé</span>
+                  </div>
+
+                  <form class="admin-form admin-form-stacked">
+                    <input id="recordScope" type="hidden">
+                    <input id="recordSex" type="hidden">
+                    <input id="recordCategory" type="hidden">
+                    <input id="recordKind" type="hidden">
+                    <input id="recordCourse" type="hidden">
+                    <input id="recordSource" type="hidden" value="frozen">
+                    <input id="recordNote" type="hidden">
+                    <label>
+                      Temps
+                      <input id="recordTime" type="text" placeholder="ex. 1:23.45">
+                    </label>
+                    <label>
+                      <span id="recordNameLabel">Nageur</span>
+                      <input id="recordName" list="swimmerOptions" type="text">
+                    </label>
+                    <label id="recordBirthDateField" class="admin-birth-field" hidden>
+                      Année de naissance
+                      <input id="recordBirthDate" type="text" inputmode="numeric" placeholder="ex. 2008">
+                      <small id="recordBirthDateHelp">À renseigner uniquement si le nageur n'est pas reconnu automatiquement.</small>
+                    </label>
+                    <label>
+                      Club
+                      <input id="recordClub" list="clubOptions" type="text">
+                    </label>
+                    <label>
+                      Date
+                      <input id="recordDate" type="date">
+                    </label>
+                    <label>
+                      Lieu
+                      <input id="recordLocation" type="text">
+                    </label>
+                  </form>
+
+                  <div id="mpfSyncAlert" class="admin-sync-alert" hidden>
+                    <div>
+                      <strong id="mpfSyncTitle">Cette performance améliore une MPF.</strong>
+                      <p id="mpfSyncText"></p>
+                    </div>
+                    <label class="admin-sync-choice">
+                      <input id="mpfSyncCheckbox" type="checkbox">
+                      <span>Ajouter aussi la mise à jour MPF aux brouillons</span>
+                    </label>
+                  </div>
+
+                  <div class="admin-actions">
+                    <button type="button" id="deleteDraftButton" class="danger-button">Supprimer cette ligne</button>
+                    <button type="button" id="saveDraftButton">Ajouter aux brouillons</button>
+                    <button type="button" id="saveTieDraftButton" class="secondary-button">Ajouter ex aequo</button>
+                    <button type="button" id="validateButton" class="admin-hidden-filter">Valider</button>
+                  </div>
+                </aside>
+              </section>
+
+              <datalist id="swimmerOptions"></datalist>
+              <datalist id="clubOptions"></datalist>
+            </section>
+
+            <section id="adminImportView" class="admin-portal-import-view import-admin-page" data-admin-view="import" aria-labelledby="adminImportViewTitle" hidden>
+              <div class="admin-portal-workspace-head admin-module-workspace-head">
+                <h2 id="adminImportViewTitle">Import des compétitions</h2>
+              </div>
+
+              <p id="adminImportModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module d’import…</p>
+
+              <section id="importWorkbench" class="import-workbench" hidden>
+                <details id="performanceSuperAdminPanel" class="import-card super-admin-maintenance" hidden>
+                  <summary class="import-card-head advanced-tools-summary">
+                    <span>Outils avancés</span>
+                    <strong>Maintenance de la base LivePalmes</strong>
+                    <p>Les imports et corrections publient automatiquement les changements. La reconstruction complète sert seulement en secours ou après une évolution technique.</p>
+                  </summary>
+                  <div class="super-admin-maintenance-actions">
+                    <button id="performancePublishPublicDataButton" type="button">Republier TOP / fiches nageurs</button>
+                    <p id="performancePublishPublicDataMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </div>
+                </details>
+
+                <section class="import-card">
+                  <div class="import-card-head">
+                    <span>Étape 1</span>
+                    <strong>Charger un fichier de résultats</strong>
+                    <p>Le fichier TXT fédéral ou la trame Excel internationale est analysé avant validation puis ajouté à la base LivePalmes officielle.</p>
+                  </div>
+                  <form id="competitionImportForm" class="competition-import-form">
+                    <label>
+                      Fichier TXT ou Excel
+                      <input id="competitionImportFile" type="file" accept=".txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                    </label>
+                    <label>
+                      Encodage TXT
+                      <select id="competitionImportEncoding">
+                        <option value="utf-8" selected>UTF-8 / export fédéral récent</option>
+                        <option value="windows-1252">Windows-1252 / ancien export</option>
+                      </select>
+                    </label>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Prévisualiser</button>
+                    </div>
+                  </form>
+                  <p id="competitionImportMessage" class="admin-portal-message" aria-live="polite"></p>
+                </section>
+
+                <section id="competitionImportPreview" class="import-card" hidden>
+                  <div class="import-card-head">
+                    <span>Étape 2</span>
+                    <strong>Prévisualisation</strong>
+                    <p>Contrôlez les informations détectées avant d’ajouter la compétition dans la base LivePalmes.</p>
+                  </div>
+                  <div id="competitionImportSummary" class="import-summary-grid"></div>
+                  <div id="competitionImportWarnings" class="import-warnings"></div>
+                  <div class="import-table-wrap">
+                    <table class="import-preview-table">
+                      <thead>
+                        <tr>
+                          <th>Nageur</th>
+                          <th>Course</th>
+                          <th>Temps</th>
+                          <th>Passage</th>
+                          <th>Catégorie</th>
+                          <th>Club</th>
+                        </tr>
+                      </thead>
+                      <tbody id="competitionImportSample"></tbody>
+                    </table>
+                  </div>
+                  <div class="admin-portal-actions">
+                    <button id="competitionImportValidateButton" type="button">Valider l’import</button>
+                  </div>
+                </section>
+
+                <section class="import-card">
+                  <div class="import-card-head import-card-head-inline">
+                    <div>
+                      <span>Historique</span>
+                      <strong>Imports déjà stockés</strong>
+                    </div>
+                    <div class="import-card-actions">
+                      <button id="competitionImportsExportButton" class="ghost-button" type="button">Exporter les données publiques</button>
+                      <button id="competitionImportsRefreshButton" class="ghost-button" type="button">Actualiser</button>
+                    </div>
+                  </div>
+                  <div class="competition-import-history-filters" aria-label="Filtres de l'historique des imports">
+                    <label>
+                      Rechercher
+                      <input id="competitionImportsSearch" type="search" placeholder="Compétition, lieu ou fichier" autocomplete="off">
+                    </label>
+                    <label>
+                      Année
+                      <select id="competitionImportsYear">
+                        <option value="">Toutes les années</option>
+                      </select>
+                    </label>
+                    <label>
+                      Statut
+                      <select id="competitionImportsStatus">
+                        <option value="">Tous les statuts</option>
+                        <option value="stored">Stocké</option>
+                        <option value="deleted">Annulé</option>
+                      </select>
+                    </label>
+                  </div>
+                  <p id="competitionImportsFilterSummary" class="competition-imports-filter-summary" aria-live="polite"></p>
+                  <div id="competitionImportsList" class="competition-imports-list"></div>
+                </section>
+              </section>
+            </section>
+
+            <section id="adminCorrectionView" class="admin-portal-import-view import-admin-page" data-admin-view="correction" aria-labelledby="adminCorrectionViewTitle" hidden>
+              <div class="admin-portal-workspace-head admin-module-workspace-head">
+                <h2 id="adminCorrectionViewTitle">Correction d’une performance</h2>
+              </div>
+
+              <p id="adminCorrectionModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module de correction…</p>
+
+              <section id="correctionWorkbench" class="import-workbench" hidden>
+
+                <section class="import-card">
+                  <div class="import-card-head">
+                    <span>Correction</span>
+                    <strong>Rechercher une performance</strong>
+                    <p>Recherchez un nageur, filtrez ses performances, puis corrigez ou masquez la ligne publiée. Un motif est obligatoire.</p>
+                  </div>
+                  <div class="performance-correction-search">
+                    <label>
+                      Nageur / nageuse
+                      <input id="performanceCorrectionSwimmer" type="search" placeholder="Nom ou prénom" autocomplete="off">
+                    </label>
+                    <label>
+                      Course
+                      <select id="performanceCorrectionCourse"></select>
+                    </label>
+                    <label>
+                      Année
+                      <select id="performanceCorrectionYear"></select>
+                    </label>
+                    <label>
+                      Compétition
+                      <select id="performanceCorrectionCompetition"></select>
+                    </label>
+                  </div>
+                  <div id="performanceCorrectionSuggestions" class="performance-correction-suggestions"></div>
+                  <div id="performanceCorrectionResultsWrap" class="import-table-wrap">
+                    <table class="import-preview-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Course</th>
+                          <th>Temps</th>
+                          <th>Nageur</th>
+                          <th>Club</th>
+                          <th>Compétition</th>
+                        </tr>
+                      </thead>
+                      <tbody id="performanceCorrectionResults">
+                        <tr><td colspan="6">Sélectionnez un nageur pour afficher ses performances.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <form id="performanceCorrectionForm" class="performance-correction-form" hidden>
+                    <div class="import-card-head-inline">
+                      <div class="import-card-head">
+                        <span>Ligne sélectionnée</span>
+                        <strong id="performanceCorrectionTitle">Performance</strong>
+                      </div>
+                      <button id="performanceCorrectionBackToList" class="ghost-button" type="button">Choisir une autre performance</button>
+                    </div>
+                    <div class="performance-correction-grid">
+                      <label>Temps final<input id="performanceCorrectionTime" type="text"></label>
+                      <label>Date<input id="performanceCorrectionDate" type="date"></label>
+                      <label>Club<input id="performanceCorrectionClub" type="text"></label>
+                      <label>Lieu<input id="performanceCorrectionLocation" type="text"></label>
+                    </div>
+                    <div>
+                      <div class="import-card-head compact">
+                        <span>Temps intermédiaires</span>
+                        <strong>Passages</strong>
+                      </div>
+                      <div id="performanceCorrectionSplits" class="performance-correction-splits"></div>
+                      <button id="performanceCorrectionAddSplit" class="ghost-button" type="button">Ajouter un passage</button>
+                    </div>
+                    <label class="performance-correction-reason">
+                      Motif de la correction
+                      <textarea id="performanceCorrectionReason" rows="3" required placeholder="Exemple : temps corrigé après vérification du protocole"></textarea>
+                    </label>
+                    <div class="admin-portal-actions">
+                      <button id="performanceCorrectionSave" type="submit">Enregistrer la correction</button>
+                      <button id="performanceCorrectionHide" class="ghost-button danger-button" type="button">Supprimer définitivement</button>
+                    </div>
+                  </form>
+                </section>
+              </section>
+            </section>
+
+            <section id="adminDtnView" class="admin-portal-dtn-view" data-admin-view="dtn" data-capability-panel="dtn.view" aria-labelledby="adminDtnViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span>Performances</span>
+                <h2 id="adminDtnViewTitle">Espace DTN</h2>
+              </div>
+
+              <section class="admin-dtn-toolbar" aria-label="Filtres des temps de qualification">
+                <label>
+                  Saison
+                  <select id="adminDtnSeason"></select>
+                </label>
+                <div id="adminDtnSexSegment" class="admin-dtn-segment admin-dtn-sex-segment" role="group" aria-label="Sexe" hidden>
+                  <button type="button" data-dtn-sex="F" aria-pressed="true">Femmes</button>
+                  <button type="button" data-dtn-sex="M" aria-pressed="false">Hommes</button>
+                </div>
+                <div id="adminDtnRefreshBox" class="admin-dtn-refresh" hidden>
+                  <button id="adminDtnRefresh" class="ghost-button" type="button">Recalculer les qualifications</button>
+                  <span id="adminDtnRefreshStatus" aria-live="polite"></span>
+                </div>
+              </section>
+
+              <div id="adminDtnDefinitions" class="admin-dtn-definitions" hidden></div>
+              <div id="adminDtnGrid" class="admin-dtn-grid" aria-live="polite"></div>
+
+              <section id="adminDtnQualifiers" class="admin-dtn-qualifiers" aria-labelledby="adminDtnQualifiersTitle" hidden>
+                <div class="admin-dtn-qualifiers-head">
+                  <div>
+                    <span id="adminDtnQualifiersContext">Qualifiés</span>
+                    <h3 id="adminDtnQualifiersTitle">Nageurs ayant réalisé le temps</h3>
+                  </div>
+                  <button id="adminDtnQualifiersClose" class="ghost-button" type="button">Fermer</button>
+                </div>
+                <p id="adminDtnQualifiersStatus" class="admin-record-module-status" aria-live="polite"></p>
+                <div class="admin-dtn-results-wrap">
+                  <table class="admin-dtn-results-table">
+                    <thead>
+                      <tr>
+                        <th>Temps</th>
+                        <th>Nageur</th>
+                        <th>Club</th>
+                        <th>Compétition</th>
+                        <th>Lieu</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminDtnQualifiersBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </section>
+
+            <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-capability-panel="admin.full" aria-labelledby="adminAccessViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span>Administration générale</span>
+                <h2 id="adminAccessViewTitle">Gestion des accès</h2>
+                <p>Créez les comptes du portail et adaptez leurs habilitations.</p>
+              </div>
+
+        <section id="adminAccessPanel" class="admin-access-preview" aria-label="Création d'un accès au portail">
           <div class="admin-access-preview-head">
             <span>Gestion des acces</span>
-            <strong>Creer ou mettre a jour un administrateur</strong>
+            <strong>Créer ou mettre à jour un accès</strong>
           </div>
           <form id="adminAccessForm" class="admin-access-form">
-            <label>
-              Nom
-              <input id="adminAccessLastName" type="text" autocomplete="family-name" required>
-            </label>
-            <label>
-              Prenom
-              <input id="adminAccessFirstName" type="text" autocomplete="given-name" required>
-            </label>
-            <label>
-              Email
-              <input id="adminAccessEmail" type="email" autocomplete="email" required>
-            </label>
-            <label>
-              Club
-              <input id="adminAccessClubName" type="text" autocomplete="organization">
-            </label>
-            <label>
-              Numero de licence
-              <input id="adminAccessLicenseNumber" type="text">
-            </label>
+            <fieldset class="admin-access-section admin-access-identity">
+              <legend>Identité</legend>
+              <div class="admin-access-identity-grid">
+                <label>
+                  Nom
+                  <input id="adminAccessLastName" type="text" autocomplete="family-name" required>
+                </label>
+                <label>
+                  Prénom
+                  <input id="adminAccessFirstName" type="text" autocomplete="given-name" required>
+                </label>
+                <label>
+                  Email
+                  <input id="adminAccessEmail" type="email" autocomplete="email" required>
+                </label>
+                <label>
+                  Club
+                  <input id="adminAccessClubName" type="text" autocomplete="organization">
+                </label>
+                <label>
+                  Numéro de licence
+                  <input id="adminAccessLicenseNumber" type="text">
+                </label>
+              </div>
+            </fieldset>
             <fieldset class="admin-access-rights">
-              <legend>Droits</legend>
+              <legend>Habilitations</legend>
               <label>
                 <input type="checkbox" name="capability" value="records.manage">
                 <span>Records / MPF</span>
               </label>
               <label>
                 <input type="checkbox" name="capability" value="consoles.manage">
-                <span>Pilotage LivePalmes</span>
+                <span>Consoles comp&eacute;tition</span>
               </label>
               <label>
                 <input type="checkbox" name="capability" value="competitions.import">
-                <span>Import competitions</span>
+                <span>Import des compétitions</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="dtn.view">
+                <span>Espace DTN</span>
               </label>
               <label>
                 <input type="checkbox" name="capability" value="admin.full">
-                <span>Administration generale</span>
+                <span>Administration générale</span>
               </label>
             </fieldset>
             <label class="admin-access-reset-choice">
@@ -150,16 +661,19 @@
           </form>
         </section>
 
-        <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Acces existants" data-capability-panel="admin.full">
+        <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Acces existants">
           <div class="admin-access-list-head">
             <div>
               <span>Acces existants</span>
-              <strong>Administrateurs LivePalmes</strong>
+              <strong>Utilisateurs du portail</strong>
             </div>
             <button id="adminAccessRefreshButton" class="ghost-button" type="button">Actualiser</button>
           </div>
           <div id="adminAccessList" class="admin-access-list"></div>
         </section>
+            </section>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -167,7 +681,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
-    <script src="assets/livepalmes-admin-auth.js?v=20260602-import-competitions-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260602-import-competitions-1"></script>
+    <script src="assets/livepalmes-admin-auth.js?v=20260722-dtn-login-1"></script>
+    <script src="assets/livepalmes-dtn-qualifications.js?v=20260722-dtn-refresh-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260722-dtn-capability-1"></script>
   </body>
 </html>

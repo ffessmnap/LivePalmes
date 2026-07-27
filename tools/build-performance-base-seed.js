@@ -59,6 +59,14 @@ function main() {
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
   const historical = readHistoricalData(args.dataDir);
+  if (!historical.allPerfs.length) {
+    throw new Error([
+      "Aucune performance historique trouvee.",
+      "La generation du seed est arretee pour eviter de produire une base vide.",
+      "Verifier la source INTRANAP ou relancer : node tools/build-intranap-public-data.js"
+    ].join(" "));
+  }
+
   const seen = new Set();
   let written = 0;
   let duplicates = 0;

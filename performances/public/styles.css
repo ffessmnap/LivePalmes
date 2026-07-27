@@ -574,12 +574,54 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
 }
 
 .swimmer-toolbar {
-  grid-template-columns: minmax(260px, 1.3fr) minmax(130px, 0.7fr) minmax(150px, 0.8fr) minmax(240px, 1fr);
+  grid-template-columns: minmax(260px, 1.35fr) minmax(118px, 0.62fr) minmax(140px, 0.72fr) minmax(132px, 0.58fr) minmax(210px, 0.95fr);
 }
 
 .swimmer-toolbar .swimmer-filter-search {
   grid-column: 1 / 2;
   grid-row: 1;
+}
+
+.swimmer-search-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.swimmer-page .swimmer-toolbar .swimmer-search-input-wrap input {
+  padding-right: 40px;
+  font-size: 1rem;
+}
+
+.swimmer-search-input-wrap input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.swimmer-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.swimmer-search-clear:hover,
+.swimmer-search-clear:focus-visible {
+  color: var(--ink);
+  background: var(--wash);
+}
+
+.swimmer-search-clear[hidden] {
+  display: none;
 }
 
 .swimmer-toolbar .swimmer-filter-season {
@@ -593,8 +635,17 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
 }
 
 .swimmer-toolbar .swimmer-filter-display {
+  grid-column: 5 / 6;
+  grid-row: 1;
+}
+
+.swimmer-toolbar .swimmer-filter-pool {
   grid-column: 4 / 5;
   grid-row: 1;
+}
+
+.swimmer-pool-segments {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .swimmer-search-panel {
@@ -742,7 +793,8 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
 
 .swimmer-profile-honors-head {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -754,87 +806,110 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
   white-space: nowrap;
 }
 
-.swimmer-profile-counts,
 .swimmer-profile-records {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.swimmer-profile-record-summary {
+  margin-right: auto;
+  text-align: left;
+  white-space: normal;
+}
+
+.swimmer-profile-honors:not(.is-expanded) .swimmer-profile-records {
+  display: none;
+}
+
+.swimmer-record-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fbfdfc;
+}
+
+.swimmer-record-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.swimmer-record-card-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
-.swimmer-profile-records {
-  display: grid;
-  gap: 6px;
+.swimmer-record-card-badges .record-france-badge {
+  margin-left: 0;
 }
 
-.swimmer-profile-counts span {
+.swimmer-record-scope-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-height: 26px;
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #f7fbfa;
-  font-size: 0.78rem;
-}
-
-.swimmer-profile-counts strong {
-  color: var(--accent-strong);
-}
-
-.swimmer-record-line {
-  display: grid;
-  grid-template-columns: minmax(82px, 0.9fr) 70px 58px 82px;
-  gap: 6px;
-  align-items: center;
-  min-height: 25px;
-  padding: 3px 7px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fbfdfc;
-  font-size: 0.76rem;
-}
-
-.swimmer-record-group {
-  display: grid;
-  gap: 3px;
-}
-
-.swimmer-record-group h3 {
-  margin: 0;
-  color: var(--accent-strong);
-  font-size: 0.74rem;
+  min-height: 16px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: 0;
+  line-height: 1.2;
 }
 
-.swimmer-record-line span {
+.swimmer-record-scope-badge.is-mpf {
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--accent-strong);
+}
+
+.swimmer-record-card-details span {
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.72rem;
 }
 
-.swimmer-record-line strong {
-  font-size: 0.78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.swimmer-record-card-details {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 7px;
 }
 
-.swimmer-profile-honors:not(.is-expanded) .swimmer-record-line.is-extra {
-  display: none;
+.swimmer-record-card-details span:first-of-type {
+  overflow-wrap: anywhere;
 }
 
-.swimmer-profile-honors:not(.is-expanded) .swimmer-record-group.is-extra {
-  display: none;
+.swimmer-record-card-details span:last-child {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.swimmer-record-card-head > strong {
+  color: var(--accent-strong);
+  font-size: 0.88rem;
+}
+
+.swimmer-record-card-details > strong {
+  color: var(--warn);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.swimmer-record-card-details > * + *::before {
+  content: "·";
+  margin-right: 7px;
+  color: #9aa6a3;
+  font-weight: 700;
 }
 
 .swimmer-records-toggle {
-  justify-self: start;
+  justify-self: end;
   width: auto;
-  min-height: 26px;
-  padding: 0 8px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: #ffffff;
@@ -847,6 +922,12 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
 .swimmer-records-toggle:focus-visible {
   border-color: var(--accent);
   background: #f3f8f7;
+}
+
+@media (max-width: 980px) {
+  .swimmer-profile-records {
+    grid-template-columns: 1fr;
+  }
 }
 
 .performance-home {
@@ -1819,6 +1900,21 @@ textarea {
   stroke: #8d681d;
 }
 
+.progress-point-group {
+  cursor: pointer;
+}
+
+.progress-hit {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.progress-point-group:focus-visible .progress-point,
+.progress-point-group.is-active .progress-point {
+  stroke: var(--warn);
+  stroke-width: 3;
+}
+
 .progress-label {
   fill: var(--muted);
   font-size: 11px;
@@ -1830,6 +1926,29 @@ textarea {
   font-weight: 700;
 }
 
+.progress-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -4px 14px 10px;
+  padding: 7px 9px;
+  border-left: 4px solid var(--accent);
+  background: #f7fbfa;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.progress-detail[hidden] {
+  display: none;
+}
+
+.progress-detail strong {
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
 .progress-list {
   display: flex;
   flex-wrap: wrap;
@@ -1837,18 +1956,33 @@ textarea {
   padding: 0 14px 12px;
 }
 
-.progress-list span {
+.progress-list span,
+.progress-list-item {
   display: inline-flex;
   gap: 5px;
+  width: auto;
+  min-height: 0;
   padding: 4px 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
   background: #ffffff;
   font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-.progress-list strong {
+.progress-list-item:hover,
+.progress-list-item:focus-visible,
+.progress-list-item.is-active {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  background: #f3f8f7;
+  outline: none;
+}
+
+.progress-list strong,
+.progress-list-item strong {
   color: var(--ink);
 }
 
@@ -1976,6 +2110,19 @@ button:hover {
   background: #ffffff;
 }
 
+.swimmer-identity-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.swimmer-identity-head p {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 .swimmer-best-table {
   min-width: 820px;
 }
@@ -1987,7 +2134,7 @@ button:hover {
 
 .swimmer-best-table th:nth-child(2),
 .swimmer-best-table td:nth-child(2) {
-  width: 92px;
+  width: 132px;
   white-space: nowrap;
 }
 
@@ -2107,6 +2254,33 @@ button:hover {
 
 .top-course-bi.active {
   background: #8a4f8d;
+}
+
+.top-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 2px;
+}
+
+.top-load-more[hidden] {
+  display: none;
+}
+
+.top-load-more button {
+  width: auto;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid #b9d5d2;
+  color: var(--accent);
+  background: #edf7f5;
+  font-weight: 850;
+}
+
+.top-load-more button:hover,
+.top-load-more button:focus-visible {
+  color: #ffffff;
+  background: var(--accent);
+  outline: none;
 }
 
 .segmented {
@@ -2267,7 +2441,7 @@ table {
 .records-page tbody tr.sex-f td:nth-child(1),
 .records-page tbody tr.sex-m td:nth-child(1),
 .records-page tbody tr.relay-mixed td:nth-child(1) {
-  width: 12%;
+  width: 10%;
 }
 
 .records-page table th:nth-child(2),
@@ -2289,21 +2463,21 @@ table {
 .records-page tbody tr.sex-f td:nth-child(4),
 .records-page tbody tr.sex-m td:nth-child(4),
 .records-page tbody tr.relay-mixed td:nth-child(4) {
-  width: 8%;
+  width: 9%;
 }
 
 .records-page table th:nth-child(5),
 .records-page tbody tr.sex-f td:nth-child(5),
 .records-page tbody tr.sex-m td:nth-child(5),
 .records-page tbody tr.relay-mixed td:nth-child(5) {
-  width: 26%;
+  width: 29%;
 }
 
 .records-page table th:nth-child(6),
 .records-page tbody tr.sex-f td:nth-child(6),
 .records-page tbody tr.sex-m td:nth-child(6),
 .records-page tbody tr.relay-mixed td:nth-child(6) {
-  width: 14%;
+  width: 12%;
   white-space: nowrap;
 }
 
@@ -2837,6 +3011,28 @@ td.time-placeholder,
     grid-column: 1 / -1;
   }
 
+  .swimmer-page .swimmer-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .swimmer-page .swimmer-filter-search,
+  .swimmer-page .swimmer-toolbar .swimmer-search-panel {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .swimmer-page .swimmer-filter-season,
+  .swimmer-page .swimmer-filter-pool {
+    grid-column: 1 / 2;
+    grid-row: auto;
+  }
+
+  .swimmer-page .swimmer-filter-course,
+  .swimmer-page .swimmer-filter-display {
+    grid-column: 2 / 3;
+    grid-row: auto;
+  }
+
 }
 
 @media (max-width: 640px) {
@@ -3074,9 +3270,21 @@ td.time-placeholder,
   }
 
   .tops-page .top-toolbar .top-filter-season,
-  .tops-page .top-toolbar .top-filter-region,
-  .tops-page .top-toolbar .top-filter-limit {
-    grid-column: span 2;
+  .tops-page .top-toolbar .top-filter-region {
+    grid-column: span 3;
+  }
+
+  .tops-page .top-toolbar .top-filter-pool {
+    grid-column: 1 / -1;
+  }
+
+  .tops-page .top-toolbar .top-filter-pool .segmented {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tops-page .top-toolbar .top-filter-pool .segment {
+    padding: 0 8px;
+    font-size: 0.76rem;
   }
 
   .rf-segments {
@@ -3312,7 +3520,7 @@ td.time-placeholder,
   .records-page tbody tr.relay-mixed {
     position: relative;
     display: grid;
-    grid-template-columns: 96px 88px minmax(0, 1fr);
+    grid-template-columns: 82px 78px minmax(0, 1fr);
     gap: 0;
     border: 0;
     border-left: 5px solid var(--accent);
@@ -3427,7 +3635,7 @@ td.time-placeholder,
   }
 
   .records-page tbody tr.expanded {
-    grid-template-columns: 96px 88px minmax(0, 1fr);
+    grid-template-columns: 82px 78px minmax(0, 1fr);
     row-gap: 0;
     background: #fbfdfc;
   }
@@ -3476,6 +3684,22 @@ td.time-placeholder,
     line-height: 1.3;
     overflow-wrap: normal;
     word-break: normal;
+  }
+
+  .records-page tbody tr.expanded:not(.relay-record) {
+    padding-bottom: 27px;
+  }
+
+  .records-page tbody tr.expanded:not(.relay-record) .record-mobile-meta {
+    position: absolute;
+    right: 24px;
+    bottom: 6px;
+    left: 6px;
+    margin-top: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-style: normal;
   }
 
   .records-page tbody tr.expanded .record-split-meta {
@@ -3777,6 +4001,26 @@ td.time-placeholder,
     line-height: 1.3;
     overflow-wrap: normal;
     word-break: normal;
+  }
+
+  .mpf-page tbody tr.expanded:not(.relay-record):not(.master-relay-data-row) {
+    padding-bottom: 27px;
+  }
+
+  .mpf-page tbody tr.expanded:not(.relay-record):not(.master-relay-data-row) .performance-birth-year {
+    display: none;
+  }
+
+  .mpf-page tbody tr.expanded:not(.relay-record):not(.master-relay-data-row) .record-mobile-meta {
+    position: absolute;
+    right: 28px;
+    bottom: 6px;
+    left: 6px;
+    margin-top: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-style: normal;
   }
 
   .mpf-page tbody tr.expanded .record-split-meta {
@@ -4623,8 +4867,7 @@ td.time-placeholder,
     font-size: 0.76rem;
   }
 
-  .swimmer-page .swimmer-filter-search,
-  .swimmer-page .swimmer-filter-display {
+  .swimmer-page .swimmer-filter-search {
     grid-column: 1 / -1;
   }
 
@@ -4651,9 +4894,25 @@ td.time-placeholder,
     order: 4;
   }
 
-  .swimmer-page .swimmer-filter-display {
+  .swimmer-page .swimmer-filter-pool {
+    grid-column: 1 / 2;
     grid-row: auto;
     order: 5;
+  }
+
+  .swimmer-page .swimmer-filter-display {
+    grid-column: 2 / 3;
+    grid-row: auto;
+    order: 6;
+  }
+
+  .swimmer-page .swimmer-pool-segments {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .swimmer-page .swimmer-pool-segments .segment {
+    padding: 0 5px;
+    font-size: 0.7rem;
   }
 
   .swimmer-page .swimmer-search-panel {
@@ -4721,6 +4980,7 @@ td.time-placeholder,
 
   .swimmer-page .swimmer-profile-honors-head {
     display: flex;
+    align-items: center;
     gap: 8px;
   }
 
@@ -4728,34 +4988,14 @@ td.time-placeholder,
     text-align: left;
   }
 
-  .swimmer-page .swimmer-record-line {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1px 7px;
-    padding: 4px 7px;
-    max-width: 100%;
+  .swimmer-page .swimmer-profile-records {
+    grid-template-columns: 1fr;
   }
 
-  .swimmer-page .swimmer-record-line span:first-child {
-    grid-column: 1 / 2;
-    font-weight: 750;
-  }
-
-  .swimmer-page .swimmer-record-line strong:nth-of-type(1) {
-    grid-column: 2 / 3;
-    text-align: right;
-  }
-
-  .swimmer-page .swimmer-record-line strong:nth-of-type(2) {
-    grid-column: 1 / 2;
-  }
-
-  .swimmer-page .swimmer-record-line span:nth-child(4) {
-    grid-column: 2 / 3;
-    text-align: right;
-  }
-
-  .swimmer-page .swimmer-record-group h3 {
-    font-size: 0.72rem;
+  .swimmer-page .swimmer-records-toggle {
+    flex-basis: 100%;
+    justify-self: stretch;
+    justify-content: center;
   }
 
   .swimmer-page .swimmer-best-table {
@@ -4811,7 +5051,7 @@ td.time-placeholder,
   .swimmer-page .swimmer-best-table tbody tr.sex-m {
     position: relative;
     display: grid;
-    grid-template-columns: 64px 62px 82px minmax(44px, 1fr);
+    grid-template-columns: 58px 104px 60px minmax(44px, 1fr);
     gap: 0;
     align-items: center;
     overflow: hidden;
@@ -4926,8 +5166,16 @@ td.time-placeholder,
     justify-content: flex-start;
     color: var(--danger);
     font-size: 0.82rem;
+    gap: 4px;
+    padding-right: 2px;
+    padding-left: 2px;
     overflow: visible;
     text-overflow: clip;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.section-row):not(.pending-row) td[data-label="Temps"] .record-france-badge {
+    flex: 0 0 auto;
+    margin-left: 0;
   }
 
   .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Lieu"] {
@@ -4952,7 +5200,7 @@ td.time-placeholder,
   .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Date"] {
     grid-column: 3 / 4;
     grid-row: 1;
-    padding-left: 13px;
+    padding-left: 6px;
     justify-content: flex-start;
     color: #7a8784;
     font-size: 0.6rem;
@@ -4968,7 +5216,7 @@ td.time-placeholder,
   }
 
   .swimmer-page .swimmer-best-table tbody tr.expanded {
-    grid-template-columns: 64px 62px 82px minmax(44px, 1fr);
+    grid-template-columns: 58px 104px 60px minmax(44px, 1fr);
     row-gap: 0;
     background: #fbfdfc;
   }
@@ -4995,6 +5243,9 @@ td.time-placeholder,
   .swimmer-page .swimmer-best-table tbody tr.expanded td[data-label="Temps"] {
     grid-column: 2 / 3;
     grid-row: 1;
+    gap: 4px;
+    padding-right: 2px;
+    padding-left: 2px;
     white-space: nowrap;
   }
 
@@ -5031,7 +5282,7 @@ td.time-placeholder,
   .swimmer-page .swimmer-best-table tbody tr.expanded td[data-label="Date"] {
     grid-column: 3 / 4;
     grid-row: 1;
-    padding-left: 13px;
+    padding-left: 6px;
     color: #7a8784;
     font-size: 0.6rem;
     justify-content: flex-start;
@@ -5115,5 +5366,222 @@ td.time-placeholder,
     color: var(--accent-strong);
     font-size: 0.72rem;
     font-weight: 800;
+  }
+}
+
+@media (min-width: 560px) and (max-width: 720px) {
+  .swimmer-page .swimmer-best-table tbody tr.sex-f:not(.expanded),
+  .swimmer-page .swimmer-best-table tbody tr.sex-m:not(.expanded) {
+    grid-template-columns: 58px 104px 62px minmax(88px, 1fr) 66px 54px;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Catégorie"],
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Lieu"] {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    width: auto;
+    min-height: 36px;
+    padding: 7px 4px;
+    border-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
+    font-size: 0.68rem;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Catégorie"] {
+    grid-column: 3 / 4;
+    grid-row: 1;
+    font-weight: 750;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Lieu"] {
+    grid-column: 4 / 5;
+    grid-row: 1;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Date"] {
+    grid-column: 5 / 6;
+    padding-left: 4px;
+  }
+
+  .swimmer-page .swimmer-best-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Club"] {
+    grid-column: 6 / 7;
+  }
+}
+
+/* Public performance pages must always fit the available viewport width. */
+.records-page,
+.mpf-page,
+.tops-page,
+.swimmer-page {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+.records-page main,
+.mpf-page main,
+.tops-page main,
+.swimmer-page main,
+.records-page .records-shell,
+.mpf-page .records-shell,
+.tops-page .records-shell,
+.swimmer-page .records-shell,
+.records-page .table-wrap,
+.mpf-page .table-wrap,
+.tops-page .table-wrap,
+.swimmer-page .table-wrap,
+.records-page .toolbar,
+.mpf-page .toolbar,
+.tops-page .toolbar,
+.swimmer-page .toolbar {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.records-page .table-wrap,
+.mpf-page .table-wrap,
+.tops-page .table-wrap,
+.swimmer-page .table-wrap {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+.records-page table,
+.mpf-page table,
+.tops-page table,
+.swimmer-page table {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.records-page .toolbar > *,
+.mpf-page .toolbar > *,
+.tops-page .toolbar > *,
+.swimmer-page .toolbar > * {
+  min-width: 0;
+}
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  .records-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td,
+  .mpf-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td,
+  .tops-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td,
+  .swimmer-page tbody tr:not(.expanded):not(.section-row):not(.pending-row) td {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .records-page tbody tr.expanded td,
+  .mpf-page tbody tr.expanded td,
+  .tops-page tbody tr.expanded td,
+  .swimmer-page tbody tr.expanded td {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .records-page tbody tr.expanded td[data-label="Course"],
+  .records-page tbody tr.expanded td[data-label="Temps"],
+  .records-page tbody tr.expanded td[data-label="Date"],
+  .mpf-page tbody tr.expanded td[data-label="Course"],
+  .mpf-page tbody tr.expanded td[data-label="Temps"],
+  .mpf-page tbody tr.expanded td[data-label="Date"],
+  .tops-page tbody tr.expanded td[data-label="Rang"],
+  .tops-page tbody tr.expanded td[data-label="Temps"],
+  .tops-page tbody tr.expanded td[data-label="Date"],
+  .swimmer-page tbody tr.expanded td[data-label="Course"],
+  .swimmer-page tbody tr.expanded td[data-label="Temps"],
+  .swimmer-page tbody tr.expanded td[data-label="Date"] {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .records-page tbody tr.expanded .location-line,
+  .mpf-page tbody tr.expanded .location-line,
+  .tops-page tbody tr.expanded .location-line,
+  .swimmer-page tbody tr.expanded .location-line,
+  .records-page tbody tr.expanded .performance-name-link,
+  .mpf-page tbody tr.expanded .performance-name-link,
+  .tops-page tbody tr.expanded .performance-name-link,
+  .swimmer-page tbody tr.expanded .performance-name-link {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  .tops-page .top-results-table th:nth-child(1),
+  .tops-page .top-results-table td:nth-child(1) {
+    width: 7%;
+  }
+
+  .tops-page .top-results-table th:nth-child(2),
+  .tops-page .top-results-table td:nth-child(2) {
+    width: 13%;
+  }
+
+  .tops-page .top-results-table th:nth-child(3),
+  .tops-page .top-results-table td:nth-child(3) {
+    width: 31%;
+  }
+
+  .tops-page .top-results-table th:nth-child(4),
+  .tops-page .top-results-table td:nth-child(4) {
+    width: 13%;
+  }
+
+  .tops-page .top-results-table th:nth-child(5),
+  .tops-page .top-results-table td:nth-child(5) {
+    width: 24%;
+  }
+
+  .tops-page .top-results-table th:nth-child(6),
+  .tops-page .top-results-table td:nth-child(6) {
+    width: 12%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(1),
+  .swimmer-page .swimmer-best-table td:nth-child(1) {
+    width: 12%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(2),
+  .swimmer-page .swimmer-best-table td:nth-child(2) {
+    width: 16%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(3),
+  .swimmer-page .swimmer-best-table td:nth-child(3) {
+    width: 12%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(4),
+  .swimmer-page .swimmer-best-table td:nth-child(4) {
+    width: 12%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(5),
+  .swimmer-page .swimmer-best-table td:nth-child(5) {
+    width: 36%;
+  }
+
+  .swimmer-page .swimmer-best-table th:nth-child(6),
+  .swimmer-page .swimmer-best-table td:nth-child(6) {
+    width: 12%;
+  }
+}
+
+@media (max-width: 720px) {
+  .records-page .main-nav,
+  .mpf-page .main-nav,
+  .tops-page .main-nav,
+  .swimmer-page .main-nav {
+    flex-wrap: wrap;
+    max-width: 100%;
+    overflow-x: visible;
   }
 }

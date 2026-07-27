@@ -9,7 +9,7 @@ const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/dat
 
 global.window = global;
 require("../assets/livepalmes-damien-hebert-trophy.js");
-require("../assets/livepalmes-public-medals-core.js");
+require("../assets/public/livepalmes-public-medals-core.js");
 
 function cleanId(value, fallback = "race") {
   const clean = String(value || "")
@@ -219,7 +219,7 @@ function buildExtras(index = {}, results = []) {
       extras.tdh = {
         ...snapshot,
         id: "tdh",
-        title: "Trophée Damien Hébert",
+        title: "TrophÃ©e Damien HÃ©bert",
         count
       };
     }
@@ -235,7 +235,7 @@ function buildExtras(index = {}, results = []) {
       extras.medals = {
         ...snapshot,
         id: "medals",
-        title: "Tableau des médailles",
+        title: "Tableau des mÃ©dailles",
         count
       };
     }
