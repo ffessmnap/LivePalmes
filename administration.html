@@ -83,7 +83,7 @@
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
                 <h2 id="adminNavCompetition">Compétitions</h2>
-                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.manage">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
+                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavAdministration">
                 <h2 id="adminNavAdministration">Administration</h2>
@@ -633,8 +633,12 @@
                 <span>Records / MPF</span>
               </label>
               <label>
+                <input type="checkbox" name="capability" value="consoles.access">
+                <span>Acc&egrave;s aux consoles par PIN</span>
+              </label>
+              <label>
                 <input type="checkbox" name="capability" value="consoles.manage">
-                <span>Consoles comp&eacute;tition</span>
+                <span>Gestion des consoles et des PIN</span>
               </label>
               <label>
                 <input type="checkbox" name="capability" value="competitions.import">
@@ -681,8 +685,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
-    <script src="assets/livepalmes-admin-auth.js?v=20260722-dtn-login-1"></script>
+    <script src="assets/livepalmes-admin-auth.js?v=20260727-console-portal-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260722-dtn-refresh-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260722-dtn-capability-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260727-console-portal-1"></script>
   </body>
 </html>

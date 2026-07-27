@@ -55,10 +55,11 @@ service cloud.firestore {
     function hasConsoleClaim(competitionId, role) {
       return request.auth != null
         && request.auth.token.keys().hasAll([
-          "livepalmesRole", "livepalmesConsole", "livepalmesCompetition"
+          "livepalmesRole", "livepalmesConsole", "livepalmesConsoleAccess", "livepalmesCompetition"
         ])
         && request.auth.token.livepalmesRole == role
         && request.auth.token.livepalmesConsole == true
+        && request.auth.token.livepalmesConsoleAccess == true
         && request.auth.token.livepalmesCompetition == competitionId;
     }
 
