@@ -21,6 +21,7 @@ for (const page of protectedConsolePages) {
   const html = fs.readFileSync(path.resolve(__dirname, `../${page}`), "utf8");
   assert.match(html, /<html lang="fr" data-console-access="pending">/);
   assert.match(html, /id="consoleAccessPending"/);
+  assert.match(html, /livepalmes-console-page-gate\.js\?v=20260727-console-no-flash-1/);
 }
 
 const pageGateSource = fs.readFileSync(path.resolve(__dirname, "../assets/livepalmes-console-page-gate.js"), "utf8");
