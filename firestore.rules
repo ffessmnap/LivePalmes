@@ -31,50 +31,219 @@ service cloud.firestore {
       return role in ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
     }
 
-    function isAdmin() {
-      return request.auth != null
-        && request.auth.uid in ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"];
-    }
-
     function hasCapability(capability) {
       return request.auth != null
+        && request.auth.token.keys().hasAll(["livepalmesAccess", "livepalmesCapabilities"])
         && request.auth.token.livepalmesAccess == true
+        && request.auth.token.livepalmesCapabilities is map
+        && request.auth.token.livepalmesCapabilities.keys().hasAll([capability])
         && request.auth.token.livepalmesCapabilities[capability] == true;
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && (
+          request.auth.uid in ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]
+          || hasCapability("admin.full")
+        );
     }
 
     function canManageRecords() {
       return isAdmin() || hasCapability("admin.full") || hasCapability("records.manage");
     }
 
-    function isAnyConsoleRole(competitionId) {
+    function hasConsoleClaim(competitionId, role) {
       return request.auth != null
-        && validRole(request.auth.token.livepalmesRole)
+        && request.auth.token.keys().hasAll([
+          "livepalmesRole", "livepalmesConsole", "livepalmesCompetition"
+        ])
+        && request.auth.token.livepalmesRole == role
         && request.auth.token.livepalmesConsole == true
         && request.auth.token.livepalmesCompetition == competitionId;
     }
 
-    function isAnyConsoleGrant(competitionId) {
+    function hasActiveConsoleGrant(competitionId, role) {
       return request.auth != null
         && exists(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid))
-        && validRole(get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.role)
+        && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.role == role
         && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.competitionId == competitionId
         && get(/databases/$(database)/documents/competitions/$(competitionId)/consoleGrants/$(request.auth.uid)).data.expiresAt > request.time;
     }
 
-    function canReadConsole(competitionId) {
-      return isAdmin() || isAnyConsoleRole(competitionId) || isAnyConsoleGrant(competitionId);
+    function hasGrantedConsoleRole(competitionId, role) {
+      return validRole(role)
+        && hasConsoleClaim(competitionId, role)
+        && hasActiveConsoleGrant(competitionId, role);
     }
 
-    function canWriteConsole(competitionId) {
-      return canReadConsole(competitionId);
+    function hasConsoleRole(competitionId, role) {
+      return isAdmin() || hasGrantedConsoleRole(competitionId, role);
+    }
+
+    function isAnyConsoleRole(competitionId) {
+      return isAdmin()
+        || (
+          request.auth != null
+          && request.auth.token.keys().hasAll(["livepalmesRole"])
+          && validRole(request.auth.token.livepalmesRole)
+          && hasGrantedConsoleRole(competitionId, request.auth.token.livepalmesRole)
+        );
+    }
+
+    function canReadConsole(competitionId) {
+      return isAnyConsoleRole(competitionId);
     }
 
     function canWriteComputer(competitionId) {
-      return canWriteConsole(competitionId);
+      return hasConsoleRole(competitionId, "computer");
     }
 
-    function canWriteRole(competitionId) {
-      return canWriteConsole(competitionId);
+    function canWriteRole(competitionId, role) {
+      return hasConsoleRole(competitionId, role);
+    }
+
+    function canWriteOperationalAlert(competitionId) {
+      return hasConsoleRole(competitionId, "speaker")
+        || hasConsoleRole(competitionId, "referee")
+        || hasConsoleRole(competitionId, "video")
+        || hasConsoleRole(competitionId, "computer")
+        || hasConsoleRole(competitionId, "secretary");
+    }
+
+    function validStatus(value) {
+      return value in ["none", "pending", "done", "confirmed", "rejected"];
+    }
+
+    function validOptionalStatus(field) {
+      return !(field in request.resource.data)
+        || validStatus(request.resource.data[field]);
+    }
+
+    function validAlertDocument(alertId) {
+      return request.resource.data.keys().hasOnly([
+          "id", "competitionId", "roleSource", "eventId", "eventLabel",
+          "sex", "sexLabel", "session", "series", "stage", "line",
+          "swimmerId", "displayName", "club", "clubCode", "type", "comment",
+          "relayLeg", "lengthType", "lengthNumber", "requiresVideo", "videoStatus",
+          "speakerStatus", "secretaryStatus", "informaticsStatus", "createdAt", "updatedAt",
+          "originalAlertId", "cancelledAt", "cancelledBy", "videoConfirmedAt",
+          "videoRejectedAt", "speakerAnnouncedAt", "secretaryDoneAt", "informaticsDoneAt",
+          "resultId", "startTime", "finalistCount", "finalists", "nextUnqualified",
+          "withdrawnName", "withdrawnClub", "replacementName", "replacementClub",
+          "replacementRowKey", "replacementRank", "replacementTime", "finalKey", "active"
+        ])
+        && request.resource.data.id == alertId
+        && validText(alertId, 160)
+        && validOptionalText("type", 60)
+        && validOptionalText("roleSource", 40)
+        && validOptionalText("eventId", 120)
+        && validOptionalText("eventLabel", 180)
+        && validOptionalText("sex", 10)
+        && validOptionalText("createdAt", 40)
+        && validOptionalText("updatedAt", 40)
+        && validOptionalStatus("videoStatus")
+        && validOptionalStatus("speakerStatus")
+        && validOptionalStatus("secretaryStatus")
+        && validOptionalStatus("informaticsStatus")
+        && (!("requiresVideo" in request.resource.data) || request.resource.data.requiresVideo is bool)
+        && (!("active" in request.resource.data) || request.resource.data.active is bool);
+    }
+
+    function validPublicIndex(documentId) {
+      return documentId in ["resultsIndex", "seriesIndex"]
+        && request.resource.data.keys().hasOnly([
+          "id", "meet", "events", "program", "entrants", "series", "results",
+          "records", "qualifications", "seriesPdfs", "sessionResultsPdfs",
+          "sessionInfos", "publicAccess", "updatedAt", "sourceVersion",
+          "sourceLabel", "lastUpdatedSession"
+        ])
+        && request.resource.data.id == documentId
+        && request.resource.data.meet is map
+        && request.resource.data.events is list
+        && request.resource.data.program is list
+        && request.resource.data.entrants is list
+        && request.resource.data.series is list
+        && request.resource.data.results is list
+        && request.resource.data.records is list
+        && request.resource.data.qualifications is list
+        && request.resource.data.seriesPdfs is list
+        && request.resource.data.sessionResultsPdfs is list
+        && request.resource.data.sessionInfos is map
+        && request.resource.data.publicAccess is map
+        && validText(request.resource.data.updatedAt, 40)
+        && validOptionalText("sourceVersion", 120)
+        && validOptionalText("sourceLabel", 160)
+        && validOptionalText("lastUpdatedSession", 20);
+    }
+
+    function validResultDocument(resultId) {
+      return request.resource.data.keys().hasOnly([
+          "id", "raceKey", "programKey", "eventId", "eventLabel", "sex", "sexLabel",
+          "stage", "phaseLabel", "finalStageCount", "session", "startTime", "hasFinal",
+          "finalists", "nextUnqualified", "ranking", "performances", "pdfName", "pdfSize",
+          "pdfDataUrl", "createdAt", "updatedAt", "isPartial", "status",
+          "finalistsAnnouncedAt", "finalWithdrawals", "finalPreWithdrawals"
+        ])
+        && request.resource.data.id == resultId
+        && validText(resultId, 180)
+        && validText(request.resource.data.raceKey, 120)
+        && validText(request.resource.data.eventId, 120)
+        && validText(request.resource.data.eventLabel, 160)
+        && validText(request.resource.data.sex, 10)
+        && request.resource.data.hasFinal is bool
+        && request.resource.data.finalists is map
+        && request.resource.data.nextUnqualified is list
+        && request.resource.data.ranking is list
+        && validText(request.resource.data.pdfName, 220)
+        && request.resource.data.pdfSize is int
+        && validOptionalText("pdfDataUrl", 900000)
+        && validText(request.resource.data.updatedAt, 40)
+        && validOptionalText("finalistsAnnouncedAt", 40)
+        && (!("performances" in request.resource.data) || request.resource.data.performances is list)
+        && (!("finalWithdrawals" in request.resource.data) || request.resource.data.finalWithdrawals is list)
+        && (!("finalPreWithdrawals" in request.resource.data) || request.resource.data.finalPreWithdrawals is list);
+    }
+
+    function speakerFinalistRowAllowed(before, after) {
+      return before == after
+        || (
+          after.diff(before).affectedKeys().hasOnly(["repechageAnnouncedAt"])
+          && after.repechaged == true
+          && (!("repechageAnnouncedAt" in before) || before.repechageAnnouncedAt == "")
+          && validText(after.repechageAnnouncedAt, 40)
+          && after.repechageAnnouncedAt.size() > 0
+        );
+    }
+
+    function speakerFinalistListAnnouncement(before, after) {
+      return before is list
+        && after is list
+        && before.size() <= 8
+        && after.size() <= 8
+        && before != after
+        && (before.size() <= 0 || speakerFinalistRowAllowed(before[0], after[0]))
+        && (before.size() <= 1 || speakerFinalistRowAllowed(before[1], after[1]))
+        && (before.size() <= 2 || speakerFinalistRowAllowed(before[2], after[2]))
+        && (before.size() <= 3 || speakerFinalistRowAllowed(before[3], after[3]))
+        && (before.size() <= 4 || speakerFinalistRowAllowed(before[4], after[4]))
+        && (before.size() <= 5 || speakerFinalistRowAllowed(before[5], after[5]))
+        && (before.size() <= 6 || speakerFinalistRowAllowed(before[6], after[6]))
+        && (before.size() <= 7 || speakerFinalistRowAllowed(before[7], after[7]));
+    }
+
+    function speakerFinalistsAnnouncementOnly() {
+      return resource.data.finalists.keys().hasOnly(["a", "b"])
+        && request.resource.data.finalists.keys().hasOnly(["a", "b"])
+        && (
+          (
+            resource.data.finalists.b == request.resource.data.finalists.b
+            && speakerFinalistListAnnouncement(resource.data.finalists.a, request.resource.data.finalists.a)
+          )
+          || (
+            resource.data.finalists.a == request.resource.data.finalists.a
+            && speakerFinalistListAnnouncement(resource.data.finalists.b, request.resource.data.finalists.b)
+          )
+        );
     }
 
     match /competitions/{competitionId} {
@@ -111,25 +280,75 @@ service cloud.firestore {
       match /alerts/{alertId} {
         allow read: if isLivePalmesCompetition(competitionId)
           && canReadConsole(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId)
-          && request.resource.data.keys().hasAny(["id"])
-          && request.resource.data.id == alertId
-          && validText(alertId, 160)
-          && validOptionalText("type", 40)
-          && validOptionalText("eventId", 120)
-          && validOptionalText("sex", 10)
-          && validOptionalText("createdAt", 40)
-          && validOptionalText("updatedAt", 40);
+        allow create: if isLivePalmesCompetition(competitionId)
+          && validAlertDocument(alertId)
+          && (
+            canWriteComputer(competitionId)
+            || (
+              hasConsoleRole(competitionId, "referee")
+              && request.resource.data.roleSource == "referee"
+            )
+            || (
+              hasConsoleRole(competitionId, "secretary")
+              && request.resource.data.roleSource == "secretary"
+            )
+            || (
+              hasConsoleRole(competitionId, "video")
+              && request.resource.data.roleSource == "delegate"
+              && request.resource.data.type == "requalification"
+              && validText(request.resource.data.originalAlertId, 160)
+            )
+          );
+        allow update: if isLivePalmesCompetition(competitionId)
+          && validAlertDocument(alertId)
+          && (
+            canWriteComputer(competitionId)
+            || (
+              hasConsoleRole(competitionId, "referee")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                "cancelledAt", "cancelledBy", "speakerStatus", "informaticsStatus",
+                "secretaryStatus", "updatedAt", "active"
+              ])
+            )
+            || (
+              hasConsoleRole(competitionId, "video")
+              && (
+                request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                  "videoStatus", "videoConfirmedAt", "videoRejectedAt", "speakerStatus",
+                  "informaticsStatus", "updatedAt", "active"
+                ])
+                || (
+                  request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                    "cancelledAt", "cancelledBy", "speakerStatus", "informaticsStatus",
+                    "secretaryStatus", "updatedAt", "active"
+                  ])
+                  && request.resource.data.cancelledBy == "delegate"
+                )
+              )
+            )
+            || (
+              hasConsoleRole(competitionId, "speaker")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                "speakerStatus", "speakerAnnouncedAt", "cancelledAt", "updatedAt", "active"
+              ])
+            )
+            || (
+              hasConsoleRole(competitionId, "secretary")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                "secretaryStatus", "secretaryDoneAt", "speakerStatus", "cancelledAt",
+                "updatedAt", "active"
+              ])
+            )
+          );
         allow delete: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId);
+          && canWriteComputer(competitionId);
       }
 
       match /summaries/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId)
           && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId)
+          && canWriteOperationalAlert(competitionId)
           && documentId == "alerts"
           && request.resource.data.keys().hasOnly(["counts", "activeCount", "updatedAt"])
           && request.resource.data.counts is map
@@ -142,64 +361,93 @@ service cloud.firestore {
       match /liveData/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId)
           && canReadConsole(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId)
-          && documentId == "current";
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId)
+        allow create: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId)
           && documentId == "current"
           && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
           && request.resource.data.data is map
           && validText(request.resource.data.updatedAt, 40)
           && validText(request.resource.data.source, 160);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && documentId == "current"
+          && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
+          && request.resource.data.data is map
+          && validText(request.resource.data.updatedAt, 40)
+          && validText(request.resource.data.source, 160)
+          && (
+            canWriteComputer(competitionId)
+            || (
+              hasConsoleRole(competitionId, "speaker")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["data", "updatedAt", "source"])
+              && request.resource.data.data.diff(resource.data.data).affectedKeys().hasOnly([
+                "entrants", "top2025", "records", "edfMembers", "internationalMedals",
+                "competitionStats", "swimmerInfos", "qualifications", "sourceVersion", "notes"
+              ])
+              && request.resource.data.data.notes.diff(resource.data.data.notes).affectedKeys().hasOnly([
+                "sourceMode", "speakerInfoSource", "recordsSource", "recordsSourceDate",
+                "recordsUpdatedAt", "speakerInfoUpdatedAt", "importHistory", "livePublishedAt", "liveSource"
+              ])
+            )
+            || (
+              hasConsoleRole(competitionId, "referee")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["data", "updatedAt", "source"])
+              && request.resource.data.data.diff(resource.data.data).affectedKeys().hasOnly(["sourceVersion", "notes"])
+              && request.resource.data.data.notes.diff(resource.data.data.notes).affectedKeys().hasOnly([
+                "refereeProgress", "importHistory", "livePublishedAt", "liveSource"
+              ])
+            )
+          );
         allow delete: if isLivePalmesTestCompetition(competitionId)
           && isAdmin();
       }
 
       match /public/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
+        allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && documentId in ["resultsIndex", "seriesIndex"];
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId)
-          && documentId in ["resultsIndex", "seriesIndex"]
-          && request.resource.data.keys().hasOnly([
-            "id",
-            "meet",
-            "events",
-            "program",
-            "entrants",
-            "series",
-            "results",
-            "records",
-            "qualifications",
-            "seriesPdfs",
-            "sessionResultsPdfs",
-            "sessionInfos",
-            "publicAccess",
-            "updatedAt",
-            "sourceVersion",
-            "sourceLabel",
-            "lastUpdatedSession"
-          ])
-          && request.resource.data.id == documentId
-          && request.resource.data.meet is map
-          && request.resource.data.events is list
-          && request.resource.data.program is list
-          && request.resource.data.entrants is list
-          && request.resource.data.series is list
-          && request.resource.data.results is list
-          && request.resource.data.records is list
-          && request.resource.data.qualifications is list
-          && request.resource.data.seriesPdfs is list
-          && request.resource.data.sessionResultsPdfs is list
-          && request.resource.data.sessionInfos is map
-          && request.resource.data.publicAccess is map
-          && validText(request.resource.data.updatedAt, 40)
-          && validOptionalText("sourceVersion", 120)
-          && validOptionalText("sourceLabel", 160)
-          && validOptionalText("lastUpdatedSession", 20);
+          && validPublicIndex(documentId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && validPublicIndex(documentId)
+          && (
+            canWriteComputer(competitionId)
+            || (
+              hasConsoleRole(competitionId, "speaker")
+              && (
+                (
+                  documentId == "resultsIndex"
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                    "results", "updatedAt", "sourceVersion", "sourceLabel", "lastUpdatedSession", "publicAccess"
+                  ])
+                )
+                || (
+                  documentId == "seriesIndex"
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                    "entrants", "records", "qualifications", "updatedAt", "sourceVersion",
+                    "sourceLabel", "lastUpdatedSession", "publicAccess"
+                  ])
+                )
+              )
+            )
+            || (
+              hasConsoleRole(competitionId, "referee")
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                "updatedAt", "sourceVersion", "publicAccess"
+              ])
+            )
+            || (
+              hasConsoleRole(competitionId, "secretary")
+              && (
+                (
+                  documentId == "resultsIndex"
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["results", "updatedAt"])
+                )
+                || (
+                  documentId == "seriesIndex"
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["updatedAt"])
+                )
+              )
+            )
+          );
         allow delete: if isLivePalmesTestCompetition(competitionId)
           && canWriteComputer(competitionId);
       }
@@ -209,17 +457,22 @@ service cloud.firestore {
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canManageRecords()
           && documentId == "records"
-          && request.resource.data.keys().hasAll([
+          && request.resource.data.keys().hasOnly([
             "id",
             "records",
             "franceRecords",
             "filters",
-            "updatedAt"
+            "recordHistory",
+            "updatedAt",
+            "sourceDate",
+            "generatedAt",
+            "cutoffDate"
           ])
           && request.resource.data.id == "records"
           && request.resource.data.records is list
           && request.resource.data.franceRecords is list
           && request.resource.data.filters is map
+          && (!("recordHistory" in request.resource.data) || request.resource.data.recordHistory is list)
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceDate", 40)
           && validOptionalText("generatedAt", 40)
@@ -230,8 +483,6 @@ service cloud.firestore {
 
       match /seriesPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
@@ -258,8 +509,6 @@ service cloud.firestore {
       match /sessionResultsPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -269,7 +518,8 @@ service cloud.firestore {
             "pdfName",
             "pdfDataUrl",
             "updatedAt",
-            "sourceLabel"
+            "sourceLabel",
+            "documentType"
           ])
           && request.resource.data.id == pdfId
           && validText(pdfId, 160)
@@ -279,7 +529,8 @@ service cloud.firestore {
           && validText(request.resource.data.pdfName, 220)
           && validText(request.resource.data.pdfDataUrl, 900000)
           && validText(request.resource.data.updatedAt, 40)
-          && validOptionalText("sourceLabel", 160);
+          && validOptionalText("sourceLabel", 160)
+          && validOptionalText("documentType", 40);
         allow delete: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
       }
@@ -289,7 +540,7 @@ service cloud.firestore {
           && canReadConsole(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && validRole(role)
-          && canWriteRole(competitionId)
+          && canWriteRole(competitionId, role)
           && request.resource.data.keys().hasOnly([
             "role",
             "clientId",
@@ -318,7 +569,7 @@ service cloud.firestore {
           );
         allow delete: if isLivePalmesCompetition(competitionId)
           && validRole(role)
-          && canWriteRole(competitionId);
+          && canWriteRole(competitionId, role);
       }
 
       match /presence/{presenceId} {
@@ -337,18 +588,16 @@ service cloud.firestore {
           && validText(presenceId, 180)
           && validText(request.resource.data.clientId, 120)
           && validPresenceRole(request.resource.data.role)
-          && canWriteRole(competitionId)
+          && canWriteRole(competitionId, request.resource.data.role)
           && request.resource.data.page == "console"
           && validText(request.resource.data.updatedAt, 40)
           && validText(request.resource.data.expiresAt, 40);
         allow delete: if isLivePalmesCompetition(competitionId)
-          && canWriteConsole(competitionId);
+          && canWriteRole(competitionId, resource.data.role);
       }
 
       match /historyArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
@@ -373,17 +622,19 @@ service cloud.firestore {
       match /resultArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
+            "archiveVersion",
             "createdAt",
             "createdLabel",
             "reason",
             "publicArchive",
             "meet",
             "count",
+            "raceCount",
+            "extras",
+            "archiveIndex",
             "publicIndex"
           ])
           && request.resource.data.id == archiveId
@@ -394,36 +645,19 @@ service cloud.firestore {
           && (!("publicArchive" in request.resource.data) || request.resource.data.publicArchive is bool)
           && request.resource.data.meet is map
           && request.resource.data.count is int
-          && request.resource.data.publicIndex is map;
+          && (!("archiveVersion" in request.resource.data) || request.resource.data.archiveVersion is int)
+          && (!("raceCount" in request.resource.data) || request.resource.data.raceCount is int)
+          && (!("extras" in request.resource.data) || request.resource.data.extras is list)
+          && (!("archiveIndex" in request.resource.data) || request.resource.data.archiveIndex is map)
+          && (!("publicIndex" in request.resource.data) || request.resource.data.publicIndex is map);
         allow delete: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
 
         match /items/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId);
-          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
-            && request.resource.data.keys().hasAll([
-              "id",
-              "raceKey",
-              "eventId",
-              "eventLabel",
-              "sex",
-              "hasFinal",
-              "pdfName",
-              "updatedAt"
-            ])
-            && request.resource.data.id == resultId
-            && validText(resultId, 180)
-            && validText(request.resource.data.raceKey, 120)
-            && validText(request.resource.data.eventId, 120)
-            && validText(request.resource.data.eventLabel, 160)
-            && validText(request.resource.data.sex, 10)
-            && request.resource.data.hasFinal is bool
-            && validText(request.resource.data.pdfName, 220)
-            && validOptionalText("pdfDataUrl", 900000)
-            && validText(request.resource.data.updatedAt, 40);
+            && validResultDocument(resultId);
           allow delete: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId);
         }
@@ -431,7 +665,23 @@ service cloud.firestore {
         match /races/{raceId} {
           allow read: if isLivePalmesCompetition(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId);
+            && canWriteComputer(competitionId)
+            && request.resource.data.keys().hasOnly([
+              "id", "raceKey", "eventId", "sex", "label", "session", "order",
+              "resultCount", "latestUpdatedAt", "programRows", "seriesRows", "results"
+            ])
+            && request.resource.data.id == raceId
+            && validText(raceId, 180)
+            && validText(request.resource.data.raceKey, 120)
+            && validText(request.resource.data.eventId, 120)
+            && validText(request.resource.data.sex, 10)
+            && validText(request.resource.data.label, 180)
+            && request.resource.data.order is int
+            && request.resource.data.resultCount is int
+            && validText(request.resource.data.latestUpdatedAt, 40)
+            && request.resource.data.programRows is list
+            && request.resource.data.seriesRows is list
+            && request.resource.data.results is list;
           allow delete: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId);
         }
@@ -439,15 +689,17 @@ service cloud.firestore {
         match /extras/{extraId} {
           allow read: if isLivePalmesCompetition(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId);
+            && canWriteComputer(competitionId)
+            && extraId in ["tdh", "medals"]
+            && request.resource.data.id == extraId
+            && validText(request.resource.data.title, 120)
+            && request.resource.data.count is int;
           allow delete: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId);
         }
 
         match /resultPdfs/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
@@ -478,8 +730,6 @@ service cloud.firestore {
         match /sessionResultsPdfs/{pdfId} {
           allow read: if isLivePalmesCompetition(competitionId);
           allow create, update: if isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId);
-          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
               "id",
@@ -489,7 +739,8 @@ service cloud.firestore {
               "pdfName",
               "pdfDataUrl",
               "updatedAt",
-              "sourceLabel"
+              "sourceLabel",
+              "documentType"
             ])
             && request.resource.data.id == pdfId
             && validText(pdfId, 180)
@@ -499,7 +750,8 @@ service cloud.firestore {
             && validText(request.resource.data.pdfName, 220)
             && validText(request.resource.data.pdfDataUrl, 900000)
             && validText(request.resource.data.updatedAt, 40)
-            && validOptionalText("sourceLabel", 180);
+            && validOptionalText("sourceLabel", 180)
+            && validOptionalText("documentType", 40);
           allow delete: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId);
         }
@@ -507,8 +759,6 @@ service cloud.firestore {
 
       match /resultPdfs/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
         allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
@@ -539,29 +789,37 @@ service cloud.firestore {
       match /results/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId)
           && canReadConsole(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId);
-        allow create, update: if isLivePalmesCompetition(competitionId)
+        allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && request.resource.data.keys().hasAll([
-            "id",
-            "raceKey",
-            "eventId",
-            "eventLabel",
-            "sex",
-            "hasFinal",
-            "pdfName",
-            "updatedAt"
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId)
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "secretary")
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "finalists", "finalWithdrawals", "finalPreWithdrawals", "updatedAt"
           ])
-          && request.resource.data.id == resultId
-          && validText(resultId, 180)
-          && validText(request.resource.data.raceKey, 120)
-          && validText(request.resource.data.eventId, 120)
-          && validText(request.resource.data.eventLabel, 160)
-          && validText(request.resource.data.sex, 10)
-          && request.resource.data.hasFinal is bool
-          && validText(request.resource.data.pdfName, 220)
-          && validOptionalText("pdfDataUrl", 900000)
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "speaker")
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "finalistsAnnouncedAt", "status", "updatedAt"
+          ])
+          && request.resource.data.diff(resource.data).affectedKeys().hasAll([
+            "finalistsAnnouncedAt", "status", "updatedAt"
+          ])
+          && resource.data.status == "finalists_pending_speaker"
+          && (!("finalistsAnnouncedAt" in resource.data) || resource.data.finalistsAnnouncedAt == "")
+          && validText(request.resource.data.finalistsAnnouncedAt, 40)
+          && request.resource.data.finalistsAnnouncedAt.size() > 0
+          && request.resource.data.status == "published"
+          && validText(request.resource.data.updatedAt, 40);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "speaker")
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["finalists", "updatedAt"])
+          && request.resource.data.diff(resource.data).affectedKeys().hasAll(["finalists", "updatedAt"])
+          && speakerFinalistsAnnouncementOnly()
           && validText(request.resource.data.updatedAt, 40);
         allow delete: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
