@@ -4,7 +4,7 @@
     "finalRowCountsAsFinalist", "finalWithdrawalLimitDate", "finalWithdrawalLimitLabel",
     "formatDeadlineTime", "hasFinalWithdrawalDeadline", "isFinalWithdrawalDeadlineExpired",
     "markAlertAlreadyClosedError", "markSpeakerAlertDoneLocally", "normalizePersonName",
-    "publishPublicResultsIndex", "render", "replacementAlertMatches", "resultParserFunction",
+    "render", "replacementAlertMatches", "resultParserFunction",
     "resultParserOptions", "saveAlerts", "sexDisplayLabel", "syncAlertChangesToFirestoreStrict",
     "syncAlertToFirestore"
   ];

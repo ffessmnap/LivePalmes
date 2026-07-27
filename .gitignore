@@ -1,5 +1,7 @@
 functions/node_modules/
+tests/firestore-rules/node_modules/
 .firebase/
+firestore-debug.log
 firebase-backups/
 outputs/
 tmp/
