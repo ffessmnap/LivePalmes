@@ -32,7 +32,7 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Extraction de la maintenance resultats dans `assets/livepalmes-result-maintenance-workflow.js`.
 - Extraction des exports/rapports dans `assets/livepalmes-export-reports-workflow.js`.
 - Extraction de la session roles/codes dans `assets/livepalmes-role-session-workflow.js`.
-- Extraction de la position publique et des compteurs d'accueil dans `assets/livepalmes-public-progress-workflow.js`.
+- Extraction de la position publique et des compteurs d'accueil dans `assets/public/livepalmes-public-progress-workflow.js`.
 - Extraction du rendu principal de console dans `assets/livepalmes-console-render-workflow.js`.
 - Extraction du stockage local dans `assets/livepalmes-app-storage-workflow.js`.
 - Correction du demarrage des evenements d'interface apres decoupage : les boutons des consoles depuis l'accueil repondent a nouveau.
@@ -42,7 +42,7 @@ Ce fichier sert a garder une trace simple des evolutions importantes.
 - Remplacement des acces implicites du rendu principal de console par des dependances explicites.
 - Remplacement des fleches unicode fragiles des boutons de navigation par des caracteres ASCII.
 - Suppression de l'heure dans le menu deroulant des courses de la page publique series.
-- Ajout d'un smoke test navigateur automatisé pour les consoles, les actions speaker et la page publique series.
+- Ajout d'un smoke test navigateur automatisÃ© pour les consoles, les actions speaker et la page publique series.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules alertes, programme et actions admin.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans les modules evenements UI, decisions JA, historique, synchronisation temps reel et import series.
 - Remplacement des acces implicites `with (context)` par des dependances explicites dans le module publication/relecture des resultats.

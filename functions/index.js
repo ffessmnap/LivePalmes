@@ -13,7 +13,7 @@ const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
-const ACCESS_CAPABILITIES = ["admin.full", "records.manage", "consoles.manage", "competitions.import"];
+const ACCESS_CAPABILITIES = ["admin.full", "records.manage", "consoles.manage", "competitions.import", "dtn.view"];
 const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
@@ -30,6 +30,8 @@ const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
+const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
+const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
 const PERFORMANCE_BASE_COLLECTION = "performances";
 const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
 const PERFORMANCE_BASE_MIGRATION_COLLECTION = "performanceMigrationJobs";
@@ -39,6 +41,13 @@ const PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION = "performanceSwimmerIndexState
 const PERFORMANCE_TOP_BUCKETS_COLLECTION = "performanceTopViews";
 const PERFORMANCE_TOP_INDEX_STATE_COLLECTION = "performanceTopIndexState";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
+const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
+const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
+const DTN_QUALIFICATION_CACHE_VERSION = 4;
+const DTN_EDF_LIMOGES_COMPETITION_ID = "e40fe3129ffd5d76286774193a2855ed";
+const DTN_EDF_COMPETITION_IDS_BY_SEASON = {
+  2026: ["5039", "4978", "4979", DTN_EDF_LIMOGES_COMPETITION_ID]
+};
 const PERFORMANCE_SWIMMER_PAGE_SIZE = 500;
 const PERFORMANCE_PUBLIC_DATA_URL = "https://livepalmes.web.app/performances/public/data";
 const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
@@ -131,7 +140,8 @@ function assertAdmin(request) {
 function assertCapability(request, capability) {
   const uid = request.auth?.uid || "";
   const capabilities = request.auth?.token?.livepalmesCapabilities || {};
-  if (!ADMIN_UIDS.has(uid) && capabilities["admin.full"] !== true && capabilities[capability] !== true) {
+  const adminFallbackAllowed = capability !== "dtn.view" && capabilities["admin.full"] === true;
+  if (!ADMIN_UIDS.has(uid) && !adminFallbackAllowed && capabilities[capability] !== true) {
     throw new HttpsError("permission-denied", "Droit LivePalmes requis.");
   }
 }
@@ -1701,6 +1711,89 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
+exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => {
+  await assertLivePalmesAccess(request);
+  const uid = cleanText(request.auth?.uid);
+  const email = normalizeEmail(request.data?.email);
+  assertEmail(email);
+
+  const authTime = Number(request.auth?.token?.auth_time || 0) * 1000;
+  if (!authTime || Date.now() - authTime > 5 * 60 * 1000) {
+    throw new HttpsError("failed-precondition", "Reconnexion recente requise.");
+  }
+
+  const authUser = await admin.auth().getUser(uid);
+  const previousEmail = normalizeEmail(authUser.email);
+  const userRef = admin.firestore().collection("users").doc(uid);
+  const userSnapshot = await userRef.get();
+  const userData = userSnapshot.exists ? userSnapshot.data() || {} : {};
+  const capabilities = ADMIN_UIDS.has(uid)
+    ? ACCESS_CAPABILITIES
+    : activeCapabilitiesFromMap(userData.capabilities || request.auth?.token?.livepalmesCapabilities || {});
+  const now = new Date().toISOString();
+
+  if (email !== previousEmail) {
+    try {
+      await admin.auth().updateUser(uid, { email, emailVerified: false });
+    } catch (error) {
+      if (error?.code === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "Cette adresse email est deja utilisee.");
+      }
+      if (error?.code === "auth/invalid-email") {
+        throw new HttpsError("invalid-argument", "Email invalide.");
+      }
+      throw error;
+    }
+  }
+
+  try {
+    const batch = admin.firestore().batch();
+    batch.set(userRef, {
+      uid,
+      email,
+      status: userData.status || "active",
+      updatedAt: now,
+      updatedBy: uid,
+      ...(!userSnapshot.exists ? { createdAt: now, createdBy: uid } : {})
+    }, { merge: true });
+    ACCESS_CAPABILITIES.forEach((capability) => {
+      const grantRef = admin.firestore().collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
+      batch.set(grantRef, {
+        uid,
+        email,
+        capability,
+        scopeType: "national",
+        scopeId: "",
+        status: capabilities.includes(capability) ? "active" : "inactive",
+        updatedAt: now,
+        updatedBy: uid,
+        createdAt: now
+      }, { merge: true });
+    });
+    await batch.commit();
+  } catch (error) {
+    if (email !== previousEmail && previousEmail) {
+      await admin.auth().updateUser(uid, { email: previousEmail }).catch((rollbackError) => {
+        console.error("Rollback email compte impossible", rollbackError);
+      });
+    }
+    throw new HttpsError("internal", "La mise a jour du profil LivePalmes a echoue.");
+  }
+
+  await writeAuditLog("accessUser.emailUpdated", uid, {
+    uid,
+    previousEmail,
+    email
+  }).catch((error) => console.warn("Journalisation du changement d'email impossible", error));
+
+  return {
+    ok: true,
+    uid,
+    email,
+    verificationRequired: true
+  };
+});
+
 exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   const uid = cleanText(request.auth?.uid);
   if (!uid) {
@@ -1921,6 +2014,20 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     };
   }
 
+  let publicFilesSnapshot = null;
+  try {
+    publicFilesSnapshot = await publishIncrementalPublicPerformanceFiles(normalizedImportedPerformances, {
+      importId,
+      now
+    });
+  } catch (error) {
+    console.warn("Publication publique incrementale des fichiers performances impossible", error);
+    publicFilesSnapshot = {
+      ok: false,
+      error: error?.message || String(error)
+    };
+  }
+
   return {
     ok: true,
     importId,
@@ -1932,7 +2039,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     recordAlertCount: recordAlerts.length,
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
     performanceBaseSync,
-    publicSnapshot
+    publicSnapshot,
+    publicFilesSnapshot
   };
 });
 
@@ -2025,6 +2133,10 @@ async function markCompetitionImportDeleted(importId, context = {}) {
     .get();
   const performanceBaseDocs = performanceBaseSnapshot.docs
     .filter((doc) => (doc.data() || {}).source === "livepalmes-import");
+  const affectedRows = performanceBaseDocs.map((doc) => ({
+    performanceBaseId: doc.id,
+    ...(doc.data() || {})
+  }));
   performanceBaseDocs.forEach((doc) => {
     const data = doc.data() || {};
     batch.set(doc.ref, {
@@ -2065,7 +2177,8 @@ async function markCompetitionImportDeleted(importId, context = {}) {
     ok: true,
     importId,
     importPerformanceCount: importPerformancesSnapshot.size,
-    performanceBaseCount: performanceBaseDocs.length
+    performanceBaseCount: performanceBaseDocs.length,
+    affectedRows
   };
 }
 
@@ -2083,6 +2196,10 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
     actorUid,
     actorEmail
   });
+  await touchDtnQualificationCacheState(result.affectedRows || [], {
+    action: "performanceImport.deleted",
+    now
+  });
 
   let publicSnapshot = null;
   try {
@@ -2098,17 +2215,38 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
     };
   }
 
+  let publicFilesSnapshot = null;
+  try {
+    publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(result.affectedRows || [], {
+      now,
+      reason: "performanceImport.deleted",
+      importId
+    });
+  } catch (error) {
+    console.error("Publication publique ciblee impossible apres suppression import", {
+      importId,
+      message: error?.message || String(error)
+    });
+    publicFilesSnapshot = {
+      ok: false,
+      error: error?.message || "Publication publique ciblee impossible."
+    };
+  }
+
   await writeAuditLog("performanceImport.deleted", actorUid, {
     importId,
     actorEmail,
     importPerformanceCount: result.importPerformanceCount,
     performanceBaseCount: result.performanceBaseCount,
-    publicSnapshot
+    publicSnapshot,
+    publicFilesSnapshot
   });
 
+  const { affectedRows, ...publicResult } = result;
   return {
-    ...result,
-    publicSnapshot
+    ...publicResult,
+    publicSnapshot,
+    publicFilesSnapshot
   };
 });
 
@@ -2364,6 +2502,13 @@ async function writePerformanceBaseRows(rows = [], context = {}) {
 
   commitIfNeeded(true);
   await Promise.all(commits);
+  await touchDtnQualificationCacheState([
+    ...rows,
+    ...(Array.isArray(context.dtnInvalidationRows) ? context.dtnInvalidationRows : [])
+  ], {
+    action: context.action || "performanceBase.updated",
+    now
+  });
   return { ok: true, written };
 }
 
@@ -2643,6 +2788,220 @@ async function performanceTopRowsFromIndex(filters = {}) {
     indexedRows: rows.length
   };
 }
+
+function dtnQualificationRow(row = {}) {
+  return cleanFirestoreValue({
+    swimmerId: cleanText(row.swimmerId),
+    swimmerIdentityKey: cleanText(row.swimmerIdentityKey),
+    swimmer: cleanText(row.swimmer),
+    firstName: cleanText(row.firstName),
+    lastName: cleanText(row.lastName),
+    birthDate: cleanText(row.birthDate),
+    sex: cleanText(row.sex),
+    club: cleanText(row.club || row.clubName),
+    competition: cleanText(row.competition),
+    location: cleanText(row.location),
+    date: cleanText(row.date),
+    seasonYear: Number(row.seasonYear || 0) || 0,
+    course: cleanText(row.course),
+    time: cleanText(row.time),
+    timeValue: Number(row.timeValue || 0) || 0
+  });
+}
+
+function bestDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
+  const bestBySwimmer = new Map();
+  rows.forEach((row) => {
+    if (!Number(row.timeValue) || Number(row.timeValue) > threshold) return;
+    if (standard.birthMin && birthYear(row.birthDate) < standard.birthMin) return;
+    const key = publicSwimmerKey(row);
+    if (!key) return;
+    const current = bestBySwimmer.get(key);
+    if (publicBetterPerformance(row, current)) bestBySwimmer.set(key, row);
+  });
+  return Array.from(bestBySwimmer.values())
+    .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.swimmer).localeCompare(cleanText(b.swimmer), "fr-FR"))
+    .map(dtnQualificationRow);
+}
+
+function dtnQualificationCacheStateRef(seasonYear) {
+  return admin.firestore().collection(DTN_QUALIFICATION_CACHE_STATE_COLLECTION).doc(String(seasonYear));
+}
+
+function dtnQualificationCacheRef(seasonYear, sex) {
+  return admin.firestore().collection(DTN_QUALIFICATION_CACHE_COLLECTION).doc(`${seasonYear}-${sex}`);
+}
+
+function dtnQualificationSeasonsForRows(rows = []) {
+  const seasons = new Set();
+  rows.forEach((inputRow) => {
+    const row = inputRow && typeof inputRow === "object" ? inputRow : {};
+    const seasonYear = Number(row.seasonYear || 0) || importSeasonYear(cleanText(row.date));
+    if (seasonYear && DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear]) seasons.add(seasonYear);
+  });
+  return Array.from(seasons);
+}
+
+async function touchDtnQualificationCacheState(rows = [], context = {}) {
+  const seasons = dtnQualificationSeasonsForRows(rows);
+  if (!seasons.length) return { touchedSeasons: [] };
+  const now = cleanText(context.now) || new Date().toISOString();
+  const batch = admin.firestore().batch();
+  seasons.forEach((seasonYear) => {
+    batch.set(dtnQualificationCacheStateRef(seasonYear), {
+      version: admin.firestore.FieldValue.increment(1),
+      updatedAt: now,
+      reason: cleanText(context.action || "performanceBase.updated")
+    }, { merge: true });
+  });
+  await batch.commit();
+  return { touchedSeasons: seasons };
+}
+
+function dtnQualificationCacheFingerprint({ seasonYear, sex, standards, competitionIds, sourceVersion }) {
+  return stableHash(JSON.stringify({
+    cacheVersion: DTN_QUALIFICATION_CACHE_VERSION,
+    seasonYear,
+    sex,
+    standards,
+    competitionIds,
+    sourceVersion
+  }));
+}
+
+function dtnQualificationRowsForStandard(rows = [], standardId = "", competitionIds = []) {
+  const id = cleanText(standardId).toUpperCase();
+  if (id === "TU16C1" || id === "TU16C2") return rows;
+  const allowedCompetitionIds = id === "TJP" || id === "TEP"
+    ? competitionIds.filter((competitionId) => competitionId !== DTN_EDF_LIMOGES_COMPETITION_ID)
+    : competitionIds;
+  const allowed = new Set(allowedCompetitionIds);
+  return rows.filter((row) => allowed.has(cleanText(row.competitionId)));
+}
+
+exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "dtn.view");
+  const seasonYear = Number(request.data?.seasonYear || 0);
+  if (!Number.isInteger(seasonYear) || !DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear]) {
+    throw new HttpsError("invalid-argument", "Saison DTN invalide.");
+  }
+
+  const stateRef = dtnQualificationCacheStateRef(seasonYear);
+  const now = new Date().toISOString();
+  const sourceVersion = await admin.firestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(stateRef);
+    const current = Number(snapshot.data()?.version || 0) || 0;
+    const next = current + 1;
+    transaction.set(stateRef, {
+      version: next,
+      updatedAt: now,
+      reason: "dtn.manual-refresh"
+    }, { merge: true });
+    return next;
+  });
+
+  return { ok: true, seasonYear, sourceVersion, refreshedAt: now };
+});
+
+exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "dtn.view");
+  const seasonYear = Number(request.data?.seasonYear || 0);
+  const sex = normalizeCategoryCode(request.data?.sex);
+  const allowedStandardIds = new Set(["TSP", "TRP", "TJP", "TEP", "TU16C2", "TU16C1"]);
+  const rawStandards = Array.isArray(request.data?.standards) ? request.data.standards.slice(0, 6) : [];
+  if (!Number.isInteger(seasonYear) || seasonYear < 2000 || seasonYear > 2100) {
+    throw new HttpsError("invalid-argument", "Saison DTN invalide.");
+  }
+  if (sex !== "F" && sex !== "M") {
+    throw new HttpsError("invalid-argument", "Sexe DTN invalide.");
+  }
+  const standards = rawStandards.map((raw) => {
+    const id = cleanText(raw?.id).toUpperCase();
+    const birthMin = Number(raw?.birthMin || 0) || 0;
+    if (!allowedStandardIds.has(id) || (birthMin && (birthMin < 1900 || birthMin > 2100))) {
+      throw new HttpsError("invalid-argument", "Référentiel DTN invalide.");
+    }
+    const thresholds = {};
+    POOL_COURSES.forEach((course) => {
+      const threshold = Number(raw?.thresholds?.[course] || 0) || 0;
+      if (threshold > 0 && threshold <= 10000000) thresholds[course] = threshold;
+    });
+    return { id, birthMin, thresholds };
+  });
+  if (!standards.length) throw new HttpsError("invalid-argument", "Aucun temps DTN fourni.");
+
+  const competitionIds = DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear] || [];
+  if (!competitionIds.length) throw new HttpsError("failed-precondition", "Compétitions DTN non définies pour cette saison.");
+  const db = admin.firestore();
+
+  const stateSnapshot = await dtnQualificationCacheStateRef(seasonYear).get();
+  const sourceVersion = Number(stateSnapshot.data()?.version || 0) || 0;
+  const fingerprint = dtnQualificationCacheFingerprint({ seasonYear, sex, standards, competitionIds, sourceVersion });
+  const cacheRef = dtnQualificationCacheRef(seasonYear, sex);
+  const cacheSnapshot = await cacheRef.get();
+  if (cacheSnapshot.exists && cleanText(cacheSnapshot.data()?.fingerprint) === fingerprint) {
+    const cachedPayload = cacheSnapshot.data()?.payload;
+    if (cachedPayload && typeof cachedPayload === "object") {
+      console.info("Cache DTN utilise", { seasonYear, sex, sourceVersion });
+      return { ...cachedPayload, cache: { hit: true, generatedAt: cleanText(cacheSnapshot.data()?.generatedAt) } };
+    }
+  }
+  console.info("Cache DTN absent ou obsolete", { seasonYear, sex, sourceVersion });
+
+  const indexedCourses = await Promise.all(POOL_COURSES.map(async (course) => {
+    const snapshot = await db.collection(PERFORMANCE_BASE_COLLECTION)
+      .where("seasonYear", "==", seasonYear)
+      .where("course", "==", course)
+      .where("sex", "==", sex)
+      .where("active", "==", true)
+      .get();
+    return {
+      course,
+      rows: snapshot.docs.map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
+    };
+  }));
+
+  const payload = {
+    ok: true,
+    seasonYear,
+    sex,
+    standards: standards.map((standard) => ({
+      id: standard.id,
+      courses: indexedCourses.map(({ course, rows }) => {
+        const threshold = Number(standard.thresholds[course] || 0);
+        const eligibleRows = dtnQualificationRowsForStandard(rows, standard.id, competitionIds);
+        const qualifiers = threshold ? bestDtnQualificationRows(eligibleRows, standard, threshold) : [];
+        return {
+          course,
+          threshold,
+          qualifiers,
+          count: qualifiers.length
+        };
+      })
+    })),
+    competitionIds
+  };
+
+  const latestStateSnapshot = await dtnQualificationCacheStateRef(seasonYear).get();
+  const latestSourceVersion = Number(latestStateSnapshot.data()?.version || 0) || 0;
+  if (latestSourceVersion === sourceVersion) {
+    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
+    if (payloadBytes < 900000) {
+      const generatedAt = new Date().toISOString();
+      await cacheRef.set({
+        fingerprint,
+        sourceVersion,
+        generatedAt,
+        payloadBytes,
+        payload: cleanFirestoreValue(payload)
+      }, { merge: false });
+      console.info("Cache DTN cree", { seasonYear, sex, sourceVersion, payloadBytes });
+      return { ...payload, cache: { hit: false, generatedAt } };
+    }
+    console.warn("Cache DTN trop volumineux", { seasonYear, sex, payloadBytes });
+  }
+  return { ...payload, cache: { hit: false, generatedAt: "" } };
+});
 
 function normalizePerformanceSearchText(value) {
   return cleanText(value)
@@ -3273,6 +3632,608 @@ async function publishIncrementalPerformanceCorrection(correction = {}) {
   });
 }
 
+function publicPerformanceFilesBucket() {
+  return admin.storage().bucket(PUBLIC_PERFORMANCE_BUCKET);
+}
+
+function publicPerformanceFilePath(relativePath = "") {
+  return `${PUBLIC_PERFORMANCE_FILES_PATH}/${String(relativePath || "").replace(/^\/+/, "")}`;
+}
+
+function publicPerformanceFile(relativePath = "") {
+  return publicPerformanceFilesBucket().file(publicPerformanceFilePath(relativePath));
+}
+
+async function readPublicPerformanceJson(relativePath, fallback) {
+  const file = publicPerformanceFile(relativePath);
+  try {
+    const [buffer] = await file.download();
+    return JSON.parse(buffer.toString("utf8"));
+  } catch (error) {
+    if (error?.code === 404 || error?.code === 403 || /No such object|not found/i.test(error?.message || "")) {
+      return fallback;
+    }
+    throw error;
+  }
+}
+
+async function savePublicPerformanceJson(relativePath, payload, cacheControl = "public, max-age=300") {
+  const file = publicPerformanceFile(relativePath);
+  await file.save(JSON.stringify(payload), {
+    resumable: false,
+    contentType: "application/json; charset=utf-8",
+    metadata: { cacheControl }
+  });
+  return publicPerformanceFilePath(relativePath);
+}
+
+async function savePublicPerformanceText(relativePath, content, cacheControl = "public, max-age=300") {
+  const file = publicPerformanceFile(relativePath);
+  await file.save(content, {
+    resumable: false,
+    contentType: "application/javascript; charset=utf-8",
+    metadata: { cacheControl }
+  });
+  return publicPerformanceFilePath(relativePath);
+}
+
+function publicPerformanceCompactObject(object = {}) {
+  return Object.fromEntries(Object.entries(object).filter(([, value]) => {
+    if (value === "" || value === null || value === undefined) return false;
+    if (value === false) return false;
+    if (Array.isArray(value) && !value.length) return false;
+    return true;
+  }));
+}
+
+function publicPerformanceSearchShard(value) {
+  const token = normalizePerformanceSearchText(value).split(/\s+/).find((item) => item.length >= 2) || "";
+  return token.slice(0, 2).toLowerCase();
+}
+
+function publicPerformanceIdShard(value) {
+  const id = cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (!id) return "";
+  return id.length === 1 ? `0${id}` : id.slice(0, 2);
+}
+
+function publicPerformanceTopFileName(sex, category) {
+  return `${cleanText(sex)}-${cleanText(category).replace(/\+/g, "")}.json`;
+}
+
+function publicPerformanceSwimmerFilePath(indexKey) {
+  const hash = stableHash(indexKey).slice(0, 40);
+  return `swimmers/${hash.slice(0, 2)}/${hash}.json`;
+}
+
+function publicPerformanceRowKey(row = {}) {
+  return cleanText(row.publicKey || performancePublicKey(row) || row.performanceBaseId || row.id);
+}
+
+function publicPerformanceTopCandidateKey(row = {}) {
+  return [
+    publicSwimmerKey(row),
+    Number(row.seasonYear || 0) || 0,
+    cleanText(row.regionId)
+  ].join("|");
+}
+
+function publicPerformanceSwimmerRow(row = {}) {
+  const isIntermediate = row.isIntermediate === true;
+  return publicPerformanceCompactObject({
+    id: cleanText(row.id),
+    source: cleanText(row.source || "livepalmes"),
+    publicKey: cleanText(row.publicKey),
+    performanceBaseId: cleanText(row.performanceBaseId),
+    club: cleanText(row.club),
+    location: cleanText(row.location),
+    date: cleanText(row.date),
+    seasonYear: Number(row.seasonYear || 0) || 0,
+    pool: cleanText(row.pool),
+    course: cleanText(row.course),
+    ...(isIntermediate ? {
+      length: Number(row.length || 0) || 0,
+      isIntermediate: true,
+      originCourse: cleanText(row.originCourse),
+      originPerformanceId: cleanText(row.originPerformanceId)
+    } : {}),
+    categoryCode: cleanText(row.categoryCode || row.category),
+    timeValue: Number(row.timeValue || 0) || 0,
+    time: cleanText(row.time),
+    intermediateTimes: Array.isArray(row.intermediateTimes) ? row.intermediateTimes : []
+  });
+}
+
+function publicPerformanceTopRow(row = {}) {
+  const intermediateTimes = Array.isArray(row.intermediateTimes) ? row.intermediateTimes : [];
+  return publicPerformanceCompactObject({
+    id: cleanText(row.id),
+    source: cleanText(row.source || "livepalmes"),
+    importId: cleanText(row.importId),
+    publicKey: cleanText(row.publicKey),
+    performanceBaseId: cleanText(row.performanceBaseId),
+    swimmerId: cleanText(row.swimmerId),
+    swimmerIdentityKey: cleanText(row.swimmerIdentityKey),
+    swimmer: cleanText(row.swimmer),
+    firstName: cleanText(row.firstName),
+    lastName: cleanText(row.lastName),
+    birthDate: cleanText(row.birthDate),
+    sex: cleanText(row.sex),
+    club: cleanText(row.club),
+    clubName: cleanText(row.clubName),
+    regionId: cleanText(row.regionId),
+    competition: cleanText(row.competition),
+    location: cleanText(row.location),
+    date: cleanText(row.date),
+    seasonYear: Number(row.seasonYear || 0) || 0,
+    pool: cleanText(row.pool),
+    course: cleanText(row.course),
+    courseShortLabel: cleanText(row.courseShortLabel),
+    isIntermediate: row.isIntermediate === true,
+    originCourse: cleanText(row.originCourse),
+    category: cleanText(row.category),
+    categoryCode: cleanText(row.categoryCode),
+    timeValue: Number(row.timeValue || 0) || 0,
+    time: cleanText(row.time),
+    intermediateTimes
+  });
+}
+
+function sortPublicPerformanceRows(rows = []) {
+  return rows.sort((a, b) =>
+    cleanText(b.date).localeCompare(cleanText(a.date)) ||
+    cleanText(a.course).localeCompare(cleanText(b.course), "fr-FR", { numeric: true }) ||
+    Number(a.timeValue || 0) - Number(b.timeValue || 0)
+  );
+}
+
+function sortPublicTopRows(rows = []) {
+  return rows.sort((a, b) =>
+    Number(a.timeValue || 0) - Number(b.timeValue || 0) ||
+    cleanText(a.date).localeCompare(cleanText(b.date))
+  );
+}
+
+function mergePublicSwimmerRows(existingRows = [], incomingRows = []) {
+  const byKey = new Map();
+  [...existingRows, ...incomingRows].forEach((row) => {
+    const key = publicPerformanceRowKey(row);
+    if (!key) return;
+    byKey.set(key, publicPerformanceSwimmerRow(row));
+  });
+  return sortPublicPerformanceRows(Array.from(byKey.values()));
+}
+
+function mergePublicTopRows(existingRows = [], incomingRows = []) {
+  const byCandidate = new Map();
+  [...existingRows, ...incomingRows].forEach((inputRow) => {
+    const row = publicPerformanceTopRow(inputRow);
+    if (!row.course || !row.sex || !row.category || !row.timeValue) return;
+    const candidateKey = publicPerformanceTopCandidateKey(row);
+    if (!candidateKey) return;
+    if (publicBetterPerformance(row, byCandidate.get(candidateKey))) byCandidate.set(candidateKey, row);
+  });
+  return sortPublicTopRows(Array.from(byCandidate.values()));
+}
+
+function buildPublicSwimmerPayload(indexKey, rows = []) {
+  const sortedRows = sortPublicPerformanceRows(rows.map(publicPerformanceBaseRow));
+  const first = sortedRows[0] || {};
+  const latestWithClub = sortedRows.find((row) => row.club || row.clubName) || first;
+  const sourceIds = Array.from(new Set(sortedRows.flatMap((row) => [row.swimmerId, row.originalSwimmerId]).map(cleanText).filter(Boolean)));
+  const aliases = Array.from(new Set(sourceIds.filter((id) => id && id !== first.swimmerId)));
+  const name = cleanText(first.swimmer) || [first.firstName, first.lastName].filter(Boolean).join(" ");
+  return publicPerformanceCompactObject({
+    id: cleanText(first.swimmerId || sourceIds[0] || stableHash(indexKey).slice(0, 16)),
+    identityKey: cleanText(first.swimmerIdentityKey || indexKey),
+    aliases,
+    sourceIds,
+    name,
+    lastName: cleanText(first.lastName),
+    firstName: cleanText(first.firstName),
+    birthDate: cleanText(first.birthDate),
+    sex: cleanText(first.sex),
+    clubId: cleanText(latestWithClub.clubId),
+    club: cleanText(latestWithClub.club),
+    clubName: cleanText(latestWithClub.clubName),
+    performanceCount: sortedRows.filter((row) => !row.isIntermediate).length,
+    rowCount: sortedRows.length,
+    rows: sortedRows.map(publicPerformanceSwimmerRow)
+  });
+}
+
+function buildPublicSearchRow(swimmerPayload = {}, perfFile = "") {
+  const sourceIds = Array.isArray(swimmerPayload.sourceIds) ? swimmerPayload.sourceIds : [];
+  const aliases = Array.isArray(swimmerPayload.aliases) ? swimmerPayload.aliases : [];
+  const searchText = normalizePerformanceSearchText([
+    swimmerPayload.name,
+    swimmerPayload.firstName,
+    swimmerPayload.lastName,
+    swimmerPayload.birthDate,
+    swimmerPayload.sex,
+    swimmerPayload.club,
+    swimmerPayload.clubName,
+    swimmerPayload.id,
+    ...sourceIds
+  ].filter(Boolean).join(" "));
+  const searchIndexText = normalizePerformanceSearchText([
+    swimmerPayload.name,
+    swimmerPayload.firstName,
+    swimmerPayload.lastName,
+    swimmerPayload.id,
+    ...sourceIds
+  ].filter(Boolean).join(" "));
+  return {
+    id: swimmerPayload.id,
+    aliases,
+    sourceIds,
+    identityKey: swimmerPayload.identityKey,
+    name: swimmerPayload.name,
+    lastName: swimmerPayload.lastName,
+    firstName: swimmerPayload.firstName,
+    birthDate: swimmerPayload.birthDate,
+    sex: swimmerPayload.sex,
+    clubId: swimmerPayload.clubId,
+    club: swimmerPayload.club,
+    clubName: swimmerPayload.clubName,
+    performanceCount: swimmerPayload.performanceCount,
+    latestDate: swimmerPayload.rows?.[0]?.date || "",
+    searchText,
+    searchPrefixes: performanceSearchPrefixes(searchIndexText),
+    perfFile
+  };
+}
+
+async function publishPublicSwimmerFile(indexKey, incomingRows = []) {
+  const perfFile = publicPerformanceSwimmerFilePath(indexKey);
+  const existing = await readPublicPerformanceJson(perfFile, null);
+  const existingRows = Array.isArray(existing?.rows) ? existing.rows : [];
+  const mergedRows = mergePublicSwimmerRows(existingRows, incomingRows);
+  const generated = buildPublicSwimmerPayload(indexKey, mergedRows);
+  const payload = {
+    ...generated,
+    id: generated.id || cleanText(existing?.id),
+    identityKey: generated.identityKey || cleanText(existing?.identityKey) || indexKey,
+    aliases: Array.from(new Set([...(Array.isArray(existing?.aliases) ? existing.aliases : []), ...(generated.aliases || [])].map(cleanText).filter(Boolean))),
+    sourceIds: Array.from(new Set([...(Array.isArray(existing?.sourceIds) ? existing.sourceIds : []), ...(generated.sourceIds || [])].map(cleanText).filter(Boolean))),
+    name: generated.name || cleanText(existing?.name),
+    lastName: generated.lastName || cleanText(existing?.lastName),
+    firstName: generated.firstName || cleanText(existing?.firstName),
+    birthDate: generated.birthDate || cleanText(existing?.birthDate),
+    sex: generated.sex || cleanText(existing?.sex),
+    clubId: generated.clubId || cleanText(existing?.clubId),
+    club: generated.club || cleanText(existing?.club),
+    clubName: generated.clubName || cleanText(existing?.clubName)
+  };
+  await savePublicPerformanceJson(perfFile, payload, "public, max-age=31536000, immutable");
+  return { perfFile, payload, existing };
+}
+
+async function publishPublicSearchIndexes(swimmerPayload, perfFile) {
+  const searchRow = buildPublicSearchRow(swimmerPayload, perfFile);
+  const searchShards = new Set((searchRow.searchPrefixes || []).map(publicPerformanceSearchShard).filter(Boolean));
+  const idValues = [searchRow.id, ...(searchRow.sourceIds || []), ...(searchRow.aliases || [])].map(cleanText).filter(Boolean);
+  const idShards = new Set(idValues.map(publicPerformanceIdShard).filter(Boolean));
+  const written = [];
+
+  for (const shard of searchShards) {
+    const relativePath = `search/${shard}.json`;
+    const rows = await readPublicPerformanceJson(relativePath, []);
+    const byId = new Map((Array.isArray(rows) ? rows : []).map((row) => [cleanText(row.id), row]));
+    byId.set(cleanText(searchRow.id), publicPerformanceCompactObject({ ...searchRow, searchPrefixes: undefined }));
+    const mergedRows = Array.from(byId.values()).sort((a, b) =>
+      cleanText(a.lastName).localeCompare(cleanText(b.lastName), "fr-FR") ||
+      cleanText(a.firstName).localeCompare(cleanText(b.firstName), "fr-FR") ||
+      cleanText(a.name).localeCompare(cleanText(b.name), "fr-FR")
+    );
+    written.push(await savePublicPerformanceJson(relativePath, mergedRows, "public, max-age=31536000, immutable"));
+  }
+
+  for (const shard of idShards) {
+    const relativePath = `ids/${shard}.json`;
+    const items = await readPublicPerformanceJson(relativePath, {});
+    idValues.forEach((id) => {
+      items[id] = publicPerformanceCompactObject({ ...searchRow, searchPrefixes: undefined });
+    });
+    written.push(await savePublicPerformanceJson(relativePath, items, "public, max-age=31536000, immutable"));
+  }
+
+  return written;
+}
+
+async function publishPublicTopFiles(topKey, incomingRows = []) {
+  const [course, sex, category] = topKey.split("|");
+  if (!course || !sex || !category) return [];
+  const fileName = publicPerformanceTopFileName(sex, category);
+  const fullPath = `tops/${course}/${fileName}`;
+  const previewPath = `tops-preview/${course}/${fileName}`;
+  const existingRows = await readPublicPerformanceJson(fullPath, []);
+  const mergedRows = mergePublicTopRows(existingRows, incomingRows);
+  const previewRows = mergedRows.slice(0, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT);
+  return [
+    await savePublicPerformanceJson(fullPath, mergedRows, "public, max-age=31536000, immutable"),
+    await savePublicPerformanceJson(previewPath, previewRows, "public, max-age=31536000, immutable")
+  ];
+}
+
+function mergePublicPerformanceManifest(manifest = {}, rows = [], generatedAt = new Date().toISOString()) {
+  const seasons = new Set([...(Array.isArray(manifest.seasons) ? manifest.seasons : [])]);
+  const regions = new Map((Array.isArray(manifest.regions) ? manifest.regions : []).map((region) => [String(region.id), region.label]));
+  const courses = new Set([...(Array.isArray(manifest.courses) ? manifest.courses : [])]);
+  const categories = new Set([...(Array.isArray(manifest.categories) ? manifest.categories : [])]);
+
+  rows.forEach((row) => {
+    const publicRow = publicPerformanceBaseRow(row);
+    if (publicRow.seasonYear) seasons.add(publicRow.seasonYear);
+    if (publicRow.regionId) regions.set(String(publicRow.regionId), publicRow.regionLabel || publicRow.regionId);
+    if (publicRow.course) courses.add(publicRow.course);
+    if (publicRow.sex && publicRow.category) categories.add(`${publicRow.sex}|${publicRow.category}`);
+  });
+
+  return {
+    ...manifest,
+    generatedAt,
+    seasons: Array.from(seasons).sort((a, b) => b - a),
+    regions: Array.from(regions.entries()).map(([id, label]) => ({ id, label })).sort((a, b) => String(a.label).localeCompare(String(b.label), "fr-FR")),
+    courses: Array.from(courses).sort(),
+    categories: Array.from(categories).sort(),
+    lastIncremental: {
+      generatedAt,
+      rows: rows.length
+    }
+  };
+}
+
+async function publishIncrementalPublicPerformanceFiles(performances = [], context = {}) {
+  const rows = performances
+    .map(publicPerformanceBaseRow)
+    .filter((row) => row.active !== false && row.status !== "hidden" && row.course && row.sex && row.category && row.timeValue);
+  if (!rows.length) return { ok: true, writtenFiles: 0, rowCount: 0 };
+
+  const bySwimmer = new Map();
+  const byTop = new Map();
+  rows.forEach((row) => {
+    const swimmerKey = publicSwimmerKey(row);
+    if (swimmerKey) {
+      if (!bySwimmer.has(swimmerKey)) bySwimmer.set(swimmerKey, []);
+      bySwimmer.get(swimmerKey).push(row);
+    }
+    const topKey = [row.course, row.sex, row.category].map(cleanText).join("|");
+    if (row.course && row.sex && row.category) {
+      if (!byTop.has(topKey)) byTop.set(topKey, []);
+      byTop.get(topKey).push(row);
+    }
+  });
+
+  const writtenFiles = new Set();
+  for (const [swimmerKey, swimmerRows] of bySwimmer.entries()) {
+    const { perfFile, payload } = await publishPublicSwimmerFile(swimmerKey, swimmerRows);
+    writtenFiles.add(publicPerformanceFilePath(perfFile));
+    const searchFiles = await publishPublicSearchIndexes(payload, perfFile);
+    searchFiles.forEach((filePath) => writtenFiles.add(filePath));
+  }
+  for (const [topKey, topRows] of byTop.entries()) {
+    const topFiles = await publishPublicTopFiles(topKey, topRows);
+    topFiles.forEach((filePath) => writtenFiles.add(filePath));
+  }
+
+  const generatedAt = context.now || new Date().toISOString();
+  const currentManifest = await readPublicPerformanceJson("manifest.json", {});
+  const manifest = mergePublicPerformanceManifest(currentManifest, rows, generatedAt);
+  writtenFiles.add(await savePublicPerformanceJson("manifest.json", manifest, "public, max-age=300"));
+  writtenFiles.add(await savePublicPerformanceText("version.js", `window.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION = ${JSON.stringify(generatedAt)};\n`, "public, max-age=300"));
+
+  return {
+    ok: true,
+    rowCount: rows.length,
+    affectedSwimmers: bySwimmer.size,
+    affectedTopBuckets: byTop.size,
+    writtenFiles: writtenFiles.size,
+    importId: cleanText(context.importId)
+  };
+}
+
+async function deletePublicPerformanceFile(relativePath = "") {
+  const file = publicPerformanceFile(relativePath);
+  try {
+    await file.delete();
+  } catch (error) {
+    if (!(error?.code === 404 || /No such object|not found/i.test(error?.message || ""))) throw error;
+  }
+  return publicPerformanceFilePath(relativePath);
+}
+
+async function removePublicSearchIndexes(swimmerPayload = {}, perfFile = "") {
+  if (!swimmerPayload || typeof swimmerPayload !== "object") return [];
+  const searchRow = buildPublicSearchRow(swimmerPayload, perfFile);
+  const searchShards = new Set((searchRow.searchPrefixes || []).map(publicPerformanceSearchShard).filter(Boolean));
+  const idValues = [searchRow.id, ...(searchRow.sourceIds || []), ...(searchRow.aliases || [])].map(cleanText).filter(Boolean);
+  const idShards = new Set(idValues.map(publicPerformanceIdShard).filter(Boolean));
+  const written = [];
+
+  for (const shard of searchShards) {
+    const relativePath = `search/${shard}.json`;
+    const rows = await readPublicPerformanceJson(relativePath, []);
+    const filtered = (Array.isArray(rows) ? rows : []).filter((row) =>
+      cleanText(row.id) !== cleanText(searchRow.id) &&
+      cleanText(row.identityKey) !== cleanText(searchRow.identityKey) &&
+      cleanText(row.perfFile) !== cleanText(perfFile)
+    );
+    written.push(await savePublicPerformanceJson(relativePath, filtered, "public, max-age=31536000, immutable"));
+  }
+
+  for (const shard of idShards) {
+    const relativePath = `ids/${shard}.json`;
+    const items = await readPublicPerformanceJson(relativePath, {});
+    idValues.forEach((id) => {
+      delete items[id];
+    });
+    written.push(await savePublicPerformanceJson(relativePath, items, "public, max-age=31536000, immutable"));
+  }
+
+  return written;
+}
+
+function publicPerformanceTopKey(row = {}) {
+  const publicRow = publicPerformanceBaseRow(row);
+  return publicRow.course && publicRow.sex && publicRow.category
+    ? `${publicRow.course}|${publicRow.sex}|${publicRow.category}`
+    : "";
+}
+
+function publicPerformanceMatchesTopKey(row = {}, topKey = "") {
+  return publicPerformanceTopKey(row) === topKey;
+}
+
+function publicPerformanceActiveRow(row = {}) {
+  const status = cleanText(row.status || "active");
+  return row.active !== false && status !== "hidden" && status !== "deleted";
+}
+
+async function getActivePublicRowsForAffectedSwimmer(seedRows = []) {
+  const db = admin.firestore();
+  const identityKeys = Array.from(new Set(seedRows
+    .map((row) => cleanText(row.swimmerIdentityKey))
+    .filter(Boolean)));
+  const ids = Array.from(new Set(seedRows
+    .flatMap((row) => [row.swimmerId, row.originalSwimmerId])
+    .map(cleanText)
+    .filter(Boolean)));
+  const reads = [];
+
+  identityKeys.forEach((identityKey) => {
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).get());
+  });
+  for (let index = 0; index < ids.length; index += 10) {
+    const chunk = ids.slice(index, index + 10);
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).get());
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).get());
+  }
+
+  if (!reads.length) return [];
+  const snapshots = await Promise.all(reads);
+  return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) =>
+    snapshot.docs
+      .map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
+      .filter(publicPerformanceActiveRow)
+      .map(publicPerformanceBaseRow)
+  ));
+}
+
+async function rebuildPublicSwimmerFilesForAffectedRows(affectedRows = []) {
+  const bySwimmer = new Map();
+  affectedRows.map(publicPerformanceBaseRow).forEach((row) => {
+    const swimmerKey = publicSwimmerKey(row);
+    if (!swimmerKey) return;
+    if (!bySwimmer.has(swimmerKey)) bySwimmer.set(swimmerKey, []);
+    bySwimmer.get(swimmerKey).push(row);
+  });
+
+  const writtenFiles = new Set();
+  const activeRowsBySwimmer = new Map();
+  for (const [swimmerKey, rows] of bySwimmer.entries()) {
+    const activeRows = await getActivePublicRowsForAffectedSwimmer(rows);
+    activeRowsBySwimmer.set(swimmerKey, activeRows);
+    const perfFile = publicPerformanceSwimmerFilePath(swimmerKey);
+    const existing = await readPublicPerformanceJson(perfFile, null);
+    if (existing) {
+      const removed = await removePublicSearchIndexes(existing, perfFile);
+      removed.forEach((filePath) => writtenFiles.add(filePath));
+    }
+    if (!activeRows.length) {
+      writtenFiles.add(await deletePublicPerformanceFile(perfFile));
+      continue;
+    }
+    const payload = buildPublicSwimmerPayload(swimmerKey, activeRows);
+    await savePublicPerformanceJson(perfFile, payload, "public, max-age=31536000, immutable");
+    writtenFiles.add(publicPerformanceFilePath(perfFile));
+    const searchFiles = await publishPublicSearchIndexes(payload, perfFile);
+    searchFiles.forEach((filePath) => writtenFiles.add(filePath));
+  }
+
+  return {
+    activeRowsBySwimmer,
+    affectedSwimmers: bySwimmer.size,
+    writtenFiles
+  };
+}
+
+async function rebuildPublicTopFilesForAffectedRows(affectedRows = [], activeRowsBySwimmer = new Map()) {
+  const publicAffectedRows = affectedRows.map(publicPerformanceBaseRow);
+  const topKeys = new Set(publicAffectedRows.map(publicPerformanceTopKey).filter(Boolean));
+  const activeRows = Array.from(activeRowsBySwimmer.values()).flat();
+  activeRows.map(publicPerformanceBaseRow).forEach((row) => {
+    const topKey = publicPerformanceTopKey(row);
+    if (topKey) topKeys.add(topKey);
+  });
+
+  const writtenFiles = new Set();
+  for (const topKey of topKeys) {
+    const [course, sex, category] = topKey.split("|");
+    if (!course || !sex || !category) continue;
+    const affectedCandidateKeys = new Set(publicAffectedRows
+      .filter((row) => publicPerformanceMatchesTopKey(row, topKey))
+      .map(publicPerformanceTopCandidateKey)
+      .filter(Boolean));
+    activeRows
+      .filter((row) => publicPerformanceMatchesTopKey(row, topKey))
+      .map(publicPerformanceTopCandidateKey)
+      .filter(Boolean)
+      .forEach((key) => affectedCandidateKeys.add(key));
+
+    const fileName = publicPerformanceTopFileName(sex, category);
+    const fullPath = `tops/${course}/${fileName}`;
+    const previewPath = `tops-preview/${course}/${fileName}`;
+    const existingRows = await readPublicPerformanceJson(fullPath, []);
+    const keptRows = (Array.isArray(existingRows) ? existingRows : [])
+      .filter((row) => !affectedCandidateKeys.has(publicPerformanceTopCandidateKey(row)));
+    const replacementRows = activeRows.filter((row) => publicPerformanceMatchesTopKey(row, topKey));
+    const mergedRows = mergePublicTopRows(keptRows, replacementRows);
+    await savePublicPerformanceJson(fullPath, mergedRows, "public, max-age=31536000, immutable");
+    await savePublicPerformanceJson(previewPath, mergedRows.slice(0, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT), "public, max-age=31536000, immutable");
+    writtenFiles.add(publicPerformanceFilePath(fullPath));
+    writtenFiles.add(publicPerformanceFilePath(previewPath));
+  }
+
+  return {
+    affectedTopBuckets: topKeys.size,
+    writtenFiles
+  };
+}
+
+async function rebuildPublicPerformanceFilesForAffectedRows(affectedRows = [], context = {}) {
+  const rows = affectedRows.map(publicPerformanceBaseRow).filter((row) => publicSwimmerKey(row) || publicPerformanceTopKey(row));
+  if (!rows.length) return { ok: true, affectedRows: 0, writtenFiles: 0 };
+
+  const swimmerResult = await rebuildPublicSwimmerFilesForAffectedRows(rows);
+  const topResult = await rebuildPublicTopFilesForAffectedRows(rows, swimmerResult.activeRowsBySwimmer);
+  const generatedAt = context.now || new Date().toISOString();
+  const currentManifest = await readPublicPerformanceJson("manifest.json", {});
+  const manifest = {
+    ...mergePublicPerformanceManifest(currentManifest, Array.from(swimmerResult.activeRowsBySwimmer.values()).flat(), generatedAt),
+    lastTargetedRebuild: {
+      generatedAt,
+      reason: cleanText(context.reason),
+      affectedRows: rows.length,
+      affectedSwimmers: swimmerResult.affectedSwimmers,
+      affectedTopBuckets: topResult.affectedTopBuckets
+    }
+  };
+
+  const writtenFiles = new Set([...swimmerResult.writtenFiles, ...topResult.writtenFiles]);
+  writtenFiles.add(await savePublicPerformanceJson("manifest.json", manifest, "public, max-age=300"));
+  writtenFiles.add(await savePublicPerformanceText("version.js", `window.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION = ${JSON.stringify(generatedAt)};\n`, "public, max-age=300"));
+
+  return {
+    ok: true,
+    affectedRows: rows.length,
+    affectedSwimmers: swimmerResult.affectedSwimmers,
+    affectedTopBuckets: topResult.affectedTopBuckets,
+    writtenFiles: writtenFiles.size,
+    reason: cleanText(context.reason)
+  };
+}
+
 async function performanceBaseMigrationManifest() {
   const response = await fetch(`${PERFORMANCE_PUBLIC_DATA_URL}/performance-base-migration-manifest.json?cache=${Date.now()}`);
   if (!response.ok) {
@@ -3732,6 +4693,7 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
   });
 
   let performanceBaseSync = null;
+  let correctedBaseRow = null;
   try {
     const baseRow = {
       ...(safePayload.targetRow || {}),
@@ -3740,6 +4702,7 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       source: safePayload.targetSource || safePayload.targetRow?.source || "intranap",
       id: safePayload.targetId || safePayload.targetRow?.id || ""
     };
+    correctedBaseRow = baseRow;
     performanceBaseSync = await writePerformanceBaseRows([baseRow], {
       actorUid: request.auth.uid,
       actorEmail: request.auth.token?.email || "",
@@ -3747,7 +4710,8 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       action: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
       changeSeed: correctionId,
       status: hidden ? "hidden" : "active",
-      topIndexIncludeTombstones: hidden
+      topIndexIncludeTombstones: hidden,
+      dtnInvalidationRows: [safePayload.targetRow || {}, baseRow]
     });
   } catch (error) {
     console.error("Synchronisation performances impossible apres correction", {
@@ -3785,6 +4749,28 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       error: error?.message || "Publication publique impossible."
     };
   }
+
+  let publicFilesSnapshot = null;
+  try {
+    publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows([
+      safePayload.targetRow || {},
+      correctedBaseRow || {}
+    ], {
+      now,
+      reason: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
+      correctionId
+    });
+  } catch (error) {
+    console.error("Publication publique ciblee impossible apres correction", {
+      correctionId,
+      targetKey,
+      message: error?.message || String(error)
+    });
+    publicFilesSnapshot = {
+      ok: false,
+      error: error?.message || "Publication publique ciblee impossible."
+    };
+  }
   return {
     ok: true,
     correction: {
@@ -3795,6 +4781,7 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       updatedAt: now
     },
     performanceBaseSync,
-    publicSnapshot
+    publicSnapshot,
+    publicFilesSnapshot
   };
 });

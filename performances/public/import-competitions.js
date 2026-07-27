@@ -6,6 +6,7 @@
     loginPassword: document.querySelector("#importLoginPassword"),
     loginMessage: document.querySelector("#importLoginMessage"),
     workbench: document.querySelector("#importWorkbench"),
+    correctionWorkbench: document.querySelector("#correctionWorkbench"),
     sessionLabel: document.querySelector("#importSessionLabel"),
     signOut: document.querySelector("#importSignOutButton"),
     form: document.querySelector("#competitionImportForm"),
@@ -21,6 +22,10 @@
     importsList: document.querySelector("#competitionImportsList"),
     importsRefresh: document.querySelector("#competitionImportsRefreshButton"),
     importsExport: document.querySelector("#competitionImportsExportButton"),
+    importsSearch: document.querySelector("#competitionImportsSearch"),
+    importsYear: document.querySelector("#competitionImportsYear"),
+    importsStatus: document.querySelector("#competitionImportsStatus"),
+    importsFilterSummary: document.querySelector("#competitionImportsFilterSummary"),
     superAdminPanel: document.querySelector("#performanceSuperAdminPanel"),
     publishPublicData: document.querySelector("#performancePublishPublicDataButton"),
     publishPublicDataMessage: document.querySelector("#performancePublishPublicDataMessage"),
@@ -66,7 +71,10 @@
   let importsVisibleCount = 5;
   const openImportIds = new Set();
   const importsPageSize = 5;
-  const publicPerformanceBase = "public/data/performance-public";
+  const isIntegratedAdminView = Boolean(document.querySelector("#adminImportView"));
+  const publicPerformanceBase = isIntegratedAdminView
+    ? "/performances/public/data/performance-public"
+    : "public/data/performance-public";
   const publicPerformanceVersion = encodeURIComponent(global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || global.LIVEPALMES_INTRANAP_SUMMARY?.generatedAt || "performance-public");
   const publicSearchShards = new Map();
   const recordAlertDraftStorageKey = "livepalmes:record-alert-drafts";
@@ -114,16 +122,23 @@
   }
 
   function publicPublicationStatus(result = {}) {
-    const snapshot = result.publicSnapshot || {};
-    if (snapshot.ok) {
+    const filesSnapshot = result.publicFilesSnapshot || {};
+    const legacySnapshot = result.publicSnapshot || {};
+    if (filesSnapshot.ok) {
       return {
         ok: true,
-        text: " Les pages publiques sont mises a jour automatiquement."
+        text: ` Les TOP et fiches nageurs sont mis a jour automatiquement (${filesSnapshot.writtenFiles || 0} fichier(s)).`
+      };
+    }
+    if (legacySnapshot.ok) {
+      return {
+        ok: false,
+        text: " Ancienne publication OK, mais fichiers TOP/nageurs a verifier."
       };
     }
     return {
       ok: false,
-      text: ` Publication publique a verifier${snapshot.error ? ` : ${snapshot.error}` : "."}`
+      text: ` Publication publique a verifier${filesSnapshot.error ? ` : ${filesSnapshot.error}` : "."}`
     };
   }
 
@@ -417,13 +432,20 @@
   function loadPublicSearchShard(shard) {
     if (!shard) return Promise.resolve([]);
     if (publicSearchShards.has(shard)) return publicSearchShards.get(shard);
+    if (global.location?.protocol === "file:") {
+      return Promise.reject(new Error("ouvrez LivePalmes depuis son adresse web ou un serveur local"));
+    }
     const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${publicPerformanceVersion}`, { cache: "force-cache" })
       .then((response) => {
         if (response.status === 404) return [];
         if (!response.ok) throw new Error("Index public nageurs indisponible.");
         return response.json();
       })
-      .then((rows) => Array.isArray(rows) ? rows : []);
+      .then((rows) => Array.isArray(rows) ? rows : [])
+      .catch((error) => {
+        publicSearchShards.delete(shard);
+        throw error;
+      });
     publicSearchShards.set(shard, promise);
     return promise;
   }
@@ -768,9 +790,11 @@
   function updateView(status = {}) {
     const signedIn = Boolean(status.signedIn);
     const superAdmin = signedIn && isSuperAdmin(status);
-    document.body.dataset.adminAuth = signedIn ? "unlocked" : "locked";
+    const authView = elements.loginPanel ? document.body : document.querySelector("#adminImportView");
+    if (authView) authView.dataset.adminAuth = signedIn ? "unlocked" : "locked";
     if (elements.loginPanel) elements.loginPanel.hidden = signedIn;
     if (elements.workbench) elements.workbench.hidden = !signedIn;
+    if (elements.correctionWorkbench) elements.correctionWorkbench.hidden = !signedIn;
     if (elements.superAdminPanel) elements.superAdminPanel.hidden = !superAdmin;
     if (signedIn && elements.loginForm) elements.loginForm.reset();
     const profile = status.profile || {};
@@ -1123,17 +1147,73 @@
     `;
   }
 
+  function importYear(item = {}) {
+    const competitionDate = String(item.metadata?.date || "");
+    const competitionYear = competitionDate.match(/(?:19|20)\d{2}/)?.[0] || "";
+    if (competitionYear) return competitionYear;
+    const importedAt = item.importedAt ? new Date(item.importedAt) : null;
+    return importedAt && !Number.isNaN(importedAt.getTime()) ? String(importedAt.getFullYear()) : "";
+  }
+
+  function updateImportYearOptions() {
+    if (!elements.importsYear) return;
+    const current = elements.importsYear.value;
+    const years = Array.from(new Set(importsCache.map(importYear).filter(Boolean)))
+      .sort((a, b) => Number(b) - Number(a));
+    elements.importsYear.innerHTML = `<option value="">Toutes les années</option>${years
+      .map((year) => `<option value="${escapeHtml(year)}">${escapeHtml(year)}</option>`)
+      .join("")}`;
+    if (years.includes(current)) elements.importsYear.value = current;
+  }
+
+  function filteredImports() {
+    const query = normalize(elements.importsSearch?.value);
+    const year = elements.importsYear?.value || "";
+    const status = elements.importsStatus?.value || "";
+    return importsCache.filter((item) => {
+      if (year && importYear(item) !== year) return false;
+      if (status && String(item.status || "stored") !== status) return false;
+      if (!query) return true;
+      const metadata = item.metadata || {};
+      const haystack = normalize([
+        metadata.competitionName,
+        metadata.location,
+        metadata.date,
+        item.fileName,
+        item.importId,
+        item.importedByEmail
+      ].filter(Boolean).join(" "));
+      return query.split(/\s+/).filter(Boolean).every((token) => haystack.includes(token));
+    });
+  }
+
+  function importCountLabel(count) {
+    return `${count} import${count > 1 ? "s" : ""}`;
+  }
+
   function renderImports(items = []) {
     if (!elements.importsList) return;
     elements.importsList.querySelectorAll(".competition-import-row[open][data-import-id]").forEach((row) => {
       openImportIds.add(row.dataset.importId);
     });
     importsCache = Array.isArray(items) ? items : [];
-    if (!items.length) {
+    updateImportYearOptions();
+    if (!importsCache.length) {
+      if (elements.importsFilterSummary) elements.importsFilterSummary.textContent = "";
       elements.importsList.innerHTML = `<p class="admin-access-empty">Aucun import stocke pour le moment.</p>`;
       return;
     }
-    const sortedItems = items
+    const filteredItems = filteredImports();
+    if (elements.importsFilterSummary) {
+      elements.importsFilterSummary.textContent = filteredItems.length === importsCache.length
+        ? importCountLabel(filteredItems.length)
+        : `${importCountLabel(filteredItems.length)} sur ${importCountLabel(importsCache.length)}`;
+    }
+    if (!filteredItems.length) {
+      elements.importsList.innerHTML = `<p class="admin-access-empty">Aucun import ne correspond aux filtres.</p>`;
+      return;
+    }
+    const sortedItems = filteredItems
       .slice()
       .sort((a, b) => String(b.importedAt || "").localeCompare(String(a.importedAt || "")));
     const visibleCount = Math.min(importsVisibleCount, sortedItems.length);
@@ -1403,6 +1483,13 @@
     elements.validate?.addEventListener("click", validateImport);
     elements.importsRefresh?.addEventListener("click", loadImports);
     elements.importsExport?.addEventListener("click", exportAdditionalPerformanceData);
+    const applyImportFilters = () => {
+      importsVisibleCount = importsPageSize;
+      renderImports(importsCache);
+    };
+    elements.importsSearch?.addEventListener("input", applyImportFilters);
+    elements.importsYear?.addEventListener("input", applyImportFilters);
+    elements.importsStatus?.addEventListener("input", applyImportFilters);
     elements.importsList?.addEventListener("click", (event) => {
       const showMoreButton = event.target.closest("[data-show-more-imports]");
       if (showMoreButton) {

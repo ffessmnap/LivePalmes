@@ -2,6 +2,9 @@
   "hosting": {
     "site": "livepalmes",
     "public": ".",
+    "predeploy": [
+      "node tools/sync-records-from-firestore.js --write"
+    ],
     "redirects": [
       {
         "source": "/public.html",
@@ -251,6 +254,15 @@
         ]
       },
       {
+        "source": "/performances/public/data/performance-public/tops-preview/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
         "source": "/performances/public/data/performance-public/swimmers/**/*.json",
         "headers": [
           {
@@ -294,6 +306,87 @@
             "value": "public, max-age=31536000, immutable"
           }
         ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/version.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/manifest.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/tops/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/tops-preview/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/swimmers/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/search/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/search/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/ids/**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/performances/public/data/performance-public-firestore/ids/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
       }
     ],
     "rewrites": [
@@ -309,6 +402,8 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      ".git/**",
+      ".firebase/**",
       "functions/**",
       "docs/**",
       "tests/**",
