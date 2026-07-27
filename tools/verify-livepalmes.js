@@ -50,7 +50,8 @@ function runUnitTests() {
   [
     "livepalmes-basic-tests.js",
     "livepalmes-result-regression-tests.js",
-    "livepalmes-public-results-index-tests.js"
+    "livepalmes-public-results-index-tests.js",
+    "livepalmes-console-access-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
   });
