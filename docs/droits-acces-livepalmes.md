@@ -12,6 +12,8 @@ Preparer LivePalmes a devenir un outil utilise par plusieurs publics :
 
 Le point important : une personne peut cumuler plusieurs droits. Par exemple, elle peut etre administrateur regional et aussi responsable records/MPF.
 
+Les droits metier sensibles doivent rester independants. Un droit d'administration generale permet de gerer les utilisateurs et les attributions, mais il ne doit pas automatiquement donner acces a tous les modules metier comme les records/MPF, les consoles, l'import de competitions, l'espace DTN ou les futurs engagements.
+
 ## Principe a retenir
 
 Il ne faut pas stocker un seul role par utilisateur.
@@ -31,7 +33,7 @@ Exemple :
   "permissions": [
     { "capability": "records.manage", "scope": { "type": "national" } },
     { "capability": "clubs.manageUsers", "scope": { "type": "region", "id": "bretagne" } },
-    { "capability": "entries.manage", "scope": { "type": "club", "id": "12345" } }
+    { "capability": "engagements.club.manage", "scope": { "type": "club", "id": "12345" } }
   ]
 }
 ```
@@ -45,9 +47,10 @@ Capacites :
 - gerer tous les utilisateurs ;
 - attribuer ou retirer tous les droits ;
 - gerer les regions et les clubs ;
-- gerer les competitions ;
-- acceder aux fonctions techniques sensibles ;
-- intervenir sur les records, MPF et donnees publiques.
+- acceder aux fonctions techniques d'administration ;
+- consulter le journal des actions sensibles.
+
+Ce droit ne remplace pas les droits metier specialises. Pour modifier les records/MPF, acceder aux consoles, importer des competitions, consulter l'espace DTN ou gerer les engagements, le compte doit recevoir la capacite metier correspondante.
 
 Perimetre :
 
@@ -68,7 +71,7 @@ Perimetre :
 
 - national, sauf besoin futur plus fin.
 
-Ce droit est separe de l'administration generale : quelqu'un peut gerer les records sans pouvoir creer des comptes admin.
+Ce droit est separe de la gestion generale : quelqu'un peut gerer les records sans pouvoir creer des comptes du portail.
 
 ### Administrateur regional
 
@@ -94,7 +97,8 @@ Limite importante :
 Capacites :
 
 - gerer les informations de son club ;
-- gerer les utilisateurs de son club, selon decision future ;
+- voir les utilisateurs rattaches a son club ;
+- demander un acces pour une autre personne du club, selon decision future ;
 - consulter les nageurs et performances du club ;
 - preparer puis envoyer les engagements aux competitions quand ce module existera.
 
@@ -165,15 +169,20 @@ Exemple `accessGrants` :
 
 Liste de depart :
 
-- `admin.full` : administration generale ;
+- `admin.full` : gestion generale ;
 - `records.manage` : gestion records et MPF ;
+- `consoles.manage` : gestion des acces consoles de competition ;
+- `consoles.access` : acces permanent aux consoles ;
+- `competitions.import` : import et correction des competitions ;
+- `dtn.view` : acces a l'espace DTN ;
 - `regions.manageClubUsers` : creation et gestion des acces club d'une region ;
-- `clubs.manageEntries` : engagements du club ;
-- `clubs.manageUsers` : gestion des utilisateurs d'un club ;
-- `competitions.manage` : gestion d'une competition ;
-- `competitions.publishResults` : publication series/resultats.
+- `engagements.club.manage` : engagements d'un club ;
+- `engagements.region.manage` : competitions et acces engagements d'une region ;
+- `engagements.national.manage` : module engagements au niveau national.
 
 Cette liste pourra evoluer sans casser les comptes existants.
+
+Les noms `regions.manageClubUsers` et les capacites `engagements.*` restent des capacites cible a valider avant implementation complete.
 
 ## Comment ca s'integre a l'existant
 
@@ -261,8 +270,9 @@ Permettre a un administrateur regional de creer des acces uniquement pour les cl
 
 Remplacer la verification admin generale actuelle sur `performanceData/records` par une verification plus fine :
 
-- `admin.full` ;
-- ou `records.manage`.
+- `records.manage`.
+
+Pendant une phase de transition, `admin.full` peut rester accepte comme filet de securite technique. La cible fonctionnelle reste toutefois une capacite metier explicite.
 
 ### Etape 7 - Preparer les engagements
 
@@ -270,7 +280,7 @@ Quand le module engagements sera cree, il devra utiliser les droits club :
 
 - un responsable club agit seulement pour son club ;
 - un administrateur regional peut accompagner les clubs de sa region ;
-- un administrateur general peut intervenir partout.
+- un responsable national engagements peut intervenir partout avec une capacite explicite comme `engagements.national.manage`.
 
 ## Decision recommandee
 

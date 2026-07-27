@@ -1,5 +1,5 @@
 (function attachPerformanceAdminLink() {
-  const adminUrl = "/administration.html";
+  const adminUrl = "/portail.html";
 
   document.addEventListener(
     "click",
@@ -17,7 +17,7 @@
     const footer = document.createElement("footer");
     footer.className = "performance-admin-footer";
     footer.innerHTML = `
-      <a class="performance-admin-link" href="${adminUrl}">Administration</a>
+      <a class="performance-admin-link" href="${adminUrl}">Portail LivePalmes</a>
     `;
     document.body.append(footer);
   }
