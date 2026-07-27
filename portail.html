@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260722-dtn-refresh-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260727-performance-menu-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -72,21 +72,34 @@
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPerformances">
                 <h2 id="adminNavPerformances">Performances</h2>
-                <a href="#records-mpf" data-admin-view-link="records" data-capability-nav="records.manage">Records / MPF</a>
-                <a href="#import-competitions" data-admin-view-link="import" data-capability-nav="competitions.import">Import des compétitions</a>
-                <a href="#correction-performance" data-admin-view-link="correction" data-capability-nav="competitions.import">Correction d’une performance</a>
-                <div class="admin-portal-nav-submenu" aria-label="Espace DTN">
-                  <span>Espace DTN</span>
-                  <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
-                  <a href="#espace-dtn-edf" data-admin-view-link="dtn" data-dtn-grid-link="edf" data-capability-nav="dtn.view">Équipe de France</a>
+                <div class="admin-portal-nav-nested" data-admin-performance-menu>
+                  <button id="adminPortalPerformanceToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalPerformanceSubmenu">
+                    <span>Gestion des performances</span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                  <div id="adminPortalPerformanceSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de gestion des performances" hidden>
+                    <a href="#records-mpf" data-admin-view-link="records" data-capability-nav="records.manage">Records / MPF</a>
+                    <a href="#import-competitions" data-admin-view-link="import" data-capability-nav="competitions.import">Import des compétitions</a>
+                    <a href="#correction-performance" data-admin-view-link="correction" data-capability-nav="competitions.import">Correction d’une performance</a>
+                  </div>
+                </div>
+                <div class="admin-portal-nav-nested" data-admin-dtn-menu>
+                  <button id="adminPortalDtnToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalDtnSubmenu" data-capability-nav="dtn.view">
+                    <span>Espace DTN</span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                  <div id="adminPortalDtnSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’espace DTN" hidden>
+                    <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
+                    <a href="#espace-dtn-edf" data-admin-view-link="dtn" data-dtn-grid-link="edf" data-capability-nav="dtn.view">Équipe de France</a>
+                  </div>
                 </div>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
                 <h2 id="adminNavCompetition">Compétitions</h2>
                 <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
               </section>
-              <section class="admin-portal-nav-group" aria-labelledby="adminNavAdministration">
-                <h2 id="adminNavAdministration">Administration</h2>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavPortal">
+                <h2 id="adminNavPortal">Gestion du portail</h2>
                 <a href="#gestion-acces" data-admin-view-link="access" data-capability-nav="admin.full">Gestion des accès</a>
               </section>
             </nav>
@@ -165,7 +178,7 @@
                 <div class="admin-history-head">
                   <div>
                     <strong>Journal des mises à jour</strong>
-                    <p>Anciennes valeurs et corrections publiées depuis l'administration.</p>
+                    <p>Anciennes valeurs et corrections publiées depuis le portail.</p>
                   </div>
                   <button type="button" id="recordHistoryCloseButton" class="ghost-button">Fermer</button>
                 </div>
@@ -590,7 +603,7 @@
 
             <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-capability-panel="admin.full" aria-labelledby="adminAccessViewTitle" hidden>
               <div class="admin-portal-workspace-head">
-                <span>Administration générale</span>
+                <span>Gestion générale</span>
                 <h2 id="adminAccessViewTitle">Gestion des accès</h2>
                 <p>Créez les comptes du portail et adaptez leurs habilitations.</p>
               </div>
@@ -650,7 +663,7 @@
               </label>
               <label>
                 <input type="checkbox" name="capability" value="admin.full">
-                <span>Administration générale</span>
+                <span>Gestion générale</span>
               </label>
             </fieldset>
             <label class="admin-access-reset-choice">
@@ -687,6 +700,6 @@
     <script src="assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-console-portal-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260722-dtn-refresh-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260727-console-portal-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260727-performance-menu-1"></script>
   </body>
 </html>

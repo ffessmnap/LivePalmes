@@ -37,7 +37,7 @@
         </div>
         ${serverPinMode ? `<div class="admin-auth-status-box"><strong>Codes serveur actifs</strong><span>Les PIN ne sont plus affichés dans le navigateur. Renseigne uniquement les codes à modifier ; laisse les autres champs vides pour les conserver.</span></div>` : ""}
         <div class="admin-extra-zone">
-          <span>Administration avancée</span>
+          <span>Gestion avancée</span>
           ${adminAuthStatus?.signedIn ? `
           <span class="admin-auth-chip">Admin connecte : ${escapeHtml(adminAuthStatus.email || "Firebase")}</span>
           <button class="ghost-button compact" type="button" data-admin-auth-signout>Deconnexion admin</button>
@@ -252,7 +252,7 @@
       <div class="decision-dialog role-codes-dialog history-archives-dialog" role="dialog" aria-modal="true" aria-label="Archives historiques" data-archives-can-delete="${canDelete ? "1" : "0"}">
         <div class="decision-modal-head">
           <div>
-            <span>Administration</span>
+            <span>Gestion</span>
             <h2>Archives historiques</h2>
             <p>Archives créées automatiquement avant un RAZ historique ou une remise à zéro des résultats.</p>
           </div>
@@ -328,10 +328,10 @@
 
   function renderAdminSeriesModalHtml() {
     return `
-      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Administration des séries">
+      <div class="decision-dialog admin-series-dialog" role="dialog" aria-modal="true" aria-label="Gestion des séries">
         <div class="decision-modal-head">
           <div>
-            <span>Administration</span>
+            <span>Gestion</span>
             <h2>Importer des séries PDF</h2>
             <p>Choisis si le PDF remplace toute la compétition ou seulement une session déjà publiée.</p>
           </div>

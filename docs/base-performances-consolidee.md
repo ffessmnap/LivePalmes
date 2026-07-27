@@ -5,7 +5,7 @@ Objectif : ne plus fusionner l'historique IntrAnap et les compétitions importé
 ## Principe
 
 - L'historique IntrAnap reste la source initiale.
-- Les compétitions importées LivePalmes restent stockées comme source d'administration et d'audit.
+- Les compétitions importées LivePalmes restent stockées comme source de gestion et d'audit.
 - Une étape de publication consolide les deux sources et génère des fichiers publics optimisés.
 - Les pages publiques TOP et fiches nageurs liront uniquement ces fichiers consolidés.
 
@@ -45,7 +45,7 @@ Cette approche garde les imports disponibles tout en évitant de relire Firestor
 
 ## Corrections administratives
 
-Les corrections de performances sont stockées dans Firestore côté administration, dans `performanceCorrections`.
+Les corrections de performances sont stockées dans Firestore depuis le portail, dans `performanceCorrections`.
 Elles ne sont pas lues directement par les visiteurs.
 
 Après chaque import ou correction, une Cloud Function republie un fichier public :

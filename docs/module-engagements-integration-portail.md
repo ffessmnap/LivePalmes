@@ -13,7 +13,7 @@ Il precise comment integrer le module engagements dans le portail LivePalmes act
 L'objectif est de faire evoluer le portail existant :
 
 ```text
-administration.html
+portail.html
 ```
 
 pour accueillir les profils club, region et national.
@@ -24,7 +24,7 @@ Le portail LivePalmes existe deja.
 
 Il utilise :
 
-- `administration.html` comme page principale ;
+- `portail.html` comme page principale ;
 - `assets/livepalmes-admin-portal.js` comme assembleur du portail ;
 - `assets/livepalmes-admin-portal.css` pour les styles ;
 - `assets/livepalmes-admin-auth.js` pour l'authentification ;
@@ -34,10 +34,10 @@ Il utilise :
 
 Les modules administratifs existants sont deja integres dans le portail :
 
-- `administration.html#records-mpf` ;
-- `administration.html#import-competitions` ;
-- `administration.html#correction-performance` ;
-- `administration.html#gestion-acces`.
+- `portail.html#records-mpf` ;
+- `portail.html#import-competitions` ;
+- `portail.html#correction-performance` ;
+- `portail.html#gestion-acces`.
 
 Le futur module engagements doit suivre le meme principe.
 
@@ -52,7 +52,7 @@ Il ne faut pas creer :
 - un nouveau systeme d'authentification ;
 - une nouvelle architecture de droits parallele.
 
-Il faut creer des vues et modules dedies, charges depuis `administration.html`.
+Il faut creer des vues et modules dedies, charges depuis `portail.html`.
 
 ## Navigation cible
 
@@ -66,7 +66,7 @@ Liens possibles :
 
 - `#engagements-calendrier` : calendrier et engagements club ;
 - `#engagements-club` : espace club ;
-- `#engagements-competitions` : administration des competitions ;
+- `#engagements-competitions` : gestion des competitions ;
 - `#engagements-demandes-acces` : demandes d'acces ;
 - `#engagements-alertes` : alertes nationales.
 
@@ -79,25 +79,47 @@ Les capacites actuelles sont :
 - `admin.full` ;
 - `records.manage` ;
 - `consoles.manage` ;
-- `competitions.import`.
+- `consoles.access` ;
+- `competitions.import` ;
+- `dtn.view`.
 
-Elles ne suffisent pas pour le module engagements.
+Le droit `dtn.view` donne acces a l'espace DTN. Il est independant du module engagements et ne donne aucun droit sur les engagements.
+
+Ces capacites ne suffisent pas pour le module engagements.
+
+Decision cible : les modules metier sensibles doivent rester controles par des droits explicites.
+
+`admin.full` permet de gerer le portail, les utilisateurs et l'attribution des droits. Il ne doit pas etre utilise comme raccourci fonctionnel donnant automatiquement acces a tous les modules sensibles.
+
+Cela concerne notamment :
+
+- `records.manage` pour les records et MPF ;
+- `consoles.manage` ou `consoles.access` pour les consoles ;
+- `competitions.import` pour les imports et corrections de competitions ;
+- `dtn.view` pour l'espace DTN ;
+- les futures capacites `engagements.*`.
+
+Cette regle evite qu'un compte charge de l'administration des acces puisse modifier des donnees sportives ou acceder aux outils de competition sans droit metier explicite.
 
 Capacites proposees :
 
-- `entries.club.manage` : gerer les engagements de son club ;
-- `entries.region.manage` : gerer les competitions et acces d'une region ;
-- `entries.national.manage` : gerer le module engagements au niveau national ;
-- `entries.access.manage` : traiter les demandes d'acces selon son perimetre ;
-- `entries.documents.manage` : generer ou consulter les documents selon son perimetre.
+- `engagements.club.manage` : gerer les engagements de son club ;
+- `engagements.region.manage` : gerer les competitions et acces d'une region ;
+- `engagements.national.manage` : gerer le module engagements au niveau national ;
+- `engagements.access.manage` : traiter les demandes d'acces selon son perimetre ;
+- `engagements.documents.manage` : generer ou consulter les documents selon son perimetre.
 
 Pour simplifier la V1, on peut commencer avec :
 
-- `entries.club.manage` ;
-- `entries.region.manage` ;
-- `entries.national.manage`.
+- `engagements.club.manage` ;
+- `engagements.region.manage` ;
+- `engagements.national.manage`.
 
-`admin.full` garde tous les droits.
+Les droits engagements sont des capacites dediees. L'acces metier au module engagements doit etre decide explicitement lors de la validation des capacites.
+
+Un utilisateur peut cumuler `dtn.view` et un droit engagements, mais ce sont deux casquettes separees.
+
+Point d'attention technique : le code actuel conserve encore des comportements de transition ou `admin.full` peut servir de fallback sur certains modules existants. Pour les nouveaux modules sensibles, et en particulier les engagements, il faudra appliquer la regle explicite des le depart.
 
 ## Perimetres des droits
 
@@ -116,7 +138,7 @@ Exemple :
 ```json
 {
   "uid": "firebase-user-id",
-  "capability": "entries.club.manage",
+  "capability": "engagements.club.manage",
   "scopeType": "club",
   "scopeId": "12345",
   "status": "active"
@@ -128,7 +150,7 @@ Exemple region :
 ```json
 {
   "uid": "firebase-user-id",
-  "capability": "entries.region.manage",
+  "capability": "engagements.region.manage",
   "scopeType": "region",
   "scopeId": "6",
   "status": "active"
@@ -140,7 +162,7 @@ Exemple national :
 ```json
 {
   "uid": "firebase-user-id",
-  "capability": "entries.national.manage",
+  "capability": "engagements.national.manage",
   "scopeType": "national",
   "scopeId": "",
   "status": "active"
@@ -177,7 +199,7 @@ Il faudra stocker correctement :
 - `status` ;
 - trace de creation et mise a jour.
 
-### Portail encore oriente administration
+### Portail encore oriente gestion
 
 Le portail actuel parle surtout a des administrateurs.
 
@@ -249,7 +271,7 @@ Ne pas creer une nouvelle page racine pour la V1.
 Ajouter les vues dans :
 
 ```text
-administration.html
+portail.html
 ```
 
 Exemples :

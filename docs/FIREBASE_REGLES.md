@@ -65,8 +65,8 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
    - traiter cote bureau des performances ;
    - exporter le journal ;
    - faire une RAZ historique ;
-   - verifier que l'archive du journal est consultable depuis l'administration ;
-   - remettre a zero les resultats publics et verifier que l'archive des resultats apparait dans l'administration.
+   - verifier que l'archive du journal est consultable depuis le portail ;
+   - remettre a zero les resultats publics et verifier que l'archive des resultats apparait dans le portail.
 
 ## A retenir
 

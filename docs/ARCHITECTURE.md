@@ -116,7 +116,7 @@ Mais un visiteur public ne doit pas pouvoir modifier ou piloter la competition.
 - `styles.css` : styles communs ;
 - `console.css` : styles des consoles internes ;
 - `public.css` : styles des pages publiques ;
-- `assets/livepalmes-admin-portal.css` : administration ;
+- `assets/livepalmes-admin-portal.css` : portail ;
 - `performances/public/styles.css` : espace performances.
 
 ### JavaScript des consoles
@@ -128,7 +128,7 @@ Mais un visiteur public ne doit pas pouvoir modifier ou piloter la competition.
 - `assets/livepalmes-results-*.js` : resultats et publication ;
 - `assets/livepalmes-result-*.js` : lecture PDF, publication, maintenance ;
 - `assets/livepalmes-final-*.js` : finalistes, forfaits, repechages ;
-- `assets/livepalmes-admin-*.js` : administration ;
+- `assets/livepalmes-admin-*.js` : portail ;
 - `assets/livepalmes-publication.js` : preparation des donnees publiees ;
 - `assets/livepalmes-firestore-refs.js` : acces aux chemins Firestore.
 
@@ -155,7 +155,7 @@ Le dossier `performances/` contient les pages liees aux performances historiques
 - MPF ;
 - TOP ;
 - fiches nageurs ;
-- import et administration.
+- import et gestion.
 
 Les visiteurs ne doivent pas lire directement une enorme base Firestore pour ces pages.
 
@@ -231,7 +231,7 @@ Il ne faut donc pas brancher une page publique directement sur une grosse requet
 Le principe a respecter est :
 
 ```text
-Administration / import / correction
+Portail / import / correction
   -> base interne ou donnees de travail
   -> generation de fichiers publics optimises
   -> lecture rapide par les visiteurs
@@ -251,7 +251,7 @@ Elles gerent notamment :
 
 - les PIN des roles ;
 - les droits d'acces ;
-- l'administration des utilisateurs ;
+- la gestion des utilisateurs ;
 - les imports de competitions ;
 - les imports et corrections de performances ;
 - la publication de donnees publiques de performances ;

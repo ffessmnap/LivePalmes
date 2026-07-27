@@ -87,13 +87,13 @@
 
     const firebase = ensureFirebaseApp();
     if (!firebase?.auth) {
-      setGateState("locked", "Accès administrateur requis", "Connectez-vous depuis l'administration LivePalmes pour consulter cette page.");
+      setGateState("locked", "Accès au portail requis", "Connectez-vous depuis le Portail LivePalmes pour consulter cette page.");
       return;
     }
 
     const user = await waitForUser(firebase);
     if (!user) {
-      setGateState("locked", "Accès administrateur requis", "Connectez-vous depuis l'administration LivePalmes pour consulter cette page.");
+      setGateState("locked", "Accès au portail requis", "Connectez-vous depuis le Portail LivePalmes pour consulter cette page.");
       return;
     }
 
@@ -114,7 +114,7 @@
       await loadGatedScripts();
       global.dispatchEvent(new CustomEvent("livepalmes:admin-gate-unlocked", { detail: result.data || {} }));
     } catch {
-      setGateState("locked", "Accès administrateur requis", "Connectez-vous depuis l'administration LivePalmes pour consulter cette page.");
+      setGateState("locked", "Accès au portail requis", "Connectez-vous depuis le Portail LivePalmes pour consulter cette page.");
     }
   }
 
