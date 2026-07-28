@@ -205,6 +205,7 @@
 
 .admin-portal-form input,
 .admin-access-form input,
+.admin-access-form select,
 .admin-account-form input {
   min-height: 42px;
   box-sizing: border-box;
@@ -216,7 +217,8 @@
   font: inherit;
 }
 
-.admin-access-form input:disabled {
+.admin-access-form input:disabled,
+.admin-access-form select:disabled {
   background: #eef4f2;
   color: #7d8e8a;
 }
@@ -273,8 +275,8 @@
 
 .admin-portal-layout {
   display: grid;
-  grid-template-columns: 238px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
 }
 
@@ -284,7 +286,7 @@
   min-width: 0;
   border: 1px solid #dce7e4;
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px;
   background: #ffffff;
   box-shadow: 0 14px 34px rgba(12, 47, 42, 0.08);
 }
@@ -295,13 +297,13 @@
 
 .admin-portal-nav {
   display: grid;
-  gap: 5px;
+  gap: 2px;
 }
 
 .admin-portal-nav-title {
-  padding: 8px 10px 6px;
+  padding: 6px 9px 4px;
   color: #5f746f;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -309,9 +311,9 @@
 
 .admin-portal-nav-group {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
-  padding: 5px 0 7px;
+  padding: 4px 0 5px;
 }
 
 .admin-portal-nav-group + .admin-portal-nav-group {
@@ -320,9 +322,9 @@
 
 .admin-portal-nav-group h2 {
   margin: 0;
-  padding: 5px 10px 3px;
+  padding: 4px 9px 2px;
   color: #6a7e79;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 850;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -333,8 +335,8 @@
   display: grid;
   gap: 2px;
   min-width: 0;
-  border-radius: 7px;
-  padding: 11px 12px;
+  border-radius: 6px;
+  padding: 7px 9px;
   color: #12312d;
   text-decoration: none;
 }
@@ -351,36 +353,55 @@
   box-shadow: inset 3px 0 #0b7285;
 }
 
+.admin-portal-nav-club-link {
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e7efed;
+}
+
+.admin-portal-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.admin-portal-nav-badge[hidden] {
+  display: none;
+}
+
 .admin-portal-nav a,
 .admin-portal-nav-parent {
   overflow-wrap: anywhere;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 750;
 }
 
 .admin-portal-nav-parent {
   width: 100%;
-  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   border: 0;
   background: transparent;
+  color: #5f746f;
+  font-size: 0.73rem;
+  font-weight: 850;
   font-family: inherit;
+  letter-spacing: 0.02em;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
 }
 
 .admin-portal-nav-parent > span:last-child {
-  color: #5f746f;
-  font-size: 0.86rem;
-  transition: transform 160ms ease;
+  display: none;
 }
 
-.admin-portal-nav-parent[aria-expanded="true"] {
-  background: #f0f7f5;
-}
-
-.admin-portal-nav-parent[aria-expanded="true"] > span:last-child {
-  transform: rotate(180deg);
+.admin-portal-nav-parent:hover {
+  background: transparent;
 }
 
 .admin-portal-nav a[href="pilotage-livepalmes.html"] {
@@ -395,9 +416,9 @@
 
 .admin-portal-nav-submenu {
   display: grid;
-  gap: 4px;
-  margin: 3px 0 0 8px;
-  padding-left: 8px;
+  gap: 2px;
+  margin: 0 0 0 6px;
+  padding-left: 7px;
   border-left: 2px solid #dce7e4;
 }
 
@@ -406,8 +427,8 @@
 }
 
 .admin-portal-nav-submenu > a {
-  padding-left: 12px;
-  font-size: 0.84rem;
+  padding-left: 9px;
+  font-size: 0.82rem;
 }
 
 .admin-portal-workspace {
@@ -416,6 +437,7 @@
 
 .admin-portal-account-view,
 .admin-portal-access-view,
+.admin-portal-engagements-view,
 .admin-portal-dtn-view,
 .admin-portal-records-view > .admin-portal-workspace-head,
 .admin-portal-import-view > .admin-portal-workspace-head {
@@ -431,13 +453,24 @@
   padding: 18px;
 }
 
+.admin-portal-engagements-view {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
 .admin-account-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-.admin-account-card {
+.admin-account-scope-card {
+  grid-column: 1 / -1;
+}
+
+.admin-account-card,
+.admin-engagements-card {
   display: grid;
   align-content: start;
   gap: 18px;
@@ -447,7 +480,8 @@
   background: #f8fbfa;
 }
 
-.admin-account-card > div > span {
+.admin-account-card > div > span,
+.admin-engagements-card > div > span {
   color: #5f746f;
   font-size: 0.74rem;
   font-weight: 850;
@@ -455,7 +489,8 @@
   text-transform: uppercase;
 }
 
-.admin-account-card h3 {
+.admin-account-card h3,
+.admin-engagements-card h3 {
   margin: 5px 0 6px;
   font-size: 1.08rem;
 }
@@ -464,6 +499,58 @@
   margin: 0;
   color: #5f746f;
   line-height: 1.45;
+}
+
+.admin-account-scope-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-account-scope-list > div {
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.admin-account-scope-list dt {
+  color: #5f746f;
+  font-size: 0.7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-account-scope-list dd {
+  margin: 4px 0 0;
+  color: #173b35;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-account-capabilities-title {
+  display: block;
+  margin-bottom: 8px;
+  color: #31524c;
+  font-size: 0.82rem;
+}
+
+.admin-account-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.admin-account-capabilities span {
+  border: 1px solid #dce7e4;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #ffffff;
+  color: #31524c;
+  font-size: 0.76rem;
+  font-weight: 850;
 }
 
 .admin-portal-workspace-head > span {
@@ -1335,6 +1422,23 @@
   padding: 4px 2px 2px;
 }
 
+.admin-portal-engagements-view > .admin-portal-workspace-head {
+  border-left: 4px solid #2f7d6d;
+  padding-left: 12px;
+}
+
+.admin-portal-engagements-view[data-engagements-mode="admin"] > .admin-portal-workspace-head {
+  border-left-color: #0b7285;
+}
+
+.admin-portal-engagements-view[data-engagements-mode="club"] .admin-engagements-card-head > div > span {
+  color: #2f7d6d;
+}
+
+.admin-portal-engagements-view[data-engagements-mode="admin"] .admin-engagements-card-head > div > span {
+  color: #0b7285;
+}
+
 .admin-portal-access-view .admin-access-preview,
 .admin-portal-access-view .admin-access-list-panel {
   box-shadow: none;
@@ -1342,6 +1446,7 @@
 
 .admin-portal-account-view[hidden],
 .admin-portal-access-view[hidden],
+.admin-portal-engagements-view[hidden],
 .admin-portal-dtn-view[hidden],
 .admin-portal-records-view[hidden],
 .admin-portal-import-view[hidden],
@@ -1461,6 +1566,2072 @@
   padding: 18px;
 }
 
+.admin-engagements-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #dce7e4;
+  overflow-x: auto;
+}
+
+.admin-engagements-tabs button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: #455d58;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-engagements-tabs button:hover,
+.admin-engagements-tabs button:focus-visible,
+.admin-engagements-tabs button[aria-selected="true"] {
+  border-color: #dce7e4;
+  background: #f8fbfa;
+  color: #12312d;
+}
+
+.admin-engagements-tab-panel {
+  min-width: 0;
+}
+
+.admin-engagements-tab-panel[hidden] {
+  display: none;
+}
+
+.admin-engagements-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.admin-engagements-scope-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-engagements-scope-list > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  border-top: 1px solid #dce7e4;
+  padding-top: 10px;
+}
+
+.admin-engagements-scope-list dt {
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-scope-list dd {
+  margin: 0;
+  color: #173b35;
+  font-weight: 850;
+}
+
+.admin-engagements-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.admin-engagements-card-head button {
+  min-height: 38px;
+}
+
+.admin-engagements-calendar-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-calendar-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(150px, auto) auto;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-calendar-filters label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-engagements-calendar-filters select {
+  min-height: 40px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-engagements-calendar-filters button {
+  min-height: 40px;
+}
+
+.admin-engagements-filter-check {
+  display: flex;
+  min-height: 40px;
+  gap: 8px;
+  align-items: center;
+  align-self: end;
+  border: 1px solid #dce7e4;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-filter-check[hidden] {
+  display: none;
+}
+
+.admin-engagements-filter-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-request-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-request-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.85fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.admin-engagements-request-main,
+.admin-engagements-request-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-engagements-request-main strong {
+  color: #12312d;
+}
+
+.admin-engagements-request-main small,
+.admin-engagements-request-meta span {
+  color: #5f746f;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-engagements-empty {
+  margin: 0;
+  color: #5f746f;
+}
+
+.admin-engagements-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.admin-engagements-form-section {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.admin-engagements-form-section legend {
+  margin-left: 8px;
+  padding: 0 6px;
+  color: #173b35;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.admin-engagements-form-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.admin-engagements-form-section-grid > label:only-child {
+  max-width: none;
+}
+
+.admin-engagements-form label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-form-section-grid > label {
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 46px;
+  border-top: 1px solid #e7efed;
+  padding: 7px 10px;
+}
+
+.admin-engagements-form-section-grid > label:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-form-section-grid > label > input,
+.admin-engagements-form-section-grid > label > select {
+  grid-column: 2;
+  width: 100%;
+}
+
+.admin-engagements-form input,
+.admin-engagements-form select {
+  min-height: 40px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-engagements-form input:disabled,
+.admin-engagements-form select:disabled {
+  background: #eef5f3;
+  color: #5f746f;
+}
+
+.admin-engagements-field-note {
+  grid-column: 2;
+  margin-top: 4px;
+  color: #5f746f;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.admin-engagements-check {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 40px;
+}
+
+.admin-engagements-check input {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-check span {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-engagements-form .admin-portal-actions,
+.admin-engagements-form .admin-portal-message {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-empty,
+.admin-engagements-competition {
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-empty {
+  padding: 14px;
+  color: #5f746f;
+  font-weight: 760;
+}
+
+.admin-engagements-competition {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 120px 96px minmax(190px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.admin-engagements-competition.selected {
+  border-color: #6aa89a;
+  box-shadow: inset 3px 0 0 #2f7d6d;
+}
+
+.admin-engagements-competition time,
+.admin-engagements-competition > span {
+  color: #31524c;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-competition strong,
+.admin-engagements-competition small {
+  display: block;
+}
+
+.admin-engagements-competition small {
+  color: #5f746f;
+  line-height: 1.35;
+}
+
+.admin-engagements-competition [data-entry-status] {
+  justify-self: start;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef5f3;
+}
+
+.admin-engagements-competition [data-entry-status="open"] {
+  background: #e4f7ec;
+  color: #1d6b3f;
+}
+
+.admin-engagements-competition [data-entry-status="closing-soon"] {
+  background: #fff4cf;
+  color: #775711;
+}
+
+.admin-engagements-competition [data-entry-status="deadline-passed"] {
+  background: #fbe7e7;
+  color: #8a3030;
+}
+
+.admin-engagements-competition [data-entry-status="closed"] {
+  background: #f3eeee;
+  color: #7c3f3f;
+}
+
+.admin-engagements-competition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-engagements-competition-actions button {
+  min-height: 34px;
+}
+
+.admin-engagements-detail {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #cddbd8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.admin-engagements-detail[hidden] {
+  display: none;
+}
+
+.admin-engagements-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.admin-engagements-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-engagements-detail-actions > button:not(.ghost-button) {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #0b7285;
+  color: #ffffff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-detail-actions > button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.admin-engagements-detail-actions .admin-engagements-danger-button {
+  border-color: #e1b2b2;
+  color: #9d2f2f;
+  background: #fff4f2;
+}
+
+.admin-engagements-detail-actions .admin-engagements-danger-button:hover,
+.admin-engagements-detail-actions .admin-engagements-danger-button:focus-visible {
+  border-color: #c95c5c;
+  color: #7f1d1d;
+  background: #ffe6e1;
+}
+
+.admin-engagements-detail-head span {
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-engagements-detail-head h4 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.admin-engagements-detail-subtitle {
+  margin: 4px 0 0;
+  color: #5f746f;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.admin-engagements-edit-state {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 7px;
+  border: 1px solid #dce7e4;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #f8fbfa;
+  color: #455d58;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.admin-engagements-edit-state[hidden] {
+  display: none;
+}
+
+.admin-engagements-edit-state[data-state="editing"] {
+  border-color: #b9dce5;
+  background: #eef9fb;
+  color: #0b6373;
+}
+
+.admin-engagements-edit-state[data-state="dirty"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+  color: #8a5a00;
+}
+
+.admin-engagements-edit-state[data-state="deletion-pending"] {
+  border-color: #e1b2b2;
+  background: #fff4f2;
+  color: #9d2f2f;
+}
+
+.admin-engagements-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-engagements-detail-meta:empty {
+  display: none;
+}
+
+.admin-engagements-detail-meta-item {
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-card[data-detail-open="true"] {
+  gap: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.admin-engagements-card[data-detail-open="true"] > .admin-engagements-card-head {
+  display: none;
+}
+
+.admin-engagements-detail-meta-item span,
+.admin-engagements-detail-meta-item strong {
+  display: block;
+}
+
+.admin-engagements-detail-meta-item span {
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-detail-meta-item strong {
+  margin-top: 3px;
+  color: #173b35;
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="open"] {
+  border-color: #bfe6ca;
+  background: #effaf3;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="closing-soon"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="deadline-passed"] {
+  border-color: #e8baba;
+  background: #fff0f0;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="closed"] {
+  border-color: #ead0d0;
+  background: #fbf1f1;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="national"] {
+  border-color: #cbd9ff;
+  background: #f2f6ff;
+}
+
+.admin-engagements-detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid #dce7e4;
+  overflow-x: auto;
+}
+
+.admin-engagements-detail-tabs button {
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 7px 10px;
+  background: transparent;
+  color: #455d58;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-engagements-detail-tabs button:hover,
+.admin-engagements-detail-tabs button:focus-visible,
+.admin-engagements-detail-tabs button[aria-selected="true"] {
+  border-color: #dce7e4;
+  background: #f8fbfa;
+  color: #12312d;
+}
+
+.admin-engagements-detail-tabs button[data-dirty="true"]::after {
+  content: " *";
+  color: #9a5b00;
+  font-weight: 900;
+}
+
+.admin-engagements-detail-tabs button[data-warning="true"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+}
+
+.admin-engagements-detail-tabs button[data-locked="true"] {
+  color: #8a9996;
+  background: #f6f8f7;
+}
+
+.admin-engagements-detail-tabs button[data-locked="true"]::after {
+  content: " verrouille";
+  color: #8a9996;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.admin-engagements-detail-panel {
+  min-width: 0;
+}
+
+.admin-engagements-detail-panel[hidden] {
+  display: none;
+}
+
+.admin-engagements-events-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-club-step-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-club-step-form[data-locked="true"] {
+  border: 1px dashed #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-choice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-club-choice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbfa;
+  color: #12312d;
+  font-weight: 850;
+}
+
+.admin-engagements-club-choice input,
+.admin-engagements-club-renunciation input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-club-team-picker {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-club-renunciation {
+  border: 1px solid #eadb9d;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff8df;
+}
+
+.admin-engagements-club-step {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-step strong {
+  color: #12312d;
+}
+
+.admin-engagements-club-step p {
+  margin: 0;
+  color: #5f746f;
+}
+
+.admin-engagements-club-step[data-locked="true"] {
+  border-style: dashed;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-officials-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-club-official-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-official-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-club-official-row strong,
+.admin-engagements-club-official-row small {
+  display: block;
+}
+
+.admin-engagements-club-official-row strong {
+  color: #12312d;
+}
+
+.admin-engagements-club-official-row small {
+  color: #5f746f;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-club-search {
+  display: grid;
+  gap: 6px;
+  color: #5f746f;
+  font-weight: 850;
+}
+
+.admin-engagements-club-new-swimmer {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-new-swimmer summary {
+  color: #12312d;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.admin-engagements-club-new-swimmer[open] {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-club-swimmer-alerts {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-club-swimmer-alert-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmer-alert-list article {
+  border: 1px solid #eadb9d;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff8df;
+}
+
+.admin-engagements-club-swimmer-alert-list strong,
+.admin-engagements-club-swimmer-alert-list small {
+  display: block;
+}
+
+.admin-engagements-club-swimmer-alert-list small {
+  color: #5f746f;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-club-swimmers-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmers-directory-tools {
+  margin: 0;
+}
+
+.admin-engagements-club-swimmers-directory-tools label {
+  display: grid;
+  gap: 5px;
+  color: #5f746f;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-club-swimmers-directory-tools input {
+  min-height: 34px;
+  border: 1px solid #ccdcd8;
+  border-radius: 6px;
+  padding: 6px 9px;
+  color: #12312d;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.admin-engagements-club-swimmers-directory-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmers-directory-table {
+  display: grid;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.admin-engagements-club-swimmers-directory-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.2fr) 92px 48px minmax(84px, 0.42fr) minmax(220px, 1fr) 104px;
+  gap: 8px;
+  align-items: center;
+  min-width: 780px;
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: #ffffff;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-club-swimmers-directory-head {
+  border-color: transparent;
+  background: transparent;
+  color: #5f746f;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-swimmers-directory-row strong,
+.admin-engagements-club-swimmers-directory-row small {
+  display: block;
+}
+
+.admin-engagements-club-swimmers-directory-row strong {
+  overflow: hidden;
+  color: #12312d;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-swimmers-directory-row small {
+  overflow: hidden;
+  color: #5f746f;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-entries-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-relays-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmers-table,
+.admin-engagements-club-entries-table {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-engagements-club-swimmers-head,
+.admin-engagements-club-swimmer-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) 90px 48px minmax(110px, 0.35fr) minmax(160px, 0.55fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-engagements-club-swimmers-head {
+  padding: 0 8px;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-entry-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.22fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-entry-name {
+  min-width: 0;
+}
+
+.admin-engagements-club-entry-name strong,
+.admin-engagements-club-entry-name small {
+  display: block;
+}
+
+.admin-engagements-club-entry-name strong {
+  color: #12312d;
+}
+
+.admin-engagements-club-entry-name small {
+  color: #5f746f;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-club-swimmer-row {
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-swimmer-row[data-selected="true"] {
+  border-color: #0b7285;
+  background: #f2fbfc;
+}
+
+.admin-engagements-club-swimmer-row > label:first-child {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-engagements-club-swimmer-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.admin-engagements-club-swimmer-row strong,
+.admin-engagements-club-swimmer-row small {
+  display: block;
+}
+
+.admin-engagements-club-swimmer-row strong {
+  color: #12312d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-swimmer-row small {
+  color: #5f746f;
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-swimmer-row input[type="text"] {
+  min-height: 30px;
+  padding: 4px 7px;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-club-swimmer-events {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  padding-top: 0;
+}
+
+.admin-engagements-club-swimmer-events[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-swimmer-events-head {
+  display: none;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  color: #5f746f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-swimmer-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 4px;
+}
+
+.admin-engagements-club-swimmer-event-choice {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  border: 1px solid #dce7e4;
+  border-radius: 5px;
+  padding: 3px 5px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-swimmer-event-choice[data-event-selected="true"] {
+  border-color: #0b7285;
+  background: #f7fcfd;
+}
+
+.admin-engagements-club-swimmer-events-grid label {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: #12312d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.admin-engagements-club-swimmer-events-grid input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-engagements-club-swimmer-event-choice input[type="text"] {
+  min-height: 30px;
+  padding: 3px 5px;
+  font-size: 0.76rem;
+}
+
+.admin-engagements-club-swimmer-event-choice small {
+  color: #6b7c78;
+  font-size: 0.66rem;
+  line-height: 1.2;
+}
+
+.admin-engagements-club-swimmer-events-empty {
+  margin: 0;
+  color: #6b7c78;
+  font-size: 0.84rem;
+}
+
+.admin-engagements-club-relays-table {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-engagements-club-relay-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.9fr) minmax(92px, 0.9fr) minmax(84px, 0.8fr) minmax(78px, 0.7fr) minmax(260px, 2fr) auto;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  padding: 6px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-relay-row select,
+.admin-engagements-club-relay-row input[type="text"] {
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 7px;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-club-relay-members {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.admin-engagements-club-person-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-person-form[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-person-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.admin-engagements-club-people-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-club-person-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(120px, 0.6fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-person-card[data-active="false"] {
+  opacity: 0.68;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-person-card strong,
+.admin-engagements-club-person-card small {
+  display: block;
+}
+
+.admin-engagements-club-person-card strong {
+  color: #12312d;
+}
+
+.admin-engagements-club-person-card small,
+.admin-engagements-club-person-card > span {
+  color: #5f746f;
+  font-size: 0.8rem;
+  font-weight: 780;
+}
+
+.admin-engagements-events-form[data-club-program-view="true"] {
+  gap: 0;
+}
+
+.admin-engagements-events-form[data-club-program-view="true"] > .admin-engagements-events-head,
+.admin-engagements-events-form[data-club-program-view="true"] #adminEngagementsProgramSection > summary,
+.admin-engagements-events-form[data-club-program-view="true"] #adminEngagementsEventsMessage {
+  display: none;
+}
+
+.admin-engagements-events-form[data-club-program-view="true"] #adminEngagementsProgramSection {
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-engagements-events-form[data-club-program-view="true"] #adminEngagementsProgramSection[open] {
+  padding-bottom: 0;
+}
+
+.admin-engagements-events-form[data-club-program-view="true"] #adminEngagementsProgramSection > .admin-engagements-program-sessions {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.admin-engagements-events-section {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-events-section[hidden] {
+  display: none;
+}
+
+.admin-engagements-events-section summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 42px;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #173b35;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.admin-engagements-events-section summary span {
+  display: inline-grid;
+  gap: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.admin-engagements-events-section summary strong,
+.admin-engagements-events-section summary small {
+  display: block;
+}
+
+.admin-engagements-events-section summary small {
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.admin-engagements-section-toggle {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-events-section[open] {
+  padding-bottom: 8px;
+}
+
+.admin-engagements-events-section[data-warning="true"] summary small {
+  color: #8a5a00;
+}
+
+.admin-engagements-events-section > fieldset,
+.admin-engagements-events-section > .admin-engagements-program-head,
+.admin-engagements-events-section > .admin-engagements-program-sessions {
+  margin-right: 8px;
+  margin-left: 8px;
+}
+
+.admin-engagements-events-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-events-head strong,
+.admin-engagements-events-head small {
+  display: block;
+}
+
+.admin-engagements-events-head small {
+  margin-top: 3px;
+  color: #5f746f;
+  font-weight: 760;
+}
+
+.admin-engagements-events-head button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #0b7285;
+  color: #ffffff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-events-head button[hidden] {
+  display: none;
+}
+
+.admin-engagements-events-head button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.admin-engagements-program-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-program-head strong,
+.admin-engagements-program-head small {
+  display: block;
+}
+
+.admin-engagements-program-head small {
+  margin-top: 1px;
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.admin-engagements-program-sessions {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-engagements-program-builder {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.admin-engagements-program-day-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  align-items: start;
+}
+
+.admin-engagements-program-builder-row {
+  display: grid;
+  grid-template-columns: minmax(164px, 0.3fr) minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  align-self: start;
+}
+
+.admin-engagements-program-builder-row[data-has-palette="true"] {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-program-builder-row[data-has-palette="false"] {
+  grid-template-columns: 1fr;
+}
+
+.admin-engagements-program-available,
+.admin-engagements-program-timeline,
+.admin-engagements-program-available-slot {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-engagements-program-available-slot:empty {
+  min-height: 1px;
+}
+
+.admin-engagements-program-available {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 5px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-program-available > strong {
+  color: #173b35;
+  font-size: 0.7rem;
+}
+
+.admin-engagements-program-available-event {
+  display: grid;
+  grid-template-columns: minmax(48px, 0.5fr) minmax(0, 1fr);
+  gap: 4px;
+  align-items: center;
+  border-top: 1px solid #dce7e4;
+  padding-top: 4px;
+}
+
+.admin-engagements-program-available-event:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.admin-engagements-program-available-event strong {
+  color: #31524c;
+  font-size: 0.68rem;
+  line-height: 1.1;
+}
+
+.admin-engagements-program-available-event > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.admin-engagements-program-session {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 5px;
+  background: #ffffff;
+}
+
+.admin-engagements-program-session[data-active="true"] {
+  border-color: #6aa89a;
+  box-shadow: inset 3px 0 0 #2f7d6d;
+}
+
+.admin-engagements-program-session-head,
+.admin-engagements-program-row {
+  display: grid;
+  grid-template-columns: minmax(104px, 0.95fr) 120px 78px auto;
+  gap: 5px;
+  align-items: end;
+}
+
+.admin-engagements-program-session-head label,
+.admin-engagements-program-session-title {
+  display: grid;
+  gap: 2px;
+  color: #455d58;
+  font-size: 0.64rem;
+  font-weight: 850;
+}
+
+.admin-engagements-program-session-title strong {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  color: #173b35;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-program-session-title span {
+  color: #455d58;
+}
+
+.admin-engagements-program-read-value {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  color: #173b35;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-engagements-program-session input,
+.admin-engagements-program-row select {
+  min-height: 24px;
+  border: 1px solid #cddbd8;
+  border-radius: 5px;
+  padding: 2px 5px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-program-session input:disabled,
+.admin-engagements-program-row select:disabled {
+  background: #eef5f3;
+  color: #5f746f;
+}
+
+.admin-engagements-program-rows {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-engagements-program-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border: 1px solid #e7efed;
+  border-radius: 5px;
+  padding: 2px 3px;
+  background: #ffffff;
+}
+
+.admin-engagements-program-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-engagements-program-row-main > span {
+  min-width: 20px;
+  color: #31524c;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.admin-engagements-program-row-main > strong {
+  color: #173b35;
+  font-size: 0.74rem;
+}
+
+.admin-engagements-program-row-main > i {
+  color: #8a9b97;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 760;
+}
+
+.admin-engagements-program-row-main > em {
+  border: 1px solid #dce7e4;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: #eef5f3;
+  color: #31524c;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.admin-engagements-program-row-main > em[data-gender-tone="female"] {
+  border-color: #f0cad8;
+  background: #fff1f6;
+  color: #9a315d;
+}
+
+.admin-engagements-program-row-main > em[data-gender-tone="male"] {
+  border-color: #c8dcf6;
+  background: #f1f7ff;
+  color: #245c9a;
+}
+
+.admin-engagements-program-row-main > em[data-gender-tone="relay-mixed"] {
+  border-color: #c9e4d2;
+  background: #f0faf3;
+  color: #256b3d;
+}
+
+.admin-engagements-program-row-main > em[data-gender-tone="combined"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+  color: #775711;
+}
+
+.admin-engagements-program-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: flex-end;
+}
+
+.admin-engagements-program-actions button {
+  min-height: 22px;
+  padding: 0 5px;
+  font-size: 0.66rem;
+}
+
+.admin-engagements-program-available-event button {
+  min-height: 21px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 900;
+}
+
+.admin-engagements-program-available-event button:disabled,
+.admin-engagements-program-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-engagements-events-form fieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.admin-engagements-events-form legend {
+  padding: 0 6px;
+  color: #31524c;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-events-section > fieldset {
+  border: 0;
+  border-radius: 0;
+  padding: 4px 0 0;
+}
+
+.admin-engagements-events-section > fieldset legend {
+  padding: 0;
+}
+
+.admin-engagements-events-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow-x: auto;
+}
+
+.admin-engagements-events-table {
+  display: grid;
+  min-width: 520px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-event-row {
+  display: grid;
+  min-height: 28px;
+  border-bottom: 1px solid #e7efed;
+}
+
+.admin-engagements-events-table-individual .admin-engagements-event-row {
+  grid-template-columns: minmax(86px, 0.75fr) repeat(var(--engagement-category-count, 12), minmax(26px, 0.28fr));
+}
+
+.admin-engagements-events-table-relay .admin-engagements-event-row {
+  grid-template-columns: minmax(86px, 0.75fr) minmax(44px, 0.34fr) minmax(58px, 0.42fr) repeat(var(--engagement-category-count, 10), minmax(26px, 0.28fr));
+}
+
+.admin-engagements-event-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-engagements-event-row[data-selected="true"] {
+  background: #f8fbfa;
+}
+
+.admin-engagements-event-row-head {
+  min-height: 28px;
+  background: #eef5f3;
+  color: #31524c;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-event-row-head > span,
+.admin-engagements-event-row-head > div,
+.admin-engagements-event-main,
+.admin-engagements-mixed-cell,
+.admin-engagements-event-restrictions label,
+.admin-engagements-category-blocked {
+  border-right: 1px solid #e7efed;
+}
+
+.admin-engagements-event-row-head > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.admin-engagements-event-row-head > span:first-child {
+  justify-content: flex-start;
+}
+
+.admin-engagements-event-row-head > div,
+.admin-engagements-event-restrictions {
+  display: contents;
+}
+
+.admin-engagements-event-row-head > div span,
+.admin-engagements-event-restrictions label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-engagements-event-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  padding: 3px 6px;
+}
+
+.admin-engagements-event-main input,
+.admin-engagements-event-restrictions input {
+  width: 13px;
+  height: 13px;
+  min-height: 0;
+  margin: 0;
+}
+
+.admin-engagements-event-main strong,
+.admin-engagements-event-main small {
+  display: block;
+}
+
+.admin-engagements-event-main strong {
+  color: #173b35;
+  font-size: 0.74rem;
+}
+
+.admin-engagements-mixed-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #31524c;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.admin-engagements-mixed-choice {
+  min-width: 0;
+  margin: 0;
+  padding: 0 3px;
+}
+
+.admin-engagements-mixed-choice select {
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  border: 1px solid #cddbd8;
+  border-radius: 5px;
+  padding: 1px 2px;
+  background: #ffffff;
+  color: #31524c;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.admin-engagements-mixed-choice select:disabled {
+  background: #eef5f3;
+  color: #7d8e8a;
+}
+
+.admin-engagements-event-main small {
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.admin-engagements-event-restrictions[hidden] {
+  display: contents;
+}
+
+.admin-engagements-event-restrictions[hidden] label {
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.admin-engagements-event-restrictions label {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-engagements-event-restrictions label:last-child,
+.admin-engagements-category-blocked:last-child,
+.admin-engagements-event-row-head > div span:last-child {
+  border-right: 0;
+}
+
+.admin-engagements-event-restrictions span {
+  display: none;
+}
+
+.admin-engagements-event-restrictions .admin-engagements-category-blocked {
+  display: block;
+}
+
+.admin-engagements-event-restrictions input:disabled {
+  opacity: 0.32;
+}
+
+.admin-engagements-category-blocked {
+  display: block;
+  min-height: 100%;
+  border-right: 1px solid #e7efed;
+  background: #eef1f0;
+}
+
+.admin-engagements-fees-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-fees-form[data-readonly="true"] {
+  gap: 10px;
+}
+
+.admin-engagements-fees-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-engagements-fees-grid label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-fees-grid input {
+  min-height: 40px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-engagements-read-value {
+  display: none;
+  min-height: 22px;
+  color: #173b35;
+  font-size: 0.86rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-fees-grid input:disabled {
+  background: #eef5f3;
+  color: #5f746f;
+}
+
+.admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid {
+  gap: 8px 14px;
+}
+
+.admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid label {
+  gap: 2px;
+  border-bottom: 1px solid #edf4f2;
+  padding-bottom: 7px;
+}
+
+.admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid input:disabled {
+  display: none;
+}
+
+.admin-engagements-fees-form[data-readonly="true"] .admin-engagements-read-value {
+  display: block;
+}
+
+.admin-engagements-payment-note {
+  margin: 0;
+  border: 1px solid #e5d8b5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff9e8;
+  color: #6f5715;
+  font-size: 0.82rem;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
+.admin-engagements-documents {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-documents-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-documents-head strong,
+.admin-engagements-documents-head small {
+  display: block;
+}
+
+.admin-engagements-documents-head small,
+.admin-engagements-documents-head span {
+  color: #5f746f;
+  font-weight: 760;
+}
+
+.admin-engagements-documents-list,
+.admin-engagements-generated-files {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-document-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.admin-engagements-document-card strong,
+.admin-engagements-document-card small {
+  display: block;
+}
+
+.admin-engagements-document-card small {
+  margin-top: 3px;
+  color: #5f746f;
+  font-size: 0.78rem;
+  font-weight: 740;
+}
+
+.admin-engagements-document-card > span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #eef5f3;
+  color: #31524c;
+  font-size: 0.76rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.admin-engagements-document-card[data-document-status="generated"] > span {
+  background: #e4f7ec;
+  color: #1d6b3f;
+}
+
+.admin-engagements-document-card[data-document-status="sent"] > span {
+  background: #e8f1ff;
+  color: #24509b;
+}
+
+.admin-engagements-generated-files a {
+  color: #0b7285;
+  font-weight: 850;
+}
+
+.admin-engagements-club-recap-files {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-club-recap-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.admin-engagements-club-recap-head strong,
+.admin-engagements-club-recap-head small {
+  display: block;
+}
+
+.admin-engagements-club-recap-head small {
+  color: #5f746f;
+  font-size: 0.8rem;
+  font-weight: 760;
+}
+
+.admin-engagements-club-recap-table {
+  display: grid;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-club-recap-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 64px 64px 58px 92px 116px;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 7px 9px;
+  border-top: 1px solid #e7efed;
+  color: #173b35;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-club-recap-row:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-club-recap-row-head {
+  min-height: 32px;
+  background: #f2f7f6;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-recap-row strong,
+.admin-engagements-club-recap-row small {
+  display: block;
+}
+
+.admin-engagements-club-recap-row small {
+  margin-top: 2px;
+  color: #6b7f7a;
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.admin-engagements-detail-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-detail-list > div {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr);
+  border-top: 1px solid #e7efed;
+}
+
+.admin-engagements-detail-list > div:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-detail-list dt {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #e7efed;
+  padding: 8px 10px;
+  background: #f8fbfa;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-detail-list dd {
+  margin: 0;
+  padding: 8px 10px;
+  color: #173b35;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-detail-list[hidden],
+.admin-engagements-edit-form[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-summary {
+  gap: 10px;
+}
+
+.admin-engagements-club-summary-relays {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-summary-relays strong {
+  color: #173b35;
+  font-size: 0.84rem;
+}
+
+.admin-engagements-club-summary-relays ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: #45615b;
+  font-size: 0.84rem;
+}
+
+.admin-access-preview[hidden] {
+  display: none;
+}
+
 .admin-access-list-panel {
   display: grid;
   gap: 14px;
@@ -1474,24 +3645,89 @@
   align-items: center;
 }
 
-.admin-access-list {
-  display: grid;
-  gap: 10px;
+.admin-access-list-head-actions,
+.admin-access-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
-.admin-access-row {
+.admin-access-list-head-actions button {
+  min-height: 40px;
+}
+
+.admin-access-count {
+  display: block;
+  margin-top: 3px;
+  color: #5f746f;
+}
+
+.admin-access-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
   border: 1px solid #dce7e4;
   border-radius: 8px;
-  padding: 12px;
   background: #f9fbfa;
 }
 
+.admin-access-filters label {
+  display: grid;
+  gap: 5px;
+  color: #455d58;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-access-filters input,
+.admin-access-filters select,
+.admin-access-filters button {
+  min-height: 40px;
+}
+
+.admin-access-list {
+  display: grid;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.admin-access-table {
+  min-width: 940px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-access-table-head,
+.admin-access-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.7fr) minmax(150px, 1.25fr) minmax(180px, 1.5fr) 90px 135px minmax(170px, auto);
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-access-table-head {
+  padding: 9px 12px;
+  background: #eef5f3;
+  color: #455d58;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.admin-access-row {
+  padding: 10px 12px;
+  border-top: 1px solid #e3ece9;
+  background: #fff;
+}
+
 .admin-access-row.inactive {
-  opacity: 0.68;
+  background: #f6f7f7;
+  color: #667773;
 }
 
 .admin-access-row strong,
@@ -1504,31 +3740,38 @@
   line-height: 1.35;
 }
 
-.admin-access-row .admin-access-login {
-  margin-top: 3px;
+.admin-access-row > div {
+  min-width: 0;
+}
+
+.admin-access-row .admin-access-login,
+.admin-access-rights-summary {
   color: #31524c;
-  font-weight: 780;
+  font-size: 0.8rem;
+  font-weight: 760;
 }
 
-.admin-access-right-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.admin-access-right-tags span {
+.admin-access-status {
+  display: inline-flex;
   border-radius: 999px;
   padding: 4px 8px;
-  background: #e9f5f2;
-  color: #0f5f57;
   font-size: 0.76rem;
   font-weight: 850;
 }
 
+.admin-access-status.active {
+  background: #dff4ea;
+  color: #16633f;
+}
+
+.admin-access-status.inactive {
+  background: #ecefee;
+  color: #5f6f6b;
+}
+
 .admin-access-row-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   justify-content: flex-end;
 }
@@ -1539,8 +3782,25 @@
 
 .admin-access-empty {
   margin: 0;
+  padding: 18px;
+  border: 1px dashed #cddbd7;
+  border-radius: 8px;
+  background: #f9fbfa;
   color: #5f746f;
   font-weight: 760;
+  text-align: center;
+}
+
+.admin-access-pagination {
+  justify-content: center;
+}
+
+.admin-access-pagination span {
+  min-width: 74px;
+  color: #455d58;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: center;
 }
 
 .admin-access-form {
@@ -1628,12 +3888,103 @@
 
   .admin-portal-grid,
   .admin-access-form,
-  .admin-account-grid {
+  .admin-account-grid,
+  .admin-engagements-grid {
     grid-template-columns: 1fr;
   }
 
   .admin-access-identity-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-account-scope-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-access-filters {
+    grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr));
+  }
+
+  .admin-engagements-competition {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+
+  .admin-engagements-calendar-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-engagements-request-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-club-person-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-club-swimmer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-club-entry-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-club-relay-row,
+  .admin-engagements-club-relay-members {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-request-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-engagements-competition-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .admin-engagements-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-detail-meta,
+  .admin-engagements-form-section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-events-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-fees-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-program-builder,
+  .admin-engagements-program-day-group,
+  .admin-engagements-program-builder-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-program-available-slot:empty {
+    display: none;
+  }
+
+  .admin-engagements-program-session-head,
+  .admin-engagements-program-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-program-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-engagements-form {
+    grid-template-columns: 1fr;
   }
 
   .admin-portal-layout {
@@ -1730,14 +4081,46 @@
     align-items: stretch;
   }
 
-  .admin-access-list-head,
-  .admin-access-row {
+  .admin-access-list-head {
     align-items: stretch;
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .admin-access-list-head-actions button {
+    flex: 1 1 auto;
+  }
+
+  .admin-access-table {
+    min-width: 0;
+    border: 0;
+    overflow: visible;
+  }
+
+  .admin-access-table-head {
+    display: none;
+  }
+
+  .admin-access-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 10px;
+    border: 1px solid #dce7e4;
+    border-radius: 8px;
+  }
+
+  .admin-access-row > div::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: #6a7e79;
+    font-size: 0.66rem;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
   .admin-access-row-actions {
-    justify-content: stretch;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .admin-access-row-actions button {
@@ -1782,6 +4165,54 @@
   .admin-portal-page.performance-admin-page .admin-portal-shell {
     width: min(100% - 20px, 1120px);
     margin-top: 14px;
+  }
+
+  .admin-access-filters,
+  .admin-engagements-calendar-filters,
+  .admin-access-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-access-filters button,
+  .admin-engagements-calendar-filters button,
+  .admin-access-row-actions {
+    width: 100%;
+  }
+
+  .admin-engagements-detail-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-detail-list dt {
+    border-right: 0;
+    border-bottom: 1px solid #eef4f2;
+    padding-bottom: 4px;
+  }
+
+  .admin-engagements-detail-list dd {
+    padding-top: 5px;
+  }
+
+  .admin-engagements-form-section-grid > label,
+  .admin-engagements-check {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .admin-engagements-form-section-grid > label > input,
+  .admin-engagements-form-section-grid > label > select,
+  .admin-engagements-field-note,
+  .admin-engagements-check input,
+  .admin-engagements-check span {
+    grid-column: 1;
+  }
+
+  .admin-engagements-check input {
+    grid-row: 2;
+  }
+
+  .admin-access-row-actions {
+    grid-column: auto;
   }
 
   .admin-portal-brand {

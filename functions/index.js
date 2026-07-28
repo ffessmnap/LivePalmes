@@ -1,5 +1,8 @@
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 const admin = require("firebase-admin");
+const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
@@ -14,7 +17,23 @@ const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
-const ACCESS_CAPABILITIES = ["admin.full", "records.manage", "consoles.manage", "consoles.access", "competitions.import", "dtn.view"];
+const ENGAGEMENT_COMPETITION_LEVELS = new Set(["departemental", "regional", "national"]);
+const ENGAGEMENT_ENTRY_STATUSES = new Set(["upcoming", "open", "closed"]);
+const ENGAGEMENT_POOL_LENGTHS = new Set(["25", "33", "50"]);
+const ENGAGEMENT_TIMING_TYPES = new Set(["manual", "electronic"]);
+const ENGAGEMENT_QUALIFICATION_TIME_MODES = new Set(["all", "period"]);
+const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999"]);
+const ACCESS_CAPABILITIES = [
+  "admin.full",
+  "records.manage",
+  "consoles.manage",
+  "consoles.access",
+  "competitions.import",
+  "dtn.view",
+  "engagements.club.manage",
+  "engagements.region.manage",
+  "engagements.national.manage"
+];
 const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
@@ -32,6 +51,7 @@ const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
+const ENGAGEMENT_PDF_LOGO_PATH = path.join(__dirname, "assets", "logo-ffessm-nage-avec-palmes.png");
 const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
 const PERFORMANCE_BASE_COLLECTION = "performances";
 const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
@@ -69,6 +89,82 @@ const COURSE_META = {
   "200BI": ["200 m Bi-palmes", "200 BI", "BI", 200],
   "400BI": ["400 m Bi-palmes", "400 BI", "BI", 400]
 };
+const ENGAGEMENT_RELAY_EVENTS = [
+  ["4X50SF", "4 x 50 m Surface", "4 x 50 SF", "SF", 50, 4, "mastersOnly"],
+  ["4X100SF", "4 x 100 m Surface", "4 x 100 SF", "SF", 100, 4],
+  ["4X200SF", "4 x 200 m Surface", "4 x 200 SF", "SF", 200, 4],
+  ["4X100BI", "4 x 100 m Bi-palmes mixte", "4 x 100 BI", "BI", 100, 4, "required"],
+  ["4X100SB", "4 x 100 m Surface/Bi-palmes mixte", "4 x 100 SB", "SB", 100, 4, "required"]
+];
+const ENGAGEMENT_EVENT_DEFINITIONS = [
+  ...POOL_COURSES.map((code) => {
+    const meta = COURSE_META[code] || [code, code, courseStyleFromCode(code), courseLengthFromCode(code)];
+    return {
+      code,
+      type: "individual",
+      label: meta[0],
+      shortLabel: meta[1],
+      discipline: meta[2],
+      distance: meta[3]
+    };
+  }),
+  ...ENGAGEMENT_RELAY_EVENTS.map(([code, label, shortLabel, discipline, distance, relayLegs, relayMixedRule]) => ({
+    code,
+    type: "relay",
+    label,
+    shortLabel,
+    discipline,
+    distance,
+    relayLegs,
+    ...(relayMixedRule ? { relayMixedRule } : {})
+  }))
+];
+const ENGAGEMENT_EVENT_DEFINITION_BY_CODE = new Map(
+  ENGAGEMENT_EVENT_DEFINITIONS.map((event) => [event.code, event])
+);
+const ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES = ["P", "B", "M", "C", "J", "S", "M30+", "M40+", "M50+", "M60+", "M70+", "M80+"];
+const ENGAGEMENT_RELAY_CATEGORY_CODES = ["P", "B", "M", "C", "J", "S", "R140", "R180", "R220", "R260"];
+const ENGAGEMENT_CATEGORY_CODES = Array.from(new Set([
+  ...ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES,
+  ...ENGAGEMENT_RELAY_CATEGORY_CODES
+]));
+const ENGAGEMENT_CATEGORY_CODE_SET = new Set(ENGAGEMENT_CATEGORY_CODES);
+const ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES = {
+  "50AP": new Set(["P", "B", "M"])
+};
+const ENGAGEMENT_RELAY_MIXED_MODES = new Set(["none", "masters", "required"]);
+const ENGAGEMENT_PROGRAM_GENDER_MODES = new Set(["female", "male", "mixed"]);
+
+function engagementCategoryCodesForEvent(code) {
+  const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(code);
+  return definition?.type === "relay"
+    ? ENGAGEMENT_RELAY_CATEGORY_CODES
+    : ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES;
+}
+
+function normalizeEngagementEventCategoryRestrictions(code, categories = []) {
+  const allowedCategories = engagementCategoryCodesForEvent(code)
+    .filter((category) => !(ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code] || new Set()).has(category));
+  const restrictionSet = new Set(categories.filter((category) => allowedCategories.includes(category)));
+  if (code === "50AP") {
+    const legacyDefault = ["C", "J", "S", "M30+", "M40+", "M50+"];
+    if (legacyDefault.every((category) => restrictionSet.has(category)) && ["M60+", "M70+", "M80+"].some((category) => !restrictionSet.has(category))) {
+      return allowedCategories;
+    }
+  }
+  return Array.from(restrictionSet);
+}
+
+function cleanEngagementRelayMixedMode(rawEvent = {}, definition = {}) {
+  if (definition.type !== "relay") return "";
+  if (definition.relayMixedRule === "required") return "required";
+  if (definition.relayMixedRule === "mastersOnly") {
+    const mode = cleanText(rawEvent.relayMixedMode).trim();
+    return ENGAGEMENT_RELAY_MIXED_MODES.has(mode) && mode === "masters" ? "masters" : "none";
+  }
+  return "";
+}
+
 const CATEGORY_LABELS = {
   F: {
     P: "Poussines",
@@ -141,7 +237,8 @@ function assertAdmin(request) {
 function assertCapability(request, capability) {
   const uid = request.auth?.uid || "";
   const capabilities = request.auth?.token?.livepalmesCapabilities || {};
-  const adminFallbackAllowed = capability !== "dtn.view" && capabilities["admin.full"] === true;
+  const explicitCapabilityRequired = capability === "dtn.view" || capability.startsWith("engagements.");
+  const adminFallbackAllowed = !explicitCapabilityRequired && capabilities["admin.full"] === true;
   if (!ADMIN_UIDS.has(uid) && !adminFallbackAllowed && capabilities[capability] !== true) {
     throw new HttpsError("permission-denied", "Droit LivePalmes requis.");
   }
@@ -182,6 +279,7 @@ function cleanAccessProfile(raw = {}) {
   const lastName = cleanText(raw.lastName).slice(0, 80);
   const clubId = cleanText(raw.clubId).slice(0, 40);
   const clubName = cleanText(raw.clubName).slice(0, 140);
+  const regionId = cleanText(raw.regionId).slice(0, 80);
   const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
   const capabilities = Array.isArray(raw.capabilities)
     ? raw.capabilities.map(cleanText).filter((item) => ACCESS_CAPABILITY_SET.has(item))
@@ -192,7 +290,14 @@ function cleanAccessProfile(raw = {}) {
   if (!capabilities.length) {
     throw new HttpsError("invalid-argument", "Selectionne au moins un droit.");
   }
-  return { uid, email, firstName, lastName, clubId, clubName, licenseNumber, capabilities };
+  if (capabilities.includes("engagements.club.manage") && !clubId) {
+    throw new HttpsError("invalid-argument", "Numero de club obligatoire pour un acces engagements club.");
+  }
+  if (capabilities.includes("engagements.region.manage") && !regionId) {
+    throw new HttpsError("invalid-argument", "Region obligatoire pour un acces engagements region.");
+  }
+  const accessScopes = accessScopesMapFromProfile({ clubId, regionId, capabilities });
+  return { uid, email, firstName, lastName, clubId, clubName, regionId, licenseNumber, capabilities, accessScopes };
 }
 
 function capabilitiesMap(capabilities = []) {
@@ -204,6 +309,117 @@ function capabilitiesMap(capabilities = []) {
 
 function activeCapabilitiesFromMap(map = {}) {
   return ACCESS_CAPABILITIES.filter((capability) => map?.[capability] === true);
+}
+
+function normalizedAccessScope(scope = {}) {
+  const scopeType = ["club", "region", "national"].includes(cleanText(scope.scopeType))
+    ? cleanText(scope.scopeType)
+    : "national";
+  return {
+    scopeType,
+    scopeId: scopeType === "national" ? "" : cleanText(scope.scopeId).slice(0, 80)
+  };
+}
+
+function accessScopeForCapability(profile = {}, capability) {
+  if (capability === "engagements.club.manage") {
+    return normalizedAccessScope({ scopeType: "club", scopeId: profile.clubId });
+  }
+  if (capability === "engagements.region.manage") {
+    return normalizedAccessScope({ scopeType: "region", scopeId: profile.regionId });
+  }
+  return normalizedAccessScope({ scopeType: "national", scopeId: "" });
+}
+
+function accessScopesMapFromProfile(profile = {}) {
+  return (profile.capabilities || []).reduce((acc, capability) => {
+    acc[capability] = accessScopeForCapability(profile, capability);
+    return acc;
+  }, {});
+}
+
+function hasEngagementsCapability(capabilities = {}) {
+  return capabilities["engagements.club.manage"] === true ||
+    capabilities["engagements.region.manage"] === true ||
+    capabilities["engagements.national.manage"] === true;
+}
+
+async function engagementAccessContext(request) {
+  const uid = request.auth?.uid || "";
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  }
+  if (ADMIN_UIDS.has(uid)) {
+    return {
+      uid,
+      email: cleanText(request.auth?.token?.email).slice(0, 180),
+      national: true,
+      region: true,
+      regionId: ""
+    };
+  }
+  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active") {
+    throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
+  }
+  const capabilities = data.capabilities || request.auth?.token?.livepalmesCapabilities || {};
+  const accessScopes = data.accessScopes || {};
+  const national = capabilities["engagements.national.manage"] === true;
+  const region = capabilities["engagements.region.manage"] === true;
+  const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
+  return {
+    uid,
+    email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+    national,
+    region,
+    regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80)
+  };
+}
+
+async function engagementClubAccessContext(request) {
+  const uid = request.auth?.uid || "";
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  }
+  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active") {
+    throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
+  }
+  const capabilities = data.capabilities || request.auth?.token?.livepalmesCapabilities || {};
+  if (capabilities["engagements.club.manage"] !== true) {
+    throw new HttpsError("permission-denied", "Droit engagements club requis.");
+  }
+  const accessScopes = data.accessScopes || {};
+  const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
+  const clubId = cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
+  if (!clubId) {
+    throw new HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
+  }
+  return {
+    uid,
+    email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+    clubId,
+    clubName: cleanText(data.clubName).slice(0, 140),
+    regionId: cleanText(data.regionId).slice(0, 80)
+  };
+}
+
+async function assertEngagementsAccess(request) {
+  const uid = request.auth?.uid || "";
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  }
+  if (ADMIN_UIDS.has(uid)) return;
+  const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
+  if (request.auth?.token?.livepalmesAccess === true && hasEngagementsCapability(tokenCapabilities)) return;
+
+  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active" || !hasEngagementsCapability(data.capabilities || {})) {
+    throw new HttpsError("permission-denied", "Droit engagements requis.");
+  }
 }
 
 function displayNameFromProfile(profile = {}) {
@@ -251,16 +467,17 @@ async function writeAuditLog(action, actorUid, target = {}) {
   });
 }
 
-async function writeAccessGrants(uid, email, capabilities, status, actorUid, now) {
+async function writeAccessGrants(uid, email, capabilities, status, actorUid, now, accessScopes = {}) {
   const batch = admin.firestore().batch();
   ACCESS_CAPABILITIES.forEach((capability) => {
     const grantRef = admin.firestore().collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
+    const scope = normalizedAccessScope(accessScopes[capability]);
     batch.set(grantRef, {
       uid,
       email,
       capability,
-      scopeType: "national",
-      scopeId: "",
+      scopeType: scope.scopeType,
+      scopeId: scope.scopeId,
       status: capabilities.includes(capability) ? status : "inactive",
       updatedAt: now,
       updatedBy: actorUid,
@@ -528,6 +745,60 @@ function recordReferenceForPerformance(referenceMap, type, perf, category) {
   const sex = normalizeCategoryCode(perf.sex);
   const course = normalizeCourseCode(perf.course);
   const key = [type, sex, type === "MPF" ? category : "", course].join("|");
+  return referenceMap.get(key) || null;
+}
+
+function engagementRelayReferenceCourseCode(course) {
+  const code = normalizeCourseCode(course);
+  return code === "4X100BI" ? "4X100BIX" : code;
+}
+
+function engagementRelayReferenceRows(recordsData = {}) {
+  return [
+    ...(Array.isArray(recordsData.franceRecords) ? recordsData.franceRecords : []).map((row) => ({
+      ...row,
+      alertType: row.recordType === "RFJ" ? "RFJ" : "RF",
+      alertLabel: row.recordType === "RFJ" ? "Record de France Junior club" : "Record de France club"
+    })),
+    ...(Array.isArray(recordsData.records) ? recordsData.records : []).map((row) => ({
+      ...row,
+      alertType: "MPF",
+      alertLabel: "Meilleure Performance Francaise club"
+    }))
+  ].filter((row) =>
+    normalizeCourseCode(row.course).startsWith("4X") &&
+    (cleanText(row.relayType).toLowerCase() === "club" || cleanText(row.style).toUpperCase() === "RELAY_CLUB") &&
+    (row.sex === "F" || row.sex === "M") &&
+    Number(row.value || 0) > 0 &&
+    cleanText(row.time) &&
+    cleanText(row.time) !== "A etablir" &&
+    cleanText(row.time) !== "À établir"
+  );
+}
+
+function engagementRelayReferenceKey(row = {}) {
+  return [
+    cleanText(row.alertType || row.recordType || "MPF"),
+    cleanText(row.mixedRelay) === "true" || row.mixedRelay === true ? "MIXED" : cleanText(row.sex),
+    cleanText(row.alertType) === "MPF" ? cleanText(row.category) : "",
+    normalizeCourseCode(row.course)
+  ].join("|");
+}
+
+function engagementRelayReferenceMap(recordsData = {}) {
+  const byKey = new Map();
+  engagementRelayReferenceRows(recordsData).forEach((row) => {
+    const key = engagementRelayReferenceKey(row);
+    const existing = byKey.get(key);
+    if (!existing || Number(row.value || 0) < Number(existing.value || 0)) byKey.set(key, row);
+  });
+  return byKey;
+}
+
+function engagementRelayReferenceForEntry(referenceMap, type, relay = {}) {
+  const sex = relay.genderMode === "mixed" ? "MIXED" : relay.genderMode === "male" ? "M" : "F";
+  const course = engagementRelayReferenceCourseCode(relay.eventCode);
+  const key = [type, sex, type === "MPF" ? relay.category : "", course].join("|");
   return referenceMap.get(key) || null;
 }
 
@@ -1635,20 +1906,23 @@ exports.createOrUpdateAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
     lastName: profile.lastName,
     clubId: profile.clubId,
     clubName: profile.clubName,
+    regionId: profile.regionId,
     licenseNumber: profile.licenseNumber,
     status: "active",
     capabilities: capabilityMap,
+    accessScopes: profile.accessScopes,
     updatedAt: now,
     updatedBy: request.auth.uid,
     ...(created ? { createdAt: now, createdBy: request.auth.uid } : {})
   }, { merge: true });
 
-  await writeAccessGrants(user.uid, profile.email, profile.capabilities, "active", request.auth.uid, now);
+  await writeAccessGrants(user.uid, profile.email, profile.capabilities, "active", request.auth.uid, now, profile.accessScopes);
 
   await writeAuditLog(created ? "accessUser.created" : "accessUser.updated", request.auth.uid, {
     uid: user.uid,
     email: profile.email,
-    capabilities: profile.capabilities
+    capabilities: profile.capabilities,
+    accessScopes: profile.accessScopes
   });
 
   return {
@@ -1660,28 +1934,145 @@ exports.createOrUpdateAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
+function accessUserListItem(doc) {
+  const data = doc.data() || {};
+  return {
+    uid: doc.id,
+    email: data.email || "",
+    firstName: data.firstName || "",
+    lastName: data.lastName || "",
+    clubId: data.clubId || "",
+    clubName: data.clubName || "",
+    regionId: data.regionId || "",
+    licenseNumber: data.licenseNumber || "",
+    status: data.status || "active",
+    capabilities: activeCapabilitiesFromMap(data.capabilities || {}),
+    accessScopes: data.accessScopes || {},
+    updatedAt: data.updatedAt || "",
+    lastLoginAt: data.lastLoginAt || ""
+  };
+}
+
+function accessUserMatchesFilters(doc, status, capability) {
+  const data = doc.data() || {};
+  if (status && (data.status || "active") !== status) return false;
+  if (capability && data.capabilities?.[capability] !== true) return false;
+  return true;
+}
+
+function normalizedDirectoryText(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr");
+}
+
+function accessUserContainsSearch(doc, search) {
+  const data = doc.data() || {};
+  const haystack = [data.firstName, data.lastName, data.email, data.clubId, data.clubName, data.regionId, data.licenseNumber]
+    .map(normalizedDirectoryText)
+    .join(" ");
+  return normalizedDirectoryText(search).split(/\s+/).filter(Boolean).every((term) => haystack.includes(term));
+}
+
+async function searchAccessUserDocuments(search) {
+  const usersRef = admin.firestore().collection("users");
+  const raw = cleanText(search).slice(0, 80);
+  const variantsFor = (value) => {
+    const titleCase = value.toLocaleLowerCase("fr").replace(/(^|[\s'-])\p{L}/gu, (letter) => letter.toLocaleUpperCase("fr"));
+    return [...new Set([value, titleCase, value.toLocaleUpperCase("fr")].filter(Boolean))];
+  };
+  let querySpecs = [];
+  if (raw.includes("@")) {
+    querySpecs = [{ field: "email", variants: [raw.toLocaleLowerCase("fr")] }];
+  } else if (/^[a-z\d-]+$/i.test(raw) && /\d/.test(raw)) {
+    const variants = [...new Set([raw, raw.toLocaleUpperCase("fr")])];
+    querySpecs = [
+      { field: "licenseNumber", variants },
+      { field: "clubId", variants }
+    ];
+  } else {
+    const nameSeed = raw.split(/\s+/).filter(Boolean).at(-1) || raw;
+    querySpecs = [
+      { field: "lastName", variants: variantsFor(nameSeed) },
+      { field: "firstName", variants: variantsFor(nameSeed) },
+      { field: "clubName", variants: variantsFor(raw) }
+    ];
+  }
+  const snapshots = await Promise.all(querySpecs.flatMap(({ field, variants }) => variants.map((variant) => usersRef
+    .orderBy(field)
+    .startAt(variant)
+    .endAt(`${variant}\uf8ff`)
+    .limit(100)
+    .get())));
+  const documents = new Map();
+  snapshots.forEach((snapshot) => snapshot.docs.forEach((doc) => documents.set(doc.id, doc)));
+  return [...documents.values()]
+    .filter((doc) => accessUserContainsSearch(doc, raw))
+    .sort((left, right) => {
+      const leftData = left.data() || {};
+      const rightData = right.data() || {};
+      return `${leftData.lastName || ""}\u0000${leftData.firstName || ""}\u0000${left.id}`
+        .localeCompare(`${rightData.lastName || ""}\u0000${rightData.firstName || ""}\u0000${right.id}`, "fr", { sensitivity: "base" });
+    });
+}
+
 exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
-  const snapshot = await admin.firestore().collection("users").orderBy("lastName").limit(200).get();
-  const users = await Promise.all(snapshot.docs.map(async (doc) => {
-    const data = doc.data() || {};
-    const authUser = await admin.auth().getUser(doc.id).catch(() => null);
+  const pageSize = Math.min(50, Math.max(10, Math.trunc(Number(request.data?.pageSize) || 25)));
+  const status = ["active", "inactive"].includes(cleanText(request.data?.status))
+    ? cleanText(request.data.status)
+    : "";
+  const capability = ACCESS_CAPABILITY_SET.has(cleanText(request.data?.capability))
+    ? cleanText(request.data.capability)
+    : "";
+  const search = cleanText(request.data?.search).slice(0, 80);
+  const cursor = request.data?.cursor && typeof request.data.cursor === "object" ? request.data.cursor : {};
+
+  if (search) {
+    const offset = Math.max(0, Math.trunc(Number(cursor.offset) || 0));
+    const matches = (await searchAccessUserDocuments(search))
+      .filter((doc) => accessUserMatchesFilters(doc, status, capability));
+    const page = matches.slice(offset, offset + pageSize);
     return {
-      uid: doc.id,
-      email: data.email || authUser?.email || "",
-      firstName: data.firstName || "",
-      lastName: data.lastName || "",
-      clubName: data.clubName || "",
-      licenseNumber: data.licenseNumber || "",
-      status: data.status || (authUser?.disabled ? "inactive" : "active"),
-      capabilities: activeCapabilitiesFromMap(data.capabilities || {}),
-      updatedAt: data.updatedAt || "",
-      lastLoginAt: authUser?.metadata?.lastSignInTime || ""
+      ok: true,
+      directoryVersion: 2,
+      users: page.map(accessUserListItem),
+      nextCursor: offset + pageSize < matches.length ? { offset: offset + pageSize } : null
     };
-  }));
+  }
+
+  const usersRef = admin.firestore().collection("users");
+  const documentId = admin.firestore.FieldPath.documentId();
+  const matchingDocs = [];
+  let queryCursor = cleanText(cursor.uid) && typeof cursor.lastName === "string"
+    ? { lastName: cursor.lastName, uid: cleanText(cursor.uid) }
+    : null;
+  let exhausted = false;
+
+  while (matchingDocs.length <= pageSize && !exhausted) {
+    let query = usersRef.orderBy("lastName").orderBy(documentId);
+    if (queryCursor) query = query.startAfter(queryCursor.lastName, queryCursor.uid);
+    const batchSize = status || capability ? 100 : pageSize + 1;
+    const snapshot = await query.limit(batchSize).get();
+    if (!snapshot.size) break;
+    for (const doc of snapshot.docs) {
+      queryCursor = { lastName: doc.data()?.lastName || "", uid: doc.id };
+      if (accessUserMatchesFilters(doc, status, capability)) matchingDocs.push(doc);
+      if (matchingDocs.length > pageSize) break;
+    }
+    exhausted = snapshot.size < batchSize;
+  }
+
+  const page = matchingDocs.slice(0, pageSize);
+  const lastVisible = page.at(-1);
   return {
     ok: true,
-    users
+    directoryVersion: 2,
+    users: page.map(accessUserListItem),
+    nextCursor: matchingDocs.length > pageSize && lastVisible
+      ? { lastName: lastVisible.data()?.lastName || "", uid: lastVisible.id }
+      : null
   };
 });
 
@@ -1705,6 +2096,7 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   }
   const data = snapshot.data() || {};
   const capabilities = activeCapabilitiesFromMap(data.capabilities || {});
+  const accessScopes = data.accessScopes || {};
   const email = data.email || "";
   const now = new Date().toISOString();
   const authUser = await admin.auth().getUser(uid);
@@ -1720,11 +2112,12 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
     updatedAt: now,
     updatedBy: request.auth.uid
   }, { merge: true });
-  await writeAccessGrants(uid, email, capabilities, status, request.auth.uid, now);
+  await writeAccessGrants(uid, email, capabilities, status, request.auth.uid, now, accessScopes);
   await writeAuditLog(status === "active" ? "accessUser.activated" : "accessUser.deactivated", request.auth.uid, {
     uid,
     email,
-    capabilities
+    capabilities,
+    accessScopes
   });
   return {
     ok: true,
@@ -1752,6 +2145,7 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
   const capabilities = ADMIN_UIDS.has(uid)
     ? ACCESS_CAPABILITIES
     : activeCapabilitiesFromMap(userData.capabilities || request.auth?.token?.livepalmesCapabilities || {});
+  const accessScopes = userData.accessScopes || {};
   const now = new Date().toISOString();
 
   if (email !== previousEmail) {
@@ -1780,12 +2174,13 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
     }, { merge: true });
     ACCESS_CAPABILITIES.forEach((capability) => {
       const grantRef = admin.firestore().collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
+      const scope = normalizedAccessScope(accessScopes[capability]);
       batch.set(grantRef, {
         uid,
         email,
         capability,
-        scopeType: "national",
-        scopeId: "",
+        scopeType: scope.scopeType,
+        scopeId: scope.scopeId,
         status: capabilities.includes(capability) ? "active" : "inactive",
         updatedAt: now,
         updatedBy: uid,
@@ -1823,6 +2218,13 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   }
   const snapshot = await admin.firestore().collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
+  const authTimeSeconds = Number(request.auth?.token?.auth_time) || 0;
+  const lastLoginAt = authTimeSeconds ? new Date(authTimeSeconds * 1000).toISOString() : (data.lastLoginAt || "");
+  if (snapshot.exists && lastLoginAt && lastLoginAt !== data.lastLoginAt) {
+    await snapshot.ref.set({ lastLoginAt }, { merge: true }).catch((error) => {
+      console.warn("Mise a jour de la derniere connexion impossible", error);
+    });
+  }
   if (ADMIN_UIDS.has(uid)) {
     return {
       ok: true,
@@ -1830,10 +2232,14 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
       email: data.email || request.auth?.token?.email || "",
       firstName: data.firstName || "",
       lastName: data.lastName || "",
+      clubId: data.clubId || "",
       clubName: data.clubName || "",
+      regionId: data.regionId || "",
       licenseNumber: data.licenseNumber || "",
       status: "active",
-      capabilities: ACCESS_CAPABILITIES
+      capabilities: ACCESS_CAPABILITIES,
+      accessScopes: data.accessScopes || {},
+      lastLoginAt
     };
   }
   if (!snapshot.exists) {
@@ -1852,10 +2258,2356 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
     email: data.email || request.auth?.token?.email || "",
     firstName: data.firstName || "",
     lastName: data.lastName || "",
+    clubId: data.clubId || "",
     clubName: data.clubName || "",
+    regionId: data.regionId || "",
     licenseNumber: data.licenseNumber || "",
     status: "active",
-    capabilities
+    capabilities,
+    accessScopes: data.accessScopes || {},
+    lastLoginAt
+  };
+});
+
+function cleanIsoDate(value) {
+  const text = cleanText(value).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
+}
+
+function cleanEngagementCompetitionLevel(value) {
+  const level = cleanText(value);
+  return ENGAGEMENT_COMPETITION_LEVELS.has(level) ? level : "regional";
+}
+
+function cleanEngagementEntryStatus(value) {
+  const status = cleanText(value);
+  return ENGAGEMENT_ENTRY_STATUSES.has(status) ? status : "upcoming";
+}
+
+function cleanOptionalEmail(value, label = "Email") {
+  const email = normalizeEmail(value).slice(0, 180);
+  if (!email) return "";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    throw new HttpsError("invalid-argument", `${label} invalide.`);
+  }
+  return email;
+}
+
+function cleanEngagementPoolLength(value) {
+  const poolLength = cleanText(value);
+  return ENGAGEMENT_POOL_LENGTHS.has(poolLength) ? poolLength : "50";
+}
+
+function cleanEngagementTimingType(value) {
+  const timingType = cleanText(value);
+  return ENGAGEMENT_TIMING_TYPES.has(timingType) ? timingType : "electronic";
+}
+
+function cleanEngagementQualificationTimesMode(value) {
+  const mode = cleanText(value);
+  return ENGAGEMENT_QUALIFICATION_TIME_MODES.has(mode) ? mode : "all";
+}
+
+function cleanEngagementMissingEntryTimeMode(value) {
+  const mode = cleanText(value);
+  return ENGAGEMENT_MISSING_ENTRY_TIME_MODES.has(mode) ? mode : "manual";
+}
+
+function cleanEngagementMaxEventsPerSwimmer(value) {
+  const count = Math.trunc(Number(value) || 0);
+  return Math.min(20, Math.max(0, count));
+}
+
+function cleanEngagementFeeAmount(value) {
+  const amount = Number(value) || 0;
+  return Math.min(9999, Math.max(0, Math.round(amount * 100) / 100));
+}
+
+function cleanEngagementFees(rawFees = {}, options = {}) {
+  if (!rawFees || typeof rawFees !== "object") {
+    return {
+      swimmerFee: 0,
+      individualEventFee: 0,
+      relayFee: 0,
+      helloAssoUrl: "",
+      latePaymentSurcharge: 50
+    };
+  }
+  const strict = options.strict !== false;
+  const helloAssoUrl = cleanText(rawFees.helloAssoUrl).slice(0, 300);
+  if (helloAssoUrl && !/^https?:\/\/\S+$/i.test(helloAssoUrl)) {
+    if (strict) throw new HttpsError("invalid-argument", "Lien HelloAsso invalide.");
+  }
+  return {
+    swimmerFee: cleanEngagementFeeAmount(rawFees.swimmerFee),
+    individualEventFee: cleanEngagementFeeAmount(rawFees.individualEventFee),
+    relayFee: cleanEngagementFeeAmount(rawFees.relayFee),
+    helloAssoUrl: /^https?:\/\/\S+$/i.test(helloAssoUrl) ? helloAssoUrl : "",
+    latePaymentSurcharge: 50
+  };
+}
+
+function cleanEngagementCompetitionEvents(rawEvents = [], options = {}) {
+  if (!Array.isArray(rawEvents)) return [];
+  const strict = options.strict !== false;
+  const seen = new Set();
+  const events = [];
+  rawEvents.slice(0, 80).forEach((rawEvent) => {
+    const code = cleanText(rawEvent?.code).toUpperCase().replace(/\s+/g, "");
+    const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(code);
+    if (!definition) {
+      if (strict) throw new HttpsError("invalid-argument", `Course engagements inconnue : ${code || "-"}.`);
+      return;
+    }
+    if (seen.has(code)) return;
+    seen.add(code);
+    const forbiddenCategories = ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code] || new Set();
+    const allowedCategories = engagementCategoryCodesForEvent(code).filter((category) => !forbiddenCategories.has(category));
+    const categoryRestrictions = [];
+    const seenCategories = new Set();
+    if (Array.isArray(rawEvent?.categoryRestrictions)) {
+      rawEvent.categoryRestrictions.slice(0, 20).forEach((rawCategory) => {
+        const category = cleanText(rawCategory).toUpperCase().replace(/\s+/g, "");
+        if (!category) return;
+        if (!ENGAGEMENT_CATEGORY_CODE_SET.has(category)) {
+          if (strict) throw new HttpsError("invalid-argument", `Categorie inconnue pour ${code} : ${category}.`);
+          return;
+        }
+        if (!allowedCategories.includes(category)) {
+          if (strict) throw new HttpsError("invalid-argument", `Categorie non autorisee pour ${code} : ${category}.`);
+          return;
+        }
+        if (forbiddenCategories.has(category)) return;
+        if (seenCategories.has(category)) return;
+        seenCategories.add(category);
+        categoryRestrictions.push(category);
+      });
+    }
+    const normalizedCategoryRestrictions = normalizeEngagementEventCategoryRestrictions(
+      code,
+      forbiddenCategories.size && !categoryRestrictions.length ? allowedCategories : categoryRestrictions
+    );
+    const relayMixedMode = cleanEngagementRelayMixedMode(rawEvent, definition);
+    events.push({
+      ...definition,
+      categoryRestrictions: normalizedCategoryRestrictions,
+      ...(relayMixedMode ? { relayMixedMode } : {}),
+      ...(definition.type === "relay" ? { multipleRelaysAllowed: rawEvent?.multipleRelaysAllowed === true } : {})
+    });
+  });
+  return events;
+}
+
+function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], options = {}) {
+  if (!Array.isArray(rawSessions)) return [];
+  const strict = options.strict !== false;
+  const selectedCodes = new Set(selectedEvents.map((event) => cleanText(event?.code).toUpperCase()).filter(Boolean));
+  const usedProgramSlots = new Map();
+  function slotConflict(eventCode, genderMode) {
+    const usedModes = usedProgramSlots.get(eventCode) || new Set();
+    if (genderMode === "mixed") return usedModes.size > 0;
+    return usedModes.has("mixed") || usedModes.has(genderMode);
+  }
+  function registerSlot(eventCode, genderMode) {
+    if (!usedProgramSlots.has(eventCode)) usedProgramSlots.set(eventCode, new Set());
+    usedProgramSlots.get(eventCode).add(genderMode);
+  }
+  return rawSessions.slice(0, 12).map((rawSession, sessionIndex) => {
+    const label = `Session ${sessionIndex + 1}`;
+    const date = cleanIsoDate(rawSession?.date);
+    const startTime = /^\d{2}:\d{2}$/.test(cleanText(rawSession?.startTime)) ? cleanText(rawSession.startTime) : "";
+    const items = [];
+    if (Array.isArray(rawSession?.items)) {
+      rawSession.items.slice(0, 160).forEach((rawItem) => {
+        const eventCode = cleanText(rawItem?.eventCode || rawItem?.code).toUpperCase().replace(/\s+/g, "");
+        const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(eventCode);
+        if (!definition || (selectedCodes.size && !selectedCodes.has(eventCode))) {
+          if (strict) throw new HttpsError("invalid-argument", `Epreuve programme inconnue ou non selectionnee : ${eventCode || "-"}.`);
+          return;
+        }
+        const requestedGenderMode = ENGAGEMENT_PROGRAM_GENDER_MODES.has(cleanText(rawItem?.genderMode))
+          ? cleanText(rawItem.genderMode)
+          : "mixed";
+        const genderMode = definition.relayMixedRule === "required" ? "mixed" : requestedGenderMode;
+        if (slotConflict(eventCode, genderMode)) {
+          if (strict) throw new HttpsError("invalid-argument", `Doublon dans le programme : ${eventCode} ${genderMode}.`);
+          return;
+        }
+        registerSlot(eventCode, genderMode);
+        items.push({
+          eventCode,
+          genderMode,
+          order: items.length + 1
+        });
+      });
+    }
+    return {
+      id: cleanText(rawSession?.id).slice(0, 40) || `session-${sessionIndex + 1}`,
+      label,
+      date,
+      startTime,
+      order: sessionIndex + 1,
+      items
+    };
+  }).filter((session) => session.items.length || session.label);
+}
+
+function engagementCompetitionListItem(doc) {
+  const data = doc.data() || {};
+  const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
+  const programSessions = cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false });
+  return {
+    id: doc.id,
+    name: cleanText(data.name || data.title).slice(0, 160),
+    date: cleanIsoDate(data.date),
+    endDate: cleanIsoDate(data.endDate) || cleanIsoDate(data.date),
+    location: cleanText(data.location).slice(0, 160),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    level: cleanEngagementCompetitionLevel(data.level || data.competitionLevel),
+    entryDeadlineAt: cleanText(data.entryDeadlineAt).slice(0, 40),
+    computerEmail: normalizeEmail(data.computerEmail).slice(0, 180),
+    entryStatus: cleanEngagementEntryStatus(data.entryStatus || data.status),
+    officialsRequired: data.officialsRequired === true,
+    poolLength: cleanEngagementPoolLength(data.poolLength),
+    timingType: cleanEngagementTimingType(data.timingType),
+    qualificationTimesMode: cleanEngagementQualificationTimesMode(data.qualificationTimesMode),
+    qualificationStartDate: cleanIsoDate(data.qualificationStartDate),
+    qualificationEndDate: cleanIsoDate(data.qualificationEndDate),
+    missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(data.missingEntryTimeMode),
+    maxEventsPerSwimmer: cleanEngagementMaxEventsPerSwimmer(data.maxEventsPerSwimmer),
+    eventCount: events.length,
+    individualEventCount: events.filter((event) => event.type === "individual").length,
+    relayEventCount: events.filter((event) => event.type === "relay").length,
+    sessionCount: programSessions.length,
+    programItemCount: programSessions.reduce((sum, session) => sum + session.items.length, 0),
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  };
+}
+
+function engagementCompetitionDetailItem(doc) {
+  const data = doc.data() || {};
+  const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
+  return {
+    ...engagementCompetitionListItem(doc),
+    events,
+    programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
+    fees: cleanEngagementFees(data.fees || {}, { strict: false }),
+    createdAt: cleanText(data.createdAt).slice(0, 40),
+    createdBy: cleanText(data.createdBy).slice(0, 128),
+    updatedBy: cleanText(data.updatedBy).slice(0, 128)
+  };
+}
+
+function engagementClubEntryId(competitionId, clubId) {
+  return `${cleanText(competitionId).slice(0, 128)}_${cleanText(clubId).slice(0, 40)}`;
+}
+
+function cleanEngagementTeamLeader(raw = {}) {
+  const mode = cleanText(raw.mode) === "renounced" ? "renounced" : "person";
+  if (mode === "renounced") {
+    return {
+      mode,
+      renunciationAccepted: raw.renunciationAccepted === true
+    };
+  }
+  const firstName = cleanText(raw.firstName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const externalClub = raw.externalClub === true;
+  const clubId = cleanText(raw.clubId).slice(0, 40);
+  const clubName = cleanText(raw.clubName).slice(0, 140);
+  if (!firstName || !lastName) {
+    throw new HttpsError("invalid-argument", "Nom et prenom du chef d'equipe obligatoires.");
+  }
+  if (!licenseNumber) {
+    throw new HttpsError("invalid-argument", "Numero de licence du chef d'equipe obligatoire.");
+  }
+  if (externalClub && !clubId) {
+    throw new HttpsError("invalid-argument", "Club du chef d'equipe obligatoire.");
+  }
+  return {
+    mode,
+    firstName,
+    lastName,
+    licenseNumber,
+    externalClub,
+    clubId,
+    clubName
+  };
+}
+
+function engagementTeamLeaderComplete(teamLeader = {}) {
+  if (teamLeader.mode === "renounced") return teamLeader.renunciationAccepted === true;
+  return Boolean(teamLeader.mode === "person" && teamLeader.firstName && teamLeader.lastName && teamLeader.licenseNumber);
+}
+
+function cleanEngagementEntryOfficial(raw = {}) {
+  return {
+    personId: cleanText(raw.personId).slice(0, 80),
+    firstName: cleanText(raw.firstName).slice(0, 80),
+    lastName: cleanText(raw.lastName).slice(0, 80),
+    licenseNumber: cleanText(raw.licenseNumber).slice(0, 60)
+  };
+}
+
+function parseEngagementEntryTime(value) {
+  const text = cleanText(value).replace(",", ".").replace(/\s+/g, "");
+  if (!text) return null;
+  if (text === "595999" || text === "59:59.99") {
+    return { display: "59:59.99", value: 359999 };
+  }
+  const digitText = text.replace(/\D/g, "");
+  if (/^\d{1,6}$/.test(text) && digitText === text) {
+    const padded = digitText.padStart(digitText.length <= 4 ? 4 : 6, "0");
+    const hundredths = Number(padded.slice(-2));
+    const seconds = Number(padded.slice(-4, -2));
+    const minutes = Number(padded.slice(0, -4) || 0);
+    if (seconds >= 60) return null;
+    const value = minutes * 6000 + seconds * 100 + hundredths;
+    return value > 0 ? { display: formatTimeValue(value), value } : null;
+  }
+  const parsedValue = parseTimeValue(text);
+  return parsedValue ? { display: formatTimeValue(parsedValue), value: parsedValue } : null;
+}
+
+function cleanEngagementEntryIndividualEntries(rawEntries = [], allowedCodes = null) {
+  if (!Array.isArray(rawEntries)) return [];
+  const seen = new Set();
+  return rawEntries.slice(0, 80).map((rawEntry) => {
+    const eventCode = cleanText(rawEntry?.eventCode || rawEntry?.code || rawEntry)
+      .toUpperCase()
+      .replace(/\s+/g, "");
+    if (!eventCode || seen.has(eventCode) || (allowedCodes && !allowedCodes.has(eventCode))) return null;
+    seen.add(eventCode);
+    return {
+      eventCode,
+      status: cleanText(rawEntry?.status || "selected").slice(0, 40) || "selected",
+      manualEntryTime: cleanText(rawEntry?.manualEntryTime || rawEntry?.entryTimeManual).slice(0, 20),
+      entryTime: cleanText(rawEntry?.entryTime).slice(0, 20),
+      entryTimeValue: Number(rawEntry?.entryTimeValue || 0) || 0,
+      entryTimeMode: cleanText(rawEntry?.entryTimeMode).slice(0, 40),
+      entryTimeWarning: cleanText(rawEntry?.entryTimeWarning).slice(0, 220),
+      sourcePerformanceId: cleanText(rawEntry?.sourcePerformanceId).slice(0, 120),
+      date: cleanIsoDate(rawEntry?.date),
+      location: cleanText(rawEntry?.location).slice(0, 160)
+    };
+  }).filter(Boolean);
+}
+
+function cleanEngagementEntrySwimmer(raw = {}) {
+  return {
+    swimmerIndexId: cleanText(raw.swimmerIndexId).slice(0, 80),
+    source: cleanText(raw.source || "performances").slice(0, 40),
+    swimmerId: cleanText(raw.swimmerId).slice(0, 80),
+    identityKey: cleanText(raw.identityKey).slice(0, 180),
+    firstName: cleanText(raw.firstName).slice(0, 80),
+    lastName: cleanText(raw.lastName).slice(0, 80),
+    name: cleanText(raw.name).slice(0, 160),
+    birthDate: cleanIsoDate(raw.birthDate),
+    sex: cleanText(raw.sex).slice(0, 20),
+    clubId: cleanText(raw.clubId).slice(0, 40),
+    club: cleanText(raw.club).slice(0, 60),
+    clubName: cleanText(raw.clubName).slice(0, 140),
+    licenseNumber: cleanText(raw.licenseNumber).slice(0, 60),
+    latestDate: cleanIsoDate(raw.latestDate),
+    performanceCount: Math.max(0, Math.trunc(Number(raw.performanceCount) || 0)),
+    individualEntries: cleanEngagementEntryIndividualEntries(raw.individualEntries || raw.individualEventCodes || [])
+  };
+}
+
+function engagementRelayAllowedCategories(event = {}) {
+  const categories = ENGAGEMENT_RELAY_CATEGORY_CODES.filter((category) =>
+    !(ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[event.code] || new Set()).has(category)
+  );
+  const restrictions = Array.isArray(event.categoryRestrictions)
+    ? event.categoryRestrictions.filter((category) => categories.includes(category))
+    : [];
+  return restrictions.length ? restrictions : categories;
+}
+
+function cleanEngagementRelayGenderMode(rawRelay = {}, event = {}) {
+  const mode = cleanText(rawRelay.genderMode || rawRelay.sexMode || rawRelay.relayGenderMode);
+  if (event.relayMixedRule === "required") return "mixed";
+  if (event.relayMixedRule === "mastersOnly" && event.relayMixedMode === "masters") {
+    return ENGAGEMENT_PROGRAM_GENDER_MODES.has(mode) ? mode : "mixed";
+  }
+  return mode === "male" ? "male" : "female";
+}
+
+function engagementRelayMemberCategory(member = {}, competitionDate = "") {
+  return ageCategoryFromDates(competitionDate, member.birthDate);
+}
+
+function engagementRelayMemberAge(member = {}, competitionDate = "") {
+  const seasonYear = importSeasonYear(competitionDate) || competitionYear(competitionDate);
+  const born = birthYear(member.birthDate);
+  const age = seasonYear && born ? seasonYear - born : 0;
+  return Number.isFinite(age) && age > 0 ? age : 0;
+}
+
+function assertEngagementRelayMembers(relay = {}, event = {}, swimmerById = new Map(), competition = {}) {
+  const memberIds = Array.from(new Set((Array.isArray(relay.memberIds) ? relay.memberIds : [])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean)))
+    .slice(0, Number(event.relayLegs || 4) || 4);
+  if (!memberIds.length) return [];
+  const expectedLegs = Number(event.relayLegs || 4) || 4;
+  if (memberIds.length !== expectedLegs) {
+    throw new HttpsError("failed-precondition", `Indiquez ${expectedLegs} relayeurs ou laissez le relais sans relayeurs.`);
+  }
+  const members = memberIds.map((memberId) => {
+    const swimmer = swimmerById.get(memberId);
+    if (!swimmer) throw new HttpsError("failed-precondition", "Relayeur non selectionne dans les nageurs de la competition.");
+    return {
+      swimmerIndexId: swimmer.swimmerIndexId,
+      swimmerId: swimmer.swimmerId,
+      firstName: swimmer.firstName,
+      lastName: swimmer.lastName,
+      name: swimmer.name,
+      birthDate: swimmer.birthDate,
+      sex: normalizeCategoryCode(swimmer.sex),
+      licenseNumber: swimmer.licenseNumber
+    };
+  });
+  if (relay.genderMode === "female" && members.some((member) => member.sex !== "F")) {
+    throw new HttpsError("failed-precondition", "Un relais Femmes ne peut contenir que des nageuses.");
+  }
+  if (relay.genderMode === "male" && members.some((member) => member.sex !== "M")) {
+    throw new HttpsError("failed-precondition", "Un relais Hommes ne peut contenir que des nageurs.");
+  }
+  if (relay.genderMode === "mixed") {
+    const sexes = new Set(members.map((member) => member.sex));
+    if (!sexes.has("F") || !sexes.has("M")) {
+      throw new HttpsError("failed-precondition", "Un relais mixte doit contenir au moins une femme et un homme.");
+    }
+  }
+  if (relay.category.startsWith("R")) {
+    if (members.some((member) => !/^M\d/.test(engagementRelayMemberCategory(member, competition.date)))) {
+      throw new HttpsError("failed-precondition", `Relais ${relay.category} reserve aux categories Master.`);
+    }
+    const minimumAge = Number(relay.category.replace(/\D/g, "")) || 0;
+    const totalAge = members.reduce((sum, member) => sum + engagementRelayMemberAge(member, competition.date), 0);
+    if (minimumAge && totalAge < minimumAge) {
+      throw new HttpsError("failed-precondition", `Relais ${relay.category} impossible : total d'age ${totalAge}, minimum ${minimumAge}.`);
+    }
+  } else {
+    const invalidMember = members.find((member) => engagementRelayMemberCategory(member, competition.date) !== relay.category);
+    if (invalidMember) {
+      throw new HttpsError("failed-precondition", `Relayeur hors categorie ${relay.category} pour ${event.shortLabel || event.code}.`);
+    }
+  }
+  return members;
+}
+
+function cleanEngagementEntryRelays(rawRelays = [], competition = {}, swimmers = []) {
+  if (!Array.isArray(rawRelays)) return [];
+  const relayEvents = new Map((Array.isArray(competition.events) ? competition.events : [])
+    .filter((event) => event.type === "relay")
+    .map((event) => [event.code, event]));
+  const swimmerById = new Map((Array.isArray(swimmers) ? swimmers : [])
+    .map((swimmer) => [cleanText(swimmer.swimmerIndexId), swimmer])
+    .filter(([id]) => id));
+  const seenRelays = new Set();
+  const memberDistanceSlots = new Set();
+  return rawRelays.slice(0, 80).map((rawRelay) => {
+    const eventCode = normalizeCourseCode(rawRelay?.eventCode || rawRelay?.code);
+    const event = relayEvents.get(eventCode);
+    if (!event) throw new HttpsError("invalid-argument", "Relais non ouvert sur cette competition.");
+    const allowedCategories = engagementRelayAllowedCategories(event);
+    const category = cleanText(rawRelay?.category).toUpperCase();
+    if (!allowedCategories.includes(category)) {
+      throw new HttpsError("invalid-argument", `Categorie ${category || "-"} non ouverte pour ${event.shortLabel || event.code}.`);
+    }
+    const genderMode = cleanEngagementRelayGenderMode(rawRelay, event);
+    const duplicateKey = [eventCode, category, genderMode].join("|");
+    if (!event.multipleRelaysAllowed && seenRelays.has(duplicateKey)) {
+      throw new HttpsError("failed-precondition", "Un relais identique existe deja pour ce club.");
+    }
+    seenRelays.add(duplicateKey);
+    const manual = parseEngagementEntryTime(rawRelay?.manualEntryTime || rawRelay?.entryTime);
+    if (!manual) {
+      throw new HttpsError("invalid-argument", `Temps d'engagement requis pour ${event.shortLabel || event.code}.`);
+    }
+    const relay = {
+      relayId: cleanText(rawRelay?.relayId).slice(0, 80) || stableHash([eventCode, category, genderMode, manual.display].join("|")).slice(0, 24),
+      eventCode,
+      category,
+      genderMode,
+      manualEntryTime: cleanText(rawRelay?.manualEntryTime || rawRelay?.entryTime).slice(0, 20),
+      entryTime: manual.display,
+      entryTimeValue: manual.value,
+      memberIds: Array.isArray(rawRelay?.memberIds) ? rawRelay.memberIds : []
+    };
+    const members = assertEngagementRelayMembers(relay, event, swimmerById, competition);
+    members.forEach((member) => {
+      const slotKey = [member.swimmerIndexId, event.distance].join("|");
+      if (memberDistanceSlots.has(slotKey)) {
+        throw new HttpsError("failed-precondition", "Un relayeur ne peut pas etre inscrit dans deux relais de meme distance.");
+      }
+      memberDistanceSlots.add(slotKey);
+    });
+    return cleanFirestoreValue({
+      ...relay,
+      members,
+      memberIds: members.map((member) => member.swimmerIndexId)
+    });
+  }).filter(Boolean);
+}
+
+function engagementQualificationRowAllowed(row = {}, competition = {}) {
+  if (row.active === false || row.status === "hidden") return false;
+  if (row.isIntermediate === true) return false;
+  if (!Number(row.timeValue || 0)) return false;
+  if (competition.qualificationTimesMode === "period") {
+    const date = cleanIsoDate(row.date);
+    if (!date) return false;
+    if (competition.qualificationStartDate && date < competition.qualificationStartDate) return false;
+    if (competition.qualificationEndDate && date > competition.qualificationEndDate) return false;
+  }
+  return true;
+}
+
+function bestEngagementKnownTime(rows = [], eventCode = "", competition = {}) {
+  return rows
+    .filter((row) => cleanText(row.course).toUpperCase().replace(/\s+/g, "") === eventCode)
+    .filter((row) => engagementQualificationRowAllowed(row, competition))
+    .reduce((best, row) => publicBetterPerformance(row, best) ? row : best, null);
+}
+
+function engagementCompetitionAppliesToFranceRecords(competition = {}) {
+  return cleanEngagementPoolLength(competition.poolLength) === "50" &&
+    cleanEngagementTimingType(competition.timingType) === "electronic";
+}
+
+function engagementCompetitionAppliesToMpf(competition = {}) {
+  const timingType = cleanEngagementTimingType(competition.timingType);
+  const poolLength = cleanEngagementPoolLength(competition.poolLength);
+  return timingType === "manual" || (timingType === "electronic" && poolLength !== "50");
+}
+
+function engagementRecordReferencesForEntry(referenceMap, swimmer = {}, entry = {}, competition = {}) {
+  const eventCode = normalizeCourseCode(entry.eventCode);
+  const sex = normalizeCategoryCode(swimmer.sex);
+  const category = ageCategoryFromDates(competition.date, swimmer.birthDate);
+  if (!eventCode || (sex !== "F" && sex !== "M") || !category || !POOL_COURSES.includes(eventCode)) {
+    return [];
+  }
+  const perf = {
+    sex,
+    course: eventCode
+  };
+  const references = [];
+  if (engagementCompetitionAppliesToFranceRecords(competition)) {
+    references.push(recordReferenceForPerformance(referenceMap, "RF", perf, category));
+    if (isYouthCategory(category)) {
+      references.push(recordReferenceForPerformance(referenceMap, "RFJ", perf, category));
+    }
+  }
+  if (engagementCompetitionAppliesToMpf(competition)) {
+    references.push(recordReferenceForPerformance(referenceMap, "MPF", perf, category));
+  }
+  return references.filter(Boolean);
+}
+
+function engagementEntryTimeWarning(entry = {}, references = []) {
+  const timeValue = Number(entry.entryTimeValue || 0) || 0;
+  if (!timeValue || cleanText(entry.entryTimeMode) !== "manual") return "";
+  const fastestReference = references
+    .map((reference) => Number(reference.value || 0) || 0)
+    .filter(Boolean)
+    .sort((a, b) => a - b)[0] || 0;
+  if (!fastestReference) return "";
+  return timeValue >= fastestReference * 5
+    ? "Temps manuel tres lent par rapport aux references connues."
+    : "";
+}
+
+function validateEngagementIndividualEntryTimes(swimmers = [], competition = {}, recordsData = {}) {
+  const referenceMap = recordReferenceMap(recordsData);
+  return swimmers.map((swimmer) => ({
+    ...swimmer,
+    individualEntries: (Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries : []).map((entry) => {
+      const timeValue = Number(entry.entryTimeValue || 0) || 0;
+      const references = engagementRecordReferencesForEntry(referenceMap, swimmer, entry, competition);
+      const manualEntry = cleanText(entry.entryTimeMode) === "manual";
+      const blockingReference = references
+        .filter((reference) => manualEntry && timeValue > 0 && timeValue < Number(reference.value || 0))
+        .sort((a, b) => Number(a.value || 0) - Number(b.value || 0))[0];
+      if (blockingReference) {
+        const swimmerName = cleanText(swimmer.name) ||
+          [cleanText(swimmer.firstName), cleanText(swimmer.lastName)].filter(Boolean).join(" ");
+        const label = cleanText(blockingReference.alertLabel || blockingReference.recordTypeLabel || blockingReference.alertType);
+        const referenceTime = cleanText(blockingReference.time) || formatTimeValue(blockingReference.value);
+        throw new HttpsError(
+          "failed-precondition",
+          `Temps impossible pour ${swimmerName || "nageur"} - ${entry.eventCode} : ${formatTimeValue(timeValue)} est sous ${label} (${referenceTime}).`
+        );
+      }
+      const entryTimeWarning = engagementEntryTimeWarning(entry, references);
+      return {
+        ...entry,
+        ...(entryTimeWarning ? { entryTimeWarning } : {})
+      };
+    })
+  }));
+}
+
+function engagementRelayReferencesForEntry(referenceMap, relay = {}, competition = {}) {
+  const references = [];
+  if (engagementCompetitionAppliesToFranceRecords(competition)) {
+    if (relay.category === "S") references.push(engagementRelayReferenceForEntry(referenceMap, "RF", relay));
+    if (relay.category === "J") references.push(engagementRelayReferenceForEntry(referenceMap, "RFJ", relay));
+  }
+  if (engagementCompetitionAppliesToMpf(competition)) {
+    references.push(engagementRelayReferenceForEntry(referenceMap, "MPF", relay));
+  }
+  return references.filter(Boolean);
+}
+
+function validateEngagementRelayEntryTimes(relays = [], competition = {}, recordsData = {}) {
+  const referenceMap = engagementRelayReferenceMap(recordsData);
+  return relays.map((relay) => {
+    const timeValue = Number(relay.entryTimeValue || 0) || 0;
+    const references = engagementRelayReferencesForEntry(referenceMap, relay, competition);
+    const blockingReference = references
+      .filter((reference) => timeValue > 0 && timeValue < Number(reference.value || 0))
+      .sort((a, b) => Number(a.value || 0) - Number(b.value || 0))[0];
+    if (blockingReference) {
+      const label = cleanText(blockingReference.alertLabel || blockingReference.recordTypeLabel || blockingReference.alertType);
+      const referenceTime = cleanText(blockingReference.time) || formatTimeValue(blockingReference.value);
+      throw new HttpsError(
+        "failed-precondition",
+        `Temps impossible pour ${relay.eventCode} ${relay.category} : ${formatTimeValue(timeValue)} est sous ${label} (${referenceTime}).`
+      );
+    }
+    return relay;
+  });
+}
+
+async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entries = [], competition = {}) {
+  if (!entries.length) return [];
+  const rows = swimmer.source === "engagement"
+    ? []
+    : await getPerformanceBaseRowsBySwimmer({
+      swimmerId: swimmer.swimmerId,
+      swimmerIds: [swimmer.swimmerId, ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : [])],
+      identityKey: swimmer.identityKey
+    });
+  return entries.map((entry) => {
+    const eventCode = cleanText(entry.eventCode).toUpperCase().replace(/\s+/g, "");
+    const known = bestEngagementKnownTime(rows, eventCode, competition);
+    if (known) {
+      return cleanEngagementEntryIndividualEntries([{
+        eventCode,
+        entryTimeMode: "known",
+        entryTime: formatTimeValue(known.timeValue) || known.time,
+        entryTimeValue: Number(known.timeValue || 0) || 0,
+        sourcePerformanceId: known.publicKey || known.performanceBaseId || known.id || "",
+        date: known.date,
+        location: known.location
+      }])[0];
+    }
+    if (competition.missingEntryTimeMode === "default595999") {
+      return cleanEngagementEntryIndividualEntries([{
+        eventCode,
+        entryTimeMode: "default595999",
+        entryTime: "59:59.99",
+        entryTimeValue: 359999
+      }])[0];
+    }
+    if (competition.missingEntryTimeMode === "manual") {
+      const manual = parseEngagementEntryTime(entry.manualEntryTime || entry.entryTime);
+      if (!manual) {
+        throw new HttpsError("failed-precondition", `Temps manuel requis pour ${eventCode}.`);
+      }
+      return cleanEngagementEntryIndividualEntries([{
+        eventCode,
+        entryTimeMode: "manual",
+        manualEntryTime: entry.manualEntryTime || entry.entryTime,
+        entryTime: manual.display,
+        entryTimeValue: manual.value
+      }])[0];
+    }
+    throw new HttpsError("failed-precondition", `Aucun temps d'engagement connu pour ${eventCode}.`);
+  }).filter(Boolean);
+}
+
+function engagementSwimmerIdentityKey(firstName, lastName, birthDate) {
+  const first = normalizePerformanceSearchText(firstName);
+  const last = normalizePerformanceSearchText(lastName);
+  const birth = cleanIsoDate(birthDate);
+  return first && last && birth ? `${last}|${first}|${birth}` : "";
+}
+
+function cleanEngagementNewSwimmer(raw = {}, context = {}) {
+  const firstName = cleanText(raw.firstName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const birthDate = cleanIsoDate(raw.birthDate);
+  const sex = ["F", "M"].includes(cleanText(raw.sex).toUpperCase()) ? cleanText(raw.sex).toUpperCase() : "";
+  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  if (!firstName || !lastName || !birthDate || !sex || !licenseNumber) {
+    throw new HttpsError("invalid-argument", "Prenom, nom, date de naissance, sexe et licence sont obligatoires.");
+  }
+  return {
+    firstName,
+    lastName,
+    name: [firstName, lastName].join(" "),
+    birthDate,
+    sex,
+    licenseNumber,
+    identityKey: engagementSwimmerIdentityKey(firstName, lastName, birthDate),
+    clubId: context.clubId,
+    clubName: context.clubName,
+    regionId: context.regionId,
+    source: "engagement",
+    active: true
+  };
+}
+
+function engagementNewSwimmerItem(doc) {
+  const data = doc.data() || {};
+  const firstName = cleanText(data.firstName).slice(0, 80);
+  const lastName = cleanText(data.lastName).slice(0, 80);
+  const name = cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  return cleanFirestoreValue({
+    id: doc.id,
+    swimmerIndexId: doc.id,
+    source: "engagement",
+    swimmerId: cleanText(data.swimmerId).slice(0, 80),
+    identityKey: cleanText(data.identityKey).slice(0, 180),
+    firstName,
+    lastName,
+    name,
+    birthDate: cleanIsoDate(data.birthDate),
+    sex: cleanText(data.sex).slice(0, 20),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    club: cleanText(data.club).slice(0, 60),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    latestDate: cleanIsoDate(data.createdAt),
+    performanceCount: 0,
+    alertCount: Array.isArray(data.alerts) ? data.alerts.length : 0
+  });
+}
+
+async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
+  const alerts = [];
+  const db = admin.firestore();
+  if (swimmer.identityKey) {
+    const exactSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("identityKey", "==", swimmer.identityKey)
+      .limit(5)
+      .get();
+    exactSnapshot.docs.forEach((doc) => {
+      const match = engagementClubSwimmerItem(doc);
+      alerts.push({
+        type: match.clubId && match.clubId !== context.clubId ? "club-change" : "duplicate",
+        level: match.clubId && match.clubId !== context.clubId ? "warning" : "info",
+        message: match.clubId && match.clubId !== context.clubId
+          ? "Nageur existant avec un dernier club different."
+          : "Nageur existant avec la meme identite.",
+        swimmerIndexId: match.id,
+        swimmerId: match.swimmerId,
+        name: match.name,
+        birthDate: match.birthDate,
+        clubId: match.clubId,
+        clubName: match.clubName
+      });
+    });
+  }
+  const lastToken = performanceSearchTokens(swimmer.lastName)[0] || "";
+  if (lastToken.length >= 2) {
+    const similarSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("searchPrefixes", "array-contains", lastToken.slice(0, Math.min(6, lastToken.length)))
+      .limit(20)
+      .get();
+    similarSnapshot.docs.forEach((doc) => {
+      const match = engagementClubSwimmerItem(doc);
+      if (alerts.some((alert) => alert.swimmerIndexId === match.id)) return;
+      const sameBirthYear = cleanText(match.birthDate).slice(0, 4) === cleanText(swimmer.birthDate).slice(0, 4);
+      const firstClose = performanceSearchTokens(match.firstName).some((token) =>
+        performanceSearchTokens(swimmer.firstName).some((inputToken) => token.slice(0, 3) === inputToken.slice(0, 3))
+      );
+      if (!sameBirthYear || !firstClose) return;
+      alerts.push({
+        type: "possible-duplicate",
+        level: "info",
+        message: "Nageur ressemblant deja present dans LivePalmes.",
+        swimmerIndexId: match.id,
+        swimmerId: match.swimmerId,
+        name: match.name,
+        birthDate: match.birthDate,
+        clubId: match.clubId,
+        clubName: match.clubName
+      });
+    });
+  }
+  return alerts.slice(0, 8);
+}
+
+function engagementSwimmerLicenseId(swimmer = {}) {
+  const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id);
+  if (swimmerIndexId) return stableHash(swimmerIndexId).slice(0, 40);
+  return stableHash([
+    cleanText(swimmer.swimmerId),
+    cleanText(swimmer.identityKey),
+    cleanText(swimmer.name)
+  ].filter(Boolean).join("|")).slice(0, 40);
+}
+
+function engagementSwimmerLicenseItem(doc) {
+  const data = doc.data() || {};
+  return {
+    id: doc.id,
+    swimmerIndexId: cleanText(data.swimmerIndexId).slice(0, 80),
+    swimmerId: cleanText(data.swimmerId).slice(0, 80),
+    identityKey: cleanText(data.identityKey).slice(0, 180),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    verificationStatus: cleanText(data.verificationStatus || "pending").slice(0, 40),
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  };
+}
+
+async function engagementSwimmerLicensesByIndexIds(swimmerIndexIds = []) {
+  const ids = Array.from(new Set(swimmerIndexIds.map(cleanText).filter(Boolean))).slice(0, 800);
+  if (!ids.length) return new Map();
+  const refs = ids.map((id) => admin.firestore().collection("engagementSwimmerLicenses").doc(stableHash(id).slice(0, 40)));
+  const docs = await admin.firestore().getAll(...refs);
+  const byIndexId = new Map();
+  docs.forEach((doc) => {
+    if (!doc.exists) return;
+    const license = engagementSwimmerLicenseItem(doc);
+    if (license.swimmerIndexId && license.licenseNumber) byIndexId.set(license.swimmerIndexId, license);
+  });
+  return byIndexId;
+}
+
+function engagementSwimmerLicensePayload(swimmer = {}, context = {}, source = {}) {
+  return cleanFirestoreValue({
+    swimmerIndexId: cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80),
+    swimmerId: cleanText(swimmer.swimmerId).slice(0, 80),
+    identityKey: cleanText(swimmer.identityKey).slice(0, 180),
+    firstName: cleanText(swimmer.firstName).slice(0, 80),
+    lastName: cleanText(swimmer.lastName).slice(0, 80),
+    name: cleanText(swimmer.name).slice(0, 160),
+    birthDate: cleanIsoDate(swimmer.birthDate),
+    sex: cleanText(swimmer.sex).slice(0, 20),
+    clubId: cleanText(context.clubId || swimmer.clubId).slice(0, 40),
+    clubName: cleanText(context.clubName || swimmer.clubName).slice(0, 140),
+    licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+    verificationStatus: "pending",
+    source: {
+      type: "engagement",
+      competitionId: cleanText(source.competitionId).slice(0, 128),
+      clubId: cleanText(context.clubId).slice(0, 40),
+      uid: cleanText(context.uid).slice(0, 128),
+      collectedAt: cleanText(source.collectedAt).slice(0, 40)
+    }
+  });
+}
+
+function engagementClubEntryItem(doc, fallback = {}) {
+  const data = doc?.exists ? doc.data() || {} : fallback;
+  const teamLeader = data.teamLeader || {};
+  const officials = Array.isArray(data.officials) ? data.officials : [];
+  const swimmers = Array.isArray(data.swimmers) ? data.swimmers : [];
+  const relays = Array.isArray(data.relays) ? data.relays : [];
+  return {
+    id: doc?.id || engagementClubEntryId(data.competitionId, data.clubId),
+    competitionId: cleanText(data.competitionId).slice(0, 128),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    status: cleanText(data.status || "active"),
+    teamLeader: {
+      mode: cleanText(teamLeader.mode),
+      firstName: cleanText(teamLeader.firstName),
+      lastName: cleanText(teamLeader.lastName),
+      licenseNumber: cleanText(teamLeader.licenseNumber),
+      externalClub: teamLeader.externalClub === true,
+      clubId: cleanText(teamLeader.clubId),
+      clubName: cleanText(teamLeader.clubName),
+      renunciationAccepted: teamLeader.renunciationAccepted === true
+    },
+    officials: officials.map(cleanEngagementEntryOfficial).filter((official) => official.personId || official.licenseNumber),
+    swimmers: swimmers.map(cleanEngagementEntrySwimmer).filter((swimmer) => swimmer.swimmerIndexId || swimmer.swimmerId || swimmer.licenseNumber),
+    relays: relays.map((relay) => ({
+      relayId: cleanText(relay.relayId).slice(0, 80),
+      eventCode: normalizeCourseCode(relay.eventCode),
+      category: cleanText(relay.category).toUpperCase().slice(0, 20),
+      genderMode: ENGAGEMENT_PROGRAM_GENDER_MODES.has(cleanText(relay.genderMode)) ? cleanText(relay.genderMode) : "female",
+      manualEntryTime: cleanText(relay.manualEntryTime).slice(0, 20),
+      entryTime: cleanText(relay.entryTime).slice(0, 20),
+      entryTimeValue: Number(relay.entryTimeValue || 0) || 0,
+      members: (Array.isArray(relay.members) ? relay.members : []).map((member) => ({
+        swimmerIndexId: cleanText(member.swimmerIndexId).slice(0, 80),
+        swimmerId: cleanText(member.swimmerId).slice(0, 80),
+        firstName: cleanText(member.firstName).slice(0, 80),
+        lastName: cleanText(member.lastName).slice(0, 80),
+        name: cleanText(member.name).slice(0, 160),
+        birthDate: cleanIsoDate(member.birthDate),
+        sex: normalizeCategoryCode(member.sex),
+        licenseNumber: cleanText(member.licenseNumber).slice(0, 60)
+      })).filter((member) => member.swimmerIndexId)
+    })).filter((relay) => relay.eventCode && relay.category),
+    teamLeaderComplete: engagementTeamLeaderComplete(teamLeader),
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  };
+}
+
+function engagementPdfFormatDate(value) {
+  const text = cleanIsoDate(value);
+  if (!text) return "-";
+  const [year, month, day] = text.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function engagementPdfFormatDateTime(value) {
+  const text = cleanText(value);
+  if (!text) return "-";
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("fr-FR", {
+    timeZone: "Europe/Paris",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function engagementPdfLevelLabel(level) {
+  return {
+    departemental: "Départemental",
+    regional: "Régional",
+    national: "National"
+  }[cleanText(level)] || "-";
+}
+
+function engagementPdfStatusLabel(status) {
+  return {
+    upcoming: "À venir",
+    open: "Engagements ouverts",
+    closed: "Engagements fermés"
+  }[cleanText(status)] || "-";
+}
+
+function engagementPdfTimingLabel(value) {
+  return cleanEngagementTimingType(value) === "manual" ? "Manuel" : "Électronique";
+}
+
+function engagementPdfMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0
+    ? `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`
+    : "0,00 EUR";
+}
+
+function engagementPdfFileName(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase()
+    .slice(0, 80) || "engagements";
+}
+
+function engagementPdfEventLabel(code) {
+  const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(normalizeCourseCode(code));
+  return definition?.shortLabel || normalizeCourseCode(code) || "-";
+}
+
+function engagementPdfSwimmerName(swimmer = {}) {
+  return cleanText(swimmer.name) || [cleanText(swimmer.firstName), cleanText(swimmer.lastName)].filter(Boolean).join(" ") || "Nageur";
+}
+
+function engagementPdfPersonName(person = {}) {
+  return [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ") || cleanText(person.name) || "-";
+}
+
+function engagementPdfGenderLabel(mode) {
+  return {
+    female: "Femmes",
+    male: "Hommes",
+    mixed: "Mixte"
+  }[cleanText(mode)] || "-";
+}
+
+function engagementPdfCategoryLabel(code) {
+  return {
+    P: "Poussins",
+    B: "Benjamins",
+    M: "Minimes",
+    C: "Cadets",
+    J: "Juniors",
+    S: "Seniors",
+    "M30+": "Master 30+",
+    "M40+": "Master 40+",
+    "M50+": "Master 50+",
+    "M60+": "Master 60+",
+    "M70+": "Master 70+",
+    "M80+": "Master 80+",
+    R140: "R140",
+    R180: "R180",
+    R220: "R220",
+    R260: "R260"
+  }[cleanText(code).toUpperCase()] || cleanText(code) || "-";
+}
+
+function engagementPdfEntryStats(entry = {}) {
+  const swimmers = Array.isArray(entry.swimmers) ? entry.swimmers : [];
+  const relays = Array.isArray(entry.relays) ? entry.relays : [];
+  const individualCount = swimmers.reduce((sum, swimmer) => sum + (Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries.length : 0), 0);
+  return { swimmerCount: swimmers.length, individualCount, relayCount: relays.length };
+}
+
+function engagementPdfFeeTotal(entry = {}, competition = {}) {
+  const fees = competition.fees || {};
+  const stats = engagementPdfEntryStats(entry);
+  return (Number(fees.swimmerFee || 0) || 0) * stats.swimmerCount +
+    (Number(fees.individualEventFee || 0) || 0) * stats.individualCount +
+    (Number(fees.relayFee || 0) || 0) * stats.relayCount;
+}
+
+function engagementPdfCollectIndividualRows(entry = {}, competition = {}) {
+  return (Array.isArray(entry.swimmers) ? entry.swimmers : [])
+    .map((swimmer) => {
+      const entries = Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries : [];
+      return {
+        license: swimmer.licenseNumber || "-",
+        swimmer: engagementPdfSwimmerName(swimmer),
+        sex: normalizeCategoryCode(swimmer.sex) || "-",
+        category: ageCategoryFromDates(competition.date, swimmer.birthDate) || "-",
+        entries: entries.map((item) => {
+          const time = item.entryTime || item.manualEntryTime || "";
+          return `${engagementPdfEventLabel(item.eventCode)}${time ? ` (${time})` : ""}`;
+        }).join(", ") || "-"
+      };
+    })
+    .sort((left, right) => left.swimmer.localeCompare(right.swimmer, "fr"));
+}
+
+function engagementPdfCollectRelayRows(entry = {}) {
+  return (Array.isArray(entry.relays) ? entry.relays : [])
+    .map((relay) => ({
+      event: engagementPdfEventLabel(relay.eventCode),
+      category: engagementPdfCategoryLabel(relay.category),
+      gender: engagementPdfGenderLabel(relay.genderMode),
+      time: relay.entryTime || relay.manualEntryTime || "-",
+      members: (Array.isArray(relay.members) ? relay.members : [])
+        .map((member) => engagementPdfPersonName(member))
+        .filter((name) => name && name !== "-")
+        .join(", ") || "Relayeurs non déclarés"
+    }));
+}
+
+function engagementPdfDocToBuffer(doc) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+    doc.end();
+  });
+}
+
+function engagementPdfAddFooter(doc, generatedAt) {
+  const range = doc.bufferedPageRange();
+  for (let index = range.start; index < range.start + range.count; index += 1) {
+    doc.switchToPage(index);
+    doc.fontSize(7).fillColor("#6b7f7a");
+    doc.text(`LivePalmes - document généré le ${engagementPdfFormatDateTime(generatedAt)} - page ${index + 1}/${range.count}`, 42, 810, {
+      width: 511,
+      align: "center"
+    });
+  }
+}
+
+function engagementPdfEnsureSpace(doc, y, height) {
+  if (y + height <= 785) return y;
+  doc.addPage();
+  return 42;
+}
+
+function engagementPdfSection(doc, title, y) {
+  y = engagementPdfEnsureSpace(doc, y, 32);
+  doc.roundedRect(42, y, 511, 20, 3).fill("#e8f3f5");
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("#073b44").text(title, 52, y + 5, { width: 491 });
+  return y + 30;
+}
+
+function engagementPdfKeyValues(doc, rows, y) {
+  const colWidth = 255.5;
+  rows.forEach((row, index) => {
+    y = engagementPdfEnsureSpace(doc, y, 30);
+    const x = 42 + (index % 2) * colWidth;
+    const rowY = y;
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#6b7f7a").text(row[0], x, rowY, { width: colWidth - 16 });
+    doc.font("Helvetica").fontSize(9).fillColor("#102f35").text(row[1] || "-", x, rowY + 10, { width: colWidth - 16 });
+    if (index % 2 === 1) y += 30;
+  });
+  return rows.length % 2 ? y + 30 : y + 6;
+}
+
+function engagementPdfTextHeight(doc, text, width, fontSize = 8) {
+  return doc.font("Helvetica").fontSize(fontSize).heightOfString(cleanText(text) || "-", { width });
+}
+
+function engagementPdfTable(doc, columns, rows, y) {
+  const left = 42;
+  const tableWidth = 511;
+  const headerHeight = 18;
+  const drawHeader = () => {
+    doc.rect(left, y, tableWidth, headerHeight).fill("#073b44");
+    let x = left;
+    columns.forEach((column) => {
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#ffffff").text(column.label, x + 5, y + 5, { width: column.width - 10 });
+      x += column.width;
+    });
+    y += headerHeight;
+  };
+  y = engagementPdfEnsureSpace(doc, y, headerHeight + 18);
+  drawHeader();
+  if (!rows.length) {
+    doc.rect(left, y, tableWidth, 22).fill("#ffffff").stroke("#d8e5e2");
+    doc.font("Helvetica").fontSize(8).fillColor("#6b7f7a").text("Aucune donnée.", left + 6, y + 7, { width: tableWidth - 12 });
+    return y + 28;
+  }
+  rows.forEach((row, index) => {
+    const heights = columns.map((column) => engagementPdfTextHeight(doc, row[column.key], column.width - 10, 8));
+    const rowHeight = Math.max(20, Math.ceil(Math.max(...heights)) + 10);
+    if (y + rowHeight > 785) {
+      doc.addPage();
+      y = 42;
+      drawHeader();
+    }
+    doc.rect(left, y, tableWidth, rowHeight).fill(index % 2 ? "#f8fbfa" : "#ffffff").stroke("#d8e5e2");
+    let x = left;
+    columns.forEach((column) => {
+      doc.font("Helvetica").fontSize(8).fillColor("#102f35").text(cleanText(row[column.key]) || "-", x + 5, y + 6, {
+        width: column.width - 10
+      });
+      x += column.width;
+    });
+    y += rowHeight;
+  });
+  return y + 10;
+}
+
+async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
+  const generatedAt = new Date().toISOString();
+  const doc = new PDFDocument({
+    size: "A4",
+    margin: 42,
+    bufferPages: true,
+    info: {
+      Title: `Récapitulatif engagements - ${competition.name || ""}`,
+      Author: "LivePalmes",
+      Subject: "Engagements compétition"
+    }
+  });
+
+  doc.rect(0, 0, 595.28, 95).fill("#f4faf9");
+  if (fs.existsSync(ENGAGEMENT_PDF_LOGO_PATH)) {
+    doc.image(ENGAGEMENT_PDF_LOGO_PATH, 42, 22, { width: 112 });
+  }
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#073b44").text("Récapitulatif des engagements", 185, 24, { width: 368 });
+  doc.font("Helvetica").fontSize(10).fillColor("#46625d").text(competition.name || "Compétition", 185, 50, { width: 368 });
+  doc.font("Helvetica-Bold").fontSize(9).fillColor("#0b7285").text("LivePalmes", 185, 68, { width: 368 });
+
+  let y = 115;
+  y = engagementPdfSection(doc, "Compétition", y);
+  y = engagementPdfKeyValues(doc, [
+    ["Nom", competition.name || "-"],
+    ["Date", competition.endDate && competition.endDate !== competition.date
+      ? `${engagementPdfFormatDate(competition.date)} au ${engagementPdfFormatDate(competition.endDate)}`
+      : engagementPdfFormatDate(competition.date)],
+    ["Lieu", competition.location || "-"],
+    ["Niveau", engagementPdfLevelLabel(competition.level)],
+    ["Région", competition.regionId || "-"],
+    ["Statut", engagementPdfStatusLabel(competition.entryStatus)],
+    ["Bassin", `${cleanEngagementPoolLength(competition.poolLength)} m`],
+    ["Chronométrage", engagementPdfTimingLabel(competition.timingType)],
+    ["Limite engagements", engagementPdfFormatDateTime(competition.entryDeadlineAt)],
+    ["Généré le", engagementPdfFormatDateTime(generatedAt)]
+  ], y);
+
+  y = engagementPdfSection(doc, "Club", y);
+  y = engagementPdfKeyValues(doc, [
+    ["Club", entry.clubName || "-"],
+    ["Numéro club", entry.clubId || "-"],
+    ["Région", entry.regionId || "-"],
+    ["Dernière mise à jour", engagementPdfFormatDateTime(entry.updatedAt)]
+  ], y);
+
+  const teamLeader = entry.teamLeader || {};
+  y = engagementPdfSection(doc, "Chef d'équipe", y);
+  const teamLeaderRows = teamLeader.mode === "renounced"
+    ? [["Déclaration", "Le club renonce au droit de réclamation."]]
+    : [
+        ["Nom", engagementPdfPersonName(teamLeader)],
+        ["Licence", teamLeader.licenseNumber || "-"],
+        ["Club externe", teamLeader.externalClub ? (teamLeader.clubName || teamLeader.clubId || "-") : "Non"]
+      ];
+  y = engagementPdfKeyValues(doc, teamLeaderRows, y);
+
+  y = engagementPdfSection(doc, "Officiels", y);
+  const officialRows = competition.officialsRequired === false
+    ? [{ name: "Officiels non requis pour cette compétition.", license: "-", role: "-" }]
+    : (Array.isArray(entry.officials) ? entry.officials : []).map((official) => ({
+        name: engagementPdfPersonName(official),
+        license: official.licenseNumber || "-",
+        role: "Officiel"
+      }));
+  y = engagementPdfTable(doc, [
+    { key: "name", label: "Nom", width: 260 },
+    { key: "license", label: "Licence", width: 120 },
+    { key: "role", label: "Rôle", width: 131 }
+  ], officialRows, y);
+
+  y = engagementPdfSection(doc, "Nageurs et courses individuelles", y);
+  y = engagementPdfTable(doc, [
+    { key: "license", label: "Licence", width: 72 },
+    { key: "swimmer", label: "Nageur", width: 150 },
+    { key: "sex", label: "Sexe", width: 38 },
+    { key: "category", label: "Cat.", width: 45 },
+    { key: "entries", label: "Courses", width: 206 }
+  ], engagementPdfCollectIndividualRows(entry, competition), y);
+
+  y = engagementPdfSection(doc, "Relais", y);
+  y = engagementPdfTable(doc, [
+    { key: "event", label: "Relais", width: 80 },
+    { key: "category", label: "Catégorie", width: 82 },
+    { key: "gender", label: "Sexe", width: 62 },
+    { key: "time", label: "Temps", width: 58 },
+    { key: "members", label: "Relayeurs", width: 229 }
+  ], engagementPdfCollectRelayRows(entry), y);
+
+  const fees = competition.fees || {};
+  const stats = engagementPdfEntryStats(entry);
+  y = engagementPdfSection(doc, "Frais d'engagement", y);
+  y = engagementPdfKeyValues(doc, [
+    ["Nageurs", `${stats.swimmerCount} x ${engagementPdfMoney(fees.swimmerFee)}`],
+    ["Courses individuelles", `${stats.individualCount} x ${engagementPdfMoney(fees.individualEventFee)}`],
+    ["Relais", `${stats.relayCount} x ${engagementPdfMoney(fees.relayFee)}`],
+    ["Total indicatif", engagementPdfMoney(engagementPdfFeeTotal(entry, competition))],
+    ["HelloAsso", fees.helloAssoUrl ? "Lien publié" : "En attente de publication du lien"],
+    ["Rappel", "Paiement attendu avant la fin de la première journée. Surplus forfaitaire de 50 EUR ensuite."]
+  ], y);
+
+  y = engagementPdfEnsureSpace(doc, y, 34);
+  doc.font("Helvetica-Oblique").fontSize(8).fillColor("#6b7f7a").text(
+    "Récapitulatif indicatif généré depuis LivePalmes, sous réserve de modifications ultérieures des engagements ou des frais.",
+    42,
+    y,
+    { width: 511 }
+  );
+
+  engagementPdfAddFooter(doc, generatedAt);
+  const buffer = await engagementPdfDocToBuffer(doc);
+  return {
+    buffer,
+    generatedAt,
+    fileName: `recap-engagements-${engagementPdfFileName(competition.name)}-${engagementPdfFileName(entry.clubName || entry.clubId)}.pdf`
+  };
+}
+
+function cleanEngagementClubPerson(raw = {}, context = {}) {
+  const firstName = cleanText(raw.firstName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const roles = raw.roles || {};
+  const official = roles.official === true || raw.official === true;
+  const teamLeader = roles.teamLeader === true || raw.teamLeader === true;
+  if (!firstName || !lastName) {
+    throw new HttpsError("invalid-argument", "Nom et prenom obligatoires.");
+  }
+  if (!licenseNumber) {
+    throw new HttpsError("invalid-argument", "Numero de licence obligatoire.");
+  }
+  if (!official && !teamLeader) {
+    throw new HttpsError("invalid-argument", "Selectionnez au moins un role.");
+  }
+  return {
+    clubId: context.clubId,
+    clubName: context.clubName,
+    regionId: context.regionId,
+    firstName,
+    lastName,
+    licenseNumber,
+    roles: {
+      official,
+      teamLeader
+    },
+    active: raw.active === false ? false : true
+  };
+}
+
+function engagementClubPersonItem(doc) {
+  const data = doc.data() || {};
+  const roles = data.roles || {};
+  return {
+    id: doc.id,
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    firstName: cleanText(data.firstName).slice(0, 80),
+    lastName: cleanText(data.lastName).slice(0, 80),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    roles: {
+      official: roles.official === true,
+      teamLeader: roles.teamLeader === true
+    },
+    active: data.active !== false,
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  };
+}
+
+function engagementClubSwimmerItem(doc) {
+  const data = doc.data() || {};
+  const firstName = cleanText(data.firstName).slice(0, 80);
+  const lastName = cleanText(data.lastName).slice(0, 80);
+  const name = cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  return cleanFirestoreValue({
+    id: doc.id,
+    swimmerIndexId: doc.id,
+    source: "performances",
+    swimmerId: cleanText(data.id || data.swimmerId).slice(0, 80),
+    identityKey: cleanText(data.identityKey).slice(0, 180),
+    firstName,
+    lastName,
+    name,
+    birthDate: cleanIsoDate(data.birthDate),
+    sex: cleanText(data.sex).slice(0, 20),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    club: cleanText(data.club).slice(0, 60),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    latestDate: cleanIsoDate(data.latestDate),
+    performanceCount: Math.max(0, Math.trunc(Number(data.performanceCount) || 0)),
+    sourceIds: Array.isArray(data.sourceIds) ? data.sourceIds.map((id) => cleanText(id).slice(0, 80)).filter(Boolean).slice(0, 20) : []
+  });
+}
+
+function cleanIsoDateTime(value) {
+  const text = cleanText(value).slice(0, 40);
+  if (!text) return "";
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
+  const name = cleanText(raw.name).slice(0, 160);
+  const date = cleanIsoDate(raw.date);
+  const endDate = cleanIsoDate(raw.endDate) || date;
+  const location = cleanText(raw.location).slice(0, 160);
+  const level = cleanEngagementCompetitionLevel(raw.level);
+  const entryDeadlineAt = cleanIsoDateTime(raw.entryDeadlineAt);
+  const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email informatique");
+  const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
+  const poolLength = cleanEngagementPoolLength(raw.poolLength);
+  const timingType = cleanEngagementTimingType(raw.timingType);
+  const qualificationTimesMode = cleanEngagementQualificationTimesMode(raw.qualificationTimesMode);
+  const qualificationStartDate = qualificationTimesMode === "period" ? cleanIsoDate(raw.qualificationStartDate) : "";
+  const qualificationEndDate = qualificationTimesMode === "period" ? cleanIsoDate(raw.qualificationEndDate) : "";
+  const missingEntryTimeMode = cleanEngagementMissingEntryTimeMode(raw.missingEntryTimeMode);
+  const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(raw.maxEventsPerSwimmer);
+  const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
+  const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
+
+  if (!context.national && !context.region) {
+    throw new HttpsError("permission-denied", "Droit creation competition engagements requis.");
+  }
+  if (!context.national && level === "national") {
+    throw new HttpsError("permission-denied", "Une competition nationale doit etre creee par le niveau national.");
+  }
+  if (!name || !date || !location) {
+    throw new HttpsError("invalid-argument", "Nom, date et lieu sont obligatoires.");
+  }
+  if (endDate && endDate < date) {
+    throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
+  }
+  if (level !== "national" && !regionId) {
+    throw new HttpsError("invalid-argument", "Region obligatoire pour une competition departementale ou regionale.");
+  }
+  if (qualificationTimesMode === "period" && (!qualificationStartDate || !qualificationEndDate)) {
+    throw new HttpsError("invalid-argument", "Periode des temps d'engagement incomplete.");
+  }
+  if (qualificationTimesMode === "period" && qualificationStartDate > qualificationEndDate) {
+    throw new HttpsError("invalid-argument", "La fin de periode des temps doit etre apres le debut.");
+  }
+
+  const events = Object.prototype.hasOwnProperty.call(raw, "events")
+    ? cleanEngagementCompetitionEvents(raw.events)
+    : null;
+
+  return {
+    name,
+    date,
+    endDate,
+    location,
+    regionId,
+    level,
+    entryDeadlineAt,
+    computerEmail,
+    entryStatus,
+    officialsRequired: raw.officialsRequired === true,
+    poolLength,
+    timingType,
+    qualificationTimesMode,
+    qualificationStartDate,
+    qualificationEndDate,
+    missingEntryTimeMode,
+    maxEventsPerSwimmer,
+    ...(Object.prototype.hasOwnProperty.call(raw, "fees")
+      ? { fees: cleanEngagementFees(raw.fees) }
+      : {}),
+    ...(events
+      ? {
+          events,
+          programSessions: cleanEngagementProgramSessions(raw.programSessions || [], events)
+        }
+      : {})
+  };
+}
+
+function assertCanManageEngagementCompetition(context = {}, competition = {}) {
+  if (context.national) return;
+  if (!context.region || !context.regionId) {
+    throw new HttpsError("permission-denied", "Droit gestion competition engagements requis.");
+  }
+  if (cleanEngagementCompetitionLevel(competition.level) === "national") {
+    throw new HttpsError("permission-denied", "Competition nationale reservee au niveau national.");
+  }
+  if (cleanText(competition.regionId) !== context.regionId) {
+    throw new HttpsError("permission-denied", "Competition hors perimetre regional.");
+  }
+}
+
+exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) => {
+  await assertEngagementsAccess(request);
+  const fromDate = cleanIsoDate(request.data?.fromDate) || new Date().toISOString().slice(0, 10);
+  const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
+  const regionId = cleanText(request.data?.regionId).slice(0, 80);
+  const level = ENGAGEMENT_COMPETITION_LEVELS.has(cleanText(request.data?.level))
+    ? cleanText(request.data.level)
+    : "";
+  const entryStatus = ENGAGEMENT_ENTRY_STATUSES.has(cleanText(request.data?.entryStatus))
+    ? cleanText(request.data.entryStatus)
+    : "";
+
+  const snapshot = await admin.firestore()
+    .collection("engagementCompetitions")
+    .where("date", ">=", fromDate)
+    .orderBy("date")
+    .limit(limit)
+    .get();
+
+  const competitions = snapshot.docs
+    .map(engagementCompetitionListItem)
+    .filter((competition) => !regionId || competition.regionId === regionId)
+    .filter((competition) => !level || competition.level === level)
+    .filter((competition) => !entryStatus || competition.entryStatus === entryStatus);
+
+  return {
+    ok: true,
+    collection: "engagementCompetitions",
+    fromDate,
+    competitions
+  };
+});
+
+exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+  await assertEngagementsAccess(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const doc = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!doc.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const deletionRequest = await admin.firestore().collection("engagementCompetitionDeletionRequests").doc(competitionId).get();
+  const deletionRequestData = deletionRequest.exists ? deletionRequest.data() || {} : {};
+  return {
+    ok: true,
+    competition: {
+      ...engagementCompetitionDetailItem(doc),
+      deletionRequestStatus: deletionRequestData.status === "pending" ? "pending" : ""
+    }
+  };
+});
+
+exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  return {
+    ok: true,
+    entry: engagementClubEntryItem(entry, {
+      competitionId,
+      clubId: context.clubId,
+      clubName: context.clubName,
+      regionId: context.regionId,
+      status: "active"
+    })
+  };
+});
+
+exports.generateEngagementClubRecapPdf = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entry = await admin.firestore()
+    .collection("engagementClubEntries")
+    .doc(engagementClubEntryId(competitionId, context.clubId))
+    .get();
+  if (!entry.exists) {
+    throw new HttpsError("failed-precondition", "Aucune inscription club a recapitulatif.");
+  }
+  const entryData = engagementClubEntryItem(entry);
+  if (entryData.clubId !== context.clubId) {
+    throw new HttpsError("permission-denied", "Inscription hors perimetre club.");
+  }
+  const { buffer, generatedAt, fileName } = await buildEngagementClubRecapPdf(
+    engagementCompetitionDetailItem(competition),
+    entryData
+  );
+  await writeAuditLog("engagementClubEntry.recapPdfGenerated", context.uid, {
+    competitionId,
+    clubId: context.clubId,
+    fileName,
+    size: buffer.length
+  });
+  return {
+    ok: true,
+    fileName,
+    contentType: "application/pdf",
+    generatedAt,
+    pdfBase64: buffer.toString("base64")
+  };
+});
+
+exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const entriesSnapshot = await admin.firestore()
+    .collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const entries = entriesSnapshot.docs
+    .map((doc) => {
+      const entry = engagementClubEntryItem(doc);
+      const stats = engagementPdfEntryStats(entry);
+      return {
+        id: entry.id,
+        clubId: entry.clubId,
+        clubName: entry.clubName || entry.clubId || "Club",
+        regionId: entry.regionId,
+        teamLeaderComplete: entry.teamLeaderComplete,
+        officialCount: entry.officials.length,
+        swimmerCount: stats.swimmerCount,
+        individualCount: stats.individualCount,
+        relayCount: stats.relayCount,
+        totalFee: engagementPdfFeeTotal(entry, engagementCompetitionDetailItem(competition)),
+        updatedAt: entry.updatedAt
+      };
+    })
+    .sort((left, right) => cleanText(left.clubName).localeCompare(cleanText(right.clubName), "fr"));
+  return {
+    ok: true,
+    competitionId,
+    entries
+  };
+});
+
+exports.generateEngagementClubRecapPdfForAdmin = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  const clubId = cleanText(request.data?.clubId).slice(0, 40);
+  if (!competitionId || !clubId) {
+    throw new HttpsError("invalid-argument", "Competition et club requis.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const entry = await admin.firestore()
+    .collection("engagementClubEntries")
+    .doc(engagementClubEntryId(competitionId, clubId))
+    .get();
+  if (!entry.exists) {
+    throw new HttpsError("not-found", "Inscription club introuvable.");
+  }
+  const entryData = engagementClubEntryItem(entry);
+  if (entryData.clubId !== clubId) {
+    throw new HttpsError("permission-denied", "Inscription club incoherente.");
+  }
+  const { buffer, generatedAt, fileName } = await buildEngagementClubRecapPdf(
+    engagementCompetitionDetailItem(competition),
+    entryData
+  );
+  await writeAuditLog("engagementCompetition.clubRecapPdfGeneratedByAdmin", context.uid, {
+    competitionId,
+    clubId,
+    fileName,
+    size: buffer.length
+  });
+  return {
+    ok: true,
+    fileName,
+    contentType: "application/pdf",
+    generatedAt,
+    pdfBase64: buffer.toString("base64")
+  };
+});
+
+exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const rawTeamLeader = cleanEngagementTeamLeader(request.data?.teamLeader || {});
+  const teamLeader = rawTeamLeader.mode === "person" && !rawTeamLeader.externalClub
+    ? {
+        ...rawTeamLeader,
+        clubId: context.clubId,
+        clubName: context.clubName
+      }
+    : rawTeamLeader;
+  if (!engagementTeamLeaderComplete(teamLeader)) {
+    throw new HttpsError("invalid-argument", "Chef d'equipe ou renonciation obligatoire.");
+  }
+  const now = new Date().toISOString();
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const snapshot = await entryRef.get();
+  const payload = {
+    competitionId,
+    clubId: context.clubId,
+    clubName: context.clubName,
+    regionId: context.regionId,
+    status: "active",
+    teamLeader,
+    teamLeaderComplete: true,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
+  };
+  await entryRef.set(payload, { merge: true });
+  await writeAuditLog("engagementClubEntry.teamLeaderSaved", context.uid, {
+    competitionId,
+    clubId: context.clubId,
+    mode: teamLeader.mode
+  });
+  const updated = await entryRef.get();
+  return {
+    ok: true,
+    entry: engagementClubEntryItem(updated)
+  };
+});
+
+exports.listEngagementClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const includeInactive = request.data?.includeInactive === true;
+  const snapshot = await admin.firestore()
+    .collection("engagementClubPeople")
+    .where("clubId", "==", context.clubId)
+    .limit(200)
+    .get();
+  const people = snapshot.docs
+    .map(engagementClubPersonItem)
+    .filter((person) => includeInactive || person.active)
+    .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"));
+  return {
+    ok: true,
+    people
+  };
+});
+
+exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const personId = cleanText(request.data?.personId).slice(0, 80);
+  const person = cleanEngagementClubPerson(request.data?.person || {}, context);
+  const db = admin.firestore();
+  const docId = personId || stableHash(`${context.clubId}|${person.licenseNumber}`).slice(0, 40);
+  const ref = db.collection("engagementClubPeople").doc(docId);
+  const snapshot = await ref.get();
+  if (snapshot.exists && cleanText(snapshot.data()?.clubId) !== context.clubId) {
+    throw new HttpsError("permission-denied", "Personne hors perimetre club.");
+  }
+  const now = new Date().toISOString();
+  await ref.set({
+    ...person,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
+  }, { merge: true });
+  await writeAuditLog("engagementClubPerson.saved", context.uid, {
+    personId: docId,
+    clubId: context.clubId,
+    licenseNumber: person.licenseNumber,
+    roles: person.roles
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    person: engagementClubPersonItem(updated)
+  };
+});
+
+exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const personId = cleanText(request.data?.personId).slice(0, 80);
+  const active = request.data?.active === true;
+  if (!personId) {
+    throw new HttpsError("invalid-argument", "Personne requise.");
+  }
+  const ref = admin.firestore().collection("engagementClubPeople").doc(personId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Personne introuvable.");
+  }
+  if (cleanText(snapshot.data()?.clubId) !== context.clubId) {
+    throw new HttpsError("permission-denied", "Personne hors perimetre club.");
+  }
+  const now = new Date().toISOString();
+  await ref.set({
+    active,
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  await writeAuditLog("engagementClubPerson.statusChanged", context.uid, {
+    personId,
+    clubId: context.clubId,
+    active
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    person: engagementClubPersonItem(updated)
+  };
+});
+
+exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les officiels.");
+  }
+
+  const personIds = Array.from(new Set((Array.isArray(request.data?.officialPersonIds) ? request.data.officialPersonIds : [])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean)))
+    .slice(0, 80);
+  const personRefs = personIds.map((id) => admin.firestore().collection("engagementClubPeople").doc(id));
+  const personDocs = personRefs.length ? await admin.firestore().getAll(...personRefs) : [];
+  const officials = personDocs.map((doc) => {
+    if (!doc.exists) {
+      throw new HttpsError("invalid-argument", "Officiel inconnu dans la base club.");
+    }
+    const person = engagementClubPersonItem(doc);
+    if (person.clubId !== context.clubId || !person.active || person.roles.official !== true) {
+      throw new HttpsError("permission-denied", "Officiel hors perimetre club ou inactif.");
+    }
+    return {
+      personId: person.id,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      licenseNumber: person.licenseNumber
+    };
+  });
+
+  const now = new Date().toISOString();
+  await entryRef.set({
+    officials,
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  await writeAuditLog("engagementClubEntry.officialsSaved", context.uid, {
+    competitionId,
+    clubId: context.clubId,
+    officialCount: officials.length
+  });
+  const updated = await entryRef.get();
+  return {
+    ok: true,
+    entry: engagementClubEntryItem(updated)
+  };
+});
+
+exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
+  const snapshot = await admin.firestore()
+    .collection(PERFORMANCE_SWIMMERS_COLLECTION)
+    .where("clubId", "==", context.clubId)
+    .limit(limit)
+    .get();
+  const newSwimmersSnapshot = await admin.firestore()
+    .collection("engagementClubSwimmers")
+    .where("clubId", "==", context.clubId)
+    .where("active", "==", true)
+    .limit(200)
+    .get();
+  const baseSwimmers = [
+    ...newSwimmersSnapshot.docs.map(engagementNewSwimmerItem),
+    ...snapshot.docs.map(engagementClubSwimmerItem)
+  ];
+  const licensesByIndexId = await engagementSwimmerLicensesByIndexIds(baseSwimmers.map((swimmer) => swimmer.id));
+  const swimmers = baseSwimmers
+    .map((swimmer) => {
+      const collectedLicense = licensesByIndexId.get(swimmer.id);
+      return {
+        ...swimmer,
+        licenseNumber: collectedLicense?.licenseNumber || swimmer.licenseNumber || "",
+        licenseVerificationStatus: collectedLicense?.verificationStatus || ""
+      };
+    })
+    .sort((left, right) =>
+      cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
+      cleanText(left.lastName).localeCompare(cleanText(right.lastName), "fr") ||
+      cleanText(left.firstName).localeCompare(cleanText(right.firstName), "fr")
+    );
+  return {
+    ok: true,
+    clubId: context.clubId,
+    swimmers
+  };
+});
+
+exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
+  const db = admin.firestore();
+  const now = new Date().toISOString();
+  const docId = stableHash([
+    context.clubId,
+    swimmer.identityKey || swimmer.name,
+    swimmer.licenseNumber
+  ].join("|")).slice(0, 40);
+  const ref = db.collection("engagementClubSwimmers").doc(docId);
+  const snapshot = await ref.get();
+  if (snapshot.exists && cleanText(snapshot.data()?.clubId) !== context.clubId) {
+    throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
+  }
+  const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  const payload = {
+    ...swimmer,
+    alerts,
+    alertCount: alerts.length,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
+  };
+  const batch = db.batch();
+  batch.set(ref, payload, { merge: true });
+  const licenseRef = db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId({ ...swimmer, swimmerIndexId: docId }));
+  batch.set(licenseRef, {
+    ...engagementSwimmerLicensePayload({ ...swimmer, swimmerIndexId: docId }, context, {
+      competitionId: cleanText(request.data?.competitionId).slice(0, 128),
+      collectedAt: now
+    }),
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  alerts.forEach((alert, index) => {
+    const alertRef = db.collection("engagementSwimmerAlerts").doc(stableHash(`${docId}|${alert.type}|${alert.swimmerIndexId || index}`).slice(0, 40));
+    batch.set(alertRef, {
+      ...alert,
+      status: "validated-by-club",
+      newSwimmerId: docId,
+      clubId: context.clubId,
+      clubName: context.clubName,
+      regionId: context.regionId,
+      createdAt: now,
+      createdBy: context.uid
+    }, { merge: true });
+  });
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.created", context.uid, {
+    swimmerId: docId,
+    clubId: context.clubId,
+    alertCount: alerts.length
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    swimmer: engagementNewSwimmerItem(updated),
+    alerts
+  };
+});
+
+exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
+  }
+
+  const competitionData = competition.data() || {};
+  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  const competitionTimeRules = {
+    date: cleanIsoDate(competitionData.date),
+    poolLength: cleanEngagementPoolLength(competitionData.poolLength),
+    timingType: cleanEngagementTimingType(competitionData.timingType),
+    qualificationTimesMode: cleanEngagementQualificationTimesMode(competitionData.qualificationTimesMode),
+    qualificationStartDate: cleanIsoDate(competitionData.qualificationStartDate),
+    qualificationEndDate: cleanIsoDate(competitionData.qualificationEndDate),
+    missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode)
+  };
+  const allowedIndividualEventCodes = new Set(
+    competitionEvents.filter((event) => event.type === "individual").map((event) => event.code)
+  );
+  const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(competitionData.maxEventsPerSwimmer);
+  const requestedSwimmers = Array.isArray(request.data?.swimmers) ? request.data.swimmers : [];
+  const uniqueSwimmers = [];
+  const seen = new Set();
+  requestedSwimmers.slice(0, 300).forEach((rawSwimmer) => {
+    const swimmerIndexId = cleanText(rawSwimmer?.swimmerIndexId).slice(0, 80);
+    const source = cleanText(rawSwimmer?.source) === "engagement" ? "engagement" : "performances";
+    const licenseNumber = cleanText(rawSwimmer?.licenseNumber).slice(0, 60);
+    const individualEntries = cleanEngagementEntryIndividualEntries(
+      rawSwimmer?.individualEntries || rawSwimmer?.individualEventCodes || [],
+      allowedIndividualEventCodes
+    );
+    if (!swimmerIndexId || seen.has(swimmerIndexId)) return;
+    if (!licenseNumber) {
+      throw new HttpsError("invalid-argument", "Numero de licence obligatoire pour chaque nageur.");
+    }
+    const requestedIndividualCodes = Array.isArray(rawSwimmer?.individualEventCodes)
+      ? rawSwimmer.individualEventCodes.map((code) => cleanText(code).toUpperCase().replace(/\s+/g, "")).filter(Boolean)
+      : (Array.isArray(rawSwimmer?.individualEntries) ? rawSwimmer.individualEntries.map((entry) => cleanText(entry?.eventCode || entry?.code).toUpperCase().replace(/\s+/g, "")).filter(Boolean) : []);
+    if (requestedIndividualCodes.some((code) => !allowedIndividualEventCodes.has(code))) {
+      throw new HttpsError("invalid-argument", "Course individuelle non ouverte sur cette competition.");
+    }
+    if (maxEventsPerSwimmer > 0 && individualEntries.length > maxEventsPerSwimmer) {
+      throw new HttpsError("failed-precondition", `Maximum ${maxEventsPerSwimmer} course(s) individuelle(s) par nageur.`);
+    }
+    seen.add(swimmerIndexId);
+    uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
+  });
+
+  const swimmerRefs = uniqueSwimmers.map((swimmer) => admin.firestore()
+    .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
+    .doc(swimmer.swimmerIndexId));
+  const swimmerDocs = swimmerRefs.length ? await admin.firestore().getAll(...swimmerRefs) : [];
+  let swimmers = await Promise.all(swimmerDocs.map(async (doc, index) => {
+    if (!doc.exists) {
+      throw new HttpsError("invalid-argument", "Nageur inconnu dans la base LivePalmes.");
+    }
+    const swimmer = uniqueSwimmers[index].source === "engagement"
+      ? engagementNewSwimmerItem(doc)
+      : engagementClubSwimmerItem(doc);
+    if (swimmer.clubId !== context.clubId) {
+      throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
+    }
+    const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
+      { ...swimmer, source: uniqueSwimmers[index].source },
+      uniqueSwimmers[index].individualEntries,
+      competitionTimeRules
+    );
+    return cleanEngagementEntrySwimmer({
+      ...swimmer,
+      swimmerIndexId: swimmer.id,
+      source: uniqueSwimmers[index].source,
+      licenseNumber: uniqueSwimmers[index].licenseNumber,
+      individualEntries
+    });
+  }));
+  if (swimmers.some((swimmer) => swimmer.individualEntries.length)) {
+    const recordsData = await loadPerformanceRecordsData();
+    swimmers = validateEngagementIndividualEntryTimes(swimmers, competitionTimeRules, recordsData);
+  }
+
+  const now = new Date().toISOString();
+  const batch = admin.firestore().batch();
+  batch.set(entryRef, {
+    swimmers,
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  swimmers.forEach((swimmer) => {
+    if (!swimmer.licenseNumber) return;
+    const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
+    batch.set(licenseRef, {
+      ...engagementSwimmerLicensePayload(swimmer, context, { competitionId, collectedAt: now }),
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+  });
+  await batch.commit();
+  await writeAuditLog("engagementClubEntry.swimmersSaved", context.uid, {
+    competitionId,
+    clubId: context.clubId,
+    swimmerCount: swimmers.length
+  });
+  const updated = await entryRef.get();
+  return {
+    ok: true,
+    entry: engagementClubEntryItem(updated)
+  };
+});
+
+exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les relais.");
+  }
+  const entryData = entry.data() || {};
+  const swimmers = (Array.isArray(entryData.swimmers) ? entryData.swimmers : [])
+    .map(cleanEngagementEntrySwimmer)
+    .filter((swimmer) => swimmer.swimmerIndexId);
+  const competitionData = competition.data() || {};
+  const events = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  let relays = cleanEngagementEntryRelays(request.data?.relays || [], {
+    date: cleanIsoDate(competitionData.date),
+    events
+  }, swimmers);
+  if (relays.length) {
+    const recordsData = await loadPerformanceRecordsData();
+    relays = validateEngagementRelayEntryTimes(relays, {
+      date: cleanIsoDate(competitionData.date),
+      poolLength: cleanEngagementPoolLength(competitionData.poolLength),
+      timingType: cleanEngagementTimingType(competitionData.timingType)
+    }, recordsData);
+  }
+  const now = new Date().toISOString();
+  await entryRef.set({
+    relays,
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  await writeAuditLog("engagementClubEntry.relaysSaved", context.uid, {
+    competitionId,
+    clubId: context.clubId,
+    relayCount: relays.length
+  });
+  const updated = await entryRef.get();
+  return {
+    ok: true,
+    entry: engagementClubEntryItem(updated)
+  };
+});
+
+exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
+  const now = new Date().toISOString();
+  const docRef = admin.firestore().collection("engagementCompetitions").doc();
+  const payload = {
+    ...competition,
+    createdAt: now,
+    createdBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  await docRef.set(payload);
+  await writeAuditLog("engagementCompetition.created", context.uid, {
+    competitionId: docRef.id,
+    name: payload.name,
+    date: payload.date,
+    regionId: payload.regionId,
+    level: payload.level,
+    entryStatus: payload.entryStatus
+  });
+  return {
+    ok: true,
+    competition: engagementCompetitionListItem({
+      id: docRef.id,
+      data: () => payload
+    })
+  };
+});
+
+exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const docRef = admin.firestore().collection("engagementCompetitions").doc(competitionId);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
+  assertCanManageEngagementCompetition(context, competition);
+  const now = new Date().toISOString();
+  const payload = {
+    ...competition,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  await docRef.set(payload, { merge: true });
+  await writeAuditLog("engagementCompetition.updated", context.uid, {
+    competitionId,
+    name: payload.name,
+    date: payload.date,
+    regionId: payload.regionId,
+    level: payload.level,
+    entryStatus: payload.entryStatus
+  });
+  const updated = await docRef.get();
+  return {
+    ok: true,
+    competition: engagementCompetitionDetailItem(updated)
+  };
+});
+
+exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
+  }
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+
+  const db = admin.firestore();
+  const docRef = db.collection("engagementCompetitions").doc(competitionId);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+
+  const competition = snapshot.data() || {};
+  const now = new Date().toISOString();
+  const deletionRequestRef = db.collection("engagementCompetitionDeletionRequests").doc(competitionId);
+  const deletionRequest = await deletionRequestRef.get();
+  const batch = db.batch();
+  batch.delete(docRef);
+  if (deletionRequest.exists) {
+    batch.set(deletionRequestRef, {
+      status: "approved",
+      approvedAt: now,
+      approvedBy: context.uid,
+      approvedByEmail: context.email || "",
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+  }
+  await batch.commit();
+  await writeAuditLog("engagementCompetition.deleted", context.uid, {
+    competitionId,
+    name: competition.name || "",
+    date: competition.date || "",
+    regionId: competition.regionId || "",
+    level: competition.level || ""
+  });
+  return {
+    ok: true,
+    deleted: true,
+    competitionId
+  };
+});
+
+exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (context.national) {
+    throw new HttpsError("failed-precondition", "Un niveau national peut supprimer directement la competition.");
+  }
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+
+  const db = admin.firestore();
+  const docRef = db.collection("engagementCompetitions").doc(competitionId);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+
+  const competition = snapshot.data() || {};
+  assertCanManageEngagementCompetition(context, competition);
+
+  const now = new Date().toISOString();
+  const payload = {
+    competitionId,
+    competitionName: competition.name || "",
+    competitionDate: competition.date || "",
+    competitionLevel: competition.level || "",
+    regionId: competition.regionId || "",
+    status: "pending",
+    requestedAt: now,
+    requestedBy: context.uid,
+    requestedByEmail: context.email || "",
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  await db.collection("engagementCompetitionDeletionRequests").doc(competitionId).set(payload, { merge: true });
+  await writeAuditLog("engagementCompetition.deletionRequested", context.uid, {
+    competitionId,
+    name: payload.competitionName,
+    date: payload.competitionDate,
+    regionId: payload.regionId,
+    level: payload.competitionLevel
+  });
+  return {
+    ok: true,
+    requested: true,
+    requestId: competitionId
+  };
+});
+
+exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  const status = ["pending", "approved", "rejected"].includes(cleanText(request.data?.status))
+    ? cleanText(request.data.status)
+    : "pending";
+  const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
+  const snapshot = await admin.firestore()
+    .collection("engagementCompetitionDeletionRequests")
+    .where("status", "==", status)
+    .limit(limit)
+    .get();
+
+  const requests = snapshot.docs
+    .map((doc) => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id,
+        competitionId: cleanText(data.competitionId),
+        competitionName: cleanText(data.competitionName),
+        competitionDate: cleanText(data.competitionDate),
+        competitionLevel: cleanText(data.competitionLevel),
+        regionId: cleanText(data.regionId),
+        status: cleanText(data.status),
+        requestedAt: cleanText(data.requestedAt),
+        requestedBy: cleanText(data.requestedBy),
+        requestedByEmail: cleanText(data.requestedByEmail)
+      };
+    })
+    .sort((left, right) => String(right.requestedAt || "").localeCompare(String(left.requestedAt || "")));
+
+  return {
+    ok: true,
+    status,
+    requests
+  };
+});
+
+exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
+  }
+  const requestId = cleanText(request.data?.requestId).slice(0, 128);
+  const decision = cleanText(request.data?.decision);
+  if (!requestId) {
+    throw new HttpsError("invalid-argument", "Demande requise.");
+  }
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new HttpsError("invalid-argument", "Decision invalide.");
+  }
+
+  const db = admin.firestore();
+  const requestRef = db.collection("engagementCompetitionDeletionRequests").doc(requestId);
+  const requestSnapshot = await requestRef.get();
+  if (!requestSnapshot.exists) {
+    throw new HttpsError("not-found", "Demande de suppression introuvable.");
+  }
+  const deletionRequest = requestSnapshot.data() || {};
+  if (deletionRequest.status && deletionRequest.status !== "pending") {
+    throw new HttpsError("failed-precondition", "Demande deja traitee.");
+  }
+
+  const competitionId = cleanText(deletionRequest.competitionId || requestId).slice(0, 128);
+  const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
+  const competitionSnapshot = await competitionRef.get();
+  const competition = competitionSnapshot.exists ? competitionSnapshot.data() || {} : {};
+  const now = new Date().toISOString();
+  const batch = db.batch();
+  if (decision === "approved" && competitionSnapshot.exists) {
+    batch.delete(competitionRef);
+  }
+  batch.set(requestRef, {
+    status: decision,
+    decidedAt: now,
+    decidedBy: context.uid,
+    decidedByEmail: context.email || "",
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  await batch.commit();
+
+  await writeAuditLog("engagementCompetition.deletionRequestResolved", context.uid, {
+    requestId,
+    decision,
+    competitionId,
+    name: competition.name || deletionRequest.competitionName || "",
+    date: competition.date || deletionRequest.competitionDate || "",
+    regionId: competition.regionId || deletionRequest.regionId || "",
+    level: competition.level || deletionRequest.competitionLevel || ""
+  });
+  return {
+    ok: true,
+    decision,
+    competitionDeleted: decision === "approved" && competitionSnapshot.exists
   };
 });
 

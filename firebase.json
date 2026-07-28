@@ -408,6 +408,7 @@
       "docs/**",
       "tests/**",
       "tools/**",
+      "tmp/**",
       "outputs/**",
       "firebase-backups/**",
       "performances/public/data/intranap-swimmer-perfs/**",

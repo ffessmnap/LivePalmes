@@ -72,6 +72,8 @@ Liens possibles :
 
 L'affichage depend des droits.
 
+Dans la vue engagements du portail, les grands sujets doivent etre separes par sous-onglets lorsque cela rend le parcours plus clair. La creation d'une competition doit notamment rester dans un onglet distinct du calendrier.
+
 ## Capacites cible
 
 Les capacites actuelles sont :
@@ -324,61 +326,92 @@ Le modele exact devra etre valide avant implementation.
 Proposition de depart :
 
 ```text
-entryCompetitions/{competitionId}
+engagementCompetitions/{competitionId}
 ```
 
-Competition d'engagements.
+Competition d'engagements. La premiere implementation lit cette collection en calendrier borne par date.
+
+Lecture V1 :
+
+- calendrier via la Cloud Function `listEngagementCompetitions` ;
+- fiche competition via la Cloud Function `getEngagementCompetition` ;
+- aucun scan public direct de la collection depuis le navigateur.
+
+Creation V1 :
+
+- uniquement via la Cloud Function `createEngagementCompetition` ;
+- `engagements.region.manage` peut creer une competition `departemental` ou `regional` dans sa region ;
+- `engagements.national.manage` peut creer une competition `departemental`, `regional` ou `national` ;
+- aucune ecriture directe Firestore depuis le portail pour cette creation.
+
+Edition V1 :
+
+- uniquement via la Cloud Function `updateEngagementCompetition` ;
+- porte d'abord sur les parametres generaux visibles dans la fiche ;
+- reprend les memes controles de perimetre que la creation ;
+- les courses, restrictions, frais et documents seront ajoutes ensuite dans des onglets separes.
+
+Champs minimaux du calendrier :
+
+- `name` ;
+- `date` au format `YYYY-MM-DD` ;
+- `location` ;
+- `regionId` ;
+- `level` : `departemental`, `regional` ou `national` ;
+- `entryStatus` : `upcoming`, `open` ou `closed` ;
+- `entryDeadlineAt` au format ISO si connu ;
+- `officialsRequired`.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}
 ```
 
 Etat d'engagement d'un club sur une competition.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}/swimmers/{entrySwimmerId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}/swimmers/{entrySwimmerId}
 ```
 
 Nageurs ajoutes par le club a la competition.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}/individualEntries/{entryId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}/individualEntries/{entryId}
 ```
 
 Courses individuelles.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}/relays/{relayId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}/relays/{relayId}
 ```
 
 Relais.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}/officials/{officialId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}/officials/{officialId}
 ```
 
 Officiels declares.
 
 ```text
-entryCompetitions/{competitionId}/clubEntries/{clubId}/documents/{documentId}
+engagementCompetitions/{competitionId}/clubEntries/{clubId}/documents/{documentId}
 ```
 
 Dernier PDF club.
 
 ```text
-entryCompetitions/{competitionId}/documents/{documentId}
+engagementCompetitions/{competitionId}/documents/{documentId}
 ```
 
 Documents admin, dont export TXT global.
 
 ```text
-entryAccessRequests/{requestId}
+engagementAccessRequests/{requestId}
 ```
 
 Demandes d'acces club.
 
 ```text
-entrySwimmerAlerts/{alertId}
+engagementSwimmerAlerts/{alertId}
 ```
 
 Alertes sensibles : doublons valides, changement de club confirme, derogation.
@@ -510,6 +543,79 @@ Actions :
 - frais informatifs ;
 - officiel requis oui/non ;
 - ouverture/fermeture.
+
+La fiche competition du calendrier est structuree en sous-onglets :
+
+- `General` : informations principales et modification des champs deja disponibles ;
+- `Courses` : selection des courses individuelles et relais depuis une liste predefinie LivePalmes ;
+- `Frais` : droits forfaitaires informatifs, frais par course, frais relais et lien HelloAsso ;
+- `Documents` : GED de competition preparee, recap PDF clubs et export TXT a generer dans un lot ulterieur.
+
+Les courses et relais d'une competition sont stockes dans le champ `events` du document `engagementCompetitions`. Ce champ est valide cote Cloud Function contre une nomenclature fermee LivePalmes.
+
+Chaque entree `events[]` peut porter `categoryRestrictions`. Regle V1 :
+
+- tableau vide ou absent : toutes categories autorisees ;
+- tableau renseigne : seules les categories listees sont autorisees ;
+- les categories individuelles sont validees cote serveur contre les codes LivePalmes `P`, `B`, `M`, `C`, `J`, `S`, `M30+`, `M40+`, `M50+`, `M60+`, `M70+`, `M80+` ;
+- les categories relais sont validees cote serveur contre les codes LivePalmes `P`, `B`, `M`, `C`, `J`, `S`, `R140`, `R180`, `R220`, `R260` ;
+- le `50 AP` interdit reglementairement `P`, `B` et `M` ;
+- le relais `4 x 200 BI` n'est pas propose en engagements ;
+- le relais `4 x 50 BI` n'est pas propose en engagements ;
+- le relais `4 x 100 SB` remplace le `4 x 200 BI` et est obligatoirement mixte ;
+- le relais `4 x 100 BI` est obligatoirement mixte ;
+- le relais `4 x 50 SF` peut etre mixte uniquement en categories Master ; ce choix est fait par l'admin lors du parametrage de la competition, pas par le club.
+
+Regles de region pour la creation et la modification :
+
+- un niveau 2 regional utilise automatiquement la region de son acces, champ verrouille ;
+- un niveau 3 national renseigne la region pour une competition departementale ou regionale ;
+- une competition nationale n'a pas de region obligatoire et le champ est vide ;
+- cote serveur, une competition nationale est toujours enregistree avec `regionId` vide.
+
+Parametres sportifs V1 stockes dans `engagementCompetitions` :
+
+- `poolLength` : `25`, `33` ou `50` ;
+- `timingType` : `manual` ou `electronic` ;
+- `qualificationTimesMode` : `all` ou `period` ;
+- `qualificationStartDate` et `qualificationEndDate` obligatoires si le mode est `period` ;
+- `maxEventsPerSwimmer` : entier de 0 a 20, `0` signifiant non limite.
+
+Frais informatifs V1 stockes dans `engagementCompetitions.fees` :
+
+- `swimmerFee` : forfait par nageur ;
+- `individualEventFee` : frais par course individuelle ;
+- `relayFee` : frais par relais ;
+- `helloAssoUrl` : lien de paiement optionnel ;
+- `latePaymentSurcharge` : fixe a `50`.
+
+Si `helloAssoUrl` est vide, le portail indique que le lien est en attente de publication. Les factures restent gerees par HelloAsso.
+
+GED competition V1 :
+
+- `computerEmail` est stocke sur la competition pour le futur envoi TXT ;
+- l'onglet Documents affiche les elements attendus : export TXT, recap PDF clubs, emails clubs, email informatique ;
+- les niveaux 2 et 3 peuvent lister les clubs engages et telecharger le PDF recapitulatif de chaque club a la demande ;
+- les statuts documentaires sont prepares avec `pending`, `generated`, `sent` ;
+- le stockage GED durable et l'export TXT seront ajoutes dans le lot documents/export suivant.
+
+## Verification locale des Functions
+
+Par defaut, le portail local appelle les Cloud Functions deployees.
+
+Pour tester les Functions locales sans publication, lancer l'emulateur :
+
+```powershell
+firebase.cmd emulators:start --only functions,firestore --project livepalmes
+```
+
+Puis ouvrir le portail avec le parametre local :
+
+```text
+portail.html?emulator=1#engagements
+```
+
+Le parametre `emulator=1` bascule uniquement les appels Cloud Functions vers `127.0.0.1:5001`. L'authentification Firebase reste celle du projet LivePalmes. Si Firestore est aussi emule, il faut que l'utilisateur connecte existe dans l'emulateur avec les droits engagements necessaires, sauf pour l'UID super admin historique.
 
 ### Lot 3 - Demandes d'acces
 

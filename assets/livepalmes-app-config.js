@@ -46,6 +46,15 @@ const FIREBASE_CONFIG = {
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
 const FIREBASE_FUNCTIONS_REGION = "europe-west1";
+const LOCAL_FUNCTIONS_EMULATOR = (() => {
+  const params = new URLSearchParams(window.location.search || "");
+  const enabled = params.get("emulator") === "1" || params.get("functionsEmulator") === "1";
+  return {
+    enabled,
+    host: params.get("functionsHost") || "127.0.0.1",
+    port: Number(params.get("functionsPort") || 5001) || 5001
+  };
+})();
 const PERFORMANCE_ADDITIONAL_DATA_URL = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
 const fallbackData = {
   meet: {
@@ -102,6 +111,17 @@ const fallbackData = {
   notes: {}
 };
 
+  function configureFunctionsService(service) {
+    if (!LOCAL_FUNCTIONS_EMULATOR.enabled || !service?.useEmulator || service.livePalmesEmulatorConfigured) return service;
+    try {
+      service.useEmulator(LOCAL_FUNCTIONS_EMULATOR.host, LOCAL_FUNCTIONS_EMULATOR.port);
+      service.livePalmesEmulatorConfigured = true;
+    } catch (error) {
+      console.warn("Emulateur Functions LivePalmes indisponible", error);
+    }
+    return service;
+  }
+
   window.LivePalmesAppConfig = {
     storageKey: STORAGE_KEY,
     alertsKey: ALERTS_KEY,
@@ -129,6 +149,8 @@ const fallbackData = {
     speakerInfoSheets: SPEAKER_INFO_SHEETS,
     firebaseConfig: FIREBASE_CONFIG,
     firebaseFunctionsRegion: FIREBASE_FUNCTIONS_REGION,
+    localFunctionsEmulator: LOCAL_FUNCTIONS_EMULATOR,
+    configureFunctionsService,
     performanceAdditionalDataUrl: PERFORMANCE_ADDITIONAL_DATA_URL,
     fallbackData
   };

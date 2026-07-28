@@ -43,10 +43,12 @@
     function functionsService() {
       if (!firebase?.functions || !firebase.apps?.length) return null;
       try {
-        return firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+        const service = firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+        return global.LivePalmesAppConfig?.configureFunctionsService?.(service) || service;
       } catch {
         try {
-          return firebase.functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+          const service = firebase.functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+          return global.LivePalmesAppConfig?.configureFunctionsService?.(service) || service;
         } catch {
           return null;
         }
@@ -91,9 +93,10 @@
 
     function hasLivePalmesCapability(claims = currentClaims) {
       const capabilities = claims?.livepalmesCapabilities || {};
+      const requiredCapabilityNeedsExplicitGrant = requiredCapability === "dtn.view" || requiredCapability.startsWith("engagements.");
       if (requiredCapability) {
         return claims?.livepalmesAccess === true && (
-          capabilities["admin.full"] === true ||
+          (!requiredCapabilityNeedsExplicitGrant && capabilities["admin.full"] === true) ||
           capabilities[requiredCapability] === true
         );
       }
@@ -103,7 +106,10 @@
         capabilities["consoles.manage"] === true ||
         capabilities["consoles.access"] === true ||
         capabilities["competitions.import"] === true ||
-        capabilities["dtn.view"] === true
+        capabilities["dtn.view"] === true ||
+        capabilities["engagements.club.manage"] === true ||
+        capabilities["engagements.region.manage"] === true ||
+        capabilities["engagements.national.manage"] === true
       );
     }
 

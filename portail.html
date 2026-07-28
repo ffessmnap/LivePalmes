@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260727-performance-menu-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260728-engagements-club-swimmers-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -96,6 +96,20 @@
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
                 <h2 id="adminNavCompetition">Compétitions</h2>
+                <a class="admin-portal-nav-club-link" href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar">Espace club</a>
+                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers">Mes nageurs</a>
+                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople">Mes officiels</a>
+                <div class="admin-portal-nav-nested" data-engagements-admin-nav hidden>
+                  <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu">
+                    <span>Administration des comp&eacute;titions</span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                  <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Administration des comp&eacute;titions" hidden>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
+                    <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Demandes de suppression <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                  </div>
+                </div>
                 <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPortal">
@@ -114,6 +128,32 @@
               </div>
 
               <div class="admin-account-grid">
+                <section class="admin-account-card admin-account-scope-card" aria-labelledby="adminAccountScopeTitle">
+                  <div>
+                    <span>Profil</span>
+                    <h3 id="adminAccountScopeTitle">P&eacute;rim&egrave;tre et habilitations</h3>
+                    <p>Ces informations d&eacute;terminent les espaces et les actions disponibles dans le portail.</p>
+                  </div>
+                  <dl class="admin-account-scope-list">
+                    <div>
+                      <dt>Niveau engagements</dt>
+                      <dd id="adminEngagementsAccessLevel">-</dd>
+                    </div>
+                    <div>
+                      <dt>Club</dt>
+                      <dd id="adminEngagementsClubScope">-</dd>
+                    </div>
+                    <div>
+                      <dt>R&eacute;gion</dt>
+                      <dd id="adminEngagementsRegionScope">-</dd>
+                    </div>
+                  </dl>
+                  <div>
+                    <strong class="admin-account-capabilities-title">Habilitations actives</strong>
+                    <div id="adminAccountCapabilities" class="admin-account-capabilities">-</div>
+                  </div>
+                </section>
+
                 <section class="admin-account-card" aria-labelledby="adminAccountEmailTitle">
                   <div>
                     <span>Adresse de connexion</span>
@@ -352,6 +392,678 @@
 
               <datalist id="swimmerOptions"></datalist>
               <datalist id="clubOptions"></datalist>
+            </section>
+
+            <section id="adminEngagementsView" class="admin-portal-engagements-view" data-admin-view="engagements" data-engagements-panel aria-labelledby="adminEngagementsViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span id="adminEngagementsViewEyebrow">Comp&eacute;titions</span>
+                <h2 id="adminEngagementsViewTitle">Administration des comp&eacute;titions</h2>
+                <p id="adminEngagementsViewIntro"></p>
+              </div>
+
+              <div id="adminEngagementsCalendarPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="calendar">
+                <section id="adminEngagementsCalendarCard" class="admin-engagements-card" aria-labelledby="adminEngagementsCalendarTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span id="adminEngagementsCalendarEyebrow">Calendrier</span>
+                      <h3 id="adminEngagementsCalendarTitle">Comp&eacute;titions</h3>
+                    </div>
+                    <button id="adminEngagementsRefreshButton" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <form id="adminEngagementsCalendarFilters" class="admin-engagements-calendar-filters" role="search">
+                    <label>
+                      Saison
+                      <select id="adminEngagementsSeasonFilter"></select>
+                    </label>
+                    <label>
+                      R&eacute;gion
+                      <select id="adminEngagementsRegionFilter"></select>
+                    </label>
+                    <label>
+                      Niveau
+                      <select id="adminEngagementsLevelFilter">
+                        <option value="">Tous</option>
+                        <option value="national">National</option>
+                        <option value="regional">R&eacute;gional</option>
+                        <option value="departemental">D&eacute;partemental</option>
+                      </select>
+                    </label>
+                    <label>
+                      Statut
+                      <select id="adminEngagementsStatusFilter">
+                        <option value="">Tous</option>
+                        <option value="upcoming">A venir</option>
+                        <option value="open">Ouverts</option>
+                        <option value="closed">Ferm&eacute;s</option>
+                      </select>
+                    </label>
+                    <label id="adminEngagementsMineFilterLabel" class="admin-engagements-filter-check" hidden>
+                      <input id="adminEngagementsMineFilter" type="checkbox">
+                      <span>Mes comp&eacute;titions</span>
+                    </label>
+                    <button id="adminEngagementsFiltersReset" class="ghost-button" type="button">Effacer</button>
+                  </form>
+                  <p id="adminEngagementsStatus" class="admin-portal-message" data-tone="loading">Socle engagements actif.</p>
+                  <div id="adminEngagementsCalendarList" class="admin-engagements-calendar-list" aria-live="polite"></div>
+                  <section id="adminEngagementsDetail" class="admin-engagements-detail" aria-labelledby="adminEngagementsDetailTitle" hidden>
+                    <div class="admin-engagements-detail-head">
+                      <div>
+                        <span id="adminEngagementsDetailEyebrow">Fiche comp&eacute;tition</span>
+                        <h4 id="adminEngagementsDetailTitle">S&eacute;lectionnez une comp&eacute;tition</h4>
+                        <p id="adminEngagementsDetailSubtitle" class="admin-engagements-detail-subtitle"></p>
+                        <span id="adminEngagementsEditState" class="admin-engagements-edit-state" hidden>Lecture seule</span>
+                      </div>
+                      <div class="admin-engagements-detail-actions">
+                        <button id="adminEngagementsEditButton" class="ghost-button" type="button" data-engagements-create hidden>Modifier</button>
+                        <button id="adminEngagementsSaveButton" type="button" hidden>Enregistrer</button>
+                        <button id="adminEngagementsEditCancelTop" class="ghost-button" type="button" hidden>Annuler</button>
+                        <button id="adminEngagementsDeleteButton" class="ghost-button admin-engagements-danger-button" type="button" hidden>Supprimer</button>
+                        <button id="adminEngagementsDetailClose" class="ghost-button" type="button">Fermer</button>
+                      </div>
+                    </div>
+                    <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
+                    <div class="admin-engagements-detail-tabs" role="tablist" aria-label="Fiche competition">
+                      <button id="adminEngagementsDetailGeneralTab" type="button" role="tab" aria-selected="true" aria-controls="adminEngagementsDetailGeneralPanel" data-engagements-detail-tab-button="general">G&eacute;n&eacute;ral</button>
+                      <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Programme</button>
+                      <button id="adminEngagementsDetailFeesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailFeesPanel" data-engagements-detail-tab-button="fees">Frais</button>
+                      <button id="adminEngagementsDetailTeamTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailTeamPanel" data-engagements-detail-tab-button="team">Chef d'&eacute;quipe</button>
+                      <button id="adminEngagementsDetailOfficialsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailOfficialsPanel" data-engagements-detail-tab-button="officials">Officiels</button>
+                      <button id="adminEngagementsDetailSwimmersTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailSwimmersPanel" data-engagements-detail-tab-button="swimmers">Nageurs</button>
+                      <button id="adminEngagementsDetailEntriesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailEntriesPanel" data-engagements-detail-tab-button="entries">Courses</button>
+                      <button id="adminEngagementsDetailRelaysTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailRelaysPanel" data-engagements-detail-tab-button="relays">Relais</button>
+                      <button id="adminEngagementsDetailSummaryTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailSummaryPanel" data-engagements-detail-tab-button="summary">R&eacute;capitulatif</button>
+                      <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents">Documents</button>
+                    </div>
+                    <div id="adminEngagementsDetailGeneralPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailGeneralTab" data-engagements-detail-tab-panel="general">
+                      <dl id="adminEngagementsDetailList" class="admin-engagements-detail-list"></dl>
+                      <form id="adminEngagementsEditForm" class="admin-engagements-form admin-engagements-edit-form" hidden>
+                        <fieldset class="admin-engagements-form-section">
+                          <legend>Competition</legend>
+                          <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Nom
+                              <input id="adminEngagementsEditName" type="text" maxlength="160" required>
+                            </label>
+                            <label>
+                              Date
+                              <input id="adminEngagementsEditDate" type="date" required>
+                            </label>
+                            <label>
+                              Date de fin
+                              <input id="adminEngagementsEditEndDate" type="date" required>
+                            </label>
+                            <label>
+                              Lieu
+                              <input id="adminEngagementsEditLocation" type="text" maxlength="160" required>
+                            </label>
+                            <label>
+                              Niveau
+                              <select id="adminEngagementsEditLevel">
+                                <option value="regional">R&eacute;gional</option>
+                                <option value="departemental">D&eacute;partemental</option>
+                                <option value="national">National</option>
+                              </select>
+                            </label>
+                            <label>
+                              R&eacute;gion
+                              <select id="adminEngagementsEditRegionId"></select>
+                              <small id="adminEngagementsEditRegionNote" class="admin-engagements-field-note"></small>
+                            </label>
+                          </div>
+                        </fieldset>
+                        <fieldset class="admin-engagements-form-section">
+                          <legend>Engagements</legend>
+                          <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Limite des engagements
+                              <input id="adminEngagementsEditDeadline" type="datetime-local">
+                            </label>
+                            <label>
+                              Statut
+                              <select id="adminEngagementsEditEntryStatus">
+                                <option value="upcoming">A venir</option>
+                                <option value="open">Ouverts</option>
+                                <option value="closed">Ferm&eacute;s</option>
+                              </select>
+                            </label>
+                            <label>
+                              Max &eacute;preuves par nageur
+                              <input id="adminEngagementsEditMaxEvents" type="number" min="0" max="20" step="1" inputmode="numeric">
+                            </label>
+                            <label class="admin-engagements-check">
+                              <input id="adminEngagementsEditOfficialsRequired" type="checkbox">
+                              <span>Officiels requis</span>
+                            </label>
+                          </div>
+                        </fieldset>
+                        <fieldset class="admin-engagements-form-section">
+                          <legend>Parametres sportifs</legend>
+                          <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Bassin
+                              <select id="adminEngagementsEditPoolLength" required>
+                                <option value="">A choisir</option>
+                                <option value="25">25 m</option>
+                                <option value="33">33 m</option>
+                                <option value="50">50 m</option>
+                              </select>
+                            </label>
+                            <label>
+                              Chronom&eacute;trage
+                              <select id="adminEngagementsEditTimingType" required>
+                                <option value="">A choisir</option>
+                                <option value="electronic">Electronique</option>
+                                <option value="manual">Manuel</option>
+                              </select>
+                            </label>
+                            <label>
+                              Temps d'engagement
+                              <select id="adminEngagementsEditQualificationMode">
+                                <option value="all">Tous les temps connus</option>
+                                <option value="period">P&eacute;riode d&eacute;finie</option>
+                              </select>
+                            </label>
+                            <label>
+                              D&eacute;but p&eacute;riode temps
+                              <input id="adminEngagementsEditQualificationStart" type="date">
+                            </label>
+                            <label>
+                              Fin p&eacute;riode temps
+                              <input id="adminEngagementsEditQualificationEnd" type="date">
+                            </label>
+                            <label>
+                              Si aucun temps connu
+                              <select id="adminEngagementsEditMissingEntryTimeMode">
+                                <option value="manual">Saisie manuelle autoris&eacute;e</option>
+                                <option value="forbidden">Course impossible</option>
+                                <option value="default595999">Temps 59:59.99</option>
+                              </select>
+                            </label>
+                          </div>
+                        </fieldset>
+                        <fieldset class="admin-engagements-form-section">
+                          <legend>Documents</legend>
+                          <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Email informatique
+                              <input id="adminEngagementsEditComputerEmail" type="email" maxlength="180" autocomplete="email">
+                            </label>
+                          </div>
+                        </fieldset>
+                        <div class="admin-portal-actions admin-engagements-inline-save-actions" hidden>
+                          <button type="submit">Enregistrer</button>
+                          <button id="adminEngagementsEditCancel" class="ghost-button" type="button">Annuler</button>
+                        </div>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailCoursesPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailCoursesTab" data-engagements-detail-tab-panel="courses" hidden>
+                      <form id="adminEngagementsEventsForm" class="admin-engagements-events-form">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Programme des &eacute;preuves</strong>
+                            <small id="adminEngagementsEventsSummary">Aucune &eacute;preuve s&eacute;lectionn&eacute;e.</small>
+                          </div>
+                          <button id="adminEngagementsEventsSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <details id="adminEngagementsEventsChoiceSection" class="admin-engagements-events-section">
+                          <summary>
+                            <span>
+                              <strong>Choix des &eacute;preuves</strong>
+                              <small id="adminEngagementsEventsChoiceSummary">Aucune &eacute;preuve s&eacute;lectionn&eacute;e.</small>
+                            </span>
+                            <button class="ghost-button admin-engagements-section-toggle" type="button" data-engagements-section-toggle="adminEngagementsEventsChoiceSection">Ouvrir</button>
+                          </summary>
+                          <fieldset>
+                            <legend>Courses individuelles</legend>
+                            <div id="adminEngagementsIndividualEvents" class="admin-engagements-events-list"></div>
+                          </fieldset>
+                          <fieldset>
+                            <legend>Relais</legend>
+                            <div id="adminEngagementsRelayEvents" class="admin-engagements-events-list"></div>
+                          </fieldset>
+                        </details>
+                        <details id="adminEngagementsProgramSection" class="admin-engagements-events-section">
+                          <summary>
+                            <span>
+                              <strong>Programme de la comp&eacute;tition</strong>
+                              <small id="adminEngagementsProgramSummary">Ordre non renseign&eacute;.</small>
+                            </span>
+                            <button class="ghost-button admin-engagements-section-toggle" type="button" data-engagements-section-toggle="adminEngagementsProgramSection">Ouvrir</button>
+                          </summary>
+                          <div class="admin-engagements-program-head">
+                            <button id="adminEngagementsProgramAddSession" class="ghost-button" type="button">Ajouter une session</button>
+                          </div>
+                          <div id="adminEngagementsProgramSessions" class="admin-engagements-program-sessions" data-engagement-program-sessions></div>
+                        </details>
+                        <p id="adminEngagementsEventsMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailFeesPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailFeesTab" data-engagements-detail-tab-panel="fees" hidden>
+                      <form id="adminEngagementsFeesForm" class="admin-engagements-fees-form">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Frais d'engagement</strong>
+                            <small id="adminEngagementsFeesSummary" hidden></small>
+                          </div>
+                          <button id="adminEngagementsFeesSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <div class="admin-engagements-fees-grid">
+                          <label>
+                            Forfait par nageur
+                            <input id="adminEngagementsSwimmerFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                            <span id="adminEngagementsSwimmerFeeRead" class="admin-engagements-read-value"></span>
+                          </label>
+                          <label>
+                            Frais par course
+                            <input id="adminEngagementsIndividualEventFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                            <span id="adminEngagementsIndividualEventFeeRead" class="admin-engagements-read-value"></span>
+                          </label>
+                          <label>
+                            Frais par relais
+                            <input id="adminEngagementsRelayFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                            <span id="adminEngagementsRelayFeeRead" class="admin-engagements-read-value"></span>
+                          </label>
+                          <label>
+                            Lien HelloAsso
+                            <input id="adminEngagementsHelloAssoUrl" type="url" maxlength="300" placeholder="https://www.helloasso.com/...">
+                            <span id="adminEngagementsHelloAssoUrlRead" class="admin-engagements-read-value"></span>
+                          </label>
+                        </div>
+                        <p class="admin-engagements-payment-note">Paiement attendu avant la fin de la premi&egrave;re journ&eacute;e de comp&eacute;tition. Un surplus forfaitaire de 50 &euro; s'applique ensuite.</p>
+                        <p id="adminEngagementsFeesMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailTeamPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailTeamTab" data-engagements-detail-tab-panel="team" hidden>
+                      <form id="adminEngagementsClubTeamForm" class="admin-engagements-club-step-form">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Chef d'&eacute;quipe</strong>
+                            <small id="adminEngagementsClubTeamSummary">A renseigner avant de commencer les engagements.</small>
+                          </div>
+                          <button id="adminEngagementsClubTeamSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <div class="admin-engagements-club-choice-list">
+                          <label class="admin-engagements-club-choice">
+                            <input type="radio" name="adminEngagementsClubTeamMode" value="person" checked>
+                            <span>D&eacute;clarer un chef d'&eacute;quipe</span>
+                          </label>
+                          <div id="adminEngagementsClubTeamPersonFields" class="admin-engagements-form-section-grid">
+                            <label class="admin-engagements-club-team-picker">
+                              Personne connue
+                              <select id="adminEngagementsClubTeamPersonSelect">
+                                <option value="">Saisie manuelle</option>
+                              </select>
+                            </label>
+                            <label>
+                              Pr&eacute;nom
+                              <input id="adminEngagementsClubTeamFirstName" type="text" maxlength="80" autocomplete="given-name">
+                            </label>
+                            <label>
+                              Nom
+                              <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name">
+                            </label>
+                            <label>
+                              Num&eacute;ro de licence
+                              <input id="adminEngagementsClubTeamLicense" type="text" maxlength="60" inputmode="numeric">
+                            </label>
+                            <label class="admin-engagements-check">
+                              <input id="adminEngagementsClubTeamExternal" type="checkbox">
+                              <span>Chef d'&eacute;quipe hors club</span>
+                            </label>
+                            <label id="adminEngagementsClubTeamExternalClubIdLabel" hidden>
+                              Club du chef d'&eacute;quipe
+                              <input id="adminEngagementsClubTeamExternalClubId" type="text" maxlength="40" inputmode="numeric">
+                            </label>
+                            <label id="adminEngagementsClubTeamExternalClubNameLabel" hidden>
+                              Nom du club
+                              <input id="adminEngagementsClubTeamExternalClubName" type="text" maxlength="140">
+                            </label>
+                          </div>
+                          <label class="admin-engagements-club-choice">
+                            <input type="radio" name="adminEngagementsClubTeamMode" value="renounced">
+                            <span>Ne pas d&eacute;clarer de chef d'&eacute;quipe</span>
+                          </label>
+                          <label id="adminEngagementsClubTeamRenunciationLabel" class="admin-engagements-check admin-engagements-club-renunciation" hidden>
+                            <input id="adminEngagementsClubTeamRenunciation" type="checkbox">
+                            <span>Le club renonce au droit de r&eacute;clamation pour cette comp&eacute;tition.</span>
+                          </label>
+                        </div>
+                        <p id="adminEngagementsClubTeamMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailOfficialsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailOfficialsTab" data-engagements-detail-tab-panel="officials" hidden>
+                      <form id="adminEngagementsClubOfficialsForm" class="admin-engagements-club-step-form" data-club-step="officials">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Officiels</strong>
+                            <small id="adminEngagementsClubOfficialsSummary">Aucun officiel s&eacute;lectionn&eacute;.</small>
+                          </div>
+                          <button id="adminEngagementsClubOfficialsSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <div id="adminEngagementsClubOfficialsList" class="admin-engagements-club-officials-list" aria-live="polite"></div>
+                        <p id="adminEngagementsClubOfficialsMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailSwimmersPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSwimmersTab" data-engagements-detail-tab-panel="swimmers" hidden>
+                      <form id="adminEngagementsClubSwimmersForm" class="admin-engagements-club-step-form" data-club-step="swimmers">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Nageurs</strong>
+                            <small id="adminEngagementsClubSwimmersSummary">Aucun nageur s&eacute;lectionn&eacute;.</small>
+                          </div>
+                          <button id="adminEngagementsClubSwimmersSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <label class="admin-engagements-club-search">
+                          Rechercher dans les nageurs connus du club
+                          <input id="adminEngagementsClubSwimmersSearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
+                        </label>
+                        <details class="admin-engagements-club-new-swimmer">
+                          <summary>Ajouter un nageur absent de la base</summary>
+                          <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Pr&eacute;nom
+                              <input id="adminEngagementsClubNewSwimmerFirstName" type="text" maxlength="80" autocomplete="given-name">
+                            </label>
+                            <label>
+                              Nom
+                              <input id="adminEngagementsClubNewSwimmerLastName" type="text" maxlength="80" autocomplete="family-name">
+                            </label>
+                            <label>
+                              Date de naissance
+                              <input id="adminEngagementsClubNewSwimmerBirthDate" type="date">
+                            </label>
+                            <label>
+                              Sexe
+                              <select id="adminEngagementsClubNewSwimmerSex">
+                                <option value="">Choisir</option>
+                                <option value="F">Femmes</option>
+                                <option value="M">Hommes</option>
+                              </select>
+                            </label>
+                            <label>
+                              Num&eacute;ro de licence
+                              <input id="adminEngagementsClubNewSwimmerLicense" type="text" maxlength="60" inputmode="numeric">
+                            </label>
+                          </div>
+                          <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Cr&eacute;er le nageur</button>
+                          <div id="adminEngagementsClubNewSwimmerAlerts" class="admin-engagements-club-swimmer-alerts" aria-live="polite"></div>
+                        </details>
+                        <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
+                        <p id="adminEngagementsClubSwimmersMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailEntriesPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailEntriesTab" data-engagements-detail-tab-panel="entries" hidden>
+                      <form id="adminEngagementsClubEntriesForm" class="admin-engagements-club-step-form" data-club-step="entries">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Courses</strong>
+                            <small id="adminEngagementsClubEntriesSummary">Aucune course s&eacute;lectionn&eacute;e.</small>
+                          </div>
+                          <button id="adminEngagementsClubEntriesSaveButton" type="submit">Enregistrer</button>
+                        </div>
+                        <div id="adminEngagementsClubEntriesList" class="admin-engagements-club-entries-list" aria-live="polite"></div>
+                        <p id="adminEngagementsClubEntriesMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailRelaysPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailRelaysTab" data-engagements-detail-tab-panel="relays" hidden>
+                      <form id="adminEngagementsClubRelaysForm" class="admin-engagements-club-step-form" data-club-step="relays">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>Relais</strong>
+                            <small id="adminEngagementsClubRelaysSummary">Aucun relais s&eacute;lectionn&eacute;.</small>
+                          </div>
+                          <div class="admin-engagements-inline-actions">
+                            <button id="adminEngagementsClubRelaysAddButton" class="ghost-button compact" type="button">Ajouter</button>
+                            <button id="adminEngagementsClubRelaysSaveButton" type="submit">Enregistrer</button>
+                          </div>
+                        </div>
+                        <div id="adminEngagementsClubRelaysList" class="admin-engagements-club-relays-list" aria-live="polite"></div>
+                        <p id="adminEngagementsClubRelaysMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </form>
+                    </div>
+                    <div id="adminEngagementsDetailSummaryPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSummaryTab" data-engagements-detail-tab-panel="summary" hidden>
+                      <section class="admin-engagements-club-step admin-engagements-club-summary" data-club-step="summary">
+                        <div class="admin-engagements-events-head">
+                          <div>
+                            <strong>R&eacute;capitulatif club</strong>
+                            <small id="adminEngagementsClubSummaryStatus">R&eacute;capitulatif &agrave; charger.</small>
+                          </div>
+                          <button id="adminEngagementsClubSummaryPdfButton" class="ghost-button" type="button">T&eacute;l&eacute;charger le PDF</button>
+                        </div>
+                        <dl id="adminEngagementsClubSummaryList" class="admin-engagements-detail-list"></dl>
+                        <div id="adminEngagementsClubSummaryRelays" class="admin-engagements-club-summary-relays"></div>
+                      </section>
+                    </div>
+                    <div id="adminEngagementsDetailDocumentsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDocumentsTab" data-engagements-detail-tab-panel="documents" hidden>
+                      <div class="admin-engagements-documents">
+                        <div class="admin-engagements-documents-head">
+                          <div>
+                            <strong>GED comp&eacute;tition</strong>
+                            <small id="adminEngagementsDocumentsSummary">Documents &agrave; pr&eacute;parer.</small>
+                          </div>
+                          <span id="adminEngagementsComputerEmailLabel">Email informatique non renseign&eacute;</span>
+                        </div>
+                        <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
+                        <div id="adminEngagementsClubRecapFiles" class="admin-engagements-club-recap-files" aria-live="polite"></div>
+                        <div id="adminEngagementsGeneratedFiles" class="admin-engagements-generated-files"></div>
+                      </div>
+                    </div>
+                    <p id="adminEngagementsDetailStatus" class="admin-portal-message" aria-live="polite"></p>
+                  </section>
+                </section>
+              </div>
+
+              <div id="adminEngagementsClubPeoplePanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubPeople" hidden>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsClubPeopleTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Espace club</span>
+                      <h3 id="adminEngagementsClubPeopleTitle">Mes officiels</h3>
+                    </div>
+                    <div class="admin-engagements-detail-actions">
+                      <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
+                      <button id="adminEngagementsClubPeopleRefresh" class="ghost-button" type="button">Actualiser</button>
+                    </div>
+                  </div>
+                  <p id="adminEngagementsClubPeopleStatus" class="admin-portal-message" data-tone="loading">Base club &agrave; charger.</p>
+                  <form id="adminEngagementsClubPersonForm" class="admin-engagements-club-person-form" hidden>
+                    <input id="adminEngagementsClubPersonId" type="hidden">
+                    <div class="admin-engagements-form-section-grid">
+                      <label>
+                        Pr&eacute;nom
+                        <input id="adminEngagementsClubPersonFirstName" type="text" maxlength="80" autocomplete="given-name" required>
+                      </label>
+                      <label>
+                        Nom
+                        <input id="adminEngagementsClubPersonLastName" type="text" maxlength="80" autocomplete="family-name" required>
+                      </label>
+                      <label>
+                        Num&eacute;ro de licence
+                        <input id="adminEngagementsClubPersonLicense" type="text" maxlength="60" inputmode="numeric" required>
+                      </label>
+                      <div class="admin-engagements-club-person-roles" role="group" aria-label="Roles">
+                        <label class="admin-engagements-check">
+                          <input id="adminEngagementsClubPersonRoleTeamLeader" type="checkbox">
+                          <span>Chef d'&eacute;quipe</span>
+                        </label>
+                        <label class="admin-engagements-check">
+                          <input id="adminEngagementsClubPersonRoleOfficial" type="checkbox">
+                          <span>Officiel</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Enregistrer</button>
+                      <button id="adminEngagementsClubPersonCancel" class="ghost-button" type="button">Annuler</button>
+                    </div>
+                    <p id="adminEngagementsClubPersonMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </form>
+                  <div id="adminEngagementsClubPeopleList" class="admin-engagements-club-people-list" aria-live="polite"></div>
+                </section>
+              </div>
+
+              <div id="adminEngagementsClubSwimmersPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubSwimmers" hidden>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsClubSwimmersDirectoryTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Espace club</span>
+                      <h3 id="adminEngagementsClubSwimmersDirectoryTitle">Mes nageurs</h3>
+                      <small id="adminEngagementsClubSwimmersDirectorySummary">Base nageurs du club &agrave; charger.</small>
+                    </div>
+                    <button id="adminEngagementsClubSwimmersDirectoryRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <form class="admin-engagements-club-swimmers-directory-tools" role="search">
+                    <label>
+                      Rechercher
+                      <input id="adminEngagementsClubSwimmersDirectorySearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
+                    </label>
+                  </form>
+                  <p id="adminEngagementsClubSwimmersDirectoryStatus" class="admin-portal-message" data-tone="loading">Base nageurs &agrave; charger.</p>
+                  <div id="adminEngagementsClubSwimmersDirectoryList" class="admin-engagements-club-swimmers-directory-list" aria-live="polite"></div>
+                </section>
+              </div>
+
+              <div id="adminEngagementsCreatePanel" class="admin-engagements-tab-panel" data-engagements-tab-panel="create" data-engagements-create hidden>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsCreateTitle">
+                  <div>
+                    <span>Administration</span>
+                    <h3 id="adminEngagementsCreateTitle">Cr&eacute;er une comp&eacute;tition</h3>
+                  </div>
+                  <form id="adminEngagementsCreateForm" class="admin-engagements-form">
+                    <fieldset class="admin-engagements-form-section">
+                      <legend>Competition</legend>
+                      <div class="admin-engagements-form-section-grid">
+                        <label>
+                          Nom
+                          <input id="adminEngagementsName" type="text" maxlength="160" required>
+                        </label>
+                        <label>
+                          Date
+                          <input id="adminEngagementsDate" type="date" required>
+                        </label>
+                        <label>
+                          Date de fin
+                          <input id="adminEngagementsEndDate" type="date" required>
+                        </label>
+                        <label>
+                          Lieu
+                          <input id="adminEngagementsLocation" type="text" maxlength="160" required>
+                        </label>
+                        <label>
+                          Niveau
+                          <select id="adminEngagementsLevel">
+                            <option value="regional">R&eacute;gional</option>
+                            <option value="departemental">D&eacute;partemental</option>
+                            <option value="national">National</option>
+                          </select>
+                        </label>
+                        <label>
+                          R&eacute;gion
+                          <select id="adminEngagementsRegionId"></select>
+                          <small id="adminEngagementsRegionNote" class="admin-engagements-field-note"></small>
+                        </label>
+                      </div>
+                    </fieldset>
+                    <fieldset class="admin-engagements-form-section">
+                      <legend>Engagements</legend>
+                      <div class="admin-engagements-form-section-grid">
+                        <label>
+                          Limite des engagements
+                          <input id="adminEngagementsDeadline" type="datetime-local">
+                        </label>
+                        <label>
+                          Statut
+                          <select id="adminEngagementsEntryStatus">
+                            <option value="upcoming">A venir</option>
+                            <option value="open">Ouverts</option>
+                            <option value="closed">Ferm&eacute;s</option>
+                          </select>
+                        </label>
+                        <label>
+                          Max &eacute;preuves par nageur
+                          <input id="adminEngagementsMaxEvents" type="number" min="0" max="20" step="1" inputmode="numeric">
+                        </label>
+                        <label class="admin-engagements-check">
+                          <input id="adminEngagementsOfficialsRequired" type="checkbox">
+                          <span>Officiels requis</span>
+                        </label>
+                      </div>
+                    </fieldset>
+                    <fieldset class="admin-engagements-form-section">
+                      <legend>Parametres sportifs</legend>
+                      <div class="admin-engagements-form-section-grid">
+                        <label>
+                          Bassin
+                          <select id="adminEngagementsPoolLength" required>
+                            <option value="">A choisir</option>
+                            <option value="25">25 m</option>
+                            <option value="33">33 m</option>
+                            <option value="50">50 m</option>
+                          </select>
+                        </label>
+                        <label>
+                          Chronom&eacute;trage
+                          <select id="adminEngagementsTimingType" required>
+                            <option value="">A choisir</option>
+                            <option value="electronic">Electronique</option>
+                            <option value="manual">Manuel</option>
+                          </select>
+                        </label>
+                        <label>
+                          Temps d'engagement
+                          <select id="adminEngagementsQualificationMode">
+                            <option value="all">Tous les temps connus</option>
+                            <option value="period">P&eacute;riode d&eacute;finie</option>
+                          </select>
+                        </label>
+                        <label>
+                          D&eacute;but p&eacute;riode temps
+                          <input id="adminEngagementsQualificationStart" type="date">
+                        </label>
+                        <label>
+                          Fin p&eacute;riode temps
+                          <input id="adminEngagementsQualificationEnd" type="date">
+                        </label>
+                        <label>
+                          Si aucun temps connu
+                          <select id="adminEngagementsMissingEntryTimeMode">
+                            <option value="manual">Saisie manuelle autoris&eacute;e</option>
+                            <option value="forbidden">Course impossible</option>
+                            <option value="default595999">Temps 59:59.99</option>
+                          </select>
+                        </label>
+                      </div>
+                    </fieldset>
+                    <fieldset class="admin-engagements-form-section">
+                      <legend>Documents</legend>
+                      <div class="admin-engagements-form-section-grid">
+                        <label>
+                          Email informatique
+                          <input id="adminEngagementsComputerEmail" type="email" maxlength="180" autocomplete="email">
+                        </label>
+                      </div>
+                    </fieldset>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Cr&eacute;er</button>
+                    </div>
+                    <p id="adminEngagementsCreateMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </form>
+                </section>
+              </div>
+
+              <div id="adminEngagementsDeletionRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="deletionRequests" hidden>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsDeletionRequestsTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Administration nationale</span>
+                      <h3 id="adminEngagementsDeletionRequestsTitle">Demandes de suppression</h3>
+                    </div>
+                    <button id="adminEngagementsDeletionRequestsRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsDeletionRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
+                  <div id="adminEngagementsDeletionRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
+              </div>
             </section>
 
             <section id="adminImportView" class="admin-portal-import-view import-admin-page" data-admin-view="import" aria-labelledby="adminImportViewTitle" hidden>
@@ -608,7 +1320,58 @@
                 <p>Créez les comptes du portail et adaptez leurs habilitations.</p>
               </div>
 
-        <section id="adminAccessPanel" class="admin-access-preview" aria-label="Création d'un accès au portail">
+        <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Accès existants">
+          <div class="admin-access-list-head">
+            <div>
+              <span>Accès existants</span>
+              <strong>Utilisateurs du portail</strong>
+              <small id="adminAccessCount" class="admin-access-count" aria-live="polite"></small>
+            </div>
+            <div class="admin-access-list-head-actions">
+              <button id="adminAccessRefreshButton" class="ghost-button" type="button">Actualiser</button>
+              <button id="adminAccessAddButton" type="button" aria-expanded="false" aria-controls="adminAccessPanel">Ajouter un compte</button>
+            </div>
+          </div>
+          <form id="adminAccessFilters" class="admin-access-filters" role="search">
+            <label class="admin-access-search">
+              <span>Rechercher</span>
+              <input id="adminAccessSearch" type="search" placeholder="Nom, email, licence ou club" autocomplete="off">
+            </label>
+            <label>
+              <span>Statut</span>
+              <select id="adminAccessStatusFilter">
+                <option value="">Tous</option>
+                <option value="active">Actifs</option>
+                <option value="inactive">Inactifs</option>
+              </select>
+            </label>
+            <label>
+              <span>Habilitation</span>
+              <select id="adminAccessCapabilityFilter">
+                <option value="">Toutes</option>
+                <option value="records.manage">Records / MPF</option>
+                <option value="consoles.access">Accès aux consoles</option>
+                <option value="consoles.manage">Consoles compétition</option>
+                <option value="competitions.import">Import des compétitions</option>
+                <option value="dtn.view">Espace DTN</option>
+                <option value="engagements.club.manage">Engagements club</option>
+                <option value="engagements.region.manage">Engagements région</option>
+                <option value="engagements.national.manage">Engagements national</option>
+                <option value="admin.full">Gestion générale</option>
+              </select>
+            </label>
+            <button type="submit">Rechercher</button>
+            <button id="adminAccessClearFilters" class="ghost-button" type="button">Effacer</button>
+          </form>
+          <div id="adminAccessList" class="admin-access-list"></div>
+          <nav id="adminAccessPagination" class="admin-access-pagination" aria-label="Pages des utilisateurs" hidden>
+            <button id="adminAccessPreviousPage" class="ghost-button" type="button">Page précédente</button>
+            <span id="adminAccessPageLabel">Page 1</span>
+            <button id="adminAccessNextPage" class="ghost-button" type="button">Page suivante</button>
+          </nav>
+        </section>
+
+        <section id="adminAccessPanel" class="admin-access-preview" aria-label="Création d'un accès au portail" hidden>
           <div class="admin-access-preview-head">
             <span>Gestion des acces</span>
             <strong>Créer ou mettre à jour un accès</strong>
@@ -630,8 +1393,16 @@
                   <input id="adminAccessEmail" type="email" autocomplete="email" required>
                 </label>
                 <label>
+                  R&eacute;gion
+                  <select id="adminAccessRegionId"></select>
+                </label>
+                <label>
                   Club
-                  <input id="adminAccessClubName" type="text" autocomplete="organization">
+                  <select id="adminAccessClubSelect" disabled>
+                    <option value="">Choisissez d'abord une r&eacute;gion</option>
+                  </select>
+                  <input id="adminAccessClubName" type="hidden">
+                  <input id="adminAccessClubId" type="hidden">
                 </label>
                 <label>
                   Numéro de licence
@@ -662,6 +1433,18 @@
                 <span>Espace DTN</span>
               </label>
               <label>
+                <input type="checkbox" name="capability" value="engagements.club.manage">
+                <span>Engagements club</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="engagements.region.manage">
+                <span>Engagements région</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="engagements.national.manage">
+                <span>Engagements national</span>
+              </label>
+              <label>
                 <input type="checkbox" name="capability" value="admin.full">
                 <span>Gestion générale</span>
               </label>
@@ -678,16 +1461,6 @@
           </form>
         </section>
 
-        <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Acces existants">
-          <div class="admin-access-list-head">
-            <div>
-              <span>Acces existants</span>
-              <strong>Utilisateurs du portail</strong>
-            </div>
-            <button id="adminAccessRefreshButton" class="ghost-button" type="button">Actualiser</button>
-          </div>
-          <div id="adminAccessList" class="admin-access-list"></div>
-        </section>
             </section>
           </div>
         </div>
@@ -697,9 +1470,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
-    <script src="assets/livepalmes-app-config.js?v=20260602-import-competitions-1"></script>
-    <script src="assets/livepalmes-admin-auth.js?v=20260727-console-portal-1"></script>
-    <script src="assets/livepalmes-dtn-qualifications.js?v=20260722-dtn-refresh-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260727-performance-menu-1"></script>
+    <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
+    <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
+    <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260728-club-officials-label-1"></script>
   </body>
 </html>

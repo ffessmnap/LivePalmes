@@ -91,9 +91,11 @@
     if (!firebase?.initializeApp || !firebase?.functions || !config) return null;
     if (!firebase.apps?.length) firebase.initializeApp(config);
     try {
-      return firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+      const service = firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+      return global.LivePalmesAppConfig?.configureFunctionsService?.(service) || service;
     } catch {
-      return firebase.functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+      const service = firebase.functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion || "europe-west1");
+      return global.LivePalmesAppConfig?.configureFunctionsService?.(service) || service;
     }
   }
 
