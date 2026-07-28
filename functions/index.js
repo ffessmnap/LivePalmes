@@ -3591,6 +3591,43 @@ function engagementClubSwimmerItem(doc) {
   });
 }
 
+function engagementReferenceSwimmerItem(raw = {}) {
+  const swimmerId = cleanText(raw.id || raw.swimmerId).slice(0, 80);
+  const firstName = cleanText(raw.firstName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const name = cleanText(raw.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  const birthDate = cleanIsoDate(raw.birthDate);
+  return cleanFirestoreValue({
+    id: swimmerId,
+    swimmerIndexId: swimmerId,
+    source: "reference",
+    swimmerId,
+    identityKey: cleanText(raw.identityKey).slice(0, 180) || engagementSwimmerIdentityKey(firstName, lastName, birthDate),
+    firstName,
+    lastName,
+    name,
+    birthDate,
+    sex: cleanText(raw.sex).slice(0, 20),
+    clubId: cleanText(raw.clubId).slice(0, 40),
+    club: cleanText(raw.club).slice(0, 60),
+    clubName: cleanText(raw.clubName).slice(0, 140),
+    licenseNumber: cleanText(raw.licenseNumber).slice(0, 60),
+    latestDate: cleanIsoDate(raw.latestDate),
+    performanceCount: Math.max(0, Math.trunc(Number(raw.performanceCount) || 0)),
+    sourceIds: swimmerId ? [swimmerId] : []
+  });
+}
+
+function engagementReferenceClubSwimmers(clubId = "", limit = 800) {
+  const targetClubId = cleanText(clubId);
+  if (!targetClubId) return [];
+  return intranapSwimmersReference
+    .filter((swimmer) => cleanText(swimmer.clubId) === targetClubId)
+    .slice(0, limit)
+    .map(engagementReferenceSwimmerItem)
+    .filter((swimmer) => swimmer.swimmerIndexId && swimmer.clubId === targetClubId);
+}
+
 function cleanIsoDateTime(value) {
   const text = cleanText(value).slice(0, 40);
   if (!text) return "";
@@ -4091,8 +4128,12 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     .get();
   const baseSwimmers = [
     ...newSwimmersSnapshot.docs.map(engagementNewSwimmerItem),
-    ...snapshot.docs.map(engagementClubSwimmerItem)
-  ];
+    ...snapshot.docs.map(engagementClubSwimmerItem),
+    ...engagementReferenceClubSwimmers(context.clubId, limit)
+  ].filter((swimmer, index, swimmers) => {
+    if (!swimmer.swimmerIndexId) return false;
+    return swimmers.findIndex((candidate) => candidate.swimmerIndexId === swimmer.swimmerIndexId) === index;
+  }).slice(0, limit);
   const licensesByIndexId = await engagementSwimmerLicensesByIndexIds(baseSwimmers.map((swimmer) => swimmer.id));
   const swimmers = baseSwimmers
     .map((swimmer) => {
@@ -4213,7 +4254,12 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const seen = new Set();
   requestedSwimmers.slice(0, 300).forEach((rawSwimmer) => {
     const swimmerIndexId = cleanText(rawSwimmer?.swimmerIndexId).slice(0, 80);
-    const source = cleanText(rawSwimmer?.source) === "engagement" ? "engagement" : "performances";
+    const requestedSource = cleanText(rawSwimmer?.source);
+    const source = requestedSource === "engagement"
+      ? "engagement"
+      : requestedSource === "reference"
+        ? "reference"
+        : "performances";
     const licenseNumber = cleanText(rawSwimmer?.licenseNumber).slice(0, 60);
     const individualEntries = cleanEngagementEntryIndividualEntries(
       rawSwimmer?.individualEntries || rawSwimmer?.individualEventCodes || [],
@@ -4236,30 +4282,49 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
-  const swimmerRefs = uniqueSwimmers.map((swimmer) => admin.firestore()
+  const referenceSwimmersById = new Map(
+    intranapSwimmersReference.map((item) => [cleanText(item.id || item.swimmerId), engagementReferenceSwimmerItem(item)])
+  );
+  const firestoreSwimmers = uniqueSwimmers.filter((swimmer) => swimmer.source !== "reference");
+  const firestoreRefs = firestoreSwimmers.map((swimmer) => admin.firestore()
     .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
     .doc(swimmer.swimmerIndexId));
-  const swimmerDocs = swimmerRefs.length ? await admin.firestore().getAll(...swimmerRefs) : [];
-  let swimmers = await Promise.all(swimmerDocs.map(async (doc, index) => {
-    if (!doc.exists) {
+  const firestoreDocs = firestoreRefs.length ? await admin.firestore().getAll(...firestoreRefs) : [];
+  const firestoreDocsByRequestedId = new Map();
+  firestoreDocs.forEach((doc, index) => {
+    const requestedSwimmer = firestoreSwimmers[index];
+    if (!requestedSwimmer) return;
+    firestoreDocsByRequestedId.set(`${requestedSwimmer.source}:${requestedSwimmer.swimmerIndexId}`, doc);
+  });
+
+  let swimmers = await Promise.all(uniqueSwimmers.map(async (requestedSwimmer) => {
+    let swimmer = null;
+    if (requestedSwimmer.source === "reference") {
+      swimmer = referenceSwimmersById.get(requestedSwimmer.swimmerIndexId) || null;
+    } else {
+      const doc = firestoreDocsByRequestedId.get(`${requestedSwimmer.source}:${requestedSwimmer.swimmerIndexId}`);
+      if (doc?.exists) {
+        swimmer = requestedSwimmer.source === "engagement"
+          ? engagementNewSwimmerItem(doc)
+          : engagementClubSwimmerItem(doc);
+      }
+    }
+    if (!swimmer) {
       throw new HttpsError("invalid-argument", "Nageur inconnu dans la base LivePalmes.");
     }
-    const swimmer = uniqueSwimmers[index].source === "engagement"
-      ? engagementNewSwimmerItem(doc)
-      : engagementClubSwimmerItem(doc);
     if (swimmer.clubId !== context.clubId) {
       throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
     }
     const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
-      { ...swimmer, source: uniqueSwimmers[index].source },
-      uniqueSwimmers[index].individualEntries,
+      { ...swimmer, source: requestedSwimmer.source },
+      requestedSwimmer.individualEntries,
       competitionTimeRules
     );
     return cleanEngagementEntrySwimmer({
       ...swimmer,
       swimmerIndexId: swimmer.id,
-      source: uniqueSwimmers[index].source,
-      licenseNumber: uniqueSwimmers[index].licenseNumber,
+      source: requestedSwimmer.source,
+      licenseNumber: requestedSwimmer.licenseNumber,
       individualEntries
     });
   }));
