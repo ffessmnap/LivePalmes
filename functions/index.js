@@ -7,6 +7,7 @@ const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
+const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
 
 admin.initializeApp();
@@ -3621,7 +3622,7 @@ function engagementReferenceSwimmerItem(raw = {}) {
 function engagementReferenceClubSwimmers(clubId = "", limit = 800) {
   const targetClubId = cleanText(clubId);
   if (!targetClubId) return [];
-  return intranapSwimmersReference
+  return intranapSwimmersIndex
     .filter((swimmer) => cleanText(swimmer.clubId) === targetClubId)
     .slice(0, limit)
     .map(engagementReferenceSwimmerItem)
@@ -4282,9 +4283,16 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
-  const referenceSwimmersById = new Map(
-    intranapSwimmersReference.map((item) => [cleanText(item.id || item.swimmerId), engagementReferenceSwimmerItem(item)])
-  );
+  const referenceSwimmersById = new Map();
+  intranapSwimmersIndex.forEach((item) => {
+    const swimmer = engagementReferenceSwimmerItem(item);
+    [
+      item.id,
+      item.swimmerId,
+      ...(Array.isArray(item.aliases) ? item.aliases : []),
+      ...(Array.isArray(item.sourceIds) ? item.sourceIds : [])
+    ].map(cleanText).filter(Boolean).forEach((id) => referenceSwimmersById.set(id, swimmer));
+  });
   const firestoreSwimmers = uniqueSwimmers.filter((swimmer) => swimmer.source !== "reference");
   const firestoreRefs = firestoreSwimmers.map((swimmer) => admin.firestore()
     .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
