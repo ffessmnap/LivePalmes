@@ -2980,6 +2980,7 @@ function engagementNewSwimmerItem(doc) {
   const firstName = cleanText(data.firstName).slice(0, 80);
   const lastName = cleanText(data.lastName).slice(0, 80);
   const name = cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  const alerts = Array.isArray(data.alerts) ? data.alerts : [];
   return cleanFirestoreValue({
     id: doc.id,
     swimmerIndexId: doc.id,
@@ -2997,7 +2998,14 @@ function engagementNewSwimmerItem(doc) {
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
     latestDate: cleanIsoDate(data.createdAt),
     performanceCount: 0,
-    alertCount: Array.isArray(data.alerts) ? data.alerts.length : 0
+    alertCount: alerts.length,
+    alerts,
+    alertValidationStatus: cleanText(data.alertValidationStatus).slice(0, 60),
+    active: data.active !== false,
+    createdAt: cleanText(data.createdAt).slice(0, 40),
+    updatedAt: cleanText(data.updatedAt).slice(0, 40),
+    disabledAt: cleanText(data.disabledAt).slice(0, 40),
+    disabledBy: cleanText(data.disabledBy).slice(0, 80)
   });
 }
 
@@ -4207,6 +4215,18 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
+exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
+  const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  return {
+    ok: true,
+    swimmer,
+    alerts,
+    requiresConfirmation: alerts.length > 0
+  };
+});
+
 exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
@@ -4223,6 +4243,13 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
     throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
   }
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  const confirmAlerts = request.data?.confirmAlerts === true;
+  if (alerts.length && !confirmAlerts) {
+    throw new HttpsError("failed-precondition", "Confirmation obligatoire avant creation du nageur.", {
+      alerts,
+      requiresConfirmation: true
+    });
+  }
   const season = currentEngagementSeasonInfo(new Date(now));
   const payload = {
     ...swimmer,
@@ -4279,6 +4306,97 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
     ok: true,
     swimmer: engagementNewSwimmerItem(updated),
     alerts
+  };
+});
+
+exports.listEngagementNationalClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
+  const snapshot = await admin.firestore()
+    .collection("engagementClubSwimmers")
+    .orderBy("updatedAt", "desc")
+    .limit(limit)
+    .get();
+  return {
+    ok: true,
+    swimmers: snapshot.docs.map(engagementNewSwimmerItem)
+  };
+});
+
+exports.setEngagementNationalClubSwimmerStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Action reservee au niveau national.");
+  }
+  const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
+  if (!swimmerId) {
+    throw new HttpsError("invalid-argument", "Nageur requis.");
+  }
+  const active = request.data?.active === true;
+  const ref = admin.firestore().collection("engagementClubSwimmers").doc(swimmerId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Nageur introuvable.");
+  }
+  const now = new Date().toISOString();
+  await ref.set({
+    active,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(active ? { reactivatedAt: now, reactivatedBy: context.uid } : { disabledAt: now, disabledBy: context.uid })
+  }, { merge: true });
+  await writeAuditLog("engagementClubSwimmer.statusChanged", context.uid, {
+    swimmerId,
+    clubId: cleanText(snapshot.data()?.clubId).slice(0, 40),
+    active
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    swimmer: engagementNewSwimmerItem(updated)
+  };
+});
+
+exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
+  }
+  const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
+  if (!swimmerId) {
+    throw new HttpsError("invalid-argument", "Nageur requis.");
+  }
+  if (request.data?.confirmPermanent !== true) {
+    throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  const db = admin.firestore();
+  const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Nageur introuvable.");
+  }
+  const data = snapshot.data() || {};
+  const alertsSnapshot = await db.collection("engagementSwimmerAlerts")
+    .where("newSwimmerId", "==", swimmerId)
+    .limit(100)
+    .get();
+  const batch = db.batch();
+  batch.delete(ref);
+  batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(swimmerId).slice(0, 40)));
+  alertsSnapshot.docs.forEach((alertDoc) => batch.delete(alertDoc.ref));
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.deleted", context.uid, {
+    swimmerId,
+    clubId: cleanText(data.clubId).slice(0, 40),
+    alertDocsDeleted: alertsSnapshot.size
+  });
+  return {
+    ok: true,
+    swimmerId,
+    alertDocsDeleted: alertsSnapshot.size
   };
 });
 
@@ -4382,6 +4500,9 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     }
     if (!swimmer) {
       throw new HttpsError("invalid-argument", "Nageur inconnu dans la base LivePalmes.");
+    }
+    if (requestedSwimmer.source === "engagement" && swimmer.active === false) {
+      throw new HttpsError("failed-precondition", "Nageur desactive par le niveau national.");
     }
     if (swimmer.clubId !== context.clubId) {
       throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
