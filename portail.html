@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-public-access-request-roleless-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-access-delete-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -159,7 +159,7 @@
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPortal">
                 <h2 id="adminNavPortal">Gestion du portail</h2>
-                <a href="#gestion-acces" data-admin-view-link="access" data-capability-nav="admin.full">Gestion des accès</a>
+                <a href="#gestion-acces" data-admin-view-link="access" data-access-management-nav hidden>Gestion des accès</a>
               </section>
             </nav>
           </aside>
@@ -1165,6 +1165,44 @@
                   </div>
                   <p id="adminEngagementsAccessRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
                   <div id="adminEngagementsAccessRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
+                  <form id="adminEngagementsAccessRequestEditForm" class="admin-engagements-access-request-edit admin-access-form" hidden>
+                    <input id="adminEngagementsAccessRequestEditId" type="hidden">
+                    <div class="admin-access-identity-grid">
+                      <label>
+                        Nom
+                        <input id="adminEngagementsAccessRequestEditLastName" type="text" required>
+                      </label>
+                      <label>
+                        Pr&eacute;nom
+                        <input id="adminEngagementsAccessRequestEditFirstName" type="text" required>
+                      </label>
+                      <label>
+                        Email
+                        <input id="adminEngagementsAccessRequestEditEmail" type="email" required>
+                      </label>
+                      <label>
+                        Licence
+                        <input id="adminEngagementsAccessRequestEditLicenseNumber" type="text" maxlength="60" required>
+                      </label>
+                      <label>
+                        R&eacute;gion
+                        <select id="adminEngagementsAccessRequestEditRegionId" required></select>
+                      </label>
+                      <label>
+                        Club
+                        <select id="adminEngagementsAccessRequestEditClubSelect" required disabled>
+                          <option value="">Choisissez d'abord une r&eacute;gion</option>
+                        </select>
+                        <input id="adminEngagementsAccessRequestEditClubName" type="hidden">
+                        <input id="adminEngagementsAccessRequestEditClubId" type="hidden">
+                      </label>
+                    </div>
+                    <div class="admin-portal-actions">
+                      <button type="submit">Valider avec ces informations</button>
+                      <button id="adminEngagementsAccessRequestEditCancel" class="ghost-button" type="button">Annuler</button>
+                    </div>
+                    <p id="adminEngagementsAccessRequestEditMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </form>
                 </section>
               </div>
 
@@ -1441,7 +1479,7 @@
               </section>
             </section>
 
-            <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-capability-panel="admin.full" aria-labelledby="adminAccessViewTitle" hidden>
+            <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-access-management-panel aria-labelledby="adminAccessViewTitle" hidden>
               <div class="admin-portal-workspace-head">
                 <span>Gestion générale</span>
                 <h2 id="adminAccessViewTitle">Gestion des accès</h2>
@@ -1497,6 +1535,20 @@
             <span id="adminAccessPageLabel">Page 1</span>
             <button id="adminAccessNextPage" class="ghost-button" type="button">Page suivante</button>
           </nav>
+        </section>
+
+        <section id="adminAccessDeletionRequestsPanel" class="admin-access-list-panel" aria-label="Demandes de suppression de comptes" hidden>
+          <div class="admin-access-list-head">
+            <div>
+              <span>Administration nationale</span>
+              <strong>Demandes de suppression en attente</strong>
+              <small id="adminAccessDeletionRequestsStatus" class="admin-access-count" aria-live="polite"></small>
+            </div>
+            <div class="admin-access-list-head-actions">
+              <button id="adminAccessDeletionRequestsRefresh" class="ghost-button" type="button">Actualiser</button>
+            </div>
+          </div>
+          <div id="adminAccessDeletionRequestsList" class="admin-engagements-request-list"></div>
         </section>
 
         <section id="adminAccessPanel" class="admin-access-preview" aria-label="Création d'un accès au portail" hidden>
@@ -1601,6 +1653,6 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260729-public-access-request-roleless-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260729-access-delete-1"></script>
   </body>
 </html>

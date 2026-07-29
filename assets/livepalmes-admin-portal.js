@@ -161,6 +161,10 @@
     accessPreviousPage: document.querySelector("#adminAccessPreviousPage"),
     accessNextPage: document.querySelector("#adminAccessNextPage"),
     accessPageLabel: document.querySelector("#adminAccessPageLabel"),
+    accessDeletionRequestsPanel: document.querySelector("#adminAccessDeletionRequestsPanel"),
+    accessDeletionRequestsRefresh: document.querySelector("#adminAccessDeletionRequestsRefresh"),
+    accessDeletionRequestsStatus: document.querySelector("#adminAccessDeletionRequestsStatus"),
+    accessDeletionRequestsList: document.querySelector("#adminAccessDeletionRequestsList"),
     cancelEdit: document.querySelector("#adminAccessCancelEdit"),
     accessRequestForm: document.querySelector("#adminAccessRequestForm"),
     accessRequestFirstName: document.querySelector("#adminAccessRequestFirstName"),
@@ -243,6 +247,18 @@
     engagementsAccessRequestsRefresh: document.querySelector("#adminEngagementsAccessRequestsRefresh"),
     engagementsAccessRequestsStatus: document.querySelector("#adminEngagementsAccessRequestsStatus"),
     engagementsAccessRequestsList: document.querySelector("#adminEngagementsAccessRequestsList"),
+    engagementsAccessRequestEditForm: document.querySelector("#adminEngagementsAccessRequestEditForm"),
+    engagementsAccessRequestEditId: document.querySelector("#adminEngagementsAccessRequestEditId"),
+    engagementsAccessRequestEditFirstName: document.querySelector("#adminEngagementsAccessRequestEditFirstName"),
+    engagementsAccessRequestEditLastName: document.querySelector("#adminEngagementsAccessRequestEditLastName"),
+    engagementsAccessRequestEditEmail: document.querySelector("#adminEngagementsAccessRequestEditEmail"),
+    engagementsAccessRequestEditLicenseNumber: document.querySelector("#adminEngagementsAccessRequestEditLicenseNumber"),
+    engagementsAccessRequestEditRegionId: document.querySelector("#adminEngagementsAccessRequestEditRegionId"),
+    engagementsAccessRequestEditClubSelect: document.querySelector("#adminEngagementsAccessRequestEditClubSelect"),
+    engagementsAccessRequestEditClubName: document.querySelector("#adminEngagementsAccessRequestEditClubName"),
+    engagementsAccessRequestEditClubId: document.querySelector("#adminEngagementsAccessRequestEditClubId"),
+    engagementsAccessRequestEditCancel: document.querySelector("#adminEngagementsAccessRequestEditCancel"),
+    engagementsAccessRequestEditMessage: document.querySelector("#adminEngagementsAccessRequestEditMessage"),
     engagementsDeletionRequestsPanel: document.querySelector("#adminEngagementsDeletionRequestsPanel"),
     engagementsDeletionRequestsRefresh: document.querySelector("#adminEngagementsDeletionRequestsRefresh"),
     engagementsDeletionRequestsStatus: document.querySelector("#adminEngagementsDeletionRequestsStatus"),
@@ -393,6 +409,9 @@
   let accessPage = 1;
   let accessUsersLoading = false;
   let accessLoadSequence = 0;
+  let accessDeletionRequests = [];
+  let accessDeletionRequestsLoaded = false;
+  let accessDeletionRequestsLoading = false;
   let currentUserLoading = false;
   let engagementCompetitions = [];
   let engagementCompetitionsLoaded = false;
@@ -412,6 +431,7 @@
   let engagementClubSwimmers = [];
   let engagementClubSwimmersLoaded = false;
   let engagementClubSwimmersLoading = false;
+  let engagementClubSwimmersClubId = "";
   let engagementClubRecapEntries = [];
   let engagementClubRecapEntriesCompetitionId = "";
   let engagementClubRecapEntriesLoading = false;
@@ -431,6 +451,7 @@
   let importModuleLoadPromise = null;
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
+  let activeAuthUid = "";
 
   function ensureFirebaseApp() {
     const firebase = global.firebase;
@@ -540,6 +561,32 @@
 
   function canReviewEngagementAccessRequests() {
     return canUse("engagements.region.manage") || canUse("engagements.national.manage");
+  }
+
+  function canManageAccessDirectory() {
+    return canUse("admin.full") || canUse("engagements.region.manage") || canUse("engagements.national.manage");
+  }
+
+  function canDeleteAccessUserDirectly() {
+    return canUse("engagements.national.manage") || canUse("admin.full");
+  }
+
+  function engagementClubScope(user = currentAccessProfile || {}) {
+    const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
+    return clubScope.scopeId || user.clubId || "";
+  }
+
+  function resetEngagementClubData() {
+    engagementClubPeople = [];
+    engagementClubPeopleLoaded = false;
+    engagementClubSwimmers = [];
+    engagementClubSwimmersLoaded = false;
+    engagementClubSwimmersLoading = false;
+    engagementClubSwimmersClubId = "";
+    engagementClubRecapEntries = [];
+    engagementClubRecapEntriesCompetitionId = "";
+    selectedEngagementClubEntry = null;
+    selectedEngagementClubEntryCompetitionId = "";
   }
 
   function engagementRegionScope(user = currentAccessProfile || {}) {
@@ -845,6 +892,12 @@
     document.querySelectorAll("[data-engagements-admin-request-nav]").forEach((item) => {
       item.hidden = !canReviewEngagementAccessRequests();
     });
+    document.querySelectorAll("[data-access-management-nav], [data-access-management-panel]").forEach((item) => {
+      item.hidden = !canManageAccessDirectory();
+    });
+    if (elements.accessAdd) elements.accessAdd.hidden = !canUse("admin.full");
+    if (elements.accessPanel && !canUse("admin.full")) elements.accessPanel.hidden = true;
+    if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
     if (!canDeleteEngagementCompetitionDirectly()) updateEngagementDeletionRequestBadge(0);
     if (!canReviewEngagementAccessRequests()) updateEngagementAccessRequestBadge(0);
     setEngagementsTab(activeEngagementsTab);
@@ -878,20 +931,20 @@
     if (canUse("competitions.import")) return "import";
     if (canUse("dtn.view")) return "dtn";
     if (canManageEngagements()) return "engagements";
-    if (canUse("admin.full")) return "access";
+    if (canManageAccessDirectory()) return "access";
     return "account";
   }
 
   function updateNavigationView() {
     const requestedView = requestedNavigationView();
-    const accessDenied = requestedView === "access" && !canUse("admin.full");
+    const accessDenied = requestedView === "access" && !canManageAccessDirectory();
     const recordsDenied = requestedView === "records" && !canUse("records.manage");
     const importDenied = requestedView === "import" && !canUse("competitions.import");
     const correctionDenied = requestedView === "correction" && !canUse("competitions.import");
     const dtnDenied = requestedView === "dtn" && !canUse("dtn.view");
     const engagementsDenied = requestedView === "engagements" && !canManageEngagements();
     const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || dtnDenied || engagementsDenied
-      ? (canUse("records.manage") ? "records" : canUse("competitions.import") ? "import" : canUse("dtn.view") ? "dtn" : canManageEngagements() ? "engagements" : "account")
+      ? (canUse("records.manage") ? "records" : canUse("competitions.import") ? "import" : canUse("dtn.view") ? "dtn" : canManageEngagements() ? "engagements" : canManageAccessDirectory() ? "access" : "account")
       : requestedView;
     document.querySelectorAll("[data-admin-view]").forEach((section) => {
       section.hidden = section.dataset.adminView !== activeView;
@@ -938,6 +991,10 @@
     }
     if (engagementsActive && activeEngagementsTab === "clubPeople") loadEngagementClubPeople();
     if (engagementsActive && activeEngagementsTab === "clubSwimmers") loadEngagementClubSwimmers();
+    if (activeView === "access") {
+      loadAccessUsers();
+      if (canDeleteAccessUserDirectly()) loadAccessDeletionRequests();
+    }
   }
 
   function loadScriptOnce(src, id) {
@@ -1151,7 +1208,7 @@
   }
 
   function populateAccessRegionChoices() {
-    const selects = [elements.accessRegionId, elements.accessRequestRegionId, elements.publicAccessRequestRegionId].filter(Boolean);
+    const selects = [elements.accessRegionId, elements.accessRequestRegionId, elements.publicAccessRequestRegionId, elements.engagementsAccessRequestEditRegionId].filter(Boolean);
     if (!selects.length) return;
     const knownRegions = new Set(LIVEPALMES_REGION_DEFINITIONS.map(normalizedRegionKey));
     const extraRegions = Array.from(new Set(accessClubReference.map((club) => club.regionId)))
@@ -1309,6 +1366,54 @@
     syncPublicAccessRequestClubFieldsFromSelect();
   }
 
+  function syncEngagementAccessRequestEditClubFieldsFromSelect() {
+    const selectedClubId = elements.engagementsAccessRequestEditClubSelect?.value || "";
+    const club = accessClubReference.find((item) => item.clubId === selectedClubId);
+    if (elements.engagementsAccessRequestEditClubId) elements.engagementsAccessRequestEditClubId.value = club?.clubId || "";
+    if (elements.engagementsAccessRequestEditClubName) elements.engagementsAccessRequestEditClubName.value = club?.clubName || "";
+  }
+
+  function populateEngagementAccessRequestEditClubSelect(selectedClubId = "", fallbackClubName = "") {
+    const select = elements.engagementsAccessRequestEditClubSelect;
+    if (!select) return;
+    const selectedId = String(selectedClubId || "").trim();
+    const knownClub = selectedId
+      ? accessClubReference.find((club) => club.clubId === selectedId)
+      : null;
+    if (knownClub && !elements.engagementsAccessRequestEditRegionId?.value) {
+      setRegionSelectValue(elements.engagementsAccessRequestEditRegionId, knownClub.regionId);
+    }
+    const regionId = canonicalLivePalmesRegion(elements.engagementsAccessRequestEditRegionId?.value || "");
+    select.innerHTML = "";
+    if (!regionId) {
+      select.append(new Option("Choisissez d'abord une region", ""));
+      select.disabled = true;
+      syncEngagementAccessRequestEditClubFieldsFromSelect();
+      return;
+    }
+    const regionKey = normalizedRegionKey(regionId);
+    const clubs = accessClubReference
+      .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
+      .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
+    select.append(new Option("A choisir", ""));
+    clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
+    if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
+      const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
+      select.append(new Option(`${label} (${selectedId})`, selectedId));
+    }
+    select.disabled = clubs.length === 0 && !selectedId;
+    if (!clubs.length && !selectedId) {
+      select.options[0].textContent = "Aucun club trouve pour cette region";
+    }
+    select.value = selectedId;
+    if (selectedId && !knownClub) {
+      if (elements.engagementsAccessRequestEditClubId) elements.engagementsAccessRequestEditClubId.value = selectedId;
+      if (elements.engagementsAccessRequestEditClubName) elements.engagementsAccessRequestEditClubName.value = fallbackClubName || "";
+      return;
+    }
+    syncEngagementAccessRequestEditClubFieldsFromSelect();
+  }
+
   function loadAccessClubReference() {
     if (accessClubReference.length) return Promise.resolve(accessClubReference);
     if (accessClubReferenceLoadPromise) return accessClubReferenceLoadPromise;
@@ -1323,6 +1428,7 @@
       populateAccessClubSelect(elements.accessClubId?.value || "");
       populateAccessRequestClubSelect(elements.accessRequestClubId?.value || "");
       populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
+      populateEngagementAccessRequestEditClubSelect(elements.engagementsAccessRequestEditClubId?.value || "");
       return accessClubReference;
     }).catch((error) => {
       accessClubReferenceLoadPromise = null;
@@ -1412,6 +1518,11 @@
   }
 
   function renderCurrentUser(user = {}) {
+    const previousClubId = engagementClubScope(currentAccessProfile || {});
+    const nextClubId = engagementClubScope(user || {});
+    if (previousClubId && nextClubId && previousClubId !== nextClubId) {
+      resetEngagementClubData();
+    }
     currentAccessProfile = user;
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
@@ -1444,7 +1555,7 @@
         : capabilities.has("engagements.club.manage")
           ? "Club"
           : "-";
-    const clubValue = clubScope.scopeId || user.clubId || "-";
+    const clubValue = engagementClubScope(user) || "-";
     const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId);
     if (elements.engagementsAccessLevel) elements.engagementsAccessLevel.textContent = level;
     if (elements.engagementsClubScope) elements.engagementsClubScope.textContent = clubValue;
@@ -2031,9 +2142,42 @@
       swimmer.sex,
       swimmer.swimmerId,
       swimmer.licenseNumber,
+      swimmer.category,
       swimmer.club,
       swimmer.clubName
     ].filter(Boolean).join(" "));
+  }
+
+  function engagementCategoryLabel(category) {
+    const code = String(category || "").trim();
+    const match = ENGAGEMENT_CATEGORY_DEFINITIONS.find(([itemCode]) => itemCode === code);
+    return match ? match[1] : code;
+  }
+
+  function engagementSeasonEndYear(date = new Date()) {
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    return month >= 8 ? year + 1 : year;
+  }
+
+  function engagementSwimmerCategory(swimmer = {}) {
+    if (swimmer.category) return String(swimmer.category);
+    const birthYear = Number(String(swimmer.birthDate || "").slice(0, 4));
+    if (!Number.isFinite(birthYear) || birthYear < 1900) return "";
+    const age = engagementSeasonEndYear() - birthYear;
+    if (!Number.isFinite(age) || age < 0 || age > 120) return "";
+    if (age <= 9) return "P";
+    if (age <= 11) return "B";
+    if (age <= 13) return "M";
+    if (age <= 15) return "C";
+    if (age <= 17) return "J";
+    if (age <= 29) return "S";
+    if (age <= 39) return "M30+";
+    if (age <= 49) return "M40+";
+    if (age <= 59) return "M50+";
+    if (age <= 69) return "M60+";
+    if (age <= 79) return "M70+";
+    return "M80+";
   }
 
   function renderEngagementClubSwimmersDirectory() {
@@ -2054,7 +2198,7 @@
     if (!engagementClubSwimmersLoaded) {
       mount.innerHTML = '<p class="admin-engagements-empty">Cliquez sur Actualiser pour charger les nageurs du club.</p>';
       if (elements.engagementsClubSwimmersDirectorySummary) {
-        elements.engagementsClubSwimmersDirectorySummary.textContent = `Effectif LivePalmes de ${clubLabel}, construit a partir du dernier club connu.`;
+        elements.engagementsClubSwimmersDirectorySummary.textContent = `Effectif LivePalmes de ${clubLabel}.`;
       }
       return;
     }
@@ -2064,7 +2208,7 @@
       .slice(0, 800);
     const hiddenCount = Math.max(0, engagementClubSwimmers.length - swimmers.length);
     if (elements.engagementsClubSwimmersDirectorySummary) {
-      elements.engagementsClubSwimmersDirectorySummary.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} avec ${clubLabel} comme dernier club connu.`;
+      elements.engagementsClubSwimmersDirectorySummary.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} dans l'effectif ${clubLabel}.`;
     }
     if (elements.engagementsClubSwimmersDirectoryStatus) {
       elements.engagementsClubSwimmersDirectoryStatus.textContent = engagementClubSwimmers.length
@@ -2075,7 +2219,7 @@
     if (!swimmers.length) {
       mount.innerHTML = engagementClubSwimmers.length
         ? '<p class="admin-engagements-empty">Aucun nageur ne correspond a cette recherche.</p>'
-        : '<p class="admin-engagements-empty">Aucun nageur trouve avec ce club comme dernier club connu.</p>';
+        : "<p class=\"admin-engagements-empty\">Aucun nageur trouve dans l'effectif du club.</p>";
       return;
     }
     mount.innerHTML = `
@@ -2084,30 +2228,21 @@
           <span role="columnheader">Nageur</span>
           <span role="columnheader">Naissance</span>
           <span role="columnheader">Sexe</span>
+          <span role="columnheader">Cat.</span>
           <span role="columnheader">Licence</span>
-          <span role="columnheader">Dernier club</span>
-          <span role="columnheader">Dernier resultat</span>
         </div>
         ${swimmers.map((swimmer) => {
       const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
-      const club = [swimmer.club || "", swimmer.clubName || ""].filter(Boolean).join(" - ") || clubLabel;
-      const swimmerReferenceId = swimmer.swimmerId || swimmer.id || "";
-      const source = swimmer.source === "engagement"
-        ? "cree par le club"
-        : swimmer.source === "reference"
-          ? ["dernier club connu", swimmerReferenceId ? `ID ${swimmerReferenceId}` : ""].filter(Boolean).join(" - ")
-          : swimmer.swimmerId ? `ID ${swimmer.swimmerId}` : "";
+      const category = engagementSwimmerCategory(swimmer);
       return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row">
           <span role="cell">
             <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml(source || "-")}</small>
           </span>
           <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
           <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
+          <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
           <span role="cell">${escapeHtml(swimmer.licenseNumber || "-")}</span>
-          <span role="cell">${escapeHtml(club)}</span>
-          <span role="cell">${escapeHtml(swimmer.latestDate ? formatShortDate(swimmer.latestDate) : "-")}</span>
         </div>
       `;
     }).join("")}
@@ -3678,6 +3813,12 @@
 
   async function loadEngagementClubSwimmers({ force = false, silent = false } = {}) {
     if (!canUse("engagements.club.manage") || engagementClubSwimmersLoading) return;
+    const expectedClubId = engagementClubScope();
+    if (engagementClubSwimmersClubId && expectedClubId && engagementClubSwimmersClubId !== expectedClubId) {
+      engagementClubSwimmers = [];
+      engagementClubSwimmersLoaded = false;
+      engagementClubSwimmersClubId = "";
+    }
     if (engagementClubSwimmersLoaded && !force) {
       renderEngagementClubSwimmers();
       renderEngagementClubSwimmersDirectory();
@@ -3692,7 +3833,12 @@
     renderEngagementClubSwimmersDirectory();
     try {
       const result = await callFunction("listEngagementClubSwimmers", { limit: 800 });
+      const resultClubId = String(result.clubId || "").trim();
+      if (expectedClubId && resultClubId && resultClubId !== expectedClubId) {
+        throw new Error(`Profil club incoherent : ${resultClubId} retourne au lieu de ${expectedClubId}.`);
+      }
       engagementClubSwimmers = Array.isArray(result.swimmers) ? result.swimmers : [];
+      engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
       engagementClubSwimmersLoaded = true;
       renderEngagementClubSwimmers();
       renderEngagementClubSwimmersDirectory();
@@ -4058,6 +4204,7 @@
     }
     if (!engagementAccessRequests.length) {
       elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'acces en attente.</p>';
+      closeEngagementAccessRequestEditForm();
       return;
     }
     elements.engagementsAccessRequestsList.innerHTML = engagementAccessRequests.map((request) => {
@@ -4074,7 +4221,7 @@
             <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
           </div>
           <div class="admin-engagements-request-actions">
-            <button class="ghost-button" type="button" data-engagement-access-request-action="approve" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Valider</button>
+            <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Modifier / valider</button>
             <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Refuser</button>
           </div>
           ${request.message ? `<p class="admin-engagements-request-note">${escapeHtml(request.message)}</p>` : ""}
@@ -4113,7 +4260,49 @@
     }
   }
 
-  async function resolveEngagementAccessRequest(requestId, decision) {
+  function setEngagementAccessRequestEditMessage(message, tone = "error") {
+    if (!elements.engagementsAccessRequestEditMessage) return;
+    elements.engagementsAccessRequestEditMessage.textContent = message || "";
+    elements.engagementsAccessRequestEditMessage.dataset.tone = tone;
+  }
+
+  function closeEngagementAccessRequestEditForm() {
+    elements.engagementsAccessRequestEditForm?.reset();
+    if (elements.engagementsAccessRequestEditForm) elements.engagementsAccessRequestEditForm.hidden = true;
+    setEngagementAccessRequestEditMessage("");
+  }
+
+  function openEngagementAccessRequestEditForm(requestId) {
+    const request = engagementAccessRequests.find((item) => item.id === requestId);
+    if (!request || !elements.engagementsAccessRequestEditForm) return;
+    if (elements.engagementsAccessRequestEditId) elements.engagementsAccessRequestEditId.value = request.id || "";
+    if (elements.engagementsAccessRequestEditFirstName) elements.engagementsAccessRequestEditFirstName.value = request.firstName || "";
+    if (elements.engagementsAccessRequestEditLastName) elements.engagementsAccessRequestEditLastName.value = request.lastName || "";
+    if (elements.engagementsAccessRequestEditEmail) elements.engagementsAccessRequestEditEmail.value = request.email || "";
+    if (elements.engagementsAccessRequestEditLicenseNumber) elements.engagementsAccessRequestEditLicenseNumber.value = request.licenseNumber || "";
+    setRegionSelectValue(elements.engagementsAccessRequestEditRegionId, request.regionId || "");
+    if (elements.engagementsAccessRequestEditRegionId) {
+      elements.engagementsAccessRequestEditRegionId.disabled = !canUse("engagements.national.manage");
+    }
+    populateEngagementAccessRequestEditClubSelect(request.clubId || "", request.clubName || "");
+    elements.engagementsAccessRequestEditForm.hidden = false;
+    setEngagementAccessRequestEditMessage("Verifiez les informations avant validation.", "loading");
+    elements.engagementsAccessRequestEditForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function correctedEngagementAccessRequestFromEditForm() {
+    return {
+      firstName: String(elements.engagementsAccessRequestEditFirstName?.value || "").trim(),
+      lastName: String(elements.engagementsAccessRequestEditLastName?.value || "").trim(),
+      email: String(elements.engagementsAccessRequestEditEmail?.value || "").trim(),
+      licenseNumber: String(elements.engagementsAccessRequestEditLicenseNumber?.value || "").trim(),
+      regionId: elements.engagementsAccessRequestEditRegionId?.value || "",
+      clubId: elements.engagementsAccessRequestEditClubId?.value || "",
+      clubName: elements.engagementsAccessRequestEditClubName?.value || ""
+    };
+  }
+
+  async function resolveEngagementAccessRequest(requestId, decision, correctedRequest = null) {
     const cleanId = String(requestId || "").trim();
     if (!cleanId || !canReviewEngagementAccessRequests()) return;
     const request = engagementAccessRequests.find((item) => item.id === cleanId) || {};
@@ -4122,7 +4311,7 @@
     const message = approve
       ? `Valider la demande de ${label} et creer l'acces engagements club ?`
       : `Refuser la demande de ${label} ?`;
-    if (!global.confirm(message)) return;
+    if (!global.confirm(message)) return false;
     if (elements.engagementsAccessRequestsStatus) {
       elements.engagementsAccessRequestsStatus.textContent = approve ? "Validation en cours..." : "Refus en cours...";
       elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
@@ -4130,13 +4319,14 @@
     try {
       const result = await callFunction("resolveEngagementAccessRequest", {
         requestId: cleanId,
-        decision: approve ? "approved" : "rejected"
+        decision: approve ? "approved" : "rejected",
+        ...(approve && correctedRequest ? { correctedRequest } : {})
       });
       if (approve && result.access?.email) {
         await global.firebase?.auth?.().sendPasswordResetEmail(result.access.email).catch(() => {});
       }
       engagementAccessRequestsLoaded = false;
-      if (canUse("admin.full")) loadAccessUsers({ reset: true });
+      if (canManageAccessDirectory()) loadAccessUsers({ reset: true });
       await loadEngagementAccessRequests({ force: true });
       if (elements.engagementsAccessRequestsStatus) {
         elements.engagementsAccessRequestsStatus.textContent = approve
@@ -4144,11 +4334,29 @@
           : "Demande refusee.";
         elements.engagementsAccessRequestsStatus.dataset.tone = "ok";
       }
+      return true;
     } catch (error) {
       if (elements.engagementsAccessRequestsStatus) {
         elements.engagementsAccessRequestsStatus.textContent = `Traitement impossible : ${error?.message || error}`;
         elements.engagementsAccessRequestsStatus.dataset.tone = "error";
       }
+      setEngagementAccessRequestEditMessage(`Validation impossible : ${error?.message || error}`);
+      return false;
+    }
+  }
+
+  async function submitEngagementAccessRequestEdit(event) {
+    event?.preventDefault?.();
+    const requestId = elements.engagementsAccessRequestEditId?.value || "";
+    if (!requestId) return;
+    const button = elements.engagementsAccessRequestEditForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    setEngagementAccessRequestEditMessage("Validation en cours...", "loading");
+    try {
+      const ok = await resolveEngagementAccessRequest(requestId, "approved", correctedEngagementAccessRequestFromEditForm());
+      if (ok) closeEngagementAccessRequestEditForm();
+    } finally {
+      if (button) button.disabled = false;
     }
   }
 
@@ -4982,6 +5190,25 @@
 
   function updateView(status = {}) {
     const signedIn = Boolean(status.signedIn);
+    const authUid = global.firebase?.auth?.().currentUser?.uid || "";
+    if (activeAuthUid && activeAuthUid !== authUid) {
+      currentAccessProfile = null;
+      resetEngagementClubData();
+      engagementCompetitionsLoaded = false;
+      engagementAccessRequestsLoaded = false;
+      engagementDeletionRequestsLoaded = false;
+      accessUsers = [];
+      accessCurrentCursor = null;
+      accessNextCursor = null;
+      accessPreviousCursors = [];
+      accessPage = 1;
+      accessDeletionRequestsLoaded = false;
+    }
+    activeAuthUid = signedIn ? authUid : "";
+    if (!signedIn) {
+      currentAccessProfile = null;
+      resetEngagementClubData();
+    }
     document.body.dataset.adminAuth = signedIn ? "unlocked" : "locked";
     if (elements.dashboard) elements.dashboard.hidden = !signedIn;
     if (elements.accountControl) elements.accountControl.hidden = !signedIn;
@@ -4989,7 +5216,7 @@
     if (signedIn) {
       updateCapabilityView();
       loadCurrentUser();
-      if (canUse("admin.full")) loadAccessUsers();
+      if (canManageAccessDirectory()) loadAccessUsers();
     }
     if (!status.available) {
       setMessage("Firebase Authentication n'est pas disponible.");
@@ -5195,6 +5422,20 @@
       const inactive = user.status !== "active";
       const clubLine = user.clubId ? `Club ${user.clubId}` : "Club non renseigne";
       const regionLine = user.regionId ? `Region ${regionDisplayLabel(user.regionId)}` : "Region non renseignee";
+      const currentUid = global.firebase?.auth?.().currentUser?.uid || "";
+      const isCurrentUser = user.uid && user.uid === currentUid;
+      const actions = [];
+      if (canUse("admin.full")) {
+        actions.push(`<button class="ghost-button" type="button" data-access-edit="${user.uid}">Modifier</button>`);
+        actions.push(`<button class="ghost-button" type="button" data-access-status="${inactive ? "active" : "inactive"}" data-access-uid="${user.uid}" ${isCurrentUser ? "disabled" : ""}>
+          ${inactive ? "Reactiver" : "Desactiver"}
+        </button>`);
+      }
+      if (canDeleteAccessUserDirectly()) {
+        actions.push(`<button class="ghost-button danger-button" type="button" data-access-delete="${user.uid}" ${isCurrentUser ? "disabled" : ""}>Supprimer definitivement</button>`);
+      } else if (canUse("engagements.region.manage")) {
+        actions.push(`<button class="ghost-button danger-button" type="button" data-access-delete-request="${user.uid}" ${isCurrentUser ? "disabled" : ""}>Demander suppression</button>`);
+      }
       return `
         <article class="admin-access-row ${inactive ? "inactive" : ""}" data-access-uid="${user.uid}" role="row">
           <div class="admin-access-user" role="cell" data-label="Utilisateur">
@@ -5216,10 +5457,7 @@
             <small class="admin-access-login">${escapeHtml(user.lastLoginAt ? formatAccessDateTime(user.lastLoginAt) : "Non disponible")}</small>
           </div>
           <div class="admin-access-row-actions" role="cell" data-label="Actions">
-            <button class="ghost-button" type="button" data-access-edit="${user.uid}">Modifier</button>
-            <button class="ghost-button" type="button" data-access-status="${inactive ? "active" : "inactive"}" data-access-uid="${user.uid}">
-              ${inactive ? "Réactiver" : "Désactiver"}
-            </button>
+            ${actions.join("") || "<small>Aucune action disponible</small>"}
           </div>
         </article>
       `;
@@ -5293,7 +5531,7 @@
   }
 
   async function loadAccessUsers({ reset = false } = {}) {
-    if (!canUse("admin.full")) return;
+    if (!canManageAccessDirectory()) return;
     const loadSequence = ++accessLoadSequence;
     if (reset) {
       accessCurrentCursor = null;
@@ -5361,6 +5599,122 @@
       setAccessMessage(`Acces ${status === "active" ? "reactive" : "desactive"}.`, "ok");
     } catch (error) {
       setAccessMessage(`Changement de statut impossible : ${error?.message || error}`);
+    }
+  }
+
+  function renderAccessDeletionRequests() {
+    if (!elements.accessDeletionRequestsPanel || !elements.accessDeletionRequestsList) return;
+    elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
+    if (!canDeleteAccessUserDirectly()) return;
+    if (!accessDeletionRequests.length) {
+      elements.accessDeletionRequestsList.innerHTML = `<p class="admin-access-empty">Aucune demande de suppression en attente.</p>`;
+      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = "Aucune demande en attente.";
+      return;
+    }
+    elements.accessDeletionRequestsList.innerHTML = accessDeletionRequests.map((request) => {
+      const name = [request.targetFirstName, request.targetLastName].filter(Boolean).join(" ") || request.targetEmail || "Compte LivePalmes";
+      const region = request.targetRegionId ? regionDisplayLabel(request.targetRegionId) : "Region non renseignee";
+      const rights = (request.targetCapabilities || []).map(capabilityLabel).join(", ") || "Aucun droit actif";
+      return `
+        <article class="admin-engagements-request-card" data-access-deletion-request-id="${request.id}">
+          <div class="admin-engagements-request-main">
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(request.targetEmail || request.targetUid)}</small>
+            <small>${escapeHtml(`Region ${region} - ${rights}`)}</small>
+          </div>
+          <div class="admin-engagements-request-meta">
+            <span>Demande par ${escapeHtml(request.requestedByEmail || request.requestedBy || "admin regional")}</span>
+            <span>${escapeHtml(request.requestedAt ? formatAccessDateTime(request.requestedAt) : "")}</span>
+          </div>
+          <div class="admin-engagements-request-actions">
+            <button type="button" data-access-deletion-decision="approved" data-access-deletion-request-id="${request.id}">Accepter</button>
+            <button class="ghost-button" type="button" data-access-deletion-decision="rejected" data-access-deletion-request-id="${request.id}">Refuser</button>
+          </div>
+        </article>
+      `;
+    }).join("");
+    if (elements.accessDeletionRequestsStatus) {
+      elements.accessDeletionRequestsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+    }
+  }
+
+  async function loadAccessDeletionRequests({ force = false } = {}) {
+    if (!canDeleteAccessUserDirectly() || accessDeletionRequestsLoading) return;
+    if (accessDeletionRequestsLoaded && !force) return;
+    accessDeletionRequestsLoading = true;
+    if (elements.accessDeletionRequestsStatus) {
+      elements.accessDeletionRequestsStatus.textContent = "Chargement...";
+      elements.accessDeletionRequestsStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("listAccessUserDeletionRequests", {});
+      accessDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
+      accessDeletionRequestsLoaded = true;
+      renderAccessDeletionRequests();
+      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.dataset.tone = "ok";
+    } catch (error) {
+      if (elements.accessDeletionRequestsStatus) {
+        elements.accessDeletionRequestsStatus.textContent = `Lecture impossible : ${error?.message || error}`;
+        elements.accessDeletionRequestsStatus.dataset.tone = "error";
+      }
+    } finally {
+      accessDeletionRequestsLoading = false;
+    }
+  }
+
+  async function deleteAccessUser(uid) {
+    const user = accessUsers.find((item) => item.uid === uid);
+    const label = user?.email || uid;
+    if (!global.confirm(`Suppression definitive du compte ${label} ? Cette action supprime le compte Firebase et ses droits LivePalmes.`)) return;
+    try {
+      await callFunction("deleteAccessUser", { uid, confirmPermanent: true });
+      accessDeletionRequestsLoaded = false;
+      await loadAccessUsers({ reset: true });
+      if (canDeleteAccessUserDirectly()) await loadAccessDeletionRequests({ force: true });
+      setAccessMessage("Compte supprime definitivement.", "ok");
+    } catch (error) {
+      setAccessMessage(`Suppression impossible : ${error?.message || error}`);
+    }
+  }
+
+  async function requestAccessUserDeletion(uid) {
+    const user = accessUsers.find((item) => item.uid === uid);
+    const label = user?.email || uid;
+    if (!global.confirm(`Demander a un admin national de supprimer le compte ${label} ?`)) return;
+    try {
+      await callFunction("requestAccessUserDeletion", { uid });
+      setAccessMessage("Demande de suppression envoyee a l'administration nationale.", "ok");
+    } catch (error) {
+      setAccessMessage(`Demande impossible : ${error?.message || error}`);
+    }
+  }
+
+  async function resolveAccessDeletionRequest(requestId, decision) {
+    const request = accessDeletionRequests.find((item) => item.id === requestId);
+    const label = request?.targetEmail || request?.targetUid || "ce compte";
+    const approve = decision === "approved";
+    const message = approve
+      ? `Accepter la demande et supprimer definitivement ${label} ?`
+      : `Refuser la demande de suppression de ${label} ?`;
+    if (!global.confirm(message)) return;
+    if (elements.accessDeletionRequestsStatus) {
+      elements.accessDeletionRequestsStatus.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
+      elements.accessDeletionRequestsStatus.dataset.tone = "loading";
+    }
+    try {
+      await callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
+      accessDeletionRequestsLoaded = false;
+      await loadAccessUsers({ reset: true });
+      await loadAccessDeletionRequests({ force: true });
+      if (elements.accessDeletionRequestsStatus) {
+        elements.accessDeletionRequestsStatus.textContent = approve ? "Demande acceptee et compte supprime." : "Demande refusee.";
+        elements.accessDeletionRequestsStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.accessDeletionRequestsStatus) {
+        elements.accessDeletionRequestsStatus.textContent = `Traitement impossible : ${error?.message || error}`;
+        elements.accessDeletionRequestsStatus.dataset.tone = "error";
+      }
     }
   }
 
@@ -5458,6 +5812,10 @@
     elements.engagementsAccessRequestsList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-access-request-action]");
       if (!button) return;
+      if (button.dataset.engagementAccessRequestAction === "edit") {
+        openEngagementAccessRequestEditForm(button.dataset.engagementAccessRequestId || "");
+        return;
+      }
       const decision = button.dataset.engagementAccessRequestAction === "approve"
         ? "approved"
         : button.dataset.engagementAccessRequestAction === "reject"
@@ -5465,6 +5823,10 @@
           : "";
       if (decision) resolveEngagementAccessRequest(button.dataset.engagementAccessRequestId, decision);
     });
+    elements.engagementsAccessRequestEditForm?.addEventListener("submit", submitEngagementAccessRequestEdit);
+    elements.engagementsAccessRequestEditCancel?.addEventListener("click", closeEngagementAccessRequestEditForm);
+    elements.engagementsAccessRequestEditRegionId?.addEventListener("change", () => populateEngagementAccessRequestEditClubSelect());
+    elements.engagementsAccessRequestEditClubSelect?.addEventListener("change", syncEngagementAccessRequestEditClubFieldsFromSelect);
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
       if (!button) return;
@@ -5742,7 +6104,9 @@
     elements.accessRegionId?.addEventListener("change", () => populateAccessClubSelect());
     elements.accessClubSelect?.addEventListener("change", syncAccessClubFieldsFromSelect);
     elements.accessRefresh?.addEventListener("click", () => loadAccessUsers());
+    elements.accessDeletionRequestsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
     elements.accessAdd?.addEventListener("click", () => {
+      if (!canUse("admin.full")) return;
       const open = elements.accessAdd.getAttribute("aria-expanded") === "true";
       if (open) {
         resetAccessForm(true);
@@ -5777,7 +6141,22 @@
       const statusButton = event.target.closest("[data-access-status]");
       if (statusButton) {
         setAccessStatus(statusButton.dataset.accessUid, statusButton.dataset.accessStatus);
+        return;
       }
+      const deleteButton = event.target.closest("[data-access-delete]");
+      if (deleteButton) {
+        deleteAccessUser(deleteButton.dataset.accessDelete);
+        return;
+      }
+      const deleteRequestButton = event.target.closest("[data-access-delete-request]");
+      if (deleteRequestButton) {
+        requestAccessUserDeletion(deleteRequestButton.dataset.accessDeleteRequest);
+      }
+    });
+    elements.accessDeletionRequestsList?.addEventListener("click", (event) => {
+      const decisionButton = event.target.closest("[data-access-deletion-decision]");
+      if (!decisionButton) return;
+      resolveAccessDeletionRequest(decisionButton.dataset.accessDeletionRequestId, decisionButton.dataset.accessDeletionDecision);
     });
   }
 
