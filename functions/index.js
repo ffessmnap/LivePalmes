@@ -4894,24 +4894,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   };
 });
 
-exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
-  const context = await engagementClubAccessContext(request);
-  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
-  if (!competitionId) {
-    throw new HttpsError("invalid-argument", "Competition requise.");
-  }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
-  if (!competition.exists) {
-    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
-  }
-  assertEngagementClubWriteOpen(competition.data() || {});
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
-  const entry = await entryRef.get();
-  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
-    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
-  }
-
-  const competitionData = competition.data() || {};
+async function buildEngagementClubSwimmersFromRequest(requestData = {}, context = {}, competitionData = {}) {
   const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
   const competitionTimeRules = {
     date: cleanIsoDate(competitionData.date),
@@ -4926,7 +4909,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     competitionEvents.filter((event) => event.type === "individual").map((event) => event.code)
   );
   const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(competitionData.maxEventsPerSwimmer);
-  const requestedSwimmers = Array.isArray(request.data?.swimmers) ? request.data.swimmers : [];
+  const requestedSwimmers = Array.isArray(requestData?.swimmers) ? requestData.swimmers : [];
   const uniqueSwimmers = [];
   const seen = new Set();
   requestedSwimmers.slice(0, 300).forEach((rawSwimmer) => {
@@ -5019,6 +5002,70 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     const recordsData = await loadPerformanceRecordsData();
     swimmers = validateEngagementIndividualEntryTimes(swimmers, competitionTimeRules, recordsData);
   }
+  return swimmers;
+}
+
+function engagementEntryTimeStats(swimmers = []) {
+  return swimmers.reduce((stats, swimmer) => {
+    (Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries : []).forEach((entry) => {
+      stats.total += 1;
+      const mode = cleanText(entry.entryTimeMode) || "missing";
+      stats[mode] = (stats[mode] || 0) + 1;
+      if (entry.entryTimeWarning) stats.warning += 1;
+    });
+    return stats;
+  }, {
+    total: 0,
+    known: 0,
+    manual: 0,
+    default595999: 0,
+    missing: 0,
+    warning: 0
+  });
+}
+
+exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
+  }
+  const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, competition.data() || {});
+  return {
+    ok: true,
+    swimmers,
+    stats: engagementEntryTimeStats(swimmers)
+  };
+});
+
+exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertEngagementClubWriteOpen(competition.data() || {});
+  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entry = await entryRef.get();
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
+  }
+
+  const competitionData = competition.data() || {};
+  const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, competitionData);
 
   const now = new Date().toISOString();
   const batch = admin.firestore().batch();
