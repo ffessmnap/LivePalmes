@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-national-swimmers-admin-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-public-access-request-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -54,6 +54,53 @@
           </div>
         </form>
         <p id="adminPortalMessage" class="admin-portal-message" aria-live="polite"></p>
+        <details class="admin-portal-login-access">
+          <summary>Demander un acc&egrave;s engagements club</summary>
+          <form id="adminPublicAccessRequestForm" class="admin-access-form">
+            <div class="admin-access-identity-grid">
+              <label>
+                Nom
+                <input id="adminPublicAccessRequestLastName" type="text" autocomplete="family-name" required>
+              </label>
+              <label>
+                Pr&eacute;nom
+                <input id="adminPublicAccessRequestFirstName" type="text" autocomplete="given-name" required>
+              </label>
+              <label>
+                Email
+                <input id="adminPublicAccessRequestEmail" type="email" autocomplete="email" required>
+              </label>
+              <label>
+                R&ocirc;le dans le club
+                <input id="adminPublicAccessRequestClubRole" type="text" maxlength="120" required>
+              </label>
+              <label>
+                Num&eacute;ro de licence
+                <input id="adminPublicAccessRequestLicenseNumber" type="text" maxlength="60" required>
+              </label>
+              <label>
+                R&eacute;gion
+                <select id="adminPublicAccessRequestRegionId" required></select>
+              </label>
+              <label>
+                Club
+                <select id="adminPublicAccessRequestClubSelect" required disabled>
+                  <option value="">Choisissez d'abord une r&eacute;gion</option>
+                </select>
+                <input id="adminPublicAccessRequestClubName" type="hidden">
+                <input id="adminPublicAccessRequestClubId" type="hidden">
+              </label>
+              <label class="admin-access-wide-field">
+                Message facultatif
+                <textarea id="adminPublicAccessRequestText" rows="2" maxlength="600"></textarea>
+              </label>
+            </div>
+            <div class="admin-portal-actions">
+              <button type="submit">Envoyer la demande</button>
+            </div>
+            <p id="adminPublicAccessRequestMessage" class="admin-portal-message" aria-live="polite"></p>
+          </form>
+        </details>
       </section>
 
       <section id="adminPortalDashboard" class="admin-portal-dashboard" hidden>
@@ -69,6 +116,7 @@
               <section class="admin-portal-nav-group" aria-labelledby="adminNavGeneral">
                 <h2 id="adminNavGeneral">Général</h2>
                 <a href="#mon-compte" data-admin-view-link="account">Mon compte</a>
+                <a href="#demande-acces" data-admin-view-link="accessRequest">Demander un acc&egrave;s</a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPerformances">
                 <h2 id="adminNavPerformances">Performances</h2>
@@ -107,6 +155,7 @@
                   <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Administration des comp&eacute;titions" hidden>
                     <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
                     <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminAccessRequests" data-engagements-nav-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d'acc&egrave;s <span id="adminEngagementsAccessRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                     <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Administration nationale <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                   </div>
                 </div>
@@ -202,6 +251,68 @@
                   </form>
                 </section>
               </div>
+            </section>
+
+            <section id="adminAccessRequestView" class="admin-portal-access-view" data-admin-view="accessRequest" aria-labelledby="adminAccessRequestViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span>Acc&egrave;s engagements</span>
+                <h2 id="adminAccessRequestViewTitle">Demander un acc&egrave;s club</h2>
+                <p>La demande sera transmise au responsable de la r&eacute;gion ou au niveau national.</p>
+              </div>
+
+              <section class="admin-access-preview" aria-label="Demande d'acc&egrave;s engagements club">
+                <div class="admin-access-preview-head">
+                  <span>Demande d'acc&egrave;s</span>
+                  <strong>Acc&egrave;s engagements club</strong>
+                </div>
+                <form id="adminAccessRequestForm" class="admin-access-form">
+                  <fieldset class="admin-access-section admin-access-identity">
+                    <legend>Identit&eacute;</legend>
+                    <div class="admin-access-identity-grid">
+                      <label>
+                        Nom
+                        <input id="adminAccessRequestLastName" type="text" autocomplete="family-name" required>
+                      </label>
+                      <label>
+                        Pr&eacute;nom
+                        <input id="adminAccessRequestFirstName" type="text" autocomplete="given-name" required>
+                      </label>
+                      <label>
+                        Email du compte
+                        <input id="adminAccessRequestEmail" type="email" autocomplete="email" required>
+                      </label>
+                      <label>
+                        R&ocirc;le dans le club
+                        <input id="adminAccessRequestClubRole" type="text" maxlength="120" required>
+                      </label>
+                      <label>
+                        Num&eacute;ro de licence
+                        <input id="adminAccessRequestLicenseNumber" type="text" maxlength="60" required>
+                      </label>
+                      <label>
+                        R&eacute;gion
+                        <select id="adminAccessRequestRegionId" required></select>
+                      </label>
+                      <label>
+                        Club
+                        <select id="adminAccessRequestClubSelect" required disabled>
+                          <option value="">Choisissez d'abord une r&eacute;gion</option>
+                        </select>
+                        <input id="adminAccessRequestClubName" type="hidden">
+                        <input id="adminAccessRequestClubId" type="hidden">
+                      </label>
+                      <label class="admin-access-wide-field">
+                        Message facultatif
+                        <textarea id="adminAccessRequestText" rows="3" maxlength="600"></textarea>
+                      </label>
+                    </div>
+                  </fieldset>
+                  <div class="admin-portal-actions admin-access-submit">
+                    <button type="submit">Envoyer la demande</button>
+                  </div>
+                  <p id="adminAccessRequestMessage" class="admin-portal-message" aria-live="polite"></p>
+                </form>
+              </section>
             </section>
 
             <section id="adminRecordsView" class="admin-portal-records-view" data-admin-view="records" aria-labelledby="adminRecordsViewTitle" hidden>
@@ -1051,6 +1162,20 @@
                 </section>
               </div>
 
+              <div id="adminEngagementsAccessRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="accessRequests" hidden>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsAccessRequestsTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Acc&egrave;s clubs</span>
+                      <h3 id="adminEngagementsAccessRequestsTitle">Demandes d'acc&egrave;s</h3>
+                    </div>
+                    <button id="adminEngagementsAccessRequestsRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsAccessRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
+                  <div id="adminEngagementsAccessRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
+              </div>
+
               <div id="adminEngagementsDeletionRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="deletionRequests" hidden>
                 <section class="admin-engagements-card" aria-labelledby="adminEngagementsDeletionRequestsTitle">
                   <div class="admin-engagements-card-head">
@@ -1484,6 +1609,6 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260729-national-swimmers-admin-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260729-public-access-request-1"></script>
   </body>
 </html>

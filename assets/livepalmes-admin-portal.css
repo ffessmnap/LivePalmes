@@ -1749,6 +1749,35 @@
   gap: 6px;
 }
 
+.admin-engagements-request-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 4px;
+  color: #5f746f;
+  font-size: 0.82rem;
+}
+
+.admin-access-wide-field {
+  grid-column: 1 / -1;
+}
+
+.admin-portal-login-access {
+  width: 100%;
+  margin-top: 8px;
+  border-top: 1px solid #dce7e4;
+  padding-top: 10px;
+}
+
+.admin-portal-login-access summary {
+  cursor: pointer;
+  color: #0b7285;
+  font-weight: 700;
+}
+
+.admin-portal-login-access .admin-access-form {
+  margin-top: 10px;
+}
+
 .admin-engagements-national-swimmer-card[data-active="false"] {
   background: #f7f9f8;
   border-color: #c7d7d3;
