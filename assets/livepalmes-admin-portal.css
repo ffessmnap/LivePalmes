@@ -1757,6 +1757,12 @@
   font-size: 0.82rem;
 }
 
+.admin-engagements-access-request-edit {
+  margin-top: 12px;
+  border-top: 1px solid #dce7e4;
+  padding-top: 12px;
+}
+
 .admin-access-wide-field {
   grid-column: 1 / -1;
 }
@@ -2489,10 +2495,10 @@
 
 .admin-engagements-club-swimmers-directory-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.2fr) 92px 48px minmax(84px, 0.42fr) minmax(220px, 1fr) 104px;
+  grid-template-columns: minmax(210px, 1.4fr) 92px 48px 54px minmax(110px, 0.7fr);
   gap: 8px;
   align-items: center;
-  min-width: 780px;
+  min-width: 540px;
   border: 1px solid #dce7e4;
   border-radius: 6px;
   padding: 5px 8px;
@@ -3788,7 +3794,7 @@
 .admin-access-table-head,
 .admin-access-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1.7fr) minmax(150px, 1.25fr) minmax(180px, 1.5fr) 90px 135px minmax(170px, auto);
+  grid-template-columns: minmax(190px, 1.7fr) minmax(150px, 1.25fr) minmax(180px, 1.5fr) 90px 135px minmax(230px, auto);
   gap: 12px;
   align-items: center;
 }
@@ -3862,6 +3868,17 @@
 
 .admin-access-row-actions button {
   min-height: 36px;
+}
+
+.admin-access-row-actions .danger-button {
+  border-color: #e0b3a5;
+  color: #9a3412;
+}
+
+.admin-access-row-actions .danger-button:hover,
+.admin-access-row-actions .danger-button:focus-visible {
+  border-color: #c2410c;
+  background: #fff1ed;
 }
 
 .admin-access-empty {

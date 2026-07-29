@@ -378,6 +378,70 @@ async function engagementAccessContext(request) {
   };
 }
 
+async function accessManagementContext(request) {
+  const uid = request.auth?.uid || "";
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  }
+  const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
+  if (ADMIN_UIDS.has(uid) || tokenCapabilities["admin.full"] === true) {
+    return {
+      uid,
+      email: cleanText(request.auth?.token?.email).slice(0, 180),
+      adminFull: true,
+      national: true,
+      region: true,
+      regionId: ""
+    };
+  }
+  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active") {
+    throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
+  }
+  const capabilities = data.capabilities || tokenCapabilities || {};
+  const accessScopes = data.accessScopes || {};
+  const national = capabilities["engagements.national.manage"] === true;
+  const region = capabilities["engagements.region.manage"] === true;
+  if (!national && !region) {
+    throw new HttpsError("permission-denied", "Droit de gestion des acces requis.");
+  }
+  const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
+  return {
+    uid,
+    email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+    adminFull: false,
+    national,
+    region,
+    regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80)
+  };
+}
+
+function accessUserRegionIdFromData(data = {}) {
+  const regionScope = normalizedAccessScope(data.accessScopes?.["engagements.region.manage"]);
+  return regionScope.scopeId || cleanText(data.regionId).slice(0, 80);
+}
+
+function accessUserCanBeManagedByRegional(context, data = {}) {
+  if (!context?.region || !context.regionId) return false;
+  const capabilities = data.capabilities || {};
+  if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return false;
+  if (capabilities["engagements.region.manage"] !== true) return false;
+  return accessUserRegionIdFromData(data) === context.regionId;
+}
+
+function accessUserVisibleForAccessDirectory(context, doc) {
+  if (context?.national) return true;
+  return accessUserCanBeManagedByRegional(context, doc.data() || {});
+}
+
+function assertRegionalAccessUserDeletionRequestAllowed(context, targetData = {}) {
+  if (context?.national) return;
+  if (!accessUserCanBeManagedByRegional(context, targetData)) {
+    throw new HttpsError("permission-denied", "Demande limitee aux admins region de ta region.");
+  }
+}
+
 async function engagementClubAccessContext(request) {
   const uid = request.auth?.uid || "";
   if (!uid) {
@@ -1044,6 +1108,10 @@ function currentEngagementSeasonInfo(date = new Date()) {
     endYear: startYear + 1,
     label: `${startYear}-${startYear + 1}`
   };
+}
+
+function currentEngagementCategoryFromBirthDate(birthDate) {
+  return ageCategoryFromDates(new Date().toISOString().slice(0, 10), birthDate);
 }
 
 function parseFfessmTxtImport(rawText) {
@@ -2082,20 +2150,38 @@ exports.resolveEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request
   assertEngagementAccessRequestScope(context, data);
   const now = new Date().toISOString();
   let accessResult = null;
+  let resolvedData = data;
   if (decision === "approved") {
+    resolvedData = {
+      ...data,
+      ...cleanEngagementAccessRequestPayload({
+        ...data,
+        ...(request.data?.correctedRequest && typeof request.data.correctedRequest === "object" ? request.data.correctedRequest : {})
+      }, request)
+    };
+    assertEngagementAccessRequestScope(context, resolvedData);
     const profile = cleanAccessProfile({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      clubId: data.clubId,
-      clubName: data.clubName,
-      regionId: data.regionId,
-      licenseNumber: data.licenseNumber,
+      firstName: resolvedData.firstName,
+      lastName: resolvedData.lastName,
+      email: resolvedData.email,
+      clubId: resolvedData.clubId,
+      clubName: resolvedData.clubName,
+      regionId: resolvedData.regionId,
+      licenseNumber: resolvedData.licenseNumber,
       capabilities: ["engagements.club.manage"]
     });
     accessResult = await saveAccessUserProfile(profile, context.uid);
   }
   await ref.set({
+    ...(decision === "approved" ? {
+      email: resolvedData.email,
+      firstName: resolvedData.firstName,
+      lastName: resolvedData.lastName,
+      clubId: resolvedData.clubId,
+      clubName: resolvedData.clubName,
+      regionId: resolvedData.regionId,
+      licenseNumber: resolvedData.licenseNumber
+    } : {}),
     status: decision,
     resolvedAt: now,
     resolvedBy: context.uid,
@@ -2107,9 +2193,10 @@ exports.resolveEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request
   await writeAuditLog("engagementAccessRequest.resolved", context.uid, {
     requestId,
     decision,
-    email: cleanText(data.email).slice(0, 180),
-    clubId: cleanText(data.clubId).slice(0, 40),
-    regionId: cleanText(data.regionId).slice(0, 80),
+    email: cleanText(resolvedData.email).slice(0, 180),
+    clubId: cleanText(resolvedData.clubId).slice(0, 40),
+    regionId: cleanText(resolvedData.regionId).slice(0, 80),
+    corrected: decision === "approved" && JSON.stringify(resolvedData) !== JSON.stringify(data),
     accessUid: accessResult?.uid || ""
   });
   const updated = await ref.get();
@@ -2136,6 +2223,28 @@ function accessUserListItem(doc) {
     accessScopes: data.accessScopes || {},
     updatedAt: data.updatedAt || "",
     lastLoginAt: data.lastLoginAt || ""
+  };
+}
+
+function accessUserDeletionRequestItem(doc) {
+  const data = doc.data() || {};
+  return {
+    id: doc.id,
+    targetUid: data.targetUid || "",
+    targetEmail: data.targetEmail || "",
+    targetFirstName: data.targetFirstName || "",
+    targetLastName: data.targetLastName || "",
+    targetRegionId: data.targetRegionId || "",
+    targetClubId: data.targetClubId || "",
+    targetClubName: data.targetClubName || "",
+    targetCapabilities: Array.isArray(data.targetCapabilities) ? data.targetCapabilities : [],
+    status: data.status || "pending",
+    requestedBy: data.requestedBy || "",
+    requestedByEmail: data.requestedByEmail || "",
+    requestedAt: data.requestedAt || "",
+    resolvedBy: data.resolvedBy || "",
+    resolvedAt: data.resolvedAt || "",
+    decision: data.decision || ""
   };
 }
 
@@ -2204,7 +2313,7 @@ async function searchAccessUserDocuments(search) {
 }
 
 exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
-  assertAdmin(request);
+  const context = await accessManagementContext(request);
   const pageSize = Math.min(50, Math.max(10, Math.trunc(Number(request.data?.pageSize) || 25)));
   const status = ["active", "inactive"].includes(cleanText(request.data?.status))
     ? cleanText(request.data.status)
@@ -2218,7 +2327,8 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
   if (search) {
     const offset = Math.max(0, Math.trunc(Number(cursor.offset) || 0));
     const matches = (await searchAccessUserDocuments(search))
-      .filter((doc) => accessUserMatchesFilters(doc, status, capability));
+      .filter((doc) => accessUserMatchesFilters(doc, status, capability))
+      .filter((doc) => accessUserVisibleForAccessDirectory(context, doc));
     const page = matches.slice(offset, offset + pageSize);
     return {
       ok: true,
@@ -2244,7 +2354,7 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
     if (!snapshot.size) break;
     for (const doc of snapshot.docs) {
       queryCursor = { lastName: doc.data()?.lastName || "", uid: doc.id };
-      if (accessUserMatchesFilters(doc, status, capability)) matchingDocs.push(doc);
+      if (accessUserMatchesFilters(doc, status, capability) && accessUserVisibleForAccessDirectory(context, doc)) matchingDocs.push(doc);
       if (matchingDocs.length > pageSize) break;
     }
     exhausted = snapshot.size < batchSize;
@@ -2309,6 +2419,188 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
     ok: true,
     uid,
     status
+  };
+});
+
+async function deleteAccessUserAccount(uid, actorUid, source = {}) {
+  const targetUid = cleanText(uid);
+  if (!targetUid) {
+    throw new HttpsError("invalid-argument", "Utilisateur requis.");
+  }
+  if (targetUid === actorUid) {
+    throw new HttpsError("failed-precondition", "Tu ne peux pas supprimer ton propre acces.");
+  }
+  if (ADMIN_UIDS.has(targetUid)) {
+    throw new HttpsError("failed-precondition", "Ce compte administrateur racine ne peut pas etre supprime.");
+  }
+  const userRef = admin.firestore().collection("users").doc(targetUid);
+  const snapshot = await userRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Acces LivePalmes introuvable.");
+  }
+  const data = snapshot.data() || {};
+  const capabilities = activeCapabilitiesFromMap(data.capabilities || {});
+  const email = data.email || "";
+  try {
+    await admin.auth().deleteUser(targetUid);
+  } catch (error) {
+    if (error?.code !== "auth/user-not-found") throw error;
+  }
+  const batch = admin.firestore().batch();
+  batch.delete(userRef);
+  ACCESS_CAPABILITIES.forEach((capability) => {
+    batch.delete(admin.firestore().collection("accessGrants").doc(`${targetUid}_${capability.replace(".", "_")}`));
+  });
+  await batch.commit();
+  await writeAuditLog("accessUser.deleted", actorUid, {
+    uid: targetUid,
+    email,
+    capabilities,
+    regionId: data.regionId || "",
+    clubId: data.clubId || "",
+    source
+  });
+  return {
+    ok: true,
+    uid: targetUid,
+    email
+  };
+}
+
+exports.deleteAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Admin national requis.");
+  }
+  if (request.data?.confirmPermanent !== true) {
+    throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  return deleteAccessUserAccount(request.data?.uid, context.uid, { mode: "direct" });
+});
+
+exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  if (context.national) {
+    throw new HttpsError("failed-precondition", "Un admin national peut supprimer directement ce compte.");
+  }
+  const targetUid = cleanText(request.data?.uid);
+  if (!targetUid) {
+    throw new HttpsError("invalid-argument", "Utilisateur requis.");
+  }
+  if (targetUid === context.uid) {
+    throw new HttpsError("failed-precondition", "Tu ne peux pas demander la suppression de ton propre acces.");
+  }
+  const userRef = admin.firestore().collection("users").doc(targetUid);
+  const snapshot = await userRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Acces LivePalmes introuvable.");
+  }
+  const data = snapshot.data() || {};
+  assertRegionalAccessUserDeletionRequestAllowed(context, data);
+
+  const pendingSnapshot = await admin.firestore().collection("accessUserDeletionRequests")
+    .where("targetUid", "==", targetUid)
+    .where("status", "==", "pending")
+    .limit(1)
+    .get();
+  if (!pendingSnapshot.empty) {
+    throw new HttpsError("already-exists", "Une demande de suppression est deja en attente pour ce compte.");
+  }
+
+  const now = new Date().toISOString();
+  const requestRef = await admin.firestore().collection("accessUserDeletionRequests").add({
+    targetUid,
+    targetEmail: data.email || "",
+    targetFirstName: data.firstName || "",
+    targetLastName: data.lastName || "",
+    targetRegionId: accessUserRegionIdFromData(data),
+    targetClubId: data.clubId || "",
+    targetClubName: data.clubName || "",
+    targetCapabilities: activeCapabilitiesFromMap(data.capabilities || {}),
+    status: "pending",
+    requestedBy: context.uid,
+    requestedByEmail: context.email || "",
+    requestedAt: now,
+    updatedAt: now
+  });
+  await writeAuditLog("accessUser.deletionRequested", context.uid, {
+    requestId: requestRef.id,
+    uid: targetUid,
+    email: data.email || "",
+    regionId: accessUserRegionIdFromData(data)
+  });
+  const created = await requestRef.get();
+  return {
+    ok: true,
+    request: accessUserDeletionRequestItem(created)
+  };
+});
+
+exports.listAccessUserDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Admin national requis.");
+  }
+  const snapshot = await admin.firestore().collection("accessUserDeletionRequests")
+    .where("status", "==", "pending")
+    .limit(100)
+    .get();
+  const requests = snapshot.docs
+    .map(accessUserDeletionRequestItem)
+    .sort((left, right) => String(left.requestedAt || "").localeCompare(String(right.requestedAt || "")));
+  return {
+    ok: true,
+    requests
+  };
+});
+
+exports.resolveAccessUserDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Admin national requis.");
+  }
+  const requestId = cleanText(request.data?.requestId);
+  const decision = cleanText(request.data?.decision);
+  if (!requestId) {
+    throw new HttpsError("invalid-argument", "Demande requise.");
+  }
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new HttpsError("invalid-argument", "Decision invalide.");
+  }
+  const requestRef = admin.firestore().collection("accessUserDeletionRequests").doc(requestId);
+  const snapshot = await requestRef.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Demande introuvable.");
+  }
+  const data = snapshot.data() || {};
+  if (data.status !== "pending") {
+    throw new HttpsError("failed-precondition", "Cette demande a deja ete traitee.");
+  }
+  let deletionResult = null;
+  if (decision === "approved") {
+    deletionResult = await deleteAccessUserAccount(data.targetUid, context.uid, { mode: "request", requestId });
+  }
+  const now = new Date().toISOString();
+  await requestRef.set({
+    status: decision,
+    decision,
+    resolvedBy: context.uid,
+    resolvedByEmail: context.email || "",
+    resolvedAt: now,
+    updatedAt: now,
+    targetDeleted: decision === "approved"
+  }, { merge: true });
+  await writeAuditLog("accessUser.deletionRequestResolved", context.uid, {
+    requestId,
+    decision,
+    uid: data.targetUid || "",
+    email: data.targetEmail || ""
+  });
+  return {
+    ok: true,
+    requestId,
+    decision,
+    deletion: deletionResult
   };
 });
 
@@ -3167,11 +3459,12 @@ function engagementNewSwimmerItem(doc) {
     name,
     birthDate: cleanIsoDate(data.birthDate),
     sex: cleanText(data.sex).slice(0, 20),
+    category: currentEngagementCategoryFromBirthDate(data.birthDate),
     clubId: cleanText(data.clubId).slice(0, 40),
     club: cleanText(data.club).slice(0, 60),
     clubName: cleanText(data.clubName).slice(0, 140),
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
-    latestDate: cleanIsoDate(data.createdAt),
+    latestDate: cleanIsoDate(data.latestDate),
     performanceCount: 0,
     alertCount: alerts.length,
     alerts,
@@ -3815,6 +4108,7 @@ function engagementClubSwimmerItem(doc) {
     name,
     birthDate: cleanIsoDate(data.birthDate),
     sex: cleanText(data.sex).slice(0, 20),
+    category: currentEngagementCategoryFromBirthDate(data.birthDate),
     clubId: cleanText(data.clubId).slice(0, 40),
     club: cleanText(data.club).slice(0, 60),
     clubName: cleanText(data.clubName).slice(0, 140),
@@ -3842,6 +4136,7 @@ function engagementReferenceSwimmerItem(raw = {}) {
     name,
     birthDate,
     sex: cleanText(raw.sex).slice(0, 20),
+    category: currentEngagementCategoryFromBirthDate(birthDate),
     clubId: cleanText(raw.clubId).slice(0, 40),
     club: cleanText(raw.club).slice(0, 60),
     clubName: cleanText(raw.clubName).slice(0, 140),
