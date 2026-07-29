@@ -101,9 +101,16 @@
   async function saveData(nextData) {
     const ref = documentRef();
     if (!ref) throw new Error("Firebase Firestore n'est pas disponible.");
+    const completed = completeData(cloneData(nextData));
     const payload = {
-      ...completeData(cloneData(nextData)),
       id: DOCUMENT,
+      records: Array.isArray(completed.records) ? completed.records : [],
+      franceRecords: Array.isArray(completed.franceRecords) ? completed.franceRecords : [],
+      filters: completed.filters && typeof completed.filters === "object" ? completed.filters : {},
+      ...(Array.isArray(completed.recordHistory) ? { recordHistory: completed.recordHistory } : {}),
+      ...(completed.sourceDate ? { sourceDate: completed.sourceDate } : {}),
+      ...(completed.generatedAt ? { generatedAt: completed.generatedAt } : {}),
+      ...(completed.cutoffDate ? { cutoffDate: completed.cutoffDate } : {}),
       updatedAt: new Date().toISOString()
     };
     await ref.set(payload, { merge: false });

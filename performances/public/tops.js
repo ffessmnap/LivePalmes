@@ -4,11 +4,11 @@
   const params = new URLSearchParams(global.location.search);
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;
+  const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
   const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
-  const isLocalPublicDataHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(global.location.hostname);
   const dataVersion = encodeURIComponent(usesFirestorePublicData ? `firestore-${Date.now()}` : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
-    ? (isLocalPublicDataHost ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
+    ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
     : "public/data/performance-public";
   const usesConsolidatedData = usesLegacyPublicData;
   const publicAdditionalDataUrl = global.LivePalmesAppConfig?.performanceAdditionalDataUrl ||

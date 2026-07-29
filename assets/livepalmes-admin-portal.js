@@ -330,7 +330,6 @@
     engagementsClubEntriesForm: document.querySelector("#adminEngagementsClubEntriesForm"),
     engagementsClubEntriesSummary: document.querySelector("#adminEngagementsClubEntriesSummary"),
     engagementsClubEntriesList: document.querySelector("#adminEngagementsClubEntriesList"),
-    engagementsClubEntriesPreviewButton: document.querySelector("#adminEngagementsClubEntriesPreviewButton"),
     engagementsClubEntriesSaveButton: document.querySelector("#adminEngagementsClubEntriesSaveButton"),
     engagementsClubEntriesMessage: document.querySelector("#adminEngagementsClubEntriesMessage"),
     engagementsClubRelaysForm: document.querySelector("#adminEngagementsClubRelaysForm"),
@@ -453,6 +452,8 @@
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
   let activeAuthUid = "";
+  let engagementClubEntryTimesPreviewTimer = null;
+  let engagementClubEntryTimesPreviewRequestId = 0;
 
   function ensureFirebaseApp() {
     const firebase = global.firebase;
@@ -1105,7 +1106,7 @@
         ["performances/public/data/records-data.js?v=records-firestore-20260629060432", "adminRecordDataScript"],
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/admin-reference.js?v=20260601-performance-admin-page-1", "adminRecordReferenceScript"],
-        ["performances/public/store.js?v=20260613-birth-year-restore-1", "adminRecordStoreScript"],
+        ["performances/public/store.js?v=20260729-record-payload-1", "adminRecordStoreScript"],
         ["performances/public/admin-records.js?v=20260721-default-filters-1", "adminRecordModuleScript"]
       ];
       for (const [src, id] of scripts) await loadScriptOnce(src, id);
@@ -1869,8 +1870,8 @@
   function engagementMissingEntryTimeModeLabel(value) {
     return {
       manual: "Saisie manuelle autorisee",
-      forbidden: "Course impossible",
-      default595999: "Temps 59:59.99"
+      forbidden: "Saisie manuelle non autorisee",
+      default595999: "Saisie manuelle non autorisee"
     }[value] || "Saisie manuelle autorisee";
   }
 
@@ -2107,8 +2108,9 @@
       const individualEntries = Array.from(row.querySelectorAll("[data-engagement-club-swimmer-event]:checked"))
         .map((input) => {
           const eventCode = String(input.dataset.engagementClubSwimmerEvent || "").trim();
-          const manualEntryTime = String(Array.from(row.querySelectorAll("[data-engagement-club-swimmer-event-time]"))
-            .find((timeInput) => timeInput.dataset.engagementClubSwimmerEventTime === eventCode)?.value || "").trim();
+          const timeInput = Array.from(row.querySelectorAll("[data-engagement-club-swimmer-event-time]"))
+            .find((item) => item.dataset.engagementClubSwimmerEventTime === eventCode);
+          const manualEntryTime = timeInput && !timeInput.disabled ? String(timeInput.value || "").trim() : "";
           return eventCode ? { ...(savedEntryByCode.get(eventCode) || {}), eventCode, manualEntryTime } : null;
         })
         .filter(Boolean);
@@ -2131,15 +2133,19 @@
     ].map((code) => String(code || "").trim()).filter(Boolean));
   }
 
-  function engagementEntryTimeStatusLabel(entry = {}) {
+  function engagementEntryTimeDisplayLabel(entry = {}) {
+    if (entry.entryTime) return entry.entryTime;
+    return "59:59.99";
+  }
+
+  function engagementEntryTimeHelpLabel(entry = {}, manualAllowed = false) {
     const warning = entry.entryTimeWarning ? ` - Alerte : ${entry.entryTimeWarning}` : "";
     if (entry.entryTimeMode === "known") {
-      return `Temps connu ${entry.entryTime || "-"}${entry.date ? ` - ${formatShortDate(entry.date)}` : ""}${entry.location ? ` - ${entry.location}` : ""}${warning}`;
+      return `Temps LivePalmes${entry.date ? ` - ${formatShortDate(entry.date)}` : ""}${entry.location ? ` - ${entry.location}` : ""}${warning}`;
     }
-    if (entry.entryTimeMode === "manual") return `Temps manuel ${entry.entryTime || "-"}${warning}`;
-    if (entry.entryTimeMode === "default595999") return `Aucun temps connu - 59:59.99${warning}`;
-    if (entry.entryTimeMode === "missing") return `Aucun temps connu${warning}`;
-    return "";
+    if (entry.entryTimeMode === "manual") return `Temps modifie manuellement${warning}`;
+    if (entry.entryTimeMode === "default595999") return `Aucun historique - 59:59.99${warning}`;
+    return manualAllowed ? "59:59.99 par defaut, remplace si un temps LivePalmes existe" : "59:59.99 par defaut, remplace si un temps LivePalmes existe";
   }
 
   function renderEngagementClubSwimmerEvents(selected = null, disabled = false) {
@@ -2162,15 +2168,22 @@
           const entry = entryByCode.get(event.code) || {};
           const checked = selectedCodes.has(event.code);
           const manualAllowed = missingMode === "manual";
-          const timeStatus = engagementEntryTimeStatusLabel(entry);
+          const manualEditing = checked && manualAllowed && entry.entryTimeMode === "manual";
+          const automaticTime = entry.entryTimeMode && entry.entryTimeMode !== "manual" ? entry.entryTime : "59:59.99";
+          const manualValue = entry.entryTimeMode === "manual" ? (entry.manualEntryTime || entry.entryTime || "") : "";
+          const timeHelp = engagementEntryTimeHelpLabel(entry, manualAllowed);
           return `
             <div class="admin-engagements-club-swimmer-event-choice" data-event-selected="${checked ? "true" : "false"}">
               <label title="${escapeHtml(definition.label || event.label || event.code)}">
                 <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(event.code)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}>
                 <span>${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}</span>
               </label>
-              <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps manuel" data-engagement-club-swimmer-event-time="${escapeHtml(event.code)}" value="${escapeHtml(entry.manualEntryTime || (entry.entryTimeMode === "manual" ? entry.entryTime : ""))}" ${checked && manualAllowed ? "" : "hidden disabled"}>
-              <small>${escapeHtml(timeStatus || (manualAllowed ? "Saisie si aucun temps connu" : missingMode === "default595999" ? "59:59.99 si aucun temps connu" : "Temps connu obligatoire"))}</small>
+              <div class="admin-engagements-club-entry-time" ${checked ? "" : "hidden"}>
+                <span class="admin-engagements-club-entry-time-value">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
+                ${manualAllowed ? `<button type="button" class="ghost-button compact admin-engagements-club-entry-time-edit" data-engagement-club-time-edit="${escapeHtml(event.code)}" data-engagement-club-time-auto="${escapeHtml(automaticTime)}" ${checked ? "" : "hidden disabled"} aria-label="Modifier le temps ${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}">✎</button>` : ""}
+                <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-swimmer-event-time="${escapeHtml(event.code)}" value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
+              </div>
+              <small>${escapeHtml(timeHelp)}</small>
             </div>
           `;
         }).join("")}
@@ -2427,7 +2440,6 @@
     const writeLockReason = engagementClubWriteLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubEntriesForm) elements.engagementsClubEntriesForm.dataset.locked = locked ? "true" : "false";
-    if (elements.engagementsClubEntriesPreviewButton) elements.engagementsClubEntriesPreviewButton.disabled = locked || engagementClubSwimmersLoading;
     if (elements.engagementsClubEntriesSaveButton) elements.engagementsClubEntriesSaveButton.disabled = locked || engagementClubSwimmersLoading;
     if (locked) {
       mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
@@ -3990,15 +4002,16 @@
       return;
     }
     try {
-      if (elements.engagementsClubEntriesPreviewButton) elements.engagementsClubEntriesPreviewButton.disabled = true;
+      const requestId = ++engagementClubEntryTimesPreviewRequestId;
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Verification des temps d'engagement...";
+        elements.engagementsClubEntriesMessage.textContent = "Calcul des temps d'engagement...";
         elements.engagementsClubEntriesMessage.dataset.tone = "loading";
       }
       const result = await callFunction("previewEngagementClubEntryTimes", {
         competitionId: selectedEngagementCompetitionId,
         swimmers
       });
+      if (requestId !== engagementClubEntryTimesPreviewRequestId) return;
       selectedEngagementClubEntry = {
         ...(selectedEngagementClubEntry || {}),
         swimmers: result.swimmers || []
@@ -4011,14 +4024,18 @@
       }
     } catch (error) {
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = `Verification impossible : ${error?.message || error}`;
+        elements.engagementsClubEntriesMessage.textContent = `Calcul impossible : ${error?.message || error}`;
         elements.engagementsClubEntriesMessage.dataset.tone = "error";
       }
-    } finally {
-      if (elements.engagementsClubEntriesPreviewButton) {
-        elements.engagementsClubEntriesPreviewButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
-      }
     }
+  }
+
+  function scheduleEngagementClubEntryTimesPreview(delayMs = 350) {
+    if (engagementClubEntryTimesPreviewTimer) clearTimeout(engagementClubEntryTimesPreviewTimer);
+    engagementClubEntryTimesPreviewTimer = setTimeout(() => {
+      engagementClubEntryTimesPreviewTimer = null;
+      previewEngagementClubEntryTimes();
+    }, delayMs);
   }
 
   async function saveEngagementClubSwimmers(event) {
@@ -6093,7 +6110,6 @@
     });
     elements.engagementsClubSwimmersForm?.addEventListener("submit", saveEngagementClubSwimmers);
     elements.engagementsClubEntriesForm?.addEventListener("submit", saveEngagementClubSwimmers);
-    elements.engagementsClubEntriesPreviewButton?.addEventListener("click", previewEngagementClubEntryTimes);
     elements.engagementsClubRelaysForm?.addEventListener("submit", saveEngagementClubRelays);
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
@@ -6153,18 +6169,42 @@
         const choice = event.target.closest("[data-event-selected]");
         const timeInput = Array.from(row?.querySelectorAll("[data-engagement-club-swimmer-event-time]") || [])
           .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
+        const timeBlock = choice?.querySelector(".admin-engagements-club-entry-time");
+        const timeEditButton = choice?.querySelector("[data-engagement-club-time-edit]");
         const checked = event.target.checked;
-        const manualAllowed = (selectedEngagementCompetition?.missingEntryTimeMode || "manual") === "manual";
         if (choice) choice.dataset.eventSelected = checked ? "true" : "false";
+        if (timeBlock) timeBlock.hidden = !checked;
+        if (timeEditButton) {
+          timeEditButton.hidden = !checked;
+          timeEditButton.disabled = !checked;
+        }
         if (timeInput) {
-          timeInput.hidden = !checked || !manualAllowed;
-          timeInput.disabled = !checked || !manualAllowed;
+          timeInput.hidden = true;
+          timeInput.disabled = true;
+          if (!checked) timeInput.value = "";
         }
       }
       updateEngagementClubEntriesSummary();
+      if (event.target.matches("[data-engagement-club-swimmer-event]") || event.target.matches("[data-engagement-club-swimmer-event-time]")) {
+        scheduleEngagementClubEntryTimesPreview();
+      }
       if (elements.engagementsClubEntriesMessage && !event.target.matches("[data-engagement-club-swimmer-event]")) {
         elements.engagementsClubEntriesMessage.textContent = "";
       }
+    });
+    elements.engagementsClubEntriesList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-club-time-edit]");
+      if (!button) return;
+      const choice = button.closest("[data-event-selected]");
+      const eventCode = button.dataset.engagementClubTimeEdit || "";
+      const timeInput = Array.from(choice?.querySelectorAll("[data-engagement-club-swimmer-event-time]") || [])
+        .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
+      if (!timeInput) return;
+      if (!timeInput.value) timeInput.value = button.dataset.engagementClubTimeAuto || "";
+      timeInput.hidden = false;
+      timeInput.disabled = false;
+      timeInput.focus?.();
+      if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
     });
     elements.engagementsClubRelaysList?.addEventListener("change", () => {
       engagementClubRelaysDraft = selectedEngagementClubRelayRowsFromDom();

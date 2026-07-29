@@ -2690,6 +2690,35 @@
   background: #f7fcfd;
 }
 
+.admin-engagements-club-entry-time {
+  display: grid;
+  grid-template-columns: minmax(58px, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.admin-engagements-club-entry-time[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-entry-time-value {
+  min-height: 24px;
+  border: 1px solid #dce7e4;
+  border-radius: 5px;
+  padding: 3px 6px;
+  background: #f8fbfa;
+  color: #073b44;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.admin-engagements-club-entry-time-edit {
+  min-height: 24px;
+  min-width: 28px;
+  padding: 2px 6px;
+}
+
 .admin-engagements-club-swimmer-events-grid label {
   display: flex;
   gap: 5px;
@@ -2705,6 +2734,7 @@
 }
 
 .admin-engagements-club-swimmer-event-choice input[type="text"] {
+  grid-column: 1 / -1;
   min-height: 30px;
   padding: 3px 5px;
   font-size: 0.76rem;

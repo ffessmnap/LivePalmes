@@ -3373,6 +3373,21 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
     });
   return entries.map((entry) => {
     const eventCode = cleanText(entry.eventCode).toUpperCase().replace(/\s+/g, "");
+    const manualRaw = cleanText(entry.manualEntryTime || entry.entryTime);
+    const manualAllowed = competition.missingEntryTimeMode === "manual";
+    if (manualAllowed && manualRaw) {
+      const manual = parseEngagementEntryTime(manualRaw);
+      if (!manual) {
+        throw new HttpsError("invalid-argument", `Temps manuel invalide pour ${eventCode}.`);
+      }
+      return cleanEngagementEntryIndividualEntries([{
+        eventCode,
+        entryTimeMode: "manual",
+        manualEntryTime: manualRaw,
+        entryTime: manual.display,
+        entryTimeValue: manual.value
+      }])[0];
+    }
     const known = bestEngagementKnownTime(rows, eventCode, competition);
     if (known) {
       return cleanEngagementEntryIndividualEntries([{
@@ -3385,28 +3400,12 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
         location: known.location
       }])[0];
     }
-    if (competition.missingEntryTimeMode === "default595999") {
-      return cleanEngagementEntryIndividualEntries([{
-        eventCode,
-        entryTimeMode: "default595999",
-        entryTime: "59:59.99",
-        entryTimeValue: 359999
-      }])[0];
-    }
-    if (competition.missingEntryTimeMode === "manual") {
-      const manual = parseEngagementEntryTime(entry.manualEntryTime || entry.entryTime);
-      if (!manual) {
-        throw new HttpsError("failed-precondition", `Temps manuel requis pour ${eventCode}.`);
-      }
-      return cleanEngagementEntryIndividualEntries([{
-        eventCode,
-        entryTimeMode: "manual",
-        manualEntryTime: entry.manualEntryTime || entry.entryTime,
-        entryTime: manual.display,
-        entryTimeValue: manual.value
-      }])[0];
-    }
-    throw new HttpsError("failed-precondition", `Aucun temps d'engagement connu pour ${eventCode}.`);
+    return cleanEngagementEntryIndividualEntries([{
+      eventCode,
+      entryTimeMode: "default595999",
+      entryTime: "59:59.99",
+      entryTimeValue: 359999
+    }])[0];
   }).filter(Boolean);
 }
 
