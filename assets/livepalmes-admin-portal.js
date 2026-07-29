@@ -548,7 +548,7 @@
         : peopleMode
           ? "Base des chefs d'equipe et officiels reutilisables par le club."
           : swimmersMode
-            ? "Liste des nageurs rattaches au club dans la base LivePalmes."
+            ? "Liste des nageurs dont le dernier club connu est votre club."
             : "Calendrier, fiche comp\u00e9tition et engagements du club.";
     }
     if (elements.engagementsCalendarEyebrow) {
@@ -1880,7 +1880,7 @@
     if (!engagementClubSwimmersLoaded) {
       mount.innerHTML = '<p class="admin-engagements-empty">Cliquez sur Actualiser pour charger les nageurs du club.</p>';
       if (elements.engagementsClubSwimmersDirectorySummary) {
-        elements.engagementsClubSwimmersDirectorySummary.textContent = `Effectif LivePalmes de ${clubLabel}.`;
+        elements.engagementsClubSwimmersDirectorySummary.textContent = `Effectif LivePalmes de ${clubLabel}, construit a partir du dernier club connu.`;
       }
       return;
     }
@@ -1890,18 +1890,18 @@
       .slice(0, 800);
     const hiddenCount = Math.max(0, engagementClubSwimmers.length - swimmers.length);
     if (elements.engagementsClubSwimmersDirectorySummary) {
-      elements.engagementsClubSwimmersDirectorySummary.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} rattache${engagementClubSwimmers.length > 1 ? "s" : ""} a ${clubLabel}.`;
+      elements.engagementsClubSwimmersDirectorySummary.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} avec ${clubLabel} comme dernier club connu.`;
     }
     if (elements.engagementsClubSwimmersDirectoryStatus) {
       elements.engagementsClubSwimmersDirectoryStatus.textContent = engagementClubSwimmers.length
         ? `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""} affiche${swimmers.length > 1 ? "s" : ""}.`
-        : `Aucun nageur trouve pour ${clubLabel} dans l'index LivePalmes.`;
+        : `Aucun nageur trouve pour ${clubLabel} dans l'effectif LivePalmes.`;
       elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = engagementClubSwimmers.length ? "ok" : "error";
     }
     if (!swimmers.length) {
       mount.innerHTML = engagementClubSwimmers.length
         ? '<p class="admin-engagements-empty">Aucun nageur ne correspond a cette recherche.</p>'
-        : '<p class="admin-engagements-empty">Aucun nageur trouve. Si le clubId est correct, l\'index nageurs Firestore doit probablement etre reconstruit ou complete.</p>';
+        : '<p class="admin-engagements-empty">Aucun nageur trouve avec ce club comme dernier club connu.</p>';
       return;
     }
     mount.innerHTML = `
@@ -1917,7 +1917,12 @@
         ${swimmers.map((swimmer) => {
       const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
       const club = [swimmer.club || "", swimmer.clubName || ""].filter(Boolean).join(" - ") || clubLabel;
-      const source = swimmer.source === "engagement" ? "cree par le club" : swimmer.swimmerId ? `ID ${swimmer.swimmerId}` : "";
+      const swimmerReferenceId = swimmer.swimmerId || swimmer.id || "";
+      const source = swimmer.source === "engagement"
+        ? "cree par le club"
+        : swimmer.source === "reference"
+          ? ["dernier club connu", swimmerReferenceId ? `ID ${swimmerReferenceId}` : ""].filter(Boolean).join(" - ")
+          : swimmer.swimmerId ? `ID ${swimmer.swimmerId}` : "";
       return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row">
           <span role="cell">
@@ -1997,7 +2002,8 @@
       const info = [
         swimmer.latestDate ? `dernier resultat ${formatShortDate(swimmer.latestDate)}` : "",
         swimmer.swimmerId ? `ID ${swimmer.swimmerId}` : "",
-        swimmer.source === "engagement" ? "cree par le club" : ""
+        swimmer.source === "engagement" ? "cree par le club" : "",
+        swimmer.source === "reference" ? "dernier club connu LivePalmes" : ""
       ].filter(Boolean).join(" - ");
       return `
         <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="${selected ? "true" : "false"}">
@@ -3715,7 +3721,7 @@
       return;
     }
     mount.innerHTML = `
-      <p class="admin-portal-message" data-tone="error">Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Le nageur est cree, mais l'alerte est tracee.</p>
+      <p class="admin-portal-message" data-tone="error">Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Le nageur est cree, l'alerte est tracee comme validee par le club.</p>
       <div class="admin-engagements-club-swimmer-alert-list">
         ${alerts.map((alert) => `
           <article>
@@ -3724,7 +3730,8 @@
               alert.name,
               alert.birthDate ? formatShortDate(alert.birthDate) : "",
               alert.clubId ? `Club ${alert.clubId}` : "",
-              alert.clubName || ""
+              alert.clubName || "",
+              alert.latestDate ? `dernier resultat ${formatShortDate(alert.latestDate)}` : ""
             ].filter(Boolean).join(" - "))}</small>
           </article>
         `).join("")}

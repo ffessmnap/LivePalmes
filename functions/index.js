@@ -988,6 +988,16 @@ function importSeasonYear(dateIso) {
   return date.getUTCMonth() >= 8 ? date.getUTCFullYear() + 1 : date.getUTCFullYear();
 }
 
+function currentEngagementSeasonInfo(date = new Date()) {
+  const year = date.getUTCFullYear();
+  const startYear = date.getUTCMonth() >= 8 ? year : year - 1;
+  return {
+    startYear,
+    endYear: startYear + 1,
+    label: `${startYear}-${startYear + 1}`
+  };
+}
+
 function parseFfessmTxtImport(rawText) {
   const text = cleanImportText(rawText);
   const lines = text.split(/\r?\n/);
@@ -2991,8 +3001,42 @@ function engagementNewSwimmerItem(doc) {
   });
 }
 
+function engagementNewSwimmerAlertFromMatch(match = {}, context = {}, type = "") {
+  const swimmerIndexId = cleanText(match.id || match.swimmerIndexId);
+  const clubId = cleanText(match.clubId);
+  const differentClub = clubId && clubId !== context.clubId;
+  const alertType = type || (differentClub ? "club-change" : "duplicate");
+  return cleanFirestoreValue({
+    type: alertType,
+    level: differentClub ? "warning" : "info",
+    message: alertType === "possible-duplicate"
+      ? "Nageur ressemblant deja present dans LivePalmes."
+      : differentClub
+        ? "Nageur existant avec un dernier club connu different."
+        : "Nageur existant avec la meme identite.",
+    swimmerIndexId,
+    swimmerId: cleanText(match.swimmerId || match.id).slice(0, 80),
+    source: cleanText(match.source || "performances").slice(0, 40),
+    identityKey: cleanText(match.identityKey).slice(0, 180),
+    name: cleanText(match.name).slice(0, 160),
+    firstName: cleanText(match.firstName).slice(0, 80),
+    lastName: cleanText(match.lastName).slice(0, 80),
+    birthDate: cleanIsoDate(match.birthDate),
+    clubId,
+    clubName: cleanText(match.clubName).slice(0, 140),
+    latestDate: cleanIsoDate(match.latestDate),
+    validationStatus: "validated-by-club"
+  });
+}
+
 async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
   const alerts = [];
+  const addAlert = (alert) => {
+    if (!alert?.swimmerIndexId && !alert?.identityKey) return;
+    const key = [alert.type, alert.identityKey || alert.swimmerIndexId, alert.clubId].join("|");
+    if (alerts.some((item) => [item.type, item.identityKey || item.swimmerIndexId, item.clubId].join("|") === key)) return;
+    alerts.push(alert);
+  };
   const db = admin.firestore();
   if (swimmer.identityKey) {
     const exactSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
@@ -3001,20 +3045,15 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
       .get();
     exactSnapshot.docs.forEach((doc) => {
       const match = engagementClubSwimmerItem(doc);
-      alerts.push({
-        type: match.clubId && match.clubId !== context.clubId ? "club-change" : "duplicate",
-        level: match.clubId && match.clubId !== context.clubId ? "warning" : "info",
-        message: match.clubId && match.clubId !== context.clubId
-          ? "Nageur existant avec un dernier club different."
-          : "Nageur existant avec la meme identite.",
-        swimmerIndexId: match.id,
-        swimmerId: match.swimmerId,
-        name: match.name,
-        birthDate: match.birthDate,
-        clubId: match.clubId,
-        clubName: match.clubName
-      });
+      addAlert(engagementNewSwimmerAlertFromMatch(match, context));
     });
+    intranapSwimmersIndex
+      .filter((match) => cleanText(match.identityKey) === swimmer.identityKey)
+      .slice(0, 5)
+      .forEach((match) => addAlert(engagementNewSwimmerAlertFromMatch({
+        ...match,
+        source: "reference"
+      }, context)));
   }
   const lastToken = performanceSearchTokens(swimmer.lastName)[0] || "";
   if (lastToken.length >= 2) {
@@ -3030,20 +3069,31 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
         performanceSearchTokens(swimmer.firstName).some((inputToken) => token.slice(0, 3) === inputToken.slice(0, 3))
       );
       if (!sameBirthYear || !firstClose) return;
-      alerts.push({
-        type: "possible-duplicate",
-        level: "info",
-        message: "Nageur ressemblant deja present dans LivePalmes.",
-        swimmerIndexId: match.id,
-        swimmerId: match.swimmerId,
-        name: match.name,
-        birthDate: match.birthDate,
-        clubId: match.clubId,
-        clubName: match.clubName
-      });
+      addAlert(engagementNewSwimmerAlertFromMatch(match, context, "possible-duplicate"));
     });
+    intranapSwimmersIndex
+      .filter((match) => {
+        if (cleanText(match.identityKey) === swimmer.identityKey) return false;
+        const sameBirthYear = cleanText(match.birthDate).slice(0, 4) === cleanText(swimmer.birthDate).slice(0, 4);
+        const lastClose = performanceSearchTokens(match.lastName).some((token) => token.slice(0, Math.min(6, lastToken.length)) === lastToken.slice(0, Math.min(6, lastToken.length)));
+        const firstClose = performanceSearchTokens(match.firstName).some((token) =>
+          performanceSearchTokens(swimmer.firstName).some((inputToken) => token.slice(0, 3) === inputToken.slice(0, 3))
+        );
+        return sameBirthYear && lastClose && firstClose;
+      })
+      .slice(0, 12)
+      .forEach((match) => addAlert(engagementNewSwimmerAlertFromMatch({
+        ...match,
+        source: "reference"
+      }, context, "possible-duplicate")));
   }
-  return alerts.slice(0, 8);
+  return alerts
+    .sort((left, right) =>
+      Number(right.type === "club-change") - Number(left.type === "club-change") ||
+      cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
+      cleanText(left.name).localeCompare(cleanText(right.name), "fr")
+    )
+    .slice(0, 8);
 }
 
 function engagementSwimmerLicenseId(swimmer = {}) {
@@ -4173,10 +4223,16 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
     throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
   }
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  const season = currentEngagementSeasonInfo(new Date(now));
   const payload = {
     ...swimmer,
     alerts,
     alertCount: alerts.length,
+    alertValidationStatus: alerts.length ? "validated-by-club" : "",
+    alertValidatedAt: alerts.length ? now : "",
+    alertValidatedBy: alerts.length ? context.uid : "",
+    seasonStartYear: season.startYear,
+    seasonLabel: season.label,
     updatedAt: now,
     updatedBy: context.uid,
     ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
@@ -4201,6 +4257,10 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
       clubId: context.clubId,
       clubName: context.clubName,
       regionId: context.regionId,
+      seasonStartYear: season.startYear,
+      seasonLabel: season.label,
+      validatedAt: now,
+      validatedBy: context.uid,
       createdAt: now,
       createdBy: context.uid
     }, { merge: true });
@@ -4209,7 +4269,10 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
   await writeAuditLog("engagementClubSwimmer.created", context.uid, {
     swimmerId: docId,
     clubId: context.clubId,
-    alertCount: alerts.length
+    alertCount: alerts.length,
+    alertTypes: Array.from(new Set(alerts.map((alert) => cleanText(alert.type)).filter(Boolean))),
+    seasonStartYear: season.startYear,
+    seasonLabel: season.label
   });
   const updated = await ref.get();
   return {
