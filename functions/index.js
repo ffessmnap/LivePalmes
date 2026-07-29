@@ -4252,6 +4252,28 @@ function assertCanManageEngagementCompetition(context = {}, competition = {}) {
   }
 }
 
+function engagementClubWriteLockReason(competition = {}, nowMs = Date.now()) {
+  const entryStatus = cleanEngagementEntryStatus(competition.entryStatus || competition.status);
+  if (entryStatus === "closed") return "Les engagements sont fermes.";
+  if (entryStatus !== "open") return "Les engagements ne sont pas ouverts.";
+  const deadline = cleanIsoDateTime(competition.entryDeadlineAt);
+  if (!deadline) return "";
+  const deadlineMs = Date.parse(deadline);
+  return Number.isFinite(deadlineMs) && deadlineMs < nowMs
+    ? "La date limite des engagements est depassee."
+    : "";
+}
+
+function assertEngagementClubWriteOpen(competition = {}) {
+  const reason = engagementClubWriteLockReason(competition);
+  if (reason) {
+    throw new HttpsError("failed-precondition", reason, {
+      entryStatus: cleanEngagementEntryStatus(competition.entryStatus || competition.status),
+      entryDeadlineAt: cleanIsoDateTime(competition.entryDeadlineAt)
+    });
+  }
+}
+
 exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) => {
   await assertEngagementsAccess(request);
   const fromDate = cleanIsoDate(request.data?.fromDate) || new Date().toISOString().slice(0, 10);
@@ -4464,6 +4486,7 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  assertEngagementClubWriteOpen(competition.data() || {});
   const rawTeamLeader = cleanEngagementTeamLeader(request.data?.teamLeader || {});
   const teamLeader = rawTeamLeader.mode === "person" && !rawTeamLeader.externalClub
     ? {
@@ -4595,6 +4618,7 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  assertEngagementClubWriteOpen(competition.data() || {});
   const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
@@ -4880,6 +4904,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  assertEngagementClubWriteOpen(competition.data() || {});
   const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
@@ -5034,6 +5059,7 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  assertEngagementClubWriteOpen(competition.data() || {});
   const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {

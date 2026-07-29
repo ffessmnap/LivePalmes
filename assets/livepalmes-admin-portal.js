@@ -735,13 +735,64 @@
     return entry.teamLeaderComplete === true;
   }
 
+  function engagementClubWriteLockReason(competition = selectedEngagementCompetition || {}) {
+    const status = competition.entryStatus || "upcoming";
+    if (status === "closed") return "Les engagements sont fermes.";
+    if (status !== "open") return "Les engagements ne sont pas ouverts.";
+    if (!competition.entryDeadlineAt) return "";
+    const deadline = new Date(competition.entryDeadlineAt);
+    if (Number.isNaN(deadline.getTime())) return "";
+    return deadline.getTime() < Date.now()
+      ? "La date limite des engagements est depassee."
+      : "";
+  }
+
+  function engagementClubWriteLocked() {
+    return Boolean(engagementClubWriteLockReason());
+  }
+
+  function setEngagementClubFormControlsLocked(form, locked) {
+    form?.querySelectorAll("input, select, textarea, button").forEach((control) => {
+      control.disabled = locked;
+    });
+  }
+
+  function setEngagementClubCompetitionFormsLocked(locked) {
+    [
+      elements.engagementsClubTeamForm,
+      elements.engagementsClubOfficialsForm,
+      elements.engagementsClubSwimmersForm,
+      elements.engagementsClubEntriesForm,
+      elements.engagementsClubRelaysForm
+    ].forEach((form) => setEngagementClubFormControlsLocked(form, locked));
+  }
+
+  function showEngagementClubWriteLock(messageElement) {
+    const reason = engagementClubWriteLockReason();
+    if (!reason) return false;
+    if (messageElement) {
+      messageElement.textContent = reason;
+      messageElement.dataset.tone = "error";
+    }
+    return true;
+  }
+
   function canOpenClubEngagementTab(tab = "") {
+    if (tab === "summary" && engagementClubWriteLocked()) return true;
     return tab === "team" || engagementClubTeamComplete();
+  }
+
+  function clubEngagementTabHiddenWhenWriteLocked(tab = "") {
+    return ["officials", "swimmers", "entries", "relays"].includes(tab);
   }
 
   function requestEngagementDetailTab(tab) {
     if (tab === activeEngagementsDetailTab) return;
     if (!confirmLeaveDirtyEngagementTab()) return;
+    if (!isEngagementAdminMode() && engagementClubWriteLocked() && clubEngagementTabHiddenWhenWriteLocked(tab)) {
+      setEngagementsDetailTab("summary");
+      return;
+    }
     if (!isEngagementAdminMode() && isClubEngagementWorkflowTab(tab) && !canOpenClubEngagementTab(tab)) {
       setEngagementsDetailTab("team");
       if (elements.engagementsClubTeamMessage) {
@@ -808,7 +859,11 @@
     const adminOnlyTabs = new Set(["documents"]);
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
-    const nextTab = !isEngagementAdminMode() && adminOnlyTabs.has(requestedTab)
+    const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
+    const requestedTabHiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(requestedTab);
+    const nextTab = requestedTabHiddenByClubLock
+      ? "summary"
+      : !isEngagementAdminMode() && adminOnlyTabs.has(requestedTab)
       ? "general"
       : isEngagementAdminMode() && clubOnlyTabs.has(requestedTab)
         ? "general"
@@ -818,8 +873,9 @@
       const buttonTab = button.dataset.engagementsDetailTabButton;
       const adminOnly = adminOnlyTabs.has(buttonTab);
       const clubOnly = clubOnlyTabs.has(buttonTab);
+      const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode());
+      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock;
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -830,7 +886,8 @@
       const panelTab = panel.dataset.engagementsDetailTabPanel;
       const adminOnly = adminOnlyTabs.has(panelTab);
       const clubOnly = clubOnlyTabs.has(panelTab);
-      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode());
+      const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(panelTab);
+      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock;
     });
     if (!isEngagementAdminMode() && (nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
       loadEngagementClubSwimmers({ silent: engagementClubSwimmersLoaded });
@@ -1979,13 +2036,14 @@
   function renderEngagementClubOfficials() {
     const mount = elements.engagementsClubOfficialsList;
     if (!mount) return;
-    const locked = !engagementClubTeamComplete();
+    const writeLockReason = engagementClubWriteLockReason();
+    const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubOfficialsForm) elements.engagementsClubOfficialsForm.dataset.locked = locked ? "true" : "false";
     if (elements.engagementsClubOfficialsSaveButton) elements.engagementsClubOfficialsSaveButton.disabled = locked;
     const selectedIds = new Set((selectedEngagementClubEntry?.officials || []).map((official) => official.personId).filter(Boolean));
     const officials = engagementClubOfficialPeople();
     if (locked) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Renseignez le chef d\'equipe ou confirmez la renonciation pour activer cette etape.</p>';
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
       updateEngagementClubOfficialsSummary();
       return;
     }
@@ -2003,6 +2061,7 @@
         </span>
       </label>
     `).join("");
+    setEngagementClubFormControlsLocked(elements.engagementsClubOfficialsForm, false);
     updateEngagementClubOfficialsSummary();
   }
 
@@ -2254,9 +2313,11 @@
   function renderEngagementClubSwimmers() {
     const mount = elements.engagementsClubSwimmersList;
     if (!mount) return;
-    const locked = !engagementClubTeamComplete();
+    const writeLockReason = engagementClubWriteLockReason();
+    const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubSwimmersForm) elements.engagementsClubSwimmersForm.dataset.locked = locked ? "true" : "false";
     if (elements.engagementsClubSwimmersSaveButton) elements.engagementsClubSwimmersSaveButton.disabled = locked || engagementClubSwimmersLoading;
+    if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = Boolean(writeLockReason);
     const selectedById = new Map((selectedEngagementClubEntry?.swimmers || [])
       .map((swimmer) => [swimmer.swimmerIndexId, swimmer])
       .filter(([id]) => id));
@@ -2270,7 +2331,7 @@
       });
     });
     if (locked) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Renseignez le chef d\'equipe ou confirmez la renonciation pour activer cette etape.</p>';
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
       updateEngagementClubSwimmersSummary();
       return;
     }
@@ -2331,6 +2392,7 @@
         }).join("")}
       </div>
     `;
+    setEngagementClubFormControlsLocked(elements.engagementsClubSwimmersForm, false);
     updateEngagementClubSwimmersSummary();
     renderEngagementClubEntries();
     renderEngagementClubRelays();
@@ -2339,11 +2401,12 @@
   function renderEngagementClubEntries() {
     const mount = elements.engagementsClubEntriesList;
     if (!mount) return;
-    const locked = !engagementClubTeamComplete();
+    const writeLockReason = engagementClubWriteLockReason();
+    const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubEntriesForm) elements.engagementsClubEntriesForm.dataset.locked = locked ? "true" : "false";
     if (elements.engagementsClubEntriesSaveButton) elements.engagementsClubEntriesSaveButton.disabled = locked || engagementClubSwimmersLoading;
     if (locked) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Renseignez le chef d\'equipe ou confirmez la renonciation pour activer cette etape.</p>';
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
       updateEngagementClubEntriesSummary();
       return;
     }
@@ -2391,6 +2454,7 @@
         }).join("")}
       </div>
     `;
+    setEngagementClubFormControlsLocked(elements.engagementsClubEntriesForm, false);
     updateEngagementClubEntriesSummary();
   }
 
@@ -2560,14 +2624,15 @@
   function renderEngagementClubRelays() {
     const mount = elements.engagementsClubRelaysList;
     if (!mount) return;
-    const locked = !engagementClubTeamComplete();
+    const writeLockReason = engagementClubWriteLockReason();
+    const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     const relayEvents = engagementClubRelayEvents();
     const swimmerOptions = engagementClubRelaySwimmerOptions();
     if (elements.engagementsClubRelaysForm) elements.engagementsClubRelaysForm.dataset.locked = locked ? "true" : "false";
     if (elements.engagementsClubRelaysSaveButton) elements.engagementsClubRelaysSaveButton.disabled = locked;
     if (elements.engagementsClubRelaysAddButton) elements.engagementsClubRelaysAddButton.disabled = locked || !relayEvents.length;
     if (locked) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Renseignez le chef d\'equipe ou confirmez la renonciation pour activer cette etape.</p>';
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
       updateEngagementClubRelaysSummary();
       return;
     }
@@ -2621,6 +2686,7 @@
     }).join("")}
       </div>
     `;
+    setEngagementClubFormControlsLocked(elements.engagementsClubRelaysForm, false);
     updateEngagementClubRelaysSummary();
   }
 
@@ -2641,6 +2707,7 @@
 
   function renderEngagementClubEntry(entry = selectedEngagementClubEntry || {}) {
     selectedEngagementClubEntry = entry || {};
+    const writeLockReason = engagementClubWriteLockReason();
     engagementClubRelaysDraft = Array.isArray(selectedEngagementClubEntry.relays)
       ? selectedEngagementClubEntry.relays.map((relay) => ({ ...relay }))
       : [];
@@ -2659,6 +2726,8 @@
     if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = teamLeader.renunciationAccepted === true;
     renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
     updateEngagementClubTeamFormMode();
+    setEngagementClubCompetitionFormsLocked(Boolean(writeLockReason));
+    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = Boolean(writeLockReason);
 
     if (elements.engagementsClubTeamSummary) {
       elements.engagementsClubTeamSummary.textContent = engagementClubTeamComplete()
@@ -2667,8 +2736,12 @@
           : `Chef d'equipe : ${[teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ")}.`
         : "A renseigner avant de commencer les engagements.";
     }
+    if (writeLockReason && elements.engagementsClubTeamMessage) {
+      elements.engagementsClubTeamMessage.textContent = writeLockReason;
+      elements.engagementsClubTeamMessage.dataset.tone = "error";
+    }
     document.querySelectorAll("[data-club-step]").forEach((step) => {
-      const locked = !engagementClubTeamComplete();
+      const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
       step.dataset.locked = locked ? "true" : "false";
       if (step.dataset.clubStep === "officials") return;
       const firstParagraph = step.querySelector("p");
@@ -2683,7 +2756,7 @@
           summary: "Structure prete. Le recapitulatif se remplira avec les prochaines etapes."
         };
         firstParagraph.textContent = locked
-          ? "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape."
+          ? writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape."
           : unlockedTexts[step.dataset.clubStep] || "";
       }
     });
@@ -3728,8 +3801,9 @@
       selectedEngagementClubEntry = result.entry || {};
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "";
-        elements.engagementsClubTeamMessage.dataset.tone = "ok";
+        const writeLockReason = engagementClubWriteLockReason();
+        elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
+        elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
       }
     } catch (error) {
       selectedEngagementClubEntry = {};
@@ -3744,6 +3818,7 @@
   async function saveEngagementClubTeamLeader(event) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return;
+    if (showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return;
     updateEngagementClubTeamFormMode();
     if (elements.engagementsClubTeamForm && !elements.engagementsClubTeamForm.checkValidity()) {
       elements.engagementsClubTeamForm.reportValidity?.();
@@ -3771,13 +3846,14 @@
         elements.engagementsClubTeamMessage.dataset.tone = "error";
       }
     } finally {
-      if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = false;
+      if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = engagementClubWriteLocked();
     }
   }
 
   async function saveEngagementClubOfficials(event) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return;
+    if (showEngagementClubWriteLock(elements.engagementsClubOfficialsMessage)) return;
     if (!engagementClubTeamComplete()) {
       if (elements.engagementsClubOfficialsMessage) {
         elements.engagementsClubOfficialsMessage.textContent = "Validez le chef d'equipe ou la renonciation avant les officiels.";
@@ -3807,7 +3883,7 @@
         elements.engagementsClubOfficialsMessage.dataset.tone = "error";
       }
     } finally {
-      if (elements.engagementsClubOfficialsSaveButton) elements.engagementsClubOfficialsSaveButton.disabled = !engagementClubTeamComplete();
+      if (elements.engagementsClubOfficialsSaveButton) elements.engagementsClubOfficialsSaveButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
     }
   }
 
@@ -3876,6 +3952,7 @@
     const fromEntries = event?.target === elements.engagementsClubEntriesForm;
     const messageElement = fromEntries ? elements.engagementsClubEntriesMessage : elements.engagementsClubSwimmersMessage;
     const saveButton = fromEntries ? elements.engagementsClubEntriesSaveButton : elements.engagementsClubSwimmersSaveButton;
+    if (showEngagementClubWriteLock(messageElement)) return;
     if (!engagementClubTeamComplete()) {
       if (messageElement) {
         messageElement.textContent = "Validez le chef d'equipe ou la renonciation avant les engagements.";
@@ -3916,13 +3993,14 @@
         messageElement.dataset.tone = "error";
       }
     } finally {
-      if (saveButton) saveButton.disabled = !engagementClubTeamComplete();
+      if (saveButton) saveButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
     }
   }
 
   async function saveEngagementClubRelays(event) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return;
+    if (showEngagementClubWriteLock(elements.engagementsClubRelaysMessage)) return;
     if (!engagementClubTeamComplete()) {
       if (elements.engagementsClubRelaysMessage) {
         elements.engagementsClubRelaysMessage.textContent = "Validez le chef d'equipe ou la renonciation avant les relais.";
@@ -3953,7 +4031,7 @@
         elements.engagementsClubRelaysMessage.dataset.tone = "error";
       }
     } finally {
-      if (elements.engagementsClubRelaysSaveButton) elements.engagementsClubRelaysSaveButton.disabled = !engagementClubTeamComplete();
+      if (elements.engagementsClubRelaysSaveButton) elements.engagementsClubRelaysSaveButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
     }
   }
 
