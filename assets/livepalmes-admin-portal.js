@@ -113,6 +113,18 @@
     message: document.querySelector("#adminPortalMessage"),
     password: document.querySelector("#adminPortalPassword"),
     reset: document.querySelector("#adminPortalResetButton"),
+    publicAccessRequestForm: document.querySelector("#adminPublicAccessRequestForm"),
+    publicAccessRequestFirstName: document.querySelector("#adminPublicAccessRequestFirstName"),
+    publicAccessRequestLastName: document.querySelector("#adminPublicAccessRequestLastName"),
+    publicAccessRequestEmail: document.querySelector("#adminPublicAccessRequestEmail"),
+    publicAccessRequestClubRole: document.querySelector("#adminPublicAccessRequestClubRole"),
+    publicAccessRequestLicenseNumber: document.querySelector("#adminPublicAccessRequestLicenseNumber"),
+    publicAccessRequestRegionId: document.querySelector("#adminPublicAccessRequestRegionId"),
+    publicAccessRequestClubSelect: document.querySelector("#adminPublicAccessRequestClubSelect"),
+    publicAccessRequestClubName: document.querySelector("#adminPublicAccessRequestClubName"),
+    publicAccessRequestClubId: document.querySelector("#adminPublicAccessRequestClubId"),
+    publicAccessRequestText: document.querySelector("#adminPublicAccessRequestText"),
+    publicAccessRequestMessage: document.querySelector("#adminPublicAccessRequestMessage"),
     sessionLabel: document.querySelector("#adminPortalSessionLabel"),
     signOut: document.querySelector("#adminPortalSignOutButton"),
     accountControl: document.querySelector("#adminPortalAccount"),
@@ -151,6 +163,18 @@
     accessNextPage: document.querySelector("#adminAccessNextPage"),
     accessPageLabel: document.querySelector("#adminAccessPageLabel"),
     cancelEdit: document.querySelector("#adminAccessCancelEdit"),
+    accessRequestForm: document.querySelector("#adminAccessRequestForm"),
+    accessRequestFirstName: document.querySelector("#adminAccessRequestFirstName"),
+    accessRequestLastName: document.querySelector("#adminAccessRequestLastName"),
+    accessRequestEmail: document.querySelector("#adminAccessRequestEmail"),
+    accessRequestClubRole: document.querySelector("#adminAccessRequestClubRole"),
+    accessRequestLicenseNumber: document.querySelector("#adminAccessRequestLicenseNumber"),
+    accessRequestRegionId: document.querySelector("#adminAccessRequestRegionId"),
+    accessRequestClubSelect: document.querySelector("#adminAccessRequestClubSelect"),
+    accessRequestClubName: document.querySelector("#adminAccessRequestClubName"),
+    accessRequestClubId: document.querySelector("#adminAccessRequestClubId"),
+    accessRequestText: document.querySelector("#adminAccessRequestText"),
+    accessRequestMessage: document.querySelector("#adminAccessRequestMessage"),
     accountEmailForm: document.querySelector("#adminAccountEmailForm"),
     accountEmail: document.querySelector("#adminAccountEmail"),
     accountEmailPassword: document.querySelector("#adminAccountEmailPassword"),
@@ -217,6 +241,10 @@
     engagementsClubSwimmersDirectoryList: document.querySelector("#adminEngagementsClubSwimmersDirectoryList"),
     engagementsDeletionRequestsNav: document.querySelector("#adminEngagementsDeletionRequestsNav"),
     engagementsDeletionRequestsBadge: document.querySelector("#adminEngagementsDeletionRequestsBadge"),
+    engagementsAccessRequestsBadge: document.querySelector("#adminEngagementsAccessRequestsBadge"),
+    engagementsAccessRequestsRefresh: document.querySelector("#adminEngagementsAccessRequestsRefresh"),
+    engagementsAccessRequestsStatus: document.querySelector("#adminEngagementsAccessRequestsStatus"),
+    engagementsAccessRequestsList: document.querySelector("#adminEngagementsAccessRequestsList"),
     engagementsDeletionRequestsPanel: document.querySelector("#adminEngagementsDeletionRequestsPanel"),
     engagementsDeletionRequestsRefresh: document.querySelector("#adminEngagementsDeletionRequestsRefresh"),
     engagementsDeletionRequestsStatus: document.querySelector("#adminEngagementsDeletionRequestsStatus"),
@@ -374,6 +402,9 @@
   let engagementDeletionRequests = [];
   let engagementDeletionRequestsLoaded = false;
   let engagementDeletionRequestsLoading = false;
+  let engagementAccessRequests = [];
+  let engagementAccessRequestsLoaded = false;
+  let engagementAccessRequestsLoading = false;
   let engagementNationalSwimmers = [];
   let engagementNationalSwimmersLoaded = false;
   let engagementNationalSwimmersLoading = false;
@@ -468,6 +499,18 @@
     elements.accessMessage.dataset.tone = tone;
   }
 
+  function setAccessRequestMessage(message, tone = "error") {
+    if (!elements.accessRequestMessage) return;
+    elements.accessRequestMessage.textContent = message || "";
+    elements.accessRequestMessage.dataset.tone = tone;
+  }
+
+  function setPublicAccessRequestMessage(message, tone = "error") {
+    if (!elements.publicAccessRequestMessage) return;
+    elements.publicAccessRequestMessage.textContent = message || "";
+    elements.publicAccessRequestMessage.dataset.tone = tone;
+  }
+
   function setAccountMessage(element, message, tone = "error") {
     if (!element) return;
     element.textContent = message || "";
@@ -495,6 +538,10 @@
 
   function canDeleteEngagementCompetitionDirectly() {
     return canUse("engagements.national.manage");
+  }
+
+  function canReviewEngagementAccessRequests() {
+    return canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
 
   function engagementRegionScope(user = currentAccessProfile || {}) {
@@ -664,33 +711,38 @@
   function setEngagementsTab(tab) {
     const canCreate = canCreateEngagementCompetition();
     const canNationalRequests = canDeleteEngagementCompetitionDirectly();
+    const canAccessRequests = canReviewEngagementAccessRequests();
     const canClubPeople = canUse("engagements.club.manage");
     const canClubSwimmers = canUse("engagements.club.manage");
     const allowedTabs = new Set(["calendar"]);
     if (canCreate) allowedTabs.add("create");
     if (canNationalRequests) allowedTabs.add("deletionRequests");
+    if (canAccessRequests) allowedTabs.add("accessRequests");
     if (canClubPeople) allowedTabs.add("clubPeople");
     if (canClubSwimmers) allowedTabs.add("clubSwimmers");
     const nextTab = allowedTabs.has(tab) ? tab : "calendar";
     activeEngagementsTab = nextTab;
     if (nextTab === "create") {
       activeEngagementsNavEntry = "adminCreate";
+    } else if (nextTab === "accessRequests") {
+      activeEngagementsNavEntry = "adminAccessRequests";
     } else if (nextTab === "deletionRequests") {
       activeEngagementsNavEntry = "adminDeletionRequests";
     } else if (nextTab === "clubPeople") {
       activeEngagementsNavEntry = "clubPeople";
     } else if (nextTab === "clubSwimmers") {
       activeEngagementsNavEntry = "clubSwimmers";
-    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
+    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminAccessRequests" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
       activeEngagementsNavEntry = canCreate ? "adminCalendar" : "club";
     }
     elements.engagementsTabButtons?.forEach((button) => {
       const buttonTab = button.dataset.engagementsTabButton;
       const createOnly = buttonTab === "create";
       const nationalOnly = buttonTab === "deletionRequests";
+      const accessRequestsOnly = buttonTab === "accessRequests";
       const clubOnly = buttonTab === "clubPeople";
       const clubSwimmersOnly = buttonTab === "clubSwimmers";
-      button.hidden = (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      button.hidden = (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
       const selected = buttonTab === nextTab;
       button.setAttribute("aria-selected", selected ? "true" : "false");
       button.tabIndex = selected ? 0 : -1;
@@ -699,9 +751,10 @@
       const panelTab = panel.dataset.engagementsTabPanel;
       const createOnly = panelTab === "create";
       const nationalOnly = panelTab === "deletionRequests";
+      const accessRequestsOnly = panelTab === "accessRequests";
       const clubOnly = panelTab === "clubPeople";
       const clubSwimmersOnly = panelTab === "clubSwimmers";
-      panel.hidden = panelTab !== nextTab || (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      panel.hidden = panelTab !== nextTab || (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
     });
   }
 
@@ -791,7 +844,11 @@
     document.querySelectorAll("[data-engagements-national-nav]").forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
     });
+    document.querySelectorAll("[data-engagements-admin-request-nav]").forEach((item) => {
+      item.hidden = !canReviewEngagementAccessRequests();
+    });
     if (!canDeleteEngagementCompetitionDirectly()) updateEngagementDeletionRequestBadge(0);
+    if (!canReviewEngagementAccessRequests()) updateEngagementAccessRequestBadge(0);
     setEngagementsTab(activeEngagementsTab);
     document.querySelectorAll(".admin-portal-nav-group").forEach((group) => {
       group.hidden = !Array.from(group.children).some((child) => {
@@ -813,6 +870,7 @@
   function requestedNavigationView() {
     if (global.location.hash === "#gestion-acces") return "access";
     if (global.location.hash === "#mon-compte") return "account";
+    if (global.location.hash === "#demande-acces") return "accessRequest";
     if (global.location.hash === "#records-mpf") return "records";
     if (global.location.hash === "#import-competitions") return "import";
     if (global.location.hash === "#correction-performance") return "correction";
@@ -875,6 +933,7 @@
     if (recordsActive) loadRecordModule();
     if (importModuleActive) loadImportModule();
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
+    if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
     if (engagementsActive && activeEngagementsTab === "deletionRequests") {
       loadEngagementDeletionRequests();
       loadEngagementNationalSwimmers();
@@ -1094,16 +1153,18 @@
   }
 
   function populateAccessRegionChoices() {
-    const select = elements.accessRegionId;
-    if (!select) return;
-    const currentValue = select.value;
-    fillLivePalmesRegionSelect(select, "A choisir");
+    const selects = [elements.accessRegionId, elements.accessRequestRegionId, elements.publicAccessRequestRegionId].filter(Boolean);
+    if (!selects.length) return;
     const knownRegions = new Set(LIVEPALMES_REGION_DEFINITIONS.map(normalizedRegionKey));
     const extraRegions = Array.from(new Set(accessClubReference.map((club) => club.regionId)))
       .filter((region) => region && !knownRegions.has(normalizedRegionKey(region)))
       .sort((a, b) => a.localeCompare(b, "fr"));
-    extraRegions.forEach((region) => select.append(new Option(region, region)));
-    setRegionSelectValue(select, currentValue);
+    selects.forEach((select) => {
+      const currentValue = select.value;
+      fillLivePalmesRegionSelect(select, "A choisir");
+      extraRegions.forEach((region) => select.append(new Option(region, region)));
+      setRegionSelectValue(select, currentValue);
+    });
   }
 
   function syncAccessClubFieldsFromSelect() {
@@ -1154,6 +1215,102 @@
     syncAccessClubFieldsFromSelect();
   }
 
+  function syncAccessRequestClubFieldsFromSelect() {
+    const selectedClubId = elements.accessRequestClubSelect?.value || "";
+    const club = accessClubReference.find((item) => item.clubId === selectedClubId);
+    if (elements.accessRequestClubId) elements.accessRequestClubId.value = club?.clubId || "";
+    if (elements.accessRequestClubName) elements.accessRequestClubName.value = club?.clubName || "";
+  }
+
+  function populateAccessRequestClubSelect(selectedClubId = "", fallbackClubName = "") {
+    const select = elements.accessRequestClubSelect;
+    if (!select) return;
+    const selectedId = String(selectedClubId || "").trim();
+    const knownClub = selectedId
+      ? accessClubReference.find((club) => club.clubId === selectedId)
+      : null;
+    if (knownClub && !elements.accessRequestRegionId?.value) {
+      setRegionSelectValue(elements.accessRequestRegionId, knownClub.regionId);
+    }
+    const regionId = canonicalLivePalmesRegion(elements.accessRequestRegionId?.value || "");
+    select.innerHTML = "";
+    if (!regionId) {
+      select.append(new Option("Choisissez d'abord une region", ""));
+      select.disabled = true;
+      syncAccessRequestClubFieldsFromSelect();
+      return;
+    }
+    const regionKey = normalizedRegionKey(regionId);
+    const clubs = accessClubReference
+      .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
+      .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
+    select.append(new Option("A choisir", ""));
+    clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
+    if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
+      const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
+      select.append(new Option(`${label} (${selectedId})`, selectedId));
+    }
+    select.disabled = clubs.length === 0 && !selectedId;
+    if (!clubs.length && !selectedId) {
+      select.options[0].textContent = "Aucun club trouve pour cette region";
+    }
+    select.value = selectedId;
+    if (selectedId && !knownClub) {
+      if (elements.accessRequestClubId) elements.accessRequestClubId.value = selectedId;
+      if (elements.accessRequestClubName) elements.accessRequestClubName.value = fallbackClubName || "";
+      return;
+    }
+    syncAccessRequestClubFieldsFromSelect();
+  }
+
+  function syncPublicAccessRequestClubFieldsFromSelect() {
+    const selectedClubId = elements.publicAccessRequestClubSelect?.value || "";
+    const club = accessClubReference.find((item) => item.clubId === selectedClubId);
+    if (elements.publicAccessRequestClubId) elements.publicAccessRequestClubId.value = club?.clubId || "";
+    if (elements.publicAccessRequestClubName) elements.publicAccessRequestClubName.value = club?.clubName || "";
+  }
+
+  function populatePublicAccessRequestClubSelect(selectedClubId = "", fallbackClubName = "") {
+    const select = elements.publicAccessRequestClubSelect;
+    if (!select) return;
+    const selectedId = String(selectedClubId || "").trim();
+    const knownClub = selectedId
+      ? accessClubReference.find((club) => club.clubId === selectedId)
+      : null;
+    if (knownClub && !elements.publicAccessRequestRegionId?.value) {
+      setRegionSelectValue(elements.publicAccessRequestRegionId, knownClub.regionId);
+    }
+    const regionId = canonicalLivePalmesRegion(elements.publicAccessRequestRegionId?.value || "");
+    select.innerHTML = "";
+    if (!regionId) {
+      select.append(new Option("Choisissez d'abord une region", ""));
+      select.disabled = true;
+      syncPublicAccessRequestClubFieldsFromSelect();
+      return;
+    }
+    const regionKey = normalizedRegionKey(regionId);
+    const clubs = accessClubReference
+      .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
+      .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
+    select.append(new Option("A choisir", ""));
+    clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
+    if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
+      const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
+      select.append(new Option(`${label} (${selectedId})`, selectedId));
+    }
+    select.disabled = clubs.length === 0 && !selectedId;
+    if (!clubs.length && !selectedId) {
+      select.options[0].textContent = "Aucun club trouve pour cette region";
+    }
+    select.value = selectedId;
+    if (selectedId && !knownClub) {
+      if (elements.publicAccessRequestClubId) elements.publicAccessRequestClubId.value = selectedId;
+      if (elements.publicAccessRequestClubName) elements.publicAccessRequestClubName.value = fallbackClubName || "";
+      return;
+    }
+    syncPublicAccessRequestClubFieldsFromSelect();
+  }
+
   function loadAccessClubReference() {
     if (accessClubReference.length) return Promise.resolve(accessClubReference);
     if (accessClubReferenceLoadPromise) return accessClubReferenceLoadPromise;
@@ -1166,10 +1323,14 @@
         .filter((club) => club.clubId && club.clubName);
       populateAccessRegionChoices();
       populateAccessClubSelect(elements.accessClubId?.value || "");
+      populateAccessRequestClubSelect(elements.accessRequestClubId?.value || "");
+      populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
       return accessClubReference;
     }).catch((error) => {
       accessClubReferenceLoadPromise = null;
       setAccessMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
+      setAccessRequestMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
+      setPublicAccessRequestMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
       return [];
     });
     return accessClubReferenceLoadPromise;
@@ -1259,9 +1420,15 @@
     if (elements.accountEmail && document.activeElement !== elements.accountEmail) {
       elements.accountEmail.value = user.email || ensureAdminAuth()?.status?.().email || "";
     }
+    if (elements.accessRequestEmail && !elements.accessRequestEmail.value && document.activeElement !== elements.accessRequestEmail) {
+      elements.accessRequestEmail.value = user.email || ensureAdminAuth()?.status?.().email || "";
+    }
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
     updateEngagementCreateFormAccess(user);
+    if (canReviewEngagementAccessRequests()) {
+      loadEngagementAccessRequests({ force: true, silent: true });
+    }
     if (canDeleteEngagementCompetitionDirectly()) {
       loadEngagementDeletionRequests({ force: true, silent: true });
     }
@@ -3878,6 +4045,180 @@
     }
   }
 
+  function updateEngagementAccessRequestBadge(count = engagementAccessRequests.length) {
+    if (!elements.engagementsAccessRequestsBadge) return;
+    const visible = canReviewEngagementAccessRequests() && Number(count) > 0;
+    elements.engagementsAccessRequestsBadge.hidden = !visible;
+    elements.engagementsAccessRequestsBadge.textContent = String(Math.min(99, Math.max(0, Number(count) || 0)));
+  }
+
+  function renderEngagementAccessRequests() {
+    if (!elements.engagementsAccessRequestsList) return;
+    if (!canReviewEngagementAccessRequests()) {
+      elements.engagementsAccessRequestsList.innerHTML = "";
+      return;
+    }
+    if (!engagementAccessRequests.length) {
+      elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'acces en attente.</p>';
+      return;
+    }
+    elements.engagementsAccessRequestsList.innerHTML = engagementAccessRequests.map((request) => {
+      const name = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "Demande sans nom";
+      return `
+        <article class="admin-engagements-request-card" data-engagement-access-request-id="${escapeHtml(request.id || "")}">
+          <div class="admin-engagements-request-main">
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml([request.email, request.clubRole ? `Role ${request.clubRole}` : "", request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
+          </div>
+          <div class="admin-engagements-request-meta">
+            <span>${escapeHtml([request.clubId ? `Club ${request.clubId}` : "", request.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne")}</span>
+            <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Region non renseignee")}</span>
+            <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
+          </div>
+          <div class="admin-engagements-request-actions">
+            <button class="ghost-button" type="button" data-engagement-access-request-action="approve" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Valider</button>
+            <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Refuser</button>
+          </div>
+          ${request.message ? `<p class="admin-engagements-request-note">${escapeHtml(request.message)}</p>` : ""}
+        </article>
+      `;
+    }).join("");
+  }
+
+  async function loadEngagementAccessRequests({ force = false, silent = false } = {}) {
+    if (!canReviewEngagementAccessRequests() || engagementAccessRequestsLoading) return;
+    if (engagementAccessRequestsLoaded && !force) return;
+    engagementAccessRequestsLoading = true;
+    if (elements.engagementsAccessRequestsRefresh) elements.engagementsAccessRequestsRefresh.disabled = true;
+    if (elements.engagementsAccessRequestsStatus && !silent) {
+      elements.engagementsAccessRequestsStatus.textContent = "Chargement des demandes...";
+      elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("listEngagementAccessRequests", { status: "pending", limit: 120 });
+      engagementAccessRequests = Array.isArray(result.requests) ? result.requests : [];
+      engagementAccessRequestsLoaded = true;
+      updateEngagementAccessRequestBadge(engagementAccessRequests.length);
+      renderEngagementAccessRequests();
+      if (elements.engagementsAccessRequestsStatus && !silent) {
+        elements.engagementsAccessRequestsStatus.textContent = `${engagementAccessRequests.length} demande${engagementAccessRequests.length > 1 ? "s" : ""} en attente.`;
+        elements.engagementsAccessRequestsStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsAccessRequestsStatus && !silent) {
+        elements.engagementsAccessRequestsStatus.textContent = `Lecture demandes impossible : ${error?.message || error}`;
+        elements.engagementsAccessRequestsStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementAccessRequestsLoading = false;
+      if (elements.engagementsAccessRequestsRefresh) elements.engagementsAccessRequestsRefresh.disabled = false;
+    }
+  }
+
+  async function resolveEngagementAccessRequest(requestId, decision) {
+    const cleanId = String(requestId || "").trim();
+    if (!cleanId || !canReviewEngagementAccessRequests()) return;
+    const request = engagementAccessRequests.find((item) => item.id === cleanId) || {};
+    const approve = decision === "approved";
+    const label = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "cette demande";
+    const message = approve
+      ? `Valider la demande de ${label} et creer l'acces engagements club ?`
+      : `Refuser la demande de ${label} ?`;
+    if (!global.confirm(message)) return;
+    if (elements.engagementsAccessRequestsStatus) {
+      elements.engagementsAccessRequestsStatus.textContent = approve ? "Validation en cours..." : "Refus en cours...";
+      elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("resolveEngagementAccessRequest", {
+        requestId: cleanId,
+        decision: approve ? "approved" : "rejected"
+      });
+      if (approve && result.access?.email) {
+        await global.firebase?.auth?.().sendPasswordResetEmail(result.access.email).catch(() => {});
+      }
+      engagementAccessRequestsLoaded = false;
+      if (canUse("admin.full")) loadAccessUsers({ reset: true });
+      await loadEngagementAccessRequests({ force: true });
+      if (elements.engagementsAccessRequestsStatus) {
+        elements.engagementsAccessRequestsStatus.textContent = approve
+          ? "Demande validee. L'acces club est actif et un email de mot de passe a ete envoye si possible."
+          : "Demande refusee.";
+        elements.engagementsAccessRequestsStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsAccessRequestsStatus) {
+        elements.engagementsAccessRequestsStatus.textContent = `Traitement impossible : ${error?.message || error}`;
+        elements.engagementsAccessRequestsStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  function accessRequestPayloadFromForm() {
+    return {
+      firstName: String(elements.accessRequestFirstName?.value || "").trim(),
+      lastName: String(elements.accessRequestLastName?.value || "").trim(),
+      email: String(elements.accessRequestEmail?.value || "").trim(),
+      clubRole: String(elements.accessRequestClubRole?.value || "").trim(),
+      licenseNumber: String(elements.accessRequestLicenseNumber?.value || "").trim(),
+      regionId: elements.accessRequestRegionId?.value || "",
+      clubId: elements.accessRequestClubId?.value || "",
+      clubName: elements.accessRequestClubName?.value || "",
+      message: String(elements.accessRequestText?.value || "").trim()
+    };
+  }
+
+  function publicAccessRequestPayloadFromForm() {
+    return {
+      firstName: String(elements.publicAccessRequestFirstName?.value || "").trim(),
+      lastName: String(elements.publicAccessRequestLastName?.value || "").trim(),
+      email: String(elements.publicAccessRequestEmail?.value || "").trim(),
+      clubRole: String(elements.publicAccessRequestClubRole?.value || "").trim(),
+      licenseNumber: String(elements.publicAccessRequestLicenseNumber?.value || "").trim(),
+      regionId: elements.publicAccessRequestRegionId?.value || "",
+      clubId: elements.publicAccessRequestClubId?.value || "",
+      clubName: elements.publicAccessRequestClubName?.value || "",
+      message: String(elements.publicAccessRequestText?.value || "").trim()
+    };
+  }
+
+  async function submitEngagementAccessRequest(event) {
+    event?.preventDefault?.();
+    const button = elements.accessRequestForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    setAccessRequestMessage("Envoi de la demande...", "loading");
+    try {
+      await callFunction("submitEngagementAccessRequest", accessRequestPayloadFromForm());
+      elements.accessRequestForm?.reset();
+      if (elements.accessRequestEmail) elements.accessRequestEmail.value = ensureAdminAuth()?.status?.().email || "";
+      populateAccessRequestClubSelect();
+      engagementAccessRequestsLoaded = false;
+      setAccessRequestMessage("Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.", "ok");
+    } catch (error) {
+      setAccessRequestMessage(`Demande impossible : ${error?.message || error}`);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function submitPublicEngagementAccessRequest(event) {
+    event?.preventDefault?.();
+    const button = elements.publicAccessRequestForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    setPublicAccessRequestMessage("Envoi de la demande...", "loading");
+    try {
+      await callFunction("submitEngagementAccessRequest", publicAccessRequestPayloadFromForm());
+      elements.publicAccessRequestForm?.reset();
+      populatePublicAccessRequestClubSelect();
+      engagementAccessRequestsLoaded = false;
+      setPublicAccessRequestMessage("Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.", "ok");
+    } catch (error) {
+      setPublicAccessRequestMessage(`Demande impossible : ${error?.message || error}`);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   function renderEngagementDeletionRequests() {
     if (!elements.engagementsDeletionRequestsList) return;
     if (!canDeleteEngagementCompetitionDirectly()) {
@@ -5061,8 +5402,12 @@
     updateView(auth?.status?.() || {});
     elements.form?.addEventListener("submit", signIn);
     elements.reset?.addEventListener("click", sendPasswordReset);
+    elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
+    elements.publicAccessRequestRegionId?.addEventListener("change", () => populatePublicAccessRequestClubSelect());
+    elements.publicAccessRequestClubSelect?.addEventListener("change", syncPublicAccessRequestClubFieldsFromSelect);
     elements.signOut?.addEventListener("click", signOut);
     elements.engagementsRefresh?.addEventListener("click", () => loadEngagementCompetitions({ force: true }));
+    elements.engagementsAccessRequestsRefresh?.addEventListener("click", () => loadEngagementAccessRequests({ force: true }));
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
     elements.engagementsNationalSwimmersRefresh?.addEventListener("click", () => loadEngagementNationalSwimmers({ force: true }));
     elements.engagementsCalendarFilters?.addEventListener("submit", (event) => event.preventDefault());
@@ -5083,6 +5428,7 @@
       button.addEventListener("click", () => {
         setEngagementsTab(button.dataset.engagementsTabButton);
         if (activeEngagementsTab === "calendar") loadEngagementCompetitions();
+        if (activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
         if (activeEngagementsTab === "deletionRequests") {
           loadEngagementDeletionRequests();
           loadEngagementNationalSwimmers();
@@ -5112,6 +5458,16 @@
       }
       const decision = action === "approve" ? "approved" : action === "reject" ? "rejected" : "";
       if (decision) resolveEngagementDeletionRequest(button.dataset.engagementDeletionRequestId, decision);
+    });
+    elements.engagementsAccessRequestsList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-access-request-action]");
+      if (!button) return;
+      const decision = button.dataset.engagementAccessRequestAction === "approve"
+        ? "approved"
+        : button.dataset.engagementAccessRequestAction === "reject"
+          ? "rejected"
+          : "";
+      if (decision) resolveEngagementAccessRequest(button.dataset.engagementAccessRequestId, decision);
     });
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
@@ -5360,6 +5716,10 @@
           closeEngagementCompetitionDetail();
           loadEngagementCompetitions();
         }
+        if (activeEngagementsTab === "accessRequests") {
+          closeEngagementCompetitionDetail();
+          loadEngagementAccessRequests();
+        }
         if (activeEngagementsTab === "deletionRequests") {
           closeEngagementCompetitionDetail();
           loadEngagementDeletionRequests();
@@ -5379,6 +5739,9 @@
     });
     elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);
     elements.accountPasswordForm?.addEventListener("submit", updateAccountPassword);
+    elements.accessRequestForm?.addEventListener("submit", submitEngagementAccessRequest);
+    elements.accessRequestRegionId?.addEventListener("change", () => populateAccessRequestClubSelect());
+    elements.accessRequestClubSelect?.addEventListener("change", syncAccessRequestClubFieldsFromSelect);
     elements.accessForm?.addEventListener("submit", saveAccessUser);
     elements.accessRegionId?.addEventListener("change", () => populateAccessClubSelect());
     elements.accessClubSelect?.addEventListener("change", syncAccessClubFieldsFromSelect);

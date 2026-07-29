@@ -458,6 +458,54 @@ async function userByEmailOrCreate(profile) {
   }
 }
 
+async function saveAccessUserProfile(profile, actorUid) {
+  const { user, created } = await userByEmailOrCreate(profile);
+  const now = new Date().toISOString();
+  const capabilityMap = capabilitiesMap(profile.capabilities);
+
+  await admin.auth().setCustomUserClaims(user.uid, {
+    ...(user.customClaims || {}),
+    livepalmesAccess: true,
+    livepalmesConsoleAccess: hasConsolePortalCapability(capabilityMap),
+    livepalmesCapabilities: capabilityMap
+  });
+
+  const userRef = admin.firestore().collection("users").doc(user.uid);
+  await userRef.set({
+    uid: user.uid,
+    email: profile.email,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    clubId: profile.clubId,
+    clubName: profile.clubName,
+    regionId: profile.regionId,
+    licenseNumber: profile.licenseNumber,
+    status: "active",
+    capabilities: capabilityMap,
+    accessScopes: profile.accessScopes,
+    updatedAt: now,
+    updatedBy: actorUid,
+    ...(created ? { createdAt: now, createdBy: actorUid } : {})
+  }, { merge: true });
+
+  await writeAccessGrants(user.uid, profile.email, profile.capabilities, "active", actorUid, now, profile.accessScopes);
+
+  await writeAuditLog(created ? "accessUser.created" : "accessUser.updated", actorUid, {
+    uid: user.uid,
+    email: profile.email,
+    capabilities: profile.capabilities,
+    accessScopes: profile.accessScopes
+  });
+
+  return {
+    ok: true,
+    created,
+    uid: user.uid,
+    email: profile.email,
+    capabilities: profile.capabilities
+  };
+}
+
 async function writeAuditLog(action, actorUid, target = {}) {
   const now = new Date().toISOString();
   await admin.firestore().collection("auditLogs").add({
@@ -1898,50 +1946,177 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.createOrUpdateAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
   const profile = cleanAccessProfile(request.data || {});
-  const { user, created } = await userByEmailOrCreate(profile);
+  return saveAccessUserProfile(profile, request.auth.uid);
+});
+
+function cleanEngagementAccessRequestPayload(raw = {}, request = {}) {
+  const authEmail = normalizeEmail(request.auth?.token?.email || "");
+  const email = normalizeEmail(raw.email || authEmail);
+  assertEmail(email);
+  const firstName = cleanText(raw.firstName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const clubRole = cleanText(raw.clubRole).slice(0, 120);
+  const clubId = cleanText(raw.clubId).slice(0, 40);
+  const clubName = cleanText(raw.clubName).slice(0, 140);
+  const regionId = cleanText(raw.regionId).slice(0, 80);
+  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const message = cleanText(raw.message).slice(0, 600);
+  if (!firstName || !lastName || !clubRole || !clubId || !regionId || !licenseNumber) {
+    throw new HttpsError("invalid-argument", "Nom, prenom, role, club, region et licence sont obligatoires.");
+  }
+  return { email, firstName, lastName, clubRole, clubId, clubName, regionId, licenseNumber, message };
+}
+
+function engagementAccessRequestItem(doc) {
+  const data = doc.data() || {};
+  return cleanFirestoreValue({
+    id: doc.id,
+    email: cleanText(data.email).slice(0, 180),
+    firstName: cleanText(data.firstName).slice(0, 80),
+    lastName: cleanText(data.lastName).slice(0, 80),
+    clubRole: cleanText(data.clubRole).slice(0, 120),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    message: cleanText(data.message).slice(0, 600),
+    status: cleanText(data.status || "pending").slice(0, 40),
+    requestedBy: cleanText(data.requestedBy).slice(0, 80),
+    requestedByEmail: cleanText(data.requestedByEmail).slice(0, 180),
+    requestedAt: cleanText(data.requestedAt).slice(0, 40),
+    resolvedAt: cleanText(data.resolvedAt).slice(0, 40),
+    resolvedBy: cleanText(data.resolvedBy).slice(0, 80),
+    resolvedByEmail: cleanText(data.resolvedByEmail).slice(0, 180)
+  });
+}
+
+function assertEngagementAccessRequestScope(context = {}, requestData = {}) {
+  if (context.national) return;
+  if (!context.region) {
+    throw new HttpsError("permission-denied", "Droit engagements region ou national requis.");
+  }
+  if (!context.regionId || cleanText(requestData.regionId) !== context.regionId) {
+    throw new HttpsError("permission-denied", "Demande hors perimetre regional.");
+  }
+}
+
+exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  const uid = cleanText(request.auth?.uid);
+  const payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
   const now = new Date().toISOString();
-  const capabilityMap = capabilitiesMap(profile.capabilities);
-
-  await admin.auth().setCustomUserClaims(user.uid, {
-    ...(user.customClaims || {}),
-    livepalmesAccess: true,
-    livepalmesConsoleAccess: hasConsolePortalCapability(capabilityMap),
-    livepalmesCapabilities: capabilityMap
-  });
-
-  const userRef = admin.firestore().collection("users").doc(user.uid);
-  await userRef.set({
-    uid: user.uid,
-    email: profile.email,
-    firstName: profile.firstName,
-    lastName: profile.lastName,
-    clubId: profile.clubId,
-    clubName: profile.clubName,
-    regionId: profile.regionId,
-    licenseNumber: profile.licenseNumber,
-    status: "active",
-    capabilities: capabilityMap,
-    accessScopes: profile.accessScopes,
+  const requestId = stableHash(`${payload.email}|${payload.clubId}|engagements.club.manage`).slice(0, 40);
+  const ref = admin.firestore().collection("engagementAccessRequests").doc(requestId);
+  const snapshot = await ref.get();
+  if (snapshot.exists && snapshot.data()?.status === "pending") {
+    throw new HttpsError("already-exists", "Une demande est deja en attente pour cet email et ce club.");
+  }
+  await ref.set({
+    ...payload,
+    status: "pending",
+    requestedBy: uid || "public-login-page",
+    requestedByEmail: cleanText(request.auth?.token?.email || payload.email).slice(0, 180),
+    requestSource: uid ? "authenticated-portal" : "login-page",
+    requestedAt: now,
     updatedAt: now,
-    updatedBy: request.auth.uid,
-    ...(created ? { createdAt: now, createdBy: request.auth.uid } : {})
+    updatedBy: uid || "public-login-page"
   }, { merge: true });
-
-  await writeAccessGrants(user.uid, profile.email, profile.capabilities, "active", request.auth.uid, now, profile.accessScopes);
-
-  await writeAuditLog(created ? "accessUser.created" : "accessUser.updated", request.auth.uid, {
-    uid: user.uid,
-    email: profile.email,
-    capabilities: profile.capabilities,
-    accessScopes: profile.accessScopes
+  await writeAuditLog("engagementAccessRequest.submitted", uid || "public-login-page", {
+    requestId,
+    email: payload.email,
+    clubId: payload.clubId,
+    regionId: payload.regionId
   });
-
+  const updated = await ref.get();
   return {
     ok: true,
-    created,
-    uid: user.uid,
-    email: profile.email,
-    capabilities: profile.capabilities
+    request: engagementAccessRequestItem(updated)
+  };
+});
+
+exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.region && !context.national) {
+    throw new HttpsError("permission-denied", "Lecture reservee aux responsables engagements region ou national.");
+  }
+  const status = ["pending", "approved", "rejected"].includes(cleanText(request.data?.status))
+    ? cleanText(request.data.status)
+    : "pending";
+  const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
+  const snapshot = await admin.firestore()
+    .collection("engagementAccessRequests")
+    .where("status", "==", status)
+    .limit(limit)
+    .get();
+  const requests = snapshot.docs
+    .map(engagementAccessRequestItem)
+    .filter((item) => context.national || item.regionId === context.regionId)
+    .sort((left, right) =>
+      cleanText(right.requestedAt).localeCompare(cleanText(left.requestedAt)) ||
+      cleanText(left.lastName).localeCompare(cleanText(right.lastName), "fr")
+    );
+  return {
+    ok: true,
+    requests
+  };
+});
+
+exports.resolveEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const requestId = cleanText(request.data?.requestId).slice(0, 80);
+  const decision = cleanText(request.data?.decision);
+  if (!requestId) {
+    throw new HttpsError("invalid-argument", "Demande requise.");
+  }
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new HttpsError("invalid-argument", "Decision invalide.");
+  }
+  const ref = admin.firestore().collection("engagementAccessRequests").doc(requestId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Demande introuvable.");
+  }
+  const data = snapshot.data() || {};
+  if (data.status !== "pending") {
+    throw new HttpsError("failed-precondition", "Demande deja traitee.");
+  }
+  assertEngagementAccessRequestScope(context, data);
+  const now = new Date().toISOString();
+  let accessResult = null;
+  if (decision === "approved") {
+    const profile = cleanAccessProfile({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      clubId: data.clubId,
+      clubName: data.clubName,
+      regionId: data.regionId,
+      licenseNumber: data.licenseNumber,
+      capabilities: ["engagements.club.manage"]
+    });
+    accessResult = await saveAccessUserProfile(profile, context.uid);
+  }
+  await ref.set({
+    status: decision,
+    resolvedAt: now,
+    resolvedBy: context.uid,
+    resolvedByEmail: context.email,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(accessResult ? { accessUid: accessResult.uid } : {})
+  }, { merge: true });
+  await writeAuditLog("engagementAccessRequest.resolved", context.uid, {
+    requestId,
+    decision,
+    email: cleanText(data.email).slice(0, 180),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    accessUid: accessResult?.uid || ""
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    request: engagementAccessRequestItem(updated),
+    access: accessResult
   };
 });
 
