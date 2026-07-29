@@ -1961,8 +1961,8 @@ function cleanEngagementAccessRequestPayload(raw = {}, request = {}) {
   const regionId = cleanText(raw.regionId).slice(0, 80);
   const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
   const message = cleanText(raw.message).slice(0, 600);
-  if (!firstName || !lastName || !clubRole || !clubId || !regionId || !licenseNumber) {
-    throw new HttpsError("invalid-argument", "Nom, prenom, role, club, region et licence sont obligatoires.");
+  if (!firstName || !lastName || !clubId || !regionId || !licenseNumber) {
+    throw new HttpsError("invalid-argument", "Nom, prenom, club, region et licence sont obligatoires.");
   }
   return { email, firstName, lastName, clubRole, clubId, clubName, regionId, licenseNumber, message };
 }

@@ -117,7 +117,6 @@
     publicAccessRequestFirstName: document.querySelector("#adminPublicAccessRequestFirstName"),
     publicAccessRequestLastName: document.querySelector("#adminPublicAccessRequestLastName"),
     publicAccessRequestEmail: document.querySelector("#adminPublicAccessRequestEmail"),
-    publicAccessRequestClubRole: document.querySelector("#adminPublicAccessRequestClubRole"),
     publicAccessRequestLicenseNumber: document.querySelector("#adminPublicAccessRequestLicenseNumber"),
     publicAccessRequestRegionId: document.querySelector("#adminPublicAccessRequestRegionId"),
     publicAccessRequestClubSelect: document.querySelector("#adminPublicAccessRequestClubSelect"),
@@ -167,7 +166,6 @@
     accessRequestFirstName: document.querySelector("#adminAccessRequestFirstName"),
     accessRequestLastName: document.querySelector("#adminAccessRequestLastName"),
     accessRequestEmail: document.querySelector("#adminAccessRequestEmail"),
-    accessRequestClubRole: document.querySelector("#adminAccessRequestClubRole"),
     accessRequestLicenseNumber: document.querySelector("#adminAccessRequestLicenseNumber"),
     accessRequestRegionId: document.querySelector("#adminAccessRequestRegionId"),
     accessRequestClubSelect: document.querySelector("#adminAccessRequestClubSelect"),
@@ -4068,7 +4066,7 @@
         <article class="admin-engagements-request-card" data-engagement-access-request-id="${escapeHtml(request.id || "")}">
           <div class="admin-engagements-request-main">
             <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml([request.email, request.clubRole ? `Role ${request.clubRole}` : "", request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
+            <small>${escapeHtml([request.email, request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
           </div>
           <div class="admin-engagements-request-meta">
             <span>${escapeHtml([request.clubId ? `Club ${request.clubId}` : "", request.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne")}</span>
@@ -4159,7 +4157,6 @@
       firstName: String(elements.accessRequestFirstName?.value || "").trim(),
       lastName: String(elements.accessRequestLastName?.value || "").trim(),
       email: String(elements.accessRequestEmail?.value || "").trim(),
-      clubRole: String(elements.accessRequestClubRole?.value || "").trim(),
       licenseNumber: String(elements.accessRequestLicenseNumber?.value || "").trim(),
       regionId: elements.accessRequestRegionId?.value || "",
       clubId: elements.accessRequestClubId?.value || "",
@@ -4173,7 +4170,6 @@
       firstName: String(elements.publicAccessRequestFirstName?.value || "").trim(),
       lastName: String(elements.publicAccessRequestLastName?.value || "").trim(),
       email: String(elements.publicAccessRequestEmail?.value || "").trim(),
-      clubRole: String(elements.publicAccessRequestClubRole?.value || "").trim(),
       licenseNumber: String(elements.publicAccessRequestLicenseNumber?.value || "").trim(),
       regionId: elements.publicAccessRequestRegionId?.value || "",
       clubId: elements.publicAccessRequestClubId?.value || "",
