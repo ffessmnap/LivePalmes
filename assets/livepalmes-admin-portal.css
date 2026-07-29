@@ -1749,6 +1749,15 @@
   gap: 6px;
 }
 
+.admin-engagements-national-swimmer-card[data-active="false"] {
+  background: #f7f9f8;
+  border-color: #c7d7d3;
+}
+
+.admin-engagements-national-swimmer-card[data-active="false"] .admin-engagements-request-main strong {
+  color: #5f746f;
+}
+
 .admin-engagements-empty {
   margin: 0;
   color: #5f746f;

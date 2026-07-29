@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260728-engagements-club-swimmers-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-national-swimmers-admin-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -107,7 +107,7 @@
                   <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Administration des comp&eacute;titions" hidden>
                     <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
                     <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
-                    <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Demandes de suppression <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                    <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Administration nationale <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                   </div>
                 </div>
                 <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
@@ -1063,6 +1063,17 @@
                   <p id="adminEngagementsDeletionRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
                   <div id="adminEngagementsDeletionRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
                 </section>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalSwimmersTitle">
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Nageurs cr&eacute;&eacute;s par les clubs</span>
+                      <h3 id="adminEngagementsNationalSwimmersTitle">Contr&ocirc;le des nageurs</h3>
+                    </div>
+                    <button id="adminEngagementsNationalSwimmersRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsNationalSwimmersStatus" class="admin-portal-message" data-tone="loading">Nageurs cr&eacute;&eacute;s par les clubs.</p>
+                  <div id="adminEngagementsNationalSwimmersList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
               </div>
             </section>
 
@@ -1473,6 +1484,6 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260729-swimmer-alerts-season-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260729-national-swimmers-admin-1"></script>
   </body>
 </html>
