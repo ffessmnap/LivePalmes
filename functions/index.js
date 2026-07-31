@@ -4,7 +4,7 @@ const path = require("node:path");
 const admin = require("firebase-admin");
 const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
@@ -62,6 +62,8 @@ const PERFORMANCE_SWIMMER_PAGES_COLLECTION = "performanceSwimmerPages";
 const PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION = "performanceSwimmerIndexState";
 const PERFORMANCE_TOP_BUCKETS_COLLECTION = "performanceTopViews";
 const PERFORMANCE_TOP_INDEX_STATE_COLLECTION = "performanceTopIndexState";
+const ENGAGEMENT_CLUB_ROSTERS_COLLECTION = "engagementClubRosters";
+const ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION = "engagementCompetitionCalendars";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
@@ -1115,6 +1117,23 @@ function currentEngagementSeasonInfo(date = new Date()) {
     startYear,
     endYear: startYear + 1,
     label: `${startYear}-${startYear + 1}`
+  };
+}
+
+function engagementSeasonEndYearFromIsoDate(dateIso = "") {
+  const cleanDate = cleanIsoDate(dateIso);
+  if (!cleanDate) return currentEngagementSeasonInfo(new Date()).endYear;
+  return importSeasonYear(cleanDate) || currentEngagementSeasonInfo(new Date()).endYear;
+}
+
+function engagementSeasonBoundsFromEndYear(endYear) {
+  const year = Math.trunc(Number(endYear) || currentEngagementSeasonInfo(new Date()).endYear);
+  return {
+    startYear: year - 1,
+    endYear: year,
+    label: `${year - 1}-${year}`,
+    startDate: `${year - 1}-09-01`,
+    endDate: `${year}-08-31`
   };
 }
 
@@ -2938,12 +2957,11 @@ function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], o
   }).filter((session) => session.items.length || session.label);
 }
 
-function engagementCompetitionListItem(doc) {
-  const data = doc.data() || {};
+function engagementCompetitionCalendarItem(data = {}, id = "") {
   const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
   const programSessions = cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false });
   return {
-    id: doc.id,
+    id: cleanText(id || data.id).slice(0, 128),
     name: cleanText(data.name || data.title).slice(0, 160),
     date: cleanIsoDate(data.date),
     endDate: cleanIsoDate(data.endDate) || cleanIsoDate(data.date),
@@ -2969,6 +2987,99 @@ function engagementCompetitionListItem(doc) {
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
   };
 }
+
+function engagementCompetitionListItem(doc) {
+  return engagementCompetitionCalendarItem(doc.data() || {}, doc.id);
+}
+
+function engagementCompetitionCalendarRef(db, endYear) {
+  return db.collection(ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION).doc(String(Math.trunc(Number(endYear) || 0)));
+}
+
+function engagementCompetitionCalendarItemsFromData(data = {}) {
+  const competitions = data.competitions && typeof data.competitions === "object" ? data.competitions : {};
+  return Object.values(competitions)
+    .map((competition) => engagementCompetitionCalendarItem(competition, competition.id))
+    .filter((competition) => competition.id && competition.date);
+}
+
+function filterEngagementCompetitionCalendarItems(items = [], filters = {}) {
+  return items
+    .filter((competition) => !filters.startDate || !competition.date || competition.date >= filters.startDate)
+    .filter((competition) => !filters.endDate || !competition.date || competition.date <= filters.endDate)
+    .filter((competition) => !filters.regionId || competition.regionId === filters.regionId)
+    .filter((competition) => !filters.level || competition.level === filters.level)
+    .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
+    .sort((left, right) =>
+      cleanText(left.date).localeCompare(cleanText(right.date)) ||
+      cleanText(left.name).localeCompare(cleanText(right.name), "fr")
+    );
+}
+
+async function rebuildEngagementCompetitionCalendar(db, endYear) {
+  const season = engagementSeasonBoundsFromEndYear(endYear);
+  const snapshot = await db.collection("engagementCompetitions")
+    .where("date", ">=", season.startDate)
+    .where("date", "<=", season.endDate)
+    .orderBy("date")
+    .limit(1200)
+    .get();
+  const competitions = {};
+  snapshot.docs.forEach((doc) => {
+    const item = engagementCompetitionListItem(doc);
+    if (item.id) competitions[item.id] = item;
+  });
+  const now = new Date().toISOString();
+  await engagementCompetitionCalendarRef(db, season.endYear).set({
+    ...season,
+    generatedAt: now,
+    updatedAt: now,
+    competitionCount: Object.keys(competitions).length,
+    competitions
+  }, { merge: false });
+  return Object.values(competitions);
+}
+
+async function syncEngagementCompetitionCalendarFromChange(event = {}) {
+  const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
+  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
+  const competitionId = cleanText(event.params?.competitionId);
+  if (!competitionId) return;
+  const db = admin.firestore();
+  const now = new Date().toISOString();
+  const batch = db.batch();
+  let batchSize = 0;
+  const beforeDate = before ? cleanIsoDate(before.date) : "";
+  const afterDate = after ? cleanIsoDate(after.date) : "";
+  const beforeSeason = beforeDate ? engagementSeasonEndYearFromIsoDate(beforeDate) : null;
+  const afterSeason = afterDate ? engagementSeasonEndYearFromIsoDate(afterDate) : null;
+  if (beforeSeason !== null && (!after || beforeSeason !== afterSeason)) {
+    batch.set(engagementCompetitionCalendarRef(db, beforeSeason), {
+      updatedAt: now,
+      competitions: {
+        [competitionId]: admin.firestore.FieldValue.delete()
+      }
+    }, { merge: true });
+    batchSize += 1;
+  }
+  if (after && afterDate && afterSeason !== null) {
+    batch.set(engagementCompetitionCalendarRef(db, afterSeason), {
+      updatedAt: now,
+      competitions: {
+        [competitionId]: engagementCompetitionCalendarItem(after, competitionId)
+      }
+    }, { merge: true });
+    batchSize += 1;
+  }
+  if (batchSize) await batch.commit();
+}
+
+exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
+  region: REGION,
+  document: "engagementCompetitions/{competitionId}"
+}, async (event) => {
+  await syncEngagementCompetitionCalendarFromChange(event);
+});
 
 function engagementCompetitionDetailItem(doc) {
   const data = doc.data() || {};
@@ -3599,10 +3710,88 @@ function engagementSwimmerLicenseId(swimmer = {}) {
   ].filter(Boolean).join("|")).slice(0, 40);
 }
 
-function engagementSwimmerLicenseItem(doc) {
-  const data = doc.data() || {};
+function engagementClubRosterId(clubId) {
+  return stableHash(cleanText(clubId)).slice(0, 40);
+}
+
+function engagementClubRosterRef(db, clubId) {
+  return db.collection(ENGAGEMENT_CLUB_ROSTERS_COLLECTION).doc(engagementClubRosterId(clubId));
+}
+
+function engagementClubRosterSwimmerKey(swimmer = {}) {
+  return stableHash([
+    cleanText(swimmer.source || "performances"),
+    cleanText(swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId || swimmer.identityKey)
+  ].filter(Boolean).join("|")).slice(0, 40);
+}
+
+function engagementClubRosterSwimmerItem(swimmer = {}) {
+  const firstName = cleanText(swimmer.firstName).slice(0, 80);
+  const lastName = cleanText(swimmer.lastName).slice(0, 80);
+  const name = cleanText(swimmer.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  const source = cleanText(swimmer.source || "performances").slice(0, 40) || "performances";
+  const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80);
+  return cleanFirestoreValue({
+    id: swimmerIndexId,
+    swimmerIndexId,
+    source,
+    swimmerId: cleanText(swimmer.swimmerId || (source === "performances" ? swimmer.id : "")).slice(0, 80),
+    identityKey: cleanText(swimmer.identityKey || swimmer.indexKey).slice(0, 180),
+    firstName,
+    lastName,
+    name,
+    birthDate: cleanIsoDate(swimmer.birthDate),
+    sex: cleanText(swimmer.sex).slice(0, 20),
+    category: cleanText(swimmer.category).slice(0, 20),
+    clubId: cleanText(swimmer.clubId).slice(0, 40),
+    club: cleanText(swimmer.club).slice(0, 60),
+    clubName: cleanText(swimmer.clubName).slice(0, 140),
+    licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+    licenseVerificationStatus: cleanText(swimmer.licenseVerificationStatus).slice(0, 40),
+    latestDate: cleanIsoDate(swimmer.latestDate),
+    performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0)),
+    active: swimmer.active !== false,
+    updatedAt: cleanText(swimmer.updatedAt).slice(0, 40)
+  });
+}
+
+function engagementClubRosterSwimmersFromData(data = {}) {
+  const swimmers = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
+  return Object.values(swimmers)
+    .map((swimmer) => engagementClubRosterSwimmerItem(swimmer))
+    .filter((swimmer) => swimmer.swimmerIndexId && swimmer.active !== false);
+}
+
+function upsertEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
+  const item = engagementClubRosterSwimmerItem(swimmer);
+  if (!item.clubId || !item.swimmerIndexId || item.active === false) return;
+  const key = engagementClubRosterSwimmerKey(item);
+  batch.set(engagementClubRosterRef(db, item.clubId), {
+    clubId: item.clubId,
+    clubName: item.clubName,
+    updatedAt: now || new Date().toISOString(),
+    swimmers: {
+      [key]: item
+    }
+  }, { merge: true });
+}
+
+function deleteEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
+  const clubId = cleanText(swimmer.clubId);
+  const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id);
+  if (!clubId || !swimmerIndexId) return;
+  const key = engagementClubRosterSwimmerKey({ ...swimmer, swimmerIndexId });
+  batch.set(engagementClubRosterRef(db, clubId), {
+    updatedAt: now || new Date().toISOString(),
+    swimmers: {
+      [key]: admin.firestore.FieldValue.delete()
+    }
+  }, { merge: true });
+}
+
+function engagementSwimmerLicenseDataItem(data = {}, id = "") {
   return {
-    id: doc.id,
+    id,
     swimmerIndexId: cleanText(data.swimmerIndexId).slice(0, 80),
     swimmerId: cleanText(data.swimmerId).slice(0, 80),
     identityKey: cleanText(data.identityKey).slice(0, 180),
@@ -3612,14 +3801,19 @@ function engagementSwimmerLicenseItem(doc) {
   };
 }
 
-async function engagementSwimmerLicensesByIndexIds(swimmerIndexIds = []) {
-  const ids = Array.from(new Set(swimmerIndexIds.map(cleanText).filter(Boolean))).slice(0, 800);
-  if (!ids.length) return new Map();
-  const refs = ids.map((id) => admin.firestore().collection("engagementSwimmerLicenses").doc(stableHash(id).slice(0, 40)));
-  const docs = await admin.firestore().getAll(...refs);
+function engagementSwimmerLicenseItem(doc) {
+  return engagementSwimmerLicenseDataItem(doc.data() || {}, doc.id);
+}
+
+async function engagementLegacySwimmerLicensesByClub(db, clubId) {
+  const cleanClubId = cleanText(clubId);
+  if (!cleanClubId) return new Map();
+  const snapshot = await db.collection("engagementSwimmerLicenses")
+    .where("clubId", "==", cleanClubId)
+    .limit(1000)
+    .get();
   const byIndexId = new Map();
-  docs.forEach((doc) => {
-    if (!doc.exists) return;
+  snapshot.docs.forEach((doc) => {
     const license = engagementSwimmerLicenseItem(doc);
     if (license.swimmerIndexId && license.licenseNumber) byIndexId.set(license.swimmerIndexId, license);
   });
@@ -4174,6 +4368,127 @@ function engagementReferenceClubSwimmers(clubId = "", limit = 800) {
     .filter((swimmer) => swimmer.swimmerIndexId && swimmer.clubId === targetClubId);
 }
 
+function sortEngagementClubSwimmers(swimmers = []) {
+  return swimmers.sort((left, right) =>
+    cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
+    cleanText(left.lastName).localeCompare(cleanText(right.lastName), "fr") ||
+    cleanText(left.firstName).localeCompare(cleanText(right.firstName), "fr")
+  );
+}
+
+function uniqueEngagementClubSwimmers(swimmers = [], limit = 800) {
+  return swimmers.filter((swimmer, index, list) => {
+    if (!swimmer.swimmerIndexId) return false;
+    return list.findIndex((candidate) => candidate.swimmerIndexId === swimmer.swimmerIndexId) === index;
+  }).slice(0, limit);
+}
+
+async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
+  const clubId = cleanText(context.clubId);
+  if (!clubId) return [];
+  const snapshot = await db
+    .collection(PERFORMANCE_SWIMMERS_COLLECTION)
+    .where("clubId", "==", clubId)
+    .limit(limit)
+    .get();
+  const newSwimmersSnapshot = await db
+    .collection("engagementClubSwimmers")
+    .where("clubId", "==", clubId)
+    .where("active", "==", true)
+    .limit(200)
+    .get();
+  const legacyLicenses = await engagementLegacySwimmerLicensesByClub(db, clubId);
+  const swimmers = sortEngagementClubSwimmers(uniqueEngagementClubSwimmers([
+    ...newSwimmersSnapshot.docs.map(engagementNewSwimmerItem),
+    ...snapshot.docs.map(engagementClubSwimmerItem),
+    ...engagementReferenceClubSwimmers(clubId, limit)
+  ], limit).map((swimmer) => {
+    const legacyLicense = legacyLicenses.get(swimmer.swimmerIndexId);
+    return legacyLicense?.licenseNumber && !swimmer.licenseNumber
+      ? {
+          ...swimmer,
+          licenseNumber: legacyLicense.licenseNumber,
+          licenseVerificationStatus: legacyLicense.verificationStatus || ""
+        }
+      : swimmer;
+  }));
+  const now = new Date().toISOString();
+  const rosterEntries = {};
+  swimmers.forEach((swimmer) => {
+    const item = engagementClubRosterSwimmerItem(swimmer);
+    if (item.swimmerIndexId && item.clubId === clubId) rosterEntries[engagementClubRosterSwimmerKey(item)] = item;
+  });
+  const swimmersWithMigratedLicenses = swimmers.filter((swimmer) =>
+    swimmer.licenseNumber && legacyLicenses.has(swimmer.swimmerIndexId) && swimmer.source !== "reference"
+  );
+  for (let index = 0; index < swimmersWithMigratedLicenses.length; index += 420) {
+    const batch = db.batch();
+    swimmersWithMigratedLicenses.slice(index, index + 420).forEach((swimmer) => {
+      batch.set(db.collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION).doc(swimmer.swimmerIndexId), {
+        licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+        licenseUpdatedAt: now,
+        licenseUpdatedBy: "engagement-roster-migration",
+        updatedAt: now
+      }, { merge: true });
+    });
+    await batch.commit();
+  }
+  await engagementClubRosterRef(db, clubId).set({
+    clubId,
+    clubName: cleanText(context.clubName).slice(0, 140) || swimmers.find((swimmer) => swimmer.clubName)?.clubName || "",
+    generatedAt: now,
+    updatedAt: now,
+    swimmerCount: Object.keys(rosterEntries).length,
+    swimmers: rosterEntries
+  }, { merge: false });
+  return swimmers;
+}
+
+async function syncEngagementClubRosterFromSwimmerChange(event = {}, source = "performances") {
+  const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
+  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
+  const docId = cleanText(event.params?.swimmerIndexId || event.params?.swimmerId);
+  const db = admin.firestore();
+  const now = new Date().toISOString();
+  const batch = db.batch();
+  let batchSize = 0;
+  const beforeItem = before
+    ? engagementClubRosterSwimmerItem({ ...before, swimmerIndexId: docId, source })
+    : null;
+  const afterItem = after
+    ? engagementClubRosterSwimmerItem({ ...after, swimmerIndexId: docId, source })
+    : null;
+  const shouldDeleteBefore = beforeItem?.clubId && (
+    !afterItem ||
+    afterItem.active === false ||
+    beforeItem.clubId !== afterItem.clubId ||
+    engagementClubRosterSwimmerKey(beforeItem) !== engagementClubRosterSwimmerKey(afterItem)
+  );
+  if (shouldDeleteBefore) {
+    deleteEngagementClubRosterSwimmer(batch, db, beforeItem, now);
+    batchSize += 1;
+  }
+  if (afterItem?.clubId && afterItem.active !== false) {
+    upsertEngagementClubRosterSwimmer(batch, db, afterItem, now);
+    batchSize += 1;
+  }
+  if (batchSize) await batch.commit();
+}
+
+exports.syncPerformanceSwimmerToEngagementClubRoster = onDocumentWritten({
+  region: REGION,
+  document: `${PERFORMANCE_SWIMMERS_COLLECTION}/{swimmerIndexId}`
+}, async (event) => {
+  await syncEngagementClubRosterFromSwimmerChange(event, "performances");
+});
+
+exports.syncEngagementClubSwimmerToRoster = onDocumentWritten({
+  region: REGION,
+  document: "engagementClubSwimmers/{swimmerId}"
+}, async (event) => {
+  await syncEngagementClubRosterFromSwimmerChange(event, "engagement");
+});
+
 function cleanIsoDateTime(value) {
   const text = cleanText(value).slice(0, 40);
   if (!text) return "";
@@ -4294,7 +4609,11 @@ function assertEngagementClubWriteOpen(competition = {}) {
 exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) => {
   await assertEngagementsAccess(request);
   const fromDate = cleanIsoDate(request.data?.fromDate) || new Date().toISOString().slice(0, 10);
-  const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
+  const season = engagementSeasonBoundsFromEndYear(engagementSeasonEndYearFromIsoDate(fromDate));
+  const requestedToDate = cleanIsoDate(request.data?.toDate);
+  const startDate = fromDate || season.startDate;
+  const endDate = requestedToDate || season.endDate;
+  const limit = Math.min(1200, Math.max(10, Math.trunc(Number(request.data?.limit) || 250)));
   const regionId = cleanText(request.data?.regionId).slice(0, 80);
   const level = ENGAGEMENT_COMPETITION_LEVELS.has(cleanText(request.data?.level))
     ? cleanText(request.data.level)
@@ -4302,24 +4621,33 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   const entryStatus = ENGAGEMENT_ENTRY_STATUSES.has(cleanText(request.data?.entryStatus))
     ? cleanText(request.data.entryStatus)
     : "";
-
-  const snapshot = await admin.firestore()
-    .collection("engagementCompetitions")
-    .where("date", ">=", fromDate)
-    .orderBy("date")
-    .limit(limit)
-    .get();
-
-  const competitions = snapshot.docs
-    .map(engagementCompetitionListItem)
-    .filter((competition) => !regionId || competition.regionId === regionId)
-    .filter((competition) => !level || competition.level === level)
-    .filter((competition) => !entryStatus || competition.entryStatus === entryStatus);
+  const db = admin.firestore();
+  const forceRebuild = request.data?.forceCalendar === true;
+  const calendarSnapshot = forceRebuild ? null : await engagementCompetitionCalendarRef(db, season.endYear).get();
+  const calendarReady = calendarSnapshot?.exists && cleanText(calendarSnapshot.data()?.generatedAt);
+  let calendarGenerated = false;
+  const calendarItems = calendarReady
+    ? engagementCompetitionCalendarItemsFromData(calendarSnapshot.data() || {})
+    : await rebuildEngagementCompetitionCalendar(db, season.endYear).then((items) => {
+      calendarGenerated = true;
+      return items;
+    });
+  const competitions = filterEngagementCompetitionCalendarItems(calendarItems, {
+    startDate,
+    endDate,
+    regionId,
+    level,
+    entryStatus
+  }).slice(0, limit);
 
   return {
     ok: true,
-    collection: "engagementCompetitions",
-    fromDate,
+    collection: ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION,
+    fromDate: startDate,
+    toDate: endDate,
+    seasonStartYear: season.startYear,
+    seasonEndYear: season.endYear,
+    calendarGenerated,
     competitions
   };
 });
@@ -4684,44 +5012,22 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
 
 exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
+  const db = admin.firestore();
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
-  const snapshot = await admin.firestore()
-    .collection(PERFORMANCE_SWIMMERS_COLLECTION)
-    .where("clubId", "==", context.clubId)
-    .limit(limit)
-    .get();
-  const newSwimmersSnapshot = await admin.firestore()
-    .collection("engagementClubSwimmers")
-    .where("clubId", "==", context.clubId)
-    .where("active", "==", true)
-    .limit(200)
-    .get();
-  const baseSwimmers = [
-    ...newSwimmersSnapshot.docs.map(engagementNewSwimmerItem),
-    ...snapshot.docs.map(engagementClubSwimmerItem),
-    ...engagementReferenceClubSwimmers(context.clubId, limit)
-  ].filter((swimmer, index, swimmers) => {
-    if (!swimmer.swimmerIndexId) return false;
-    return swimmers.findIndex((candidate) => candidate.swimmerIndexId === swimmer.swimmerIndexId) === index;
-  }).slice(0, limit);
-  const licensesByIndexId = await engagementSwimmerLicensesByIndexIds(baseSwimmers.map((swimmer) => swimmer.id));
-  const swimmers = baseSwimmers
-    .map((swimmer) => {
-      const collectedLicense = licensesByIndexId.get(swimmer.id);
-      return {
-        ...swimmer,
-        licenseNumber: collectedLicense?.licenseNumber || swimmer.licenseNumber || "",
-        licenseVerificationStatus: collectedLicense?.verificationStatus || ""
-      };
-    })
-    .sort((left, right) =>
-      cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
-      cleanText(left.lastName).localeCompare(cleanText(right.lastName), "fr") ||
-      cleanText(left.firstName).localeCompare(cleanText(right.firstName), "fr")
-    );
+  const forceRebuild = request.data?.forceRoster === true;
+  const rosterSnapshot = forceRebuild ? null : await engagementClubRosterRef(db, context.clubId).get();
+  const rosterReady = rosterSnapshot?.exists && cleanText(rosterSnapshot.data()?.generatedAt);
+  let rosterGenerated = false;
+  const swimmers = rosterReady
+    ? sortEngagementClubSwimmers(uniqueEngagementClubSwimmers(engagementClubRosterSwimmersFromData(rosterSnapshot.data() || {}), limit))
+    : await rebuildEngagementClubRoster(db, context, limit).then((items) => {
+      rosterGenerated = true;
+      return items;
+    });
   return {
     ok: true,
     clubId: context.clubId,
+    rosterGenerated,
     swimmers
   };
 });
@@ -4778,14 +5084,16 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
   const batch = db.batch();
   batch.set(ref, payload, { merge: true });
   const licenseRef = db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId({ ...swimmer, swimmerIndexId: docId }));
-  batch.set(licenseRef, {
+  const licensePayload = {
     ...engagementSwimmerLicensePayload({ ...swimmer, swimmerIndexId: docId }, context, {
       competitionId: cleanText(request.data?.competitionId).slice(0, 128),
       collectedAt: now
     }),
     updatedAt: now,
     updatedBy: context.uid
-  }, { merge: true });
+  };
+  batch.set(licenseRef, licensePayload, { merge: true });
+  upsertEngagementClubRosterSwimmer(batch, db, { ...payload, id: docId, swimmerIndexId: docId, source: "engagement" }, now);
   alerts.forEach((alert, index) => {
     const alertRef = db.collection("engagementSwimmerAlerts").doc(stableHash(`${docId}|${alert.type}|${alert.swimmerIndexId || index}`).slice(0, 40));
     batch.set(alertRef, {
@@ -4897,6 +5205,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   const batch = db.batch();
   batch.delete(ref);
   batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(swimmerId).slice(0, 40)));
+  deleteEngagementClubRosterSwimmer(batch, db, { ...data, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" });
   alertsSnapshot.docs.forEach((alertDoc) => batch.delete(alertDoc.ref));
   await batch.commit();
   await writeAuditLog("engagementClubSwimmer.deleted", context.uid, {
@@ -5093,12 +5402,23 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   }, { merge: true });
   swimmers.forEach((swimmer) => {
     if (!swimmer.licenseNumber) return;
-    const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
-    batch.set(licenseRef, {
-      ...engagementSwimmerLicensePayload(swimmer, context, { competitionId, collectedAt: now }),
+    const swimmerCollection = swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION;
+    const swimmerRef = admin.firestore().collection(swimmerCollection).doc(swimmer.swimmerIndexId);
+    batch.set(swimmerRef, {
+      licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+      licenseUpdatedAt: now,
+      licenseUpdatedBy: context.uid,
       updatedAt: now,
       updatedBy: context.uid
     }, { merge: true });
+    const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
+    const licensePayload = {
+      ...engagementSwimmerLicensePayload(swimmer, context, { competitionId, collectedAt: now }),
+      updatedAt: now,
+      updatedBy: context.uid
+    };
+    batch.set(licenseRef, licensePayload, { merge: true });
+    upsertEngagementClubRosterSwimmer(batch, admin.firestore(), swimmer, now);
   });
   await batch.commit();
   await writeAuditLog("engagementClubEntry.swimmersSaved", context.uid, {
