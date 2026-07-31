@@ -5181,7 +5181,8 @@
       const filters = engagementCalendarFiltersPayload();
       const result = await callFunction("listEngagementCompetitions", {
         fromDate: filters.startDate,
-        limit: 100
+        toDate: filters.endDate,
+        limit: 250
       });
       engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
       engagementCompetitionsLoaded = true;
