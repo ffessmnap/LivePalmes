@@ -2782,6 +2782,22 @@
   gap: 4px;
 }
 
+.admin-engagements-club-relay-issues {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #efc8bb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff7f3;
+  color: #8c2d12;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-club-relay-issues ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .admin-engagements-club-person-form {
   display: grid;
   gap: 12px;

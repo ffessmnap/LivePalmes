@@ -56,6 +56,14 @@
     ["R220", "Relais R220"],
     ["R260", "Relais R260"]
   ];
+  const ENGAGEMENT_RELAY_AGE_CATEGORY_RANK = {
+    P: 0,
+    B: 1,
+    M: 2,
+    C: 3,
+    J: 4,
+    S: 5
+  };
   const ENGAGEMENT_CATEGORY_DEFINITIONS = Array.from(new Map([
     ...ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS,
     ...ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS
@@ -2087,6 +2095,12 @@
         return {
           swimmerIndexId,
           source: checkbox.dataset.engagementClubSwimmerSource || "performances",
+          swimmerId: checkbox.dataset.engagementClubSwimmerLivepalmesId || "",
+          name: checkbox.dataset.engagementClubSwimmerName || "",
+          firstName: checkbox.dataset.engagementClubSwimmerFirstName || "",
+          lastName: checkbox.dataset.engagementClubSwimmerLastName || "",
+          birthDate: checkbox.dataset.engagementClubSwimmerBirthDate || "",
+          sex: checkbox.dataset.engagementClubSwimmerSex || "",
           licenseNumber: String(row.querySelector("[data-engagement-club-swimmer-license]")?.value || "").trim(),
           individualEventCodes: individualEntries.map((entry) => entry.eventCode),
           individualEntries
@@ -2255,11 +2269,21 @@
     return month >= 8 ? year + 1 : year;
   }
 
-  function engagementSwimmerCategory(swimmer = {}) {
+  function engagementSeasonEndYearFromDate(dateValue = "") {
+    const value = String(dateValue || "").trim();
+    const match = value.match(/^(\d{4})-(\d{2})-\d{2}$/);
+    if (!match) return engagementSeasonEndYear();
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (!Number.isFinite(year) || !Number.isFinite(month)) return engagementSeasonEndYear();
+    return month >= 9 ? year + 1 : year;
+  }
+
+  function engagementSwimmerCategory(swimmer = {}, competitionDate = "") {
     if (swimmer.category) return String(swimmer.category);
     const birthYear = Number(String(swimmer.birthDate || "").slice(0, 4));
     if (!Number.isFinite(birthYear) || birthYear < 1900) return "";
-    const age = engagementSeasonEndYear() - birthYear;
+    const age = engagementSeasonEndYearFromDate(competitionDate) - birthYear;
     if (!Number.isFinite(age) || age < 0 || age > 120) return "";
     if (age <= 9) return "P";
     if (age <= 11) return "B";
@@ -2414,7 +2438,7 @@
       return `
         <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="${selected ? "true" : "false"}">
           <label role="cell">
-            <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" ${selected ? "checked" : ""}>
+            <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" data-engagement-club-swimmer-livepalmes-id="${escapeHtml(swimmer.swimmerId || "")}" data-engagement-club-swimmer-name="${escapeHtml(name)}" data-engagement-club-swimmer-first-name="${escapeHtml(swimmer.firstName || "")}" data-engagement-club-swimmer-last-name="${escapeHtml(swimmer.lastName || "")}" data-engagement-club-swimmer-birth-date="${escapeHtml(swimmer.birthDate || "")}" data-engagement-club-swimmer-sex="${escapeHtml(swimmer.sex || "")}" ${selected ? "checked" : ""}>
             <strong>${escapeHtml(name)}</strong>
           </label>
           <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
@@ -2526,6 +2550,64 @@
     );
   }
 
+  function engagementRelayLegCount(event = {}) {
+    return Math.max(1, Math.trunc(Number(event.relayLegs || 4) || 4));
+  }
+
+  function engagementRelayLegPlaceholder(genderMode = "", index = 0) {
+    if (genderMode === "mixed") return `Relayeur ${index + 1} (${index % 2 === 0 ? "Homme" : "Femme"})`;
+    return `Relayeur ${index + 1}`;
+  }
+
+  function engagementRelayExpectedMemberSex(genderMode = "", index = 0) {
+    if (genderMode === "female") return "F";
+    if (genderMode === "male") return "M";
+    if (genderMode === "mixed") return index % 2 === 0 ? "M" : "F";
+    return "";
+  }
+
+  function engagementRelayNoMemberOptionLabel(expectedSex = "", memberIndex = 0) {
+    if (expectedSex === "F") return `Aucune nageuse selectionnee`;
+    if (expectedSex === "M") return `Aucun nageur selectionne`;
+    return engagementRelayLegPlaceholder("", memberIndex);
+  }
+
+  function engagementRelaySwimmerAllowedForCategory(swimmer = {}, relayCategory = "", competitionDate = "") {
+    const category = engagementSwimmerCategory(swimmer, competitionDate);
+    if (!category) return false;
+    if (String(relayCategory || "").startsWith("R")) return /^M\d/.test(category);
+    if (relayCategory === "S") return true;
+    const swimmerRank = ENGAGEMENT_RELAY_AGE_CATEGORY_RANK[category];
+    const relayRank = ENGAGEMENT_RELAY_AGE_CATEGORY_RANK[relayCategory];
+    return Number.isFinite(swimmerRank) && Number.isFinite(relayRank) && swimmerRank <= relayRank;
+  }
+
+  function engagementRelayMemberOptionLabel(swimmer = {}, competitionDate = "") {
+    const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur";
+    const category = engagementSwimmerCategory(swimmer, competitionDate);
+    return category ? `${name} (${category})` : name;
+  }
+
+  function engagementRelaySameDistanceNature(event = {}, candidate = {}) {
+    return String(event.distance || "") === String(candidate.distance || "") &&
+      String(event.discipline || "") === String(candidate.discipline || "");
+  }
+
+  function engagementRelayMemberAlreadyUsed(swimmerIndexId = "", rows = [], rowIndex = -1, memberIndex = -1, event = {}) {
+    if (!swimmerIndexId) return false;
+    const relayEvents = new Map(engagementClubRelayEvents().map((item) => [item.code, item]));
+    return rows.some((relay, relayIndex) => {
+      const relayEvent = relayEvents.get(relay.eventCode);
+      if (!relayEvent || !engagementRelaySameDistanceNature(event, relayEvent)) return false;
+      const memberIds = Array.isArray(relay.memberIds)
+        ? relay.memberIds
+        : (relay.members || []).map((member) => member.swimmerIndexId).filter(Boolean);
+      return memberIds.some((memberId, currentMemberIndex) =>
+        memberId === swimmerIndexId && (relayIndex !== rowIndex || currentMemberIndex !== memberIndex)
+      );
+    });
+  }
+
   function selectedEngagementClubRelayRowsFromDom() {
     return Array.from(elements.engagementsClubRelaysList?.querySelectorAll("[data-engagement-club-relay-row]") || [])
       .map((row) => {
@@ -2534,8 +2616,7 @@
         const genderMode = row.querySelector("[data-engagement-club-relay-gender]")?.value || "";
         const manualEntryTime = row.querySelector("[data-engagement-club-relay-time]")?.value || "";
         const memberIds = Array.from(row.querySelectorAll("[data-engagement-club-relay-member]"))
-          .map((select) => select.value || "")
-          .filter(Boolean);
+          .map((select) => select.value || "");
         return eventCode && category
           ? {
               relayId: row.dataset.engagementClubRelayId || "",
@@ -2557,10 +2638,97 @@
       : engagementClubRelaysDraft;
   }
 
+  function engagementRelayMemberAge(swimmer = {}, competitionDate = "") {
+    const birthYear = Number(String(swimmer.birthDate || "").slice(0, 4));
+    if (!Number.isFinite(birthYear) || birthYear < 1900) return 0;
+    return engagementSeasonEndYearFromDate(competitionDate) - birthYear;
+  }
+
+  function engagementClubRelayValidationIssues(relays = selectedEngagementClubRelayRows()) {
+    const issues = [];
+    const relayEvents = new Map(engagementClubRelayEvents().map((event) => [event.code, event]));
+    const swimmers = new Map(engagementClubRelaySwimmerOptions().map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
+    const seenRelays = new Set();
+    const memberSlots = new Set();
+    const competitionDate = selectedEngagementCompetition?.date || "";
+    relays.forEach((relay, index) => {
+      const rowLabel = `Relais ${index + 1}`;
+      const event = relayEvents.get(relay.eventCode);
+      if (!event) {
+        issues.push(`${rowLabel} : relais non ouvert sur cette competition.`);
+        return;
+      }
+      if (!String(relay.manualEntryTime || "").trim()) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : temps d'engagement obligatoire.`);
+      }
+      const duplicateKey = [relay.eventCode, relay.category, relay.genderMode].join("|");
+      if (!event.multipleRelaysAllowed && seenRelays.has(duplicateKey)) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relais identique existe deja pour ce club.`);
+      }
+      seenRelays.add(duplicateKey);
+      const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds.filter(Boolean) : [];
+      const uniqueMemberIds = Array.from(new Set(memberIds));
+      if (uniqueMemberIds.length !== memberIds.length) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur est selectionne plusieurs fois dans le meme relais.`);
+      }
+      const expectedLegs = engagementRelayLegCount(event);
+      if (memberIds.length > 0 && memberIds.length !== expectedLegs) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : indiquez ${expectedLegs} relayeurs ou laissez la composition vide.`);
+      }
+      if (!memberIds.length || memberIds.length !== expectedLegs) return;
+      const members = memberIds.map((id) => swimmers.get(id)).filter(Boolean);
+      if (members.length !== memberIds.length) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur n'est plus dans les nageurs de la competition.`);
+        return;
+      }
+      if (relay.genderMode === "female" && members.some((member) => member.sex !== "F")) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relais Femmes ne peut contenir que des nageuses.`);
+      }
+      if (relay.genderMode === "male" && members.some((member) => member.sex !== "M")) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relais Hommes ne peut contenir que des nageurs.`);
+      }
+      if (relay.genderMode === "mixed") {
+        const invalidOrderIndex = members.findIndex((member, memberIndex) => member.sex !== (memberIndex % 2 === 0 ? "M" : "F"));
+        if (invalidOrderIndex >= 0) {
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : ordre mixte attendu Homme - Femme - Homme - Femme.`);
+        }
+      }
+      if (String(relay.category || "").startsWith("R")) {
+        const nonMaster = members.find((member) => !/^M\d/.test(engagementSwimmerCategory(member, competitionDate)));
+        if (nonMaster) {
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : la categorie ${relay.category} est reservee aux Masters.`);
+        }
+        const minimumAge = Number(String(relay.category || "").replace(/\D/g, "")) || 0;
+        const totalAge = members.reduce((sum, member) => sum + engagementRelayMemberAge(member, competitionDate), 0);
+        if (minimumAge && totalAge < minimumAge) {
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : total d'age ${totalAge}, minimum ${minimumAge}.`);
+        }
+      } else {
+        const invalidMember = members.find((member) => !engagementRelaySwimmerAllowedForCategory(member, relay.category, competitionDate));
+        if (invalidMember) {
+          const name = invalidMember.name || [invalidMember.firstName, invalidMember.lastName].filter(Boolean).join(" ") || "un relayeur";
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : ${name} n'est pas autorise en relais ${engagementCategoryLabel(relay.category)}.`);
+        }
+      }
+      members.forEach((member) => {
+        const slotKey = [member.swimmerIndexId, event.distance, event.discipline].join("|");
+        if (memberSlots.has(slotKey)) {
+          const name = member.name || [member.firstName, member.lastName].filter(Boolean).join(" ") || "Un relayeur";
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : ${name} est deja dans un relais de meme distance et meme nature.`);
+        }
+        memberSlots.add(slotKey);
+      });
+    });
+    return issues;
+  }
+
   function updateEngagementClubRelaysSummary() {
     if (!elements.engagementsClubRelaysSummary) return;
     const count = selectedEngagementClubRelayRows().length;
-    elements.engagementsClubRelaysSummary.textContent = count
+    const issues = engagementClubRelayValidationIssues();
+    elements.engagementsClubRelaysSummary.textContent = issues.length
+      ? `${count} relais selectionne${count > 1 ? "s" : ""} - ${issues.length} point${issues.length > 1 ? "s" : ""} a corriger.`
+      : count
       ? `${count} relais selectionne${count > 1 ? "s" : ""}.`
       : "Aucun relais selectionne.";
     renderEngagementClubSummary();
@@ -2678,6 +2846,7 @@
       return;
     }
     const rows = engagementClubRelaysDraft;
+    const competitionDate = selectedEngagementCompetition?.date || "";
     if (!rows.length) {
       mount.innerHTML = '<p class="admin-engagements-empty">Ajoutez un relais pour commencer.</p>';
       updateEngagementClubRelaysSummary();
@@ -2693,6 +2862,7 @@
       const genderOptions = engagementRelayGenderOptions(event, category);
       const genderMode = genderOptions.some(([mode]) => mode === relay.genderMode) ? relay.genderMode : genderOptions[0]?.[0] || "female";
       const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds : (relay.members || []).map((member) => member.swimmerIndexId).filter(Boolean);
+      const relayLegs = engagementRelayLegCount(event);
       return `
         <div class="admin-engagements-club-relay-row" data-engagement-club-relay-row data-engagement-club-relay-id="${escapeHtml(relayId)}">
           <select data-engagement-club-relay-event aria-label="Relais">
@@ -2704,17 +2874,27 @@
           <select data-engagement-club-relay-gender aria-label="Sexe ou mixite">
             ${genderOptions.map(([mode, label]) => `<option value="${escapeHtml(mode)}" ${mode === genderMode ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
           </select>
-          <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-relay-time value="${escapeHtml(relay.manualEntryTime || relay.entryTime || "")}" aria-label="Temps d'engagement">
+          <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps obligatoire" data-engagement-club-relay-time value="${escapeHtml(relay.manualEntryTime || relay.entryTime || "")}" aria-label="Temps d'engagement">
           <div class="admin-engagements-club-relay-members">
-            ${[0, 1, 2, 3].map((memberIndex) => `
-              <select data-engagement-club-relay-member aria-label="Relayeur ${memberIndex + 1}">
-                <option value="">Relayeur ${memberIndex + 1}</option>
-                ${swimmerOptions.map((swimmer) => {
-                  const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur";
-                  return `<option value="${escapeHtml(swimmer.swimmerIndexId)}" ${memberIds[memberIndex] === swimmer.swimmerIndexId ? "selected" : ""}>${escapeHtml(name)}</option>`;
+            ${Array.from({ length: relayLegs }, (_, memberIndex) => {
+              const expectedSex = engagementRelayExpectedMemberSex(genderMode, memberIndex);
+              const currentMemberId = memberIds[memberIndex] || "";
+              const memberOptions = swimmerOptions.filter((swimmer) => {
+                if (expectedSex && swimmer.sex !== expectedSex) return false;
+                if (!engagementRelaySwimmerAllowedForCategory(swimmer, category, competitionDate)) return false;
+                return swimmer.swimmerIndexId === currentMemberId ||
+                  !engagementRelayMemberAlreadyUsed(swimmer.swimmerIndexId, rows, index, memberIndex, event);
+              });
+              return `
+              <select data-engagement-club-relay-member aria-label="${escapeHtml(engagementRelayLegPlaceholder(genderMode, memberIndex))}">
+                <option value="">${escapeHtml(memberOptions.length ? engagementRelayLegPlaceholder(genderMode, memberIndex) : engagementRelayNoMemberOptionLabel(expectedSex, memberIndex))}</option>
+                ${memberOptions.map((swimmer) => {
+                  const name = engagementRelayMemberOptionLabel(swimmer, competitionDate);
+                  return `<option value="${escapeHtml(swimmer.swimmerIndexId)}" ${currentMemberId === swimmer.swimmerIndexId ? "selected" : ""}>${escapeHtml(name)}</option>`;
                 }).join("")}
               </select>
-            `).join("")}
+            `;
+            }).join("")}
           </div>
           <button type="button" class="ghost-button compact" data-engagement-club-relay-remove aria-label="Supprimer le relais">Supprimer</button>
         </div>
@@ -2722,6 +2902,16 @@
     }).join("")}
       </div>
     `;
+    const issues = engagementClubRelayValidationIssues(rows);
+    if (issues.length) {
+      mount.insertAdjacentHTML("beforeend", `
+        <div class="admin-engagements-club-relay-issues" role="status">
+          <strong>Points a corriger avant enregistrement</strong>
+          <ul>${issues.slice(0, 8).map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
+          ${issues.length > 8 ? `<small>+ ${issues.length - 8} autre${issues.length - 8 > 1 ? "s" : ""} point${issues.length - 8 > 1 ? "s" : ""}.</small>` : ""}
+        </div>
+      `);
+    }
     setEngagementClubFormControlsLocked(elements.engagementsClubRelaysForm, false);
     updateEngagementClubRelaysSummary();
   }
@@ -4101,6 +4291,15 @@
       return;
     }
     engagementClubRelaysDraft = selectedEngagementClubRelayRowsFromDom();
+    const validationIssues = engagementClubRelayValidationIssues(engagementClubRelaysDraft);
+    if (validationIssues.length) {
+      if (elements.engagementsClubRelaysMessage) {
+        elements.engagementsClubRelaysMessage.textContent = validationIssues[0];
+        elements.engagementsClubRelaysMessage.dataset.tone = "error";
+      }
+      renderEngagementClubRelays();
+      return;
+    }
     if (elements.engagementsClubRelaysSaveButton) elements.engagementsClubRelaysSaveButton.disabled = true;
     if (elements.engagementsClubRelaysMessage) {
       elements.engagementsClubRelaysMessage.textContent = "Enregistrement des relais...";
