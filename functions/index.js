@@ -125,6 +125,14 @@ const ENGAGEMENT_EVENT_DEFINITION_BY_CODE = new Map(
 );
 const ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES = ["P", "B", "M", "C", "J", "S", "M30+", "M40+", "M50+", "M60+", "M70+", "M80+"];
 const ENGAGEMENT_RELAY_CATEGORY_CODES = ["P", "B", "M", "C", "J", "S", "R140", "R180", "R220", "R260"];
+const ENGAGEMENT_RELAY_AGE_CATEGORY_RANK = {
+  P: 0,
+  B: 1,
+  M: 2,
+  C: 3,
+  J: 4,
+  S: 5
+};
 const ENGAGEMENT_CATEGORY_CODES = Array.from(new Set([
   ...ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES,
   ...ENGAGEMENT_RELAY_CATEGORY_CODES
@@ -3123,6 +3131,16 @@ function engagementRelayMemberAge(member = {}, competitionDate = "") {
   return Number.isFinite(age) && age > 0 ? age : 0;
 }
 
+function engagementRelayMemberAllowedForCategory(member = {}, relayCategory = "", competitionDate = "") {
+  const category = engagementRelayMemberCategory(member, competitionDate);
+  if (!category) return false;
+  if (cleanText(relayCategory).startsWith("R")) return /^M\d/.test(category);
+  if (relayCategory === "S") return true;
+  const swimmerRank = ENGAGEMENT_RELAY_AGE_CATEGORY_RANK[category];
+  const relayRank = ENGAGEMENT_RELAY_AGE_CATEGORY_RANK[relayCategory];
+  return Number.isFinite(swimmerRank) && Number.isFinite(relayRank) && swimmerRank <= relayRank;
+}
+
 function assertEngagementRelayMembers(relay = {}, event = {}, swimmerById = new Map(), competition = {}) {
   const memberIds = Array.from(new Set((Array.isArray(relay.memberIds) ? relay.memberIds : [])
     .map((id) => cleanText(id).slice(0, 80))
@@ -3154,9 +3172,9 @@ function assertEngagementRelayMembers(relay = {}, event = {}, swimmerById = new 
     throw new HttpsError("failed-precondition", "Un relais Hommes ne peut contenir que des nageurs.");
   }
   if (relay.genderMode === "mixed") {
-    const sexes = new Set(members.map((member) => member.sex));
-    if (!sexes.has("F") || !sexes.has("M")) {
-      throw new HttpsError("failed-precondition", "Un relais mixte doit contenir au moins une femme et un homme.");
+    const invalidOrderIndex = members.findIndex((member, index) => member.sex !== (index % 2 === 0 ? "M" : "F"));
+    if (invalidOrderIndex >= 0) {
+      throw new HttpsError("failed-precondition", "Un relais mixte doit respecter l'ordre Homme - Femme - Homme - Femme.");
     }
   }
   if (relay.category.startsWith("R")) {
@@ -3169,9 +3187,9 @@ function assertEngagementRelayMembers(relay = {}, event = {}, swimmerById = new 
       throw new HttpsError("failed-precondition", `Relais ${relay.category} impossible : total d'age ${totalAge}, minimum ${minimumAge}.`);
     }
   } else {
-    const invalidMember = members.find((member) => engagementRelayMemberCategory(member, competition.date) !== relay.category);
+    const invalidMember = members.find((member) => !engagementRelayMemberAllowedForCategory(member, relay.category, competition.date));
     if (invalidMember) {
-      throw new HttpsError("failed-precondition", `Relayeur hors categorie ${relay.category} pour ${event.shortLabel || event.code}.`);
+      throw new HttpsError("failed-precondition", `Relayeur non autorise en relais ${relay.category} pour ${event.shortLabel || event.code}.`);
     }
   }
   return members;
@@ -3218,9 +3236,9 @@ function cleanEngagementEntryRelays(rawRelays = [], competition = {}, swimmers =
     };
     const members = assertEngagementRelayMembers(relay, event, swimmerById, competition);
     members.forEach((member) => {
-      const slotKey = [member.swimmerIndexId, event.distance].join("|");
+      const slotKey = [member.swimmerIndexId, event.distance, event.discipline].join("|");
       if (memberDistanceSlots.has(slotKey)) {
-        throw new HttpsError("failed-precondition", "Un relayeur ne peut pas etre inscrit dans deux relais de meme distance.");
+        throw new HttpsError("failed-precondition", "Un relayeur ne peut pas etre inscrit dans deux relais de meme distance et meme nature.");
       }
       memberDistanceSlots.add(slotKey);
     });
