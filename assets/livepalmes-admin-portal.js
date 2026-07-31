@@ -1,4 +1,5 @@
 (function attachLivePalmesAdminPortal(global) {
+  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
   const ENGAGEMENT_EVENT_DEFINITIONS = [
     ["50SF", "individual", "50 m Surface", "50 SF", "SF", 50],
     ["100SF", "individual", "100 m Surface", "100 SF", "SF", 100],
@@ -2444,7 +2445,7 @@
           <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
           <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
           <label role="cell" aria-label="Numero de licence">
-            <input type="text" maxlength="60" inputmode="numeric" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected ? "required" : ""}>
+            <input type="text" maxlength="60" inputmode="numeric" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>
           </label>
           <small role="cell">${escapeHtml(info || "-")}</small>
         </div>
@@ -4244,7 +4245,7 @@
     }
     if (!engagementClubSwimmersLoaded) await loadEngagementClubSwimmers({ silent: true });
     const selectedSwimmers = selectedEngagementClubSwimmerRows();
-    const missingLicense = selectedSwimmers.some((swimmer) => !swimmer.licenseNumber);
+    const missingLicense = ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && selectedSwimmers.some((swimmer) => !swimmer.licenseNumber);
     if (missingLicense) {
       if (messageElement) {
         messageElement.textContent = "Numero de licence obligatoire pour chaque nageur selectionne.";
@@ -6342,7 +6343,7 @@
       const license = row?.querySelector("[data-engagement-club-swimmer-license]");
       if (row && checkbox && license) {
         row.dataset.selected = checkbox.checked ? "true" : "false";
-        license.required = checkbox.checked;
+        license.required = checkbox.checked && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE;
       }
       updateEngagementClubSwimmersSummary();
       renderEngagementClubEntries();
