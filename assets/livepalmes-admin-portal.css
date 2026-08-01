@@ -3750,6 +3750,14 @@
   font-weight: 760;
 }
 
+.admin-engagements-documents-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .admin-engagements-documents-list,
 .admin-engagements-generated-files {
   display: grid;
@@ -3837,7 +3845,7 @@
 
 .admin-engagements-club-recap-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 64px 64px 58px 92px 116px;
+  grid-template-columns: minmax(180px, 1fr) 64px 64px 58px 92px 136px;
   gap: 8px;
   align-items: center;
   min-height: 42px;
@@ -3845,6 +3853,16 @@
   border-top: 1px solid #e7efed;
   color: #173b35;
   font-size: 0.82rem;
+}
+
+.admin-engagements-club-recap-row[data-recap-pdf-ready="true"] {
+  background: #fbfffe;
+}
+
+.admin-engagements-club-recap-row > span:last-child {
+  display: grid;
+  gap: 2px;
+  align-items: center;
 }
 
 .admin-engagements-club-recap-row:first-child {
