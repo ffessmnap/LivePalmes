@@ -2372,35 +2372,97 @@
 .admin-engagements-club-officials-list {
   display: grid;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.admin-engagements-club-official-row {
+.admin-engagements-club-officials-section {
+  display: grid;
+  gap: 4px;
+  min-width: 420px;
+}
+
+.admin-engagements-club-officials-section h5 {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   align-items: center;
+  margin: 0;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-officials-section h5 span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #e6f3f0;
+  color: #0f5f57;
+  font-size: 0.65rem;
+}
+
+.admin-engagements-club-officials-table {
+  display: grid;
+  gap: 2px;
   border: 1px solid #dce7e4;
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 6px;
+  overflow: hidden;
   background: #ffffff;
 }
 
-.admin-engagements-club-official-row input {
-  width: 18px;
-  height: 18px;
+.admin-engagements-club-officials-head,
+.admin-engagements-club-official-row {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) 110px;
+  gap: 5px;
+  align-items: center;
 }
 
-.admin-engagements-club-official-row strong,
-.admin-engagements-club-official-row small {
-  display: block;
+.admin-engagements-club-officials-head {
+  padding: 5px 8px;
+  background: #f5faf9;
+  border-bottom: 1px solid #dce7e4;
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-official-row {
+  border-bottom: 1px solid #edf3f1;
+  padding: 2px 8px;
+  background: #ffffff;
+  min-height: 28px;
+}
+
+.admin-engagements-club-official-row[data-selected="true"] {
+  background: #f1fbf9;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+.admin-engagements-club-official-row > span:first-child {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-engagements-club-official-row input {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
 }
 
 .admin-engagements-club-official-row strong {
   color: #12312d;
-}
-
-.admin-engagements-club-official-row small {
-  color: #5f746f;
-  font-size: 0.78rem;
+  font-size: 0.79rem;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-engagements-club-search {
@@ -2566,6 +2628,8 @@
 .admin-engagements-club-relays-list {
   display: grid;
   gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-engagements-club-swimmers-table,
@@ -2837,32 +2901,62 @@
 
 .admin-engagements-club-relays-table {
   display: grid;
-  gap: 5px;
+  gap: 3px;
+  min-width: 920px;
 }
 
 .admin-engagements-club-relay-row {
   display: grid;
-  grid-template-columns: minmax(92px, 0.9fr) minmax(92px, 0.9fr) minmax(84px, 0.8fr) minmax(78px, 0.7fr) minmax(260px, 2fr) auto;
-  gap: 6px;
+  grid-template-columns: minmax(88px, 0.8fr) minmax(86px, 0.75fr) minmax(82px, 0.72fr) 70px minmax(360px, 2.3fr) 28px;
+  gap: 4px;
   align-items: center;
-  border: 1px solid #dce7e4;
-  border-radius: 6px;
-  padding: 6px;
+  border: 1px solid #edf3f1;
+  border-radius: 5px;
+  padding: 3px 5px;
   background: #ffffff;
+}
+
+.admin-engagements-club-relay-row[data-gender="female"] {
+  background: #fff7fb;
+}
+
+.admin-engagements-club-relay-row[data-gender="male"] {
+  background: #f5fbff;
+}
+
+.admin-engagements-club-relay-row[data-gender="mixed"] {
+  background: #f7fbf9;
 }
 
 .admin-engagements-club-relay-row select,
 .admin-engagements-club-relay-row input[type="text"] {
   width: 100%;
-  min-height: 30px;
-  padding: 4px 7px;
-  font-size: 0.78rem;
+  min-height: 24px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  line-height: 1.1;
 }
 
 .admin-engagements-club-relay-members {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  gap: 3px;
+}
+
+.admin-engagements-club-relay-members select[data-expected-sex="F"] {
+  background: #fff7fb;
+}
+
+.admin-engagements-club-relay-members select[data-expected-sex="M"] {
+  background: #f5fbff;
+}
+
+.admin-engagements-club-relay-remove {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .admin-engagements-club-relay-issues {
@@ -4148,11 +4242,6 @@
   }
 
   .admin-engagements-club-person-card {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-engagements-club-relay-row,
-  .admin-engagements-club-relay-members {
     grid-template-columns: 1fr;
   }
 
