@@ -1,5 +1,5 @@
 (function attachLivePalmesAdminPortal(global) {
-  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
+  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
   const ENGAGEMENT_EVENT_DEFINITIONS = [
     ["50SF", "individual", "50 m Surface", "50 SF", "SF", 50],
     ["100SF", "individual", "100 m Surface", "100 SF", "SF", 100],
@@ -2194,7 +2194,7 @@
                 <span>${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}</span>
               </label>
               <div class="admin-engagements-club-entry-time" ${checked ? "" : "hidden"}>
-                <span class="admin-engagements-club-entry-time-value">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
+                <span class="admin-engagements-club-entry-time-value" title="${escapeHtml(timeHelp)}">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
                 ${manualAllowed ? `<button type="button" class="ghost-button compact admin-engagements-club-entry-time-edit" data-engagement-club-time-edit="${escapeHtml(event.code)}" data-engagement-club-time-auto="${escapeHtml(automaticTime)}" ${checked ? "" : "hidden disabled"} aria-label="Modifier le temps ${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}">✎</button>` : ""}
                 <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-swimmer-event-time="${escapeHtml(event.code)}" value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
               </div>
@@ -2406,7 +2406,24 @@
       updateEngagementClubSwimmersSummary();
       return;
     }
+    const renderedSwimmerIds = new Set(Array.from(mount.querySelectorAll("[data-engagement-club-swimmer-id]") || [])
+      .map((input) => input.dataset.engagementClubSwimmerId || "")
+      .filter(Boolean));
+    const currentSelectedRows = selectedEngagementClubSwimmerRows();
+    const currentSelectedIds = new Set(currentSelectedRows.map((swimmer) => swimmer.swimmerIndexId).filter(Boolean));
     const query = normalizedEngagementClubSearch(elements.engagementsClubSwimmersSearch?.value || "");
+    renderedSwimmerIds.forEach((id) => {
+      if (!currentSelectedIds.has(id)) selectedById.delete(id);
+    });
+    currentSelectedRows.forEach((swimmer) => {
+      selectedById.set(swimmer.swimmerIndexId, {
+        ...(selectedById.get(swimmer.swimmerIndexId) || {}),
+        swimmerIndexId: swimmer.swimmerIndexId,
+        source: swimmer.source || "performances",
+        licenseNumber: swimmer.licenseNumber,
+        individualEntries: swimmer.individualEntries || (swimmer.individualEventCodes || []).map((eventCode) => ({ eventCode }))
+      });
+    });
     const selectedIds = new Set(selectedById.keys());
     const swimmers = engagementClubSwimmers
       .filter((swimmer) => !query || selectedIds.has(swimmer.id) || engagementClubSwimmerSearchText(swimmer).includes(query))
@@ -2417,41 +2434,60 @@
       updateEngagementClubSwimmersSummary();
       return;
     }
-    mount.innerHTML = `
-      <div class="admin-engagements-club-swimmers-table" role="table" aria-label="Nageurs du club">
-        <div class="admin-engagements-club-swimmers-head" role="row">
-          <span role="columnheader">Nageur</span>
-          <span role="columnheader">Naissance</span>
-          <span role="columnheader">Sexe</span>
-          <span role="columnheader">Licence</span>
-          <span role="columnheader">Info</span>
-        </div>
-        ${swimmers.map((swimmer) => {
+    const renderSwimmerRow = (swimmer) => {
       const selected = selectedById.get(swimmer.id);
       const licenseNumber = selected?.licenseNumber || swimmer.licenseNumber || "";
+      const licenseLocked = Boolean(swimmer.licenseNumber || swimmer.licenseLocked);
+      const verificationStatus = licenseNumber ? (swimmer.licenseVerificationStatus || selected?.licenseVerificationStatus || "") : "";
+      const seasonStatus = licenseNumber ? (swimmer.licenseSeasonStatus || selected?.licenseSeasonStatus || "") : "";
+      const verificationLabel = {
+        verified: "Numero verifie",
+        pending: "Verification nationale a faire",
+        rejected: "Numero rejete",
+        conflict: "Conflit a traiter"
+      }[verificationStatus] || "";
+      const seasonLabel = {
+        to_check: "Saison a controler",
+        valid: "Valide pour la saison",
+        invalid: "Non valide pour la saison"
+      }[seasonStatus] || "";
       const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
-      const info = [
-        swimmer.latestDate ? `dernier resultat ${formatShortDate(swimmer.latestDate)}` : "",
-        swimmer.swimmerId ? `ID ${swimmer.swimmerId}` : "",
-        swimmer.source === "engagement" ? "cree par le club" : "",
-        swimmer.source === "reference" ? "dernier club connu LivePalmes" : ""
-      ].filter(Boolean).join(" - ");
       return `
-        <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="${selected ? "true" : "false"}">
+        <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="${selected ? "true" : "false"}" data-sex="${escapeHtml(swimmer.sex || "")}">
           <label role="cell">
             <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" data-engagement-club-swimmer-livepalmes-id="${escapeHtml(swimmer.swimmerId || "")}" data-engagement-club-swimmer-name="${escapeHtml(name)}" data-engagement-club-swimmer-first-name="${escapeHtml(swimmer.firstName || "")}" data-engagement-club-swimmer-last-name="${escapeHtml(swimmer.lastName || "")}" data-engagement-club-swimmer-birth-date="${escapeHtml(swimmer.birthDate || "")}" data-engagement-club-swimmer-sex="${escapeHtml(swimmer.sex || "")}" ${selected ? "checked" : ""}>
             <strong>${escapeHtml(name)}</strong>
           </label>
           <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
           <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
-          <label role="cell" aria-label="Numero de licence">
-            <input type="text" maxlength="60" inputmode="numeric" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>
+          <span role="cell">${escapeHtml(swimmer.category || "-")}</span>
+          <label class="admin-engagements-club-swimmer-license-cell" role="cell" aria-label="Numero de licence">
+            <input type="text" maxlength="60" inputmode="numeric" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${licenseLocked ? "readonly" : ""} ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseLocked ? "required" : ""}>
+            ${verificationLabel || seasonLabel ? `<small>${escapeHtml([verificationLabel, seasonLabel].filter(Boolean).join(" - "))}</small>` : ""}
           </label>
-          <small role="cell">${escapeHtml(info || "-")}</small>
         </div>
       `;
-        }).join("")}
-      </div>
+    };
+    const renderSwimmerTable = (rows, label) => `
+      <section class="admin-engagements-club-swimmers-section">
+        <h5>${escapeHtml(label)} <span>${rows.length}</span></h5>
+        <div class="admin-engagements-club-swimmers-table" role="table" aria-label="${escapeHtml(label)}">
+          <div class="admin-engagements-club-swimmers-head" role="row">
+            <span role="columnheader">Nageur</span>
+            <span role="columnheader">Naissance</span>
+            <span role="columnheader">Sexe</span>
+            <span role="columnheader">Cat.</span>
+            <span role="columnheader">Licence</span>
+          </div>
+          ${rows.map(renderSwimmerRow).join("")}
+        </div>
+      </section>
+    `;
+    const selectedSwimmers = swimmers.filter((swimmer) => selectedIds.has(swimmer.id));
+    const availableSwimmers = swimmers.filter((swimmer) => !selectedIds.has(swimmer.id));
+    mount.innerHTML = `
+      ${selectedSwimmers.length ? renderSwimmerTable(selectedSwimmers, "Nageurs selectionnes") : ""}
+      ${availableSwimmers.length ? renderSwimmerTable(availableSwimmers, selectedSwimmers.length ? "Autres nageurs du club" : "Nageurs du club") : ""}
     `;
     setEngagementClubFormControlsLocked(elements.engagementsClubSwimmersForm, false);
     updateEngagementClubSwimmersSummary();
@@ -2497,12 +2533,13 @@
       const swimmer = swimmersById.get(selected.swimmerIndexId) || selected;
       const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
       const meta = [
-        swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "",
         swimmer.sex || "",
+        swimmer.category || "",
+        swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "",
         selected.licenseNumber ? `licence ${selected.licenseNumber}` : ""
       ].filter(Boolean).join(" - ");
       return `
-        <div class="admin-engagements-club-entry-row" role="row" data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${escapeHtml(selected.swimmerIndexId)}">
+        <div class="admin-engagements-club-entry-row" role="row" data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${escapeHtml(selected.swimmerIndexId)}" data-sex="${escapeHtml(swimmer.sex || "")}">
           <div class="admin-engagements-club-entry-name">
             <strong>${escapeHtml(name)}</strong>
             <small>${escapeHtml(meta || "Nageur selectionne")}</small>
@@ -6341,9 +6378,17 @@
       const row = event.target.closest("[data-engagement-club-swimmer-row]");
       const checkbox = row?.querySelector("[data-engagement-club-swimmer-id]");
       const license = row?.querySelector("[data-engagement-club-swimmer-license]");
+      const selectionChanged = event.target.matches("[data-engagement-club-swimmer-id]");
       if (row && checkbox && license) {
         row.dataset.selected = checkbox.checked ? "true" : "false";
-        license.required = checkbox.checked && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE;
+        license.required = checkbox.checked && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !license.readOnly;
+      }
+      if (selectionChanged) {
+        renderEngagementClubSwimmers();
+        if (elements.engagementsClubSwimmersMessage) {
+          elements.engagementsClubSwimmersMessage.textContent = "";
+        }
+        return;
       }
       updateEngagementClubSwimmersSummary();
       renderEngagementClubEntries();

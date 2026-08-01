@@ -2457,7 +2457,28 @@
 
 .admin-engagements-club-swimmers-list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-engagements-club-swimmers-section {
+  display: grid;
+  gap: 3px;
+  min-width: 520px;
+}
+
+.admin-engagements-club-swimmers-section h5 {
+  margin: 0;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-swimmers-section h5 span {
+  color: #0b7285;
+  font-weight: 900;
 }
 
 .admin-engagements-club-swimmers-directory-tools {
@@ -2538,6 +2559,8 @@
 .admin-engagements-club-entries-list {
   display: grid;
   gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-engagements-club-relays-list {
@@ -2548,34 +2571,52 @@
 .admin-engagements-club-swimmers-table,
 .admin-engagements-club-entries-table {
   display: grid;
-  gap: 4px;
+  gap: 3px;
+  min-width: 760px;
+}
+
+.admin-engagements-club-swimmers-table {
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .admin-engagements-club-swimmers-head,
 .admin-engagements-club-swimmer-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1fr) 90px 48px minmax(110px, 0.35fr) minmax(160px, 0.55fr);
-  gap: 8px;
+  grid-template-columns: minmax(190px, 1fr) 82px 34px 42px minmax(155px, 0.4fr);
+  gap: 5px;
   align-items: center;
 }
 
 .admin-engagements-club-swimmers-head {
-  padding: 0 8px;
+  padding: 5px 8px;
+  background: #f5faf9;
+  border-bottom: 1px solid #dce7e4;
   color: #5f746f;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .admin-engagements-club-entry-row {
   display: grid;
-  grid-template-columns: minmax(180px, 0.22fr) minmax(0, 1fr);
-  gap: 8px;
-  align-items: start;
-  border: 1px solid #dce7e4;
-  border-radius: 6px;
-  padding: 6px 8px;
+  grid-template-columns: minmax(170px, 0.22fr) minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #edf3f1;
+  border-radius: 5px;
+  padding: 3px 6px;
   background: #ffffff;
+}
+
+.admin-engagements-club-entry-row[data-sex="F"] {
+  background: #fff7fb;
+}
+
+.admin-engagements-club-entry-row[data-sex="M"] {
+  background: #f5fbff;
 }
 
 .admin-engagements-club-entry-name {
@@ -2589,35 +2630,53 @@
 
 .admin-engagements-club-entry-name strong {
   color: #12312d;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-engagements-club-entry-name small {
   color: #5f746f;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-engagements-club-swimmer-row {
-  border: 1px solid #dce7e4;
-  border-radius: 6px;
-  padding: 5px 8px;
+  border: 0;
+  border-bottom: 1px solid #edf3f1;
+  border-radius: 0;
+  padding: 1px 8px;
   background: #ffffff;
+  min-height: 27px;
+}
+
+.admin-engagements-club-swimmer-row[data-sex="F"] {
+  background: #fff7fb;
+}
+
+.admin-engagements-club-swimmer-row[data-sex="M"] {
+  background: #f5fbff;
 }
 
 .admin-engagements-club-swimmer-row[data-selected="true"] {
-  border-color: #0b7285;
-  background: #f2fbfc;
+  box-shadow: inset 3px 0 0 #0b7285;
 }
 
 .admin-engagements-club-swimmer-row > label:first-child {
   display: flex;
-  gap: 7px;
+  gap: 5px;
   align-items: center;
   min-width: 0;
 }
 
 .admin-engagements-club-swimmer-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   flex: 0 0 auto;
 }
 
@@ -2628,6 +2687,8 @@
 
 .admin-engagements-club-swimmer-row strong {
   color: #12312d;
+  font-size: 0.79rem;
+  line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2642,15 +2703,34 @@
 }
 
 .admin-engagements-club-swimmer-row input[type="text"] {
-  min-height: 30px;
-  padding: 4px 7px;
-  font-size: 0.82rem;
+  min-height: 20px;
+  padding: 1px 6px;
+  font-size: 0.74rem;
+  line-height: 1.1;
+}
+
+.admin-engagements-club-swimmer-license-cell {
+  display: grid;
+  gap: 1px;
+}
+
+.admin-engagements-club-swimmer-license-cell small {
+  color: #5f746f;
+  font-size: 0.61rem;
+  line-height: 1.1;
+}
+
+.admin-engagements-club-swimmer-license-cell input[readonly] {
+  border-color: #cbd9d6;
+  background: #edf3f1;
+  color: #12312d;
+  cursor: default;
 }
 
 .admin-engagements-club-swimmer-events {
   grid-column: 1 / -1;
-  display: grid;
-  gap: 4px;
+  display: block;
+  min-width: 0;
   padding-top: 0;
 }
 
@@ -2670,30 +2750,35 @@
 }
 
 .admin-engagements-club-swimmer-events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-  gap: 4px;
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-engagements-club-swimmer-event-choice {
   display: grid;
-  gap: 3px;
-  align-content: start;
+  grid-template-columns: minmax(80px, 1fr) auto;
+  gap: 2px 4px;
+  align-items: center;
   border: 1px solid #dce7e4;
   border-radius: 5px;
-  padding: 3px 5px;
+  min-width: 108px;
+  min-height: 24px;
+  padding: 1px 4px;
   background: #ffffff;
 }
 
 .admin-engagements-club-swimmer-event-choice[data-event-selected="true"] {
   border-color: #0b7285;
   background: #f7fcfd;
+  min-width: 170px;
 }
 
 .admin-engagements-club-entry-time {
   display: grid;
   grid-template-columns: minmax(58px, 1fr) auto;
-  gap: 4px;
+  gap: 2px;
   align-items: center;
 }
 
@@ -2702,48 +2787,46 @@
 }
 
 .admin-engagements-club-entry-time-value {
-  min-height: 24px;
+  min-height: 20px;
   border: 1px solid #dce7e4;
   border-radius: 5px;
-  padding: 3px 6px;
+  padding: 2px 5px;
   background: #f8fbfa;
   color: #073b44;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .admin-engagements-club-entry-time-edit {
-  min-height: 24px;
-  min-width: 28px;
-  padding: 2px 6px;
+  min-height: 20px;
+  min-width: 24px;
+  padding: 1px 5px;
 }
 
 .admin-engagements-club-swimmer-events-grid label {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
   color: #12312d;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
 .admin-engagements-club-swimmer-events-grid input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .admin-engagements-club-swimmer-event-choice input[type="text"] {
   grid-column: 1 / -1;
-  min-height: 30px;
-  padding: 3px 5px;
-  font-size: 0.76rem;
+  min-height: 22px;
+  padding: 2px 5px;
+  font-size: 0.72rem;
 }
 
 .admin-engagements-club-swimmer-event-choice small {
-  color: #6b7c78;
-  font-size: 0.66rem;
-  line-height: 1.2;
+  display: none;
 }
 
 .admin-engagements-club-swimmer-events-empty {
@@ -4065,14 +4148,6 @@
   }
 
   .admin-engagements-club-person-card {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-engagements-club-swimmer-row {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-engagements-club-entry-row {
     grid-template-columns: 1fr;
   }
 
