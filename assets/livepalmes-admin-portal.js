@@ -360,6 +360,7 @@
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
     engagementsComputerEmailLabel: document.querySelector("#adminEngagementsComputerEmailLabel"),
+    engagementsGenerateClubRecapsButton: document.querySelector("#adminEngagementsGenerateClubRecapsButton"),
     engagementsDocumentsList: document.querySelector("#adminEngagementsDocumentsList"),
     engagementsClubRecapFiles: document.querySelector("#adminEngagementsClubRecapFiles"),
     engagementsGeneratedFiles: document.querySelector("#adminEngagementsGeneratedFiles"),
@@ -3145,8 +3146,11 @@
           <span role="columnheader">Total</span>
           <span role="columnheader">PDF</span>
         </div>
-        ${engagementClubRecapEntries.map((entry) => `
-          <div class="admin-engagements-club-recap-row" role="row">
+        ${engagementClubRecapEntries.map((entry) => {
+      const recapPdf = entry.recapPdf || {};
+      const pdfReady = recapPdf.status === "generated" && recapPdf.generatedAt;
+      return `
+          <div class="admin-engagements-club-recap-row" role="row" data-recap-pdf-ready="${pdfReady ? "true" : "false"}">
             <span role="cell">
               <strong>${escapeHtml(entry.clubName || entry.clubId || "Club")}</strong>
               <small>${escapeHtml([entry.clubId ? `Club ${entry.clubId}` : "", entry.updatedAt ? `MAJ ${formatDeadline(entry.updatedAt).replace(/^Limite /, "")}` : ""].filter(Boolean).join(" - ") || "-")}</small>
@@ -3156,10 +3160,12 @@
             <span role="cell">${escapeHtml(String(entry.relayCount || 0))}</span>
             <span role="cell">${escapeHtml(formatEngagementFee(entry.totalFee))}</span>
             <span role="cell">
-              <button class="ghost-button compact" type="button" data-engagement-admin-club-pdf="${escapeHtml(entry.clubId)}" ${entry.teamLeaderComplete ? "" : "disabled"}>Telecharger</button>
+              <button class="ghost-button compact" type="button" data-engagement-admin-club-pdf="${escapeHtml(entry.clubId)}" ${entry.teamLeaderComplete ? "" : "disabled"}>${pdfReady ? "Telecharger" : "Generer"}</button>
+              <small>${escapeHtml(pdfReady ? `GED ${formatDeadline(recapPdf.generatedAt).replace(/^Limite /, "")}` : "Non genere")}</small>
             </span>
           </div>
-        `).join("")}
+        `;
+    }).join("")}
       </div>
     `;
   }
@@ -4399,8 +4405,27 @@
       });
       if (!result.pdfBase64) throw new Error("PDF non retourne par le serveur.");
       downloadBase64File(result.pdfBase64, result.fileName || "recap-engagements-livepalmes.pdf", result.contentType || "application/pdf");
+      if (result.document) {
+        selectedEngagementClubEntry = {
+          ...(selectedEngagementClubEntry || {}),
+          documents: {
+            ...(selectedEngagementClubEntry?.documents || {}),
+            clubRecapPdf: result.document
+          }
+        };
+        selectedEngagementCompetition = {
+          ...(selectedEngagementCompetition || {}),
+          documents: {
+            ...(selectedEngagementCompetition?.documents || {}),
+            clubRecapPdf: {
+              status: "generated",
+              generatedAt: result.document.generatedAt || new Date().toISOString()
+            }
+          }
+        };
+      }
       if (elements.engagementsClubSummaryStatus) {
-        elements.engagementsClubSummaryStatus.textContent = "PDF genere et telecharge.";
+        elements.engagementsClubSummaryStatus.textContent = result.fromStorage ? "PDF telecharge depuis la GED." : "PDF genere et telecharge.";
         elements.engagementsClubSummaryStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -4428,12 +4453,88 @@
       });
       if (!result.pdfBase64) throw new Error("PDF non retourne par le serveur.");
       downloadBase64File(result.pdfBase64, result.fileName || "recap-engagements-livepalmes.pdf", result.contentType || "application/pdf");
+      if (result.document) {
+        engagementClubRecapEntries = engagementClubRecapEntries.map((entry) =>
+          entry.clubId === cleanClubId
+            ? { ...entry, recapPdf: result.document }
+            : entry
+        );
+        selectedEngagementCompetition = {
+          ...(selectedEngagementCompetition || {}),
+          documents: {
+            ...(selectedEngagementCompetition?.documents || {}),
+            clubRecapPdf: {
+              status: "generated",
+              generatedAt: result.document.generatedAt || new Date().toISOString()
+            }
+          }
+        };
+        renderEngagementDocuments(selectedEngagementCompetition);
+        renderEngagementClubRecapFiles();
+      }
     } catch (error) {
       if (elements.engagementsClubRecapFiles) {
         elements.engagementsClubRecapFiles.insertAdjacentHTML(
           "afterbegin",
           `<p class="admin-portal-message" data-tone="error">Generation PDF impossible : ${escapeHtml(error?.message || error)}</p>`
         );
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function generateEngagementAdminClubRecapPdfs() {
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
+    const button = elements.engagementsGenerateClubRecapsButton;
+    if (button) button.disabled = true;
+    if (elements.engagementsDocumentsSummary) {
+      elements.engagementsDocumentsSummary.textContent = "Generation des PDF clubs en cours...";
+    }
+    try {
+      const result = await callFunction("generateEngagementCompetitionClubRecapPdfs", {
+        competitionId: selectedEngagementCompetitionId
+      });
+      if (Array.isArray(result.entries) && result.entries.length) {
+        const byClubId = new Map(result.entries.map((entry) => [entry.clubId, entry]));
+        engagementClubRecapEntries = engagementClubRecapEntries.map((entry) =>
+          byClubId.has(entry.clubId) ? { ...entry, ...byClubId.get(entry.clubId) } : entry
+        );
+        const knownClubIds = new Set(engagementClubRecapEntries.map((entry) => entry.clubId));
+        result.entries.forEach((entry) => {
+          if (entry.clubId && !knownClubIds.has(entry.clubId)) engagementClubRecapEntries.push(entry);
+        });
+      }
+      const hasReadyPdf = Number(result.generatedCount || 0) + Number(result.reusedCount || 0) > 0;
+      if (hasReadyPdf) {
+        selectedEngagementCompetition = {
+          ...(selectedEngagementCompetition || {}),
+          documents: {
+            ...(selectedEngagementCompetition?.documents || {}),
+            clubRecapPdf: {
+              status: "generated",
+              generatedAt: new Date().toISOString()
+            }
+          }
+        };
+      }
+      renderEngagementDocuments(selectedEngagementCompetition);
+      renderEngagementClubRecapFiles();
+      if (elements.engagementsDocumentsSummary) {
+        const generatedCount = Number(result.generatedCount || 0);
+        const reusedCount = Number(result.reusedCount || 0);
+        const skippedCount = Number(result.skippedCount || 0);
+        const errorCount = Number(result.errorCount || 0);
+        elements.engagementsDocumentsSummary.textContent = [
+          `${generatedCount} PDF genere${generatedCount > 1 ? "s" : ""}`,
+          `${reusedCount} deja a jour`,
+          skippedCount ? `${skippedCount} ignore${skippedCount > 1 ? "s" : ""}` : "",
+          errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
+        ].filter(Boolean).join(" - ");
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Generation PDF clubs impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -6372,6 +6473,7 @@
     elements.engagementsClubEntriesForm?.addEventListener("submit", saveEngagementClubSwimmers);
     elements.engagementsClubRelaysForm?.addEventListener("submit", saveEngagementClubRelays);
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
+    elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-admin-club-pdf]");
       if (!button) return;

@@ -24,7 +24,9 @@ const ENGAGEMENT_POOL_LENGTHS = new Set(["25", "33", "50"]);
 const ENGAGEMENT_TIMING_TYPES = new Set(["manual", "electronic"]);
 const ENGAGEMENT_QUALIFICATION_TIME_MODES = new Set(["all", "period"]);
 const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999"]);
-const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
+const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+const ENGAGEMENT_LICENSE_VERIFICATION_STATUSES = new Set(["verified", "pending", "rejected", "conflict"]);
+const ENGAGEMENT_LICENSE_SEASON_STATUSES = new Set(["to_check", "valid", "invalid"]);
 const ACCESS_CAPABILITIES = [
   "admin.full",
   "records.manage",
@@ -69,6 +71,7 @@ const ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION = "engagementCompetition
 const ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = "engagementClubPeopleRosters";
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
 const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 1;
+const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
@@ -1122,6 +1125,29 @@ function currentEngagementSeasonInfo(date = new Date()) {
     startYear,
     endYear: startYear + 1,
     label: `${startYear}-${startYear + 1}`
+  };
+}
+
+function cleanEngagementLicenseVerificationStatus(value, fallback = "pending") {
+  const status = cleanText(value).toLowerCase();
+  return ENGAGEMENT_LICENSE_VERIFICATION_STATUSES.has(status) ? status : fallback;
+}
+
+function cleanEngagementLicenseSeasonStatus(value, fallback = "to_check") {
+  const status = cleanText(value).toLowerCase();
+  return ENGAGEMENT_LICENSE_SEASON_STATUSES.has(status) ? status : fallback;
+}
+
+function engagementLicenseSeasonState(data = {}, date = new Date()) {
+  const season = currentEngagementSeasonInfo(date);
+  const seasons = data.licenseSeasons && typeof data.licenseSeasons === "object" ? data.licenseSeasons : {};
+  const stored = seasons[season.label] && typeof seasons[season.label] === "object" ? seasons[season.label] : {};
+  const legacyStatus = cleanText(data.licenseSeasonLabel) === season.label ? data.licenseSeasonStatus : "";
+  return {
+    startYear: season.startYear,
+    endYear: season.endYear,
+    label: season.label,
+    status: cleanEngagementLicenseSeasonStatus(stored.status || legacyStatus, "to_check")
   };
 }
 
@@ -3094,6 +3120,7 @@ function engagementCompetitionDetailItem(doc) {
     events,
     programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
     fees: cleanEngagementFees(data.fees || {}, { strict: false }),
+    documents: engagementCompetitionDocumentsMetadata(data.documents || {}),
     createdAt: cleanText(data.createdAt).slice(0, 40),
     createdBy: cleanText(data.createdBy).slice(0, 128),
     updatedBy: cleanText(data.updatedBy).slice(0, 128)
@@ -3197,6 +3224,7 @@ function cleanEngagementEntryIndividualEntries(rawEntries = [], allowedCodes = n
 }
 
 function cleanEngagementEntrySwimmer(raw = {}) {
+  const licenseSeason = engagementLicenseSeasonState(raw);
   return {
     swimmerIndexId: cleanText(raw.swimmerIndexId).slice(0, 80),
     source: cleanText(raw.source || "performances").slice(0, 40),
@@ -3211,6 +3239,10 @@ function cleanEngagementEntrySwimmer(raw = {}) {
     club: cleanText(raw.club).slice(0, 60),
     clubName: cleanText(raw.clubName).slice(0, 140),
     licenseNumber: cleanText(raw.licenseNumber).slice(0, 60),
+    licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(raw.licenseVerificationStatus || raw.verificationStatus, "pending"),
+    licenseSeasonLabel: cleanText(raw.licenseSeasonLabel || licenseSeason.label).slice(0, 20),
+    licenseSeasonStatus: cleanEngagementLicenseSeasonStatus(raw.licenseSeasonStatus || licenseSeason.status, "to_check"),
+    licenseLocked: raw.licenseLocked === true || raw.licenseNumberLocked === true,
     latestDate: cleanIsoDate(raw.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(raw.performanceCount) || 0)),
     individualEntries: cleanEngagementEntryIndividualEntries(raw.individualEntries || raw.individualEventCodes || [])
@@ -3648,6 +3680,7 @@ function cleanEngagementNewSwimmer(raw = {}, context = {}) {
   const birthDate = cleanIsoDate(raw.birthDate);
   const sex = ["F", "M"].includes(cleanText(raw.sex).toUpperCase()) ? cleanText(raw.sex).toUpperCase() : "";
   const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const licenseSeason = currentEngagementSeasonInfo();
   if (!firstName || !lastName || !birthDate || !sex || !licenseNumber) {
     throw new HttpsError("invalid-argument", "Prenom, nom, date de naissance, sexe et licence sont obligatoires.");
   }
@@ -3658,6 +3691,9 @@ function cleanEngagementNewSwimmer(raw = {}, context = {}) {
     birthDate,
     sex,
     licenseNumber,
+    licenseVerificationStatus: "pending",
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: "to_check",
     identityKey: engagementSwimmerIdentityKey(firstName, lastName, birthDate),
     clubId: context.clubId,
     clubName: context.clubName,
@@ -3673,6 +3709,7 @@ function engagementNewSwimmerItem(doc) {
   const lastName = cleanText(data.lastName).slice(0, 80);
   const name = cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
   const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+  const licenseSeason = engagementLicenseSeasonState(data);
   return cleanFirestoreValue({
     id: doc.id,
     swimmerIndexId: doc.id,
@@ -3689,6 +3726,9 @@ function engagementNewSwimmerItem(doc) {
     club: cleanText(data.club).slice(0, 60),
     clubName: cleanText(data.clubName).slice(0, 140),
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(data.licenseVerificationStatus || data.verificationStatus, "pending"),
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: licenseSeason.status,
     latestDate: cleanIsoDate(data.latestDate),
     performanceCount: 0,
     alertCount: alerts.length,
@@ -3828,6 +3868,7 @@ function engagementClubRosterSwimmerItem(swimmer = {}) {
   const name = cleanText(swimmer.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
   const source = cleanText(swimmer.source || "performances").slice(0, 40) || "performances";
   const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80);
+  const licenseSeason = engagementLicenseSeasonState(swimmer);
   return cleanFirestoreValue({
     id: swimmerIndexId,
     swimmerIndexId,
@@ -3844,7 +3885,9 @@ function engagementClubRosterSwimmerItem(swimmer = {}) {
     club: cleanText(swimmer.club).slice(0, 60),
     clubName: cleanText(swimmer.clubName).slice(0, 140),
     licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
-    licenseVerificationStatus: cleanText(swimmer.licenseVerificationStatus).slice(0, 40),
+    licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(swimmer.licenseVerificationStatus || swimmer.verificationStatus, "pending"),
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: licenseSeason.status,
     latestDate: cleanIsoDate(swimmer.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0)),
     active: swimmer.active !== false,
@@ -3887,13 +3930,17 @@ function deleteEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
 }
 
 function engagementSwimmerLicenseDataItem(data = {}, id = "") {
+  const licenseSeason = engagementLicenseSeasonState(data);
   return {
     id,
     swimmerIndexId: cleanText(data.swimmerIndexId).slice(0, 80),
     swimmerId: cleanText(data.swimmerId).slice(0, 80),
     identityKey: cleanText(data.identityKey).slice(0, 180),
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
-    verificationStatus: cleanText(data.verificationStatus || "pending").slice(0, 40),
+    verificationStatus: cleanEngagementLicenseVerificationStatus(data.verificationStatus, "pending"),
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: licenseSeason.status,
+    licenseSeasons: data.licenseSeasons && typeof data.licenseSeasons === "object" ? data.licenseSeasons : {},
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
   };
 }
@@ -3918,6 +3965,11 @@ async function engagementLegacySwimmerLicensesByClub(db, clubId) {
 }
 
 function engagementSwimmerLicensePayload(swimmer = {}, context = {}, source = {}) {
+  const collectedAt = cleanText(source.collectedAt).slice(0, 40) || new Date().toISOString();
+  const season = currentEngagementSeasonInfo(new Date(collectedAt));
+  const verificationStatus = cleanEngagementLicenseVerificationStatus(swimmer.licenseVerificationStatus || swimmer.verificationStatus, "pending");
+  const seasonStatus = cleanEngagementLicenseSeasonStatus(swimmer.licenseSeasonStatus, "to_check");
+  const sourceType = cleanText(source.type || "engagement").slice(0, 40) || "engagement";
   return cleanFirestoreValue({
     swimmerIndexId: cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80),
     swimmerId: cleanText(swimmer.swimmerId).slice(0, 80),
@@ -3930,13 +3982,24 @@ function engagementSwimmerLicensePayload(swimmer = {}, context = {}, source = {}
     clubId: cleanText(context.clubId || swimmer.clubId).slice(0, 40),
     clubName: cleanText(context.clubName || swimmer.clubName).slice(0, 140),
     licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
-    verificationStatus: "pending",
+    verificationStatus,
+    verificationSource: cleanText(source.verificationSource || (sourceType === "admin_import" ? "admin_import" : "club")).slice(0, 40),
+    licenseSeasonLabel: season.label,
+    licenseSeasonStatus: seasonStatus,
+    licenseSeasons: {
+      [season.label]: {
+        status: seasonStatus,
+        updatedAt: collectedAt,
+        updatedBy: cleanText(context.uid).slice(0, 128),
+        source: sourceType
+      }
+    },
     source: {
-      type: "engagement",
+      type: sourceType,
       competitionId: cleanText(source.competitionId).slice(0, 128),
       clubId: cleanText(context.clubId).slice(0, 40),
       uid: cleanText(context.uid).slice(0, 128),
-      collectedAt: cleanText(source.collectedAt).slice(0, 40)
+      collectedAt
     }
   });
 }
@@ -3947,6 +4010,8 @@ function engagementClubEntryItem(doc, fallback = {}) {
   const officials = Array.isArray(data.officials) ? data.officials : [];
   const swimmers = Array.isArray(data.swimmers) ? data.swimmers : [];
   const relays = Array.isArray(data.relays) ? data.relays : [];
+  const documents = data.documents && typeof data.documents === "object" ? data.documents : {};
+  const clubRecapPdf = cleanEngagementDocumentMetadata(documents.clubRecapPdf || {});
   return {
     id: doc?.id || engagementClubEntryId(data.competitionId, data.clubId),
     competitionId: cleanText(data.competitionId).slice(0, 128),
@@ -3985,6 +4050,7 @@ function engagementClubEntryItem(doc, fallback = {}) {
         licenseNumber: cleanText(member.licenseNumber).slice(0, 60)
       })).filter((member) => member.swimmerIndexId)
     })).filter((relay) => relay.eventCode && relay.category),
+    documents: clubRecapPdf ? { clubRecapPdf } : {},
     teamLeaderComplete: engagementTeamLeaderComplete(teamLeader),
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
   };
@@ -4047,6 +4113,83 @@ function engagementPdfFileName(value) {
     .replace(/^-+|-+$/g, "")
     .toLowerCase()
     .slice(0, 80) || "engagements";
+}
+
+function cleanEngagementDocumentMetadata(raw = {}) {
+  const storagePath = cleanText(raw.storagePath).slice(0, 260);
+  const status = cleanText(raw.status);
+  if (!storagePath && status !== "generated") return null;
+  return cleanFirestoreValue({
+    status: status === "generated" ? "generated" : "pending",
+    type: cleanText(raw.type || "clubRecapPdf").slice(0, 60),
+    fileName: cleanText(raw.fileName).slice(0, 180),
+    contentType: cleanText(raw.contentType || "application/pdf").slice(0, 80),
+    storagePath,
+    size: Math.max(0, Math.trunc(Number(raw.size) || 0)),
+    generatedAt: cleanText(raw.generatedAt).slice(0, 40),
+    sourceUpdatedAt: cleanText(raw.sourceUpdatedAt).slice(0, 40),
+    sourceHash: cleanText(raw.sourceHash).slice(0, 80),
+    competitionId: cleanText(raw.competitionId).slice(0, 128),
+    clubId: cleanText(raw.clubId).slice(0, 40)
+  });
+}
+
+function engagementCompetitionDocumentsMetadata(raw = {}) {
+  const documents = raw && typeof raw === "object" ? raw : {};
+  const clubRecapPdf = cleanEngagementDocumentMetadata(documents.clubRecapPdf || {});
+  return cleanFirestoreValue({
+    ...(clubRecapPdf ? { clubRecapPdf } : {}),
+    entriesTxt: documents.entriesTxt && typeof documents.entriesTxt === "object"
+      ? {
+          status: cleanText(documents.entriesTxt.status) === "generated" ? "generated" : cleanText(documents.entriesTxt.status) === "sent" ? "sent" : "pending",
+          generatedAt: cleanText(documents.entriesTxt.generatedAt).slice(0, 40)
+        }
+      : undefined,
+    clubRecapEmails: documents.clubRecapEmails && typeof documents.clubRecapEmails === "object"
+      ? {
+          status: cleanText(documents.clubRecapEmails.status) === "sent" ? "sent" : cleanText(documents.clubRecapEmails.status) === "generated" ? "generated" : "pending",
+          generatedAt: cleanText(documents.clubRecapEmails.generatedAt).slice(0, 40)
+        }
+      : undefined
+  });
+}
+
+function engagementClubRecapPdfStoragePath(competitionId, clubId) {
+  return [
+    ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX,
+    engagementPdfFileName(competitionId),
+    "clubs",
+    engagementPdfFileName(clubId),
+    "recap.pdf"
+  ].join("/");
+}
+
+function engagementClubRecapPdfSourceHash(competition = {}, entry = {}) {
+  return stableHash(JSON.stringify({
+    competition: {
+      id: competition.id,
+      name: competition.name,
+      date: competition.date,
+      endDate: competition.endDate,
+      location: competition.location,
+      level: competition.level,
+      regionId: competition.regionId,
+      poolLength: competition.poolLength,
+      timingType: competition.timingType,
+      entryDeadlineAt: competition.entryDeadlineAt,
+      fees: competition.fees
+    },
+    entry: {
+      clubId: entry.clubId,
+      clubName: entry.clubName,
+      regionId: entry.regionId,
+      teamLeader: entry.teamLeader,
+      officials: entry.officials,
+      swimmers: entry.swimmers,
+      relays: entry.relays,
+      updatedAt: entry.updatedAt
+    }
+  }));
 }
 
 function engagementPdfEventLabel(code) {
@@ -4136,6 +4279,7 @@ function engagementCompetitionEntrySummaryItem(entry = {}) {
     swimmerCount: stats.swimmerCount || Math.max(0, Math.trunc(Number(entry.swimmerCount) || 0)),
     individualCount: stats.individualCount || Math.max(0, Math.trunc(Number(entry.individualCount) || 0)),
     relayCount: stats.relayCount || Math.max(0, Math.trunc(Number(entry.relayCount) || 0)),
+    recapPdf: cleanEngagementDocumentMetadata(entry.documents?.clubRecapPdf || {}) || undefined,
     updatedAt: cleanText(entry.updatedAt).slice(0, 40)
   });
 }
@@ -4463,6 +4607,107 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
   };
 }
 
+async function readStoredEngagementClubRecapPdf(document = {}) {
+  const storagePath = cleanText(document.storagePath);
+  if (!storagePath) return null;
+  const [buffer] = await admin.storage().bucket().file(storagePath).download();
+  return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+}
+
+async function saveEngagementClubRecapPdfDocument(competition = {}, entry = {}, pdf = {}, sourceHash = "") {
+  const db = admin.firestore();
+  const generatedAt = cleanText(pdf.generatedAt) || new Date().toISOString();
+  const storagePath = engagementClubRecapPdfStoragePath(competition.id || entry.competitionId, entry.clubId);
+  const fileName = cleanText(pdf.fileName) || "recap-engagements-livepalmes.pdf";
+  const buffer = Buffer.isBuffer(pdf.buffer) ? pdf.buffer : Buffer.from(pdf.buffer || []);
+  await admin.storage().bucket().file(storagePath).save(buffer, {
+    resumable: false,
+    contentType: "application/pdf",
+    metadata: {
+      cacheControl: "private, max-age=0, no-transform",
+      metadata: {
+        competitionId: cleanText(competition.id || entry.competitionId).slice(0, 128),
+        clubId: cleanText(entry.clubId).slice(0, 40),
+        generatedAt,
+        sourceHash: cleanText(sourceHash).slice(0, 80)
+      }
+    }
+  });
+  const document = cleanEngagementDocumentMetadata({
+    status: "generated",
+    type: "clubRecapPdf",
+    fileName,
+    contentType: "application/pdf",
+    storagePath,
+    size: buffer.length,
+    generatedAt,
+    sourceUpdatedAt: entry.updatedAt,
+    sourceHash,
+    competitionId: competition.id || entry.competitionId,
+    clubId: entry.clubId
+  });
+  const summaryEntry = {
+    ...entry,
+    documents: {
+      ...(entry.documents || {}),
+      clubRecapPdf: document
+    }
+  };
+  const batch = db.batch();
+  batch.set(db.collection("engagementClubEntries").doc(engagementClubEntryId(entry.competitionId, entry.clubId)), {
+    documents: {
+      clubRecapPdf: document
+    }
+  }, { merge: true });
+  batch.set(db.collection("engagementCompetitions").doc(entry.competitionId), {
+    documents: {
+      clubRecapPdf: {
+        status: "generated",
+        generatedAt,
+        updatedAt: generatedAt
+      }
+    }
+  }, { merge: true });
+  upsertEngagementCompetitionEntrySummary(batch, db, summaryEntry, generatedAt);
+  await batch.commit();
+  return document;
+}
+
+async function getOrCreateEngagementClubRecapPdf(competitionSnapshot, entrySnapshot, options = {}) {
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const entry = engagementClubEntryItem(entrySnapshot);
+  const sourceHash = engagementClubRecapPdfSourceHash(competition, entry);
+  const existingDocument = entry.documents?.clubRecapPdf || null;
+  if (options.force !== true && existingDocument?.storagePath && existingDocument.sourceHash === sourceHash) {
+    try {
+      const buffer = await readStoredEngagementClubRecapPdf(existingDocument);
+      if (buffer?.length) {
+        return {
+          buffer,
+          generatedAt: existingDocument.generatedAt,
+          fileName: existingDocument.fileName || "recap-engagements-livepalmes.pdf",
+          document: existingDocument,
+          fromStorage: true
+        };
+      }
+    } catch (error) {
+      console.warn("engagement recap pdf storage read failed", {
+        competitionId: entry.competitionId,
+        clubId: entry.clubId,
+        storagePath: existingDocument.storagePath,
+        message: error?.message || String(error)
+      });
+    }
+  }
+  const pdf = await buildEngagementClubRecapPdf(competition, entry);
+  const document = await saveEngagementClubRecapPdfDocument(competition, entry, pdf, sourceHash);
+  return {
+    ...pdf,
+    document,
+    fromStorage: false
+  };
+}
+
 function cleanEngagementClubPerson(raw = {}, context = {}) {
   const firstName = cleanText(raw.firstName).slice(0, 80);
   const lastName = cleanText(raw.lastName).slice(0, 80);
@@ -4628,6 +4873,7 @@ function engagementClubSwimmerItem(doc) {
   const firstName = cleanText(data.firstName).slice(0, 80);
   const lastName = cleanText(data.lastName).slice(0, 80);
   const name = cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
+  const licenseSeason = engagementLicenseSeasonState(data);
   return cleanFirestoreValue({
     id: doc.id,
     swimmerIndexId: doc.id,
@@ -4644,6 +4890,9 @@ function engagementClubSwimmerItem(doc) {
     club: cleanText(data.club).slice(0, 60),
     clubName: cleanText(data.clubName).slice(0, 140),
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(data.licenseVerificationStatus || data.verificationStatus, "pending"),
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: licenseSeason.status,
     latestDate: cleanIsoDate(data.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(data.performanceCount) || 0)),
     sourceIds: Array.isArray(data.sourceIds) ? data.sourceIds.map((id) => cleanText(id).slice(0, 80)).filter(Boolean).slice(0, 20) : []
@@ -4656,6 +4905,7 @@ function engagementReferenceSwimmerItem(raw = {}) {
   const lastName = cleanText(raw.lastName).slice(0, 80);
   const name = cleanText(raw.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
   const birthDate = cleanIsoDate(raw.birthDate);
+  const licenseSeason = engagementLicenseSeasonState(raw);
   return cleanFirestoreValue({
     id: swimmerId,
     swimmerIndexId: swimmerId,
@@ -4672,6 +4922,9 @@ function engagementReferenceSwimmerItem(raw = {}) {
     club: cleanText(raw.club).slice(0, 60),
     clubName: cleanText(raw.clubName).slice(0, 140),
     licenseNumber: cleanText(raw.licenseNumber).slice(0, 60),
+    licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(raw.licenseVerificationStatus || raw.verificationStatus, "pending"),
+    licenseSeasonLabel: licenseSeason.label,
+    licenseSeasonStatus: licenseSeason.status,
     latestDate: cleanIsoDate(raw.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(raw.performanceCount) || 0)),
     sourceIds: swimmerId ? [swimmerId] : []
@@ -4724,11 +4977,14 @@ async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
     ...engagementReferenceClubSwimmers(clubId, limit)
   ], limit).map((swimmer) => {
     const legacyLicense = legacyLicenses.get(swimmer.swimmerIndexId);
-    return legacyLicense?.licenseNumber && !swimmer.licenseNumber
+    return legacyLicense?.licenseNumber
       ? {
           ...swimmer,
           licenseNumber: legacyLicense.licenseNumber,
-          licenseVerificationStatus: legacyLicense.verificationStatus || ""
+          licenseVerificationStatus: legacyLicense.verificationStatus || "pending",
+          licenseSeasonLabel: legacyLicense.licenseSeasonLabel,
+          licenseSeasonStatus: legacyLicense.licenseSeasonStatus,
+          licenseSeasons: legacyLicense.licenseSeasons
         }
       : swimmer;
   }));
@@ -5042,21 +5298,23 @@ exports.generateEngagementClubRecapPdf = onCall(CALLABLE_OPTIONS, async (request
   if (entryData.clubId !== context.clubId) {
     throw new HttpsError("permission-denied", "Inscription hors perimetre club.");
   }
-  const { buffer, generatedAt, fileName } = await buildEngagementClubRecapPdf(
-    engagementCompetitionDetailItem(competition),
-    entryData
-  );
+  const { buffer, generatedAt, fileName, document, fromStorage } = await getOrCreateEngagementClubRecapPdf(competition, entry, {
+    force: request.data?.force === true
+  });
   await writeAuditLog("engagementClubEntry.recapPdfGenerated", context.uid, {
     competitionId,
     clubId: context.clubId,
     fileName,
-    size: buffer.length
+    size: buffer.length,
+    fromStorage
   });
   return {
     ok: true,
     fileName,
     contentType: "application/pdf",
     generatedAt,
+    document,
+    fromStorage,
     pdfBase64: buffer.toString("base64")
   };
 });
@@ -5120,22 +5378,93 @@ exports.generateEngagementClubRecapPdfForAdmin = onCall(CALLABLE_OPTIONS, async 
   if (entryData.clubId !== clubId) {
     throw new HttpsError("permission-denied", "Inscription club incoherente.");
   }
-  const { buffer, generatedAt, fileName } = await buildEngagementClubRecapPdf(
-    engagementCompetitionDetailItem(competition),
-    entryData
-  );
+  const { buffer, generatedAt, fileName, document, fromStorage } = await getOrCreateEngagementClubRecapPdf(competition, entry, {
+    force: request.data?.force === true
+  });
   await writeAuditLog("engagementCompetition.clubRecapPdfGeneratedByAdmin", context.uid, {
     competitionId,
     clubId,
     fileName,
-    size: buffer.length
+    size: buffer.length,
+    fromStorage
   });
   return {
     ok: true,
     fileName,
     contentType: "application/pdf",
     generatedAt,
+    document,
+    fromStorage,
     pdfBase64: buffer.toString("base64")
+  };
+});
+
+exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  let generatedCount = 0;
+  let reusedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+  const entries = [];
+  for (const entryDoc of entriesSnapshot.docs) {
+    const entry = engagementClubEntryItem(entryDoc);
+    if (!entry.clubId || !entry.teamLeaderComplete) {
+      skippedCount += 1;
+      continue;
+    }
+    try {
+      const result = await getOrCreateEngagementClubRecapPdf(competition, entryDoc, {
+        force: request.data?.force === true
+      });
+      if (result.fromStorage) reusedCount += 1;
+      else generatedCount += 1;
+      entries.push(engagementCompetitionEntrySummaryItem({
+        ...entry,
+        documents: {
+          ...(entry.documents || {}),
+          clubRecapPdf: result.document
+        }
+      }));
+    } catch (error) {
+      errorCount += 1;
+      console.warn("engagement recap pdf generation failed", {
+        competitionId,
+        clubId: entry.clubId,
+        message: error?.message || String(error)
+      });
+    }
+  }
+  await writeAuditLog("engagementCompetition.clubRecapPdfsGenerated", context.uid, {
+    competitionId,
+    entryCount: entriesSnapshot.size,
+    generatedCount,
+    reusedCount,
+    skippedCount,
+    errorCount
+  });
+  return {
+    ok: true,
+    competitionId,
+    entryCount: entriesSnapshot.size,
+    generatedCount,
+    reusedCount,
+    skippedCount,
+    errorCount,
+    entries
   };
 });
 
@@ -5589,9 +5918,6 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       allowedIndividualEventCodes
     );
     if (!swimmerIndexId || seen.has(swimmerIndexId)) return;
-    if (ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseNumber) {
-      throw new HttpsError("invalid-argument", "Numero de licence obligatoire pour chaque nageur.");
-    }
     const requestedIndividualCodes = Array.isArray(rawSwimmer?.individualEventCodes)
       ? rawSwimmer.individualEventCodes.map((code) => cleanText(code).toUpperCase().replace(/\s+/g, "")).filter(Boolean)
       : (Array.isArray(rawSwimmer?.individualEntries) ? rawSwimmer.individualEntries.map((entry) => cleanText(entry?.eventCode || entry?.code).toUpperCase().replace(/\s+/g, "")).filter(Boolean) : []);
@@ -5605,6 +5931,9 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
+  const db = admin.firestore();
+  const knownLicenses = await engagementLegacySwimmerLicensesByClub(db, context.clubId);
+
   const referenceSwimmersById = new Map();
   intranapSwimmersIndex.forEach((item) => {
     const swimmer = engagementReferenceSwimmerItem(item);
@@ -5616,10 +5945,10 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     ].map(cleanText).filter(Boolean).forEach((id) => referenceSwimmersById.set(id, swimmer));
   });
   const firestoreSwimmers = uniqueSwimmers.filter((swimmer) => swimmer.source !== "reference");
-  const firestoreRefs = firestoreSwimmers.map((swimmer) => admin.firestore()
+  const firestoreRefs = firestoreSwimmers.map((swimmer) => db
     .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
     .doc(swimmer.swimmerIndexId));
-  const firestoreDocs = firestoreRefs.length ? await admin.firestore().getAll(...firestoreRefs) : [];
+  const firestoreDocs = firestoreRefs.length ? await db.getAll(...firestoreRefs) : [];
   const firestoreDocsByRequestedId = new Map();
   firestoreDocs.forEach((doc, index) => {
     const requestedSwimmer = firestoreSwimmers[index];
@@ -5648,6 +5977,21 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     if (swimmer.clubId !== context.clubId) {
       throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
     }
+    const knownLicense = knownLicenses.get(swimmer.swimmerIndexId) || knownLicenses.get(requestedSwimmer.swimmerIndexId);
+    const storedLicenseNumber = cleanText(knownLicense?.licenseNumber || swimmer.licenseNumber).slice(0, 60);
+    if (storedLicenseNumber && requestedSwimmer.licenseNumber && storedLicenseNumber !== requestedSwimmer.licenseNumber) {
+      throw new HttpsError("failed-precondition", "Le numero de licence deja enregistre ne peut pas etre modifie par le club.");
+    }
+    const licenseNumber = storedLicenseNumber || requestedSwimmer.licenseNumber;
+    if (ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseNumber) {
+      throw new HttpsError("invalid-argument", "Numero de licence obligatoire pour chaque nageur.");
+    }
+    const licenseVerificationStatus = storedLicenseNumber
+      ? cleanEngagementLicenseVerificationStatus(knownLicense?.verificationStatus || swimmer.licenseVerificationStatus, "pending")
+      : "pending";
+    const licenseSeason = storedLicenseNumber && knownLicense
+      ? engagementLicenseSeasonState(knownLicense)
+      : engagementLicenseSeasonState(swimmer);
     const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
       { ...swimmer, source: requestedSwimmer.source },
       requestedSwimmer.individualEntries,
@@ -5657,7 +6001,11 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       ...swimmer,
       swimmerIndexId: swimmer.id,
       source: requestedSwimmer.source,
-      licenseNumber: requestedSwimmer.licenseNumber,
+      licenseNumber,
+      licenseVerificationStatus,
+      licenseSeasonLabel: licenseSeason.label,
+      licenseSeasonStatus: licenseSeason.status,
+      licenseLocked: Boolean(storedLicenseNumber),
       individualEntries
     });
   }));
@@ -5739,22 +6087,34 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   }, { merge: true });
   swimmers.forEach((swimmer) => {
     if (!swimmer.licenseNumber) return;
-    const swimmerCollection = swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION;
-    const swimmerRef = admin.firestore().collection(swimmerCollection).doc(swimmer.swimmerIndexId);
-    batch.set(swimmerRef, {
-      licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
-      licenseUpdatedAt: now,
-      licenseUpdatedBy: context.uid,
-      updatedAt: now,
-      updatedBy: context.uid
-    }, { merge: true });
-    const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
-    const licensePayload = {
-      ...engagementSwimmerLicensePayload(swimmer, context, { competitionId, collectedAt: now }),
-      updatedAt: now,
-      updatedBy: context.uid
-    };
-    batch.set(licenseRef, licensePayload, { merge: true });
+    if (!swimmer.licenseLocked && swimmer.source !== "reference") {
+      const swimmerCollection = swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION;
+      const swimmerRef = admin.firestore().collection(swimmerCollection).doc(swimmer.swimmerIndexId);
+      batch.set(swimmerRef, {
+        licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+        licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(swimmer.licenseVerificationStatus, "pending"),
+        licenseSeasonLabel: cleanText(swimmer.licenseSeasonLabel).slice(0, 20),
+        licenseSeasonStatus: cleanEngagementLicenseSeasonStatus(swimmer.licenseSeasonStatus, "to_check"),
+        licenseUpdatedAt: now,
+        licenseUpdatedBy: context.uid,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    }
+    if (!swimmer.licenseLocked) {
+      const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
+      const licensePayload = {
+        ...engagementSwimmerLicensePayload(swimmer, context, {
+          type: "engagement",
+          verificationSource: "club",
+          competitionId,
+          collectedAt: now
+        }),
+        updatedAt: now,
+        updatedBy: context.uid
+      };
+      batch.set(licenseRef, licensePayload, { merge: true });
+    }
     upsertEngagementClubRosterSwimmer(batch, admin.firestore(), swimmer, now);
   });
   await batch.commit();
