@@ -2063,15 +2063,37 @@
       updateEngagementClubOfficialsSummary();
       return;
     }
-    mount.innerHTML = officials.map((person) => `
-      <label class="admin-engagements-club-official-row">
-        <input type="checkbox" data-engagement-club-official-id="${escapeHtml(person.id)}" ${selectedIds.has(person.id) ? "checked" : ""}>
-        <span>
-          <strong>${escapeHtml([person.firstName, person.lastName].filter(Boolean).join(" ") || "Officiel sans nom")}</strong>
-          <small>Licence ${escapeHtml(person.licenseNumber || "-")}</small>
-        </span>
-      </label>
-    `).join("");
+    const renderOfficialRow = (person) => {
+      const selected = selectedIds.has(person.id);
+      const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "Officiel sans nom";
+      return `
+        <label class="admin-engagements-club-official-row" role="row" data-selected="${selected ? "true" : "false"}">
+          <span role="cell">
+            <input type="checkbox" data-engagement-club-official-id="${escapeHtml(person.id)}" ${selected ? "checked" : ""}>
+            <strong>${escapeHtml(name)}</strong>
+          </span>
+          <span role="cell">${escapeHtml(person.licenseNumber || "-")}</span>
+        </label>
+      `;
+    };
+    const renderOfficialTable = (rows, label) => `
+      <section class="admin-engagements-club-officials-section">
+        <h5>${escapeHtml(label)} <span>${rows.length}</span></h5>
+        <div class="admin-engagements-club-officials-table" role="table" aria-label="${escapeHtml(label)}">
+          <div class="admin-engagements-club-officials-head" role="row">
+            <span role="columnheader">Officiel</span>
+            <span role="columnheader">Licence</span>
+          </div>
+          ${rows.map(renderOfficialRow).join("")}
+        </div>
+      </section>
+    `;
+    const selectedOfficials = officials.filter((person) => selectedIds.has(person.id));
+    const availableOfficials = officials.filter((person) => !selectedIds.has(person.id));
+    mount.innerHTML = `
+      ${selectedOfficials.length ? renderOfficialTable(selectedOfficials, "Officiels selectionnes") : ""}
+      ${availableOfficials.length ? renderOfficialTable(availableOfficials, selectedOfficials.length ? "Autres officiels du club" : "Officiels du club") : ""}
+    `;
     setEngagementClubFormControlsLocked(elements.engagementsClubOfficialsForm, false);
     updateEngagementClubOfficialsSummary();
   }
@@ -2902,7 +2924,7 @@
       const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds : (relay.members || []).map((member) => member.swimmerIndexId).filter(Boolean);
       const relayLegs = engagementRelayLegCount(event);
       return `
-        <div class="admin-engagements-club-relay-row" data-engagement-club-relay-row data-engagement-club-relay-id="${escapeHtml(relayId)}">
+        <div class="admin-engagements-club-relay-row" data-engagement-club-relay-row data-engagement-club-relay-id="${escapeHtml(relayId)}" data-gender="${escapeHtml(genderMode)}">
           <select data-engagement-club-relay-event aria-label="Relais">
             ${relayEvents.map((option) => `<option value="${escapeHtml(option.code)}" ${option.code === event.code ? "selected" : ""}>${escapeHtml(option.shortLabel || option.code)}</option>`).join("")}
           </select>
@@ -2912,7 +2934,7 @@
           <select data-engagement-club-relay-gender aria-label="Sexe ou mixite">
             ${genderOptions.map(([mode, label]) => `<option value="${escapeHtml(mode)}" ${mode === genderMode ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
           </select>
-          <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps obligatoire" data-engagement-club-relay-time value="${escapeHtml(relay.manualEntryTime || relay.entryTime || "")}" aria-label="Temps d'engagement">
+          <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-relay-time value="${escapeHtml(relay.manualEntryTime || relay.entryTime || "")}" aria-label="Temps d'engagement">
           <div class="admin-engagements-club-relay-members">
             ${Array.from({ length: relayLegs }, (_, memberIndex) => {
               const expectedSex = engagementRelayExpectedMemberSex(genderMode, memberIndex);
@@ -2924,7 +2946,7 @@
                   !engagementRelayMemberAlreadyUsed(swimmer.swimmerIndexId, rows, index, memberIndex, event);
               });
               return `
-              <select data-engagement-club-relay-member aria-label="${escapeHtml(engagementRelayLegPlaceholder(genderMode, memberIndex))}">
+              <select data-engagement-club-relay-member data-expected-sex="${escapeHtml(expectedSex)}" aria-label="${escapeHtml(engagementRelayLegPlaceholder(genderMode, memberIndex))}">
                 <option value="">${escapeHtml(memberOptions.length ? engagementRelayLegPlaceholder(genderMode, memberIndex) : engagementRelayNoMemberOptionLabel(expectedSex, memberIndex))}</option>
                 ${memberOptions.map((swimmer) => {
                   const name = engagementRelayMemberOptionLabel(swimmer, competitionDate);
@@ -2934,7 +2956,7 @@
             `;
             }).join("")}
           </div>
-          <button type="button" class="ghost-button compact" data-engagement-club-relay-remove aria-label="Supprimer le relais">Supprimer</button>
+          <button type="button" class="ghost-button compact admin-engagements-club-relay-remove" data-engagement-club-relay-remove aria-label="Supprimer le relais" title="Supprimer le relais">×</button>
         </div>
       `;
     }).join("")}
