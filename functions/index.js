@@ -6,6 +6,7 @@ const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
@@ -15,6 +16,20 @@ admin.initializeApp();
 admin.firestore().settings({ ignoreUndefinedProperties: true });
 
 const REGION = "europe-west1";
+const LIVEPALMES_SMTP_HOST = defineSecret("LIVEPALMES_SMTP_HOST");
+const LIVEPALMES_SMTP_PORT = defineSecret("LIVEPALMES_SMTP_PORT");
+const LIVEPALMES_SMTP_USER = defineSecret("LIVEPALMES_SMTP_USER");
+const LIVEPALMES_SMTP_PASS = defineSecret("LIVEPALMES_SMTP_PASS");
+const LIVEPALMES_SMTP_SECURE = defineSecret("LIVEPALMES_SMTP_SECURE");
+const LIVEPALMES_MAIL_FROM = defineSecret("LIVEPALMES_MAIL_FROM");
+const ENGAGEMENT_MAIL_SECRETS = [
+  LIVEPALMES_SMTP_HOST,
+  LIVEPALMES_SMTP_PORT,
+  LIVEPALMES_SMTP_USER,
+  LIVEPALMES_SMTP_PASS,
+  LIVEPALMES_SMTP_SECURE,
+  LIVEPALMES_MAIL_FROM
+];
 const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
@@ -43,6 +58,7 @@ const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
+const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
@@ -4721,13 +4737,21 @@ function engagementMailStatusLabel(status) {
   }[cleanText(status)] || "Brouillon";
 }
 
+function engagementMailSecretValue(secret, envName) {
+  try {
+    return String(secret.value() || process.env[envName] || "");
+  } catch (error) {
+    return String(process.env[envName] || "");
+  }
+}
+
 function engagementMailSmtpConfig() {
-  const host = cleanText(process.env.LIVEPALMES_SMTP_HOST);
-  const port = Number(process.env.LIVEPALMES_SMTP_PORT || 587);
-  const user = cleanText(process.env.LIVEPALMES_SMTP_USER);
-  const pass = String(process.env.LIVEPALMES_SMTP_PASS || "");
-  const secureSetting = cleanText(process.env.LIVEPALMES_SMTP_SECURE).toLowerCase();
-  const fromEmail = normalizeEmail(process.env.LIVEPALMES_MAIL_FROM || "livepalmes@nap-ffessm.fr");
+  const host = cleanText(engagementMailSecretValue(LIVEPALMES_SMTP_HOST, "LIVEPALMES_SMTP_HOST"));
+  const port = Number(engagementMailSecretValue(LIVEPALMES_SMTP_PORT, "LIVEPALMES_SMTP_PORT") || 587);
+  const user = cleanText(engagementMailSecretValue(LIVEPALMES_SMTP_USER, "LIVEPALMES_SMTP_USER"));
+  const pass = engagementMailSecretValue(LIVEPALMES_SMTP_PASS, "LIVEPALMES_SMTP_PASS");
+  const secureSetting = cleanText(engagementMailSecretValue(LIVEPALMES_SMTP_SECURE, "LIVEPALMES_SMTP_SECURE")).toLowerCase();
+  const fromEmail = normalizeEmail(engagementMailSecretValue(LIVEPALMES_MAIL_FROM, "LIVEPALMES_MAIL_FROM") || "livepalmes@nap-ffessm.fr");
   const missing = [];
   if (!host) missing.push("LIVEPALMES_SMTP_HOST");
   if (!Number.isFinite(port) || port <= 0) missing.push("LIVEPALMES_SMTP_PORT");
@@ -5901,7 +5925,7 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
   };
 });
 
-exports.sendEngagementPreparedEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const requestedType = cleanText(request.data?.type).slice(0, 80);
