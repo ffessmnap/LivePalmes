@@ -6,6 +6,7 @@ const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
@@ -64,6 +65,14 @@ const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
+const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
+  region: REGION,
+  schedule: "every 15 minutes",
+  timeZone: "Europe/Paris",
+  timeoutSeconds: 540,
+  memory: "1GiB",
+  secrets: ENGAGEMENT_MAIL_SECRETS
+};
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
@@ -75,6 +84,8 @@ const PIN_MAX_FAILED_ATTEMPTS = 5;
 const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
 const LIVEPALMES_STORAGE_BUCKET = "livepalmes.firebasestorage.app";
+const ENGAGEMENT_CLOSURE_BATCH_LIMIT = 5;
+const ENGAGEMENT_CLOSURE_SCAN_LIMIT = 100;
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
@@ -5946,19 +5957,9 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
   };
 });
 
-exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (request) => {
-  const context = await engagementAccessContext(request);
-  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
-  if (!competitionId) {
-    throw new HttpsError("invalid-argument", "Competition requise.");
-  }
-  const db = admin.firestore();
-  const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
-  if (!competitionSnapshot.exists) {
-    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
-  }
-  assertCanManageEngagementCompetition(context, competitionSnapshot.data() || {});
+async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, options = {}) {
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const competitionId = cleanText(competition.id).slice(0, 128);
   const recipientsByClub = engagementRecipientsByClub(await engagementActiveClubMailRecipients(db));
   const entriesSnapshot = await db.collection("engagementClubEntries")
     .where("competitionId", "==", competitionId)
@@ -5981,7 +5982,7 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
     let pdf = null;
     try {
       pdf = await getOrCreateEngagementClubRecapPdf(competitionSnapshot, entryDoc, {
-        force: request.data?.forcePdf === true
+        force: options.forcePdf === true
       });
     } catch (error) {
       errorCount += 1;
@@ -6016,18 +6017,7 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
       if (job) jobs.push(job);
     }
   }
-  await writeAuditLog("engagementCompetition.clubRecapEmailsPrepared", context.uid, {
-    competitionId,
-    clubEntryCount: entriesSnapshot.size,
-    skippedClubCount,
-    jobCount: jobs.length,
-    pdfGeneratedCount,
-    pdfReusedCount,
-    errorCount,
-    mailStatus: "blocked_missing_config"
-  });
   return {
-    ok: true,
     competitionId,
     clubEntryCount: entriesSnapshot.size,
     skippedClubCount,
@@ -6035,25 +6025,47 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
     pdfGeneratedCount,
     pdfReusedCount,
     errorCount,
+    mailStatus: engagementMailPreparedStatus(),
     errors,
     jobs
   };
-});
+}
 
-exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
-  const requestedType = cleanText(request.data?.type).slice(0, 80);
-  const limit = Math.max(1, Math.min(Number(request.data?.limit || 500) || 500, 500));
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
   const db = admin.firestore();
-  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
-  if (!competition.exists) {
+  const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competitionSnapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  assertCanManageEngagementCompetition(context, competition.data() || {});
+  assertCanManageEngagementCompetition(context, competitionSnapshot.data() || {});
+  const result = await prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, {
+    forcePdf: request.data?.forcePdf === true
+  });
+  await writeAuditLog("engagementCompetition.clubRecapEmailsPrepared", context.uid, {
+    competitionId,
+    clubEntryCount: result.clubEntryCount,
+    skippedClubCount: result.skippedClubCount,
+    jobCount: result.jobCount,
+    pdfGeneratedCount: result.pdfGeneratedCount,
+    pdfReusedCount: result.pdfReusedCount,
+    errorCount: result.errorCount,
+    mailStatus: result.mailStatus
+  });
+  return {
+    ok: true,
+    ...result
+  };
+});
+
+async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context = {}, options = {}) {
+  const competitionId = cleanText(competitionSnapshot.id).slice(0, 128);
+  const requestedType = cleanText(options.type).slice(0, 80);
+  const limit = Math.max(1, Math.min(Number(options.limit || 500) || 500, 500));
   const config = engagementMailSmtpConfig();
   if (!config.ready) {
     throw new HttpsError(
@@ -6087,21 +6099,210 @@ exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, 
     else if (job.status === "failed") errorCount += 1;
     jobs.push(job);
   }
-  await writeAuditLog("engagementCompetition.preparedEmailsSent", context.uid, {
-    competitionId,
-    requestedType,
-    attemptedCount: candidates.length,
-    sentCount,
-    errorCount
-  });
   return {
-    ok: true,
     competitionId,
     attemptedCount: candidates.length,
     sentCount,
     errorCount,
     jobs
   };
+}
+
+exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const result = await sendEngagementPreparedEmailJobs(db, competition, context, {
+    type: request.data?.type,
+    limit: request.data?.limit
+  });
+  await writeAuditLog("engagementCompetition.preparedEmailsSent", context.uid, {
+    competitionId,
+    requestedType: cleanText(request.data?.type).slice(0, 80),
+    attemptedCount: result.attemptedCount,
+    sentCount: result.sentCount,
+    errorCount: result.errorCount
+  });
+  return {
+    ok: true,
+    ...result
+  };
+});
+
+function engagementClosureAutomationContext() {
+  return {
+    uid: "system:engagementClosureScheduler",
+    email: "livepalmes@nap-ffessm.fr",
+    national: true,
+    region: true,
+    regionId: ""
+  };
+}
+
+async function reserveEngagementCompetitionClosure(db, competitionRef, now) {
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(competitionRef);
+    if (!snapshot.exists) {
+      return { reserved: false, reason: "not-found" };
+    }
+    const data = snapshot.data() || {};
+    const entryStatus = cleanEngagementEntryStatus(data.entryStatus || data.status);
+    const deadline = cleanIsoDateTime(data.entryDeadlineAt);
+    if (entryStatus !== "open") {
+      return { reserved: false, reason: "not-open" };
+    }
+    if (!deadline || deadline > now) {
+      return { reserved: false, reason: "deadline-not-reached" };
+    }
+    transaction.set(competitionRef, {
+      entryStatus: "closed",
+      closureAutomationStatus: "processing",
+      closureAutomationStartedAt: now,
+      closureAutomationLastAttemptAt: now,
+      closureAutomationAttemptCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: now,
+      updatedBy: "system:engagementClosureScheduler"
+    }, { merge: true });
+    return {
+      reserved: true,
+      competition: engagementCompetitionDetailItem({
+        id: snapshot.id,
+        data: () => ({ ...data, entryStatus: "closed" })
+      })
+    };
+  });
+}
+
+async function processEngagementCompetitionAutomaticClosure(db, competitionSnapshot, now) {
+  const context = engagementClosureAutomationContext();
+  const competitionRef = competitionSnapshot.ref;
+  const reservation = await reserveEngagementCompetitionClosure(db, competitionRef, now);
+  if (!reservation.reserved) {
+    return {
+      competitionId: competitionSnapshot.id,
+      skipped: true,
+      reason: reservation.reason
+    };
+  }
+  const closedSnapshot = await competitionRef.get();
+  try {
+    const preparation = await prepareEngagementClubRecapEmailJobs(db, closedSnapshot, {
+      forcePdf: false
+    });
+    const sendResult = preparation.jobCount
+      ? await sendEngagementPreparedEmailJobs(db, closedSnapshot, context, {
+          type: "club_recap_pdf",
+          limit: 500
+        })
+      : {
+          competitionId: closedSnapshot.id,
+          attemptedCount: 0,
+          sentCount: 0,
+          errorCount: 0,
+          jobs: []
+        };
+    const completedAt = new Date().toISOString();
+    const status = preparation.errorCount || sendResult.errorCount
+      ? "completed_with_errors"
+      : "completed";
+    await competitionRef.set({
+      closureAutomationStatus: status,
+      closureAutomationCompletedAt: completedAt,
+      closureRecapEmailsPreparedAt: preparation.jobCount ? completedAt : "",
+      closureRecapEmailsSentAt: sendResult.attemptedCount ? completedAt : "",
+      closureAutomationSummary: cleanFirestoreValue({
+        clubEntryCount: preparation.clubEntryCount,
+        skippedClubCount: preparation.skippedClubCount,
+        jobCount: preparation.jobCount,
+        pdfGeneratedCount: preparation.pdfGeneratedCount,
+        pdfReusedCount: preparation.pdfReusedCount,
+        prepareErrorCount: preparation.errorCount,
+        attemptedMailCount: sendResult.attemptedCount,
+        sentMailCount: sendResult.sentCount,
+        sendErrorCount: sendResult.errorCount,
+        updatedAt: completedAt
+      }),
+      updatedAt: completedAt,
+      updatedBy: context.uid
+    }, { merge: true });
+    await writeAuditLog("engagementCompetition.closedAutomatically", context.uid, {
+      competitionId: closedSnapshot.id,
+      closureAutomationStatus: status,
+      clubEntryCount: preparation.clubEntryCount,
+      skippedClubCount: preparation.skippedClubCount,
+      jobCount: preparation.jobCount,
+      pdfGeneratedCount: preparation.pdfGeneratedCount,
+      pdfReusedCount: preparation.pdfReusedCount,
+      prepareErrorCount: preparation.errorCount,
+      attemptedMailCount: sendResult.attemptedCount,
+      sentMailCount: sendResult.sentCount,
+      sendErrorCount: sendResult.errorCount
+    });
+    return {
+      competitionId: closedSnapshot.id,
+      skipped: false,
+      status,
+      preparation,
+      sendResult
+    };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    await competitionRef.set({
+      closureAutomationStatus: "failed",
+      closureAutomationFailedAt: failedAt,
+      closureAutomationReason: cleanText(error?.message || error).slice(0, 220),
+      updatedAt: failedAt,
+      updatedBy: context.uid
+    }, { merge: true });
+    await writeAuditLog("engagementCompetition.automaticClosureFailed", context.uid, {
+      competitionId: closedSnapshot.id,
+      message: cleanText(error?.message || error).slice(0, 220)
+    });
+    return {
+      competitionId: closedSnapshot.id,
+      skipped: false,
+      status: "failed",
+      error: cleanText(error?.message || error).slice(0, 220)
+    };
+  }
+}
+
+exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
+  const db = admin.firestore();
+  const now = new Date().toISOString();
+  const snapshot = await db.collection("engagementCompetitions")
+    .where("entryStatus", "==", "open")
+    .limit(ENGAGEMENT_CLOSURE_SCAN_LIMIT)
+    .get();
+  const dueCompetitions = snapshot.docs
+    .filter((doc) => {
+      const deadline = cleanIsoDateTime((doc.data() || {}).entryDeadlineAt);
+      return deadline && deadline <= now;
+    })
+    .slice(0, ENGAGEMENT_CLOSURE_BATCH_LIMIT);
+  const results = [];
+  for (const competitionSnapshot of dueCompetitions) {
+    results.push(await processEngagementCompetitionAutomaticClosure(db, competitionSnapshot, now));
+  }
+  if (dueCompetitions.length || results.length) {
+    await writeAuditLog("engagementCompetition.automaticClosureSweep", "system:engagementClosureScheduler", {
+      checkedAt: now,
+      openCompetitionScanCount: snapshot.size,
+      dueCandidateCount: dueCompetitions.length,
+      processedCount: results.filter((result) => !result.skipped).length,
+      skippedCount: results.filter((result) => result.skipped).length,
+      failedCount: results.filter((result) => result.status === "failed").length
+    });
+  }
+  return null;
 });
 
 exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) => {
