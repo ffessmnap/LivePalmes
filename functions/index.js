@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
@@ -4720,6 +4721,40 @@ function engagementMailStatusLabel(status) {
   }[cleanText(status)] || "Brouillon";
 }
 
+function engagementMailSmtpConfig() {
+  const host = cleanText(process.env.LIVEPALMES_SMTP_HOST);
+  const port = Number(process.env.LIVEPALMES_SMTP_PORT || 587);
+  const user = cleanText(process.env.LIVEPALMES_SMTP_USER);
+  const pass = String(process.env.LIVEPALMES_SMTP_PASS || "");
+  const secureSetting = cleanText(process.env.LIVEPALMES_SMTP_SECURE).toLowerCase();
+  const fromEmail = normalizeEmail(process.env.LIVEPALMES_MAIL_FROM || "livepalmes@nap-ffessm.fr");
+  const missing = [];
+  if (!host) missing.push("LIVEPALMES_SMTP_HOST");
+  if (!Number.isFinite(port) || port <= 0) missing.push("LIVEPALMES_SMTP_PORT");
+  if (!user) missing.push("LIVEPALMES_SMTP_USER");
+  if (!pass) missing.push("LIVEPALMES_SMTP_PASS");
+  if (!fromEmail) missing.push("LIVEPALMES_MAIL_FROM");
+  return {
+    ready: !missing.length,
+    missing,
+    transport: {
+      host,
+      port,
+      secure: secureSetting ? secureSetting === "true" : port === 465,
+      auth: { user, pass }
+    },
+    fromEmail
+  };
+}
+
+function engagementMailPreparedStatus() {
+  return engagementMailSmtpConfig().ready ? "ready" : "blocked_missing_config";
+}
+
+function engagementMailPreparedReason() {
+  return engagementMailSmtpConfig().ready ? "" : "Configuration technique d'envoi mail non branchee.";
+}
+
 function engagementMailJobId(payload = {}) {
   return stableHash([
     cleanText(payload.type),
@@ -4743,8 +4778,9 @@ function engagementMailRecipientFromUserDoc(doc) {
 }
 
 async function engagementActiveClubMailRecipients(db) {
+  const clubCapabilityField = new admin.firestore.FieldPath("capabilities", "engagements.club.manage");
   const snapshot = await db.collection("users")
-    .where("capabilities.engagements.club.manage", "==", true)
+    .where(clubCapabilityField, "==", true)
     .limit(1000)
     .get();
   const recipientsByEmail = new Map();
@@ -4822,6 +4858,8 @@ function engagementMailJobItemFromData(data = {}, id = "") {
     subject: cleanText(data.subject).slice(0, 220),
     attachmentCount: Array.isArray(data.attachments) ? data.attachments.length : 0,
     reason: cleanText(data.reason).slice(0, 220),
+    sentAt: cleanText(data.sentAt).slice(0, 40),
+    failedAt: cleanText(data.failedAt).slice(0, 40),
     createdAt: cleanText(data.createdAt).slice(0, 40),
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
   });
@@ -4830,15 +4868,17 @@ function engagementMailJobItemFromData(data = {}, id = "") {
 async function upsertEngagementMailJob(payload = {}, now = "") {
   const id = engagementMailJobId(payload);
   if (!id || !normalizeEmail(payload.toEmail)) return null;
+  const status = engagementMailPreparedStatus();
   const job = cleanFirestoreValue({
     id,
     type: cleanText(payload.type).slice(0, 80),
-    status: "blocked_missing_config",
-    reason: "Configuration technique d'envoi mail non branchee.",
+    status,
+    reason: engagementMailPreparedReason(),
     fromEmail: "livepalmes@nap-ffessm.fr",
     toEmail: normalizeEmail(payload.toEmail).slice(0, 180),
     toName: cleanText(payload.toName).slice(0, 180),
     subject: cleanText(payload.subject).slice(0, 220),
+    textBody: cleanText(payload.text).slice(0, 5000),
     textPreview: cleanText(payload.text).slice(0, 1200),
     competitionId: cleanText(payload.competitionId).slice(0, 128),
     competitionName: cleanText(payload.competitionName).slice(0, 160),
@@ -4856,6 +4896,72 @@ async function upsertEngagementMailJob(payload = {}, now = "") {
   });
   await admin.firestore().collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set(job, { merge: true });
   return engagementMailJobItemFromData(job, id);
+}
+
+async function engagementMailAttachments(job = {}) {
+  const attachments = [];
+  for (const attachment of Array.isArray(job.attachments) ? job.attachments : []) {
+    const storagePath = cleanText(attachment.storagePath);
+    if (!storagePath) continue;
+    const buffer = await readStoredEngagementClubRecapPdf({ storagePath });
+    if (!buffer?.length) continue;
+    attachments.push({
+      filename: cleanText(attachment.fileName) || "document-livepalmes.pdf",
+      content: buffer,
+      contentType: cleanText(attachment.contentType) || "application/pdf"
+    });
+  }
+  return attachments;
+}
+
+async function sendEngagementMailJob(transporter, doc, config, context) {
+  const data = doc.data() || {};
+  const now = new Date().toISOString();
+  const toEmail = normalizeEmail(data.toEmail);
+  const subject = cleanText(data.subject).slice(0, 220);
+  const text = cleanText(data.textBody || data.textPreview).slice(0, 5000);
+  if (!toEmail || !subject || !text) {
+    const update = {
+      status: "failed",
+      reason: "Mail incomplet.",
+      failedAt: now,
+      updatedAt: now,
+      updatedBy: context.uid || ""
+    };
+    await doc.ref.set(update, { merge: true });
+    return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
+  }
+  try {
+    const info = await transporter.sendMail({
+      from: `LivePalmes <${config.fromEmail}>`,
+      to: toEmail,
+      subject,
+      text,
+      attachments: await engagementMailAttachments(data)
+    });
+    const update = cleanFirestoreValue({
+      status: "sent",
+      reason: "",
+      sentAt: now,
+      sentBy: context.uid || "",
+      sentByEmail: context.email || "",
+      providerMessageId: cleanText(info?.messageId).slice(0, 180),
+      updatedAt: now,
+      updatedBy: context.uid || ""
+    });
+    await doc.ref.set(update, { merge: true });
+    return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
+  } catch (error) {
+    const update = cleanFirestoreValue({
+      status: "failed",
+      reason: cleanText(error?.message || error).slice(0, 220),
+      failedAt: now,
+      updatedAt: now,
+      updatedBy: context.uid || ""
+    });
+    await doc.ref.set(update, { merge: true });
+    return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
+  }
 }
 
 function cleanEngagementClubPerson(raw = {}, context = {}) {
@@ -5791,6 +5897,70 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
     pdfReusedCount,
     errorCount,
     errors,
+    jobs
+  };
+});
+
+exports.sendEngagementPreparedEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  const requestedType = cleanText(request.data?.type).slice(0, 80);
+  const limit = Math.max(1, Math.min(Number(request.data?.limit || 100) || 100, 100));
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const config = engagementMailSmtpConfig();
+  if (!config.ready) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Configuration mail SMTP incomplete."
+    );
+  }
+  const snapshot = await db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION)
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const candidates = snapshot.docs
+    .filter((doc) => {
+      const data = doc.data() || {};
+      const status = cleanText(data.status);
+      if (requestedType && cleanText(data.type) !== requestedType) return false;
+      return status === "ready" || status === "blocked_missing_config" || status === "failed";
+    })
+    .sort((left, right) =>
+      cleanText(left.data()?.updatedAt).localeCompare(cleanText(right.data()?.updatedAt)) ||
+      cleanText(left.data()?.toEmail).localeCompare(cleanText(right.data()?.toEmail))
+    )
+    .slice(0, limit);
+  const transporter = nodemailer.createTransport(config.transport);
+  const jobs = [];
+  let sentCount = 0;
+  let errorCount = 0;
+  for (const doc of candidates) {
+    const job = await sendEngagementMailJob(transporter, doc, config, context);
+    if (job.status === "sent") sentCount += 1;
+    else if (job.status === "failed") errorCount += 1;
+    jobs.push(job);
+  }
+  await writeAuditLog("engagementCompetition.preparedEmailsSent", context.uid, {
+    competitionId,
+    requestedType,
+    attemptedCount: candidates.length,
+    sentCount,
+    errorCount
+  });
+  return {
+    ok: true,
+    competitionId,
+    attemptedCount: candidates.length,
+    sentCount,
+    errorCount,
     jobs
   };
 });

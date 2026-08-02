@@ -363,6 +363,7 @@
     engagementsPrepareOpeningEmailsButton: document.querySelector("#adminEngagementsPrepareOpeningEmailsButton"),
     engagementsGenerateClubRecapsButton: document.querySelector("#adminEngagementsGenerateClubRecapsButton"),
     engagementsPrepareClubRecapEmailsButton: document.querySelector("#adminEngagementsPrepareClubRecapEmailsButton"),
+    engagementsSendPreparedEmailsButton: document.querySelector("#adminEngagementsSendPreparedEmailsButton"),
     engagementsDocumentsList: document.querySelector("#adminEngagementsDocumentsList"),
     engagementsClubRecapFiles: document.querySelector("#adminEngagementsClubRecapFiles"),
     engagementsMailJobsList: document.querySelector("#adminEngagementsMailJobsList"),
@@ -3236,10 +3237,20 @@
       mount.innerHTML = '<p class="admin-engagements-empty">Aucun mail prepare pour le moment.</p>';
       return;
     }
+    const sentCount = engagementMailJobs.filter((job) => job.status === "sent").length;
+    const readyCount = engagementMailJobs.filter((job) => job.status === "ready").length;
+    const failedCount = engagementMailJobs.filter((job) => job.status === "failed").length;
+    const blockedCount = engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
+    const statusParts = [
+      readyCount ? `${readyCount} pret${readyCount > 1 ? "s" : ""}` : "",
+      sentCount ? `${sentCount} envoye${sentCount > 1 ? "s" : ""}` : "",
+      failedCount ? `${failedCount} erreur${failedCount > 1 ? "s" : ""}` : "",
+      blockedCount ? `${blockedCount} configuration manquante` : ""
+    ].filter(Boolean);
     mount.innerHTML = `
       <div class="admin-engagements-mail-jobs-head">
         <strong>Mails prepares</strong>
-        <small>${engagementMailJobs.length} mail${engagementMailJobs.length > 1 ? "s" : ""} en attente de configuration d'envoi</small>
+        <small>${engagementMailJobs.length} mail${engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` - ${statusParts.join(" - ")}` : ""}</small>
       </div>
       <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Mails prepares">
         <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
@@ -3249,7 +3260,7 @@
           <span role="columnheader">Statut</span>
         </div>
         ${engagementMailJobs.map((job) => `
-          <div class="admin-engagements-mail-jobs-row" role="row">
+          <div class="admin-engagements-mail-jobs-row" role="row" data-mail-status="${escapeHtml(job.status || "")}">
             <span role="cell">${escapeHtml(engagementMailJobTypeLabel(job.type))}</span>
             <span role="cell">
               <strong>${escapeHtml(job.toEmail || "-")}</strong>
@@ -4713,6 +4724,42 @@
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Preparation mails PDF impossible : ${error?.message || error}`;
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function sendEngagementPreparedEmails() {
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
+    const pendingCount = engagementMailJobs.filter((job) => job.status !== "sent").length;
+    const confirmed = global.confirm(
+      `Envoyer les mails prepares de cette competition${pendingCount ? ` (${pendingCount} mail${pendingCount > 1 ? "s" : ""} non envoye${pendingCount > 1 ? "s" : ""})` : ""} ?`
+    );
+    if (!confirmed) return;
+    const button = elements.engagementsSendPreparedEmailsButton;
+    if (button) button.disabled = true;
+    if (elements.engagementsDocumentsSummary) {
+      elements.engagementsDocumentsSummary.textContent = "Envoi des mails prepares...";
+    }
+    try {
+      const result = await callFunction("sendEngagementPreparedEmails", {
+        competitionId: selectedEngagementCompetitionId,
+        limit: 100
+      });
+      await loadEngagementMailJobs({ force: true });
+      if (elements.engagementsDocumentsSummary) {
+        const sentCount = Number(result.sentCount || 0);
+        const errorCount = Number(result.errorCount || 0);
+        const attemptedCount = Number(result.attemptedCount || 0);
+        elements.engagementsDocumentsSummary.textContent = [
+          `${sentCount}/${attemptedCount} mail${attemptedCount > 1 ? "s" : ""} envoye${sentCount > 1 ? "s" : ""}`,
+          errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
+        ].filter(Boolean).join(" - ");
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Envoi mails impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -6654,6 +6701,7 @@
     elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);
+    elements.engagementsSendPreparedEmailsButton?.addEventListener("click", sendEngagementPreparedEmails);
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-admin-club-pdf]");
       if (!button) return;
