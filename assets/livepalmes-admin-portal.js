@@ -360,9 +360,12 @@
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
     engagementsComputerEmailLabel: document.querySelector("#adminEngagementsComputerEmailLabel"),
+    engagementsPrepareOpeningEmailsButton: document.querySelector("#adminEngagementsPrepareOpeningEmailsButton"),
     engagementsGenerateClubRecapsButton: document.querySelector("#adminEngagementsGenerateClubRecapsButton"),
+    engagementsPrepareClubRecapEmailsButton: document.querySelector("#adminEngagementsPrepareClubRecapEmailsButton"),
     engagementsDocumentsList: document.querySelector("#adminEngagementsDocumentsList"),
     engagementsClubRecapFiles: document.querySelector("#adminEngagementsClubRecapFiles"),
+    engagementsMailJobsList: document.querySelector("#adminEngagementsMailJobsList"),
     engagementsGeneratedFiles: document.querySelector("#adminEngagementsGeneratedFiles"),
     engagementsEditButton: document.querySelector("#adminEngagementsEditButton"),
     engagementsSaveButton: document.querySelector("#adminEngagementsSaveButton"),
@@ -445,6 +448,9 @@
   let engagementClubRecapEntries = [];
   let engagementClubRecapEntriesCompetitionId = "";
   let engagementClubRecapEntriesLoading = false;
+  let engagementMailJobs = [];
+  let engagementMailJobsCompetitionId = "";
+  let engagementMailJobsLoading = false;
   let engagementCalendarFiltersInitialized = false;
   let activeEngagementsTab = "calendar";
   let activeEngagementsNavEntry = "club";
@@ -597,6 +603,8 @@
     engagementClubSwimmersClubId = "";
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
+    engagementMailJobs = [];
+    engagementMailJobsCompetitionId = "";
     selectedEngagementClubEntry = null;
     selectedEngagementClubEntryCompetitionId = "";
   }
@@ -908,6 +916,7 @@
     }
     if (isEngagementAdminMode() && nextTab === "documents") {
       loadEngagementClubRecapFiles();
+      loadEngagementMailJobs();
     }
   }
 
@@ -3197,6 +3206,93 @@
     renderEngagementClubRecapFiles();
   }
 
+  function engagementMailJobTypeLabel(type) {
+    return {
+      opening_notification: "Ouverture",
+      club_recap_pdf: "PDF club"
+    }[String(type || "")] || "Mail";
+  }
+
+  function renderEngagementMailJobs() {
+    const mount = elements.engagementsMailJobsList;
+    if (!mount) return;
+    if (!isEngagementAdminMode()) {
+      mount.innerHTML = "";
+      return;
+    }
+    if (engagementMailJobsLoading) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des mails prepares...</p>';
+      return;
+    }
+    if (!selectedEngagementCompetitionId) {
+      mount.innerHTML = "";
+      return;
+    }
+    if (!engagementMailJobsCompetitionId || engagementMailJobsCompetitionId !== selectedEngagementCompetitionId) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Mails prepares a charger.</p>';
+      return;
+    }
+    if (!engagementMailJobs.length) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucun mail prepare pour le moment.</p>';
+      return;
+    }
+    mount.innerHTML = `
+      <div class="admin-engagements-mail-jobs-head">
+        <strong>Mails prepares</strong>
+        <small>${engagementMailJobs.length} mail${engagementMailJobs.length > 1 ? "s" : ""} en attente de configuration d'envoi</small>
+      </div>
+      <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Mails prepares">
+        <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
+          <span role="columnheader">Type</span>
+          <span role="columnheader">Destinataire</span>
+          <span role="columnheader">Club</span>
+          <span role="columnheader">Statut</span>
+        </div>
+        ${engagementMailJobs.map((job) => `
+          <div class="admin-engagements-mail-jobs-row" role="row">
+            <span role="cell">${escapeHtml(engagementMailJobTypeLabel(job.type))}</span>
+            <span role="cell">
+              <strong>${escapeHtml(job.toEmail || "-")}</strong>
+              <small>${escapeHtml(job.subject || "-")}</small>
+            </span>
+            <span role="cell">${escapeHtml(job.clubName || job.clubId || "-")}</span>
+            <span role="cell">
+              <span class="admin-engagements-mail-status">${escapeHtml(job.statusLabel || job.status || "Prepare")}</span>
+              <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
+            </span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  async function loadEngagementMailJobs({ force = false } = {}) {
+    if (!isEngagementAdminMode() || !selectedEngagementCompetitionId || engagementMailJobsLoading) return;
+    if (!force && engagementMailJobsCompetitionId === selectedEngagementCompetitionId) {
+      renderEngagementMailJobs();
+      return;
+    }
+    engagementMailJobsLoading = true;
+    renderEngagementMailJobs();
+    try {
+      const result = await callFunction("listEngagementCompetitionMailJobs", {
+        competitionId: selectedEngagementCompetitionId
+      });
+      engagementMailJobs = Array.isArray(result.jobs) ? result.jobs : [];
+      engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
+    } catch (error) {
+      engagementMailJobs = [];
+      engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
+      if (elements.engagementsMailJobsList) {
+        elements.engagementsMailJobsList.innerHTML = `<p class="admin-portal-message" data-tone="error">Lecture mails prepares impossible : ${escapeHtml(error?.message || error)}</p>`;
+      }
+      return;
+    } finally {
+      engagementMailJobsLoading = false;
+    }
+    renderEngagementMailJobs();
+  }
+
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const definitions = engagementDocumentDefinitions(competition);
     const generatedCount = definitions.filter((item) => item.status !== "pending").length;
@@ -3226,6 +3322,7 @@
         : `<p class="admin-engagements-empty">Aucun fichier genere pour le moment.</p>`;
     }
     renderEngagementClubRecapFiles();
+    renderEngagementMailJobs();
   }
 
   function engagementEventSummary(events = []) {
@@ -3987,6 +4084,9 @@
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementClubRecapEntriesLoading = false;
+    engagementMailJobs = [];
+    engagementMailJobsCompetitionId = "";
+    engagementMailJobsLoading = false;
     setEngagementsDetailTab("general");
     setEngagementCompetitionDetailVisible(false);
     if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Selectionnez une competition";
@@ -4037,6 +4137,7 @@
     if (elements.engagementsComputerEmailLabel) elements.engagementsComputerEmailLabel.textContent = "Email informatique non renseigne";
     if (elements.engagementsDocumentsList) elements.engagementsDocumentsList.innerHTML = "";
     if (elements.engagementsClubRecapFiles) elements.engagementsClubRecapFiles.innerHTML = "";
+    if (elements.engagementsMailJobsList) elements.engagementsMailJobsList.innerHTML = "";
     if (elements.engagementsGeneratedFiles) elements.engagementsGeneratedFiles.innerHTML = "";
     if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "";
     renderEngagementCompetitions();
@@ -4051,6 +4152,9 @@
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementClubRecapEntriesLoading = false;
+    engagementMailJobs = [];
+    engagementMailJobsCompetitionId = "";
+    engagementMailJobsLoading = false;
     renderEngagementCompetitions();
     setEngagementCompetitionDetailVisible(true);
     setEngagementsDetailTab("general");
@@ -4544,6 +4648,71 @@
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Generation PDF clubs impossible : ${error?.message || error}`;
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function prepareEngagementOpeningEmails() {
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
+    const button = elements.engagementsPrepareOpeningEmailsButton;
+    if (button) button.disabled = true;
+    if (elements.engagementsDocumentsSummary) {
+      elements.engagementsDocumentsSummary.textContent = "Preparation des mails d'ouverture...";
+    }
+    try {
+      const result = await callFunction("prepareEngagementOpeningNotificationEmails", {
+        competitionId: selectedEngagementCompetitionId
+      });
+      await loadEngagementMailJobs({ force: true });
+      if (elements.engagementsDocumentsSummary) {
+        const count = Number(result.jobCount || 0);
+        elements.engagementsDocumentsSummary.textContent = `${count} mail${count > 1 ? "s" : ""} d'ouverture prepare${count > 1 ? "s" : ""}, non envoye${count > 1 ? "s" : ""}.`;
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Preparation mails ouverture impossible : ${error?.message || error}`;
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function prepareEngagementClubRecapEmails() {
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
+    const button = elements.engagementsPrepareClubRecapEmailsButton;
+    if (button) button.disabled = true;
+    if (elements.engagementsDocumentsSummary) {
+      elements.engagementsDocumentsSummary.textContent = "Preparation des mails PDF clubs...";
+    }
+    try {
+      const result = await callFunction("prepareEngagementClubRecapEmails", {
+        competitionId: selectedEngagementCompetitionId
+      });
+      await loadEngagementMailJobs({ force: true });
+      if (elements.engagementsDocumentsSummary) {
+        const jobCount = Number(result.jobCount || 0);
+        const skippedCount = Number(result.skippedClubCount || 0);
+        const errorCount = Number(result.errorCount || 0);
+        elements.engagementsDocumentsSummary.textContent = [
+          `${jobCount} mail${jobCount > 1 ? "s" : ""} PDF prepare${jobCount > 1 ? "s" : ""}, non envoye${jobCount > 1 ? "s" : ""}`,
+          skippedCount ? `${skippedCount} club${skippedCount > 1 ? "s" : ""} ignore${skippedCount > 1 ? "s" : ""}` : "",
+          errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
+        ].filter(Boolean).join(" - ");
+      }
+      if (Array.isArray(result.errors) && result.errors.length && elements.engagementsMailJobsList) {
+        const details = result.errors.slice(0, 5).map((item) =>
+          `${item.clubName || item.clubId || "Club"} : ${item.message || "erreur inconnue"}`
+        ).join(" | ");
+        elements.engagementsMailJobsList.insertAdjacentHTML(
+          "afterbegin",
+          `<p class="admin-portal-message" data-tone="error">Mails PDF non prepares : ${escapeHtml(details)}</p>`
+        );
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Preparation mails PDF impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -6482,7 +6651,9 @@
     elements.engagementsClubEntriesForm?.addEventListener("submit", saveEngagementClubSwimmers);
     elements.engagementsClubRelaysForm?.addEventListener("submit", saveEngagementClubRelays);
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
+    elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
+    elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-admin-club-pdf]");
       if (!button) return;

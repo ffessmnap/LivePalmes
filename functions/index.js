@@ -73,6 +73,7 @@ const ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = "engagementClubPeopleRosters";
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
 const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 1;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
+const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
@@ -4709,6 +4710,154 @@ async function getOrCreateEngagementClubRecapPdf(competitionSnapshot, entrySnaps
   };
 }
 
+function engagementMailStatusLabel(status) {
+  return {
+    draft: "Brouillon",
+    blocked_missing_config: "Configuration mail manquante",
+    ready: "Pret a envoyer",
+    sent: "Envoye",
+    failed: "Erreur"
+  }[cleanText(status)] || "Brouillon";
+}
+
+function engagementMailJobId(payload = {}) {
+  return stableHash([
+    cleanText(payload.type),
+    cleanText(payload.competitionId),
+    cleanText(payload.clubId),
+    normalizeEmail(payload.toEmail)
+  ].join("|")).slice(0, 40);
+}
+
+function engagementMailRecipientFromUserDoc(doc) {
+  const data = doc.data() || {};
+  return cleanFirestoreValue({
+    uid: doc.id,
+    email: normalizeEmail(data.email).slice(0, 180),
+    firstName: cleanText(data.firstName).slice(0, 80),
+    lastName: cleanText(data.lastName).slice(0, 80),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    regionId: cleanText(data.regionId).slice(0, 80)
+  });
+}
+
+async function engagementActiveClubMailRecipients(db) {
+  const snapshot = await db.collection("users")
+    .where("capabilities.engagements.club.manage", "==", true)
+    .limit(1000)
+    .get();
+  const recipientsByEmail = new Map();
+  snapshot.docs
+    .filter((doc) => (doc.data() || {}).status === "active")
+    .map(engagementMailRecipientFromUserDoc)
+    .filter((recipient) => recipient.email && recipient.clubId)
+    .forEach((recipient) => {
+      if (!recipientsByEmail.has(recipient.email)) recipientsByEmail.set(recipient.email, recipient);
+    });
+  return [...recipientsByEmail.values()];
+}
+
+function engagementCompetitionOpeningRecipients(recipients = [], competition = {}) {
+  const level = cleanEngagementCompetitionLevel(competition.level);
+  const regionId = cleanText(competition.regionId);
+  return recipients.filter((recipient) => level === "national" || recipient.regionId === regionId);
+}
+
+function engagementRecipientsByClub(recipients = []) {
+  return recipients.reduce((acc, recipient) => {
+    const clubId = cleanText(recipient.clubId);
+    if (!clubId) return acc;
+    if (!acc.has(clubId)) acc.set(clubId, []);
+    acc.get(clubId).push(recipient);
+    return acc;
+  }, new Map());
+}
+
+function engagementOpeningMailSubject(competition = {}) {
+  return `Ouverture des engagements - ${competition.name || "Competition LivePalmes"}`;
+}
+
+function engagementOpeningMailText(competition = {}) {
+  return [
+    `Les engagements sont ouverts pour ${competition.name || "la competition"}.`,
+    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
+    `Lieu : ${competition.location || "-"}.`,
+    `Limite des engagements : ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
+    "Connectez-vous au portail LivePalmes pour effectuer vos engagements."
+  ].join("\n");
+}
+
+function engagementClubRecapMailSubject(competition = {}, entry = {}) {
+  return `Recapitulatif des engagements - ${entry.clubName || entry.clubId || "Club"} - ${competition.name || "LivePalmes"}`;
+}
+
+function engagementClubRecapMailText(competition = {}, entry = {}) {
+  const fees = competition.fees || {};
+  return [
+    `Bonjour,`,
+    "",
+    `Vous trouverez en piece jointe le recapitulatif des engagements de ${entry.clubName || entry.clubId || "votre club"} pour ${competition.name || "la competition"}.`,
+    `Total indicatif : ${engagementPdfMoney(engagementPdfFeeTotal(entry, competition))}.`,
+    fees.helloAssoUrl
+      ? `Paiement HelloAsso : ${fees.helloAssoUrl}`
+      : "Lien HelloAsso en attente de publication.",
+    "Rappel : paiement attendu avant la fin de la premiere journee de competition. Surplus forfaitaire de 50 EUR ensuite.",
+    "",
+    "LivePalmes"
+  ].join("\n");
+}
+
+function engagementMailJobItemFromData(data = {}, id = "") {
+  return cleanFirestoreValue({
+    id: cleanText(id || data.id).slice(0, 80),
+    type: cleanText(data.type).slice(0, 80),
+    status: cleanText(data.status).slice(0, 80),
+    statusLabel: engagementMailStatusLabel(data.status),
+    competitionId: cleanText(data.competitionId).slice(0, 128),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    toEmail: normalizeEmail(data.toEmail).slice(0, 180),
+    toName: cleanText(data.toName).slice(0, 180),
+    subject: cleanText(data.subject).slice(0, 220),
+    attachmentCount: Array.isArray(data.attachments) ? data.attachments.length : 0,
+    reason: cleanText(data.reason).slice(0, 220),
+    createdAt: cleanText(data.createdAt).slice(0, 40),
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  });
+}
+
+async function upsertEngagementMailJob(payload = {}, now = "") {
+  const id = engagementMailJobId(payload);
+  if (!id || !normalizeEmail(payload.toEmail)) return null;
+  const job = cleanFirestoreValue({
+    id,
+    type: cleanText(payload.type).slice(0, 80),
+    status: "blocked_missing_config",
+    reason: "Configuration technique d'envoi mail non branchee.",
+    fromEmail: "livepalmes@nap-ffessm.fr",
+    toEmail: normalizeEmail(payload.toEmail).slice(0, 180),
+    toName: cleanText(payload.toName).slice(0, 180),
+    subject: cleanText(payload.subject).slice(0, 220),
+    textPreview: cleanText(payload.text).slice(0, 1200),
+    competitionId: cleanText(payload.competitionId).slice(0, 128),
+    competitionName: cleanText(payload.competitionName).slice(0, 160),
+    clubId: cleanText(payload.clubId).slice(0, 40),
+    clubName: cleanText(payload.clubName).slice(0, 140),
+    regionId: cleanText(payload.regionId).slice(0, 80),
+    attachments: Array.isArray(payload.attachments) ? payload.attachments.map((attachment) => cleanFirestoreValue({
+      type: cleanText(attachment.type).slice(0, 80),
+      fileName: cleanText(attachment.fileName).slice(0, 180),
+      contentType: cleanText(attachment.contentType).slice(0, 80),
+      storagePath: cleanText(attachment.storagePath).slice(0, 260)
+    })).filter((attachment) => attachment.storagePath) : [],
+    updatedAt: now || new Date().toISOString(),
+    createdAt: now || new Date().toISOString()
+  });
+  await admin.firestore().collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set(job, { merge: true });
+  return engagementMailJobItemFromData(job, id);
+}
+
 function cleanEngagementClubPerson(raw = {}, context = {}) {
   const firstName = cleanText(raw.firstName).slice(0, 80);
   const lastName = cleanText(raw.lastName).slice(0, 80);
@@ -5473,6 +5622,176 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
     errorCount,
     errors,
     entries
+  };
+});
+
+exports.listEngagementCompetitionMailJobs = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const snapshot = await db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION)
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const jobs = snapshot.docs
+    .map((doc) => engagementMailJobItemFromData(doc.data() || {}, doc.id))
+    .sort((left, right) =>
+      cleanText(right.updatedAt).localeCompare(cleanText(left.updatedAt)) ||
+      cleanText(left.toEmail).localeCompare(cleanText(right.toEmail))
+    );
+  return {
+    ok: true,
+    competitionId,
+    collection: ENGAGEMENT_MAIL_JOBS_COLLECTION,
+    jobs
+  };
+});
+
+exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competitionSnapshot.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competitionSnapshot.data() || {});
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const recipients = engagementCompetitionOpeningRecipients(await engagementActiveClubMailRecipients(db), competition);
+  const now = new Date().toISOString();
+  const jobs = [];
+  for (const recipient of recipients) {
+    const job = await upsertEngagementMailJob({
+      type: "opening_notification",
+      competitionId,
+      competitionName: competition.name,
+      clubId: recipient.clubId,
+      clubName: recipient.clubName,
+      regionId: recipient.regionId,
+      toEmail: recipient.email,
+      toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+      subject: engagementOpeningMailSubject(competition),
+      text: engagementOpeningMailText(competition)
+    }, now);
+    if (job) jobs.push(job);
+  }
+  await writeAuditLog("engagementCompetition.openingEmailsPrepared", context.uid, {
+    competitionId,
+    recipientCount: recipients.length,
+    jobCount: jobs.length,
+    mailStatus: "blocked_missing_config"
+  });
+  return {
+    ok: true,
+    competitionId,
+    recipientCount: recipients.length,
+    jobCount: jobs.length,
+    jobs
+  };
+});
+
+exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = admin.firestore();
+  const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competitionSnapshot.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competitionSnapshot.data() || {});
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const recipientsByClub = engagementRecipientsByClub(await engagementActiveClubMailRecipients(db));
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const now = new Date().toISOString();
+  const jobs = [];
+  let skippedClubCount = 0;
+  let pdfGeneratedCount = 0;
+  let pdfReusedCount = 0;
+  let errorCount = 0;
+  const errors = [];
+  for (const entryDoc of entriesSnapshot.docs) {
+    const entry = engagementClubEntryItem(entryDoc);
+    const recipients = recipientsByClub.get(entry.clubId) || [];
+    if (!entry.clubId || !entry.teamLeaderComplete || !recipients.length) {
+      skippedClubCount += 1;
+      continue;
+    }
+    let pdf = null;
+    try {
+      pdf = await getOrCreateEngagementClubRecapPdf(competitionSnapshot, entryDoc, {
+        force: request.data?.forcePdf === true
+      });
+    } catch (error) {
+      errorCount += 1;
+      errors.push({
+        clubId: entry.clubId,
+        clubName: entry.clubName,
+        message: cleanText(error?.message || error).slice(0, 220)
+      });
+      continue;
+    }
+    if (pdf.fromStorage) pdfReusedCount += 1;
+    else pdfGeneratedCount += 1;
+    for (const recipient of recipients) {
+      const job = await upsertEngagementMailJob({
+        type: "club_recap_pdf",
+        competitionId,
+        competitionName: competition.name,
+        clubId: entry.clubId,
+        clubName: entry.clubName,
+        regionId: entry.regionId,
+        toEmail: recipient.email,
+        toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+        subject: engagementClubRecapMailSubject(competition, entry),
+        text: engagementClubRecapMailText(competition, entry),
+        attachments: [{
+          type: "clubRecapPdf",
+          fileName: pdf.document?.fileName || pdf.fileName,
+          contentType: "application/pdf",
+          storagePath: pdf.document?.storagePath
+        }]
+      }, now);
+      if (job) jobs.push(job);
+    }
+  }
+  await writeAuditLog("engagementCompetition.clubRecapEmailsPrepared", context.uid, {
+    competitionId,
+    clubEntryCount: entriesSnapshot.size,
+    skippedClubCount,
+    jobCount: jobs.length,
+    pdfGeneratedCount,
+    pdfReusedCount,
+    errorCount,
+    mailStatus: "blocked_missing_config"
+  });
+  return {
+    ok: true,
+    competitionId,
+    clubEntryCount: entriesSnapshot.size,
+    skippedClubCount,
+    jobCount: jobs.length,
+    pdfGeneratedCount,
+    pdfReusedCount,
+    errorCount,
+    errors,
+    jobs
   };
 });
 

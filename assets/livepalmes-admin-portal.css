@@ -3890,6 +3890,85 @@
   font-weight: 720;
 }
 
+.admin-engagements-mail-jobs {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-mail-jobs-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.admin-engagements-mail-jobs-head strong,
+.admin-engagements-mail-jobs-head small {
+  display: block;
+}
+
+.admin-engagements-mail-jobs-head small {
+  color: #5f746f;
+  font-size: 0.8rem;
+  font-weight: 760;
+}
+
+.admin-engagements-mail-jobs-table {
+  display: grid;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-mail-jobs-row {
+  display: grid;
+  grid-template-columns: 92px minmax(220px, 1.4fr) minmax(150px, 0.8fr) 150px;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 6px 9px;
+  border-top: 1px solid #e7efed;
+  color: #173b35;
+  font-size: 0.8rem;
+}
+
+.admin-engagements-mail-jobs-row:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-mail-jobs-row-head {
+  min-height: 30px;
+  background: #f2f7f6;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-mail-jobs-row strong,
+.admin-engagements-mail-jobs-row small {
+  display: block;
+}
+
+.admin-engagements-mail-jobs-row small {
+  margin-top: 2px;
+  color: #6b7f7a;
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.admin-engagements-mail-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fff6dd;
+  color: #76570f;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
 .admin-engagements-detail-list {
   display: grid;
   grid-template-columns: 1fr;
@@ -4520,6 +4599,16 @@
 
   .admin-engagements-detail-list dd {
     padding-top: 5px;
+  }
+
+  .admin-engagements-club-recap-files,
+  .admin-engagements-mail-jobs {
+    overflow-x: auto;
+  }
+
+  .admin-engagements-club-recap-table,
+  .admin-engagements-mail-jobs-table {
+    min-width: 680px;
   }
 
   .admin-engagements-form-section-grid > label,
