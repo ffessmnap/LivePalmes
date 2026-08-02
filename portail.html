@@ -612,6 +612,11 @@
                               <select id="adminEngagementsEditRegionId"></select>
                               <small id="adminEngagementsEditRegionNote" class="admin-engagements-field-note"></small>
                             </label>
+                            <label>
+                              R&eacute;gions invit&eacute;es
+                              <select id="adminEngagementsEditInvitedRegionIds" multiple size="4"></select>
+                              <small class="admin-engagements-field-note">Pour le mail d'ouverture uniquement.</small>
+                            </label>
                           </div>
                         </fieldset>
                         <fieldset class="admin-engagements-form-section">
@@ -950,7 +955,8 @@
                             <button id="adminEngagementsPrepareOpeningEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails ouverture</button>
                             <button id="adminEngagementsGenerateClubRecapsButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer les PDF clubs</button>
                             <button id="adminEngagementsPrepareClubRecapEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails PDF clubs</button>
-                            <button id="adminEngagementsSendPreparedEmailsButton" class="ghost-button compact" type="button">Envoyer mails pr&eacute;par&eacute;s</button>
+                            <button id="adminEngagementsSendOpeningEmailsButton" class="ghost-button compact" type="button">Envoyer ouvertures</button>
+                            <button id="adminEngagementsSendClubRecapEmailsButton" class="ghost-button compact" type="button">Envoyer PDF clubs</button>
                           </div>
                         </div>
                         <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
@@ -1072,6 +1078,11 @@
                           R&eacute;gion
                           <select id="adminEngagementsRegionId"></select>
                           <small id="adminEngagementsRegionNote" class="admin-engagements-field-note"></small>
+                        </label>
+                        <label>
+                          R&eacute;gions invit&eacute;es
+                          <select id="adminEngagementsInvitedRegionIds" multiple size="4"></select>
+                          <small class="admin-engagements-field-note">Pour le mail d'ouverture uniquement.</small>
                         </label>
                       </div>
                     </fieldset>

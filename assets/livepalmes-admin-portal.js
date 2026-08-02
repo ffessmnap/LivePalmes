@@ -363,7 +363,8 @@
     engagementsPrepareOpeningEmailsButton: document.querySelector("#adminEngagementsPrepareOpeningEmailsButton"),
     engagementsGenerateClubRecapsButton: document.querySelector("#adminEngagementsGenerateClubRecapsButton"),
     engagementsPrepareClubRecapEmailsButton: document.querySelector("#adminEngagementsPrepareClubRecapEmailsButton"),
-    engagementsSendPreparedEmailsButton: document.querySelector("#adminEngagementsSendPreparedEmailsButton"),
+    engagementsSendOpeningEmailsButton: document.querySelector("#adminEngagementsSendOpeningEmailsButton"),
+    engagementsSendClubRecapEmailsButton: document.querySelector("#adminEngagementsSendClubRecapEmailsButton"),
     engagementsDocumentsList: document.querySelector("#adminEngagementsDocumentsList"),
     engagementsClubRecapFiles: document.querySelector("#adminEngagementsClubRecapFiles"),
     engagementsMailJobsList: document.querySelector("#adminEngagementsMailJobsList"),
@@ -381,6 +382,7 @@
     engagementsEditLevel: document.querySelector("#adminEngagementsEditLevel"),
     engagementsEditRegionId: document.querySelector("#adminEngagementsEditRegionId"),
     engagementsEditRegionNote: document.querySelector("#adminEngagementsEditRegionNote"),
+    engagementsEditInvitedRegionIds: document.querySelector("#adminEngagementsEditInvitedRegionIds"),
     engagementsEditDeadline: document.querySelector("#adminEngagementsEditDeadline"),
     engagementsEditComputerEmail: document.querySelector("#adminEngagementsEditComputerEmail"),
     engagementsEditPoolLength: document.querySelector("#adminEngagementsEditPoolLength"),
@@ -400,6 +402,7 @@
     engagementsLevel: document.querySelector("#adminEngagementsLevel"),
     engagementsRegionId: document.querySelector("#adminEngagementsRegionId"),
     engagementsRegionNote: document.querySelector("#adminEngagementsRegionNote"),
+    engagementsInvitedRegionIds: document.querySelector("#adminEngagementsInvitedRegionIds"),
     engagementsDeadline: document.querySelector("#adminEngagementsDeadline"),
     engagementsComputerEmail: document.querySelector("#adminEngagementsComputerEmail"),
     engagementsPoolLength: document.querySelector("#adminEngagementsPoolLength"),
@@ -1252,11 +1255,49 @@
     setRegionSelectValue(select, currentValue);
   }
 
+  function selectedRegionMultiSelectValues(select) {
+    if (!select) return [];
+    const seen = new Set();
+    return Array.from(select.selectedOptions || [])
+      .map((option) => canonicalLivePalmesRegion(option.value))
+      .filter(Boolean)
+      .filter((region) => {
+        const key = normalizedRegionKey(region);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function setRegionMultiSelectValues(select, values = [], excludedRegion = "") {
+    if (!select) return;
+    const selectedKeys = new Set((Array.isArray(values) ? values : [])
+      .map(canonicalLivePalmesRegion)
+      .filter(Boolean)
+      .filter((region) => normalizedRegionKey(region) !== normalizedRegionKey(excludedRegion))
+      .map(normalizedRegionKey));
+    Array.from(select.options).forEach((option) => {
+      option.selected = selectedKeys.has(normalizedRegionKey(option.value));
+    });
+  }
+
+  function fillLivePalmesRegionMultiSelect(select) {
+    if (!select) return;
+    const currentValues = selectedRegionMultiSelectValues(select);
+    select.innerHTML = "";
+    LIVEPALMES_REGION_DEFINITIONS.forEach((region) => {
+      select.append(new Option(region, region));
+    });
+    setRegionMultiSelectValues(select, currentValues);
+  }
+
   function populateLivePalmesRegionSelects() {
     fillLivePalmesRegionSelect(elements.accessRegionId, "A choisir");
     fillLivePalmesRegionSelect(elements.engagementsRegionId, "A choisir");
     fillLivePalmesRegionSelect(elements.engagementsEditRegionId, "A choisir");
     fillLivePalmesRegionSelect(elements.engagementsRegionFilter, "Toutes les regions");
+    fillLivePalmesRegionMultiSelect(elements.engagementsInvitedRegionIds);
+    fillLivePalmesRegionMultiSelect(elements.engagementsEditInvitedRegionIds);
   }
 
   function accessReferenceRegionLabel(regionId) {
@@ -1684,6 +1725,23 @@
     if (submitButton) submitButton.disabled = Boolean(!nationalCompetition && isRegional && !isNational && !regionId);
   }
 
+  function updateEngagementInvitedRegionField({ field, levelInput, primaryRegionField }) {
+    if (!field) return;
+    const nationalCompetition = (levelInput?.value || "regional") === "national";
+    field.disabled = nationalCompetition || !canCreateEngagementCompetition();
+    const primaryRegion = primaryRegionField?.value || "";
+    Array.from(field.options).forEach((option) => {
+      const sameAsPrimary = normalizedRegionKey(option.value) === normalizedRegionKey(primaryRegion);
+      option.disabled = sameAsPrimary;
+      if (sameAsPrimary) option.selected = false;
+    });
+    if (nationalCompetition) {
+      Array.from(field.options).forEach((option) => {
+        option.selected = false;
+      });
+    }
+  }
+
   function updateEngagementCreateFormAccess(user = currentAccessProfile || {}) {
     const capabilities = new Set(user.capabilities || []);
     const isNational = capabilities.has("engagements.national.manage");
@@ -1693,6 +1751,11 @@
       levelInput: elements.engagementsLevel,
       user,
       submitButton: elements.engagementsCreateForm?.querySelector("button[type='submit']")
+    });
+    updateEngagementInvitedRegionField({
+      field: elements.engagementsInvitedRegionIds,
+      levelInput: elements.engagementsLevel,
+      primaryRegionField: elements.engagementsRegionId
     });
     const nationalOption = elements.engagementsLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
@@ -1704,6 +1767,11 @@
         levelInput: elements.engagementsLevel,
         user,
         submitButton: elements.engagementsCreateForm?.querySelector("button[type='submit']")
+      });
+      updateEngagementInvitedRegionField({
+        field: elements.engagementsInvitedRegionIds,
+        levelInput: elements.engagementsLevel,
+        primaryRegionField: elements.engagementsRegionId
       });
     }
   }
@@ -1718,6 +1786,11 @@
       user,
       submitButton: elements.engagementsEditForm?.querySelector("button[type='submit']")
     });
+    updateEngagementInvitedRegionField({
+      field: elements.engagementsEditInvitedRegionIds,
+      levelInput: elements.engagementsEditLevel,
+      primaryRegionField: elements.engagementsEditRegionId
+    });
     const nationalOption = elements.engagementsEditLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
     if (!isNational && elements.engagementsEditLevel?.value === "national") {
@@ -1728,6 +1801,11 @@
         levelInput: elements.engagementsEditLevel,
         user,
         submitButton: elements.engagementsEditForm?.querySelector("button[type='submit']")
+      });
+      updateEngagementInvitedRegionField({
+        field: elements.engagementsEditInvitedRegionIds,
+        levelInput: elements.engagementsEditLevel,
+        primaryRegionField: elements.engagementsEditRegionId
       });
     }
   }
@@ -1756,6 +1834,7 @@
     if (elements.engagementsEditLocation) elements.engagementsEditLocation.value = competition.location || "";
     if (elements.engagementsEditLevel) elements.engagementsEditLevel.value = competition.level || "regional";
     setRegionSelectValue(elements.engagementsEditRegionId, competition.regionId || "");
+    setRegionMultiSelectValues(elements.engagementsEditInvitedRegionIds, competition.invitedRegionIds || [], competition.regionId || "");
     if (elements.engagementsEditDeadline) elements.engagementsEditDeadline.value = isoToDatetimeLocal(competition.entryDeadlineAt);
     if (elements.engagementsEditComputerEmail) elements.engagementsEditComputerEmail.value = competition.computerEmail || "";
     if (elements.engagementsEditPoolLength) elements.engagementsEditPoolLength.value = competition.poolLength || "50";
@@ -4033,6 +4112,7 @@
       ["Date de fin", formatShortDate(competition.endDate || competition.date)],
       ["Lieu", competition.location || "-"],
       ["Region", regionDisplayLabel(competition.regionId)],
+      ["Regions invitees", (competition.invitedRegionIds || []).map(regionDisplayLabel).filter((region) => region && region !== "-").join(", ") || "-"],
       ["Niveau", engagementLevelLabel(competition.level)],
       ["Statut engagements", engagementStatusLabel(competition.entryStatus)],
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
@@ -4730,22 +4810,50 @@
     }
   }
 
-  async function sendEngagementPreparedEmails() {
+  function engagementMailSendButton(type) {
+    return type === "club_recap_pdf"
+      ? elements.engagementsSendClubRecapEmailsButton
+      : elements.engagementsSendOpeningEmailsButton;
+  }
+
+  function engagementMailSendActionLabel(type) {
+    return type === "club_recap_pdf" ? "PDF clubs" : "d'ouverture";
+  }
+
+  async function sendEngagementPreparedEmails(type = "opening_notification") {
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
-    const pendingCount = engagementMailJobs.filter((job) => job.status !== "sent").length;
+    if (engagementMailJobsCompetitionId !== selectedEngagementCompetitionId) {
+      await loadEngagementMailJobs({ force: true });
+    }
+    const matchingJobs = engagementMailJobs.filter((job) => job.type === type);
+    const pendingJobs = matchingJobs.filter((job) => job.status !== "sent");
+    const pendingCount = pendingJobs.length;
+    const actionLabel = engagementMailSendActionLabel(type);
+    if (!pendingCount) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Aucun mail ${actionLabel} a envoyer.`;
+      }
+      return;
+    }
+    const sampleRecipients = pendingJobs.slice(0, 6).map((job) => job.toEmail).filter(Boolean);
     const confirmed = global.confirm(
-      `Envoyer les mails prepares de cette competition${pendingCount ? ` (${pendingCount} mail${pendingCount > 1 ? "s" : ""} non envoye${pendingCount > 1 ? "s" : ""})` : ""} ?`
+      [
+        `Envoyer ${pendingCount} mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
+        sampleRecipients.length ? `Destinataires : ${sampleRecipients.join(", ")}${pendingCount > sampleRecipients.length ? ", ..." : ""}` : "",
+        "Les mails deja envoyes ne seront pas renvoyes."
+      ].filter(Boolean).join("\n\n")
     );
     if (!confirmed) return;
-    const button = elements.engagementsSendPreparedEmailsButton;
+    const button = engagementMailSendButton(type);
     if (button) button.disabled = true;
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Envoi des mails prepares...";
+      elements.engagementsDocumentsSummary.textContent = `Envoi des mails ${actionLabel}...`;
     }
     try {
       const result = await callFunction("sendEngagementPreparedEmails", {
         competitionId: selectedEngagementCompetitionId,
-        limit: 100
+        type,
+        limit: 500
       });
       await loadEngagementMailJobs({ force: true });
       if (elements.engagementsDocumentsSummary) {
@@ -4753,7 +4861,7 @@
         const errorCount = Number(result.errorCount || 0);
         const attemptedCount = Number(result.attemptedCount || 0);
         elements.engagementsDocumentsSummary.textContent = [
-          `${sentCount}/${attemptedCount} mail${attemptedCount > 1 ? "s" : ""} envoye${sentCount > 1 ? "s" : ""}`,
+          `${sentCount}/${attemptedCount} mail${attemptedCount > 1 ? "s" : ""} ${actionLabel} envoye${sentCount > 1 ? "s" : ""}`,
           errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
         ].filter(Boolean).join(" - ");
       }
@@ -5603,6 +5711,8 @@
       location: fields.location?.value || "",
       level,
       regionId: level === "national" ? "" : fields.regionId?.value || "",
+      invitedRegionIds: level === "national" ? [] : selectedRegionMultiSelectValues(fields.invitedRegionIds)
+        .filter((region) => normalizedRegionKey(region) !== normalizedRegionKey(fields.regionId?.value || "")),
       entryDeadlineAt: deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? deadlineDate.toISOString() : "",
       computerEmail: fields.computerEmail?.value || "",
       entryStatus: fields.entryStatus?.value || "upcoming",
@@ -5625,6 +5735,7 @@
       location: elements.engagementsLocation,
       level: elements.engagementsLevel,
       regionId: elements.engagementsRegionId,
+      invitedRegionIds: elements.engagementsInvitedRegionIds,
       deadline: elements.engagementsDeadline,
       computerEmail: elements.engagementsComputerEmail,
       poolLength: elements.engagementsPoolLength,
@@ -5647,6 +5758,7 @@
       location: elements.engagementsEditLocation,
       level: elements.engagementsEditLevel,
       regionId: elements.engagementsEditRegionId,
+      invitedRegionIds: elements.engagementsEditInvitedRegionIds,
       deadline: elements.engagementsEditDeadline,
       computerEmail: elements.engagementsEditComputerEmail,
       poolLength: elements.engagementsEditPoolLength,
@@ -5669,6 +5781,68 @@
     return engagementCompetitionPayloadFromFields(editCompetitionFields());
   }
 
+  function shouldSendEngagementOpeningMail(previousStatus, nextStatus) {
+    return previousStatus !== "open" && nextStatus === "open";
+  }
+
+  function engagementOpeningMailScopeLabel(payload = {}) {
+    if ((payload.level || "regional") === "national") {
+      return "Destinataires : admins LivePalmes club, region et national, toutes regions.";
+    }
+    const regions = [
+      payload.regionId,
+      ...(Array.isArray(payload.invitedRegionIds) ? payload.invitedRegionIds : [])
+    ].map(regionDisplayLabel).filter((region) => region && region !== "-");
+    return `Destinataires : admins LivePalmes club, region et national${regions.length ? ` - regions ${regions.join(", ")}` : ""}.`;
+  }
+
+  function confirmEngagementOpeningMail(payload = {}) {
+    return global.confirm([
+      "Ouvrir les engagements et envoyer le mail d'ouverture ?",
+      engagementOpeningMailScopeLabel(payload),
+      "Les mails deja envoyes pour cette competition ne seront pas renvoyes."
+    ].join("\n\n"));
+  }
+
+  async function prepareAndSendEngagementOpeningEmails(competitionId, statusTarget = elements.engagementsDetailStatus) {
+    if (!competitionId) return null;
+    if (statusTarget) {
+      statusTarget.textContent = "Preparation du mail d'ouverture...";
+      statusTarget.dataset.tone = "loading";
+      statusTarget.hidden = false;
+    }
+    const preparation = await callFunction("prepareEngagementOpeningNotificationEmails", { competitionId });
+    const jobCount = Number(preparation.jobCount || 0);
+    if (!jobCount) {
+      if (statusTarget) {
+        statusTarget.textContent = "Engagements ouverts. Aucun destinataire mail trouve.";
+        statusTarget.dataset.tone = "ok";
+      }
+      return preparation;
+    }
+    if (statusTarget) {
+      statusTarget.textContent = `Envoi de ${jobCount} mail${jobCount > 1 ? "s" : ""} d'ouverture...`;
+    }
+    const sendResult = await callFunction("sendEngagementPreparedEmails", {
+      competitionId,
+      type: "opening_notification",
+      limit: 500
+    });
+    if (engagementMailJobsCompetitionId === competitionId || selectedEngagementCompetitionId === competitionId) {
+      await loadEngagementMailJobs({ force: true });
+    }
+    if (statusTarget) {
+      const sentCount = Number(sendResult.sentCount || 0);
+      const errorCount = Number(sendResult.errorCount || 0);
+      statusTarget.textContent = [
+        `Engagements ouverts. ${sentCount}/${jobCount} mail${jobCount > 1 ? "s" : ""} d'ouverture envoye${sentCount > 1 ? "s" : ""}.`,
+        errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}.` : ""
+      ].filter(Boolean).join(" ");
+      statusTarget.dataset.tone = errorCount ? "error" : "ok";
+    }
+    return sendResult;
+  }
+
   async function createEngagementCompetition(event) {
     event?.preventDefault?.();
     if (!canCreateEngagementCompetition()) {
@@ -5678,6 +5852,9 @@
       }
       return;
     }
+    const payload = engagementCompetitionPayloadFromForm();
+    const sendOpeningMail = shouldSendEngagementOpeningMail("upcoming", payload.entryStatus);
+    if (sendOpeningMail && !confirmEngagementOpeningMail(payload)) return;
     const button = elements.engagementsCreateForm?.querySelector("button[type='submit']");
     if (button) button.disabled = true;
     if (elements.engagementsCreateMessage) {
@@ -5685,16 +5862,26 @@
       elements.engagementsCreateMessage.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("createEngagementCompetition", engagementCompetitionPayloadFromForm());
+      const result = await callFunction("createEngagementCompetition", payload);
       elements.engagementsCreateForm?.reset();
       updateEngagementCreateFormAccess();
       engagementCompetitionsLoaded = false;
       setEngagementsTab("calendar");
       await loadEngagementCompetitions({ force: true });
       if (result.competition?.id) await loadEngagementCompetitionDetail(result.competition.id);
+      if (sendOpeningMail && result.competition?.id) {
+        try {
+          await prepareAndSendEngagementOpeningEmails(result.competition.id, elements.engagementsCreateMessage);
+        } catch (mailError) {
+          if (elements.engagementsCreateMessage) {
+            elements.engagementsCreateMessage.textContent = `Competition creee, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsCreateMessage.dataset.tone = "error";
+          }
+        }
+      }
       if (elements.engagementsCreateMessage) {
-        elements.engagementsCreateMessage.textContent = `Competition creee : ${result.competition?.name || "engagements"}.`;
-        elements.engagementsCreateMessage.dataset.tone = "ok";
+        if (!sendOpeningMail) elements.engagementsCreateMessage.textContent = `Competition creee : ${result.competition?.name || "engagements"}.`;
+        if (!sendOpeningMail) elements.engagementsCreateMessage.dataset.tone = "ok";
       }
     } catch (error) {
       if (elements.engagementsCreateMessage) {
@@ -5721,15 +5908,35 @@
         competitionId: selectedEngagementCompetition.id,
         ...engagementCompetitionPayloadFromEditForm()
       };
+      const sendOpeningMail = shouldSendEngagementOpeningMail(selectedEngagementCompetition.entryStatus || "upcoming", payload.entryStatus);
+      if (sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
+        if (elements.engagementsDetailStatus) {
+          elements.engagementsDetailStatus.textContent = "Ouverture annulee.";
+          elements.engagementsDetailStatus.dataset.tone = "loading";
+        }
+        return;
+      }
       const result = await callFunction("updateEngagementCompetition", payload);
       selectedEngagementCompetition = result.competition || null;
       engagementCompetitionsLoaded = false;
       await loadEngagementCompetitions({ force: true });
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty("general");
+      if (sendOpeningMail && selectedEngagementCompetition?.id) {
+        try {
+          await prepareAndSendEngagementOpeningEmails(selectedEngagementCompetition.id, elements.engagementsDetailStatus);
+        } catch (mailError) {
+          if (elements.engagementsDetailStatus) {
+            elements.engagementsDetailStatus.textContent = `Parametres enregistres, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsDetailStatus.dataset.tone = "error";
+          }
+        }
+      }
       if (elements.engagementsDetailStatus) {
-        elements.engagementsDetailStatus.textContent = "Parametres enregistres.";
-        elements.engagementsDetailStatus.dataset.tone = "ok";
+        if (!sendOpeningMail) {
+          elements.engagementsDetailStatus.textContent = "Parametres enregistres.";
+          elements.engagementsDetailStatus.dataset.tone = "ok";
+        }
       }
     } catch (error) {
       if (elements.engagementsDetailStatus) {
@@ -5782,6 +5989,14 @@
         programSessions: selectedEngagementProgramSessionsFromForm(),
         fees: selectedEngagementFeesFromForm()
       };
+      const sendOpeningMail = shouldSendEngagementOpeningMail(selectedEngagementCompetition.entryStatus || "upcoming", payload.entryStatus);
+      if (sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
+        if (elements.engagementsDetailStatus) {
+          elements.engagementsDetailStatus.textContent = "Ouverture annulee.";
+          elements.engagementsDetailStatus.dataset.tone = "loading";
+        }
+        return;
+      }
       const expectedProgramItemCount = payload.programSessions.reduce((sum, session) => sum + (session.items || []).length, 0);
       const result = await callFunction("updateEngagementCompetition", payload);
       const returnedCompetition = result.competition || {};
@@ -5796,9 +6011,21 @@
       engagementDetailEditing = false;
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty();
+      if (sendOpeningMail && selectedEngagementCompetition?.id) {
+        try {
+          await prepareAndSendEngagementOpeningEmails(selectedEngagementCompetition.id, elements.engagementsDetailStatus);
+        } catch (mailError) {
+          if (elements.engagementsDetailStatus) {
+            elements.engagementsDetailStatus.textContent = `Fiche enregistree, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsDetailStatus.dataset.tone = "error";
+          }
+        }
+      }
       if (elements.engagementsDetailStatus) {
-        elements.engagementsDetailStatus.textContent = "Fiche competition enregistree.";
-        elements.engagementsDetailStatus.dataset.tone = "ok";
+        if (!sendOpeningMail) {
+          elements.engagementsDetailStatus.textContent = "Fiche competition enregistree.";
+          elements.engagementsDetailStatus.dataset.tone = "ok";
+        }
       }
     } catch (error) {
       if (elements.engagementsDetailStatus) {
@@ -5818,6 +6045,7 @@
       location: selectedEngagementCompetition.location || "",
       level: selectedEngagementCompetition.level || "regional",
       regionId: selectedEngagementCompetition.regionId || "",
+      invitedRegionIds: selectedEngagementCompetition.invitedRegionIds || [],
       entryDeadlineAt: selectedEngagementCompetition.entryDeadlineAt || "",
       endDate: selectedEngagementCompetition.endDate || selectedEngagementCompetition.date || "",
       computerEmail: selectedEngagementCompetition.computerEmail || "",
@@ -6701,7 +6929,8 @@
     elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);
-    elements.engagementsSendPreparedEmailsButton?.addEventListener("click", sendEngagementPreparedEmails);
+    elements.engagementsSendOpeningEmailsButton?.addEventListener("click", () => sendEngagementPreparedEmails("opening_notification"));
+    elements.engagementsSendClubRecapEmailsButton?.addEventListener("click", () => sendEngagementPreparedEmails("club_recap_pdf"));
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-admin-club-pdf]");
       if (!button) return;
@@ -6823,7 +7052,9 @@
       if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
     });
     elements.engagementsLevel?.addEventListener("change", () => updateEngagementCreateFormAccess());
+    elements.engagementsRegionId?.addEventListener("change", () => updateEngagementCreateFormAccess());
     elements.engagementsEditLevel?.addEventListener("change", () => updateEngagementEditFormAccess());
+    elements.engagementsEditRegionId?.addEventListener("change", () => updateEngagementEditFormAccess());
     elements.engagementsQualificationMode?.addEventListener("change", () => updateEngagementQualificationFields("create"));
     elements.engagementsEditQualificationMode?.addEventListener("change", () => updateEngagementQualificationFields("edit"));
     updateEngagementQualificationFields("create");

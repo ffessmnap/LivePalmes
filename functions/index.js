@@ -55,10 +55,15 @@ const ACCESS_CAPABILITIES = [
   "engagements.national.manage"
 ];
 const ACCESS_CAPABILITY_SET = new Set(ACCESS_CAPABILITIES);
+const ENGAGEMENT_MAIL_CAPABILITIES = [
+  "engagements.club.manage",
+  "engagements.region.manage",
+  "engagements.national.manage"
+];
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
-const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS };
+const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
@@ -301,6 +306,14 @@ async function assertLivePalmesAccess(request) {
 
 function normalizeEmail(value) {
   return cleanText(value).toLowerCase();
+}
+
+function normalizedEngagementRegionKey(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLocaleLowerCase("fr");
 }
 
 function assertEmail(email) {
@@ -3017,6 +3030,7 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     endDate: cleanIsoDate(data.endDate) || cleanIsoDate(data.date),
     location: cleanText(data.location).slice(0, 160),
     regionId: cleanText(data.regionId).slice(0, 80),
+    invitedRegionIds: cleanEngagementRegionIds(data.invitedRegionIds, data.regionId),
     level: cleanEngagementCompetitionLevel(data.level || data.competitionLevel),
     entryDeadlineAt: cleanText(data.entryDeadlineAt).slice(0, 40),
     computerEmail: normalizeEmail(data.computerEmail).slice(0, 180),
@@ -4790,6 +4804,8 @@ function engagementMailJobId(payload = {}) {
 
 function engagementMailRecipientFromUserDoc(doc) {
   const data = doc.data() || {};
+  const capabilities = activeCapabilitiesFromMap(data.capabilities || {})
+    .filter((capability) => ENGAGEMENT_MAIL_CAPABILITIES.includes(capability));
   return cleanFirestoreValue({
     uid: doc.id,
     email: normalizeEmail(data.email).slice(0, 180),
@@ -4797,31 +4813,107 @@ function engagementMailRecipientFromUserDoc(doc) {
     lastName: cleanText(data.lastName).slice(0, 80),
     clubId: cleanText(data.clubId).slice(0, 40),
     clubName: cleanText(data.clubName).slice(0, 140),
-    regionId: cleanText(data.regionId).slice(0, 80)
+    regionId: cleanText(data.regionId).slice(0, 80),
+    capabilities
   });
 }
 
-async function engagementActiveClubMailRecipients(db) {
-  const clubCapabilityField = new admin.firestore.FieldPath("capabilities", "engagements.club.manage");
-  const snapshot = await db.collection("users")
-    .where(clubCapabilityField, "==", true)
-    .limit(1000)
-    .get();
+function engagementRecipientHasCapability(recipient = {}, capability) {
+  return Array.isArray(recipient.capabilities) && recipient.capabilities.includes(capability);
+}
+
+async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
+  const mailCapabilities = capabilities.filter((capability) => ENGAGEMENT_MAIL_CAPABILITIES.includes(capability));
+  const snapshots = await Promise.all(mailCapabilities.map((capability) => {
+    const capabilityField = new admin.firestore.FieldPath("capabilities", capability);
+    return db.collection("users")
+      .where(capabilityField, "==", true)
+      .limit(1000)
+      .get();
+  }));
   const recipientsByEmail = new Map();
-  snapshot.docs
+  snapshots.flatMap((snapshot) => snapshot.docs)
     .filter((doc) => (doc.data() || {}).status === "active")
     .map(engagementMailRecipientFromUserDoc)
-    .filter((recipient) => recipient.email && recipient.clubId)
+    .filter((recipient) => recipient.email && recipient.capabilities?.length)
     .forEach((recipient) => {
-      if (!recipientsByEmail.has(recipient.email)) recipientsByEmail.set(recipient.email, recipient);
+      const existing = recipientsByEmail.get(recipient.email);
+      if (!existing) {
+        recipientsByEmail.set(recipient.email, recipient);
+        return;
+      }
+      recipientsByEmail.set(recipient.email, {
+        ...existing,
+        ...recipient,
+        capabilities: Array.from(new Set([...(existing.capabilities || []), ...(recipient.capabilities || [])]))
+      });
     });
   return [...recipientsByEmail.values()];
 }
 
-function engagementCompetitionOpeningRecipients(recipients = [], competition = {}) {
+async function engagementActiveClubMailRecipients(db) {
+  return (await engagementActiveMailRecipients(db, ["engagements.club.manage"]))
+    .filter((recipient) =>
+      recipient.clubId &&
+      engagementRecipientHasCapability(recipient, "engagements.club.manage")
+    );
+}
+
+function engagementMailRecipientFromContext(context = {}) {
+  const capabilities = [];
+  if (context.national) capabilities.push("engagements.national.manage");
+  else if (context.region) capabilities.push("engagements.region.manage");
+  if (!context.email || !capabilities.length) return null;
+  return {
+    uid: context.uid || "",
+    email: normalizeEmail(context.email).slice(0, 180),
+    firstName: "",
+    lastName: "",
+    clubId: "",
+    clubName: "",
+    regionId: cleanText(context.regionId).slice(0, 80),
+    capabilities
+  };
+}
+
+function engagementDedupMailRecipients(recipients = []) {
+  const recipientsByEmail = new Map();
+  recipients
+    .filter((recipient) => recipient?.email)
+    .forEach((recipient) => {
+      const email = normalizeEmail(recipient.email);
+      const existing = recipientsByEmail.get(email);
+      if (!existing) {
+        recipientsByEmail.set(email, { ...recipient, email });
+        return;
+      }
+      recipientsByEmail.set(email, {
+        ...existing,
+        ...recipient,
+        email,
+        capabilities: Array.from(new Set([...(existing.capabilities || []), ...(recipient.capabilities || [])]))
+      });
+    });
+  return [...recipientsByEmail.values()];
+}
+
+function engagementCompetitionOpeningRecipients(recipients = [], competition = {}, extraRecipients = []) {
   const level = cleanEngagementCompetitionLevel(competition.level);
-  const regionId = cleanText(competition.regionId);
-  return recipients.filter((recipient) => level === "national" || recipient.regionId === regionId);
+  const regionKeys = new Set([
+    cleanText(competition.regionId),
+    ...cleanEngagementRegionIds(competition.invitedRegionIds, competition.regionId)
+  ].map(normalizedEngagementRegionKey).filter(Boolean));
+  return engagementDedupMailRecipients([...extraRecipients, ...recipients]).filter((recipient) => {
+    if (engagementRecipientHasCapability(recipient, "engagements.national.manage")) return true;
+    if (level === "national") {
+      return engagementRecipientHasCapability(recipient, "engagements.club.manage") ||
+        engagementRecipientHasCapability(recipient, "engagements.region.manage");
+    }
+    const recipientRegionKey = normalizedEngagementRegionKey(recipient.regionId);
+    if (!recipientRegionKey || !regionKeys.has(recipientRegionKey)) return false;
+    return engagementRecipientHasCapability(recipient, "engagements.club.manage") ||
+      engagementRecipientHasCapability(recipient, "engagements.region.manage");
+  });
 }
 
 function engagementRecipientsByClub(recipients = []) {
@@ -5356,6 +5448,23 @@ function cleanIsoDateTime(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function cleanEngagementRegionIds(raw = [], excludedRegionId = "") {
+  const values = Array.isArray(raw) ? raw : [raw];
+  const excludedKey = normalizedEngagementRegionKey(excludedRegionId);
+  const seen = new Set();
+  return values
+    .map((value) => cleanText(value).slice(0, 80))
+    .filter(Boolean)
+    .filter((regionId) => normalizedEngagementRegionKey(regionId) !== excludedKey)
+    .filter((regionId) => {
+      const key = normalizedEngagementRegionKey(regionId);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 30);
+}
+
 function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const name = cleanText(raw.name).slice(0, 160);
   const date = cleanIsoDate(raw.date);
@@ -5374,6 +5483,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(raw.maxEventsPerSwimmer);
   const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
   const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
+  const invitedRegionIds = level === "national" ? [] : cleanEngagementRegionIds(raw.invitedRegionIds, regionId);
 
   if (!context.national && !context.region) {
     throw new HttpsError("permission-denied", "Droit creation competition engagements requis.");
@@ -5407,6 +5517,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     endDate,
     location,
     regionId,
+    invitedRegionIds,
     level,
     entryDeadlineAt,
     computerEmail,
@@ -5798,7 +5909,11 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
   }
   assertCanManageEngagementCompetition(context, competitionSnapshot.data() || {});
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
-  const recipients = engagementCompetitionOpeningRecipients(await engagementActiveClubMailRecipients(db), competition);
+  const recipients = engagementCompetitionOpeningRecipients(
+    await engagementActiveMailRecipients(db),
+    competition,
+    [engagementMailRecipientFromContext(context)].filter(Boolean)
+  );
   const now = new Date().toISOString();
   const jobs = [];
   for (const recipient of recipients) {
@@ -5820,7 +5935,7 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
     competitionId,
     recipientCount: recipients.length,
     jobCount: jobs.length,
-    mailStatus: "blocked_missing_config"
+    mailStatus: "ready"
   });
   return {
     ok: true,
@@ -5929,7 +6044,7 @@ exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, 
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const requestedType = cleanText(request.data?.type).slice(0, 80);
-  const limit = Math.max(1, Math.min(Number(request.data?.limit || 100) || 100, 100));
+  const limit = Math.max(1, Math.min(Number(request.data?.limit || 500) || 500, 500));
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
