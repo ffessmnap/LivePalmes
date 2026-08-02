@@ -3170,6 +3170,62 @@
     return ["pending", "generated", "sent"].includes(status) ? status : "pending";
   }
 
+  function engagementClosureAutomationStatusLabel(status) {
+    return {
+      processing: "En cours",
+      completed: "Terminee",
+      completed_with_errors: "Terminee avec erreurs",
+      failed: "Erreur"
+    }[String(status || "")] || "En attente";
+  }
+
+  function engagementClosureAutomationStatusTone(status) {
+    return {
+      processing: "processing",
+      completed: "sent",
+      completed_with_errors: "warning",
+      failed: "failed"
+    }[String(status || "")] || "pending";
+  }
+
+  function formatEngagementAutomationDate(value) {
+    return value ? formatDeadline(value).replace(/^Limite /, "") : "-";
+  }
+
+  function renderEngagementClosureAutomation(competition = {}) {
+    const status = String(competition.closureAutomationStatus || "").trim();
+    const summary = competition.closureAutomationSummary || {};
+    const shouldShow = status || competition.entryStatus === "closed" || competition.closureRecapEmailsPreparedAt || competition.closureRecapEmailsSentAt;
+    if (!shouldShow) return "";
+    const updatedAt = summary.updatedAt || competition.closureAutomationCompletedAt || competition.closureAutomationFailedAt || competition.closureAutomationStartedAt;
+    const rows = [
+      ["Derniere execution", formatEngagementAutomationDate(updatedAt)],
+      ["Clubs traites", `${Number(summary.clubEntryCount || 0)}${Number(summary.skippedClubCount || 0) ? ` - ${Number(summary.skippedClubCount || 0)} ignore${Number(summary.skippedClubCount || 0) > 1 ? "s" : ""}` : ""}`],
+      ["PDF", `${Number(summary.pdfGeneratedCount || 0)} genere${Number(summary.pdfGeneratedCount || 0) > 1 ? "s" : ""} - ${Number(summary.pdfReusedCount || 0)} deja a jour`],
+      ["Mails", `${Number(summary.sentMailCount || 0)}/${Number(summary.attemptedMailCount || 0)} envoye${Number(summary.sentMailCount || 0) > 1 ? "s" : ""}`]
+    ];
+    const errorCount = Number(summary.prepareErrorCount || 0) + Number(summary.sendErrorCount || 0);
+    if (errorCount || competition.closureAutomationReason) {
+      rows.push(["Erreurs", competition.closureAutomationReason || String(errorCount)]);
+    }
+    return `
+      <article class="admin-engagements-closure-card" data-closure-status="${escapeHtml(engagementClosureAutomationStatusTone(status))}">
+        <div class="admin-engagements-closure-card-head">
+          <strong>Fermeture automatique</strong>
+          <span>${escapeHtml(engagementClosureAutomationStatusLabel(status))}</span>
+        </div>
+        <dl>
+          ${rows.map(([label, value]) => `
+            <div>
+              <dt>${escapeHtml(label)}</dt>
+              <dd>${escapeHtml(value)}</dd>
+            </div>
+          `).join("")}
+        </dl>
+      </article>
+    `;
+  }
+
   function engagementDocumentDefinitions(competition = {}) {
     const documents = competition.documents || {};
     return [
@@ -3405,7 +3461,7 @@
         : "Email informatique non renseigne";
     }
     if (elements.engagementsDocumentsList) {
-      elements.engagementsDocumentsList.innerHTML = definitions.map((item) => `
+      elements.engagementsDocumentsList.innerHTML = `${definitions.map((item) => `
         <article class="admin-engagements-document-card" data-document-status="${escapeHtml(item.status)}">
           <div>
             <strong>${escapeHtml(item.title)}</strong>
@@ -3413,7 +3469,7 @@
           </div>
           <span>${escapeHtml(engagementDocumentStatusLabel(item.status))}</span>
         </article>
-      `).join("");
+      `).join("")}${renderEngagementClosureAutomation(competition)}`;
     }
     if (elements.engagementsGeneratedFiles) {
       const files = Array.isArray(competition.generatedFiles) ? competition.generatedFiles : [];
