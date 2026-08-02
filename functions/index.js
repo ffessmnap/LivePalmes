@@ -6084,6 +6084,19 @@ async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, opti
       if (job) jobs.push(job);
     }
   }
+  if (jobs.length || errorCount) {
+    await db.collection("engagementCompetitions").doc(competitionId).set({
+      documents: {
+        clubRecapEmails: {
+          status: jobs.length ? "generated" : "pending",
+          generatedAt: now,
+          updatedAt: now,
+          jobCount: jobs.length,
+          errorCount
+        }
+      }
+    }, { merge: true });
+  }
   return {
     competitionId,
     clubEntryCount: entriesSnapshot.size,
@@ -6165,6 +6178,21 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
     if (job.status === "sent") sentCount += 1;
     else if (job.status === "failed") errorCount += 1;
     jobs.push(job);
+  }
+  if (requestedType === "club_recap_pdf" && candidates.length) {
+    const now = new Date().toISOString();
+    await db.collection("engagementCompetitions").doc(competitionId).set({
+      documents: {
+        clubRecapEmails: {
+          status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
+          generatedAt: now,
+          updatedAt: now,
+          attemptedCount: candidates.length,
+          sentCount,
+          errorCount
+        }
+      }
+    }, { merge: true });
   }
   return {
     competitionId,
