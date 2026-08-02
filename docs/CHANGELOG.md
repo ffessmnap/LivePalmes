@@ -1,5 +1,7 @@
 # Changelog LivePalmes
 
+<!-- description: Historique synthétique des évolutions importantes apportées au projet LivePalmes. -->
+
 Ce fichier sert a garder une trace simple des evolutions importantes.
 
 ## 2026-05-27

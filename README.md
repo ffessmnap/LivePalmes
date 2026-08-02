@@ -1,5 +1,7 @@
 # LivePalmes
 
+<!-- description: Présentation générale de LivePalmes, démarrage local et principaux outils du dépôt. -->
+
 Outil de suivi live pour la nage avec palmes : console Live, Speaker, Juge arbitre, Juge video et Informatique.
 
 En local, double-clique sur `Demarrer la console.bat`.

@@ -1,5 +1,7 @@
 # Gestion de la base des performances LivePalmes
 
+<!-- description: Gestion quotidienne des performances, imports, corrections, sources et publications publiques. -->
+
 Ce document explique simplement comment LivePalmes gere les performances utilisees pour les TOP, les fiches nageurs, les MPF et les records.
 
 L'idee importante : LivePalmes a maintenant une base active unique pour les performances. Les anciennes sources restent conservees, mais l'exploitation quotidienne se fait dans une base consolidee.

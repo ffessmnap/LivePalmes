@@ -1,5 +1,7 @@
 # Authentification admin et codes PIN
 
+<!-- description: Fonctionnement des comptes, capacités et codes PIN protégeant les consoles et accès administratifs. -->
+
 ## Objectif
 
 ## Acces actuel aux consoles

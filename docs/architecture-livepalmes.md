@@ -1,5 +1,7 @@
 # Architecture LivePalmes
 
+<!-- description: Architecture cible des consoles par rôle et principes d'évolution modulaire du code. -->
+
 ## Objectif
 
 LivePalmes doit rester simple a utiliser en competition, mais son code doit permettre de continuer a ajouter des fonctions sans fragiliser les consoles existantes.

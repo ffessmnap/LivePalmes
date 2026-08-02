@@ -1,5 +1,7 @@
 # Base publique consolidée des performances
 
+<!-- description: Principe et commandes de génération de la base publique consolidée des performances. -->
+
 Objectif : ne plus fusionner l'historique IntrAnap et les compétitions importées au chargement des pages publiques.
 
 ## Principe

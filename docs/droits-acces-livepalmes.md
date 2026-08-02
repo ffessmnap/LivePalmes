@@ -1,5 +1,7 @@
 # Droits d'acces LivePalmes
 
+<!-- description: Modèle des rôles, capacités et délégations d'accès au portail et aux consoles LivePalmes. -->
+
 ## Objectif
 
 Preparer LivePalmes a devenir un outil utilise par plusieurs publics :

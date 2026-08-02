@@ -1,5 +1,7 @@
 # Base LivePalmes unique des performances
 
+<!-- description: Modèle cible de la base interne unique des performances et de son journal de modifications. -->
+
 ## Cible
 
 La source officielle devient une base interne unique :

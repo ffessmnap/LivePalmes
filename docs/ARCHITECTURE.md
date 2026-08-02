@@ -1,5 +1,7 @@
 # Architecture LivePalmes
 
+<!-- description: Architecture technique actuelle, responsabilités des pages, stockage des données et vérifications avant publication. -->
+
 Ce document explique l'organisation de LivePalmes avec des mots simples.
 
 Il sert a comprendre :

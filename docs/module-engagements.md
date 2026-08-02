@@ -1,5 +1,7 @@
 # Module engagements LivePalmes
 
+<!-- description: Cahier des charges fonctionnel du futur module de gestion des engagements en compétition. -->
+
 ## Objectif
 
 Ce document cadre la premiere version du futur module d'engagements LivePalmes.

@@ -1,5 +1,7 @@
 # Regles Firebase LivePalmes
 
+<!-- description: Périmètre des données Firestore et règles de sécurité Firebase utilisées par LivePalmes. -->
+
 Ce fichier sert a sortir du mode test Firestore.
 
 ## Principe

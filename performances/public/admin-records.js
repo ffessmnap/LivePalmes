@@ -195,14 +195,14 @@ async function loadLocalRecordsData() {
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `public/data/records-data.js?v=records-firestore-20260722080552&reload=${Date.now()}`;
+    script.src = `public/data/records-data.js?v=records-firestore-20260729212535&reload=${Date.now()}`;
     script.onload = () => resolve();
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   try {
-    const response = await fetch("public/data/records-data.js?v=records-firestore-20260722080552", { cache: "no-store" });
+    const response = await fetch("public/data/records-data.js?v=records-firestore-20260729212535", { cache: "no-store" });
     if (!response.ok) return window.LIVEPALMES_RECORDS || {};
     const text = await response.text();
     const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
