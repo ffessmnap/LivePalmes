@@ -3481,6 +3481,22 @@
     renderEngagementMailJobs();
   }
 
+  function updateSelectedEngagementDocumentStatus(key, status, generatedAt = new Date().toISOString()) {
+    if (!key || !selectedEngagementCompetition) return;
+    selectedEngagementCompetition = {
+      ...selectedEngagementCompetition,
+      documents: {
+        ...(selectedEngagementCompetition.documents || {}),
+        [key]: {
+          ...((selectedEngagementCompetition.documents || {})[key] || {}),
+          status,
+          generatedAt
+        }
+      }
+    };
+    renderEngagementDocuments(selectedEngagementCompetition);
+  }
+
   function engagementEventSummary(events = []) {
     const eventList = Array.isArray(events) ? events : [];
     const individualCount = eventList.filter((event) => event.type === "individual").length;
@@ -4847,6 +4863,9 @@
       const result = await callFunction("prepareEngagementClubRecapEmails", {
         competitionId: selectedEngagementCompetitionId
       });
+      if (Number(result.jobCount || 0)) {
+        updateSelectedEngagementDocumentStatus("clubRecapEmails", "generated");
+      }
       await loadEngagementMailJobs({ force: true });
       if (elements.engagementsDocumentsSummary) {
         const jobCount = Number(result.jobCount || 0);
@@ -4921,6 +4940,12 @@
         type,
         limit: 500
       });
+      if (type === "club_recap_pdf" && Number(result.attemptedCount || 0)) {
+        updateSelectedEngagementDocumentStatus(
+          "clubRecapEmails",
+          Number(result.errorCount || 0) ? "generated" : "sent"
+        );
+      }
       await loadEngagementMailJobs({ force: true });
       if (elements.engagementsDocumentsSummary) {
         const sentCount = Number(result.sentCount || 0);
