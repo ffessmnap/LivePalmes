@@ -4906,7 +4906,7 @@
       [
         `Envoyer ${pendingCount} mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
         sampleRecipients.length ? `Destinataires : ${sampleRecipients.join(", ")}${pendingCount > sampleRecipients.length ? ", ..." : ""}` : "",
-        "Les mails deja envoyes ne seront pas renvoyes."
+        "Seuls les mails prepares, bloques ou en erreur seront envoyes."
       ].filter(Boolean).join("\n\n")
     );
     if (!confirmed) return;
@@ -5866,7 +5866,7 @@
     return global.confirm([
       "Ouvrir les engagements et envoyer le mail d'ouverture ?",
       engagementOpeningMailScopeLabel(payload),
-      "Les mails deja envoyes pour cette competition ne seront pas renvoyes."
+      "Les mails seront prepares pour ce cycle d'ouverture puis envoyes aux destinataires concernes."
     ].join("\n\n"));
   }
 
