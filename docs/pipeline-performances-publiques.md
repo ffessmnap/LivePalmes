@@ -1,5 +1,7 @@
 # Pipeline des performances publiques
 
+<!-- description: Pipeline de reconstruction et de publication des fichiers optimisés utilisés par les pages publiques de performances. -->
+
 Ce document fixe la chaine propre pour reconstruire les donnees publiques des performances.
 
 ## Objectif

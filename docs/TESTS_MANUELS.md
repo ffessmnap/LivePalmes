@@ -1,5 +1,7 @@
 # Tests manuels LivePalmes
 
+<!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
+
 Cette checklist sert avant une publication importante ou apres une modification sensible.
 
 ## Test rapide obligatoire

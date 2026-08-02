@@ -1,5 +1,7 @@
 # Integration du module engagements dans le portail
 
+<!-- description: Proposition d'intégration technique et fonctionnelle du module engagements dans le portail existant. -->
+
 ## Objectif
 
 Ce document complete le cahier des charges fonctionnel :

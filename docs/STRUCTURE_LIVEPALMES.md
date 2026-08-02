@@ -1,5 +1,7 @@
 # Structure LivePalmes
 
+<!-- description: Carte fonctionnelle des pages, dossiers et grandes zones du dépôt LivePalmes. -->
+
 Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de LivePalmes sans imposer de deplacement de fichiers.
 
 ## Principe important
