@@ -67,7 +67,7 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
-  schedule: "every 15 minutes",
+  schedule: "* * * * *",
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
@@ -85,7 +85,6 @@ const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
 const LIVEPALMES_STORAGE_BUCKET = "livepalmes.firebasestorage.app";
 const ENGAGEMENT_CLOSURE_BATCH_LIMIT = 5;
-const ENGAGEMENT_CLOSURE_SCAN_LIMIT = 100;
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
@@ -107,6 +106,7 @@ const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
 const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 1;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
 const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
+const ENGAGEMENT_CLOSURE_QUEUE_COLLECTION = "engagementClosureQueue";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
@@ -3071,6 +3071,26 @@ function engagementCompetitionCalendarRef(db, endYear) {
   return db.collection(ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION).doc(String(Math.trunc(Number(endYear) || 0)));
 }
 
+function engagementClosureQueueRef(db, competitionId) {
+  return db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION).doc(cleanText(competitionId).slice(0, 128));
+}
+
+function engagementClosureQueueItem(competition = {}, competitionId = "", now = new Date().toISOString()) {
+  const entryStatus = cleanEngagementEntryStatus(competition.entryStatus || competition.status);
+  const runAt = cleanIsoDateTime(competition.entryDeadlineAt);
+  if (entryStatus !== "open" || !runAt) return null;
+  return cleanFirestoreValue({
+    competitionId: cleanText(competitionId).slice(0, 128),
+    competitionName: cleanText(competition.name || competition.title).slice(0, 160),
+    runAt,
+    entryDeadlineAt: runAt,
+    regionId: cleanText(competition.regionId).slice(0, 80),
+    level: cleanEngagementCompetitionLevel(competition.level || competition.competitionLevel),
+    status: "scheduled",
+    updatedAt: now
+  });
+}
+
 function engagementCompetitionCalendarItemsFromData(data = {}) {
   const competitions = data.competitions && typeof data.competitions === "object" ? data.competitions : {};
   return Object.values(competitions)
@@ -3144,6 +3164,14 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
         [competitionId]: engagementCompetitionCalendarItem(after, competitionId)
       }
     }, { merge: true });
+    batchSize += 1;
+  }
+  const queueItem = after ? engagementClosureQueueItem(after, competitionId, now) : null;
+  if (queueItem) {
+    batch.set(engagementClosureQueueRef(db, competitionId), queueItem, { merge: true });
+    batchSize += 1;
+  } else {
+    batch.delete(engagementClosureQueueRef(db, competitionId));
     batchSize += 1;
   }
   if (batchSize) await batch.commit();
@@ -6278,25 +6306,40 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
 exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
   const db = admin.firestore();
   const now = new Date().toISOString();
-  const snapshot = await db.collection("engagementCompetitions")
-    .where("entryStatus", "==", "open")
-    .limit(ENGAGEMENT_CLOSURE_SCAN_LIMIT)
+  const snapshot = await db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION)
+    .where("runAt", "<=", now)
+    .orderBy("runAt")
+    .limit(ENGAGEMENT_CLOSURE_BATCH_LIMIT)
     .get();
-  const dueCompetitions = snapshot.docs
-    .filter((doc) => {
-      const deadline = cleanIsoDateTime((doc.data() || {}).entryDeadlineAt);
-      return deadline && deadline <= now;
-    })
-    .slice(0, ENGAGEMENT_CLOSURE_BATCH_LIMIT);
   const results = [];
-  for (const competitionSnapshot of dueCompetitions) {
-    results.push(await processEngagementCompetitionAutomaticClosure(db, competitionSnapshot, now));
+  for (const queueSnapshot of snapshot.docs) {
+    const queue = queueSnapshot.data() || {};
+    const competitionId = cleanText(queue.competitionId || queueSnapshot.id).slice(0, 128);
+    if (!competitionId) {
+      await queueSnapshot.ref.delete();
+      results.push({ skipped: true, reason: "missing-competition-id" });
+      continue;
+    }
+    const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
+    if (!competitionSnapshot.exists) {
+      await queueSnapshot.ref.delete();
+      results.push({ competitionId, skipped: true, reason: "competition-not-found" });
+      continue;
+    }
+    const result = await processEngagementCompetitionAutomaticClosure(db, competitionSnapshot, now);
+    results.push(result);
+    if (result.skipped && result.reason === "deadline-not-reached") {
+      const queueItem = engagementClosureQueueItem(competitionSnapshot.data() || {}, competitionSnapshot.id, now);
+      if (queueItem) await queueSnapshot.ref.set(queueItem, { merge: true });
+      else await queueSnapshot.ref.delete();
+    } else {
+      await queueSnapshot.ref.delete();
+    }
   }
-  if (dueCompetitions.length || results.length) {
+  if (snapshot.size || results.length) {
     await writeAuditLog("engagementCompetition.automaticClosureSweep", "system:engagementClosureScheduler", {
       checkedAt: now,
-      openCompetitionScanCount: snapshot.size,
-      dueCandidateCount: dueCompetitions.length,
+      dueQueueCount: snapshot.size,
       processedCount: results.filter((result) => !result.skipped).length,
       skippedCount: results.filter((result) => result.skipped).length,
       failedCount: results.filter((result) => result.status === "failed").length
