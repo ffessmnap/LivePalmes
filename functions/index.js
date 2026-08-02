@@ -52,6 +52,7 @@ const PUBLIC_RESULT_TRIGGER_OPTIONS = {
 const PIN_MAX_FAILED_ATTEMPTS = 5;
 const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
+const LIVEPALMES_STORAGE_BUCKET = "livepalmes.firebasestorage.app";
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
@@ -4610,7 +4611,7 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
 async function readStoredEngagementClubRecapPdf(document = {}) {
   const storagePath = cleanText(document.storagePath);
   if (!storagePath) return null;
-  const [buffer] = await admin.storage().bucket().file(storagePath).download();
+  const [buffer] = await admin.storage().bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).download();
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
 }
 
@@ -4620,7 +4621,7 @@ async function saveEngagementClubRecapPdfDocument(competition = {}, entry = {}, 
   const storagePath = engagementClubRecapPdfStoragePath(competition.id || entry.competitionId, entry.clubId);
   const fileName = cleanText(pdf.fileName) || "recap-engagements-livepalmes.pdf";
   const buffer = Buffer.isBuffer(pdf.buffer) ? pdf.buffer : Buffer.from(pdf.buffer || []);
-  await admin.storage().bucket().file(storagePath).save(buffer, {
+  await admin.storage().bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(buffer, {
     resumable: false,
     contentType: "application/pdf",
     metadata: {
@@ -5419,6 +5420,7 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
   let reusedCount = 0;
   let skippedCount = 0;
   let errorCount = 0;
+  const errors = [];
   const entries = [];
   for (const entryDoc of entriesSnapshot.docs) {
     const entry = engagementClubEntryItem(entryDoc);
@@ -5441,6 +5443,11 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
       }));
     } catch (error) {
       errorCount += 1;
+      errors.push({
+        clubId: entry.clubId,
+        clubName: entry.clubName,
+        message: cleanText(error?.message || String(error)).slice(0, 220)
+      });
       console.warn("engagement recap pdf generation failed", {
         competitionId,
         clubId: entry.clubId,
@@ -5464,6 +5471,7 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
     reusedCount,
     skippedCount,
     errorCount,
+    errors,
     entries
   };
 });

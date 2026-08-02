@@ -4532,6 +4532,15 @@
           errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
         ].filter(Boolean).join(" - ");
       }
+      if (Array.isArray(result.errors) && result.errors.length && elements.engagementsClubRecapFiles) {
+        const details = result.errors.slice(0, 5).map((item) =>
+          `${item.clubName || item.clubId || "Club"} : ${item.message || "erreur inconnue"}`
+        ).join(" | ");
+        elements.engagementsClubRecapFiles.insertAdjacentHTML(
+          "afterbegin",
+          `<p class="admin-portal-message" data-tone="error">PDF non generes : ${escapeHtml(details)}</p>`
+        );
+      }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Generation PDF clubs impossible : ${error?.message || error}`;
