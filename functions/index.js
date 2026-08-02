@@ -5045,6 +5045,7 @@ function engagementMailJobItemFromData(data = {}, id = "") {
 async function upsertEngagementMailJob(payload = {}, now = "") {
   const id = engagementMailJobId(payload);
   if (!id || !normalizeEmail(payload.toEmail)) return null;
+  const preparedAt = now || new Date().toISOString();
   const status = engagementMailPreparedStatus();
   const job = cleanFirestoreValue({
     id,
@@ -5068,10 +5069,18 @@ async function upsertEngagementMailJob(payload = {}, now = "") {
       contentType: cleanText(attachment.contentType).slice(0, 80),
       storagePath: cleanText(attachment.storagePath).slice(0, 260)
     })).filter((attachment) => attachment.storagePath) : [],
-    updatedAt: now || new Date().toISOString(),
-    createdAt: now || new Date().toISOString()
+    preparedAt,
+    updatedAt: preparedAt,
+    createdAt: preparedAt
   });
-  await admin.firestore().collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set(job, { merge: true });
+  await admin.firestore().collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set({
+    ...job,
+    sentAt: admin.firestore.FieldValue.delete(),
+    sentBy: admin.firestore.FieldValue.delete(),
+    sentByEmail: admin.firestore.FieldValue.delete(),
+    failedAt: admin.firestore.FieldValue.delete(),
+    providerMessageId: admin.firestore.FieldValue.delete()
+  }, { merge: true });
   return engagementMailJobItemFromData(job, id);
 }
 
