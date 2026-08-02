@@ -3969,6 +3969,21 @@
   font-weight: 850;
 }
 
+.admin-engagements-mail-jobs-row[data-mail-status="ready"] .admin-engagements-mail-status {
+  background: #e8f1ff;
+  color: #24509b;
+}
+
+.admin-engagements-mail-jobs-row[data-mail-status="sent"] .admin-engagements-mail-status {
+  background: #e4f7ec;
+  color: #1d6b3f;
+}
+
+.admin-engagements-mail-jobs-row[data-mail-status="failed"] .admin-engagements-mail-status {
+  background: #ffe9df;
+  color: #9a3412;
+}
+
 .admin-engagements-detail-list {
   display: grid;
   grid-template-columns: 1fr;
