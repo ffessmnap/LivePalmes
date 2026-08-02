@@ -3807,6 +3807,80 @@
   color: #24509b;
 }
 
+.admin-engagements-closure-card {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-closure-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-engagements-closure-card-head strong {
+  font-size: 0.88rem;
+}
+
+.admin-engagements-closure-card-head span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #eef5f3;
+  color: #31524c;
+  font-size: 0.76rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.admin-engagements-closure-card[data-closure-status="sent"] .admin-engagements-closure-card-head span {
+  background: #e8f1ff;
+  color: #24509b;
+}
+
+.admin-engagements-closure-card[data-closure-status="warning"] .admin-engagements-closure-card-head span,
+.admin-engagements-closure-card[data-closure-status="processing"] .admin-engagements-closure-card-head span {
+  background: #fff4d6;
+  color: #7b5a08;
+}
+
+.admin-engagements-closure-card[data-closure-status="failed"] .admin-engagements-closure-card-head span {
+  background: #ffe7dc;
+  color: #a12b0b;
+}
+
+.admin-engagements-closure-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.admin-engagements-closure-card dl > div {
+  min-width: 0;
+}
+
+.admin-engagements-closure-card dt,
+.admin-engagements-closure-card dd {
+  margin: 0;
+}
+
+.admin-engagements-closure-card dt {
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-closure-card dd {
+  margin-top: 2px;
+  color: #0d2f2b;
+  font-size: 0.84rem;
+  font-weight: 820;
+}
+
 .admin-engagements-generated-files a {
   color: #0b7285;
   font-weight: 850;
@@ -4375,6 +4449,10 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-engagements-closure-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-engagements-events-list {
     grid-template-columns: 1fr;
   }
@@ -4614,6 +4692,10 @@
 
   .admin-engagements-detail-list dd {
     padding-top: 5px;
+  }
+
+  .admin-engagements-closure-card dl {
+    grid-template-columns: 1fr;
   }
 
   .admin-engagements-club-recap-files,

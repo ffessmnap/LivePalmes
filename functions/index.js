@@ -3187,12 +3187,34 @@ exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
 function engagementCompetitionDetailItem(doc) {
   const data = doc.data() || {};
   const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
+  const closureSummary = data.closureAutomationSummary && typeof data.closureAutomationSummary === "object"
+    ? data.closureAutomationSummary
+    : {};
   return {
     ...engagementCompetitionListItem(doc),
     events,
     programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
     fees: cleanEngagementFees(data.fees || {}, { strict: false }),
     documents: engagementCompetitionDocumentsMetadata(data.documents || {}),
+    closureAutomationStatus: cleanText(data.closureAutomationStatus).slice(0, 80),
+    closureAutomationStartedAt: cleanText(data.closureAutomationStartedAt).slice(0, 40),
+    closureAutomationCompletedAt: cleanText(data.closureAutomationCompletedAt).slice(0, 40),
+    closureAutomationFailedAt: cleanText(data.closureAutomationFailedAt).slice(0, 40),
+    closureAutomationReason: cleanText(data.closureAutomationReason).slice(0, 220),
+    closureRecapEmailsPreparedAt: cleanText(data.closureRecapEmailsPreparedAt).slice(0, 40),
+    closureRecapEmailsSentAt: cleanText(data.closureRecapEmailsSentAt).slice(0, 40),
+    closureAutomationSummary: {
+      clubEntryCount: Math.max(0, Math.trunc(Number(closureSummary.clubEntryCount) || 0)),
+      skippedClubCount: Math.max(0, Math.trunc(Number(closureSummary.skippedClubCount) || 0)),
+      jobCount: Math.max(0, Math.trunc(Number(closureSummary.jobCount) || 0)),
+      pdfGeneratedCount: Math.max(0, Math.trunc(Number(closureSummary.pdfGeneratedCount) || 0)),
+      pdfReusedCount: Math.max(0, Math.trunc(Number(closureSummary.pdfReusedCount) || 0)),
+      prepareErrorCount: Math.max(0, Math.trunc(Number(closureSummary.prepareErrorCount) || 0)),
+      attemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.attemptedMailCount) || 0)),
+      sentMailCount: Math.max(0, Math.trunc(Number(closureSummary.sentMailCount) || 0)),
+      sendErrorCount: Math.max(0, Math.trunc(Number(closureSummary.sendErrorCount) || 0)),
+      updatedAt: cleanText(closureSummary.updatedAt).slice(0, 40)
+    },
     createdAt: cleanText(data.createdAt).slice(0, 40),
     createdBy: cleanText(data.createdBy).slice(0, 128),
     updatedBy: cleanText(data.updatedBy).slice(0, 128)
