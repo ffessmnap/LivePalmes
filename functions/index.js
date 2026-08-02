@@ -67,7 +67,7 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
-  schedule: "* * * * *",
+  schedule: "1 * * * *",
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
@@ -5487,6 +5487,14 @@ function cleanIsoDateTime(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function cleanEngagementDeadlineAt(value) {
+  const text = cleanIsoDateTime(value);
+  if (!text) return "";
+  const date = new Date(text);
+  date.setUTCMinutes(0, 0, 0);
+  return date.toISOString();
+}
+
 function cleanEngagementRegionIds(raw = [], excludedRegionId = "") {
   const values = Array.isArray(raw) ? raw : [raw];
   const excludedKey = normalizedEngagementRegionKey(excludedRegionId);
@@ -5510,7 +5518,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const endDate = cleanIsoDate(raw.endDate) || date;
   const location = cleanText(raw.location).slice(0, 160);
   const level = cleanEngagementCompetitionLevel(raw.level);
-  const entryDeadlineAt = cleanIsoDateTime(raw.entryDeadlineAt);
+  const entryDeadlineAt = cleanEngagementDeadlineAt(raw.entryDeadlineAt);
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email informatique");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
   const poolLength = cleanEngagementPoolLength(raw.poolLength);

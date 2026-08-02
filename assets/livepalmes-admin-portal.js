@@ -1899,6 +1899,16 @@
     return local.toISOString().slice(0, 16);
   }
 
+  function normalizeEngagementDeadlineField(field) {
+    if (!field?.value) return "";
+    const date = new Date(field.value);
+    if (Number.isNaN(date.getTime())) return field.value;
+    date.setMinutes(0, 0, 0);
+    const normalized = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    field.value = normalized;
+    return normalized;
+  }
+
   function syncEngagementEndDate(startField, endField) {
     if (!startField || !endField) return;
     const shouldSync = !endField.value || endField.dataset.autoFromStart !== "false";
@@ -5698,7 +5708,7 @@
   }
 
   function engagementCompetitionPayloadFromFields(fields = {}) {
-    const deadlineValue = fields.deadline?.value || "";
+    const deadlineValue = normalizeEngagementDeadlineField(fields.deadline) || fields.deadline?.value || "";
     const deadlineDate = deadlineValue ? new Date(deadlineValue) : null;
     const level = fields.level?.value || "regional";
     const qualificationTimesMode = fields.qualificationMode?.value || "all";
@@ -6890,6 +6900,8 @@
     elements.engagementsEndDate?.addEventListener("change", () => markEngagementEndDateManual(elements.engagementsDate, elements.engagementsEndDate));
     elements.engagementsEditDate?.addEventListener("change", () => syncEngagementEndDate(elements.engagementsEditDate, elements.engagementsEditEndDate));
     elements.engagementsEditEndDate?.addEventListener("change", () => markEngagementEndDateManual(elements.engagementsEditDate, elements.engagementsEditEndDate));
+    elements.engagementsDeadline?.addEventListener("change", () => normalizeEngagementDeadlineField(elements.engagementsDeadline));
+    elements.engagementsEditDeadline?.addEventListener("change", () => normalizeEngagementDeadlineField(elements.engagementsEditDeadline));
     elements.engagementsFeesForm?.addEventListener("submit", saveEngagementCompetitionDetail);
     elements.engagementsFeesForm?.addEventListener("input", () => markEngagementDetailTabDirty("fees"));
     elements.engagementsFeesForm?.addEventListener("change", () => markEngagementDetailTabDirty("fees"));
