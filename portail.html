@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260803-portal-touch-navigation-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260803-portal-simplified-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -20,11 +20,6 @@
         <img class="admin-portal-livepalmes-logo" src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="">
       </div>
       <div class="admin-portal-topbar-actions">
-        <button id="adminPortalSearchButton" class="admin-portal-search-button" type="button" aria-haspopup="dialog" aria-controls="adminPortalSearchDialog">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg>
-          <span>Rechercher</span>
-          <kbd>Ctrl K</kbd>
-        </button>
         <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
           <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
             <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
@@ -214,26 +209,6 @@
                 <h2 id="adminOverviewViewTitle">Vue d’ensemble</h2>
                 <p>Retrouvez les outils disponibles pour votre profil.</p>
               </div>
-
-              <div class="admin-overview-intro" role="status">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
-                <div>
-                  <strong>Votre espace de gestion est prêt</strong>
-                  <p>Les rubriques ci-dessous respectent les habilitations déjà associées à votre compte.</p>
-                </div>
-              </div>
-
-              <section id="adminPortalQuickAccess" class="admin-portal-quick-access" aria-labelledby="adminPortalQuickAccessTitle" hidden>
-                <div class="admin-portal-quick-access-head">
-                  <div>
-                    <span>Accès rapide</span>
-                    <h3 id="adminPortalQuickAccessTitle">Favoris et éléments récents</h3>
-                  </div>
-                  <button id="adminPortalQuickAccessClear" class="ghost-button" type="button">Effacer les récents</button>
-                </div>
-                <div id="adminPortalFavorites" class="admin-portal-quick-list" aria-label="Outils favoris"></div>
-                <div id="adminPortalRecents" class="admin-portal-quick-list" aria-label="Outils récemment consultés"></div>
-              </section>
 
               <div class="admin-overview-grid admin-overview-spaces" aria-label="Espaces disponibles">
                 <article class="admin-overview-space-card" data-overview-space>
@@ -2192,26 +2167,6 @@
       </section>
     </main>
 
-    <div id="adminPortalSearchDialog" class="admin-portal-search-dialog" role="dialog" aria-modal="true" aria-labelledby="adminPortalSearchTitle" hidden>
-      <button class="admin-portal-search-backdrop" type="button" data-portal-search-close aria-label="Fermer la recherche"></button>
-      <section class="admin-portal-search-panel">
-        <div class="admin-portal-search-head">
-          <div>
-            <span>Navigation rapide</span>
-            <h2 id="adminPortalSearchTitle">Rechercher dans le portail</h2>
-          </div>
-          <button class="ghost-button" type="button" data-portal-search-close>Fermer</button>
-        </div>
-        <label class="admin-portal-search-field">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg>
-          <input id="adminPortalSearchInput" type="search" autocomplete="off" aria-label="Rechercher un outil ou une compétition chargée" placeholder="Outil, espace ou compétition chargée…">
-          <kbd>Échap</kbd>
-        </label>
-        <p id="adminPortalSearchHint" class="admin-portal-search-hint">La recherche respecte les outils visibles pour votre profil.</p>
-        <div id="adminPortalSearchResults" class="admin-portal-search-results" role="listbox" aria-label="Résultats de recherche"></div>
-      </section>
-    </div>
-
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
@@ -2219,6 +2174,6 @@
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260803-space-home-1"></script>
     <script src="assets/livepalmes-admin-portal.js?v=20260803-portal-touch-navigation-1"></script>
-    <script src="assets/livepalmes-portal-ux.js?v=20260803-portal-ux-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20260803-portal-simplified-1"></script>
   </body>
 </html>
