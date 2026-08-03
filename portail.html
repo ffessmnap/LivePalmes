@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260729-access-delete-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260803-portal-final-ui-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -36,7 +36,7 @@
     <main class="admin-portal-shell">
       <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion au portail LivePalmes">
         <div>
-          <span>Acces protege</span>
+          <span>Accès protégé</span>
           <strong>Connexion au portail</strong>
         </div>
         <form id="adminPortalLoginForm" class="admin-portal-form">
@@ -50,7 +50,7 @@
           </label>
           <div class="admin-portal-actions">
             <button type="submit">Connexion</button>
-            <button id="adminPortalResetButton" class="ghost-button" type="button">Mot de passe oublie</button>
+            <button id="adminPortalResetButton" class="ghost-button" type="button">Mot de passe oublié</button>
           </div>
         </form>
         <p id="adminPortalMessage" class="admin-portal-message" aria-live="polite"></p>
@@ -111,13 +111,15 @@
               <span class="admin-portal-nav-title">Navigation</span>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavGeneral">
                 <h2 id="adminNavGeneral">Général</h2>
-                <a href="#mon-compte" data-admin-view-link="account">Mon compte</a>
-                <a href="#demande-acces" data-admin-view-link="accessRequest">Demander un acc&egrave;s</a>
+                <a href="#accueil" data-admin-view-link="dashboard"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></span><span>Vue d’ensemble</span></a>
+                <a href="#mon-compte" data-admin-view-link="account"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span>Mon compte</span></a>
+                <a href="#demande-acces" data-admin-view-link="accessRequest"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span><span>Demander un acc&egrave;s</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPerformances">
                 <h2 id="adminNavPerformances">Performances</h2>
                 <div class="admin-portal-nav-nested" data-admin-performance-menu>
                   <button id="adminPortalPerformanceToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalPerformanceSubmenu">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
                     <span>Gestion des performances</span>
                     <span aria-hidden="true">⌄</span>
                   </button>
@@ -129,6 +131,7 @@
                 </div>
                 <div class="admin-portal-nav-nested" data-admin-dtn-menu>
                   <button id="adminPortalDtnToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalDtnSubmenu" data-capability-nav="dtn.view">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
                     <span>Espace DTN</span>
                     <span aria-hidden="true">⌄</span>
                   </button>
@@ -140,11 +143,12 @@
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
                 <h2 id="adminNavCompetition">Compétitions</h2>
-                <a class="admin-portal-nav-club-link" href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar">Espace club</a>
-                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers">Mes nageurs</a>
-                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople">Mes officiels</a>
+                <a class="admin-portal-nav-club-link" href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span><span>Espace club</span></a>
+                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 21a6 6 0 0 1 12 0M14 16a5 5 0 0 1 7 5"></path></svg></span><span>Mes nageurs</span></a>
+                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span><span>Mes officiels</span></a>
                 <div class="admin-portal-nav-nested" data-engagements-admin-nav hidden>
                   <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
                     <span>Administration des comp&eacute;titions</span>
                     <span aria-hidden="true">⌄</span>
                   </button>
@@ -155,16 +159,82 @@
                     <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Administration nationale <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                   </div>
                 </div>
-                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access">Consoles comp&eacute;tition <span aria-hidden="true">↗</span></a>
+                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"></rect><path d="M8 22h8M12 18v4"></path></svg></span><span>Consoles comp&eacute;tition</span><span aria-hidden="true">↗</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPortal">
                 <h2 id="adminNavPortal">Gestion du portail</h2>
-                <a href="#gestion-acces" data-admin-view-link="access" data-access-management-nav hidden>Gestion des accès</a>
+                <a href="#gestion-acces" data-admin-view-link="access" data-access-management-nav hidden><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span><span>Gestion des accès</span></a>
               </section>
             </nav>
           </aside>
 
           <div class="admin-portal-workspace">
+            <section id="adminOverviewView" class="admin-portal-overview-view" data-admin-view="dashboard" aria-labelledby="adminOverviewViewTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Portail LivePalmes</span>
+                <h2 id="adminOverviewViewTitle">Vue d’ensemble</h2>
+                <p>Retrouvez les outils disponibles pour votre profil.</p>
+              </div>
+
+              <div class="admin-overview-intro" role="status">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+                <div>
+                  <strong>Votre espace de gestion est prêt</strong>
+                  <p>Les rubriques ci-dessous respectent les habilitations déjà associées à votre compte.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils disponibles">
+                <a class="admin-overview-card" href="#mon-compte">
+                  <span class="admin-overview-card-icon tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
+                  <span class="admin-overview-card-label">Général</span>
+                  <strong>Mon compte</strong>
+                  <p>Consulter votre périmètre et modifier vos identifiants.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+
+                <a class="admin-overview-card" href="#records-mpf" data-capability-panel="records.manage">
+                  <span class="admin-overview-card-icon tone-performance" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
+                  <span class="admin-overview-card-label">Performances</span>
+                  <strong>Records et MPF</strong>
+                  <p>Préparer et suivre les mises à jour des références nationales.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+
+                <a class="admin-overview-card" href="#import-competitions" data-capability-panel="competitions.import">
+                  <span class="admin-overview-card-icon tone-import" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M4 14v6h16v-6"></path></svg></span>
+                  <span class="admin-overview-card-label">Performances</span>
+                  <strong>Imports et corrections</strong>
+                  <p>Importer une compétition ou corriger une performance publiée.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+
+                <a class="admin-overview-card" href="#espace-dtn-france" data-capability-panel="dtn.view">
+                  <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+                  <span class="admin-overview-card-label">Espace DTN</span>
+                  <strong>Suivi sportif national</strong>
+                  <p>Consulter les qualifications France et Équipe de France.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+
+                <a class="admin-overview-card" href="#engagements" data-engagements-panel>
+                  <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
+                  <span class="admin-overview-card-label">Compétitions</span>
+                  <strong>Gestion des engagements</strong>
+                  <p>Accéder aux compétitions, nageurs, officiels et engagements.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+
+                <a class="admin-overview-card" href="#gestion-acces" data-access-management-panel hidden>
+                  <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
+                  <span class="admin-overview-card-label">Administration</span>
+                  <strong>Accès et utilisateurs</strong>
+                  <p>Gérer les comptes et les habilitations du portail.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </section>
+
             <section id="adminAccountView" class="admin-portal-account-view" data-admin-view="account" aria-labelledby="adminAccountViewTitle" hidden>
               <div class="admin-portal-workspace-head">
                 <span>Général</span>
@@ -174,10 +244,13 @@
 
               <div class="admin-account-grid">
                 <section class="admin-account-card admin-account-scope-card" aria-labelledby="adminAccountScopeTitle">
-                  <div>
-                    <span>Profil</span>
-                    <h3 id="adminAccountScopeTitle">P&eacute;rim&egrave;tre et habilitations</h3>
-                    <p>Ces informations d&eacute;terminent les espaces et les actions disponibles dans le portail.</p>
+                  <div class="admin-simple-card-head">
+                    <span class="admin-simple-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+                    <div>
+                      <span>Profil</span>
+                      <h3 id="adminAccountScopeTitle">P&eacute;rim&egrave;tre et habilitations</h3>
+                      <p>Ces informations d&eacute;terminent les espaces et les actions disponibles dans le portail.</p>
+                    </div>
                   </div>
                   <dl class="admin-account-scope-list">
                     <div>
@@ -200,10 +273,13 @@
                 </section>
 
                 <section class="admin-account-card" aria-labelledby="adminAccountEmailTitle">
-                  <div>
-                    <span>Adresse de connexion</span>
-                    <h3 id="adminAccountEmailTitle">Modifier mon adresse email</h3>
-                    <p>Votre mot de passe actuel est demandé pour sécuriser la modification.</p>
+                  <div class="admin-simple-card-head">
+                    <span class="admin-simple-card-icon tone-email" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span>
+                    <div>
+                      <span>Adresse de connexion</span>
+                      <h3 id="adminAccountEmailTitle">Modifier mon adresse email</h3>
+                      <p>Votre mot de passe actuel est demandé pour sécuriser la modification.</p>
+                    </div>
                   </div>
                   <form id="adminAccountEmailForm" class="admin-account-form">
                     <label>
@@ -222,10 +298,13 @@
                 </section>
 
                 <section class="admin-account-card" aria-labelledby="adminAccountPasswordTitle">
-                  <div>
-                    <span>Sécurité</span>
-                    <h3 id="adminAccountPasswordTitle">Modifier mon mot de passe</h3>
-                    <p>Choisissez un mot de passe d’au moins 8 caractères.</p>
+                  <div class="admin-simple-card-head">
+                    <span class="admin-simple-card-icon tone-security" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path></svg></span>
+                    <div>
+                      <span>Sécurité</span>
+                      <h3 id="adminAccountPasswordTitle">Modifier mon mot de passe</h3>
+                      <p>Choisissez un mot de passe d’au moins 8 caractères.</p>
+                    </div>
                   </div>
                   <form id="adminAccountPasswordForm" class="admin-account-form">
                     <label>
@@ -257,9 +336,12 @@
               </div>
 
               <section class="admin-access-preview" aria-label="Demande d'acc&egrave;s engagements club">
-                <div class="admin-access-preview-head">
-                  <span>Demande d'acc&egrave;s</span>
-                  <strong>Acc&egrave;s engagements club</strong>
+                <div class="admin-access-preview-head admin-simple-card-head">
+                  <span class="admin-simple-card-icon tone-request" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span>
+                  <div>
+                    <span>Demande d'acc&egrave;s</span>
+                    <strong>Acc&egrave;s engagements club</strong>
+                  </div>
                 </div>
                 <form id="adminAccessRequestForm" class="admin-access-form">
                   <fieldset class="admin-access-section admin-access-identity">
@@ -310,7 +392,9 @@
             <section id="adminRecordsView" class="admin-portal-records-view" data-admin-view="records" aria-labelledby="adminRecordsViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-records-workspace-head">
                 <div>
+                  <span>Performances</span>
                   <h2 id="adminRecordsViewTitle">Mise à jour des records de France et MPF</h2>
+                  <p>Recherchez une référence, préparez les modifications puis publiez les brouillons validés.</p>
                 </div>
                 <button type="button" id="recordHistoryButton" class="ghost-button">Journal des mises à jour</button>
               </div>
@@ -351,6 +435,14 @@
                 </section>
 
                 <section class="admin-finder-card" aria-label="Recherche de records">
+                  <div class="admin-records-section-head">
+                    <span class="admin-records-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></span>
+                    <div>
+                      <span>Recherche</span>
+                      <strong>Choisir le référentiel à consulter</strong>
+                      <p>Les filtres déterminent les lignes affichées dans le tableau.</p>
+                    </div>
+                  </div>
                   <div class="admin-filter-grid">
                     <div class="admin-filter-scope">
                       <span class="admin-label">Référentiel</span>
@@ -535,7 +627,7 @@
                       Statut
                       <select id="adminEngagementsStatusFilter">
                         <option value="">Tous</option>
-                        <option value="upcoming">A venir</option>
+                        <option value="upcoming">À venir</option>
                         <option value="open">Ouverts</option>
                         <option value="closed">Ferm&eacute;s</option>
                       </select>
@@ -581,7 +673,7 @@
                       <dl id="adminEngagementsDetailList" class="admin-engagements-detail-list"></dl>
                       <form id="adminEngagementsEditForm" class="admin-engagements-form admin-engagements-edit-form" hidden>
                         <fieldset class="admin-engagements-form-section">
-                          <legend>Competition</legend>
+                          <legend>Compétition</legend>
                           <div class="admin-engagements-form-section-grid">
                             <label>
                               Nom
@@ -629,7 +721,7 @@
                             <label>
                               Statut
                               <select id="adminEngagementsEditEntryStatus">
-                                <option value="upcoming">A venir</option>
+                                <option value="upcoming">À venir</option>
                                 <option value="open">Ouverts</option>
                                 <option value="closed">Ferm&eacute;s</option>
                               </select>
@@ -645,12 +737,12 @@
                           </div>
                         </fieldset>
                         <fieldset class="admin-engagements-form-section">
-                          <legend>Parametres sportifs</legend>
+                          <legend>Paramètres sportifs</legend>
                           <div class="admin-engagements-form-section-grid">
                             <label>
                               Bassin
                               <select id="adminEngagementsEditPoolLength" required>
-                                <option value="">A choisir</option>
+                                <option value="">À choisir</option>
                                 <option value="25">25 m</option>
                                 <option value="33">33 m</option>
                                 <option value="50">50 m</option>
@@ -659,8 +751,8 @@
                             <label>
                               Chronom&eacute;trage
                               <select id="adminEngagementsEditTimingType" required>
-                                <option value="">A choisir</option>
-                                <option value="electronic">Electronique</option>
+                                <option value="">À choisir</option>
+                                <option value="electronic">Électronique</option>
                                 <option value="manual">Manuel</option>
                               </select>
                             </label>
@@ -947,22 +1039,52 @@
                       <div class="admin-engagements-documents">
                         <div class="admin-engagements-documents-head">
                           <div>
-                            <strong>GED comp&eacute;tition</strong>
-                            <small id="adminEngagementsDocumentsSummary">Documents &agrave; pr&eacute;parer.</small>
+                            <strong>Documents de la comp&eacute;tition</strong>
+                            <small id="adminEngagementsDocumentsSummary">Exports, PDF clubs et automatisation.</small>
                           </div>
-                          <div class="admin-engagements-documents-actions">
-                            <span id="adminEngagementsComputerEmailLabel">Email informatique non renseign&eacute;</span>
-                            <button id="adminEngagementsPrepareOpeningEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails ouverture</button>
-                            <button id="adminEngagementsGenerateClubRecapsButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer les PDF clubs</button>
-                            <button id="adminEngagementsPrepareClubRecapEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails PDF clubs</button>
-                            <button id="adminEngagementsSendOpeningEmailsButton" class="ghost-button compact" type="button">Envoyer ouvertures</button>
-                            <button id="adminEngagementsSendClubRecapEmailsButton" class="ghost-button compact" type="button">Envoyer PDF clubs</button>
-                          </div>
+                          <span id="adminEngagementsComputerEmailLabel">Email informatique non renseign&eacute;</span>
                         </div>
-                        <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
-                        <div id="adminEngagementsClubRecapFiles" class="admin-engagements-club-recap-files" aria-live="polite"></div>
-                        <div id="adminEngagementsMailJobsList" class="admin-engagements-mail-jobs" aria-live="polite"></div>
-                        <div id="adminEngagementsGeneratedFiles" class="admin-engagements-generated-files"></div>
+                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsFilesTitle">
+                          <div class="admin-engagements-documents-section-head">
+                            <div>
+                              <strong id="adminEngagementsFilesTitle">Fichiers de la comp&eacute;tition</strong>
+                              <small>Export TXT global et fichiers d&eacute;j&agrave; g&eacute;n&eacute;r&eacute;s.</small>
+                            </div>
+                            <div class="admin-engagements-documents-actions">
+                              <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer export TXT</button>
+                              <button id="adminEngagementsGenerateClubRecapsButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer les PDF clubs</button>
+                            </div>
+                          </div>
+                          <div id="adminEngagementsGeneratedFiles" class="admin-engagements-generated-files"></div>
+                        </section>
+                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsClubRecapsTitle">
+                          <div class="admin-engagements-documents-section-head">
+                            <div>
+                              <strong id="adminEngagementsClubRecapsTitle">R&eacute;caps clubs</strong>
+                              <small>PDF par club engag&eacute; et totaux indicatifs.</small>
+                            </div>
+                          </div>
+                          <div id="adminEngagementsClubRecapFiles" class="admin-engagements-club-recap-files" aria-live="polite"></div>
+                        </section>
+                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsAutomationTitle">
+                          <div class="admin-engagements-documents-section-head">
+                            <div>
+                              <strong id="adminEngagementsAutomationTitle">Automatisation</strong>
+                              <small>Suivi des mails et de la fermeture automatique.</small>
+                            </div>
+                          </div>
+                          <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
+                          <details class="admin-engagements-advanced-actions">
+                            <summary>Actions avanc&eacute;es</summary>
+                            <div class="admin-engagements-documents-actions">
+                              <button id="adminEngagementsPrepareOpeningEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails ouverture</button>
+                              <button id="adminEngagementsPrepareClubRecapEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails PDF clubs</button>
+                              <button id="adminEngagementsSendOpeningEmailsButton" class="ghost-button compact" type="button">Envoyer ouvertures</button>
+                              <button id="adminEngagementsSendClubRecapEmailsButton" class="ghost-button compact" type="button">Envoyer PDF clubs</button>
+                            </div>
+                            <div id="adminEngagementsMailJobsList" class="admin-engagements-mail-jobs" aria-live="polite"></div>
+                          </details>
+                        </section>
                       </div>
                     </div>
                     <p id="adminEngagementsDetailStatus" class="admin-portal-message" aria-live="polite"></p>
@@ -1048,7 +1170,7 @@
                   </div>
                   <form id="adminEngagementsCreateForm" class="admin-engagements-form">
                     <fieldset class="admin-engagements-form-section">
-                      <legend>Competition</legend>
+                      <legend>Compétition</legend>
                       <div class="admin-engagements-form-section-grid">
                         <label>
                           Nom
@@ -1096,7 +1218,7 @@
                         <label>
                           Statut
                           <select id="adminEngagementsEntryStatus">
-                            <option value="upcoming">A venir</option>
+                            <option value="upcoming">À venir</option>
                             <option value="open">Ouverts</option>
                             <option value="closed">Ferm&eacute;s</option>
                           </select>
@@ -1112,12 +1234,12 @@
                       </div>
                     </fieldset>
                     <fieldset class="admin-engagements-form-section">
-                      <legend>Parametres sportifs</legend>
+                      <legend>Paramètres sportifs</legend>
                       <div class="admin-engagements-form-section-grid">
                         <label>
                           Bassin
                           <select id="adminEngagementsPoolLength" required>
-                            <option value="">A choisir</option>
+                            <option value="">À choisir</option>
                             <option value="25">25 m</option>
                             <option value="33">33 m</option>
                             <option value="50">50 m</option>
@@ -1126,8 +1248,8 @@
                         <label>
                           Chronom&eacute;trage
                           <select id="adminEngagementsTimingType" required>
-                            <option value="">A choisir</option>
-                            <option value="electronic">Electronique</option>
+                            <option value="">À choisir</option>
+                            <option value="electronic">Électronique</option>
                             <option value="manual">Manuel</option>
                           </select>
                         </label>
@@ -1225,7 +1347,14 @@
               </div>
 
               <div id="adminEngagementsDeletionRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="deletionRequests" hidden>
-                <section class="admin-engagements-card" aria-labelledby="adminEngagementsDeletionRequestsTitle">
+                <div class="admin-engagements-national-tabs" role="tablist" aria-label="Administration nationale">
+                  <button type="button" role="tab" data-engagements-national-tab-button="deletions" aria-selected="true">Suppressions</button>
+                  <button type="button" role="tab" data-engagements-national-tab-button="swimmers">Doublons nageurs</button>
+                  <button type="button" role="tab" data-engagements-national-tab-button="people">Officiels</button>
+                  <button type="button" role="tab" data-engagements-national-tab-button="accounts">Comptes admin</button>
+                  <button type="button" role="tab" data-engagements-national-tab-button="audit">Historique</button>
+                </div>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsDeletionRequestsTitle" data-engagements-national-panel="deletions">
                   <div class="admin-engagements-card-head">
                     <div>
                       <span>Administration nationale</span>
@@ -1236,23 +1365,97 @@
                   <p id="adminEngagementsDeletionRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
                   <div id="adminEngagementsDeletionRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
                 </section>
-                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalSwimmersTitle">
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalSwimmersTitle" data-engagements-national-panel="swimmers" hidden>
                   <div class="admin-engagements-card-head">
                     <div>
-                      <span>Nageurs cr&eacute;&eacute;s par les clubs</span>
-                      <h3 id="adminEngagementsNationalSwimmersTitle">Contr&ocirc;le des nageurs</h3>
+                      <span>Base nageurs LivePalmes</span>
+                      <h3 id="adminEngagementsNationalSwimmersTitle">Recherche et fusion des nageurs</h3>
                     </div>
-                    <button id="adminEngagementsNationalSwimmersRefresh" class="ghost-button" type="button">Actualiser</button>
+                    <button id="adminEngagementsNationalSwimmersRefresh" class="ghost-button" type="button">Rechercher</button>
                   </div>
-                  <p id="adminEngagementsNationalSwimmersStatus" class="admin-portal-message" data-tone="loading">Nageurs cr&eacute;&eacute;s par les clubs.</p>
+                  <p id="adminEngagementsNationalSwimmersStatus" class="admin-portal-message" data-tone="loading">Recherchez un nageur par nom, pr&eacute;nom, licence ou club.</p>
+                  <div class="admin-engagements-national-filters" aria-label="Filtres des nageurs">
+                    <label>
+                      <span>Recherche</span>
+                      <input id="adminEngagementsNationalSwimmersSearch" type="search" placeholder="Nom, pr&eacute;nom, licence, club..." autocomplete="off">
+                    </label>
+                    <label>
+                      <span>Statut</span>
+                      <select id="adminEngagementsNationalSwimmersStatusFilter">
+                        <option value="">Tous</option>
+                        <option value="active">Actifs</option>
+                        <option value="inactive">D&eacute;sactiv&eacute;s</option>
+                        <option value="merged">Fusionn&eacute;s</option>
+                      </select>
+                    </label>
+                    <button id="adminEngagementsNationalSwimmersReset" class="ghost-button" type="button">R&eacute;initialiser</button>
+                  </div>
+                  <div class="admin-engagements-national-bulk-actions">
+                    <button id="adminEngagementsNationalSwimmersBulkMerge" type="button" disabled>Fusionner la s&eacute;lection</button>
+                    <span id="adminEngagementsNationalSwimmersSelectionSummary">Choisissez une fiche &agrave; conserver et au moins une fiche &agrave; fusionner.</span>
+                  </div>
                   <div id="adminEngagementsNationalSwimmersList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalPeopleTitle" data-engagements-national-panel="people" hidden>
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Officiels et chefs d'&eacute;quipe</span>
+                      <h3 id="adminEngagementsNationalPeopleTitle">Contr&ocirc;le des officiels</h3>
+                    </div>
+                    <button id="adminEngagementsNationalPeopleRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsNationalPeopleStatus" class="admin-portal-message" data-tone="loading">Officiels et chefs d'&eacute;quipe cr&eacute;&eacute;s par les clubs.</p>
+                  <div class="admin-engagements-national-filters" aria-label="Filtres des officiels">
+                    <label>
+                      <span>Recherche</span>
+                      <input id="adminEngagementsNationalPeopleSearch" type="search" placeholder="Nom, licence, club...">
+                    </label>
+                    <label>
+                      <span>Statut</span>
+                      <select id="adminEngagementsNationalPeopleStatusFilter">
+                        <option value="">Tous</option>
+                        <option value="active">Actifs</option>
+                        <option value="inactive">D&eacute;sactiv&eacute;s</option>
+                      </select>
+                    </label>
+                    <button id="adminEngagementsNationalPeopleReset" class="ghost-button" type="button">R&eacute;initialiser</button>
+                  </div>
+                  <div class="admin-engagements-national-bulk-actions">
+                    <button id="adminEngagementsNationalPeopleBulkMerge" type="button" disabled>Fusionner la s&eacute;lection</button>
+                    <span id="adminEngagementsNationalPeopleSelectionSummary">Choisissez une fiche &agrave; conserver et au moins une fiche &agrave; fusionner.</span>
+                  </div>
+                  <div id="adminEngagementsNationalPeopleList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalAccountsTitle" data-engagements-national-panel="accounts" hidden>
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Comptes admin</span>
+                      <h3 id="adminEngagementsNationalAccountsTitle">Demandes de suppression de comptes</h3>
+                    </div>
+                    <button id="adminEngagementsNationalAccountsRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsNationalAccountsStatus" class="admin-portal-message" data-tone="loading">Demandes de suppression de comptes admin.</p>
+                  <div id="adminEngagementsNationalAccountsList" class="admin-engagements-request-list" aria-live="polite"></div>
+                </section>
+                <section class="admin-engagements-card" aria-labelledby="adminEngagementsNationalAuditTitle" data-engagements-national-panel="audit" hidden>
+                  <div class="admin-engagements-card-head">
+                    <div>
+                      <span>Historique</span>
+                      <h3 id="adminEngagementsNationalAuditTitle">Actions sensibles</h3>
+                    </div>
+                    <button id="adminEngagementsNationalAuditRefresh" class="ghost-button" type="button">Actualiser</button>
+                  </div>
+                  <p id="adminEngagementsNationalAuditStatus" class="admin-portal-message" data-tone="loading">Dernieres actions d'administration nationale.</p>
+                  <div id="adminEngagementsNationalAuditList" class="admin-engagements-request-list" aria-live="polite"></div>
                 </section>
               </div>
             </section>
 
             <section id="adminImportView" class="admin-portal-import-view import-admin-page" data-admin-view="import" aria-labelledby="adminImportViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-module-workspace-head">
+                <span>Performances</span>
                 <h2 id="adminImportViewTitle">Import des compétitions</h2>
+                <p>Analysez le fichier, contrôlez la prévisualisation puis validez son ajout à la base.</p>
               </div>
 
               <p id="adminImportModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module d’import…</p>
@@ -1362,7 +1565,9 @@
 
             <section id="adminCorrectionView" class="admin-portal-import-view import-admin-page" data-admin-view="correction" aria-labelledby="adminCorrectionViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-module-workspace-head">
+                <span>Performances</span>
                 <h2 id="adminCorrectionViewTitle">Correction d’une performance</h2>
+                <p>Recherchez la ligne publiée, contrôlez les valeurs puis enregistrez une correction motivée.</p>
               </div>
 
               <p id="adminCorrectionModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module de correction…</p>
@@ -1450,6 +1655,7 @@
               <div class="admin-portal-workspace-head">
                 <span>Performances</span>
                 <h2 id="adminDtnViewTitle">Espace DTN</h2>
+                <p>Consultez les temps de qualification et les sportifs qualifiés pour la saison sélectionnée.</p>
               </div>
 
               <section class="admin-dtn-toolbar" aria-label="Filtres des temps de qualification">
@@ -1571,7 +1777,7 @@
 
         <section id="adminAccessPanel" class="admin-access-preview" aria-label="Création d'un accès au portail" hidden>
           <div class="admin-access-preview-head">
-            <span>Gestion des acces</span>
+            <span>Gestion des accès</span>
             <strong>Créer ou mettre à jour un accès</strong>
           </div>
           <form id="adminAccessForm" class="admin-access-form">
@@ -1649,10 +1855,10 @@
             </fieldset>
             <label class="admin-access-reset-choice">
               <input id="adminAccessSendReset" type="checkbox" checked>
-              <span>Envoyer l'email de creation/reinitialisation du mot de passe</span>
+              <span>Envoyer l’email de création ou de réinitialisation du mot de passe</span>
             </label>
             <div class="admin-portal-actions admin-access-submit">
-              <button type="submit">Enregistrer l'acces</button>
+              <button type="submit">Enregistrer l’accès</button>
               <button id="adminAccessCancelEdit" class="ghost-button" type="button" hidden>Annuler la modification</button>
             </div>
             <p id="adminAccessMessage" class="admin-portal-message" aria-live="polite"></p>
@@ -1671,6 +1877,6 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260729-access-delete-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260803-portal-overview-1"></script>
   </body>
 </html>
