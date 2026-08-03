@@ -8412,7 +8412,6 @@
 }
 
 .admin-overview-space-card:hover .admin-overview-space-toggle > span:last-child,
-.admin-overview-space-card:focus-within .admin-overview-space-toggle > span:last-child,
 .admin-overview-space-card.is-expanded .admin-overview-space-toggle > span:last-child {
   transform: rotate(180deg);
 }
@@ -8429,7 +8428,6 @@
   transition: max-height 220ms ease, padding 220ms ease, opacity 150ms ease;
 }
 
-.admin-overview-space-card:focus-within .admin-overview-space-tools,
 .admin-overview-space-card.is-expanded .admin-overview-space-tools {
   visibility: visible;
   max-height: 320px;
