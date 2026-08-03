@@ -182,6 +182,24 @@
         ]
       },
       {
+        "source": "/assets/livepalmes-admin-portal.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/assets/livepalmes-admin-portal.css",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
         "source": "/performances/*.html",
         "headers": [
           {

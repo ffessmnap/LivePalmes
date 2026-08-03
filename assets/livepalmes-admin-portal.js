@@ -1,5 +1,8 @@
 (function attachLivePalmesAdminPortal(global) {
-  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
+  const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260803-national-swimmers-all-1";
+  const PERFORMANCE_PUBLIC_SEARCH_BASE = "performances/public/data/performance-public";
+  const publicPerformanceSwimmerSearchShards = new Map();
   const ENGAGEMENT_EVENT_DEFINITIONS = [
     ["50SF", "individual", "50 m Surface", "50 SF", "SF", 50],
     ["100SF", "individual", "100 m Surface", "100 SF", "SF", 100],
@@ -269,12 +272,33 @@
     engagementsAccessRequestEditCancel: document.querySelector("#adminEngagementsAccessRequestEditCancel"),
     engagementsAccessRequestEditMessage: document.querySelector("#adminEngagementsAccessRequestEditMessage"),
     engagementsDeletionRequestsPanel: document.querySelector("#adminEngagementsDeletionRequestsPanel"),
+    engagementsNationalTabButtons: document.querySelectorAll("[data-engagements-national-tab-button]"),
+    engagementsNationalPanels: document.querySelectorAll("[data-engagements-national-panel]"),
     engagementsDeletionRequestsRefresh: document.querySelector("#adminEngagementsDeletionRequestsRefresh"),
     engagementsDeletionRequestsStatus: document.querySelector("#adminEngagementsDeletionRequestsStatus"),
     engagementsDeletionRequestsList: document.querySelector("#adminEngagementsDeletionRequestsList"),
     engagementsNationalSwimmersRefresh: document.querySelector("#adminEngagementsNationalSwimmersRefresh"),
     engagementsNationalSwimmersStatus: document.querySelector("#adminEngagementsNationalSwimmersStatus"),
+    engagementsNationalSwimmersSearch: document.querySelector("#adminEngagementsNationalSwimmersSearch"),
+    engagementsNationalSwimmersStatusFilter: document.querySelector("#adminEngagementsNationalSwimmersStatusFilter"),
+    engagementsNationalSwimmersReset: document.querySelector("#adminEngagementsNationalSwimmersReset"),
+    engagementsNationalSwimmersBulkMerge: document.querySelector("#adminEngagementsNationalSwimmersBulkMerge"),
+    engagementsNationalSwimmersSelectionSummary: document.querySelector("#adminEngagementsNationalSwimmersSelectionSummary"),
     engagementsNationalSwimmersList: document.querySelector("#adminEngagementsNationalSwimmersList"),
+    engagementsNationalPeopleRefresh: document.querySelector("#adminEngagementsNationalPeopleRefresh"),
+    engagementsNationalPeopleStatus: document.querySelector("#adminEngagementsNationalPeopleStatus"),
+    engagementsNationalPeopleSearch: document.querySelector("#adminEngagementsNationalPeopleSearch"),
+    engagementsNationalPeopleStatusFilter: document.querySelector("#adminEngagementsNationalPeopleStatusFilter"),
+    engagementsNationalPeopleReset: document.querySelector("#adminEngagementsNationalPeopleReset"),
+    engagementsNationalPeopleBulkMerge: document.querySelector("#adminEngagementsNationalPeopleBulkMerge"),
+    engagementsNationalPeopleSelectionSummary: document.querySelector("#adminEngagementsNationalPeopleSelectionSummary"),
+    engagementsNationalPeopleList: document.querySelector("#adminEngagementsNationalPeopleList"),
+    engagementsNationalAccountsRefresh: document.querySelector("#adminEngagementsNationalAccountsRefresh"),
+    engagementsNationalAccountsStatus: document.querySelector("#adminEngagementsNationalAccountsStatus"),
+    engagementsNationalAccountsList: document.querySelector("#adminEngagementsNationalAccountsList"),
+    engagementsNationalAuditRefresh: document.querySelector("#adminEngagementsNationalAuditRefresh"),
+    engagementsNationalAuditStatus: document.querySelector("#adminEngagementsNationalAuditStatus"),
+    engagementsNationalAuditList: document.querySelector("#adminEngagementsNationalAuditList"),
     engagementsDetail: document.querySelector("#adminEngagementsDetail"),
     engagementsDetailEyebrow: document.querySelector("#adminEngagementsDetailEyebrow"),
     engagementsDetailTitle: document.querySelector("#adminEngagementsDetailTitle"),
@@ -360,6 +384,7 @@
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
     engagementsComputerEmailLabel: document.querySelector("#adminEngagementsComputerEmailLabel"),
+    engagementsGenerateTxtExportButton: document.querySelector("#adminEngagementsGenerateTxtExportButton"),
     engagementsPrepareOpeningEmailsButton: document.querySelector("#adminEngagementsPrepareOpeningEmailsButton"),
     engagementsGenerateClubRecapsButton: document.querySelector("#adminEngagementsGenerateClubRecapsButton"),
     engagementsPrepareClubRecapEmailsButton: document.querySelector("#adminEngagementsPrepareClubRecapEmailsButton"),
@@ -439,9 +464,21 @@
   let engagementAccessRequests = [];
   let engagementAccessRequestsLoaded = false;
   let engagementAccessRequestsLoading = false;
+  let activeEngagementNationalTab = "deletions";
   let engagementNationalSwimmers = [];
   let engagementNationalSwimmersLoaded = false;
   let engagementNationalSwimmersLoading = false;
+  let engagementNationalSwimmerMergeSourceId = "";
+  let engagementNationalSwimmerMergeTargets = [];
+  let engagementNationalSwimmerMergeQuery = "";
+  let engagementNationalSwimmerMergeLoading = false;
+  let engagementNationalPeople = [];
+  let engagementNationalPeopleLoaded = false;
+  let engagementNationalPeopleLoading = false;
+  let engagementNationalPersonMergeSourceId = "";
+  let engagementNationalAuditLogs = [];
+  let engagementNationalAuditLogsLoaded = false;
+  let engagementNationalAuditLogsLoading = false;
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
   let engagementClubPeopleLoading = false;
@@ -510,6 +547,20 @@
     if (!functions?.httpsCallable) throw new Error("Cloud Functions LivePalmes indisponibles.");
     const result = await functions.httpsCallable(name)(payload);
     return result.data || {};
+  }
+
+  async function callFunctionWithTimeout(name, payload, timeoutMs = 30000) {
+    let timeoutId = null;
+    try {
+      return await Promise.race([
+        callFunction(name, payload),
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("Delai de lecture depasse. Reessayez dans quelques instants.")), timeoutMs);
+        })
+      ]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
   }
 
   function downloadBase64File(base64, fileName, contentType = "application/octet-stream") {
@@ -701,6 +752,38 @@
     updateEngagementDetailEditState();
   }
 
+  function loadActiveEngagementNationalTab() {
+    if (!canDeleteEngagementCompetitionDirectly()) return;
+    if (activeEngagementNationalTab === "swimmers") {
+      loadEngagementNationalSwimmers();
+    } else if (activeEngagementNationalTab === "people") {
+      loadEngagementNationalPeople();
+    } else if (activeEngagementNationalTab === "accounts") {
+      loadAccessDeletionRequests();
+    } else if (activeEngagementNationalTab === "audit") {
+      loadEngagementNationalAuditLogs();
+    } else {
+      loadEngagementDeletionRequests();
+    }
+  }
+
+  function setEngagementNationalTab(tab = "deletions") {
+    const allowedTabs = new Set(["deletions", "swimmers", "people", "accounts", "audit"]);
+    const nextTab = allowedTabs.has(tab) ? tab : "deletions";
+    activeEngagementNationalTab = nextTab;
+    elements.engagementsNationalTabButtons?.forEach((button) => {
+      const selected = button.dataset.engagementsNationalTabButton === nextTab;
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      button.tabIndex = selected ? 0 : -1;
+    });
+    elements.engagementsNationalPanels?.forEach((panel) => {
+      panel.hidden = panel.dataset.engagementsNationalPanel !== nextTab;
+    });
+    if (activeEngagementsTab === "deletionRequests" && activeView === "engagements") {
+      loadActiveEngagementNationalTab();
+    }
+  }
+
   function updateEngagementDetailEditState() {
     if (!elements.engagementsEditState) return;
     if (!selectedEngagementCompetition?.id) {
@@ -876,6 +959,7 @@
       const clubSwimmersOnly = panelTab === "clubSwimmers";
       panel.hidden = panelTab !== nextTab || (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
     });
+    if (nextTab === "deletionRequests") setEngagementNationalTab(activeEngagementNationalTab);
   }
 
   function setEngagementsDetailTab(tab) {
@@ -1001,6 +1085,7 @@
   }
 
   function requestedNavigationView() {
+    if (!global.location.hash || global.location.hash === "#accueil") return "dashboard";
     if (global.location.hash === "#gestion-acces") return "access";
     if (global.location.hash === "#mon-compte") return "account";
     if (global.location.hash === "#demande-acces") return "accessRequest";
@@ -1009,12 +1094,7 @@
     if (global.location.hash === "#correction-performance") return "correction";
     if (global.location.hash === "#engagements") return "engagements";
     if (["#espace-dtn", "#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
-    if (canUse("records.manage")) return "records";
-    if (canUse("competitions.import")) return "import";
-    if (canUse("dtn.view")) return "dtn";
-    if (canManageEngagements()) return "engagements";
-    if (canManageAccessDirectory()) return "access";
-    return "account";
+    return "dashboard";
   }
 
   function updateNavigationView() {
@@ -1026,7 +1106,7 @@
     const dtnDenied = requestedView === "dtn" && !canUse("dtn.view");
     const engagementsDenied = requestedView === "engagements" && !canManageEngagements();
     const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || dtnDenied || engagementsDenied
-      ? (canUse("records.manage") ? "records" : canUse("competitions.import") ? "import" : canUse("dtn.view") ? "dtn" : canManageEngagements() ? "engagements" : canManageAccessDirectory() ? "access" : "account")
+      ? "dashboard"
       : requestedView;
     document.querySelectorAll("[data-admin-view]").forEach((section) => {
       section.hidden = section.dataset.adminView !== activeView;
@@ -1067,10 +1147,7 @@
     if (importModuleActive) loadImportModule();
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
     if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
-    if (engagementsActive && activeEngagementsTab === "deletionRequests") {
-      loadEngagementDeletionRequests();
-      loadEngagementNationalSwimmers();
-    }
+    if (engagementsActive && activeEngagementsTab === "deletionRequests") loadActiveEngagementNationalTab();
     if (engagementsActive && activeEngagementsTab === "clubPeople") loadEngagementClubPeople();
     if (engagementsActive && activeEngagementsTab === "clubSwimmers") loadEngagementClubSwimmers();
     if (activeView === "access") {
@@ -2206,6 +2283,173 @@
       .trim();
   }
 
+  function engagementAdminPublicSwimmerSearchTokens(value) {
+    return normalizedEngagementClubSearch(value)
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter((token) => token.length >= 2);
+  }
+
+  function engagementAdminPublicSwimmerSearchShard(value) {
+    const token = engagementAdminPublicSwimmerSearchTokens(value)[0] || "";
+    return token.slice(0, 2);
+  }
+
+  async function loadEngagementAdminPublicSwimmerSearchShard(shard = "") {
+    const cleanShard = String(shard || "").trim();
+    if (!cleanShard) return [];
+    if (publicPerformanceSwimmerSearchShards.has(cleanShard)) {
+      return publicPerformanceSwimmerSearchShards.get(cleanShard);
+    }
+    const promise = fetch(`${PERFORMANCE_PUBLIC_SEARCH_BASE}/search/${encodeURIComponent(cleanShard)}.json?v=${ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION}`, {
+      cache: "force-cache"
+    })
+      .then((response) => {
+        if (response.status === 404) return [];
+        if (!response.ok) throw new Error("Index public nageurs indisponible.");
+        return response.json();
+      })
+      .then((rows) => Array.isArray(rows) ? rows : [])
+      .catch(() => []);
+    publicPerformanceSwimmerSearchShards.set(cleanShard, promise);
+    return promise;
+  }
+
+  function engagementAdminPublicSwimmerScore(swimmer = {}, terms = []) {
+    const name = normalizedEngagementClubSearch([swimmer.firstName, swimmer.lastName].filter(Boolean).join(" "));
+    const reverseName = normalizedEngagementClubSearch([swimmer.lastName, swimmer.firstName].filter(Boolean).join(" "));
+    const searchText = normalizedEngagementClubSearch(swimmer.searchText || "");
+    if (terms.length && (name === terms.join(" ") || reverseName === terms.join(" "))) return 0;
+    if (terms.length && (name.startsWith(terms.join(" ")) || reverseName.startsWith(terms.join(" ")))) return 1;
+    if (terms.some((term) => normalizedEngagementClubSearch(swimmer.lastName).startsWith(term))) return 2;
+    if (terms.every((term) => searchText.includes(term))) return 3;
+    return 4;
+  }
+
+  function engagementAdminPublicSwimmerItem(row = {}) {
+    return {
+      ...row,
+      id: String(row.id || row.swimmerIndexId || "").trim(),
+      swimmerIndexId: String(row.swimmerIndexId || row.id || "").trim(),
+      source: row.source || "performances",
+      active: row.active !== false,
+      status: row.status || "active",
+      clubName: row.clubName || row.club || "",
+      updatedAt: row.updatedAt || row.latestDate || ""
+    };
+  }
+
+  async function searchEngagementAdminPublicSwimmers(query = "", limit = 80) {
+    const terms = engagementAdminPublicSwimmerSearchTokens(query).slice(0, 5);
+    if (!terms.length) return [];
+    const shard = engagementAdminPublicSwimmerSearchShard(query);
+    const rows = await loadEngagementAdminPublicSwimmerSearchShard(shard);
+    const results = rows
+      .map(engagementAdminPublicSwimmerItem)
+      .filter((swimmer) => {
+        const haystack = normalizedEngagementClubSearch(swimmer.searchText || [
+          swimmer.firstName,
+          swimmer.lastName,
+          swimmer.name,
+          swimmer.birthDate,
+          swimmer.sex,
+          swimmer.clubId,
+          swimmer.clubName,
+          ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : []),
+          ...(Array.isArray(swimmer.aliases) ? swimmer.aliases : [])
+        ].filter(Boolean).join(" "));
+        return terms.every((term) => haystack.includes(term));
+      })
+      .sort((left, right) =>
+        engagementAdminPublicSwimmerScore(left, terms) - engagementAdminPublicSwimmerScore(right, terms) ||
+        String(right.latestDate || "").localeCompare(String(left.latestDate || "")) ||
+        String(left.lastName || "").localeCompare(String(right.lastName || ""), "fr-FR") ||
+        String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr-FR")
+      );
+    return results.slice(0, limit);
+  }
+
+  function mergeEngagementNationalSwimmerResults(rows = []) {
+    const byKey = new Map();
+    rows.forEach((raw) => {
+      const swimmer = engagementAdminPublicSwimmerItem(raw);
+      const source = swimmer.source || "performances";
+      const key = source === "performances"
+        ? `${source}:${swimmer.identityKey || swimmer.id || swimmer.swimmerIndexId}`
+        : `${source}:${swimmer.id || swimmer.swimmerIndexId}`;
+      if (!key.endsWith(":")) {
+        byKey.set(key, { ...(byKey.get(key) || {}), ...swimmer });
+      }
+    });
+    return Array.from(byKey.values());
+  }
+
+  function engagementNationalSwimmerKey(swimmer = {}) {
+    return `${swimmer.source || "performances"}:${swimmer.id || swimmer.swimmerIndexId || ""}`;
+  }
+
+  function engagementNationalSwimmerByKey(key = "") {
+    return engagementNationalSwimmers.find((swimmer) => engagementNationalSwimmerKey(swimmer) === key) || null;
+  }
+
+  function engagementNationalSwimmerIdentityKey(swimmer = {}) {
+    return String(swimmer.identityKey || [
+      normalizedEngagementClubSearch(swimmer.lastName || swimmer.name || ""),
+      normalizedEngagementClubSearch(swimmer.firstName || ""),
+      swimmer.birthDate || ""
+    ].filter(Boolean).join("|")).trim();
+  }
+
+  function engagementNationalSwimmerDuplicateAlertLabel(swimmer = {}, swimmers = []) {
+    const key = engagementNationalSwimmerKey(swimmer);
+    const license = String(swimmer.licenseNumber || "").trim();
+    const identity = engagementNationalSwimmerIdentityKey(swimmer);
+    const normalizedName = normalizedEngagementClubSearch([swimmer.lastName, swimmer.firstName].filter(Boolean).join(" "));
+    const sameLicense = license && swimmers.some((candidate) =>
+      engagementNationalSwimmerKey(candidate) !== key &&
+      String(candidate.licenseNumber || "").trim() === license
+    );
+    if (sameLicense) return { score: "high", label: "Meme licence" };
+    const sameIdentity = identity && swimmers.some((candidate) =>
+      engagementNationalSwimmerKey(candidate) !== key &&
+      engagementNationalSwimmerIdentityKey(candidate) === identity
+    );
+    if (sameIdentity) return { score: "high", label: "Meme identite" };
+    const sameBirthNearName = swimmer.birthDate && normalizedName && swimmers.some((candidate) => {
+      if (engagementNationalSwimmerKey(candidate) === key || candidate.birthDate !== swimmer.birthDate) return false;
+      const candidateName = normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" "));
+      return candidateName && (candidateName.includes(normalizedName) || normalizedName.includes(candidateName) ||
+        candidateName.split(/\s+/).some((part) => part.length >= 4 && normalizedName.includes(part)));
+    });
+    if (sameBirthNearName) return { score: "medium", label: "A verifier" };
+    return { score: "low", label: "Simple" };
+  }
+
+  function selectedEngagementNationalSwimmerMergeKeys() {
+    return Array.from(elements.engagementsNationalSwimmersList?.querySelectorAll("[data-engagement-national-swimmer-merge-check]:checked") || [])
+      .map((item) => item.value)
+      .filter(Boolean);
+  }
+
+  function selectedEngagementNationalSwimmerKeepKey() {
+    return elements.engagementsNationalSwimmersList?.querySelector("[data-engagement-national-swimmer-keep]:checked")?.value || "";
+  }
+
+  function updateEngagementNationalSwimmerSelectionState() {
+    const keepKey = selectedEngagementNationalSwimmerKeepKey();
+    const mergeKeys = selectedEngagementNationalSwimmerMergeKeys().filter((key) => key !== keepKey);
+    if (elements.engagementsNationalSwimmersBulkMerge) {
+      elements.engagementsNationalSwimmersBulkMerge.disabled = !keepKey || !mergeKeys.length || engagementNationalSwimmerMergeLoading;
+    }
+    if (elements.engagementsNationalSwimmersSelectionSummary) {
+      const keep = engagementNationalSwimmerByKey(keepKey);
+      const keepName = keep ? ([keep.firstName, keep.lastName].filter(Boolean).join(" ") || keep.name || keepKey) : "";
+      elements.engagementsNationalSwimmersSelectionSummary.textContent = keepKey && mergeKeys.length
+        ? `${mergeKeys.length} fiche${mergeKeys.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
+        : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
+    }
+  }
+
   function selectedEngagementClubSwimmerRows() {
     return Array.from(elements.engagementsClubSwimmersList?.querySelectorAll("[data-engagement-club-swimmer-row]") || [])
       .map((row) => {
@@ -2282,7 +2526,9 @@
     }
     if (entry.entryTimeMode === "manual") return `Temps modifie manuellement${warning}`;
     if (entry.entryTimeMode === "default595999") return `Aucun historique - 59:59.99${warning}`;
-    return manualAllowed ? "59:59.99 par defaut, remplace si un temps LivePalmes existe" : "59:59.99 par defaut, remplace si un temps LivePalmes existe";
+    return manualAllowed
+      ? "Temps calcule automatiquement a partir de LivePalmes. Si aucun temps n'existe, 59:59.99 sera utilise."
+      : "Temps calcule automatiquement a partir de LivePalmes. Si aucun temps n'existe, 59:59.99 sera utilise.";
   }
 
   function renderEngagementClubSwimmerEvents(selected = null, disabled = false) {
@@ -2316,7 +2562,7 @@
                 <span>${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}</span>
               </label>
               <div class="admin-engagements-club-entry-time" ${checked ? "" : "hidden"}>
-                <span class="admin-engagements-club-entry-time-value" title="${escapeHtml(timeHelp)}">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
+                <span class="admin-engagements-club-entry-time-value" data-entry-time-mode="${escapeHtml(entry.entryTimeMode || "pending")}" title="${escapeHtml(timeHelp)}">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
                 ${manualAllowed ? `<button type="button" class="ghost-button compact admin-engagements-club-entry-time-edit" data-engagement-club-time-edit="${escapeHtml(event.code)}" data-engagement-club-time-auto="${escapeHtml(automaticTime)}" ${checked ? "" : "hidden disabled"} aria-label="Modifier le temps ${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}">✎</button>` : ""}
                 <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-swimmer-event-time="${escapeHtml(event.code)}" value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
               </div>
@@ -3202,6 +3448,7 @@
       ["Derniere execution", formatEngagementAutomationDate(updatedAt)],
       ["Clubs traites", `${Number(summary.clubEntryCount || 0)}${Number(summary.skippedClubCount || 0) ? ` - ${Number(summary.skippedClubCount || 0)} ignore${Number(summary.skippedClubCount || 0) > 1 ? "s" : ""}` : ""}`],
       ["PDF", `${Number(summary.pdfGeneratedCount || 0)} genere${Number(summary.pdfGeneratedCount || 0) > 1 ? "s" : ""} - ${Number(summary.pdfReusedCount || 0)} deja a jour`],
+      ["TXT", `${Number(summary.txtGeneratedCount || 0)} genere - ${Number(summary.txtSentMailCount || 0)}/${Number(summary.txtAttemptedMailCount || 0)} envoye${Number(summary.txtSentMailCount || 0) > 1 ? "s" : ""}`],
       ["Mails", `${Number(summary.sentMailCount || 0)}/${Number(summary.attemptedMailCount || 0)} envoye${Number(summary.sentMailCount || 0) > 1 ? "s" : ""}`]
     ];
     const errorCount = Number(summary.prepareErrorCount || 0) + Number(summary.sendErrorCount || 0);
@@ -3355,6 +3602,7 @@
   function engagementMailJobTypeLabel(type) {
     return {
       opening_notification: "Ouverture",
+      entries_txt: "TXT informatique",
       club_recap_pdf: "PDF club"
     }[String(type || "")] || "Mail";
   }
@@ -3451,9 +3699,8 @@
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const definitions = engagementDocumentDefinitions(competition);
-    const generatedCount = definitions.filter((item) => item.status !== "pending").length;
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = `${generatedCount}/${definitions.length} element${definitions.length > 1 ? "s" : ""} pret${generatedCount > 1 ? "s" : ""}.`;
+      elements.engagementsDocumentsSummary.textContent = "Exports, PDF clubs et automatisation.";
     }
     if (elements.engagementsComputerEmailLabel) {
       elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
@@ -3475,7 +3722,7 @@
       const files = Array.isArray(competition.generatedFiles) ? competition.generatedFiles : [];
       elements.engagementsGeneratedFiles.innerHTML = files.length
         ? files.map((file) => `<a href="${escapeHtml(file.url || "#")}" target="_blank" rel="noopener">${escapeHtml(file.name || "Document")}</a>`).join("")
-        : `<p class="admin-engagements-empty">Aucun fichier genere pour le moment.</p>`;
+        : `<p class="admin-engagements-empty">Aucun fichier disponible pour le moment.</p>`;
     }
     renderEngagementClubRecapFiles();
     renderEngagementMailJobs();
@@ -4474,10 +4721,10 @@
       elements.engagementsClubSwimmersMessage.textContent = "Chargement des nageurs du club...";
       elements.engagementsClubSwimmersMessage.dataset.tone = "loading";
     }
-    renderEngagementClubSwimmers();
-    renderEngagementClubSwimmersDirectory();
     try {
-      const result = await callFunction("listEngagementClubSwimmers", { limit: 800 });
+      renderEngagementClubSwimmers();
+      renderEngagementClubSwimmersDirectory();
+      const result = await callFunctionWithTimeout("listEngagementClubSwimmers", { limit: 800 }, 30000);
       const resultClubId = String(result.clubId || "").trim();
       if (expectedClubId && resultClubId && resultClubId !== expectedClubId) {
         throw new Error(`Profil club incoherent : ${resultClubId} retourne au lieu de ${expectedClubId}.`);
@@ -4506,12 +4753,17 @@
         elements.engagementsClubSwimmersDirectoryStatus.textContent = `Lecture impossible : ${error?.message || error}`;
         elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
       }
-      renderEngagementClubSwimmers();
-      renderEngagementClubSwimmersDirectory();
     } finally {
       engagementClubSwimmersLoading = false;
-      renderEngagementClubSwimmers();
-      renderEngagementClubSwimmersDirectory();
+      try {
+        renderEngagementClubSwimmers();
+        renderEngagementClubSwimmersDirectory();
+      } catch (renderError) {
+        if (elements.engagementsClubSwimmersDirectoryStatus) {
+          elements.engagementsClubSwimmersDirectoryStatus.textContent = `Affichage nageurs impossible : ${renderError?.message || renderError}`;
+          elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
+        }
+      }
     }
   }
 
@@ -4529,15 +4781,15 @@
     const entryCount = swimmers.reduce((sum, swimmer) => sum + (swimmer.individualEntries?.length || 0), 0);
     if (!swimmers.length || !entryCount) {
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Selectionnez au moins un nageur et une course a verifier.";
-        elements.engagementsClubEntriesMessage.dataset.tone = "error";
+        elements.engagementsClubEntriesMessage.textContent = "";
+        elements.engagementsClubEntriesMessage.dataset.tone = "";
       }
       return;
     }
     try {
       const requestId = ++engagementClubEntryTimesPreviewRequestId;
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Calcul des temps d'engagement...";
+        elements.engagementsClubEntriesMessage.textContent = "Mise a jour automatique des temps d'engagement...";
         elements.engagementsClubEntriesMessage.dataset.tone = "loading";
       }
       const result = await callFunction("previewEngagementClubEntryTimes", {
@@ -4557,7 +4809,7 @@
       }
     } catch (error) {
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = `Calcul impossible : ${error?.message || error}`;
+        elements.engagementsClubEntriesMessage.textContent = `Mise a jour des temps impossible : ${error?.message || error}`;
         elements.engagementsClubEntriesMessage.dataset.tone = "error";
       }
     }
@@ -4827,6 +5079,50 @@
     }
   }
 
+  async function generateEngagementAdminTxtExport() {
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
+    const button = elements.engagementsGenerateTxtExportButton;
+    if (button) button.disabled = true;
+    if (elements.engagementsDocumentsSummary) {
+      elements.engagementsDocumentsSummary.textContent = "Generation de l'export TXT...";
+    }
+    try {
+      const result = await callFunction("generateEngagementCompetitionTxtExport", {
+        competitionId: selectedEngagementCompetitionId
+      });
+      if (!result.txtBase64) throw new Error("TXT non retourne par le serveur.");
+      downloadBase64File(result.txtBase64, result.fileName || "export-engagements-livepalmes.txt", result.contentType || "text/plain");
+      const generatedAt = result.generatedAt || new Date().toISOString();
+      selectedEngagementCompetition = {
+        ...(selectedEngagementCompetition || {}),
+        documents: {
+          ...(selectedEngagementCompetition?.documents || {}),
+          entriesTxt: {
+            status: "generated",
+            generatedAt
+          }
+        },
+        generatedFiles: Array.isArray(result.generatedFiles)
+          ? result.generatedFiles
+          : (result.file ? [
+              result.file,
+              ...((selectedEngagementCompetition?.generatedFiles || []).filter((file) => file.type !== "entriesTxt"))
+            ] : selectedEngagementCompetition?.generatedFiles || [])
+      };
+      renderEngagementDocuments(selectedEngagementCompetition);
+      if (elements.engagementsDocumentsSummary) {
+        const entryCount = Number(result.entryCount || 0);
+        elements.engagementsDocumentsSummary.textContent = `Export TXT genere pour ${entryCount} club${entryCount > 1 ? "s" : ""}.`;
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Generation TXT impossible : ${error?.message || error}`;
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   async function prepareEngagementOpeningEmails() {
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
     const button = elements.engagementsPrepareOpeningEmailsButton;
@@ -4902,6 +5198,7 @@
   }
 
   function engagementMailSendActionLabel(type) {
+    if (type === "entries_txt") return "TXT informatique";
     return type === "club_recap_pdf" ? "PDF clubs" : "d'ouverture";
   }
 
@@ -4940,9 +5237,9 @@
         type,
         limit: 500
       });
-      if (type === "club_recap_pdf" && Number(result.attemptedCount || 0)) {
+      if ((type === "club_recap_pdf" || type === "entries_txt") && Number(result.attemptedCount || 0)) {
         updateSelectedEngagementDocumentStatus(
-          "clubRecapEmails",
+          type === "entries_txt" ? "entriesTxt" : "clubRecapEmails",
           Number(result.errorCount || 0) ? "generated" : "sent"
         );
       }
@@ -5483,57 +5780,208 @@
     if (!elements.engagementsNationalSwimmersList) return;
     if (!canDeleteEngagementCompetitionDirectly()) {
       elements.engagementsNationalSwimmersList.innerHTML = "";
+      updateEngagementNationalSwimmerSelectionState();
       return;
     }
     if (!engagementNationalSwimmers.length) {
-      elements.engagementsNationalSwimmersList.innerHTML = '<p class="admin-engagements-empty">Aucun nageur cree par un club.</p>';
+      updateEngagementNationalSwimmersStatus(0);
+      elements.engagementsNationalSwimmersList.innerHTML = '<p class="admin-engagements-empty">Lancez une recherche pour afficher les nageurs de la base.</p>';
+      updateEngagementNationalSwimmerSelectionState();
       return;
     }
-    elements.engagementsNationalSwimmersList.innerHTML = engagementNationalSwimmers.map((swimmer) => {
+    const swimmers = filteredEngagementNationalSwimmers();
+    updateEngagementNationalSwimmersStatus(swimmers.length);
+    if (!swimmers.length) {
+      elements.engagementsNationalSwimmersList.innerHTML = '<p class="admin-engagements-empty">Aucun nageur ne correspond aux filtres.</p>';
+      updateEngagementNationalSwimmerSelectionState();
+      return;
+    }
+    const rows = swimmers.map((swimmer) => {
       const active = swimmer.active !== false;
+      const merged = swimmer.status === "merged" || Boolean(swimmer.mergedIntoId);
       const name = [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || swimmer.name || "Nageur sans nom";
-      const statusLabel = active ? "Actif" : "Desactive";
+      const statusLabel = merged
+        ? `Fusionne vers ${swimmer.mergedIntoName || swimmer.mergedIntoId || "une autre fiche"}`
+        : active ? "Actif" : "Desactive";
+      const sourceId = swimmer.id || swimmer.swimmerIndexId || "";
+      const sourceType = swimmer.source || "performances";
+      const sourceKey = `${sourceType}:${sourceId}`;
+      const mergeOpen = engagementNationalSwimmerMergeSourceId === sourceKey;
+      const mergeTargets = mergeOpen ? engagementNationalSwimmerMergeTargets : [];
+      const alertLabel = engagementNationalSwimmerDuplicateAlertLabel(swimmer, swimmers);
+      const clubLabel = [swimmer.clubId ? `Club ${swimmer.clubId}` : "", swimmer.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
+      const perfCount = Number(swimmer.performanceCount || 0) || 0;
       return `
-        <article class="admin-engagements-request-card admin-engagements-national-swimmer-card" data-engagement-national-swimmer-id="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-active="${active ? "true" : "false"}">
-          <div class="admin-engagements-request-main">
-            <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml([
-              swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "",
-              swimmer.sex || "",
-              swimmer.licenseNumber ? `Licence ${swimmer.licenseNumber}` : ""
-            ].filter(Boolean).join(" - "))}</small>
-          </div>
-          <div class="admin-engagements-request-meta">
-            <span>${escapeHtml([swimmer.clubId ? `Club ${swimmer.clubId}` : "", swimmer.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne")}</span>
-            <span>${escapeHtml(`${statusLabel} - ${Number(swimmer.alertCount || 0)} alerte${Number(swimmer.alertCount || 0) > 1 ? "s" : ""}`)}</span>
-            <span>${escapeHtml(swimmer.updatedAt ? `MAJ ${formatDeadline(swimmer.updatedAt).replace(/^Limite /, "")}` : "")}</span>
-          </div>
-          <div class="admin-engagements-request-actions">
-            <button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}">${active ? "Desactiver" : "Reactiver"}</button>
-            <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}">Supprimer definitivement</button>
-          </div>
-        </article>
+        <tr class="admin-engagements-national-swimmer-row" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" data-engagement-national-swimmer-key="${escapeHtml(sourceKey)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
+          <td class="admin-engagements-national-choice">
+            ${merged ? "" : `<input type="radio" name="adminEngagementsNationalSwimmerKeep" value="${escapeHtml(sourceKey)}" title="Conserver cette fiche" data-engagement-national-swimmer-keep>`}
+          </td>
+          <td class="admin-engagements-national-choice">
+            ${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
+          </td>
+          <td><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
+          <td><strong>${escapeHtml(swimmer.lastName || name)}</strong></td>
+          <td>${escapeHtml(swimmer.firstName || "")}</td>
+          <td>${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</td>
+          <td>${escapeHtml(swimmer.sex || "-")}</td>
+          <td>${escapeHtml(swimmer.licenseNumber || "-")}</td>
+          <td>${escapeHtml(clubLabel)}</td>
+          <td>${escapeHtml(perfCount ? String(perfCount) : "-")}</td>
+          <td>${escapeHtml(statusLabel)}</td>
+          <td class="admin-engagements-national-table-actions">
+            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Cible</button>`}
+            ${merged || sourceType !== "engagement" ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Desactiver" : "Reactiver"}</button>`}
+            ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Suppr.</button>` : ""}
+          </td>
+        </tr>
+        ${mergeOpen ? `
+          <tr class="admin-engagements-national-merge-row">
+            <td colspan="12">
+              <div class="admin-engagements-national-merge" data-engagement-national-swimmer-merge="${escapeHtml(sourceKey)}">
+                <label>
+                  <span>Recherche cible</span>
+                  <input type="search" value="${escapeHtml(engagementNationalSwimmerMergeQuery)}" placeholder="Nom, prenom ou licence" data-engagement-national-swimmer-merge-query>
+                </label>
+                <div class="admin-engagements-request-actions">
+                  <button class="ghost-button" type="button" data-engagement-national-swimmer-action="search-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" ${engagementNationalSwimmerMergeLoading ? "disabled" : ""}>Rechercher</button>
+                </div>
+                <label class="admin-engagements-national-merge-target">
+                  <span>Fusionner vers</span>
+                  <select data-engagement-national-swimmer-merge-target>
+                    <option value="">Choisir la fiche a conserver</option>
+                    ${mergeTargets.map((candidate) => {
+                      const candidateId = candidate.id || candidate.swimmerIndexId || "";
+                      const candidateSource = candidate.source || "performances";
+                      const candidateName = [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.name || candidateId;
+                      return `<option value="${escapeHtml(`${candidateSource}:${candidateId}`)}">${escapeHtml(candidateName)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(candidate.clubName || candidate.clubId || "club non renseigne")} - ${escapeHtml(candidateSource === "performances" ? "LivePalmes" : "creation club")}</option>`;
+                    }).join("")}
+                  </select>
+                </label>
+                <div class="admin-engagements-request-actions">
+                  <button class="ghost-button" type="button" data-engagement-national-swimmer-action="cancel-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Annuler</button>
+                  <button type="button" data-engagement-national-swimmer-action="confirm-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" ${mergeTargets.length ? "" : "disabled"}>Confirmer la fusion</button>
+                </div>
+                <p class="admin-engagements-request-note">${escapeHtml(engagementNationalSwimmerMergeLoading ? "Recherche en cours..." : mergeTargets.length ? `${mergeTargets.length} cible${mergeTargets.length > 1 ? "s" : ""} trouvee${mergeTargets.length > 1 ? "s" : ""}.` : "Lancez une recherche pour trouver la fiche a conserver.")}</p>
+              </div>
+            </td>
+          </tr>
+        ` : ""}
       `;
     }).join("");
+    elements.engagementsNationalSwimmersList.innerHTML = `
+      <div class="admin-engagements-national-table-wrap">
+        <table class="admin-engagements-national-table">
+          <thead>
+            <tr>
+              <th>Conserver</th>
+              <th>Fusionner</th>
+              <th>Alerte</th>
+              <th>Nom</th>
+              <th>Prenom</th>
+              <th>Naissance</th>
+              <th>Sexe</th>
+              <th>Licence</th>
+              <th>Club</th>
+              <th>Perf.</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+    updateEngagementNationalSwimmerSelectionState();
+  }
+
+  function updateEngagementNationalSwimmersStatus(filteredCount = engagementNationalSwimmers.length) {
+    if (!elements.engagementsNationalSwimmersStatus) return;
+    const total = engagementNationalSwimmers.length;
+    if (!total) {
+      elements.engagementsNationalSwimmersStatus.textContent = "Aucun nageur charge. Lancez une recherche.";
+      elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+      return;
+    }
+    const filtered = Math.max(0, Math.min(total, Number(filteredCount) || 0));
+    elements.engagementsNationalSwimmersStatus.textContent = filtered === total
+      ? `${total} nageur${total > 1 ? "s" : ""} charge${total > 1 ? "s" : ""}.`
+      : `${filtered} nageur${filtered > 1 ? "s" : ""} affiche${filtered > 1 ? "s" : ""} sur ${total} charge${total > 1 ? "s" : ""}.`;
+    elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+  }
+
+  function engagementNationalStatusMatches(item = {}, status = "") {
+    const merged = item.status === "merged" || Boolean(item.mergedIntoId);
+    if (status === "merged") return merged;
+    if (status === "active") return !merged && item.active !== false;
+    if (status === "inactive") return !merged && item.active === false;
+    return true;
+  }
+
+  function filteredEngagementNationalSwimmers() {
+    const terms = normalizedEngagementClubSearch(elements.engagementsNationalSwimmersSearch?.value || "").split(/\s+/).filter(Boolean);
+    const status = elements.engagementsNationalSwimmersStatusFilter?.value || "";
+    return engagementNationalSwimmers.filter((swimmer) => {
+      if (!engagementNationalStatusMatches(swimmer, status)) return false;
+      if (!terms.length) return true;
+      const haystack = normalizedEngagementClubSearch([
+        swimmer.firstName,
+        swimmer.lastName,
+        swimmer.name,
+        swimmer.licenseNumber,
+        swimmer.clubId,
+        swimmer.clubName,
+        swimmer.sex,
+        swimmer.birthDate,
+        swimmer.searchText,
+        ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : []),
+        ...(Array.isArray(swimmer.aliases) ? swimmer.aliases : [])
+      ].filter(Boolean).join(" "));
+      return terms.every((term) => haystack.includes(term));
+    });
+  }
+
+  function resetEngagementNationalSwimmerFilters() {
+    if (elements.engagementsNationalSwimmersSearch) elements.engagementsNationalSwimmersSearch.value = "";
+    if (elements.engagementsNationalSwimmersStatusFilter) elements.engagementsNationalSwimmersStatusFilter.value = "";
+    engagementNationalSwimmers = [];
+    engagementNationalSwimmersLoaded = true;
+    resetEngagementNationalSwimmerMergeState();
+    renderEngagementNationalSwimmers();
   }
 
   async function loadEngagementNationalSwimmers({ force = false, silent = false } = {}) {
     if (!canDeleteEngagementCompetitionDirectly() || engagementNationalSwimmersLoading) return;
     if (engagementNationalSwimmersLoaded && !force) return;
-    engagementNationalSwimmersLoading = true;
-    if (elements.engagementsNationalSwimmersRefresh) elements.engagementsNationalSwimmersRefresh.disabled = true;
-    if (elements.engagementsNationalSwimmersStatus && !silent) {
-      elements.engagementsNationalSwimmersStatus.textContent = "Chargement des nageurs...";
-      elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
-    }
-    try {
-      const result = await callFunction("listEngagementNationalClubSwimmers", { limit: 120 });
-      engagementNationalSwimmers = Array.isArray(result.swimmers) ? result.swimmers : [];
+    const query = String(elements.engagementsNationalSwimmersSearch?.value || "").trim();
+    if (query.length < 2) {
+      engagementNationalSwimmers = [];
       engagementNationalSwimmersLoaded = true;
       renderEngagementNationalSwimmers();
       if (elements.engagementsNationalSwimmersStatus && !silent) {
-        elements.engagementsNationalSwimmersStatus.textContent = `${engagementNationalSwimmers.length} nageur${engagementNationalSwimmers.length > 1 ? "s" : ""} cree${engagementNationalSwimmers.length > 1 ? "s" : ""} par les clubs.`;
+        elements.engagementsNationalSwimmersStatus.textContent = "Saisissez au moins 2 caracteres pour chercher dans la base nageurs.";
         elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+      }
+      return;
+    }
+    engagementNationalSwimmersLoading = true;
+    if (elements.engagementsNationalSwimmersRefresh) elements.engagementsNationalSwimmersRefresh.disabled = true;
+    if (elements.engagementsNationalSwimmersStatus && !silent) {
+      elements.engagementsNationalSwimmersStatus.textContent = "Recherche des nageurs...";
+      elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
+    }
+    try {
+      const [result, publicSwimmers] = await Promise.all([
+        callFunction("searchEngagementNationalSwimmers", { query, limit: 60 }),
+        searchEngagementAdminPublicSwimmers(query, 80)
+      ]);
+      engagementNationalSwimmers = mergeEngagementNationalSwimmerResults([
+        ...publicSwimmers,
+        ...(Array.isArray(result.swimmers) ? result.swimmers : [])
+      ]).slice(0, 100);
+      engagementNationalSwimmersLoaded = true;
+      renderEngagementNationalSwimmers();
+      if (elements.engagementsNationalSwimmersStatus && !silent) {
+        updateEngagementNationalSwimmersStatus(filteredEngagementNationalSwimmers().length);
       }
     } catch (error) {
       if (elements.engagementsNationalSwimmersStatus && !silent) {
@@ -5543,6 +5991,7 @@
     } finally {
       engagementNationalSwimmersLoading = false;
       if (elements.engagementsNationalSwimmersRefresh) elements.engagementsNationalSwimmersRefresh.disabled = false;
+      if (engagementNationalSwimmersLoaded) renderEngagementNationalSwimmers();
     }
   }
 
@@ -5598,6 +6047,638 @@
         elements.engagementsNationalSwimmersStatus.textContent = `Suppression impossible : ${error?.message || error}`;
         elements.engagementsNationalSwimmersStatus.dataset.tone = "error";
       }
+    }
+  }
+
+  function resetEngagementNationalSwimmerMergeState() {
+    engagementNationalSwimmerMergeSourceId = "";
+    engagementNationalSwimmerMergeTargets = [];
+    engagementNationalSwimmerMergeQuery = "";
+    engagementNationalSwimmerMergeLoading = false;
+  }
+
+  async function searchEngagementNationalSwimmerMergeTargets(sourceSwimmerId, sourceSource = "engagement") {
+    const sourceId = String(sourceSwimmerId || "").trim();
+    const sourceType = String(sourceSource || "engagement").trim() || "engagement";
+    if (!sourceId || !canDeleteEngagementCompetitionDirectly()) return;
+    const sourceKey = `${sourceType}:${sourceId}`;
+    const card = elements.engagementsNationalSwimmersList?.querySelector(`[data-engagement-national-swimmer-key="${CSS.escape(sourceKey)}"]`);
+    const query = String(card?.querySelector("[data-engagement-national-swimmer-merge-query]")?.value || engagementNationalSwimmerMergeQuery || "").trim();
+    engagementNationalSwimmerMergeQuery = query;
+    engagementNationalSwimmerMergeLoading = true;
+    renderEngagementNationalSwimmers();
+    try {
+      const [result, publicSwimmers] = await Promise.all([
+        callFunction("searchEngagementNationalSwimmerMergeTargets", {
+          sourceSwimmerId: sourceId,
+          sourceSource: sourceType,
+          query,
+          limit: 25
+        }),
+        query ? searchEngagementAdminPublicSwimmers(query, 40) : Promise.resolve([])
+      ]);
+      engagementNationalSwimmerMergeTargets = mergeEngagementNationalSwimmerResults([
+        ...publicSwimmers,
+        ...(Array.isArray(result.swimmers) ? result.swimmers : [])
+      ])
+        .filter((swimmer) => `${swimmer.source || "performances"}:${swimmer.id || swimmer.swimmerIndexId}` !== sourceKey)
+        .filter((swimmer) => swimmer.status !== "merged" && !swimmer.mergedIntoId)
+        .slice(0, 40);
+      if (elements.engagementsNationalSwimmersStatus) {
+        elements.engagementsNationalSwimmersStatus.textContent = `${engagementNationalSwimmerMergeTargets.length} fiche${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} cible${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} trouvee${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""}.`;
+        elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      engagementNationalSwimmerMergeTargets = [];
+      if (elements.engagementsNationalSwimmersStatus) {
+        elements.engagementsNationalSwimmersStatus.textContent = `Recherche impossible : ${error?.message || error}`;
+        elements.engagementsNationalSwimmersStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementNationalSwimmerMergeLoading = false;
+      renderEngagementNationalSwimmers();
+    }
+  }
+
+  async function mergeEngagementNationalSwimmer(sourceSwimmerId, sourceSource, targetValue) {
+    const sourceId = String(sourceSwimmerId || "").trim();
+    const sourceType = String(sourceSource || "engagement").trim() || "engagement";
+    const [targetSourceRaw, targetIdRaw] = String(targetValue || "").split(":");
+    const targetSource = targetSourceRaw || "performances";
+    const targetId = targetIdRaw || "";
+    if (!sourceId || !targetId || !canDeleteEngagementCompetitionDirectly()) return;
+    const source = engagementNationalSwimmers.find((item) =>
+      (item.source || "performances") === sourceType && (item.id === sourceId || item.swimmerIndexId === sourceId)
+    ) || {};
+    const target = engagementNationalSwimmerMergeTargets.find((item) =>
+      (item.source || "performances") === targetSource && (item.id === targetId || item.swimmerIndexId === targetId)
+    ) || {};
+    const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || "cette fiche";
+    const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || "la fiche cible";
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquee comme fusionnee et retiree des listes club.`)) return;
+    const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
+    if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
+    const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${source.clubName || source.clubId} / ${target.clubName || target.clubId}). Confirmer quand meme la fusion ?`)) return;
+    if (elements.engagementsNationalSwimmersStatus) {
+      elements.engagementsNationalSwimmersStatus.textContent = "Fusion nageur en cours...";
+      elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("mergeEngagementNationalClubSwimmer", {
+        sourceSwimmerId: sourceId,
+        sourceSource: sourceType,
+        targetSwimmerId: targetId,
+        targetSource,
+        confirmMerge: true,
+        confirmLicenseMismatch: licenseMismatch,
+        confirmClubMismatch: clubMismatch
+      });
+      resetEngagementNationalSwimmerMergeState();
+      engagementNationalSwimmersLoaded = false;
+      engagementClubSwimmersLoaded = false;
+      await loadEngagementNationalSwimmers({ force: true });
+      if (elements.engagementsNationalSwimmersStatus) {
+        const totalUpdates = Number(result.entrySwimmerUpdateCount || 0) + Number(result.relayUpdateCount || 0) + Number(result.performanceUpdateCount || 0);
+        elements.engagementsNationalSwimmersStatus.textContent = `Fusion terminee. ${totalUpdates} element${totalUpdates > 1 ? "s" : ""} mis a jour.`;
+        elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsNationalSwimmersStatus) {
+        elements.engagementsNationalSwimmersStatus.textContent = `Fusion impossible : ${error?.message || error}`;
+        elements.engagementsNationalSwimmersStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  async function mergeSelectedEngagementNationalSwimmers() {
+    const targetKey = selectedEngagementNationalSwimmerKeepKey();
+    const sourceKeys = selectedEngagementNationalSwimmerMergeKeys().filter((key) => key !== targetKey);
+    if (!targetKey || !sourceKeys.length || !canDeleteEngagementCompetitionDirectly()) {
+      updateEngagementNationalSwimmerSelectionState();
+      return;
+    }
+    const target = engagementNationalSwimmerByKey(targetKey);
+    const sources = sourceKeys.map(engagementNationalSwimmerByKey).filter(Boolean);
+    if (!target || !sources.length) return;
+    const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || targetKey;
+    const licenseMismatch = sources.some((source) => source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
+    const clubMismatch = sources.some((source) => source.clubId && target.clubId && source.clubId !== target.clubId);
+    const warning = [
+      licenseMismatch ? "numeros de licence differents" : "",
+      clubMismatch ? "clubs differents" : ""
+    ].filter(Boolean).join(", ");
+    const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ? Les performances, engagements et relais seront rattaches a la fiche conservee.${warning ? ` Attention : ${warning}.` : ""}`;
+    if (!global.confirm(message)) return;
+    engagementNationalSwimmerMergeLoading = true;
+    updateEngagementNationalSwimmerSelectionState();
+    if (elements.engagementsNationalSwimmersStatus) {
+      elements.engagementsNationalSwimmersStatus.textContent = "Fusion groupee en cours...";
+      elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
+    }
+    let successCount = 0;
+    const errors = [];
+    const [targetSourceRaw, targetIdRaw] = targetKey.split(":");
+    for (const source of sources) {
+      const sourceKey = engagementNationalSwimmerKey(source);
+      const [sourceSourceRaw, sourceIdRaw] = sourceKey.split(":");
+      try {
+        await callFunction("mergeEngagementNationalClubSwimmer", {
+          sourceSwimmerId: sourceIdRaw,
+          sourceSource: sourceSourceRaw || "engagement",
+          targetSwimmerId: targetIdRaw,
+          targetSource: targetSourceRaw || "performances",
+          confirmMerge: true,
+          confirmLicenseMismatch: true,
+          confirmClubMismatch: true
+        });
+        successCount += 1;
+      } catch (error) {
+        const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || sourceKey;
+        errors.push(`${sourceName} : ${error?.message || error}`);
+      }
+    }
+    engagementNationalSwimmerMergeLoading = false;
+    resetEngagementNationalSwimmerMergeState();
+    engagementNationalSwimmersLoaded = false;
+    engagementClubSwimmersLoaded = false;
+    await loadEngagementNationalSwimmers({ force: true, silent: true });
+    if (elements.engagementsNationalSwimmersStatus) {
+      elements.engagementsNationalSwimmersStatus.textContent = errors.length
+        ? `${successCount} fusion${successCount > 1 ? "s" : ""} realisee${successCount > 1 ? "s" : ""}. Erreurs : ${errors.slice(0, 3).join(" | ")}`
+        : `${successCount} fusion${successCount > 1 ? "s" : ""} realisee${successCount > 1 ? "s" : ""}.`;
+      elements.engagementsNationalSwimmersStatus.dataset.tone = errors.length ? "error" : "ok";
+    }
+  }
+
+  function renderEngagementNationalPeople() {
+    if (!elements.engagementsNationalPeopleList) return;
+    if (!canDeleteEngagementCompetitionDirectly()) {
+      elements.engagementsNationalPeopleList.innerHTML = "";
+      updateEngagementNationalPeopleSelectionState();
+      return;
+    }
+    if (!engagementNationalPeople.length) {
+      updateEngagementNationalPeopleStatus(0);
+      elements.engagementsNationalPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'equipe cree par un club.</p>';
+      updateEngagementNationalPeopleSelectionState();
+      return;
+    }
+    const people = filteredEngagementNationalPeople();
+    updateEngagementNationalPeopleStatus(people.length);
+    if (!people.length) {
+      elements.engagementsNationalPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ne correspond aux filtres.</p>';
+      updateEngagementNationalPeopleSelectionState();
+      return;
+    }
+    const rows = people.map((person) => {
+      const active = person.active !== false;
+      const merged = person.status === "merged" || Boolean(person.mergedIntoId);
+      const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "Personne sans nom";
+      const statusLabel = merged
+        ? `Fusionnee vers ${person.mergedIntoName || person.mergedIntoId || "une autre fiche"}`
+        : active ? "Actif" : "Desactive";
+      const sourceId = person.id || "";
+      const mergeOpen = engagementNationalPersonMergeSourceId === sourceId;
+      const mergeCandidates = engagementNationalPersonMergeCandidates(sourceId);
+      const alertLabel = engagementNationalPersonDuplicateAlertLabel(person, people);
+      const clubLabel = [person.clubId ? `Club ${person.clubId}` : "", person.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
+      return `
+        <tr class="admin-engagements-national-person-row" data-engagement-national-person-id="${escapeHtml(sourceId)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
+          <td class="admin-engagements-national-choice">${merged ? "" : `<input type="radio" name="adminEngagementsNationalPersonKeep" value="${escapeHtml(sourceId)}" title="Conserver cette fiche" data-engagement-national-person-keep>`}</td>
+          <td class="admin-engagements-national-choice">${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceId)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-person-merge-check>`}</td>
+          <td><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
+          <td><strong>${escapeHtml(person.lastName || name)}</strong></td>
+          <td>${escapeHtml(person.firstName || "")}</td>
+          <td>${escapeHtml(person.licenseNumber || "-")}</td>
+          <td>${escapeHtml(engagementClubPersonRoleLabel(person))}</td>
+          <td>${escapeHtml(clubLabel)}</td>
+          <td>${escapeHtml(statusLabel)}</td>
+          <td class="admin-engagements-national-table-actions">
+            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="merge" data-engagement-national-person-id="${escapeHtml(sourceId)}">Cible</button>`}
+            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="${active ? "disable" : "enable"}" data-engagement-national-person-id="${escapeHtml(sourceId)}">${active ? "Desactiver" : "Reactiver"}</button>`}
+            <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-person-action="delete" data-engagement-national-person-id="${escapeHtml(sourceId)}">Suppr.</button>
+          </td>
+        </tr>
+        ${mergeOpen ? `
+          <tr class="admin-engagements-national-merge-row">
+            <td colspan="10">
+              <div class="admin-engagements-national-merge" data-engagement-national-person-merge="${escapeHtml(sourceId)}">
+                <label>
+                  <span>Fusionner vers</span>
+                  <select data-engagement-national-person-merge-target>
+                    <option value="">Choisir la fiche a conserver</option>
+                    ${mergeCandidates.map((candidate) => `
+                      <option value="${escapeHtml(candidate.id)}">${escapeHtml([candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.licenseNumber || candidate.id)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(candidate.clubName || candidate.clubId || "club non renseigne")}</option>
+                    `).join("")}
+                  </select>
+                </label>
+                <div class="admin-engagements-request-actions">
+                  <button class="ghost-button" type="button" data-engagement-national-person-action="cancel-merge" data-engagement-national-person-id="${escapeHtml(sourceId)}">Annuler</button>
+                  <button type="button" data-engagement-national-person-action="confirm-merge" data-engagement-national-person-id="${escapeHtml(sourceId)}" ${mergeCandidates.length ? "" : "disabled"}>Confirmer la fusion</button>
+                </div>
+                ${mergeCandidates.length ? "" : '<p class="admin-engagements-request-note">Aucune autre fiche n est chargee dans la liste.</p>'}
+              </div>
+            </td>
+          </tr>
+        ` : ""}
+      `;
+    }).join("");
+    elements.engagementsNationalPeopleList.innerHTML = `
+      <div class="admin-engagements-national-table-wrap">
+        <table class="admin-engagements-national-table admin-engagements-national-people-table">
+          <thead>
+            <tr>
+              <th>Conserver</th>
+              <th>Fusionner</th>
+              <th>Alerte</th>
+              <th>Nom</th>
+              <th>Prenom</th>
+              <th>Licence</th>
+              <th>Role</th>
+              <th>Club</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+    updateEngagementNationalPeopleSelectionState();
+  }
+
+  function updateEngagementNationalPeopleStatus(filteredCount = engagementNationalPeople.length) {
+    if (!elements.engagementsNationalPeopleStatus) return;
+    const total = engagementNationalPeople.length;
+    if (!total) {
+      elements.engagementsNationalPeopleStatus.textContent = "Aucun officiel charge.";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
+      return;
+    }
+    const filtered = Math.max(0, Math.min(total, Number(filteredCount) || 0));
+    elements.engagementsNationalPeopleStatus.textContent = filtered === total
+      ? `${total} personne${total > 1 ? "s" : ""} chargee${total > 1 ? "s" : ""}.`
+      : `${filtered} personne${filtered > 1 ? "s" : ""} affichee${filtered > 1 ? "s" : ""} sur ${total} chargee${total > 1 ? "s" : ""}.`;
+    elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
+  }
+
+  function filteredEngagementNationalPeople() {
+    const terms = normalizedEngagementClubSearch(elements.engagementsNationalPeopleSearch?.value || "").split(/\s+/).filter(Boolean);
+    const status = elements.engagementsNationalPeopleStatusFilter?.value || "";
+    return engagementNationalPeople.filter((person) => {
+      if (!engagementNationalStatusMatches(person, status)) return false;
+      if (!terms.length) return true;
+      const haystack = normalizedEngagementClubSearch([
+        person.firstName,
+        person.lastName,
+        person.licenseNumber,
+        person.clubId,
+        person.clubName,
+        engagementClubPersonRoleLabel(person)
+      ].filter(Boolean).join(" "));
+      return terms.every((term) => haystack.includes(term));
+    });
+  }
+
+  function resetEngagementNationalPeopleFilters() {
+    if (elements.engagementsNationalPeopleSearch) elements.engagementsNationalPeopleSearch.value = "";
+    if (elements.engagementsNationalPeopleStatusFilter) elements.engagementsNationalPeopleStatusFilter.value = "";
+    renderEngagementNationalPeople();
+  }
+
+  function engagementNationalPersonMergeCandidates(sourceId = "") {
+    const source = engagementNationalPeople.find((person) => person.id === sourceId);
+    if (!source) return [];
+    return engagementNationalPeople
+      .filter((person) => person.id && person.id !== sourceId)
+      .filter((person) => person.status !== "merged" && !person.mergedIntoId)
+      .sort((left, right) =>
+        Number(right.clubId === source.clubId) - Number(left.clubId === source.clubId) ||
+        `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr")
+      );
+  }
+
+  function engagementNationalPersonDuplicateAlertLabel(person = {}, people = []) {
+    const personId = person.id || "";
+    const license = String(person.licenseNumber || "").trim();
+    const normalizedName = normalizedEngagementClubSearch([person.lastName, person.firstName].filter(Boolean).join(" "));
+    const sameLicense = license && people.some((candidate) => candidate.id !== personId && String(candidate.licenseNumber || "").trim() === license);
+    if (sameLicense) return { score: "high", label: "Meme licence" };
+    const sameNameClub = normalizedName && people.some((candidate) =>
+      candidate.id !== personId &&
+      normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" ")) === normalizedName &&
+      (!person.clubId || !candidate.clubId || person.clubId === candidate.clubId)
+    );
+    if (sameNameClub) return { score: "high", label: "Meme identite" };
+    const nearName = normalizedName && people.some((candidate) => {
+      if (candidate.id === personId) return false;
+      const candidateName = normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" "));
+      return candidateName && (candidateName.includes(normalizedName) || normalizedName.includes(candidateName));
+    });
+    if (nearName) return { score: "medium", label: "A verifier" };
+    return { score: "low", label: "Simple" };
+  }
+
+  function engagementNationalPersonById(personId = "") {
+    return engagementNationalPeople.find((person) => person.id === personId) || null;
+  }
+
+  function selectedEngagementNationalPersonMergeIds() {
+    return Array.from(elements.engagementsNationalPeopleList?.querySelectorAll("[data-engagement-national-person-merge-check]:checked") || [])
+      .map((item) => item.value)
+      .filter(Boolean);
+  }
+
+  function selectedEngagementNationalPersonKeepId() {
+    return elements.engagementsNationalPeopleList?.querySelector("[data-engagement-national-person-keep]:checked")?.value || "";
+  }
+
+  function updateEngagementNationalPeopleSelectionState() {
+    const keepId = selectedEngagementNationalPersonKeepId();
+    const mergeIds = selectedEngagementNationalPersonMergeIds().filter((id) => id !== keepId);
+    if (elements.engagementsNationalPeopleBulkMerge) {
+      elements.engagementsNationalPeopleBulkMerge.disabled = !keepId || !mergeIds.length || engagementNationalPeopleLoading;
+    }
+    if (elements.engagementsNationalPeopleSelectionSummary) {
+      const keep = engagementNationalPersonById(keepId);
+      const keepName = keep ? ([keep.firstName, keep.lastName].filter(Boolean).join(" ") || keep.licenseNumber || keepId) : "";
+      elements.engagementsNationalPeopleSelectionSummary.textContent = keepId && mergeIds.length
+        ? `${mergeIds.length} fiche${mergeIds.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
+        : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
+    }
+  }
+
+  async function loadEngagementNationalPeople({ force = false, silent = false } = {}) {
+    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalPeopleLoading) return;
+    if (engagementNationalPeopleLoaded && !force) return;
+    engagementNationalPeopleLoading = true;
+    if (elements.engagementsNationalPeopleRefresh) elements.engagementsNationalPeopleRefresh.disabled = true;
+    if (elements.engagementsNationalPeopleStatus && !silent) {
+      elements.engagementsNationalPeopleStatus.textContent = "Chargement des officiels...";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("listEngagementNationalClubPeople", { limit: 120 });
+      engagementNationalPeople = Array.isArray(result.people) ? result.people : [];
+      engagementNationalPeopleLoaded = true;
+      renderEngagementNationalPeople();
+      if (elements.engagementsNationalPeopleStatus && !silent) {
+        updateEngagementNationalPeopleStatus(filteredEngagementNationalPeople().length);
+      }
+    } catch (error) {
+      if (elements.engagementsNationalPeopleStatus && !silent) {
+        elements.engagementsNationalPeopleStatus.textContent = `Lecture officiels impossible : ${error?.message || error}`;
+        elements.engagementsNationalPeopleStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementNationalPeopleLoading = false;
+      if (elements.engagementsNationalPeopleRefresh) elements.engagementsNationalPeopleRefresh.disabled = false;
+      if (engagementNationalPeopleLoaded) renderEngagementNationalPeople();
+    }
+  }
+
+  async function setEngagementNationalPersonStatus(personId, active) {
+    const cleanId = String(personId || "").trim();
+    if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
+    const person = engagementNationalPeople.find((item) => item.id === cleanId) || {};
+    const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "cette personne";
+    const message = active
+      ? `Reactiver ${name} ? Cette personne redeviendra utilisable par son club.`
+      : `Desactiver ${name} ? Cette personne ne sera plus proposable comme officiel ou chef d'equipe.`;
+    if (!global.confirm(message)) return;
+    if (elements.engagementsNationalPeopleStatus) {
+      elements.engagementsNationalPeopleStatus.textContent = active ? "Reactivation en cours..." : "Desactivation en cours...";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
+    }
+    try {
+      await callFunction("setEngagementNationalClubPersonStatus", {
+        personId: cleanId,
+        active
+      });
+      engagementNationalPeopleLoaded = false;
+      engagementClubPeopleLoaded = false;
+      await loadEngagementNationalPeople({ force: true });
+    } catch (error) {
+      if (elements.engagementsNationalPeopleStatus) {
+        elements.engagementsNationalPeopleStatus.textContent = `Action impossible : ${error?.message || error}`;
+        elements.engagementsNationalPeopleStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  async function deleteEngagementNationalPerson(personId) {
+    const cleanId = String(personId || "").trim();
+    if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
+    const person = engagementNationalPeople.find((item) => item.id === cleanId) || {};
+    const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "cette personne";
+    if (!global.confirm(`Supprimer definitivement ${name} de la base des officiels / chefs d'equipe ? Cette action est irreversible.`)) return;
+    if (elements.engagementsNationalPeopleStatus) {
+      elements.engagementsNationalPeopleStatus.textContent = "Suppression definitive en cours...";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
+    }
+    try {
+      await callFunction("deleteEngagementNationalClubPerson", {
+        personId: cleanId,
+        confirmPermanent: true
+      });
+      engagementNationalPeopleLoaded = false;
+      engagementClubPeopleLoaded = false;
+      await loadEngagementNationalPeople({ force: true });
+    } catch (error) {
+      if (elements.engagementsNationalPeopleStatus) {
+        elements.engagementsNationalPeopleStatus.textContent = `Suppression impossible : ${error?.message || error}`;
+        elements.engagementsNationalPeopleStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  async function mergeEngagementNationalPerson(sourcePersonId, targetPersonId) {
+    const sourceId = String(sourcePersonId || "").trim();
+    const targetId = String(targetPersonId || "").trim();
+    if (!sourceId || !targetId || sourceId === targetId || !canDeleteEngagementCompetitionDirectly()) return;
+    const source = engagementNationalPeople.find((item) => item.id === sourceId) || {};
+    const target = engagementNationalPeople.find((item) => item.id === targetId) || {};
+    const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || "cette fiche";
+    const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.licenseNumber || "la fiche cible";
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquee comme fusionnee et retiree des listes club.`)) return;
+    const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
+    if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
+    const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${source.clubName || source.clubId} / ${target.clubName || target.clubId}). Confirmer quand meme la fusion ?`)) return;
+    if (elements.engagementsNationalPeopleStatus) {
+      elements.engagementsNationalPeopleStatus.textContent = "Fusion en cours...";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("mergeEngagementNationalClubPerson", {
+        sourcePersonId: sourceId,
+        targetPersonId: targetId,
+        confirmMerge: true,
+        confirmLicenseMismatch: licenseMismatch,
+        confirmClubMismatch: clubMismatch
+      });
+      engagementNationalPersonMergeSourceId = "";
+      engagementNationalPeopleLoaded = false;
+      engagementClubPeopleLoaded = false;
+      await loadEngagementNationalPeople({ force: true });
+      if (elements.engagementsNationalPeopleStatus) {
+        const totalUpdates = Number(result.teamLeaderUpdateCount || 0) + Number(result.officialsUpdateCount || 0);
+        elements.engagementsNationalPeopleStatus.textContent = `Fusion terminee. ${totalUpdates} engagement${totalUpdates > 1 ? "s" : ""} mis a jour.`;
+        elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsNationalPeopleStatus) {
+        elements.engagementsNationalPeopleStatus.textContent = `Fusion impossible : ${error?.message || error}`;
+        elements.engagementsNationalPeopleStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  async function mergeSelectedEngagementNationalPeople() {
+    const targetId = selectedEngagementNationalPersonKeepId();
+    const sourceIds = selectedEngagementNationalPersonMergeIds().filter((id) => id !== targetId);
+    if (!targetId || !sourceIds.length || !canDeleteEngagementCompetitionDirectly()) {
+      updateEngagementNationalPeopleSelectionState();
+      return;
+    }
+    const target = engagementNationalPersonById(targetId);
+    const sources = sourceIds.map(engagementNationalPersonById).filter(Boolean);
+    if (!target || !sources.length) return;
+    const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.licenseNumber || targetId;
+    const licenseMismatch = sources.some((source) => source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
+    const clubMismatch = sources.some((source) => source.clubId && target.clubId && source.clubId !== target.clubId);
+    const warning = [
+      licenseMismatch ? "numeros de licence differents" : "",
+      clubMismatch ? "clubs differents" : ""
+    ].filter(Boolean).join(", ");
+    if (!global.confirm(`Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ?${warning ? ` Attention : ${warning}.` : ""}`)) return;
+    engagementNationalPeopleLoading = true;
+    updateEngagementNationalPeopleSelectionState();
+    if (elements.engagementsNationalPeopleStatus) {
+      elements.engagementsNationalPeopleStatus.textContent = "Fusion groupee en cours...";
+      elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
+    }
+    let successCount = 0;
+    const errors = [];
+    for (const source of sources) {
+      try {
+        await callFunction("mergeEngagementNationalClubPerson", {
+          sourcePersonId: source.id,
+          targetPersonId: targetId,
+          confirmMerge: true,
+          confirmLicenseMismatch: true,
+          confirmClubMismatch: true
+        });
+        successCount += 1;
+      } catch (error) {
+        const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || source.id;
+        errors.push(`${sourceName} : ${error?.message || error}`);
+      }
+    }
+    engagementNationalPeopleLoading = false;
+    engagementNationalPersonMergeSourceId = "";
+    engagementNationalPeopleLoaded = false;
+    engagementClubPeopleLoaded = false;
+    await loadEngagementNationalPeople({ force: true, silent: true });
+    if (elements.engagementsNationalPeopleStatus) {
+      elements.engagementsNationalPeopleStatus.textContent = errors.length
+        ? `${successCount} fusion${successCount > 1 ? "s" : ""} realisee${successCount > 1 ? "s" : ""}. Erreurs : ${errors.slice(0, 3).join(" | ")}`
+        : `${successCount} fusion${successCount > 1 ? "s" : ""} realisee${successCount > 1 ? "s" : ""}.`;
+      elements.engagementsNationalPeopleStatus.dataset.tone = errors.length ? "error" : "ok";
+    }
+  }
+
+  function auditTargetSummary(target = {}) {
+    if (!target || typeof target !== "object") return "-";
+    return [
+      target.email || target.targetEmail || "",
+      target.competitionName || target.competitionId || "",
+      target.clubName || target.clubId || target.sourceClubId || "",
+      target.swimmerId || target.sourceSwimmerId || target.personId || target.sourcePersonId || "",
+      target.requestId || ""
+    ].filter(Boolean).slice(0, 3).join(" - ") || "-";
+  }
+
+  function auditActionLabel(action = "") {
+    return {
+      "accessUser.created": "Compte cree",
+      "accessUser.updated": "Compte modifie",
+      "accessUser.deleted": "Compte supprime",
+      "accessUser.deletionRequested": "Suppression compte demandee",
+      "accessUser.deletionRequestResolved": "Demande compte traitee",
+      "engagementClubSwimmer.nationalMerged": "Fusion nageur",
+      "engagementClubPerson.nationalMerged": "Fusion officiel",
+      "engagementClubSwimmer.deleted": "Nageur supprime",
+      "engagementClubPerson.nationalDeleted": "Officiel supprime",
+      "engagementCompetition.deleted": "Competition supprimee",
+      "engagementCompetition.deletionRequestResolved": "Demande competition traitee"
+    }[action] || action || "-";
+  }
+
+  function renderEngagementNationalAuditLogs() {
+    if (!elements.engagementsNationalAuditList) return;
+    if (!canDeleteEngagementCompetitionDirectly()) {
+      elements.engagementsNationalAuditList.innerHTML = "";
+      return;
+    }
+    if (!engagementNationalAuditLogs.length) {
+      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action recente a afficher.</p>';
+      return;
+    }
+    elements.engagementsNationalAuditList.innerHTML = `
+      <div class="admin-engagements-national-table-wrap">
+        <table class="admin-engagements-national-table admin-engagements-national-audit-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Action</th>
+              <th>Acteur</th>
+              <th>Cible</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${engagementNationalAuditLogs.map((log) => `
+              <tr>
+                <td>${escapeHtml(log.createdAt ? formatDeadline(log.createdAt).replace(/^Limite /, "") : "-")}</td>
+                <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong><small>${escapeHtml(log.action || "")}</small></td>
+                <td>${escapeHtml(log.actorUid || "-")}</td>
+                <td>${escapeHtml(auditTargetSummary(log.target))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  async function loadEngagementNationalAuditLogs({ force = false, silent = false } = {}) {
+    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalAuditLogsLoading) return;
+    if (engagementNationalAuditLogsLoaded && !force) return;
+    engagementNationalAuditLogsLoading = true;
+    if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = true;
+    if (elements.engagementsNationalAuditStatus && !silent) {
+      elements.engagementsNationalAuditStatus.textContent = "Chargement de l'historique...";
+      elements.engagementsNationalAuditStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("listEngagementNationalAuditLogs", { limit: 80 });
+      engagementNationalAuditLogs = Array.isArray(result.logs) ? result.logs : [];
+      engagementNationalAuditLogsLoaded = true;
+      renderEngagementNationalAuditLogs();
+      if (elements.engagementsNationalAuditStatus && !silent) {
+        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} affichee${engagementNationalAuditLogs.length > 1 ? "s" : ""}.`;
+        elements.engagementsNationalAuditStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsNationalAuditStatus && !silent) {
+        elements.engagementsNationalAuditStatus.textContent = `Lecture historique impossible : ${error?.message || error}`;
+        elements.engagementsNationalAuditStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementNationalAuditLogsLoading = false;
+      if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = false;
+      if (engagementNationalAuditLogsLoaded) renderEngagementNationalAuditLogs();
     }
   }
 
@@ -6678,15 +7759,23 @@
   }
 
   function renderAccessDeletionRequests() {
-    if (!elements.accessDeletionRequestsPanel || !elements.accessDeletionRequestsList) return;
-    elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
-    if (!canDeleteAccessUserDirectly()) return;
-    if (!accessDeletionRequests.length) {
-      elements.accessDeletionRequestsList.innerHTML = `<p class="admin-access-empty">Aucune demande de suppression en attente.</p>`;
-      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = "Aucune demande en attente.";
+    if (!canDeleteAccessUserDirectly()) {
+      if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = true;
+      if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = "";
       return;
     }
-    elements.accessDeletionRequestsList.innerHTML = accessDeletionRequests.map((request) => {
+    if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = false;
+    if (!accessDeletionRequests.length) {
+      if (elements.accessDeletionRequestsList) elements.accessDeletionRequestsList.innerHTML = `<p class="admin-access-empty">Aucune demande de suppression en attente.</p>`;
+      if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = `<p class="admin-engagements-empty">Aucune demande de suppression de compte en attente.</p>`;
+      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = "Aucune demande en attente.";
+      if (elements.engagementsNationalAccountsStatus) {
+        elements.engagementsNationalAccountsStatus.textContent = "Aucune demande en attente.";
+        elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
+      }
+      return;
+    }
+    const html = accessDeletionRequests.map((request) => {
       const name = [request.targetFirstName, request.targetLastName].filter(Boolean).join(" ") || request.targetEmail || "Compte LivePalmes";
       const region = request.targetRegionId ? regionDisplayLabel(request.targetRegionId) : "Region non renseignee";
       const rights = (request.targetCapabilities || []).map(capabilityLabel).join(", ") || "Aucun droit actif";
@@ -6708,8 +7797,14 @@
         </article>
       `;
     }).join("");
+    if (elements.accessDeletionRequestsList) elements.accessDeletionRequestsList.innerHTML = html;
+    if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = html;
     if (elements.accessDeletionRequestsStatus) {
       elements.accessDeletionRequestsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+    }
+    if (elements.engagementsNationalAccountsStatus) {
+      elements.engagementsNationalAccountsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+      elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
     }
   }
 
@@ -6721,6 +7816,10 @@
       elements.accessDeletionRequestsStatus.textContent = "Chargement...";
       elements.accessDeletionRequestsStatus.dataset.tone = "loading";
     }
+    if (elements.engagementsNationalAccountsStatus) {
+      elements.engagementsNationalAccountsStatus.textContent = "Chargement...";
+      elements.engagementsNationalAccountsStatus.dataset.tone = "loading";
+    }
     try {
       const result = await callFunction("listAccessUserDeletionRequests", {});
       accessDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
@@ -6731,6 +7830,10 @@
       if (elements.accessDeletionRequestsStatus) {
         elements.accessDeletionRequestsStatus.textContent = `Lecture impossible : ${error?.message || error}`;
         elements.accessDeletionRequestsStatus.dataset.tone = "error";
+      }
+      if (elements.engagementsNationalAccountsStatus) {
+        elements.engagementsNationalAccountsStatus.textContent = `Lecture impossible : ${error?.message || error}`;
+        elements.engagementsNationalAccountsStatus.dataset.tone = "error";
       }
     } finally {
       accessDeletionRequestsLoading = false;
@@ -6764,7 +7867,7 @@
     }
   }
 
-  async function resolveAccessDeletionRequest(requestId, decision) {
+  async function resolveAccessDeletionRequest(requestId, decision, statusElement = elements.accessDeletionRequestsStatus) {
     const request = accessDeletionRequests.find((item) => item.id === requestId);
     const label = request?.targetEmail || request?.targetUid || "ce compte";
     const approve = decision === "approved";
@@ -6772,23 +7875,23 @@
       ? `Accepter la demande et supprimer definitivement ${label} ?`
       : `Refuser la demande de suppression de ${label} ?`;
     if (!global.confirm(message)) return;
-    if (elements.accessDeletionRequestsStatus) {
-      elements.accessDeletionRequestsStatus.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
-      elements.accessDeletionRequestsStatus.dataset.tone = "loading";
+    if (statusElement) {
+      statusElement.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
+      statusElement.dataset.tone = "loading";
     }
     try {
       await callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
       accessDeletionRequestsLoaded = false;
       await loadAccessUsers({ reset: true });
       await loadAccessDeletionRequests({ force: true });
-      if (elements.accessDeletionRequestsStatus) {
-        elements.accessDeletionRequestsStatus.textContent = approve ? "Demande acceptee et compte supprime." : "Demande refusee.";
-        elements.accessDeletionRequestsStatus.dataset.tone = "ok";
+      if (statusElement) {
+        statusElement.textContent = approve ? "Demande acceptee et compte supprime." : "Demande refusee.";
+        statusElement.dataset.tone = "ok";
       }
     } catch (error) {
-      if (elements.accessDeletionRequestsStatus) {
-        elements.accessDeletionRequestsStatus.textContent = `Traitement impossible : ${error?.message || error}`;
-        elements.accessDeletionRequestsStatus.dataset.tone = "error";
+      if (statusElement) {
+        statusElement.textContent = `Traitement impossible : ${error?.message || error}`;
+        statusElement.dataset.tone = "error";
       }
     }
   }
@@ -6902,17 +8005,118 @@
     elements.engagementsAccessRequestEditCancel?.addEventListener("click", closeEngagementAccessRequestEditForm);
     elements.engagementsAccessRequestEditRegionId?.addEventListener("change", () => populateEngagementAccessRequestEditClubSelect());
     elements.engagementsAccessRequestEditClubSelect?.addEventListener("change", syncEngagementAccessRequestEditClubFieldsFromSelect);
+    elements.engagementsNationalTabButtons?.forEach((button) => {
+      button.addEventListener("click", () => setEngagementNationalTab(button.dataset.engagementsNationalTabButton));
+    });
+    elements.engagementsNationalAccountsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
+    elements.engagementsNationalAccountsList?.addEventListener("click", (event) => {
+      const decisionButton = event.target.closest("[data-access-deletion-decision]");
+      if (!decisionButton) return;
+      resolveAccessDeletionRequest(
+        decisionButton.dataset.accessDeletionRequestId,
+        decisionButton.dataset.accessDeletionDecision,
+        elements.engagementsNationalAccountsStatus
+      );
+    });
+    elements.engagementsNationalAuditRefresh?.addEventListener("click", () => loadEngagementNationalAuditLogs({ force: true }));
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
       if (!button) return;
       const action = button.dataset.engagementNationalSwimmerAction;
       const swimmerId = button.dataset.engagementNationalSwimmerId || "";
+      const swimmerSource = button.dataset.engagementNationalSwimmerSource || "engagement";
+      const swimmerKey = `${swimmerSource}:${swimmerId}`;
       if (action === "disable" || action === "enable") {
         setEngagementNationalSwimmerStatus(swimmerId, action === "enable");
       } else if (action === "delete") {
         deleteEngagementNationalSwimmer(swimmerId);
+      } else if (action === "merge") {
+        engagementNationalSwimmerMergeSourceId = engagementNationalSwimmerMergeSourceId === swimmerKey ? "" : swimmerKey;
+        engagementNationalSwimmerMergeTargets = [];
+        const source = engagementNationalSwimmers.find((item) =>
+          (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
+        ) || {};
+        engagementNationalSwimmerMergeQuery = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || "";
+        renderEngagementNationalSwimmers();
+        searchEngagementNationalSwimmerMergeTargets(swimmerId, swimmerSource);
+      } else if (action === "cancel-merge") {
+        resetEngagementNationalSwimmerMergeState();
+        renderEngagementNationalSwimmers();
+      } else if (action === "search-merge") {
+        searchEngagementNationalSwimmerMergeTargets(swimmerId, swimmerSource);
+      } else if (action === "confirm-merge") {
+        const card = button.closest("[data-engagement-national-swimmer-key]");
+        const targetValue = card?.querySelector("[data-engagement-national-swimmer-merge-target]")?.value || "";
+        mergeEngagementNationalSwimmer(swimmerId, swimmerSource, targetValue);
       }
     });
+    elements.engagementsNationalSwimmersList?.addEventListener("change", (event) => {
+      const keep = event.target.closest("[data-engagement-national-swimmer-keep]");
+      const merge = event.target.closest("[data-engagement-national-swimmer-merge-check]");
+      if (keep?.checked) {
+        const duplicateMerge = Array.from(elements.engagementsNationalSwimmersList?.querySelectorAll("[data-engagement-national-swimmer-merge-check]") || [])
+          .find((item) => item.value === keep.value);
+        if (duplicateMerge) duplicateMerge.checked = false;
+      }
+      if (merge?.checked) {
+        const currentKeep = selectedEngagementNationalSwimmerKeepKey();
+        if (currentKeep && currentKeep === merge.value) merge.checked = false;
+      }
+      updateEngagementNationalSwimmerSelectionState();
+    });
+    elements.engagementsNationalSwimmersSearch?.addEventListener("input", () => {
+      engagementNationalSwimmersLoaded = false;
+      if (!String(elements.engagementsNationalSwimmersSearch?.value || "").trim()) resetEngagementNationalSwimmerFilters();
+    });
+    elements.engagementsNationalSwimmersSearch?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        loadEngagementNationalSwimmers({ force: true });
+      }
+    });
+    elements.engagementsNationalSwimmersStatusFilter?.addEventListener("change", renderEngagementNationalSwimmers);
+    elements.engagementsNationalSwimmersReset?.addEventListener("click", resetEngagementNationalSwimmerFilters);
+    elements.engagementsNationalSwimmersBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalSwimmers);
+    elements.engagementsNationalPeopleRefresh?.addEventListener("click", () => loadEngagementNationalPeople({ force: true }));
+    elements.engagementsNationalPeopleList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-national-person-action]");
+      if (!button) return;
+      const action = button.dataset.engagementNationalPersonAction;
+      const personId = button.dataset.engagementNationalPersonId || "";
+      if (action === "disable" || action === "enable") {
+        setEngagementNationalPersonStatus(personId, action === "enable");
+      } else if (action === "delete") {
+        deleteEngagementNationalPerson(personId);
+      } else if (action === "merge") {
+        engagementNationalPersonMergeSourceId = engagementNationalPersonMergeSourceId === personId ? "" : personId;
+        renderEngagementNationalPeople();
+      } else if (action === "cancel-merge") {
+        engagementNationalPersonMergeSourceId = "";
+        renderEngagementNationalPeople();
+      } else if (action === "confirm-merge") {
+        const card = button.closest("[data-engagement-national-person-id]");
+        const targetId = card?.querySelector("[data-engagement-national-person-merge-target]")?.value || "";
+        mergeEngagementNationalPerson(personId, targetId);
+      }
+    });
+    elements.engagementsNationalPeopleList?.addEventListener("change", (event) => {
+      const keep = event.target.closest("[data-engagement-national-person-keep]");
+      const merge = event.target.closest("[data-engagement-national-person-merge-check]");
+      if (keep?.checked) {
+        const duplicateMerge = Array.from(elements.engagementsNationalPeopleList?.querySelectorAll("[data-engagement-national-person-merge-check]") || [])
+          .find((item) => item.value === keep.value);
+        if (duplicateMerge) duplicateMerge.checked = false;
+      }
+      if (merge?.checked) {
+        const currentKeep = selectedEngagementNationalPersonKeepId();
+        if (currentKeep && currentKeep === merge.value) merge.checked = false;
+      }
+      updateEngagementNationalPeopleSelectionState();
+    });
+    elements.engagementsNationalPeopleSearch?.addEventListener("input", renderEngagementNationalPeople);
+    elements.engagementsNationalPeopleStatusFilter?.addEventListener("change", renderEngagementNationalPeople);
+    elements.engagementsNationalPeopleReset?.addEventListener("click", resetEngagementNationalPeopleFilters);
+    elements.engagementsNationalPeopleBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalPeople);
     elements.engagementsClubPeopleRefresh?.addEventListener("click", () => loadEngagementClubPeople({ force: true }));
     elements.engagementsClubSwimmersDirectoryRefresh?.addEventListener("click", () => loadEngagementClubSwimmers({ force: true }));
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
@@ -7019,6 +8223,7 @@
     elements.engagementsClubEntriesForm?.addEventListener("submit", saveEngagementClubSwimmers);
     elements.engagementsClubRelaysForm?.addEventListener("submit", saveEngagementClubRelays);
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
+    elements.engagementsGenerateTxtExportButton?.addEventListener("click", generateEngagementAdminTxtExport);
     elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);

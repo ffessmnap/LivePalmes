@@ -66,6 +66,8 @@ Les pages publiques fréquentes doivent privilégier les fichiers statiques gén
 
 Concevoir mobile first tout en restant efficace sur ordinateur. Aucun contenu ou bouton essentiel ne doit devenir inaccessible. Les actions doivent fonctionner au toucher sans dépendre du survol. Prévoir une présentation adaptée ou un défilement pour les tableaux larges. Respecter le style et les composants existants.
 
+Après toute modification qui change l’interface ou son rendu visuel, mettre à jour `docs/DESIGN_SYSTEM.md` dans la même intervention. Documenter uniquement les règles, composants, états ou variantes réellement introduits ou modifiés ; ne pas dupliquer un changement purement technique sans effet visuel.
+
 ## Vérifications
 
 Adapter les contrôles au risque :
