@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260803-portal-final-ui-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260803-portal-typography-2">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -19,16 +19,23 @@
         <h1>Portail LivePalmes</h1>
         <img class="admin-portal-livepalmes-logo" src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="">
       </div>
-      <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
-        <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
-          <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
-          <span class="admin-portal-account-short">Profil</span>
-          <span aria-hidden="true">⌄</span>
+      <div class="admin-portal-topbar-actions">
+        <button id="adminPortalSearchButton" class="admin-portal-search-button" type="button" aria-haspopup="dialog" aria-controls="adminPortalSearchDialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg>
+          <span>Rechercher</span>
+          <kbd>Ctrl K</kbd>
         </button>
-        <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
-          <a href="#mon-compte" role="menuitem">Mon compte</a>
-          <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
-          <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
+        <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
+          <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
+            <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
+            <span class="admin-portal-account-short">Profil</span>
+            <span aria-hidden="true">⌄</span>
+          </button>
+          <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
+            <a href="#mon-compte" role="menuitem">Mon compte</a>
+            <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
+            <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
+          </div>
         </div>
       </div>
     </header>
@@ -108,32 +115,67 @@
               <span aria-hidden="true">⌄</span>
             </button>
             <nav id="adminPortalNavigation" class="admin-portal-nav">
-              <span class="admin-portal-nav-title">Navigation</span>
+              <div class="admin-portal-nav-head">
+                <span class="admin-portal-nav-title">Navigation</span>
+                <button id="adminPortalNavPin" class="admin-portal-nav-pin" type="button" aria-pressed="false" aria-label="Épingler la navigation ouverte" title="Épingler la navigation ouverte">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4 6 6M14 3l7 7-4 1-4 4-1 5-2-2-4 4-2-2 4-4-2-2 5-1 4-4 1-4Z"></path></svg>
+                </button>
+              </div>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavGeneral">
                 <h2 id="adminNavGeneral">Général</h2>
                 <a href="#accueil" data-admin-view-link="dashboard"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></span><span>Vue d’ensemble</span></a>
                 <a href="#mon-compte" data-admin-view-link="account"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span>Mon compte</span></a>
                 <a href="#demande-acces" data-admin-view-link="accessRequest"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span><span>Demander un acc&egrave;s</span></a>
               </section>
-              <section class="admin-portal-nav-group" aria-labelledby="adminNavPerformances">
-                <h2 id="adminNavPerformances">Performances</h2>
-                <div class="admin-portal-nav-nested" data-admin-performance-menu>
-                  <button id="adminPortalPerformanceToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalPerformanceSubmenu">
-                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
-                    <span>Gestion des performances</span>
-                    <span aria-hidden="true">⌄</span>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavClub">
+                <h2 id="adminNavClub">Club</h2>
+                <div class="admin-portal-nav-nested" data-engagements-club-menu hidden>
+                  <button id="adminPortalClubToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalClubSubmenu" data-admin-space-hash="espace-club">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span>
+                    <span>Espace club</span><span aria-hidden="true">⌄</span>
                   </button>
-                  <div id="adminPortalPerformanceSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de gestion des performances" hidden>
+                  <div id="adminPortalClubSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’espace club" hidden>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar">Compétitions et engagements</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers">Mes nageurs</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople">Mes officiels</a>
+                  </div>
+                </div>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
+                <h2 id="adminNavCompetition">Compétitions</h2>
+                <div class="admin-portal-nav-nested" data-engagements-admin-nav hidden>
+                  <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu" data-admin-space-hash="organisation-competitions">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
+                    <span>Organisation des compétitions</span><span aria-hidden="true">⌄</span>
+                  </button>
+                  <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Organisation des compétitions" hidden>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminAccessRequests" data-engagements-nav-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d'acc&egrave;s <span id="adminEngagementsAccessRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                  </div>
+                </div>
+                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"></rect><path d="M8 22h8M12 18v4"></path></svg></span><span>Consoles comp&eacute;tition</span><span aria-hidden="true">↗</span></a>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavData">
+                <h2 id="adminNavData">Données sportives</h2>
+                <div class="admin-portal-nav-nested" data-admin-performance-menu>
+                  <button id="adminPortalPerformanceToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalPerformanceSubmenu" data-admin-space-hash="gestion-performances">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
+                    <span>Outils de données sportives</span><span aria-hidden="true">⌄</span>
+                  </button>
+                  <div id="adminPortalPerformanceSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de gestion des données sportives" hidden>
                     <a href="#records-mpf" data-admin-view-link="records" data-capability-nav="records.manage">Records / MPF</a>
                     <a href="#import-competitions" data-admin-view-link="import" data-capability-nav="competitions.import">Import des compétitions</a>
                     <a href="#correction-performance" data-admin-view-link="correction" data-capability-nav="competitions.import">Correction d’une performance</a>
                   </div>
                 </div>
+              </section>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavDtn">
+                <h2 id="adminNavDtn">Suivi DTN</h2>
                 <div class="admin-portal-nav-nested" data-admin-dtn-menu>
-                  <button id="adminPortalDtnToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalDtnSubmenu" data-capability-nav="dtn.view">
+                  <button id="adminPortalDtnToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalDtnSubmenu" data-admin-space-hash="espace-dtn" data-capability-nav="dtn.view">
                     <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-                    <span>Espace DTN</span>
-                    <span aria-hidden="true">⌄</span>
+                    <span>Espace DTN</span><span aria-hidden="true">⌄</span>
                   </button>
                   <div id="adminPortalDtnSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’espace DTN" hidden>
                     <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
@@ -141,25 +183,21 @@
                   </div>
                 </div>
               </section>
-              <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
-                <h2 id="adminNavCompetition">Compétitions</h2>
-                <a class="admin-portal-nav-club-link" href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span><span>Espace club</span></a>
-                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 21a6 6 0 0 1 12 0M14 16a5 5 0 0 1 7 5"></path></svg></span><span>Mes nageurs</span></a>
-                <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span><span>Mes officiels</span></a>
-                <div class="admin-portal-nav-nested" data-engagements-admin-nav hidden>
-                  <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu">
-                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
-                    <span>Administration des comp&eacute;titions</span>
-                    <span aria-hidden="true">⌄</span>
+              <section class="admin-portal-nav-group" aria-labelledby="adminNavNational">
+                <h2 id="adminNavNational">Administration nationale</h2>
+                <div class="admin-portal-nav-nested" data-engagements-national-menu hidden>
+                  <button id="adminPortalNationalToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalNationalSubmenu" data-admin-space-hash="administration-nationale">
+                    <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+                    <span>Administration nationale</span><span aria-hidden="true">⌄</span>
                   </button>
-                  <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Administration des comp&eacute;titions" hidden>
-                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
-                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
-                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminAccessRequests" data-engagements-nav-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d'acc&egrave;s <span id="adminEngagementsAccessRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
-                    <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-nav hidden>Administration nationale <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                  <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
+                    <a id="adminEngagementsDeletionRequestsNav" href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Suppressions <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Doublons nageurs</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="accounts" data-engagements-national-nav hidden>Comptes admin</a>
+                    <a href="#engagements" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" data-engagements-national-nav hidden>Historique</a>
                   </div>
                 </div>
-                <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"></rect><path d="M8 22h8M12 18v4"></path></svg></span><span>Consoles comp&eacute;tition</span><span aria-hidden="true">↗</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavPortal">
                 <h2 id="adminNavPortal">Gestion du portail</h2>
@@ -169,6 +207,7 @@
           </aside>
 
           <div class="admin-portal-workspace">
+            <nav id="adminPortalBreadcrumb" class="admin-portal-breadcrumb" aria-label="Fil d’Ariane" hidden></nav>
             <section id="adminOverviewView" class="admin-portal-overview-view" data-admin-view="dashboard" aria-labelledby="adminOverviewViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-overview-head">
                 <span>Portail LivePalmes</span>
@@ -184,52 +223,333 @@
                 </div>
               </div>
 
-              <div class="admin-overview-grid" aria-label="Outils disponibles">
-                <a class="admin-overview-card" href="#mon-compte">
-                  <span class="admin-overview-card-icon tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
-                  <span class="admin-overview-card-label">Général</span>
-                  <strong>Mon compte</strong>
-                  <p>Consulter votre périmètre et modifier vos identifiants.</p>
-                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
-                </a>
+              <section id="adminPortalQuickAccess" class="admin-portal-quick-access" aria-labelledby="adminPortalQuickAccessTitle" hidden>
+                <div class="admin-portal-quick-access-head">
+                  <div>
+                    <span>Accès rapide</span>
+                    <h3 id="adminPortalQuickAccessTitle">Favoris et éléments récents</h3>
+                  </div>
+                  <button id="adminPortalQuickAccessClear" class="ghost-button" type="button">Effacer les récents</button>
+                </div>
+                <div id="adminPortalFavorites" class="admin-portal-quick-list" aria-label="Outils favoris"></div>
+                <div id="adminPortalRecents" class="admin-portal-quick-list" aria-label="Outils récemment consultés"></div>
+              </section>
 
-                <a class="admin-overview-card" href="#records-mpf" data-capability-panel="records.manage">
-                  <span class="admin-overview-card-icon tone-performance" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
-                  <span class="admin-overview-card-label">Performances</span>
-                  <strong>Records et MPF</strong>
-                  <p>Préparer et suivre les mises à jour des références nationales.</p>
-                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
-                </a>
+              <div class="admin-overview-grid admin-overview-spaces" aria-label="Espaces disponibles">
+                <article class="admin-overview-space-card" data-overview-space>
+                  <a class="admin-overview-space-main" href="#mon-compte">
+                    <span class="admin-overview-card-icon tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
+                    <span class="admin-overview-card-label">Général</span>
+                    <strong>Mon espace</strong>
+                    <p>Consulter votre compte et demander un accès complémentaire.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewGeneralTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewGeneralTools" class="admin-overview-space-tools">
+                    <a href="#mon-compte" data-overview-tool>Mon compte <span aria-hidden="true">→</span></a>
+                    <a href="#demande-acces" data-overview-tool>Demander un accès <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
 
-                <a class="admin-overview-card" href="#import-competitions" data-capability-panel="competitions.import">
-                  <span class="admin-overview-card-icon tone-import" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M4 14v6h16v-6"></path></svg></span>
-                  <span class="admin-overview-card-label">Performances</span>
-                  <strong>Imports et corrections</strong>
-                  <p>Importer une compétition ou corriger une performance publiée.</p>
-                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
-                </a>
+                <article class="admin-overview-space-card" data-overview-space data-overview-club hidden>
+                  <a class="admin-overview-space-main" href="#espace-club">
+                    <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span>
+                    <span class="admin-overview-card-label">Club</span>
+                    <strong>Espace club</strong>
+                    <p>Gérer les engagements, les nageurs et les officiels de votre club.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewClubTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewClubTools" class="admin-overview-space-tools">
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="club" data-engagements-home-tab="calendar">Compétitions et engagements <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="clubSwimmers" data-engagements-home-tab="clubSwimmers">Mes nageurs <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="clubPeople" data-engagements-home-tab="clubPeople">Mes officiels <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
 
-                <a class="admin-overview-card" href="#espace-dtn-france" data-capability-panel="dtn.view">
-                  <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-                  <span class="admin-overview-card-label">Espace DTN</span>
-                  <strong>Suivi sportif national</strong>
-                  <p>Consulter les qualifications France et Équipe de France.</p>
-                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
-                </a>
+                <article class="admin-overview-space-card" data-overview-space data-overview-competition hidden>
+                  <a class="admin-overview-space-main" href="#organisation-competitions">
+                    <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
+                    <span class="admin-overview-card-label">Compétitions</span>
+                    <strong>Organisation des compétitions</strong>
+                    <p>Créer et administrer les compétitions de votre périmètre.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewCompetitionTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewCompetitionTools" class="admin-overview-space-tools">
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminCalendar" data-engagements-home-tab="calendar">Calendrier <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminCreate" data-engagements-home-tab="create">Créer une compétition <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminAccessRequests" data-engagements-home-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d’accès <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
 
-                <a class="admin-overview-card" href="#engagements" data-engagements-panel>
+                <article class="admin-overview-space-card" data-overview-space data-overview-performance hidden>
+                  <a class="admin-overview-space-main" href="#gestion-performances">
+                    <span class="admin-overview-card-icon tone-performance" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
+                    <span class="admin-overview-card-label">Données sportives</span>
+                    <strong>Données sportives</strong>
+                    <p>Maintenir les références et les performances publiées.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPerformanceTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewPerformanceTools" class="admin-overview-space-tools">
+                    <a href="#records-mpf" data-overview-tool data-capability-panel="records.manage">Records et MPF <span aria-hidden="true">→</span></a>
+                    <a href="#import-competitions" data-overview-tool data-capability-panel="competitions.import">Import des compétitions <span aria-hidden="true">→</span></a>
+                    <a href="#correction-performance" data-overview-tool data-capability-panel="competitions.import">Correction d’une performance <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
+
+                <article class="admin-overview-space-card" data-overview-space data-capability-panel="dtn.view">
+                  <a class="admin-overview-space-main" href="#espace-dtn">
+                    <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+                    <span class="admin-overview-card-label">Suivi DTN</span>
+                    <strong>Espace DTN</strong>
+                    <p>Consulter les qualifications France et Équipe de France.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewDtnTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewDtnTools" class="admin-overview-space-tools">
+                    <a href="#espace-dtn-france" data-overview-tool>Championnats de France <span aria-hidden="true">→</span></a>
+                    <a href="#espace-dtn-edf" data-overview-tool>Équipe de France <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
+
+                <article class="admin-overview-space-card" data-overview-space data-overview-national hidden>
+                  <a class="admin-overview-space-main" href="#administration-nationale">
+                    <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+                    <span class="admin-overview-card-label">National</span>
+                    <strong>Administration nationale</strong>
+                    <p>Contrôler et maintenir les données réservées au niveau national.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewNationalTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewNationalTools" class="admin-overview-space-tools">
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">Suppressions <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">Doublons nageurs <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="people">Officiels <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="accounts">Comptes administrateurs <span aria-hidden="true">→</span></a>
+                    <a href="#engagements" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">Historique <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
+
+                <article class="admin-overview-space-card" data-overview-space data-access-management-panel hidden>
+                  <a class="admin-overview-space-main" href="#gestion-acces">
+                    <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
+                    <span class="admin-overview-card-label">Portail</span>
+                    <strong>Gestion du portail</strong>
+                    <p>Administrer les comptes et les habilitations du portail.</p>
+                    <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                  </a>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPortalTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <div id="adminOverviewPortalTools" class="admin-overview-space-tools">
+                    <a href="#gestion-acces" data-overview-tool>Accès et utilisateurs <span aria-hidden="true">→</span></a>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section id="adminClubHomeView" class="admin-portal-space-home" data-admin-view="clubHome" data-engagements-club-home aria-labelledby="adminClubHomeTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Espace club</span>
+                <h2 id="adminClubHomeTitle">Gestion du club</h2>
+                <p>Retrouvez les compétitions, les nageurs et les officiels rattachés à votre club.</p>
+              </div>
+
+              <div class="admin-overview-intro">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span>
+                <div>
+                  <strong>Outils du club</strong>
+                  <p>Les données proposées correspondent au périmètre associé à votre compte.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils de l’espace club">
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="club" data-engagements-home-tab="calendar">
                   <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
                   <span class="admin-overview-card-label">Compétitions</span>
-                  <strong>Gestion des engagements</strong>
-                  <p>Accéder aux compétitions, nageurs, officiels et engagements.</p>
+                  <strong>Compétitions et engagements</strong>
+                  <p>Consulter les compétitions ouvertes et gérer les engagements du club.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="clubSwimmers" data-engagements-home-tab="clubSwimmers">
+                  <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M17 8h5M19.5 5.5v5"></path></svg></span>
+                  <span class="admin-overview-card-label">Effectif</span>
+                  <strong>Mes nageurs</strong>
+                  <p>Consulter et maintenir la liste des nageurs utilisés pour les engagements.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="clubPeople" data-engagements-home-tab="clubPeople">
+                  <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="9" r="3"></circle><path d="M2 21a6 6 0 0 1 12 0M12 21a5 5 0 0 1 10 0"></path></svg></span>
+                  <span class="admin-overview-card-label">Encadrement</span>
+                  <strong>Mes officiels</strong>
+                  <p>Gérer les officiels et accompagnants mobilisables par le club.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </section>
 
-                <a class="admin-overview-card" href="#gestion-acces" data-access-management-panel hidden>
+            <section id="adminPerformanceHomeView" class="admin-portal-space-home" data-admin-view="performanceHome" aria-labelledby="adminPerformanceHomeTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Données sportives</span>
+                <h2 id="adminPerformanceHomeTitle">Gestion des données sportives</h2>
+                <p>Choisissez l’outil adapté pour maintenir les références et les performances publiées.</p>
+              </div>
+
+              <div class="admin-overview-intro">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
+                <div>
+                  <strong>Outils de données sportives</strong>
+                  <p>Seuls les outils autorisés pour votre profil sont proposés.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils de gestion des données sportives">
+                <a class="admin-overview-card" href="#records-mpf" data-capability-panel="records.manage">
+                  <span class="admin-overview-card-icon tone-performance" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
+                  <span class="admin-overview-card-label">Références</span>
+                  <strong>Records et MPF</strong>
+                  <p>Consulter, préparer et valider les références nationales.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#import-competitions" data-capability-panel="competitions.import">
+                  <span class="admin-overview-card-icon tone-import" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M4 14v6h16v-6"></path></svg></span>
+                  <span class="admin-overview-card-label">Données</span>
+                  <strong>Import des compétitions</strong>
+                  <p>Importer et contrôler les performances d’une compétition.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#correction-performance" data-capability-panel="competitions.import">
+                  <span class="admin-overview-card-icon tone-import" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4ZM13 7l4 4"></path></svg></span>
+                  <span class="admin-overview-card-label">Correction</span>
+                  <strong>Correction d’une performance</strong>
+                  <p>Rechercher une ligne publiée et enregistrer une correction motivée.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </section>
+
+            <section id="adminDtnHomeView" class="admin-portal-space-home" data-admin-view="dtnHome" data-capability-panel="dtn.view" aria-labelledby="adminDtnHomeTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Espace DTN</span>
+                <h2 id="adminDtnHomeTitle">Suivi sportif national</h2>
+                <p>Accédez aux qualifications des Championnats de France et des Équipes de France.</p>
+              </div>
+
+              <div class="admin-overview-intro">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+                <div>
+                  <strong>Référentiels DTN</strong>
+                  <p>Sélectionnez le suivi à consulter pour la saison sportive.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils de l’espace DTN">
+                <a class="admin-overview-card" href="#espace-dtn-france">
+                  <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+                  <span class="admin-overview-card-label">France</span>
+                  <strong>Championnats de France</strong>
+                  <p>Consulter les temps de qualification et les nageurs qualifiés.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#espace-dtn-edf">
+                  <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 15 9l6 .9-4.5 4.4 1.1 6.2L12 17.6 6.4 20.5l1.1-6.2L3 9.9 9 9l3-6Z"></path></svg></span>
+                  <span class="admin-overview-card-label">International</span>
+                  <strong>Équipe de France</strong>
+                  <p>Consulter les temps de sélection et le suivi des sportifs concernés.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </section>
+
+            <section id="adminCompetitionHomeView" class="admin-portal-space-home" data-admin-view="engagementsAdminHome" data-engagements-admin-home aria-labelledby="adminCompetitionHomeTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Compétitions</span>
+                <h2 id="adminCompetitionHomeTitle">Organisation des compétitions</h2>
+                <p>Créez les compétitions et suivez les opérations de votre périmètre régional ou national.</p>
+              </div>
+
+              <div class="admin-overview-intro">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
+                <div>
+                  <strong>Pilotage des compétitions</strong>
+                  <p>Les actions affichées respectent votre périmètre régional ou national.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils d’organisation des compétitions">
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminCalendar" data-engagements-home-tab="calendar">
+                  <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
+                  <span class="admin-overview-card-label">Calendrier</span>
+                  <strong>Compétitions</strong>
+                  <p>Consulter et administrer les compétitions de votre périmètre.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminCreate" data-engagements-home-tab="create">
+                  <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></span>
+                  <span class="admin-overview-card-label">Création</span>
+                  <strong>Créer une compétition</strong>
+                  <p>Définir une nouvelle compétition et son cadre d’engagement.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminAccessRequests" data-engagements-home-tab="accessRequests" data-engagements-admin-request-nav hidden>
+                  <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span>
+                  <span class="admin-overview-card-label">Demandes</span>
+                  <strong>Demandes d’accès</strong>
+                  <p>Examiner les demandes d’accès transmises par les clubs.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </section>
+
+            <section id="adminNationalHomeView" class="admin-portal-space-home" data-admin-view="nationalHome" data-engagements-national-home aria-labelledby="adminNationalHomeTitle" hidden>
+              <div class="admin-portal-workspace-head admin-overview-head">
+                <span>Administration nationale</span>
+                <h2 id="adminNationalHomeTitle">Gestion nationale</h2>
+                <p>Accédez aux opérations de contrôle et de maintenance réservées au niveau national.</p>
+              </div>
+
+              <div class="admin-overview-intro">
+                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+                <div>
+                  <strong>Outils nationaux</strong>
+                  <p>Ces fonctions restent limitées aux profils disposant des habilitations nationales.</p>
+                </div>
+              </div>
+
+              <div class="admin-overview-grid" aria-label="Outils d’administration nationale">
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">
+                  <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"></path></svg></span>
+                  <span class="admin-overview-card-label">Contrôle</span>
+                  <strong>Suppressions</strong>
+                  <p>Examiner et traiter les demandes de suppression de compétitions.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">
+                  <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="16" cy="8" r="3"></circle><path d="M2 21a6 6 0 0 1 12 0M10 21a6 6 0 0 1 12 0"></path></svg></span>
+                  <span class="admin-overview-card-label">Qualité des données</span>
+                  <strong>Doublons nageurs</strong>
+                  <p>Identifier et rapprocher les fiches nageurs en doublon.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="people">
+                  <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="9" r="3"></circle><path d="M2 21a6 6 0 0 1 12 0M12 21a5 5 0 0 1 10 0"></path></svg></span>
+                  <span class="admin-overview-card-label">Référentiel</span>
+                  <strong>Officiels</strong>
+                  <p>Contrôler les personnes et officiels enregistrés dans la base.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="accounts">
                   <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
-                  <span class="admin-overview-card-label">Administration</span>
-                  <strong>Accès et utilisateurs</strong>
-                  <p>Gérer les comptes et les habilitations du portail.</p>
+                  <span class="admin-overview-card-label">Comptes</span>
+                  <strong>Comptes administrateurs</strong>
+                  <p>Consulter les comptes liés aux opérations nationales.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">
+                  <span class="admin-overview-card-icon tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"></path></svg></span>
+                  <span class="admin-overview-card-label">Traçabilité</span>
+                  <strong>Historique</strong>
+                  <p>Consulter la trace des opérations administratives nationales.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
               </div>
@@ -392,7 +712,7 @@
             <section id="adminRecordsView" class="admin-portal-records-view" data-admin-view="records" aria-labelledby="adminRecordsViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-records-workspace-head">
                 <div>
-                  <span>Performances</span>
+                  <span>Données sportives</span>
                   <h2 id="adminRecordsViewTitle">Mise à jour des records de France et MPF</h2>
                   <p>Recherchez une référence, préparez les modifications puis publiez les brouillons validés.</p>
                 </div>
@@ -591,8 +911,8 @@
 
             <section id="adminEngagementsView" class="admin-portal-engagements-view" data-admin-view="engagements" data-engagements-panel aria-labelledby="adminEngagementsViewTitle" hidden>
               <div class="admin-portal-workspace-head">
-                <span id="adminEngagementsViewEyebrow">Comp&eacute;titions</span>
-                <h2 id="adminEngagementsViewTitle">Administration des comp&eacute;titions</h2>
+                <span id="adminEngagementsViewEyebrow">Organisation des comp&eacute;titions</span>
+                <h2 id="adminEngagementsViewTitle">Organisation des comp&eacute;titions</h2>
                 <p id="adminEngagementsViewIntro"></p>
               </div>
 
@@ -636,8 +956,9 @@
                       <input id="adminEngagementsMineFilter" type="checkbox">
                       <span>Mes comp&eacute;titions</span>
                     </label>
-                    <button id="adminEngagementsFiltersReset" class="ghost-button" type="button">Effacer</button>
+                    <button id="adminEngagementsFiltersReset" class="ghost-button" type="button">Réinitialiser les filtres</button>
                   </form>
+                  <p id="adminEngagementsResultsCount" class="admin-portal-results-count" aria-live="polite"></p>
                   <p id="adminEngagementsStatus" class="admin-portal-message" data-tone="loading">Socle engagements actif.</p>
                   <div id="adminEngagementsCalendarList" class="admin-engagements-calendar-list" aria-live="polite"></div>
                   <section id="adminEngagementsDetail" class="admin-engagements-detail" aria-labelledby="adminEngagementsDetailTitle" hidden>
@@ -1453,7 +1774,7 @@
 
             <section id="adminImportView" class="admin-portal-import-view import-admin-page" data-admin-view="import" aria-labelledby="adminImportViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-module-workspace-head">
-                <span>Performances</span>
+                <span>Données sportives</span>
                 <h2 id="adminImportViewTitle">Import des compétitions</h2>
                 <p>Analysez le fichier, contrôlez la prévisualisation puis validez son ajout à la base.</p>
               </div>
@@ -1565,7 +1886,7 @@
 
             <section id="adminCorrectionView" class="admin-portal-import-view import-admin-page" data-admin-view="correction" aria-labelledby="adminCorrectionViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-module-workspace-head">
-                <span>Performances</span>
+                <span>Données sportives</span>
                 <h2 id="adminCorrectionViewTitle">Correction d’une performance</h2>
                 <p>Recherchez la ligne publiée, contrôlez les valeurs puis enregistrez une correction motivée.</p>
               </div>
@@ -1653,7 +1974,7 @@
 
             <section id="adminDtnView" class="admin-portal-dtn-view" data-admin-view="dtn" data-capability-panel="dtn.view" aria-labelledby="adminDtnViewTitle" hidden>
               <div class="admin-portal-workspace-head">
-                <span>Performances</span>
+                <span>Données sportives</span>
                 <h2 id="adminDtnViewTitle">Espace DTN</h2>
                 <p>Consultez les temps de qualification et les sportifs qualifiés pour la saison sélectionnée.</p>
               </div>
@@ -1705,7 +2026,7 @@
 
             <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-access-management-panel aria-labelledby="adminAccessViewTitle" hidden>
               <div class="admin-portal-workspace-head">
-                <span>Gestion générale</span>
+                <span>Administration du portail</span>
                 <h2 id="adminAccessViewTitle">Gestion des accès</h2>
                 <p>Créez les comptes du portail et adaptez leurs habilitations.</p>
               </div>
@@ -1751,7 +2072,7 @@
               </select>
             </label>
             <button type="submit">Rechercher</button>
-            <button id="adminAccessClearFilters" class="ghost-button" type="button">Effacer</button>
+            <button id="adminAccessClearFilters" class="ghost-button" type="button">Réinitialiser les filtres</button>
           </form>
           <div id="adminAccessList" class="admin-access-list"></div>
           <nav id="adminAccessPagination" class="admin-access-pagination" aria-label="Pages des utilisateurs" hidden>
@@ -1871,12 +2192,33 @@
       </section>
     </main>
 
+    <div id="adminPortalSearchDialog" class="admin-portal-search-dialog" role="dialog" aria-modal="true" aria-labelledby="adminPortalSearchTitle" hidden>
+      <button class="admin-portal-search-backdrop" type="button" data-portal-search-close aria-label="Fermer la recherche"></button>
+      <section class="admin-portal-search-panel">
+        <div class="admin-portal-search-head">
+          <div>
+            <span>Navigation rapide</span>
+            <h2 id="adminPortalSearchTitle">Rechercher dans le portail</h2>
+          </div>
+          <button class="ghost-button" type="button" data-portal-search-close>Fermer</button>
+        </div>
+        <label class="admin-portal-search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg>
+          <input id="adminPortalSearchInput" type="search" autocomplete="off" aria-label="Rechercher un outil ou une compétition chargée" placeholder="Outil, espace ou compétition chargée…">
+          <kbd>Échap</kbd>
+        </label>
+        <p id="adminPortalSearchHint" class="admin-portal-search-hint">La recherche respecte les outils visibles pour votre profil.</p>
+        <div id="adminPortalSearchResults" class="admin-portal-search-results" role="listbox" aria-label="Résultats de recherche"></div>
+      </section>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-dtn-qualifications.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260803-portal-overview-1"></script>
+    <script src="assets/livepalmes-dtn-qualifications.js?v=20260803-space-home-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260803-portal-overview-tools-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20260803-portal-ux-1"></script>
   </body>
 </html>

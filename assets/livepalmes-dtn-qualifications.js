@@ -642,8 +642,8 @@
     elements.qualifiersClose.addEventListener("click", closeQualifiers);
     const syncGridFromHash = () => {
       if (global.location.hash === "#espace-dtn-edf") state.grid = "edf";
-      if (["#espace-dtn", "#espace-dtn-france"].includes(global.location.hash)) state.grid = "france";
-      if (global.location.hash.startsWith("#espace-dtn")) renderGrid();
+      if (global.location.hash === "#espace-dtn-france") state.grid = "france";
+      if (["#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) renderGrid();
     };
     global.addEventListener("hashchange", syncGridFromHash);
     syncGridFromHash();

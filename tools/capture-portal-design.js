@@ -9,13 +9,23 @@ const outputDir = path.join(rootDir, "tmp", "portal-design-captures");
 const views = [
   { name: "login", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false },
   { name: "overview", hash: "accueil", selector: "#adminOverviewView", authenticated: true },
-  { name: "records", hash: "records-mpf", selector: "#adminRecordsView", authenticated: true },
+  { name: "overview-expanded", hash: "accueil", selector: "#adminOverviewView", authenticated: true, overviewSpace: "national" },
+  { name: "overview-quick", hash: "accueil", selector: "#adminOverviewView", authenticated: true, ux: "quick" },
+  { name: "search", hash: "accueil", selector: "#adminOverviewView", authenticated: true, ux: "search" },
+  { name: "club-home", hash: "espace-club", selector: "#adminClubHomeView", authenticated: true, menu: "club" },
+  { name: "performance-home", hash: "gestion-performances", selector: "#adminPerformanceHomeView", authenticated: true, menu: "performance" },
+  { name: "records", hash: "records-mpf", selector: "#adminRecordsView", authenticated: true, menu: "performance" },
   { name: "engagements", hash: "engagements", selector: "#adminEngagementsView", authenticated: true },
-  { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true },
+  { name: "competition-home", hash: "organisation-competitions", selector: "#adminCompetitionHomeView", authenticated: true, menu: "engagements" },
+  { name: "dtn-home", hash: "espace-dtn", selector: "#adminDtnHomeView", authenticated: true, menu: "dtn" },
+  { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
+  { name: "national-home", hash: "administration-nationale", selector: "#adminNationalHomeView", authenticated: true, menu: "national" },
   { name: "access", hash: "gestion-acces", selector: "#adminAccessView", authenticated: true }
 ];
 const viewports = [
+  { name: "wide", width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false },
   { name: "desktop", width: 1280, height: 720, deviceScaleFactor: 1, mobile: false },
+  { name: "tablet", width: 1024, height: 768, deviceScaleFactor: 1, mobile: false },
   { name: "mobile", width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
 ];
 
@@ -175,12 +185,29 @@ function presentationScript(view) {
     if (login) login.hidden = authenticated;
     if (dashboard) dashboard.hidden = !authenticated;
     if (account) account.hidden = !authenticated;
+    const sidebar = document.querySelector(".admin-portal-sidebar");
+    if (sidebar) sidebar.classList.toggle("is-pinned", authenticated && ${view.pinned ? "true" : "false"});
     document.querySelectorAll("[data-admin-view]").forEach((element) => {
       element.hidden = !authenticated || !element.matches(${JSON.stringify(view.selector)});
     });
     if (authenticated) {
       document.querySelectorAll("#adminPortalNavigation [hidden]").forEach((element) => {
-        if (element.matches(".admin-portal-nav-submenu,[data-engagements-admin-nav],[data-access-management-nav]")) element.hidden = false;
+        if (element.matches("[data-engagements-club-menu],[data-engagements-club-nav],[data-engagements-admin-nav],[data-engagements-national-menu],[data-engagements-national-nav],[data-access-management-nav]")) element.hidden = false;
+      });
+      const menu = ${JSON.stringify(view.menu || "")};
+      const menuState = {
+        club: ["#adminPortalClubToggle", "#adminPortalClubSubmenu"],
+        performance: ["#adminPortalPerformanceToggle", "#adminPortalPerformanceSubmenu"],
+        dtn: ["#adminPortalDtnToggle", "#adminPortalDtnSubmenu"],
+        engagements: ["#adminPortalEngagementsToggle", "#adminPortalEngagementsSubmenu"],
+        national: ["#adminPortalNationalToggle", "#adminPortalNationalSubmenu"]
+      };
+      Object.entries(menuState).forEach(([name, selectors]) => {
+        const toggle = document.querySelector(selectors[0]);
+        const submenu = document.querySelector(selectors[1]);
+        const open = name === menu;
+        if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        if (submenu) submenu.hidden = !open;
       });
       document.querySelectorAll("#adminPortalNavigation [data-admin-view-link]").forEach((link) => {
         const active = link.dataset.adminViewLink === document.querySelector(${JSON.stringify(view.selector)})?.dataset.adminView;
@@ -188,9 +215,30 @@ function presentationScript(view) {
         if (active) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
       });
-      document.querySelectorAll(${JSON.stringify(`${view.selector} [data-capability-panel],${view.selector} [data-engagements-panel],${view.selector} [data-access-management-panel]`)}).forEach((element) => {
+      document.querySelectorAll(${JSON.stringify(`${view.selector} [data-capability-panel],${view.selector} [data-engagements-panel],${view.selector} [data-access-management-panel],${view.selector} [data-engagements-admin-request-nav],${view.selector} [data-engagements-national-nav],${view.selector} [data-overview-club],${view.selector} [data-overview-competition],${view.selector} [data-overview-performance],${view.selector} [data-overview-national]`)}).forEach((element) => {
         element.hidden = false;
       });
+      const overviewSpace = ${JSON.stringify(view.overviewSpace || "")};
+      if (overviewSpace) {
+        const card = document.querySelector("[data-overview-" + overviewSpace + "]");
+        const toggle = card?.querySelector(".admin-overview-space-toggle");
+        const tools = card ? [...card.querySelectorAll("[data-overview-tool]:not([hidden])")] : [];
+        card?.classList.add("is-expanded");
+        if (toggle) {
+          toggle.setAttribute("aria-expanded", "true");
+          const label = toggle.querySelector("span:first-child");
+          if (label) label.textContent = "Masquer les outils";
+        }
+        if (card) card.dataset.overviewToolCount = String(tools.length);
+      }
+      const ux = ${JSON.stringify(view.ux || "")};
+      if (ux === "quick") {
+        const recentLink = document.querySelector('#adminPortalNavigation a[href="#mon-compte"]');
+        const preventNavigation = (event) => event.preventDefault();
+        document.addEventListener("click", preventNavigation, { capture: true, once: true });
+        recentLink?.click();
+      }
+      if (ux === "search") document.querySelector("#adminPortalSearchButton")?.click();
     }
     const target = document.querySelector(${JSON.stringify(view.selector)});
     return Boolean(target && getComputedStyle(target).display !== "none");
@@ -204,20 +252,29 @@ async function captureView(client, baseUrl, viewport, view) {
   if (!ready) throw new Error(`${view.name}/${viewport.name} : portail non charge.`);
   const visible = await evaluate(client, presentationScript(view));
   if (!visible) throw new Error(`${view.name}/${viewport.name} : vue non visible.`);
+  await sleep(100);
   const audit = await evaluate(client, `
     const root = document.documentElement;
     const emptyButtons = [...document.querySelectorAll("button")].filter((button) => !button.textContent.trim() && !button.getAttribute("aria-label") && !button.getAttribute("title"));
     const unlabeledControls = [...document.querySelectorAll('input:not([type="hidden"]),select,textarea')].filter((control) => !(control.labels && control.labels.length) && !control.getAttribute("aria-label") && !control.getAttribute("aria-labelledby"));
+    const isVisible = (element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
+    const overweightTableText = [...document.querySelectorAll("table th,table td,table th *,table td *")].filter((element) => isVisible(element) && element.textContent.trim() && Number.parseInt(getComputedStyle(element).fontWeight, 10) > 500);
+    const overweightSelectedTabs = [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].filter((element) => isVisible(element) && Number.parseInt(getComputedStyle(element).fontWeight, 10) > 500);
     return {
       overflow: root.scrollWidth > innerWidth + 1,
       emptyButtons: emptyButtons.length,
       unlabeledControls: unlabeledControls.length,
-      h1Count: document.querySelectorAll("h1").length
+      h1Count: document.querySelectorAll("h1").length,
+      overweightTableText: overweightTableText.length,
+      overweightSelectedTabs: overweightSelectedTabs.length
     };
   `);
   if (audit.overflow) throw new Error(`${view.name}/${viewport.name} : debordement horizontal global.`);
   if (audit.emptyButtons || audit.unlabeledControls || audit.h1Count !== 1) {
     throw new Error(`${view.name}/${viewport.name} : structure accessible invalide ${JSON.stringify(audit)}.`);
+  }
+  if (audit.overweightTableText || audit.overweightSelectedTabs) {
+    throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   const fileName = `${view.name}-${viewport.name}.png`;
