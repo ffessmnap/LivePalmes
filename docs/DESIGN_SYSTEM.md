@@ -113,6 +113,8 @@ Dans les vues Performances, le féminin utilise `#b01762` avec le fond `#fff2f7`
 
 La famille déclarée est `Inter`, avec repli sur les polices système : `Segoe UI`, `Arial`, `system-ui` et `sans-serif` selon les zones. Aucun fichier de police ni import web n’est chargé actuellement ; le rendu dépend donc de la présence locale d’Inter, sinon de la police système.
 
+Dans le portail, la taille racine est fixée explicitement à `16 px` : `1rem = 16px`. Toute nouvelle taille de texte ou dimension typographique exprimée en `rem` doit utiliser cette référence et ne doit pas redéfinir localement la valeur du `rem`.
+
 Hiérarchie observée :
 
 - titre de page publique : `clamp(1.7rem, 3vw, 3rem)`, interligne serré ;
@@ -120,7 +122,18 @@ Hiérarchie observée :
 - titre de section : environ `1rem` à `2rem` selon le contexte ;
 - texte courant : environ `0.82rem` à `0.98rem` ;
 - métadonnée et libellé : environ `0.68rem` à `0.82rem` ;
-- poids courants : 700 à 950 pour rendre les informations compactes très lisibles.
+- poids historiquement présents : 700 à 950 dans les consoles et certains modules denses.
+
+Le portail utilise une échelle plus sobre, centralisée par `--portal-font-weight-regular`, `--portal-font-weight-medium`, `--portal-font-weight-semibold` et `--portal-font-weight-bold` :
+
+- `400` pour le texte courant, les champs et les descriptions ;
+- `500` pour la navigation, les métadonnées et les liens secondaires ;
+- `600` pour les libellés, boutons, états actifs et informations mises en avant ;
+- `700` pour les titres de page et de section.
+
+Les graisses supérieures à `700` ne doivent plus être introduites dans le portail. Un changement de couleur, de taille, de position ou de surface doit être préféré à l’accumulation de texte gras. Les valeurs métier réellement critiques peuvent conserver une emphase, mais les paragraphes, listes, filtres et sous-navigation restent en graisse normale ou moyenne.
+
+Dans les tableaux du portail, les cellules courantes restent en `400` et les en-têtes, temps, compteurs ou identifiants mis en avant utilisent au maximum `500`. Les onglets inactifs restent en `400` ; l’onglet sélectionné passe en `500`, son état étant d’abord porté par la couleur, le fond et la bordure. Les titres de panneaux DTN intégrés aux tableaux suivent également cette graisse moyenne.
 
 Les surtitres et libellés de statut sont souvent en capitales. Le texte courant conserve une casse naturelle. Les temps, rangs et valeurs alignées utilisent lorsque nécessaire des chiffres tabulaires avec `font-variant-numeric: tabular-nums`.
 
@@ -190,9 +203,21 @@ La barre supérieure est collante et reçoit une bordure haute de la couleur du 
 
 ### Portail
 
-Le portail utilise une largeur maximale de `1460 px`. Son en-tête blanc, compact et collant est organisé en trois colonnes : identité fédérale à gauche, marque LivePalmes au centre et compte à droite.
+Le portail utilise une largeur fluide plafonnée à `1720 px`, avec des gouttières latérales d’au moins `16 px`. Son en-tête blanc, compact et collant est organisé en trois colonnes : identité fédérale à gauche, marque LivePalmes au centre et compte à droite. Son padding vertical est limité à `6 px` sur ordinateur ; le nom de l’application et son pictogramme sont séparés de `4 px` pour former une marque visuelle unique. Au-delà de `1720 px`, le logo fédéral, le compte et le contenu s’alignent sur les mêmes gouttières afin d’éviter les grandes zones vides et la dispersion des repères sur les écrans larges.
 
 Sur ordinateur, le contenu combine une navigation latérale de `232 px` et une zone de gestion flexible. La navigation emploie des pictogrammes linéaires dans des carrés pastel, des libellés textuels et un repère turquoise vertical pour la page active. Les sous-menus restent indentés et alignés avec les libellés principaux.
+
+Le rail organise les outils par responsabilité : Espace club, Organisation des compétitions, Données sportives, Suivi DTN, Administration nationale et Administration du portail. L’Administration nationale constitue un espace autonome et ne doit pas être placée dans l’Organisation des compétitions. Les cinq premiers espaces fonctionnent comme un accordéon : un seul groupe peut être déployé à la fois, le groupe de la page active s’ouvre automatiquement et chaque groupe peut être replié manuellement. Un clic sur son intitulé ouvre d’abord un accueil d’espace composé de cartes, sur le modèle de la Vue d’ensemble. Ces accueils ne présentent que les destinations déjà autorisées pour le profil ; ils n’ajoutent aucun droit ni traitement métier.
+
+L’accueil Club regroupe les compétitions et engagements, les nageurs et les officiels du club. L’accueil Organisation des compétitions regroupe le calendrier, la création et les demandes d’accès du périmètre régional ou national. L’accueil Données sportives réunit Records/MPF, import et correction. L’accueil Administration nationale rassemble les suppressions, doublons nageurs, officiels, comptes administrateurs et l’historique. Les libellés décrivent une responsabilité stable plutôt qu’un rôle technique ou un niveau de permission.
+
+La Vue d’ensemble reprend ces espaces sous forme de cartes explorables. Le lien principal de chaque carte ouvre l’accueil de l’espace ; un volet secondaire révèle les destinations autorisées au survol sur ordinateur, au focus clavier et par un bouton explicite au clic ou au toucher. Le volet s’ouvre dans le flux de la page, sans menu flottant, et ne doit jamais contenir une destination absente du profil. Sur un appareil sans survol, le bouton « Voir les outils » reste le mécanisme principal et son état est communiqué avec `aria-expanded`.
+
+Hors Vue d’ensemble, un fil d’Ariane compact rappelle le chemin depuis l’accueil, puis l’espace et enfin l’outil actif. Les intitulés du rail, des accueils et des écrans détaillés doivent employer le même vocabulaire : « Organisation des compétitions », « Données sportives », « Suivi DTN », « Administration nationale » et « Administration du portail ». Les termes historiques « Administration des compétitions » et « Performances » ne doivent plus désigner ces espaces dans le portail.
+
+La barre supérieure propose une recherche locale accessible avec `Ctrl+K`, `Cmd+K` ou `/`. Elle indexe uniquement les destinations déjà visibles pour le profil et les compétitions déjà chargées dans la page ; elle ne déclenche aucune lecture Firebase supplémentaire. Les favoris et les cinq éléments récents sont mémorisés dans le stockage local du navigateur, puis affichés sur la Vue d’ensemble. Une destination devenue non autorisée ou absente ne doit jamais être restituée par ces accès rapides.
+
+À partir de `1440 px`, la navigation latérale reste entièrement déployée sur `248 px` : les icônes, groupes, libellés et sous-menus sont directement lisibles. Entre `1081 px` et `1439 px`, elle se présente au repos comme un rail de `64 px` laissant visibles les pictogrammes et le repère de page active. Elle s’élargit temporairement à `248 px` au survol ou dès qu’un de ses éléments reçoit le focus clavier, en se superposant au contenu pour éviter un décalage à chaque passage. Après la sélection d’une destination, le rail se referme immédiatement, même si le pointeur se trouve encore au-dessus ; il se rouvre au prochain survol ou focus. Un bouton permet de conserver la navigation ouverte ; l’état épinglé désactive cette fermeture automatique et la grille réserve `248 px` afin de ne masquer aucun contenu. Ce choix est mémorisé localement dans le navigateur. Les libellés restent présents dans le DOM et sont également exposés comme infobulles lorsque le rail est compact. Sous `1080 px`, le menu repliable mobile reste la seule interaction : aucun accès essentiel ne dépend du survol.
 
 Sous `1080 px`, la navigation précède le contenu et se replie derrière un bouton indiquant la vue active. Les surfaces utilisent des bordures légères, un rayon de `9–10 px` et peu ou pas d’ombre. L’ombre reste admise pour la connexion, les menus flottants et les éléments réellement superposés.
 
@@ -209,6 +234,10 @@ L’Espace DTN utilise le même en-tête descriptif et regroupe la saison, le se
 La Gestion des accès distingue la consultation des utilisateurs et l’édition d’un compte dans deux cartes autonomes. Sur ordinateur, la liste reste un tableau compact et le formulaire d’identité utilise trois colonnes. Les habilitations sont présentées comme des choix explicites dans une grille, sans modifier leur portée ni leur comportement. Sous `1120 px`, le formulaire et les habilitations passent à deux colonnes. Sous `760 px`, chaque utilisateur devient une fiche verticale dont chaque valeur conserve son libellé ; les filtres et le formulaire passent à une colonne. Sous `520 px`, les groupes d’actions occupent toute la largeur. Les statuts actif et inactif restent des badges sémantiques, et les actions de désactivation ou de suppression conservent leur traitement d’alerte existant.
 
 Le calendrier des Engagements utilise une carte blanche unique contenant son titre, les filtres et la liste des compétitions. Chaque ligne met en avant la date, le nom, le niveau, le statut opérationnel et l’action principale, tandis que la fiche sélectionnée est signalée par un fond turquoise très léger. Sous `1120 px`, une compétition est réorganisée sur deux lignes ; sous `700 px`, elle devient une fiche verticale et les filtres passent à une colonne. Dans la fiche compétition, la navigation entre Général, Programme, Frais, acteurs, courses, relais, récapitulatif et documents reste horizontale et défilable, sous forme de boutons compacts dont l’onglet actif est turquoise. Les couleurs ouvert, échéance proche, échéance dépassée et fermé restent exclusivement liées aux états métier existants.
+
+Les barres de filtres des calendriers, accès, qualifications DTN et historiques d’import restent collantes sur ordinateur afin de conserver le contexte pendant le défilement. Elles affichent un résultat quantifié lorsqu’il est déjà disponible côté client et utilisent l’action explicite « Réinitialiser les filtres ». Aucun compteur ne justifie une nouvelle lecture distante. Les messages `aria-live` en cours de chargement reçoivent un indicateur animé discret, désactivé lorsque l’utilisateur préfère réduire les animations.
+
+Sous `620 px`, les tableaux de résultats et d’administration adaptés reçoivent des libellés de colonnes et deviennent des fiches verticales. Les matrices sportives qui nécessitent une comparaison par colonnes, comme les grilles de temps DTN, conservent leur défilement horizontal et leur première colonne fixe.
 
 Le contenu d’une fiche compétition suit une même structure pour tous ses onglets : un résumé ou une barre de contexte, puis des sections blanches bordées et enfin les actions. Le formulaire général conserve une présentation libellé-valeur sur ordinateur et passe à une disposition verticale sous `700 px`. Le programme utilise des sections repliables, avec un fond turquoise léger pour la session active ; les marqueurs féminin, masculin, mixte et combiné conservent leurs couleurs métier. Les frais sont regroupés en cartes de champs et leur note de paiement reste jaune. Les documents utilisent des cartes compactes avec un badge d’état. En lecture seule, les valeurs restent visuellement distinctes sans masquer l’état désactivé des champs.
 
@@ -390,7 +419,7 @@ Pour le portail, le contrôle reproductible s’exécute avec :
 node tools/capture-portal-design.js
 ```
 
-La commande ouvre la version locale sans écrire dans Firebase, bloque les appels HTTPS et produit dans `tmp/portal-design-captures/` les vues Connexion, Vue d’ensemble, Records/MPF, Engagements, DTN et Gestion des accès en `1280 × 720` et `390 × 844`. Elle vérifie aussi la vue active, l’absence de débordement horizontal global, les libellés accessibles des contrôles et la présence d’un seul `h1`. Les captures sont temporaires et ignorées par Git ; elles doivent être examinées visuellement lorsqu’un changement touche le portail.
+La commande ouvre la version locale sans écrire dans Firebase, bloque les appels HTTPS et produit dans `tmp/portal-design-captures/` les vues Connexion, Vue d’ensemble repliée, avec un espace déployé et avec les accès rapides, recherche globale, accueils Club, Données sportives, DTN, Organisation des compétitions et Administration nationale, Records/MPF, Engagements, DTN détaillé et Gestion des accès en `1920 × 1080`, `1280 × 720`, `1024 × 768` et `390 × 844`. Elle vérifie aussi la vue active, l’absence de débordement horizontal global, les libellés accessibles des contrôles, la présence d’un seul `h1` et l’absence de graisses excessives dans les tableaux et onglets actifs. Les captures sont temporaires et ignorées par Git ; elles doivent être examinées visuellement lorsqu’un changement touche le portail.
 
 À éviter :
 

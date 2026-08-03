@@ -1,5 +1,6 @@
 (function attachLivePalmesAdminPortal(global) {
   const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
+  const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260803-national-swimmers-all-1";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "performances/public/data/performance-public";
   const publicPerformanceSwimmerSearchShards = new Map();
@@ -144,6 +145,11 @@
     navToggle: document.querySelector("#adminPortalNavToggle"),
     navCurrent: document.querySelector("#adminPortalNavCurrent"),
     navigation: document.querySelector("#adminPortalNavigation"),
+    sidebar: document.querySelector(".admin-portal-sidebar"),
+    navPin: document.querySelector("#adminPortalNavPin"),
+    clubMenu: document.querySelector("[data-engagements-club-menu]"),
+    clubToggle: document.querySelector("#adminPortalClubToggle"),
+    clubSubmenu: document.querySelector("#adminPortalClubSubmenu"),
     performanceMenu: document.querySelector("[data-admin-performance-menu]"),
     performanceToggle: document.querySelector("#adminPortalPerformanceToggle"),
     performanceSubmenu: document.querySelector("#adminPortalPerformanceSubmenu"),
@@ -153,6 +159,11 @@
     dtnMenu: document.querySelector("[data-admin-dtn-menu]"),
     dtnToggle: document.querySelector("#adminPortalDtnToggle"),
     dtnSubmenu: document.querySelector("#adminPortalDtnSubmenu"),
+    nationalMenu: document.querySelector("[data-engagements-national-menu]"),
+    nationalToggle: document.querySelector("#adminPortalNationalToggle"),
+    nationalSubmenu: document.querySelector("#adminPortalNationalSubmenu"),
+    engagementsHomeLinks: document.querySelectorAll("[data-engagements-home-entry]"),
+    overviewSpaceToggles: document.querySelectorAll(".admin-overview-space-toggle"),
     accessForm: document.querySelector("#adminAccessForm"),
     accessMessage: document.querySelector("#adminAccessMessage"),
     accessList: document.querySelector("#adminAccessList"),
@@ -219,6 +230,7 @@
     engagementsDetailTabButtons: document.querySelectorAll("[data-engagements-detail-tab-button]"),
     engagementsDetailTabPanels: document.querySelectorAll("[data-engagements-detail-tab-panel]"),
     engagementsStatus: document.querySelector("#adminEngagementsStatus"),
+    engagementsResultsCount: document.querySelector("#adminEngagementsResultsCount"),
     engagementsRefresh: document.querySelector("#adminEngagementsRefreshButton"),
     engagementsCalendarPanel: document.querySelector("#adminEngagementsCalendarPanel"),
     engagementsCalendarCard: document.querySelector("#adminEngagementsCalendarCard"),
@@ -618,6 +630,45 @@
     return canUse("records.manage") || canUse("competitions.import");
   }
 
+  function setPortalNavigationPinned(pinned, { persist = true } = {}) {
+    const nextPinned = Boolean(pinned);
+    if (nextPinned) elements.sidebar?.classList.remove("is-collapsed-after-navigation");
+    elements.sidebar?.classList.toggle("is-pinned", nextPinned);
+    elements.navPin?.setAttribute("aria-pressed", nextPinned ? "true" : "false");
+    const label = nextPinned ? "Libérer la navigation" : "Épingler la navigation ouverte";
+    elements.navPin?.setAttribute("aria-label", label);
+    if (elements.navPin) elements.navPin.title = label;
+    if (!persist) return;
+    try {
+      global.localStorage?.setItem(PORTAL_NAV_PIN_STORAGE_KEY, nextPinned ? "true" : "false");
+    } catch {}
+  }
+
+  function restorePortalNavigationPinned() {
+    let pinned = false;
+    try {
+      pinned = global.localStorage?.getItem(PORTAL_NAV_PIN_STORAGE_KEY) === "true";
+    } catch {}
+    setPortalNavigationPinned(pinned, { persist: false });
+  }
+
+  function initializePortalNavigationLabels() {
+    elements.navigation?.querySelectorAll("a, .admin-portal-nav-parent").forEach((item) => {
+      if (item.title) return;
+      const label = item.querySelector(":scope > span:not(.admin-portal-nav-icon)")?.textContent?.trim() || item.textContent?.trim();
+      if (label) item.title = label;
+    });
+  }
+
+  function collapsePortalNavigationAfterSelection() {
+    const compactDesktop = global.matchMedia?.("(min-width: 1081px) and (max-width: 1439px)")?.matches;
+    if (!compactDesktop || elements.sidebar?.classList.contains("is-pinned")) return;
+    elements.sidebar?.classList.add("is-collapsed-after-navigation");
+    if (document.activeElement instanceof HTMLElement && elements.navigation?.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  }
+
   function canManageEngagements() {
     return canUse("engagements.club.manage") ||
       canUse("engagements.region.manage") ||
@@ -679,21 +730,72 @@
   }
 
   function setPerformanceMenuOpen(open) {
-    const expanded = canManagePerformances();
+    const expanded = Boolean(open) && canManagePerformances();
     elements.performanceToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (elements.performanceSubmenu) elements.performanceSubmenu.hidden = !expanded;
   }
 
+  function setClubMenuOpen(open) {
+    const expanded = Boolean(open) && canUse("engagements.club.manage");
+    elements.clubToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (elements.clubSubmenu) elements.clubSubmenu.hidden = !expanded;
+  }
+
   function setDtnMenuOpen(open) {
-    const expanded = canUse("dtn.view");
+    const expanded = Boolean(open) && canUse("dtn.view");
     elements.dtnToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (elements.dtnSubmenu) elements.dtnSubmenu.hidden = !expanded;
   }
 
   function setEngagementsAdminMenuOpen(open) {
-    const expanded = canCreateEngagementCompetition();
+    const expanded = Boolean(open) && canCreateEngagementCompetition();
     elements.engagementsAdminToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (elements.engagementsAdminSubmenu) elements.engagementsAdminSubmenu.hidden = !expanded;
+  }
+
+  function setNationalMenuOpen(open) {
+    const expanded = Boolean(open) && canDeleteEngagementCompetitionDirectly();
+    elements.nationalToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (elements.nationalSubmenu) elements.nationalSubmenu.hidden = !expanded;
+  }
+
+  function setExclusivePortalMenu(menu, open = true) {
+    setClubMenuOpen(Boolean(open) && menu === "club");
+    setPerformanceMenuOpen(Boolean(open) && menu === "performance");
+    setDtnMenuOpen(Boolean(open) && menu === "dtn");
+    setEngagementsAdminMenuOpen(Boolean(open) && menu === "engagementsAdmin");
+    setNationalMenuOpen(Boolean(open) && menu === "national");
+  }
+
+  function togglePortalSpace(menu, homeView, hash, toggle) {
+    const onHome = requestedNavigationView() === homeView;
+    const open = onHome ? toggle?.getAttribute("aria-expanded") !== "true" : true;
+    setExclusivePortalMenu(menu, open);
+    if (!onHome) global.location.hash = `#${hash}`;
+  }
+
+  function setOverviewSpaceExpanded(card, expanded) {
+    if (!card) return;
+    const toggle = card.querySelector(".admin-overview-space-toggle");
+    const label = toggle?.querySelector("span:first-child");
+    const toolCount = Number(card.dataset.overviewToolCount || 0);
+    card.classList.toggle("is-expanded", Boolean(expanded));
+    toggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (label) {
+      label.textContent = expanded
+        ? "Masquer les outils"
+        : `Voir ${toolCount > 1 ? `les ${toolCount} outils` : "l’outil"}`;
+    }
+  }
+
+  function updateOverviewSpaceTools() {
+    document.querySelectorAll("[data-overview-space]").forEach((card) => {
+      const visibleTools = Array.from(card.querySelectorAll("[data-overview-tool]")).filter((tool) => !tool.hidden);
+      card.dataset.overviewToolCount = String(visibleTools.length);
+      const toggle = card.querySelector(".admin-overview-space-toggle");
+      if (toggle) toggle.hidden = visibleTools.length === 0;
+      setOverviewSpaceExpanded(card, card.classList.contains("is-expanded") && visibleTools.length > 0);
+    });
   }
 
   function isEngagementAdminMode() {
@@ -705,10 +807,10 @@
     const peopleMode = activeEngagementsTab === "clubPeople";
     const swimmersMode = activeEngagementsTab === "clubSwimmers";
     if (elements.engagementsView) elements.engagementsView.dataset.engagementsMode = adminMode ? "admin" : "club";
-    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.textContent = adminMode ? "Administration" : "Espace club";
+    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.textContent = adminMode ? "Organisation des compétitions" : "Espace club";
     if (elements.engagementsViewTitle) {
       elements.engagementsViewTitle.textContent = adminMode
-        ? "Administration des comp\u00e9titions"
+        ? "Organisation des comp\u00e9titions"
         : peopleMode
           ? "Mes officiels"
           : swimmersMode
@@ -717,7 +819,7 @@
     }
     if (elements.engagementsViewIntro) {
       elements.engagementsViewIntro.textContent = adminMode
-        ? "Calendrier admin, cr\u00e9ation, param\u00e9trage, documents et statistiques."
+        ? "Calendrier, création, paramétrage, documents et statistiques de votre périmètre."
         : peopleMode
           ? "Base des chefs d'equipe et officiels reutilisables par le club."
           : swimmersMode
@@ -725,13 +827,13 @@
             : "Calendrier, fiche comp\u00e9tition et engagements du club.";
     }
     if (elements.engagementsCalendarEyebrow) {
-      elements.engagementsCalendarEyebrow.textContent = adminMode ? "Calendrier admin" : "Calendrier club";
+      elements.engagementsCalendarEyebrow.textContent = adminMode ? "Calendrier organisateur" : "Calendrier club";
     }
     if (elements.engagementsCalendarTitle) {
       elements.engagementsCalendarTitle.textContent = adminMode ? "Comp\u00e9titions \u00e0 administrer" : "Comp\u00e9titions ouvertes aux clubs";
     }
     if (elements.engagementsDetailEyebrow) {
-      elements.engagementsDetailEyebrow.textContent = adminMode ? "Fiche admin comp\u00e9tition" : "Fiche comp\u00e9tition club";
+      elements.engagementsDetailEyebrow.textContent = adminMode ? "Fiche compétition organisateur" : "Fiche compétition club";
     }
     const capabilities = new Set(currentAccessProfile?.capabilities || []);
     const showMineFilter = adminMode && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage");
@@ -1049,10 +1151,31 @@
     document.querySelectorAll("[data-engagements-admin-nav]").forEach((item) => {
       item.hidden = !canCreateEngagementCompetition();
     });
+    document.querySelectorAll("[data-engagements-admin-home]").forEach((item) => {
+      item.hidden = !canCreateEngagementCompetition();
+    });
     document.querySelectorAll("[data-engagements-club-nav]").forEach((item) => {
       item.hidden = !canUse("engagements.club.manage");
     });
+    document.querySelectorAll("[data-engagements-club-home]").forEach((item) => {
+      item.hidden = !canUse("engagements.club.manage");
+    });
     document.querySelectorAll("[data-engagements-national-nav]").forEach((item) => {
+      item.hidden = !canDeleteEngagementCompetitionDirectly();
+    });
+    document.querySelectorAll("[data-engagements-national-home]").forEach((item) => {
+      item.hidden = !canDeleteEngagementCompetitionDirectly();
+    });
+    document.querySelectorAll("[data-overview-club]").forEach((item) => {
+      item.hidden = !canUse("engagements.club.manage");
+    });
+    document.querySelectorAll("[data-overview-competition]").forEach((item) => {
+      item.hidden = !canCreateEngagementCompetition();
+    });
+    document.querySelectorAll("[data-overview-performance]").forEach((item) => {
+      item.hidden = !canManagePerformances();
+    });
+    document.querySelectorAll("[data-overview-national]").forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
     });
     document.querySelectorAll("[data-engagements-admin-request-nav]").forEach((item) => {
@@ -1061,6 +1184,8 @@
     document.querySelectorAll("[data-access-management-nav], [data-access-management-panel]").forEach((item) => {
       item.hidden = !canManageAccessDirectory();
     });
+    if (elements.clubMenu) elements.clubMenu.hidden = !canUse("engagements.club.manage");
+    if (elements.nationalMenu) elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly();
     if (elements.accessAdd) elements.accessAdd.hidden = !canUse("admin.full");
     if (elements.accessPanel && !canUse("admin.full")) elements.accessPanel.hidden = true;
     if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
@@ -1076,24 +1201,28 @@
     document.querySelectorAll("[data-capability-panel]").forEach((item) => {
       item.hidden = !canUse(item.dataset.capabilityPanel);
     });
+    updateOverviewSpaceTools();
     if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
     if (elements.dtnMenu) elements.dtnMenu.hidden = !canUse("dtn.view");
-    setEngagementsAdminMenuOpen(true);
-    setPerformanceMenuOpen(true);
-    setDtnMenuOpen(true);
+    setExclusivePortalMenu("", false);
     updateNavigationView();
   }
 
   function requestedNavigationView() {
     if (!global.location.hash || global.location.hash === "#accueil") return "dashboard";
+    if (global.location.hash === "#espace-club") return "clubHome";
+    if (global.location.hash === "#gestion-performances") return "performanceHome";
     if (global.location.hash === "#gestion-acces") return "access";
     if (global.location.hash === "#mon-compte") return "account";
     if (global.location.hash === "#demande-acces") return "accessRequest";
     if (global.location.hash === "#records-mpf") return "records";
     if (global.location.hash === "#import-competitions") return "import";
     if (global.location.hash === "#correction-performance") return "correction";
+    if (["#organisation-competitions", "#administration-competitions"].includes(global.location.hash)) return "engagementsAdminHome";
+    if (global.location.hash === "#administration-nationale") return "nationalHome";
     if (global.location.hash === "#engagements") return "engagements";
-    if (["#espace-dtn", "#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
+    if (global.location.hash === "#espace-dtn") return "dtnHome";
+    if (["#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
     return "dashboard";
   }
 
@@ -1103,9 +1232,13 @@
     const recordsDenied = requestedView === "records" && !canUse("records.manage");
     const importDenied = requestedView === "import" && !canUse("competitions.import");
     const correctionDenied = requestedView === "correction" && !canUse("competitions.import");
-    const dtnDenied = requestedView === "dtn" && !canUse("dtn.view");
+    const performanceHomeDenied = requestedView === "performanceHome" && !canManagePerformances();
+    const clubHomeDenied = requestedView === "clubHome" && !canUse("engagements.club.manage");
+    const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
+    const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
+    const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly();
     const engagementsDenied = requestedView === "engagements" && !canManageEngagements();
-    const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || dtnDenied || engagementsDenied
+    const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || engagementsDenied
       ? "dashboard"
       : requestedView;
     document.querySelectorAll("[data-admin-view]").forEach((section) => {
@@ -1113,12 +1246,14 @@
     });
     document.querySelectorAll("[data-admin-view-link]").forEach((link) => {
       const dtnHash = link.dataset.dtnGridLink ? `#espace-dtn-${link.dataset.dtnGridLink}` : "";
-      const legacyDtnFrance = link.dataset.dtnGridLink === "france" && global.location.hash === "#espace-dtn";
       const engagementsEntry = link.dataset.engagementsNavEntry || "";
       const engagementLinkMatches = activeView !== "engagements" || !engagementsEntry || engagementsEntry === activeEngagementsNavEntry;
+      const nationalTarget = link.dataset.engagementsNationalTarget || "";
+      const nationalLinkMatches = !nationalTarget || nationalTarget === activeEngagementNationalTab;
       const isActive = link.dataset.adminViewLink === activeView &&
         engagementLinkMatches &&
-        (!dtnHash || global.location.hash === dtnHash || legacyDtnFrance);
+        nationalLinkMatches &&
+        (!dtnHash || global.location.hash === dtnHash);
       link.classList.toggle("active", isActive);
       if (isActive) {
         link.setAttribute("aria-current", "page");
@@ -1126,8 +1261,28 @@
         link.removeAttribute("aria-current");
       }
     });
+    const performanceSpaceActive = ["performanceHome", "records", "import", "correction"].includes(activeView);
+    const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
+    const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(activeEngagementsNavEntry));
+    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && activeEngagementsNavEntry === "adminDeletionRequests");
+    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && activeEngagementsNavEntry !== "adminDeletionRequests");
+    const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
+    setExclusivePortalMenu(activeMenu, Boolean(activeMenu));
+    [
+      [elements.clubToggle, activeView === "clubHome"],
+      [elements.performanceToggle, activeView === "performanceHome"],
+      [elements.dtnToggle, activeView === "dtnHome"],
+      [elements.engagementsAdminToggle, activeView === "engagementsAdminHome"],
+      [elements.nationalToggle, activeView === "nationalHome"]
+    ].forEach(([toggle, active]) => {
+      toggle?.classList.toggle("active", active);
+      if (active) toggle?.setAttribute("aria-current", "page");
+      else toggle?.removeAttribute("aria-current");
+    });
     const activeLink = document.querySelector("[data-admin-view-link].active");
-    if (elements.navCurrent) elements.navCurrent.textContent = activeLink?.textContent?.trim() || "Navigation";
+    const activeParent = document.querySelector(".admin-portal-nav-parent.active");
+    const activeParentLabel = activeParent?.children?.[1]?.textContent?.trim();
+    if (elements.navCurrent) elements.navCurrent.textContent = activeLink?.textContent?.trim() || activeParentLabel || "Navigation";
     const recordsActive = activeView === "records";
     const importActive = activeView === "import";
     const correctionActive = activeView === "correction";
@@ -1135,11 +1290,6 @@
     const importModuleActive = importActive || correctionActive;
     const performanceModuleActive = recordsActive || importModuleActive;
     if (engagementsActive) updateEngagementsModeView();
-    if (engagementsActive && activeEngagementsNavEntry.startsWith("admin")) {
-      setEngagementsAdminMenuOpen(true);
-    } else if (engagementsActive) {
-      setEngagementsAdminMenuOpen(false);
-    }
     if (elements.performanceStyles) elements.performanceStyles.disabled = !performanceModuleActive;
     if (elements.importStyles) elements.importStyles.disabled = !importModuleActive;
     document.body.classList.toggle("performance-admin-page", performanceModuleActive);
@@ -4370,6 +4520,9 @@
     const mount = elements.engagementsCalendarList;
     if (!mount) return;
     const visibleCompetitions = filteredEngagementCompetitions();
+    if (elements.engagementsResultsCount) {
+      elements.engagementsResultsCount.textContent = `${visibleCompetitions.length} compétition${visibleCompetitions.length > 1 ? "s" : ""} affichée${visibleCompetitions.length > 1 ? "s" : ""}`;
+    }
     if (!visibleCompetitions.length) {
       mount.innerHTML = `<p class="admin-engagements-empty">Aucune competition ne correspond aux filtres.</p>`;
       return;
@@ -7922,6 +8075,8 @@
   }
 
     function init() {
+    initializePortalNavigationLabels();
+    restorePortalNavigationPinned();
     populateLivePalmesRegionSelects();
     populateAccessClubSelect();
     loadAccessClubReference();
@@ -8372,17 +8527,54 @@
     elements.navToggle?.addEventListener("click", () => {
       const open = elements.navToggle.getAttribute("aria-expanded") !== "true";
       elements.navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-      document.querySelector(".admin-portal-sidebar")?.classList.toggle("is-open", open);
+      elements.sidebar?.classList.toggle("is-open", open);
+    });
+    elements.navPin?.addEventListener("click", () => {
+      setPortalNavigationPinned(elements.navPin.getAttribute("aria-pressed") !== "true");
+    });
+    elements.sidebar?.addEventListener("pointerleave", () => {
+      elements.sidebar.classList.remove("is-collapsed-after-navigation");
+    });
+    elements.sidebar?.addEventListener("focusin", () => {
+      elements.sidebar.classList.remove("is-collapsed-after-navigation");
+    });
+    elements.clubToggle?.addEventListener("click", () => {
+      togglePortalSpace("club", "clubHome", "espace-club", elements.clubToggle);
+      collapsePortalNavigationAfterSelection();
     });
     elements.performanceToggle?.addEventListener("click", () => {
-      setPerformanceMenuOpen(elements.performanceToggle.getAttribute("aria-expanded") !== "true");
+      togglePortalSpace("performance", "performanceHome", "gestion-performances", elements.performanceToggle);
+      collapsePortalNavigationAfterSelection();
     });
     elements.engagementsAdminToggle?.addEventListener("click", () => {
-      setEngagementsAdminMenuOpen(elements.engagementsAdminToggle.getAttribute("aria-expanded") !== "true");
+      togglePortalSpace("engagementsAdmin", "engagementsAdminHome", "organisation-competitions", elements.engagementsAdminToggle);
+      collapsePortalNavigationAfterSelection();
     });
     elements.dtnToggle?.addEventListener("click", () => {
-      setDtnMenuOpen(elements.dtnToggle.getAttribute("aria-expanded") !== "true");
+      togglePortalSpace("dtn", "dtnHome", "espace-dtn", elements.dtnToggle);
+      collapsePortalNavigationAfterSelection();
     });
+    elements.nationalToggle?.addEventListener("click", () => {
+      togglePortalSpace("national", "nationalHome", "administration-nationale", elements.nationalToggle);
+      collapsePortalNavigationAfterSelection();
+    });
+    elements.overviewSpaceToggles.forEach((toggle) => toggle.addEventListener("click", () => {
+      const card = toggle.closest("[data-overview-space]");
+      const expanded = toggle.getAttribute("aria-expanded") !== "true";
+      document.querySelectorAll("[data-overview-space].is-expanded").forEach((otherCard) => {
+        if (otherCard !== card) setOverviewSpaceExpanded(otherCard, false);
+      });
+      setOverviewSpaceExpanded(card, expanded);
+      if (!expanded) toggle.blur();
+    }));
+    elements.engagementsHomeLinks.forEach((link) => link.addEventListener("click", () => {
+      activeEngagementsNavEntry = link.dataset.engagementsHomeEntry || "adminCalendar";
+      setEngagementsTab(link.dataset.engagementsHomeTab || "calendar");
+      if (link.dataset.engagementsNationalTarget) {
+        setEngagementNationalTab(link.dataset.engagementsNationalTarget);
+      }
+      if (global.location.hash === "#engagements") updateNavigationView();
+    }));
     elements.navigation?.addEventListener("click", (event) => {
       const link = event.target.closest("a");
       if (!link) return;
@@ -8390,6 +8582,9 @@
         activeEngagementsNavEntry = link.dataset.engagementsNavEntry || "club";
         if (link.dataset.engagementsNavTab) {
           setEngagementsTab(link.dataset.engagementsNavTab);
+        }
+        if (link.dataset.engagementsNationalTarget) {
+          setEngagementNationalTab(link.dataset.engagementsNationalTarget);
         }
         if (activeEngagementsTab === "calendar") {
           closeEngagementCompetitionDetail();
@@ -8414,7 +8609,8 @@
         updateNavigationView();
       }
       elements.navToggle?.setAttribute("aria-expanded", "false");
-      document.querySelector(".admin-portal-sidebar")?.classList.remove("is-open");
+      elements.sidebar?.classList.remove("is-open");
+      collapsePortalNavigationAfterSelection();
     });
     elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);
     elements.accountPasswordForm?.addEventListener("submit", updateAccountPassword);
