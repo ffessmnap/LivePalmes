@@ -661,6 +661,12 @@
   }
 
   function collapsePortalNavigationAfterSelection() {
+    const mobileNavigation = global.matchMedia?.("(max-width: 1080px)")?.matches;
+    if (mobileNavigation) {
+      elements.navToggle?.setAttribute("aria-expanded", "false");
+      elements.sidebar?.classList.remove("is-open");
+      return;
+    }
     const compactDesktop = global.matchMedia?.("(min-width: 1081px) and (max-width: 1439px)")?.matches;
     if (!compactDesktop || elements.sidebar?.classList.contains("is-pinned")) return;
     elements.sidebar?.classList.add("is-collapsed-after-navigation");
@@ -8608,8 +8614,6 @@
         }
         updateNavigationView();
       }
-      elements.navToggle?.setAttribute("aria-expanded", "false");
-      elements.sidebar?.classList.remove("is-open");
       collapsePortalNavigationAfterSelection();
     });
     elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);

@@ -245,6 +245,103 @@ function presentationScript(view) {
   `;
 }
 
+async function auditInteractions(client, viewport, view) {
+  const audit = await evaluate(client, `
+    const isVisible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return !element.hidden &&
+        !element.closest("[hidden],details:not([open])") &&
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        Number.parseFloat(style.opacity || "1") > 0.01 &&
+        rect.width > 0 &&
+        rect.height > 0;
+    };
+    const activeDialog = document.querySelector('#adminPortalSearchDialog:not([hidden])');
+    const actionable = [...document.querySelectorAll('a[href],button:not([disabled]),input:not([type="hidden"]):not([disabled]),select:not([disabled]),textarea:not([disabled]),summary')]
+      .filter(isVisible)
+      .filter((element) => !activeDialog || activeDialog.contains(element));
+    const blocked = [];
+    const covered = [];
+    actionable.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      const label = element.id || element.getAttribute("href") || element.getAttribute("aria-label") || element.textContent.trim().slice(0, 48);
+      if (getComputedStyle(element).pointerEvents === "none") blocked.push(label);
+      const x = Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2));
+      const y = Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2));
+      if (rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) return;
+      let ancestor = element.parentElement;
+      while (ancestor) {
+        const ancestorStyle = getComputedStyle(ancestor);
+        if (/hidden|auto|scroll/.test(ancestorStyle.overflow + " " + ancestorStyle.overflowX + " " + ancestorStyle.overflowY)) {
+          const ancestorRect = ancestor.getBoundingClientRect();
+          if (x < ancestorRect.left || x > ancestorRect.right || y < ancestorRect.top || y > ancestorRect.bottom) return;
+        }
+        ancestor = ancestor.parentElement;
+      }
+      if (element.classList.contains("admin-portal-search-backdrop")) return;
+      const hit = document.elementFromPoint(x, y);
+      if (hit && hit !== element && !element.contains(hit)) covered.push({ label, hit: hit.id || hit.className || hit.tagName });
+    });
+
+    const result = { blocked, covered, mobileNavigation: null, mobileParentNavigation: null, accountMenu: null, search: null, overviewToggle: null, overviewLink: null };
+    const accountToggle = document.querySelector("#adminPortalAccountToggle");
+    const accountActions = document.querySelector("#adminPortalAccountActions");
+    if (${view.authenticated ? "true" : "false"} && accountToggle && isVisible(accountToggle)) {
+      accountToggle.click();
+      const opened = accountToggle.getAttribute("aria-expanded") === "true" && !accountActions.hidden;
+      accountToggle.click();
+      result.accountMenu = opened && accountToggle.getAttribute("aria-expanded") === "false" && accountActions.hidden;
+    }
+
+    const searchButton = document.querySelector("#adminPortalSearchButton");
+    const searchDialog = document.querySelector("#adminPortalSearchDialog");
+    if (${view.authenticated ? "true" : "false"} && searchButton && isVisible(searchButton)) {
+      searchButton.click();
+      const opened = !searchDialog.hidden && document.body.classList.contains("admin-portal-search-open");
+      searchDialog.querySelector("[data-portal-search-close]")?.click();
+      result.search = opened && searchDialog.hidden && !document.body.classList.contains("admin-portal-search-open");
+    }
+
+    if (${viewport.width <= 1080 ? "true" : "false"} && ${view.authenticated ? "true" : "false"}) {
+      const navToggle = document.querySelector("#adminPortalNavToggle");
+      const sidebar = document.querySelector(".admin-portal-sidebar");
+      const navigation = document.querySelector("#adminPortalNavigation");
+      navToggle?.click();
+      const opened = navToggle?.getAttribute("aria-expanded") === "true" && sidebar?.classList.contains("is-open") && getComputedStyle(navigation).display !== "none";
+      const directLink = navigation?.querySelector('a[href="#mon-compte"]');
+      directLink?.click();
+      result.mobileNavigation = Boolean(opened && globalThis.location.hash === "#mon-compte" && navToggle?.getAttribute("aria-expanded") === "false" && !sidebar?.classList.contains("is-open"));
+      navToggle?.click();
+      const parentButton = navigation?.querySelector('#adminPortalPerformanceToggle');
+      parentButton?.click();
+      result.mobileParentNavigation = Boolean(globalThis.location.hash === "#gestion-performances" && navToggle?.getAttribute("aria-expanded") === "false" && !sidebar?.classList.contains("is-open"));
+    }
+
+    if (${JSON.stringify(view.name)} === "overview") {
+      const card = document.querySelector("[data-overview-space]");
+      const toggle = card?.querySelector(".admin-overview-space-toggle");
+      toggle?.click();
+      result.overviewToggle = Boolean(card?.classList.contains("is-expanded") && toggle?.getAttribute("aria-expanded") === "true");
+      toggle?.click();
+      const mainLink = card?.querySelector(".admin-overview-space-main");
+      const expectedHash = mainLink?.getAttribute("href");
+      mainLink?.click();
+      result.overviewLink = Boolean(expectedHash && globalThis.location.hash === expectedHash);
+    }
+    return result;
+  `);
+  const failures = [];
+  if (audit.blocked.length) failures.push(`actions bloquees ${JSON.stringify(audit.blocked)}`);
+  if (audit.covered.length) failures.push(`actions recouvertes ${JSON.stringify(audit.covered)}`);
+  ["accountMenu", "search", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink"].forEach((key) => {
+    if (audit[key] === false) failures.push(`${key} KO`);
+  });
+  if (failures.length) throw new Error(`${view.name}/${viewport.name} : interactions invalides : ${failures.join(", ")}`);
+  await evaluate(client, presentationScript(view));
+}
+
 async function captureView(client, baseUrl, viewport, view) {
   await client.send("Emulation.setDeviceMetricsOverride", viewport);
   await client.send("Page.navigate", { url: `${baseUrl}/portail.html?portal-design=${Date.now()}#${view.hash}` });
@@ -276,6 +373,7 @@ async function captureView(client, baseUrl, viewport, view) {
   if (audit.overweightTableText || audit.overweightSelectedTabs) {
     throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
+  await auditInteractions(client, viewport, view);
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   const fileName = `${view.name}-${viewport.name}.png`;
   fs.writeFileSync(path.join(outputDir, fileName), Buffer.from(screenshot.data, "base64"));
