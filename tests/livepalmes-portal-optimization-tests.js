@@ -31,6 +31,7 @@ assert.ok(functions.includes("DTN_QUALIFICATION_MAX_ROWS_PER_COURSE + 1"));
 assert.equal(functions.includes('licenseUpdatedBy: "engagement-roster-migration"'), false);
 assert.ok(functions.includes("revokeRefreshTokens(uid)"));
 assert.ok(functions.includes("nextPortalAccessRateLimit"));
+assert.equal(functions.includes("const db = db;"), false);
 assert.ok(publicSeries.includes("restoredPublicSeriesCache"));
 assert.ok(publicSeries.includes("Index publics indisponibles."));
 assert.ok(publicResults.includes("restoredPublicResultsCache"));
