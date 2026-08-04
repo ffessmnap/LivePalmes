@@ -2276,7 +2276,6 @@ exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request)
   const payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
   const now = new Date().toISOString();
   const requestId = stableHash(`${payload.email}|${payload.clubId}|engagements.club.manage`).slice(0, 40);
-  const db = db;
   const ref = db.collection("engagementAccessRequests").doc(requestId);
   const savedPayload = {
     ...payload,
@@ -3288,7 +3287,6 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
   const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
   const competitionId = cleanText(event.params?.competitionId);
   if (!competitionId) return;
-  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -3748,7 +3746,6 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
 
 async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}) {
   if (cleanText(swimmer.source) === "engagement") return [];
-  const db = db;
   const cacheSnapshot = await engagementEntryTimeCacheRef(db, swimmer).get();
   const cacheReady = cacheSnapshot.exists &&
     Number(cacheSnapshot.data()?.version || 0) === ENGAGEMENT_ENTRY_TIME_CACHE_VERSION &&
@@ -4032,7 +4029,6 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
     if (alerts.some((item) => [item.type, item.identityKey || item.swimmerIndexId, item.clubId].join("|") === key)) return;
     alerts.push(alert);
   };
-  const db = db;
   if (swimmer.identityKey) {
     const exactSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
       .where("identityKey", "==", swimmer.identityKey)
@@ -4709,7 +4705,6 @@ function deleteEngagementCompetitionEntrySummary(batch, db, entry = {}, now = ""
 async function syncEngagementCompetitionEntrySummaryFromChange(event = {}) {
   const before = event.data?.before?.exists ? engagementClubEntryItem(event.data.before) : null;
   const after = event.data?.after?.exists ? engagementClubEntryItem(event.data.after) : null;
-  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -4982,7 +4977,6 @@ async function readStoredEngagementClubRecapPdf(document = {}) {
 }
 
 async function saveEngagementClubRecapPdfDocument(competition = {}, entry = {}, pdf = {}, sourceHash = "") {
-  const db = db;
   const generatedAt = cleanText(pdf.generatedAt) || new Date().toISOString();
   const storagePath = engagementClubRecapPdfStoragePath(competition.id || entry.competitionId, entry.clubId);
   const fileName = cleanText(pdf.fileName) || "recap-engagements-livepalmes.pdf";
@@ -5852,7 +5846,6 @@ async function rebuildEngagementClubPeopleRoster(db, context = {}) {
 async function syncEngagementClubPeopleRosterFromChange(event = {}) {
   const before = event.data?.before?.exists ? engagementClubPersonItem(event.data.before) : null;
   const after = event.data?.after?.exists ? engagementClubPersonItem(event.data.after) : null;
-  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -6020,7 +6013,6 @@ async function syncEngagementClubRosterFromSwimmerChange(event = {}, source = "p
   const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
   const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
   const docId = cleanText(event.params?.swimmerIndexId || event.params?.swimmerId);
-  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -6224,7 +6216,6 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   const entryStatus = ENGAGEMENT_ENTRY_STATUSES.has(cleanText(request.data?.entryStatus))
     ? cleanText(request.data.entryStatus)
     : "";
-  const db = db;
   const forceRebuild = request.data?.forceCalendar === true;
   const calendarSnapshot = forceRebuild ? null : await engagementCompetitionCalendarRef(db, season.endYear).get();
   const calendarReady = calendarSnapshot?.exists && cleanText(calendarSnapshot.data()?.generatedAt);
@@ -6353,7 +6344,6 @@ exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (re
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertCanManageEngagementCompetition(context, competition.data() || {});
-  const db = db;
   const forceRebuild = request.data?.forceSummary === true;
   const summarySnapshot = forceRebuild ? null : await engagementCompetitionEntrySummaryRef(db, competitionId).get();
   const summaryReady = summarySnapshot?.exists && cleanText(summarySnapshot.data()?.generatedAt);
@@ -6428,7 +6418,6 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6504,7 +6493,6 @@ exports.generateEngagementCompetitionTxtExport = onCall(CALLABLE_OPTIONS, async 
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6545,7 +6533,6 @@ exports.listEngagementCompetitionMailJobs = onCall(CALLABLE_OPTIONS, async (requ
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6575,7 +6562,6 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competitionSnapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6712,7 +6698,6 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competitionSnapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6880,7 +6865,6 @@ exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, 
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -7069,7 +7053,6 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
 }
 
 exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
-  const db = db;
   const now = new Date().toISOString();
   const snapshot = await db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION)
     .where("runAt", "<=", now)
@@ -7166,7 +7149,6 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
 exports.listEngagementClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const includeInactive = request.data?.includeInactive === true;
-  const db = db;
   const forceRebuild = request.data?.forceRoster === true;
   const rosterSnapshot = forceRebuild ? null : await engagementClubPeopleRosterRef(db, context.clubId).get();
   const rosterReady = rosterSnapshot?.exists && cleanText(rosterSnapshot.data()?.generatedAt);
@@ -7192,7 +7174,6 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const person = cleanEngagementClubPerson(request.data?.person || {}, context);
-  const db = db;
   const docId = personId || stableHash(`${context.clubId}|${person.licenseNumber}`).slice(0, 40);
   const ref = db.collection("engagementClubPeople").doc(docId);
   const snapshot = await ref.get();
@@ -7239,7 +7220,6 @@ exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request)
     throw new HttpsError("permission-denied", "Personne hors perimetre club.");
   }
   const now = new Date().toISOString();
-  const db = db;
   const payload = {
     active,
     updatedAt: now,
@@ -7323,7 +7303,6 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
 
 exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
-  const db = db;
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
   const forceRebuild = request.data?.forceRoster === true;
   const rosterSnapshot = forceRebuild ? null : await engagementClubRosterRef(db, context.clubId).get();
@@ -7359,7 +7338,6 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
 exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
-  const db = db;
   const now = new Date().toISOString();
   const docId = stableHash([
     context.clubId,
@@ -7611,7 +7589,6 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
   }
-  const db = db;
   const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -7825,7 +7802,6 @@ exports.searchEngagementNationalSwimmerMergeTargets = onCall(CALLABLE_OPTIONS, a
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
   const query = cleanText(request.data?.query).slice(0, 100);
   const limit = Math.min(40, Math.max(5, Math.trunc(Number(request.data?.limit) || 20)));
-  const db = db;
   const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId);
   const sourceKey = `${source.source}:${sourceSwimmerId}`;
   const swimmers = (query
@@ -7901,7 +7877,6 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
   if (request.data?.confirmMerge !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
   }
-  const db = db;
   const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId);
   const target = await getEngagementNationalSwimmerForMerge(db, targetSource, targetSwimmerId);
   const sourceSwimmer = source.swimmer;
@@ -8086,7 +8061,6 @@ exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (
     throw new HttpsError("invalid-argument", "Personne requise.");
   }
   const active = request.data?.active === true;
-  const db = db;
   const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -8133,7 +8107,6 @@ exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (req
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
   }
-  const db = db;
   const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -8235,7 +8208,6 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
   if (request.data?.confirmMerge !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
   }
-  const db = db;
   const sourceRef = db.collection("engagementClubPeople").doc(sourcePersonId);
   const targetRef = db.collection("engagementClubPeople").doc(targetPersonId);
   const [sourceSnapshot, targetSnapshot] = await db.getAll(sourceRef, targetRef);
@@ -8398,7 +8370,6 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
-  const db = db;
   const knownLicenses = await engagementLegacySwimmerLicensesByClub(db, context.clubId);
 
   const referenceSwimmersById = new Map();
@@ -8725,7 +8696,6 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
 
-  const db = db;
   const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
@@ -8773,7 +8743,6 @@ exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (r
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
 
-  const db = db;
   const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
@@ -8866,7 +8835,6 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
     throw new HttpsError("invalid-argument", "Decision invalide.");
   }
 
-  const db = db;
   const requestRef = db.collection("engagementCompetitionDeletionRequests").doc(requestId);
   const requestSnapshot = await requestRef.get();
   if (!requestSnapshot.exists) {
@@ -8961,7 +8929,6 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const now = new Date().toISOString();
   const actorUid = request.auth.uid;
   const actorEmail = request.auth.token?.email || "";
-  const db = db;
   const batches = [];
   let batch = db.batch();
   let batchSize = 0;
@@ -9152,7 +9119,6 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
 });
 
 async function markCompetitionImportDeleted(importId, context = {}) {
-  const db = db;
   const now = context.now || new Date().toISOString();
   const importRef = db.collection("performanceImports").doc(importId);
   const importDoc = await importRef.get();
@@ -9524,7 +9490,6 @@ function cleanPerformanceBaseRow(row = {}, status = "active") {
 }
 
 async function writePerformanceBaseRows(rows = [], context = {}) {
-  const db = db;
   const now = context.now || new Date().toISOString();
   const logChanges = context.logChanges !== false;
   let batch = db.batch();
@@ -9797,7 +9762,6 @@ async function writePerformanceTopIndexRows(rows = [], context = {}) {
   });
   if (!byBucket.size) return { ok: true, writtenRows: 0, touchedBucketIds: [] };
 
-  const db = db;
   const now = context.now || new Date().toISOString();
   const bucketEntries = Array.from(byBucket.values());
   const refs = bucketEntries.map((bucket) => db.collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucket.id));
@@ -10007,7 +9971,6 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
 
   const competitionIds = DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear] || [];
   if (!competitionIds.length) throw new HttpsError("failed-precondition", "Compétitions DTN non définies pour cette saison.");
-  const db = db;
 
   const stateSnapshot = await dtnQualificationCacheStateRef(seasonYear).get();
   const sourceVersion = Number(stateSnapshot.data()?.version || 0) || 0;
@@ -10217,7 +10180,6 @@ function aggregateSwimmerIndexRows(rows = []) {
 async function writePerformanceSwimmerIndexRows(rows = [], context = {}) {
   const swimmers = aggregateSwimmerIndexRows(rows);
   if (!swimmers.length) return { ok: true, written: 0 };
-  const db = db;
   const now = context.now || new Date().toISOString();
   let batch = db.batch();
   let batchSize = 0;
@@ -10279,7 +10241,6 @@ async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
   });
   if (!bySwimmer.size) return { ok: true, writtenPages: 0 };
 
-  const db = db;
   const now = context.now || new Date().toISOString();
   let writtenPages = 0;
 
@@ -10354,7 +10315,6 @@ async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
 }
 
 async function getPerformanceBaseRowsBySwimmer(data = {}) {
-  const db = db;
   const ids = Array.from(new Set([
     ...(Array.isArray(data.swimmerIds) ? data.swimmerIds : []),
     data.swimmerId
@@ -10426,7 +10386,6 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
-  const db = db;
   const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -10481,7 +10440,6 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
 
 exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
-  const db = db;
   const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -11224,7 +11182,6 @@ function publicPerformanceActiveRow(row = {}) {
 }
 
 async function getActivePublicRowsForAffectedSwimmer(seedRows = []) {
-  const db = db;
   const identityKeys = Array.from(new Set(seedRows
     .map((row) => cleanText(row.swimmerIdentityKey))
     .filter(Boolean)));
@@ -11388,7 +11345,6 @@ async function performanceBaseMigrationManifest() {
 }
 
 async function migrationChunkStatuses(chunks = []) {
-  const db = db;
   const refs = chunks.map((chunk) => db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(chunk.name));
   const snapshots = refs.length ? await db.getAll(...refs) : [];
   const byName = new Map();
@@ -11468,7 +11424,6 @@ async function migrateHistoricalPerformanceBaseChunk(chunkName, request) {
   if (!/^chunk-[A-Za-z0-9-]+\.json$/.test(cleanChunkName)) {
     throw new HttpsError("invalid-argument", "Lot historique invalide.");
   }
-  const db = db;
   const migrationRef = db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanChunkName);
   const existing = await migrationRef.get();
   const existingData = existing.exists ? existing.data() || {} : {};
