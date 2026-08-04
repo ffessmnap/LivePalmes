@@ -262,7 +262,6 @@
     engagementsClubPeopleList: document.querySelector("#adminEngagementsClubPeopleList"),
     engagementsClubSwimmersPanel: document.querySelector("#adminEngagementsClubSwimmersPanel"),
     engagementsClubSwimmersDirectoryRefresh: document.querySelector("#adminEngagementsClubSwimmersDirectoryRefresh"),
-    engagementsClubSwimmersDirectorySummary: document.querySelector("#adminEngagementsClubSwimmersDirectorySummary"),
     engagementsClubSwimmersDirectorySearch: document.querySelector("#adminEngagementsClubSwimmersDirectorySearch"),
     engagementsClubSwimmersDirectoryStatus: document.querySelector("#adminEngagementsClubSwimmersDirectoryStatus"),
     engagementsClubSwimmersDirectoryList: document.querySelector("#adminEngagementsClubSwimmersDirectoryList"),
@@ -2857,9 +2856,6 @@
     }
     if (!engagementClubSwimmersLoaded) {
       mount.innerHTML = '<p class="admin-engagements-empty">Cliquez sur Actualiser pour charger les nageurs du club.</p>';
-      if (elements.engagementsClubSwimmersDirectorySummary) {
-        elements.engagementsClubSwimmersDirectorySummary.textContent = `Effectif LivePalmes de ${clubLabel}.`;
-      }
       return;
     }
     const query = normalizedEngagementClubSearch(elements.engagementsClubSwimmersDirectorySearch?.value || "");
@@ -2867,9 +2863,6 @@
       .filter((swimmer) => !query || engagementClubSwimmerSearchText(swimmer).includes(query))
       .slice(0, 800);
     const hiddenCount = Math.max(0, engagementClubSwimmers.length - swimmers.length);
-    if (elements.engagementsClubSwimmersDirectorySummary) {
-      elements.engagementsClubSwimmersDirectorySummary.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} dans l'effectif ${clubLabel}.`;
-    }
     if (elements.engagementsClubSwimmersDirectoryStatus) {
       elements.engagementsClubSwimmersDirectoryStatus.textContent = engagementClubSwimmers.length
         ? `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""} affiche${swimmers.length > 1 ? "s" : ""}.`
@@ -2891,18 +2884,30 @@
           <span role="columnheader">Cat.</span>
           <span role="columnheader">Licence</span>
         </div>
-        ${swimmers.map((swimmer) => {
+        ${swimmers.map((swimmer, index) => {
       const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
       const category = engagementSwimmerCategory(swimmer);
+      const sex = String(swimmer.sex || "").trim().toUpperCase();
+      const sexLabel = sex === "F" ? "Femme" : (sex === "M" ? "Homme" : "Sexe non renseigné");
+      const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
       return `
-        <div class="admin-engagements-club-swimmers-directory-row" role="row">
-          <span role="cell">
+        <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${escapeHtml(sex)}" data-expanded="false">
+          <button class="admin-engagements-club-swimmers-directory-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" data-engagement-club-swimmer-directory-toggle>
             <strong>${escapeHtml(name)}</strong>
-          </span>
-          <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
-          <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
-          <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
-          <span role="cell">${escapeHtml(swimmer.licenseNumber || "-")}</span>
+            <span class="admin-engagements-club-swimmers-directory-toggle-meta">
+              <span class="admin-engagements-club-swimmers-directory-sex" aria-label="${escapeHtml(sexLabel)}">${escapeHtml(sex || "-")}</span>
+              <span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span>
+            </span>
+          </button>
+          <div id="${detailsId}" class="admin-engagements-club-swimmers-directory-details">
+            <span role="cell">
+              <strong>${escapeHtml(name)}</strong>
+            </span>
+            <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
+            <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
+            <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
+            <span role="cell">${escapeHtml(swimmer.licenseNumber || "-")}</span>
+          </div>
         </div>
       `;
     }).join("")}
@@ -8301,6 +8306,22 @@
     elements.engagementsClubPeopleRefresh?.addEventListener("click", () => loadEngagementClubPeople({ force: true }));
     elements.engagementsClubSwimmersDirectoryRefresh?.addEventListener("click", () => loadEngagementClubSwimmers({ force: true }));
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
+    elements.engagementsClubSwimmersDirectoryList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-club-swimmer-directory-toggle]");
+      if (!button) return;
+      const row = button.closest(".admin-engagements-club-swimmers-directory-row");
+      const expanded = button.getAttribute("aria-expanded") === "true";
+      if (!expanded) {
+        elements.engagementsClubSwimmersDirectoryList.querySelectorAll("[data-engagement-club-swimmer-directory-toggle][aria-expanded=\"true\"]")
+          .forEach((openButton) => {
+            openButton.setAttribute("aria-expanded", "false");
+            const openRow = openButton.closest(".admin-engagements-club-swimmers-directory-row");
+            if (openRow) openRow.dataset.expanded = "false";
+          });
+      }
+      button.setAttribute("aria-expanded", expanded ? "false" : "true");
+      if (row) row.dataset.expanded = expanded ? "false" : "true";
+    });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
     elements.engagementsClubPersonCancel?.addEventListener("click", () => {
       resetEngagementClubPersonForm();

@@ -333,14 +333,6 @@
                 <p>Retrouvez les compétitions, les nageurs et les officiels rattachés à votre club.</p>
               </div>
 
-              <div class="admin-overview-intro">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span>
-                <div>
-                  <strong>Outils du club</strong>
-                  <p>Les données proposées correspondent au périmètre associé à votre compte.</p>
-                </div>
-              </div>
-
               <div class="admin-overview-grid" aria-label="Outils de l’espace club">
                 <a class="admin-overview-card" href="#engagements" data-engagements-home-entry="club" data-engagements-home-tab="calendar">
                   <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
@@ -371,14 +363,6 @@
                 <span>Données sportives</span>
                 <h2 id="adminPerformanceHomeTitle">Gestion des données sportives</h2>
                 <p>Choisissez l’outil adapté pour maintenir les références et les performances publiées.</p>
-              </div>
-
-              <div class="admin-overview-intro">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
-                <div>
-                  <strong>Outils de données sportives</strong>
-                  <p>Seuls les outils autorisés pour votre profil sont proposés.</p>
-                </div>
               </div>
 
               <div class="admin-overview-grid" aria-label="Outils de gestion des données sportives">
@@ -413,14 +397,6 @@
                 <p>Accédez aux qualifications des Championnats de France et des Équipes de France.</p>
               </div>
 
-              <div class="admin-overview-intro">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-                <div>
-                  <strong>Référentiels DTN</strong>
-                  <p>Sélectionnez le suivi à consulter pour la saison sportive.</p>
-                </div>
-              </div>
-
               <div class="admin-overview-grid" aria-label="Outils de l’espace DTN">
                 <a class="admin-overview-card" href="#espace-dtn-france">
                   <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
@@ -444,14 +420,6 @@
                 <span>Compétitions</span>
                 <h2 id="adminCompetitionHomeTitle">Organisation des compétitions</h2>
                 <p>Créez les compétitions et suivez les opérations de votre périmètre régional ou national.</p>
-              </div>
-
-              <div class="admin-overview-intro">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
-                <div>
-                  <strong>Pilotage des compétitions</strong>
-                  <p>Les actions affichées respectent votre périmètre régional ou national.</p>
-                </div>
               </div>
 
               <div class="admin-overview-grid" aria-label="Outils d’organisation des compétitions">
@@ -484,14 +452,6 @@
                 <span>Administration nationale</span>
                 <h2 id="adminNationalHomeTitle">Gestion nationale</h2>
                 <p>Accédez aux opérations de contrôle et de maintenance réservées au niveau national.</p>
-              </div>
-
-              <div class="admin-overview-intro">
-                <span class="admin-overview-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
-                <div>
-                  <strong>Outils nationaux</strong>
-                  <p>Ces fonctions restent limitées aux profils disposant des habilitations nationales.</p>
-                </div>
               </div>
 
               <div class="admin-overview-grid" aria-label="Outils d’administration nationale">
@@ -1392,16 +1352,10 @@
               </div>
 
               <div id="adminEngagementsClubPeoplePanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubPeople" hidden>
-                <section class="admin-engagements-card" aria-labelledby="adminEngagementsClubPeopleTitle">
-                  <div class="admin-engagements-card-head">
-                    <div>
-                      <span>Espace club</span>
-                      <h3 id="adminEngagementsClubPeopleTitle">Mes officiels</h3>
-                    </div>
-                    <div class="admin-engagements-detail-actions">
-                      <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
-                      <button id="adminEngagementsClubPeopleRefresh" class="ghost-button" type="button">Actualiser</button>
-                    </div>
+                <section class="admin-engagements-card" aria-label="Gestion des officiels du club">
+                  <div class="admin-engagements-directory-toolbar">
+                    <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
+                    <button id="adminEngagementsClubPeopleRefresh" class="ghost-button" type="button">Actualiser</button>
                   </div>
                   <p id="adminEngagementsClubPeopleStatus" class="admin-portal-message" data-tone="loading">Base club &agrave; charger.</p>
                   <form id="adminEngagementsClubPersonForm" class="admin-engagements-club-person-form" hidden>
@@ -1441,20 +1395,13 @@
               </div>
 
               <div id="adminEngagementsClubSwimmersPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubSwimmers" hidden>
-                <section class="admin-engagements-card" aria-labelledby="adminEngagementsClubSwimmersDirectoryTitle">
-                  <div class="admin-engagements-card-head">
-                    <div>
-                      <span>Espace club</span>
-                      <h3 id="adminEngagementsClubSwimmersDirectoryTitle">Mes nageurs</h3>
-                      <small id="adminEngagementsClubSwimmersDirectorySummary">Base nageurs du club &agrave; charger.</small>
-                    </div>
-                    <button id="adminEngagementsClubSwimmersDirectoryRefresh" class="ghost-button" type="button">Actualiser</button>
-                  </div>
+                <section class="admin-engagements-card" aria-label="Effectif des nageurs du club">
                   <form class="admin-engagements-club-swimmers-directory-tools" role="search">
                     <label>
                       Rechercher
                       <input id="adminEngagementsClubSwimmersDirectorySearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
                     </label>
+                    <button id="adminEngagementsClubSwimmersDirectoryRefresh" class="ghost-button" type="button">Actualiser</button>
                   </form>
                   <p id="adminEngagementsClubSwimmersDirectoryStatus" class="admin-portal-message" data-tone="loading">Base nageurs &agrave; charger.</p>
                   <div id="adminEngagementsClubSwimmersDirectoryList" class="admin-engagements-club-swimmers-directory-list" aria-live="polite"></div>

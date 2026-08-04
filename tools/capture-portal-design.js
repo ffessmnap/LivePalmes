@@ -14,6 +14,7 @@ const views = [
   { name: "performance-home", hash: "gestion-performances", selector: "#adminPerformanceHomeView", authenticated: true, menu: "performance" },
   { name: "records", hash: "records-mpf", selector: "#adminRecordsView", authenticated: true, menu: "performance" },
   { name: "engagements", hash: "engagements", selector: "#adminEngagementsView", authenticated: true },
+  { name: "club-swimmers", hash: "engagements", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true },
   { name: "competition-home", hash: "organisation-competitions", selector: "#adminCompetitionHomeView", authenticated: true, menu: "engagements" },
   { name: "dtn-home", hash: "espace-dtn", selector: "#adminDtnHomeView", authenticated: true, menu: "dtn" },
   { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
@@ -173,6 +174,32 @@ async function waitFor(client, expression, timeoutMs = 8000) {
   return false;
 }
 
+function clubSwimmersFixtureHtml() {
+  const swimmers = [
+    ["Nageuse DEMO", "12/03/2008", "F", "S", "A-00-000001", "Femme"],
+    ["Nageur DEMO", "04/09/2011", "M", "C", "A-00-000002", "Homme"],
+    ["Identite volontairement longue pour tester la reduction", "18/05/2014", "F", "M", "A-00-000003", "Femme"]
+  ];
+  return `
+    <div class="admin-engagements-club-swimmers-directory-table" role="table" aria-label="Mes nageurs">
+      <div class="admin-engagements-club-swimmers-directory-row admin-engagements-club-swimmers-directory-head" role="row">
+        <span role="columnheader">Nageur</span><span role="columnheader">Naissance</span><span role="columnheader">Sexe</span><span role="columnheader">Cat.</span><span role="columnheader">Licence</span>
+      </div>
+      ${swimmers.map((row, index) => `
+        <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${row[2]}" data-expanded="false">
+          <button class="admin-engagements-club-swimmers-directory-toggle" type="button" aria-expanded="false" aria-controls="adminEngagementsClubSwimmerFixtureDetails${index}" data-engagement-club-swimmer-directory-toggle>
+            <strong>${row[0]}</strong>
+            <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex" aria-label="${row[5]}">${row[2]}</span><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></span>
+          </button>
+          <div id="adminEngagementsClubSwimmerFixtureDetails${index}" class="admin-engagements-club-swimmers-directory-details">
+            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4]}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 function presentationScript(view) {
   return `
     history.replaceState(null, "", "#${view.hash}");
@@ -235,6 +262,22 @@ function presentationScript(view) {
         }
         if (card) card.dataset.overviewToolCount = String(tools.length);
       }
+      if (${view.swimmersFixture ? "true" : "false"}) {
+        const viewEyebrow = document.querySelector("#adminEngagementsViewEyebrow");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (viewEyebrow) viewEyebrow.textContent = "Espace club";
+        if (viewTitle) viewTitle.textContent = "Mes nageurs";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsClubSwimmersPanel";
+        });
+        const status = document.querySelector("#adminEngagementsClubSwimmersDirectoryStatus");
+        const mount = document.querySelector("#adminEngagementsClubSwimmersDirectoryList");
+        if (status) {
+          status.textContent = "3 nageurs affiches.";
+          status.dataset.tone = "ok";
+        }
+        if (mount) mount.innerHTML = ${JSON.stringify(clubSwimmersFixtureHtml())};
+      }
     }
     const target = document.querySelector(${JSON.stringify(view.selector)});
     return Boolean(target && getComputedStyle(target).display !== "none");
@@ -284,12 +327,13 @@ async function auditInteractions(client, viewport, view) {
       blocked,
       delayedTouch,
       covered,
-      removedComponents: document.querySelectorAll("#adminPortalSearchButton,#adminPortalSearchDialog,#adminPortalQuickAccess,#adminOverviewView > .admin-overview-intro").length,
+      removedComponents: document.querySelectorAll("#adminPortalSearchButton,#adminPortalSearchDialog,#adminPortalQuickAccess,.admin-overview-intro").length,
       mobileNavigation: null,
       mobileParentNavigation: null,
       accountMenu: null,
       overviewToggle: null,
-      overviewLink: null
+      overviewLink: null,
+      swimmerAccordion: null
     };
     const accountToggle = document.querySelector("#adminPortalAccountToggle");
     const accountActions = document.querySelector("#adminPortalAccountActions");
@@ -326,6 +370,13 @@ async function auditInteractions(client, viewport, view) {
       mainLink?.click();
       result.overviewLink = Boolean(expectedHash && globalThis.location.hash === expectedHash);
     }
+    if (${JSON.stringify(view.name)} === "club-swimmers" && ${viewport.width <= 700 ? "true" : "false"}) {
+      const toggles = [...document.querySelectorAll("[data-engagement-club-swimmer-directory-toggle]")];
+      toggles[0]?.click();
+      const firstOpened = toggles[0]?.getAttribute("aria-expanded") === "true" && toggles[0]?.closest("[data-expanded]")?.dataset.expanded === "true";
+      toggles[1]?.click();
+      result.swimmerAccordion = Boolean(firstOpened && toggles[0]?.getAttribute("aria-expanded") === "false" && toggles[1]?.getAttribute("aria-expanded") === "true");
+    }
     return result;
   `);
   const failures = [];
@@ -333,7 +384,7 @@ async function auditInteractions(client, viewport, view) {
   if (audit.delayedTouch.length) failures.push(`actions tactiles non optimisees ${JSON.stringify(audit.delayedTouch)}`);
   if (audit.covered.length) failures.push(`actions recouvertes ${JSON.stringify(audit.covered)}`);
   if (audit.removedComponents) failures.push(`${audit.removedComponents} composant(s) supprime(s) encore present(s)`);
-  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink"].forEach((key) => {
+  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion"].forEach((key) => {
     if (audit[key] === false) failures.push(`${key} KO`);
   });
   if (failures.length) throw new Error(`${view.name}/${viewport.name} : interactions invalides : ${failures.join(", ")}`);
@@ -372,6 +423,14 @@ async function captureView(client, baseUrl, viewport, view) {
     throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
   await auditInteractions(client, viewport, view);
+  if (view.name === "club-swimmers" && viewport.width <= 700) {
+    const opened = await evaluate(client, `
+      const toggle = document.querySelector("[data-engagement-club-swimmer-directory-toggle]");
+      toggle?.click();
+      return toggle?.getAttribute("aria-expanded") === "true";
+    `);
+    if (!opened) throw new Error(`${view.name}/${viewport.name} : ouverture visuelle de l'accordeon impossible.`);
+  }
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   const fileName = `${view.name}-${viewport.name}.png`;
   fs.writeFileSync(path.join(outputDir, fileName), Buffer.from(screenshot.data, "base64"));

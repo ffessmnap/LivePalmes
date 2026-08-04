@@ -7,6 +7,8 @@ const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const portal = read("assets/livepalmes-admin-portal.js");
+const portalCss = read("assets/livepalmes-admin-portal.css");
+const portalHtml = read("portail.html");
 const records = read("performances/public/admin-records.js");
 const imports = read("performances/public/import-competitions.js");
 const publicSeries = read("assets/pages/series-public.js");
@@ -32,6 +34,18 @@ assert.equal(functions.includes('licenseUpdatedBy: "engagement-roster-migration"
 assert.ok(functions.includes("revokeRefreshTokens(uid)"));
 assert.ok(functions.includes("nextPortalAccessRateLimit"));
 assert.equal(functions.includes("const db = db;"), false);
+assert.ok(portal.includes("data-engagement-club-swimmer-directory-toggle"));
+assert.ok(portal.includes('data-expanded="false"'));
+assert.ok(portalCss.includes('.admin-engagements-club-swimmers-directory-row[data-sex="F"]'));
+assert.ok(portalCss.includes('.admin-engagements-club-swimmers-directory-row[data-expanded="true"] .admin-engagements-club-swimmers-directory-details'));
+assert.equal(portalHtml.includes('id="adminEngagementsClubSwimmersDirectoryTitle"'), false);
+assert.equal(portalHtml.includes('id="adminEngagementsClubPeopleTitle"'), false);
+assert.ok(portalHtml.includes('aria-label="Effectif des nageurs du club"'));
+assert.ok(portalHtml.includes('aria-label="Gestion des officiels du club"'));
+assert.equal(portalHtml.includes("admin-overview-intro"), false);
+assert.equal(portalCss.includes(".admin-overview-intro"), false);
+assert.ok(portalCss.includes(".admin-portal-page .admin-portal-space-home > .admin-overview-head"));
+assert.ok(portalCss.includes("padding: 10px 14px"));
 assert.ok(publicSeries.includes("restoredPublicSeriesCache"));
 assert.ok(publicSeries.includes("Index publics indisponibles."));
 assert.ok(publicResults.includes("restoredPublicResultsCache"));
