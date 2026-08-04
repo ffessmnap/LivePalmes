@@ -6,7 +6,7 @@
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
   const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
-  const dataVersion = encodeURIComponent(usesFirestorePublicData ? `firestore-${Date.now()}` : publicVersion);
+  let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-current" : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
     ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
     : "public/data/performance-public";
@@ -61,12 +61,15 @@
           : (currentFilters.categories || [])
       }
     };
+    if (usesFirestorePublicData && manifest.generatedAt) {
+      dataVersion = encodeURIComponent(`firestore-${manifest.generatedAt}`);
+    }
   }
 
   async function loadSelectedPublicManifest() {
     if (!usesFirestorePublicData) return;
     try {
-      const response = await fetch(`${publicPerformanceBase}/manifest.json?v=${dataVersion}`, { cache: "no-store" });
+      const response = await fetch(`${publicPerformanceBase}/manifest.json`, { cache: "no-store" });
       if (!response.ok) return;
       applyPublicManifest(await response.json());
     } catch (error) {

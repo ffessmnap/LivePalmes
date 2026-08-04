@@ -125,14 +125,20 @@
     }
 
     function publicIndexByteSize(payload) {
+      if (typeof livePalmesPublication.publicIndexByteSize === "function") {
+        return livePalmesPublication.publicIndexByteSize(payload);
+      }
       const json = JSON.stringify(payload || {});
       if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
       return json.length;
     }
 
     function assertPublicIndexSize(label, payload) {
+      if (typeof livePalmesPublication.assertPublicIndexSize === "function") {
+        return livePalmesPublication.assertPublicIndexSize(label, payload);
+      }
       const bytes = publicIndexByteSize(payload);
-      const limit = 980000;
+      const limit = 900000;
       if (bytes > limit) {
         throw new Error(`${label} trop lourd : ${bytes.toLocaleString("fr-FR")} octets. Limite de securite LivePalmes : ${limit.toLocaleString("fr-FR")} octets.`);
       }

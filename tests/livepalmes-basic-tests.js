@@ -21,6 +21,16 @@ const speakerInfo = global.LivePalmesSpeakerInfo;
 const historyPresenter = global.LivePalmesHistoryPresenter;
 const resultDetailView = global.LivePalmesResultDetailView;
 
+{
+  const replacement = global.LivePalmesResults.resultPdfPayload({
+    id: "result-1",
+    pdfUrl: "https://storage.example/old.pdf",
+    storagePath: "competition-pdfs/livepalmes-active/result/old.pdf"
+  }, "data:application/pdf;base64,JVBERi0=");
+  assert.equal(replacement.pdfUrl, "");
+  assert.equal(replacement.storagePath, "");
+}
+
 function splitImportedPersonName(value) {
   const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
   return {

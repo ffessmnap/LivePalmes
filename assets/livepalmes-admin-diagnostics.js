@@ -237,7 +237,7 @@
             { label: "sessions résultats", value: escapeHtml(firebase.resultSessions || "aucune"), status: firebase.results ? "ok" : "neutral" }
           ])}
           ${technicalDiagnosticSection("Poids / synchro", [
-            { label: "index public", value: formatByteSize(firebase.publicIndexBytes || 0), status: (firebase.publicIndexBytes || 0) > 750000 ? "warn" : "ok" },
+            { label: "index public", value: formatByteSize(firebase.publicIndexBytes || 0), status: (firebase.publicIndexBytes || 0) >= 650000 ? "warn" : "ok" },
             { label: "live data", value: formatByteSize(firebase.liveDataBytes || 0), status: (firebase.liveDataBytes || 0) > 900000 ? "warn" : "ok" },
             { label: "PDF résultats", value: String(firebase.resultPdfCount ?? "-"), status: firebase.resultPdfCount ? "ok" : "neutral" },
             { label: "PDF à nettoyer", value: String(firebase.legacyPdfCount || 0), status: firebase.legacyPdfCount ? "warn" : "ok" },

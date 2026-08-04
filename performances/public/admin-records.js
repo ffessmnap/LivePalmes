@@ -1,5 +1,5 @@
 ﻿let data = window.LIVEPALMES_RECORDS || {};
-const reference = window.LIVEPALMES_ADMIN_REFERENCE || { swimmers: [], clubs: [] };
+const reference = window.LIVEPALMES_CLUB_REFERENCE || { clubs: [] };
 const MASTER_RELAY_CATEGORY = window.LivePalmesRecordPlaceholders?.masterRelayCategory || "MASTER_RELAYS_MIXED";
 const MASTER_RELAY_LABEL = window.LivePalmesRecordPlaceholders?.masterRelayLabel || "Relais Masters mixtes";
 const RECORD_HISTORY_LIMIT = 50;
@@ -9,6 +9,9 @@ let currentAccessUser = null;
 let currentAccessUserLoading = false;
 let recordsDataLoaded = false;
 let sourceRows = [];
+let referenceSwimmers = [];
+let swimmerSearchRequestId = 0;
+const swimmerSearchShards = new Map();
 
 const state = {
   scope: "",
@@ -195,14 +198,14 @@ async function loadLocalRecordsData() {
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `public/data/records-data.js?v=records-firestore-20260729212535&reload=${Date.now()}`;
+    script.src = `public/data/records-data.js?v=records-firestore-20260803223824&reload=${Date.now()}`;
     script.onload = () => resolve();
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   try {
-    const response = await fetch("public/data/records-data.js?v=records-firestore-20260729212535", { cache: "no-store" });
+    const response = await fetch("public/data/records-data.js?v=records-firestore-20260803223824", { cache: "no-store" });
     if (!response.ok) return window.LIVEPALMES_RECORDS || {};
     const text = await response.text();
     const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
@@ -521,20 +524,49 @@ function allowedSwimmerSexes(row) {
   return [row.sex || "F"];
 }
 
-function updateSwimmerOptions(row) {
-  const allowedSexes = new Set(allowedSwimmerSexes(row));
-  const seen = new Set();
-  document.querySelector("#swimmerOptions").innerHTML = reference.swimmers
-    .filter((swimmer) => allowedSexes.has(swimmer[2]))
-    .filter((swimmer) => {
-      const name = swimmer[1];
-      if (!name || seen.has(name)) return false;
-      seen.add(name);
-      return true;
-    })
-    .slice(0, 2500)
-    .map((swimmer) => `<option value="${swimmer[1]}"></option>`)
-    .join("");
+function recordSwimmerSearchShard(value) {
+  const token = normalizeLookup(value).split(/\s+/).find((item) => item.length >= 2) || "";
+  return token.slice(0, 2).toLocaleLowerCase("fr-FR");
+}
+
+async function updateSwimmerOptions(row) {
+  const options = document.querySelector("#swimmerOptions");
+  if (!options) return;
+  const query = row?.swimmer || elements.fieldName?.value || "";
+  const shard = recordSwimmerSearchShard(query);
+  if (!shard) {
+    referenceSwimmers = [];
+    options.innerHTML = "";
+    return;
+  }
+  const requestId = ++swimmerSearchRequestId;
+  if (!swimmerSearchShards.has(shard)) {
+    const version = encodeURIComponent(window.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || "performance-public");
+    swimmerSearchShards.set(shard, fetch(`/performances/public/data/performance-public/search/${encodeURIComponent(shard)}.json?v=${version}`, { cache: "force-cache" })
+      .then((response) => response.status === 404 ? [] : response.ok ? response.json() : Promise.reject(new Error("Index nageurs indisponible.")))
+      .then((rows) => Array.isArray(rows) ? rows : [])
+      .catch((error) => {
+        swimmerSearchShards.delete(shard);
+        throw error;
+      }));
+  }
+  try {
+    const rows = await swimmerSearchShards.get(shard);
+    if (requestId !== swimmerSearchRequestId) return;
+    const allowedSexes = new Set(allowedSwimmerSexes(row));
+    const queryTokens = normalizeLookup(query).split(/\s+/).filter(Boolean);
+    referenceSwimmers = rows
+      .filter((swimmer) => allowedSexes.has(swimmer.sex))
+      .filter((swimmer) => queryTokens.every((token) => normalizeLookup(swimmer.searchText || swimmer.name).includes(token)))
+      .slice(0, 100)
+      .map((swimmer) => [swimmer.id, swimmer.name, swimmer.sex, swimmer.birthDate, swimmer.clubId]);
+    options.innerHTML = referenceSwimmers
+      .map((swimmer) => `<option value="${escapeHtml(swimmer[1])}"></option>`)
+      .join("");
+    updateBirthDateField();
+  } catch {
+    if (requestId === swimmerSearchRequestId) options.innerHTML = "";
+  }
 }
 
 function normalizeLookup(value) {
@@ -574,7 +606,7 @@ function swimmerBirthDateForRow(row) {
   const name = normalizeLookup(row.swimmer);
   if (!name || name === "A ETABLIR") return "";
   const allowedSexes = new Set(allowedSwimmerSexes(row));
-  const candidates = (reference.swimmers || [])
+  const candidates = referenceSwimmers
     .filter((swimmer) => normalizeLookup(swimmer[1]) === name)
     .filter((swimmer) => allowedSexes.has(swimmer[2]))
     .filter((swimmer) => isUsableBirthDate(swimmer[3]));
@@ -1277,7 +1309,7 @@ function editorValue(status = "Brouillon") {
 function swimmerSexesForName(name) {
   const clean = String(name || "").trim().toLocaleLowerCase("fr-FR");
   if (!clean) return [];
-  return Array.from(new Set(reference.swimmers
+  return Array.from(new Set(referenceSwimmers
     .filter((swimmer) => String(swimmer[1] || "").trim().toLocaleLowerCase("fr-FR") === clean)
     .map((swimmer) => swimmer[2])
     .filter(Boolean)));
@@ -1754,7 +1786,7 @@ function updateScope(value) {
 
 function setupDatalists() {
   document.querySelector("#clubOptions").innerHTML = reference.clubs
-    .map((club) => `<option value="${club[1]}"></option>`)
+    .map((club) => `<option value="${escapeHtml(club[1])}"></option>`)
     .join("");
 }
 
@@ -1809,6 +1841,11 @@ async function loadCurrentAccessUser() {
 
 function ensureAdminAuth() {
   if (adminAuth) return adminAuth;
+  if (window.LivePalmesPortalAuth) {
+    adminAuth = window.LivePalmesPortalAuth;
+    adminAuth.onChange(updateAuthView);
+    return adminAuth;
+  }
   const firebase = ensureFirebase();
   if (!firebase || !window.LivePalmesAdminAuth?.init) return null;
   adminAuth = window.LivePalmesAdminAuth.init({
@@ -1860,8 +1897,7 @@ async function startAdmin() {
   updateAuthView();
 
   const localData = completeRecordsData(await withTimeout(loadLocalRecordsData(), 4000, {}));
-  const remoteData = await withTimeout(loadRemoteRecordsData(), 5000, {});
-  const firstData = hasRecordData(remoteData) ? mergeRecordsData(localData, remoteData) : localData;
+  const firstData = localData;
   applyRecordsData(firstData, { loaded: true });
 
   if (window.LivePalmesPerformanceStore?.loadData) {
@@ -1925,8 +1961,11 @@ elements.fieldTime.addEventListener("blur", () => {
   elements.fieldTime.value = normalizeTimeInput(elements.fieldTime.value);
   updateMpfSyncAlert();
 });
-[elements.fieldName, elements.fieldClub]
-  .forEach((field) => field.addEventListener("input", () => updateBirthDateField()));
+elements.fieldName.addEventListener("input", () => {
+  updateSwimmerOptions(editorPreviewRow());
+  updateBirthDateField();
+});
+elements.fieldClub.addEventListener("input", () => updateBirthDateField());
 [elements.fieldBirthDate].filter(Boolean)
   .forEach((field) => field.addEventListener("blur", () => {
     field.value = normalizeBirthDateInput(field.value) || field.value.trim();

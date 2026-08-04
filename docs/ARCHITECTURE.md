@@ -167,6 +167,10 @@ Les pages publiques utilisent des fichiers optimises dans :
 performances/public/data/
 ```
 
+Le portail ne charge pas le referentiel complet des nageurs a son ouverture. La liste des clubs provient de `performances/public/data/club-reference.js`, generee par `tools/build-admin-club-reference.js`. Le fichier de travail `admin-reference.js`, qui contient des donnees nageurs, est exclu de Firebase Hosting. Dans l'administration Records / MPF, les suggestions de nageurs sont chargees a la demande depuis les shards statiques `performance-public/search/`.
+
+Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent actifs. L'annuaire des acces est pagine et borne cote Cloud Functions ; les recherches regionales s'appuient sur les index declares dans `firestore.indexes.json`. Les calculs DTN utilisent leur cache et refusent un recalcul si la limite explicite de performances par course est depassee, afin de ne jamais produire un resultat partiel silencieux.
+
 ## Donnees et Firebase
 
 Firebase est utilise pour :
@@ -204,25 +208,35 @@ On y trouve notamment :
 - les verrous de roles ;
 - les records et MPF.
 
+Les nouveaux PDF publics sont stockes dans le bucket public sous `competition-pdfs/`. Firestore ne conserve que leurs metadonnees, leur URL et leur chemin de stockage. Les anciens documents contenant encore un `pdfDataUrl` restent lisibles pendant la transition ; une publication bascule temporairement sur ce format historique si la fonction de stockage est indisponible.
+
+Les listes publiques de series et de resultats utilisent les documents agreges `public/seriesIndex` et `public/resultsIndex`. Leur publication avertit a partir de 650 ko et est bloquee au-dela de 900 ko, avant la limite Firestore. Un depassement du seuil d'alerte doit conduire a preparer un decoupage par session.
+
+La page des archives lit en priorite `public/archivesIndex`, borne aux 50 archives publiques les plus recentes. La requete historique sur `historyArchives` reste uniquement un secours tant que l'index n'existe pas.
+
 ### Records et MPF
 
-La source officielle des Records / MPF est :
+La source d'administration des Records / MPF est :
 
 ```text
 competitions/livepalmes-active/performanceData/records
 ```
 
-Il existe aussi un fichier de secours statique :
+Les pages publiques lisent uniquement le fichier statique genere :
 
 ```text
 performances/public/data/records-data.js
 ```
 
-Avant chaque déploiement Firebase Hosting, le hook `hosting.predeploy` synchronise automatiquement ce fichier de secours depuis Firestore. La commande reste disponible pour lancer la synchronisation manuellement :
+En fonctionnement normal, chaque modification de `performanceData/records` declenche aussi `syncPublicRecordsData`. La fonction publie une version JSON immuable dans `performance-public-firestore/records/versions/`, puis remplace atomiquement le petit manifeste `performance-public-firestore/records/manifest.json`. Les pages Records, MPF et fiches nageurs lisent ce manifeste sans interroger Firestore ; le fichier Hosting ci-dessus reste leur secours local.
+
+Avant chaque déploiement Firebase Hosting, le hook `hosting.predeploy` synchronise aussi le fichier de secours depuis Firestore. La commande reste disponible pour lancer la synchronisation manuellement :
 
 ```powershell
 node tools/sync-records-from-firestore.js --write
 ```
+
+Le meme hook regenere le petit referentiel clubs. Les mises a jour RF / MPF restent independantes de ce fichier : elles continuent a invalider puis republier automatiquement le manifeste Records public.
 
 ### Performances historiques
 
@@ -247,7 +261,7 @@ Les Cloud Functions sont dans :
 functions/index.js
 ```
 
-Elles utilisent Node.js 20.
+Elles utilisent Node.js 22.
 
 Elles gerent notamment :
 

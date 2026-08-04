@@ -309,10 +309,19 @@
           const itemSnapshot = await archiveRef.collection("items").get();
           const pdfSnapshot = await archiveRef.collection("resultPdfs").get();
           const sessionPdfSnapshot = await archiveRef.collection("sessionResultsPdfs").get();
+          const archivesIndexRef = collection.parent?.collection("public")?.doc("archivesIndex") || null;
+          const archivesIndexSnapshot = archivesIndexRef ? await archivesIndexRef.get().catch(() => null) : null;
           const batch = context.firestoreDb.batch();
           itemSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
           pdfSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
           sessionPdfSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          if (archivesIndexSnapshot?.exists && Array.isArray(archivesIndexSnapshot.data()?.archives)) {
+            batch.set(archivesIndexRef, {
+              ...archivesIndexSnapshot.data(),
+              archives: archivesIndexSnapshot.data().archives.filter((archive) => archive?.id !== archiveRef.id),
+              updatedAt: new Date().toISOString()
+            });
+          }
           batch.delete(archiveRef);
           await batch.commit();
           await renderHistoryArchivesModal({ canDelete: true });

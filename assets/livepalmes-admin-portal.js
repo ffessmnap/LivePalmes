@@ -131,6 +131,7 @@
     publicAccessRequestLastName: document.querySelector("#adminPublicAccessRequestLastName"),
     publicAccessRequestEmail: document.querySelector("#adminPublicAccessRequestEmail"),
     publicAccessRequestLicenseNumber: document.querySelector("#adminPublicAccessRequestLicenseNumber"),
+    publicAccessRequestWebsite: document.querySelector("#adminPublicAccessRequestWebsite"),
     publicAccessRequestRegionId: document.querySelector("#adminPublicAccessRequestRegionId"),
     publicAccessRequestClubSelect: document.querySelector("#adminPublicAccessRequestClubSelect"),
     publicAccessRequestClubName: document.querySelector("#adminPublicAccessRequestClubName"),
@@ -462,6 +463,7 @@
   let accessPreviousCursors = [];
   let accessPage = 1;
   let accessUsersLoading = false;
+  let accessDirectoryTruncated = false;
   let accessLoadSequence = 0;
   let accessDeletionRequests = [];
   let accessDeletionRequestsLoaded = false;
@@ -518,6 +520,7 @@
   let currentAccessProfile = null;
   let recordModuleLoadPromise = null;
   let importModuleLoadPromise = null;
+  let importSpreadsheetLoadPromise = null;
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
   let activeAuthUid = "";
@@ -539,6 +542,7 @@
       firebase: global.firebase,
       authConfig: global.LivePalmesAppConfig?.adminAuth || {}
     });
+    global.LivePalmesPortalAuth = adminAuth;
     adminAuth.onChange(updateView);
     return adminAuth;
   }
@@ -1300,7 +1304,7 @@
     if (elements.importStyles) elements.importStyles.disabled = !importModuleActive;
     document.body.classList.toggle("performance-admin-page", performanceModuleActive);
     if (recordsActive) loadRecordModule();
-    if (importModuleActive) loadImportModule();
+    if (importModuleActive) loadImportModule({ includeSpreadsheet: importActive });
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
     if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
     if (engagementsActive && activeEngagementsTab === "deletionRequests") loadActiveEngagementNationalTab();
@@ -1361,8 +1365,9 @@
       const scripts = [
         ["performances/public/data/records-data.js?v=records-firestore-20260629060432", "adminRecordDataScript"],
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
-        ["performances/public/data/admin-reference.js?v=20260601-performance-admin-page-1", "adminRecordReferenceScript"],
-        ["performances/public/store.js?v=20260729-record-payload-1", "adminRecordStoreScript"],
+        ["performances/public/data/club-reference.js?v=20260804-portal-clubs-1", "adminRecordReferenceScript"],
+        ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
+        ["performances/public/store.js?v=20260804-records-static-auto-1", "adminRecordStoreScript"],
         ["performances/public/admin-records.js?v=20260721-default-filters-1", "adminRecordModuleScript"]
       ];
       for (const [src, id] of scripts) await loadScriptOnce(src, id);
@@ -1398,8 +1403,25 @@
     });
   }
 
-  function loadImportModule() {
-    if (importModuleLoadPromise) return importModuleLoadPromise;
+  function loadImportSpreadsheet() {
+    if (!importSpreadsheetLoadPromise) {
+      importSpreadsheetLoadPromise = loadScriptOnce(
+        "performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1",
+        "adminImportXlsxScript"
+      ).catch((error) => {
+        importSpreadsheetLoadPromise = null;
+        throw error;
+      });
+    }
+    return importSpreadsheetLoadPromise;
+  }
+
+  function loadImportModule({ includeSpreadsheet = false } = {}) {
+    if (importModuleLoadPromise) {
+      return includeSpreadsheet
+        ? Promise.all([importModuleLoadPromise, loadImportSpreadsheet()]).then(() => undefined)
+        : importModuleLoadPromise;
+    }
     if (elements.importModuleStatus) {
       elements.importModuleStatus.hidden = false;
       elements.importModuleStatus.textContent = "Chargement du module d’import…";
@@ -1413,11 +1435,11 @@
     importModuleLoadPromise = (async () => {
       const scripts = [
         ["performances/public/data/intranap-summary.js?v=consolidated-20260603140205", "adminImportSummaryScript"],
-        ["performances/public/data/performance-public/version.js", "adminImportVersionScript"],
-        ["performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1", "adminImportXlsxScript"],
-        ["performances/public/import-competitions.js?v=20260727-portal-name-1", "adminImportModuleScript"]
+        ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       for (const [src, id] of scripts) await loadScriptOnce(src, id);
+      if (includeSpreadsheet) await loadImportSpreadsheet();
+      await loadScriptOnce("performances/public/import-competitions.js?v=20260804-portal-lazy-1", "adminImportModuleScript");
       watchImportWorkbench();
     })().catch((error) => {
       importModuleLoadPromise = null;
@@ -1771,10 +1793,10 @@
     if (accessClubReference.length) return Promise.resolve(accessClubReference);
     if (accessClubReferenceLoadPromise) return accessClubReferenceLoadPromise;
     accessClubReferenceLoadPromise = loadScriptOnce(
-      "performances/public/data/admin-reference.js?v=20260601-performance-admin-page-1",
+      "performances/public/data/club-reference.js?v=20260804-portal-clubs-1",
       "adminAccessReferenceScript"
     ).then(() => {
-      accessClubReference = (global.LIVEPALMES_ADMIN_REFERENCE?.clubs || [])
+      accessClubReference = (global.LIVEPALMES_CLUB_REFERENCE?.clubs || [])
         .map(normalizeAccessClubReference)
         .filter((club) => club.clubId && club.clubName);
       populateAccessRegionChoices();
@@ -1888,12 +1910,6 @@
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
     updateEngagementCreateFormAccess(user);
-    if (canReviewEngagementAccessRequests()) {
-      loadEngagementAccessRequests({ force: true, silent: true });
-    }
-    if (canDeleteEngagementCompetitionDirectly()) {
-      loadEngagementDeletionRequests({ force: true, silent: true });
-    }
   }
 
   function renderEngagementsProfile(user = {}) {
@@ -5792,7 +5808,8 @@
       regionId: elements.publicAccessRequestRegionId?.value || "",
       clubId: elements.publicAccessRequestClubId?.value || "",
       clubName: elements.publicAccessRequestClubName?.value || "",
-      message: String(elements.publicAccessRequestText?.value || "").trim()
+      message: String(elements.publicAccessRequestText?.value || "").trim(),
+      website: String(elements.publicAccessRequestWebsite?.value || "").trim()
     };
   }
 
@@ -7530,8 +7547,8 @@
     if (elements.sessionLabel) elements.sessionLabel.textContent = "Profil LivePalmes";
     if (signedIn) {
       updateCapabilityView();
-      loadCurrentUser();
-      if (canManageAccessDirectory()) loadAccessUsers();
+      if (status.profile) renderCurrentUser(status.profile);
+      else loadCurrentUser();
     }
     if (!status.available) {
       setMessage("Firebase Authentication n'est pas disponible.");
@@ -7721,7 +7738,7 @@
     if (!mount) return;
     if (elements.accessCount) {
       elements.accessCount.textContent = accessUsers.length
-        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} sur cette page`
+        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} sur cette page${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}`
         : "Aucun compte trouvé";
     }
     if (!accessUsers.length) {
@@ -7847,6 +7864,7 @@
 
   async function loadAccessUsers({ reset = false } = {}) {
     if (!canManageAccessDirectory()) return;
+    if (accessUsersLoading && !reset) return;
     const loadSequence = ++accessLoadSequence;
     if (reset) {
       accessCurrentCursor = null;
@@ -7869,11 +7887,13 @@
       if (result.directoryVersion === 2) {
         accessUsers = returnedUsers;
         accessNextCursor = result.nextCursor || null;
+        accessDirectoryTruncated = result.truncated === true;
       } else {
         const filteredUsers = legacyFilteredAccessUsers(returnedUsers, filters);
         const offset = Math.max(0, Math.trunc(Number(accessCurrentCursor?.offset) || 0));
         accessUsers = filteredUsers.slice(offset, offset + 25);
         accessNextCursor = offset + 25 < filteredUsers.length ? { offset: offset + 25 } : null;
+        accessDirectoryTruncated = false;
       }
       renderAccessUsers();
     } catch (error) {

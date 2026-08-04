@@ -37,6 +37,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier les records et pastilles MPF/RF/RFJ.
 - Verifier la page publique des series.
 - Verifier la recherche nageur publique.
+- Verifier qu'un nouveau PDF de series s'ouvre depuis son URL de stockage public.
 
 ## Resultats sans finale
 
@@ -45,6 +46,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier que les temps apparaissent sur la page resultats.
 - Verifier que la fiche nageur affiche le temps realise.
 - Verifier que le bouton PDF fonctionne.
+- Verifier dans Firestore que le nouveau document PDF contient `pdfUrl` et `storagePath`, sans `pdfDataUrl` lorsque la fonction de stockage est disponible.
 
 ## Resultats avec finale
 
@@ -81,6 +83,22 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier le bouton actualiser.
 - Verifier la recherche nageur.
 - Verifier qu'une fiche nageur affiche engagement, temps realise, finale, DSQ/ABD/forfait si present.
+- Verifier `archives.html` avec `public/archivesIndex`, puis son repli historique sur un environnement ou l'index est absent.
+- Verifier `performances/records.html` et `performances/mpf.html` sans connexion Firestore : les donnees statiques doivent s'afficher.
+- Publier une modification RF ou MPF depuis l'administration, puis verifier sans redeployer que `performance-public-firestore/records/manifest.json` change et que la valeur apparait sur la page publique.
+- Verifier que Records, MPF et une fiche nageur restent utilisables si le manifeste Storage est temporairement indisponible : le fichier Hosting doit servir de secours.
+
+## Portail LivePalmes
+
+- Verifier qu'une connexion n'ouvre aucune liste d'administration tant que son ecran n'est pas visite.
+- Ouvrir successivement Records / MPF, Correction puis Import : les deux premiers ecrans ne doivent pas charger XLSX ; l'import doit accepter un fichier Excel apres son chargement a la demande.
+- Dans Records / MPF, saisir au moins deux lettres d'un nageur et verifier les suggestions, la date de naissance et le club sans chargement de `admin-reference.js`.
+- Verifier la pagination et les filtres de Gestion des acces avec un profil national puis regional ; une recherche bornee doit inviter a affiner les filtres.
+- Envoyer une demande d'acces publique valide, puis verifier qu'un doublon est refuse et qu'une rafale de demandes est limitee.
+- Desactiver un compte de test et verifier qu'une nouvelle requete avec son ancien jeton est refusee apres actualisation.
+- Ouvrir l'espace DTN sur un cache chaud, puis forcer un recalcul sur un environnement de test et verifier les metadonnees `readStats`.
+
+- Couper Firestore dans un environnement de test et verifier que les pages Series et Resultats conservent leur dernier cache au lieu de remplacer l'affichage par une erreur.
 
 ## Diagnostic et maintenance
 
@@ -88,4 +106,5 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier qu'il ne signale pas d'alerte grave.
 - Ouvrir le diagnostic performance.
 - Verifier qu'il n'y a pas de vieux PDF resultats a nettoyer.
+- Verifier que les index publics restent sous 650 ko ; entre 650 et 900 ko, planifier leur decoupage par session.
 - Ne lancer une RAZ que si la competition est terminee ou si c'est un vrai test.

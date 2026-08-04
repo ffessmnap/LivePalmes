@@ -1,4 +1,37 @@
 (function attachLivePalmesPublication(global) {
+  const PUBLIC_INDEX_WARNING_BYTES = 650000;
+  const PUBLIC_INDEX_MAX_BYTES = 900000;
+
+  function publicIndexByteSize(payload) {
+    const json = JSON.stringify(payload || {});
+    if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
+    return unescape(encodeURIComponent(json)).length;
+  }
+
+  function publicIndexSizeReport(payload, options = {}) {
+    const warningBytes = Number(options.warningBytes || PUBLIC_INDEX_WARNING_BYTES);
+    const maxBytes = Number(options.maxBytes || PUBLIC_INDEX_MAX_BYTES);
+    const bytes = publicIndexByteSize(payload);
+    return {
+      bytes,
+      warningBytes,
+      maxBytes,
+      warning: bytes >= warningBytes,
+      tooLarge: bytes > maxBytes
+    };
+  }
+
+  function assertPublicIndexSize(label, payload, options = {}) {
+    const report = publicIndexSizeReport(payload, options);
+    if (report.tooLarge) {
+      throw new Error(`${label} trop lourd : ${report.bytes.toLocaleString("fr-FR")} octets. Limite de securite LivePalmes : ${report.maxBytes.toLocaleString("fr-FR")} octets.`);
+    }
+    if (report.warning && global.console?.warn) {
+      global.console.warn(`${label} approche de la limite Firestore : ${report.bytes.toLocaleString("fr-FR")} octets.`);
+    }
+    return report.bytes;
+  }
+
   function buildPublicResultsIndex(options = {}) {
     const {
       data = {},
@@ -137,6 +170,11 @@
   }
 
   global.LivePalmesPublication = {
+    PUBLIC_INDEX_WARNING_BYTES,
+    PUBLIC_INDEX_MAX_BYTES,
+    publicIndexByteSize,
+    publicIndexSizeReport,
+    assertPublicIndexSize,
     buildPublicResultsIndex,
     buildPublicSeriesIndex,
     mergePublicResultsPreservingCurrent,

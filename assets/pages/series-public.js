@@ -828,6 +828,9 @@ async function loadPublicSeries() {
     competition.collection("public").doc("seriesIndex").get({ source: "server" }).catch(() => null),
     competition.collection("public").doc("resultsIndex").get({ source: "server" }).catch(() => null)
   ]);
+  if (!seriesIndexSnapshot?.exists && !resultsIndexSnapshot?.exists) {
+    throw new Error("Index publics indisponibles.");
+  }
   const resultsIndex = resultsIndexSnapshot?.data?.() || {};
   const index = seriesIndexSnapshot?.exists ? (seriesIndexSnapshot.data() || {}) : resultsIndex;
   if (resultsIndex.publicAccess?.online === false || index.publicAccess?.online === false) {
@@ -994,7 +997,8 @@ function refreshPublicSeries() {
 refreshBtn?.addEventListener("click", refreshPublicSeries);
 refreshFloatBtn?.addEventListener("click", refreshPublicSeries);
 
-if (restorePublicSeriesCache()) {
+const restoredPublicSeriesCache = restorePublicSeriesCache();
+if (restoredPublicSeriesCache) {
   setStatus("Actualisation", "pending");
   clampState();
   render();
@@ -1002,6 +1006,6 @@ if (restorePublicSeriesCache()) {
 
 loadPublicSeries().catch((error) => {
   console.warn("Lecture séries publiques impossible", error);
-  setStatus("Erreur", "error");
-  if (app) app.innerHTML = `<section class="panel"><p class="panel-subtitle">Impossible de charger les séries publiques.</p></section>`;
+  setStatus(restoredPublicSeriesCache ? "Données en cache" : "Erreur", restoredPublicSeriesCache ? "pending" : "error");
+  if (!restoredPublicSeriesCache && app) app.innerHTML = `<section class="panel"><p class="panel-subtitle">Impossible de charger les séries publiques.</p></section>`;
 });

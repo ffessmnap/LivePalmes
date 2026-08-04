@@ -114,9 +114,10 @@ async function init() {
   const result = snapshot.data() || {};
   const title = `${result.eventLabel || "Résultat"} ${result.sexLabel || ""}`.trim();
   if (pdfTitle) pdfTitle.textContent = title;
-  const rendered = await renderPdfInline(result.pdfDataUrl);
+  const pdfSource = result.pdfUrl || result.pdfDataUrl || "";
+  const rendered = await renderPdfInline(pdfSource);
   if (rendered) return;
-  const blobUrl = dataUrlToBlobUrl(result.pdfDataUrl);
+  const blobUrl = result.pdfUrl || dataUrlToBlobUrl(result.pdfDataUrl);
   if (!blobUrl) {
     showMessage("Le PDF n'a pas pu être chargé.");
     return;

@@ -251,6 +251,8 @@ La création d’une compétition reprend la structure des formulaires de fiche 
 
 L’écran de connexion est une carte centrée de `680 px` au maximum. Le formulaire principal reste immédiatement visible ; la demande d’accès club est placée dans une section repliable. Sous `700 px`, les champs et actions passent à une colonne. Dans tout le portail, les messages de chargement sont gris, les confirmations vertes, les avertissements jaunes et les erreurs rouges. Les états vides utilisent une surface gris clair à bordure discrète. Les documents avancés, suivis de fermeture et historiques de mails reprennent les mêmes cartes, tableaux et badges d’état que le reste du portail.
 
+Lorsqu'une recherche de la Gestion des accès atteint sa borne serveur, le compteur de la liste doit l'indiquer en texte et inviter à affiner les filtres ; cet état ne doit pas être signalé uniquement par une couleur.
+
 ### Contenu Performances
 
 Le contenu est centré dans une largeur maximale de `1440 px`. Les filtres sont présentés dans une barre d’outils en grille, puis les résultats dans un panneau tabulaire. La grille se réduit progressivement à deux colonnes puis une colonne.
