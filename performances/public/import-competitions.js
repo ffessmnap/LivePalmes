@@ -89,6 +89,11 @@
 
   function ensureAdminAuth() {
     if (adminAuth) return adminAuth;
+    if (global.LivePalmesPortalAuth) {
+      adminAuth = global.LivePalmesPortalAuth;
+      adminAuth.onChange(updateView);
+      return adminAuth;
+    }
     if (!ensureFirebaseApp() || !global.LivePalmesAdminAuth?.init) return null;
     adminAuth = global.LivePalmesAdminAuth.init({
       firebase: global.firebase,
@@ -800,7 +805,7 @@
     const profile = status.profile || {};
     const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || status.email || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
-    if (signedIn) loadImports();
+    if (signedIn && (!isIntegratedAdminView || global.location.hash === "#import-competitions")) loadImports();
     if (!status.available) {
       setMessage(elements.loginMessage, "Firebase Authentication n'est pas disponible.");
     } else if (!signedIn) {
@@ -1482,6 +1487,9 @@
     elements.form?.addEventListener("submit", previewImport);
     elements.validate?.addEventListener("click", validateImport);
     elements.importsRefresh?.addEventListener("click", loadImports);
+    global.addEventListener("hashchange", () => {
+      if (global.location.hash === "#import-competitions" && ensureAdminAuth()?.isAdminAuthenticated?.()) loadImports();
+    });
     elements.importsExport?.addEventListener("click", exportAdditionalPerformanceData);
     const applyImportFilters = () => {
       importsVisibleCount = importsPageSize;

@@ -87,9 +87,20 @@ async function loadArchives() {
   }
   if (!window.firebase.apps?.length) window.firebase.initializeApp(FIREBASE_CONFIG);
   const db = window.firebase.firestore();
-  const snapshot = await db
+  const competition = db
     .collection("competitions")
-    .doc(FIRESTORE_COMPETITION_ID)
+    .doc(FIRESTORE_COMPETITION_ID);
+  const indexSnapshot = await competition
+    .collection("public")
+    .doc("archivesIndex")
+    .get({ source: "server" })
+    .catch(() => null);
+  const indexedArchives = indexSnapshot?.data?.()?.archives;
+  if (indexSnapshot?.exists && Array.isArray(indexedArchives)) {
+    renderArchives(indexedArchives);
+    return;
+  }
+  const snapshot = await competition
     .collection("resultArchives")
     .orderBy("createdAt", "desc")
     .limit(50)

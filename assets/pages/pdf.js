@@ -228,9 +228,10 @@ async function init() {
     meetMeta.hidden = !metaLabel;
   }
   if (pdfTitle) pdfTitle.textContent = config.titleFromData(data);
-  const blobUrl = dataUrlToBlobUrl(data.pdfDataUrl);
+  const pdfSource = data.pdfUrl || data.pdfDataUrl || "";
+  const blobUrl = data.pdfUrl || dataUrlToBlobUrl(data.pdfDataUrl);
   if (blobUrl) setDownloadLink(blobUrl, data.pdfName || config.downloadName);
-  const rendered = await renderPdfInline(data.pdfDataUrl);
+  const rendered = await renderPdfInline(pdfSource);
   if (rendered) return;
   if (!blobUrl) {
     showMessage("Le PDF n'a pas pu être chargé.");

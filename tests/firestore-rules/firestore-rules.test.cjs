@@ -107,6 +107,23 @@ function validPublicIndex(id, overrides = {}) {
   };
 }
 
+function validPublicArchivesIndex(overrides = {}) {
+  return {
+    id: "archivesIndex",
+    archives: [{
+      id: "archive-1",
+      createdAt: "2026-07-27T09:00:00.000Z",
+      publicArchive: true,
+      meet: {},
+      count: 12,
+      raceCount: 3,
+      extras: []
+    }],
+    updatedAt: "2026-07-27T09:00:00.000Z",
+    ...overrides
+  };
+}
+
 function validAlert(overrides = {}) {
   return {
     id: "alert-1",
@@ -224,6 +241,23 @@ test("speaker : ajoute uniquement repechageAnnouncedAt à une finaliste déjà r
   allowed.finalists.a[1] = { ...allowed.finalists.a[1], repechageAnnouncedAt: "2026-07-27T09:10:00.000Z" };
   allowed.updatedAt = "2026-07-27T09:10:00.000Z";
   await assertSucceeds(setDoc(ref, allowed));
+});
+
+test("index public des archives : lecture publique et ecriture computer uniquement", async () => {
+  const publicRef = competitionDoc(testEnv.unauthenticatedContext().firestore(), "public", "archivesIndex");
+  await assertSucceeds(getDoc(publicRef));
+  await assertSucceeds(setDoc(
+    competitionDoc(roleDb("computer"), "public", "archivesIndex"),
+    validPublicArchivesIndex()
+  ));
+  await assertFails(setDoc(
+    competitionDoc(roleDb("speaker"), "public", "archivesIndex"),
+    validPublicArchivesIndex()
+  ));
+  await assertFails(setDoc(
+    competitionDoc(roleDb("computer"), "public", "archivesIndex"),
+    validPublicArchivesIndex({ archives: Array.from({ length: 51 }, (_, index) => ({ id: `archive-${index}` })) })
+  ));
 });
 
 test("console : claim et grant de rôle restent refusés sans accès portail", async () => {
@@ -455,6 +489,12 @@ test("computer : publication séries/résultats/PDF et suppression opérationnel
     id: "series-1", scope: "session", session: "1", pdfName: "series.pdf",
     pdfDataUrl: "data:application/pdf;base64,AA==", updatedAt: "2026-07-27T09:30:00.000Z"
   }));
+  await assertSucceeds(setDoc(competitionDoc(db, "seriesPdfs", "series-storage"), {
+    id: "series-storage", scope: "session", session: "1", pdfName: "series.pdf",
+    pdfUrl: "https://storage.googleapis.com/livepalmes-public-data-718081132564/competition-pdfs/livepalmes-active/series/series-storage.pdf",
+    storagePath: "competition-pdfs/livepalmes-active/series/series-storage.pdf",
+    updatedAt: "2026-07-27T09:30:00.000Z"
+  }));
   await assertSucceeds(setDoc(competitionDoc(db, "sessionResultsPdfs", "protocol"), {
     id: "protocol", scope: "protocol", sessions: [], pdfName: "protocol.pdf",
     pdfDataUrl: "data:application/pdf;base64,AA==", updatedAt: "2026-07-27T09:30:00.000Z",
@@ -506,6 +546,10 @@ test("structures invalides et champs inattendus : refusés même au computer", a
     id: "invalid-pdf", scope: "session", session: "1", pdfName: "series.pdf",
     pdfDataUrl: "data:application/pdf;base64,AA==", updatedAt: "2026-07-27T09:30:00.000Z",
     unexpectedField: "forbidden"
+  }));
+  await assertFails(setDoc(competitionDoc(db, "seriesPdfs", "missing-pdf-source"), {
+    id: "missing-pdf-source", scope: "session", session: "1", pdfName: "series.pdf",
+    updatedAt: "2026-07-27T09:30:00.000Z"
   }));
   await assertFails(setDoc(competitionDoc(db, "public", "resultsIndex"), {
     ...validPublicIndex("resultsIndex"), results: "not-a-list"

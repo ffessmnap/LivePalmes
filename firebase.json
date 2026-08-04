@@ -3,7 +3,8 @@
     "site": "livepalmes",
     "public": ".",
     "predeploy": [
-      "node tools/sync-records-from-firestore.js --write"
+      "node tools/sync-records-from-firestore.js --write",
+      "node tools/build-admin-club-reference.js"
     ],
     "redirects": [
       {
@@ -178,6 +179,22 @@
           {
             "key": "Cache-Control",
             "value": "no-store"
+          },
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https://livepalmes.firebaseapp.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "no-referrer"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=()"
           }
         ]
       },
@@ -186,7 +203,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       },
@@ -195,7 +212,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       },
@@ -240,7 +257,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=300, stale-while-revalidate=86400"
           }
         ]
       },
@@ -432,6 +449,7 @@
       "performances/public/data/intranap-swimmer-perfs/**",
       "performances/public/data/intranap-top-source/**",
       "performances/public/data/intranap-swimmers-index.js",
+      "performances/public/data/admin-reference.js",
       "performances/public/data/performance-base-migration-manifest.json",
       "archives/**",
       "sauvegardes/**",
@@ -444,12 +462,19 @@
     ]
   },
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "functions": [
     {
       "source": "functions",
       "codebase": "default"
     }
-  ]
+  ],
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8085
+    }
+  }
 }

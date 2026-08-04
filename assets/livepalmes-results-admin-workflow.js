@@ -130,14 +130,20 @@
   }
 
   function publicIndexByteSize(payload) {
+    if (typeof livePalmesPublication.publicIndexByteSize === "function") {
+      return livePalmesPublication.publicIndexByteSize(payload);
+    }
     const json = JSON.stringify(payload || {});
     if (typeof TextEncoder === "function") return new TextEncoder().encode(json).length;
     return json.length;
   }
 
   function assertPublicIndexSize(label, payload) {
+    if (typeof livePalmesPublication.assertPublicIndexSize === "function") {
+      return livePalmesPublication.assertPublicIndexSize(label, payload);
+    }
     const bytes = publicIndexByteSize(payload);
-    const limit = 980000;
+    const limit = 900000;
     if (bytes > limit) {
       throw new Error(`${label} trop lourd : ${bytes.toLocaleString("fr-FR")} octets. Limite de securite LivePalmes : ${limit.toLocaleString("fr-FR")} octets.`);
     }
@@ -263,7 +269,7 @@
     const collection = seriesPdfsCollection();
     if (!collection) return 0;
     const snapshot = await collection.get();
-    await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+    await Promise.all(snapshot.docs.map(deletePublicPdfDocument));
     clearPublicSeriesPdfMetadata();
     return snapshot.docs.length;
   }
@@ -278,12 +284,28 @@
     }));
     saveData();
   }
+
+  async function savePublicPdfDocument(collection, payload, kind) {
+    if (window.LivePalmesPdfStorage?.saveDocument) {
+      return window.LivePalmesPdfStorage.saveDocument({ collection, payload, kind });
+    }
+    await collection.doc(payload.id).set(JSON.parse(JSON.stringify(payload)));
+    return payload;
+  }
+
+  async function deletePublicPdfDocument(doc) {
+    if (window.LivePalmesPdfStorage?.deleteDocument) {
+      return window.LivePalmesPdfStorage.deleteDocument(doc.ref, doc.data() || {});
+    }
+    await doc.ref.delete();
+    return true;
+  }
   
   async function clearPublicSessionResultsPdfs() {
     const collection = sessionResultsPdfsCollection();
     if (!collection) return 0;
     const snapshot = await collection.get();
-    await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+    await Promise.all(snapshot.docs.map(deletePublicPdfDocument));
     clearPublicSessionResultsPdfMetadata();
     return snapshot.docs.length;
   }
@@ -303,7 +325,7 @@
       const sessions = Array.isArray(pdf.sessions) ? pdf.sessions.map(String) : [];
       return String(pdf.session || "") === cleanSession || sessions.includes(cleanSession);
     });
-    await Promise.all(docs.map((doc) => doc.ref.delete()));
+    await Promise.all(docs.map(deletePublicPdfDocument));
     const deletedIds = new Set(docs.map((doc) => doc.id));
     const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
     setWorkflowData(normalizeData({
@@ -324,7 +346,8 @@
     const cleanId = String(id || "").trim();
     const collection = sessionResultsPdfsCollection();
     if (!collection || !cleanId) return false;
-    await collection.doc(cleanId).delete();
+    const snapshot = await collection.doc(cleanId).get({ source: "server" }).catch(() => null);
+    if (snapshot?.exists) await deletePublicPdfDocument(snapshot);
     const current = Array.isArray(data.notes?.publicSessionResultsPdfs) ? data.notes.publicSessionResultsPdfs : [];
     setWorkflowData(normalizeData({
       ...data,
@@ -356,9 +379,9 @@
       updatedAt: now,
       sourceLabel: scope === "full" ? "Séries complètes" : `Séries session ${session || "-"}`
     };
-    await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
-    updatePublicSeriesPdfMetadata(payload);
-    return payload;
+    const storedPayload = await savePublicPdfDocument(collection, payload, "series");
+    updatePublicSeriesPdfMetadata(storedPayload);
+    return storedPayload;
   }
   
   function sessionResultsPdfId(scope, sessions = []) {
@@ -439,13 +462,13 @@
     };
     if (["full", "protocol"].includes(finalScope)) {
       const snapshot = await collection.get();
-      await Promise.all(snapshot.docs.map((doc) => doc.ref.delete()));
+      await Promise.all(snapshot.docs.map(deletePublicPdfDocument));
       clearPublicSessionResultsPdfMetadata();
     }
-    await collection.doc(id).set(JSON.parse(JSON.stringify(payload)));
-    updatePublicSessionResultsPdfMetadata(payload);
+    const storedPayload = await savePublicPdfDocument(collection, payload, "session-results");
+    updatePublicSessionResultsPdfMetadata(storedPayload);
     await publishPublicResultsIndex();
-    return payload;
+    return storedPayload;
   }
   
   function isLastProgramPartForRace(row) { return programWorkflow().isLastProgramPartForRace(row); }

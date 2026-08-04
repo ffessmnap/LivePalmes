@@ -131,70 +131,129 @@ async function applyImport(rows, season, inputPath) {
   const confirmCount = Number(option("confirm-count", "-1"));
   if (projectId !== "livepalmes") throw new Error("L'application exige --project livepalmes.");
   if (confirmCount !== rows.length) throw new Error(`L'application exige --confirm-count ${rows.length}.`);
+  if (!process.argv.includes("--create-only")) throw new Error("L'application exige --create-only pour interdire tout ecrasement de numero.");
   const admin = require(path.join(__dirname, "..", "functions", "node_modules", "firebase-admin"));
   if (!admin.apps.length) admin.initializeApp({ projectId });
   const db = admin.firestore();
-  const refs = rows.map((row) => db.collection("engagementSwimmerLicenses").doc(row.targetId));
-  const existing = refs.length ? await db.getAll(...refs) : [];
-  existing.forEach((snapshot, index) => {
-    const previous = String(snapshot.data()?.licenseNumber || "").trim();
-    if (previous && previous !== rows[index].licenseNumber) {
-      throw new Error(`Conflit pour l'ID ${rows[index].id} : licence existante ${previous}.`);
-    }
-  });
+  const now = new Date().toISOString();
+  const buildPayload = (row) => {
+    const swimmer = row.swimmer;
+    return {
+      swimmerIndexId: row.id,
+      swimmerId: row.id,
+      identityKey: `${normalizeName(swimmer.lastName)}|${normalizeName(swimmer.firstName)}|${swimmer.birthDate}`,
+      firstName: swimmer.firstName,
+      lastName: swimmer.lastName,
+      name: swimmer.name || `${swimmer.firstName} ${swimmer.lastName}`,
+      birthDate: swimmer.birthDate,
+      sex: swimmer.sex || "",
+      clubId: String(swimmer.clubId || ""),
+      clubName: swimmer.clubName || swimmer.club || "",
+      licenseNumber: row.licenseNumber,
+      verificationStatus: "verified",
+      verificationSource: "admin_import",
+      licenseSeasonLabel: season,
+      licenseSeasonStatus: "to_check",
+      licenseSeasons: {
+        [season]: { status: "to_check", updatedAt: now, updatedBy: "admin_import", source: "admin_import" }
+      },
+      source: { type: "admin_import", file: path.basename(inputPath), collectedAt: now },
+      updatedAt: now,
+      updatedBy: "admin_import"
+    };
+  };
   const expectedIdByLicense = new Map(rows.map((row) => [row.licenseNumber, row.id]));
   const licenseNumbers = Array.from(expectedIdByLicense.keys());
+  const existingById = new Map();
+  const preflightConflicts = [];
+  let preflightQueries = 0;
   for (let start = 0; start < licenseNumbers.length; start += 30) {
     const snapshot = await db.collection("engagementSwimmerLicenses")
       .where("licenseNumber", "in", licenseNumbers.slice(start, start + 30))
       .get();
+    preflightQueries += 1;
     snapshot.docs.forEach((doc) => {
       const data = doc.data() || {};
       const expectedId = expectedIdByLicense.get(String(data.licenseNumber || ""));
       const existingId = String(data.swimmerIndexId || "");
       if (expectedId && existingId && existingId !== expectedId) {
-        throw new Error(`Licence ${data.licenseNumber} deja associee a l'ID LivePalmes ${existingId}.`);
+        preflightConflicts.push({
+          licenseNumber: String(data.licenseNumber || ""),
+          expectedId,
+          existingId,
+          documentId: doc.id
+        });
+      } else if (expectedId && existingId === expectedId) {
+        existingById.set(expectedId, { ref: doc.ref, data });
       }
     });
   }
-  const now = new Date().toISOString();
-  for (let start = 0; start < rows.length; start += 400) {
-    const batch = db.batch();
-    rows.slice(start, start + 400).forEach((row) => {
-      const swimmer = row.swimmer;
-      batch.set(db.collection("engagementSwimmerLicenses").doc(row.targetId), {
-        swimmerIndexId: row.id,
-        swimmerId: row.id,
-        identityKey: `${normalizeName(swimmer.lastName)}|${normalizeName(swimmer.firstName)}|${swimmer.birthDate}`,
-        firstName: swimmer.firstName,
-        lastName: swimmer.lastName,
-        name: swimmer.name || `${swimmer.firstName} ${swimmer.lastName}`,
-        birthDate: swimmer.birthDate,
-        sex: swimmer.sex || "",
-        clubId: String(swimmer.clubId || ""),
-        clubName: swimmer.clubName || swimmer.club || "",
-        licenseNumber: row.licenseNumber,
-        verificationStatus: "verified",
-        verificationSource: "admin_import",
-        licenseSeasonLabel: season,
-        licenseSeasonStatus: "to_check",
-        licenseSeasons: {
-          [season]: { status: "to_check", updatedAt: now, updatedBy: "admin_import", source: "admin_import" }
-        },
-        source: { type: "admin_import", file: path.basename(inputPath), collectedAt: now },
-        updatedAt: now,
-        updatedBy: "admin_import"
-      }, { merge: true });
-    });
-    await batch.commit();
+  if (preflightConflicts.length) {
+    throw new Error(`Import refuse avant ecriture : ${preflightConflicts.length} licence(s) deja associee(s) a un autre ID LivePalmes.`);
   }
+
+  const writer = db.bulkWriter({ throttling: { initialOpsPerSecond: 100, maxOpsPerSecond: 200 } });
+  writer.onWriteError((error) => {
+    const transientCodes = new Set([4, 8, 10, 13, 14]);
+    return transientCodes.has(Number(error.code)) && error.failedAttempts < 5;
+  });
+  const operations = rows.map((row) => {
+    const existing = existingById.get(row.id);
+    if (existing) {
+      return writer.set(existing.ref, buildPayload(row), { merge: true })
+        .then(() => ({ row, status: "updated_existing" }))
+        .catch((error) => ({ row, status: "failed", error: error?.message || String(error), code: error?.code }));
+    }
+    const ref = db.collection("engagementSwimmerLicenses").doc(row.targetId);
+    return writer.create(ref, buildPayload(row))
+      .then(() => ({ row, status: "created" }))
+      .catch((error) => ({ row, status: Number(error?.code) === 6 ? "already_exists" : "failed", error: error?.message || String(error), code: error?.code }));
+  });
+  await writer.close();
+  const outcomes = await Promise.all(operations);
+
+  const alreadyExists = outcomes.filter((outcome) => outcome.status === "already_exists");
+  if (alreadyExists.length) {
+    const snapshots = await db.getAll(...alreadyExists.map(({ row }) =>
+      db.collection("engagementSwimmerLicenses").doc(row.targetId)
+    ));
+    const updateWriter = db.bulkWriter({ throttling: { initialOpsPerSecond: 50, maxOpsPerSecond: 100 } });
+    const updates = [];
+    snapshots.forEach((snapshot, index) => {
+      const outcome = alreadyExists[index];
+      const data = snapshot.data() || {};
+      const sameId = String(data.swimmerIndexId || "") === outcome.row.id;
+      const sameLicense = String(data.licenseNumber || "") === outcome.row.licenseNumber;
+      if (!sameId || !sameLicense) {
+        outcome.status = "conflict";
+        outcome.existingId = String(data.swimmerIndexId || "");
+        outcome.existingLicense = String(data.licenseNumber || "");
+        return;
+      }
+      updates.push(updateWriter.set(snapshot.ref, buildPayload(outcome.row), { merge: true })
+        .then(() => { outcome.status = "updated_existing"; })
+        .catch((error) => {
+          outcome.status = "failed";
+          outcome.error = error?.message || String(error);
+          outcome.code = error?.code;
+        }));
+    });
+    await updateWriter.close();
+    await Promise.all(updates);
+  }
+
+  const successfulRows = outcomes
+    .filter((outcome) => ["created", "updated_existing"].includes(outcome.status))
+    .map((outcome) => outcome.row);
   const rowsByClub = new Map();
-  rows.forEach((row) => {
+  successfulRows.forEach((row) => {
     const clubId = String(row.swimmer.clubId || "");
     if (!clubId) return;
     if (!rowsByClub.has(clubId)) rowsByClub.set(clubId, []);
     rowsByClub.get(clubId).push(row);
   });
+  const rosterWriter = db.bulkWriter({ throttling: { initialOpsPerSecond: 50, maxOpsPerSecond: 100 } });
+  const rosterOperations = [];
   for (const [clubId, clubRows] of rowsByClub) {
     const swimmers = {};
     clubRows.forEach((row) => {
@@ -220,13 +279,52 @@ async function applyImport(rows, season, inputPath) {
         updatedAt: now
       };
     });
-    await db.collection("engagementClubRosters").doc(stableHash(clubId).slice(0, 40)).set({
+    rosterOperations.push(rosterWriter.set(db.collection("engagementClubRosters").doc(stableHash(clubId).slice(0, 40)), {
       clubId,
       clubName: clubRows[0].swimmer.clubName || clubRows[0].swimmer.club || "",
       updatedAt: now,
       swimmers
-    }, { merge: true });
+    }, { merge: true }));
   }
+  await rosterWriter.close();
+  await Promise.all(rosterOperations);
+
+  const counts = outcomes.reduce((result, outcome) => {
+    result[outcome.status] = (result[outcome.status] || 0) + 1;
+    return result;
+  }, {});
+  const report = {
+    projectId,
+    inputPath,
+    season,
+    numberVerificationStatus: "verified",
+    seasonStatus: "to_check",
+    startedAt: now,
+    completedAt: new Date().toISOString(),
+    requestedRows: rows.length,
+    preflightQueries,
+    preflightDocumentsFound: existingById.size,
+    rosterDocumentsWritten: rowsByClub.size,
+    counts,
+    exceptions: outcomes
+      .filter((outcome) => ["conflict", "failed"].includes(outcome.status))
+      .map((outcome) => ({
+        livepalmesId: outcome.row.id,
+        licenseNumber: outcome.row.licenseNumber,
+        status: outcome.status,
+        existingId: outcome.existingId || "",
+        existingLicense: outcome.existingLicense || "",
+        error: outcome.error || "",
+        code: outcome.code ?? ""
+      }))
+  };
+  const reportPath = path.join(path.dirname(inputPath), `rapport-import-firestore-${now.replace(/[:.]/g, "-")}.json`);
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  console.log(JSON.stringify({ ...report, exceptions: report.exceptions.slice(0, 30), reportPath }, null, 2));
+  if (report.exceptions.length) {
+    throw new Error(`Import partiel : ${report.exceptions.length} exception(s). Consulter ${reportPath}`);
+  }
+  return report;
 }
 
 async function main() {
@@ -235,7 +333,7 @@ async function main() {
   const season = option("season");
   const apply = process.argv.includes("--apply");
   if (!option("input") || !/^\d{4}-\d{4}$/.test(season)) {
-    throw new Error("Usage: node tools/import-engagement-swimmer-licenses.js --input <csv> --season 2025-2026 [--apply --project livepalmes --confirm-count N]");
+    throw new Error("Usage: node tools/import-engagement-swimmer-licenses.js --input <csv> --season 2025-2026 [--apply --create-only --project livepalmes --confirm-count N]");
   }
   const { accepted, rejected } = readValidatedRows(inputPath, indexPath);
   const summary = { mode: apply ? "apply" : "dry-run", inputPath, season, accepted: accepted.length, rejected: rejected.length, rejectedRows: rejected.slice(0, 30) };

@@ -1,7 +1,10 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { FieldPath, FieldValue, getFirestore, Timestamp } = require("firebase-admin/firestore");
+const { getStorage } = require("firebase-admin/storage");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
@@ -12,9 +15,23 @@ const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-acc
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
+const {
+  decodePdfDataUrl,
+  publicPdfStoragePath,
+  publicStorageUrl
+} = require("./public-pdf-storage");
+const {
+  publicRecordsManifest,
+  publicRecordsPayload,
+  shouldPublishRecordsManifest
+} = require("./public-records-data");
+const { nextPortalAccessRateLimit } = require("./portal-access-protection");
 
-admin.initializeApp();
-admin.firestore().settings({ ignoreUndefinedProperties: true });
+initializeApp();
+const auth = getAuth();
+const db = getFirestore();
+const storage = getStorage();
+db.settings({ ignoreUndefinedProperties: true });
 
 const REGION = "europe-west1";
 const LIVEPALMES_SMTP_HOST = defineSecret("LIVEPALMES_SMTP_HOST");
@@ -88,6 +105,7 @@ const ENGAGEMENT_CLOSURE_BATCH_LIMIT = 5;
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
+const PUBLIC_COMPETITION_PDF_PREFIX = "competition-pdfs";
 const ENGAGEMENT_PDF_LOGO_PATH = path.join(__dirname, "assets", "logo-ffessm-nage-avec-palmes.png");
 const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
 const PERFORMANCE_BASE_COLLECTION = "performances";
@@ -102,6 +120,7 @@ const ENGAGEMENT_CLUB_ROSTERS_COLLECTION = "engagementClubRosters";
 const ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION = "engagementCompetitionCalendars";
 const ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION = "engagementCompetitionEntrySummaries";
 const ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = "engagementClubPeopleRosters";
+const ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION = "engagementSwimmerLicenseNumbers";
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
 const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 1;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
@@ -111,6 +130,8 @@ const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
 const DTN_QUALIFICATION_CACHE_VERSION = 4;
+const DTN_QUALIFICATION_MAX_ROWS_PER_COURSE = 5000;
+const PORTAL_ACCESS_RATE_LIMIT_COLLECTION = "portalAccessRequestRateLimits";
 const DTN_EDF_LIMOGES_COMPETITION_ID = "e40fe3129ffd5d76286774193a2855ed";
 const DTN_EDF_COMPETITION_IDS_BY_SEASON = {
   2026: ["5039", "4978", "4979", DTN_EDF_LIMOGES_COMPETITION_ID]
@@ -307,7 +328,7 @@ async function assertLivePalmesAccess(request) {
   const capabilities = request.auth?.token?.livepalmesCapabilities || {};
   if (capabilities["admin.full"] === true || ACCESS_CAPABILITIES.some((capability) => capabilities[capability] === true)) return;
 
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   const activeCapabilities = activeCapabilitiesFromMap(data.capabilities || {});
   if (!snapshot.exists || data.status !== "active" || !activeCapabilities.length) {
@@ -420,7 +441,7 @@ async function engagementAccessContext(request) {
       regionId: ""
     };
   }
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   if (!snapshot.exists || data.status !== "active") {
     throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
@@ -455,7 +476,7 @@ async function accessManagementContext(request) {
       regionId: ""
     };
   }
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   if (!snapshot.exists || data.status !== "active") {
     throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
@@ -508,7 +529,7 @@ async function engagementClubAccessContext(request) {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
   }
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   if (!snapshot.exists || data.status !== "active") {
     throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
@@ -541,7 +562,7 @@ async function assertEngagementsAccess(request) {
   const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
   if (request.auth?.token?.livepalmesAccess === true && hasEngagementsCapability(tokenCapabilities)) return;
 
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   if (!snapshot.exists || data.status !== "active" || !hasEngagementsCapability(data.capabilities || {})) {
     throw new HttpsError("permission-denied", "Droit engagements requis.");
@@ -555,7 +576,7 @@ function displayNameFromProfile(profile = {}) {
 async function accessUserDisplayName(uid, fallbackToken = {}) {
   const cleanUid = cleanText(uid);
   if (!cleanUid) return "";
-  const snapshot = await admin.firestore().collection("users").doc(cleanUid).get().catch(() => null);
+  const snapshot = await db.collection("users").doc(cleanUid).get().catch(() => null);
   const data = snapshot?.exists ? snapshot.data() || {} : {};
   return displayNameFromProfile(data) || cleanText(fallbackToken.name);
 }
@@ -563,17 +584,17 @@ async function accessUserDisplayName(uid, fallbackToken = {}) {
 async function userByEmailOrCreate(profile) {
   const displayName = displayNameFromProfile(profile);
   if (profile.uid) {
-    const existing = await admin.auth().getUser(profile.uid);
-    await admin.auth().updateUser(existing.uid, { email: profile.email, displayName, disabled: false });
+    const existing = await auth.getUser(profile.uid);
+    await auth.updateUser(existing.uid, { email: profile.email, displayName, disabled: false });
     return { user: { ...existing, email: profile.email, displayName }, created: false };
   }
   try {
-    const existing = await admin.auth().getUserByEmail(profile.email);
-    await admin.auth().updateUser(existing.uid, { displayName, disabled: false });
+    const existing = await auth.getUserByEmail(profile.email);
+    await auth.updateUser(existing.uid, { displayName, disabled: false });
     return { user: existing, created: false };
   } catch (error) {
     if (error?.code !== "auth/user-not-found") throw error;
-    const user = await admin.auth().createUser({
+    const user = await auth.createUser({
       email: profile.email,
       emailVerified: false,
       displayName,
@@ -588,14 +609,14 @@ async function saveAccessUserProfile(profile, actorUid) {
   const now = new Date().toISOString();
   const capabilityMap = capabilitiesMap(profile.capabilities);
 
-  await admin.auth().setCustomUserClaims(user.uid, {
+  await auth.setCustomUserClaims(user.uid, {
     ...(user.customClaims || {}),
     livepalmesAccess: true,
     livepalmesConsoleAccess: hasConsolePortalCapability(capabilityMap),
     livepalmesCapabilities: capabilityMap
   });
 
-  const userRef = admin.firestore().collection("users").doc(user.uid);
+  const userRef = db.collection("users").doc(user.uid);
   await userRef.set({
     uid: user.uid,
     email: profile.email,
@@ -633,7 +654,7 @@ async function saveAccessUserProfile(profile, actorUid) {
 
 async function writeAuditLog(action, actorUid, target = {}) {
   const now = new Date().toISOString();
-  await admin.firestore().collection("auditLogs").add({
+  await db.collection("auditLogs").add({
     action,
     actorUid,
     target,
@@ -642,9 +663,9 @@ async function writeAuditLog(action, actorUid, target = {}) {
 }
 
 async function writeAccessGrants(uid, email, capabilities, status, actorUid, now, accessScopes = {}) {
-  const batch = admin.firestore().batch();
+  const batch = db.batch();
   ACCESS_CAPABILITIES.forEach((capability) => {
-    const grantRef = admin.firestore().collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
+    const grantRef = db.collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
     const scope = normalizedAccessScope(accessScopes[capability]);
     batch.set(grantRef, {
       uid,
@@ -864,7 +885,7 @@ function importPerformanceCategory(perf = {}) {
 }
 
 async function loadPerformanceRecordsData() {
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection("competitions")
     .doc("livepalmes-active")
     .collection("performanceData")
@@ -1832,7 +1853,7 @@ function roleUid(competitionId, role, clientId) {
 }
 
 function liveDataRef(competitionId) {
-  return admin.firestore()
+  return db
     .collection("competitions")
     .doc(competitionId)
     .collection("liveData")
@@ -1840,7 +1861,7 @@ function liveDataRef(competitionId) {
 }
 
 function rolePinsRef(competitionId) {
-  return admin.firestore()
+  return db
     .collection("competitions")
     .doc(competitionId)
     .collection("secrets")
@@ -1849,7 +1870,7 @@ function rolePinsRef(competitionId) {
 
 function pinAttemptRef(competitionId, role, uid, clientId) {
   const key = stableHash(`${competitionId}|${role}|${uid}|${cleanText(clientId)}`);
-  return admin.firestore()
+  return db
     .collection("competitions")
     .doc(competitionId)
     .collection("security")
@@ -1859,7 +1880,7 @@ function pinAttemptRef(competitionId, role, uid, clientId) {
 }
 
 function consoleGrantRef(competitionId, uid) {
-  return admin.firestore()
+  return db
     .collection("competitions")
     .doc(competitionId)
     .collection("consoleGrants")
@@ -1889,7 +1910,7 @@ async function recordFailedPinAttempt(ref, details = {}) {
   const now = new Date();
   const nowIso = now.toISOString();
   let blockedSeconds = 0;
-  await admin.firestore().runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     const previous = snapshot.exists ? snapshot.data() || {} : {};
     const wasLocked = lockRemainingSeconds(previous, now.getTime()) > 0;
@@ -1935,7 +1956,7 @@ async function clearPinAttempts(ref) {
 async function updatePublicPinNotes(competitionId, enabled) {
   const now = new Date().toISOString();
   const ref = liveDataRef(competitionId);
-  await admin.firestore().runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     const current = snapshot.exists ? snapshot.data() : {};
     const liveData = current.data || {};
@@ -1966,24 +1987,102 @@ async function assertConsolePortalAccess(request) {
   if (token.livepalmesAccess !== true || !hasConsolePortalCapability(token.livepalmesCapabilities || {})) {
     throw new HttpsError("permission-denied", "Acces aux consoles LivePalmes requis.");
   }
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   if (!snapshot.exists || data.status !== "active" || !hasConsolePortalCapability(data.capabilities || {})) {
     throw new HttpsError("permission-denied", "Acces aux consoles LivePalmes inactif.");
   }
 }
 
+async function assertComputerPdfAccess(request, competitionId) {
+  const uid = cleanText(request.auth?.uid);
+  if (!uid) throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  const token = request.auth?.token || {};
+  const capabilities = token.livepalmesCapabilities || {};
+  if (ADMIN_UIDS.has(uid) || capabilities["admin.full"] === true) return;
+  if (
+    token.livepalmesAccess !== true
+    || token.livepalmesConsoleAccess !== true
+    || token.livepalmesConsole !== true
+    || token.livepalmesRole !== "computer"
+    || token.livepalmesCompetition !== competitionId
+  ) {
+    throw new HttpsError("permission-denied", "Acces bureau des performances requis.");
+  }
+  const grantSnapshot = await consoleGrantRef(competitionId, uid).get();
+  const grant = grantSnapshot.exists ? grantSnapshot.data() || {} : {};
+  const expiresAtMs = typeof grant.expiresAt?.toMillis === "function"
+    ? grant.expiresAt.toMillis()
+    : Date.parse(grant.expiresAt || "");
+  if (
+    !grantSnapshot.exists
+    || grant.role !== "computer"
+    || grant.competitionId !== competitionId
+    || !Number.isFinite(expiresAtMs)
+    || expiresAtMs <= Date.now()
+  ) {
+    throw new HttpsError("permission-denied", "Autorisation bureau des performances expiree.");
+  }
+}
+
+exports.storeCompetitionPdf = onCall(CALLABLE_OPTIONS, async (request) => {
+  const competitionId = competitionIdFrom(request.data || {});
+  await assertComputerPdfAccess(request, competitionId);
+  const kind = cleanText(request.data?.kind);
+  const id = cleanText(request.data?.id).slice(0, 180);
+  const pdfName = cleanText(request.data?.pdfName).slice(0, 220) || "document.pdf";
+  if (!id) throw new HttpsError("invalid-argument", "Identifiant PDF requis.");
+  let buffer;
+  let storagePath;
+  try {
+    buffer = decodePdfDataUrl(request.data?.pdfDataUrl);
+    storagePath = publicPdfStoragePath({ competitionId, kind, id, buffer });
+  } catch (error) {
+    throw new HttpsError("invalid-argument", error?.message || "PDF invalide.");
+  }
+  const bucket = storage.bucket(PUBLIC_PERFORMANCE_BUCKET);
+  await bucket.file(storagePath).save(buffer, {
+    resumable: false,
+    contentType: "application/pdf",
+    metadata: {
+      cacheControl: "public, max-age=31536000, immutable",
+      contentDisposition: `inline; filename="${pdfName.replace(/["\r\n]/g, "_")}"`
+    }
+  });
+  return {
+    ok: true,
+    id,
+    kind,
+    pdfName,
+    pdfSize: buffer.length,
+    storagePath,
+    pdfUrl: publicStorageUrl(PUBLIC_PERFORMANCE_BUCKET, storagePath)
+  };
+});
+
+exports.deleteCompetitionPdf = onCall(CALLABLE_OPTIONS, async (request) => {
+  const competitionId = competitionIdFrom(request.data || {});
+  await assertComputerPdfAccess(request, competitionId);
+  const storagePath = cleanText(request.data?.storagePath).slice(0, 600);
+  const expectedPrefix = `${PUBLIC_COMPETITION_PDF_PREFIX}/${competitionId}/`;
+  if (!storagePath.startsWith(expectedPrefix) || storagePath.includes("..")) {
+    throw new HttpsError("invalid-argument", "Chemin PDF invalide.");
+  }
+  await storage.bucket(PUBLIC_PERFORMANCE_BUCKET).file(storagePath).delete({ ignoreNotFound: true });
+  return { ok: true, storagePath };
+});
+
 exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async (event) => {
   const competitionId = cleanText(event.params?.competitionId);
   const resultId = cleanText(event.params?.resultId);
   if (!COMPETITION_IDS.has(competitionId) || !resultId || !event.data?.after?.exists) return;
   const officialResult = event.data.after.data() || {};
-  const indexRef = admin.firestore()
+  const indexRef = db
     .collection("competitions")
     .doc(competitionId)
     .collection("public")
     .doc("resultsIndex");
-  await admin.firestore().runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(indexRef);
     if (!snapshot.exists) return;
     const nextIndex = nextPublicResultsIndex(snapshot.data() || {}, resultId, officialResult);
@@ -2003,7 +2102,7 @@ exports.setRolePins = onCall(CALLABLE_OPTIONS, async (request) => {
   const pins = request.data?.pins || {};
   const ref = rolePinsRef(competitionId);
 
-  await admin.firestore().runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     const previousRoles = snapshot.exists ? (snapshot.data()?.roles || {}) : {};
     const nextRoles = enabled ? { ...previousRoles } : {};
@@ -2038,8 +2137,8 @@ exports.setRolePins = onCall(CALLABLE_OPTIONS, async (request) => {
     }, { merge: false });
   });
 
-  await admin.firestore().runTransaction(async (transaction) => {
-    const attemptsRoot = admin.firestore()
+  await db.runTransaction(async (transaction) => {
+    const attemptsRoot = db
       .collection("competitions")
       .doc(competitionId)
       .collection("security")
@@ -2090,8 +2189,8 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
   }
 
   await clearPinAttempts(attemptsRef);
-  const authUser = await admin.auth().getUser(uid);
-  await admin.auth().setCustomUserClaims(uid, consoleRoleClaims(
+  const authUser = await auth.getUser(uid);
+  await auth.setCustomUserClaims(uid, consoleRoleClaims(
     authUser.customClaims || {},
     role,
     competitionId
@@ -2103,7 +2202,7 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, async (request) => {
     competitionId,
     clientIdHash: stableHash(clientId),
     updatedAt: now.toISOString(),
-    expiresAt: admin.firestore.Timestamp.fromMillis(now.getTime() + 12 * 60 * 60 * 1000)
+    expiresAt: Timestamp.fromMillis(now.getTime() + 12 * 60 * 60 * 1000)
   }, { merge: false });
 
   return {
@@ -2171,15 +2270,15 @@ function assertEngagementAccessRequestScope(context = {}, requestData = {}) {
 
 exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request) => {
   const uid = cleanText(request.auth?.uid);
+  if (cleanText(request.data?.website)) {
+    throw new HttpsError("invalid-argument", "Demande invalide.");
+  }
   const payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
   const now = new Date().toISOString();
   const requestId = stableHash(`${payload.email}|${payload.clubId}|engagements.club.manage`).slice(0, 40);
-  const ref = admin.firestore().collection("engagementAccessRequests").doc(requestId);
-  const snapshot = await ref.get();
-  if (snapshot.exists && snapshot.data()?.status === "pending") {
-    throw new HttpsError("already-exists", "Une demande est deja en attente pour cet email et ce club.");
-  }
-  await ref.set({
+  const db = db;
+  const ref = db.collection("engagementAccessRequests").doc(requestId);
+  const savedPayload = {
     ...payload,
     status: "pending",
     requestedBy: uid || "public-login-page",
@@ -2188,17 +2287,39 @@ exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request)
     requestedAt: now,
     updatedAt: now,
     updatedBy: uid || "public-login-page"
-  }, { merge: true });
+  };
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (snapshot.exists && snapshot.data()?.status === "pending") {
+      throw new HttpsError("already-exists", "Une demande est deja en attente pour cet email et ce club.");
+    }
+    if (!uid) {
+      const headers = request.rawRequest?.headers || {};
+      const forwardedIp = cleanText(headers["x-forwarded-for"]).split(",")[0].trim();
+      const clientIp = forwardedIp || cleanText(request.rawRequest?.ip || request.rawRequest?.socket?.remoteAddress);
+      const userAgent = cleanText(headers["user-agent"]).slice(0, 240);
+      const rateId = stableHash(`${clientIp || "unknown"}|${userAgent || "unknown"}`).slice(0, 40);
+      const rateRef = db.collection(PORTAL_ACCESS_RATE_LIMIT_COLLECTION).doc(rateId);
+      const rateSnapshot = await transaction.get(rateRef);
+      const rate = nextPortalAccessRateLimit(rateSnapshot.data() || {}, Date.parse(now));
+      if (!rate.allowed) {
+        throw new HttpsError("resource-exhausted", "Trop de demandes. Reessayez plus tard.", {
+          retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000)
+        });
+      }
+      transaction.set(rateRef, rate.next, { merge: false });
+    }
+    transaction.set(ref, savedPayload, { merge: true });
+  });
   await writeAuditLog("engagementAccessRequest.submitted", uid || "public-login-page", {
     requestId,
     email: payload.email,
     clubId: payload.clubId,
     regionId: payload.regionId
   });
-  const updated = await ref.get();
   return {
     ok: true,
-    request: engagementAccessRequestItem(updated)
+    request: engagementAccessRequestItem({ id: requestId, data: () => savedPayload })
   };
 });
 
@@ -2211,7 +2332,7 @@ exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, async (request) 
     ? cleanText(request.data.status)
     : "pending";
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection("engagementAccessRequests")
     .where("status", "==", status)
     .limit(limit)
@@ -2239,7 +2360,7 @@ exports.resolveEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request
   if (!["approved", "rejected"].includes(decision)) {
     throw new HttpsError("invalid-argument", "Decision invalide.");
   }
-  const ref = admin.firestore().collection("engagementAccessRequests").doc(requestId);
+  const ref = db.collection("engagementAccessRequests").doc(requestId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Demande introuvable.");
@@ -2371,12 +2492,12 @@ function accessUserContainsSearch(doc, search) {
   return normalizedDirectoryText(search).split(/\s+/).filter(Boolean).every((term) => haystack.includes(term));
 }
 
-async function searchAccessUserDocuments(search) {
-  const usersRef = admin.firestore().collection("users");
+async function searchAccessUserDocuments(search, context, maxScanned = 180) {
+  const usersRef = db.collection("users");
   const raw = cleanText(search).slice(0, 80);
   const variantsFor = (value) => {
     const titleCase = value.toLocaleLowerCase("fr").replace(/(^|[\s'-])\p{L}/gu, (letter) => letter.toLocaleUpperCase("fr"));
-    return [...new Set([value, titleCase, value.toLocaleUpperCase("fr")].filter(Boolean))];
+    return [...new Set([value, titleCase].filter(Boolean))];
   };
   let querySpecs = [];
   if (raw.includes("@")) {
@@ -2395,15 +2516,21 @@ async function searchAccessUserDocuments(search) {
       { field: "clubName", variants: variantsFor(raw) }
     ];
   }
-  const snapshots = await Promise.all(querySpecs.flatMap(({ field, variants }) => variants.map((variant) => usersRef
-    .orderBy(field)
-    .startAt(variant)
-    .endAt(`${variant}\uf8ff`)
-    .limit(100)
-    .get())));
+  const flatSpecs = querySpecs.flatMap(({ field, variants }) => variants.map((variant) => ({ field, variant }))).slice(0, 6);
+  const perQueryLimit = Math.max(10, Math.floor(maxScanned / Math.max(1, flatSpecs.length)));
+  const snapshots = await Promise.all(flatSpecs.map(({ field, variant }) => {
+    let query = usersRef;
+    if (!context.national && context.regionId) query = query.where("regionId", "==", context.regionId);
+    return query
+      .orderBy(field)
+      .startAt(variant)
+      .endAt(`${variant}\uf8ff`)
+      .limit(perQueryLimit)
+      .get();
+  }));
   const documents = new Map();
   snapshots.forEach((snapshot) => snapshot.docs.forEach((doc) => documents.set(doc.id, doc)));
-  return [...documents.values()]
+  const matches = [...documents.values()]
     .filter((doc) => accessUserContainsSearch(doc, raw))
     .sort((left, right) => {
       const leftData = left.data() || {};
@@ -2411,6 +2538,11 @@ async function searchAccessUserDocuments(search) {
       return `${leftData.lastName || ""}\u0000${leftData.firstName || ""}\u0000${left.id}`
         .localeCompare(`${rightData.lastName || ""}\u0000${rightData.firstName || ""}\u0000${right.id}`, "fr", { sensitivity: "base" });
     });
+  return {
+    documents: matches,
+    scannedCount: snapshots.reduce((total, snapshot) => total + snapshot.size, 0),
+    truncated: snapshots.some((snapshot) => snapshot.size >= perQueryLimit)
+  };
 }
 
 exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -2427,7 +2559,8 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
 
   if (search) {
     const offset = Math.max(0, Math.trunc(Number(cursor.offset) || 0));
-    const matches = (await searchAccessUserDocuments(search))
+    const searchResult = await searchAccessUserDocuments(search, context);
+    const matches = searchResult.documents
       .filter((doc) => accessUserMatchesFilters(doc, status, capability))
       .filter((doc) => accessUserVisibleForAccessDirectory(context, doc));
     const page = matches.slice(offset, offset + pageSize);
@@ -2435,24 +2568,31 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
       ok: true,
       directoryVersion: 2,
       users: page.map(accessUserListItem),
-      nextCursor: offset + pageSize < matches.length ? { offset: offset + pageSize } : null
+      nextCursor: offset + pageSize < matches.length ? { offset: offset + pageSize } : null,
+      scannedCount: searchResult.scannedCount,
+      truncated: searchResult.truncated
     };
   }
 
-  const usersRef = admin.firestore().collection("users");
-  const documentId = admin.firestore.FieldPath.documentId();
+  const usersRef = db.collection("users");
+  const documentId = FieldPath.documentId();
   const matchingDocs = [];
   let queryCursor = cleanText(cursor.uid) && typeof cursor.lastName === "string"
     ? { lastName: cursor.lastName, uid: cleanText(cursor.uid) }
     : null;
   let exhausted = false;
+  let scannedCount = 0;
+  const maxScanned = 250;
 
-  while (matchingDocs.length <= pageSize && !exhausted) {
-    let query = usersRef.orderBy("lastName").orderBy(documentId);
+  while (matchingDocs.length <= pageSize && !exhausted && scannedCount < maxScanned) {
+    let query = usersRef;
+    if (!context.national && context.regionId) query = query.where("regionId", "==", context.regionId);
+    query = query.orderBy("lastName").orderBy(documentId);
     if (queryCursor) query = query.startAfter(queryCursor.lastName, queryCursor.uid);
-    const batchSize = status || capability ? 100 : pageSize + 1;
+    const batchSize = Math.min(status || capability ? 100 : pageSize + 1, maxScanned - scannedCount);
     const snapshot = await query.limit(batchSize).get();
     if (!snapshot.size) break;
+    scannedCount += snapshot.size;
     for (const doc of snapshot.docs) {
       queryCursor = { lastName: doc.data()?.lastName || "", uid: doc.id };
       if (accessUserMatchesFilters(doc, status, capability) && accessUserVisibleForAccessDirectory(context, doc)) matchingDocs.push(doc);
@@ -2463,13 +2603,20 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
 
   const page = matchingDocs.slice(0, pageSize);
   const lastVisible = page.at(-1);
+  const truncated = !exhausted && scannedCount >= maxScanned;
+  const nextCursor = matchingDocs.length > pageSize && lastVisible
+    ? { lastName: lastVisible.data()?.lastName || "", uid: lastVisible.id }
+    : truncated && queryCursor
+      ? queryCursor
+      : null;
+  console.info("Annuaire portail", { uid: context.uid, search: Boolean(search), scannedCount, returnedCount: page.length, truncated });
   return {
     ok: true,
     directoryVersion: 2,
     users: page.map(accessUserListItem),
-    nextCursor: matchingDocs.length > pageSize && lastVisible
-      ? { lastName: lastVisible.data()?.lastName || "", uid: lastVisible.id }
-      : null
+    nextCursor,
+    scannedCount,
+    truncated
   };
 });
 
@@ -2486,7 +2633,7 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   if (uid === request.auth.uid && status === "inactive") {
     throw new HttpsError("failed-precondition", "Tu ne peux pas desactiver ton propre acces.");
   }
-  const userRef = admin.firestore().collection("users").doc(uid);
+  const userRef = db.collection("users").doc(uid);
   const snapshot = await userRef.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Acces LivePalmes introuvable.");
@@ -2496,14 +2643,15 @@ exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   const accessScopes = data.accessScopes || {};
   const email = data.email || "";
   const now = new Date().toISOString();
-  const authUser = await admin.auth().getUser(uid);
-  await admin.auth().updateUser(uid, { disabled: status !== "active" });
-  await admin.auth().setCustomUserClaims(uid, {
+  const authUser = await auth.getUser(uid);
+  await auth.updateUser(uid, { disabled: status !== "active" });
+  await auth.setCustomUserClaims(uid, {
     ...(authUser.customClaims || {}),
     livepalmesAccess: status === "active",
     livepalmesConsoleAccess: status === "active" && hasConsolePortalCapability(capabilitiesMap(capabilities)),
     livepalmesCapabilities: status === "active" ? capabilitiesMap(capabilities) : capabilitiesMap([])
   });
+  if (status !== "active") await auth.revokeRefreshTokens(uid);
   await userRef.set({
     status,
     updatedAt: now,
@@ -2534,7 +2682,7 @@ async function deleteAccessUserAccount(uid, actorUid, source = {}) {
   if (ADMIN_UIDS.has(targetUid)) {
     throw new HttpsError("failed-precondition", "Ce compte administrateur racine ne peut pas etre supprime.");
   }
-  const userRef = admin.firestore().collection("users").doc(targetUid);
+  const userRef = db.collection("users").doc(targetUid);
   const snapshot = await userRef.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Acces LivePalmes introuvable.");
@@ -2543,14 +2691,14 @@ async function deleteAccessUserAccount(uid, actorUid, source = {}) {
   const capabilities = activeCapabilitiesFromMap(data.capabilities || {});
   const email = data.email || "";
   try {
-    await admin.auth().deleteUser(targetUid);
+    await auth.deleteUser(targetUid);
   } catch (error) {
     if (error?.code !== "auth/user-not-found") throw error;
   }
-  const batch = admin.firestore().batch();
+  const batch = db.batch();
   batch.delete(userRef);
   ACCESS_CAPABILITIES.forEach((capability) => {
-    batch.delete(admin.firestore().collection("accessGrants").doc(`${targetUid}_${capability.replace(".", "_")}`));
+    batch.delete(db.collection("accessGrants").doc(`${targetUid}_${capability.replace(".", "_")}`));
   });
   await batch.commit();
   await writeAuditLog("accessUser.deleted", actorUid, {
@@ -2591,7 +2739,7 @@ exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, async (request) => 
   if (targetUid === context.uid) {
     throw new HttpsError("failed-precondition", "Tu ne peux pas demander la suppression de ton propre acces.");
   }
-  const userRef = admin.firestore().collection("users").doc(targetUid);
+  const userRef = db.collection("users").doc(targetUid);
   const snapshot = await userRef.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Acces LivePalmes introuvable.");
@@ -2599,7 +2747,7 @@ exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, async (request) => 
   const data = snapshot.data() || {};
   assertRegionalAccessUserDeletionRequestAllowed(context, data);
 
-  const pendingSnapshot = await admin.firestore().collection("accessUserDeletionRequests")
+  const pendingSnapshot = await db.collection("accessUserDeletionRequests")
     .where("targetUid", "==", targetUid)
     .where("status", "==", "pending")
     .limit(1)
@@ -2609,7 +2757,7 @@ exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, async (request) => 
   }
 
   const now = new Date().toISOString();
-  const requestRef = await admin.firestore().collection("accessUserDeletionRequests").add({
+  const requestRef = await db.collection("accessUserDeletionRequests").add({
     targetUid,
     targetEmail: data.email || "",
     targetFirstName: data.firstName || "",
@@ -2642,7 +2790,7 @@ exports.listAccessUserDeletionRequests = onCall(CALLABLE_OPTIONS, async (request
   if (!context.national) {
     throw new HttpsError("permission-denied", "Admin national requis.");
   }
-  const snapshot = await admin.firestore().collection("accessUserDeletionRequests")
+  const snapshot = await db.collection("accessUserDeletionRequests")
     .where("status", "==", "pending")
     .limit(100)
     .get();
@@ -2668,7 +2816,7 @@ exports.resolveAccessUserDeletionRequest = onCall(CALLABLE_OPTIONS, async (reque
   if (!["approved", "rejected"].includes(decision)) {
     throw new HttpsError("invalid-argument", "Decision invalide.");
   }
-  const requestRef = admin.firestore().collection("accessUserDeletionRequests").doc(requestId);
+  const requestRef = db.collection("accessUserDeletionRequests").doc(requestId);
   const snapshot = await requestRef.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Demande introuvable.");
@@ -2716,9 +2864,9 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
     throw new HttpsError("failed-precondition", "Reconnexion recente requise.");
   }
 
-  const authUser = await admin.auth().getUser(uid);
+  const authUser = await auth.getUser(uid);
   const previousEmail = normalizeEmail(authUser.email);
-  const userRef = admin.firestore().collection("users").doc(uid);
+  const userRef = db.collection("users").doc(uid);
   const userSnapshot = await userRef.get();
   const userData = userSnapshot.exists ? userSnapshot.data() || {} : {};
   const capabilities = ADMIN_UIDS.has(uid)
@@ -2729,7 +2877,7 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
 
   if (email !== previousEmail) {
     try {
-      await admin.auth().updateUser(uid, { email, emailVerified: false });
+      await auth.updateUser(uid, { email, emailVerified: false });
     } catch (error) {
       if (error?.code === "auth/email-already-exists") {
         throw new HttpsError("already-exists", "Cette adresse email est deja utilisee.");
@@ -2742,7 +2890,7 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
   }
 
   try {
-    const batch = admin.firestore().batch();
+    const batch = db.batch();
     batch.set(userRef, {
       uid,
       email,
@@ -2752,7 +2900,7 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
       ...(!userSnapshot.exists ? { createdAt: now, createdBy: uid } : {})
     }, { merge: true });
     ACCESS_CAPABILITIES.forEach((capability) => {
-      const grantRef = admin.firestore().collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
+      const grantRef = db.collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
       const scope = normalizedAccessScope(accessScopes[capability]);
       batch.set(grantRef, {
         uid,
@@ -2769,7 +2917,7 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
     await batch.commit();
   } catch (error) {
     if (email !== previousEmail && previousEmail) {
-      await admin.auth().updateUser(uid, { email: previousEmail }).catch((rollbackError) => {
+      await auth.updateUser(uid, { email: previousEmail }).catch((rollbackError) => {
         console.error("Rollback email compte impossible", rollbackError);
       });
     }
@@ -2795,7 +2943,7 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
   }
-  const snapshot = await admin.firestore().collection("users").doc(uid).get();
+  const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   const authTimeSeconds = Number(request.auth?.token?.auth_time) || 0;
   const lastLoginAt = authTimeSeconds ? new Date(authTimeSeconds * 1000).toISOString() : (data.lastLoginAt || "");
@@ -3140,7 +3288,7 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
   const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
   const competitionId = cleanText(event.params?.competitionId);
   if (!competitionId) return;
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -3152,7 +3300,7 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
     batch.set(engagementCompetitionCalendarRef(db, beforeSeason), {
       updatedAt: now,
       competitions: {
-        [competitionId]: admin.firestore.FieldValue.delete()
+        [competitionId]: FieldValue.delete()
       }
     }, { merge: true });
     batchSize += 1;
@@ -3196,6 +3344,7 @@ function engagementCompetitionDetailItem(doc) {
     programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
     fees: cleanEngagementFees(data.fees || {}, { strict: false }),
     documents: engagementCompetitionDocumentsMetadata(data.documents || {}),
+    generatedFiles: cleanEngagementGeneratedFiles(data.generatedFiles || []),
     closureAutomationStatus: cleanText(data.closureAutomationStatus).slice(0, 80),
     closureAutomationStartedAt: cleanText(data.closureAutomationStartedAt).slice(0, 40),
     closureAutomationCompletedAt: cleanText(data.closureAutomationCompletedAt).slice(0, 40),
@@ -3209,10 +3358,15 @@ function engagementCompetitionDetailItem(doc) {
       jobCount: Math.max(0, Math.trunc(Number(closureSummary.jobCount) || 0)),
       pdfGeneratedCount: Math.max(0, Math.trunc(Number(closureSummary.pdfGeneratedCount) || 0)),
       pdfReusedCount: Math.max(0, Math.trunc(Number(closureSummary.pdfReusedCount) || 0)),
+      txtGeneratedCount: Math.max(0, Math.trunc(Number(closureSummary.txtGeneratedCount) || 0)),
+      txtMailJobCount: Math.max(0, Math.trunc(Number(closureSummary.txtMailJobCount) || 0)),
       prepareErrorCount: Math.max(0, Math.trunc(Number(closureSummary.prepareErrorCount) || 0)),
       attemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.attemptedMailCount) || 0)),
       sentMailCount: Math.max(0, Math.trunc(Number(closureSummary.sentMailCount) || 0)),
       sendErrorCount: Math.max(0, Math.trunc(Number(closureSummary.sendErrorCount) || 0)),
+      txtAttemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.txtAttemptedMailCount) || 0)),
+      txtSentMailCount: Math.max(0, Math.trunc(Number(closureSummary.txtSentMailCount) || 0)),
+      txtSendErrorCount: Math.max(0, Math.trunc(Number(closureSummary.txtSendErrorCount) || 0)),
       updatedAt: cleanText(closureSummary.updatedAt).slice(0, 40)
     },
     createdAt: cleanText(data.createdAt).slice(0, 40),
@@ -3594,7 +3748,7 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
 
 async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}) {
   if (cleanText(swimmer.source) === "engagement") return [];
-  const db = admin.firestore();
+  const db = db;
   const cacheSnapshot = await engagementEntryTimeCacheRef(db, swimmer).get();
   const cacheReady = cacheSnapshot.exists &&
     Number(cacheSnapshot.data()?.version || 0) === ENGAGEMENT_ENTRY_TIME_CACHE_VERSION &&
@@ -3829,6 +3983,12 @@ function engagementNewSwimmerItem(doc) {
     alerts,
     alertValidationStatus: cleanText(data.alertValidationStatus).slice(0, 60),
     active: data.active !== false,
+    status: cleanText(data.status || (data.active === false ? "inactive" : "active")).slice(0, 40),
+    mergedIntoId: cleanText(data.mergedIntoId).slice(0, 80),
+    mergedIntoSource: cleanText(data.mergedIntoSource).slice(0, 40),
+    mergedIntoName: cleanText(data.mergedIntoName).slice(0, 160),
+    mergedAt: cleanText(data.mergedAt).slice(0, 40),
+    mergedBy: cleanText(data.mergedBy).slice(0, 80),
     createdAt: cleanText(data.createdAt).slice(0, 40),
     updatedAt: cleanText(data.updatedAt).slice(0, 40),
     disabledAt: cleanText(data.disabledAt).slice(0, 40),
@@ -3872,7 +4032,7 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
     if (alerts.some((item) => [item.type, item.identityKey || item.swimmerIndexId, item.clubId].join("|") === key)) return;
     alerts.push(alert);
   };
-  const db = admin.firestore();
+  const db = db;
   if (swimmer.identityKey) {
     const exactSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
       .where("identityKey", "==", swimmer.identityKey)
@@ -3939,6 +4099,15 @@ function engagementSwimmerLicenseId(swimmer = {}) {
     cleanText(swimmer.identityKey),
     cleanText(swimmer.name)
   ].filter(Boolean).join("|")).slice(0, 40);
+}
+
+function engagementSwimmerLicenseNumberKey(licenseNumber = "") {
+  return cleanText(licenseNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function engagementSwimmerLicenseNumberId(licenseNumber = "") {
+  const key = engagementSwimmerLicenseNumberKey(licenseNumber);
+  return key ? stableHash(key).slice(0, 40) : "";
 }
 
 function engagementClubRosterId(clubId) {
@@ -4018,7 +4187,7 @@ function deleteEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
   batch.set(engagementClubRosterRef(db, clubId), {
     updatedAt: now || new Date().toISOString(),
     swimmers: {
-      [key]: admin.firestore.FieldValue.delete()
+      [key]: FieldValue.delete()
     }
   }, { merge: true });
 }
@@ -4095,6 +4264,87 @@ function engagementSwimmerLicensePayload(swimmer = {}, context = {}, source = {}
       uid: cleanText(context.uid).slice(0, 128),
       collectedAt
     }
+  });
+}
+
+function engagementSwimmerLicenseConflictData(data = {}, id = "", source = "") {
+  return cleanFirestoreValue({
+    id,
+    source: cleanText(source).slice(0, 40),
+    swimmerIndexId: cleanText(data.swimmerIndexId || data.id).slice(0, 80),
+    swimmerId: cleanText(data.swimmerId).slice(0, 80),
+    firstName: cleanText(data.firstName).slice(0, 80),
+    lastName: cleanText(data.lastName).slice(0, 80),
+    name: cleanText(data.name).slice(0, 160),
+    birthDate: cleanIsoDate(data.birthDate),
+    sex: cleanText(data.sex).slice(0, 20),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140),
+    licenseNumber: cleanText(data.licenseNumber).slice(0, 60)
+  });
+}
+
+async function findEngagementSwimmerLicenseConflict(db, swimmer = {}, ignoredSwimmerIds = []) {
+  const licenseNumber = cleanText(swimmer.licenseNumber).slice(0, 60);
+  const licenseKey = engagementSwimmerLicenseNumberKey(licenseNumber);
+  if (!licenseKey) return null;
+  const ignored = new Set((Array.isArray(ignoredSwimmerIds) ? ignoredSwimmerIds : [])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean));
+  const licenseNumberRefId = engagementSwimmerLicenseNumberId(licenseNumber);
+  if (licenseNumberRefId) {
+    const indexed = await db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId).get();
+    if (indexed.exists) {
+      const data = indexed.data() || {};
+      const indexedSwimmerId = cleanText(data.swimmerIndexId || data.swimmerId).slice(0, 80);
+      if (!indexedSwimmerId || !ignored.has(indexedSwimmerId)) {
+        return engagementSwimmerLicenseConflictData(data, indexed.id, "license-index");
+      }
+    }
+  }
+  const collectedLicenseSnapshot = await db.collection("engagementSwimmerLicenses")
+    .where("licenseNumber", "==", licenseNumber)
+    .limit(2)
+    .get();
+  for (const doc of collectedLicenseSnapshot.docs) {
+    const data = doc.data() || {};
+    const indexedSwimmerId = cleanText(data.swimmerIndexId || data.swimmerId).slice(0, 80);
+    if (!indexedSwimmerId || !ignored.has(indexedSwimmerId)) {
+      return engagementSwimmerLicenseConflictData(data, doc.id, "license-collection");
+    }
+  }
+  const engagementSnapshot = await db.collection("engagementClubSwimmers")
+    .where("licenseNumber", "==", licenseNumber)
+    .limit(2)
+    .get();
+  for (const doc of engagementSnapshot.docs) {
+    if (!ignored.has(doc.id)) {
+      return engagementSwimmerLicenseConflictData({ ...(doc.data() || {}), swimmerIndexId: doc.id }, doc.id, "engagement");
+    }
+  }
+  const performanceSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+    .where("licenseNumber", "==", licenseNumber)
+    .limit(2)
+    .get();
+  for (const doc of performanceSnapshot.docs) {
+    if (!ignored.has(doc.id)) {
+      return engagementSwimmerLicenseConflictData({ ...(doc.data() || {}), swimmerIndexId: doc.id }, doc.id, "performances");
+    }
+  }
+  const referenceMatch = intranapSwimmersIndex.find((match) => engagementSwimmerLicenseNumberKey(match.licenseNumber) === licenseKey);
+  if (referenceMatch && !ignored.has(cleanText(referenceMatch.id || referenceMatch.swimmerIndexId).slice(0, 80))) {
+    return engagementSwimmerLicenseConflictData(referenceMatch, cleanText(referenceMatch.id || referenceMatch.swimmerIndexId), "reference");
+  }
+  return null;
+}
+
+async function assertNoEngagementSwimmerLicenseConflict(db, swimmer = {}, ignoredSwimmerIds = []) {
+  const conflict = await findEngagementSwimmerLicenseConflict(db, swimmer, ignoredSwimmerIds);
+  if (!conflict) return null;
+  const name = [conflict.firstName, conflict.lastName].filter(Boolean).join(" ") || conflict.name || "un nageur existant";
+  const club = conflict.clubName || conflict.clubId || "club non renseigne";
+  throw new HttpsError("already-exists", `Licence deja utilisee par ${name} (${club}). Utilisez la fiche existante au lieu de creer un doublon.`, {
+    conflict
   });
 }
 
@@ -4226,6 +4476,29 @@ function cleanEngagementDocumentMetadata(raw = {}) {
     competitionId: cleanText(raw.competitionId).slice(0, 128),
     clubId: cleanText(raw.clubId).slice(0, 40)
   });
+}
+
+function cleanEngagementGeneratedFile(raw = {}) {
+  const url = cleanText(raw.url).slice(0, 600);
+  const storagePath = cleanText(raw.storagePath).slice(0, 260);
+  if (!url && !storagePath) return null;
+  return cleanFirestoreValue({
+    type: cleanText(raw.type || "document").slice(0, 60),
+    name: cleanText(raw.name || raw.fileName || "Document").slice(0, 180),
+    fileName: cleanText(raw.fileName || raw.name || "document").slice(0, 180),
+    contentType: cleanText(raw.contentType || "application/octet-stream").slice(0, 80),
+    storagePath,
+    url,
+    size: Math.max(0, Math.trunc(Number(raw.size) || 0)),
+    generatedAt: cleanText(raw.generatedAt).slice(0, 40)
+  });
+}
+
+function cleanEngagementGeneratedFiles(rawFiles = []) {
+  return (Array.isArray(rawFiles) ? rawFiles : [])
+    .map(cleanEngagementGeneratedFile)
+    .filter(Boolean)
+    .slice(0, 30);
 }
 
 function engagementCompetitionDocumentsMetadata(raw = {}) {
@@ -4428,7 +4701,7 @@ function deleteEngagementCompetitionEntrySummary(batch, db, entry = {}, now = ""
   batch.set(engagementCompetitionEntrySummaryRef(db, competitionId), {
     updatedAt: now || new Date().toISOString(),
     entries: {
-      [clubId]: admin.firestore.FieldValue.delete()
+      [clubId]: FieldValue.delete()
     }
   }, { merge: true });
 }
@@ -4436,7 +4709,7 @@ function deleteEngagementCompetitionEntrySummary(batch, db, entry = {}, now = ""
 async function syncEngagementCompetitionEntrySummaryFromChange(event = {}) {
   const before = event.data?.before?.exists ? engagementClubEntryItem(event.data.before) : null;
   const after = event.data?.after?.exists ? engagementClubEntryItem(event.data.after) : null;
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -4704,17 +4977,17 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
 async function readStoredEngagementClubRecapPdf(document = {}) {
   const storagePath = cleanText(document.storagePath);
   if (!storagePath) return null;
-  const [buffer] = await admin.storage().bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).download();
+  const [buffer] = await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).download();
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
 }
 
 async function saveEngagementClubRecapPdfDocument(competition = {}, entry = {}, pdf = {}, sourceHash = "") {
-  const db = admin.firestore();
+  const db = db;
   const generatedAt = cleanText(pdf.generatedAt) || new Date().toISOString();
   const storagePath = engagementClubRecapPdfStoragePath(competition.id || entry.competitionId, entry.clubId);
   const fileName = cleanText(pdf.fileName) || "recap-engagements-livepalmes.pdf";
   const buffer = Buffer.isBuffer(pdf.buffer) ? pdf.buffer : Buffer.from(pdf.buffer || []);
-  await admin.storage().bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(buffer, {
+  await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(buffer, {
     resumable: false,
     contentType: "application/pdf",
     metadata: {
@@ -4798,6 +5071,272 @@ async function getOrCreateEngagementClubRecapPdf(competitionSnapshot, entrySnaps
   return {
     ...pdf,
     document,
+    fromStorage: false
+  };
+}
+
+function engagementTxtStoragePath(competitionId) {
+  return [
+    ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX,
+    engagementPdfFileName(competitionId),
+    "export.txt"
+  ].join("/");
+}
+
+function engagementTxtDownloadUrl(storagePath, token) {
+  return `https://firebasestorage.googleapis.com/v0/b/${LIVEPALMES_STORAGE_BUCKET}/o/${encodeURIComponent(storagePath)}?alt=media&token=${encodeURIComponent(token)}`;
+}
+
+function engagementTxtValue(value) {
+  const text = cleanText(value);
+  return (text || "-").replace(/[;\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function engagementTxtLine(fields = []) {
+  return fields.map(engagementTxtValue).join(";");
+}
+
+function engagementTxtSourceHash(competition = {}, entries = []) {
+  return stableHash(JSON.stringify({
+    competition: {
+      id: competition.id,
+      name: competition.name,
+      date: competition.date,
+      endDate: competition.endDate,
+      location: competition.location,
+      level: competition.level,
+      regionId: competition.regionId,
+      entryDeadlineAt: competition.entryDeadlineAt,
+      events: competition.events,
+      programSessions: competition.programSessions
+    },
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      clubId: entry.clubId,
+      clubName: entry.clubName,
+      regionId: entry.regionId,
+      teamLeader: entry.teamLeader,
+      officials: entry.officials,
+      swimmers: entry.swimmers,
+      relays: entry.relays,
+      updatedAt: entry.updatedAt
+    }))
+  }));
+}
+
+function engagementTxtSwimmerCategory(swimmer = {}, competition = {}) {
+  return ageCategoryFromDates(competition.date, swimmer.birthDate) || "-";
+}
+
+function buildEngagementCompetitionTxt(competition = {}, entries = []) {
+  const generatedAt = new Date().toISOString();
+  const lines = [
+    "LIVEPALMES_EXPORT_PROVISOIRE_V1",
+    engagementTxtLine(["GENERE_LE", generatedAt]),
+    engagementTxtLine(["COMPETITION", competition.id, competition.name, competition.date, competition.endDate, competition.location, competition.level, competition.regionId, competition.entryDeadlineAt]),
+    "",
+    "CLUBS",
+    engagementTxtLine(["TYPE", "CLUB_ID", "CLUB", "REGION", "NAGEURS", "COURSES", "RELAIS", "MAJ"])
+  ];
+  entries.forEach((entry) => {
+    const stats = engagementPdfEntryStats(entry);
+    lines.push(engagementTxtLine([
+      "CLUB",
+      entry.clubId,
+      entry.clubName,
+      entry.regionId,
+      stats.swimmerCount,
+      stats.individualCount,
+      stats.relayCount,
+      entry.updatedAt
+    ]));
+  });
+  lines.push("", "CHEFS_EQUIPE", engagementTxtLine(["TYPE", "CLUB_ID", "MODE", "PRENOM", "NOM", "LICENCE", "CLUB_EXTERNE"]));
+  entries.forEach((entry) => {
+    const leader = entry.teamLeader || {};
+    lines.push(engagementTxtLine([
+      "CHEF_EQUIPE",
+      entry.clubId,
+      leader.mode === "renounced" ? "RENONCIATION" : "PERSONNE",
+      leader.firstName,
+      leader.lastName,
+      leader.licenseNumber,
+      leader.externalClub ? (leader.clubName || leader.clubId) : "NON"
+    ]));
+  });
+  lines.push("", "OFFICIELS", engagementTxtLine(["TYPE", "CLUB_ID", "PRENOM", "NOM", "LICENCE"]));
+  entries.forEach((entry) => {
+    (Array.isArray(entry.officials) ? entry.officials : []).forEach((official) => {
+      lines.push(engagementTxtLine([
+        "OFFICIEL",
+        entry.clubId,
+        official.firstName,
+        official.lastName,
+        official.licenseNumber
+      ]));
+    });
+  });
+  lines.push("", "NAGEURS", engagementTxtLine(["TYPE", "CLUB_ID", "NAGEUR_ID", "LICENCE", "NOM", "PRENOM", "NAISSANCE", "SEXE", "CATEGORIE"]));
+  entries.forEach((entry) => {
+    (Array.isArray(entry.swimmers) ? entry.swimmers : []).forEach((swimmer) => {
+      lines.push(engagementTxtLine([
+        "NAGEUR",
+        entry.clubId,
+        swimmer.swimmerIndexId || swimmer.swimmerId,
+        swimmer.licenseNumber,
+        swimmer.lastName,
+        swimmer.firstName,
+        swimmer.birthDate,
+        swimmer.sex,
+        engagementTxtSwimmerCategory(swimmer, competition)
+      ]));
+    });
+  });
+  lines.push("", "COURSES_INDIVIDUELLES", engagementTxtLine(["TYPE", "CLUB_ID", "NAGEUR_ID", "LICENCE", "NOM", "PRENOM", "EPREUVE", "CATEGORIE", "SEXE", "TEMPS", "MODE_TEMPS", "DATE_TEMPS"]));
+  entries.forEach((entry) => {
+    (Array.isArray(entry.swimmers) ? entry.swimmers : []).forEach((swimmer) => {
+      (Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries : []).forEach((individual) => {
+        lines.push(engagementTxtLine([
+          "COURSE",
+          entry.clubId,
+          swimmer.swimmerIndexId || swimmer.swimmerId,
+          swimmer.licenseNumber,
+          swimmer.lastName,
+          swimmer.firstName,
+          engagementPdfEventLabel(individual.eventCode),
+          engagementTxtSwimmerCategory(swimmer, competition),
+          swimmer.sex,
+          individual.entryTime || individual.manualEntryTime || "59:59.99",
+          individual.entryTimeMode || "default",
+          individual.date
+        ]));
+      });
+    });
+  });
+  lines.push("", "RELAIS", engagementTxtLine(["TYPE", "CLUB_ID", "RELAIS_ID", "EPREUVE", "CATEGORIE", "SEXE", "TEMPS", "RELAYEUR_1", "RELAYEUR_2", "RELAYEUR_3", "RELAYEUR_4", "RELAYEUR_5", "RELAYEUR_6"]));
+  entries.forEach((entry) => {
+    (Array.isArray(entry.relays) ? entry.relays : []).forEach((relay) => {
+      const members = (Array.isArray(relay.members) ? relay.members : []).map(engagementPdfPersonName);
+      lines.push(engagementTxtLine([
+        "RELAIS",
+        entry.clubId,
+        relay.relayId,
+        engagementPdfEventLabel(relay.eventCode),
+        engagementPdfCategoryLabel(relay.category),
+        engagementPdfGenderLabel(relay.genderMode),
+        relay.entryTime || relay.manualEntryTime || "59:59.99",
+        members[0],
+        members[1],
+        members[2],
+        members[3],
+        members[4],
+        members[5]
+      ]));
+    });
+  });
+  lines.push("");
+  const content = `${lines.join("\r\n")}\r\n`;
+  return {
+    buffer: Buffer.from(content, "utf8"),
+    generatedAt,
+    fileName: `export-engagements-provisoire-${engagementPdfFileName(competition.name || competition.id)}.txt`
+  };
+}
+
+async function readStoredEngagementTxt(document = {}) {
+  const storagePath = cleanText(document.storagePath);
+  if (!storagePath) return null;
+  const [buffer] = await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).download();
+  return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+}
+
+async function getOrCreateEngagementCompetitionTxt(competitionSnapshot, entrySnapshots = [], options = {}) {
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const rawCompetition = competitionSnapshot.data() || {};
+  const entries = entrySnapshots
+    .map((entryDoc) => engagementClubEntryItem(entryDoc))
+    .filter((entry) => entry.competitionId === competition.id && entry.clubId)
+    .sort((left, right) => cleanText(left.clubName).localeCompare(cleanText(right.clubName), "fr"));
+  const sourceHash = engagementTxtSourceHash(competition, entries);
+  const existingDocument = rawCompetition.documents?.entriesTxt || null;
+  if (options.force !== true && existingDocument?.storagePath && existingDocument.sourceHash === sourceHash) {
+    try {
+      const buffer = await readStoredEngagementTxt(existingDocument);
+      if (buffer?.length) {
+        return {
+          buffer,
+          generatedAt: existingDocument.generatedAt,
+          fileName: existingDocument.fileName || "export-engagements-livepalmes.txt",
+          document: existingDocument,
+          file: cleanEngagementGeneratedFile(existingDocument),
+          generatedFiles: cleanEngagementGeneratedFiles(rawCompetition.generatedFiles || []),
+          entryCount: entries.length,
+          fromStorage: true
+        };
+      }
+    } catch (error) {
+      console.warn("engagement txt storage read failed", {
+        competitionId: competition.id,
+        storagePath: existingDocument.storagePath,
+        message: error?.message || String(error)
+      });
+    }
+  }
+  const txt = buildEngagementCompetitionTxt(competition, entries);
+  const storagePath = engagementTxtStoragePath(competition.id);
+  const token = crypto.randomUUID();
+  await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(txt.buffer, {
+    resumable: false,
+    contentType: "text/plain; charset=utf-8",
+    metadata: {
+      cacheControl: "private, max-age=0, no-transform",
+      metadata: {
+        firebaseStorageDownloadTokens: token,
+        competitionId: cleanText(competition.id).slice(0, 128),
+        generatedAt: txt.generatedAt,
+        sourceHash
+      }
+    }
+  });
+  const url = engagementTxtDownloadUrl(storagePath, token);
+  const document = cleanEngagementDocumentMetadata({
+    status: "generated",
+    type: "entriesTxt",
+    fileName: txt.fileName,
+    contentType: "text/plain; charset=utf-8",
+    storagePath,
+    url,
+    size: txt.buffer.length,
+    generatedAt: txt.generatedAt,
+    sourceHash,
+    competitionId: competition.id
+  });
+  const file = cleanEngagementGeneratedFile({
+    ...document,
+    type: "entriesTxt",
+    name: "Export TXT engagements",
+    url
+  });
+  const generatedFiles = [
+    file,
+    ...cleanEngagementGeneratedFiles(rawCompetition.generatedFiles || []).filter((item) => item.type !== "entriesTxt")
+  ].slice(0, 30);
+  await db.collection("engagementCompetitions").doc(competition.id).set({
+    documents: {
+      entriesTxt: {
+        ...document,
+        url
+      }
+    },
+    generatedFiles,
+    updatedAt: txt.generatedAt
+  }, { merge: true });
+  return {
+    ...txt,
+    document,
+    file,
+    generatedFiles,
+    entryCount: entries.length,
     fromStorage: false
   };
 }
@@ -4886,7 +5425,7 @@ function engagementRecipientHasCapability(recipient = {}, capability) {
 async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
   const mailCapabilities = capabilities.filter((capability) => ENGAGEMENT_MAIL_CAPABILITIES.includes(capability));
   const snapshots = await Promise.all(mailCapabilities.map((capability) => {
-    const capabilityField = new admin.firestore.FieldPath("capabilities", capability);
+    const capabilityField = new FieldPath("capabilities", capability);
     return db.collection("users")
       .where(capabilityField, "==", true)
       .limit(1000)
@@ -5021,6 +5560,23 @@ function engagementClubRecapMailText(competition = {}, entry = {}) {
   ].join("\n");
 }
 
+function engagementTxtMailSubject(competition = {}) {
+  return `Export TXT engagements - ${competition.name || "Competition LivePalmes"}`;
+}
+
+function engagementTxtMailText(competition = {}, txt = {}) {
+  return [
+    "Bonjour,",
+    "",
+    `Vous trouverez en piece jointe l'export TXT des engagements pour ${competition.name || "la competition"}.`,
+    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
+    `Lieu : ${competition.location || "-"}.`,
+    `Fichier : ${txt.document?.fileName || txt.fileName || "export-engagements-livepalmes.txt"}.`,
+    "",
+    "LivePalmes"
+  ].join("\n");
+}
+
 function engagementMailJobItemFromData(data = {}, id = "") {
   return cleanFirestoreValue({
     id: cleanText(id || data.id).slice(0, 80),
@@ -5073,13 +5629,13 @@ async function upsertEngagementMailJob(payload = {}, now = "") {
     updatedAt: preparedAt,
     createdAt: preparedAt
   });
-  await admin.firestore().collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set({
+  await db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(id).set({
     ...job,
-    sentAt: admin.firestore.FieldValue.delete(),
-    sentBy: admin.firestore.FieldValue.delete(),
-    sentByEmail: admin.firestore.FieldValue.delete(),
-    failedAt: admin.firestore.FieldValue.delete(),
-    providerMessageId: admin.firestore.FieldValue.delete()
+    sentAt: FieldValue.delete(),
+    sentBy: FieldValue.delete(),
+    sentByEmail: FieldValue.delete(),
+    failedAt: FieldValue.delete(),
+    providerMessageId: FieldValue.delete()
   }, { merge: true });
   return engagementMailJobItemFromData(job, id);
 }
@@ -5197,6 +5753,10 @@ function engagementClubPersonItem(doc) {
       teamLeader: roles.teamLeader === true
     },
     active: data.active !== false,
+    status: cleanText(data.status || (data.mergedIntoId ? "merged" : "active")).slice(0, 30),
+    mergedIntoId: cleanText(data.mergedIntoId).slice(0, 80),
+    mergedIntoName: cleanText(data.mergedIntoName).slice(0, 180),
+    mergedAt: cleanText(data.mergedAt).slice(0, 40),
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
   };
 }
@@ -5239,6 +5799,10 @@ function engagementClubPeopleRosterPeopleFromData(data = {}) {
 function upsertEngagementClubPeopleRosterPerson(batch, db, person = {}, now = "") {
   const item = engagementClubPeopleRosterPersonItem(person);
   if (!item.clubId || !item.id) return;
+  if (cleanText(person.status) === "merged" || cleanText(person.mergedIntoId)) {
+    deleteEngagementClubPeopleRosterPerson(batch, db, item, now);
+    return;
+  }
   batch.set(engagementClubPeopleRosterRef(db, item.clubId), {
     clubId: item.clubId,
     clubName: item.clubName,
@@ -5256,7 +5820,7 @@ function deleteEngagementClubPeopleRosterPerson(batch, db, person = {}, now = ""
   batch.set(engagementClubPeopleRosterRef(db, clubId), {
     updatedAt: now || new Date().toISOString(),
     people: {
-      [personId]: admin.firestore.FieldValue.delete()
+      [personId]: FieldValue.delete()
     }
   }, { merge: true });
 }
@@ -5288,7 +5852,7 @@ async function rebuildEngagementClubPeopleRoster(db, context = {}) {
 async function syncEngagementClubPeopleRosterFromChange(event = {}) {
   const before = event.data?.before?.exists ? engagementClubPersonItem(event.data.before) : null;
   const after = event.data?.after?.exists ? engagementClubPersonItem(event.data.after) : null;
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -5337,6 +5901,11 @@ function engagementClubSwimmerItem(doc) {
     licenseSeasonStatus: licenseSeason.status,
     latestDate: cleanIsoDate(data.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(data.performanceCount) || 0)),
+    active: data.active !== false,
+    status: cleanText(data.status || (data.active === false ? "inactive" : "active")).slice(0, 40),
+    mergedIntoId: cleanText(data.mergedIntoId).slice(0, 80),
+    mergedIntoSource: cleanText(data.mergedIntoSource).slice(0, 40),
+    mergedIntoName: cleanText(data.mergedIntoName).slice(0, 160),
     sourceIds: Array.isArray(data.sourceIds) ? data.sourceIds.map((id) => cleanText(id).slice(0, 80)).filter(Boolean).slice(0, 20) : []
   });
 }
@@ -5436,21 +6005,6 @@ async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
     const item = engagementClubRosterSwimmerItem(swimmer);
     if (item.swimmerIndexId && item.clubId === clubId) rosterEntries[engagementClubRosterSwimmerKey(item)] = item;
   });
-  const swimmersWithMigratedLicenses = swimmers.filter((swimmer) =>
-    swimmer.licenseNumber && legacyLicenses.has(swimmer.swimmerIndexId) && swimmer.source !== "reference"
-  );
-  for (let index = 0; index < swimmersWithMigratedLicenses.length; index += 420) {
-    const batch = db.batch();
-    swimmersWithMigratedLicenses.slice(index, index + 420).forEach((swimmer) => {
-      batch.set(db.collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION).doc(swimmer.swimmerIndexId), {
-        licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
-        licenseUpdatedAt: now,
-        licenseUpdatedBy: "engagement-roster-migration",
-        updatedAt: now
-      }, { merge: true });
-    });
-    await batch.commit();
-  }
   await engagementClubRosterRef(db, clubId).set({
     clubId,
     clubName: cleanText(context.clubName).slice(0, 140) || swimmers.find((swimmer) => swimmer.clubName)?.clubName || "",
@@ -5466,7 +6020,7 @@ async function syncEngagementClubRosterFromSwimmerChange(event = {}, source = "p
   const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
   const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
   const docId = cleanText(event.params?.swimmerIndexId || event.params?.swimmerId);
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const batch = db.batch();
   let batchSize = 0;
@@ -5670,7 +6224,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   const entryStatus = ENGAGEMENT_ENTRY_STATUSES.has(cleanText(request.data?.entryStatus))
     ? cleanText(request.data.entryStatus)
     : "";
-  const db = admin.firestore();
+  const db = db;
   const forceRebuild = request.data?.forceCalendar === true;
   const calendarSnapshot = forceRebuild ? null : await engagementCompetitionCalendarRef(db, season.endYear).get();
   const calendarReady = calendarSnapshot?.exists && cleanText(calendarSnapshot.data()?.generatedAt);
@@ -5707,11 +6261,11 @@ exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const doc = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const doc = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!doc.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  const deletionRequest = await admin.firestore().collection("engagementCompetitionDeletionRequests").doc(competitionId).get();
+  const deletionRequest = await db.collection("engagementCompetitionDeletionRequests").doc(competitionId).get();
   const deletionRequestData = deletionRequest.exists ? deletionRequest.data() || {} : {};
   return {
     ok: true,
@@ -5728,11 +6282,11 @@ exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   return {
     ok: true,
@@ -5752,11 +6306,11 @@ exports.generateEngagementClubRecapPdf = onCall(CALLABLE_OPTIONS, async (request
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  const entry = await admin.firestore()
+  const entry = await db
     .collection("engagementClubEntries")
     .doc(engagementClubEntryId(competitionId, context.clubId))
     .get();
@@ -5794,12 +6348,12 @@ exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (re
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertCanManageEngagementCompetition(context, competition.data() || {});
-  const db = admin.firestore();
+  const db = db;
   const forceRebuild = request.data?.forceSummary === true;
   const summarySnapshot = forceRebuild ? null : await engagementCompetitionEntrySummaryRef(db, competitionId).get();
   const summaryReady = summarySnapshot?.exists && cleanText(summarySnapshot.data()?.generatedAt);
@@ -5831,12 +6385,12 @@ exports.generateEngagementClubRecapPdfForAdmin = onCall(CALLABLE_OPTIONS, async 
   if (!competitionId || !clubId) {
     throw new HttpsError("invalid-argument", "Competition et club requis.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertCanManageEngagementCompetition(context, competition.data() || {});
-  const entry = await admin.firestore()
+  const entry = await db
     .collection("engagementClubEntries")
     .doc(engagementClubEntryId(competitionId, clubId))
     .get();
@@ -5874,7 +6428,7 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -5944,13 +6498,54 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
   };
 });
 
+exports.generateEngagementCompetitionTxtExport = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  const db = db;
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertCanManageEngagementCompetition(context, competition.data() || {});
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const result = await getOrCreateEngagementCompetitionTxt(competition, entriesSnapshot.docs, {
+    force: request.data?.force === true
+  });
+  await writeAuditLog("engagementCompetition.txtExportGenerated", context.uid, {
+    competitionId,
+    entryCount: result.entryCount,
+    fileName: result.fileName,
+    size: result.buffer.length,
+    fromStorage: result.fromStorage
+  });
+  return {
+    ok: true,
+    competitionId,
+    entryCount: result.entryCount,
+    fileName: result.fileName,
+    contentType: "text/plain; charset=utf-8",
+    generatedAt: result.generatedAt,
+    document: result.document,
+    file: result.file,
+    generatedFiles: result.generatedFiles,
+    fromStorage: result.fromStorage,
+    txtBase64: result.buffer.toString("base64")
+  };
+});
+
 exports.listEngagementCompetitionMailJobs = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -5980,7 +6575,7 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competitionSnapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6117,7 +6712,7 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const competitionSnapshot = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competitionSnapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6141,6 +6736,71 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
     ...result
   };
 });
+
+async function prepareEngagementTxtEmailJob(db, competitionSnapshot, options = {}) {
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const competitionId = cleanText(competition.id).slice(0, 128);
+  const computerEmail = normalizeEmail(competition.computerEmail);
+  const now = new Date().toISOString();
+  if (!computerEmail) {
+    return {
+      competitionId,
+      jobCount: 0,
+      errorCount: 1,
+      errors: [{
+        message: "Email informatique non renseigne."
+      }],
+      generatedFiles: cleanEngagementGeneratedFiles(competition.generatedFiles || [])
+    };
+  }
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const txt = await getOrCreateEngagementCompetitionTxt(competitionSnapshot, entriesSnapshot.docs, {
+    force: options.forceTxt === true
+  });
+  const job = await upsertEngagementMailJob({
+    type: "entries_txt",
+    competitionId,
+    competitionName: competition.name,
+    clubId: "informatique",
+    clubName: "Informatique competition",
+    regionId: competition.regionId,
+    toEmail: computerEmail,
+    toName: "Responsable informatique",
+    subject: engagementTxtMailSubject(competition),
+    text: engagementTxtMailText(competition, txt),
+    attachments: [{
+      type: "entriesTxt",
+      fileName: txt.document?.fileName || txt.fileName,
+      contentType: "text/plain; charset=utf-8",
+      storagePath: txt.document?.storagePath
+    }]
+  }, now);
+  await db.collection("engagementCompetitions").doc(competitionId).set({
+    documents: {
+      entriesTxt: {
+        status: "generated",
+        generatedAt: txt.generatedAt,
+        updatedAt: now,
+        jobCount: job ? 1 : 0
+      }
+    }
+  }, { merge: true });
+  return {
+    competitionId,
+    entryCount: txt.entryCount,
+    jobCount: job ? 1 : 0,
+    errorCount: 0,
+    mailStatus: engagementMailPreparedStatus(),
+    generatedAt: txt.generatedAt,
+    generatedFiles: txt.generatedFiles,
+    txtFileName: txt.fileName,
+    txtFromStorage: txt.fromStorage,
+    jobs: job ? [job] : []
+  };
+}
 
 async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context = {}, options = {}) {
   const competitionId = cleanText(competitionSnapshot.id).slice(0, 128);
@@ -6179,19 +6839,30 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
     else if (job.status === "failed") errorCount += 1;
     jobs.push(job);
   }
-  if (requestedType === "club_recap_pdf" && candidates.length) {
+  if ((requestedType === "club_recap_pdf" || requestedType === "entries_txt") && candidates.length) {
     const now = new Date().toISOString();
     await db.collection("engagementCompetitions").doc(competitionId).set({
-      documents: {
-        clubRecapEmails: {
-          status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
-          generatedAt: now,
-          updatedAt: now,
-          attemptedCount: candidates.length,
-          sentCount,
-          errorCount
-        }
-      }
+      documents: requestedType === "entries_txt"
+        ? {
+            entriesTxt: {
+              status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
+              generatedAt: now,
+              updatedAt: now,
+              attemptedCount: candidates.length,
+              sentCount,
+              errorCount
+            }
+          }
+        : {
+            clubRecapEmails: {
+              status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
+              generatedAt: now,
+              updatedAt: now,
+              attemptedCount: candidates.length,
+              sentCount,
+              errorCount
+            }
+          }
     }, { merge: true });
   }
   return {
@@ -6209,7 +6880,7 @@ exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, 
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -6262,7 +6933,7 @@ async function reserveEngagementCompetitionClosure(db, competitionRef, now) {
       closureAutomationStatus: "processing",
       closureAutomationStartedAt: now,
       closureAutomationLastAttemptAt: now,
-      closureAutomationAttemptCount: admin.firestore.FieldValue.increment(1),
+      closureAutomationAttemptCount: FieldValue.increment(1),
       updatedAt: now,
       updatedBy: "system:engagementClosureScheduler"
     }, { merge: true });
@@ -6292,6 +6963,9 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
     const preparation = await prepareEngagementClubRecapEmailJobs(db, closedSnapshot, {
       forcePdf: false
     });
+    const txtPreparation = await prepareEngagementTxtEmailJob(db, closedSnapshot, {
+      forceTxt: false
+    });
     const sendResult = preparation.jobCount
       ? await sendEngagementPreparedEmailJobs(db, closedSnapshot, context, {
           type: "club_recap_pdf",
@@ -6304,8 +6978,20 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
           errorCount: 0,
           jobs: []
         };
+    const txtSendResult = txtPreparation.jobCount
+      ? await sendEngagementPreparedEmailJobs(db, closedSnapshot, context, {
+          type: "entries_txt",
+          limit: 10
+        })
+      : {
+          competitionId: closedSnapshot.id,
+          attemptedCount: 0,
+          sentCount: 0,
+          errorCount: 0,
+          jobs: []
+        };
     const completedAt = new Date().toISOString();
-    const status = preparation.errorCount || sendResult.errorCount
+    const status = preparation.errorCount || txtPreparation.errorCount || sendResult.errorCount || txtSendResult.errorCount
       ? "completed_with_errors"
       : "completed";
     await competitionRef.set({
@@ -6319,10 +7005,15 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
         jobCount: preparation.jobCount,
         pdfGeneratedCount: preparation.pdfGeneratedCount,
         pdfReusedCount: preparation.pdfReusedCount,
-        prepareErrorCount: preparation.errorCount,
-        attemptedMailCount: sendResult.attemptedCount,
-        sentMailCount: sendResult.sentCount,
-        sendErrorCount: sendResult.errorCount,
+        txtGeneratedCount: txtPreparation.generatedAt ? 1 : 0,
+        txtMailJobCount: txtPreparation.jobCount,
+        prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0),
+        attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0),
+        sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0),
+        sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0),
+        txtAttemptedMailCount: txtSendResult.attemptedCount,
+        txtSentMailCount: txtSendResult.sentCount,
+        txtSendErrorCount: txtSendResult.errorCount,
         updatedAt: completedAt
       }),
       updatedAt: completedAt,
@@ -6336,17 +7027,24 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
       jobCount: preparation.jobCount,
       pdfGeneratedCount: preparation.pdfGeneratedCount,
       pdfReusedCount: preparation.pdfReusedCount,
-      prepareErrorCount: preparation.errorCount,
-      attemptedMailCount: sendResult.attemptedCount,
-      sentMailCount: sendResult.sentCount,
-      sendErrorCount: sendResult.errorCount
+      txtGeneratedCount: txtPreparation.generatedAt ? 1 : 0,
+      txtMailJobCount: txtPreparation.jobCount,
+      prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0),
+      attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0),
+      sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0),
+      sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0),
+      txtAttemptedMailCount: txtSendResult.attemptedCount,
+      txtSentMailCount: txtSendResult.sentCount,
+      txtSendErrorCount: txtSendResult.errorCount
     });
     return {
       competitionId: closedSnapshot.id,
       skipped: false,
       status,
       preparation,
-      sendResult
+      txtPreparation,
+      sendResult,
+      txtSendResult
     };
   } catch (error) {
     const failedAt = new Date().toISOString();
@@ -6371,7 +7069,7 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
 }
 
 exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const snapshot = await db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION)
     .where("runAt", "<=", now)
@@ -6421,7 +7119,7 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
@@ -6438,7 +7136,7 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
     throw new HttpsError("invalid-argument", "Chef d'equipe ou renonciation obligatoire.");
   }
   const now = new Date().toISOString();
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const snapshot = await entryRef.get();
   const payload = {
     competitionId,
@@ -6468,7 +7166,7 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
 exports.listEngagementClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const includeInactive = request.data?.includeInactive === true;
-  const db = admin.firestore();
+  const db = db;
   const forceRebuild = request.data?.forceRoster === true;
   const rosterSnapshot = forceRebuild ? null : await engagementClubPeopleRosterRef(db, context.clubId).get();
   const rosterReady = rosterSnapshot?.exists && cleanText(rosterSnapshot.data()?.generatedAt);
@@ -6494,7 +7192,7 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const person = cleanEngagementClubPerson(request.data?.person || {}, context);
-  const db = admin.firestore();
+  const db = db;
   const docId = personId || stableHash(`${context.clubId}|${person.licenseNumber}`).slice(0, 40);
   const ref = db.collection("engagementClubPeople").doc(docId);
   const snapshot = await ref.get();
@@ -6532,7 +7230,7 @@ exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request)
   if (!personId) {
     throw new HttpsError("invalid-argument", "Personne requise.");
   }
-  const ref = admin.firestore().collection("engagementClubPeople").doc(personId);
+  const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Personne introuvable.");
@@ -6541,7 +7239,7 @@ exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request)
     throw new HttpsError("permission-denied", "Personne hors perimetre club.");
   }
   const now = new Date().toISOString();
-  const db = admin.firestore();
+  const db = db;
   const payload = {
     active,
     updatedAt: now,
@@ -6572,12 +7270,12 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertEngagementClubWriteOpen(competition.data() || {});
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les officiels.");
@@ -6587,8 +7285,8 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
     .map((id) => cleanText(id).slice(0, 80))
     .filter(Boolean)))
     .slice(0, 80);
-  const personRefs = personIds.map((id) => admin.firestore().collection("engagementClubPeople").doc(id));
-  const personDocs = personRefs.length ? await admin.firestore().getAll(...personRefs) : [];
+  const personRefs = personIds.map((id) => db.collection("engagementClubPeople").doc(id));
+  const personDocs = personRefs.length ? await db.getAll(...personRefs) : [];
   const officials = personDocs.map((doc) => {
     if (!doc.exists) {
       throw new HttpsError("invalid-argument", "Officiel inconnu dans la base club.");
@@ -6625,7 +7323,7 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
 
 exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
-  const db = admin.firestore();
+  const db = db;
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
   const forceRebuild = request.data?.forceRoster === true;
   const rosterSnapshot = forceRebuild ? null : await engagementClubRosterRef(db, context.clubId).get();
@@ -6648,6 +7346,7 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
 exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
+  await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
   return {
     ok: true,
@@ -6660,7 +7359,7 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
 exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
-  const db = admin.firestore();
+  const db = db;
   const now = new Date().toISOString();
   const docId = stableHash([
     context.clubId,
@@ -6672,6 +7371,10 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
   if (snapshot.exists && cleanText(snapshot.data()?.clubId) !== context.clubId) {
     throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
   }
+  if (snapshot.exists) {
+    throw new HttpsError("already-exists", "Un nageur avec cette licence existe deja pour ce club. Utilisez la fiche existante.");
+  }
+  await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
   const confirmAlerts = request.data?.confirmAlerts === true;
   if (alerts.length && !confirmAlerts) {
@@ -6706,6 +7409,16 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
     updatedBy: context.uid
   };
   batch.set(licenseRef, licensePayload, { merge: true });
+  const licenseNumberRefId = engagementSwimmerLicenseNumberId(swimmer.licenseNumber);
+  if (licenseNumberRefId) {
+    batch.create(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId), {
+      ...licensePayload,
+      swimmerIndexId: docId,
+      licenseKey: engagementSwimmerLicenseNumberKey(swimmer.licenseNumber),
+      updatedAt: now,
+      updatedBy: context.uid
+    });
+  }
   upsertEngagementClubRosterSwimmer(batch, db, { ...payload, id: docId, swimmerIndexId: docId, source: "engagement" }, now);
   alerts.forEach((alert, index) => {
     const alertRef = db.collection("engagementSwimmerAlerts").doc(stableHash(`${docId}|${alert.type}|${alert.swimmerIndexId || index}`).slice(0, 40));
@@ -6747,7 +7460,7 @@ exports.listEngagementNationalClubSwimmers = onCall(CALLABLE_OPTIONS, async (req
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
   }
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection("engagementClubSwimmers")
     .orderBy("updatedAt", "desc")
     .limit(limit)
@@ -6755,6 +7468,95 @@ exports.listEngagementNationalClubSwimmers = onCall(CALLABLE_OPTIONS, async (req
   return {
     ok: true,
     swimmers: snapshot.docs.map(engagementNewSwimmerItem)
+  };
+});
+
+function nationalSwimmerSearchMatches(swimmer = {}, terms = []) {
+  if (!terms.length) return true;
+  const haystack = normalizePerformanceSearchText([
+    swimmer.firstName,
+    swimmer.lastName,
+    swimmer.name,
+    swimmer.licenseNumber,
+    swimmer.birthDate,
+    swimmer.sex,
+    swimmer.clubId,
+    swimmer.club,
+    swimmer.clubName,
+    swimmer.identityKey,
+    swimmer.id,
+    swimmer.swimmerId,
+    ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : [])
+  ].filter(Boolean).join(" "));
+  return terms.every((term) => haystack.includes(term));
+}
+
+function nationalSwimmerSort(left = {}, right = {}) {
+  return cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
+    cleanText(left.lastName).localeCompare(cleanText(right.lastName), "fr") ||
+    cleanText(left.firstName).localeCompare(cleanText(right.firstName), "fr") ||
+    cleanText(left.source).localeCompare(cleanText(right.source), "fr");
+}
+
+async function searchEngagementNationalSwimmerDocs(db, query = "", limit = 40) {
+  const cleanQuery = cleanText(query).slice(0, 120);
+  const normalized = normalizePerformanceSearchText(cleanQuery);
+  const terms = normalized.split(/\s+/).filter((term) => term.length >= 2).slice(0, 5);
+  const licenseKey = engagementSwimmerLicenseNumberKey(cleanQuery);
+  if (!terms.length && licenseKey.length < 3) return [];
+  const docs = new Map();
+  const addDoc = (doc, source) => {
+    if (!doc.exists) return;
+    const key = `${source}:${doc.id}`;
+    if (!docs.has(key)) docs.set(key, { doc, source });
+  };
+  const reads = [];
+  if (terms.length) {
+    reads.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("searchPrefixes", "array-contains", terms[0].slice(0, 18))
+      .limit(Math.min(80, Math.max(limit * 2, 30)))
+      .get()
+      .then((snapshot) => snapshot.docs.forEach((doc) => addDoc(doc, "performances"))));
+  }
+  if (cleanQuery) {
+    reads.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
+      .where("licenseNumber", "==", cleanQuery)
+      .limit(limit)
+      .get()
+      .then((snapshot) => snapshot.docs.forEach((doc) => addDoc(doc, "performances"))));
+    reads.push(db.collection("engagementClubSwimmers")
+      .where("licenseNumber", "==", cleanQuery)
+      .limit(limit)
+      .get()
+      .then((snapshot) => snapshot.docs.forEach((doc) => addDoc(doc, "engagement"))));
+  }
+  if (terms.length) {
+    reads.push(db.collection("engagementClubSwimmers")
+      .orderBy("updatedAt", "desc")
+      .limit(200)
+      .get()
+      .then((snapshot) => snapshot.docs.forEach((doc) => addDoc(doc, "engagement"))));
+  }
+  await Promise.all(reads);
+  return Array.from(docs.values())
+    .map((item) => engagementNationalSwimmerItemFromDoc(item.doc, item.source))
+    .filter((swimmer) => nationalSwimmerSearchMatches(swimmer, terms))
+    .sort(nationalSwimmerSort)
+    .slice(0, limit);
+}
+
+exports.searchEngagementNationalSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
+  }
+  const query = cleanText(request.data?.query).slice(0, 120);
+  const limit = Math.min(80, Math.max(10, Math.trunc(Number(request.data?.limit) || 40)));
+  const swimmers = await searchEngagementNationalSwimmerDocs(db, query, limit);
+  return {
+    ok: true,
+    query,
+    swimmers
   };
 });
 
@@ -6768,18 +7570,23 @@ exports.setEngagementNationalClubSwimmerStatus = onCall(CALLABLE_OPTIONS, async 
     throw new HttpsError("invalid-argument", "Nageur requis.");
   }
   const active = request.data?.active === true;
-  const ref = admin.firestore().collection("engagementClubSwimmers").doc(swimmerId);
+  const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Nageur introuvable.");
   }
+  if (cleanText(snapshot.data()?.status) === "merged" && active) {
+    throw new HttpsError("failed-precondition", "Un nageur fusionne ne peut pas etre reactive directement.");
+  }
   const now = new Date().toISOString();
-  await ref.set({
+  const payload = {
     active,
+    ...(active ? { status: "active" } : {}),
     updatedAt: now,
     updatedBy: context.uid,
     ...(active ? { reactivatedAt: now, reactivatedBy: context.uid } : { disabledAt: now, disabledBy: context.uid })
-  }, { merge: true });
+  };
+  await ref.set(payload, { merge: true });
   await writeAuditLog("engagementClubSwimmer.statusChanged", context.uid, {
     swimmerId,
     clubId: cleanText(snapshot.data()?.clubId).slice(0, 40),
@@ -6804,7 +7611,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
   }
-  const db = admin.firestore();
+  const db = db;
   const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -6818,6 +7625,10 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   const batch = db.batch();
   batch.delete(ref);
   batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(swimmerId).slice(0, 40)));
+  const licenseNumberRefId = engagementSwimmerLicenseNumberId(data.licenseNumber);
+  if (licenseNumberRefId) {
+    batch.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId));
+  }
   deleteEngagementClubRosterSwimmer(batch, db, { ...data, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" });
   alertsSnapshot.docs.forEach((alertDoc) => batch.delete(alertDoc.ref));
   await batch.commit();
@@ -6830,6 +7641,715 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
     ok: true,
     swimmerId,
     alertDocsDeleted: alertsSnapshot.size
+  };
+});
+
+function engagementNationalSwimmerCollectionForSource(db, source = "") {
+  const cleanSource = cleanText(source || "engagement");
+  if (cleanSource === "performances") return db.collection(PERFORMANCE_SWIMMERS_COLLECTION);
+  if (cleanSource === "engagement") return db.collection("engagementClubSwimmers");
+  throw new HttpsError("invalid-argument", "Source nageur invalide.");
+}
+
+function engagementNationalSwimmerItemFromDoc(doc, source = "") {
+  return cleanText(source) === "performances"
+    ? engagementClubSwimmerItem(doc)
+    : engagementNewSwimmerItem(doc);
+}
+
+async function getEngagementNationalSwimmerForMerge(db, source = "", swimmerId = "") {
+  const cleanSource = cleanText(source || "engagement");
+  const cleanId = cleanText(swimmerId).slice(0, 80);
+  if (!cleanId) throw new HttpsError("invalid-argument", "Nageur requis.");
+  const collection = engagementNationalSwimmerCollectionForSource(db, cleanSource);
+  let ref = collection.doc(cleanId);
+  let snapshot = await ref.get();
+  if (!snapshot.exists && cleanSource === "performances") {
+    const identityKey = cleanText(swimmerId).slice(0, 180);
+    const lookups = [
+      collection.where("sourceIds", "array-contains", cleanId).limit(1).get(),
+      collection.where("aliases", "array-contains", cleanId).limit(1).get()
+    ];
+    if (identityKey) {
+      lookups.push(collection.where("identityKey", "==", identityKey).limit(1).get());
+    }
+    const snapshots = await Promise.all(lookups);
+    const match = snapshots.flatMap((item) => item.docs)[0];
+    if (match) {
+      ref = match.ref;
+      snapshot = match;
+    }
+  }
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Nageur introuvable.");
+  }
+  return {
+    ref,
+    snapshot,
+    swimmer: engagementNationalSwimmerItemFromDoc(snapshot, cleanSource),
+    source: cleanSource
+  };
+}
+
+function engagementNationalSwimmerFullName(swimmer = {}) {
+  return [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || swimmer.name || swimmer.licenseNumber || swimmer.id || "Nageur";
+}
+
+function engagementNationalSwimmerEntrySnapshot(swimmer = {}, source = "") {
+  return cleanEngagementEntrySwimmer({
+    ...swimmer,
+    swimmerIndexId: cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80),
+    source: cleanText(source || swimmer.source || "performances").slice(0, 40),
+    individualEntries: swimmer.individualEntries || []
+  });
+}
+
+function mergeEngagementEntryIndividualEntries(targetEntries = [], sourceEntries = []) {
+  const byEvent = new Map();
+  (Array.isArray(targetEntries) ? targetEntries : []).forEach((entry) => {
+    const cleanEntry = cleanEngagementEntryIndividualEntries([entry])[0];
+    if (cleanEntry?.eventCode) byEvent.set(cleanEntry.eventCode, cleanEntry);
+  });
+  (Array.isArray(sourceEntries) ? sourceEntries : []).forEach((entry) => {
+    const cleanEntry = cleanEngagementEntryIndividualEntries([entry])[0];
+    if (cleanEntry?.eventCode && !byEvent.has(cleanEntry.eventCode)) byEvent.set(cleanEntry.eventCode, cleanEntry);
+  });
+  return Array.from(byEvent.values());
+}
+
+function mergeEngagementClubEntrySwimmers(swimmers = [], sourceId = "", targetSnapshot = {}) {
+  const sourceKey = cleanText(sourceId).slice(0, 80);
+  const targetKey = cleanText(targetSnapshot.swimmerIndexId || targetSnapshot.id).slice(0, 80);
+  if (!sourceKey || !targetKey) return { swimmers: Array.isArray(swimmers) ? swimmers : [], changed: false };
+  const cleanSwimmers = (Array.isArray(swimmers) ? swimmers : []).map(cleanEngagementEntrySwimmer);
+  const sourceSwimmer = cleanSwimmers.find((swimmer) => cleanText(swimmer.swimmerIndexId).slice(0, 80) === sourceKey);
+  if (!sourceSwimmer) return { swimmers: cleanSwimmers, changed: false };
+  const existingTarget = cleanSwimmers.find((swimmer) => cleanText(swimmer.swimmerIndexId).slice(0, 80) === targetKey);
+  const mergedTarget = cleanEngagementEntrySwimmer({
+    ...targetSnapshot,
+    individualEntries: mergeEngagementEntryIndividualEntries(existingTarget?.individualEntries || [], sourceSwimmer.individualEntries || [])
+  });
+  const next = [];
+  let targetInserted = false;
+  cleanSwimmers.forEach((swimmer) => {
+    const swimmerKey = cleanText(swimmer.swimmerIndexId).slice(0, 80);
+    if (swimmerKey === sourceKey) {
+      if (!targetInserted && !existingTarget) {
+        next.push(mergedTarget);
+        targetInserted = true;
+      }
+      return;
+    }
+    if (swimmerKey === targetKey) {
+      next.push(mergedTarget);
+      targetInserted = true;
+      return;
+    }
+    next.push(swimmer);
+  });
+  if (!targetInserted) next.push(mergedTarget);
+  return { swimmers: next, changed: true };
+}
+
+function mergeEngagementClubEntryRelays(relays = [], sourceId = "", targetSnapshot = {}) {
+  const sourceKey = cleanText(sourceId).slice(0, 80);
+  const targetKey = cleanText(targetSnapshot.swimmerIndexId || targetSnapshot.id).slice(0, 80);
+  if (!sourceKey || !targetKey) return { relays: Array.isArray(relays) ? relays : [], changed: false };
+  let changed = false;
+  const targetMember = {
+    swimmerIndexId: targetKey,
+    swimmerId: cleanText(targetSnapshot.swimmerId).slice(0, 80),
+    firstName: cleanText(targetSnapshot.firstName).slice(0, 80),
+    lastName: cleanText(targetSnapshot.lastName).slice(0, 80),
+    name: cleanText(targetSnapshot.name).slice(0, 160),
+    birthDate: cleanIsoDate(targetSnapshot.birthDate),
+    sex: normalizeCategoryCode(targetSnapshot.sex),
+    licenseNumber: cleanText(targetSnapshot.licenseNumber).slice(0, 60)
+  };
+  const nextRelays = (Array.isArray(relays) ? relays : []).map((relay) => {
+    const memberIds = (Array.isArray(relay?.memberIds) ? relay.memberIds : [])
+      .map((id) => cleanText(id).slice(0, 80))
+      .filter(Boolean);
+    if (!memberIds.includes(sourceKey)) return relay;
+    if (memberIds.includes(targetKey)) {
+      throw new HttpsError("failed-precondition", "Fusion impossible : source et cible sont dans le meme relais. Corrigez ce relais avant de fusionner.");
+    }
+    changed = true;
+    const members = (Array.isArray(relay?.members) ? relay.members : []).map((member) =>
+      cleanText(member?.swimmerIndexId).slice(0, 80) === sourceKey ? targetMember : member
+    );
+    return cleanFirestoreValue({
+      ...relay,
+      memberIds: memberIds.map((id) => id === sourceKey ? targetKey : id),
+      members
+    });
+  });
+  return { relays: nextRelays, changed };
+}
+
+async function searchEngagementNationalSwimmerMergeTargetDocs(db, sourceSwimmer = {}, query = "", limit = 25) {
+  const docs = new Map();
+  const addDocs = (snapshot, source) => {
+    snapshot.docs.forEach((doc) => {
+      const key = `${source}:${doc.id}`;
+      if (!docs.has(key)) docs.set(key, { doc, source });
+    });
+  };
+  const cleanQuery = cleanText(query).slice(0, 100);
+  const sourceIdentityKey = cleanText(sourceSwimmer.identityKey).slice(0, 180);
+  const sourceLicense = cleanText(sourceSwimmer.licenseNumber).slice(0, 60);
+  const searchToken = normalizePerformanceSearchText(cleanQuery || engagementNationalSwimmerFullName(sourceSwimmer)).split(/\s+/)[0] || "";
+  const reads = [];
+  if (sourceIdentityKey) {
+    reads.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION).where("identityKey", "==", sourceIdentityKey).limit(limit).get().then((snapshot) => addDocs(snapshot, "performances")));
+    reads.push(db.collection("engagementClubSwimmers").where("identityKey", "==", sourceIdentityKey).limit(limit).get().then((snapshot) => addDocs(snapshot, "engagement")));
+  }
+  const license = cleanQuery || sourceLicense;
+  if (license) {
+    reads.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION).where("licenseNumber", "==", license).limit(limit).get().then((snapshot) => addDocs(snapshot, "performances")));
+    reads.push(db.collection("engagementClubSwimmers").where("licenseNumber", "==", license).limit(limit).get().then((snapshot) => addDocs(snapshot, "engagement")));
+  }
+  if (searchToken.length >= 2) {
+    reads.push(db.collection(PERFORMANCE_SWIMMERS_COLLECTION).where("searchPrefixes", "array-contains", searchToken.slice(0, 18)).limit(limit).get().then((snapshot) => addDocs(snapshot, "performances")));
+  }
+  await Promise.all(reads);
+  return Array.from(docs.values()).slice(0, limit);
+}
+
+exports.searchEngagementNationalSwimmerMergeTargets = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
+  }
+  const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
+  const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
+  const query = cleanText(request.data?.query).slice(0, 100);
+  const limit = Math.min(40, Math.max(5, Math.trunc(Number(request.data?.limit) || 20)));
+  const db = db;
+  const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId);
+  const sourceKey = `${source.source}:${sourceSwimmerId}`;
+  const swimmers = (query
+    ? await searchEngagementNationalSwimmerDocs(db, query, limit + 1)
+    : (await searchEngagementNationalSwimmerMergeTargetDocs(db, source.swimmer, query, limit + 1))
+      .map((item) => engagementNationalSwimmerItemFromDoc(item.doc, item.source)))
+    .filter((swimmer) => `${swimmer.source || "performances"}:${swimmer.id || swimmer.swimmerIndexId}` !== sourceKey)
+    .filter((swimmer) => swimmer.status !== "merged" && !swimmer.mergedIntoId)
+    .slice(0, limit);
+  return {
+    ok: true,
+    swimmers
+  };
+});
+
+function performanceMergeTargetPayloadFromSwimmer(targetSwimmer = {}) {
+  const identityKey = cleanText(targetSwimmer.identityKey).slice(0, 180) ||
+    engagementSwimmerIdentityKey(targetSwimmer.firstName, targetSwimmer.lastName, targetSwimmer.birthDate);
+  return cleanFirestoreValue({
+    swimmerId: cleanText(targetSwimmer.swimmerId || targetSwimmer.id || targetSwimmer.swimmerIndexId).slice(0, 80),
+    swimmerIdentityKey: identityKey,
+    swimmer: engagementNationalSwimmerFullName(targetSwimmer),
+    firstName: cleanText(targetSwimmer.firstName).slice(0, 80),
+    lastName: cleanText(targetSwimmer.lastName).slice(0, 80),
+    birthDate: cleanIsoDate(targetSwimmer.birthDate),
+    sex: normalizeCategoryCode(targetSwimmer.sex)
+  });
+}
+
+async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}, sourceSwimmerId = "", limit = 180) {
+  const ids = Array.from(new Set([
+    sourceSwimmerId,
+    sourceSwimmer.id,
+    sourceSwimmer.swimmerId,
+    sourceSwimmer.swimmerIndexId,
+    ...(Array.isArray(sourceSwimmer.sourceIds) ? sourceSwimmer.sourceIds : [])
+  ].map((id) => cleanText(id).slice(0, 80)).filter(Boolean))).slice(0, 25);
+  const identityKey = cleanText(sourceSwimmer.identityKey).slice(0, 180);
+  if (!ids.length && !identityKey) return [];
+  const reads = [];
+  for (let index = 0; index < ids.length; index += 10) {
+    const chunk = ids.slice(index, index + 10);
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).limit(limit + 1).get());
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).limit(limit + 1).get());
+  }
+  if (identityKey) {
+    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).limit(limit + 1).get());
+  }
+  const snapshots = await Promise.all(reads);
+  const docs = new Map();
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((doc) => docs.set(doc.id, doc));
+  });
+  const rows = Array.from(docs.values());
+  if (rows.length > limit) {
+    throw new HttpsError("failed-precondition", "Fusion trop volumineuse pour une action directe. Une migration dediee est necessaire.");
+  }
+  return rows;
+}
+
+exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
+  }
+  const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
+  const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
+  const targetSwimmerId = cleanText(request.data?.targetSwimmerId).slice(0, 80);
+  const targetSource = cleanText(request.data?.targetSource || "performances").slice(0, 40);
+  if (!sourceSwimmerId || !targetSwimmerId || (sourceSource === targetSource && sourceSwimmerId === targetSwimmerId)) {
+    throw new HttpsError("invalid-argument", "Nageurs source et cible requis.");
+  }
+  if (request.data?.confirmMerge !== true) {
+    throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+  }
+  const db = db;
+  const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId);
+  const target = await getEngagementNationalSwimmerForMerge(db, targetSource, targetSwimmerId);
+  const sourceSwimmer = source.swimmer;
+  const targetSwimmer = target.swimmer;
+  if (sourceSwimmer.status === "merged" || sourceSwimmer.mergedIntoId) {
+    throw new HttpsError("failed-precondition", "Ce nageur est deja fusionne.");
+  }
+  if (targetSwimmer.status === "merged" || targetSwimmer.mergedIntoId) {
+    throw new HttpsError("failed-precondition", "La fiche cible est deja fusionnee vers une autre fiche.");
+  }
+  const clubMismatch = Boolean(sourceSwimmer.clubId && targetSwimmer.clubId && sourceSwimmer.clubId !== targetSwimmer.clubId);
+  if (clubMismatch && request.data?.confirmClubMismatch !== true) {
+    throw new HttpsError("failed-precondition", "Les clubs sont differents. Confirmation speciale requise.", {
+      code: "club-mismatch"
+    });
+  }
+  const licenseMismatch = Boolean(sourceSwimmer.licenseNumber && targetSwimmer.licenseNumber && sourceSwimmer.licenseNumber !== targetSwimmer.licenseNumber);
+  if (licenseMismatch && request.data?.confirmLicenseMismatch !== true) {
+    throw new HttpsError("failed-precondition", "Les numeros de licence sont differents. Confirmation speciale requise.", {
+      code: "license-mismatch"
+    });
+  }
+  const performanceDocs = await readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer, sourceSwimmerId, 180);
+  const now = new Date().toISOString();
+  const targetName = engagementNationalSwimmerFullName(targetSwimmer);
+  const targetSnapshot = engagementNationalSwimmerEntrySnapshot(targetSwimmer, target.source);
+  const entriesSnapshot = sourceSwimmer.clubId
+    ? await db.collection("engagementClubEntries").where("clubId", "==", sourceSwimmer.clubId).limit(300).get()
+    : { docs: [], size: 0 };
+  const batch = db.batch();
+  const targetPayload = {
+    active: true,
+    status: "active",
+    mergedSourceIds: FieldValue.arrayUnion(sourceSwimmerId),
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  if (!targetSwimmer.licenseNumber && sourceSwimmer.licenseNumber) {
+    targetPayload.licenseNumber = sourceSwimmer.licenseNumber;
+    targetSnapshot.licenseNumber = sourceSwimmer.licenseNumber;
+  }
+  const sourcePayload = {
+    active: false,
+    status: "merged",
+    mergedIntoId: targetSwimmerId,
+    mergedIntoSource: target.source,
+    mergedIntoName: targetName,
+    mergedAt: now,
+    mergedBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  batch.set(target.ref, targetPayload, { merge: true });
+  batch.set(source.ref, sourcePayload, { merge: true });
+  upsertEngagementClubRosterSwimmer(batch, db, { ...targetSwimmer, ...targetPayload, swimmerIndexId: targetSwimmer.swimmerIndexId || targetSwimmer.id, source: target.source }, now);
+  deleteEngagementClubRosterSwimmer(batch, db, { ...sourceSwimmer, id: sourceSwimmerId, swimmerIndexId: sourceSwimmerId, source: source.source }, now);
+  deleteEngagementEntryTimeCache(batch, db, { source: source.source, swimmerIndexId: sourceSwimmerId });
+  deleteEngagementEntryTimeCache(batch, db, { source: target.source, swimmerIndexId: targetSwimmer.swimmerIndexId || targetSwimmer.id });
+  if (source.source === "performances") {
+    const pageCount = Math.min(50, Math.max(0, Math.trunc(Number(source.snapshot.data()?.pageCount || 0) || 0)));
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      batch.delete(db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(sourceSwimmerId, pageIndex)));
+    }
+  }
+  let entrySwimmerUpdateCount = 0;
+  let relayUpdateCount = 0;
+  entriesSnapshot.docs.forEach((entryDoc) => {
+    const entry = entryDoc.data() || {};
+    const updates = {};
+    const swimmersResult = mergeEngagementClubEntrySwimmers(entry.swimmers || [], sourceSwimmerId, targetSnapshot);
+    if (swimmersResult.changed) {
+      updates.swimmers = swimmersResult.swimmers;
+      entrySwimmerUpdateCount += 1;
+    }
+    const relaysResult = mergeEngagementClubEntryRelays(entry.relays || [], sourceSwimmerId, targetSnapshot);
+    if (relaysResult.changed) {
+      updates.relays = relaysResult.relays;
+      relayUpdateCount += 1;
+    }
+    if (Object.keys(updates).length) {
+      batch.set(entryDoc.ref, {
+        ...updates,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    }
+  });
+  const updatedPerformanceRows = [];
+  const performanceTarget = performanceMergeTargetPayloadFromSwimmer({ ...targetSwimmer, ...targetPayload });
+  performanceDocs.forEach((doc) => {
+    const before = doc.data() || {};
+    const row = publicPerformanceBaseRow({ performanceBaseId: doc.id, ...before });
+    const updated = cleanFirestoreValue({
+      ...performanceTarget,
+      originalSwimmerId: cleanText(row.originalSwimmerId || row.swimmerId || sourceSwimmerId).slice(0, 80),
+      updatedAt: now,
+      updatedBy: context.uid,
+      sourceAction: "engagement.swimmerMerged"
+    });
+    batch.set(doc.ref, updated, { merge: true });
+    updatedPerformanceRows.push(publicPerformanceBaseRow({
+      ...row,
+      ...updated,
+      performanceBaseId: doc.id,
+      publicKey: row.publicKey || before.publicKey || performancePublicKey(row)
+    }));
+  });
+  if (source.source === "engagement") {
+    const sourceLicenseNumberRefId = engagementSwimmerLicenseNumberId(sourceSwimmer.licenseNumber);
+    if (sourceLicenseNumberRefId) {
+      batch.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(sourceLicenseNumberRefId));
+    }
+    batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(sourceSwimmerId).slice(0, 40)));
+  }
+  if (targetPayload.licenseNumber) {
+    const targetLicensePayload = engagementSwimmerLicensePayload(
+      { ...targetSwimmer, ...targetPayload, swimmerIndexId: targetSwimmer.swimmerIndexId || targetSwimmer.id },
+      { uid: context.uid, clubId: targetSwimmer.clubId || sourceSwimmer.clubId, clubName: targetSwimmer.clubName || sourceSwimmer.clubName },
+      { type: "national_merge", collectedAt: now, verificationSource: "national" }
+    );
+    batch.set(db.collection("engagementSwimmerLicenses").doc(stableHash(targetSwimmer.swimmerIndexId || targetSwimmer.id || targetSwimmerId).slice(0, 40)), targetLicensePayload, { merge: true });
+    const targetLicenseNumberRefId = engagementSwimmerLicenseNumberId(targetPayload.licenseNumber);
+    if (targetLicenseNumberRefId) {
+      batch.set(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(targetLicenseNumberRefId), targetLicensePayload, { merge: true });
+    }
+  }
+  await batch.commit();
+  if (updatedPerformanceRows.length) {
+    await writePerformanceSwimmerIndexRows(updatedPerformanceRows, { action: "engagement.swimmerMerged", now });
+    await writePerformanceSwimmerPageRows(updatedPerformanceRows, { action: "engagement.swimmerMerged", now });
+  }
+  await writeAuditLog("engagementClubSwimmer.nationalMerged", context.uid, {
+    sourceSwimmerId,
+    sourceSource: source.source,
+    targetSwimmerId,
+    targetSource: target.source,
+    sourceClubId: sourceSwimmer.clubId,
+    targetClubId: targetSwimmer.clubId,
+    clubMismatch,
+    licenseMismatch,
+    scannedEntryCount: entriesSnapshot.size,
+    entrySwimmerUpdateCount,
+    relayUpdateCount,
+    performanceUpdateCount: updatedPerformanceRows.length
+  });
+  const [updatedSource, updatedTarget] = await db.getAll(source.ref, target.ref);
+  return {
+    ok: true,
+    source: engagementNationalSwimmerItemFromDoc(updatedSource, source.source),
+    target: engagementNationalSwimmerItemFromDoc(updatedTarget, target.source),
+    scannedEntryCount: entriesSnapshot.size,
+    entrySwimmerUpdateCount,
+    relayUpdateCount,
+    performanceUpdateCount: updatedPerformanceRows.length
+  };
+});
+
+exports.listEngagementNationalClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
+  const snapshot = await db
+    .collection("engagementClubPeople")
+    .orderBy("updatedAt", "desc")
+    .limit(limit)
+    .get();
+  return {
+    ok: true,
+    people: snapshot.docs.map(engagementClubPersonItem)
+  };
+});
+
+exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Action reservee au niveau national.");
+  }
+  const personId = cleanText(request.data?.personId).slice(0, 80);
+  if (!personId) {
+    throw new HttpsError("invalid-argument", "Personne requise.");
+  }
+  const active = request.data?.active === true;
+  const db = db;
+  const ref = db.collection("engagementClubPeople").doc(personId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Personne introuvable.");
+  }
+  if (cleanText(snapshot.data()?.status) === "merged" && active) {
+    throw new HttpsError("failed-precondition", "Une personne fusionnee ne peut pas etre reactivee directement.");
+  }
+  const now = new Date().toISOString();
+  const payload = {
+    active,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(active ? { reactivatedAt: now, reactivatedBy: context.uid } : { disabledAt: now, disabledBy: context.uid })
+  };
+  const batch = db.batch();
+  batch.set(ref, payload, { merge: true });
+  upsertEngagementClubPeopleRosterPerson(batch, db, engagementClubPersonItem({
+    id: ref.id,
+    data: () => ({ ...(snapshot.data() || {}), ...payload })
+  }), now);
+  await batch.commit();
+  await writeAuditLog("engagementClubPerson.nationalStatusChanged", context.uid, {
+    personId,
+    clubId: cleanText(snapshot.data()?.clubId).slice(0, 40),
+    active
+  });
+  const updated = await ref.get();
+  return {
+    ok: true,
+    person: engagementClubPersonItem(updated)
+  };
+});
+
+exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
+  }
+  const personId = cleanText(request.data?.personId).slice(0, 80);
+  if (!personId) {
+    throw new HttpsError("invalid-argument", "Personne requise.");
+  }
+  if (request.data?.confirmPermanent !== true) {
+    throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  const db = db;
+  const ref = db.collection("engagementClubPeople").doc(personId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Personne introuvable.");
+  }
+  const data = snapshot.data() || {};
+  const batch = db.batch();
+  batch.delete(ref);
+  deleteEngagementClubPeopleRosterPerson(batch, db, { ...data, id: personId });
+  await batch.commit();
+  await writeAuditLog("engagementClubPerson.nationalDeleted", context.uid, {
+    personId,
+    clubId: cleanText(data.clubId).slice(0, 40),
+    roles: data.roles || {}
+  });
+  return {
+    ok: true,
+    personId
+  };
+});
+
+exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Historique reserve au niveau national.");
+  }
+  const limit = Math.min(120, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
+  const snapshot = await db
+    .collection("auditLogs")
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get();
+  return {
+    ok: true,
+    logs: snapshot.docs.map((doc) => {
+      const data = doc.data() || {};
+      return cleanFirestoreValue({
+        id: doc.id,
+        action: cleanText(data.action).slice(0, 120),
+        actorUid: cleanText(data.actorUid).slice(0, 160),
+        createdAt: cleanText(data.createdAt).slice(0, 40),
+        target: typeof data.target === "object" && data.target ? data.target : {}
+      });
+    })
+  };
+});
+
+function engagementClubPersonEntrySnapshot(person = {}) {
+  return {
+    personId: cleanText(person.id).slice(0, 80),
+    firstName: cleanText(person.firstName).slice(0, 80),
+    lastName: cleanText(person.lastName).slice(0, 80),
+    licenseNumber: cleanText(person.licenseNumber).slice(0, 60)
+  };
+}
+
+function engagementClubPersonFullName(person = {}) {
+  return [person.firstName, person.lastName].filter(Boolean).join(" ") || person.licenseNumber || person.id || "Personne";
+}
+
+function mergeEngagementClubEntryOfficials(officials = [], sourceId = "", targetOfficial = {}) {
+  const targetId = cleanText(targetOfficial.personId).slice(0, 80);
+  const seen = new Set();
+  let changed = false;
+  const merged = (Array.isArray(officials) ? officials : []).map((official) => {
+    const officialId = cleanText(official?.personId).slice(0, 80);
+    if (officialId === sourceId) {
+      changed = true;
+      return targetOfficial;
+    }
+    return cleanEngagementEntryOfficial(official || {});
+  }).filter((official) => official.personId || official.licenseNumber)
+    .filter((official) => {
+      const key = official.personId || `${official.licenseNumber}|${official.firstName}|${official.lastName}`;
+      if (!key) return false;
+      if (seen.has(key)) {
+        changed = true;
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  if (targetId && !seen.has(targetId) && (Array.isArray(officials) ? officials : []).some((official) => cleanText(official?.personId).slice(0, 80) === sourceId)) {
+    changed = true;
+  }
+  return { officials: merged, changed };
+}
+
+exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
+  }
+  const sourcePersonId = cleanText(request.data?.sourcePersonId).slice(0, 80);
+  const targetPersonId = cleanText(request.data?.targetPersonId).slice(0, 80);
+  if (!sourcePersonId || !targetPersonId || sourcePersonId === targetPersonId) {
+    throw new HttpsError("invalid-argument", "Personnes source et cible requises.");
+  }
+  if (request.data?.confirmMerge !== true) {
+    throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+  }
+  const db = db;
+  const sourceRef = db.collection("engagementClubPeople").doc(sourcePersonId);
+  const targetRef = db.collection("engagementClubPeople").doc(targetPersonId);
+  const [sourceSnapshot, targetSnapshot] = await db.getAll(sourceRef, targetRef);
+  if (!sourceSnapshot.exists || !targetSnapshot.exists) {
+    throw new HttpsError("not-found", "Personne source ou cible introuvable.");
+  }
+  const sourcePerson = engagementClubPersonItem(sourceSnapshot);
+  const targetPerson = engagementClubPersonItem(targetSnapshot);
+  if (sourcePerson.status === "merged" || sourcePerson.mergedIntoId) {
+    throw new HttpsError("failed-precondition", "Cette personne est deja fusionnee.");
+  }
+  if (targetPerson.status === "merged" || targetPerson.mergedIntoId) {
+    throw new HttpsError("failed-precondition", "La personne cible est deja fusionnee vers une autre fiche.");
+  }
+  if (!sourcePerson.clubId || !targetPerson.clubId) {
+    throw new HttpsError("failed-precondition", "Club source et club cible requis pour fusionner.");
+  }
+  const clubMismatch = sourcePerson.clubId !== targetPerson.clubId;
+  if (clubMismatch && request.data?.confirmClubMismatch !== true) {
+    throw new HttpsError("failed-precondition", "Les clubs sont differents. Confirmation speciale requise.", {
+      code: "club-mismatch"
+    });
+  }
+  const licenseMismatch = Boolean(sourcePerson.licenseNumber && targetPerson.licenseNumber && sourcePerson.licenseNumber !== targetPerson.licenseNumber);
+  if (licenseMismatch && request.data?.confirmLicenseMismatch !== true) {
+    throw new HttpsError("failed-precondition", "Les numeros de licence sont differents. Confirmation speciale requise.", {
+      code: "license-mismatch"
+    });
+  }
+  const now = new Date().toISOString();
+  const targetRoles = targetSnapshot.data()?.roles || {};
+  const sourceRoles = sourceSnapshot.data()?.roles || {};
+  const targetPayload = {
+    roles: {
+      official: targetRoles.official === true || sourceRoles.official === true,
+      teamLeader: targetRoles.teamLeader === true || sourceRoles.teamLeader === true
+    },
+    active: true,
+    status: "active",
+    mergedSourceIds: FieldValue.arrayUnion(sourcePersonId),
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  const sourcePayload = {
+    active: false,
+    status: "merged",
+    mergedIntoId: targetPersonId,
+    mergedIntoName: engagementClubPersonFullName(targetPerson),
+    mergedAt: now,
+    mergedBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  const targetEntrySnapshot = engagementClubPersonEntrySnapshot({ ...targetPerson, id: targetPersonId });
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("clubId", "==", sourcePerson.clubId)
+    .limit(300)
+    .get();
+  const batch = db.batch();
+  batch.set(targetRef, targetPayload, { merge: true });
+  batch.set(sourceRef, sourcePayload, { merge: true });
+  upsertEngagementClubPeopleRosterPerson(batch, db, { ...targetPerson, ...targetPayload, id: targetPersonId }, now);
+  deleteEngagementClubPeopleRosterPerson(batch, db, { ...sourcePerson, id: sourcePersonId }, now);
+  let teamLeaderUpdateCount = 0;
+  let officialsUpdateCount = 0;
+  entriesSnapshot.docs.forEach((entryDoc) => {
+    const entry = entryDoc.data() || {};
+    const updates = {};
+    const teamLeader = entry.teamLeader || {};
+    if (cleanText(teamLeader.personId).slice(0, 80) === sourcePersonId) {
+      updates.teamLeader = {
+        ...teamLeader,
+        ...targetEntrySnapshot,
+        mode: "person",
+        externalClub: targetPerson.clubId !== cleanText(entry.clubId),
+        clubId: targetPerson.clubId,
+        clubName: targetPerson.clubName
+      };
+      teamLeaderUpdateCount += 1;
+    }
+    const officialsResult = mergeEngagementClubEntryOfficials(entry.officials || [], sourcePersonId, targetEntrySnapshot);
+    if (officialsResult.changed) {
+      updates.officials = officialsResult.officials;
+      officialsUpdateCount += 1;
+    }
+    if (Object.keys(updates).length) {
+      batch.set(entryDoc.ref, {
+        ...updates,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    }
+  });
+  await batch.commit();
+  await writeAuditLog("engagementClubPerson.nationalMerged", context.uid, {
+    sourcePersonId,
+    targetPersonId,
+    sourceClubId: sourcePerson.clubId,
+    targetClubId: targetPerson.clubId,
+    clubMismatch,
+    licenseMismatch,
+    scannedEntryCount: entriesSnapshot.size,
+    teamLeaderUpdateCount,
+    officialsUpdateCount
+  });
+  const updatedTarget = await targetRef.get();
+  const updatedSource = await sourceRef.get();
+  return {
+    ok: true,
+    source: engagementClubPersonItem(updatedSource),
+    target: engagementClubPersonItem(updatedTarget),
+    scannedEntryCount: entriesSnapshot.size,
+    teamLeaderUpdateCount,
+    officialsUpdateCount
   };
 });
 
@@ -6878,7 +8398,7 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
-  const db = admin.firestore();
+  const db = db;
   const knownLicenses = await engagementLegacySwimmerLicensesByClub(db, context.clubId);
 
   const referenceSwimmersById = new Map();
@@ -6988,11 +8508,11 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
@@ -7011,12 +8531,12 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertEngagementClubWriteOpen(competition.data() || {});
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
@@ -7026,7 +8546,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, competitionData);
 
   const now = new Date().toISOString();
-  const batch = admin.firestore().batch();
+  const batch = db.batch();
   batch.set(entryRef, {
     swimmers,
     updatedAt: now,
@@ -7036,7 +8556,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     if (!swimmer.licenseNumber) return;
     if (!swimmer.licenseLocked && swimmer.source !== "reference") {
       const swimmerCollection = swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION;
-      const swimmerRef = admin.firestore().collection(swimmerCollection).doc(swimmer.swimmerIndexId);
+      const swimmerRef = db.collection(swimmerCollection).doc(swimmer.swimmerIndexId);
       batch.set(swimmerRef, {
         licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
         licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(swimmer.licenseVerificationStatus, "pending"),
@@ -7049,7 +8569,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
       }, { merge: true });
     }
     if (!swimmer.licenseLocked) {
-      const licenseRef = admin.firestore().collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
+      const licenseRef = db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(swimmer));
       const licensePayload = {
         ...engagementSwimmerLicensePayload(swimmer, context, {
           type: "engagement",
@@ -7062,7 +8582,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
       };
       batch.set(licenseRef, licensePayload, { merge: true });
     }
-    upsertEngagementClubRosterSwimmer(batch, admin.firestore(), swimmer, now);
+    upsertEngagementClubRosterSwimmer(batch, db, swimmer, now);
   });
   await batch.commit();
   await writeAuditLog("engagementClubEntry.swimmersSaved", context.uid, {
@@ -7083,12 +8603,12 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const competition = await admin.firestore().collection("engagementCompetitions").doc(competitionId).get();
+  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertEngagementClubWriteOpen(competition.data() || {});
-  const entryRef = admin.firestore().collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const entry = await entryRef.get();
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les relais.");
@@ -7133,7 +8653,7 @@ exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   const context = await engagementAccessContext(request);
   const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
   const now = new Date().toISOString();
-  const docRef = admin.firestore().collection("engagementCompetitions").doc();
+  const docRef = db.collection("engagementCompetitions").doc();
   const payload = {
     ...competition,
     createdAt: now,
@@ -7165,7 +8685,7 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  const docRef = admin.firestore().collection("engagementCompetitions").doc(competitionId);
+  const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -7205,7 +8725,7 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
 
-  const db = admin.firestore();
+  const db = db;
   const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
@@ -7253,7 +8773,7 @@ exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (r
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
 
-  const db = admin.firestore();
+  const db = db;
   const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
@@ -7301,7 +8821,7 @@ exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, asy
     ? cleanText(request.data.status)
     : "pending";
   const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection("engagementCompetitionDeletionRequests")
     .where("status", "==", status)
     .limit(limit)
@@ -7346,7 +8866,7 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
     throw new HttpsError("invalid-argument", "Decision invalide.");
   }
 
-  const db = admin.firestore();
+  const db = db;
   const requestRef = db.collection("engagementCompetitionDeletionRequests").doc(requestId);
   const requestSnapshot = await requestRef.get();
   if (!requestSnapshot.exists) {
@@ -7397,7 +8917,7 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const parsed = parseCompetitionImportPayload(request.data || {});
   const fileHash = stableHash(parsed.fileHashSeed || "");
   const importId = importDocumentId(parsed.metadata, fileHash);
-  const existing = await admin.firestore().collection("performanceImports").doc(importId).get();
+  const existing = await db.collection("performanceImports").doc(importId).get();
   const existingData = existing.exists ? existing.data() || {} : {};
   const recordAlerts = detectRecordAlerts(parsed.performances, await loadPerformanceRecordsData());
   return {
@@ -7431,7 +8951,7 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     throw new HttpsError("invalid-argument", "Le fichier ne correspond plus a la previsualisation.");
   }
 
-  const importRef = admin.firestore().collection("performanceImports").doc(importId);
+  const importRef = db.collection("performanceImports").doc(importId);
   const existing = await importRef.get();
   const existingData = existing.exists ? existing.data() || {} : {};
   if (existing.exists && existingData.status !== "deleted" && request.data?.overwrite !== true) {
@@ -7441,7 +8961,7 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const now = new Date().toISOString();
   const actorUid = request.auth.uid;
   const actorEmail = request.auth.token?.email || "";
-  const db = admin.firestore();
+  const db = db;
   const batches = [];
   let batch = db.batch();
   let batchSize = 0;
@@ -7601,7 +9121,7 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
 
 exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection("performanceImports")
     .orderBy("importedAt", "desc")
     .limit(50)
@@ -7632,7 +9152,7 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
 });
 
 async function markCompetitionImportDeleted(importId, context = {}) {
-  const db = admin.firestore();
+  const db = db;
   const now = context.now || new Date().toISOString();
   const importRef = db.collection("performanceImports").doc(importId);
   const importDoc = await importRef.get();
@@ -7821,7 +9341,7 @@ exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, as
     throw new HttpsError("invalid-argument", "Decision inconnue.");
   }
 
-  const importRef = admin.firestore().collection("performanceImports").doc(importId);
+  const importRef = db.collection("performanceImports").doc(importId);
   const importDoc = await importRef.get();
   if (!importDoc.exists) {
     throw new HttpsError("not-found", "Import introuvable.");
@@ -8004,7 +9524,7 @@ function cleanPerformanceBaseRow(row = {}, status = "active") {
 }
 
 async function writePerformanceBaseRows(rows = [], context = {}) {
-  const db = admin.firestore();
+  const db = db;
   const now = context.now || new Date().toISOString();
   const logChanges = context.logChanges !== false;
   let batch = db.batch();
@@ -8277,7 +9797,7 @@ async function writePerformanceTopIndexRows(rows = [], context = {}) {
   });
   if (!byBucket.size) return { ok: true, writtenRows: 0, touchedBucketIds: [] };
 
-  const db = admin.firestore();
+  const db = db;
   const now = context.now || new Date().toISOString();
   const bucketEntries = Array.from(byBucket.values());
   const refs = bucketEntries.map((bucket) => db.collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucket.id));
@@ -8331,7 +9851,7 @@ async function performanceTopRowsFromIndex(filters = {}) {
     regionId: filters.region
   });
   const bucketId = performanceTopBucketId(bucketKey);
-  const snapshot = await admin.firestore().collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucketId).get();
+  const snapshot = await db.collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucketId).get();
   if (!snapshot.exists) return null;
   const view = snapshot.data() || {};
   const rows = Array.isArray(view.rows) ? view.rows : [];
@@ -8380,11 +9900,11 @@ function bestDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
 }
 
 function dtnQualificationCacheStateRef(seasonYear) {
-  return admin.firestore().collection(DTN_QUALIFICATION_CACHE_STATE_COLLECTION).doc(String(seasonYear));
+  return db.collection(DTN_QUALIFICATION_CACHE_STATE_COLLECTION).doc(String(seasonYear));
 }
 
 function dtnQualificationCacheRef(seasonYear, sex) {
-  return admin.firestore().collection(DTN_QUALIFICATION_CACHE_COLLECTION).doc(`${seasonYear}-${sex}`);
+  return db.collection(DTN_QUALIFICATION_CACHE_COLLECTION).doc(`${seasonYear}-${sex}`);
 }
 
 function dtnQualificationSeasonsForRows(rows = []) {
@@ -8401,10 +9921,10 @@ async function touchDtnQualificationCacheState(rows = [], context = {}) {
   const seasons = dtnQualificationSeasonsForRows(rows);
   if (!seasons.length) return { touchedSeasons: [] };
   const now = cleanText(context.now) || new Date().toISOString();
-  const batch = admin.firestore().batch();
+  const batch = db.batch();
   seasons.forEach((seasonYear) => {
     batch.set(dtnQualificationCacheStateRef(seasonYear), {
-      version: admin.firestore.FieldValue.increment(1),
+      version: FieldValue.increment(1),
       updatedAt: now,
       reason: cleanText(context.action || "performanceBase.updated")
     }, { merge: true });
@@ -8443,7 +9963,7 @@ exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) 
 
   const stateRef = dtnQualificationCacheStateRef(seasonYear);
   const now = new Date().toISOString();
-  const sourceVersion = await admin.firestore().runTransaction(async (transaction) => {
+  const sourceVersion = await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(stateRef);
     const current = Number(snapshot.data()?.version || 0) || 0;
     const next = current + 1;
@@ -8487,7 +10007,7 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
 
   const competitionIds = DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear] || [];
   if (!competitionIds.length) throw new HttpsError("failed-precondition", "Compétitions DTN non définies pour cette saison.");
-  const db = admin.firestore();
+  const db = db;
 
   const stateSnapshot = await dtnQualificationCacheStateRef(seasonYear).get();
   const sourceVersion = Number(stateSnapshot.data()?.version || 0) || 0;
@@ -8509,12 +10029,22 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
       .where("course", "==", course)
       .where("sex", "==", sex)
       .where("active", "==", true)
+      .limit(DTN_QUALIFICATION_MAX_ROWS_PER_COURSE + 1)
       .get();
+    if (snapshot.size > DTN_QUALIFICATION_MAX_ROWS_PER_COURSE) {
+      console.warn("Qualification DTN bornee", { seasonYear, sex, course, scannedRows: snapshot.size });
+      throw new HttpsError(
+        "resource-exhausted",
+        `Trop de performances pour ${course}. Regenerer un agregrat DTN avant de relancer.`
+      );
+    }
     return {
       course,
       rows: snapshot.docs.map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
     };
   }));
+  const scannedRows = indexedCourses.reduce((total, item) => total + item.rows.length, 0);
+  console.info("Qualification DTN calculee", { seasonYear, sex, scannedRows, courseCount: indexedCourses.length });
 
   const payload = {
     ok: true,
@@ -8534,7 +10064,8 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
         };
       })
     })),
-    competitionIds
+    competitionIds,
+    readStats: { scannedRows, bounded: true }
   };
 
   const latestStateSnapshot = await dtnQualificationCacheStateRef(seasonYear).get();
@@ -8686,7 +10217,7 @@ function aggregateSwimmerIndexRows(rows = []) {
 async function writePerformanceSwimmerIndexRows(rows = [], context = {}) {
   const swimmers = aggregateSwimmerIndexRows(rows);
   if (!swimmers.length) return { ok: true, written: 0 };
-  const db = admin.firestore();
+  const db = db;
   const now = context.now || new Date().toISOString();
   let batch = db.batch();
   let batchSize = 0;
@@ -8710,9 +10241,9 @@ async function writePerformanceSwimmerIndexRows(rows = [], context = {}) {
     };
     if (context.mode !== "replace") {
       delete payload.performanceCount;
-      if ((swimmer.aliases || []).length) payload.aliases = admin.firestore.FieldValue.arrayUnion(...swimmer.aliases);
-      if ((swimmer.sourceIds || []).length) payload.sourceIds = admin.firestore.FieldValue.arrayUnion(...swimmer.sourceIds);
-      if ((swimmer.searchPrefixes || []).length) payload.searchPrefixes = admin.firestore.FieldValue.arrayUnion(...swimmer.searchPrefixes);
+      if ((swimmer.aliases || []).length) payload.aliases = FieldValue.arrayUnion(...swimmer.aliases);
+      if ((swimmer.sourceIds || []).length) payload.sourceIds = FieldValue.arrayUnion(...swimmer.sourceIds);
+      if ((swimmer.searchPrefixes || []).length) payload.searchPrefixes = FieldValue.arrayUnion(...swimmer.searchPrefixes);
     }
     batch.set(ref, payload, { merge: context.mode !== "replace" });
     batchSize += 1;
@@ -8748,7 +10279,7 @@ async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
   });
   if (!bySwimmer.size) return { ok: true, writtenPages: 0 };
 
-  const db = admin.firestore();
+  const db = db;
   const now = context.now || new Date().toISOString();
   let writtenPages = 0;
 
@@ -8823,7 +10354,7 @@ async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
 }
 
 async function getPerformanceBaseRowsBySwimmer(data = {}) {
-  const db = admin.firestore();
+  const db = db;
   const ids = Array.from(new Set([
     ...(Array.isArray(data.swimmerIds) ? data.swimmerIds : []),
     data.swimmerId
@@ -8895,7 +10426,7 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
-  const db = admin.firestore();
+  const db = db;
   const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -8904,7 +10435,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
   const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
   const cursor = reset ? "" : cleanText(state.cursor);
   let query = db.collection(PERFORMANCE_BASE_COLLECTION)
-    .orderBy(admin.firestore.FieldPath.documentId())
+    .orderBy(FieldPath.documentId())
     .limit(pageSize);
   if (cursor) query = query.startAfter(cursor);
   const snapshot = await query.get();
@@ -8950,7 +10481,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
 
 exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   assertAdmin(request);
-  const db = admin.firestore();
+  const db = db;
   const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -8959,7 +10490,7 @@ exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_
   const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
   const cursor = reset ? "" : cleanText(state.cursor);
   let query = db.collection(PERFORMANCE_BASE_COLLECTION)
-    .orderBy(admin.firestore.FieldPath.documentId())
+    .orderBy(FieldPath.documentId())
     .limit(pageSize);
   if (cursor) query = query.startAfter(cursor);
   const snapshot = await query.get();
@@ -8997,7 +10528,7 @@ exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_
 });
 
 async function normalizedImportPerformances(importId) {
-  const importRef = admin.firestore().collection("performanceImports").doc(importId);
+  const importRef = db.collection("performanceImports").doc(importId);
   const importDoc = await importRef.get();
   if (!importDoc.exists) return [];
   const importData = importDoc.data() || {};
@@ -9026,7 +10557,7 @@ async function syncImportToPerformanceBase(importId, context = {}) {
     action: "performanceImport.synced",
     changeSeed: importId
   });
-  await admin.firestore().collection("performanceImports").doc(importId).set({
+  await db.collection("performanceImports").doc(importId).set({
     performanceBaseSyncedAt: context.now || new Date().toISOString(),
     performanceBaseCount: result.written
   }, { merge: true });
@@ -9092,7 +10623,7 @@ function normalizeAdditionalPerformanceDataSnapshot(snapshot = {}) {
 }
 
 function additionalPerformanceFile() {
-  return admin.storage().bucket(PUBLIC_PERFORMANCE_BUCKET).file(PUBLIC_ADDITIONAL_PERFORMANCE_PATH);
+  return storage.bucket(PUBLIC_PERFORMANCE_BUCKET).file(PUBLIC_ADDITIONAL_PERFORMANCE_PATH);
 }
 
 async function readPublishedAdditionalPerformanceDataSnapshot() {
@@ -9188,7 +10719,7 @@ async function publishIncrementalPerformanceCorrection(correction = {}) {
 }
 
 function publicPerformanceFilesBucket() {
-  return admin.storage().bucket(PUBLIC_PERFORMANCE_BUCKET);
+  return storage.bucket(PUBLIC_PERFORMANCE_BUCKET);
 }
 
 function publicPerformanceFilePath(relativePath = "") {
@@ -9231,6 +10762,53 @@ async function savePublicPerformanceText(relativePath, content, cacheControl = "
   });
   return publicPerformanceFilePath(relativePath);
 }
+
+async function publishPublicRecordsManifest(manifest) {
+  const file = publicPerformanceFile("records/manifest.json");
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    let current = {};
+    let generation = 0;
+    try {
+      const [[buffer], [metadata]] = await Promise.all([file.download(), file.getMetadata()]);
+      current = JSON.parse(buffer.toString("utf8"));
+      generation = Number(metadata.generation || 0);
+    } catch (error) {
+      if (!(error?.code === 404 || /No such object|not found/i.test(error?.message || ""))) throw error;
+    }
+    if (!shouldPublishRecordsManifest(current, manifest)) return { published: false, manifest: current };
+    try {
+      await file.save(JSON.stringify(manifest), {
+        resumable: false,
+        contentType: "application/json; charset=utf-8",
+        metadata: { cacheControl: "no-store, max-age=0" },
+        preconditionOpts: { ifGenerationMatch: generation }
+      });
+      return { published: true, manifest };
+    } catch (error) {
+      if (Number(error?.code) !== 412) throw error;
+    }
+  }
+  throw new Error("Publication concurrente du manifeste RF/MPF impossible.");
+}
+
+async function publishPublicRecordsSnapshot(data, eventTime = "") {
+  const payload = publicRecordsPayload(data);
+  const manifest = publicRecordsManifest(payload, eventTime);
+  await savePublicPerformanceJson(manifest.dataPath, payload, "public, max-age=31536000, immutable");
+  const result = await publishPublicRecordsManifest(manifest);
+  return { ...result, version: manifest.version, dataPath: manifest.dataPath };
+}
+
+exports.syncPublicRecordsData = onDocumentWritten({
+  region: REGION,
+  document: "competitions/{competitionId}/performanceData/records",
+  retry: true,
+  timeoutSeconds: 120,
+  memory: "512MiB"
+}, async (event) => {
+  if (event.params?.competitionId !== "livepalmes-active" || !event.data?.after?.exists) return null;
+  return publishPublicRecordsSnapshot(event.data.after.data() || {}, event.time || "");
+});
 
 function publicPerformanceCompactObject(object = {}) {
   return Object.fromEntries(Object.entries(object).filter(([, value]) => {
@@ -9646,7 +11224,7 @@ function publicPerformanceActiveRow(row = {}) {
 }
 
 async function getActivePublicRowsForAffectedSwimmer(seedRows = []) {
-  const db = admin.firestore();
+  const db = db;
   const identityKeys = Array.from(new Set(seedRows
     .map((row) => cleanText(row.swimmerIdentityKey))
     .filter(Boolean)));
@@ -9810,7 +11388,7 @@ async function performanceBaseMigrationManifest() {
 }
 
 async function migrationChunkStatuses(chunks = []) {
-  const db = admin.firestore();
+  const db = db;
   const refs = chunks.map((chunk) => db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(chunk.name));
   const snapshots = refs.length ? await db.getAll(...refs) : [];
   const byName = new Map();
@@ -9871,7 +11449,7 @@ exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, asy
     status: "active",
     logChanges: false
   });
-  await admin.firestore().collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanText(data.batchId || stableHash(now).slice(0, 24))).set({
+  await db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanText(data.batchId || stableHash(now).slice(0, 24))).set({
     source,
     status: "completed",
     importedCount: result.written,
@@ -9890,7 +11468,7 @@ async function migrateHistoricalPerformanceBaseChunk(chunkName, request) {
   if (!/^chunk-[A-Za-z0-9-]+\.json$/.test(cleanChunkName)) {
     throw new HttpsError("invalid-argument", "Lot historique invalide.");
   }
-  const db = admin.firestore();
+  const db = db;
   const migrationRef = db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanChunkName);
   const existing = await migrationRef.get();
   const existingData = existing.exists ? existing.data() || {} : {};
@@ -9991,7 +11569,7 @@ async function migrateHistoricalPerformanceBaseChunk(chunkName, request) {
 }
 
 async function buildAdditionalPerformanceDataSnapshot() {
-  const performanceSnapshot = await admin.firestore()
+  const performanceSnapshot = await db
     .collection(PERFORMANCE_BASE_COLLECTION)
     .where("source", "==", "livepalmes-import")
     .get();
@@ -10000,7 +11578,7 @@ async function buildAdditionalPerformanceDataSnapshot() {
     .map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
     .filter((row) => row.active !== false && row.status !== "hidden");
 
-  const correctionsSnapshot = await admin.firestore()
+  const correctionsSnapshot = await db
     .collection("performanceCorrections")
     .orderBy("updatedAt", "desc")
     .limit(2000)
@@ -10011,7 +11589,7 @@ async function buildAdditionalPerformanceDataSnapshot() {
   const correctionUserNames = new Map();
   for (let index = 0; index < correctionUserIds.length; index += 10) {
     const chunk = correctionUserIds.slice(index, index + 10);
-    const usersSnapshot = await admin.firestore()
+    const usersSnapshot = await db
       .collection("users")
       .where("uid", "in", chunk)
       .get();
@@ -10212,7 +11790,7 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
   const now = new Date().toISOString();
   const updatedByName = await accessUserDisplayName(request.auth.uid, request.auth.token || {});
   const correctionId = stableHash(targetKey).slice(0, 32);
-  const ref = admin.firestore().collection("performanceCorrections").doc(correctionId);
+  const ref = db.collection("performanceCorrections").doc(correctionId);
   const existing = await ref.get();
   const payload = {
     id: correctionId,

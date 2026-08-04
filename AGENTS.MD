@@ -15,7 +15,7 @@ Application statique en HTML, CSS et JavaScript natif, sans framework frontend, 
 - `portail.html` : portail séparé des consoles de compétition.
 - `assets/` : modules applicatifs et scripts des pages.
 - `performances/` : records, MPF, TOP et fiches nageurs.
-- `functions/` : Cloud Functions Firebase Node.js 20.
+- `functions/` : Cloud Functions Firebase Node.js 22.
 - `tools/`, `tests/`, `docs/` : outils, tests et documentation.
 
 Ne pas réintroduire le pilotage ou le portail dans l’accueil public. `app.js` est proche de la limite de 1 000 lignes utiles : placer toute nouvelle logique métier dans un module existant ou dédié.

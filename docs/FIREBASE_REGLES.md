@@ -20,6 +20,8 @@ LivePalmes utilise seulement ces zones dans Firestore :
 - `competitions/livepalmes-active/resultPdfs`
 - `competitions/livepalmes-active/sessionResultsPdfs`
 - `competitions/livepalmes-active/public/resultsIndex`
+- `competitions/livepalmes-active/public/seriesIndex`
+- `competitions/livepalmes-active/public/archivesIndex`
 
 Les regles dans `firestore.rules` bloquent tout le reste.
 
@@ -31,8 +33,9 @@ Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Auth
 - Publication des series et des reperes via `liveData/current`.
 - Creation et mise a jour des alertes arbitres, speaker, video, bureau des performances et secretariat.
 - Reservation d'une console par role via `roleLocks`.
-- Publication, remplacement et suppression des PDF resultats dans une collection separee pour accelerer les consoles.
+- Publication, remplacement et suppression des metadonnees PDF dans des collections separees ; les nouveaux fichiers sont servis par le stockage public et les anciens `pdfDataUrl` restent compatibles.
 - Publication d'un index public leger pour limiter les lectures de la page resultats, avec etat public et infos de session.
+- Publication d'un index public borne a 50 entrees pour afficher les archives en une lecture.
 - Gestion des finalistes, forfaits, pre-forfaits et repechages dans les resultats.
 - Archivage du journal d'arbitrage avant RAZ.
 - Archivage public durable des resultats, des fiches nageurs et des PDF resultats avant nouvelle competition.

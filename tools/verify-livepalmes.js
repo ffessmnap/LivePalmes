@@ -51,7 +51,13 @@ function runUnitTests() {
     "livepalmes-basic-tests.js",
     "livepalmes-result-regression-tests.js",
     "livepalmes-public-results-index-tests.js",
-    "livepalmes-console-access-tests.js"
+    "livepalmes-publication-tests.js",
+    "livepalmes-public-pdf-storage-tests.js",
+    "livepalmes-public-records-data-tests.js",
+    "livepalmes-public-records-store-tests.js",
+    "livepalmes-console-access-tests.js",
+    "livepalmes-portal-access-protection-tests.js",
+    "livepalmes-portal-optimization-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
   });
@@ -70,6 +76,7 @@ function runArchitectureChecks() {
 function runGeneratedPageChecks() {
   printStep("Controle pages consoles");
   run(process.execPath, [path.join(rootDir, "tools", "build-console-pages.js"), "--check"]);
+  run(process.execPath, [path.join(rootDir, "tools", "build-admin-club-reference.js"), "--check"]);
 }
 
 function runConsolePageLoadChecks() {
