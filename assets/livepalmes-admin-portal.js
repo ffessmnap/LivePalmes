@@ -3149,7 +3149,7 @@
 
   function updateEngagementClubSwimmersSummary() {
     if (!elements.engagementsClubSwimmersSummary) return;
-    const selectedRows = selectedEngagementClubSwimmerRows();
+    const selectedRows = currentEngagementClubSwimmersForSummary();
     const selectedCount = selectedRows.length;
     elements.engagementsClubSwimmersSummary.textContent = selectedCount
       ? `${selectedCount} nageur${selectedCount > 1 ? "s" : ""} engagé${selectedCount > 1 ? "s" : ""}.`
@@ -3241,7 +3241,20 @@
     renderEngagementClubEntry(selectedEngagementClubEntry);
   }
 
-  function queueEngagementClubEntryMutation({ execute, messageElement, loadingMessage, errorPrefix = "Enregistrement impossible", competitionId = selectedEngagementCompetitionId, renderScope = "all" } = {}) {
+  function mergeEngagementClubEntryWithLocalSwimmerSelections(entry = {}) {
+    const localSelectedSwimmers = selectedEngagementClubSwimmerRows();
+    if (!localSelectedSwimmers.length) return entry;
+    const swimmers = Array.isArray(entry.swimmers) ? [...entry.swimmers] : [];
+    const savedIds = new Set(swimmers.map((swimmer) => swimmer?.swimmerIndexId).filter(Boolean));
+    localSelectedSwimmers.forEach((swimmer) => {
+      if (!swimmer.swimmerIndexId || savedIds.has(swimmer.swimmerIndexId)) return;
+      swimmers.push(swimmer);
+      savedIds.add(swimmer.swimmerIndexId);
+    });
+    return { ...entry, swimmers };
+  }
+
+  function queueEngagementClubEntryMutation({ execute, messageElement, loadingMessage, errorPrefix = "Enregistrement impossible", competitionId = selectedEngagementCompetitionId, renderScope = "all", preserveLocalSwimmerSelections = false } = {}) {
     const revision = ++engagementClubEntryMutationRevision;
     if (messageElement) {
       messageElement.textContent = loadingMessage || "Enregistrement...";
@@ -3253,7 +3266,10 @@
         if (result?.entry && competitionId === selectedEngagementCompetitionId) rememberEngagementClubPersistedEntry(result.entry);
         if (revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId && result?.entry) {
           setEngagementClubEntriesDirty(false);
-          renderEngagementClubMutationResult(result.entry, renderScope);
+          const entryToRender = preserveLocalSwimmerSelections
+            ? mergeEngagementClubEntryWithLocalSwimmerSelections(result.entry)
+            : result.entry;
+          renderEngagementClubMutationResult(entryToRender, renderScope);
         }
         if (messageElement && revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId) {
           messageElement.textContent = "";
@@ -3282,6 +3298,7 @@
     if (!swimmerIndexId) return Promise.resolve(false);
     return queueEngagementClubEntryMutation({
       competitionId,
+      preserveLocalSwimmerSelections: true,
       messageElement: elements.engagementsClubSwimmersMessage,
       loadingMessage: selected ? "Ajout du nageur..." : "Retrait du nageur et de ses courses...",
       execute: () => callFunction("saveEngagementClubSwimmerSelection", {
@@ -3806,7 +3823,7 @@
       updateEngagementClubEntriesSummary();
       return;
     }
-    const selectedRows = selectedEngagementClubSwimmerRows();
+    const selectedRows = currentEngagementClubSwimmersForSummary();
     if (!selectedRows.length) {
       mount.innerHTML = '<p class="admin-engagements-empty">Selectionnez d\'abord les nageurs dans l\'onglet Nageurs.</p>';
       updateEngagementClubEntriesSummary();
@@ -4171,22 +4188,16 @@
     return String(swimmer.name || "").trim();
   }
 
-  function engagementRelayMemberSummary(memberIds = []) {
+  function engagementRelayMemberShortLabels(memberIds = []) {
     const swimmers = new Map(engagementClubRelaySwimmerOptions().map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
     return memberIds
       .filter(Boolean)
       .map((memberId) => engagementRelayMemberShortLabel(swimmers.get(memberId) || {}))
-      .filter(Boolean)
-      .join(" · ");
+      .filter(Boolean);
   }
 
-  function engagementRelayMemberFullSummary(memberIds = []) {
-    const swimmers = new Map(engagementClubRelaySwimmerOptions().map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
-    return memberIds
-      .filter(Boolean)
-      .map((memberId) => engagementSwimmerDisplayName(swimmers.get(memberId) || {}, ""))
-      .filter(Boolean)
-      .join(" · ");
+  function engagementRelayMemberSummary(memberIds = []) {
+    return engagementRelayMemberShortLabels(memberIds).join(" · ");
   }
 
   function engagementRelayExpectedMemberSex(genderMode = "", index = 0) {
@@ -4658,21 +4669,22 @@
   }
 
   function updateEngagementClubRelaysSummary() {
-    if (!elements.engagementsClubRelaysSummary) return;
     const rows = selectedEngagementClubRelayRows();
     const count = rows.length;
     const incompleteCount = rows.filter(engagementClubRelayNeedsCompletion).length;
     const pendingCount = rows.filter((relay) => relay.draftPending === true).length;
     const issues = engagementClubRelayValidationIssues(rows.filter((relay) => relay.draftPending !== true));
-    elements.engagementsClubRelaysSummary.textContent = incompleteCount
-      ? `${count} relais - ${incompleteCount} à compléter.`
-      : pendingCount
-        ? `${count} relais - ${pendingCount} à valider.`
-        : issues.length
-          ? `${count} relais - ${issues.length} point${issues.length > 1 ? "s" : ""} a corriger.`
-          : count
-            ? `${count} relais.`
-            : "Aucun relais selectionne.";
+    if (elements.engagementsClubRelaysSummary) {
+      elements.engagementsClubRelaysSummary.textContent = incompleteCount
+        ? `${count} relais - ${incompleteCount} à compléter.`
+        : pendingCount
+          ? `${count} relais - ${pendingCount} à valider.`
+          : issues.length
+            ? `${count} relais - ${issues.length} point${issues.length > 1 ? "s" : ""} a corriger.`
+            : count
+              ? `${count} relais.`
+              : "Aucun relais selectionne.";
+    }
     renderEngagementClubSummary();
   }
 
@@ -4813,8 +4825,8 @@
       const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds : (relay.members || []).map((member) => member.swimmerIndexId).filter(Boolean);
       const relayLegs = engagementRelayLegCount(event);
       const memberCount = memberIds.filter(Boolean).length;
+      const memberLabels = engagementRelayMemberShortLabels(memberIds);
       const memberSummary = engagementRelayMemberSummary(memberIds);
-      const memberFullSummary = engagementRelayMemberFullSummary(memberIds);
       const peopleWording = engagementRelayPeopleWording(genderMode);
       const sessionLabel = event.code ? engagementClubRelaySessionLabel(event.code, genderMode) : "";
       const relayPending = relay.draftPending === true;
@@ -4835,7 +4847,9 @@
             <span class="admin-engagements-club-relay-read-value"><small>Temps</small><strong>${escapeHtml(relayTime || "-")}</strong></span>
             <div class="admin-engagements-club-relay-compose admin-engagements-club-relay-compose-readonly">
               <small>${escapeHtml(peopleWording.plural.slice(0, 1).toLocaleUpperCase("fr-FR") + peopleWording.plural.slice(1))}</small>
-              <strong>${escapeHtml(memberFullSummary || peopleWording.empty)}</strong>
+              ${memberLabels.length
+                ? `<ul class="admin-engagements-club-relay-member-list">${memberLabels.map((label) => `<li>${escapeHtml(label)}</li>`).join("")}</ul>`
+                : `<strong>${escapeHtml(peopleWording.empty)}</strong>`}
             </div>
             <div class="admin-engagements-club-relay-row-actions">
               <button type="button" class="ghost-button compact admin-engagements-club-relay-edit" data-engagement-club-relay-edit aria-label="Modifier le relais" title="Modifier le relais">✎</button>
@@ -4863,7 +4877,7 @@
           </select>
           <input type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" data-engagement-club-relay-time value="${escapeHtml(relayTime)}" aria-label="Temps d'engagement au format MM:SS.CC">
           <div class="admin-engagements-club-relay-compose">
-            <small title="${escapeHtml(memberSummary)}">${memberSummary ? escapeHtml(memberSummary) : peopleWording.empty}${relayPending ? " · À valider" : ""}</small>
+            ${memberSummary ? `<small title="${escapeHtml(memberSummary)}">${escapeHtml(memberSummary)}${relayPending ? " · À valider" : ""}</small>` : ""}
             <button type="button" class="ghost-button compact" data-engagement-club-relay-compose="${escapeHtml(relayId)}">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>${memberCount ? `Modifier les ${peopleWording.plural}` : `Choisir les ${peopleWording.plural}`}</span>
@@ -6136,6 +6150,9 @@
 
   function closeEngagementCompetitionDetail() {
     if (!confirmLeaveDirtyEngagementTab()) return;
+    if (engagementClubEntriesAutosaveSwimmers.size) {
+      void flushEngagementClubIndividualEntriesAutosave();
+    }
     clearEngagementDetailTabDirty();
     selectedEngagementCompetitionId = "";
     selectedEngagementCompetition = null;
@@ -6241,7 +6258,10 @@
     }
     const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
     const clubPeoplePromise = clubMode ? loadEngagementClubPeople({ silent: true }) : null;
-    const clubEntryPromise = clubMode ? callFunction("getEngagementClubEntry", { competitionId: cleanId }) : null;
+    const pendingEntryMutations = engagementClubEntryMutationQueue;
+    const clubEntryPromise = clubMode
+      ? pendingEntryMutations.then(() => callFunction("getEngagementClubEntry", { competitionId: cleanId }))
+      : null;
     clubEntryPromise?.catch(() => {});
     try {
       const result = await callFunction("getEngagementCompetition", { competitionId: cleanId });

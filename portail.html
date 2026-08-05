@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260805-autosave-2">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260805-engagements-3">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -1227,16 +1227,10 @@
                     </div>
                     <div id="adminEngagementsDetailRelaysPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailRelaysTab" data-engagements-detail-tab-panel="relays" hidden>
                       <form id="adminEngagementsClubRelaysForm" class="admin-engagements-club-step-form" data-club-step="relays">
-                        <div class="admin-engagements-events-head">
-                          <div>
-                            <strong>Relais</strong>
-                            <small id="adminEngagementsClubRelaysSummary">Aucun relais s&eacute;lectionn&eacute;.</small>
-                          </div>
-                          <div class="admin-engagements-inline-actions">
-                            <button id="adminEngagementsClubRelaysAddButton" class="ghost-button compact" type="button">Ajouter</button>
-                          </div>
-                        </div>
                         <div id="adminEngagementsClubRelaysList" class="admin-engagements-club-relays-list" aria-live="polite"></div>
+                        <div class="admin-engagements-club-relays-add">
+                          <button id="adminEngagementsClubRelaysAddButton" class="ghost-button compact" type="button">Ajouter un relais</button>
+                        </div>
                         <p id="adminEngagementsClubRelaysMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                       <dialog id="adminEngagementsClubRelayDialog" class="admin-engagements-club-times-dialog admin-engagements-club-relay-dialog" aria-labelledby="adminEngagementsClubRelayDialogTitle">
@@ -2106,7 +2100,7 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260803-space-home-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260805-autosave-2"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260805-engagements-3"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>
