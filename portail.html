@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260805-engagements-3">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260806-engagements-3">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -134,7 +134,7 @@
                     <span>Espace club</span><span aria-hidden="true">⌄</span>
                   </button>
                   <div id="adminPortalClubSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’espace club" hidden>
-                    <a href="#club-competitions" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar">Compétitions et engagements</a>
+                    <a href="#club-competitions" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="club" data-engagements-nav-tab="calendar">Engagements en compétition</a>
                     <a href="#club-nageurs" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubSwimmers" data-engagements-nav-tab="clubSwimmers">Mes nageurs</a>
                     <a href="#club-officiels" data-admin-view-link="engagements" data-engagements-nav data-engagements-club-nav data-engagements-nav-entry="clubPeople" data-engagements-nav-tab="clubPeople">Mes officiels</a>
                   </div>
@@ -225,7 +225,7 @@
                   </a>
                   <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewClubTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
                   <div id="adminOverviewClubTools" class="admin-overview-space-tools">
-                    <a href="#club-competitions" data-overview-tool data-engagements-home-entry="club" data-engagements-home-tab="calendar">Compétitions et engagements <span aria-hidden="true">→</span></a>
+                    <a href="#club-competitions" data-overview-tool data-engagements-home-entry="club" data-engagements-home-tab="calendar">Engagements en compétition <span aria-hidden="true">→</span></a>
                     <a href="#club-nageurs" data-overview-tool data-engagements-home-entry="clubSwimmers" data-engagements-home-tab="clubSwimmers">Mes nageurs <span aria-hidden="true">→</span></a>
                     <a href="#club-officiels" data-overview-tool data-engagements-home-entry="clubPeople" data-engagements-home-tab="clubPeople">Mes officiels <span aria-hidden="true">→</span></a>
                   </div>
@@ -323,7 +323,7 @@
                 <a class="admin-overview-card" href="#club-competitions" data-engagements-home-entry="club" data-engagements-home-tab="calendar">
                   <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
                   <span class="admin-overview-card-label">Compétitions</span>
-                  <strong>Compétitions et engagements</strong>
+                  <strong>Engagements en compétition</strong>
                   <p>Consulter les compétitions ouvertes et gérer les engagements du club.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
@@ -768,6 +768,7 @@
                 <span id="adminEngagementsViewEyebrow">Organisation des comp&eacute;titions</span>
                 <h2 id="adminEngagementsViewTitle">Organisation des comp&eacute;titions</h2>
                 <p id="adminEngagementsViewIntro"></p>
+                <button id="adminEngagementsDetailClose" class="ghost-button admin-engagements-workspace-back" type="button" hidden>&larr; Retour aux comp&eacute;titions</button>
               </div>
 
               <div id="adminEngagementsCalendarPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="calendar">
@@ -834,14 +835,17 @@
                         <span id="adminEngagementsDetailEyebrow">Fiche comp&eacute;tition</span>
                         <h4 id="adminEngagementsDetailTitle">S&eacute;lectionnez une comp&eacute;tition</h4>
                         <p id="adminEngagementsDetailSubtitle" class="admin-engagements-detail-subtitle"></p>
-                        <span id="adminEngagementsEditState" class="admin-engagements-edit-state" hidden>Lecture seule</span>
+                        <div class="admin-engagements-detail-state-row">
+                          <span id="adminEngagementsEditState" class="admin-engagements-edit-state" hidden>Lecture seule</span>
+                          <span id="adminEngagementsDetailLevel" class="admin-engagements-level-badge" hidden></span>
+                          <button id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" type="button" aria-label="Statut des engagements" hidden>Statut des engagements</button>
+                        </div>
                       </div>
                       <div class="admin-engagements-detail-actions">
                         <button id="adminEngagementsEditButton" class="ghost-button" type="button" data-engagements-create hidden>Modifier</button>
                         <button id="adminEngagementsSaveButton" type="button" hidden>Enregistrer</button>
                         <button id="adminEngagementsEditCancelTop" class="ghost-button" type="button" hidden>Annuler</button>
                         <button id="adminEngagementsDeleteButton" class="ghost-button admin-engagements-danger-button" type="button" hidden>Supprimer</button>
-                        <button id="adminEngagementsDetailClose" class="ghost-button" type="button">Retour aux comp&eacute;titions</button>
                       </div>
                     </div>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
@@ -926,7 +930,7 @@
                               Limite des engagements
                               <input id="adminEngagementsEditDeadline" type="datetime-local" step="3600">
                             </label>
-                            <label>
+                            <label class="admin-engagements-entry-status-field">
                               Statut
                               <select id="adminEngagementsEditEntryStatus">
                                 <option value="upcoming">À venir</option>
@@ -936,7 +940,11 @@
                             </label>
                             <label>
                               Max &eacute;preuves par nageur
-                              <input id="adminEngagementsEditMaxEvents" type="number" min="0" max="20" step="1" inputmode="numeric">
+                              <input id="adminEngagementsEditMaxEvents" type="number" min="1" max="20" step="1" inputmode="numeric">
+                            </label>
+                            <label class="admin-engagements-check admin-engagements-max-events-unlimited">
+                              <input id="adminEngagementsEditMaxEventsUnlimited" type="checkbox">
+                              <span>Aucune limite d'&eacute;preuves par nageur</span>
                             </label>
                             <label class="admin-engagements-check">
                               <input id="adminEngagementsEditOfficialsRequired" type="checkbox">
@@ -1140,7 +1148,7 @@
                             <input type="radio" name="adminEngagementsClubTeamMode" value="renounced">
                             <span>Ne pas d&eacute;clarer de chef d'&eacute;quipe</span>
                           </label>
-                          <input id="adminEngagementsClubTeamRenunciation" type="checkbox" hidden>
+                          <input id="adminEngagementsClubTeamRenunciation" type="checkbox" aria-label="Renonciation au droit de r&eacute;clamation" hidden>
                         </div>
                         <p id="adminEngagementsClubTeamMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
@@ -1154,6 +1162,19 @@
                           </div>
                           <button id="adminEngagementsClubOfficialsSaveButton" type="submit">Enregistrer</button>
                         </div>
+                        <details id="adminEngagementsClubOfficialSwimmerPicker" class="admin-engagements-official-swimmer-picker">
+                          <summary>Ajouter un nageur comme officiel</summary>
+                          <div>
+                            <label>
+                              Nageur du club
+                              <select id="adminEngagementsClubOfficialSwimmerSelect">
+                                <option value="">Choisir une personne</option>
+                              </select>
+                            </label>
+                            <button id="adminEngagementsClubOfficialSwimmerAdd" class="ghost-button" type="button">Ajouter comme officiel</button>
+                          </div>
+                          <small>Le nom et la licence seront partag&eacute;s avec sa fiche nageur.</small>
+                        </details>
                         <div id="adminEngagementsClubOfficialsList" class="admin-engagements-club-officials-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubOfficialsMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
@@ -1236,32 +1257,55 @@
                       <dialog id="adminEngagementsClubRelayDialog" class="admin-engagements-club-times-dialog admin-engagements-club-relay-dialog" aria-labelledby="adminEngagementsClubRelayDialogTitle">
                         <div class="admin-engagements-club-times-dialog-head">
                           <div>
-                            <span>Composition du relais</span>
-                            <h3 id="adminEngagementsClubRelayDialogTitle">Relais</h3>
+                            <span>Relais</span>
+                            <h3 id="adminEngagementsClubRelayDialogTitle">Nouveau relais</h3>
                             <p id="adminEngagementsClubRelayDialogMeta"></p>
                           </div>
                           <button id="adminEngagementsClubRelayDialogClose" class="ghost-button compact" type="button" aria-label="Fermer la fen&ecirc;tre">&times;</button>
                         </div>
-                        <div id="adminEngagementsClubRelayDialogList" class="admin-engagements-club-relay-dialog-list"></div>
+                        <div class="admin-engagements-club-relay-dialog-body">
+                          <div class="admin-engagements-club-relay-dialog-fields">
+                            <label>
+                              <span>Distance</span>
+                              <select id="adminEngagementsClubRelayDialogEvent" required></select>
+                            </label>
+                            <label>
+                              <span>Cat&eacute;gorie</span>
+                              <select id="adminEngagementsClubRelayDialogCategory" required></select>
+                            </label>
+                            <label>
+                              <span>Sexe</span>
+                              <select id="adminEngagementsClubRelayDialogGender" required></select>
+                            </label>
+                            <label>
+                              <span>Temps</span>
+                              <input id="adminEngagementsClubRelayDialogTime" type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" aria-label="Temps d'engagement au format MM:SS.CC" required>
+                            </label>
+                          </div>
+                          <details id="adminEngagementsClubRelayDialogMembers" class="admin-engagements-club-relay-dialog-members">
+                            <summary id="adminEngagementsClubRelayDialogMembersSummary">Choisir les relayeurs</summary>
+                            <div class="admin-engagements-club-relay-dialog-members-head">
+                              <p id="adminEngagementsClubRelayDialogMembersHelp"></p>
+                              <button id="adminEngagementsClubRelayDialogReset" class="ghost-button compact" type="button">RAZ</button>
+                            </div>
+                            <div id="adminEngagementsClubRelayDialogList" class="admin-engagements-club-relay-dialog-list"></div>
+                          </details>
+                        </div>
                         <p id="adminEngagementsClubRelayDialogMessage" class="admin-portal-message" aria-live="polite"></p>
                         <div class="admin-engagements-club-times-dialog-actions">
-                          <button id="adminEngagementsClubRelayDialogReset" class="ghost-button compact" type="button">RAZ</button>
                           <button id="adminEngagementsClubRelayDialogCancel" class="ghost-button" type="button">Annuler</button>
-                          <button id="adminEngagementsClubRelayDialogApply" type="button">Valider les relayeurs</button>
+                          <button id="adminEngagementsClubRelayDialogApply" type="button">Valider le relais</button>
                         </div>
                       </dialog>
                     </div>
                     <div id="adminEngagementsDetailSummaryPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSummaryTab" data-engagements-detail-tab-panel="summary" hidden>
                       <section class="admin-engagements-club-step admin-engagements-club-summary" data-club-step="summary">
-                        <div class="admin-engagements-events-head">
-                          <div>
-                            <strong>R&eacute;capitulatif club</strong>
-                            <small id="adminEngagementsClubSummaryStatus">R&eacute;capitulatif &agrave; charger.</small>
-                          </div>
+                        <h3>R&eacute;capitulatif club</h3>
+                        <dl id="adminEngagementsClubSummaryList" class="admin-engagements-detail-list"></dl>
+                        <p id="adminEngagementsClubSummaryStatus" class="admin-portal-message" aria-live="polite" hidden></p>
+                        <div class="admin-engagements-club-summary-actions">
                           <button id="adminEngagementsClubSummaryPdfButton" class="ghost-button" type="button">T&eacute;l&eacute;charger le PDF</button>
                         </div>
-                        <dl id="adminEngagementsClubSummaryList" class="admin-engagements-detail-list"></dl>
-                        <div id="adminEngagementsClubSummaryRelays" class="admin-engagements-club-summary-relays"></div>
                       </section>
                     </div>
                     <div id="adminEngagementsDetailDocumentsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDocumentsTab" data-engagements-detail-tab-panel="documents" hidden>
@@ -1330,7 +1374,16 @@
                   <p id="adminEngagementsClubPeopleStatus" class="admin-portal-message" aria-live="polite">Les officiels seront charg&eacute;s &agrave; l&rsquo;ouverture.</p>
                   <form id="adminEngagementsClubPersonForm" class="admin-engagements-club-person-form" hidden>
                     <input id="adminEngagementsClubPersonId" type="hidden">
+                    <input id="adminEngagementsClubPersonSwimmerId" type="hidden">
+                    <input id="adminEngagementsClubPersonSwimmerSource" type="hidden">
                     <div class="admin-engagements-form-section-grid">
+                      <label class="admin-engagements-club-person-swimmer-source">
+                        Personne existante
+                        <select id="adminEngagementsClubPersonSwimmerSelect">
+                          <option value="">Saisie manuelle</option>
+                        </select>
+                        <small>Choisissez un nageur pour r&eacute;utiliser son identit&eacute;.</small>
+                      </label>
                       <label>
                         Pr&eacute;nom
                         <input id="adminEngagementsClubPersonFirstName" type="text" maxlength="80" autocomplete="given-name" required>
@@ -1444,7 +1497,11 @@
                         </label>
                         <label>
                           Max &eacute;preuves par nageur
-                          <input id="adminEngagementsMaxEvents" type="number" min="0" max="20" step="1" inputmode="numeric">
+                          <input id="adminEngagementsMaxEvents" type="number" min="1" max="20" step="1" inputmode="numeric" disabled>
+                        </label>
+                        <label class="admin-engagements-check admin-engagements-max-events-unlimited">
+                          <input id="adminEngagementsMaxEventsUnlimited" type="checkbox" checked>
+                          <span>Aucune limite d'&eacute;preuves par nageur</span>
                         </label>
                         <label class="admin-engagements-check">
                           <input id="adminEngagementsOfficialsRequired" type="checkbox">
@@ -2100,7 +2157,7 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260803-space-home-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260805-engagements-3"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260806-engagements-3"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>

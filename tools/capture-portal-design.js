@@ -201,6 +201,41 @@ function clubSwimmersFixtureHtml() {
   `;
 }
 
+function engagementCompetitionsFixtureHtml() {
+  const rows = [
+    ["15–17 août", "TEST LIVEPALMES", "Houilles", "National", "Île-de-France", "Ouverts", "Ferme dans 1 j 4 h", "open", "warning", "Gérer mes engagements"],
+    ["12 septembre", "Championnat régional", "Beaumont-sur-Oise", "Régional", "Île-de-France", "À venir", "Ouvre dans 18 jours", "upcoming", "neutral", "Voir les informations"],
+    ["4 octobre", "Meeting de rentrée", "Corbie", "Départemental", "Hauts-de-France", "Fermés", "Fermés depuis le 28 septembre", "closed", "neutral", "Voir le récapitulatif"]
+  ];
+  return `
+    <div class="admin-engagements-competitions-table" role="table" aria-label="Engagements en compétition">
+      <div class="admin-engagements-competitions-table-head" role="row">
+        <span role="columnheader">Date</span><span role="columnheader">Compétition</span><span role="columnheader">Niveau / région</span><span role="columnheader">Engagements</span><span role="columnheader">Action</span>
+      </div>
+      <section class="admin-engagements-competition-group" role="rowgroup" aria-labelledby="engagement-fixture-open">
+        <h4 id="engagement-fixture-open">Août 2026</h4>
+        ${rows.slice(0, 1).map((row) => engagementCompetitionFixtureRow(row)).join("")}
+      </section>
+      <section class="admin-engagements-competition-group" role="rowgroup" aria-labelledby="engagement-fixture-month">
+        <h4 id="engagement-fixture-month">Septembre 2026</h4>
+        ${rows.slice(1).map((row) => engagementCompetitionFixtureRow(row)).join("")}
+      </section>
+    </div>
+  `;
+}
+
+function engagementCompetitionFixtureRow(row) {
+  return `
+    <article class="admin-engagements-competition" role="row">
+      <time class="admin-engagements-competition-date" role="cell" data-label="Date">${row[0]}</time>
+      <div class="admin-engagements-competition-main" role="cell" data-label="Compétition"><strong>${row[1]}</strong><small class="admin-engagements-competition-location">${row[2]}</small></div>
+      <div class="admin-engagements-competition-scope" role="cell" data-label="Niveau / région"><span>${row[3]}</span><small>${row[4]}</small></div>
+      <div class="admin-engagements-competition-status" role="cell" data-label="Engagements"><span class="admin-engagements-competition-entry-badge" data-entry-state="${row[7]}">${row[5]}</span><small data-entry-status="${row[8]}">${row[6]}</small></div>
+      <div class="admin-engagements-competition-actions" role="cell" data-label="Action"><button class="ghost-button" type="button" aria-label="${row[9]} — ${row[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span>${row[9]}</span></button></div>
+    </article>
+  `;
+}
+
 function presentationScript(view) {
   return `
     history.replaceState(null, "", "#${view.hash}");
@@ -300,6 +335,27 @@ function presentationScript(view) {
           status.dataset.tone = "neutral";
         }
         if (mount) mount.innerHTML = ${JSON.stringify(clubSwimmersFixtureHtml())};
+      }
+      if (${JSON.stringify(view.name)} === "engagements") {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewEyebrow = document.querySelector("#adminEngagementsViewEyebrow");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const calendarHead = document.querySelector("#adminEngagementsCalendarHead");
+        const statusFilterLabel = document.querySelector("#adminEngagementsStatusFilterLabel");
+        const statusSegments = document.querySelector("#adminEngagementsStatusSegments");
+        const resultsCount = document.querySelector("#adminEngagementsResultsCount");
+        const mount = document.querySelector("#adminEngagementsCalendarList");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "club";
+          engagementsView.dataset.engagementsTab = "calendar";
+        }
+        if (viewEyebrow) viewEyebrow.hidden = true;
+        if (viewTitle) viewTitle.textContent = "Engagements en compétition";
+        if (calendarHead) calendarHead.hidden = true;
+        if (statusFilterLabel) statusFilterLabel.hidden = true;
+        if (statusSegments) statusSegments.hidden = false;
+        if (resultsCount) resultsCount.hidden = true;
+        if (mount) mount.innerHTML = ${JSON.stringify(engagementCompetitionsFixtureHtml())};
       }
       if (${JSON.stringify(view.name)} === "account") {
         document.querySelectorAll("#adminAccountView details").forEach((details) => {

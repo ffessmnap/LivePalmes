@@ -1715,6 +1715,229 @@
   }
 }
 
+/* Calendriers Club et Organisateur : tableau dense, puis mini-fiches mobiles. */
+#adminEngagementsCalendarCard .admin-engagements-competitions-table {
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  overflow: clip;
+  background: #ffffff;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table-head,
+#adminEngagementsCalendarCard .admin-engagements-competition {
+  display: grid;
+  grid-template-columns: 100px minmax(240px, 1.6fr) minmax(125px, 0.65fr) minmax(190px, 0.85fr) minmax(175px, auto);
+  gap: 10px;
+  align-items: center;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table-head {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  min-height: 34px;
+  border-bottom: 1px solid #d8e0e3;
+  padding: 6px 10px;
+  background: #edf2f3;
+  color: #53666d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group {
+  display: grid;
+  gap: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group > h4,
+#adminEngagementsCalendarCard .admin-engagements-competition-group:first-child > h4 {
+  margin: 0;
+  border-bottom: 1px solid #dfe5e7;
+  padding: 6px 10px;
+  background: #f8fafb;
+  color: #0b7285;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition {
+  min-height: 56px;
+  border: 0;
+  border-bottom: 1px solid #e5eaec;
+  border-radius: 0;
+  padding: 7px 10px;
+  background: #ffffff;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group:last-child .admin-engagements-competition:last-child {
+  border-bottom: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition:hover {
+  border-color: transparent;
+  background: #f8fbfb;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition.selected {
+  border-color: transparent;
+  border-radius: 0;
+  background: #eef8f9;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-date {
+  color: #23434c;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-main,
+#adminEngagementsCalendarCard .admin-engagements-competition-scope,
+#adminEngagementsCalendarCard .admin-engagements-competition-status {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-main strong {
+  overflow: hidden;
+  color: #263940;
+  font-size: 0.83rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-location,
+#adminEngagementsCalendarCard .admin-engagements-competition-scope small,
+#adminEngagementsCalendarCard .admin-engagements-competition-status small {
+  color: #62747a;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-scope > span,
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: #eef3f4;
+  color: #4e6269;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="open"] {
+  background: #dff4ed;
+  color: #17634f;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="closed"] {
+  background: #edf0f1;
+  color: #5f6d72;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="upcoming"] {
+  background: #e5f2f7;
+  color: #245d70;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1120px) and (min-width: 761px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table-head,
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-columns: 92px minmax(200px, 1fr) minmax(105px, 0.55fr) minmax(155px, 0.75fr) minmax(155px, auto);
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas: none;
+  }
+}
+
+@media (max-width: 760px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table {
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table-head {
+    display: none;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group {
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group > h4,
+  #adminEngagementsCalendarCard .admin-engagements-competition-group:first-child > h4 {
+    border: 0;
+    padding: 4px 2px 0;
+    background: transparent;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas:
+      "date scope"
+      "name name"
+      "status status"
+      "action action";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 10px;
+    min-height: 0;
+    border: 1px solid #dfe5e7;
+    border-radius: 9px;
+    padding: 9px 10px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group:last-child .admin-engagements-competition:last-child {
+    border-bottom: 1px solid #dfe5e7;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition.selected {
+    border-color: #77b6be;
+    border-radius: 9px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-date { grid-area: date; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-main { grid-area: name; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-scope { grid-area: scope; justify-items: end; text-align: right; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-status {
+    grid-area: status;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    align-items: center;
+  }
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions { grid-area: action; }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions,
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+    width: 100%;
+  }
+}
+
 .admin-engagements-tab-panel {
   min-width: 0;
 }
@@ -2524,6 +2747,52 @@
   border-color: #e1b2b2;
   background: #fff4f2;
   color: #9d2f2f;
+}
+
+.admin-engagements-detail-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-engagements-entry-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  margin-top: 7px;
+  border: 1px solid #cfdadd;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #f7fafb;
+  color: #52636a;
+  font-size: 0.69rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-entry-status[data-entry-status="open"] {
+  border-color: #9ccfc0;
+  background: #edf8f3;
+  color: #176447;
+}
+
+.admin-engagements-entry-status[data-entry-status="closed"] {
+  border-color: #d8c8a1;
+  background: #fff8e8;
+  color: #76570f;
+}
+
+.admin-engagements-entry-status:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.admin-engagements-entry-status:not(:disabled):hover,
+.admin-engagements-entry-status:not(:disabled):focus-visible {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.14);
+  outline-offset: 1px;
 }
 
 .admin-engagements-detail-meta {
@@ -4735,25 +5004,6 @@
 
 .admin-engagements-club-summary {
   gap: 10px;
-}
-
-.admin-engagements-club-summary-relays {
-  display: grid;
-  gap: 6px;
-}
-
-.admin-engagements-club-summary-relays strong {
-  color: #173b35;
-  font-size: 0.84rem;
-}
-
-.admin-engagements-club-summary-relays ul {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding-left: 18px;
-  color: #45615b;
-  font-size: 0.84rem;
 }
 
 .admin-access-preview[hidden] {
@@ -6985,36 +7235,31 @@
 }
 
 #adminEngagementsDetailSummaryPanel .admin-engagements-club-summary {
-  gap: 14px;
-  border-color: #dfe5e7;
-  border-radius: 9px;
-  padding: 0;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary > .admin-engagements-events-head {
+  gap: 10px;
   border: 0;
-  border-bottom: 1px solid #e3e9eb;
   border-radius: 0;
+  padding: 0;
+  background: transparent;
 }
 
-#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary > .admin-engagements-detail-list,
-#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-relays {
-  margin-right: 14px;
-  margin-left: 14px;
+#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary > h3 {
+  margin: 0;
+  color: #263940;
+  font-size: 0.95rem;
 }
 
-#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-relays {
-  margin-bottom: 14px;
-  border: 1px solid #dfe5e7;
-  border-radius: 9px;
-  padding: 11px 12px;
-  background: #f8fafb;
+#adminEngagementsDetailSummaryPanel .admin-engagements-detail-list dd {
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
-#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-relays strong {
-  color: #0b7285;
+#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary > .admin-portal-message {
+  margin: 0;
+}
+
+#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (max-width: 700px) {
@@ -7040,6 +7285,10 @@
   #adminEngagementsDetailSummaryPanel .admin-engagements-club-summary > .admin-engagements-detail-list dt {
     border-right: 0;
     border-bottom: 1px solid #e3e9eb;
+  }
+
+  #adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-actions button {
+    width: 100%;
   }
 }
 
@@ -7578,7 +7827,18 @@
 }
 
 #adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dd {
+  font-size: 0.82rem;
   font-weight: 500;
+}
+
+#adminEngagementsEditForm .admin-engagements-entry-status-field {
+  border-left: 3px solid #0b7285;
+  background: #eef8fa;
+  color: #174f59;
+}
+
+.admin-engagements-max-events-unlimited {
+  background: #f8fafb;
 }
 
 #adminEngagementsDetail .admin-engagements-form {
@@ -8961,16 +9221,104 @@
   width: min(720px, calc(100vw - 28px));
 }
 
+.admin-engagements-club-relay-dialog-body {
+  display: grid;
+  gap: 12px;
+  max-height: min(520px, calc(100vh - 210px));
+  overflow-y: auto;
+  padding: 14px 17px;
+}
+
+.admin-engagements-club-relay-dialog-fields {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(120px, 1fr) minmax(105px, 0.85fr) minmax(100px, 0.8fr);
+  gap: 10px;
+}
+
+.admin-engagements-club-relay-dialog-fields label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #52636a;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.admin-engagements-club-relay-dialog-fields select,
+.admin-engagements-club-relay-dialog-fields input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #d8e0e3;
+  border-radius: 7px;
+  padding: 5px 8px;
+  background: #ffffff;
+  color: #263940;
+  font: inherit;
+}
+
+.admin-engagements-club-relay-dialog-fields select {
+  padding-right: 28px;
+}
+
+.admin-engagements-club-relay-dialog-fields select[data-gender="female"] {
+  border-color: #e3b5ca;
+  background: #fff8fb;
+}
+
+.admin-engagements-club-relay-dialog-fields select[data-gender="male"] {
+  border-color: #b4cfe5;
+  background: #f7fbff;
+}
+
+.admin-engagements-club-relay-dialog-fields select:focus,
+.admin-engagements-club-relay-dialog-fields input:focus {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.16);
+  outline-offset: 1px;
+}
+
+.admin-engagements-club-relay-dialog-members {
+  border: 1px solid #dfe6e8;
+  border-radius: 8px;
+  background: #f9fbfb;
+}
+
+.admin-engagements-club-relay-dialog-members summary {
+  padding: 10px 12px;
+  color: #29464d;
+  font-size: 0.79rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-engagements-club-relay-dialog-members.is-unavailable summary {
+  color: #7d8b90;
+}
+
+.admin-engagements-club-relay-dialog-members-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #e4eaec;
+  padding: 8px 12px 0;
+}
+
+.admin-engagements-club-relay-dialog-members-head p {
+  margin: 0;
+  color: #617279;
+  font-size: 0.71rem;
+  line-height: 1.35;
+}
+
 #adminEngagementsClubRelayDialogReset {
-  margin-right: auto;
+  min-height: 30px;
 }
 
 .admin-engagements-club-relay-dialog-list {
   display: grid;
   gap: 10px;
-  max-height: min(500px, calc(100vh - 230px));
-  overflow-y: auto;
-  padding: 14px 17px;
+  padding: 10px 12px 12px;
 }
 
 .admin-engagements-club-relay-dialog-help {
@@ -8988,16 +9336,25 @@
 
 .admin-engagements-club-relay-dialog-grid label {
   display: grid;
-  gap: 4px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
   min-width: 0;
   color: #52636a;
   font-size: 0.76rem;
   font-weight: 800;
 }
 
+.admin-engagements-club-relay-dialog-grid label > span {
+  color: #0b7285;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+}
+
 .admin-engagements-club-relay-dialog-grid select {
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid #d8e0e3;
   border-radius: 7px;
   padding: 6px 32px 6px 9px;
@@ -9065,9 +9422,16 @@
   }
 
   .admin-engagements-club-relay-dialog-list {
-    max-height: calc(100vh - 245px);
-    padding-right: 12px;
-    padding-left: 12px;
+    padding: 8px 9px 10px;
+  }
+
+  .admin-engagements-club-relay-dialog-body {
+    max-height: calc(100vh - 210px);
+    padding: 12px;
+  }
+
+  .admin-engagements-club-relay-dialog-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-engagements-club-relay-dialog-grid {
@@ -10507,6 +10871,125 @@
   font-size: clamp(1.08rem, 1.8vw, 1.3rem);
 }
 
+#adminEngagementsView[data-engagements-tab="calendar"] > .admin-portal-workspace-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] > .admin-portal-workspace-head > :not(.admin-engagements-workspace-back) {
+  grid-column: 1;
+}
+
+#adminEngagementsView .admin-engagements-workspace-back {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  width: auto;
+  white-space: nowrap;
+}
+
+#adminEngagementsView .admin-engagements-level-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  border: 1px solid #d6e1e3;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #eef3f4;
+  color: #40565d;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail .admin-engagements-detail-head {
+  padding: 10px var(--portal-panel-gutter) 12px;
+  border-bottom: 0;
+}
+
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail .admin-engagements-detail-head h4 {
+  margin-top: 0;
+  font-size: clamp(1.08rem, 1.8vw, 1.3rem);
+}
+
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail .admin-engagements-detail-tabs {
+  border: 1px solid #e3e9eb;
+}
+
+.admin-engagements-official-swimmer-picker {
+  border: 1px solid #dce5e7;
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: #f7f9fa;
+}
+
+.admin-engagements-official-swimmer-picker > summary {
+  color: #435960;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-engagements-official-swimmer-picker > div {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 9px;
+}
+
+.admin-engagements-official-swimmer-picker label,
+.admin-engagements-club-person-swimmer-source {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-engagements-official-swimmer-picker select,
+.admin-engagements-club-person-swimmer-source select {
+  width: 100%;
+}
+
+.admin-engagements-official-swimmer-picker > small,
+.admin-engagements-club-person-swimmer-source small {
+  display: block;
+  margin-top: 6px;
+  color: #667980;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-club-person-swimmer-source {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsView[data-engagements-tab="calendar"] > .admin-portal-workspace-head {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 5px;
+  }
+
+  .admin-engagements-official-swimmer-picker > div {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-official-swimmer-picker button {
+    width: 100%;
+  }
+}
+
 #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] > .admin-portal-workspace-head > p,
 #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarCard > .admin-engagements-card-head > div {
   display: none;
@@ -10929,5 +11412,291 @@
 
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-details > [data-label]::before {
     display: none;
+  }
+}
+
+/* Priorité finale du calendrier : bandeau plat, cinq colonnes et mini-fiches mobiles. */
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarCard:not([data-detail-open="true"]) {
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarCard:not([data-detail-open="true"]) > .admin-engagements-card-head {
+  border: 0;
+  padding: 0 0 4px;
+  background: transparent;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: end;
+  margin: 0;
+  border: 1px solid #dfe5e7;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  padding: 8px 10px;
+  background: #f7f9fa;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+  flex: 1 1 620px;
+  gap: 6px;
+  align-items: end;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+  min-width: 122px;
+  max-width: 150px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters select,
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters button {
+  min-height: 34px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments {
+  flex: 1 1 380px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments button {
+  min-height: 34px;
+  padding: 5px 11px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0 0 4px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters[open] {
+  flex-basis: 100%;
+  border-top: 1px solid #e1e7e9;
+  padding-top: 6px;
+}
+
+#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarList {
+  margin: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table {
+  border: 0;
+  border-top: 1px solid #dfe5e7;
+  border-bottom: 1px solid #dfe5e7;
+  border-radius: 0;
+  overflow: clip;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competitions-table-head,
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition {
+  grid-template-areas: none;
+  grid-template-columns: 100px minmax(240px, 1.6fr) minmax(125px, 0.65fr) minmax(190px, 0.85fr) minmax(175px, auto);
+  gap: 10px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competitions-table-head {
+  display: grid;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group {
+  gap: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > h4,
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group:first-of-type > h4 {
+  margin: 0;
+  border-bottom: 1px solid #dfe5e7;
+  padding: 5px 10px;
+  background: transparent;
+  color: #0b7285;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition {
+  min-height: 56px;
+  border: 0;
+  border-bottom: 1px solid #e5eaec;
+  border-radius: 0;
+  padding: 7px 10px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition.selected {
+  border-color: transparent;
+  border-radius: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-main {
+  grid-area: auto;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-main strong {
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-main .admin-engagements-competition-location {
+  overflow: hidden;
+  color: #62747a;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-status small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-actions {
+  min-width: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-actions button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-actions svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 1120px) and (min-width: 761px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competitions-table-head,
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition {
+    grid-template-columns: 92px minmax(200px, 1fr) minmax(105px, 0.55fr) minmax(155px, 0.75fr) minmax(155px, auto);
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition {
+    grid-template-areas: none;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > * {
+    grid-area: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table {
+    border: 0;
+    overflow: visible;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competitions-table-head {
+    display: none;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group {
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > h4,
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group:first-of-type > h4 {
+    border: 0;
+    padding: 4px 2px 0;
+    background: transparent;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition {
+    grid-template-areas:
+      "date scope"
+      "name name"
+      "status status"
+      "action action";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 10px;
+    min-height: 0;
+    border: 1px solid #dfe5e7;
+    border-radius: 9px;
+    padding: 9px 10px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition.selected {
+    border-color: #77b6be;
+    border-radius: 9px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > * { grid-area: auto; }
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > .admin-engagements-competition-date { grid-area: date; }
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > .admin-engagements-competition-main { grid-area: name; }
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > .admin-engagements-competition-scope { grid-area: scope; }
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > .admin-engagements-competition-status { grid-area: status; }
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table > .admin-engagements-competition-group > .admin-engagements-competition > .admin-engagements-competition-actions { grid-area: action; }
+
+  #adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+    padding: 8px;
+  }
+
+  #adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary,
+  #adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments {
+    flex-basis: 100%;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table .admin-engagements-competition-main .admin-engagements-competition-location {
+    white-space: normal;
+  }
+}
+
+/* Aplatissement final du calendrier, prioritaire sur les anciennes cartes Club. */
+#adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] #adminEngagementsCalendarCard:not([data-detail-open="true"]) {
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+#adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+  display: flex;
+  margin: 0;
+  border: 1px solid #dfe5e7;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  padding: 8px 10px;
+  background: #f7f9fa;
+}
+
+#adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] #adminEngagementsCalendarList {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  #adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+    margin: 0;
+    padding: 8px;
+  }
+
+  #adminEngagementsView[data-engagements-mode][data-engagements-tab="calendar"] #adminEngagementsCalendarList {
+    margin: 0;
   }
 }
