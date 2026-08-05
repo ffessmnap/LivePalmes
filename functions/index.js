@@ -5818,6 +5818,9 @@ function cleanEngagementClubPerson(raw = {}, context = {}) {
   const roles = raw.roles || {};
   const official = roles.official === true || raw.official === true;
   const teamLeader = roles.teamLeader === true || raw.teamLeader === true;
+  const swimmerIndexId = cleanText(raw.swimmerIndexId).slice(0, 80);
+  const swimmerSource = cleanText(raw.swimmerSource || raw.source).slice(0, 40);
+  const swimmer = Boolean(swimmerIndexId);
   if (!firstName || !lastName) {
     throw new HttpsError("invalid-argument", "Nom et prenom obligatoires.");
   }
@@ -5834,7 +5837,13 @@ function cleanEngagementClubPerson(raw = {}, context = {}) {
     firstName,
     lastName,
     licenseNumber,
+    swimmerIndexId,
+    swimmerSource: swimmer ? (swimmerSource || "performances") : "",
+    birthDate: swimmer ? cleanIsoDate(raw.birthDate) : "",
+    sex: swimmer ? cleanText(raw.sex).toUpperCase().slice(0, 20) : "",
+    identityKey: swimmer ? cleanText(raw.identityKey).slice(0, 180) : "",
     roles: {
+      swimmer,
       official,
       teamLeader
     },
@@ -5853,7 +5862,13 @@ function engagementClubPersonItem(doc) {
     firstName: cleanText(data.firstName).slice(0, 80),
     lastName: cleanText(data.lastName).slice(0, 80),
     licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+    swimmerIndexId: cleanText(data.swimmerIndexId).slice(0, 80),
+    swimmerSource: cleanText(data.swimmerSource).slice(0, 40),
+    birthDate: cleanIsoDate(data.birthDate),
+    sex: cleanText(data.sex).toUpperCase().slice(0, 20),
+    identityKey: cleanText(data.identityKey).slice(0, 180),
     roles: {
+      swimmer: roles.swimmer === true || Boolean(cleanText(data.swimmerIndexId)),
       official: roles.official === true,
       teamLeader: roles.teamLeader === true
     },
@@ -5884,7 +5899,13 @@ function engagementClubPeopleRosterPersonItem(person = {}) {
     firstName: cleanText(person.firstName).slice(0, 80),
     lastName: cleanText(person.lastName).slice(0, 80),
     licenseNumber: cleanText(person.licenseNumber).slice(0, 60),
+    swimmerIndexId: cleanText(person.swimmerIndexId).slice(0, 80),
+    swimmerSource: cleanText(person.swimmerSource).slice(0, 40),
+    birthDate: cleanIsoDate(person.birthDate),
+    sex: cleanText(person.sex).toUpperCase().slice(0, 20),
+    identityKey: cleanText(person.identityKey).slice(0, 180),
     roles: {
+      swimmer: roles.swimmer === true || Boolean(cleanText(person.swimmerIndexId)),
       official: roles.official === true,
       teamLeader: roles.teamLeader === true
     },
@@ -7283,10 +7304,39 @@ exports.listEngagementClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
+async function resolveEngagementClubPersonSwimmer(db, context = {}, rawPerson = {}) {
+  const swimmerIndexId = cleanText(rawPerson.swimmerIndexId).slice(0, 80);
+  if (!swimmerIndexId) return null;
+  const swimmerSource = cleanText(rawPerson.swimmerSource || rawPerson.source || "performances").slice(0, 40) || "performances";
+  const rosterSnapshot = await engagementClubRosterRef(db, context.clubId).get();
+  if (!rosterSnapshot.exists) {
+    throw new HttpsError("failed-precondition", "Chargez d'abord les nageurs du club.");
+  }
+  const swimmer = engagementClubRosterSwimmersFromData(rosterSnapshot.data() || {}).find((candidate) =>
+    candidate.swimmerIndexId === swimmerIndexId && cleanText(candidate.source || "performances") === swimmerSource
+  );
+  if (!swimmer || swimmer.clubId !== context.clubId || swimmer.active === false) {
+    throw new HttpsError("permission-denied", "Nageur hors perimetre club ou inactif.");
+  }
+  return swimmer;
+}
+
 exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const personId = cleanText(request.data?.personId).slice(0, 80);
-  const person = cleanEngagementClubPerson(request.data?.person || {}, context);
+  const rawPerson = request.data?.person || {};
+  const linkedSwimmer = await resolveEngagementClubPersonSwimmer(db, context, rawPerson);
+  const person = cleanEngagementClubPerson(linkedSwimmer ? {
+    ...rawPerson,
+    firstName: linkedSwimmer.firstName,
+    lastName: linkedSwimmer.lastName,
+    licenseNumber: linkedSwimmer.licenseNumber,
+    swimmerIndexId: linkedSwimmer.swimmerIndexId,
+    swimmerSource: linkedSwimmer.source,
+    birthDate: linkedSwimmer.birthDate,
+    sex: linkedSwimmer.sex,
+    identityKey: linkedSwimmer.identityKey
+  } : rawPerson, context);
   const docId = personId || stableHash(`${context.clubId}|${person.licenseNumber}`).slice(0, 40);
   const ref = db.collection("engagementClubPeople").doc(docId);
   const snapshot = await ref.get();
@@ -8582,9 +8632,15 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
   const sourceRoles = sourceSnapshot.data()?.roles || {};
   const targetPayload = {
     roles: {
+      swimmer: targetRoles.swimmer === true || sourceRoles.swimmer === true || Boolean(targetPerson.swimmerIndexId || sourcePerson.swimmerIndexId),
       official: targetRoles.official === true || sourceRoles.official === true,
       teamLeader: targetRoles.teamLeader === true || sourceRoles.teamLeader === true
     },
+    swimmerIndexId: targetPerson.swimmerIndexId || sourcePerson.swimmerIndexId || "",
+    swimmerSource: targetPerson.swimmerSource || sourcePerson.swimmerSource || "",
+    birthDate: targetPerson.birthDate || sourcePerson.birthDate || "",
+    sex: targetPerson.sex || sourcePerson.sex || "",
+    identityKey: targetPerson.identityKey || sourcePerson.identityKey || "",
     active: true,
     status: "active",
     mergedSourceIds: FieldValue.arrayUnion(sourcePersonId),
