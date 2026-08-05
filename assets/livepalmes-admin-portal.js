@@ -1,5 +1,6 @@
 (function attachLivePalmesAdminPortal(global) {
-  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
+  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+  const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260803-national-swimmers-all-1";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "performances/public/data/performance-public";
@@ -118,6 +119,26 @@
     "18": "R\u00e9union",
     "22": "Bourgogne Franche Comt\u00e9"
   };
+  const ENGAGEMENT_ROUTE_BY_HASH = Object.freeze({
+    "#club-competitions": { entry: "club", tab: "calendar" },
+    "#club-nageurs": { entry: "clubSwimmers", tab: "clubSwimmers" },
+    "#club-officiels": { entry: "clubPeople", tab: "clubPeople" },
+    "#competitions-calendrier": { entry: "adminCalendar", tab: "calendar" },
+    "#competitions-creation": { entry: "adminCreate", tab: "create" },
+    "#competitions-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
+    "#administration-suppressions": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
+    "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
+    "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
+    "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "accounts" },
+    "#administration-historique": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "audit" }
+  });
+  const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
+    deletions: "#administration-suppressions",
+    swimmers: "#administration-doublons-nageurs",
+    people: "#administration-officiels",
+    accounts: "#administration-comptes",
+    audit: "#administration-historique"
+  });
 
   const elements = {
     dashboard: document.querySelector("#adminPortalDashboard"),
@@ -125,6 +146,7 @@
     form: document.querySelector("#adminPortalLoginForm"),
     message: document.querySelector("#adminPortalMessage"),
     password: document.querySelector("#adminPortalPassword"),
+    passwordToggle: document.querySelector("#adminPortalPasswordToggle"),
     reset: document.querySelector("#adminPortalResetButton"),
     publicAccessRequestForm: document.querySelector("#adminPublicAccessRequestForm"),
     publicAccessRequestFirstName: document.querySelector("#adminPublicAccessRequestFirstName"),
@@ -145,6 +167,8 @@
     accountActions: document.querySelector("#adminPortalAccountActions"),
     navToggle: document.querySelector("#adminPortalNavToggle"),
     navCurrent: document.querySelector("#adminPortalNavCurrent"),
+    homeLink: document.querySelector("#adminPortalHomeLink"),
+    homeLabel: document.querySelector("#adminPortalHomeLabel"),
     navigation: document.querySelector("#adminPortalNavigation"),
     sidebar: document.querySelector(".admin-portal-sidebar"),
     navPin: document.querySelector("#adminPortalNavPin"),
@@ -190,26 +214,23 @@
     accessDeletionRequestsStatus: document.querySelector("#adminAccessDeletionRequestsStatus"),
     accessDeletionRequestsList: document.querySelector("#adminAccessDeletionRequestsList"),
     cancelEdit: document.querySelector("#adminAccessCancelEdit"),
-    accessRequestForm: document.querySelector("#adminAccessRequestForm"),
-    accessRequestFirstName: document.querySelector("#adminAccessRequestFirstName"),
-    accessRequestLastName: document.querySelector("#adminAccessRequestLastName"),
-    accessRequestEmail: document.querySelector("#adminAccessRequestEmail"),
-    accessRequestLicenseNumber: document.querySelector("#adminAccessRequestLicenseNumber"),
-    accessRequestRegionId: document.querySelector("#adminAccessRequestRegionId"),
-    accessRequestClubSelect: document.querySelector("#adminAccessRequestClubSelect"),
-    accessRequestClubName: document.querySelector("#adminAccessRequestClubName"),
-    accessRequestClubId: document.querySelector("#adminAccessRequestClubId"),
-    accessRequestText: document.querySelector("#adminAccessRequestText"),
-    accessRequestMessage: document.querySelector("#adminAccessRequestMessage"),
     accountEmailForm: document.querySelector("#adminAccountEmailForm"),
     accountEmail: document.querySelector("#adminAccountEmail"),
     accountEmailPassword: document.querySelector("#adminAccountEmailPassword"),
     accountEmailMessage: document.querySelector("#adminAccountEmailMessage"),
     accountPasswordForm: document.querySelector("#adminAccountPasswordForm"),
+    accountEmailDetails: document.querySelector("#adminAccountEmailDetails"),
+    accountPasswordDetails: document.querySelector("#adminAccountPasswordDetails"),
     accountCurrentPassword: document.querySelector("#adminAccountCurrentPassword"),
     accountNewPassword: document.querySelector("#adminAccountNewPassword"),
     accountConfirmPassword: document.querySelector("#adminAccountConfirmPassword"),
     accountPasswordMessage: document.querySelector("#adminAccountPasswordMessage"),
+    accountFullName: document.querySelector("#adminAccountFullName"),
+    accountIdentityEmail: document.querySelector("#adminAccountIdentityEmail"),
+    accountEmailSummary: document.querySelector("#adminAccountEmailSummary"),
+    accountLicenseMeta: document.querySelector("#adminAccountLicenseMeta"),
+    accountLicenseNumber: document.querySelector("#adminAccountLicenseNumber"),
+    accountScopeSentence: document.querySelector("#adminAccountScopeSentence"),
     accountCapabilities: document.querySelector("#adminAccountCapabilities"),
     recordModuleStatus: document.querySelector("#adminRecordModuleStatus"),
     performanceStyles: document.querySelector("#adminPerformanceStyles"),
@@ -223,9 +244,6 @@
     engagementsViewEyebrow: document.querySelector("#adminEngagementsViewEyebrow"),
     engagementsViewTitle: document.querySelector("#adminEngagementsViewTitle"),
     engagementsViewIntro: document.querySelector("#adminEngagementsViewIntro"),
-    engagementsAccessLevel: document.querySelector("#adminEngagementsAccessLevel"),
-    engagementsClubScope: document.querySelector("#adminEngagementsClubScope"),
-    engagementsRegionScope: document.querySelector("#adminEngagementsRegionScope"),
     engagementsTabButtons: document.querySelectorAll("[data-engagements-tab-button]"),
     engagementsTabPanels: document.querySelectorAll("[data-engagements-tab-panel]"),
     engagementsDetailTabButtons: document.querySelectorAll("[data-engagements-detail-tab-button]"),
@@ -235,11 +253,16 @@
     engagementsRefresh: document.querySelector("#adminEngagementsRefreshButton"),
     engagementsCalendarPanel: document.querySelector("#adminEngagementsCalendarPanel"),
     engagementsCalendarCard: document.querySelector("#adminEngagementsCalendarCard"),
+    engagementsCalendarHead: document.querySelector("#adminEngagementsCalendarHead"),
     engagementsCalendarFilters: document.querySelector("#adminEngagementsCalendarFilters"),
     engagementsSeasonFilter: document.querySelector("#adminEngagementsSeasonFilter"),
     engagementsRegionFilter: document.querySelector("#adminEngagementsRegionFilter"),
     engagementsLevelFilter: document.querySelector("#adminEngagementsLevelFilter"),
     engagementsStatusFilter: document.querySelector("#adminEngagementsStatusFilter"),
+    engagementsStatusFilterLabel: document.querySelector("#adminEngagementsStatusFilterLabel"),
+    engagementsStatusSegments: document.querySelector("#adminEngagementsStatusSegments"),
+    engagementsStatusSegmentButtons: document.querySelectorAll("[data-engagement-status]"),
+    engagementsAdvancedFilters: document.querySelector("#adminEngagementsAdvancedFilters"),
     engagementsMineFilterLabel: document.querySelector("#adminEngagementsMineFilterLabel"),
     engagementsMineFilter: document.querySelector("#adminEngagementsMineFilter"),
     engagementsFiltersReset: document.querySelector("#adminEngagementsFiltersReset"),
@@ -261,8 +284,8 @@
     engagementsClubPersonMessage: document.querySelector("#adminEngagementsClubPersonMessage"),
     engagementsClubPeopleList: document.querySelector("#adminEngagementsClubPeopleList"),
     engagementsClubSwimmersPanel: document.querySelector("#adminEngagementsClubSwimmersPanel"),
-    engagementsClubSwimmersDirectoryRefresh: document.querySelector("#adminEngagementsClubSwimmersDirectoryRefresh"),
     engagementsClubSwimmersDirectorySearch: document.querySelector("#adminEngagementsClubSwimmersDirectorySearch"),
+    engagementsClubSwimmersMissingLicenseFilter: document.querySelector("#adminEngagementsClubSwimmersMissingLicenseFilter"),
     engagementsClubSwimmersDirectoryStatus: document.querySelector("#adminEngagementsClubSwimmersDirectoryStatus"),
     engagementsClubSwimmersDirectoryList: document.querySelector("#adminEngagementsClubSwimmersDirectoryList"),
     engagementsDeletionRequestsNav: document.querySelector("#adminEngagementsDeletionRequestsNav"),
@@ -335,6 +358,9 @@
     engagementsEventsMessage: document.querySelector("#adminEngagementsEventsMessage"),
     engagementsFeesForm: document.querySelector("#adminEngagementsFeesForm"),
     engagementsFeesSummary: document.querySelector("#adminEngagementsFeesSummary"),
+    engagementsNoFees: document.querySelector("#adminEngagementsNoFees"),
+    engagementsFeesGrid: document.querySelector("#adminEngagementsFeesGrid"),
+    engagementsPaymentNote: document.querySelector("#adminEngagementsPaymentNote"),
     engagementsSwimmerFee: document.querySelector("#adminEngagementsSwimmerFee"),
     engagementsSwimmerFeeRead: document.querySelector("#adminEngagementsSwimmerFeeRead"),
     engagementsIndividualEventFee: document.querySelector("#adminEngagementsIndividualEventFee"),
@@ -369,14 +395,23 @@
     engagementsClubSwimmersForm: document.querySelector("#adminEngagementsClubSwimmersForm"),
     engagementsClubSwimmersSummary: document.querySelector("#adminEngagementsClubSwimmersSummary"),
     engagementsClubSwimmersSearch: document.querySelector("#adminEngagementsClubSwimmersSearch"),
+    engagementsClubSelectedSwimmersList: document.querySelector("#adminEngagementsClubSelectedSwimmersList"),
     engagementsClubSwimmersList: document.querySelector("#adminEngagementsClubSwimmersList"),
     engagementsClubSwimmersSaveButton: document.querySelector("#adminEngagementsClubSwimmersSaveButton"),
     engagementsClubSwimmersMessage: document.querySelector("#adminEngagementsClubSwimmersMessage"),
     engagementsClubEntriesForm: document.querySelector("#adminEngagementsClubEntriesForm"),
-    engagementsClubEntriesSummary: document.querySelector("#adminEngagementsClubEntriesSummary"),
     engagementsClubEntriesList: document.querySelector("#adminEngagementsClubEntriesList"),
+    engagementsClubEntriesSaveBar: document.querySelector("#adminEngagementsClubEntriesSaveBar"),
     engagementsClubEntriesSaveButton: document.querySelector("#adminEngagementsClubEntriesSaveButton"),
     engagementsClubEntriesMessage: document.querySelector("#adminEngagementsClubEntriesMessage"),
+    engagementsClubTimesDialog: document.querySelector("#adminEngagementsClubTimesDialog"),
+    engagementsClubTimesDialogTitle: document.querySelector("#adminEngagementsClubTimesDialogTitle"),
+    engagementsClubTimesDialogMeta: document.querySelector("#adminEngagementsClubTimesDialogMeta"),
+    engagementsClubTimesDialogList: document.querySelector("#adminEngagementsClubTimesDialogList"),
+    engagementsClubTimesDialogMessage: document.querySelector("#adminEngagementsClubTimesDialogMessage"),
+    engagementsClubTimesDialogClose: document.querySelector("#adminEngagementsClubTimesDialogClose"),
+    engagementsClubTimesDialogCancel: document.querySelector("#adminEngagementsClubTimesDialogCancel"),
+    engagementsClubTimesDialogApply: document.querySelector("#adminEngagementsClubTimesDialogApply"),
     engagementsClubRelaysForm: document.querySelector("#adminEngagementsClubRelaysForm"),
     engagementsClubRelaysSummary: document.querySelector("#adminEngagementsClubRelaysSummary"),
     engagementsClubRelaysList: document.querySelector("#adminEngagementsClubRelaysList"),
@@ -392,6 +427,7 @@
     engagementsClubNewSwimmerBirthDate: document.querySelector("#adminEngagementsClubNewSwimmerBirthDate"),
     engagementsClubNewSwimmerSex: document.querySelector("#adminEngagementsClubNewSwimmerSex"),
     engagementsClubNewSwimmerLicense: document.querySelector("#adminEngagementsClubNewSwimmerLicense"),
+    engagementsClubNewSwimmerResetButton: document.querySelector("#adminEngagementsClubNewSwimmerResetButton"),
     engagementsClubNewSwimmerSaveButton: document.querySelector("#adminEngagementsClubNewSwimmerSaveButton"),
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
@@ -423,6 +459,7 @@
     engagementsEditDeadline: document.querySelector("#adminEngagementsEditDeadline"),
     engagementsEditComputerEmail: document.querySelector("#adminEngagementsEditComputerEmail"),
     engagementsEditPoolLength: document.querySelector("#adminEngagementsEditPoolLength"),
+    engagementsEditPoolLaneCount: document.querySelector("#adminEngagementsEditPoolLaneCount"),
     engagementsEditTimingType: document.querySelector("#adminEngagementsEditTimingType"),
     engagementsEditQualificationMode: document.querySelector("#adminEngagementsEditQualificationMode"),
     engagementsEditQualificationStart: document.querySelector("#adminEngagementsEditQualificationStart"),
@@ -443,6 +480,7 @@
     engagementsDeadline: document.querySelector("#adminEngagementsDeadline"),
     engagementsComputerEmail: document.querySelector("#adminEngagementsComputerEmail"),
     engagementsPoolLength: document.querySelector("#adminEngagementsPoolLength"),
+    engagementsPoolLaneCount: document.querySelector("#adminEngagementsPoolLaneCount"),
     engagementsTimingType: document.querySelector("#adminEngagementsTimingType"),
     engagementsQualificationMode: document.querySelector("#adminEngagementsQualificationMode"),
     engagementsQualificationStart: document.querySelector("#adminEngagementsQualificationStart"),
@@ -471,6 +509,8 @@
   let engagementCompetitions = [];
   let engagementCompetitionsLoaded = false;
   let engagementCompetitionsLoading = false;
+  let engagementCompetitionsVisibleLimit = 24;
+  let engagementDeadlineCountdownTimer = null;
   let engagementDeletionRequests = [];
   let engagementDeletionRequestsLoaded = false;
   let engagementDeletionRequestsLoading = false;
@@ -499,6 +539,9 @@
   let engagementClubSwimmersLoaded = false;
   let engagementClubSwimmersLoading = false;
   let engagementClubSwimmersClubId = "";
+  let engagementClubSwimmersRenderedCompetitionId = "";
+  let engagementClubEntriesRenderedCompetitionId = "";
+  let engagementClubRelaysRenderedCompetitionId = "";
   let engagementClubRecapEntries = [];
   let engagementClubRecapEntriesCompetitionId = "";
   let engagementClubRecapEntriesLoading = false;
@@ -523,8 +566,14 @@
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
   let activeAuthUid = "";
-  let engagementClubEntryTimesPreviewTimer = null;
-  let engagementClubEntryTimesPreviewRequestId = 0;
+  let engagementClubEntriesDirty = false;
+  const engagementClubEntriesDirtySwimmerIds = new Set();
+  let engagementClubPersistedSwimmerIds = new Set();
+  let engagementClubTimesDialogSwimmerId = "";
+  let engagementClubTimesDialogLoading = false;
+  let engagementClubTimesDialogOpener = null;
+  const engagementClubSwimmerEventTimesCache = new Map();
+  const engagementClubSwimmerEventTimesRequests = new Map();
 
   function ensureFirebaseApp() {
     const firebase = global.firebase;
@@ -606,12 +655,6 @@
     elements.accessMessage.dataset.tone = tone;
   }
 
-  function setAccessRequestMessage(message, tone = "error") {
-    if (!elements.accessRequestMessage) return;
-    elements.accessRequestMessage.textContent = message || "";
-    elements.accessRequestMessage.dataset.tone = tone;
-  }
-
   function setPublicAccessRequestMessage(message, tone = "error") {
     if (!elements.publicAccessRequestMessage) return;
     elements.publicAccessRequestMessage.textContent = message || "";
@@ -622,6 +665,26 @@
     if (!element) return;
     element.textContent = message || "";
     element.dataset.tone = tone;
+  }
+
+  function markLastRefresh(element) {
+    if (element) element.dataset.lastRefreshAt = new Date().toISOString();
+  }
+
+  function lastRefreshSuffix(element) {
+    const value = element?.dataset.lastRefreshAt || "";
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return ` Dernière actualisation à ${date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`;
+  }
+
+  function toggleLoginPasswordVisibility() {
+    if (!elements.password || !elements.passwordToggle) return;
+    const visible = elements.password.type === "password";
+    elements.password.type = visible ? "text" : "password";
+    elements.passwordToggle.textContent = visible ? "Masquer" : "Afficher";
+    elements.passwordToggle.setAttribute("aria-pressed", visible ? "true" : "false");
   }
 
   function closeAccountMenu() {
@@ -663,11 +726,19 @@
     });
   }
 
+  function setMobilePortalNavigationOpen(open) {
+    const expanded = Boolean(open);
+    elements.navToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    elements.sidebar?.classList.toggle("is-open", expanded);
+    const label = `${expanded ? "Fermer" : "Ouvrir"} le menu de navigation`;
+    elements.navToggle?.setAttribute("aria-label", label);
+    if (elements.navToggle) elements.navToggle.title = label;
+  }
+
   function collapsePortalNavigationAfterSelection() {
     const mobileNavigation = global.matchMedia?.("(max-width: 1080px)")?.matches;
     if (mobileNavigation) {
-      elements.navToggle?.setAttribute("aria-expanded", "false");
-      elements.sidebar?.classList.remove("is-open");
+      setMobilePortalNavigationOpen(false);
       return;
     }
     const compactDesktop = global.matchMedia?.("(min-width: 1081px) and (max-width: 1439px)")?.matches;
@@ -710,12 +781,21 @@
   }
 
   function resetEngagementClubData() {
+    if (elements.engagementsClubTimesDialog?.open) elements.engagementsClubTimesDialog.close();
+    engagementClubTimesDialogSwimmerId = "";
+    engagementClubTimesDialogLoading = false;
+    engagementClubTimesDialogOpener = null;
+    engagementClubPersistedSwimmerIds.clear();
+    setEngagementClubEntriesDirty(false);
     engagementClubPeople = [];
     engagementClubPeopleLoaded = false;
     engagementClubSwimmers = [];
     engagementClubSwimmersLoaded = false;
     engagementClubSwimmersLoading = false;
     engagementClubSwimmersClubId = "";
+    engagementClubSwimmersRenderedCompetitionId = "";
+    engagementClubEntriesRenderedCompetitionId = "";
+    engagementClubRelaysRenderedCompetitionId = "";
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementMailJobs = [];
@@ -813,9 +893,14 @@
 
   function updateEngagementsModeView() {
     const adminMode = isEngagementAdminMode();
+    const nextMode = adminMode ? "admin" : "club";
+    const previousMode = elements.engagementsView?.dataset.engagementsMode || "";
     const peopleMode = activeEngagementsTab === "clubPeople";
     const swimmersMode = activeEngagementsTab === "clubSwimmers";
-    if (elements.engagementsView) elements.engagementsView.dataset.engagementsMode = adminMode ? "admin" : "club";
+    if (elements.engagementsView) {
+      elements.engagementsView.dataset.engagementsMode = nextMode;
+      elements.engagementsView.dataset.engagementsTab = activeEngagementsTab;
+    }
     if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.textContent = adminMode ? "Organisation des compétitions" : "Espace club";
     if (elements.engagementsViewTitle) {
       elements.engagementsViewTitle.textContent = adminMode
@@ -824,7 +909,7 @@
           ? "Mes officiels"
           : swimmersMode
             ? "Mes nageurs"
-            : "Espace club";
+            : "Comp\u00e9titions et engagements";
     }
     if (elements.engagementsViewIntro) {
       elements.engagementsViewIntro.textContent = adminMode
@@ -833,14 +918,17 @@
           ? "Base des chefs d'equipe et officiels reutilisables par le club."
           : swimmersMode
             ? "Liste des nageurs dont le dernier club connu est votre club."
-            : "Calendrier, fiche comp\u00e9tition et engagements du club.";
+            : "";
     }
+    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.hidden = !adminMode && !peopleMode && !swimmersMode;
     if (elements.engagementsCalendarEyebrow) {
       elements.engagementsCalendarEyebrow.textContent = adminMode ? "Calendrier organisateur" : "Calendrier club";
+      elements.engagementsCalendarEyebrow.hidden = !adminMode;
     }
     if (elements.engagementsCalendarTitle) {
-      elements.engagementsCalendarTitle.textContent = adminMode ? "Comp\u00e9titions \u00e0 administrer" : "Comp\u00e9titions ouvertes aux clubs";
+      elements.engagementsCalendarTitle.textContent = adminMode ? "Comp\u00e9titions \u00e0 administrer" : "Comp\u00e9titions et engagements";
     }
+    if (elements.engagementsCalendarHead) elements.engagementsCalendarHead.hidden = !adminMode;
     if (elements.engagementsDetailEyebrow) {
       elements.engagementsDetailEyebrow.textContent = adminMode ? "Fiche compétition organisateur" : "Fiche compétition club";
     }
@@ -848,6 +936,15 @@
     const showMineFilter = adminMode && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage");
     if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = !showMineFilter;
     if (!showMineFilter && elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
+    if (elements.engagementsStatusFilterLabel) elements.engagementsStatusFilterLabel.hidden = !adminMode;
+    if (elements.engagementsStatusSegments) elements.engagementsStatusSegments.hidden = adminMode;
+    if (elements.engagementsAdvancedFilters && previousMode !== nextMode) elements.engagementsAdvancedFilters.open = adminMode;
+    if (previousMode && previousMode !== nextMode && elements.engagementsStatusFilter) {
+      elements.engagementsStatusFilter.value = adminMode ? "" : "open";
+      engagementCompetitionsVisibleLimit = 24;
+    }
+    syncEngagementStatusSegments();
+    updateEngagementDetailStepLabels();
     if (!isEngagementAdminMode() && isClubEngagementWorkflowTab(activeEngagementsDetailTab) && !canOpenClubEngagementTab(activeEngagementsDetailTab)) {
       setEngagementsDetailTab("team");
     } else {
@@ -890,7 +987,7 @@
     elements.engagementsNationalPanels?.forEach((panel) => {
       panel.hidden = panel.dataset.engagementsNationalPanel !== nextTab;
     });
-    if (activeEngagementsTab === "deletionRequests" && activeView === "engagements") {
+    if (activeEngagementsTab === "deletionRequests" && requestedNavigationView() === "engagements") {
       loadActiveEngagementNationalTab();
     }
   }
@@ -1075,13 +1172,16 @@
 
   function setEngagementsDetailTab(tab) {
     const allowedTabs = new Set(["general", "courses", "fees", "team", "officials", "swimmers", "entries", "relays", "summary", "documents"]);
-    const adminOnlyTabs = new Set(["documents"]);
+    const adminOnlyTabs = new Set(["fees", "documents"]);
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
     const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
+    const clubOfficialsNotRequired = !isEngagementAdminMode() && selectedEngagementCompetition?.officialsRequired === false;
     const requestedTabHiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(requestedTab);
     const nextTab = requestedTabHiddenByClubLock
       ? "summary"
+      : clubOfficialsNotRequired && requestedTab === "officials"
+      ? (engagementClubTeamComplete() ? "swimmers" : "team")
       : !isEngagementAdminMode() && adminOnlyTabs.has(requestedTab)
       ? "general"
       : isEngagementAdminMode() && clubOnlyTabs.has(requestedTab)
@@ -1093,8 +1193,9 @@
       const adminOnly = adminOnlyTabs.has(buttonTab);
       const clubOnly = clubOnlyTabs.has(buttonTab);
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
+      const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && buttonTab === "officials";
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock;
+      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -1106,12 +1207,25 @@
       const adminOnly = adminOnlyTabs.has(panelTab);
       const clubOnly = clubOnlyTabs.has(panelTab);
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(panelTab);
-      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock;
+      const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
+      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
     });
     if (!isEngagementAdminMode() && (nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
-      loadEngagementClubSwimmers({ silent: engagementClubSwimmersLoaded });
-      renderEngagementClubEntries();
-      renderEngagementClubRelays();
+      if (!engagementClubSwimmersLoaded) {
+        void loadEngagementClubSwimmers({ silent: engagementClubSwimmersLoaded });
+      } else if (nextTab === "swimmers" && engagementClubSwimmersRenderedCompetitionId !== selectedEngagementCompetitionId) {
+        renderEngagementClubSwimmers();
+      } else if (nextTab === "entries" && engagementClubEntriesRenderedCompetitionId !== selectedEngagementCompetitionId) {
+        renderEngagementClubEntries();
+      } else if (nextTab === "relays" && engagementClubRelaysRenderedCompetitionId !== selectedEngagementCompetitionId) {
+        renderEngagementClubRelays();
+      }
+    }
+    if (!isEngagementAdminMode() && nextTab === "officials" && canUse("engagements.club.manage")) {
+      renderEngagementClubOfficials();
+    }
+    if (!isEngagementAdminMode() && nextTab === "summary" && canUse("engagements.club.manage")) {
+      renderEngagementClubSummary();
     }
     if (isEngagementAdminMode() && nextTab === "documents") {
       loadEngagementClubRecapFiles();
@@ -1148,6 +1262,33 @@
       return Boolean(auth?.hasCapability?.(capability));
     }
     return Boolean(auth?.hasCapability?.("admin.full") || auth?.hasCapability?.(capability));
+  }
+
+  function isClubOnlyPortalProfile() {
+    if (!canUse("engagements.club.manage")) return false;
+    return ![
+      "admin.full",
+      "engagements.region.manage",
+      "engagements.national.manage",
+      "records.manage",
+      "competitions.import",
+      "dtn.view"
+    ].some((capability) => canUse(capability));
+  }
+
+  function applyPortalHomeForProfile() {
+    const clubOnly = isClubOnlyPortalProfile();
+    document.body.dataset.portalHome = clubOnly ? "club" : "overview";
+    if (elements.homeLink) {
+      elements.homeLink.href = clubOnly ? "#espace-club" : "#accueil";
+      elements.homeLink.dataset.adminViewLink = clubOnly ? "clubHome" : "dashboard";
+    }
+    if (elements.homeLabel) elements.homeLabel.textContent = clubOnly ? "Accueil club" : "Vue d’ensemble";
+    document.dispatchEvent(new CustomEvent("livepalmes:portal-home-change"));
+    const removedAccessRequestRoute = global.location.hash === "#demande-acces";
+    if (removedAccessRequestRoute || (clubOnly && (!global.location.hash || global.location.hash === "#accueil"))) {
+      global.location.hash = clubOnly ? "#espace-club" : "#accueil";
+    }
   }
 
   function updateCapabilityView() {
@@ -1201,6 +1342,8 @@
     if (!canDeleteEngagementCompetitionDirectly()) updateEngagementDeletionRequestBadge(0);
     if (!canReviewEngagementAccessRequests()) updateEngagementAccessRequestBadge(0);
     setEngagementsTab(activeEngagementsTab);
+    if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
+    if (elements.dtnMenu) elements.dtnMenu.hidden = !canUse("dtn.view");
     document.querySelectorAll(".admin-portal-nav-group").forEach((group) => {
       group.hidden = !Array.from(group.children).some((child) => {
         if (child.tagName === "A") return !child.hidden;
@@ -1211,10 +1354,17 @@
       item.hidden = !canUse(item.dataset.capabilityPanel);
     });
     updateOverviewSpaceTools();
-    if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
-    if (elements.dtnMenu) elements.dtnMenu.hidden = !canUse("dtn.view");
     setExclusivePortalMenu("", false);
     updateNavigationView();
+  }
+
+  function syncEngagementRouteFromHash() {
+    const route = ENGAGEMENT_ROUTE_BY_HASH[global.location.hash];
+    if (!route) return false;
+    activeEngagementsNavEntry = route.entry;
+    setEngagementsTab(route.tab);
+    if (route.nationalTab) setEngagementNationalTab(route.nationalTab);
+    return true;
   }
 
   function requestedNavigationView() {
@@ -1223,19 +1373,19 @@
     if (global.location.hash === "#gestion-performances") return "performanceHome";
     if (global.location.hash === "#gestion-acces") return "access";
     if (global.location.hash === "#mon-compte") return "account";
-    if (global.location.hash === "#demande-acces") return "accessRequest";
     if (global.location.hash === "#records-mpf") return "records";
     if (global.location.hash === "#import-competitions") return "import";
     if (global.location.hash === "#correction-performance") return "correction";
     if (["#organisation-competitions", "#administration-competitions"].includes(global.location.hash)) return "engagementsAdminHome";
     if (global.location.hash === "#administration-nationale") return "nationalHome";
-    if (global.location.hash === "#engagements") return "engagements";
+    if (global.location.hash === "#engagements" || ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
     if (global.location.hash === "#espace-dtn") return "dtnHome";
     if (["#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
     return "dashboard";
   }
 
   function updateNavigationView() {
+    syncEngagementRouteFromHash();
     const requestedView = requestedNavigationView();
     const accessDenied = requestedView === "access" && !canManageAccessDirectory();
     const recordsDenied = requestedView === "records" && !canUse("records.manage");
@@ -1278,7 +1428,7 @@
     const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
     setExclusivePortalMenu(activeMenu, Boolean(activeMenu));
     [
-      [elements.clubToggle, activeView === "clubHome"],
+      [elements.clubToggle, activeView === "clubHome" && document.body.dataset.portalHome !== "club"],
       [elements.performanceToggle, activeView === "performanceHome"],
       [elements.dtnToggle, activeView === "dtnHome"],
       [elements.engagementsAdminToggle, activeView === "engagementsAdminHome"],
@@ -1582,7 +1732,7 @@
   }
 
   function populateAccessRegionChoices() {
-    const selects = [elements.accessRegionId, elements.accessRequestRegionId, elements.publicAccessRequestRegionId, elements.engagementsAccessRequestEditRegionId].filter(Boolean);
+    const selects = [elements.accessRegionId, elements.publicAccessRequestRegionId, elements.engagementsAccessRequestEditRegionId].filter(Boolean);
     if (!selects.length) return;
     const knownRegions = new Set(LIVEPALMES_REGION_DEFINITIONS.map(normalizedRegionKey));
     const extraRegions = Array.from(new Set(accessClubReference.map((club) => club.regionId)))
@@ -1642,54 +1792,6 @@
       return;
     }
     syncAccessClubFieldsFromSelect();
-  }
-
-  function syncAccessRequestClubFieldsFromSelect() {
-    const selectedClubId = elements.accessRequestClubSelect?.value || "";
-    const club = accessClubReference.find((item) => item.clubId === selectedClubId);
-    if (elements.accessRequestClubId) elements.accessRequestClubId.value = club?.clubId || "";
-    if (elements.accessRequestClubName) elements.accessRequestClubName.value = club?.clubName || "";
-  }
-
-  function populateAccessRequestClubSelect(selectedClubId = "", fallbackClubName = "") {
-    const select = elements.accessRequestClubSelect;
-    if (!select) return;
-    const selectedId = String(selectedClubId || "").trim();
-    const knownClub = selectedId
-      ? accessClubReference.find((club) => club.clubId === selectedId)
-      : null;
-    if (knownClub && !elements.accessRequestRegionId?.value) {
-      setRegionSelectValue(elements.accessRequestRegionId, knownClub.regionId);
-    }
-    const regionId = canonicalLivePalmesRegion(elements.accessRequestRegionId?.value || "");
-    select.innerHTML = "";
-    if (!regionId) {
-      select.append(new Option("Choisissez d'abord une region", ""));
-      select.disabled = true;
-      syncAccessRequestClubFieldsFromSelect();
-      return;
-    }
-    const regionKey = normalizedRegionKey(regionId);
-    const clubs = accessClubReference
-      .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
-      .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
-    select.append(new Option("A choisir", ""));
-    clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
-    if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
-      const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
-      select.append(new Option(`${label} (${selectedId})`, selectedId));
-    }
-    select.disabled = clubs.length === 0 && !selectedId;
-    if (!clubs.length && !selectedId) {
-      select.options[0].textContent = "Aucun club trouve pour cette region";
-    }
-    select.value = selectedId;
-    if (selectedId && !knownClub) {
-      if (elements.accessRequestClubId) elements.accessRequestClubId.value = selectedId;
-      if (elements.accessRequestClubName) elements.accessRequestClubName.value = fallbackClubName || "";
-      return;
-    }
-    syncAccessRequestClubFieldsFromSelect();
   }
 
   function syncPublicAccessRequestClubFieldsFromSelect() {
@@ -1800,14 +1902,13 @@
         .filter((club) => club.clubId && club.clubName);
       populateAccessRegionChoices();
       populateAccessClubSelect(elements.accessClubId?.value || "");
-      populateAccessRequestClubSelect(elements.accessRequestClubId?.value || "");
       populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
       populateEngagementAccessRequestEditClubSelect(elements.engagementsAccessRequestEditClubId?.value || "");
+      if (currentAccessProfile) renderEngagementsProfile(currentAccessProfile);
       return accessClubReference;
     }).catch((error) => {
       accessClubReferenceLoadPromise = null;
       setAccessMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
-      setAccessRequestMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
       setPublicAccessRequestMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
       return [];
     });
@@ -1847,6 +1948,32 @@
       : String(currentSeason);
   }
 
+  function syncEngagementStatusSegments() {
+    const activeStatus = elements.engagementsStatusFilter?.value || "";
+    elements.engagementsStatusSegmentButtons?.forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.engagementStatus === activeStatus ? "true" : "false");
+    });
+  }
+
+  function updateEngagementDetailStepLabels() {
+    const labels = isEngagementAdminMode()
+      ? {
+          information: "Paramétrage",
+          participants: "Participants",
+          entries: "Engagements",
+          summary: "Finalisation"
+        }
+      : {
+          information: "1. Informations",
+          participants: "2. Participants",
+          entries: "3. Engagements",
+          summary: "4. Vérification et envoi"
+        };
+    document.querySelectorAll("[data-engagement-step-label]").forEach((label) => {
+      label.textContent = labels[label.dataset.engagementStepLabel] || "";
+    });
+  }
+
   function initializeEngagementCalendarFilters(user = currentAccessProfile || {}) {
     if (engagementCalendarFiltersInitialized) return;
     const capabilities = new Set(user.capabilities || []);
@@ -1854,10 +1981,14 @@
     if (elements.engagementsSeasonFilter) {
       elements.engagementsSeasonFilter.value = String(currentEngagementSeasonStartYear());
     }
+    if (elements.engagementsStatusFilter) {
+      elements.engagementsStatusFilter.value = isEngagementAdminMode() ? "" : "open";
+    }
     if (elements.engagementsRegionFilter && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage") && regionId) {
       setRegionSelectValue(elements.engagementsRegionFilter, regionId);
     }
     engagementCalendarFiltersInitialized = true;
+    syncEngagementStatusSegments();
   }
 
   function resetEngagementCalendarFilters() {
@@ -1866,8 +1997,10 @@
     }
     setRegionSelectValue(elements.engagementsRegionFilter, "");
     if (elements.engagementsLevelFilter) elements.engagementsLevelFilter.value = "";
-    if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = "";
+    if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = isEngagementAdminMode() ? "" : "open";
     if (elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
+    engagementCompetitionsVisibleLimit = 24;
+    syncEngagementStatusSegments();
   }
 
   function engagementCalendarFiltersPayload() {
@@ -1888,7 +2021,14 @@
       .filter((competition) => !filters.regionId || canonicalLivePalmesRegion(competition.regionId) === filters.regionId)
       .filter((competition) => !filters.level || competition.level === filters.level)
       .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
-      .filter((competition) => !filters.mineOnly || canEditEngagementCompetition(competition));
+      .filter((competition) => !filters.mineOnly || canEditEngagementCompetition(competition))
+      .sort((left, right) => {
+        const leftOpen = left.entryStatus === "open" ? 0 : 1;
+        const rightOpen = right.entryStatus === "open" ? 0 : 1;
+        if (leftOpen !== rightOpen) return leftOpen - rightOpen;
+        return String(left.date || "9999-12-31").localeCompare(String(right.date || "9999-12-31")) ||
+          String(left.name || "").localeCompare(String(right.name || ""), "fr");
+      });
   }
 
   function renderCurrentUser(user = {}) {
@@ -1898,13 +2038,17 @@
       resetEngagementClubData();
     }
     currentAccessProfile = user;
+    applyPortalHomeForProfile();
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
+    const accountEmail = user.email || ensureAdminAuth()?.status?.().email || "";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
+    if (elements.accountFullName) elements.accountFullName.textContent = name;
+    if (elements.accountIdentityEmail) elements.accountIdentityEmail.textContent = accountEmail || "Email non renseigné";
+    if (elements.accountEmailSummary) elements.accountEmailSummary.textContent = accountEmail ? `Adresse actuelle : ${accountEmail}` : "Adresse actuelle non renseignée";
+    if (elements.accountLicenseMeta) elements.accountLicenseMeta.hidden = !user.licenseNumber;
+    if (elements.accountLicenseNumber) elements.accountLicenseNumber.textContent = user.licenseNumber || "";
     if (elements.accountEmail && document.activeElement !== elements.accountEmail) {
-      elements.accountEmail.value = user.email || ensureAdminAuth()?.status?.().email || "";
-    }
-    if (elements.accessRequestEmail && !elements.accessRequestEmail.value && document.activeElement !== elements.accessRequestEmail) {
-      elements.accessRequestEmail.value = user.email || ensureAdminAuth()?.status?.().email || "";
+      elements.accountEmail.value = accountEmail;
     }
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
@@ -1916,18 +2060,24 @@
     const scopeFor = (capability) => user.accessScopes?.[capability] || {};
     const clubScope = scopeFor("engagements.club.manage");
     const regionScope = scopeFor("engagements.region.manage");
-    const level = capabilities.has("engagements.national.manage")
-      ? "National"
-      : capabilities.has("engagements.region.manage")
-        ? "Region"
-        : capabilities.has("engagements.club.manage")
-          ? "Club"
-          : "-";
-    const clubValue = engagementClubScope(user) || "-";
-    const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId);
-    if (elements.engagementsAccessLevel) elements.engagementsAccessLevel.textContent = level;
-    if (elements.engagementsClubScope) elements.engagementsClubScope.textContent = clubValue;
-    if (elements.engagementsRegionScope) elements.engagementsRegionScope.textContent = regionValue;
+    const clubId = engagementClubScope(user);
+    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
+    const clubValue = user.clubName || clubScope.scopeName || referencedClub?.clubName || (clubId ? "Nom du club indisponible" : "Aucun");
+    const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId || referencedClub?.regionId);
+    if (elements.accountScopeSentence) {
+      if (capabilities.has("engagements.national.manage")) {
+        elements.accountScopeSentence.textContent = "Vous gérez les engagements au niveau national.";
+      } else if (capabilities.has("engagements.region.manage")) {
+        elements.accountScopeSentence.innerHTML = `Vous gérez les engagements de la région <strong>${escapeHtml(regionValue)}</strong>.`;
+      } else if (capabilities.has("engagements.club.manage")) {
+        const regionSuffix = regionValue && regionValue !== "-"
+          ? `, région <strong>${escapeHtml(regionValue)}</strong>`
+          : "";
+        elements.accountScopeSentence.innerHTML = `Vous gérez les engagements du club <strong>${escapeHtml(clubValue)}</strong>${regionSuffix}.`;
+      } else {
+        elements.accountScopeSentence.textContent = "Aucun périmètre d’engagement n’est associé à ce compte.";
+      }
+    }
     if (elements.accountCapabilities) {
       const capabilityValues = Array.from(capabilities).sort();
       elements.accountCapabilities.innerHTML = capabilityValues.length
@@ -1935,12 +2085,9 @@
         : "-";
     }
     if (elements.engagementsStatus) {
-      elements.engagementsStatus.textContent = capabilities.has("engagements.club.manage") ||
-        capabilities.has("engagements.region.manage") ||
-        capabilities.has("engagements.national.manage")
-        ? "Socle engagements actif."
-        : "Aucun droit engagements actif.";
-      elements.engagementsStatus.dataset.tone = "loading";
+      elements.engagementsStatus.textContent = "";
+      elements.engagementsStatus.hidden = true;
+      delete elements.engagementsStatus.dataset.tone;
     }
   }
 
@@ -2086,6 +2233,7 @@
     if (elements.engagementsEditDeadline) elements.engagementsEditDeadline.value = isoToDatetimeLocal(competition.entryDeadlineAt);
     if (elements.engagementsEditComputerEmail) elements.engagementsEditComputerEmail.value = competition.computerEmail || "";
     if (elements.engagementsEditPoolLength) elements.engagementsEditPoolLength.value = competition.poolLength || "50";
+    if (elements.engagementsEditPoolLaneCount) elements.engagementsEditPoolLaneCount.value = competition.poolLaneCount || "";
     if (elements.engagementsEditTimingType) elements.engagementsEditTimingType.value = competition.timingType || "electronic";
     if (elements.engagementsEditQualificationMode) elements.engagementsEditQualificationMode.value = competition.qualificationTimesMode || "all";
     if (elements.engagementsEditQualificationStart) elements.engagementsEditQualificationStart.value = competition.qualificationStartDate || "";
@@ -2209,8 +2357,77 @@
     return engagementStatusLabel(competition.entryStatus);
   }
 
+  function formatEngagementCompetitionDate(competition = {}) {
+    const start = formatShortDate(competition.date);
+    const end = formatShortDate(competition.endDate || competition.date);
+    return competition.endDate && competition.endDate !== competition.date
+      ? `${start} au ${end}`
+      : start;
+  }
+
+  function engagementDeadlineDisplay(competition = {}) {
+    const status = competition.entryStatus || "upcoming";
+    if (status === "closed") return "Engagements fermés";
+    if (status !== "open") return "Engagements à venir";
+    if (!competition.entryDeadlineAt) return "Engagements ouverts";
+    const deadline = new Date(competition.entryDeadlineAt);
+    if (Number.isNaN(deadline.getTime())) return "Engagements ouverts";
+    const remainingMs = deadline.getTime() - Date.now();
+    if (remainingMs <= 0) return "Date limite dépassée";
+    const totalMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    const parts = [];
+    if (days) parts.push(`${days} jour${days > 1 ? "s" : ""}`);
+    if (days || hours) parts.push(`${hours} h`);
+    parts.push(`${minutes} min`);
+    return `Ferme dans ${parts.join(" ")}`;
+  }
+
+  function refreshEngagementDeadlineCountdowns() {
+    document.querySelectorAll("[data-engagement-deadline-competition-id]").forEach((node) => {
+      const competition = engagementCompetitions.find((item) => item.id === node.dataset.engagementDeadlineCompetitionId);
+      if (!competition) return;
+      node.textContent = engagementDeadlineDisplay(competition);
+      node.dataset.entryStatus = engagementDeadlineTone(competition);
+    });
+  }
+
+  function engagementCompetitionMonthLabel(competition = {}) {
+    if (!competition.date) return "Date à confirmer";
+    const date = new Date(`${competition.date}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return "Date à confirmer";
+    const label = date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  function engagementCompetitionAction(competition = {}) {
+    if (isEngagementAdminMode()) {
+      return {
+        label: canEditEngagementCompetition(competition) ? "Administrer" : "Voir la fiche",
+        tab: "general"
+      };
+    }
+    if (competition.entryStatus === "open" && engagementDeadlineTone(competition) !== "deadline-passed") {
+      return { label: "Gérer mes engagements", tab: "team" };
+    }
+    if (competition.entryStatus === "closed" || engagementDeadlineTone(competition) === "deadline-passed") {
+      return { label: "Consulter le récapitulatif", tab: "summary" };
+    }
+    return { label: "Voir les informations", tab: "general" };
+  }
+
   function engagementPoolLengthLabel(value) {
     return ["25", "33", "50"].includes(String(value || "")) ? `${value} m` : "-";
+  }
+
+  function engagementPoolLabel(competition = {}) {
+    const length = engagementPoolLengthLabel(competition.poolLength || "50");
+    const laneCount = Math.trunc(Number(competition.poolLaneCount) || 0);
+    return laneCount >= 4 && laneCount <= 10
+      ? `${length} · ${laneCount} lignes d'eau`
+      : `${length} · nombre de lignes non renseigné`;
   }
 
   function engagementTimingTypeLabel(value) {
@@ -2250,16 +2467,17 @@
   }
 
   function engagementFeesSummary(fees = {}) {
+    if (fees.enabled === false) return "Aucun frais d'engagement";
     const parts = [
       `nageur ${formatEngagementFee(fees.swimmerFee)}`,
       `course ${formatEngagementFee(fees.individualEventFee)}`,
       `relais ${formatEngagementFee(fees.relayFee)}`
     ];
-    const payment = fees.helloAssoUrl ? "HelloAsso publie" : "HelloAsso en attente";
-    return `${parts.join(" - ")} - ${payment}`;
+    return parts.join(" - ");
   }
 
   function engagementHelloAssoLabel(fees = {}) {
+    if (fees.enabled === false) return "Aucun paiement requis";
     return fees.helloAssoUrl ? "Lien publie dans l'onglet Frais" : "En attente de publication du lien";
   }
 
@@ -2273,20 +2491,36 @@
   }
 
   function selectedEngagementFeesFromForm() {
+    const enabled = elements.engagementsNoFees?.checked !== true;
     return {
-      swimmerFee: engagementFeeAmount(elements.engagementsSwimmerFee?.value),
-      individualEventFee: engagementFeeAmount(elements.engagementsIndividualEventFee?.value),
-      relayFee: engagementFeeAmount(elements.engagementsRelayFee?.value),
-      helloAssoUrl: String(elements.engagementsHelloAssoUrl?.value || "").trim(),
+      enabled,
+      swimmerFee: enabled ? engagementFeeAmount(elements.engagementsSwimmerFee?.value) : 0,
+      individualEventFee: enabled ? engagementFeeAmount(elements.engagementsIndividualEventFee?.value) : 0,
+      relayFee: enabled ? engagementFeeAmount(elements.engagementsRelayFee?.value) : 0,
+      helloAssoUrl: enabled ? String(elements.engagementsHelloAssoUrl?.value || "").trim() : "",
       latePaymentSurcharge: 50
     };
+  }
+
+  function updateEngagementFeesFormMode(canEdit = false) {
+    const noFees = elements.engagementsNoFees?.checked === true;
+    if (elements.engagementsFeesGrid) elements.engagementsFeesGrid.hidden = noFees;
+    if (elements.engagementsPaymentNote) elements.engagementsPaymentNote.hidden = noFees;
+    [elements.engagementsSwimmerFee, elements.engagementsIndividualEventFee, elements.engagementsRelayFee, elements.engagementsHelloAssoUrl].forEach((field) => {
+      if (field) field.disabled = !canEdit || noFees;
+    });
   }
 
   function renderEngagementFees(competition = selectedEngagementCompetition || {}) {
     const fees = competition.fees || {};
     const adminMode = isEngagementAdminMode();
     const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition);
+    const noFees = fees.enabled === false;
     if (elements.engagementsFeesForm) elements.engagementsFeesForm.dataset.readonly = canEdit ? "false" : "true";
+    if (elements.engagementsNoFees) {
+      elements.engagementsNoFees.checked = noFees;
+      elements.engagementsNoFees.disabled = !canEdit;
+    }
     if (elements.engagementsSwimmerFee) elements.engagementsSwimmerFee.value = fees.swimmerFee || "";
     if (elements.engagementsIndividualEventFee) elements.engagementsIndividualEventFee.value = fees.individualEventFee || "";
     if (elements.engagementsRelayFee) elements.engagementsRelayFee.value = fees.relayFee || "";
@@ -2295,9 +2529,7 @@
     if (elements.engagementsIndividualEventFeeRead) elements.engagementsIndividualEventFeeRead.textContent = formatEngagementFee(fees.individualEventFee);
     if (elements.engagementsRelayFeeRead) elements.engagementsRelayFeeRead.textContent = formatEngagementFee(fees.relayFee);
     if (elements.engagementsHelloAssoUrlRead) elements.engagementsHelloAssoUrlRead.textContent = fees.helloAssoUrl || "Lien en attente";
-    [elements.engagementsSwimmerFee, elements.engagementsIndividualEventFee, elements.engagementsRelayFee, elements.engagementsHelloAssoUrl].forEach((field) => {
-      if (field) field.disabled = !canEdit;
-    });
+    updateEngagementFeesFormMode(canEdit);
     if (elements.engagementsFeesSummary) elements.engagementsFeesSummary.textContent = engagementFeesSummary(fees);
     renderEngagementClubSummary();
     if (elements.engagementsFeesSaveButton) {
@@ -2622,7 +2854,7 @@
   }
 
   function selectedEngagementClubSwimmerRows() {
-    return Array.from(elements.engagementsClubSwimmersList?.querySelectorAll("[data-engagement-club-swimmer-row]") || [])
+    return Array.from(elements.engagementsClubSwimmersForm?.querySelectorAll("[data-engagement-club-swimmer-row]") || [])
       .map((row) => {
         const checkbox = row.querySelector("[data-engagement-club-swimmer-id]");
         if (!checkbox?.checked) return null;
@@ -2630,6 +2862,7 @@
         const entriesBySwimmer = selectedEngagementClubEntryRowsBySwimmerId();
         const savedSwimmer = (selectedEngagementClubEntry?.swimmers || []).find((swimmer) => swimmer.swimmerIndexId === swimmerIndexId) || {};
         const individualEntries = entriesBySwimmer.get(swimmerIndexId) || savedSwimmer.individualEntries || [];
+        const licenseField = row.querySelector("[data-engagement-club-swimmer-license]");
         return {
           swimmerIndexId,
           source: checkbox.dataset.engagementClubSwimmerSource || "performances",
@@ -2639,7 +2872,8 @@
           lastName: checkbox.dataset.engagementClubSwimmerLastName || "",
           birthDate: checkbox.dataset.engagementClubSwimmerBirthDate || "",
           sex: checkbox.dataset.engagementClubSwimmerSex || "",
-          licenseNumber: String(row.querySelector("[data-engagement-club-swimmer-license]")?.value || "").trim(),
+          category: checkbox.dataset.engagementClubSwimmerCategory || "",
+          licenseNumber: String(licenseField?.value || licenseField?.dataset.engagementClubSwimmerLicense || "").trim().toUpperCase(),
           individualEventCodes: individualEntries.map((entry) => entry.eventCode),
           individualEntries
         };
@@ -2687,7 +2921,97 @@
 
   function engagementEntryTimeDisplayLabel(entry = {}) {
     if (entry.entryTime) return entry.entryTime;
-    return "59:59.99";
+    return entry.entryTimeMode === "default595999" ? "59:59.99" : "Calcul...";
+  }
+
+  function engagementClubSwimmerEventTimesCacheKey(swimmer = {}) {
+    return [
+      selectedEngagementCompetitionId,
+      swimmer.source || "performances",
+      swimmer.swimmerIndexId || swimmer.id || ""
+    ].join(":");
+  }
+
+  function mergeEngagementClubSwimmerEventTimes(swimmerIndexId = "", entries = []) {
+    const previewByCode = new Map((Array.isArray(entries) ? entries : [])
+      .map((entry) => [entry?.eventCode, entry])
+      .filter(([eventCode]) => eventCode));
+    if (!swimmerIndexId || !previewByCode.size) return;
+    let updatedSwimmer = null;
+    const swimmers = selectedEngagementClubSwimmerRows().map((swimmer) => {
+      if (swimmer.swimmerIndexId !== swimmerIndexId) return swimmer;
+      updatedSwimmer = {
+        ...swimmer,
+        individualEntries: (swimmer.individualEntries || []).map((entry) => {
+          if (entry.entryTimeMode === "manual" && entry.manualEntryTime) return entry;
+          const preview = previewByCode.get(entry.eventCode);
+          return preview ? { ...entry, ...preview, manualEntryTime: "" } : entry;
+        })
+      };
+      return updatedSwimmer;
+    });
+    selectedEngagementClubEntry = {
+      ...(selectedEngagementClubEntry || {}),
+      swimmers
+    };
+    const entryRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
+      .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
+    const updatedByCode = new Map((updatedSwimmer?.individualEntries || []).map((entry) => [entry.eventCode, entry]));
+    Array.from(entryRow?.querySelectorAll("[data-engagement-club-swimmer-event]:checked") || []).forEach((checkbox) => {
+      const eventCode = checkbox.dataset.engagementClubSwimmerEvent || "";
+      const choice = checkbox.closest("[data-event-selected]");
+      const entry = updatedByCode.get(eventCode);
+      const timeValue = choice?.querySelector("[data-engagement-club-entry-cell-time]");
+      const editButton = choice?.querySelector("[data-engagement-club-time-edit]");
+      if (!entry || !timeValue) return;
+      timeValue.textContent = engagementEntryTimeDisplayLabel(entry);
+      timeValue.dataset.entryTimeMode = entry.entryTimeMode || "pending";
+      timeValue.title = engagementEntryTimeHelpLabel(entry, selectedEngagementCompetition?.missingEntryTimeMode === "manual");
+      if (editButton) editButton.dataset.engagementClubTimeAuto = entry.entryTime || "59:59.99";
+    });
+    updateEngagementClubEntriesSummary();
+    renderEngagementClubSummary();
+  }
+
+  async function ensureEngagementClubSwimmerEventTimes(swimmer = {}) {
+    const swimmerIndexId = swimmer.swimmerIndexId || swimmer.id || "";
+    const requestCompetitionId = selectedEngagementCompetitionId;
+    const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
+    if (!swimmerIndexId || !selectedEngagementCompetitionId) return;
+    if (engagementClubSwimmerEventTimesCache.has(cacheKey)) {
+      mergeEngagementClubSwimmerEventTimes(swimmerIndexId, engagementClubSwimmerEventTimesCache.get(cacheKey));
+      return;
+    }
+    if (engagementClubSwimmerEventTimesRequests.has(cacheKey)) {
+      await engagementClubSwimmerEventTimesRequests.get(cacheKey);
+      return;
+    }
+    const request = callFunction("previewEngagementClubSwimmerEventTimes", {
+      competitionId: selectedEngagementCompetitionId,
+      swimmerIndexId,
+      source: swimmer.source || "performances"
+    }).then((result) => {
+      if (selectedEngagementCompetitionId !== requestCompetitionId) return;
+      const previewEntries = Array.isArray(result.individualEntries) ? result.individualEntries : [];
+      engagementClubSwimmerEventTimesCache.set(cacheKey, previewEntries);
+      mergeEngagementClubSwimmerEventTimes(swimmerIndexId, previewEntries);
+    }).catch(() => {
+      const entryRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
+        .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
+      Array.from(entryRow?.querySelectorAll('[data-engagement-club-entry-cell-time][data-entry-time-mode="pending"]') || [])
+        .forEach((timeValue) => {
+          timeValue.textContent = "Indisponible";
+          timeValue.dataset.entryTimeMode = "error";
+        });
+      if (elements.engagementsClubEntriesMessage) {
+        elements.engagementsClubEntriesMessage.textContent = "Le temps d'engagement n'a pas pu etre calcule. Reessayez dans quelques instants.";
+        elements.engagementsClubEntriesMessage.dataset.tone = "error";
+      }
+    }).finally(() => {
+      engagementClubSwimmerEventTimesRequests.delete(cacheKey);
+    });
+    engagementClubSwimmerEventTimesRequests.set(cacheKey, request);
+    await request;
   }
 
   function engagementEntryTimeHelpLabel(entry = {}, manualAllowed = false) {
@@ -2702,47 +3026,62 @@
       : "Temps calcule automatiquement a partir de LivePalmes. Si aucun temps n'existe, 59:59.99 sera utilise.";
   }
 
-  function renderEngagementClubSwimmerEvents(selected = null, disabled = false) {
+  function engagementClubProgramSessionsForEntries() {
     const events = engagementClubIndividualEvents();
-    if (!events.length) {
-      return '<p class="admin-engagements-club-swimmer-events-empty">Aucune course individuelle ouverte sur cette competition.</p>';
-    }
-    const selectedCodes = engagementClubSelectedIndividualEventCodes(selected || {});
-    const entryByCode = new Map((selected?.individualEntries || []).map((entry) => [entry.eventCode, entry]).filter(([code]) => code));
+    const eventOptions = events.map((event) => ({
+      code: event.code,
+      label: event.shortLabel || event.label || event.code,
+      type: event.type || "individual"
+    }));
+    const sessions = normalizedEngagementProgramSessions(selectedEngagementCompetition?.programSessions || [], eventOptions)
+      .map((session) => ({
+        ...session,
+        items: (session.items || []).filter((item) => ENGAGEMENT_EVENT_BY_CODE.get(item.eventCode)?.type === "individual")
+      }))
+      .filter((session) => session.items.length);
+    if (sessions.length) return sessions;
+    return events.length ? [{
+      id: "individual-program",
+      label: "Programme",
+      date: selectedEngagementCompetition?.date || "",
+      startTime: "",
+      items: events.map((event) => ({ eventCode: event.code, genderMode: "mixed" }))
+    }] : [];
+  }
+
+  function engagementClubProgramItemAllowsSwimmer(item = {}, swimmer = {}) {
+    if (item.genderMode === "female" && swimmer.sex === "M") return false;
+    if (item.genderMode === "male" && swimmer.sex === "F") return false;
+    const event = engagementClubIndividualEvents().find((candidate) => candidate.code === item.eventCode) || {};
+    const restrictions = Array.isArray(event.categoryRestrictions) ? event.categoryRestrictions : [];
+    const category = String(swimmer.category || "").trim();
+    const knownCategory = ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS.some(([code]) => code === category);
+    return !restrictions.length || !knownCategory || restrictions.includes(category);
+  }
+
+  function engagementClubProgramItemLabel(item = {}) {
+    const event = ENGAGEMENT_EVENT_BY_CODE.get(item.eventCode) || {};
+    const eventOption = engagementClubIndividualEvents().find((candidate) => candidate.code === item.eventCode) || event;
+    return {
+      short: event.shortLabel || eventOption.shortLabel || item.eventCode,
+      gender: engagementProgramGenderModeShortLabel(item.genderMode, item.eventCode, eventOption),
+      full: `${event.label || eventOption.label || item.eventCode} - ${engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOption)}`
+    };
+  }
+
+  function engagementClubEntryRowCountLabel(row) {
+    const count = row?.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length || 0;
     const maxEvents = Number(selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
-    const missingMode = selectedEngagementCompetition?.missingEntryTimeMode || "manual";
-    return `
-      <div class="admin-engagements-club-swimmer-events-head">
-        <span>Courses individuelles</span>
-        <small>${maxEvents > 0 ? `${maxEvents} max` : "Sans limite"}</small>
-      </div>
-      <div class="admin-engagements-club-swimmer-events-grid">
-        ${events.map((event) => {
-          const definition = ENGAGEMENT_EVENT_BY_CODE.get(event.code) || event;
-          const entry = entryByCode.get(event.code) || {};
-          const checked = selectedCodes.has(event.code);
-          const manualAllowed = missingMode === "manual";
-          const manualEditing = checked && manualAllowed && entry.entryTimeMode === "manual";
-          const automaticTime = entry.entryTimeMode && entry.entryTimeMode !== "manual" ? entry.entryTime : "59:59.99";
-          const manualValue = entry.entryTimeMode === "manual" ? (entry.manualEntryTime || entry.entryTime || "") : "";
-          const timeHelp = engagementEntryTimeHelpLabel(entry, manualAllowed);
-          return `
-            <div class="admin-engagements-club-swimmer-event-choice" data-event-selected="${checked ? "true" : "false"}">
-              <label title="${escapeHtml(definition.label || event.label || event.code)}">
-                <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(event.code)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}>
-                <span>${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}</span>
-              </label>
-              <div class="admin-engagements-club-entry-time" ${checked ? "" : "hidden"}>
-                <span class="admin-engagements-club-entry-time-value" data-entry-time-mode="${escapeHtml(entry.entryTimeMode || "pending")}" title="${escapeHtml(timeHelp)}">${escapeHtml(engagementEntryTimeDisplayLabel(entry))}</span>
-                ${manualAllowed ? `<button type="button" class="ghost-button compact admin-engagements-club-entry-time-edit" data-engagement-club-time-edit="${escapeHtml(event.code)}" data-engagement-club-time-auto="${escapeHtml(automaticTime)}" ${checked ? "" : "hidden disabled"} aria-label="Modifier le temps ${escapeHtml(definition.shortLabel || event.shortLabel || event.code)}">✎</button>` : ""}
-                <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-swimmer-event-time="${escapeHtml(event.code)}" value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
-              </div>
-              <small>${escapeHtml(timeHelp)}</small>
-            </div>
-          `;
-        }).join("")}
-      </div>
-    `;
+    return maxEvents > 0 ? `${count}/${maxEvents}` : String(count);
+  }
+
+  function updateEngagementClubEntryRowCount(row) {
+    const button = row?.querySelector("[data-engagement-club-times-open]");
+    if (!button) return;
+    const countLabel = engagementClubEntryRowCountLabel(row);
+    const count = row?.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length || 0;
+    button.querySelector("span")?.replaceChildren(countLabel);
+    button.setAttribute("aria-label", `Voir ou modifier les temps d'engagement, ${count} course${count > 1 ? "s" : ""}`);
   }
 
   function updateEngagementClubSwimmersSummary() {
@@ -2755,31 +3094,38 @@
     renderEngagementClubSummary();
   }
 
-  function updateEngagementClubEntriesSummary() {
-    if (!elements.engagementsClubEntriesSummary) return;
-    const selectedRows = selectedEngagementClubSwimmerRows();
-    const eventCount = selectedRows.reduce((sum, swimmer) => sum + (swimmer.individualEntries?.length || 0), 0);
-    elements.engagementsClubEntriesSummary.textContent = eventCount
-      ? `${eventCount} course${eventCount > 1 ? "s" : ""} selectionnee${eventCount > 1 ? "s" : ""}.`
-      : "Aucune course selectionnee.";
-    renderEngagementClubSummary();
+  function syncEngagementClubEntriesSaveBar() {
+    if (elements.engagementsClubEntriesForm) {
+      elements.engagementsClubEntriesForm.dataset.dirty = engagementClubEntriesDirty ? "true" : "false";
+    }
+    if (elements.engagementsClubEntriesSaveBar) {
+      elements.engagementsClubEntriesSaveBar.hidden = !engagementClubEntriesDirty;
+    }
+    if (elements.engagementsClubEntriesSaveButton) {
+      elements.engagementsClubEntriesSaveButton.disabled = !engagementClubEntriesDirty || engagementClubSwimmersLoading || engagementClubWriteLocked();
+    }
   }
 
-  function engagementClubEntryTimePreviewMessage(stats = {}) {
-    const total = Number(stats.total || 0) || 0;
-    if (!total) return "Aucune course selectionnee.";
-    const parts = [];
-    const known = Number(stats.known || 0) || 0;
-    const manual = Number(stats.manual || 0) || 0;
-    const default595999 = Number(stats.default595999 || 0) || 0;
-    const warning = Number(stats.warning || 0) || 0;
-    if (known) parts.push(`${known} temps connu${known > 1 ? "s" : ""}`);
-    if (manual) parts.push(`${manual} temps manuel${manual > 1 ? "s" : ""}`);
-    if (default595999) parts.push(`${default595999} temps a 59:59.99`);
-    if (warning) parts.push(`${warning} alerte${warning > 1 ? "s" : ""}`);
-    return parts.length
-      ? `${total} course${total > 1 ? "s" : ""} verifiee${total > 1 ? "s" : ""} : ${parts.join(", ")}.`
-      : `${total} course${total > 1 ? "s" : ""} verifiee${total > 1 ? "s" : ""}.`;
+  function setEngagementClubEntriesDirty(dirty) {
+    engagementClubEntriesDirty = Boolean(dirty);
+    if (!engagementClubEntriesDirty) engagementClubEntriesDirtySwimmerIds.clear();
+    syncEngagementClubEntriesSaveBar();
+  }
+
+  function markEngagementClubEntrySwimmerDirty(swimmerIndexId = "") {
+    const cleanId = String(swimmerIndexId || "").trim();
+    if (cleanId) engagementClubEntriesDirtySwimmerIds.add(cleanId);
+    setEngagementClubEntriesDirty(true);
+  }
+
+  function setEngagementClubPersistedSwimmers(entry = {}) {
+    engagementClubPersistedSwimmerIds = new Set((entry.swimmers || [])
+      .map((swimmer) => String(swimmer?.swimmerIndexId || "").trim())
+      .filter(Boolean));
+  }
+
+  function updateEngagementClubEntriesSummary() {
+    renderEngagementClubSummary();
   }
 
   function engagementClubSwimmerSearchText(swimmer = {}) {
@@ -2839,6 +3185,23 @@
     return "M80+";
   }
 
+  function engagementSwimmerDisplayName(swimmer = {}, fallback = "Nageur") {
+    return [swimmer.lastName, swimmer.firstName].filter(Boolean).join(" ") || swimmer.name || fallback;
+  }
+
+  function engagementPublicSwimmerProfileUrl(swimmer = {}, name = engagementSwimmerDisplayName(swimmer)) {
+    const params = new URLSearchParams();
+    const swimmerId = String(swimmer.swimmerId || swimmer.id || swimmer.swimmerIndexId || "").trim();
+    if (swimmerId) {
+      params.set("id", swimmerId);
+    } else {
+      params.set("name", name);
+      if (swimmer.birthDate) params.set("birth", swimmer.birthDate);
+      if (swimmer.sex) params.set("sex", swimmer.sex);
+    }
+    return `performances/nageur.html?${params.toString()}`;
+  }
+
   function renderEngagementClubSwimmersDirectory() {
     const mount = elements.engagementsClubSwimmersDirectoryList;
     if (!mount) return;
@@ -2855,23 +3218,27 @@
       return;
     }
     if (!engagementClubSwimmersLoaded) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Cliquez sur Actualiser pour charger les nageurs du club.</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Les nageurs seront chargés à l’ouverture de cette page.</p>';
       return;
     }
     const query = normalizedEngagementClubSearch(elements.engagementsClubSwimmersDirectorySearch?.value || "");
+    const missingLicenseOnly = Boolean(elements.engagementsClubSwimmersMissingLicenseFilter?.checked);
     const swimmers = engagementClubSwimmers
       .filter((swimmer) => !query || engagementClubSwimmerSearchText(swimmer).includes(query))
+      .filter((swimmer) => !missingLicenseOnly || !String(swimmer.licenseNumber || "").trim())
+      .sort((left, right) =>
+        String(left.lastName || left.name || "").localeCompare(String(right.lastName || right.name || ""), "fr", { sensitivity: "base" }) ||
+        String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr", { sensitivity: "base" })
+      )
       .slice(0, 800);
     const hiddenCount = Math.max(0, engagementClubSwimmers.length - swimmers.length);
     if (elements.engagementsClubSwimmersDirectoryStatus) {
-      elements.engagementsClubSwimmersDirectoryStatus.textContent = engagementClubSwimmers.length
-        ? `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""} affiche${swimmers.length > 1 ? "s" : ""}.`
-        : `Aucun nageur trouve pour ${clubLabel} dans l'effectif LivePalmes.`;
-      elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = engagementClubSwimmers.length ? "ok" : "error";
+      elements.engagementsClubSwimmersDirectoryStatus.textContent = "";
+      elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "neutral";
     }
     if (!swimmers.length) {
       mount.innerHTML = engagementClubSwimmers.length
-        ? '<p class="admin-engagements-empty">Aucun nageur ne correspond a cette recherche.</p>'
+        ? '<p class="admin-engagements-empty">Aucun nageur ne correspond aux filtres.</p>'
         : "<p class=\"admin-engagements-empty\">Aucun nageur trouve dans l'effectif du club.</p>";
       return;
     }
@@ -2883,30 +3250,44 @@
           <span role="columnheader">Sexe</span>
           <span role="columnheader">Cat.</span>
           <span role="columnheader">Licence</span>
+          <span role="columnheader">Action</span>
         </div>
         ${swimmers.map((swimmer, index) => {
-      const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
+      const name = engagementSwimmerDisplayName(swimmer, "Nageur sans nom");
       const category = engagementSwimmerCategory(swimmer);
       const sex = String(swimmer.sex || "").trim().toUpperCase();
       const sexLabel = sex === "F" ? "Femme" : (sex === "M" ? "Homme" : "Sexe non renseigné");
       const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
+      const publicProfileUrl = engagementPublicSwimmerProfileUrl(swimmer, name);
       return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${escapeHtml(sex)}" data-expanded="false">
-          <button class="admin-engagements-club-swimmers-directory-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" data-engagement-club-swimmer-directory-toggle>
-            <strong>${escapeHtml(name)}</strong>
+          <div class="admin-engagements-club-swimmers-directory-toggle">
+            <button class="admin-engagements-club-swimmers-directory-name-button" type="button" data-engagement-club-swimmer-public-profile="${escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${escapeHtml(name)}">
+              <strong>${escapeHtml(name)}</strong>
+            </button>
             <span class="admin-engagements-club-swimmers-directory-toggle-meta">
               <span class="admin-engagements-club-swimmers-directory-sex" aria-label="${escapeHtml(sexLabel)}">${escapeHtml(sex || "-")}</span>
-              <span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span>
+              <span class="admin-engagements-club-swimmers-directory-category" aria-label="Catégorie ${escapeHtml(category || "non renseignée")}">${escapeHtml(category || "-")}</span>
+              <button class="admin-engagements-club-swimmers-directory-details-button" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-directory-toggle>
+                <span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span>
+              </button>
             </span>
-          </button>
+          </div>
           <div id="${detailsId}" class="admin-engagements-club-swimmers-directory-details">
             <span role="cell">
-              <strong>${escapeHtml(name)}</strong>
+              <button class="admin-engagements-club-swimmers-directory-name-button" type="button" data-engagement-club-swimmer-public-profile="${escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${escapeHtml(name)}">
+                <strong>${escapeHtml(name)}</strong>
+              </button>
             </span>
             <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
             <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
             <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
-            <span role="cell">${escapeHtml(swimmer.licenseNumber || "-")}</span>
+            <span role="cell">${swimmer.licenseNumber
+              ? escapeHtml(swimmer.licenseNumber)
+              : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
+            <span role="cell">${swimmer.source === "engagement"
+              ? `<button class="admin-engagements-club-swimmers-directory-delete-button" type="button" title="Demander la suppression de ${escapeHtml(name)}" aria-label="Demander la suppression de ${escapeHtml(name)}" data-engagement-club-swimmer-delete="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-delete-name="${escapeHtml(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"></path></svg></button>`
+              : "-"}</span>
           </div>
         </div>
       `;
@@ -2916,9 +3297,78 @@
     `;
   }
 
+  async function requestEngagementClubSwimmerDeletion(swimmerId, swimmerName = "ce nageur") {
+    const cleanId = String(swimmerId || "").trim();
+    if (!cleanId || !canUse("engagements.club.manage")) return;
+    if (!global.confirm(`Demander la suppression de ${swimmerName} ? La fiche sera supprimée immédiatement si elle n'est utilisée nulle part. Sinon, elle sera désactivée et transmise au niveau national.`)) return;
+    if (elements.engagementsClubSwimmersDirectoryStatus) {
+      elements.engagementsClubSwimmersDirectoryStatus.textContent = "Vérification des performances et engagements...";
+      elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("requestEngagementClubSwimmerDeletion", { swimmerId: cleanId });
+      engagementClubSwimmersLoaded = false;
+      await loadEngagementClubSwimmers({ force: true, silent: true });
+      if (elements.engagementsClubSwimmersDirectoryStatus) {
+        elements.engagementsClubSwimmersDirectoryStatus.textContent = result.deleted
+          ? `${swimmerName} a été supprimé définitivement : aucune performance ni inscription ne le référençait.`
+          : `${swimmerName} a été désactivé. Une demande avec le détail des utilisations a été transmise au niveau national.`;
+        elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "ok";
+      }
+    } catch (error) {
+      if (elements.engagementsClubSwimmersDirectoryStatus) {
+        elements.engagementsClubSwimmersDirectoryStatus.textContent = `Suppression impossible : ${error?.message || error}`;
+        elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  function renderEngagementClubSelectedSwimmersPreview(mount, selectedById) {
+    const sexRank = (value) => String(value || "").toUpperCase() === "F" ? 0 : String(value || "").toUpperCase() === "M" ? 1 : 2;
+    const swimmers = Array.from(selectedById.entries())
+      .map(([id, swimmer]) => ({ ...swimmer, id, swimmerIndexId: id }))
+      .sort((left, right) =>
+        sexRank(left.sex) - sexRank(right.sex) ||
+        String(left.lastName || left.name || "").localeCompare(String(right.lastName || right.name || ""), "fr", { sensitivity: "base", numeric: true }) ||
+        String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr", { sensitivity: "base", numeric: true })
+      );
+    if (!swimmers.length) {
+      mount.innerHTML = "";
+      return;
+    }
+    mount.innerHTML = `
+      <section class="admin-engagements-club-swimmers-section">
+        <h5>Nageurs selectionnes <span>${swimmers.length}</span></h5>
+        <div class="admin-engagements-club-swimmers-table" role="table" aria-label="Nageurs selectionnes">
+          <div class="admin-engagements-club-swimmers-head" role="row">
+            <span role="columnheader">Nageur</span><span role="columnheader">Naissance</span><span role="columnheader">Sexe</span><span role="columnheader">Cat.</span><span role="columnheader">Licence</span>
+          </div>
+          ${swimmers.map((swimmer) => {
+            const name = engagementSwimmerDisplayName(swimmer, "Nageur sans nom");
+            const licenseNumber = swimmer.licenseNumber || "";
+            return `
+              <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="true" data-sex="${escapeHtml(swimmer.sex || "")}">
+                <label role="cell">
+                  <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" data-engagement-club-swimmer-livepalmes-id="${escapeHtml(swimmer.swimmerId || "")}" data-engagement-club-swimmer-name="${escapeHtml(name)}" data-engagement-club-swimmer-first-name="${escapeHtml(swimmer.firstName || "")}" data-engagement-club-swimmer-last-name="${escapeHtml(swimmer.lastName || "")}" data-engagement-club-swimmer-birth-date="${escapeHtml(swimmer.birthDate || "")}" data-engagement-club-swimmer-sex="${escapeHtml(swimmer.sex || "")}" data-engagement-club-swimmer-category="${escapeHtml(swimmer.category || "")}" checked>
+                  <strong>${escapeHtml(name)}</strong>
+                </label>
+                <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
+                <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
+                <span role="cell">${escapeHtml(swimmer.category || "-")}</span>
+                <div class="admin-engagements-club-swimmer-license-cell" role="cell" aria-label="Numero de licence">
+                  ${licenseNumber ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>` : `<input type="text" maxlength="60" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" aria-label="Numero de licence obligatoire, format A-12-34567" data-engagement-club-swimmer-license required>`}
+                </div>
+              </div>`;
+          }).join("")}
+        </div>
+      </section>`;
+  }
+
   function renderEngagementClubSwimmers() {
     const mount = elements.engagementsClubSwimmersList;
-    if (!mount) return;
+    const selectedMount = elements.engagementsClubSelectedSwimmersList;
+    if (!mount || !selectedMount) return;
+    const canPreserveDraft = engagementClubSwimmersRenderedCompetitionId === selectedEngagementCompetitionId;
     const writeLockReason = engagementClubWriteLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubSwimmersForm) elements.engagementsClubSwimmersForm.dataset.locked = locked ? "true" : "false";
@@ -2927,7 +3377,7 @@
     const selectedById = new Map((selectedEngagementClubEntry?.swimmers || [])
       .map((swimmer) => [swimmer.swimmerIndexId, swimmer])
       .filter(([id]) => id));
-    selectedEngagementClubSwimmerRows().forEach((swimmer) => {
+    (canPreserveDraft ? selectedEngagementClubSwimmerRows() : []).forEach((swimmer) => {
       selectedById.set(swimmer.swimmerIndexId, {
         ...(selectedById.get(swimmer.swimmerIndexId) || {}),
         swimmerIndexId: swimmer.swimmerIndexId,
@@ -2937,24 +3387,30 @@
       });
     });
     if (locked) {
+      selectedMount.innerHTML = "";
       mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
+      engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
       updateEngagementClubSwimmersSummary();
       return;
     }
     if (engagementClubSwimmersLoading) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des nageurs du club...</p>';
+      renderEngagementClubSelectedSwimmersPreview(selectedMount, selectedById);
+      mount.innerHTML = '<p class="admin-engagements-empty">Préparation de la recherche des nageurs...</p>';
+      engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
       updateEngagementClubSwimmersSummary();
       return;
     }
     if (!engagementClubSwimmersLoaded) {
+      renderEngagementClubSelectedSwimmersPreview(selectedMount, selectedById);
       mount.innerHTML = '<p class="admin-engagements-empty">Ouvrez l\'onglet Nageurs pour charger la base du club.</p>';
+      engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
       updateEngagementClubSwimmersSummary();
       return;
     }
-    const renderedSwimmerIds = new Set(Array.from(mount.querySelectorAll("[data-engagement-club-swimmer-id]") || [])
+    const renderedSwimmerIds = new Set(Array.from(canPreserveDraft ? elements.engagementsClubSwimmersForm?.querySelectorAll("[data-engagement-club-swimmer-id]") || [] : [])
       .map((input) => input.dataset.engagementClubSwimmerId || "")
       .filter(Boolean));
-    const currentSelectedRows = selectedEngagementClubSwimmerRows();
+    const currentSelectedRows = canPreserveDraft ? selectedEngagementClubSwimmerRows() : [];
     const currentSelectedIds = new Set(currentSelectedRows.map((swimmer) => swimmer.swimmerIndexId).filter(Boolean));
     const query = normalizedEngagementClubSearch(elements.engagementsClubSwimmersSearch?.value || "");
     renderedSwimmerIds.forEach((id) => {
@@ -2971,14 +3427,9 @@
     });
     const selectedIds = new Set(selectedById.keys());
     const swimmers = engagementClubSwimmers
-      .filter((swimmer) => !query || selectedIds.has(swimmer.id) || engagementClubSwimmerSearchText(swimmer).includes(query))
+      .filter((swimmer) => selectedIds.has(swimmer.id) || (query && engagementClubSwimmerSearchText(swimmer).includes(query)))
       .sort((left, right) => Number(selectedIds.has(right.id)) - Number(selectedIds.has(left.id)))
-      .slice(0, 250);
-    if (!swimmers.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Aucun nageur trouve pour ce club.</p>';
-      updateEngagementClubSwimmersSummary();
-      return;
-    }
+      .slice(0, 50 + selectedIds.size);
     const renderSwimmerRow = (swimmer) => {
       const selected = selectedById.get(swimmer.id);
       const licenseNumber = selected?.licenseNumber || swimmer.licenseNumber || "";
@@ -2996,26 +3447,28 @@
         valid: "Valide pour la saison",
         invalid: "Non valide pour la saison"
       }[seasonStatus] || "";
-      const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
+      const name = engagementSwimmerDisplayName(swimmer, "Nageur sans nom");
       return `
         <div class="admin-engagements-club-swimmer-row" role="row" data-engagement-club-swimmer-row data-selected="${selected ? "true" : "false"}" data-sex="${escapeHtml(swimmer.sex || "")}">
           <label role="cell">
-            <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" data-engagement-club-swimmer-livepalmes-id="${escapeHtml(swimmer.swimmerId || "")}" data-engagement-club-swimmer-name="${escapeHtml(name)}" data-engagement-club-swimmer-first-name="${escapeHtml(swimmer.firstName || "")}" data-engagement-club-swimmer-last-name="${escapeHtml(swimmer.lastName || "")}" data-engagement-club-swimmer-birth-date="${escapeHtml(swimmer.birthDate || "")}" data-engagement-club-swimmer-sex="${escapeHtml(swimmer.sex || "")}" ${selected ? "checked" : ""}>
+            <input type="checkbox" data-engagement-club-swimmer-id="${escapeHtml(swimmer.id)}" data-engagement-club-swimmer-source="${escapeHtml(swimmer.source || "performances")}" data-engagement-club-swimmer-livepalmes-id="${escapeHtml(swimmer.swimmerId || "")}" data-engagement-club-swimmer-name="${escapeHtml(name)}" data-engagement-club-swimmer-first-name="${escapeHtml(swimmer.firstName || "")}" data-engagement-club-swimmer-last-name="${escapeHtml(swimmer.lastName || "")}" data-engagement-club-swimmer-birth-date="${escapeHtml(swimmer.birthDate || "")}" data-engagement-club-swimmer-sex="${escapeHtml(swimmer.sex || "")}" data-engagement-club-swimmer-category="${escapeHtml(swimmer.category || "")}" ${selected ? "checked" : ""}>
             <strong>${escapeHtml(name)}</strong>
           </label>
           <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
           <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
           <span role="cell">${escapeHtml(swimmer.category || "-")}</span>
-          <label class="admin-engagements-club-swimmer-license-cell" role="cell" aria-label="Numero de licence">
-            <input type="text" maxlength="60" inputmode="numeric" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${licenseLocked ? "readonly" : ""} ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseLocked ? "required" : ""}>
+          <div class="admin-engagements-club-swimmer-license-cell" role="cell" aria-label="Numero de licence">
+            ${licenseLocked
+              ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>`
+              : `<input type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres" aria-label="Numero de licence obligatoire, format A-12-34567" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>`}
             ${verificationLabel || seasonLabel ? `<small>${escapeHtml([verificationLabel, seasonLabel].filter(Boolean).join(" - "))}</small>` : ""}
-          </label>
+          </div>
         </div>
       `;
     };
-    const renderSwimmerTable = (rows, label) => `
+    const renderSwimmerTable = (rows, label, { showCount = false } = {}) => `
       <section class="admin-engagements-club-swimmers-section">
-        <h5>${escapeHtml(label)} <span>${rows.length}</span></h5>
+        <h5>${escapeHtml(label)}${showCount ? ` <span>${rows.length}</span>` : ""}</h5>
         <div class="admin-engagements-club-swimmers-table" role="table" aria-label="${escapeHtml(label)}">
           <div class="admin-engagements-club-swimmers-head" role="row">
             <span role="columnheader">Nageur</span>
@@ -3028,25 +3481,39 @@
         </div>
       </section>
     `;
-    const selectedSwimmers = swimmers.filter((swimmer) => selectedIds.has(swimmer.id));
-    const availableSwimmers = swimmers.filter((swimmer) => !selectedIds.has(swimmer.id));
-    mount.innerHTML = `
-      ${selectedSwimmers.length ? renderSwimmerTable(selectedSwimmers, "Nageurs selectionnes") : ""}
-      ${availableSwimmers.length ? renderSwimmerTable(availableSwimmers, selectedSwimmers.length ? "Autres nageurs du club" : "Nageurs du club") : ""}
-    `;
+    const selectedSwimmers = [
+      ...swimmers.filter((swimmer) => selectedIds.has(swimmer.id)),
+      ...Array.from(selectedById.entries())
+        .filter(([id]) => !swimmers.some((swimmer) => swimmer.id === id))
+        .map(([id, swimmer]) => ({ ...swimmer, id, swimmerIndexId: id }))
+    ];
+    const availableMatches = engagementClubSwimmers
+      .filter((swimmer) => !selectedIds.has(swimmer.id))
+      .filter((swimmer) => query && engagementClubSwimmerSearchText(swimmer).includes(query));
+    const availableSwimmers = swimmers.filter((swimmer) => !selectedIds.has(swimmer.id)).slice(0, 50);
+    const hiddenAvailableCount = Math.max(0, availableMatches.length - availableSwimmers.length);
+    selectedMount.innerHTML = selectedSwimmers.length
+      ? renderSwimmerTable(selectedSwimmers, "Nageurs selectionnes", { showCount: true })
+      : "";
+    mount.innerHTML = !query
+      ? '<p class="admin-engagements-empty">Recherchez un nageur par son nom, son prénom, son année de naissance ou sa licence.</p>'
+      : availableSwimmers.length
+        ? `${renderSwimmerTable(availableSwimmers, "Résultats de recherche")}
+          ${hiddenAvailableCount ? '<p class="admin-engagements-empty">Affinez votre recherche pour afficher les autres résultats.</p>' : ""}`
+        : '<p class="admin-engagements-empty">Aucun nageur ne correspond à la recherche.</p>';
+    engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
     setEngagementClubFormControlsLocked(elements.engagementsClubSwimmersForm, false);
     updateEngagementClubSwimmersSummary();
-    renderEngagementClubEntries();
-    renderEngagementClubRelays();
   }
 
   function renderEngagementClubEntries() {
     const mount = elements.engagementsClubEntriesList;
     if (!mount) return;
+    engagementClubEntriesRenderedCompetitionId = selectedEngagementCompetitionId;
     const writeLockReason = engagementClubWriteLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubEntriesForm) elements.engagementsClubEntriesForm.dataset.locked = locked ? "true" : "false";
-    if (elements.engagementsClubEntriesSaveButton) elements.engagementsClubEntriesSaveButton.disabled = locked || engagementClubSwimmersLoading;
+    syncEngagementClubEntriesSaveBar();
     if (locked) {
       mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
       updateEngagementClubEntriesSummary();
@@ -3072,37 +3539,299 @@
       ...engagementClubSwimmers.map((swimmer) => [swimmer.id, swimmer]),
       ...(selectedEngagementClubEntry?.swimmers || []).map((swimmer) => [swimmer.swimmerIndexId, swimmer])
     ].filter(([id]) => id));
+    const sortedSelectedRows = [...selectedRows].sort((left, right) => {
+      const leftSwimmer = swimmersById.get(left.swimmerIndexId) || left;
+      const rightSwimmer = swimmersById.get(right.swimmerIndexId) || right;
+      const sexRank = (value) => value === "F" ? 0 : value === "M" ? 1 : 2;
+      const sexDifference = sexRank(String(leftSwimmer.sex || left.sex || "").toUpperCase())
+        - sexRank(String(rightSwimmer.sex || right.sex || "").toUpperCase());
+      if (sexDifference) return sexDifference;
+      const leftLastName = leftSwimmer.lastName || left.lastName || leftSwimmer.name || left.name || "";
+      const rightLastName = rightSwimmer.lastName || right.lastName || rightSwimmer.name || right.name || "";
+      const lastNameDifference = String(leftLastName).localeCompare(String(rightLastName), "fr", { sensitivity: "base", numeric: true });
+      if (lastNameDifference) return lastNameDifference;
+      return String(leftSwimmer.firstName || left.firstName || "")
+        .localeCompare(String(rightSwimmer.firstName || right.firstName || ""), "fr", { sensitivity: "base", numeric: true });
+    });
+    const sessions = engagementClubProgramSessionsForEntries();
+    if (!sessions.length) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucune course individuelle dans le programme.</p>';
+      updateEngagementClubEntriesSummary();
+      return;
+    }
+    const columns = sessions.flatMap((session, sessionIndex) => (session.items || []).map((item, itemIndex) => ({
+      ...item,
+      session,
+      sessionIndex,
+      sessionStart: itemIndex === 0
+    })));
     mount.innerHTML = `
-      <div class="admin-engagements-club-entries-table" role="table" aria-label="Courses des nageurs">
-        ${selectedRows.map((selected) => {
+      <div class="admin-engagements-club-entries-table-shell" tabindex="0" aria-label="Tableau des courses, faire défiler horizontalement si nécessaire">
+      <table class="admin-engagements-club-entries-table" aria-label="Courses des nageurs">
+        <thead>
+          <tr class="admin-engagements-club-entry-session-head">
+            <th class="admin-engagements-club-entry-identity admin-engagements-club-entry-last-name" rowspan="2" scope="col">Nom</th>
+            <th class="admin-engagements-club-entry-identity" rowspan="2" scope="col">Prénom</th>
+            <th class="admin-engagements-club-entry-identity" rowspan="2" scope="col">Naissance</th>
+            <th class="admin-engagements-club-entry-identity" rowspan="2" scope="col">Cat.</th>
+            ${sessions.map((session, sessionIndex) => {
+              const meta = [formatShortDate(session.date), session.startTime].filter(Boolean).join(" · ");
+              return `<th class="admin-engagements-club-entry-session${sessionIndex ? " is-session-start" : ""}" colspan="${session.items.length}" scope="colgroup"><span>${escapeHtml(session.label || `Session ${sessionIndex + 1}`)}</span>${meta ? `<small>${escapeHtml(meta)}</small>` : ""}</th>`;
+            }).join("")}
+            <th class="admin-engagements-club-entry-action" rowspan="2" scope="col">Temps</th>
+          </tr>
+          <tr class="admin-engagements-club-entry-course-head">
+            ${columns.map((item) => {
+              const label = engagementClubProgramItemLabel(item);
+              return `<th class="${item.sessionStart ? "is-session-start" : ""}" scope="col" title="${escapeHtml(label.full)}"><span>${escapeHtml(label.short)}</span><small>${escapeHtml(label.gender)}</small></th>`;
+            }).join("")}
+          </tr>
+        </thead>
+        <tbody>
+        ${sortedSelectedRows.map((selected) => {
       const swimmer = swimmersById.get(selected.swimmerIndexId) || selected;
-      const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur sans nom";
-      const meta = [
-        swimmer.sex || "",
-        swimmer.category || "",
-        swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "",
-        selected.licenseNumber ? `licence ${selected.licenseNumber}` : ""
-      ].filter(Boolean).join(" - ");
+      const selectedCodes = engagementClubSelectedIndividualEventCodes(selected);
+      const entryByCode = new Map((selected.individualEntries || []).map((entry) => [entry.eventCode, entry]).filter(([code]) => code));
+      const lastName = swimmer.lastName || selected.lastName || swimmer.name || "Nageur sans nom";
+      const firstName = swimmer.firstName || selected.firstName || "";
+      const category = swimmer.category || selected.category || "-";
+      const selectedCount = selectedCodes.size;
+      const maxEvents = Number(selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
+      const countLabel = maxEvents > 0 ? `${selectedCount}/${maxEvents}` : String(selectedCount);
       return `
-        <div class="admin-engagements-club-entry-row" role="row" data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${escapeHtml(selected.swimmerIndexId)}" data-sex="${escapeHtml(swimmer.sex || "")}">
-          <div class="admin-engagements-club-entry-name">
-            <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml(meta || "Nageur selectionne")}</small>
-          </div>
-          <div class="admin-engagements-club-swimmer-events" data-engagement-club-swimmer-events>
-            ${renderEngagementClubSwimmerEvents(selected)}
-          </div>
-        </div>
+        <tr class="admin-engagements-club-entry-row" data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${escapeHtml(selected.swimmerIndexId)}" data-sex="${escapeHtml(swimmer.sex || "")}">
+          <th class="admin-engagements-club-entry-last-name" scope="row">${escapeHtml(lastName)}</th>
+          <td>${escapeHtml(firstName || "-")}</td>
+          <td>${escapeHtml(formatShortDate(swimmer.birthDate || selected.birthDate) || "-")}</td>
+          <td>${escapeHtml(category)}</td>
+          ${columns.map((item) => {
+            const allowed = engagementClubProgramItemAllowsSwimmer(item, swimmer);
+            const checked = allowed && selectedCodes.has(item.eventCode);
+            const entry = entryByCode.get(item.eventCode) || {};
+            const manualValue = entry.entryTimeMode === "manual" ? (entry.manualEntryTime || entry.entryTime || "") : "";
+            const timeLabel = checked ? engagementEntryTimeDisplayLabel(entry) : "";
+            const timeMode = checked ? (entry.entryTimeMode || "pending") : "";
+            const label = engagementClubProgramItemLabel(item);
+            return `
+              <td class="admin-engagements-club-entry-course${item.sessionStart ? " is-session-start" : ""}${allowed ? "" : " is-unavailable"}">
+                ${allowed ? `
+                  <label data-event-selected title="${escapeHtml(label.full)} pour ${escapeHtml(`${lastName} ${firstName}`.trim())}">
+                    <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(item.eventCode)}" ${checked ? "checked" : ""} aria-label="${escapeHtml(label.full)}">
+                    <small data-engagement-club-entry-cell-time data-entry-time-mode="${escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${escapeHtml(engagementEntryTimeHelpLabel(entry, selectedEngagementCompetition?.missingEntryTimeMode === "manual"))}">${escapeHtml(timeLabel)}</small>
+                  </label>
+                  <input type="hidden" data-engagement-club-swimmer-event-time="${escapeHtml(item.eventCode)}" value="${escapeHtml(manualValue)}" ${manualValue ? "" : "disabled"}>
+                ` : '<span aria-label="Course non ouverte pour ce nageur">—</span>'}
+              </td>
+            `;
+          }).join("")}
+          <td class="admin-engagements-club-entry-action">
+            <button class="ghost-button compact admin-engagements-club-times-open" type="button" data-engagement-club-times-open="${escapeHtml(selected.swimmerIndexId)}" aria-label="Voir ou modifier les temps d'engagement, ${selectedCount} course${selectedCount > 1 ? "s" : ""}"><span>${escapeHtml(countLabel)}</span><b aria-hidden="true">✎</b></button>
+          </td>
+        </tr>
       `;
         }).join("")}
+        </tbody>
+      </table>
       </div>
     `;
-    setEngagementClubFormControlsLocked(elements.engagementsClubEntriesForm, false);
     updateEngagementClubEntriesSummary();
+  }
+
+  function engagementClubTimesDialogSwimmer() {
+    if (!engagementClubTimesDialogSwimmerId) return null;
+    return selectedEngagementClubSwimmerRows()
+      .find((swimmer) => swimmer.swimmerIndexId === engagementClubTimesDialogSwimmerId) || null;
+  }
+
+  function engagementClubTimesDialogEventCodes(swimmer = {}) {
+    const selectedCodes = engagementClubSelectedIndividualEventCodes(swimmer);
+    const orderedCodes = engagementClubProgramSessionsForEntries()
+      .flatMap((session) => session.items || [])
+      .map((item) => item.eventCode)
+      .filter((code, index, codes) => selectedCodes.has(code) && codes.indexOf(code) === index);
+    selectedCodes.forEach((code) => {
+      if (!orderedCodes.includes(code)) orderedCodes.push(code);
+    });
+    return orderedCodes;
+  }
+
+  function renderEngagementClubTimesDialog() {
+    const swimmer = engagementClubTimesDialogSwimmer();
+    const mount = elements.engagementsClubTimesDialogList;
+    if (!swimmer || !mount) return;
+    const name = engagementSwimmerDisplayName(swimmer, "Nageur");
+    const meta = [
+      swimmer.birthDate ? `né(e) le ${formatShortDate(swimmer.birthDate)}` : "",
+      swimmer.category ? `catégorie ${swimmer.category}` : "",
+      swimmer.licenseNumber ? `licence ${swimmer.licenseNumber}` : ""
+    ].filter(Boolean).join(" · ");
+    if (elements.engagementsClubTimesDialogTitle) elements.engagementsClubTimesDialogTitle.textContent = name;
+    if (elements.engagementsClubTimesDialogMeta) elements.engagementsClubTimesDialogMeta.textContent = meta;
+    if (elements.engagementsClubTimesDialogApply) elements.engagementsClubTimesDialogApply.disabled = engagementClubTimesDialogLoading;
+    if (elements.engagementsClubTimesDialogMessage) {
+      elements.engagementsClubTimesDialogMessage.textContent = engagementClubTimesDialogLoading ? "Recherche des temps d'engagement..." : "";
+      elements.engagementsClubTimesDialogMessage.dataset.tone = engagementClubTimesDialogLoading ? "loading" : "";
+    }
+    if (engagementClubTimesDialogLoading) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des temps du nageur...</p>';
+      return;
+    }
+    const eventCodes = engagementClubTimesDialogEventCodes(swimmer);
+    if (!eventCodes.length) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucune course cochée pour ce nageur.</p>';
+      return;
+    }
+    const entryByCode = new Map((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry]));
+    const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
+    const previewByCode = new Map((engagementClubSwimmerEventTimesCache.get(cacheKey) || []).map((entry) => [entry.eventCode, entry]));
+    const manualAllowed = selectedEngagementCompetition?.missingEntryTimeMode === "manual";
+    mount.innerHTML = eventCodes.map((eventCode) => {
+      const event = ENGAGEMENT_EVENT_BY_CODE.get(eventCode) || { code: eventCode, shortLabel: eventCode, label: eventCode };
+      const entry = entryByCode.get(eventCode) || {};
+      const preview = previewByCode.get(eventCode) || (entry.entryTimeMode !== "manual" ? entry : {});
+      const manualEditing = manualAllowed && entry.entryTimeMode === "manual" && Boolean(entry.manualEntryTime || entry.entryTime);
+      const manualValue = manualEditing ? (entry.manualEntryTime || entry.entryTime || "") : "";
+      const automaticValue = preview.entryTime || "59:59.99";
+      const displayedEntry = manualEditing ? entry : preview;
+      const displayLabel = engagementEntryTimeDisplayLabel(displayedEntry);
+      const help = engagementEntryTimeHelpLabel(displayedEntry, manualAllowed);
+      const automaticLabel = engagementEntryTimeDisplayLabel(preview);
+      return `
+        <div class="admin-engagements-club-time-dialog-row" data-engagement-club-time-dialog-row="${escapeHtml(eventCode)}">
+          <div class="admin-engagements-club-time-dialog-course">
+            <strong>${escapeHtml(event.shortLabel || eventCode)}</strong>
+            <small>${escapeHtml(event.label || eventCode)}</small>
+          </div>
+          <div class="admin-engagements-club-time-dialog-value">
+            <span data-engagement-club-time-dialog-display data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-automatic-label="${escapeHtml(automaticLabel)}">${escapeHtml(displayLabel)}</span>
+            ${manualAllowed ? `
+              <button class="ghost-button compact" type="button" data-engagement-club-time-toggle data-automatic-time="${escapeHtml(automaticValue)}">${manualEditing ? "Rétablir auto" : "Modifier"}</button>
+              <input type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" aria-label="Temps manuel ${escapeHtml(event.shortLabel || eventCode)}" data-engagement-club-time-dialog-input value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
+            ` : ""}
+          </div>
+          <small class="admin-engagements-club-time-dialog-help">${escapeHtml(help)}</small>
+        </div>
+      `;
+    }).join("");
+    if (!previewByCode.size && elements.engagementsClubTimesDialogMessage) {
+      elements.engagementsClubTimesDialogMessage.textContent = "Les temps automatiques sont indisponibles pour le moment. Les valeurs seront recalculées à l'enregistrement.";
+      elements.engagementsClubTimesDialogMessage.dataset.tone = "error";
+    }
+  }
+
+  async function openEngagementClubTimesDialog(swimmerIndexId = "", opener = null) {
+    const row = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
+      .find((candidate) => candidate.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
+    if (!row) return;
+    engagementClubTimesDialogSwimmerId = swimmerIndexId;
+    engagementClubTimesDialogOpener = opener;
+    engagementClubTimesDialogLoading = false;
+    const swimmer = engagementClubTimesDialogSwimmer();
+    const eventCodes = swimmer ? engagementClubTimesDialogEventCodes(swimmer) : [];
+    const cacheKey = swimmer ? engagementClubSwimmerEventTimesCacheKey(swimmer) : "";
+    if (elements.engagementsClubTimesDialog && !elements.engagementsClubTimesDialog.open) {
+      elements.engagementsClubTimesDialog.showModal();
+    }
+    if (!swimmer || !eventCodes.length || engagementClubSwimmerEventTimesCache.has(cacheKey)) {
+      renderEngagementClubTimesDialog();
+      return;
+    }
+    engagementClubTimesDialogLoading = true;
+    renderEngagementClubTimesDialog();
+    await ensureEngagementClubSwimmerEventTimes(swimmer);
+    if (engagementClubTimesDialogSwimmerId !== swimmerIndexId) return;
+    engagementClubTimesDialogLoading = false;
+    renderEngagementClubTimesDialog();
+  }
+
+  function closeEngagementClubTimesDialog(restoreFocus = true) {
+    if (elements.engagementsClubTimesDialog?.open) elements.engagementsClubTimesDialog.close();
+    const opener = engagementClubTimesDialogOpener;
+    engagementClubTimesDialogSwimmerId = "";
+    engagementClubTimesDialogLoading = false;
+    engagementClubTimesDialogOpener = null;
+    if (restoreFocus) opener?.focus?.();
+  }
+
+  function applyEngagementClubTimesDialog() {
+    const swimmer = engagementClubTimesDialogSwimmer();
+    if (!swimmer) return;
+    const overrides = new Map();
+    const dialogRows = Array.from(elements.engagementsClubTimesDialogList?.querySelectorAll("[data-engagement-club-time-dialog-row]") || []);
+    for (const dialogRow of dialogRows) {
+      const eventCode = dialogRow.dataset.engagementClubTimeDialogRow || "";
+      const input = dialogRow.querySelector("[data-engagement-club-time-dialog-input]");
+      if (!input) continue;
+      const manual = !input.disabled;
+      const value = manual ? String(input.value || "").trim() : "";
+      if (manual && !value) {
+        if (elements.engagementsClubTimesDialogMessage) {
+          elements.engagementsClubTimesDialogMessage.textContent = "Renseignez le temps modifié ou rétablissez le temps automatique.";
+          elements.engagementsClubTimesDialogMessage.dataset.tone = "error";
+        }
+        input.focus?.();
+        return;
+      }
+      overrides.set(eventCode, { manual, value });
+    }
+    const matrixRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
+      .find((candidate) => candidate.dataset.engagementClubEntrySwimmerId === swimmer.swimmerIndexId);
+    overrides.forEach((override, eventCode) => {
+      const timeInput = Array.from(matrixRow?.querySelectorAll("[data-engagement-club-swimmer-event-time]") || [])
+        .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
+      if (!timeInput) return;
+      timeInput.value = override.value;
+      timeInput.disabled = !override.manual;
+    });
+    const previewByCode = new Map((engagementClubSwimmerEventTimesCache.get(engagementClubSwimmerEventTimesCacheKey(swimmer)) || [])
+      .map((entry) => [entry.eventCode, entry]));
+    const swimmers = selectedEngagementClubSwimmerRows().map((candidate) => {
+      if (candidate.swimmerIndexId !== swimmer.swimmerIndexId) return candidate;
+      return {
+        ...candidate,
+        individualEntries: (candidate.individualEntries || []).map((entry) => {
+          const override = overrides.get(entry.eventCode);
+          if (!override) return entry;
+          if (override.manual) {
+            return { ...entry, entryTimeMode: "manual", entryTime: override.value, manualEntryTime: override.value };
+          }
+          const preview = previewByCode.get(entry.eventCode);
+          return preview ? { ...entry, ...preview, manualEntryTime: "" } : { ...entry, manualEntryTime: "" };
+        })
+      };
+    });
+    const swimmerIndexId = swimmer.swimmerIndexId;
+    selectedEngagementClubEntry = { ...(selectedEngagementClubEntry || {}), swimmers };
+    closeEngagementClubTimesDialog(false);
+    renderEngagementClubEntries();
+    markEngagementClubEntrySwimmerDirty(swimmerIndexId);
+    Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-times-open]") || [])
+      .find((button) => button.dataset.engagementClubTimesOpen === swimmerIndexId)?.focus?.();
+    if (elements.engagementsClubEntriesMessage) {
+      elements.engagementsClubEntriesMessage.textContent = "Temps mis à jour dans le brouillon. Enregistrez les courses pour les valider.";
+      elements.engagementsClubEntriesMessage.dataset.tone = "ok";
+    }
   }
 
   function engagementClubRelayEvents() {
     return (selectedEngagementCompetition?.events || []).filter((event) => event.type === "relay");
+  }
+
+  function engagementClubRelaySessionLabel(eventCode = "", genderMode = "") {
+    const events = Array.isArray(selectedEngagementCompetition?.events) ? selectedEngagementCompetition.events : [];
+    const eventOptions = events.map((event) => ({ code: event.code, label: event.shortLabel || event.code }));
+    const sessions = normalizedEngagementProgramSessions(selectedEngagementCompetition?.programSessions || [], eventOptions);
+    let matches = sessions.filter((session) => (session.items || []).some((item) =>
+      item.eventCode === eventCode && (!genderMode || item.genderMode === genderMode)
+    ));
+    if (!matches.length && genderMode) {
+      matches = sessions.filter((session) => (session.items || []).some((item) => item.eventCode === eventCode));
+    }
+    return matches.map((session) => [
+      session.label,
+      session.date ? formatShortDate(session.date) : "",
+      session.startTime || ""
+    ].filter(Boolean).join(" · ")).join(" / ");
   }
 
   function engagementRelayCategoryOptions(event = {}) {
@@ -3166,7 +3895,7 @@
   }
 
   function engagementRelayMemberOptionLabel(swimmer = {}, competitionDate = "") {
-    const name = swimmer.name || [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "Nageur";
+    const name = engagementSwimmerDisplayName(swimmer);
     const category = engagementSwimmerCategory(swimmer, competitionDate);
     return category ? `${name} (${category})` : name;
   }
@@ -3240,6 +3969,12 @@
       if (!event) {
         issues.push(`${rowLabel} : relais non ouvert sur cette competition.`);
         return;
+      }
+      if (!relay.category) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : choisissez une categorie.`);
+      }
+      if (!relay.genderMode) {
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : choisissez Femmes, Hommes ou Mixte.`);
       }
       if (!String(relay.manualEntryTime || "").trim()) {
         issues.push(`${rowLabel} ${event.shortLabel || event.code} : temps d'engagement obligatoire.`);
@@ -3347,7 +4082,9 @@
     const categoryLabel = new Map(ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS).get(relay.category) || relay.category || "-";
     const genderLabel = relay.genderMode === "mixed"
       ? "Mixte"
-      : relay.genderMode === "male" ? "Hommes" : "Femmes";
+      : relay.genderMode === "male"
+        ? "Hommes"
+        : relay.genderMode === "female" ? "Femmes" : "Composition a choisir";
     const memberCount = Array.isArray(relay.memberIds)
       ? relay.memberIds.filter(Boolean).length
       : Array.isArray(relay.members) ? relay.members.length : 0;
@@ -3364,6 +4101,7 @@
     if (!elements.engagementsClubSummaryList && !elements.engagementsClubSummaryStatus && !elements.engagementsClubSummaryRelays) return;
     const competition = selectedEngagementCompetition || {};
     const fees = competition.fees || {};
+    const noFees = fees.enabled === false;
     const swimmers = currentEngagementClubSwimmersForSummary(entry);
     const relays = selectedEngagementClubRelayRows();
     const officialsCount = currentEngagementClubOfficialCount(entry);
@@ -3377,8 +4115,8 @@
       ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`],
       ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`],
       ["Relais", `${relays.length} relais`],
-      ["Total indicatif", formatEngagementFee(total)],
-      ["HelloAsso", engagementHelloAssoLabel(fees)]
+      ["Frais d'engagement", noFees ? "Aucun frais d'engagement" : formatEngagementFee(total)],
+      ...(!noFees ? [["HelloAsso", engagementHelloAssoLabel(fees)]] : [])
     ];
     if (elements.engagementsClubSummaryStatus) {
       elements.engagementsClubSummaryStatus.textContent = engagementClubTeamComplete(entry)
@@ -3411,6 +4149,7 @@
   function renderEngagementClubRelays() {
     const mount = elements.engagementsClubRelaysList;
     if (!mount) return;
+    engagementClubRelaysRenderedCompetitionId = selectedEngagementCompetitionId;
     const writeLockReason = engagementClubWriteLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     const relayEvents = engagementClubRelayEvents();
@@ -3441,20 +4180,26 @@
       const relayId = relay.relayId || `relay-${Date.now()}-${index}`;
       const event = relayEvents.find((candidate) => candidate.code === relay.eventCode) || relayEvents[0];
       const categories = engagementRelayCategoryOptions(event);
-      const category = categories.some(([code]) => code === relay.category) ? relay.category : categories[0]?.[0] || "";
+      const category = categories.some(([code]) => code === relay.category) ? relay.category : "";
       const genderOptions = engagementRelayGenderOptions(event, category);
-      const genderMode = genderOptions.some(([mode]) => mode === relay.genderMode) ? relay.genderMode : genderOptions[0]?.[0] || "female";
+      const genderMode = genderOptions.some(([mode]) => mode === relay.genderMode) ? relay.genderMode : "";
       const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds : (relay.members || []).map((member) => member.swimmerIndexId).filter(Boolean);
       const relayLegs = engagementRelayLegCount(event);
+      const sessionLabel = engagementClubRelaySessionLabel(event.code, genderMode);
       return `
         <div class="admin-engagements-club-relay-row" data-engagement-club-relay-row data-engagement-club-relay-id="${escapeHtml(relayId)}" data-gender="${escapeHtml(genderMode)}">
-          <select data-engagement-club-relay-event aria-label="Relais">
-            ${relayEvents.map((option) => `<option value="${escapeHtml(option.code)}" ${option.code === event.code ? "selected" : ""}>${escapeHtml(option.shortLabel || option.code)}</option>`).join("")}
-          </select>
-          <select data-engagement-club-relay-category aria-label="Categorie">
+          <div class="admin-engagements-club-relay-event">
+            <select data-engagement-club-relay-event aria-label="Relais">
+              ${relayEvents.map((option) => `<option value="${escapeHtml(option.code)}" ${option.code === event.code ? "selected" : ""}>${escapeHtml(option.shortLabel || option.code)}</option>`).join("")}
+            </select>
+            ${sessionLabel ? `<small>${escapeHtml(sessionLabel)}</small>` : ""}
+          </div>
+          <select data-engagement-club-relay-category aria-label="Categorie" required>
+            <option value="" ${category ? "" : "selected"} disabled>Choisir une categorie</option>
             ${categories.map(([code, label]) => `<option value="${escapeHtml(code)}" ${code === category ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
           </select>
-          <select data-engagement-club-relay-gender aria-label="Sexe ou mixite">
+          <select data-engagement-club-relay-gender aria-label="Sexe ou mixite" data-gender="${escapeHtml(genderMode)}" required>
+            <option value="" ${genderMode ? "" : "selected"} disabled>Choisir une composition</option>
             ${genderOptions.map(([mode, label]) => `<option value="${escapeHtml(mode)}" ${mode === genderMode ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
           </select>
           <input type="text" maxlength="8" inputmode="numeric" placeholder="Temps" data-engagement-club-relay-time value="${escapeHtml(relay.manualEntryTime || relay.entryTime || "")}" aria-label="Temps d'engagement">
@@ -3462,15 +4207,16 @@
             ${Array.from({ length: relayLegs }, (_, memberIndex) => {
               const expectedSex = engagementRelayExpectedMemberSex(genderMode, memberIndex);
               const currentMemberId = memberIds[memberIndex] || "";
-              const memberOptions = swimmerOptions.filter((swimmer) => {
+              const filtersComplete = Boolean(category && genderMode);
+              const memberOptions = filtersComplete ? swimmerOptions.filter((swimmer) => {
                 if (expectedSex && swimmer.sex !== expectedSex) return false;
                 if (!engagementRelaySwimmerAllowedForCategory(swimmer, category, competitionDate)) return false;
                 return swimmer.swimmerIndexId === currentMemberId ||
                   !engagementRelayMemberAlreadyUsed(swimmer.swimmerIndexId, rows, index, memberIndex, event);
-              });
+              }) : [];
               return `
-              <select data-engagement-club-relay-member data-expected-sex="${escapeHtml(expectedSex)}" aria-label="${escapeHtml(engagementRelayLegPlaceholder(genderMode, memberIndex))}">
-                <option value="">${escapeHtml(memberOptions.length ? engagementRelayLegPlaceholder(genderMode, memberIndex) : engagementRelayNoMemberOptionLabel(expectedSex, memberIndex))}</option>
+              <select data-engagement-club-relay-member data-expected-sex="${escapeHtml(expectedSex)}" aria-label="${escapeHtml(engagementRelayLegPlaceholder(genderMode, memberIndex))}" ${filtersComplete ? "" : "disabled"}>
+                <option value="">${escapeHtml(filtersComplete ? (memberOptions.length ? engagementRelayLegPlaceholder(genderMode, memberIndex) : engagementRelayNoMemberOptionLabel(expectedSex, memberIndex)) : "Choisissez categorie et composition")}</option>
                 ${memberOptions.map((swimmer) => {
                   const name = engagementRelayMemberOptionLabel(swimmer, competitionDate);
                   return `<option value="${escapeHtml(swimmer.swimmerIndexId)}" ${currentMemberId === swimmer.swimmerIndexId ? "selected" : ""}>${escapeHtml(name)}</option>`;
@@ -3500,31 +4246,38 @@
   }
 
   function updateEngagementClubTeamFormMode() {
-    const mode = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value || "person";
+    const mode = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value || "";
+    const declaringPerson = mode === "person";
     const renounced = mode === "renounced";
     const externalClub = elements.engagementsClubTeamExternal?.checked === true;
-    if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = renounced;
+    if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = !declaringPerson;
     if (elements.engagementsClubTeamRenunciationLabel) elements.engagementsClubTeamRenunciationLabel.hidden = !renounced;
+    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = !declaringPerson;
     [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamLicense].forEach((field) => {
-      if (field) field.required = !renounced;
+      if (field) field.required = declaringPerson;
     });
     if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.required = renounced;
-    if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = renounced || !externalClub;
-    if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = renounced || !externalClub;
-    if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.required = !renounced && externalClub;
+    if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = !declaringPerson || !externalClub;
+    if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = !declaringPerson || !externalClub;
+    if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.required = declaringPerson && externalClub;
   }
 
   function renderEngagementClubEntry(entry = selectedEngagementClubEntry || {}) {
     selectedEngagementClubEntry = entry || {};
+    engagementClubSwimmersRenderedCompetitionId = "";
+    engagementClubEntriesRenderedCompetitionId = "";
+    engagementClubRelaysRenderedCompetitionId = "";
     const writeLockReason = engagementClubWriteLockReason();
     engagementClubRelaysDraft = Array.isArray(selectedEngagementClubEntry.relays)
       ? selectedEngagementClubEntry.relays.map((relay) => ({ ...relay }))
       : [];
     const teamLeader = selectedEngagementClubEntry.teamLeader || {};
     if (elements.engagementsClubTeamForm) {
-      const mode = teamLeader.mode === "renounced" ? "renounced" : "person";
-      const radio = elements.engagementsClubTeamForm.querySelector(`input[name="adminEngagementsClubTeamMode"][value="${mode}"]`);
-      if (radio) radio.checked = true;
+      const mode = teamLeader.mode === "renounced"
+        ? "renounced"
+        : engagementClubTeamComplete() ? "person" : "";
+      elements.engagementsClubTeamForm.querySelectorAll('input[name="adminEngagementsClubTeamMode"]')
+        .forEach((radio) => { radio.checked = radio.value === mode; });
     }
     if (elements.engagementsClubTeamFirstName) elements.engagementsClubTeamFirstName.value = teamLeader.firstName || "";
     if (elements.engagementsClubTeamLastName) elements.engagementsClubTeamLastName.value = teamLeader.lastName || "";
@@ -3569,10 +4322,6 @@
           : unlockedTexts[step.dataset.clubStep] || "";
       }
     });
-    renderEngagementClubOfficials();
-    renderEngagementClubSwimmers();
-    renderEngagementClubRelays();
-    renderEngagementClubSummary();
     if (!isEngagementAdminMode() && isClubEngagementWorkflowTab(activeEngagementsDetailTab) && !canOpenClubEngagementTab(activeEngagementsDetailTab)) {
       setEngagementsDetailTab("team");
     } else {
@@ -3941,16 +4690,7 @@
   function engagementProgramStatusSummary(events = [], sessions = []) {
     const eventCount = Array.isArray(events) ? events.length : 0;
     const sessionCount = Array.isArray(sessions) ? sessions.length : 0;
-    const itemCount = (Array.isArray(sessions) ? sessions : []).reduce((sum, session) => sum + (Array.isArray(session.items) ? session.items.length : 0), 0);
-    const missingCount = missingEngagementProgramEventCount(events, sessions);
-    const status = !eventCount
-      ? "aucune epreuve"
-      : missingCount
-        ? `${missingCount} epreuve${missingCount > 1 ? "s" : ""} a placer`
-        : itemCount
-          ? "programme complet"
-          : "programme a construire";
-    return `${eventCount} epreuve${eventCount > 1 ? "s" : ""} choisie${eventCount > 1 ? "s" : ""} - ${sessionCount} session${sessionCount > 1 ? "s" : ""} - ${status}`;
+    return `${eventCount} épreuve${eventCount > 1 ? "s" : ""} - ${sessionCount} session${sessionCount > 1 ? "s" : ""}`;
   }
 
   function engagementEventsCompactSummary(events = []) {
@@ -4393,6 +5133,7 @@
   }
 
   function updateEngagementEventsSummaryFromForm(event) {
+    if (event?.type === "input" && event.target?.matches?.("[data-engagement-category-column]")) return;
     if (event?.target?.closest?.("[data-engagement-program-sessions]")) {
       const sessions = selectedEngagementProgramSessionsFromForm();
       updateEngagementEventsSectionSummaries(selectedEngagementEventsFromForm(), sessions);
@@ -4414,11 +5155,37 @@
       }
       if (relayMultipleField) relayMultipleField.disabled = !checked || !isEngagementAdminMode() || !engagementDetailEditing || !canEditEngagementCompetition();
     });
+    updateEngagementCategoryColumnControls(elements.engagementsIndividualEvents);
+    updateEngagementCategoryColumnControls(elements.engagementsRelayEvents);
     if (!elements.engagementsEventsSummary) return;
     const selectedEvents = selectedEngagementEventsFromForm();
     elements.engagementsEventsSummary.textContent = engagementEventSummary(selectedEvents);
     updateEngagementEventsSectionSummaries(selectedEvents, previousProgramSessions);
     renderEngagementProgramSessions(previousProgramSessions, isEngagementAdminMode() && engagementDetailEditing && canEditEngagementCompetition());
+  }
+
+  function engagementCategoryColumnInputs(mount, categoryCode = "") {
+    return Array.from(mount?.querySelectorAll(`[data-engagement-category-code="${categoryCode}"]`) || [])
+      .filter((input) => !input.disabled && input.closest("[data-engagement-event-item]")?.dataset.selected === "true");
+  }
+
+  function updateEngagementCategoryColumnControls(mount) {
+    Array.from(mount?.querySelectorAll("[data-engagement-category-column]") || []).forEach((control) => {
+      const inputs = engagementCategoryColumnInputs(mount, control.dataset.engagementCategoryColumn || "");
+      const checkedCount = inputs.filter((input) => input.checked).length;
+      control.disabled = inputs.length === 0;
+      control.checked = inputs.length > 0 && checkedCount === inputs.length;
+      control.indeterminate = checkedCount > 0 && checkedCount < inputs.length;
+    });
+  }
+
+  function applyEngagementCategoryColumnControl(control) {
+    const mount = control?.closest("[data-engagement-event-group]");
+    if (!mount) return;
+    const inputs = engagementCategoryColumnInputs(mount, control.dataset.engagementCategoryColumn || "");
+    inputs.forEach((input) => { input.checked = control.checked; });
+    control.indeterminate = false;
+    updateEngagementCategoryColumnControls(mount);
   }
 
   function renderEngagementEventGroup(mount, type, selectedCodes, canEdit) {
@@ -4429,7 +5196,10 @@
       ? ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS
       : ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS;
     const categoryHead = categoryDefinitions.map(([code, label]) => `
-      <span title="${escapeHtml(label)}">${escapeHtml(code)}</span>
+      <label class="admin-engagements-category-column-control" title="${escapeHtml(label)} : appliquer a toutes les courses selectionnees">
+        <input type="checkbox" data-engagement-category-column="${escapeHtml(code)}" aria-label="${escapeHtml(label)} pour toutes les courses" ${canEdit ? "" : "disabled"}>
+        <span>${escapeHtml(code)}</span>
+      </label>
     `).join("");
     const rows = events.map((event) => {
       const selectedEvent = selectedCodes.get(event.code) || {};
@@ -4496,15 +5266,17 @@
     }).join("");
     mount.innerHTML = `
       <div class="admin-engagements-events-table ${relayTable ? "admin-engagements-events-table-relay" : "admin-engagements-events-table-individual"}" style="--engagement-category-count: ${categoryDefinitions.length}">
-        <div class="admin-engagements-event-row admin-engagements-event-row-head" aria-hidden="true">
-          <span>Course</span>
-          ${relayTable ? "<span>Mixte</span>" : ""}
-          ${relayTable ? "<span>Plusieurs</span>" : ""}
-          <div>${categoryHead}</div>
+        <div class="admin-engagements-event-row admin-engagements-event-row-head" role="row">
+          <span role="columnheader">Course</span>
+          ${relayTable ? '<span role="columnheader">Mixte</span>' : ""}
+          ${relayTable ? '<span role="columnheader">Plusieurs</span>' : ""}
+          <div role="presentation">${categoryHead}</div>
         </div>
         ${rows}
       </div>
     `;
+    mount.dataset.engagementEventGroup = type;
+    updateEngagementCategoryColumnControls(mount);
   }
 
   function renderEngagementEvents(competition = selectedEngagementCompetition || {}) {
@@ -4547,28 +5319,65 @@
     const mount = elements.engagementsCalendarList;
     if (!mount) return;
     const visibleCompetitions = filteredEngagementCompetitions();
+    const renderedCompetitions = visibleCompetitions.slice(0, engagementCompetitionsVisibleLimit);
     if (elements.engagementsResultsCount) {
-      elements.engagementsResultsCount.textContent = `${visibleCompetitions.length} compétition${visibleCompetitions.length > 1 ? "s" : ""} affichée${visibleCompetitions.length > 1 ? "s" : ""}`;
+      elements.engagementsResultsCount.textContent = renderedCompetitions.length < visibleCompetitions.length
+        ? `${renderedCompetitions.length} compétitions affichées sur ${visibleCompetitions.length}`
+        : `${visibleCompetitions.length} compétition${visibleCompetitions.length > 1 ? "s" : ""} affichée${visibleCompetitions.length > 1 ? "s" : ""}`;
     }
     if (!visibleCompetitions.length) {
-      mount.innerHTML = `<p class="admin-engagements-empty">Aucune competition ne correspond aux filtres.</p>`;
+      mount.innerHTML = `
+        <div class="admin-engagements-empty admin-engagements-calendar-empty">
+          <strong>Aucune compétition dans cette vue.</strong>
+          <span>Modifiez le statut ou retirez les filtres secondaires.</span>
+          <button class="ghost-button" type="button" data-engagement-filters-reset>Réinitialiser les filtres</button>
+        </div>
+      `;
       return;
     }
-    mount.innerHTML = visibleCompetitions.map((competition) => `
-      <article class="admin-engagements-competition ${competition.id === selectedEngagementCompetitionId ? "selected" : ""}">
-        <time datetime="${escapeHtml(competition.date || "")}">${escapeHtml(formatShortDate(competition.date))}</time>
+    const groupedCompetitions = [];
+    renderedCompetitions.forEach((competition) => {
+      const groupLabel = !isEngagementAdminMode() && competition.entryStatus === "open"
+        ? "Engagements ouverts"
+        : engagementCompetitionMonthLabel(competition);
+      let group = groupedCompetitions.at(-1);
+      if (!group || group.label !== groupLabel) {
+        group = { label: groupLabel, competitions: [] };
+        groupedCompetitions.push(group);
+      }
+      group.competitions.push(competition);
+    });
+    mount.innerHTML = groupedCompetitions.map((group, groupIndex) => `
+      <section class="admin-engagements-competition-group" aria-labelledby="engagement-competition-group-${groupIndex}">
+        <h4 id="engagement-competition-group-${groupIndex}">${escapeHtml(group.label)}</h4>
         <div>
-          <strong>${escapeHtml(competition.name || "Competition sans nom")}</strong>
-          <small>${escapeHtml([competition.location, competition.regionId ? `Region ${regionDisplayLabel(competition.regionId)}` : ""].filter(Boolean).join(" - ") || "Lieu non renseigne")}</small>
+          ${group.competitions.map((competition) => {
+            const action = engagementCompetitionAction(competition);
+            return `
+              <article class="admin-engagements-competition ${competition.id === selectedEngagementCompetitionId ? "selected" : ""}">
+                <time datetime="${escapeHtml(competition.date || "")}">${escapeHtml(formatEngagementCompetitionDate(competition))}</time>
+                <div class="admin-engagements-competition-main">
+                  <strong>${escapeHtml(competition.name || "Compétition sans nom")}</strong>
+                  <small>${escapeHtml(competition.location || "Lieu non renseigné")}</small>
+                  <div class="admin-engagements-competition-metadata">
+                    <span>${escapeHtml(engagementLevelLabel(competition.level))}</span>
+                    ${competition.regionId ? `<span>${escapeHtml(regionDisplayLabel(competition.regionId))}</span>` : ""}
+                  </div>
+                </div>
+                <div class="admin-engagements-competition-side">
+                  <p data-entry-status="${escapeHtml(engagementDeadlineTone(competition))}" data-engagement-deadline-competition-id="${escapeHtml(competition.id)}">${escapeHtml(engagementDeadlineDisplay(competition))}</p>
+                  <div class="admin-engagements-competition-actions">
+                    <button class="ghost-button" type="button" data-engagement-competition-id="${escapeHtml(competition.id)}" data-engagement-open-tab="${escapeHtml(action.tab)}">${escapeHtml(action.label)}</button>
+                  </div>
+                </div>
+              </article>
+            `;
+          }).join("")}
         </div>
-        <span>${escapeHtml(engagementLevelLabel(competition.level))}</span>
-        <span data-entry-status="${escapeHtml(engagementDeadlineTone(competition))}">${escapeHtml(engagementOperationalStatusLabel(competition))}</span>
-        <div class="admin-engagements-competition-actions">
-          <small>${escapeHtml(formatDeadline(competition.entryDeadlineAt))}</small>
-          <button class="ghost-button" type="button" data-engagement-competition-id="${escapeHtml(competition.id)}">${isEngagementAdminMode() && canEditEngagementCompetition(competition) ? "Administrer" : "Voir la fiche"}</button>
-        </div>
-      </article>
-    `).join("");
+      </section>
+    `).join("") + (renderedCompetitions.length < visibleCompetitions.length
+      ? `<button class="ghost-button admin-engagements-show-more" type="button" data-engagement-show-more>Afficher plus de compétitions</button>`
+      : "");
   }
 
   function setEngagementCompetitionDetailVisible(visible) {
@@ -4616,6 +5425,7 @@
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
     const adminMode = isEngagementAdminMode();
+    const noFees = competition.fees?.enabled === false;
     const sharedRows = [
       ["Date", formatShortDate(competition.date)],
       ["Date de fin", formatShortDate(competition.endDate || competition.date)],
@@ -4625,7 +5435,7 @@
       ["Niveau", engagementLevelLabel(competition.level)],
       ["Statut engagements", engagementStatusLabel(competition.entryStatus)],
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
-      ["Bassin", engagementPoolLengthLabel(competition.poolLength || "50")],
+      ["Bassin", engagementPoolLabel(competition)],
       ["Chronometrage", engagementTimingTypeLabel(competition.timingType)],
       ["Temps engagements", engagementQualificationPeriodLabel(competition)],
       ["Sans temps connu", engagementMissingEntryTimeModeLabel(competition.missingEntryTimeMode)],
@@ -4643,11 +5453,11 @@
       ["Statut engagements", engagementStatusLabel(competition.entryStatus)],
       ["Programme", engagementCompetitionProgramOverview(competition)],
       ["Frais d'engagement", engagementFeesSummary(competition.fees || {})],
-      ["HelloAsso", engagementHelloAssoLabel(competition.fees || {})],
+      ...(!noFees ? [["HelloAsso", engagementHelloAssoLabel(competition.fees || {})]] : []),
       ["Niveau", engagementLevelLabel(competition.level)],
       ["Region", regionDisplayLabel(competition.regionId)],
       ["Officiels", competition.officialsRequired ? "A declarer" : "Non requis"],
-      ["Bassin", engagementPoolLengthLabel(competition.poolLength || "50")],
+      ["Bassin", engagementPoolLabel(competition)],
       ["Chronometrage", engagementTimingTypeLabel(competition.timingType)]
     ];
     const rows = adminMode ? [
@@ -4666,8 +5476,8 @@
       `).join("");
     }
     if (elements.engagementsDetailStatus) {
-      elements.engagementsDetailStatus.textContent = "Fiche chargee.";
-      elements.engagementsDetailStatus.dataset.tone = "ok";
+      elements.engagementsDetailStatus.textContent = "";
+      elements.engagementsDetailStatus.dataset.tone = "";
     }
     updateEngagementDetailEditState();
     renderEngagementEvents(competition);
@@ -4681,6 +5491,8 @@
     selectedEngagementCompetitionId = "";
     selectedEngagementCompetition = null;
     selectedEngagementClubEntry = null;
+    engagementClubPersistedSwimmerIds.clear();
+    setEngagementClubEntriesDirty(false);
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementClubRecapEntriesLoading = false;
@@ -4719,9 +5531,9 @@
     if (elements.engagementsClubOfficialsMessage) elements.engagementsClubOfficialsMessage.textContent = "";
     if (elements.engagementsClubSwimmersSummary) elements.engagementsClubSwimmersSummary.textContent = "Aucun nageur selectionne.";
     if (elements.engagementsClubSwimmersSearch) elements.engagementsClubSwimmersSearch.value = "";
+    if (elements.engagementsClubSelectedSwimmersList) elements.engagementsClubSelectedSwimmersList.innerHTML = "";
     if (elements.engagementsClubSwimmersList) elements.engagementsClubSwimmersList.innerHTML = "";
     if (elements.engagementsClubSwimmersMessage) elements.engagementsClubSwimmersMessage.textContent = "";
-    if (elements.engagementsClubEntriesSummary) elements.engagementsClubEntriesSummary.textContent = "Aucune course selectionnee.";
     if (elements.engagementsClubEntriesList) elements.engagementsClubEntriesList.innerHTML = "";
     if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
     engagementClubRelaysDraft = [];
@@ -4743,12 +5555,19 @@
     renderEngagementCompetitions();
   }
 
-  async function loadEngagementCompetitionDetail(competitionId) {
+  async function loadEngagementCompetitionDetail(competitionId, initialTab = "general") {
     const cleanId = String(competitionId || "").trim();
     if (!cleanId) return;
     if (selectedEngagementCompetitionId && selectedEngagementCompetitionId !== cleanId && !confirmLeaveDirtyEngagementTab()) return;
     clearEngagementDetailTabDirty();
     selectedEngagementCompetitionId = cleanId;
+    engagementClubSwimmersRenderedCompetitionId = "";
+    engagementClubEntriesRenderedCompetitionId = "";
+    engagementClubRelaysRenderedCompetitionId = "";
+    engagementClubPersistedSwimmerIds.clear();
+    setEngagementClubEntriesDirty(false);
+    engagementClubSwimmerEventTimesCache.clear();
+    engagementClubSwimmerEventTimesRequests.clear();
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementClubRecapEntriesLoading = false;
@@ -4757,7 +5576,7 @@
     engagementMailJobsLoading = false;
     renderEngagementCompetitions();
     setEngagementCompetitionDetailVisible(true);
-    setEngagementsDetailTab("general");
+    setEngagementsDetailTab(initialTab);
     if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
     if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
@@ -4765,13 +5584,17 @@
       elements.engagementsDetailStatus.textContent = "Chargement de la fiche...";
       elements.engagementsDetailStatus.dataset.tone = "loading";
     }
+    const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
+    const clubPeoplePromise = clubMode ? loadEngagementClubPeople({ silent: true }) : null;
+    const clubEntryPromise = clubMode ? callFunction("getEngagementClubEntry", { competitionId: cleanId }) : null;
+    clubEntryPromise?.catch(() => {});
     try {
       const result = await callFunction("getEngagementCompetition", { competitionId: cleanId });
       selectedEngagementCompetition = result.competition || null;
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty();
-      if (!isEngagementAdminMode() && canUse("engagements.club.manage")) {
-        await loadEngagementClubEntry(cleanId);
+      if (clubMode) {
+        await loadEngagementClubEntry(cleanId, { entryPromise: clubEntryPromise, peoplePromise: clubPeoplePromise });
       } else {
         selectedEngagementClubEntry = null;
         renderEngagementClubEntry({});
@@ -4784,25 +5607,30 @@
     }
   }
 
-  async function loadEngagementClubEntry(competitionId = selectedEngagementCompetitionId) {
+  async function loadEngagementClubEntry(competitionId = selectedEngagementCompetitionId, { entryPromise = null, peoplePromise = null } = {}) {
     const cleanId = String(competitionId || "").trim();
     if (!cleanId || !canUse("engagements.club.manage")) return;
-    await loadEngagementClubPeople({ silent: true });
+    const pendingPeople = peoplePromise || loadEngagementClubPeople({ silent: true });
     if (elements.engagementsClubTeamMessage) {
       elements.engagementsClubTeamMessage.textContent = "Chargement de votre inscription club...";
       elements.engagementsClubTeamMessage.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("getEngagementClubEntry", { competitionId: cleanId });
+      const result = await (entryPromise || callFunction("getEngagementClubEntry", { competitionId: cleanId }));
       selectedEngagementClubEntry = result.entry || {};
+      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
         const writeLockReason = engagementClubWriteLockReason();
         elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
         elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
       }
+      await pendingPeople;
+      const teamLeader = selectedEngagementClubEntry.teamLeader || {};
+      renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
     } catch (error) {
       selectedEngagementClubEntry = {};
+      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = `Inscription club indisponible : ${error?.message || error}`;
@@ -4813,12 +5641,12 @@
 
   async function saveEngagementClubTeamLeader(event) {
     event?.preventDefault?.();
-    if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return;
-    if (showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return;
+    if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
+    if (showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return false;
     updateEngagementClubTeamFormMode();
     if (elements.engagementsClubTeamForm && !elements.engagementsClubTeamForm.checkValidity()) {
       elements.engagementsClubTeamForm.reportValidity?.();
-      return;
+      return false;
     }
     if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = true;
     if (elements.engagementsClubTeamMessage) {
@@ -4836,11 +5664,13 @@
         elements.engagementsClubTeamMessage.textContent = "Etape chef d'equipe enregistree. Vous pouvez continuer les engagements.";
         elements.engagementsClubTeamMessage.dataset.tone = "ok";
       }
+      return true;
     } catch (error) {
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = `Enregistrement impossible : ${error?.message || error}`;
         elements.engagementsClubTeamMessage.dataset.tone = "error";
       }
+      return false;
     } finally {
       if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = engagementClubWriteLocked();
     }
@@ -4883,6 +5713,17 @@
     }
   }
 
+  function renderActiveEngagementClubSwimmerConsumer() {
+    if (activeEngagementsTab === "clubSwimmers") {
+      renderEngagementClubSwimmersDirectory();
+      return;
+    }
+    if (!selectedEngagementCompetitionId) return;
+    if (activeEngagementsDetailTab === "swimmers") renderEngagementClubSwimmers();
+    if (activeEngagementsDetailTab === "entries") renderEngagementClubEntries();
+    if (activeEngagementsDetailTab === "relays") renderEngagementClubRelays();
+  }
+
   async function loadEngagementClubSwimmers({ force = false, silent = false } = {}) {
     if (!canUse("engagements.club.manage") || engagementClubSwimmersLoading) return;
     const expectedClubId = engagementClubScope();
@@ -4892,8 +5733,7 @@
       engagementClubSwimmersClubId = "";
     }
     if (engagementClubSwimmersLoaded && !force) {
-      renderEngagementClubSwimmers();
-      renderEngagementClubSwimmersDirectory();
+      renderActiveEngagementClubSwimmerConsumer();
       return;
     }
     engagementClubSwimmersLoading = true;
@@ -4902,8 +5742,7 @@
       elements.engagementsClubSwimmersMessage.dataset.tone = "loading";
     }
     try {
-      renderEngagementClubSwimmers();
-      renderEngagementClubSwimmersDirectory();
+      renderActiveEngagementClubSwimmerConsumer();
       const result = await callFunctionWithTimeout("listEngagementClubSwimmers", { limit: 800 }, 30000);
       const resultClubId = String(result.clubId || "").trim();
       if (expectedClubId && resultClubId && resultClubId !== expectedClubId) {
@@ -4912,17 +5751,9 @@
       engagementClubSwimmers = Array.isArray(result.swimmers) ? result.swimmers : [];
       engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
       engagementClubSwimmersLoaded = true;
-      renderEngagementClubSwimmers();
-      renderEngagementClubSwimmersDirectory();
       if (!silent && elements.engagementsClubSwimmersMessage) {
         elements.engagementsClubSwimmersMessage.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} connu${engagementClubSwimmers.length > 1 ? "s" : ""} charge${engagementClubSwimmers.length > 1 ? "s" : ""}.`;
         elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
-      }
-      if (elements.engagementsClubSwimmersDirectoryStatus) {
-        elements.engagementsClubSwimmersDirectoryStatus.textContent = engagementClubSwimmers.length
-          ? `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} charge${engagementClubSwimmers.length > 1 ? "s" : ""}.`
-          : "Aucun nageur trouve pour ce club dans l'index LivePalmes.";
-        elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = engagementClubSwimmers.length ? "ok" : "error";
       }
     } catch (error) {
       if (elements.engagementsClubSwimmersMessage) {
@@ -4936,8 +5767,7 @@
     } finally {
       engagementClubSwimmersLoading = false;
       try {
-        renderEngagementClubSwimmers();
-        renderEngagementClubSwimmersDirectory();
+        renderActiveEngagementClubSwimmerConsumer();
       } catch (renderError) {
         if (elements.engagementsClubSwimmersDirectoryStatus) {
           elements.engagementsClubSwimmersDirectoryStatus.textContent = `Affichage nageurs impossible : ${renderError?.message || renderError}`;
@@ -4945,62 +5775,6 @@
         }
       }
     }
-  }
-
-  async function previewEngagementClubEntryTimes() {
-    if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return;
-    if (showEngagementClubWriteLock(elements.engagementsClubEntriesMessage)) return;
-    if (!engagementClubTeamComplete()) {
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Validez le chef d'equipe ou la renonciation avant les courses.";
-        elements.engagementsClubEntriesMessage.dataset.tone = "error";
-      }
-      return;
-    }
-    const swimmers = selectedEngagementClubSwimmerRows();
-    const entryCount = swimmers.reduce((sum, swimmer) => sum + (swimmer.individualEntries?.length || 0), 0);
-    if (!swimmers.length || !entryCount) {
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "";
-        elements.engagementsClubEntriesMessage.dataset.tone = "";
-      }
-      return;
-    }
-    try {
-      const requestId = ++engagementClubEntryTimesPreviewRequestId;
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Mise a jour automatique des temps d'engagement...";
-        elements.engagementsClubEntriesMessage.dataset.tone = "loading";
-      }
-      const result = await callFunction("previewEngagementClubEntryTimes", {
-        competitionId: selectedEngagementCompetitionId,
-        swimmers
-      });
-      if (requestId !== engagementClubEntryTimesPreviewRequestId) return;
-      selectedEngagementClubEntry = {
-        ...(selectedEngagementClubEntry || {}),
-        swimmers: result.swimmers || []
-      };
-      renderEngagementClubEntries();
-      renderEngagementClubSummary();
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = engagementClubEntryTimePreviewMessage(result.stats || {});
-        elements.engagementsClubEntriesMessage.dataset.tone = "ok";
-      }
-    } catch (error) {
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = `Mise a jour des temps impossible : ${error?.message || error}`;
-        elements.engagementsClubEntriesMessage.dataset.tone = "error";
-      }
-    }
-  }
-
-  function scheduleEngagementClubEntryTimesPreview(delayMs = 350) {
-    if (engagementClubEntryTimesPreviewTimer) clearTimeout(engagementClubEntryTimesPreviewTimer);
-    engagementClubEntryTimesPreviewTimer = setTimeout(() => {
-      engagementClubEntryTimesPreviewTimer = null;
-      previewEngagementClubEntryTimes();
-    }, delayMs);
   }
 
   async function saveEngagementClubSwimmers(event) {
@@ -5028,17 +5802,39 @@
       elements.engagementsClubSwimmersForm?.reportValidity?.();
       return;
     }
+    const invalidLicense = selectedSwimmers.some((swimmer) => !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(swimmer.licenseNumber));
+    if (invalidLicense) {
+      if (messageElement) {
+        messageElement.textContent = "Chaque licence doit respecter le format A-12-34567.";
+        messageElement.dataset.tone = "error";
+      }
+      elements.engagementsClubSwimmersForm?.reportValidity?.();
+      return;
+    }
     if (saveButton) saveButton.disabled = true;
     if (messageElement) {
       messageElement.textContent = fromEntries ? "Enregistrement des courses..." : "Enregistrement des nageurs...";
       messageElement.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("saveEngagementClubSwimmers", {
+      const dirtySwimmerIds = new Set(engagementClubEntriesDirtySwimmerIds);
+      const useIndividualEntriesSave = fromEntries && dirtySwimmerIds.size > 0 &&
+        Array.from(dirtySwimmerIds).every((swimmerIndexId) => engagementClubPersistedSwimmerIds.has(swimmerIndexId));
+      const swimmersForRequest = useIndividualEntriesSave
+        ? selectedSwimmers
+          .filter((swimmer) => dirtySwimmerIds.has(swimmer.swimmerIndexId))
+          .map((swimmer) => ({
+            swimmerIndexId: swimmer.swimmerIndexId,
+            individualEntries: swimmer.individualEntries || []
+          }))
+        : selectedSwimmers;
+      const result = await callFunction(useIndividualEntriesSave ? "saveEngagementClubIndividualEntries" : "saveEngagementClubSwimmers", {
         competitionId: selectedEngagementCompetitionId,
-        swimmers: selectedSwimmers
+        swimmers: swimmersForRequest
       });
       selectedEngagementClubEntry = result.entry || selectedEngagementClubEntry || {};
+      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
+      setEngagementClubEntriesDirty(false);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (messageElement) {
         messageElement.textContent = fromEntries ? "Courses enregistrees." : "Nageurs enregistres.";
@@ -5050,7 +5846,8 @@
         messageElement.dataset.tone = "error";
       }
     } finally {
-      if (saveButton) saveButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
+      if (fromEntries) syncEngagementClubEntriesSaveBar();
+      else if (saveButton) saveButton.disabled = !engagementClubTeamComplete() || engagementClubWriteLocked();
     }
   }
 
@@ -5445,11 +6242,22 @@
   function selectedEngagementClubNewSwimmerFromForm() {
     return {
       firstName: String(elements.engagementsClubNewSwimmerFirstName?.value || "").trim(),
-      lastName: String(elements.engagementsClubNewSwimmerLastName?.value || "").trim(),
+      lastName: String(elements.engagementsClubNewSwimmerLastName?.value || "").trim().toLocaleUpperCase("fr-FR"),
       birthDate: String(elements.engagementsClubNewSwimmerBirthDate?.value || "").trim(),
       sex: String(elements.engagementsClubNewSwimmerSex?.value || "").trim(),
-      licenseNumber: String(elements.engagementsClubNewSwimmerLicense?.value || "").trim()
+      licenseNumber: formatEngagementSwimmerLicense(elements.engagementsClubNewSwimmerLicense?.value || "")
     };
+  }
+
+  function formatEngagementSwimmerLicense(value = "") {
+    const source = String(value || "").toUpperCase();
+    const letterIndex = source.search(/[A-Z]/);
+    if (letterIndex < 0) return "";
+    const letter = source[letterIndex];
+    const digits = source.slice(letterIndex + 1).replace(/\D/g, "").slice(0, 57);
+    const federation = digits.slice(0, 2);
+    const number = digits.slice(2);
+    return `${letter}-${federation}${federation.length === 2 ? `-${number}` : ""}`;
   }
 
   function resetEngagementClubNewSwimmerForm() {
@@ -5464,6 +6272,16 @@
     });
   }
 
+  function resetEngagementClubNewSwimmerFormFromButton() {
+    resetEngagementClubNewSwimmerForm();
+    if (elements.engagementsClubNewSwimmerAlerts) elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
+    if (elements.engagementsClubSwimmersMessage) {
+      elements.engagementsClubSwimmersMessage.textContent = "";
+      delete elements.engagementsClubSwimmersMessage.dataset.tone;
+    }
+    elements.engagementsClubNewSwimmerLastName?.focus();
+  }
+
   function renderEngagementClubNewSwimmerAlerts(alerts = [], { confirmed = false } = {}) {
     const mount = elements.engagementsClubNewSwimmerAlerts;
     if (!mount) return;
@@ -5471,8 +6289,11 @@
       mount.innerHTML = '<p class="admin-portal-message" data-tone="ok">Aucune ressemblance forte detectee.</p>';
       return;
     }
+    const blocksCreation = alerts.some((alert) => alert.type === "inverted-identity");
     mount.innerHTML = `
-      <p class="admin-portal-message" data-tone="error">${confirmed
+      <p class="admin-portal-message" data-tone="error">${blocksCreation
+        ? "Creation impossible : une fiche avec la meme date de naissance utilise deja ce nom et ce prenom dans l'ordre inverse."
+        : confirmed
         ? `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Le nageur est cree, l'alerte est tracee comme validee par le club.`
         : `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Confirmez la creation uniquement si ce nageur est bien nouveau pour votre club.`}</p>
       <div class="admin-engagements-club-swimmer-alert-list">
@@ -5518,6 +6339,17 @@
       }
       return;
     }
+    if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(swimmer.licenseNumber)) {
+      if (elements.engagementsClubNewSwimmerLicense) {
+        elements.engagementsClubNewSwimmerLicense.value = swimmer.licenseNumber;
+        elements.engagementsClubNewSwimmerLicense.reportValidity?.();
+      }
+      if (elements.engagementsClubSwimmersMessage) {
+        elements.engagementsClubSwimmersMessage.textContent = "Le numero de licence doit respecter le format A-12-34567.";
+        elements.engagementsClubSwimmersMessage.dataset.tone = "error";
+      }
+      return;
+    }
     if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = true;
     if (elements.engagementsClubSwimmersMessage) {
       elements.engagementsClubSwimmersMessage.textContent = "Verification des rapprochements...";
@@ -5529,6 +6361,15 @@
       });
       const alerts = Array.isArray(preview.alerts) ? preview.alerts : [];
       renderEngagementClubNewSwimmerAlerts(alerts, { confirmed: false });
+      const blockingAlert = alerts.find((alert) => alert.type === "inverted-identity");
+      if (preview.blocksCreation === true || blockingAlert) {
+        if (elements.engagementsClubSwimmersMessage) {
+          const matchingName = blockingAlert?.name ? ` : ${blockingAlert.name}` : "";
+          elements.engagementsClubSwimmersMessage.textContent = `Creation impossible${matchingName}. Le nom et le prenom sont inverses pour la meme date de naissance.`;
+          elements.engagementsClubSwimmersMessage.dataset.tone = "error";
+        }
+        return;
+      }
       if (alerts.length && !global.confirm(engagementClubNewSwimmerConfirmationMessage(alerts))) {
         if (elements.engagementsClubSwimmersMessage) {
           elements.engagementsClubSwimmersMessage.textContent = "Creation annulee : rapprochement a verifier.";
@@ -5677,7 +6518,8 @@
       updateEngagementAccessRequestBadge(engagementAccessRequests.length);
       renderEngagementAccessRequests();
       if (elements.engagementsAccessRequestsStatus && !silent) {
-        elements.engagementsAccessRequestsStatus.textContent = `${engagementAccessRequests.length} demande${engagementAccessRequests.length > 1 ? "s" : ""} en attente.`;
+        markLastRefresh(elements.engagementsAccessRequestsStatus);
+        elements.engagementsAccessRequestsStatus.textContent = `${engagementAccessRequests.length} demande${engagementAccessRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.engagementsAccessRequestsStatus)}`;
         elements.engagementsAccessRequestsStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -5791,19 +6633,6 @@
     }
   }
 
-  function accessRequestPayloadFromForm() {
-    return {
-      firstName: String(elements.accessRequestFirstName?.value || "").trim(),
-      lastName: String(elements.accessRequestLastName?.value || "").trim(),
-      email: String(elements.accessRequestEmail?.value || "").trim(),
-      licenseNumber: String(elements.accessRequestLicenseNumber?.value || "").trim(),
-      regionId: elements.accessRequestRegionId?.value || "",
-      clubId: elements.accessRequestClubId?.value || "",
-      clubName: elements.accessRequestClubName?.value || "",
-      message: String(elements.accessRequestText?.value || "").trim()
-    };
-  }
-
   function publicAccessRequestPayloadFromForm() {
     return {
       firstName: String(elements.publicAccessRequestFirstName?.value || "").trim(),
@@ -5816,25 +6645,6 @@
       message: String(elements.publicAccessRequestText?.value || "").trim(),
       website: String(elements.publicAccessRequestWebsite?.value || "").trim()
     };
-  }
-
-  async function submitEngagementAccessRequest(event) {
-    event?.preventDefault?.();
-    const button = elements.accessRequestForm?.querySelector("button[type='submit']");
-    if (button) button.disabled = true;
-    setAccessRequestMessage("Envoi de la demande...", "loading");
-    try {
-      await callFunction("submitEngagementAccessRequest", accessRequestPayloadFromForm());
-      elements.accessRequestForm?.reset();
-      if (elements.accessRequestEmail) elements.accessRequestEmail.value = ensureAdminAuth()?.status?.().email || "";
-      populateAccessRequestClubSelect();
-      engagementAccessRequestsLoaded = false;
-      setAccessRequestMessage("Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.", "ok");
-    } catch (error) {
-      setAccessRequestMessage(`Demande impossible : ${error?.message || error}`);
-    } finally {
-      if (button) button.disabled = false;
-    }
   }
 
   async function submitPublicEngagementAccessRequest(event) {
@@ -5865,14 +6675,23 @@
       elements.engagementsDeletionRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande de suppression en attente.</p>';
       return;
     }
-    elements.engagementsDeletionRequestsList.innerHTML = engagementDeletionRequests.map((request) => `
-      <article class="admin-engagements-request-card" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || "")}">
+    elements.engagementsDeletionRequestsList.innerHTML = engagementDeletionRequests.map((request) => {
+      const swimmerRequest = request.requestType === "swimmer";
+      const usageDetails = swimmerRequest ? [
+        request.performanceMatchCount ? `${request.performanceMatchCount} correspondance${request.performanceMatchCount > 1 ? "s" : ""} dans les performances` : "",
+        request.entryUsageCount ? `${request.entryUsageCount} inscription${request.entryUsageCount > 1 ? "s" : ""}` : "",
+        request.entryScanTruncated ? "contrôle historique à compléter" : ""
+      ].filter(Boolean).join(" - ") : "";
+      return `
+      <article class="admin-engagements-request-card" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || request.swimmerId || "")}" data-request-type="${swimmerRequest ? "swimmer" : "competition"}">
         <div class="admin-engagements-request-main">
-          <strong>${escapeHtml(request.competitionName || "Competition sans nom")}</strong>
+          <strong>${escapeHtml(swimmerRequest ? request.swimmerName || "Nageur sans nom" : request.competitionName || "Competition sans nom")}</strong>
           <small>${escapeHtml([
-            request.competitionDate ? formatShortDate(request.competitionDate) : "",
-            engagementLevelLabel(request.competitionLevel),
-            request.regionId ? regionDisplayLabel(request.regionId) : ""
+            swimmerRequest ? "Nageur désactivé" : request.competitionDate ? formatShortDate(request.competitionDate) : "",
+            swimmerRequest ? request.birthDate ? formatShortDate(request.birthDate) : "" : engagementLevelLabel(request.competitionLevel),
+            swimmerRequest ? request.licenseNumber ? `Licence ${request.licenseNumber}` : "" : request.regionId ? regionDisplayLabel(request.regionId) : "",
+            swimmerRequest ? [request.clubId ? `Club ${request.clubId}` : "", request.clubName || ""].filter(Boolean).join(" - ") : "",
+            usageDetails
           ].filter(Boolean).join(" - "))}</small>
         </div>
         <div class="admin-engagements-request-meta">
@@ -5880,12 +6699,13 @@
           <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
         </div>
         <div class="admin-engagements-request-actions">
-          <button class="ghost-button" type="button" data-engagement-deletion-action="view" data-engagement-competition-id="${escapeHtml(request.competitionId || "")}">Voir</button>
-          <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-deletion-action="approve" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || "")}">Approuver</button>
-          <button class="ghost-button" type="button" data-engagement-deletion-action="reject" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || "")}">Refuser</button>
+          ${swimmerRequest ? "" : `<button class="ghost-button" type="button" data-engagement-deletion-action="view" data-engagement-competition-id="${escapeHtml(request.competitionId || "")}">Voir</button>`}
+          <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-deletion-action="approve" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || request.swimmerId || "")}" data-engagement-deletion-request-type="${swimmerRequest ? "swimmer" : "competition"}">${swimmerRequest ? "Confirmer le retrait" : "Approuver"}</button>
+          <button class="ghost-button" type="button" data-engagement-deletion-action="reject" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || request.swimmerId || "")}" data-engagement-deletion-request-type="${swimmerRequest ? "swimmer" : "competition"}">${swimmerRequest ? "Réactiver" : "Refuser"}</button>
         </div>
       </article>
-    `).join("");
+    `;
+    }).join("");
   }
 
   async function loadEngagementDeletionRequests({ force = false, silent = false } = {}) {
@@ -5898,13 +6718,20 @@
       elements.engagementsDeletionRequestsStatus.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("listEngagementCompetitionDeletionRequests", { status: "pending", limit: 50 });
-      engagementDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
+      const [competitionResult, swimmerResult] = await Promise.all([
+        callFunction("listEngagementCompetitionDeletionRequests", { status: "pending", limit: 50 }),
+        callFunction("listEngagementSwimmerDeletionRequests", { status: "pending", limit: 50 })
+      ]);
+      engagementDeletionRequests = [
+        ...(Array.isArray(competitionResult.requests) ? competitionResult.requests.map((request) => ({ ...request, requestType: "competition" })) : []),
+        ...(Array.isArray(swimmerResult.requests) ? swimmerResult.requests : [])
+      ].sort((left, right) => String(right.requestedAt || "").localeCompare(String(left.requestedAt || "")));
       engagementDeletionRequestsLoaded = true;
       updateEngagementDeletionRequestBadge(engagementDeletionRequests.length);
       renderEngagementDeletionRequests();
       if (elements.engagementsDeletionRequestsStatus && !silent) {
-        elements.engagementsDeletionRequestsStatus.textContent = `${engagementDeletionRequests.length} demande${engagementDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+        markLastRefresh(elements.engagementsDeletionRequestsStatus);
+        elements.engagementsDeletionRequestsStatus.textContent = `${engagementDeletionRequests.length} demande${engagementDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.engagementsDeletionRequestsStatus)}`;
         elements.engagementsDeletionRequestsStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -5925,27 +6752,34 @@
     elements.engagementsDeletionRequestsBadge.textContent = String(Math.min(99, Math.max(0, Number(count) || 0)));
   }
 
-  async function resolveEngagementDeletionRequest(requestId, decision) {
+  async function resolveEngagementDeletionRequest(requestId, decision, requestType = "competition") {
     const cleanId = String(requestId || "").trim();
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const approve = decision === "approved";
-    const message = approve
-      ? "Approuver cette demande et supprimer definitivement la competition ?"
-      : "Refuser cette demande de suppression ?";
+    const swimmerRequest = requestType === "swimmer";
+    const message = swimmerRequest
+      ? approve
+        ? "Confirmer le retrait de ce nageur ? Sa fiche restera archivée et désactivée pour préserver l'historique."
+        : "Refuser cette demande et réactiver le nageur dans l'effectif de son club ?"
+      : approve
+        ? "Approuver cette demande et supprimer definitivement la competition ?"
+        : "Refuser cette demande de suppression ?";
     if (!global.confirm(message)) return;
     if (elements.engagementsDeletionRequestsStatus) {
-      elements.engagementsDeletionRequestsStatus.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
+      elements.engagementsDeletionRequestsStatus.textContent = swimmerRequest
+        ? approve ? "Confirmation du retrait..." : "Réactivation en cours..."
+        : approve ? "Suppression en cours..." : "Refus en cours...";
       elements.engagementsDeletionRequestsStatus.dataset.tone = "loading";
     }
     try {
-      await callFunction("resolveEngagementCompetitionDeletionRequest", {
+      await callFunction(swimmerRequest ? "resolveEngagementSwimmerDeletionRequest" : "resolveEngagementCompetitionDeletionRequest", {
         requestId: cleanId,
         decision: approve ? "approved" : "rejected"
       });
       engagementDeletionRequestsLoaded = false;
       engagementCompetitionsLoaded = false;
       await loadEngagementDeletionRequests({ force: true });
-      if (approve) {
+      if (approve && !swimmerRequest) {
         closeEngagementCompetitionDetail();
         await loadEngagementCompetitions({ force: true });
       }
@@ -5980,7 +6814,7 @@
     const rows = swimmers.map((swimmer) => {
       const active = swimmer.active !== false;
       const merged = swimmer.status === "merged" || Boolean(swimmer.mergedIntoId);
-      const name = [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || swimmer.name || "Nageur sans nom";
+      const name = engagementSwimmerDisplayName(swimmer, "Nageur sans nom");
       const statusLabel = merged
         ? `Fusionne vers ${swimmer.mergedIntoName || swimmer.mergedIntoId || "une autre fiche"}`
         : active ? "Actif" : "Desactive";
@@ -6180,7 +7014,7 @@
     const cleanId = String(swimmerId || "").trim();
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const swimmer = engagementNationalSwimmers.find((item) => item.id === cleanId || item.swimmerIndexId === cleanId) || {};
-    const name = [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || swimmer.name || "ce nageur";
+    const name = engagementSwimmerDisplayName(swimmer, "ce nageur");
     const message = active
       ? `Reactiver ${name} ? Il redeviendra utilisable par son club.`
       : `Desactiver ${name} ? Il ne sera plus proposable dans les engagements du club.`;
@@ -6209,7 +7043,7 @@
     const cleanId = String(swimmerId || "").trim();
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const swimmer = engagementNationalSwimmers.find((item) => item.id === cleanId || item.swimmerIndexId === cleanId) || {};
-    const name = [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || swimmer.name || "ce nageur";
+    const name = engagementSwimmerDisplayName(swimmer, "ce nageur");
     if (!global.confirm(`Supprimer definitivement ${name} de la base des nageurs crees par les clubs ? Cette action est irreversible.`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = "Suppression definitive en cours...";
@@ -6493,14 +7327,14 @@
     if (!elements.engagementsNationalPeopleStatus) return;
     const total = engagementNationalPeople.length;
     if (!total) {
-      elements.engagementsNationalPeopleStatus.textContent = "Aucun officiel charge.";
+      elements.engagementsNationalPeopleStatus.textContent = `Aucun officiel charge.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`;
       elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
       return;
     }
     const filtered = Math.max(0, Math.min(total, Number(filteredCount) || 0));
     elements.engagementsNationalPeopleStatus.textContent = filtered === total
-      ? `${total} personne${total > 1 ? "s" : ""} chargee${total > 1 ? "s" : ""}.`
-      : `${filtered} personne${filtered > 1 ? "s" : ""} affichee${filtered > 1 ? "s" : ""} sur ${total} chargee${total > 1 ? "s" : ""}.`;
+      ? `${total} personne${total > 1 ? "s" : ""} chargee${total > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`
+      : `${filtered} personne${filtered > 1 ? "s" : ""} affichee${filtered > 1 ? "s" : ""} sur ${total} chargee${total > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`;
     elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
   }
 
@@ -6603,6 +7437,7 @@
       const result = await callFunction("listEngagementNationalClubPeople", { limit: 120 });
       engagementNationalPeople = Array.isArray(result.people) ? result.people : [];
       engagementNationalPeopleLoaded = true;
+      markLastRefresh(elements.engagementsNationalPeopleStatus);
       renderEngagementNationalPeople();
       if (elements.engagementsNationalPeopleStatus && !silent) {
         updateEngagementNationalPeopleStatus(filteredEngagementNationalPeople().length);
@@ -6848,7 +7683,8 @@
       engagementNationalAuditLogsLoaded = true;
       renderEngagementNationalAuditLogs();
       if (elements.engagementsNationalAuditStatus && !silent) {
-        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} affichee${engagementNationalAuditLogs.length > 1 ? "s" : ""}.`;
+        markLastRefresh(elements.engagementsNationalAuditStatus);
+        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} affichee${engagementNationalAuditLogs.length > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalAuditStatus)}`;
         elements.engagementsNationalAuditStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -6927,7 +7763,12 @@
 
   async function loadEngagementClubPeople({ force = false, silent = false } = {}) {
     if (!canUse("engagements.club.manage") || engagementClubPeopleLoading) return;
-    if (engagementClubPeopleLoaded && !force) return;
+    if (engagementClubPeopleLoaded && !force) {
+      if (activeEngagementsTab === "clubPeople") renderEngagementClubPeople();
+      renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
+      if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
+      return;
+    }
     engagementClubPeopleLoading = true;
     if (elements.engagementsClubPeopleRefresh) elements.engagementsClubPeopleRefresh.disabled = true;
     if (elements.engagementsClubPeopleStatus && !silent) {
@@ -6938,12 +7779,13 @@
       const result = await callFunction("listEngagementClubPeople", { includeInactive: true });
       engagementClubPeople = Array.isArray(result.people) ? result.people : [];
       engagementClubPeopleLoaded = true;
-      renderEngagementClubPeople();
+      if (activeEngagementsTab === "clubPeople") renderEngagementClubPeople();
       renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
-      renderEngagementClubOfficials();
+      if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
       if (elements.engagementsClubPeopleStatus && !silent) {
         const activeCount = engagementClubPeople.filter((person) => person.active).length;
-        elements.engagementsClubPeopleStatus.textContent = `${activeCount} personne${activeCount > 1 ? "s" : ""} active${activeCount > 1 ? "s" : ""}.`;
+        markLastRefresh(elements.engagementsClubPeopleStatus);
+        elements.engagementsClubPeopleStatus.textContent = `${activeCount} personne${activeCount > 1 ? "s" : ""} active${activeCount > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsClubPeopleStatus)}`;
         elements.engagementsClubPeopleStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -7035,9 +7877,10 @@
       engagementCompetitionsLoaded = true;
       renderEngagementCompetitions();
       if (elements.engagementsStatus) {
-        elements.engagementsStatus.textContent = "";
-        elements.engagementsStatus.dataset.tone = "ok";
-        elements.engagementsStatus.hidden = true;
+        markLastRefresh(elements.engagementsStatus);
+        elements.engagementsStatus.textContent = lastRefreshSuffix(elements.engagementsStatus).trim();
+        elements.engagementsStatus.dataset.tone = "neutral";
+        elements.engagementsStatus.hidden = false;
       }
     } catch (error) {
       if (elements.engagementsStatus) {
@@ -7071,6 +7914,7 @@
       entryStatus: fields.entryStatus?.value || "upcoming",
       officialsRequired: fields.officialsRequired?.checked === true,
       poolLength: fields.poolLength?.value || "50",
+      poolLaneCount: Math.trunc(Number(fields.poolLaneCount?.value) || 0),
       timingType: fields.timingType?.value || "electronic",
       qualificationTimesMode,
       qualificationStartDate: qualificationTimesMode === "period" ? fields.qualificationStart?.value || "" : "",
@@ -7092,6 +7936,7 @@
       deadline: elements.engagementsDeadline,
       computerEmail: elements.engagementsComputerEmail,
       poolLength: elements.engagementsPoolLength,
+      poolLaneCount: elements.engagementsPoolLaneCount,
       timingType: elements.engagementsTimingType,
       qualificationMode: elements.engagementsQualificationMode,
       qualificationStart: elements.engagementsQualificationStart,
@@ -7115,6 +7960,7 @@
       deadline: elements.engagementsEditDeadline,
       computerEmail: elements.engagementsEditComputerEmail,
       poolLength: elements.engagementsEditPoolLength,
+      poolLaneCount: elements.engagementsEditPoolLaneCount,
       timingType: elements.engagementsEditTimingType,
       qualificationMode: elements.engagementsEditQualificationMode,
       qualificationStart: elements.engagementsEditQualificationStart,
@@ -7154,6 +8000,15 @@
       "Ouvrir les engagements et envoyer le mail d'ouverture ?",
       engagementOpeningMailScopeLabel(payload),
       "Les mails seront prepares pour ce cycle d'ouverture puis envoyes aux destinataires concernes."
+    ].join("\n\n"));
+  }
+
+  function confirmEngagementReopeningMail(payload = {}) {
+    return global.confirm([
+      "La compétition va être réouverte.",
+      "Souhaitez-vous renvoyer le mail d'ouverture aux clubs ?",
+      engagementOpeningMailScopeLabel(payload),
+      "OK : réouvrir et renvoyer le mail.\nAnnuler : réouvrir sans renvoyer de mail."
     ].join("\n\n"));
   }
 
@@ -7261,8 +8116,11 @@
         competitionId: selectedEngagementCompetition.id,
         ...engagementCompetitionPayloadFromEditForm()
       };
-      const sendOpeningMail = shouldSendEngagementOpeningMail(selectedEngagementCompetition.entryStatus || "upcoming", payload.entryStatus);
-      if (sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
+      const previousStatus = selectedEngagementCompetition.entryStatus || "upcoming";
+      const reopening = previousStatus === "closed" && payload.entryStatus === "open";
+      let sendOpeningMail = shouldSendEngagementOpeningMail(previousStatus, payload.entryStatus);
+      if (reopening) sendOpeningMail = confirmEngagementReopeningMail(payload);
+      if (!reopening && sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
         if (elements.engagementsDetailStatus) {
           elements.engagementsDetailStatus.textContent = "Ouverture annulee.";
           elements.engagementsDetailStatus.dataset.tone = "loading";
@@ -7287,7 +8145,9 @@
       }
       if (elements.engagementsDetailStatus) {
         if (!sendOpeningMail) {
-          elements.engagementsDetailStatus.textContent = "Parametres enregistres.";
+          elements.engagementsDetailStatus.textContent = reopening
+            ? "Competition reouverte sans renvoi du mail d'ouverture."
+            : "Parametres enregistres.";
           elements.engagementsDetailStatus.dataset.tone = "ok";
         }
       }
@@ -7342,8 +8202,11 @@
         programSessions: selectedEngagementProgramSessionsFromForm(),
         fees: selectedEngagementFeesFromForm()
       };
-      const sendOpeningMail = shouldSendEngagementOpeningMail(selectedEngagementCompetition.entryStatus || "upcoming", payload.entryStatus);
-      if (sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
+      const previousStatus = selectedEngagementCompetition.entryStatus || "upcoming";
+      const reopening = previousStatus === "closed" && payload.entryStatus === "open";
+      let sendOpeningMail = shouldSendEngagementOpeningMail(previousStatus, payload.entryStatus);
+      if (reopening) sendOpeningMail = confirmEngagementReopeningMail(payload);
+      if (!reopening && sendOpeningMail && !confirmEngagementOpeningMail(payload)) {
         if (elements.engagementsDetailStatus) {
           elements.engagementsDetailStatus.textContent = "Ouverture annulee.";
           elements.engagementsDetailStatus.dataset.tone = "loading";
@@ -7376,7 +8239,9 @@
       }
       if (elements.engagementsDetailStatus) {
         if (!sendOpeningMail) {
-          elements.engagementsDetailStatus.textContent = "Fiche competition enregistree.";
+          elements.engagementsDetailStatus.textContent = reopening
+            ? "Competition reouverte sans renvoi du mail d'ouverture."
+            : "Fiche competition enregistree.";
           elements.engagementsDetailStatus.dataset.tone = "ok";
         }
       }
@@ -7405,6 +8270,7 @@
       entryStatus: selectedEngagementCompetition.entryStatus || "upcoming",
       officialsRequired: selectedEngagementCompetition.officialsRequired === true,
       poolLength: selectedEngagementCompetition.poolLength || "50",
+      poolLaneCount: selectedEngagementCompetition.poolLaneCount || 0,
       timingType: selectedEngagementCompetition.timingType || "electronic",
       qualificationTimesMode: selectedEngagementCompetition.qualificationTimesMode || "all",
       qualificationStartDate: selectedEngagementCompetition.qualificationStartDate || "",
@@ -7549,11 +8415,15 @@
     document.body.dataset.adminAuth = signedIn ? "unlocked" : "locked";
     if (elements.dashboard) elements.dashboard.hidden = !signedIn;
     if (elements.accountControl) elements.accountControl.hidden = !signedIn;
+    if (elements.navToggle) elements.navToggle.hidden = !signedIn;
     if (elements.sessionLabel) elements.sessionLabel.textContent = "Profil LivePalmes";
     if (signedIn) {
       updateCapabilityView();
       if (status.profile) renderCurrentUser(status.profile);
       else loadCurrentUser();
+    } else {
+      applyPortalHomeForProfile();
+      setMobilePortalNavigationOpen(false);
     }
     if (!status.available) {
       setMessage("Firebase Authentication n'est pas disponible.");
@@ -7743,8 +8613,8 @@
     if (!mount) return;
     if (elements.accessCount) {
       elements.accessCount.textContent = accessUsers.length
-        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} sur cette page${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}`
-        : "Aucun compte trouvé";
+        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} sur cette page${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}.${lastRefreshSuffix(elements.accessCount)}`
+        : `Aucun compte trouvé.${lastRefreshSuffix(elements.accessCount)}`;
     }
     if (!accessUsers.length) {
       mount.innerHTML = `<p class="admin-access-empty">Aucun compte ne correspond à cette recherche.</p>`;
@@ -7900,6 +8770,7 @@
         accessNextCursor = offset + 25 < filteredUsers.length ? { offset: offset + 25 } : null;
         accessDirectoryTruncated = false;
       }
+      markLastRefresh(elements.accessCount);
       renderAccessUsers();
     } catch (error) {
       if (loadSequence !== accessLoadSequence) return;
@@ -7952,9 +8823,9 @@
     if (!accessDeletionRequests.length) {
       if (elements.accessDeletionRequestsList) elements.accessDeletionRequestsList.innerHTML = `<p class="admin-access-empty">Aucune demande de suppression en attente.</p>`;
       if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = `<p class="admin-engagements-empty">Aucune demande de suppression de compte en attente.</p>`;
-      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = "Aucune demande en attente.";
+      if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = `Aucune demande en attente.${lastRefreshSuffix(elements.accessDeletionRequestsStatus)}`;
       if (elements.engagementsNationalAccountsStatus) {
-        elements.engagementsNationalAccountsStatus.textContent = "Aucune demande en attente.";
+        elements.engagementsNationalAccountsStatus.textContent = `Aucune demande en attente.${lastRefreshSuffix(elements.engagementsNationalAccountsStatus)}`;
         elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
       }
       return;
@@ -7984,10 +8855,10 @@
     if (elements.accessDeletionRequestsList) elements.accessDeletionRequestsList.innerHTML = html;
     if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = html;
     if (elements.accessDeletionRequestsStatus) {
-      elements.accessDeletionRequestsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+      elements.accessDeletionRequestsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.accessDeletionRequestsStatus)}`;
     }
     if (elements.engagementsNationalAccountsStatus) {
-      elements.engagementsNationalAccountsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
+      elements.engagementsNationalAccountsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.engagementsNationalAccountsStatus)}`;
       elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
     }
   }
@@ -8008,6 +8879,8 @@
       const result = await callFunction("listAccessUserDeletionRequests", {});
       accessDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
       accessDeletionRequestsLoaded = true;
+      markLastRefresh(elements.accessDeletionRequestsStatus);
+      markLastRefresh(elements.engagementsNationalAccountsStatus);
       renderAccessDeletionRequests();
       if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.dataset.tone = "ok";
     } catch (error) {
@@ -8107,6 +8980,9 @@
 
     function init() {
     initializePortalNavigationLabels();
+    if (!engagementDeadlineCountdownTimer) {
+      engagementDeadlineCountdownTimer = global.setInterval(refreshEngagementDeadlineCountdowns, 60000);
+    }
     restorePortalNavigationPinned();
     populateLivePalmesRegionSelects();
     populateAccessClubSelect();
@@ -8115,6 +8991,7 @@
     const auth = ensureAdminAuth();
     updateView(auth?.status?.() || {});
     elements.form?.addEventListener("submit", signIn);
+    elements.passwordToggle?.addEventListener("click", toggleLoginPasswordVisibility);
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
     elements.publicAccessRequestRegionId?.addEventListener("change", () => populatePublicAccessRequestClubSelect());
@@ -8132,7 +9009,19 @@
       elements.engagementsStatusFilter,
       elements.engagementsMineFilter
     ].forEach((filter) => {
-      filter?.addEventListener("change", () => loadEngagementCompetitions({ force: true }));
+      filter?.addEventListener("change", () => {
+        engagementCompetitionsVisibleLimit = 24;
+        syncEngagementStatusSegments();
+        loadEngagementCompetitions({ force: true });
+      });
+    });
+    elements.engagementsStatusSegmentButtons?.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = button.dataset.engagementStatus || "";
+        engagementCompetitionsVisibleLimit = 24;
+        syncEngagementStatusSegments();
+        loadEngagementCompetitions({ force: true });
+      });
     });
     elements.engagementsFiltersReset?.addEventListener("click", () => {
       resetEngagementCalendarFilters();
@@ -8156,9 +9045,19 @@
       button.addEventListener("click", () => requestEngagementDetailTab(button.dataset.engagementsDetailTabButton));
     });
     elements.engagementsCalendarList?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-engagement-filters-reset]")) {
+        resetEngagementCalendarFilters();
+        loadEngagementCompetitions({ force: true });
+        return;
+      }
+      if (event.target.closest("[data-engagement-show-more]")) {
+        engagementCompetitionsVisibleLimit += 24;
+        renderEngagementCompetitions();
+        return;
+      }
       const button = event.target.closest("[data-engagement-competition-id]");
       if (!button) return;
-      loadEngagementCompetitionDetail(button.dataset.engagementCompetitionId);
+      loadEngagementCompetitionDetail(button.dataset.engagementCompetitionId, button.dataset.engagementOpenTab || "general");
     });
     elements.engagementsDeletionRequestsList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-deletion-action]");
@@ -8166,12 +9065,16 @@
       const action = button.dataset.engagementDeletionAction;
       if (action === "view") {
         setEngagementsTab("calendar");
+        global.location.hash = "#competitions-calendrier";
         loadEngagementCompetitionDetail(button.dataset.engagementCompetitionId);
-        updateNavigationView();
         return;
       }
       const decision = action === "approve" ? "approved" : action === "reject" ? "rejected" : "";
-      if (decision) resolveEngagementDeletionRequest(button.dataset.engagementDeletionRequestId, decision);
+      if (decision) resolveEngagementDeletionRequest(
+        button.dataset.engagementDeletionRequestId,
+        decision,
+        button.dataset.engagementDeletionRequestType || "competition"
+      );
     });
     elements.engagementsAccessRequestsList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-access-request-action]");
@@ -8192,7 +9095,12 @@
     elements.engagementsAccessRequestEditRegionId?.addEventListener("change", () => populateEngagementAccessRequestEditClubSelect());
     elements.engagementsAccessRequestEditClubSelect?.addEventListener("change", syncEngagementAccessRequestEditClubFieldsFromSelect);
     elements.engagementsNationalTabButtons?.forEach((button) => {
-      button.addEventListener("click", () => setEngagementNationalTab(button.dataset.engagementsNationalTabButton));
+      button.addEventListener("click", () => {
+        const tab = button.dataset.engagementsNationalTabButton;
+        setEngagementNationalTab(tab);
+        const hash = ENGAGEMENT_NATIONAL_HASH_BY_TAB[tab];
+        if (hash && global.location.hash !== hash) global.location.hash = hash;
+      });
     });
     elements.engagementsNationalAccountsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
     elements.engagementsNationalAccountsList?.addEventListener("click", (event) => {
@@ -8304,9 +9212,26 @@
     elements.engagementsNationalPeopleReset?.addEventListener("click", resetEngagementNationalPeopleFilters);
     elements.engagementsNationalPeopleBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalPeople);
     elements.engagementsClubPeopleRefresh?.addEventListener("click", () => loadEngagementClubPeople({ force: true }));
-    elements.engagementsClubSwimmersDirectoryRefresh?.addEventListener("click", () => loadEngagementClubSwimmers({ force: true }));
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
+    elements.engagementsClubSwimmersMissingLicenseFilter?.addEventListener("change", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectoryList?.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest("[data-engagement-club-swimmer-delete]");
+      if (deleteButton) {
+        requestEngagementClubSwimmerDeletion(
+          deleteButton.dataset.engagementClubSwimmerDelete || "",
+          deleteButton.dataset.engagementClubSwimmerDeleteName || "ce nageur"
+        );
+        return;
+      }
+      const profileButton = event.target.closest("[data-engagement-club-swimmer-public-profile]");
+      if (profileButton) {
+        const name = profileButton.dataset.engagementClubSwimmerPublicName || "ce nageur";
+        const profileUrl = profileButton.dataset.engagementClubSwimmerPublicProfile || "";
+        if (profileUrl && global.confirm(`Ouvrir la fiche publique de ${name} dans un nouvel onglet ?`)) {
+          global.open(profileUrl, "_blank", "noopener,noreferrer");
+        }
+        return;
+      }
       const button = event.target.closest("[data-engagement-club-swimmer-directory-toggle]");
       if (!button) return;
       const row = button.closest(".admin-engagements-club-swimmers-directory-row");
@@ -8358,6 +9283,10 @@
     elements.engagementsEditForm?.addEventListener("input", () => markEngagementDetailTabDirty("general"));
     elements.engagementsEditForm?.addEventListener("change", () => markEngagementDetailTabDirty("general"));
     elements.engagementsEventsForm?.addEventListener("submit", saveEngagementCompetitionDetail);
+    elements.engagementsEventsForm?.addEventListener("change", (event) => {
+      const control = event.target.closest?.("[data-engagement-category-column]");
+      if (control) applyEngagementCategoryColumnControl(control);
+    });
     elements.engagementsEventsForm?.addEventListener("input", updateEngagementEventsSummaryFromForm);
     elements.engagementsEventsForm?.addEventListener("change", updateEngagementEventsSummaryFromForm);
     elements.engagementsProgramAddSession?.addEventListener("click", addEngagementProgramSession);
@@ -8390,16 +9319,49 @@
     elements.engagementsDeadline?.addEventListener("change", () => normalizeEngagementDeadlineField(elements.engagementsDeadline));
     elements.engagementsEditDeadline?.addEventListener("change", () => normalizeEngagementDeadlineField(elements.engagementsEditDeadline));
     elements.engagementsFeesForm?.addEventListener("submit", saveEngagementCompetitionDetail);
+    elements.engagementsNoFees?.addEventListener("change", () => {
+      updateEngagementFeesFormMode(isEngagementAdminMode() && engagementDetailEditing && canEditEngagementCompetition());
+    });
     elements.engagementsFeesForm?.addEventListener("input", () => markEngagementDetailTabDirty("fees"));
     elements.engagementsFeesForm?.addEventListener("change", () => markEngagementDetailTabDirty("fees"));
     elements.engagementsClubTeamForm?.addEventListener("submit", saveEngagementClubTeamLeader);
-    elements.engagementsClubTeamForm?.addEventListener("change", () => {
+    elements.engagementsClubTeamForm?.addEventListener("change", async (event) => {
+      const changedMode = event.target?.matches?.('input[name="adminEngagementsClubTeamMode"]')
+        ? event.target.value
+        : "";
+      if (changedMode === "renounced") {
+        const confirmed = global.confirm(
+          "En choisissant « Ne pas déclarer de chef d’équipe », votre club renonce au droit de réclamation pour cette compétition. Confirmer cette renonciation ?"
+        );
+        if (!confirmed) {
+          const personRadio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
+          if (personRadio) personRadio.checked = true;
+          if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = false;
+          updateEngagementClubTeamFormMode();
+          return;
+        }
+        if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = true;
+        updateEngagementClubTeamFormMode();
+        const saved = await saveEngagementClubTeamLeader();
+        if (!saved) {
+          const personRadio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
+          if (personRadio) personRadio.checked = true;
+          if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = false;
+          updateEngagementClubTeamFormMode();
+        }
+        return;
+      }
+      if (changedMode === "person" && elements.engagementsClubTeamRenunciation) {
+        elements.engagementsClubTeamRenunciation.checked = false;
+      }
       updateEngagementClubTeamFormMode();
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
     });
     elements.engagementsClubTeamPersonSelect?.addEventListener("change", () => {
       const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
       if (radio) radio.checked = true;
+      if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = false;
+      updateEngagementClubTeamFormMode();
       applyEngagementClubTeamPerson(elements.engagementsClubTeamPersonSelect.value);
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
     });
@@ -8441,33 +9403,74 @@
       const firstEvent = relayEvents[0];
       if (!firstEvent) return;
       engagementClubRelaysDraft = selectedEngagementClubRelayRowsFromDom();
-      const firstCategory = engagementRelayCategoryOptions(firstEvent)[0]?.[0] || "";
       engagementClubRelaysDraft.push({
         relayId: `relay-${Date.now()}`,
         eventCode: firstEvent.code,
-        category: firstCategory,
-        genderMode: engagementRelayGenderOptions(firstEvent, firstCategory)[0]?.[0] || "female",
+        category: "",
+        genderMode: "",
         manualEntryTime: "",
         memberIds: []
       });
       renderEngagementClubRelays();
       if (elements.engagementsClubRelaysMessage) elements.engagementsClubRelaysMessage.textContent = "";
     });
-    elements.engagementsClubSwimmersSearch?.addEventListener("input", renderEngagementClubSwimmers);
+    elements.engagementsClubSwimmersSearch?.addEventListener("input", () => {
+      renderEngagementClubSwimmers();
+    });
+    elements.engagementsClubNewSwimmerLicense?.addEventListener("input", (event) => {
+      event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
+    });
+    elements.engagementsClubNewSwimmerLastName?.addEventListener("input", (event) => {
+      event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
+    });
+    elements.engagementsClubNewSwimmerResetButton?.addEventListener("click", resetEngagementClubNewSwimmerFormFromButton);
     elements.engagementsClubNewSwimmerSaveButton?.addEventListener("click", createEngagementClubSwimmer);
-    elements.engagementsClubSwimmersList?.addEventListener("change", (event) => {
+    elements.engagementsClubSwimmersForm?.addEventListener("change", (event) => {
       const row = event.target.closest("[data-engagement-club-swimmer-row]");
+      if (!row) return;
       const checkbox = row?.querySelector("[data-engagement-club-swimmer-id]");
       const license = row?.querySelector("[data-engagement-club-swimmer-license]");
       const selectionChanged = event.target.matches("[data-engagement-club-swimmer-id]");
-      if (row && checkbox && license) {
+      let removalMessage = "";
+      if (selectionChanged && checkbox && !checkbox.checked) {
+        const swimmerIndexId = checkbox.dataset.engagementClubSwimmerId || "";
+        const savedSwimmer = (selectedEngagementClubEntry?.swimmers || [])
+          .find((swimmer) => swimmer.swimmerIndexId === swimmerIndexId) || {};
+        const currentEntries = selectedEngagementClubEntryRowsBySwimmerId().get(swimmerIndexId) || savedSwimmer.individualEntries || [];
+        if (currentEntries.length) {
+          const swimmerName = checkbox.dataset.engagementClubSwimmerName || "ce nageur";
+          const confirmed = global.confirm(
+            `Retirer ${swimmerName} supprimera aussi ${currentEntries.length} engagement${currentEntries.length > 1 ? "s" : ""} sur les courses individuelles. Confirmer cette suppression ?`
+          );
+          if (!confirmed) {
+            checkbox.checked = true;
+            if (row) row.dataset.selected = "true";
+            return;
+          }
+          removalMessage = `${currentEntries.length} engagement${currentEntries.length > 1 ? "s" : ""} seront supprimés à l'enregistrement.`;
+        }
+      }
+      if (event.target.matches("input[data-engagement-club-swimmer-license]")) {
+        event.target.value = String(event.target.value || "").trim().toUpperCase();
+      }
+      if (row && checkbox) {
         row.dataset.selected = checkbox.checked ? "true" : "false";
-        license.required = checkbox.checked && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !license.readOnly;
+        if (license?.matches("input")) {
+          license.required = checkbox.checked && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE;
+        }
       }
       if (selectionChanged) {
+        const swimmers = selectedEngagementClubSwimmerRows();
+        selectedEngagementClubEntry = {
+          ...(selectedEngagementClubEntry || {}),
+          swimmers
+        };
         renderEngagementClubSwimmers();
+        renderEngagementClubEntries();
+        renderEngagementClubRelays();
         if (elements.engagementsClubSwimmersMessage) {
-          elements.engagementsClubSwimmersMessage.textContent = "";
+          elements.engagementsClubSwimmersMessage.textContent = removalMessage;
+          elements.engagementsClubSwimmersMessage.dataset.tone = removalMessage ? "loading" : "";
         }
         return;
       }
@@ -8480,11 +9483,13 @@
     });
     elements.engagementsClubEntriesList?.addEventListener("change", (event) => {
       const row = event.target.closest("[data-engagement-club-entry-row]");
+      let courseSelectionChanged = event.target.matches("[data-engagement-club-swimmer-event]");
       if (event.target.matches("[data-engagement-club-swimmer-event]") && event.target.checked) {
         const maxEvents = Number(selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
         const checkedEvents = Array.from(row?.querySelectorAll("[data-engagement-club-swimmer-event]:checked") || []);
         if (maxEvents > 0 && checkedEvents.length > maxEvents) {
           event.target.checked = false;
+          courseSelectionChanged = false;
           if (elements.engagementsClubEntriesMessage) {
             elements.engagementsClubEntriesMessage.textContent = `Maximum ${maxEvents} course${maxEvents > 1 ? "s" : ""} individuelle${maxEvents > 1 ? "s" : ""} par nageur.`;
             elements.engagementsClubEntriesMessage.dataset.tone = "error";
@@ -8494,44 +9499,80 @@
       if (event.target.matches("[data-engagement-club-swimmer-event]")) {
         const eventCode = event.target.dataset.engagementClubSwimmerEvent || "";
         const choice = event.target.closest("[data-event-selected]");
+        const timeValue = choice?.querySelector("[data-engagement-club-entry-cell-time]");
         const timeInput = Array.from(row?.querySelectorAll("[data-engagement-club-swimmer-event-time]") || [])
           .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
-        const timeBlock = choice?.querySelector(".admin-engagements-club-entry-time");
-        const timeEditButton = choice?.querySelector("[data-engagement-club-time-edit]");
         const checked = event.target.checked;
-        if (choice) choice.dataset.eventSelected = checked ? "true" : "false";
-        if (timeBlock) timeBlock.hidden = !checked;
-        if (timeEditButton) {
-          timeEditButton.hidden = !checked;
-          timeEditButton.disabled = !checked;
+        if (timeValue) {
+          timeValue.hidden = !checked;
+          if (checked && !timeValue.textContent.trim()) {
+            timeValue.textContent = "Calcul...";
+            timeValue.dataset.entryTimeMode = "pending";
+          }
         }
-        if (timeInput) {
-          timeInput.hidden = true;
+        if (timeInput && !checked) {
+          timeInput.value = "";
           timeInput.disabled = true;
-          if (!checked) timeInput.value = "";
         }
+        updateEngagementClubEntryRowCount(row);
+        if (courseSelectionChanged && checked) {
+          const swimmerIndexId = row?.dataset.engagementClubEntrySwimmerId || "";
+          const swimmer = selectedEngagementClubSwimmerRows()
+            .find((item) => item.swimmerIndexId === swimmerIndexId);
+          if (swimmer) void ensureEngagementClubSwimmerEventTimes(swimmer);
+        }
+      }
+      if (courseSelectionChanged) {
+        markEngagementClubEntrySwimmerDirty(row?.dataset.engagementClubEntrySwimmerId || "");
       }
       updateEngagementClubEntriesSummary();
-      if (event.target.matches("[data-engagement-club-swimmer-event]") || event.target.matches("[data-engagement-club-swimmer-event-time]")) {
-        scheduleEngagementClubEntryTimesPreview();
-      }
       if (elements.engagementsClubEntriesMessage && !event.target.matches("[data-engagement-club-swimmer-event]")) {
         elements.engagementsClubEntriesMessage.textContent = "";
       }
     });
     elements.engagementsClubEntriesList?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-engagement-club-time-edit]");
+      const button = event.target.closest("[data-engagement-club-times-open]");
       if (!button) return;
-      const choice = button.closest("[data-event-selected]");
-      const eventCode = button.dataset.engagementClubTimeEdit || "";
-      const timeInput = Array.from(choice?.querySelectorAll("[data-engagement-club-swimmer-event-time]") || [])
-        .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
-      if (!timeInput) return;
-      if (!timeInput.value) timeInput.value = button.dataset.engagementClubTimeAuto || "";
-      timeInput.hidden = false;
-      timeInput.disabled = false;
-      timeInput.focus?.();
+      void openEngagementClubTimesDialog(button.dataset.engagementClubTimesOpen || "", button);
       if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
+    });
+    elements.engagementsClubTimesDialogList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-club-time-toggle]");
+      if (!button) return;
+      const row = button.closest("[data-engagement-club-time-dialog-row]");
+      const input = row?.querySelector("[data-engagement-club-time-dialog-input]");
+      const display = row?.querySelector("[data-engagement-club-time-dialog-display]");
+      if (!input) return;
+      if (input.disabled) {
+        input.value = button.dataset.automaticTime || "59:59.99";
+        input.hidden = false;
+        input.disabled = false;
+        button.textContent = "Rétablir auto";
+        input.focus?.();
+      } else {
+        input.value = "";
+        input.hidden = true;
+        input.disabled = true;
+        button.textContent = "Modifier";
+        if (display) {
+          display.textContent = display.dataset.automaticLabel || "59:59.99";
+          display.dataset.entryTimeMode = "known";
+        }
+      }
+      if (elements.engagementsClubTimesDialogMessage) {
+        elements.engagementsClubTimesDialogMessage.textContent = "";
+        elements.engagementsClubTimesDialogMessage.dataset.tone = "";
+      }
+    });
+    elements.engagementsClubTimesDialogApply?.addEventListener("click", applyEngagementClubTimesDialog);
+    elements.engagementsClubTimesDialogClose?.addEventListener("click", closeEngagementClubTimesDialog);
+    elements.engagementsClubTimesDialogCancel?.addEventListener("click", closeEngagementClubTimesDialog);
+    elements.engagementsClubTimesDialog?.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeEngagementClubTimesDialog();
+    });
+    elements.engagementsClubTimesDialog?.addEventListener("click", (event) => {
+      if (event.target === elements.engagementsClubTimesDialog) closeEngagementClubTimesDialog();
     });
     elements.engagementsClubRelaysList?.addEventListener("change", () => {
       engagementClubRelaysDraft = selectedEngagementClubRelayRowsFromDom();
@@ -8572,9 +9613,7 @@
       if (event.key === "Escape") closeAccountMenu();
     });
     elements.navToggle?.addEventListener("click", () => {
-      const open = elements.navToggle.getAttribute("aria-expanded") !== "true";
-      elements.navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-      elements.sidebar?.classList.toggle("is-open", open);
+      setMobilePortalNavigationOpen(elements.navToggle.getAttribute("aria-expanded") !== "true");
     });
     elements.navPin?.addEventListener("click", () => {
       setPortalNavigationPinned(elements.navPin.getAttribute("aria-pressed") !== "true");
@@ -8620,7 +9659,7 @@
       if (link.dataset.engagementsNationalTarget) {
         setEngagementNationalTab(link.dataset.engagementsNationalTarget);
       }
-      if (global.location.hash === "#engagements") updateNavigationView();
+      if (global.location.hash === link.hash) updateNavigationView();
     }));
     elements.navigation?.addEventListener("click", (event) => {
       const link = event.target.closest("a");
@@ -8653,15 +9692,20 @@
           closeEngagementCompetitionDetail();
           loadEngagementClubSwimmers();
         }
-        updateNavigationView();
+        if (global.location.hash === link.hash) updateNavigationView();
       }
       collapsePortalNavigationAfterSelection();
     });
     elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);
     elements.accountPasswordForm?.addEventListener("submit", updateAccountPassword);
-    elements.accessRequestForm?.addEventListener("submit", submitEngagementAccessRequest);
-    elements.accessRequestRegionId?.addEventListener("change", () => populateAccessRequestClubSelect());
-    elements.accessRequestClubSelect?.addEventListener("change", syncAccessRequestClubFieldsFromSelect);
+    [elements.accountEmailDetails, elements.accountPasswordDetails].forEach((details) => {
+      details?.querySelector(":scope > summary")?.addEventListener("click", () => {
+        if (details.open) return;
+        [elements.accountEmailDetails, elements.accountPasswordDetails].forEach((otherDetails) => {
+          if (otherDetails && otherDetails !== details) otherDetails.open = false;
+        });
+      });
+    });
     elements.accessForm?.addEventListener("submit", saveAccessUser);
     elements.accessRegionId?.addEventListener("change", () => populateAccessClubSelect());
     elements.accessClubSelect?.addEventListener("change", syncAccessClubFieldsFromSelect);

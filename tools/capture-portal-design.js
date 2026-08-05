@@ -10,11 +10,12 @@ const views = [
   { name: "login", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false },
   { name: "overview", hash: "accueil", selector: "#adminOverviewView", authenticated: true },
   { name: "overview-expanded", hash: "accueil", selector: "#adminOverviewView", authenticated: true, overviewSpace: "national" },
-  { name: "club-home", hash: "espace-club", selector: "#adminClubHomeView", authenticated: true, menu: "club" },
+  { name: "club-home", hash: "espace-club", selector: "#adminClubHomeView", authenticated: true, menu: "club", clubOnly: true },
+  { name: "account", hash: "mon-compte", selector: "#adminAccountView", authenticated: true },
   { name: "performance-home", hash: "gestion-performances", selector: "#adminPerformanceHomeView", authenticated: true, menu: "performance" },
   { name: "records", hash: "records-mpf", selector: "#adminRecordsView", authenticated: true, menu: "performance" },
-  { name: "engagements", hash: "engagements", selector: "#adminEngagementsView", authenticated: true },
-  { name: "club-swimmers", hash: "engagements", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true },
+  { name: "engagements", hash: "club-competitions", selector: "#adminEngagementsView", authenticated: true },
+  { name: "club-swimmers", hash: "club-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true },
   { name: "competition-home", hash: "organisation-competitions", selector: "#adminCompetitionHomeView", authenticated: true, menu: "engagements" },
   { name: "dtn-home", hash: "espace-dtn", selector: "#adminDtnHomeView", authenticated: true, menu: "dtn" },
   { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
@@ -176,9 +177,9 @@ async function waitFor(client, expression, timeoutMs = 8000) {
 
 function clubSwimmersFixtureHtml() {
   const swimmers = [
-    ["Nageuse DEMO", "12/03/2008", "F", "S", "A-00-000001", "Femme"],
-    ["Nageur DEMO", "04/09/2011", "M", "C", "A-00-000002", "Homme"],
-    ["Identite volontairement longue pour tester la reduction", "18/05/2014", "F", "M", "A-00-000003", "Femme"]
+    ["DEMO Nageuse", "12/03/2008", "F", "S", "A-00-000001", "Femme"],
+    ["DEMO Nageur", "04/09/2011", "M", "C", "A-00-000002", "Homme"],
+    ["IDENTITE Volontairement longue pour tester la reduction", "18/05/2014", "F", "M", "", "Femme"]
   ];
   return `
     <div class="admin-engagements-club-swimmers-directory-table" role="table" aria-label="Mes nageurs">
@@ -189,10 +190,10 @@ function clubSwimmersFixtureHtml() {
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${row[2]}" data-expanded="false">
           <button class="admin-engagements-club-swimmers-directory-toggle" type="button" aria-expanded="false" aria-controls="adminEngagementsClubSwimmerFixtureDetails${index}" data-engagement-club-swimmer-directory-toggle>
             <strong>${row[0]}</strong>
-            <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex" aria-label="${row[5]}">${row[2]}</span><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></span>
+            <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex" aria-label="${row[5]}">${row[2]}</span><span class="admin-engagements-club-swimmers-directory-category" aria-label="Catégorie ${row[3]}">${row[3]}</span><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></span>
           </button>
           <div id="adminEngagementsClubSwimmerFixtureDetails${index}" class="admin-engagements-club-swimmers-directory-details">
-            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4]}</span>
+            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
           </div>
         </div>
       `).join("")}
@@ -208,9 +209,20 @@ function presentationScript(view) {
     const login = document.querySelector("#adminPortalLoginPanel");
     const dashboard = document.querySelector("#adminPortalDashboard");
     const account = document.querySelector("#adminPortalAccount");
+    const navToggle = document.querySelector("#adminPortalNavToggle");
     if (login) login.hidden = authenticated;
     if (dashboard) dashboard.hidden = !authenticated;
     if (account) account.hidden = !authenticated;
+    if (navToggle) navToggle.hidden = !authenticated;
+    document.body.dataset.portalHome = ${view.clubOnly ? '"club"' : '"overview"'};
+    const homeLink = document.querySelector("#adminPortalHomeLink");
+    const homeLabel = document.querySelector("#adminPortalHomeLabel");
+    if (homeLink) {
+      homeLink.href = ${view.clubOnly ? '"#espace-club"' : '"#accueil"'};
+      homeLink.dataset.adminViewLink = ${view.clubOnly ? '"clubHome"' : '"dashboard"'};
+    }
+    if (homeLabel) homeLabel.textContent = ${view.clubOnly ? '"Accueil club"' : '"Vue d’ensemble"'};
+    document.dispatchEvent(new CustomEvent("livepalmes:portal-home-change"));
     const sidebar = document.querySelector(".admin-portal-sidebar");
     if (sidebar) sidebar.classList.toggle("is-pinned", authenticated && ${view.pinned ? "true" : "false"});
     document.querySelectorAll("[data-admin-view]").forEach((element) => {
@@ -220,6 +232,17 @@ function presentationScript(view) {
       document.querySelectorAll("#adminPortalNavigation [hidden]").forEach((element) => {
         if (element.matches("[data-engagements-club-menu],[data-engagements-club-nav],[data-engagements-admin-nav],[data-engagements-national-menu],[data-engagements-national-nav],[data-access-management-nav]")) element.hidden = false;
       });
+      if (${view.clubOnly ? "true" : "false"}) {
+        document.querySelectorAll("[data-engagements-admin-nav],[data-engagements-national-menu],[data-access-management-nav],[data-admin-performance-menu],[data-admin-dtn-menu]").forEach((element) => {
+          element.hidden = true;
+        });
+        document.querySelectorAll(".admin-portal-nav-group").forEach((group) => {
+          group.hidden = !Array.from(group.children).some((child) => {
+            if (child.tagName === "A") return !child.hidden;
+            return child.classList?.contains("admin-portal-nav-nested") && !child.hidden;
+          });
+        });
+      }
       const menu = ${JSON.stringify(view.menu || "")};
       const menuState = {
         club: ["#adminPortalClubToggle", "#adminPortalClubSubmenu"],
@@ -273,10 +296,26 @@ function presentationScript(view) {
         const status = document.querySelector("#adminEngagementsClubSwimmersDirectoryStatus");
         const mount = document.querySelector("#adminEngagementsClubSwimmersDirectoryList");
         if (status) {
-          status.textContent = "3 nageurs affiches.";
-          status.dataset.tone = "ok";
+          status.textContent = "";
+          status.dataset.tone = "neutral";
         }
         if (mount) mount.innerHTML = ${JSON.stringify(clubSwimmersFixtureHtml())};
+      }
+      if (${JSON.stringify(view.name)} === "account") {
+        document.querySelectorAll("#adminAccountView details").forEach((details) => {
+          details.open = false;
+        });
+        const values = {
+          adminAccountFullName: "Camille Martin",
+          adminAccountIdentityEmail: "camille.martin@example.fr",
+          adminAccountEmailSummary: "Adresse actuelle : camille.martin@example.fr",
+          adminAccountLicenseNumber: "A-00-000001",
+          adminAccountScopeSentence: "Vous gérez les engagements du club Nage avec palmes Démonstration, région Île-de-France."
+        };
+        Object.entries(values).forEach(([id, value]) => {
+          const element = document.getElementById(id);
+          if (element) element.textContent = value;
+        });
       }
     }
     const target = document.querySelector(${JSON.stringify(view.selector)});
@@ -327,13 +366,17 @@ async function auditInteractions(client, viewport, view) {
       blocked,
       delayedTouch,
       covered,
-      removedComponents: document.querySelectorAll("#adminPortalSearchButton,#adminPortalSearchDialog,#adminPortalQuickAccess,.admin-overview-intro").length,
+      removedComponents: document.querySelectorAll("#adminPortalSearchButton,#adminPortalSearchDialog,#adminPortalQuickAccess,.admin-overview-intro,#adminAccessRequestView,[data-admin-view-link='accessRequest']").length,
       mobileNavigation: null,
       mobileParentNavigation: null,
       accountMenu: null,
       overviewToggle: null,
       overviewLink: null,
-      swimmerAccordion: null
+      swimmerAccordion: null,
+      distinctEngagementRoutes: null,
+      tabKeyboard: null,
+      unauthorizedGroupsVisible: null,
+      accountProgressiveDisclosure: null
     };
     const accountToggle = document.querySelector("#adminPortalAccountToggle");
     const accountActions = document.querySelector("#adminPortalAccountActions");
@@ -369,6 +412,37 @@ async function auditInteractions(client, viewport, view) {
       const expectedHash = mainLink?.getAttribute("href");
       mainLink?.click();
       result.overviewLink = Boolean(expectedHash && globalThis.location.hash === expectedHash);
+      const routeLinks = [...document.querySelectorAll('#adminPortalNavigation [data-admin-view-link="engagements"]')]
+        .map((link) => link.getAttribute("href"));
+      result.distinctEngagementRoutes = Boolean(routeLinks.length && routeLinks.every((hash) => hash && hash !== "#engagements") && new Set(routeLinks).size === routeLinks.length);
+    }
+    if (${JSON.stringify(view.name)} === "engagements") {
+      const detail = document.querySelector("#adminEngagementsDetail");
+      const general = document.querySelector("#adminEngagementsDetailGeneralTab");
+      const program = document.querySelector("#adminEngagementsDetailCoursesTab");
+      if (detail && general && program) {
+        detail.hidden = false;
+        general.focus();
+        general.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        result.tabKeyboard = program.getAttribute("aria-selected") === "true" && document.activeElement === program;
+        general.click();
+        detail.hidden = true;
+      }
+    }
+    if (${view.clubOnly ? "true" : "false"}) {
+      const visibleGroupLabels = [...document.querySelectorAll(".admin-portal-nav-group:not([hidden]) > h2")]
+        .map((heading) => heading.textContent.trim());
+      result.unauthorizedGroupsVisible = visibleGroupLabels.some((label) => ["DonnÃ©es sportives", "Suivi DTN"].includes(label));
+    }
+    if (${JSON.stringify(view.name)} === "account") {
+      const emailCard = document.querySelector("#adminAccountEmailForm")?.closest("details");
+      const passwordCard = document.querySelector("#adminAccountPasswordForm")?.closest("details");
+      const initiallyClosed = !emailCard?.open && !passwordCard?.open;
+      emailCard?.querySelector("summary")?.click();
+      const emailOpened = emailCard?.open && isVisible(document.querySelector("#adminAccountEmailForm")) && !passwordCard?.open;
+      passwordCard?.querySelector("summary")?.click();
+      const passwordOpened = passwordCard?.open && isVisible(document.querySelector("#adminAccountPasswordForm")) && !emailCard?.open;
+      result.accountProgressiveDisclosure = Boolean(initiallyClosed && emailOpened && passwordOpened);
     }
     if (${JSON.stringify(view.name)} === "club-swimmers" && ${viewport.width <= 700 ? "true" : "false"}) {
       const toggles = [...document.querySelectorAll("[data-engagement-club-swimmer-directory-toggle]")];
@@ -384,9 +458,10 @@ async function auditInteractions(client, viewport, view) {
   if (audit.delayedTouch.length) failures.push(`actions tactiles non optimisees ${JSON.stringify(audit.delayedTouch)}`);
   if (audit.covered.length) failures.push(`actions recouvertes ${JSON.stringify(audit.covered)}`);
   if (audit.removedComponents) failures.push(`${audit.removedComponents} composant(s) supprime(s) encore present(s)`);
-  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion"].forEach((key) => {
+  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion", "distinctEngagementRoutes", "tabKeyboard", "accountProgressiveDisclosure"].forEach((key) => {
     if (audit[key] === false) failures.push(`${key} KO`);
   });
+  if (audit.unauthorizedGroupsVisible) failures.push("rubriques non autorisees visibles");
   if (failures.length) throw new Error(`${view.name}/${viewport.name} : interactions invalides : ${failures.join(", ")}`);
   await evaluate(client, presentationScript(view));
 }

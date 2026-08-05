@@ -34,7 +34,8 @@
     const mount = elements.breadcrumb;
     if (!mount) return;
     const activeView = document.querySelector("[data-admin-view]:not([hidden])")?.dataset.adminView || "";
-    if (!activeView || activeView === "dashboard") {
+    const clubIsHome = document.body.dataset.portalHome === "club";
+    if (!activeView || activeView === "dashboard" || (clubIsHome && activeView === "clubHome")) {
       mount.hidden = true;
       if (breadcrumbSignature) mount.replaceChildren();
       breadcrumbSignature = "";
@@ -44,8 +45,11 @@
     const activeParent = elements.navigation?.querySelector(".admin-portal-nav-parent.active,.admin-portal-nav-parent[aria-current='page']") || activeLink?.closest(".admin-portal-nav-nested")?.querySelector(".admin-portal-nav-parent");
     const parentLabel = activeParent ? cleanLabel(activeParent) : "";
     const currentLabel = activeLink ? cleanLabel(activeLink) : parentLabel || HOME_LABELS[activeView] || document.querySelector(`[data-admin-view="${activeView}"] h2`)?.textContent?.trim() || "";
-    const items = [{ label: "Vue d’ensemble", href: "#accueil" }];
-    if (parentLabel && parentLabel !== currentLabel) {
+    const items = [{
+      label: clubIsHome ? "Accueil club" : "Vue d’ensemble",
+      href: clubIsHome ? "#espace-club" : "#accueil"
+    }];
+    if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
       items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
     }
     if (currentLabel) items.push({ label: currentLabel });
@@ -98,22 +102,67 @@
     });
   }
 
+  function visibleTabs(tablist) {
+    return Array.from(tablist?.querySelectorAll?.('[role="tab"]') || []).filter((tab) => {
+      return !tab.hidden && !tab.closest("[hidden]") && tab.getAttribute("aria-disabled") !== "true";
+    });
+  }
+
+  function enhanceTabFocus() {
+    document.querySelectorAll('[role="tablist"]').forEach((tablist) => {
+      const tabs = visibleTabs(tablist);
+      if (!tabs.length) return;
+      const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+      tabs.forEach((tab) => {
+        tab.tabIndex = tab === selected ? 0 : -1;
+      });
+    });
+  }
+
+  function handleTabKeydown(event) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const current = event.target.closest?.('[role="tab"]');
+    const tablist = current?.closest?.('[role="tablist"]');
+    if (!current || !tablist) return;
+    const tabs = visibleTabs(tablist);
+    const currentIndex = tabs.indexOf(current);
+    if (currentIndex < 0 || tabs.length < 2) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : event.key === "ArrowRight"
+          ? (currentIndex + 1) % tabs.length
+          : (currentIndex - 1 + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    next.focus();
+    next.click();
+    global.requestAnimationFrame(() => {
+      const active = tablist.querySelector('[role="tab"][aria-selected="true"]');
+      if (active && !active.hidden && !active.closest("[hidden]")) active.focus();
+    });
+  }
+
   function refreshEnhancements() {
     global.clearTimeout(refreshTimer);
     refreshTimer = global.setTimeout(() => {
       renderBreadcrumb();
       enhanceResponsiveTables();
       enhanceLoadingStates();
+      enhanceTabFocus();
     }, 40);
   }
 
   global.addEventListener("hashchange", refreshEnhancements);
+  document.addEventListener("livepalmes:portal-home-change", refreshEnhancements);
+  document.addEventListener("keydown", handleTabKeydown);
   new MutationObserver((mutations) => {
     const generatedOnly = mutations.every((mutation) => mutation.target.closest?.("#adminPortalBreadcrumb"));
     if (!generatedOnly) refreshEnhancements();
   }).observe(document.querySelector("#adminPortalDashboard") || document.body, {
     attributes: true,
-    attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "data-tone"],
+    attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "aria-disabled", "data-tone"],
     childList: true,
     subtree: true,
     characterData: true

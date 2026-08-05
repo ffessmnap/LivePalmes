@@ -26,6 +26,7 @@ const {
   shouldPublishRecordsManifest
 } = require("./public-records-data");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
+const { engagementAccessAcknowledgement } = require("./portal-access-mail");
 
 initializeApp();
 const auth = getAuth();
@@ -59,6 +60,7 @@ const ENGAGEMENT_TIMING_TYPES = new Set(["manual", "electronic"]);
 const ENGAGEMENT_QUALIFICATION_TIME_MODES = new Set(["all", "period"]);
 const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999"]);
 const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
 const ENGAGEMENT_LICENSE_VERIFICATION_STATUSES = new Set(["verified", "pending", "rejected", "conflict"]);
 const ENGAGEMENT_LICENSE_SEASON_STATUSES = new Set(["to_check", "valid", "invalid"]);
 const ACCESS_CAPABILITIES = [
@@ -82,6 +84,7 @@ const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
+const PORTAL_ACCESS_REQUEST_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 30 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
   schedule: "1 * * * *",
@@ -2268,7 +2271,45 @@ function assertEngagementAccessRequestScope(context = {}, requestData = {}) {
   }
 }
 
-exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+async function sendEngagementAccessAcknowledgement(payload = {}) {
+  const config = engagementMailSmtpConfig();
+  const attemptedAt = new Date().toISOString();
+  if (!config.ready) {
+    return {
+      status: "skipped_missing_config",
+      attemptedAt,
+      reason: "Configuration SMTP incomplete."
+    };
+  }
+  const mail = engagementAccessAcknowledgement(payload);
+  try {
+    const transporter = nodemailer.createTransport(config.transport);
+    await transporter.sendMail({
+      from: `LivePalmes <${config.fromEmail}>`,
+      to: payload.email,
+      subject: mail.subject,
+      text: mail.text
+    });
+    return {
+      status: "sent",
+      attemptedAt,
+      sentAt: new Date().toISOString(),
+      reason: ""
+    };
+  } catch (error) {
+    console.error(
+      "Accuse de reception de demande d'acces impossible.",
+      cleanText(error?.code || error?.name || "smtp-error").slice(0, 80)
+    );
+    return {
+      status: "failed",
+      attemptedAt,
+      reason: "Envoi SMTP impossible."
+    };
+  }
+}
+
+exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, async (request) => {
   const uid = cleanText(request.auth?.uid);
   if (cleanText(request.data?.website)) {
     throw new HttpsError("invalid-argument", "Demande invalide.");
@@ -2316,9 +2357,20 @@ exports.submitEngagementAccessRequest = onCall(CALLABLE_OPTIONS, async (request)
     clubId: payload.clubId,
     regionId: payload.regionId
   });
+  const acknowledgementEmail = await sendEngagementAccessAcknowledgement(payload);
+  await ref.set({
+    acknowledgementEmail,
+    updatedAt: new Date().toISOString()
+  }, { merge: true }).catch((error) => {
+    console.error(
+      "Statut de l'accuse de reception non enregistre.",
+      cleanText(error?.code || error?.name || "firestore-error").slice(0, 80)
+    );
+  });
   return {
     ok: true,
-    request: engagementAccessRequestItem({ id: requestId, data: () => savedPayload })
+    request: engagementAccessRequestItem({ id: requestId, data: () => savedPayload }),
+    acknowledgementEmailSent: acknowledgementEmail.status === "sent"
   };
 });
 
@@ -3024,6 +3076,15 @@ function cleanEngagementPoolLength(value) {
   return ENGAGEMENT_POOL_LENGTHS.has(poolLength) ? poolLength : "50";
 }
 
+function cleanEngagementPoolLaneCount(value) {
+  if (value === "" || value === null || value === undefined) return 0;
+  const laneCount = Number(value);
+  if (!Number.isInteger(laneCount) || laneCount < 4 || laneCount > 10) {
+    throw new HttpsError("invalid-argument", "Le nombre de lignes d'eau doit etre compris entre 4 et 10.");
+  }
+  return laneCount;
+}
+
 function cleanEngagementTimingType(value) {
   const timingType = cleanText(value);
   return ENGAGEMENT_TIMING_TYPES.has(timingType) ? timingType : "electronic";
@@ -3052,6 +3113,7 @@ function cleanEngagementFeeAmount(value) {
 function cleanEngagementFees(rawFees = {}, options = {}) {
   if (!rawFees || typeof rawFees !== "object") {
     return {
+      enabled: true,
       swimmerFee: 0,
       individualEventFee: 0,
       relayFee: 0,
@@ -3060,15 +3122,17 @@ function cleanEngagementFees(rawFees = {}, options = {}) {
     };
   }
   const strict = options.strict !== false;
+  const enabled = rawFees.enabled !== false;
   const helloAssoUrl = cleanText(rawFees.helloAssoUrl).slice(0, 300);
   if (helloAssoUrl && !/^https?:\/\/\S+$/i.test(helloAssoUrl)) {
     if (strict) throw new HttpsError("invalid-argument", "Lien HelloAsso invalide.");
   }
   return {
-    swimmerFee: cleanEngagementFeeAmount(rawFees.swimmerFee),
-    individualEventFee: cleanEngagementFeeAmount(rawFees.individualEventFee),
-    relayFee: cleanEngagementFeeAmount(rawFees.relayFee),
-    helloAssoUrl: /^https?:\/\/\S+$/i.test(helloAssoUrl) ? helloAssoUrl : "",
+    enabled,
+    swimmerFee: enabled ? cleanEngagementFeeAmount(rawFees.swimmerFee) : 0,
+    individualEventFee: enabled ? cleanEngagementFeeAmount(rawFees.individualEventFee) : 0,
+    relayFee: enabled ? cleanEngagementFeeAmount(rawFees.relayFee) : 0,
+    helloAssoUrl: enabled && /^https?:\/\/\S+$/i.test(helloAssoUrl) ? helloAssoUrl : "",
     latePaymentSurcharge: 50
   };
 }
@@ -3195,6 +3259,7 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     entryStatus: cleanEngagementEntryStatus(data.entryStatus || data.status),
     officialsRequired: data.officialsRequired === true,
     poolLength: cleanEngagementPoolLength(data.poolLength),
+    poolLaneCount: cleanEngagementPoolLaneCount(data.poolLaneCount),
     timingType: cleanEngagementTimingType(data.timingType),
     qualificationTimesMode: cleanEngagementQualificationTimesMode(data.qualificationTimesMode),
     qualificationStartDate: cleanIsoDate(data.qualificationStartDate),
@@ -3876,7 +3941,10 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
   const rows = await getEngagementEntryTimeRowsForSwimmer(swimmer);
   return entries.map((entry) => {
     const eventCode = cleanText(entry.eventCode).toUpperCase().replace(/\s+/g, "");
-    const manualRaw = cleanText(entry.manualEntryTime || entry.entryTime);
+    const manualMode = cleanText(entry.entryTimeMode) === "manual";
+    const manualRaw = manualMode
+      ? cleanText(entry.manualEntryTime || entry.entryTime)
+      : cleanText(entry.manualEntryTime);
     const manualAllowed = competition.missingEntryTimeMode === "manual";
     if (manualAllowed && manualRaw) {
       const manual = parseEngagementEntryTime(manualRaw);
@@ -3924,10 +3992,13 @@ function cleanEngagementNewSwimmer(raw = {}, context = {}) {
   const lastName = cleanText(raw.lastName).slice(0, 80);
   const birthDate = cleanIsoDate(raw.birthDate);
   const sex = ["F", "M"].includes(cleanText(raw.sex).toUpperCase()) ? cleanText(raw.sex).toUpperCase() : "";
-  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const licenseNumber = cleanText(raw.licenseNumber).toUpperCase().slice(0, 60);
   const licenseSeason = currentEngagementSeasonInfo();
   if (!firstName || !lastName || !birthDate || !sex || !licenseNumber) {
     throw new HttpsError("invalid-argument", "Prenom, nom, date de naissance, sexe et licence sont obligatoires.");
+  }
+  if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
+    throw new HttpsError("invalid-argument", "Le numero de licence doit respecter le format A-12-34567.");
   }
   return {
     firstName,
@@ -3998,10 +4069,14 @@ function engagementNewSwimmerAlertFromMatch(match = {}, context = {}, type = "")
   const clubId = cleanText(match.clubId);
   const differentClub = clubId && clubId !== context.clubId;
   const alertType = type || (differentClub ? "club-change" : "duplicate");
+  const firstName = cleanText(match.firstName).slice(0, 80);
+  const lastName = cleanText(match.lastName).slice(0, 80);
   return cleanFirestoreValue({
     type: alertType,
-    level: differentClub ? "warning" : "info",
-    message: alertType === "possible-duplicate"
+    level: alertType === "inverted-identity" ? "error" : differentClub ? "warning" : "info",
+    message: alertType === "inverted-identity"
+      ? "Creation impossible : un nageur existe avec le nom et le prenom inverses."
+      : alertType === "possible-duplicate"
       ? "Nageur ressemblant deja present dans LivePalmes."
       : differentClub
         ? "Nageur existant avec un dernier club connu different."
@@ -4010,9 +4085,9 @@ function engagementNewSwimmerAlertFromMatch(match = {}, context = {}, type = "")
     swimmerId: cleanText(match.swimmerId || match.id).slice(0, 80),
     source: cleanText(match.source || "performances").slice(0, 40),
     identityKey: cleanText(match.identityKey).slice(0, 180),
-    name: cleanText(match.name).slice(0, 160),
-    firstName: cleanText(match.firstName).slice(0, 80),
-    lastName: cleanText(match.lastName).slice(0, 80),
+    name: [lastName, firstName].filter(Boolean).join(" ") || cleanText(match.name).slice(0, 160),
+    firstName,
+    lastName,
     birthDate: cleanIsoDate(match.birthDate),
     clubId,
     clubName: cleanText(match.clubName).slice(0, 140),
@@ -4029,22 +4104,35 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
     if (alerts.some((item) => [item.type, item.identityKey || item.swimmerIndexId, item.clubId].join("|") === key)) return;
     alerts.push(alert);
   };
-  if (swimmer.identityKey) {
+  const invertedIdentityKey = engagementSwimmerIdentityKey(swimmer.lastName, swimmer.firstName, swimmer.birthDate);
+  const identityKeys = Array.from(new Set([swimmer.identityKey, invertedIdentityKey].filter(Boolean)));
+  const alertTypeForMatch = (match = {}) => invertedIdentityKey && invertedIdentityKey !== swimmer.identityKey && cleanText(match.identityKey) === invertedIdentityKey
+    ? "inverted-identity"
+    : "";
+  if (identityKeys.length) {
     const exactSnapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
-      .where("identityKey", "==", swimmer.identityKey)
-      .limit(5)
+      .where("identityKey", "in", identityKeys)
+      .limit(10)
       .get();
     exactSnapshot.docs.forEach((doc) => {
       const match = engagementClubSwimmerItem(doc);
-      addAlert(engagementNewSwimmerAlertFromMatch(match, context));
+      addAlert(engagementNewSwimmerAlertFromMatch(match, context, alertTypeForMatch(match)));
+    });
+    const engagementSnapshot = await db.collection("engagementClubSwimmers")
+      .where("identityKey", "in", identityKeys)
+      .limit(10)
+      .get();
+    engagementSnapshot.docs.forEach((doc) => {
+      const match = engagementNewSwimmerItem(doc);
+      addAlert(engagementNewSwimmerAlertFromMatch(match, context, alertTypeForMatch(match)));
     });
     intranapSwimmersIndex
-      .filter((match) => cleanText(match.identityKey) === swimmer.identityKey)
-      .slice(0, 5)
+      .filter((match) => identityKeys.includes(cleanText(match.identityKey)))
+      .slice(0, 10)
       .forEach((match) => addAlert(engagementNewSwimmerAlertFromMatch({
         ...match,
         source: "reference"
-      }, context)));
+      }, context, alertTypeForMatch(match))));
   }
   const lastToken = performanceSearchTokens(swimmer.lastName)[0] || "";
   if (lastToken.length >= 2) {
@@ -4064,7 +4152,7 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
     });
     intranapSwimmersIndex
       .filter((match) => {
-        if (cleanText(match.identityKey) === swimmer.identityKey) return false;
+        if (identityKeys.includes(cleanText(match.identityKey))) return false;
         const sameBirthYear = cleanText(match.birthDate).slice(0, 4) === cleanText(swimmer.birthDate).slice(0, 4);
         const lastClose = performanceSearchTokens(match.lastName).some((token) => token.slice(0, Math.min(6, lastToken.length)) === lastToken.slice(0, Math.min(6, lastToken.length)));
         const firstClose = performanceSearchTokens(match.firstName).some((token) =>
@@ -4080,6 +4168,7 @@ async function buildEngagementNewSwimmerAlerts(swimmer = {}, context = {}) {
   }
   return alerts
     .sort((left, right) =>
+      Number(right.type === "inverted-identity") - Number(left.type === "inverted-identity") ||
       Number(right.type === "club-change") - Number(left.type === "club-change") ||
       cleanText(right.latestDate).localeCompare(cleanText(left.latestDate)) ||
       cleanText(left.name).localeCompare(cleanText(right.name), "fr")
@@ -4538,6 +4627,7 @@ function engagementClubRecapPdfSourceHash(competition = {}, entry = {}) {
       level: competition.level,
       regionId: competition.regionId,
       poolLength: competition.poolLength,
+      poolLaneCount: competition.poolLaneCount,
       timingType: competition.timingType,
       entryDeadlineAt: competition.entryDeadlineAt,
       fees: competition.fees
@@ -4614,6 +4704,7 @@ function engagementPdfEntryStats(entry = {}) {
 
 function engagementPdfFeeTotal(entry = {}, competition = {}) {
   const fees = competition.fees || {};
+  if (fees.enabled === false) return 0;
   const stats = engagementPdfEntryStats(entry);
   return (Number(fees.swimmerFee || 0) || 0) * stats.swimmerCount +
     (Number(fees.individualEventFee || 0) || 0) * stats.individualCount +
@@ -4883,7 +4974,12 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     ["Niveau", engagementPdfLevelLabel(competition.level)],
     ["Région", competition.regionId || "-"],
     ["Statut", engagementPdfStatusLabel(competition.entryStatus)],
-    ["Bassin", `${cleanEngagementPoolLength(competition.poolLength)} m`],
+    ["Bassin", [
+      `${cleanEngagementPoolLength(competition.poolLength)} m`,
+      cleanEngagementPoolLaneCount(competition.poolLaneCount)
+        ? `${cleanEngagementPoolLaneCount(competition.poolLaneCount)} lignes d'eau`
+        : "nombre de lignes non renseigne"
+    ].join(" - ")],
     ["Chronométrage", engagementPdfTimingLabel(competition.timingType)],
     ["Limite engagements", engagementPdfFormatDateTime(competition.entryDeadlineAt)],
     ["Généré le", engagementPdfFormatDateTime(generatedAt)]
@@ -4943,14 +5039,16 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
   const fees = competition.fees || {};
   const stats = engagementPdfEntryStats(entry);
   y = engagementPdfSection(doc, "Frais d'engagement", y);
-  y = engagementPdfKeyValues(doc, [
-    ["Nageurs", `${stats.swimmerCount} x ${engagementPdfMoney(fees.swimmerFee)}`],
-    ["Courses individuelles", `${stats.individualCount} x ${engagementPdfMoney(fees.individualEventFee)}`],
-    ["Relais", `${stats.relayCount} x ${engagementPdfMoney(fees.relayFee)}`],
-    ["Total indicatif", engagementPdfMoney(engagementPdfFeeTotal(entry, competition))],
-    ["HelloAsso", fees.helloAssoUrl ? "Lien publié" : "En attente de publication du lien"],
-    ["Rappel", "Paiement attendu avant la fin de la première journée. Surplus forfaitaire de 50 EUR ensuite."]
-  ], y);
+  y = engagementPdfKeyValues(doc, fees.enabled === false
+    ? [["Frais", "Aucun frais d'engagement"]]
+    : [
+      ["Nageurs", `${stats.swimmerCount} x ${engagementPdfMoney(fees.swimmerFee)}`],
+      ["Courses individuelles", `${stats.individualCount} x ${engagementPdfMoney(fees.individualEventFee)}`],
+      ["Relais", `${stats.relayCount} x ${engagementPdfMoney(fees.relayFee)}`],
+      ["Total indicatif", engagementPdfMoney(engagementPdfFeeTotal(entry, competition))],
+      ["HelloAsso", fees.helloAssoUrl ? "Lien publié" : "En attente de publication du lien"],
+      ["Rappel", "Paiement attendu avant la fin de la première journée. Surplus forfaitaire de 50 EUR ensuite."]
+    ], y);
 
   y = engagementPdfEnsureSpace(doc, y, 34);
   doc.font("Helvetica-Oblique").fontSize(8).fillColor("#6b7f7a").text(
@@ -5525,11 +5623,19 @@ function engagementOpeningMailSubject(competition = {}) {
 }
 
 function engagementOpeningMailText(competition = {}) {
+  const fees = competition.fees || {};
+  const feeLines = fees.enabled === false
+    ? ["Frais d'engagement : aucun."]
+    : [
+      `Frais : ${engagementPdfMoney(fees.swimmerFee)} par nageur, ${engagementPdfMoney(fees.individualEventFee)} par course et ${engagementPdfMoney(fees.relayFee)} par relais.`,
+      fees.helloAssoUrl ? `Paiement HelloAsso : ${fees.helloAssoUrl}` : "Le lien de paiement HelloAsso sera communiqué ultérieurement."
+    ];
   return [
     `Les engagements sont ouverts pour ${competition.name || "la competition"}.`,
     `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
     `Lieu : ${competition.location || "-"}.`,
     `Limite des engagements : ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
+    ...feeLines,
     "Connectez-vous au portail LivePalmes pour effectuer vos engagements."
   ].join("\n");
 }
@@ -5540,15 +5646,20 @@ function engagementClubRecapMailSubject(competition = {}, entry = {}) {
 
 function engagementClubRecapMailText(competition = {}, entry = {}) {
   const fees = competition.fees || {};
+  const feeLines = fees.enabled === false
+    ? ["Aucun frais d'engagement n'est demandé pour cette compétition."]
+    : [
+      `Total indicatif : ${engagementPdfMoney(engagementPdfFeeTotal(entry, competition))}.`,
+      fees.helloAssoUrl
+        ? `Paiement HelloAsso : ${fees.helloAssoUrl}`
+        : "Lien HelloAsso en attente de publication.",
+      "Rappel : paiement attendu avant la fin de la premiere journee de competition. Surplus forfaitaire de 50 EUR ensuite."
+    ];
   return [
     `Bonjour,`,
     "",
     `Vous trouverez en piece jointe le recapitulatif des engagements de ${entry.clubName || entry.clubId || "votre club"} pour ${competition.name || "la competition"}.`,
-    `Total indicatif : ${engagementPdfMoney(engagementPdfFeeTotal(entry, competition))}.`,
-    fees.helloAssoUrl
-      ? `Paiement HelloAsso : ${fees.helloAssoUrl}`
-      : "Lien HelloAsso en attente de publication.",
-    "Rappel : paiement attendu avant la fin de la premiere journee de competition. Surplus forfaitaire de 50 EUR ensuite.",
+    ...feeLines,
     "",
     "LivePalmes"
   ].join("\n");
@@ -6099,6 +6210,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email informatique");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
   const poolLength = cleanEngagementPoolLength(raw.poolLength);
+  const poolLaneCount = cleanEngagementPoolLaneCount(raw.poolLaneCount);
   const timingType = cleanEngagementTimingType(raw.timingType);
   const qualificationTimesMode = cleanEngagementQualificationTimesMode(raw.qualificationTimesMode);
   const qualificationStartDate = qualificationTimesMode === "period" ? cleanIsoDate(raw.qualificationStartDate) : "";
@@ -6148,6 +6260,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     entryStatus,
     officialsRequired: raw.officialsRequired === true,
     poolLength,
+    poolLaneCount,
     timingType,
     qualificationTimesMode,
     qualificationStartDate,
@@ -7327,11 +7440,13 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
   await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  const blockingAlerts = alerts.filter((alert) => alert.type === "inverted-identity");
   return {
     ok: true,
     swimmer,
     alerts,
-    requiresConfirmation: alerts.length > 0
+    requiresConfirmation: alerts.length > 0 && blockingAlerts.length === 0,
+    blocksCreation: blockingAlerts.length > 0
   };
 });
 
@@ -7354,6 +7469,13 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
   }
   await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
+  const blockingAlerts = alerts.filter((alert) => alert.type === "inverted-identity");
+  if (blockingAlerts.length) {
+    throw new HttpsError("already-exists", "Un nageur existe deja avec le nom et le prenom inverses.", {
+      alerts: blockingAlerts,
+      blocksCreation: true
+    });
+  }
   const confirmAlerts = request.data?.confirmAlerts === true;
   if (alerts.length && !confirmAlerts) {
     throw new HttpsError("failed-precondition", "Confirmation obligatoire avant creation du nageur.", {
@@ -7577,6 +7699,129 @@ exports.setEngagementNationalClubSwimmerStatus = onCall(CALLABLE_OPTIONS, async 
   };
 });
 
+async function engagementClubSwimmerDeletionUsage(swimmerId, swimmer = {}, context = {}) {
+  const identityKey = cleanText(swimmer.identityKey).slice(0, 180);
+  const [performanceSnapshot, entriesSnapshot] = await Promise.all([
+    identityKey
+      ? db.collection(PERFORMANCE_SWIMMERS_COLLECTION).where("identityKey", "==", identityKey).limit(5).get()
+      : Promise.resolve({ docs: [], size: 0 }),
+    db.collection("engagementClubEntries").where("clubId", "==", context.clubId).limit(201).get()
+  ]);
+  const competitionIds = entriesSnapshot.docs.filter((entryDoc) => {
+    const entry = entryDoc.data() || {};
+    const usedAsSwimmer = (Array.isArray(entry.swimmers) ? entry.swimmers : [])
+      .some((item) => cleanText(item?.swimmerIndexId) === swimmerId);
+    const usedInRelay = (Array.isArray(entry.relays) ? entry.relays : []).some((relay) => {
+      const memberIds = Array.isArray(relay?.memberIds)
+        ? relay.memberIds
+        : (Array.isArray(relay?.members) ? relay.members.map((member) => member?.swimmerIndexId) : []);
+      return memberIds.some((memberId) => cleanText(memberId) === swimmerId);
+    });
+    return usedAsSwimmer || usedInRelay;
+  }).map((entryDoc) => cleanText(entryDoc.data()?.competitionId || entryDoc.id).slice(0, 128));
+  return {
+    performanceMatchCount: performanceSnapshot.size || performanceSnapshot.docs.length,
+    entryUsageCount: competitionIds.length,
+    competitionIds: Array.from(new Set(competitionIds)).slice(0, 25),
+    entryScanTruncated: entriesSnapshot.size > 200
+  };
+}
+
+async function deleteEngagementClubSwimmerPermanently(ref, snapshot, context = {}, auditSource = "national") {
+  const swimmerId = ref.id;
+  const data = snapshot.data() || {};
+  const alertsSnapshot = await db.collection("engagementSwimmerAlerts")
+    .where("newSwimmerId", "==", swimmerId)
+    .limit(100)
+    .get();
+  const batch = db.batch();
+  batch.delete(ref);
+  batch.delete(db.collection("engagementSwimmerDeletionRequests").doc(swimmerId));
+  batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(swimmerId).slice(0, 40)));
+  const licenseNumberRefId = engagementSwimmerLicenseNumberId(data.licenseNumber);
+  if (licenseNumberRefId) {
+    batch.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId));
+  }
+  deleteEngagementClubRosterSwimmer(batch, db, { ...data, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" });
+  alertsSnapshot.docs.forEach((alertDoc) => batch.delete(alertDoc.ref));
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.deleted", context.uid, {
+    swimmerId,
+    clubId: cleanText(data.clubId).slice(0, 40),
+    alertDocsDeleted: alertsSnapshot.size,
+    source: auditSource
+  });
+  return { swimmerId, alertDocsDeleted: alertsSnapshot.size };
+}
+
+exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
+  if (!swimmerId) {
+    throw new HttpsError("invalid-argument", "Nageur requis.");
+  }
+  const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new HttpsError("not-found", "Seul un nageur cree depuis le portail peut etre supprime par son club.");
+  }
+  const swimmer = snapshot.data() || {};
+  if (cleanText(swimmer.clubId) !== context.clubId) {
+    throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
+  }
+  const requestRef = db.collection("engagementSwimmerDeletionRequests").doc(swimmerId);
+  const pendingRequest = await requestRef.get();
+  if (pendingRequest.exists && cleanText(pendingRequest.data()?.status) === "pending") {
+    throw new HttpsError("already-exists", "Une demande de retrait est deja en attente pour ce nageur.");
+  }
+  const usage = await engagementClubSwimmerDeletionUsage(swimmerId, swimmer, context);
+  const blocked = usage.performanceMatchCount > 0 || usage.entryUsageCount > 0 || usage.entryScanTruncated;
+  if (!blocked) {
+    const deleted = await deleteEngagementClubSwimmerPermanently(ref, snapshot, context, "club-unused");
+    return { ok: true, deleted: true, requested: false, usage, ...deleted };
+  }
+  const now = new Date().toISOString();
+  const payload = {
+    swimmerId,
+    swimmerName: cleanText(swimmer.name).slice(0, 160) || [cleanText(swimmer.lastName), cleanText(swimmer.firstName)].filter(Boolean).join(" "),
+    firstName: cleanText(swimmer.firstName).slice(0, 80),
+    lastName: cleanText(swimmer.lastName).slice(0, 80),
+    birthDate: cleanIsoDate(swimmer.birthDate),
+    licenseNumber: cleanText(swimmer.licenseNumber).slice(0, 60),
+    clubId: context.clubId,
+    clubName: context.clubName,
+    regionId: context.regionId,
+    status: "pending",
+    ...usage,
+    requestedAt: now,
+    requestedBy: context.uid,
+    requestedByEmail: context.email || "",
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  const batch = db.batch();
+  batch.set(ref, {
+    active: false,
+    status: "deletion-pending",
+    deletionRequestStatus: "pending",
+    disabledAt: now,
+    disabledBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  deleteEngagementClubRosterSwimmer(batch, db, { ...swimmer, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" }, now);
+  batch.set(requestRef, payload, { merge: false });
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.deletionRequested", context.uid, {
+    swimmerId,
+    clubId: context.clubId,
+    performanceMatchCount: usage.performanceMatchCount,
+    entryUsageCount: usage.entryUsageCount,
+    entryScanTruncated: usage.entryScanTruncated
+  });
+  return { ok: true, deleted: false, requested: true, usage };
+});
+
 exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -7594,31 +7839,126 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Nageur introuvable.");
   }
-  const data = snapshot.data() || {};
-  const alertsSnapshot = await db.collection("engagementSwimmerAlerts")
-    .where("newSwimmerId", "==", swimmerId)
-    .limit(100)
-    .get();
-  const batch = db.batch();
-  batch.delete(ref);
-  batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(swimmerId).slice(0, 40)));
-  const licenseNumberRefId = engagementSwimmerLicenseNumberId(data.licenseNumber);
-  if (licenseNumberRefId) {
-    batch.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId));
-  }
-  deleteEngagementClubRosterSwimmer(batch, db, { ...data, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" });
-  alertsSnapshot.docs.forEach((alertDoc) => batch.delete(alertDoc.ref));
-  await batch.commit();
-  await writeAuditLog("engagementClubSwimmer.deleted", context.uid, {
-    swimmerId,
-    clubId: cleanText(data.clubId).slice(0, 40),
-    alertDocsDeleted: alertsSnapshot.size
+  const swimmer = snapshot.data() || {};
+  const usage = await engagementClubSwimmerDeletionUsage(swimmerId, swimmer, {
+    ...context,
+    clubId: cleanText(swimmer.clubId).slice(0, 40)
   });
+  if (usage.performanceMatchCount > 0 || usage.entryUsageCount > 0 || usage.entryScanTruncated) {
+    throw new HttpsError("failed-precondition", "Ce nageur est utilise dans l'historique. Il doit etre desactive plutot que supprime.", usage);
+  }
+  const deleted = await deleteEngagementClubSwimmerPermanently(ref, snapshot, context, "national");
   return {
     ok: true,
-    swimmerId,
-    alertDocsDeleted: alertsSnapshot.size
+    ...deleted
   };
+});
+
+exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  const status = ["pending", "approved", "rejected"].includes(cleanText(request.data?.status))
+    ? cleanText(request.data.status)
+    : "pending";
+  const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
+  const snapshot = await db.collection("engagementSwimmerDeletionRequests")
+    .where("status", "==", status)
+    .limit(limit)
+    .get();
+  const requests = snapshot.docs.map((doc) => {
+    const data = doc.data() || {};
+    return {
+      id: doc.id,
+      requestType: "swimmer",
+      swimmerId: cleanText(data.swimmerId || doc.id).slice(0, 80),
+      swimmerName: cleanText(data.swimmerName).slice(0, 160),
+      firstName: cleanText(data.firstName).slice(0, 80),
+      lastName: cleanText(data.lastName).slice(0, 80),
+      birthDate: cleanIsoDate(data.birthDate),
+      licenseNumber: cleanText(data.licenseNumber).slice(0, 60),
+      clubId: cleanText(data.clubId).slice(0, 40),
+      clubName: cleanText(data.clubName).slice(0, 140),
+      regionId: cleanText(data.regionId).slice(0, 80),
+      performanceMatchCount: Math.max(0, Math.trunc(Number(data.performanceMatchCount) || 0)),
+      entryUsageCount: Math.max(0, Math.trunc(Number(data.entryUsageCount) || 0)),
+      competitionIds: (Array.isArray(data.competitionIds) ? data.competitionIds : []).map((value) => cleanText(value).slice(0, 128)).filter(Boolean).slice(0, 25),
+      entryScanTruncated: data.entryScanTruncated === true,
+      status: cleanText(data.status),
+      requestedAt: cleanText(data.requestedAt),
+      requestedBy: cleanText(data.requestedBy),
+      requestedByEmail: cleanText(data.requestedByEmail)
+    };
+  }).sort((left, right) => String(right.requestedAt || "").localeCompare(String(left.requestedAt || "")));
+  return { ok: true, status, requests };
+});
+
+exports.resolveEngagementSwimmerDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
+  }
+  const requestId = cleanText(request.data?.requestId).slice(0, 80);
+  const decision = cleanText(request.data?.decision);
+  if (!requestId) throw new HttpsError("invalid-argument", "Demande requise.");
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new HttpsError("invalid-argument", "Decision invalide.");
+  }
+  const requestRef = db.collection("engagementSwimmerDeletionRequests").doc(requestId);
+  const requestSnapshot = await requestRef.get();
+  if (!requestSnapshot.exists) throw new HttpsError("not-found", "Demande de retrait introuvable.");
+  const deletionRequest = requestSnapshot.data() || {};
+  if (cleanText(deletionRequest.status) !== "pending") {
+    throw new HttpsError("failed-precondition", "Demande deja traitee.");
+  }
+  const swimmerId = cleanText(deletionRequest.swimmerId || requestId).slice(0, 80);
+  const swimmerRef = db.collection("engagementClubSwimmers").doc(swimmerId);
+  const swimmerSnapshot = await swimmerRef.get();
+  const swimmer = swimmerSnapshot.exists ? swimmerSnapshot.data() || {} : {};
+  const now = new Date().toISOString();
+  const batch = db.batch();
+  if (swimmerSnapshot.exists) {
+    if (decision === "rejected") {
+      batch.set(swimmerRef, {
+        active: true,
+        status: "active",
+        deletionRequestStatus: "rejected",
+        reactivatedAt: now,
+        reactivatedBy: context.uid,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+      upsertEngagementClubRosterSwimmer(batch, db, { ...swimmer, active: true, status: "active", id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" }, now);
+    } else {
+      batch.set(swimmerRef, {
+        active: false,
+        status: "inactive",
+        deletionRequestStatus: "approved",
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+      deleteEngagementClubRosterSwimmer(batch, db, { ...swimmer, id: swimmerId, swimmerIndexId: swimmerId, source: "engagement" }, now);
+    }
+  }
+  batch.set(requestRef, {
+    status: decision,
+    decidedAt: now,
+    decidedBy: context.uid,
+    decidedByEmail: context.email || "",
+    updatedAt: now,
+    updatedBy: context.uid
+  }, { merge: true });
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.deletionRequestResolved", context.uid, {
+    requestId,
+    swimmerId,
+    decision,
+    clubId: cleanText(deletionRequest.clubId).slice(0, 40),
+    performanceMatchCount: Math.max(0, Math.trunc(Number(deletionRequest.performanceMatchCount) || 0)),
+    entryUsageCount: Math.max(0, Math.trunc(Number(deletionRequest.entryUsageCount) || 0))
+  });
+  return { ok: true, requestId, swimmerId, decision, swimmerActive: decision === "rejected" };
 });
 
 function engagementNationalSwimmerCollectionForSource(db, source = "") {
@@ -8351,7 +8691,7 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       : requestedSource === "reference"
         ? "reference"
         : "performances";
-    const licenseNumber = cleanText(rawSwimmer?.licenseNumber).slice(0, 60);
+    const licenseNumber = cleanText(rawSwimmer?.licenseNumber).toUpperCase().slice(0, 60);
     const individualEntries = cleanEngagementEntryIndividualEntries(
       rawSwimmer?.individualEntries || rawSwimmer?.individualEventCodes || [],
       allowedIndividualEventCodes
@@ -8370,8 +8710,6 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
   });
 
-  const knownLicenses = await engagementLegacySwimmerLicensesByClub(db, context.clubId);
-
   const referenceSwimmersById = new Map();
   intranapSwimmersIndex.forEach((item) => {
     const swimmer = engagementReferenceSwimmerItem(item);
@@ -8386,12 +8724,33 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
   const firestoreRefs = firestoreSwimmers.map((swimmer) => db
     .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
     .doc(swimmer.swimmerIndexId));
-  const firestoreDocs = firestoreRefs.length ? await db.getAll(...firestoreRefs) : [];
+  const requestedLicenseIds = Array.from(new Set(uniqueSwimmers.flatMap((requestedSwimmer) => {
+    const referenceSwimmer = requestedSwimmer.source === "reference"
+      ? referenceSwimmersById.get(requestedSwimmer.swimmerIndexId)
+      : null;
+    return [requestedSwimmer.swimmerIndexId, referenceSwimmer?.id].map(cleanText).filter(Boolean);
+  })));
+  const licenseReads = [];
+  for (let index = 0; index < requestedLicenseIds.length; index += 10) {
+    licenseReads.push(db.collection("engagementSwimmerLicenses")
+      .where("swimmerIndexId", "in", requestedLicenseIds.slice(index, index + 10))
+      .get());
+  }
+  const [firestoreDocs, licenseSnapshots] = await Promise.all([
+    firestoreRefs.length ? db.getAll(...firestoreRefs) : [],
+    Promise.all(licenseReads)
+  ]);
   const firestoreDocsByRequestedId = new Map();
   firestoreDocs.forEach((doc, index) => {
     const requestedSwimmer = firestoreSwimmers[index];
     if (!requestedSwimmer) return;
     firestoreDocsByRequestedId.set(`${requestedSwimmer.source}:${requestedSwimmer.swimmerIndexId}`, doc);
+  });
+  const knownLicenses = new Map();
+  licenseSnapshots.flatMap((snapshot) => snapshot.docs).forEach((doc) => {
+    if (cleanText(doc.data()?.clubId) !== context.clubId) return;
+    const license = engagementSwimmerLicenseItem(doc);
+    if (license.swimmerIndexId) knownLicenses.set(license.swimmerIndexId, license);
   });
 
   let swimmers = await Promise.all(uniqueSwimmers.map(async (requestedSwimmer) => {
@@ -8416,13 +8775,16 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
     }
     const knownLicense = knownLicenses.get(swimmer.swimmerIndexId) || knownLicenses.get(requestedSwimmer.swimmerIndexId);
-    const storedLicenseNumber = cleanText(knownLicense?.licenseNumber || swimmer.licenseNumber).slice(0, 60);
+    const storedLicenseNumber = cleanText(knownLicense?.licenseNumber || swimmer.licenseNumber).toUpperCase().slice(0, 60);
     if (storedLicenseNumber && requestedSwimmer.licenseNumber && storedLicenseNumber !== requestedSwimmer.licenseNumber) {
       throw new HttpsError("failed-precondition", "Le numero de licence deja enregistre ne peut pas etre modifie par le club.");
     }
     const licenseNumber = storedLicenseNumber || requestedSwimmer.licenseNumber;
     if (ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseNumber) {
       throw new HttpsError("invalid-argument", "Numero de licence obligatoire pour chaque nageur.");
+    }
+    if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
+      throw new HttpsError("invalid-argument", "Chaque licence doit respecter le format A-12-34567.");
     }
     const licenseVerificationStatus = storedLicenseNumber
       ? cleanEngagementLicenseVerificationStatus(knownLicense?.verificationStatus || swimmer.licenseVerificationStatus, "pending")
@@ -8447,7 +8809,7 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       individualEntries
     });
   }));
-  if (swimmers.some((swimmer) => swimmer.individualEntries.length)) {
+  if (swimmers.some((swimmer) => swimmer.individualEntries.some((entry) => entry.entryTimeMode === "manual"))) {
     const recordsData = await loadPerformanceRecordsData();
     swimmers = validateEngagementIndividualEntryTimes(swimmers, competitionTimeRules, recordsData);
   }
@@ -8493,6 +8855,193 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
     ok: true,
     swimmers,
     stats: engagementEntryTimeStats(swimmers)
+  };
+});
+
+exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
+  const requestedSource = cleanText(request.data?.source);
+  const source = requestedSource === "engagement"
+    ? "engagement"
+    : requestedSource === "reference"
+      ? "reference"
+      : "performances";
+  if (!competitionId || !swimmerIndexId) {
+    throw new HttpsError("invalid-argument", "Competition et nageur requis.");
+  }
+
+  const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const [competition, entry] = await db.getAll(competitionRef, entryRef);
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
+  }
+
+  let swimmer = null;
+  if (source === "reference") {
+    const reference = intranapSwimmersIndex.find((item) => [
+      item.id,
+      item.swimmerId,
+      ...(Array.isArray(item.aliases) ? item.aliases : []),
+      ...(Array.isArray(item.sourceIds) ? item.sourceIds : [])
+    ].map(cleanText).includes(swimmerIndexId));
+    if (reference) swimmer = engagementReferenceSwimmerItem(reference);
+  } else {
+    const swimmerDoc = await db
+      .collection(source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION)
+      .doc(swimmerIndexId)
+      .get();
+    if (swimmerDoc.exists) {
+      swimmer = source === "engagement"
+        ? engagementNewSwimmerItem(swimmerDoc)
+        : engagementClubSwimmerItem(swimmerDoc);
+    }
+  }
+  if (!swimmer) throw new HttpsError("not-found", "Nageur introuvable.");
+  if (swimmer.clubId !== context.clubId) {
+    throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
+  }
+
+  const competitionData = competition.data() || {};
+  const competitionTimeRules = {
+    date: cleanIsoDate(competitionData.date),
+    poolLength: cleanEngagementPoolLength(competitionData.poolLength),
+    timingType: cleanEngagementTimingType(competitionData.timingType),
+    qualificationTimesMode: cleanEngagementQualificationTimesMode(competitionData.qualificationTimesMode),
+    qualificationStartDate: cleanIsoDate(competitionData.qualificationStartDate),
+    qualificationEndDate: cleanIsoDate(competitionData.qualificationEndDate),
+    missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode)
+  };
+  const eventEntries = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false })
+    .filter((event) => event.type === "individual")
+    .map((event) => ({ eventCode: event.code }));
+  const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
+    { ...swimmer, swimmerIndexId: swimmer.id || swimmerIndexId, source },
+    eventEntries,
+    competitionTimeRules
+  );
+  return {
+    ok: true,
+    swimmerIndexId,
+    individualEntries
+  };
+});
+
+exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+
+  const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const [competition, entry] = await db.getAll(competitionRef, entryRef);
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertEngagementClubWriteOpen(competition.data() || {});
+  if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+    throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
+  }
+
+  const competitionData = competition.data() || {};
+  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  const allowedIndividualEventCodes = new Set(
+    competitionEvents.filter((event) => event.type === "individual").map((event) => event.code)
+  );
+  const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(competitionData.maxEventsPerSwimmer);
+  const competitionTimeRules = {
+    date: cleanIsoDate(competitionData.date),
+    poolLength: cleanEngagementPoolLength(competitionData.poolLength),
+    timingType: cleanEngagementTimingType(competitionData.timingType),
+    qualificationTimesMode: cleanEngagementQualificationTimesMode(competitionData.qualificationTimesMode),
+    qualificationStartDate: cleanIsoDate(competitionData.qualificationStartDate),
+    qualificationEndDate: cleanIsoDate(competitionData.qualificationEndDate),
+    missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode)
+  };
+  const savedSwimmers = (Array.isArray(entry.data()?.swimmers) ? entry.data().swimmers : [])
+    .map(cleanEngagementEntrySwimmer)
+    .filter((swimmer) => swimmer.swimmerIndexId);
+  const savedSwimmersById = new Map(savedSwimmers.map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
+  const requestedChanges = Array.isArray(request.data?.swimmers) ? request.data.swimmers.slice(0, 100) : [];
+  const seen = new Set();
+
+  let changedSwimmers = await Promise.all(requestedChanges.map(async (rawSwimmer) => {
+    const swimmerIndexId = cleanText(rawSwimmer?.swimmerIndexId).slice(0, 80);
+    if (!swimmerIndexId || seen.has(swimmerIndexId)) {
+      throw new HttpsError("invalid-argument", "Nageur modifie invalide ou duplique.");
+    }
+    seen.add(swimmerIndexId);
+    const savedSwimmer = savedSwimmersById.get(swimmerIndexId);
+    if (!savedSwimmer) {
+      throw new HttpsError("failed-precondition", "Enregistrez d'abord les nageurs selectionnes avant leurs courses.");
+    }
+    const rawEntries = Array.isArray(rawSwimmer?.individualEntries)
+      ? rawSwimmer.individualEntries
+      : Array.isArray(rawSwimmer?.individualEventCodes)
+        ? rawSwimmer.individualEventCodes
+        : [];
+    const requestedCodes = rawEntries
+      .map((rawEntry) => cleanText(rawEntry?.eventCode || rawEntry?.code || rawEntry).toUpperCase().replace(/\s+/g, ""))
+      .filter(Boolean);
+    if (requestedCodes.some((code) => !allowedIndividualEventCodes.has(code))) {
+      throw new HttpsError("invalid-argument", "Course individuelle non ouverte sur cette competition.");
+    }
+    const individualEntries = cleanEngagementEntryIndividualEntries(rawEntries, allowedIndividualEventCodes);
+    if (maxEventsPerSwimmer > 0 && individualEntries.length > maxEventsPerSwimmer) {
+      throw new HttpsError("failed-precondition", `Maximum ${maxEventsPerSwimmer} course(s) individuelle(s) par nageur.`);
+    }
+    const resolvedEntries = await resolveEngagementIndividualEntriesForSwimmer(
+      savedSwimmer,
+      individualEntries,
+      competitionTimeRules
+    );
+    return cleanEngagementEntrySwimmer({
+      ...savedSwimmer,
+      individualEntries: resolvedEntries
+    });
+  }));
+
+  if (changedSwimmers.some((swimmer) => swimmer.individualEntries.some((entryItem) => entryItem.entryTimeMode === "manual"))) {
+    const recordsData = await loadPerformanceRecordsData();
+    changedSwimmers = validateEngagementIndividualEntryTimes(changedSwimmers, competitionTimeRules, recordsData);
+  }
+  const changedById = new Map(changedSwimmers.map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
+  const swimmers = savedSwimmers.map((swimmer) => changedById.get(swimmer.swimmerIndexId) || swimmer);
+  const now = new Date().toISOString();
+  const updatedEntryData = {
+    ...(entry.data() || {}),
+    swimmers,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  if (changedSwimmers.length) {
+    await entryRef.set({
+      swimmers,
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+    await writeAuditLog("engagementClubEntry.individualEntriesSaved", context.uid, {
+      competitionId,
+      clubId: context.clubId,
+      changedSwimmerCount: changedSwimmers.length,
+      individualEntryCount: changedSwimmers.reduce((sum, swimmer) => sum + swimmer.individualEntries.length, 0)
+    });
+  }
+  return {
+    ok: true,
+    changedSwimmerCount: changedSwimmers.length,
+    entry: engagementClubEntryItem({
+      id: entryRef.id,
+      exists: true,
+      data: () => updatedEntryData
+    })
   };
 });
 
@@ -8561,10 +9110,19 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     clubId: context.clubId,
     swimmerCount: swimmers.length
   });
-  const updated = await entryRef.get();
+  const updatedEntryData = {
+    ...(entry.data() || {}),
+    swimmers,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
   return {
     ok: true,
-    entry: engagementClubEntryItem(updated)
+    entry: engagementClubEntryItem({
+      id: entryRef.id,
+      exists: true,
+      data: () => updatedEntryData
+    })
   };
 });
 
@@ -8623,6 +9181,9 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
+  if (!competition.poolLaneCount) {
+    throw new HttpsError("invalid-argument", "Le nombre de lignes d'eau est obligatoire.");
+  }
   const now = new Date().toISOString();
   const docRef = db.collection("engagementCompetitions").doc();
   const payload = {
