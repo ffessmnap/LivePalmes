@@ -57,6 +57,7 @@ function runUnitTests() {
     "livepalmes-public-records-store-tests.js",
     "livepalmes-console-access-tests.js",
     "livepalmes-portal-access-protection-tests.js",
+    "livepalmes-portal-access-mail-tests.js",
     "livepalmes-portal-optimization-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
