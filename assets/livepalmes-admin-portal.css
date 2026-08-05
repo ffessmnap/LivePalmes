@@ -6938,6 +6938,16 @@
   padding: 0;
 }
 
+#adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-remove svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-draft-notice {
   grid-column: 1 / -1;
   border-left: 3px solid #d49a18;
@@ -7448,7 +7458,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     align-items: start;
-    padding: 10px 40px 10px 10px;
+    padding: 10px 76px 10px 10px;
   }
 
   #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-event,
@@ -7472,8 +7482,8 @@
     width: 100%;
   }
 
-  #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-remove,
-  #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-cancel-edit {
+  #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-row > .admin-engagements-club-relay-remove,
+  #adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-row > .admin-engagements-club-relay-cancel-edit {
     position: absolute;
     top: 10px;
     right: 7px;
@@ -7483,7 +7493,7 @@
     position: absolute;
     top: 8px;
     right: 7px;
-    display: grid;
+    display: flex;
     gap: 4px;
   }
 

@@ -53,11 +53,13 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier sur ordinateur et mobile que la matrice defile horizontalement, que Nom reste fixe a gauche et que le crayon Temps reste accessible a droite.
 - Verifier que les femmes precedent les hommes dans la matrice Courses, puis que chaque groupe est trie par nom et prenom.
 - Cocher puis décocher plusieurs courses d'un nageur : vérifier que chaque clic est enregistré automatiquement, que le temps renvoyé apparaît sous la case sans élargir la colonne et que la limite de courses existante reste appliquée.
-- Vérifier que l'onglet Courses ne répète ni son titre, ni le nombre de courses sélectionnées, ni un bouton ou une barre d'enregistrement. Seul « Enregistrement de la course... » apparaît pendant l'écriture et aucun message permanent ne reste après le succès.
+- Cocher rapidement plusieurs courses d'un même nageur puis de plusieurs nageurs : vérifier qu'un seul appel groupé part environ `500 ms` après le dernier clic et que le dernier état de chaque ligne est conservé.
+- Faire défiler Courses horizontalement, cocher une course puis attendre la sauvegarde : la matrice doit conserver exactement sa position et le focus doit rester sur la case choisie.
+- Vérifier que l'onglet Courses ne répète ni son titre, ni le nombre de courses sélectionnées, ni un bouton ou une barre d'enregistrement. Seul « Enregistrement de la course... » ou « Enregistrement des courses... » apparaît pendant l'écriture et aucun message permanent ne reste après le succès.
 - Ouvrir le crayon d'un nageur et verifier qu'il reutilise les temps deja charges ; fermer puis rouvrir la fenetre et verifier que le cache evite une nouvelle lecture.
 - Dans la fenêtre des temps, consulter les sources, modifier un temps autorisé, rétablir sa valeur automatique puis valider : la ligne du nageur doit être enregistrée immédiatement et les validations métier existantes doivent rester appliquées.
 - Dans un temps manuel de Course puis dans un temps de Relais, saisir `5912`, `12345`, `012345` et `59,12` : a la sortie du champ, verifier respectivement `00:59.12`, `01:23.45`, `01:23.45` et `00:59.12`. Une seconde superieure a 59 ou un temps nul doit etre refuse.
-- Modifier une course d'un nageur déjà enregistré : vérifier que seule cette fiche est envoyée immédiatement à `saveEngagementClubIndividualEntries`, sans lecture de l'effectif complet ni des licences du club.
+- Modifier une course d'un nageur déjà enregistré : vérifier que seule cette fiche est ajoutée au prochain lot de `saveEngagementClubIndividualEntries`, sans lecture de l'effectif complet ni des licences du club.
 - Enregistrer un temps automatique sur une competition autorisant la saisie manuelle : son etat doit rester automatique apres sauvegarde. Modifier ensuite explicitement ce temps et verifier que seul ce second cas prend l'etat manuel.
 - Avec plusieurs nageurs sélectionnés, vérifier qu'un clic dans Courses ne traite que la ligne modifiée et que plusieurs clics rapides sont enregistrés dans l'ordre sans perdre le dernier état.
 - Dans Chef d'equipe, verifier que le formulaire est replie sans choix, qu'il se deploie en choisissant « Declarer un chef d'equipe » et que la case « hors club » precede son libelle sans le chevaucher.
@@ -78,6 +80,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Apres composition, verifier que la ligne affiche les noms et l'initiale des prenoms, sans compteur `4/4`.
 - Depuis le dernier champ d'un relais en cours de saisie, cliquer directement sur le choix des participants : la fenetre doit s'ouvrir au premier clic malgré la perte de focus du champ.
 - Apres validation, verifier que le relais est présenté en lecture seule, que les noms complets des participants restent visibles et que le crayon repasse la ligne en modification. Annuler doit restaurer les valeurs enregistrées.
+- Sur une ligne Relais enregistrée, vérifier que le crayon et la poubelle sont côte à côte sans chevauchement sur ordinateur et mobile ; la croix doit rester réservée à l'annulation d'une modification.
 - Valider les relayeurs : verifier l'etat de chargement dans la fenetre, sa fermeture apres reussite et la confirmation « Relais enregistre » sans utiliser de bouton d'enregistrement global.
 - Simuler une erreur d'enregistrement du relais : la fenetre doit rester ouverte, conserver les choix et afficher l'erreur sans perdre la ligne.
 - A une largeur proche de 657 px, passer de Chef d'equipe a Nageurs puis Relais : la largeur globale ne doit plus varier avec l'apparition de la barre de defilement.

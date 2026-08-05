@@ -580,6 +580,9 @@
   let engagementClubEntryMutationQueue = Promise.resolve();
   let engagementClubEntryMutationRevision = 0;
   let engagementClubLastPersistedEntry = null;
+  const engagementClubEntriesAutosaveSwimmers = new Map();
+  let engagementClubEntriesAutosaveTimer = null;
+  let engagementClubEntriesAutosaveCompetitionId = "";
   let engagementClubTimesDialogSwimmerId = "";
   let engagementClubTimesDialogLoading = false;
   let engagementClubTimesDialogOpener = null;
@@ -805,6 +808,7 @@
     engagementClubRelayDialogSaving = false;
     engagementClubEntryMutationRevision += 1;
     engagementClubLastPersistedEntry = null;
+    resetEngagementClubEntriesAutosave();
     engagementClubPersistedSwimmerIds.clear();
     setEngagementClubEntriesDirty(false);
     engagementClubPeople = [];
@@ -3192,7 +3196,52 @@
     setEngagementClubPersistedSwimmers(entry);
   }
 
-  function queueEngagementClubEntryMutation({ execute, messageElement, loadingMessage, errorPrefix = "Enregistrement impossible", competitionId = selectedEngagementCompetitionId } = {}) {
+  function captureEngagementClubEntriesViewport() {
+    const shell = elements.engagementsClubEntriesList?.querySelector(".admin-engagements-club-entries-table-shell");
+    if (!shell) return null;
+    const active = document.activeElement;
+    const row = active?.closest?.("[data-engagement-club-entry-row]");
+    return {
+      scrollLeft: shell.scrollLeft,
+      scrollTop: shell.scrollTop,
+      swimmerIndexId: row?.dataset.engagementClubEntrySwimmerId || "",
+      eventCode: active?.dataset?.engagementClubSwimmerEvent || "",
+      timesButton: active?.matches?.("[data-engagement-club-times-open]") === true,
+      shellFocused: active === shell
+    };
+  }
+
+  function restoreEngagementClubEntriesViewport(state = null) {
+    if (!state) return;
+    const shell = elements.engagementsClubEntriesList?.querySelector(".admin-engagements-club-entries-table-shell");
+    if (!shell) return;
+    const row = Array.from(shell.querySelectorAll("[data-engagement-club-entry-row]"))
+      .find((candidate) => candidate.dataset.engagementClubEntrySwimmerId === state.swimmerIndexId);
+    const target = state.eventCode
+      ? Array.from(row?.querySelectorAll("[data-engagement-club-swimmer-event]") || [])
+        .find((candidate) => candidate.dataset.engagementClubSwimmerEvent === state.eventCode)
+      : state.timesButton
+        ? row?.querySelector("[data-engagement-club-times-open]")
+        : state.shellFocused ? shell : null;
+    target?.focus?.({ preventScroll: true });
+    shell.scrollLeft = state.scrollLeft;
+    shell.scrollTop = state.scrollTop;
+  }
+
+  function renderEngagementClubMutationResult(entry = {}, renderScope = "all") {
+    selectedEngagementClubEntry = entry || {};
+    if (renderScope === "entries") {
+      const viewport = captureEngagementClubEntriesViewport();
+      engagementClubEntriesRenderedCompetitionId = "";
+      renderEngagementClubEntries();
+      renderEngagementClubSummary();
+      restoreEngagementClubEntriesViewport(viewport);
+      return;
+    }
+    renderEngagementClubEntry(selectedEngagementClubEntry);
+  }
+
+  function queueEngagementClubEntryMutation({ execute, messageElement, loadingMessage, errorPrefix = "Enregistrement impossible", competitionId = selectedEngagementCompetitionId, renderScope = "all" } = {}) {
     const revision = ++engagementClubEntryMutationRevision;
     if (messageElement) {
       messageElement.textContent = loadingMessage || "Enregistrement...";
@@ -3203,9 +3252,8 @@
         const result = await execute?.();
         if (result?.entry && competitionId === selectedEngagementCompetitionId) rememberEngagementClubPersistedEntry(result.entry);
         if (revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId && result?.entry) {
-          selectedEngagementClubEntry = result.entry;
           setEngagementClubEntriesDirty(false);
-          renderEngagementClubEntry(selectedEngagementClubEntry);
+          renderEngagementClubMutationResult(result.entry, renderScope);
         }
         if (messageElement && revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId) {
           messageElement.textContent = "";
@@ -3214,9 +3262,8 @@
         return true;
       } catch (error) {
         if (revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId && engagementClubLastPersistedEntry) {
-          selectedEngagementClubEntry = cloneEngagementClubEntry(engagementClubLastPersistedEntry);
           setEngagementClubEntriesDirty(false);
-          renderEngagementClubEntry(selectedEngagementClubEntry);
+          renderEngagementClubMutationResult(cloneEngagementClubEntry(engagementClubLastPersistedEntry), renderScope);
         }
         if (messageElement && competitionId === selectedEngagementCompetitionId) {
           messageElement.textContent = `${errorPrefix} : ${error?.message || error}`;
@@ -3246,23 +3293,66 @@
     });
   }
 
+  function resetEngagementClubEntriesAutosave() {
+    if (engagementClubEntriesAutosaveTimer) global.clearTimeout(engagementClubEntriesAutosaveTimer);
+    engagementClubEntriesAutosaveTimer = null;
+    engagementClubEntriesAutosaveSwimmers.clear();
+    engagementClubEntriesAutosaveCompetitionId = "";
+  }
+
+  function discardPendingEngagementClubIndividualEntries(swimmerIndexId = "") {
+    const cleanId = String(swimmerIndexId || "").trim();
+    if (!cleanId) return;
+    engagementClubEntriesAutosaveSwimmers.delete(cleanId);
+    if (engagementClubEntriesAutosaveSwimmers.size || !engagementClubEntriesAutosaveTimer) return;
+    global.clearTimeout(engagementClubEntriesAutosaveTimer);
+    engagementClubEntriesAutosaveTimer = null;
+    engagementClubEntriesAutosaveCompetitionId = "";
+  }
+
+  function flushEngagementClubIndividualEntriesAutosave() {
+    if (engagementClubEntriesAutosaveTimer) global.clearTimeout(engagementClubEntriesAutosaveTimer);
+    engagementClubEntriesAutosaveTimer = null;
+    const competitionId = engagementClubEntriesAutosaveCompetitionId;
+    const swimmers = Array.from(engagementClubEntriesAutosaveSwimmers.values());
+    engagementClubEntriesAutosaveSwimmers.clear();
+    engagementClubEntriesAutosaveCompetitionId = "";
+    if (!competitionId || !swimmers.length || competitionId !== selectedEngagementCompetitionId) return Promise.resolve(false);
+    return queueEngagementClubEntryMutation({
+      competitionId,
+      renderScope: "entries",
+      messageElement: elements.engagementsClubEntriesMessage,
+      loadingMessage: swimmers.length > 1 ? "Enregistrement des courses..." : "Enregistrement de la course...",
+      execute: () => callFunction("saveEngagementClubIndividualEntries", {
+        competitionId,
+        swimmers
+      })
+    });
+  }
+
   function persistEngagementClubIndividualEntries(swimmer = {}) {
     const swimmerIndexId = String(swimmer.swimmerIndexId || swimmer.id || "").trim();
     const competitionId = selectedEngagementCompetitionId;
-    if (!swimmerIndexId) return Promise.resolve(false);
+    if (!swimmerIndexId || !competitionId) return Promise.resolve(false);
+    if (engagementClubEntriesAutosaveCompetitionId && engagementClubEntriesAutosaveCompetitionId !== competitionId) {
+      resetEngagementClubEntriesAutosave();
+    }
     markEngagementClubEntrySwimmerDirty(swimmerIndexId);
-    return queueEngagementClubEntryMutation({
-      competitionId,
-      messageElement: elements.engagementsClubEntriesMessage,
-      loadingMessage: "Enregistrement de la course...",
-      execute: () => callFunction("saveEngagementClubIndividualEntries", {
-        competitionId,
-        swimmers: [{
-          swimmerIndexId,
-          individualEntries: swimmer.individualEntries || []
-        }]
-      })
+    engagementClubEntriesAutosaveCompetitionId = competitionId;
+    engagementClubEntriesAutosaveSwimmers.set(swimmerIndexId, {
+      swimmerIndexId,
+      individualEntries: cloneEngagementClubEntry(swimmer.individualEntries || [])
     });
+    engagementClubEntryMutationRevision += 1;
+    if (elements.engagementsClubEntriesMessage) {
+      elements.engagementsClubEntriesMessage.textContent = "Enregistrement des courses...";
+      elements.engagementsClubEntriesMessage.dataset.tone = "loading";
+    }
+    if (engagementClubEntriesAutosaveTimer) global.clearTimeout(engagementClubEntriesAutosaveTimer);
+    engagementClubEntriesAutosaveTimer = global.setTimeout(() => {
+      void flushEngagementClubIndividualEntriesAutosave();
+    }, 500);
+    return Promise.resolve(true);
   }
 
   function updateEngagementClubEntriesSummary() {
@@ -4749,7 +4839,7 @@
             </div>
             <div class="admin-engagements-club-relay-row-actions">
               <button type="button" class="ghost-button compact admin-engagements-club-relay-edit" data-engagement-club-relay-edit aria-label="Modifier le relais" title="Modifier le relais">✎</button>
-              <button type="button" class="ghost-button compact admin-engagements-club-relay-remove" data-engagement-club-relay-remove aria-label="Supprimer le relais" title="Supprimer le relais">×</button>
+              <button type="button" class="ghost-button compact admin-engagements-club-relay-remove" data-engagement-club-relay-remove aria-label="Supprimer le relais" title="Supprimer le relais"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button>
             </div>
           </div>
         `;
@@ -4781,7 +4871,7 @@
           </div>
           ${relay.persisted === true
             ? '<button type="button" class="ghost-button compact admin-engagements-club-relay-cancel-edit" data-engagement-club-relay-cancel-edit aria-label="Annuler les modifications" title="Annuler les modifications">×</button>'
-            : '<button type="button" class="ghost-button compact admin-engagements-club-relay-remove" data-engagement-club-relay-remove aria-label="Supprimer le relais" title="Supprimer le relais">×</button>'}
+            : '<button type="button" class="ghost-button compact admin-engagements-club-relay-remove" data-engagement-club-relay-remove aria-label="Supprimer le relais" title="Supprimer le relais"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button>'}
           ${relay.draftNotice ? `<small class="admin-engagements-club-relay-draft-notice" role="status">${escapeHtml(relay.draftNotice)}</small>` : ""}
         </div>
       `;
@@ -6052,6 +6142,7 @@
     selectedEngagementClubEntry = null;
     engagementClubEntryMutationRevision += 1;
     engagementClubLastPersistedEntry = null;
+    resetEngagementClubEntriesAutosave();
     engagementClubPersistedSwimmerIds.clear();
     setEngagementClubEntriesDirty(false);
     engagementClubRecapEntries = [];
@@ -6124,6 +6215,7 @@
     selectedEngagementCompetitionId = cleanId;
     engagementClubEntryMutationRevision += 1;
     engagementClubLastPersistedEntry = null;
+    resetEngagementClubEntriesAutosave();
     engagementClubSwimmersRenderedCompetitionId = "";
     engagementClubEntriesRenderedCompetitionId = "";
     engagementClubRelaysRenderedCompetitionId = "";
@@ -10054,6 +10146,7 @@
       }
       if (selectionChanged) {
         const swimmerIndexId = checkbox?.dataset.engagementClubSwimmerId || "";
+        if (checkbox?.checked !== true) discardPendingEngagementClubIndividualEntries(swimmerIndexId);
         const shouldExpandLicense = checkbox?.checked === true && Boolean(license?.matches("input"));
         const swimmers = selectedEngagementClubSwimmerRows();
         const changedSwimmer = swimmers.find((swimmer) => swimmer.swimmerIndexId === swimmerIndexId) || {
