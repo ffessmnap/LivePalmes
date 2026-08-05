@@ -9045,6 +9045,112 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
   };
 });
 
+exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementClubAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  const swimmerIndexId = cleanText(request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId).slice(0, 80);
+  const selected = request.data?.selected === true;
+  if (!competitionId) {
+    throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (!swimmerIndexId) {
+    throw new HttpsError("invalid-argument", "Nageur requis.");
+  }
+
+  const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
+  const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
+  const competition = await competitionRef.get();
+  if (!competition.exists) {
+    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+  }
+  assertEngagementClubWriteOpen(competition.data() || {});
+
+  let validatedSwimmer = null;
+  if (selected) {
+    const swimmers = await buildEngagementClubSwimmersFromRequest({ swimmers: [request.data?.swimmer || {}] }, context, competition.data() || {});
+    validatedSwimmer = swimmers[0] || null;
+    if (!validatedSwimmer || validatedSwimmer.swimmerIndexId !== swimmerIndexId) {
+      throw new HttpsError("invalid-argument", "Nageur invalide.");
+    }
+  }
+
+  const now = new Date().toISOString();
+  let changed = false;
+  let updatedEntryData = null;
+  await db.runTransaction(async (transaction) => {
+    const entry = await transaction.get(entryRef);
+    if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
+      throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
+    }
+    const savedSwimmers = (Array.isArray(entry.data()?.swimmers) ? entry.data().swimmers : [])
+      .map(cleanEngagementEntrySwimmer)
+      .filter((swimmer) => swimmer.swimmerIndexId);
+    const alreadySelected = savedSwimmers.some((swimmer) => swimmer.swimmerIndexId === swimmerIndexId);
+    const swimmers = selected
+      ? (alreadySelected ? savedSwimmers : [...savedSwimmers, validatedSwimmer])
+      : savedSwimmers.filter((swimmer) => swimmer.swimmerIndexId !== swimmerIndexId);
+    changed = selected !== alreadySelected;
+    updatedEntryData = {
+      ...(entry.data() || {}),
+      swimmers,
+      updatedAt: changed ? now : cleanText(entry.data()?.updatedAt),
+      updatedBy: changed ? context.uid : cleanText(entry.data()?.updatedBy)
+    };
+    if (!changed) return;
+    transaction.set(entryRef, {
+      swimmers,
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+    if (!selected || !validatedSwimmer) return;
+    if (validatedSwimmer.licenseNumber && !validatedSwimmer.licenseLocked && validatedSwimmer.source !== "reference") {
+      const swimmerCollection = validatedSwimmer.source === "engagement" ? "engagementClubSwimmers" : PERFORMANCE_SWIMMERS_COLLECTION;
+      transaction.set(db.collection(swimmerCollection).doc(validatedSwimmer.swimmerIndexId), {
+        licenseNumber: cleanText(validatedSwimmer.licenseNumber).slice(0, 60),
+        licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(validatedSwimmer.licenseVerificationStatus, "pending"),
+        licenseSeasonLabel: cleanText(validatedSwimmer.licenseSeasonLabel).slice(0, 20),
+        licenseSeasonStatus: cleanEngagementLicenseSeasonStatus(validatedSwimmer.licenseSeasonStatus, "to_check"),
+        licenseUpdatedAt: now,
+        licenseUpdatedBy: context.uid,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    }
+    if (validatedSwimmer.licenseNumber && !validatedSwimmer.licenseLocked) {
+      const licenseRef = db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(validatedSwimmer));
+      transaction.set(licenseRef, {
+        ...engagementSwimmerLicensePayload(validatedSwimmer, context, {
+          type: "engagement",
+          verificationSource: "club",
+          competitionId,
+          collectedAt: now
+        }),
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    }
+    upsertEngagementClubRosterSwimmer(transaction, db, validatedSwimmer, now);
+  });
+
+  if (changed) {
+    await writeAuditLog(selected ? "engagementClubEntry.swimmerAdded" : "engagementClubEntry.swimmerRemoved", context.uid, {
+      competitionId,
+      clubId: context.clubId,
+      swimmerIndexId
+    });
+  }
+  return {
+    ok: true,
+    changed,
+    selected,
+    entry: engagementClubEntryItem({
+      id: entryRef.id,
+      exists: true,
+      data: () => updatedEntryData || {}
+    })
+  };
+});
+
 exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
