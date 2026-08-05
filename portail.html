@@ -1160,13 +1160,6 @@
                     </div>
                     <div id="adminEngagementsDetailSwimmersPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSwimmersTab" data-engagements-detail-tab-panel="swimmers" hidden>
                       <form id="adminEngagementsClubSwimmersForm" class="admin-engagements-club-step-form" data-club-step="swimmers">
-                        <div class="admin-engagements-events-head">
-                          <div>
-                            <strong>Nageurs</strong>
-                            <small id="adminEngagementsClubSwimmersSummary">Aucun nageur s&eacute;lectionn&eacute;.</small>
-                          </div>
-                          <button id="adminEngagementsClubSwimmersSaveButton" type="submit">Enregistrer</button>
-                        </div>
                         <div id="adminEngagementsClubSelectedSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
                         <label class="admin-engagements-club-search">
                           Rechercher dans les nageurs connus du club
@@ -1213,10 +1206,6 @@
                     <div id="adminEngagementsDetailEntriesPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailEntriesTab" data-engagements-detail-tab-panel="entries" hidden>
                       <form id="adminEngagementsClubEntriesForm" class="admin-engagements-club-step-form" data-club-step="entries">
                         <div id="adminEngagementsClubEntriesList" class="admin-engagements-club-entries-list" aria-live="polite"></div>
-                        <div id="adminEngagementsClubEntriesSaveBar" class="admin-engagements-club-entries-save-bar" hidden>
-                          <span>Modifications non enregistr&eacute;es</span>
-                          <button id="adminEngagementsClubEntriesSaveButton" type="submit">Enregistrer</button>
-                        </div>
                         <p id="adminEngagementsClubEntriesMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                       <dialog id="adminEngagementsClubTimesDialog" class="admin-engagements-club-times-dialog" aria-labelledby="adminEngagementsClubTimesDialogTitle">
@@ -1245,12 +1234,28 @@
                           </div>
                           <div class="admin-engagements-inline-actions">
                             <button id="adminEngagementsClubRelaysAddButton" class="ghost-button compact" type="button">Ajouter</button>
-                            <button id="adminEngagementsClubRelaysSaveButton" type="submit">Enregistrer</button>
                           </div>
                         </div>
                         <div id="adminEngagementsClubRelaysList" class="admin-engagements-club-relays-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubRelaysMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
+                      <dialog id="adminEngagementsClubRelayDialog" class="admin-engagements-club-times-dialog admin-engagements-club-relay-dialog" aria-labelledby="adminEngagementsClubRelayDialogTitle">
+                        <div class="admin-engagements-club-times-dialog-head">
+                          <div>
+                            <span>Composition du relais</span>
+                            <h3 id="adminEngagementsClubRelayDialogTitle">Relais</h3>
+                            <p id="adminEngagementsClubRelayDialogMeta"></p>
+                          </div>
+                          <button id="adminEngagementsClubRelayDialogClose" class="ghost-button compact" type="button" aria-label="Fermer la fen&ecirc;tre">&times;</button>
+                        </div>
+                        <div id="adminEngagementsClubRelayDialogList" class="admin-engagements-club-relay-dialog-list"></div>
+                        <p id="adminEngagementsClubRelayDialogMessage" class="admin-portal-message" aria-live="polite"></p>
+                        <div class="admin-engagements-club-times-dialog-actions">
+                          <button id="adminEngagementsClubRelayDialogReset" class="ghost-button compact" type="button">RAZ</button>
+                          <button id="adminEngagementsClubRelayDialogCancel" class="ghost-button" type="button">Annuler</button>
+                          <button id="adminEngagementsClubRelayDialogApply" type="button">Valider les relayeurs</button>
+                        </div>
+                      </dialog>
                     </div>
                     <div id="adminEngagementsDetailSummaryPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSummaryTab" data-engagements-detail-tab-panel="summary" hidden>
                       <section class="admin-engagements-club-step admin-engagements-club-summary" data-club-step="summary">

@@ -436,6 +436,8 @@ Regle d'interpretation :
 
 L'affichage final est toujours normalise en `MM:SS.CC`.
 
+Dans le portail, cette normalisation est appliquée dès la sortie du champ et avant toute validation : les séparateurs peuvent être omis pendant la saisie, aussi bien pour une course individuelle que pour un relais.
+
 ### Controle des temps
 
 Un temps sous le record ou la MPF applicable est bloquant.

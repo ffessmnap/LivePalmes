@@ -649,6 +649,8 @@ Actions :
 - temps d'engagement connu ou manuel ;
 - max d'epreuves par nageur.
 
+La selection d'un nageur est persistee immediatement par une fonction unitaire : le retrait lit uniquement la competition et l'inscription du club ; l'ajout ajoute au plus la fiche nageur et sa licence aux lectures fixes. Le choix d'une course appelle `saveEngagementClubIndividualEntries` pour le seul nageur modifie. Les ecritures du navigateur sont mises en file afin que des clics rapides ne puissent pas s'ecraser mutuellement. Aucune de ces actions ne relit l'effectif complet du club.
+
 ### Lot 5 - Officiels et relais
 
 Objectif : completer le parcours club.
