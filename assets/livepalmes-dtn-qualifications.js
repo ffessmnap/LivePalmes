@@ -134,7 +134,16 @@
         sex,
         standards: edfThresholdPayload(season, sex)
       });
-    }).then((result) => result.data || {});
+    }).then((result) => {
+      const overview = result.data || {};
+      if (overview.cache?.pending && elements.refreshStatus) {
+        elements.refreshStatus.dataset.tone = "";
+        elements.refreshStatus.textContent = overview.cache.stale
+          ? "Dernière vue affichée. Actualisation en arrière-plan."
+          : "Calcul lancé en arrière-plan. Revenez dans quelques instants.";
+      }
+      return overview;
+    });
     overviewCache.set(key, promise);
     promise.catch(() => overviewCache.delete(key));
     return promise;
@@ -157,8 +166,10 @@
       });
       renderGrid();
       const sexes = state.edfTab === "summary" ? ["F", "M"] : [state.sex];
-      await Promise.all(sexes.map((sex) => loadEdfOverview(season, sex)));
-      elements.refreshStatus.textContent = "Qualifications actualisées.";
+      const overviews = await Promise.all(sexes.map((sex) => loadEdfOverview(season, sex)));
+      elements.refreshStatus.textContent = overviews.some((overview) => overview.cache?.pending)
+        ? "Recalcul lancé en arrière-plan. La dernière vue reste disponible."
+        : "Qualifications actualisées.";
     } catch (error) {
       elements.refreshStatus.dataset.tone = "error";
       elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;

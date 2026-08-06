@@ -14,13 +14,32 @@ const views = [
   { name: "account", hash: "mon-compte", selector: "#adminAccountView", authenticated: true },
   { name: "performance-home", hash: "gestion-performances", selector: "#adminPerformanceHomeView", authenticated: true, menu: "performance" },
   { name: "records", hash: "records-mpf", selector: "#adminRecordsView", authenticated: true, menu: "performance" },
+  { name: "import", hash: "import-competitions", selector: "#adminImportView", authenticated: true, menu: "performance" },
+  { name: "correction", hash: "correction-performance", selector: "#adminCorrectionView", authenticated: true, menu: "performance" },
   { name: "engagements", hash: "club-competitions", selector: "#adminEngagementsView", authenticated: true },
   { name: "club-swimmers", hash: "club-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true },
+  { name: "club-swimmer-change", hash: "club-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true, swimmerCorrectionDialogFixture: "request" },
+  { name: "club-officials", hash: "club-officiels", selector: "#adminEngagementsView", authenticated: true, menu: "club", peopleFixture: true },
+  { name: "club-officials-add", hash: "club-officiels", selector: "#adminEngagementsView", authenticated: true, menu: "club", peopleFixture: true, peopleFormFixture: true },
   { name: "competition-home", hash: "organisation-competitions", selector: "#adminCompetitionHomeView", authenticated: true, menu: "engagements" },
+  { name: "competition-calendar", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminCalendarFixture: true },
+  { name: "competition-create", hash: "competitions-creation", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminCreateFixture: true },
+  { name: "competition-detail", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminDetailFixture: true },
   { name: "dtn-home", hash: "espace-dtn", selector: "#adminDtnHomeView", authenticated: true, menu: "dtn" },
   { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
   { name: "national-home", hash: "administration-nationale", selector: "#adminNationalHomeView", authenticated: true, menu: "national" },
-  { name: "access", hash: "gestion-acces", selector: "#adminAccessView", authenticated: true }
+  { name: "national-requests", hash: "administration-suppressions", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalRequestsFixture: true },
+  { name: "national-swimmers", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true },
+  { name: "national-swimmers-merge", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true, nationalSwimmersMergeFixture: true },
+  { name: "national-swimmer-edit", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true, swimmerCorrectionDialogFixture: "direct" },
+  { name: "national-officials", hash: "administration-officiels", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalPeopleFixture: true },
+  { name: "national-audit", hash: "administration-historique", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalAuditFixture: true },
+  { name: "access-home", hash: "gestion-acces", selector: "#adminAccessHomeView", authenticated: true, menu: "access" },
+  { name: "access-requests", hash: "gestion-demandes-acces", selector: "#adminEngagementsView", authenticated: true, menu: "access", accessRequestsFixture: true },
+  { name: "access-users", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true },
+  { name: "access-users-expanded", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true, accessUsersExpandedFixture: true },
+  { name: "access-user-add", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true, accessDialogFixture: "add" },
+  { name: "access-user-edit", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true, accessDialogFixture: "edit" }
 ];
 const viewports = [
   { name: "wide", width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false },
@@ -184,7 +203,7 @@ function clubSwimmersFixtureHtml() {
   return `
     <div class="admin-engagements-club-swimmers-directory-table" role="table" aria-label="Mes nageurs">
       <div class="admin-engagements-club-swimmers-directory-row admin-engagements-club-swimmers-directory-head" role="row">
-        <span role="columnheader">Nageur</span><span role="columnheader">Naissance</span><span role="columnheader">Sexe</span><span role="columnheader">Cat.</span><span role="columnheader">Licence</span>
+        <span role="columnheader">Nageur</span><span role="columnheader">Naissance</span><span role="columnheader">Sexe</span><span role="columnheader">Cat.</span><span role="columnheader">Licence</span><span role="columnheader">Action</span>
       </div>
       ${swimmers.map((row, index) => `
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${row[2]}" data-expanded="false">
@@ -193,12 +212,78 @@ function clubSwimmersFixtureHtml() {
             <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex" aria-label="${row[5]}">${row[2]}</span><span class="admin-engagements-club-swimmers-directory-category" aria-label="Catégorie ${row[3]}">${row[3]}</span><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></span>
           </button>
           <div id="adminEngagementsClubSwimmerFixtureDetails${index}" class="admin-engagements-club-swimmers-directory-details">
-            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
+            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span><span role="cell" class="admin-engagements-club-swimmers-directory-actions"><button class="admin-engagements-club-swimmers-directory-edit-button" type="button" aria-label="Demander une correction"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button></span>
           </div>
         </div>
       `).join("")}
     </div>
   `;
+}
+
+function clubPeopleFixtureHtml() {
+  const people = [
+    ["MARTIN Camille", "A-00-000001", "Chef d'équipe et officiel", "true"],
+    ["ROBERT Alex", "A-00-000002", "Officiel", "true"],
+    ["DURAND Louise", "A-00-000003", "Chef d'équipe", "false"]
+  ];
+  return `
+    <div class="admin-engagements-club-people-table" role="table" aria-label="Mes officiels">
+      <div class="admin-engagements-club-person-row admin-engagements-club-person-head" role="row">
+        <span role="columnheader">Personne</span><span role="columnheader">Licence</span><span role="columnheader">Rôle</span><span role="columnheader">Statut</span><span role="columnheader">Actions</span>
+      </div>
+      ${people.map((person, index) => `
+        <div class="admin-engagements-club-person-row" role="row" data-active="${person[3]}" data-expanded="false">
+          <button class="admin-engagements-club-person-toggle" type="button" aria-expanded="false" aria-controls="adminEngagementsClubPersonFixtureDetails${index}" data-engagement-club-person-directory-toggle>
+            <strong>${person[0]}</strong>
+            <span class="admin-engagements-club-person-toggle-meta"><span class="admin-engagements-club-person-role-badge" title="${person[2]}">${person[2]}</span><span class="admin-engagements-club-person-chevron" aria-hidden="true">›</span></span>
+          </button>
+          <div id="adminEngagementsClubPersonFixtureDetails${index}" class="admin-engagements-club-person-details">
+            <span role="cell"><strong>${person[0]}</strong></span><span role="cell">${person[1]}</span><span role="cell">${person[2]}</span><span role="cell"><span class="admin-engagements-club-person-status" data-active="${person[3]}">${person[3] === "true" ? "Actif" : "Inactif"}</span></span><span role="cell"><span class="admin-engagements-request-actions"><button class="ghost-button" type="button">Modifier</button><button class="ghost-button" type="button">${person[3] === "true" ? "Désactiver" : "Réactiver"}</button></span></span>
+          </div>
+        </div>
+      `).join("")}
+    </div>`;
+}
+
+function accessUsersFixtureHtml() {
+  const users = [
+    ["MARTIN", "Camille", "camille.martin@example.fr", "Club Démonstration", "A-00-000001", "Engagements club +1", "Actif", "active"],
+    ["ROBERT", "Alex", "alex.robert@example.fr", "Club Démonstration", "A-00-000002", "Engagements région +2", "Actif", "active"],
+    ["DURAND", "Louise", "louise.durand@example.fr", "Club Démonstration", "A-00-000003", "Aucun droit actif", "Inactif", "inactive"]
+  ];
+  const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10.6-10.6-3.2-3.2L5 15.8 4 20Z"></path></svg>';
+  const statusIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>';
+  return `
+    <div class="admin-access-table" role="table" aria-label="Utilisateurs du portail">
+      <div class="admin-access-table-head" role="row">
+        <span role="columnheader">Nom</span><span role="columnheader">Prénom</span><span role="columnheader">Email</span><span role="columnheader">Club</span><span role="columnheader">Connexion</span><span role="columnheader">État</span><span role="columnheader" aria-label="Détails"></span>
+      </div>
+      ${users.map((user, index) => `
+        <article class="admin-access-row ${user[7] === "inactive" ? "inactive" : ""}" data-expanded="false" role="rowgroup">
+          <button class="admin-access-row-toggle" type="button" aria-expanded="false" aria-controls="adminAccessFixtureDetails${index}" data-access-directory-toggle>
+            <span class="admin-access-row-toggle-user"><strong>${user[0]} ${user[1]}</strong><small>${user[2]}</small></span>
+            <span class="admin-access-row-toggle-meta"><span class="admin-access-status ${user[7]}">${user[6]}</span><span class="admin-access-row-chevron" aria-hidden="true">›</span></span>
+          </button>
+          <div class="admin-access-row-summary" role="row">
+            <div class="admin-access-last-name" role="cell" data-label="Nom"><strong>${user[0]}</strong></div>
+            <div class="admin-access-first-name" role="cell" data-label="Prénom">${user[1]}</div>
+            <div class="admin-access-email" role="cell" data-label="Email">${user[2]}</div>
+            <div class="admin-access-scope" role="cell" data-label="Club"><span>${user[3]}</span></div>
+            <div role="cell" data-label="Connexion"><small class="admin-access-login">05/08/2026 18:30</small></div>
+            <div role="cell" data-label="État"><span class="admin-access-status ${user[7]}">${user[6]}</span></div>
+            <div class="admin-access-row-disclosure" role="cell"><button type="button" aria-expanded="false" aria-controls="adminAccessFixtureDetails${index}" aria-label="Afficher le détail de ${user[0]} ${user[1]}" data-access-directory-toggle><span class="admin-access-row-chevron" aria-hidden="true">›</span></button></div>
+          </div>
+          <div id="adminAccessFixtureDetails${index}" class="admin-access-row-expanded">
+            <div class="admin-access-row-expanded-data">
+              <div><span>Licence</span><strong>${user[4]}</strong></div>
+              <div><span>Périmètre</span><strong>${user[3]}</strong><small>Club 001 · Région Île-de-France</small></div>
+              <div class="admin-access-row-expanded-rights"><span>Habilitations</span><strong>${user[5]}</strong></div>
+            </div>
+            <div class="admin-access-row-actions"><button class="ghost-button admin-access-action-button" type="button">${editIcon}<span>Modifier</span></button><button class="ghost-button admin-access-action-button" type="button">${statusIcon}<span>${user[7] === "active" ? "Désactiver" : "Réactiver"}</span></button></div>
+          </div>
+        </article>
+      `).join("")}
+    </div>`;
 }
 
 function engagementCompetitionsFixtureHtml() {
@@ -284,7 +369,8 @@ function presentationScript(view) {
         performance: ["#adminPortalPerformanceToggle", "#adminPortalPerformanceSubmenu"],
         dtn: ["#adminPortalDtnToggle", "#adminPortalDtnSubmenu"],
         engagements: ["#adminPortalEngagementsToggle", "#adminPortalEngagementsSubmenu"],
-        national: ["#adminPortalNationalToggle", "#adminPortalNationalSubmenu"]
+        national: ["#adminPortalNationalToggle", "#adminPortalNationalSubmenu"],
+        access: ["#adminPortalAccessToggle", "#adminPortalAccessSubmenu"]
       };
       Object.entries(menuState).forEach(([name, selectors]) => {
         const toggle = document.querySelector(selectors[0]);
@@ -294,7 +380,7 @@ function presentationScript(view) {
         if (submenu) submenu.hidden = !open;
       });
       document.querySelectorAll("#adminPortalNavigation [data-admin-view-link]").forEach((link) => {
-        const active = link.dataset.adminViewLink === document.querySelector(${JSON.stringify(view.selector)})?.dataset.adminView;
+        const active = link.hash === location.hash;
         link.classList.toggle("active", active);
         if (active) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
@@ -320,10 +406,14 @@ function presentationScript(view) {
         }
         if (card) card.dataset.overviewToolCount = String(tools.length);
       }
+      if (${view.name === "national-home" ? "true" : "false"}) {
+        const pendingCount = document.querySelector("#adminNationalOverviewPendingCount");
+        const pendingBreakdown = document.querySelector("#adminNationalOverviewPendingBreakdown");
+        if (pendingCount) pendingCount.textContent = "5";
+        if (pendingBreakdown) pendingBreakdown.textContent = "2 corrections · 2 suppressions de données · 1 suppression de compte";
+      }
       if (${view.swimmersFixture ? "true" : "false"}) {
-        const viewEyebrow = document.querySelector("#adminEngagementsViewEyebrow");
         const viewTitle = document.querySelector("#adminEngagementsViewTitle");
-        if (viewEyebrow) viewEyebrow.textContent = "Espace club";
         if (viewTitle) viewTitle.textContent = "Mes nageurs";
         document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
           panel.hidden = panel.id !== "adminEngagementsClubSwimmersPanel";
@@ -336,25 +426,240 @@ function presentationScript(view) {
         }
         if (mount) mount.innerHTML = ${JSON.stringify(clubSwimmersFixtureHtml())};
       }
+      if (${view.nationalRequestsFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "deletionRequests";
+        }
+        if (viewTitle) viewTitle.textContent = "Demandes à traiter";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDeletionRequestsPanel";
+        });
+        document.querySelectorAll("[data-engagements-national-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsNationalPanel !== "deletions";
+        });
+        const empty = document.querySelector("#adminNationalRequestsEmpty");
+        const requests = document.querySelector("#adminEngagementsSwimmerChangeRequests");
+        const requestCount = document.querySelector("#adminEngagementsSwimmerChangeRequestsCount");
+        const requestList = document.querySelector("#adminEngagementsSwimmerChangeRequestsList");
+        if (empty) empty.hidden = true;
+        if (requests) {
+          requests.hidden = false;
+          requests.open = true;
+        }
+        if (requestCount) requestCount.textContent = "1 en attente";
+        if (requestList) requestList.innerHTML = '<article class="admin-engagements-swimmer-change-request"><div class="admin-engagements-swimmer-change-request-head"><div><strong>MARTIN Camille</strong><span>Club Démonstration · 06/08/2026 14:30</span></div><span class="admin-engagements-request-status" data-status="pending">En attente</span></div><div class="admin-engagements-swimmer-change-diff"><div><span>Nom</span><del>MARTNI</del><strong>MARTIN</strong></div><div><span>Naissance</span><del>12/03/2008</del><strong>13/03/2008</strong></div></div><p class="admin-engagements-request-note"><strong>Motif du club :</strong> Faute constatée sur la licence fédérale.</p><label class="admin-engagements-swimmer-change-resolution-note"><span>Commentaire national <small>(facultatif)</small></span><input type="text" placeholder="Précision pour le club"></label><div class="admin-engagements-request-actions"><button class="ghost-button" type="button">Refuser</button><button type="button">Valider la correction</button></div></article>';
+      }
+      if (${view.nationalSwimmersFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const mergeMode = ${view.nationalSwimmersMergeFixture ? "true" : "false"};
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "deletionRequests";
+        }
+        if (viewTitle) viewTitle.textContent = "Nageurs";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDeletionRequestsPanel";
+        });
+        document.querySelectorAll("[data-engagements-national-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsNationalPanel !== "swimmers";
+        });
+        const mergeButton = document.querySelector("#adminEngagementsNationalSwimmersMergeMode");
+        const bulk = document.querySelector("[data-engagement-national-swimmer-bulk]");
+        if (mergeButton) {
+          mergeButton.setAttribute("aria-pressed", mergeMode ? "true" : "false");
+          mergeButton.textContent = mergeMode ? "Quitter le mode doublons" : "Gérer les doublons";
+        }
+        if (bulk) bulk.hidden = !mergeMode;
+        const status = document.querySelector("#adminEngagementsNationalSwimmersStatus");
+        const list = document.querySelector("#adminEngagementsNationalSwimmersList");
+        if (status) {
+          status.textContent = "2 nageurs affichés.";
+          status.dataset.tone = "ok";
+        }
+        if (list) list.innerHTML = '<div class="admin-engagements-national-table-wrap"><table class="admin-engagements-national-table" data-merge-mode="' + (mergeMode ? 'true' : 'false') + '"><thead><tr><th class="admin-engagements-national-choice">Conserver</th><th class="admin-engagements-national-choice">Fusionner</th><th class="admin-engagements-national-merge-only">Alerte</th><th>Nom</th><th>Prénom</th><th>Naissance</th><th>Sexe</th><th>Licence</th><th>Club</th><th>Perf.</th><th>Statut</th><th>Actions</th></tr></thead><tbody><tr><td class="admin-engagements-national-choice"><input type="radio" aria-label="Conserver"></td><td class="admin-engagements-national-choice"><input type="checkbox" aria-label="Fusionner"></td><td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge">Doublon possible</span></td><td><strong>MARTIN</strong></td><td>Camille</td><td>13/03/2008</td><td>F</td><td>A-00-000001</td><td>Club Démonstration</td><td>24</td><td>Actif</td><td class="admin-engagements-national-table-actions"><details class="admin-national-row-menu"><summary aria-label="Actions pour MARTIN Camille">⋮</summary><div><button class="ghost-button" type="button">Modifier la fiche</button></div></details></td></tr><tr><td class="admin-engagements-national-choice"><input type="radio" aria-label="Conserver"></td><td class="admin-engagements-national-choice"><input type="checkbox" aria-label="Fusionner"></td><td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge">Aucun</span></td><td><strong>DURAND</strong></td><td>Lina</td><td>24/07/2009</td><td>F</td><td>A-00-000002</td><td>Palmes Atlantique</td><td>11</td><td>Actif</td><td class="admin-engagements-national-table-actions"><details class="admin-national-row-menu"><summary aria-label="Actions pour DURAND Lina">⋮</summary><div><button class="ghost-button" type="button">Modifier la fiche</button></div></details></td></tr></tbody></table></div>';
+      }
+      if (${view.nationalPeopleFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "deletionRequests";
+        }
+        if (viewTitle) viewTitle.textContent = "Officiels";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDeletionRequestsPanel";
+        });
+        document.querySelectorAll("[data-engagements-national-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsNationalPanel !== "people";
+        });
+        const status = document.querySelector("#adminEngagementsNationalPeopleStatus");
+        const list = document.querySelector("#adminEngagementsNationalPeopleList");
+        if (status) status.textContent = "2 personnes affichées.";
+        if (list) list.innerHTML = '<div class="admin-engagements-national-table-wrap"><table class="admin-engagements-national-table" data-merge-mode="false"><thead><tr><th class="admin-engagements-national-choice">Conserver</th><th class="admin-engagements-national-choice">Fusionner</th><th class="admin-engagements-national-merge-only">Alerte</th><th>Nom</th><th>Prénom</th><th>Licence</th><th>Rôle</th><th>Club</th><th>Statut</th><th>Actions</th></tr></thead><tbody><tr><td class="admin-engagements-national-choice"></td><td class="admin-engagements-national-choice"></td><td class="admin-engagements-national-merge-only"></td><td><strong>BERGERON</strong></td><td>Maxime</td><td>A-00-100001</td><td>Juge</td><td>Club Démonstration</td><td>Actif</td><td class="admin-engagements-national-table-actions"><details class="admin-national-row-menu"><summary aria-label="Actions pour BERGERON Maxime">⋮</summary><div><button class="ghost-button">Désactiver</button><button class="ghost-button">Supprimer</button></div></details></td></tr><tr><td class="admin-engagements-national-choice"></td><td class="admin-engagements-national-choice"></td><td class="admin-engagements-national-merge-only"></td><td><strong>FAUVEAU</strong></td><td>Antoine</td><td>A-00-100002</td><td>Chef d’équipe</td><td>Nage avec Palmes</td><td>Actif</td><td class="admin-engagements-national-table-actions"><details class="admin-national-row-menu"><summary aria-label="Actions pour FAUVEAU Antoine">⋮</summary><div><button class="ghost-button">Désactiver</button><button class="ghost-button">Supprimer</button></div></details></td></tr></tbody></table></div>';
+      }
+      if (${view.nationalAuditFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "deletionRequests";
+        }
+        if (viewTitle) viewTitle.textContent = "Journal d’activité";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDeletionRequestsPanel";
+        });
+        document.querySelectorAll("[data-engagements-national-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsNationalPanel !== "audit";
+        });
+        const status = document.querySelector("#adminEngagementsNationalAuditStatus");
+        const list = document.querySelector("#adminEngagementsNationalAuditList");
+        if (status) status.textContent = "2 actions affichées.";
+        if (list) list.innerHTML = '<div class="admin-engagements-national-table-wrap"><table class="admin-engagements-national-table admin-engagements-national-audit-table"><thead><tr><th>Date</th><th>Action</th><th>Acteur</th><th>Objet</th><th>Détails</th></tr></thead><tbody><tr><td>06/08/2026 14:30</td><td><strong>Correction de nageur validée</strong></td><td>Vous</td><td>MARTIN Camille</td><td><details class="admin-national-audit-details"><summary>Voir</summary><code>engagementClubSwimmer.changeApproved</code></details></td></tr><tr><td>06/08/2026 13:05</td><td><strong>Compte modifié</strong></td><td>Administrateur LivePalmes</td><td>Club Démonstration</td><td><details class="admin-national-audit-details"><summary>Voir</summary><code>accessUser.updated</code></details></td></tr></tbody></table></div>';
+      }
+      if (${view.peopleFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const peopleActions = document.querySelector("#adminEngagementsClubPeopleActions");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "club";
+          engagementsView.dataset.engagementsTab = "clubPeople";
+        }
+        if (viewTitle) viewTitle.textContent = "Mes officiels";
+        if (peopleActions) peopleActions.hidden = false;
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsClubPeoplePanel";
+        });
+        const status = document.querySelector("#adminEngagementsClubPeopleStatus");
+        const mount = document.querySelector("#adminEngagementsClubPeopleList");
+        if (status) {
+          status.textContent = "";
+          status.dataset.tone = "neutral";
+        }
+        if (mount) mount.innerHTML = ${JSON.stringify(clubPeopleFixtureHtml())};
+      }
+      if (${view.peopleFormFixture ? "true" : "false"}) {
+        const form = document.querySelector("#adminEngagementsClubPersonForm");
+        const search = document.querySelector("#adminEngagementsClubPersonSwimmerSearch");
+        const results = document.querySelector("#adminEngagementsClubPersonSwimmerResults");
+        if (form) form.hidden = false;
+        if (search) search.value = "mart";
+        if (search) search.setAttribute("aria-expanded", "true");
+        if (results) {
+          results.hidden = false;
+          results.innerHTML = '<button type="button" data-engagement-club-person-swimmer-result="performances:demo-1"><strong>MARTIN Camille</strong><small>A-00-000001</small></button>';
+        }
+      }
+      if (${view.accessRequestsFixture ? "true" : "false"}) {
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (viewTitle) viewTitle.textContent = "Demandes d'accès";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsTabPanel !== "accessRequests";
+        });
+      }
+      if (${view.accessUsersFixture ? "true" : "false"}) {
+        const count = document.querySelector("#adminAccessCount");
+        const mount = document.querySelector("#adminAccessList");
+        if (count) count.textContent = "3 comptes affichés";
+        if (mount) mount.innerHTML = ${JSON.stringify(accessUsersFixtureHtml())};
+      }
+      if (${view.accessUsersExpandedFixture ? "true" : "false"}) {
+        const row = document.querySelector("#adminAccessList .admin-access-row");
+        if (row) {
+          row.dataset.expanded = "true";
+          row.querySelectorAll("[data-access-directory-toggle]").forEach((toggle) => toggle.setAttribute("aria-expanded", "true"));
+        }
+      }
+      if (${view.adminCalendarFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const card = document.querySelector("#adminEngagementsCalendarCard");
+        const calendarActions = document.querySelector("#adminEngagementsCalendarActions");
+        const refreshMeta = document.querySelector("#adminEngagementsRefreshMeta");
+        const mount = document.querySelector("#adminEngagementsCalendarList");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "calendar";
+        }
+        if (viewTitle) viewTitle.textContent = "Compétitions à administrer";
+        if (card) card.dataset.detailOpen = "false";
+        if (calendarActions) calendarActions.hidden = false;
+        if (refreshMeta) {
+          refreshMeta.textContent = "Actualisé à 13:30";
+          refreshMeta.hidden = false;
+        }
+        if (mount) mount.innerHTML = ${JSON.stringify(engagementCompetitionsFixtureHtml())};
+      }
+      if (${view.adminCreateFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "create";
+        }
+        if (viewTitle) viewTitle.textContent = "Créer une compétition";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsTabPanel !== "create";
+        });
+      }
+      if (${view.adminDetailFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const card = document.querySelector("#adminEngagementsCalendarCard");
+        const close = document.querySelector("#adminEngagementsDetailClose");
+        const detail = document.querySelector("#adminEngagementsDetail");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "calendar";
+        }
+        if (viewTitle) viewTitle.textContent = "Compétitions à administrer";
+        if (card) card.dataset.detailOpen = "true";
+        if (close) close.hidden = false;
+        document.querySelector("#adminEngagementsCalendarActions")?.setAttribute("hidden", "");
+        document.querySelector("#adminEngagementsCalendarFilters")?.setAttribute("hidden", "");
+        document.querySelector("#adminEngagementsCalendarList")?.setAttribute("hidden", "");
+        document.querySelector("#adminEngagementsRefreshButton")?.setAttribute("hidden", "");
+        if (detail) detail.hidden = false;
+        const detailEyebrow = document.querySelector("#adminEngagementsDetailEyebrow");
+        const detailTitle = document.querySelector("#adminEngagementsDetailTitle");
+        const detailSubtitle = document.querySelector("#adminEngagementsDetailSubtitle");
+        if (detailEyebrow) detailEyebrow.hidden = true;
+        if (detailTitle) detailTitle.textContent = "TEST LIVEPALMES";
+        if (detailSubtitle) detailSubtitle.textContent = "15/08/2026 au 17/08/2026 · Houilles";
+        const editState = document.querySelector("#adminEngagementsEditState");
+        const level = document.querySelector("#adminEngagementsDetailLevel");
+        const entryStatus = document.querySelector("#adminEngagementsDetailEntryStatus");
+        if (editState) {
+          editState.textContent = "Lecture seule";
+          editState.hidden = false;
+        }
+        if (level) {
+          level.textContent = "National";
+          level.hidden = false;
+        }
+        if (entryStatus) {
+          entryStatus.textContent = "Engagements ouverts";
+          entryStatus.hidden = false;
+        }
+        const detailList = document.querySelector("#adminEngagementsDetailList");
+        if (detailList) detailList.innerHTML = "<div><dt>Date</dt><dd>15/08/2026 au 17/08/2026</dd></div><div><dt>Lieu</dt><dd>Houilles</dd></div><div><dt>Bassin</dt><dd>50 m · 10 lignes d'eau</dd></div><div><dt>Programme</dt><dd>14 courses individuelles, 3 relais</dd></div>";
+      }
       if (${JSON.stringify(view.name)} === "engagements") {
         const engagementsView = document.querySelector("#adminEngagementsView");
-        const viewEyebrow = document.querySelector("#adminEngagementsViewEyebrow");
         const viewTitle = document.querySelector("#adminEngagementsViewTitle");
-        const calendarHead = document.querySelector("#adminEngagementsCalendarHead");
         const statusFilterLabel = document.querySelector("#adminEngagementsStatusFilterLabel");
         const statusSegments = document.querySelector("#adminEngagementsStatusSegments");
-        const resultsCount = document.querySelector("#adminEngagementsResultsCount");
         const mount = document.querySelector("#adminEngagementsCalendarList");
         if (engagementsView) {
           engagementsView.dataset.engagementsMode = "club";
           engagementsView.dataset.engagementsTab = "calendar";
         }
-        if (viewEyebrow) viewEyebrow.hidden = true;
         if (viewTitle) viewTitle.textContent = "Engagements en compétition";
-        if (calendarHead) calendarHead.hidden = true;
         if (statusFilterLabel) statusFilterLabel.hidden = true;
         if (statusSegments) statusSegments.hidden = false;
-        if (resultsCount) resultsCount.hidden = true;
         if (mount) mount.innerHTML = ${JSON.stringify(engagementCompetitionsFixtureHtml())};
       }
       if (${JSON.stringify(view.name)} === "account") {
@@ -429,6 +734,8 @@ async function auditInteractions(client, viewport, view) {
       overviewToggle: null,
       overviewLink: null,
       swimmerAccordion: null,
+      peopleAccordion: null,
+      accessAccordion: null,
       distinctEngagementRoutes: null,
       tabKeyboard: null,
       unauthorizedGroupsVisible: null,
@@ -507,6 +814,20 @@ async function auditInteractions(client, viewport, view) {
       toggles[1]?.click();
       result.swimmerAccordion = Boolean(firstOpened && toggles[0]?.getAttribute("aria-expanded") === "false" && toggles[1]?.getAttribute("aria-expanded") === "true");
     }
+    if (${JSON.stringify(view.name)} === "club-officials" && ${viewport.width <= 700 ? "true" : "false"}) {
+      const toggles = [...document.querySelectorAll("[data-engagement-club-person-directory-toggle]")];
+      toggles[0]?.click();
+      const firstOpened = toggles[0]?.getAttribute("aria-expanded") === "true" && toggles[0]?.closest("[data-expanded]")?.dataset.expanded === "true";
+      toggles[1]?.click();
+      result.peopleAccordion = Boolean(firstOpened && toggles[0]?.getAttribute("aria-expanded") === "false" && toggles[1]?.getAttribute("aria-expanded") === "true");
+    }
+    if (${JSON.stringify(view.name)} === "access-users" && ${viewport.width <= 760 ? "true" : "false"}) {
+      const toggles = [...document.querySelectorAll(".admin-access-row-toggle[data-access-directory-toggle]")];
+      toggles[0]?.click();
+      const firstOpened = toggles[0]?.getAttribute("aria-expanded") === "true" && toggles[0]?.closest("[data-expanded]")?.dataset.expanded === "true";
+      toggles[1]?.click();
+      result.accessAccordion = Boolean(firstOpened && toggles[0]?.getAttribute("aria-expanded") === "false" && toggles[1]?.getAttribute("aria-expanded") === "true");
+    }
     return result;
   `);
   const failures = [];
@@ -514,7 +835,7 @@ async function auditInteractions(client, viewport, view) {
   if (audit.delayedTouch.length) failures.push(`actions tactiles non optimisees ${JSON.stringify(audit.delayedTouch)}`);
   if (audit.covered.length) failures.push(`actions recouvertes ${JSON.stringify(audit.covered)}`);
   if (audit.removedComponents) failures.push(`${audit.removedComponents} composant(s) supprime(s) encore present(s)`);
-  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion", "distinctEngagementRoutes", "tabKeyboard", "accountProgressiveDisclosure"].forEach((key) => {
+  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion", "peopleAccordion", "accessAccordion", "distinctEngagementRoutes", "tabKeyboard", "accountProgressiveDisclosure"].forEach((key) => {
     if (audit[key] === false) failures.push(`${key} KO`);
   });
   if (audit.unauthorizedGroupsVisible) failures.push("rubriques non autorisees visibles");
@@ -554,6 +875,63 @@ async function captureView(client, baseUrl, viewport, view) {
     throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
   await auditInteractions(client, viewport, view);
+  if (view.accessDialogFixture) {
+    const dialogOpened = await evaluate(client, `
+      const dialog = document.querySelector("#adminAccessPanel");
+      const title = document.querySelector("#adminAccessDialogTitle");
+      if (!dialog) return false;
+      if (${JSON.stringify(view.accessDialogFixture)} === "edit") {
+        if (title) title.textContent = "Modifier MARTIN Camille";
+        const values = {
+          adminAccessLastName: "MARTIN",
+          adminAccessFirstName: "Camille",
+          adminAccessEmail: "camille.martin@example.fr",
+          adminAccessLicenseNumber: "A-00-000001"
+        };
+        Object.entries(values).forEach(([id, value]) => {
+          const field = document.getElementById(id);
+          if (field) field.value = value;
+        });
+      } else if (title) {
+        title.textContent = "Ajouter un utilisateur";
+      }
+      dialog.showModal();
+      return dialog.open;
+    `);
+    if (!dialogOpened) throw new Error(`${view.name}/${viewport.name} : ouverture de la fenêtre utilisateur impossible.`);
+    await sleep(100);
+  }
+  if (view.swimmerCorrectionDialogFixture) {
+    const dialogOpened = await evaluate(client, `
+      const dialog = document.querySelector("#adminEngagementsSwimmerCorrectionDialog");
+      if (!dialog) return false;
+      const direct = ${JSON.stringify(view.swimmerCorrectionDialogFixture)} === "direct";
+      const values = {
+        adminEngagementsSwimmerCorrectionLastName: direct ? "MARTIN" : "MARTNI",
+        adminEngagementsSwimmerCorrectionFirstName: "Camille",
+        adminEngagementsSwimmerCorrectionBirthDate: "2008-03-13",
+        adminEngagementsSwimmerCorrectionSex: "F",
+        adminEngagementsSwimmerCorrectionLicense: "A-00-000001",
+        adminEngagementsSwimmerCorrectionReason: "Correction vérifiée sur la licence fédérale."
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+      });
+      const title = document.querySelector("#adminEngagementsSwimmerCorrectionTitle");
+      const context = document.querySelector("#adminEngagementsSwimmerCorrectionContext");
+      const submit = document.querySelector("#adminEngagementsSwimmerCorrectionSubmit");
+      const reasonLabel = document.querySelector("#adminEngagementsSwimmerCorrectionReasonLabel");
+      if (title) title.textContent = direct ? "Modifier le nageur" : "Demander une correction";
+      if (context) context.textContent = "MARTIN Camille · Club Démonstration";
+      if (submit) submit.textContent = direct ? "Enregistrer la correction" : "Envoyer la demande";
+      if (reasonLabel) reasonLabel.textContent = direct ? "Motif de la correction" : "Motif de la demande";
+      dialog.showModal();
+      return dialog.open;
+    `);
+    if (!dialogOpened) throw new Error(`${view.name}/${viewport.name} : ouverture de la fenêtre de correction impossible.`);
+    await sleep(100);
+  }
   if (view.name === "club-swimmers" && viewport.width <= 700) {
     const opened = await evaluate(client, `
       const toggle = document.querySelector("[data-engagement-club-swimmer-directory-toggle]");

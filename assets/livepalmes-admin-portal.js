@@ -126,17 +126,17 @@
     "#competitions-calendrier": { entry: "adminCalendar", tab: "calendar" },
     "#competitions-creation": { entry: "adminCreate", tab: "create" },
     "#competitions-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
+    "#gestion-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#administration-suppressions": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
     "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
     "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
-    "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "accounts" },
+    "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
     "#administration-historique": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "audit" }
   });
   const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
     deletions: "#administration-suppressions",
     swimmers: "#administration-doublons-nageurs",
     people: "#administration-officiels",
-    accounts: "#administration-comptes",
     audit: "#administration-historique"
   });
 
@@ -187,15 +187,21 @@
     nationalMenu: document.querySelector("[data-engagements-national-menu]"),
     nationalToggle: document.querySelector("#adminPortalNationalToggle"),
     nationalSubmenu: document.querySelector("#adminPortalNationalSubmenu"),
+    accessMenu: document.querySelector("[data-access-management-nav]"),
+    accessToggle: document.querySelector("#adminPortalAccessToggle"),
+    accessSubmenu: document.querySelector("#adminPortalAccessSubmenu"),
     engagementsHomeLinks: document.querySelectorAll("[data-engagements-home-entry]"),
+    nationalOverviewPendingCount: document.querySelector("#adminNationalOverviewPendingCount"),
+    nationalOverviewPendingBreakdown: document.querySelector("#adminNationalOverviewPendingBreakdown"),
     overviewSpaceToggles: document.querySelectorAll(".admin-overview-space-toggle"),
     accessForm: document.querySelector("#adminAccessForm"),
     accessMessage: document.querySelector("#adminAccessMessage"),
     accessList: document.querySelector("#adminAccessList"),
     accessCount: document.querySelector("#adminAccessCount"),
     accessPanel: document.querySelector("#adminAccessPanel"),
+    accessDialogTitle: document.querySelector("#adminAccessDialogTitle"),
+    accessDialogClose: document.querySelector("#adminAccessDialogClose"),
     accessAdd: document.querySelector("#adminAccessAddButton"),
-    accessRefresh: document.querySelector("#adminAccessRefreshButton"),
     accessRegionId: document.querySelector("#adminAccessRegionId"),
     accessClubSelect: document.querySelector("#adminAccessClubSelect"),
     accessClubName: document.querySelector("#adminAccessClubName"),
@@ -241,19 +247,17 @@
     correctionModuleStatus: document.querySelector("#adminCorrectionModuleStatus"),
     correctionWorkbench: document.querySelector("#correctionWorkbench"),
     engagementsView: document.querySelector("#adminEngagementsView"),
-    engagementsViewEyebrow: document.querySelector("#adminEngagementsViewEyebrow"),
     engagementsViewTitle: document.querySelector("#adminEngagementsViewTitle"),
-    engagementsViewIntro: document.querySelector("#adminEngagementsViewIntro"),
     engagementsTabButtons: document.querySelectorAll("[data-engagements-tab-button]"),
     engagementsTabPanels: document.querySelectorAll("[data-engagements-tab-panel]"),
     engagementsDetailTabButtons: document.querySelectorAll("[data-engagements-detail-tab-button]"),
     engagementsDetailTabPanels: document.querySelectorAll("[data-engagements-detail-tab-panel]"),
     engagementsStatus: document.querySelector("#adminEngagementsStatus"),
-    engagementsResultsCount: document.querySelector("#adminEngagementsResultsCount"),
+    engagementsCalendarActions: document.querySelector("#adminEngagementsCalendarActions"),
+    engagementsRefreshMeta: document.querySelector("#adminEngagementsRefreshMeta"),
     engagementsRefresh: document.querySelector("#adminEngagementsRefreshButton"),
     engagementsCalendarPanel: document.querySelector("#adminEngagementsCalendarPanel"),
     engagementsCalendarCard: document.querySelector("#adminEngagementsCalendarCard"),
-    engagementsCalendarHead: document.querySelector("#adminEngagementsCalendarHead"),
     engagementsCalendarFilters: document.querySelector("#adminEngagementsCalendarFilters"),
     engagementsSeasonFilter: document.querySelector("#adminEngagementsSeasonFilter"),
     engagementsRegionFilter: document.querySelector("#adminEngagementsRegionFilter"),
@@ -267,17 +271,16 @@
     engagementsMineFilter: document.querySelector("#adminEngagementsMineFilter"),
     engagementsFiltersReset: document.querySelector("#adminEngagementsFiltersReset"),
     engagementsCalendarList: document.querySelector("#adminEngagementsCalendarList"),
-    engagementsCalendarEyebrow: document.querySelector("#adminEngagementsCalendarEyebrow"),
-    engagementsCalendarTitle: document.querySelector("#adminEngagementsCalendarTitle"),
     engagementsClubPeoplePanel: document.querySelector("#adminEngagementsClubPeoplePanel"),
+    engagementsClubPeopleActions: document.querySelector("#adminEngagementsClubPeopleActions"),
     engagementsClubPeopleAddButton: document.querySelector("#adminEngagementsClubPeopleAddButton"),
-    engagementsClubPeopleRefresh: document.querySelector("#adminEngagementsClubPeopleRefresh"),
     engagementsClubPeopleStatus: document.querySelector("#adminEngagementsClubPeopleStatus"),
     engagementsClubPersonForm: document.querySelector("#adminEngagementsClubPersonForm"),
     engagementsClubPersonId: document.querySelector("#adminEngagementsClubPersonId"),
     engagementsClubPersonSwimmerId: document.querySelector("#adminEngagementsClubPersonSwimmerId"),
     engagementsClubPersonSwimmerSource: document.querySelector("#adminEngagementsClubPersonSwimmerSource"),
-    engagementsClubPersonSwimmerSelect: document.querySelector("#adminEngagementsClubPersonSwimmerSelect"),
+    engagementsClubPersonSwimmerSearch: document.querySelector("#adminEngagementsClubPersonSwimmerSearch"),
+    engagementsClubPersonSwimmerResults: document.querySelector("#adminEngagementsClubPersonSwimmerResults"),
     engagementsClubPersonFirstName: document.querySelector("#adminEngagementsClubPersonFirstName"),
     engagementsClubPersonLastName: document.querySelector("#adminEngagementsClubPersonLastName"),
     engagementsClubPersonBirthDate: document.querySelector("#adminEngagementsClubPersonBirthDate"),
@@ -315,6 +318,9 @@
     engagementsNationalTabButtons: document.querySelectorAll("[data-engagements-national-tab-button]"),
     engagementsNationalPanels: document.querySelectorAll("[data-engagements-national-panel]"),
     engagementsDeletionRequestsRefresh: document.querySelector("#adminEngagementsDeletionRequestsRefresh"),
+    engagementsDeletionRequestsGroup: document.querySelector("#adminEngagementsDeletionRequestsGroup"),
+    engagementsDeletionRequestsCount: document.querySelector("#adminEngagementsDeletionRequestsCount"),
+    nationalRequestsEmpty: document.querySelector("#adminNationalRequestsEmpty"),
     engagementsDeletionRequestsStatus: document.querySelector("#adminEngagementsDeletionRequestsStatus"),
     engagementsDeletionRequestsList: document.querySelector("#adminEngagementsDeletionRequestsList"),
     engagementsNationalSwimmersRefresh: document.querySelector("#adminEngagementsNationalSwimmersRefresh"),
@@ -322,21 +328,54 @@
     engagementsNationalSwimmersSearch: document.querySelector("#adminEngagementsNationalSwimmersSearch"),
     engagementsNationalSwimmersStatusFilter: document.querySelector("#adminEngagementsNationalSwimmersStatusFilter"),
     engagementsNationalSwimmersReset: document.querySelector("#adminEngagementsNationalSwimmersReset"),
+    engagementsNationalSwimmersMergeMode: document.querySelector("#adminEngagementsNationalSwimmersMergeMode"),
+    engagementsNationalSwimmersBulk: document.querySelector("[data-engagement-national-swimmer-bulk]"),
     engagementsNationalSwimmersBulkMerge: document.querySelector("#adminEngagementsNationalSwimmersBulkMerge"),
     engagementsNationalSwimmersSelectionSummary: document.querySelector("#adminEngagementsNationalSwimmersSelectionSummary"),
     engagementsNationalSwimmersList: document.querySelector("#adminEngagementsNationalSwimmersList"),
+    engagementsSwimmerChangeRequestsBadge: document.querySelector("#adminEngagementsSwimmerChangeRequestsBadge"),
+    engagementsSwimmerChangeRequests: document.querySelector("#adminEngagementsSwimmerChangeRequests"),
+    engagementsSwimmerChangeRequestsCount: document.querySelector("#adminEngagementsSwimmerChangeRequestsCount"),
+    engagementsSwimmerChangeRequestsStatus: document.querySelector("#adminEngagementsSwimmerChangeRequestsStatus"),
+    engagementsSwimmerChangeRequestsList: document.querySelector("#adminEngagementsSwimmerChangeRequestsList"),
+    engagementsSwimmerCorrectionDialog: document.querySelector("#adminEngagementsSwimmerCorrectionDialog"),
+    engagementsSwimmerCorrectionForm: document.querySelector("#adminEngagementsSwimmerCorrectionForm"),
+    engagementsSwimmerCorrectionTitle: document.querySelector("#adminEngagementsSwimmerCorrectionTitle"),
+    engagementsSwimmerCorrectionContext: document.querySelector("#adminEngagementsSwimmerCorrectionContext"),
+    engagementsSwimmerCorrectionClose: document.querySelector("#adminEngagementsSwimmerCorrectionClose"),
+    engagementsSwimmerCorrectionCancel: document.querySelector("#adminEngagementsSwimmerCorrectionCancel"),
+    engagementsSwimmerCorrectionSubmit: document.querySelector("#adminEngagementsSwimmerCorrectionSubmit"),
+    engagementsSwimmerCorrectionMode: document.querySelector("#adminEngagementsSwimmerCorrectionMode"),
+    engagementsSwimmerCorrectionSource: document.querySelector("#adminEngagementsSwimmerCorrectionSource"),
+    engagementsSwimmerCorrectionId: document.querySelector("#adminEngagementsSwimmerCorrectionId"),
+    engagementsSwimmerCorrectionIdentityKey: document.querySelector("#adminEngagementsSwimmerCorrectionIdentityKey"),
+    engagementsSwimmerCorrectionLastName: document.querySelector("#adminEngagementsSwimmerCorrectionLastName"),
+    engagementsSwimmerCorrectionFirstName: document.querySelector("#adminEngagementsSwimmerCorrectionFirstName"),
+    engagementsSwimmerCorrectionBirthDate: document.querySelector("#adminEngagementsSwimmerCorrectionBirthDate"),
+    engagementsSwimmerCorrectionSex: document.querySelector("#adminEngagementsSwimmerCorrectionSex"),
+    engagementsSwimmerCorrectionLicense: document.querySelector("#adminEngagementsSwimmerCorrectionLicense"),
+    engagementsSwimmerCorrectionReasonLabel: document.querySelector("#adminEngagementsSwimmerCorrectionReasonLabel"),
+    engagementsSwimmerCorrectionReason: document.querySelector("#adminEngagementsSwimmerCorrectionReason"),
+    engagementsSwimmerCorrectionMessage: document.querySelector("#adminEngagementsSwimmerCorrectionMessage"),
     engagementsNationalPeopleRefresh: document.querySelector("#adminEngagementsNationalPeopleRefresh"),
     engagementsNationalPeopleStatus: document.querySelector("#adminEngagementsNationalPeopleStatus"),
     engagementsNationalPeopleSearch: document.querySelector("#adminEngagementsNationalPeopleSearch"),
     engagementsNationalPeopleStatusFilter: document.querySelector("#adminEngagementsNationalPeopleStatusFilter"),
     engagementsNationalPeopleReset: document.querySelector("#adminEngagementsNationalPeopleReset"),
+    engagementsNationalPeopleMergeMode: document.querySelector("#adminEngagementsNationalPeopleMergeMode"),
+    engagementsNationalPeopleBulk: document.querySelector("[data-engagement-national-people-bulk]"),
     engagementsNationalPeopleBulkMerge: document.querySelector("#adminEngagementsNationalPeopleBulkMerge"),
     engagementsNationalPeopleSelectionSummary: document.querySelector("#adminEngagementsNationalPeopleSelectionSummary"),
     engagementsNationalPeopleList: document.querySelector("#adminEngagementsNationalPeopleList"),
     engagementsNationalAccountsRefresh: document.querySelector("#adminEngagementsNationalAccountsRefresh"),
+    engagementsNationalAccountsGroup: document.querySelector("#adminEngagementsNationalAccountsGroup"),
+    engagementsNationalAccountsCount: document.querySelector("#adminEngagementsNationalAccountsCount"),
     engagementsNationalAccountsStatus: document.querySelector("#adminEngagementsNationalAccountsStatus"),
     engagementsNationalAccountsList: document.querySelector("#adminEngagementsNationalAccountsList"),
     engagementsNationalAuditRefresh: document.querySelector("#adminEngagementsNationalAuditRefresh"),
+    engagementsNationalAuditSearch: document.querySelector("#adminEngagementsNationalAuditSearch"),
+    engagementsNationalAuditType: document.querySelector("#adminEngagementsNationalAuditType"),
+    engagementsNationalAuditReset: document.querySelector("#adminEngagementsNationalAuditReset"),
     engagementsNationalAuditStatus: document.querySelector("#adminEngagementsNationalAuditStatus"),
     engagementsNationalAuditList: document.querySelector("#adminEngagementsNationalAuditList"),
     engagementsDetail: document.querySelector("#adminEngagementsDetail"),
@@ -531,6 +570,7 @@
   let accessPreviousCursors = [];
   let accessPage = 1;
   let accessUsersLoading = false;
+  let accessUsersLoaded = false;
   let accessDirectoryTruncated = false;
   let accessLoadSequence = 0;
   let accessDeletionRequests = [];
@@ -540,11 +580,14 @@
   let engagementCompetitions = [];
   let engagementCompetitionsLoaded = false;
   let engagementCompetitionsLoading = false;
+  let engagementCompetitionsLoadedRange = "";
   let engagementCompetitionsVisibleLimit = 24;
   let engagementDeadlineCountdownTimer = null;
   let engagementDeletionRequests = [];
   let engagementDeletionRequestsLoaded = false;
   let engagementDeletionRequestsLoading = false;
+  let engagementNationalOverviewLoaded = false;
+  let engagementNationalOverviewLoading = false;
   let engagementAccessRequests = [];
   let engagementAccessRequestsLoaded = false;
   let engagementAccessRequestsLoading = false;
@@ -556,10 +599,16 @@
   let engagementNationalSwimmerMergeTargets = [];
   let engagementNationalSwimmerMergeQuery = "";
   let engagementNationalSwimmerMergeLoading = false;
+  let engagementNationalSwimmerMergeMode = false;
+  let engagementSwimmerChangeRequests = [];
+  let engagementSwimmerChangeRequestsLoaded = false;
+  let engagementSwimmerChangeRequestsLoading = false;
+  let engagementSwimmerCorrectionOpener = null;
   let engagementNationalPeople = [];
   let engagementNationalPeopleLoaded = false;
   let engagementNationalPeopleLoading = false;
   let engagementNationalPersonMergeSourceId = "";
+  let engagementNationalPeopleMergeMode = false;
   let engagementNationalAuditLogs = [];
   let engagementNationalAuditLogsLoaded = false;
   let engagementNationalAuditLogsLoading = false;
@@ -593,6 +642,7 @@
   let currentAccessProfile = null;
   let recordModuleLoadPromise = null;
   let importModuleLoadPromise = null;
+  let dtnModuleLoadPromise = null;
   let importSpreadsheetLoadPromise = null;
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
@@ -603,7 +653,12 @@
   let engagementClubEntryMutationQueue = Promise.resolve();
   let engagementClubEntryMutationRevision = 0;
   let engagementClubLastPersistedEntry = null;
+  const engagementClubWorkspaceCache = new Map();
+  const ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS = 30 * 1000;
   const engagementClubEntriesAutosaveSwimmers = new Map();
+  const engagementClubSelectionChanges = new Map();
+  let engagementClubSelectionTimer = null;
+  let engagementClubSelectionCompetitionId = "";
   let engagementClubEntriesAutosaveTimer = null;
   let engagementClubEntriesAutosaveCompetitionId = "";
   let engagementClubTimesDialogSwimmerId = "";
@@ -615,6 +670,8 @@
   let engagementClubRelayDialogSaving = false;
   const engagementClubSwimmerEventTimesCache = new Map();
   const engagementClubSwimmerEventTimesRequests = new Map();
+  const engagementClubSwimmerEventTimesBatch = new Map();
+  let engagementClubSwimmerEventTimesBatchTimer = null;
 
   function ensureFirebaseApp() {
     const firebase = global.firebase;
@@ -712,12 +769,17 @@
     if (element) element.dataset.lastRefreshAt = new Date().toISOString();
   }
 
-  function lastRefreshSuffix(element) {
+  function lastRefreshTime(element) {
     const value = element?.dataset.lastRefreshAt || "";
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return ` Dernière actualisation à ${date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`;
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function lastRefreshSuffix(element) {
+    const time = lastRefreshTime(element);
+    return time ? ` Dernière actualisation à ${time}.` : "";
   }
 
   function toggleLoginPasswordVisibility() {
@@ -824,6 +886,7 @@
   function resetEngagementClubData() {
     if (elements.engagementsClubTimesDialog?.open) elements.engagementsClubTimesDialog.close();
     if (elements.engagementsClubRelayDialog?.open) elements.engagementsClubRelayDialog.close();
+    if (elements.engagementsSwimmerCorrectionDialog?.open) elements.engagementsSwimmerCorrectionDialog.close();
     engagementClubTimesDialogSwimmerId = "";
     engagementClubTimesDialogLoading = false;
     engagementClubTimesDialogOpener = null;
@@ -850,7 +913,8 @@
     engagementMailJobs = [];
     engagementMailJobsCompetitionId = "";
     selectedEngagementClubEntry = null;
-    selectedEngagementClubEntryCompetitionId = "";
+    engagementClubWorkspaceCache.clear();
+    engagementSwimmerCorrectionOpener = null;
   }
 
   function engagementRegionScope(user = currentAccessProfile || {}) {
@@ -897,12 +961,19 @@
     if (elements.nationalSubmenu) elements.nationalSubmenu.hidden = !expanded;
   }
 
+  function setAccessMenuOpen(open) {
+    const expanded = Boolean(open) && canManageAccessDirectory();
+    elements.accessToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (elements.accessSubmenu) elements.accessSubmenu.hidden = !expanded;
+  }
+
   function setExclusivePortalMenu(menu, open = true) {
     setClubMenuOpen(Boolean(open) && menu === "club");
     setPerformanceMenuOpen(Boolean(open) && menu === "performance");
     setDtnMenuOpen(Boolean(open) && menu === "dtn");
     setEngagementsAdminMenuOpen(Boolean(open) && menu === "engagementsAdmin");
     setNationalMenuOpen(Boolean(open) && menu === "national");
+    setAccessMenuOpen(Boolean(open) && menu === "access");
   }
 
   function togglePortalSpace(menu, homeView, hash, toggle) {
@@ -940,48 +1011,49 @@
     return activeEngagementsNavEntry.startsWith("admin");
   }
 
+  function engagementNationalPageTitle(tab = activeEngagementNationalTab) {
+    return {
+      deletions: "Demandes à traiter",
+      swimmers: "Nageurs",
+      people: "Officiels",
+      audit: "Journal d'activité"
+    }[tab] || "Administration nationale";
+  }
+
   function updateEngagementsModeView() {
     const adminMode = isEngagementAdminMode();
     const nextMode = adminMode ? "admin" : "club";
     const previousMode = elements.engagementsView?.dataset.engagementsMode || "";
     const peopleMode = activeEngagementsTab === "clubPeople";
     const swimmersMode = activeEngagementsTab === "clubSwimmers";
+    const accessRequestsMode = activeEngagementsTab === "accessRequests";
+    const adminCalendarMode = adminMode && activeEngagementsTab === "calendar";
+    const createMode = activeEngagementsTab === "create";
+    const nationalMode = activeEngagementsTab === "deletionRequests";
     if (elements.engagementsView) {
       elements.engagementsView.dataset.engagementsMode = nextMode;
       elements.engagementsView.dataset.engagementsTab = activeEngagementsTab;
     }
-    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.textContent = adminMode ? "Organisation des compétitions" : "Espace club";
     if (elements.engagementsViewTitle) {
-      elements.engagementsViewTitle.textContent = adminMode
-        ? "Organisation des comp\u00e9titions"
-        : peopleMode
-          ? "Mes officiels"
-          : swimmersMode
-            ? "Mes nageurs"
-            : "Engagements en comp\u00e9tition";
+      elements.engagementsViewTitle.textContent = accessRequestsMode
+        ? "Demandes d'accès"
+        : adminCalendarMode
+          ? "Comp\u00e9titions \u00e0 administrer"
+          : createMode
+            ? "Cr\u00e9er une comp\u00e9tition"
+            : nationalMode
+              ? engagementNationalPageTitle()
+              : peopleMode
+                ? "Mes officiels"
+                : swimmersMode
+                  ? "Mes nageurs"
+                  : "Engagements en comp\u00e9tition";
     }
-    if (elements.engagementsViewIntro) {
-      elements.engagementsViewIntro.textContent = adminMode
-        ? "Calendrier, création, paramétrage, documents et statistiques de votre périmètre."
-        : peopleMode
-          ? "Base des chefs d'equipe et officiels reutilisables par le club."
-          : swimmersMode
-            ? "Liste des nageurs dont le dernier club connu est votre club."
-            : "";
+    if (elements.engagementsCalendarActions) {
+      elements.engagementsCalendarActions.hidden = !adminCalendarMode || elements.engagementsCalendarCard?.dataset.detailOpen === "true";
     }
-    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.hidden = !adminMode && !peopleMode && !swimmersMode;
-    if (elements.engagementsCalendarEyebrow) {
-      elements.engagementsCalendarEyebrow.textContent = adminMode ? "Calendrier organisateur" : "Calendrier club";
-      elements.engagementsCalendarEyebrow.hidden = !adminMode;
-    }
-    if (elements.engagementsCalendarTitle) {
-      elements.engagementsCalendarTitle.textContent = adminMode ? "Comp\u00e9titions \u00e0 administrer" : "Engagements en comp\u00e9tition";
-    }
-    if (elements.engagementsCalendarHead) elements.engagementsCalendarHead.hidden = !adminMode;
-    if (elements.engagementsDetailEyebrow) {
-      elements.engagementsDetailEyebrow.textContent = adminMode ? "Fiche compétition organisateur" : "Fiche compétition club";
-      elements.engagementsDetailEyebrow.hidden = !adminMode;
-    }
+    if (elements.engagementsClubPeopleActions) elements.engagementsClubPeopleActions.hidden = !peopleMode;
+    if (elements.engagementsDetailEyebrow) elements.engagementsDetailEyebrow.hidden = true;
     const capabilities = new Set(currentAccessProfile?.capabilities || []);
     const showMineFilter = adminMode && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage");
     if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = !showMineFilter;
@@ -1016,17 +1088,17 @@
       loadEngagementNationalSwimmers();
     } else if (activeEngagementNationalTab === "people") {
       loadEngagementNationalPeople();
-    } else if (activeEngagementNationalTab === "accounts") {
-      loadAccessDeletionRequests();
     } else if (activeEngagementNationalTab === "audit") {
       loadEngagementNationalAuditLogs();
     } else {
       loadEngagementDeletionRequests();
+      loadEngagementSwimmerChangeRequests();
+      loadAccessDeletionRequests();
     }
   }
 
   function setEngagementNationalTab(tab = "deletions") {
-    const allowedTabs = new Set(["deletions", "swimmers", "people", "accounts", "audit"]);
+    const allowedTabs = new Set(["deletions", "swimmers", "people", "audit"]);
     const nextTab = allowedTabs.has(tab) ? tab : "deletions";
     activeEngagementNationalTab = nextTab;
     elements.engagementsNationalTabButtons?.forEach((button) => {
@@ -1037,8 +1109,42 @@
     elements.engagementsNationalPanels?.forEach((panel) => {
       panel.hidden = panel.dataset.engagementsNationalPanel !== nextTab;
     });
+    updateEngagementsModeView();
     if (activeEngagementsTab === "deletionRequests" && requestedNavigationView() === "engagements") {
       loadActiveEngagementNationalTab();
+    }
+  }
+
+  function renderEngagementNationalOverview(counts = null) {
+    const safeCounts = counts && typeof counts === "object" ? counts : null;
+    if (elements.nationalOverviewPendingCount) {
+      elements.nationalOverviewPendingCount.textContent = safeCounts ? String(Math.max(0, Number(safeCounts.total) || 0)) : "–";
+    }
+    if (elements.nationalOverviewPendingBreakdown) {
+      elements.nationalOverviewPendingBreakdown.textContent = safeCounts
+        ? [
+            `${Math.max(0, Number(safeCounts.swimmerChanges) || 0)} correction${Number(safeCounts.swimmerChanges) === 1 ? "" : "s"}`,
+            `${Math.max(0, Number(safeCounts.dataDeletions) || 0)} suppression${Number(safeCounts.dataDeletions) === 1 ? "" : "s"} de données`,
+            `${Math.max(0, Number(safeCounts.accountDeletions) || 0)} suppression${Number(safeCounts.accountDeletions) === 1 ? "" : "s"} de comptes`
+          ].join(" · ")
+        : engagementNationalOverviewLoading ? "Comptage en cours..." : "Comptage indisponible";
+    }
+  }
+
+  async function loadEngagementNationalOverview({ force = false } = {}) {
+    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalOverviewLoading) return;
+    if (engagementNationalOverviewLoaded && !force) return;
+    engagementNationalOverviewLoading = true;
+    renderEngagementNationalOverview();
+    try {
+      const result = await callFunction("getEngagementNationalAdministrationOverview", {});
+      engagementNationalOverviewLoaded = true;
+      renderEngagementNationalOverview(result.counts || {});
+    } catch (error) {
+      engagementNationalOverviewLoaded = false;
+    } finally {
+      engagementNationalOverviewLoading = false;
+      if (!engagementNationalOverviewLoaded) renderEngagementNationalOverview();
     }
   }
 
@@ -1420,7 +1526,8 @@
     if (!global.location.hash || global.location.hash === "#accueil") return "dashboard";
     if (global.location.hash === "#espace-club") return "clubHome";
     if (global.location.hash === "#gestion-performances") return "performanceHome";
-    if (global.location.hash === "#gestion-acces") return "access";
+    if (global.location.hash === "#gestion-acces") return "accessHome";
+    if (global.location.hash === "#gestion-utilisateurs") return "access";
     if (global.location.hash === "#mon-compte") return "account";
     if (global.location.hash === "#records-mpf") return "records";
     if (global.location.hash === "#import-competitions") return "import";
@@ -1436,7 +1543,7 @@
   function updateNavigationView() {
     syncEngagementRouteFromHash();
     const requestedView = requestedNavigationView();
-    const accessDenied = requestedView === "access" && !canManageAccessDirectory();
+    const accessDenied = (requestedView === "access" || requestedView === "accessHome") && !canManageAccessDirectory();
     const recordsDenied = requestedView === "records" && !canUse("records.manage");
     const importDenied = requestedView === "import" && !canUse("competitions.import");
     const correctionDenied = requestedView === "correction" && !canUse("competitions.import");
@@ -1473,15 +1580,17 @@
     const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
     const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(activeEngagementsNavEntry));
     const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && activeEngagementsNavEntry === "adminDeletionRequests");
-    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && activeEngagementsNavEntry !== "adminDeletionRequests");
-    const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
+    const accessSpaceActive = activeView === "accessHome" || activeView === "access" || (activeView === "engagements" && activeEngagementsNavEntry === "adminAccessRequests");
+    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests"].includes(activeEngagementsNavEntry));
+    const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : accessSpaceActive ? "access" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
     setExclusivePortalMenu(activeMenu, Boolean(activeMenu));
     [
       [elements.clubToggle, activeView === "clubHome" && document.body.dataset.portalHome !== "club"],
       [elements.performanceToggle, activeView === "performanceHome"],
       [elements.dtnToggle, activeView === "dtnHome"],
       [elements.engagementsAdminToggle, activeView === "engagementsAdminHome"],
-      [elements.nationalToggle, activeView === "nationalHome"]
+      [elements.nationalToggle, activeView === "nationalHome"],
+      [elements.accessToggle, activeView === "accessHome"]
     ].forEach(([toggle, active]) => {
       toggle?.classList.toggle("active", active);
       if (active) toggle?.setAttribute("aria-current", "page");
@@ -1503,6 +1612,8 @@
     document.body.classList.toggle("performance-admin-page", performanceModuleActive);
     if (recordsActive) loadRecordModule();
     if (importModuleActive) loadImportModule({ includeSpreadsheet: importActive });
+    if (dtnSpaceActive && activeView === "dtn") loadDtnModule();
+    if (activeView === "nationalHome") loadEngagementNationalOverview();
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
     if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
     if (engagementsActive && activeEngagementsTab === "deletionRequests") loadActiveEngagementNationalTab();
@@ -1547,6 +1658,18 @@
     const observer = new MutationObserver(updateStatus);
     observer.observe(elements.recordWorkbench, { attributes: true, attributeFilter: ["hidden"] });
     updateStatus();
+  }
+
+  function loadDtnModule() {
+    if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
+    dtnModuleLoadPromise = loadScriptOnce(
+      "assets/livepalmes-dtn-qualifications.js?v=20260806-performance-audit-1",
+      "livepalmes-dtn-qualifications-script"
+    ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
+      dtnModuleLoadPromise = null;
+      console.error("Chargement du module DTN impossible", error);
+    });
+    return dtnModuleLoadPromise;
   }
 
   function loadRecordModule() {
@@ -2140,6 +2263,11 @@
       elements.engagementsStatus.textContent = "";
       elements.engagementsStatus.hidden = true;
       delete elements.engagementsStatus.dataset.tone;
+    }
+    if (elements.engagementsRefreshMeta) {
+      elements.engagementsRefreshMeta.textContent = "";
+      elements.engagementsRefreshMeta.hidden = true;
+      delete elements.engagementsRefreshMeta.dataset.lastRefreshAt;
     }
   }
 
@@ -2736,29 +2864,53 @@
   }
 
   function renderEngagementClubPersonSwimmerOptions() {
-    const swimmers = engagementClubSwimmers
+    const availableSwimmers = engagementClubSwimmers
       .filter((swimmer) => swimmer.active !== false)
       .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"));
-    const currentPersonValue = elements.engagementsClubPersonSwimmerId?.value
-      ? engagementClubSwimmerReferenceValue({
-        swimmerIndexId: elements.engagementsClubPersonSwimmerId.value,
-        source: elements.engagementsClubPersonSwimmerSource?.value || "performances"
-      })
-      : "";
-    if (elements.engagementsClubPersonSwimmerSelect) {
-      elements.engagementsClubPersonSwimmerSelect.innerHTML = [
-        '<option value="">Saisie manuelle</option>',
-        ...swimmers.map(engagementClubSwimmerOptionMarkup)
-      ].join("");
-      elements.engagementsClubPersonSwimmerSelect.value = currentPersonValue;
+    if (elements.engagementsClubPersonSwimmerResults) {
+      const query = normalizedEngagementClubSearch(elements.engagementsClubPersonSwimmerSearch?.value || "");
+      const terms = query.split(/\s+/).filter(Boolean);
+      const matchingSwimmers = query
+        ? availableSwimmers.filter((swimmer) => {
+          const haystack = engagementClubSwimmerSearchText(swimmer);
+          return terms.every((term) => haystack.includes(term));
+        })
+        : [];
+      if (!query) {
+        elements.engagementsClubPersonSwimmerResults.hidden = true;
+        elements.engagementsClubPersonSwimmerResults.innerHTML = "";
+        elements.engagementsClubPersonSwimmerSearch?.setAttribute("aria-expanded", "false");
+      } else if (!matchingSwimmers.length) {
+        elements.engagementsClubPersonSwimmerResults.hidden = false;
+        elements.engagementsClubPersonSwimmerResults.innerHTML = '<p class="admin-engagements-club-person-swimmer-empty">Aucun nageur trouvé. Vous pouvez saisir la personne manuellement.</p>';
+        elements.engagementsClubPersonSwimmerSearch?.setAttribute("aria-expanded", "true");
+      } else {
+        const visibleSwimmers = matchingSwimmers.slice(0, 8);
+        elements.engagementsClubPersonSwimmerResults.hidden = false;
+        elements.engagementsClubPersonSwimmerResults.innerHTML = [
+          ...visibleSwimmers.map((swimmer) => {
+            const value = engagementClubSwimmerReferenceValue(swimmer);
+            const name = [swimmer.lastName, swimmer.firstName].filter(Boolean).join(" ") || swimmer.name || "Nageur sans nom";
+            const license = swimmer.licenseNumber || "Licence à renseigner";
+            return `<button type="button" data-engagement-club-person-swimmer-result="${escapeHtml(value)}" ${swimmer.licenseNumber ? "" : "disabled"}>
+              <strong>${escapeHtml(name)}</strong>
+              <small>${escapeHtml(license)}</small>
+            </button>`;
+          }),
+          matchingSwimmers.length > visibleSwimmers.length
+            ? `<small class="admin-engagements-club-person-swimmer-more">${matchingSwimmers.length - visibleSwimmers.length} autre${matchingSwimmers.length - visibleSwimmers.length > 1 ? "s" : ""} résultat${matchingSwimmers.length - visibleSwimmers.length > 1 ? "s" : ""} · précisez la recherche</small>`
+            : ""
+        ].join("");
+        elements.engagementsClubPersonSwimmerSearch?.setAttribute("aria-expanded", "true");
+      }
     }
     if (elements.engagementsClubOfficialSwimmerSelect) {
       const currentValue = elements.engagementsClubOfficialSwimmerSelect.value;
       elements.engagementsClubOfficialSwimmerSelect.innerHTML = [
         '<option value="">Choisir une personne</option>',
-        ...swimmers.map(engagementClubSwimmerOptionMarkup)
+        ...availableSwimmers.map(engagementClubSwimmerOptionMarkup)
       ].join("");
-      elements.engagementsClubOfficialSwimmerSelect.value = swimmers.some((swimmer) => engagementClubSwimmerReferenceValue(swimmer) === currentValue)
+      elements.engagementsClubOfficialSwimmerSelect.value = availableSwimmers.some((swimmer) => engagementClubSwimmerReferenceValue(swimmer) === currentValue)
         ? currentValue
         : "";
     }
@@ -2767,15 +2919,30 @@
   function applyEngagementClubPersonSwimmer(value = "") {
     const swimmer = engagementClubSwimmerFromReferenceValue(value);
     if (value && !swimmer) return;
+    const previouslyLinked = Boolean(elements.engagementsClubPersonSwimmerId?.value);
     const linked = Boolean(swimmer);
     if (elements.engagementsClubPersonSwimmerId) elements.engagementsClubPersonSwimmerId.value = swimmer?.swimmerIndexId || swimmer?.id || "";
     if (elements.engagementsClubPersonSwimmerSource) elements.engagementsClubPersonSwimmerSource.value = swimmer?.source || "";
     if (linked) {
+      if (elements.engagementsClubPersonSwimmerSearch) {
+        elements.engagementsClubPersonSwimmerSearch.value = [swimmer.lastName, swimmer.firstName].filter(Boolean).join(" ");
+        elements.engagementsClubPersonSwimmerSearch.setAttribute("aria-expanded", "false");
+      }
+      if (elements.engagementsClubPersonSwimmerResults) {
+        elements.engagementsClubPersonSwimmerResults.hidden = true;
+        elements.engagementsClubPersonSwimmerResults.innerHTML = "";
+      }
       if (elements.engagementsClubPersonFirstName) elements.engagementsClubPersonFirstName.value = swimmer.firstName || "";
       if (elements.engagementsClubPersonLastName) elements.engagementsClubPersonLastName.value = swimmer.lastName || "";
       if (elements.engagementsClubPersonBirthDate) elements.engagementsClubPersonBirthDate.value = swimmer.birthDate || "";
       if (elements.engagementsClubPersonSex) elements.engagementsClubPersonSex.value = swimmer.sex || "";
       if (elements.engagementsClubPersonLicense) elements.engagementsClubPersonLicense.value = swimmer.licenseNumber || "";
+    } else if (previouslyLinked) {
+      if (elements.engagementsClubPersonFirstName) elements.engagementsClubPersonFirstName.value = "";
+      if (elements.engagementsClubPersonLastName) elements.engagementsClubPersonLastName.value = "";
+      if (elements.engagementsClubPersonBirthDate) elements.engagementsClubPersonBirthDate.value = "";
+      if (elements.engagementsClubPersonSex) elements.engagementsClubPersonSex.value = "";
+      if (elements.engagementsClubPersonLicense) elements.engagementsClubPersonLicense.value = "";
     }
     [elements.engagementsClubPersonFirstName, elements.engagementsClubPersonLastName, elements.engagementsClubPersonBirthDate, elements.engagementsClubPersonSex, elements.engagementsClubPersonLicense]
       .forEach((field) => {
@@ -3132,6 +3299,11 @@
   }
 
   function updateEngagementNationalSwimmerSelectionState() {
+    if (elements.engagementsNationalSwimmersBulk) elements.engagementsNationalSwimmersBulk.hidden = !engagementNationalSwimmerMergeMode;
+    if (elements.engagementsNationalSwimmersMergeMode) {
+      elements.engagementsNationalSwimmersMergeMode.setAttribute("aria-pressed", engagementNationalSwimmerMergeMode ? "true" : "false");
+      elements.engagementsNationalSwimmersMergeMode.textContent = engagementNationalSwimmerMergeMode ? "Quitter le mode doublons" : "Gérer les doublons";
+    }
     const keepKey = selectedEngagementNationalSwimmerKeepKey();
     const mergeKeys = selectedEngagementNationalSwimmerMergeKeys().filter((key) => key !== keepKey);
     if (elements.engagementsNationalSwimmersBulkMerge) {
@@ -3144,6 +3316,16 @@
         ? `${mergeKeys.length} fiche${mergeKeys.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
         : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
     }
+  }
+
+  function setEngagementNationalSwimmerMergeMode(enabled) {
+    engagementNationalSwimmerMergeMode = enabled === true;
+    if (!engagementNationalSwimmerMergeMode) {
+      engagementNationalSwimmerMergeSourceId = "";
+      engagementNationalSwimmerMergeTargets = [];
+      engagementNationalSwimmerMergeQuery = "";
+    }
+    renderEngagementNationalSwimmers();
   }
 
   function selectedEngagementClubSwimmerRows() {
@@ -3305,6 +3487,54 @@
     renderEngagementClubSummary();
   }
 
+  function markEngagementClubSwimmerEventTimesError(swimmerIndexId = "") {
+    const entryRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
+      .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
+    Array.from(entryRow?.querySelectorAll('[data-engagement-club-entry-cell-time][data-entry-time-mode="pending"]') || [])
+      .forEach((timeValue) => {
+        timeValue.textContent = "Indisponible";
+        timeValue.dataset.entryTimeMode = "error";
+      });
+  }
+
+  async function flushEngagementClubSwimmerEventTimesBatch() {
+    if (engagementClubSwimmerEventTimesBatchTimer) global.clearTimeout(engagementClubSwimmerEventTimesBatchTimer);
+    engagementClubSwimmerEventTimesBatchTimer = null;
+    const competitionId = selectedEngagementCompetitionId;
+    const pending = Array.from(engagementClubSwimmerEventTimesBatch.values());
+    engagementClubSwimmerEventTimesBatch.clear();
+    if (!competitionId || !pending.length) return;
+    try {
+      if (engagementClubSelectionChanges.size) await flushEngagementClubSwimmerSelections();
+      await engagementClubEntryMutationQueue;
+      const result = await callFunction("previewEngagementClubSwimmerEventTimesBatch", {
+        competitionId,
+        swimmerIndexIds: pending.map((item) => item.swimmerIndexId)
+      });
+      const resultsById = new Map((Array.isArray(result.swimmers) ? result.swimmers : [])
+        .map((item) => [item.swimmerIndexId, Array.isArray(item.individualEntries) ? item.individualEntries : []]));
+      pending.forEach((item) => {
+        const previewEntries = resultsById.get(item.swimmerIndexId) || [];
+        if (selectedEngagementCompetitionId === competitionId) {
+          engagementClubSwimmerEventTimesCache.set(item.cacheKey, previewEntries);
+          mergeEngagementClubSwimmerEventTimes(item.swimmerIndexId, previewEntries);
+        }
+        item.resolve();
+      });
+    } catch (error) {
+      pending.forEach((item) => {
+        markEngagementClubSwimmerEventTimesError(item.swimmerIndexId);
+        item.resolve();
+      });
+      if (elements.engagementsClubEntriesMessage) {
+        elements.engagementsClubEntriesMessage.textContent = `Le temps d'engagement n'a pas pu etre calcule : ${error?.message || error}`;
+        elements.engagementsClubEntriesMessage.dataset.tone = "error";
+      }
+    } finally {
+      pending.forEach((item) => engagementClubSwimmerEventTimesRequests.delete(item.cacheKey));
+    }
+  }
+
   async function ensureEngagementClubSwimmerEventTimes(swimmer = {}) {
     const swimmerIndexId = swimmer.swimmerIndexId || swimmer.id || "";
     const requestCompetitionId = selectedEngagementCompetitionId;
@@ -3318,29 +3548,10 @@
       await engagementClubSwimmerEventTimesRequests.get(cacheKey);
       return;
     }
-    const request = callFunction("previewEngagementClubSwimmerEventTimes", {
-      competitionId: selectedEngagementCompetitionId,
-      swimmerIndexId,
-      source: swimmer.source || "performances"
-    }).then((result) => {
-      if (selectedEngagementCompetitionId !== requestCompetitionId) return;
-      const previewEntries = Array.isArray(result.individualEntries) ? result.individualEntries : [];
-      engagementClubSwimmerEventTimesCache.set(cacheKey, previewEntries);
-      mergeEngagementClubSwimmerEventTimes(swimmerIndexId, previewEntries);
-    }).catch(() => {
-      const entryRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
-        .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
-      Array.from(entryRow?.querySelectorAll('[data-engagement-club-entry-cell-time][data-entry-time-mode="pending"]') || [])
-        .forEach((timeValue) => {
-          timeValue.textContent = "Indisponible";
-          timeValue.dataset.entryTimeMode = "error";
-        });
-      if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = "Le temps d'engagement n'a pas pu etre calcule. Reessayez dans quelques instants.";
-        elements.engagementsClubEntriesMessage.dataset.tone = "error";
-      }
-    }).finally(() => {
-      engagementClubSwimmerEventTimesRequests.delete(cacheKey);
+    const request = new Promise((resolve) => {
+      engagementClubSwimmerEventTimesBatch.set(cacheKey, { cacheKey, swimmerIndexId, resolve });
+      if (engagementClubSwimmerEventTimesBatchTimer) global.clearTimeout(engagementClubSwimmerEventTimesBatchTimer);
+      engagementClubSwimmerEventTimesBatchTimer = global.setTimeout(() => void flushEngagementClubSwimmerEventTimesBatch(), 80);
     });
     engagementClubSwimmerEventTimesRequests.set(cacheKey, request);
     await request;
@@ -3463,6 +3674,14 @@
   function rememberEngagementClubPersistedEntry(entry = {}) {
     engagementClubLastPersistedEntry = cloneEngagementClubEntry(entry);
     setEngagementClubPersistedSwimmers(entry);
+    if (selectedEngagementCompetitionId && !isEngagementAdminMode() && canUse("engagements.club.manage")) {
+      const cached = engagementClubWorkspaceCache.get(selectedEngagementCompetitionId) || {};
+      engagementClubWorkspaceCache.set(selectedEngagementCompetitionId, {
+        competition: cloneEngagementClubEntry(selectedEngagementCompetition || cached.competition || {}),
+        entry: cloneEngagementClubEntry(entry),
+        cachedAt: Date.now()
+      });
+    }
   }
 
   function captureEngagementClubEntriesViewport() {
@@ -3561,22 +3780,38 @@
     return task;
   }
 
+  function flushEngagementClubSwimmerSelections() {
+    if (engagementClubSelectionTimer) global.clearTimeout(engagementClubSelectionTimer);
+    engagementClubSelectionTimer = null;
+    const competitionId = engagementClubSelectionCompetitionId;
+    const changes = Array.from(engagementClubSelectionChanges.values());
+    engagementClubSelectionChanges.clear();
+    engagementClubSelectionCompetitionId = "";
+    if (!competitionId || !changes.length) return Promise.resolve(false);
+    return queueEngagementClubEntryMutation({
+      competitionId,
+      messageElement: elements.engagementsClubSwimmersMessage,
+      loadingMessage: changes.length > 1 ? `Enregistrement de ${changes.length} modifications...` : "Enregistrement du nageur...",
+      execute: () => callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes })
+    });
+  }
+
   function persistEngagementClubSwimmerSelection(swimmer = {}, selected = true) {
     const swimmerIndexId = String(swimmer.swimmerIndexId || swimmer.id || "").trim();
     const competitionId = selectedEngagementCompetitionId;
     if (!swimmerIndexId) return Promise.resolve(false);
-    return queueEngagementClubEntryMutation({
-      competitionId,
-      preserveLocalSwimmerSelections: true,
-      messageElement: elements.engagementsClubSwimmersMessage,
-      loadingMessage: selected ? "Ajout du nageur..." : "Retrait du nageur et de ses courses...",
-      execute: () => callFunction("saveEngagementClubSwimmerSelection", {
-        competitionId,
-        swimmerIndexId,
-        selected,
-        swimmer: selected ? swimmer : undefined
-      })
+    if (engagementClubSelectionCompetitionId && engagementClubSelectionCompetitionId !== competitionId) {
+      void flushEngagementClubSwimmerSelections();
+    }
+    engagementClubSelectionCompetitionId = competitionId;
+    engagementClubSelectionChanges.set(swimmerIndexId, {
+      swimmerIndexId,
+      selected,
+      swimmer: selected ? swimmer : undefined
     });
+    if (engagementClubSelectionTimer) global.clearTimeout(engagementClubSelectionTimer);
+    engagementClubSelectionTimer = global.setTimeout(() => void flushEngagementClubSwimmerSelections(), 400);
+    return Promise.resolve(true);
   }
 
   function resetEngagementClubEntriesAutosave() {
@@ -3814,6 +4049,7 @@
       const sexLabel = sex === "F" ? "Femme" : (sex === "M" ? "Homme" : "Sexe non renseigné");
       const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
       const publicProfileUrl = engagementPublicSwimmerProfileUrl(swimmer, name);
+      const changePending = swimmer.changeRequestStatus === "pending";
       return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${escapeHtml(sex)}" data-expanded="false">
           <div class="admin-engagements-club-swimmers-directory-toggle">
@@ -3840,9 +4076,12 @@
             <span role="cell">${swimmer.licenseNumber
               ? escapeHtml(swimmer.licenseNumber)
               : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
-            <span role="cell">${swimmer.source === "engagement"
-              ? `<button class="admin-engagements-club-swimmers-directory-delete-button" type="button" title="Demander la suppression de ${escapeHtml(name)}" aria-label="Demander la suppression de ${escapeHtml(name)}" data-engagement-club-swimmer-delete="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-delete-name="${escapeHtml(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"></path></svg></button>`
-              : "-"}</span>
+            <span role="cell" class="admin-engagements-club-swimmers-directory-actions">
+              <button class="admin-engagements-club-swimmers-directory-edit-button" type="button" title="${changePending ? "Une demande de correction est déjà en attente" : `Demander une correction pour ${escapeHtml(name)}`}" aria-label="${changePending ? `Correction de ${escapeHtml(name)} en attente` : `Demander une correction pour ${escapeHtml(name)}`}" data-engagement-club-swimmer-change="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-change-source="${escapeHtml(swimmer.source || "performances")}" ${changePending ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button>
+              ${swimmer.source === "engagement"
+                ? `<button class="admin-engagements-club-swimmers-directory-delete-button" type="button" title="Demander la suppression de ${escapeHtml(name)}" aria-label="Demander la suppression de ${escapeHtml(name)}" data-engagement-club-swimmer-delete="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-delete-name="${escapeHtml(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"></path></svg></button>`
+                : ""}
+            </span>
           </div>
         </div>
       `;
@@ -6295,11 +6534,6 @@
     if (!mount) return;
     const visibleCompetitions = filteredEngagementCompetitions();
     const renderedCompetitions = visibleCompetitions.slice(0, engagementCompetitionsVisibleLimit);
-    if (elements.engagementsResultsCount) {
-      elements.engagementsResultsCount.textContent = renderedCompetitions.length < visibleCompetitions.length
-        ? `${renderedCompetitions.length} compétitions affichées sur ${visibleCompetitions.length}`
-        : `${visibleCompetitions.length} compétition${visibleCompetitions.length > 1 ? "s" : ""} affichée${visibleCompetitions.length > 1 ? "s" : ""}`;
-    }
     if (!visibleCompetitions.length) {
       mount.innerHTML = `
         <div class="admin-engagements-empty admin-engagements-calendar-empty">
@@ -6374,6 +6608,7 @@
     if (elements.engagementsCalendarCard) elements.engagementsCalendarCard.dataset.detailOpen = visible ? "true" : "false";
     if (elements.engagementsCalendarFilters) elements.engagementsCalendarFilters.hidden = visible;
     if (elements.engagementsCalendarList) elements.engagementsCalendarList.hidden = visible;
+    if (elements.engagementsCalendarActions) elements.engagementsCalendarActions.hidden = visible || !isEngagementAdminMode();
     if (elements.engagementsRefresh) elements.engagementsRefresh.hidden = visible;
     if (elements.engagementsDetail) elements.engagementsDetail.hidden = !visible;
     if (elements.engagementsDetailClose) elements.engagementsDetailClose.hidden = !visible;
@@ -6494,6 +6729,7 @@
     if (engagementClubEntriesAutosaveSwimmers.size) {
       void flushEngagementClubIndividualEntriesAutosave();
     }
+    if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
     clearEngagementDetailTabDirty();
     selectedEngagementCompetitionId = "";
     selectedEngagementCompetition = null;
@@ -6573,6 +6809,10 @@
     const cleanId = String(competitionId || "").trim();
     if (!cleanId) return;
     if (selectedEngagementCompetitionId && selectedEngagementCompetitionId !== cleanId && !confirmLeaveDirtyEngagementTab()) return;
+    if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
+    const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
+    const cachedWorkspace = clubMode ? engagementClubWorkspaceCache.get(cleanId) : null;
+    const cachedWorkspaceFresh = Boolean(cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
     clearEngagementDetailTabDirty();
     selectedEngagementCompetitionId = cleanId;
     engagementClubEntryMutationRevision += 1;
@@ -6594,67 +6834,69 @@
     renderEngagementCompetitions();
     setEngagementCompetitionDetailVisible(true);
     setEngagementsDetailTab(initialTab);
-    if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
-    if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
-    if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
-    if (elements.engagementsDetailStatus) {
-      elements.engagementsDetailStatus.textContent = "Chargement de la fiche...";
-      elements.engagementsDetailStatus.dataset.tone = "loading";
+    if (cachedWorkspace) {
+      selectedEngagementCompetition = cloneEngagementClubEntry(cachedWorkspace.competition);
+      selectedEngagementClubEntry = cloneEngagementClubEntry(cachedWorkspace.entry);
+      renderEngagementCompetitionDetail(selectedEngagementCompetition);
+      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
+      renderEngagementClubEntry(selectedEngagementClubEntry);
+      clearEngagementDetailTabDirty();
+      if (cachedWorkspaceFresh) return;
+    } else {
+      if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
+      if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
+      if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
+      if (elements.engagementsDetailStatus) {
+        elements.engagementsDetailStatus.textContent = "Chargement de la fiche...";
+        elements.engagementsDetailStatus.dataset.tone = "loading";
+      }
     }
-    const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
-    const clubPeoplePromise = clubMode ? loadEngagementClubPeople({ silent: true }) : null;
+    let clubPeoplePromise = null;
     const pendingEntryMutations = engagementClubEntryMutationQueue;
-    const clubEntryPromise = clubMode
-      ? pendingEntryMutations.then(() => callFunction("getEngagementClubEntry", { competitionId: cleanId }))
-      : null;
-    clubEntryPromise?.catch(() => {});
     try {
-      const result = await callFunction("getEngagementCompetition", { competitionId: cleanId });
+      const result = await (clubMode
+        ? pendingEntryMutations.then(() => callFunction("getEngagementClubEntry", { competitionId: cleanId }))
+        : callFunction("getEngagementCompetition", { competitionId: cleanId }));
+      if (selectedEngagementCompetitionId !== cleanId) return;
       selectedEngagementCompetition = result.competition || null;
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty();
       if (clubMode) {
-        await loadEngagementClubEntry(cleanId, { entryPromise: clubEntryPromise, peoplePromise: clubPeoplePromise });
+        selectedEngagementClubEntry = result.entry || {};
+        if (result.peopleRosterReady) {
+          engagementClubPeople = Array.isArray(result.people) ? result.people : [];
+          engagementClubPeopleLoaded = true;
+          renderEngagementClubPeople();
+        }
+        setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
+        renderEngagementClubEntry(selectedEngagementClubEntry);
+        engagementClubWorkspaceCache.set(cleanId, {
+          competition: cloneEngagementClubEntry(selectedEngagementCompetition || {}),
+          entry: cloneEngagementClubEntry(selectedEngagementClubEntry),
+          cachedAt: Date.now()
+        });
+        if (elements.engagementsClubTeamMessage) {
+          const writeLockReason = engagementClubWriteLockReason();
+          elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
+          elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
+        }
+        if (!result.peopleRosterReady) clubPeoplePromise ||= loadEngagementClubPeople({ silent: true });
+        clubPeoplePromise?.then(() => {
+          if (selectedEngagementCompetitionId !== cleanId) return;
+          const teamLeader = selectedEngagementClubEntry?.teamLeader || {};
+          renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
+        });
       } else {
         selectedEngagementClubEntry = null;
         renderEngagementClubEntry({});
       }
     } catch (error) {
+      if (selectedEngagementCompetitionId !== cleanId) return;
       if (elements.engagementsDetailStatus) {
-        elements.engagementsDetailStatus.textContent = `Fiche indisponible : ${error?.message || error}`;
+        elements.engagementsDetailStatus.textContent = cachedWorkspace
+          ? `Actualisation impossible, derniere version affichee : ${error?.message || error}`
+          : `Fiche indisponible : ${error?.message || error}`;
         elements.engagementsDetailStatus.dataset.tone = "error";
-      }
-    }
-  }
-
-  async function loadEngagementClubEntry(competitionId = selectedEngagementCompetitionId, { entryPromise = null, peoplePromise = null } = {}) {
-    const cleanId = String(competitionId || "").trim();
-    if (!cleanId || !canUse("engagements.club.manage")) return;
-    const pendingPeople = peoplePromise || loadEngagementClubPeople({ silent: true });
-    if (elements.engagementsClubTeamMessage) {
-      elements.engagementsClubTeamMessage.textContent = "Chargement de votre inscription club...";
-      elements.engagementsClubTeamMessage.dataset.tone = "loading";
-    }
-    try {
-      const result = await (entryPromise || callFunction("getEngagementClubEntry", { competitionId: cleanId }));
-      selectedEngagementClubEntry = result.entry || {};
-      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
-      renderEngagementClubEntry(selectedEngagementClubEntry);
-      if (elements.engagementsClubTeamMessage) {
-        const writeLockReason = engagementClubWriteLockReason();
-        elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
-        elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
-      }
-      await pendingPeople;
-      const teamLeader = selectedEngagementClubEntry.teamLeader || {};
-      renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
-    } catch (error) {
-      selectedEngagementClubEntry = {};
-      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
-      renderEngagementClubEntry(selectedEngagementClubEntry);
-      if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = `Inscription club indisponible : ${error?.message || error}`;
-        elements.engagementsClubTeamMessage.dataset.tone = "error";
       }
     }
   }
@@ -7833,6 +8075,46 @@
     }
   }
 
+  function updateEngagementNationalRequestsPresentation() {
+    const correctionCount = engagementSwimmerChangeRequests.length;
+    const deletionCount = engagementDeletionRequests.length;
+    const accountCount = accessDeletionRequests.length;
+    const total = correctionCount + deletionCount + accountCount;
+    const correctionError = elements.engagementsSwimmerChangeRequestsStatus?.dataset.tone === "error";
+    const deletionError = elements.engagementsDeletionRequestsStatus?.dataset.tone === "error";
+    const accountError = elements.engagementsNationalAccountsStatus?.dataset.tone === "error";
+    if (elements.engagementsSwimmerChangeRequests) {
+      elements.engagementsSwimmerChangeRequests.hidden = correctionCount === 0 && !correctionError;
+      if (correctionError) elements.engagementsSwimmerChangeRequests.open = true;
+    }
+    if (elements.engagementsDeletionRequestsGroup) {
+      elements.engagementsDeletionRequestsGroup.hidden = deletionCount === 0 && !deletionError;
+      if (deletionError) elements.engagementsDeletionRequestsGroup.open = true;
+    }
+    if (elements.engagementsNationalAccountsGroup) {
+      elements.engagementsNationalAccountsGroup.hidden = accountCount === 0 && !accountError;
+      if (accountError) elements.engagementsNationalAccountsGroup.open = true;
+    }
+    if (elements.engagementsDeletionRequestsCount) {
+      elements.engagementsDeletionRequestsCount.textContent = `${deletionCount} en attente`;
+    }
+    if (elements.engagementsNationalAccountsCount) {
+      elements.engagementsNationalAccountsCount.textContent = `${accountCount} en attente`;
+    }
+    const loading = engagementDeletionRequestsLoading || engagementSwimmerChangeRequestsLoading || accessDeletionRequestsLoading;
+    const complete = engagementDeletionRequestsLoaded && engagementSwimmerChangeRequestsLoaded && accessDeletionRequestsLoaded;
+    if (elements.nationalRequestsEmpty) {
+      elements.nationalRequestsEmpty.hidden = total > 0 || (!loading && !complete && (deletionError || correctionError || accountError));
+      elements.nationalRequestsEmpty.textContent = complete
+        ? "Aucune demande en attente."
+        : loading ? "Chargement des demandes..." : "Certaines demandes n'ont pas pu être chargées.";
+    }
+    if (elements.engagementsDeletionRequestsBadge) {
+      elements.engagementsDeletionRequestsBadge.hidden = total === 0;
+      elements.engagementsDeletionRequestsBadge.textContent = total > 0 ? String(Math.min(99, total)) : "";
+    }
+  }
+
   function renderEngagementDeletionRequests() {
     if (!elements.engagementsDeletionRequestsList) return;
     if (!canDeleteEngagementCompetitionDirectly()) {
@@ -7841,6 +8123,7 @@
     }
     if (!engagementDeletionRequests.length) {
       elements.engagementsDeletionRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande de suppression en attente.</p>';
+      updateEngagementNationalRequestsPresentation();
       return;
     }
     elements.engagementsDeletionRequestsList.innerHTML = engagementDeletionRequests.map((request) => {
@@ -7874,12 +8157,14 @@
       </article>
     `;
     }).join("");
+    updateEngagementNationalRequestsPresentation();
   }
 
   async function loadEngagementDeletionRequests({ force = false, silent = false } = {}) {
     if (!canDeleteEngagementCompetitionDirectly() || engagementDeletionRequestsLoading) return;
     if (engagementDeletionRequestsLoaded && !force) return;
     engagementDeletionRequestsLoading = true;
+    updateEngagementNationalRequestsPresentation();
     if (elements.engagementsDeletionRequestsRefresh) elements.engagementsDeletionRequestsRefresh.disabled = true;
     if (elements.engagementsDeletionRequestsStatus && !silent) {
       elements.engagementsDeletionRequestsStatus.textContent = "Chargement des demandes...";
@@ -7899,7 +8184,7 @@
       renderEngagementDeletionRequests();
       if (elements.engagementsDeletionRequestsStatus && !silent) {
         markLastRefresh(elements.engagementsDeletionRequestsStatus);
-        elements.engagementsDeletionRequestsStatus.textContent = `${engagementDeletionRequests.length} demande${engagementDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.engagementsDeletionRequestsStatus)}`;
+        elements.engagementsDeletionRequestsStatus.textContent = `${engagementDeletionRequests.length} demande${engagementDeletionRequests.length > 1 ? "s" : ""} en attente.`;
         elements.engagementsDeletionRequestsStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -7910,14 +8195,13 @@
     } finally {
       engagementDeletionRequestsLoading = false;
       if (elements.engagementsDeletionRequestsRefresh) elements.engagementsDeletionRequestsRefresh.disabled = false;
+      updateEngagementNationalRequestsPresentation();
     }
   }
 
   function updateEngagementDeletionRequestBadge(count = engagementDeletionRequests.length) {
-    if (!elements.engagementsDeletionRequestsBadge) return;
-    const visible = canDeleteEngagementCompetitionDirectly() && Number(count) > 0;
-    elements.engagementsDeletionRequestsBadge.hidden = !visible;
-    elements.engagementsDeletionRequestsBadge.textContent = String(Math.min(99, Math.max(0, Number(count) || 0)));
+    void count;
+    updateEngagementNationalRequestsPresentation();
   }
 
   async function resolveEngagementDeletionRequest(requestId, decision, requestType = "competition") {
@@ -7944,6 +8228,7 @@
         requestId: cleanId,
         decision: approve ? "approved" : "rejected"
       });
+      engagementNationalOverviewLoaded = false;
       engagementDeletionRequestsLoaded = false;
       engagementCompetitionsLoaded = false;
       await loadEngagementDeletionRequests({ force: true });
@@ -7989,7 +8274,7 @@
       const sourceId = swimmer.id || swimmer.swimmerIndexId || "";
       const sourceType = swimmer.source || "performances";
       const sourceKey = `${sourceType}:${sourceId}`;
-      const mergeOpen = engagementNationalSwimmerMergeSourceId === sourceKey;
+      const mergeOpen = engagementNationalSwimmerMergeMode && engagementNationalSwimmerMergeSourceId === sourceKey;
       const mergeTargets = mergeOpen ? engagementNationalSwimmerMergeTargets : [];
       const alertLabel = engagementNationalSwimmerDuplicateAlertLabel(swimmer, swimmers);
       const clubLabel = [swimmer.clubId ? `Club ${swimmer.clubId}` : "", swimmer.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
@@ -8002,7 +8287,7 @@
           <td class="admin-engagements-national-choice">
             ${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
           </td>
-          <td><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
+          <td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
           <td><strong>${escapeHtml(swimmer.lastName || name)}</strong></td>
           <td>${escapeHtml(swimmer.firstName || "")}</td>
           <td>${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</td>
@@ -8012,9 +8297,17 @@
           <td>${escapeHtml(perfCount ? String(perfCount) : "-")}</td>
           <td>${escapeHtml(statusLabel)}</td>
           <td class="admin-engagements-national-table-actions">
-            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Cible</button>`}
-            ${merged || sourceType !== "engagement" ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Desactiver" : "Reactiver"}</button>`}
-            ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Suppr.</button>` : ""}
+            ${merged ? '<span class="admin-national-row-no-action" aria-label="Aucune action disponible">—</span>' : `
+              <details class="admin-national-row-menu">
+                <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
+                <div>
+                  <button class="ghost-button" type="button" data-engagement-national-swimmer-action="edit" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Modifier la fiche</button>
+                  ${!engagementNationalSwimmerMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
+                  ${sourceType !== "engagement" ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
+                  ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
+                </div>
+              </details>
+            `}
           </td>
         </tr>
         ${mergeOpen ? `
@@ -8053,12 +8346,12 @@
     }).join("");
     elements.engagementsNationalSwimmersList.innerHTML = `
       <div class="admin-engagements-national-table-wrap">
-        <table class="admin-engagements-national-table">
+        <table class="admin-engagements-national-table" data-merge-mode="${engagementNationalSwimmerMergeMode ? "true" : "false"}">
           <thead>
             <tr>
-              <th>Conserver</th>
-              <th>Fusionner</th>
-              <th>Alerte</th>
+              <th class="admin-engagements-national-choice">Conserver</th>
+              <th class="admin-engagements-national-choice">Fusionner</th>
+              <th class="admin-engagements-national-merge-only">Alerte</th>
               <th>Nom</th>
               <th>Prenom</th>
               <th>Naissance</th>
@@ -8090,6 +8383,244 @@
       ? `${total} nageur${total > 1 ? "s" : ""} charge${total > 1 ? "s" : ""}.`
       : `${filtered} nageur${filtered > 1 ? "s" : ""} affiche${filtered > 1 ? "s" : ""} sur ${total} charge${total > 1 ? "s" : ""}.`;
     elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
+  }
+
+  function engagementSwimmerChangeSummary(current = {}, proposed = {}) {
+    const fields = [
+      ["lastName", "Nom", (value) => value || "Non renseigné"],
+      ["firstName", "Prénom", (value) => value || "Non renseigné"],
+      ["birthDate", "Naissance", (value) => value ? formatShortDate(value) : "Non renseignée"],
+      ["sex", "Sexe", (value) => value || "Non renseigné"],
+      ["licenseNumber", "Licence", (value) => value || "Non renseignée"]
+    ];
+    return fields
+      .filter(([key]) => String(current[key] || "") !== String(proposed[key] || ""))
+      .map(([key, label, format]) => ({ label, before: format(current[key]), after: format(proposed[key]) }));
+  }
+
+  function updateEngagementSwimmerChangeRequestsBadge(count = engagementSwimmerChangeRequests.length) {
+    const total = Math.max(0, Number(count) || 0);
+    if (elements.engagementsSwimmerChangeRequestsBadge) {
+      elements.engagementsSwimmerChangeRequestsBadge.hidden = total === 0;
+      elements.engagementsSwimmerChangeRequestsBadge.textContent = String(total);
+    }
+    if (elements.engagementsSwimmerChangeRequestsCount) {
+      elements.engagementsSwimmerChangeRequestsCount.textContent = `${total} en attente`;
+    }
+  }
+
+  function renderEngagementSwimmerChangeRequests() {
+    const section = elements.engagementsSwimmerChangeRequests;
+    const mount = elements.engagementsSwimmerChangeRequestsList;
+    if (!section || !mount) return;
+    updateEngagementSwimmerChangeRequestsBadge();
+    if (engagementSwimmerChangeRequestsLoading) {
+      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des demandes de correction...</p>';
+      updateEngagementNationalRequestsPresentation();
+      return;
+    }
+    if (!engagementSwimmerChangeRequests.length) {
+      mount.innerHTML = "";
+      updateEngagementNationalRequestsPresentation();
+      return;
+    }
+    mount.innerHTML = engagementSwimmerChangeRequests.map((item) => {
+      const current = item.current || {};
+      const proposed = item.proposed || {};
+      const name = engagementSwimmerDisplayName(current, "Nageur");
+      const changes = engagementSwimmerChangeSummary(current, proposed);
+      return `
+        <article class="admin-engagements-swimmer-change-request" data-engagement-swimmer-change-request="${escapeHtml(item.id || "")}">
+          <div class="admin-engagements-swimmer-change-request-head">
+            <div>
+              <strong>${escapeHtml(name)}</strong>
+              <span>${escapeHtml(item.clubName || item.clubId || "Club non renseigné")} · ${escapeHtml(formatAccessDateTime(item.requestedAt) || "Date inconnue")}</span>
+            </div>
+            <span class="admin-engagements-request-status" data-status="pending">En attente</span>
+          </div>
+          <div class="admin-engagements-swimmer-change-diff">
+            ${changes.map((change) => `
+              <div>
+                <span>${escapeHtml(change.label)}</span>
+                <del>${escapeHtml(change.before)}</del>
+                <strong>${escapeHtml(change.after)}</strong>
+              </div>
+            `).join("")}
+          </div>
+          <p class="admin-engagements-request-note"><strong>Motif du club :</strong> ${escapeHtml(item.reason || "Non précisé")}</p>
+          <label class="admin-engagements-swimmer-change-resolution-note">
+            <span>Commentaire national <small>(facultatif)</small></span>
+            <input type="text" maxlength="500" placeholder="Précision pour le club" data-engagement-swimmer-change-resolution-note>
+          </label>
+          <div class="admin-engagements-request-actions">
+            <button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Refuser</button>
+            <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Valider la correction</button>
+          </div>
+        </article>
+      `;
+    }).join("");
+    updateEngagementNationalRequestsPresentation();
+  }
+
+  async function loadEngagementSwimmerChangeRequests({ force = false } = {}) {
+    if (!canDeleteEngagementCompetitionDirectly() || engagementSwimmerChangeRequestsLoading) return;
+    if (engagementSwimmerChangeRequestsLoaded && !force) return;
+    engagementSwimmerChangeRequestsLoading = true;
+    updateEngagementNationalRequestsPresentation();
+    if (elements.engagementsSwimmerChangeRequestsStatus) {
+      elements.engagementsSwimmerChangeRequestsStatus.textContent = "Chargement des demandes...";
+      elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "loading";
+    }
+    renderEngagementSwimmerChangeRequests();
+    try {
+      const result = await callFunction("listEngagementSwimmerChangeRequests", { status: "pending", limit: 50 });
+      engagementSwimmerChangeRequests = Array.isArray(result.requests) ? result.requests : [];
+      engagementSwimmerChangeRequestsLoaded = true;
+      if (elements.engagementsSwimmerChangeRequestsStatus) {
+        elements.engagementsSwimmerChangeRequestsStatus.textContent = "";
+        elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "neutral";
+      }
+    } catch (error) {
+      if (elements.engagementsSwimmerChangeRequestsStatus) {
+        elements.engagementsSwimmerChangeRequestsStatus.textContent = `Demandes impossibles à charger : ${error?.message || error}`;
+        elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementSwimmerChangeRequestsLoading = false;
+      renderEngagementSwimmerChangeRequests();
+      updateEngagementNationalRequestsPresentation();
+    }
+  }
+
+  async function resolveEngagementSwimmerChangeRequest(requestId = "", decision = "", card = null) {
+    if (!requestId || !["approved", "rejected"].includes(decision) || !canDeleteEngagementCompetitionDirectly()) return;
+    const verb = decision === "approved" ? "Valider" : "Refuser";
+    if (!global.confirm(`${verb} cette demande de correction ?`)) return;
+    const resolutionNote = String(card?.querySelector("[data-engagement-swimmer-change-resolution-note]")?.value || "").trim();
+    const buttons = card?.querySelectorAll("button") || [];
+    buttons.forEach((button) => { button.disabled = true; });
+    if (elements.engagementsSwimmerChangeRequestsStatus) {
+      elements.engagementsSwimmerChangeRequestsStatus.textContent = decision === "approved" ? "Application de la correction..." : "Refus de la demande...";
+      elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("resolveEngagementSwimmerChangeRequest", { requestId, decision, resolutionNote });
+      engagementNationalOverviewLoaded = false;
+      engagementSwimmerChangeRequestsLoaded = false;
+      engagementNationalSwimmersLoaded = false;
+      engagementClubSwimmersLoaded = false;
+      await loadEngagementSwimmerChangeRequests({ force: true });
+      if (elements.engagementsNationalSwimmersSearch?.value.trim().length >= 2) {
+        await loadEngagementNationalSwimmers({ force: true, silent: true });
+      }
+      if (elements.engagementsSwimmerChangeRequestsStatus) {
+        const publicWarning = result?.result?.publicSnapshot?.ok === false
+          ? " La fiche a été corrigée, mais sa publication publique devra être relancée."
+          : "";
+        elements.engagementsSwimmerChangeRequestsStatus.textContent = `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}`;
+        elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning ? "warning" : "ok";
+      }
+    } catch (error) {
+      buttons.forEach((button) => { button.disabled = false; });
+      if (elements.engagementsSwimmerChangeRequestsStatus) {
+        elements.engagementsSwimmerChangeRequestsStatus.textContent = `Traitement impossible : ${error?.message || error}`;
+        elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "error";
+      }
+    }
+  }
+
+  function closeEngagementSwimmerCorrectionDialog() {
+    if (elements.engagementsSwimmerCorrectionDialog?.open) elements.engagementsSwimmerCorrectionDialog.close();
+  }
+
+  function resetEngagementSwimmerCorrectionDialog() {
+    elements.engagementsSwimmerCorrectionForm?.reset();
+    if (elements.engagementsSwimmerCorrectionMessage) {
+      elements.engagementsSwimmerCorrectionMessage.textContent = "";
+      elements.engagementsSwimmerCorrectionMessage.dataset.tone = "neutral";
+    }
+    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = false;
+  }
+
+  function openEngagementSwimmerCorrectionDialog(swimmer = {}, mode = "request", opener = null) {
+    const dialog = elements.engagementsSwimmerCorrectionDialog;
+    if (!dialog || !swimmer) return;
+    resetEngagementSwimmerCorrectionDialog();
+    engagementSwimmerCorrectionOpener = opener instanceof HTMLElement ? opener : null;
+    const direct = mode === "direct";
+    const name = engagementSwimmerDisplayName(swimmer, "Nageur");
+    if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = direct ? "direct" : "request";
+    if (elements.engagementsSwimmerCorrectionSource) elements.engagementsSwimmerCorrectionSource.value = swimmer.source || "performances";
+    if (elements.engagementsSwimmerCorrectionId) elements.engagementsSwimmerCorrectionId.value = swimmer.id || swimmer.swimmerIndexId || "";
+    if (elements.engagementsSwimmerCorrectionIdentityKey) elements.engagementsSwimmerCorrectionIdentityKey.value = swimmer.identityKey || "";
+    if (elements.engagementsSwimmerCorrectionLastName) elements.engagementsSwimmerCorrectionLastName.value = swimmer.lastName || "";
+    if (elements.engagementsSwimmerCorrectionFirstName) elements.engagementsSwimmerCorrectionFirstName.value = swimmer.firstName || "";
+    if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
+    if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
+    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.licenseNumber || "";
+    if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = direct ? "Modifier le nageur" : "Demander une correction";
+    if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${swimmer.clubName || swimmer.clubId || "Club non renseigné"}`;
+    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = direct ? "Motif de la correction" : "Motif de la demande";
+    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.textContent = direct ? "Enregistrer la correction" : "Envoyer la demande";
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    elements.engagementsSwimmerCorrectionLastName?.focus();
+  }
+
+  async function submitEngagementSwimmerCorrection() {
+    if (!elements.engagementsSwimmerCorrectionForm?.reportValidity()) return;
+    const direct = elements.engagementsSwimmerCorrectionMode?.value === "direct";
+    if (direct && !global.confirm("Enregistrer cette correction nationale ? Les performances et engagements liés seront mis à jour.")) return;
+    const payload = {
+      source: elements.engagementsSwimmerCorrectionSource?.value || "performances",
+      swimmerId: elements.engagementsSwimmerCorrectionId?.value || "",
+      identityKey: elements.engagementsSwimmerCorrectionIdentityKey?.value || "",
+      proposed: {
+        lastName: elements.engagementsSwimmerCorrectionLastName?.value || "",
+        firstName: elements.engagementsSwimmerCorrectionFirstName?.value || "",
+        birthDate: elements.engagementsSwimmerCorrectionBirthDate?.value || "",
+        sex: elements.engagementsSwimmerCorrectionSex?.value || "",
+        licenseNumber: elements.engagementsSwimmerCorrectionLicense?.value || ""
+      },
+      reason: elements.engagementsSwimmerCorrectionReason?.value || ""
+    };
+    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = true;
+    if (elements.engagementsSwimmerCorrectionMessage) {
+      elements.engagementsSwimmerCorrectionMessage.textContent = direct ? "Enregistrement de la correction..." : "Envoi de la demande...";
+      elements.engagementsSwimmerCorrectionMessage.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction(direct ? "updateEngagementNationalSwimmerIdentity" : "requestEngagementClubSwimmerChange", payload);
+      engagementClubSwimmersLoaded = false;
+      engagementNationalSwimmersLoaded = false;
+      engagementSwimmerChangeRequestsLoaded = false;
+      closeEngagementSwimmerCorrectionDialog();
+      if (direct) {
+        await Promise.all([
+          elements.engagementsNationalSwimmersSearch?.value.trim().length >= 2
+            ? loadEngagementNationalSwimmers({ force: true, silent: true })
+            : Promise.resolve(),
+          loadEngagementSwimmerChangeRequests({ force: true })
+        ]);
+        if (elements.engagementsNationalSwimmersStatus) {
+          const publicWarning = result?.publicSnapshot?.ok === false ? " Publication publique à relancer." : "";
+          elements.engagementsNationalSwimmersStatus.textContent = `Nageur corrigé.${publicWarning}`;
+          elements.engagementsNationalSwimmersStatus.dataset.tone = publicWarning ? "warning" : "ok";
+        }
+      } else {
+        await loadEngagementClubSwimmers({ force: true, silent: true });
+        if (elements.engagementsClubSwimmersDirectoryStatus) {
+          elements.engagementsClubSwimmersDirectoryStatus.textContent = "Demande envoyée au niveau national.";
+          elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "ok";
+        }
+      }
+    } catch (error) {
+      if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = false;
+      if (elements.engagementsSwimmerCorrectionMessage) {
+        elements.engagementsSwimmerCorrectionMessage.textContent = `Correction impossible : ${error?.message || error}`;
+        elements.engagementsSwimmerCorrectionMessage.dataset.tone = "error";
+      }
+    }
   }
 
   function engagementNationalStatusMatches(item = {}, status = "") {
@@ -8417,12 +8948,12 @@
     const rows = people.map((person) => {
       const active = person.active !== false;
       const merged = person.status === "merged" || Boolean(person.mergedIntoId);
-      const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "Personne sans nom";
+      const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Personne sans nom";
       const statusLabel = merged
         ? `Fusionnee vers ${person.mergedIntoName || person.mergedIntoId || "une autre fiche"}`
         : active ? "Actif" : "Desactive";
       const sourceId = person.id || "";
-      const mergeOpen = engagementNationalPersonMergeSourceId === sourceId;
+      const mergeOpen = engagementNationalPeopleMergeMode && engagementNationalPersonMergeSourceId === sourceId;
       const mergeCandidates = engagementNationalPersonMergeCandidates(sourceId);
       const alertLabel = engagementNationalPersonDuplicateAlertLabel(person, people);
       const clubLabel = [person.clubId ? `Club ${person.clubId}` : "", person.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
@@ -8430,7 +8961,7 @@
         <tr class="admin-engagements-national-person-row" data-engagement-national-person-id="${escapeHtml(sourceId)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
           <td class="admin-engagements-national-choice">${merged ? "" : `<input type="radio" name="adminEngagementsNationalPersonKeep" value="${escapeHtml(sourceId)}" title="Conserver cette fiche" data-engagement-national-person-keep>`}</td>
           <td class="admin-engagements-national-choice">${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceId)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-person-merge-check>`}</td>
-          <td><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
+          <td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
           <td><strong>${escapeHtml(person.lastName || name)}</strong></td>
           <td>${escapeHtml(person.firstName || "")}</td>
           <td>${escapeHtml(person.licenseNumber || "-")}</td>
@@ -8438,9 +8969,14 @@
           <td>${escapeHtml(clubLabel)}</td>
           <td>${escapeHtml(statusLabel)}</td>
           <td class="admin-engagements-national-table-actions">
-            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="merge" data-engagement-national-person-id="${escapeHtml(sourceId)}">Cible</button>`}
-            ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="${active ? "disable" : "enable"}" data-engagement-national-person-id="${escapeHtml(sourceId)}">${active ? "Desactiver" : "Reactiver"}</button>`}
-            <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-person-action="delete" data-engagement-national-person-id="${escapeHtml(sourceId)}">Suppr.</button>
+            <details class="admin-national-row-menu">
+              <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
+              <div>
+                ${merged || !engagementNationalPeopleMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="merge" data-engagement-national-person-id="${escapeHtml(sourceId)}">Choisir une autre cible</button>`}
+                ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="${active ? "disable" : "enable"}" data-engagement-national-person-id="${escapeHtml(sourceId)}">${active ? "Désactiver" : "Réactiver"}</button>`}
+                <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-person-action="delete" data-engagement-national-person-id="${escapeHtml(sourceId)}">Supprimer</button>
+              </div>
+            </details>
           </td>
         </tr>
         ${mergeOpen ? `
@@ -8469,12 +9005,12 @@
     }).join("");
     elements.engagementsNationalPeopleList.innerHTML = `
       <div class="admin-engagements-national-table-wrap">
-        <table class="admin-engagements-national-table admin-engagements-national-people-table">
+        <table class="admin-engagements-national-table admin-engagements-national-people-table" data-merge-mode="${engagementNationalPeopleMergeMode ? "true" : "false"}">
           <thead>
             <tr>
-              <th>Conserver</th>
-              <th>Fusionner</th>
-              <th>Alerte</th>
+              <th class="admin-engagements-national-choice">Conserver</th>
+              <th class="admin-engagements-national-choice">Fusionner</th>
+              <th class="admin-engagements-national-merge-only">Alerte</th>
               <th>Nom</th>
               <th>Prenom</th>
               <th>Licence</th>
@@ -8495,14 +9031,14 @@
     if (!elements.engagementsNationalPeopleStatus) return;
     const total = engagementNationalPeople.length;
     if (!total) {
-      elements.engagementsNationalPeopleStatus.textContent = `Aucun officiel charge.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`;
+      elements.engagementsNationalPeopleStatus.textContent = "Aucun officiel chargé.";
       elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
       return;
     }
     const filtered = Math.max(0, Math.min(total, Number(filteredCount) || 0));
     elements.engagementsNationalPeopleStatus.textContent = filtered === total
-      ? `${total} personne${total > 1 ? "s" : ""} chargee${total > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`
-      : `${filtered} personne${filtered > 1 ? "s" : ""} affichee${filtered > 1 ? "s" : ""} sur ${total} chargee${total > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalPeopleStatus)}`;
+      ? `${total} personne${total > 1 ? "s" : ""} chargée${total > 1 ? "s" : ""}.`
+      : `${filtered} personne${filtered > 1 ? "s" : ""} affichée${filtered > 1 ? "s" : ""} sur ${total}.`;
     elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
   }
 
@@ -8578,6 +9114,11 @@
   }
 
   function updateEngagementNationalPeopleSelectionState() {
+    if (elements.engagementsNationalPeopleBulk) elements.engagementsNationalPeopleBulk.hidden = !engagementNationalPeopleMergeMode;
+    if (elements.engagementsNationalPeopleMergeMode) {
+      elements.engagementsNationalPeopleMergeMode.setAttribute("aria-pressed", engagementNationalPeopleMergeMode ? "true" : "false");
+      elements.engagementsNationalPeopleMergeMode.textContent = engagementNationalPeopleMergeMode ? "Quitter le mode doublons" : "Gérer les doublons";
+    }
     const keepId = selectedEngagementNationalPersonKeepId();
     const mergeIds = selectedEngagementNationalPersonMergeIds().filter((id) => id !== keepId);
     if (elements.engagementsNationalPeopleBulkMerge) {
@@ -8590,6 +9131,12 @@
         ? `${mergeIds.length} fiche${mergeIds.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
         : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
     }
+  }
+
+  function setEngagementNationalPeopleMergeMode(enabled) {
+    engagementNationalPeopleMergeMode = enabled === true;
+    if (!engagementNationalPeopleMergeMode) engagementNationalPersonMergeSourceId = "";
+    renderEngagementNationalPeople();
   }
 
   async function loadEngagementNationalPeople({ force = false, silent = false } = {}) {
@@ -8774,14 +9321,20 @@
   }
 
   function auditTargetSummary(target = {}) {
-    if (!target || typeof target !== "object") return "-";
-    return [
-      target.email || target.targetEmail || "",
-      target.competitionName || target.competitionId || "",
-      target.clubName || target.clubId || target.sourceClubId || "",
-      target.swimmerId || target.sourceSwimmerId || target.personId || target.sourcePersonId || "",
-      target.requestId || ""
-    ].filter(Boolean).slice(0, 3).join(" - ") || "-";
+    if (!target || typeof target !== "object") return "Élément concerné";
+    const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
+      .filter(Boolean).join(" ");
+    if (target.email || target.targetEmail) return target.email || target.targetEmail;
+    if (target.competitionName) return target.competitionName;
+    if (personName) return personName;
+    if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
+    if (target.clubName) return target.clubName;
+    if (target.competitionId) return `Compétition ${String(target.competitionId).slice(0, 8)}`;
+    if (target.clubId || target.sourceClubId) return `Club ${target.clubId || target.sourceClubId}`;
+    if (target.requestId) return `Demande ${String(target.requestId).slice(0, 8)}`;
+    if (target.swimmerId || target.sourceSwimmerId) return `Nageur ${String(target.swimmerId || target.sourceSwimmerId).slice(0, 8)}`;
+    if (target.personId || target.sourcePersonId) return `Personne ${String(target.personId || target.sourcePersonId).slice(0, 8)}`;
+    return "Élément concerné";
   }
 
   function auditActionLabel(action = "") {
@@ -8791,13 +9344,63 @@
       "accessUser.deleted": "Compte supprime",
       "accessUser.deletionRequested": "Suppression compte demandee",
       "accessUser.deletionRequestResolved": "Demande compte traitee",
+      "engagementClubSwimmer.changeRequested": "Correction de nageur demandée",
+      "engagementClubSwimmer.changeApproved": "Correction de nageur validée",
+      "engagementClubSwimmer.changeRejected": "Correction de nageur refusée",
+      "engagementClubSwimmer.identityCorrected": "Identité de nageur corrigée",
       "engagementClubSwimmer.nationalMerged": "Fusion nageur",
       "engagementClubPerson.nationalMerged": "Fusion officiel",
+      "engagementClubPerson.saved": "Officiel enregistré",
       "engagementClubSwimmer.deleted": "Nageur supprime",
       "engagementClubPerson.nationalDeleted": "Officiel supprime",
+      "engagementCompetition.updated": "Compétition modifiée",
       "engagementCompetition.deleted": "Competition supprimee",
-      "engagementCompetition.deletionRequestResolved": "Demande competition traitee"
+      "engagementCompetition.deletionRequestResolved": "Demande competition traitee",
+      "engagementClubEntry.teamLeaderSaved": "Chef d'équipe enregistré",
+      "engagementClubEntry.swimmerAdded": "Nageur ajouté à un engagement",
+      "engagementClubEntry.swimmerRemoved": "Nageur retiré d'un engagement",
+      "engagementClubEntry.individualEntriesSaved": "Engagements individuels enregistrés",
+      "engagementClubEntry.relaysSaved": "Relais enregistrés",
+      "engagementClubEntry.recapPdfGenerated": "Récapitulatif PDF généré"
     }[action] || action || "-";
+  }
+
+  function auditActionCategory(action = "") {
+    const value = String(action || "");
+    if (/request|deletion|changeRequested|changeApproved|changeRejected/i.test(value)) return "requests";
+    if (value.startsWith("accessUser.")) return "access";
+    if (/ClubSwimmer|ClubPerson/i.test(value)) return "people";
+    if (/Competition|ClubEntry/i.test(value)) return "competitions";
+    return "";
+  }
+
+  function auditActorLabel(log = {}) {
+    const actorUid = String(log.actorUid || "");
+    if (actorUid && actorUid === String(currentAccessProfile?.uid || "")) return "Vous";
+    return actorUid ? "Administrateur LivePalmes" : "Système LivePalmes";
+  }
+
+  function filteredEngagementNationalAuditLogs() {
+    const query = normalizePerformanceSearchText(elements.engagementsNationalAuditSearch?.value || "");
+    const type = elements.engagementsNationalAuditType?.value || "";
+    return engagementNationalAuditLogs.filter((log) => {
+      if (type && auditActionCategory(log.action) !== type) return false;
+      if (!query) return true;
+      const haystack = normalizePerformanceSearchText([
+        auditActionLabel(log.action),
+        log.action,
+        auditActorLabel(log),
+        auditTargetSummary(log.target),
+        JSON.stringify(log.target || {})
+      ].join(" "));
+      return haystack.includes(query);
+    });
+  }
+
+  function resetEngagementNationalAuditFilters() {
+    if (elements.engagementsNationalAuditSearch) elements.engagementsNationalAuditSearch.value = "";
+    if (elements.engagementsNationalAuditType) elements.engagementsNationalAuditType.value = "";
+    renderEngagementNationalAuditLogs();
   }
 
   function renderEngagementNationalAuditLogs() {
@@ -8810,6 +9413,16 @@
       elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action recente a afficher.</p>';
       return;
     }
+    const logs = filteredEngagementNationalAuditLogs();
+    if (!logs.length) {
+      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action ne correspond aux filtres.</p>';
+      if (elements.engagementsNationalAuditStatus) elements.engagementsNationalAuditStatus.textContent = "0 action affichée.";
+      return;
+    }
+    if (elements.engagementsNationalAuditStatus) {
+      elements.engagementsNationalAuditStatus.textContent = `${logs.length} action${logs.length > 1 ? "s" : ""} affichée${logs.length > 1 ? "s" : ""}.`;
+      elements.engagementsNationalAuditStatus.dataset.tone = "ok";
+    }
     elements.engagementsNationalAuditList.innerHTML = `
       <div class="admin-engagements-national-table-wrap">
         <table class="admin-engagements-national-table admin-engagements-national-audit-table">
@@ -8818,16 +9431,24 @@
               <th>Date</th>
               <th>Action</th>
               <th>Acteur</th>
-              <th>Cible</th>
+              <th>Objet</th>
+              <th>Détails</th>
             </tr>
           </thead>
           <tbody>
-            ${engagementNationalAuditLogs.map((log) => `
+            ${logs.map((log) => `
               <tr>
                 <td>${escapeHtml(log.createdAt ? formatDeadline(log.createdAt).replace(/^Limite /, "") : "-")}</td>
-                <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong><small>${escapeHtml(log.action || "")}</small></td>
-                <td>${escapeHtml(log.actorUid || "-")}</td>
+                <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong></td>
+                <td>${escapeHtml(auditActorLabel(log))}</td>
                 <td>${escapeHtml(auditTargetSummary(log.target))}</td>
+                <td>
+                  <details class="admin-national-audit-details">
+                    <summary>Voir</summary>
+                    <code>${escapeHtml(log.action || "Action inconnue")}</code>
+                    ${log.actorUid ? `<code>Acteur : ${escapeHtml(log.actorUid)}</code>` : ""}
+                  </details>
+                </td>
               </tr>
             `).join("")}
           </tbody>
@@ -8852,7 +9473,7 @@
       renderEngagementNationalAuditLogs();
       if (elements.engagementsNationalAuditStatus && !silent) {
         markLastRefresh(elements.engagementsNationalAuditStatus);
-        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} affichee${engagementNationalAuditLogs.length > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsNationalAuditStatus)}`;
+        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} disponible${engagementNationalAuditLogs.length > 1 ? "s" : ""}.`;
         elements.engagementsNationalAuditStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -8918,7 +9539,7 @@
       }
     }
     if (elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden = false;
-    elements.engagementsClubPersonFirstName?.focus?.();
+    (person ? elements.engagementsClubPersonFirstName : elements.engagementsClubPersonSwimmerSearch)?.focus?.();
   }
 
   function selectedEngagementClubPersonFromForm() {
@@ -8943,19 +9564,48 @@
       elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'equipe enregistre pour ce club.</p>';
       return;
     }
-    elements.engagementsClubPeopleList.innerHTML = engagementClubPeople.map((person) => `
-      <article class="admin-engagements-club-person-card" data-engagement-club-person-id="${escapeHtml(person.id)}" data-active="${person.active ? "true" : "false"}">
-        <div>
-          <strong>${escapeHtml([person.firstName, person.lastName].filter(Boolean).join(" ") || "Personne sans nom")}</strong>
-          <small>Licence ${escapeHtml(person.licenseNumber || "-")}</small>
+    elements.engagementsClubPeopleList.innerHTML = `
+      <div class="admin-engagements-club-people-table" role="table" aria-label="Mes officiels">
+        <div class="admin-engagements-club-person-row admin-engagements-club-person-head" role="row">
+          <span role="columnheader">Personne</span>
+          <span role="columnheader">Licence</span>
+          <span role="columnheader">Rôle</span>
+          <span role="columnheader">Statut</span>
+          <span role="columnheader">Actions</span>
         </div>
-        <span>${escapeHtml(engagementClubPersonRoleLabel(person))}</span>
-        <div class="admin-engagements-request-actions">
-          <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}">Modifier</button>
-          <button class="ghost-button" type="button" data-engagement-club-person-action="${person.active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}">${person.active ? "Desactiver" : "Reactiver"}</button>
+        ${[...engagementClubPeople]
+          .sort((left, right) => `${left.lastName || ""} ${left.firstName || ""}`.localeCompare(`${right.lastName || ""} ${right.firstName || ""}`, "fr", { sensitivity: "base" }))
+          .map((person, index) => {
+      const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Personne sans nom";
+      const role = engagementClubPersonRoleLabel(person);
+      const active = person.active === true;
+      const detailsId = `adminEngagementsClubPersonDirectoryDetails${index}`;
+      return `
+        <div class="admin-engagements-club-person-row" role="row" data-engagement-club-person-id="${escapeHtml(person.id)}" data-active="${active ? "true" : "false"}" data-expanded="false">
+          <button class="admin-engagements-club-person-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" data-engagement-club-person-directory-toggle>
+            <strong>${escapeHtml(name)}</strong>
+            <span class="admin-engagements-club-person-toggle-meta">
+              <span class="admin-engagements-club-person-role-badge" title="${escapeHtml(role)}">${escapeHtml(role)}</span>
+              <span class="admin-engagements-club-person-chevron" aria-hidden="true">›</span>
+            </span>
+          </button>
+          <div id="${detailsId}" class="admin-engagements-club-person-details">
+            <span role="cell"><strong>${escapeHtml(name)}</strong></span>
+            <span role="cell">${escapeHtml(person.licenseNumber || "-")}</span>
+            <span role="cell">${escapeHtml(role)}</span>
+            <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
+            <span role="cell">
+              <span class="admin-engagements-request-actions">
+                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}">Modifier</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}">${active ? "Désactiver" : "Réactiver"}</button>
+              </span>
+            </span>
+          </div>
         </div>
-      </article>
-    `).join("");
+      `;
+    }).join("")}
+      </div>
+    `;
   }
 
   async function loadEngagementClubPeople({ force = false, silent = false } = {}) {
@@ -8968,7 +9618,6 @@
       return;
     }
     engagementClubPeopleLoading = true;
-    if (elements.engagementsClubPeopleRefresh) elements.engagementsClubPeopleRefresh.disabled = true;
     if (elements.engagementsClubPeopleStatus && !silent) {
       elements.engagementsClubPeopleStatus.textContent = "Chargement de Mes officiels...";
       elements.engagementsClubPeopleStatus.dataset.tone = "loading";
@@ -8982,10 +9631,8 @@
       renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
       if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
       if (elements.engagementsClubPeopleStatus && !silent) {
-        const activeCount = engagementClubPeople.filter((person) => person.active).length;
-        markLastRefresh(elements.engagementsClubPeopleStatus);
-        elements.engagementsClubPeopleStatus.textContent = `${activeCount} personne${activeCount > 1 ? "s" : ""} active${activeCount > 1 ? "s" : ""}.${lastRefreshSuffix(elements.engagementsClubPeopleStatus)}`;
-        elements.engagementsClubPeopleStatus.dataset.tone = "ok";
+        elements.engagementsClubPeopleStatus.textContent = "";
+        elements.engagementsClubPeopleStatus.dataset.tone = "neutral";
       }
     } catch (error) {
       if (elements.engagementsClubPeopleStatus && !silent) {
@@ -8994,7 +9641,6 @@
       }
     } finally {
       engagementClubPeopleLoading = false;
-      if (elements.engagementsClubPeopleRefresh) elements.engagementsClubPeopleRefresh.disabled = false;
     }
   }
 
@@ -9097,6 +9743,7 @@
     }
     try {
       const filters = engagementCalendarFiltersPayload();
+      const requestedRange = `${filters.startDate}|${filters.endDate}`;
       const result = await callFunction("listEngagementCompetitions", {
         fromDate: filters.startDate,
         toDate: filters.endDate,
@@ -9104,12 +9751,17 @@
       });
       engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
       engagementCompetitionsLoaded = true;
+      engagementCompetitionsLoadedRange = requestedRange;
       renderEngagementCompetitions();
+      if (elements.engagementsRefreshMeta) {
+        markLastRefresh(elements.engagementsRefreshMeta);
+        elements.engagementsRefreshMeta.textContent = `Actualisé à ${lastRefreshTime(elements.engagementsRefreshMeta)}`;
+        elements.engagementsRefreshMeta.hidden = false;
+      }
       if (elements.engagementsStatus) {
-        markLastRefresh(elements.engagementsStatus);
-        elements.engagementsStatus.textContent = lastRefreshSuffix(elements.engagementsStatus).trim();
-        elements.engagementsStatus.dataset.tone = "neutral";
-        elements.engagementsStatus.hidden = false;
+        elements.engagementsStatus.textContent = "";
+        delete elements.engagementsStatus.dataset.tone;
+        elements.engagementsStatus.hidden = true;
       }
     } catch (error) {
       if (elements.engagementsStatus) {
@@ -9635,6 +10287,7 @@
       engagementAccessRequestsLoaded = false;
       engagementDeletionRequestsLoaded = false;
       accessUsers = [];
+      accessUsersLoaded = false;
       accessCurrentCursor = null;
       accessNextCursor = null;
       accessPreviousCursors = [];
@@ -9798,6 +10451,16 @@
     };
   }
 
+  function openAccessDialog() {
+    const dialog = elements.accessPanel;
+    if (!dialog) return;
+    if (!dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
+    }
+    elements.accessAdd?.setAttribute("aria-expanded", "true");
+  }
+
   function fillAccessForm(user = {}) {
     const form = elements.accessForm;
     if (!form) return;
@@ -9814,18 +10477,18 @@
       input.checked = (user.capabilities || []).includes(input.value);
     });
     form.querySelector("#adminAccessSendReset").checked = false;
-    if (elements.cancelEdit) elements.cancelEdit.hidden = !editingUid;
-    if (elements.accessPanel) elements.accessPanel.hidden = false;
-    elements.accessAdd?.setAttribute("aria-expanded", "true");
-    form.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (elements.accessDialogTitle) elements.accessDialogTitle.textContent = `Modifier ${[user.lastName, user.firstName].filter(Boolean).join(" ") || "l’utilisateur"}`;
+    openAccessDialog();
+    form.querySelector("#adminAccessLastName")?.focus();
   }
 
   function resetAccessForm(close = false) {
     editingUid = "";
     elements.accessForm?.reset();
     populateAccessClubSelect();
-    if (elements.cancelEdit) elements.cancelEdit.hidden = true;
-    if (close && elements.accessPanel) elements.accessPanel.hidden = true;
+    setAccessMessage("");
+    if (elements.accessDialogTitle) elements.accessDialogTitle.textContent = "Ajouter un utilisateur";
+    if (close && elements.accessPanel?.open) elements.accessPanel.close();
     if (close) elements.accessAdd?.setAttribute("aria-expanded", "false");
   }
 
@@ -9842,63 +10505,94 @@
     });
   }
 
+  function accessActionIcon(action) {
+    if (action === "edit") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10.6-10.6-3.2-3.2L5 15.8 4 20Z"></path><path d="m14.8 6 3.2 3.2"></path></svg>';
+    }
+    if (action === "enable") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8"></path><path d="M7.1 5.8a8 8 0 1 0 9.8 0"></path></svg>';
+    }
+    if (action === "disable") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="m9 7 1-3h4l1 3"></path><path d="m7 7 1 13h8l1-13"></path><path d="M10 11v5M14 11v5"></path></svg>';
+  }
+
   function renderAccessUsers() {
     const mount = elements.accessList;
     if (!mount) return;
     if (elements.accessCount) {
       elements.accessCount.textContent = accessUsers.length
-        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} sur cette page${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}.${lastRefreshSuffix(elements.accessCount)}`
-        : `Aucun compte trouvé.${lastRefreshSuffix(elements.accessCount)}`;
+        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} affiché${accessUsers.length > 1 ? "s" : ""}${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}`
+        : "Aucun compte trouvé";
     }
     if (!accessUsers.length) {
       mount.innerHTML = `<p class="admin-access-empty">Aucun compte ne correspond à cette recherche.</p>`;
       renderAccessPagination();
       return;
     }
-    const rows = accessUsers.map((user) => {
-      const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Compte LivePalmes";
+    const rows = accessUsers.map((user, index) => {
+      const lastName = user.lastName || "—";
+      const firstName = user.firstName || "—";
+      const name = [user.lastName, user.firstName].filter(Boolean).join(" ") || user.email || "Compte LivePalmes";
       const rights = (user.capabilities || []).map(capabilityLabel);
-      const visibleRights = rights.slice(0, 2).join(", ") || "Aucun droit actif";
-      const rightsSummary = rights.length > 2 ? `${visibleRights} +${rights.length - 2}` : visibleRights;
+      const rightsLabel = rights.join(" · ") || "Aucune habilitation active";
       const inactive = user.status !== "active";
-      const clubLine = user.clubId ? `Club ${user.clubId}` : "Club non renseigne";
-      const regionLine = user.regionId ? `Region ${regionDisplayLabel(user.regionId)}` : "Region non renseignee";
+      const clubLine = user.clubId ? `Club ${user.clubId}` : "Club non renseigné";
+      const regionLine = user.regionId ? `Région ${regionDisplayLabel(user.regionId)}` : "Région non renseignée";
       const currentUid = global.firebase?.auth?.().currentUser?.uid || "";
       const isCurrentUser = user.uid && user.uid === currentUid;
+      const detailsId = `adminAccessDirectoryDetails${index}`;
       const actions = [];
       if (canUse("admin.full")) {
-        actions.push(`<button class="ghost-button" type="button" data-access-edit="${user.uid}">Modifier</button>`);
-        actions.push(`<button class="ghost-button" type="button" data-access-status="${inactive ? "active" : "inactive"}" data-access-uid="${user.uid}" ${isCurrentUser ? "disabled" : ""}>
-          ${inactive ? "Reactiver" : "Desactiver"}
-        </button>`);
+        actions.push(`<button class="ghost-button admin-access-action-button" type="button" data-access-edit="${user.uid}">${accessActionIcon("edit")}<span>Modifier</span></button>`);
+        actions.push(`<button class="ghost-button admin-access-action-button" type="button" data-access-status="${inactive ? "active" : "inactive"}" data-access-uid="${user.uid}" ${isCurrentUser ? "disabled" : ""}>${accessActionIcon(inactive ? "enable" : "disable")}<span>${inactive ? "Réactiver" : "Désactiver"}</span></button>`);
       }
       if (canDeleteAccessUserDirectly()) {
-        actions.push(`<button class="ghost-button danger-button" type="button" data-access-delete="${user.uid}" ${isCurrentUser ? "disabled" : ""}>Supprimer definitivement</button>`);
+        actions.push(`<button class="ghost-button danger-button admin-access-action-button" type="button" data-access-delete="${user.uid}" ${isCurrentUser ? "disabled" : ""}>${accessActionIcon("delete")}<span>Supprimer</span></button>`);
       } else if (canUse("engagements.region.manage")) {
-        actions.push(`<button class="ghost-button danger-button" type="button" data-access-delete-request="${user.uid}" ${isCurrentUser ? "disabled" : ""}>Demander suppression</button>`);
+        actions.push(`<button class="ghost-button danger-button admin-access-action-button" type="button" data-access-delete-request="${user.uid}" ${isCurrentUser ? "disabled" : ""}>${accessActionIcon("delete")}<span>Demander la suppression</span></button>`);
       }
       return `
-        <article class="admin-access-row ${inactive ? "inactive" : ""}" data-access-uid="${user.uid}" role="row">
-          <div class="admin-access-user" role="cell" data-label="Utilisateur">
-            <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml(user.email || user.uid)}</small>
+        <article class="admin-access-row ${inactive ? "inactive" : ""}" data-access-uid="${user.uid}" data-expanded="false" role="rowgroup">
+          <button class="admin-access-row-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" data-access-directory-toggle>
+            <span class="admin-access-row-toggle-user">
+              <strong>${escapeHtml(name)}</strong>
+              <small>${escapeHtml(user.email || user.uid)}</small>
+            </span>
+            <span class="admin-access-row-toggle-meta">
+              <span class="admin-access-status ${inactive ? "inactive" : "active"}">${inactive ? "Inactif" : "Actif"}</span>
+              <span class="admin-access-row-chevron" aria-hidden="true">›</span>
+            </span>
+          </button>
+          <div class="admin-access-row-summary" role="row">
+            <div class="admin-access-last-name" role="cell" data-label="Nom">
+              <strong>${escapeHtml(lastName)}</strong>
+            </div>
+            <div class="admin-access-first-name" role="cell" data-label="Prénom">${escapeHtml(firstName)}</div>
+            <div class="admin-access-email" role="cell" data-label="Email" title="${escapeHtml(user.email || user.uid)}">${escapeHtml(user.email || user.uid)}</div>
+            <div class="admin-access-scope" role="cell" data-label="Club" title="${escapeHtml(`${user.clubName || "Club non renseigné"} · ${clubLine} · ${regionLine}`)}">
+              <span>${escapeHtml(user.clubName || "—")}</span>
+            </div>
+            <div role="cell" data-label="Connexion">
+              <small class="admin-access-login">${escapeHtml(user.lastLoginAt ? formatAccessDateTime(user.lastLoginAt) : "Non disponible")}</small>
+            </div>
+            <div role="cell" data-label="État"><span class="admin-access-status ${inactive ? "inactive" : "active"}">${inactive ? "Inactif" : "Actif"}</span></div>
+            <div class="admin-access-row-disclosure" role="cell">
+              <button type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-access-directory-toggle>
+                <span class="admin-access-row-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
           </div>
-          <div role="cell" data-label="Club / licence">
-            <small>${escapeHtml(`${clubLine} - ${regionLine}`)}</small>
-            <strong>${escapeHtml(user.clubName || "—")}</strong>
-            <small>${escapeHtml(user.licenseNumber ? `Licence ${user.licenseNumber}` : "Licence non renseignée")}</small>
-          </div>
-          <div class="admin-access-rights-summary" role="cell" data-label="Habilitations" title="${escapeHtml(rights.join(", ") || "Aucun droit actif")}">
-            ${escapeHtml(rightsSummary)}
-          </div>
-          <div role="cell" data-label="Statut">
-            <span class="admin-access-status ${inactive ? "inactive" : "active"}">${inactive ? "Inactif" : "Actif"}</span>
-          </div>
-          <div role="cell" data-label="Dernière connexion">
-            <small class="admin-access-login">${escapeHtml(user.lastLoginAt ? formatAccessDateTime(user.lastLoginAt) : "Non disponible")}</small>
-          </div>
-          <div class="admin-access-row-actions" role="cell" data-label="Actions">
-            ${actions.join("") || "<small>Aucune action disponible</small>"}
+          <div id="${detailsId}" class="admin-access-row-expanded">
+            <div class="admin-access-row-expanded-data">
+              <div><span>Licence</span><strong>${escapeHtml(user.licenseNumber || "Non renseignée")}</strong></div>
+              <div><span>Périmètre</span><strong>${escapeHtml(user.clubName || "Club non renseigné")}</strong><small>${escapeHtml(`${clubLine} · ${regionLine}`)}</small></div>
+              <div class="admin-access-row-expanded-rights"><span>Habilitations</span><strong>${escapeHtml(rightsLabel)}</strong></div>
+            </div>
+            <div class="admin-access-row-actions">
+              ${actions.join("") || "<small>Aucune action disponible</small>"}
+            </div>
           </div>
         </article>
       `;
@@ -9906,12 +10600,13 @@
     mount.innerHTML = `
       <div class="admin-access-table" role="table" aria-label="Utilisateurs du portail">
         <div class="admin-access-table-head" role="row">
-          <span role="columnheader">Utilisateur</span>
-          <span role="columnheader">Club / licence</span>
-          <span role="columnheader">Habilitations</span>
-          <span role="columnheader">Statut</span>
-          <span role="columnheader">Dernière connexion</span>
-          <span role="columnheader">Actions</span>
+          <span role="columnheader">Nom</span>
+          <span role="columnheader">Prénom</span>
+          <span role="columnheader">Email</span>
+          <span role="columnheader">Club</span>
+          <span role="columnheader">Connexion</span>
+          <span role="columnheader">État</span>
+          <span role="columnheader" aria-label="Détails"></span>
         </div>
         ${rows}
       </div>`;
@@ -9971,9 +10666,13 @@
     });
   }
 
-  async function loadAccessUsers({ reset = false } = {}) {
+  async function loadAccessUsers({ reset = false, force = false } = {}) {
     if (!canManageAccessDirectory()) return;
     if (accessUsersLoading && !reset) return;
+    if (accessUsersLoaded && !reset && !force) {
+      renderAccessUsers();
+      return;
+    }
     const loadSequence = ++accessLoadSequence;
     if (reset) {
       accessCurrentCursor = null;
@@ -10004,7 +10703,7 @@
         accessNextCursor = offset + 25 < filteredUsers.length ? { offset: offset + 25 } : null;
         accessDirectoryTruncated = false;
       }
-      markLastRefresh(elements.accessCount);
+      accessUsersLoaded = true;
       renderAccessUsers();
     } catch (error) {
       if (loadSequence !== accessLoadSequence) return;
@@ -10023,14 +10722,14 @@
     accessPreviousCursors.push(accessCurrentCursor);
     accessCurrentCursor = accessNextCursor;
     accessPage += 1;
-    await loadAccessUsers();
+    await loadAccessUsers({ force: true });
   }
 
   async function showPreviousAccessPage() {
     if (!accessPreviousCursors.length || accessUsersLoading) return;
     accessCurrentCursor = accessPreviousCursors.pop() || null;
     accessPage = Math.max(1, accessPage - 1);
-    await loadAccessUsers();
+    await loadAccessUsers({ force: true });
   }
 
   async function setAccessStatus(uid, status) {
@@ -10040,7 +10739,7 @@
     if (!window.confirm(`Confirmer : ${verb} ${label} ?`)) return;
     try {
       await callFunction("setAccessUserStatus", { uid, status });
-      await loadAccessUsers();
+      await loadAccessUsers({ force: true });
       setAccessMessage(`Acces ${status === "active" ? "reactive" : "desactive"}.`, "ok");
     } catch (error) {
       setAccessMessage(`Changement de statut impossible : ${error?.message || error}`);
@@ -10051,6 +10750,7 @@
     if (!canDeleteAccessUserDirectly()) {
       if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = true;
       if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = "";
+      updateEngagementNationalRequestsPresentation();
       return;
     }
     if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = false;
@@ -10059,9 +10759,10 @@
       if (elements.engagementsNationalAccountsList) elements.engagementsNationalAccountsList.innerHTML = `<p class="admin-engagements-empty">Aucune demande de suppression de compte en attente.</p>`;
       if (elements.accessDeletionRequestsStatus) elements.accessDeletionRequestsStatus.textContent = `Aucune demande en attente.${lastRefreshSuffix(elements.accessDeletionRequestsStatus)}`;
       if (elements.engagementsNationalAccountsStatus) {
-        elements.engagementsNationalAccountsStatus.textContent = `Aucune demande en attente.${lastRefreshSuffix(elements.engagementsNationalAccountsStatus)}`;
+        elements.engagementsNationalAccountsStatus.textContent = "Aucune demande en attente.";
         elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
       }
+      updateEngagementNationalRequestsPresentation();
       return;
     }
     const html = accessDeletionRequests.map((request) => {
@@ -10092,15 +10793,17 @@
       elements.accessDeletionRequestsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.accessDeletionRequestsStatus)}`;
     }
     if (elements.engagementsNationalAccountsStatus) {
-      elements.engagementsNationalAccountsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.${lastRefreshSuffix(elements.engagementsNationalAccountsStatus)}`;
+      elements.engagementsNationalAccountsStatus.textContent = `${accessDeletionRequests.length} demande${accessDeletionRequests.length > 1 ? "s" : ""} en attente.`;
       elements.engagementsNationalAccountsStatus.dataset.tone = "ok";
     }
+    updateEngagementNationalRequestsPresentation();
   }
 
   async function loadAccessDeletionRequests({ force = false } = {}) {
     if (!canDeleteAccessUserDirectly() || accessDeletionRequestsLoading) return;
     if (accessDeletionRequestsLoaded && !force) return;
     accessDeletionRequestsLoading = true;
+    updateEngagementNationalRequestsPresentation();
     if (elements.accessDeletionRequestsStatus) {
       elements.accessDeletionRequestsStatus.textContent = "Chargement...";
       elements.accessDeletionRequestsStatus.dataset.tone = "loading";
@@ -10128,6 +10831,7 @@
       }
     } finally {
       accessDeletionRequestsLoading = false;
+      updateEngagementNationalRequestsPresentation();
     }
   }
 
@@ -10172,6 +10876,7 @@
     }
     try {
       await callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
+      engagementNationalOverviewLoaded = false;
       accessDeletionRequestsLoaded = false;
       await loadAccessUsers({ reset: true });
       await loadAccessDeletionRequests({ force: true });
@@ -10236,40 +10941,38 @@
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
     elements.engagementsNationalSwimmersRefresh?.addEventListener("click", () => loadEngagementNationalSwimmers({ force: true }));
     elements.engagementsCalendarFilters?.addEventListener("submit", (event) => event.preventDefault());
-    [
-      elements.engagementsSeasonFilter,
-      elements.engagementsRegionFilter,
-      elements.engagementsLevelFilter,
-      elements.engagementsStatusFilter,
-      elements.engagementsMineFilter
-    ].forEach((filter) => {
+    [elements.engagementsRegionFilter, elements.engagementsLevelFilter, elements.engagementsStatusFilter, elements.engagementsMineFilter].forEach((filter) => {
       filter?.addEventListener("change", () => {
         engagementCompetitionsVisibleLimit = 24;
         syncEngagementStatusSegments();
-        loadEngagementCompetitions({ force: true });
+        renderEngagementCompetitions();
       });
+    });
+    elements.engagementsSeasonFilter?.addEventListener("change", () => {
+      engagementCompetitionsVisibleLimit = 24;
+      loadEngagementCompetitions({ force: true });
     });
     elements.engagementsStatusSegmentButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = button.dataset.engagementStatus || "";
         engagementCompetitionsVisibleLimit = 24;
         syncEngagementStatusSegments();
-        loadEngagementCompetitions({ force: true });
+        renderEngagementCompetitions();
       });
     });
     elements.engagementsFiltersReset?.addEventListener("click", () => {
       resetEngagementCalendarFilters();
-      loadEngagementCompetitions({ force: true });
+      const filters = engagementCalendarFiltersPayload();
+      const requestedRange = `${filters.startDate}|${filters.endDate}`;
+      if (engagementCompetitionsLoadedRange === requestedRange) renderEngagementCompetitions();
+      else loadEngagementCompetitions({ force: true });
     });
     elements.engagementsTabButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         setEngagementsTab(button.dataset.engagementsTabButton);
         if (activeEngagementsTab === "calendar") loadEngagementCompetitions();
         if (activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
-        if (activeEngagementsTab === "deletionRequests") {
-          loadEngagementDeletionRequests();
-          loadEngagementNationalSwimmers();
-        }
+        if (activeEngagementsTab === "deletionRequests") loadActiveEngagementNationalTab();
         if (activeEngagementsTab === "clubPeople") {
           loadEngagementClubPeople();
           loadEngagementClubSwimmers({ silent: true });
@@ -10284,7 +10987,10 @@
     elements.engagementsCalendarList?.addEventListener("click", (event) => {
       if (event.target.closest("[data-engagement-filters-reset]")) {
         resetEngagementCalendarFilters();
-        loadEngagementCompetitions({ force: true });
+        const filters = engagementCalendarFiltersPayload();
+        const requestedRange = `${filters.startDate}|${filters.endDate}`;
+        if (engagementCompetitionsLoadedRange === requestedRange) renderEngagementCompetitions();
+        else loadEngagementCompetitions({ force: true });
         return;
       }
       if (event.target.closest("[data-engagement-show-more]")) {
@@ -10350,6 +11056,9 @@
       );
     });
     elements.engagementsNationalAuditRefresh?.addEventListener("click", () => loadEngagementNationalAuditLogs({ force: true }));
+    elements.engagementsNationalAuditSearch?.addEventListener("input", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditType?.addEventListener("change", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditReset?.addEventListener("click", resetEngagementNationalAuditFilters);
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
       if (!button) return;
@@ -10357,7 +11066,12 @@
       const swimmerId = button.dataset.engagementNationalSwimmerId || "";
       const swimmerSource = button.dataset.engagementNationalSwimmerSource || "engagement";
       const swimmerKey = `${swimmerSource}:${swimmerId}`;
-      if (action === "disable" || action === "enable") {
+      if (action === "edit") {
+        const swimmer = engagementNationalSwimmers.find((item) =>
+          (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
+        );
+        if (swimmer) openEngagementSwimmerCorrectionDialog(swimmer, "direct", button);
+      } else if (action === "disable" || action === "enable") {
         setEngagementNationalSwimmerStatus(swimmerId, action === "enable");
       } else if (action === "delete") {
         deleteEngagementNationalSwimmer(swimmerId);
@@ -10407,7 +11121,19 @@
     });
     elements.engagementsNationalSwimmersStatusFilter?.addEventListener("change", renderEngagementNationalSwimmers);
     elements.engagementsNationalSwimmersReset?.addEventListener("click", resetEngagementNationalSwimmerFilters);
+    elements.engagementsNationalSwimmersMergeMode?.addEventListener("click", () => {
+      setEngagementNationalSwimmerMergeMode(!engagementNationalSwimmerMergeMode);
+    });
     elements.engagementsNationalSwimmersBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalSwimmers);
+    elements.engagementsSwimmerChangeRequestsList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-swimmer-change-decision]");
+      if (!button) return;
+      resolveEngagementSwimmerChangeRequest(
+        button.dataset.engagementSwimmerChangeRequestId || "",
+        button.dataset.engagementSwimmerChangeDecision || "",
+        button.closest("[data-engagement-swimmer-change-request]")
+      );
+    });
     elements.engagementsNationalPeopleRefresh?.addEventListener("click", () => loadEngagementNationalPeople({ force: true }));
     elements.engagementsNationalPeopleList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-person-action]");
@@ -10447,11 +11173,23 @@
     elements.engagementsNationalPeopleSearch?.addEventListener("input", renderEngagementNationalPeople);
     elements.engagementsNationalPeopleStatusFilter?.addEventListener("change", renderEngagementNationalPeople);
     elements.engagementsNationalPeopleReset?.addEventListener("click", resetEngagementNationalPeopleFilters);
+    elements.engagementsNationalPeopleMergeMode?.addEventListener("click", () => {
+      setEngagementNationalPeopleMergeMode(!engagementNationalPeopleMergeMode);
+    });
     elements.engagementsNationalPeopleBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalPeople);
-    elements.engagementsClubPeopleRefresh?.addEventListener("click", () => loadEngagementClubPeople({ force: true }));
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersMissingLicenseFilter?.addEventListener("change", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectoryList?.addEventListener("click", (event) => {
+      const changeButton = event.target.closest("[data-engagement-club-swimmer-change]");
+      if (changeButton) {
+        const swimmerId = changeButton.dataset.engagementClubSwimmerChange || "";
+        const source = changeButton.dataset.engagementClubSwimmerChangeSource || "performances";
+        const swimmer = engagementClubSwimmers.find((item) =>
+          (item.source || "performances") === source && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
+        );
+        if (swimmer) openEngagementSwimmerCorrectionDialog(swimmer, "request", changeButton);
+        return;
+      }
       const deleteButton = event.target.closest("[data-engagement-club-swimmer-delete]");
       if (deleteButton) {
         requestEngagementClubSwimmerDeletion(
@@ -10484,8 +11222,53 @@
       button.setAttribute("aria-expanded", expanded ? "false" : "true");
       if (row) row.dataset.expanded = expanded ? "false" : "true";
     });
+    elements.engagementsSwimmerCorrectionForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void submitEngagementSwimmerCorrection();
+    });
+    elements.engagementsSwimmerCorrectionClose?.addEventListener("click", closeEngagementSwimmerCorrectionDialog);
+    elements.engagementsSwimmerCorrectionCancel?.addEventListener("click", closeEngagementSwimmerCorrectionDialog);
+    elements.engagementsSwimmerCorrectionDialog?.addEventListener("close", () => {
+      resetEngagementSwimmerCorrectionDialog();
+      const opener = engagementSwimmerCorrectionOpener;
+      engagementSwimmerCorrectionOpener = null;
+      opener?.focus?.();
+    });
+    elements.engagementsSwimmerCorrectionDialog?.addEventListener("click", (event) => {
+      if (event.target === elements.engagementsSwimmerCorrectionDialog) closeEngagementSwimmerCorrectionDialog();
+    });
+    elements.engagementsSwimmerCorrectionLastName?.addEventListener("input", (event) => {
+      const start = event.target.selectionStart;
+      const end = event.target.selectionEnd;
+      event.target.value = event.target.value.toUpperCase();
+      if (Number.isInteger(start) && Number.isInteger(end)) event.target.setSelectionRange(start, end);
+    });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
-    elements.engagementsClubPersonSwimmerSelect?.addEventListener("change", (event) => applyEngagementClubPersonSwimmer(event.target.value));
+    elements.engagementsClubPersonSwimmerSearch?.addEventListener("input", () => {
+      applyEngagementClubPersonSwimmer("");
+      renderEngagementClubPersonSwimmerOptions();
+      if (elements.engagementsClubPersonMessage) elements.engagementsClubPersonMessage.textContent = "";
+    });
+    elements.engagementsClubPersonSwimmerSearch?.addEventListener("focus", renderEngagementClubPersonSwimmerOptions);
+    elements.engagementsClubPersonSwimmerSearch?.addEventListener("keydown", (event) => {
+      const firstResult = elements.engagementsClubPersonSwimmerResults?.querySelector("button:not(:disabled)");
+      if (event.key === "ArrowDown" && firstResult) {
+        event.preventDefault();
+        firstResult.focus();
+      } else if (event.key === "Enter" && firstResult && !elements.engagementsClubPersonSwimmerResults.hidden) {
+        event.preventDefault();
+        firstResult.click();
+      } else if (event.key === "Escape" && elements.engagementsClubPersonSwimmerResults) {
+        elements.engagementsClubPersonSwimmerResults.hidden = true;
+        elements.engagementsClubPersonSwimmerSearch.setAttribute("aria-expanded", "false");
+      }
+    });
+    elements.engagementsClubPersonSwimmerResults?.addEventListener("click", (event) => {
+      const result = event.target.closest("[data-engagement-club-person-swimmer-result]");
+      if (!result) return;
+      applyEngagementClubPersonSwimmer(result.dataset.engagementClubPersonSwimmerResult);
+      if (elements.engagementsClubPersonMessage) elements.engagementsClubPersonMessage.textContent = "";
+    });
     elements.engagementsClubPersonLicense?.addEventListener("input", (event) => {
       event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
     });
@@ -10499,6 +11282,22 @@
     });
     elements.engagementsClubPersonForm?.addEventListener("submit", saveEngagementClubPerson);
     elements.engagementsClubPeopleList?.addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-engagement-club-person-directory-toggle]");
+      if (toggle) {
+        const row = toggle.closest(".admin-engagements-club-person-row");
+        const expanded = toggle.getAttribute("aria-expanded") === "true";
+        if (!expanded) {
+          elements.engagementsClubPeopleList.querySelectorAll('[data-engagement-club-person-directory-toggle][aria-expanded="true"]')
+            .forEach((openToggle) => {
+              openToggle.setAttribute("aria-expanded", "false");
+              const openRow = openToggle.closest(".admin-engagements-club-person-row");
+              if (openRow) openRow.dataset.expanded = "false";
+            });
+        }
+        toggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+        if (row) row.dataset.expanded = expanded ? "false" : "true";
+        return;
+      }
       const button = event.target.closest("[data-engagement-club-person-action]");
       if (!button) return;
       const personId = button.dataset.engagementClubPersonId || "";
@@ -11124,6 +11923,10 @@
       togglePortalSpace("national", "nationalHome", "administration-nationale", elements.nationalToggle);
       collapsePortalNavigationAfterSelection();
     });
+    elements.accessToggle?.addEventListener("click", () => {
+      togglePortalSpace("access", "accessHome", "gestion-acces", elements.accessToggle);
+      collapsePortalNavigationAfterSelection();
+    });
     elements.overviewSpaceToggles.forEach((toggle) => toggle.addEventListener("click", () => {
       const card = toggle.closest("[data-overview-space]");
       const expanded = toggle.getAttribute("aria-expanded") !== "true";
@@ -11190,21 +11993,19 @@
     elements.accessForm?.addEventListener("submit", saveAccessUser);
     elements.accessRegionId?.addEventListener("change", () => populateAccessClubSelect());
     elements.accessClubSelect?.addEventListener("change", syncAccessClubFieldsFromSelect);
-    elements.accessRefresh?.addEventListener("click", () => loadAccessUsers());
     elements.accessDeletionRequestsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
     elements.accessAdd?.addEventListener("click", () => {
       if (!canUse("admin.full")) return;
-      const open = elements.accessAdd.getAttribute("aria-expanded") === "true";
-      if (open) {
-        resetAccessForm(true);
-      } else {
-        resetAccessForm();
-        if (elements.accessPanel) elements.accessPanel.hidden = false;
-        elements.accessAdd.setAttribute("aria-expanded", "true");
-        elements.accessPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      resetAccessForm();
+      openAccessDialog();
+      elements.accessForm?.querySelector("#adminAccessLastName")?.focus();
     });
     elements.cancelEdit?.addEventListener("click", () => resetAccessForm(true));
+    elements.accessDialogClose?.addEventListener("click", () => resetAccessForm(true));
+    elements.accessPanel?.addEventListener("close", () => {
+      resetAccessForm();
+      elements.accessAdd?.setAttribute("aria-expanded", "false");
+    });
     elements.accessFilters?.addEventListener("submit", (event) => {
       event.preventDefault();
       loadAccessUsers({ reset: true });
@@ -11219,6 +12020,20 @@
     elements.accessNextPage?.addEventListener("click", showNextAccessPage);
     global.addEventListener("hashchange", updateNavigationView);
     elements.accessList?.addEventListener("click", (event) => {
+      const directoryToggle = event.target.closest("[data-access-directory-toggle]");
+      if (directoryToggle) {
+        const row = directoryToggle.closest(".admin-access-row");
+        const willExpand = row?.dataset.expanded !== "true";
+        elements.accessList.querySelectorAll('.admin-access-row[data-expanded="true"]').forEach((expandedRow) => {
+          expandedRow.dataset.expanded = "false";
+          expandedRow.querySelectorAll("[data-access-directory-toggle]").forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
+        });
+        if (row) {
+          row.dataset.expanded = willExpand ? "true" : "false";
+          row.querySelectorAll("[data-access-directory-toggle]").forEach((toggle) => toggle.setAttribute("aria-expanded", willExpand ? "true" : "false"));
+        }
+        return;
+      }
       const edit = event.target.closest("[data-access-edit]");
       if (edit) {
         const user = accessUsers.find((item) => item.uid === edit.dataset.accessEdit);
