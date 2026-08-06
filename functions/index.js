@@ -3452,7 +3452,10 @@ function cleanEngagementTeamLeader(raw = {}) {
   }
   const firstName = cleanText(raw.firstName).slice(0, 80);
   const lastName = cleanText(raw.lastName).slice(0, 80);
-  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const personId = cleanText(raw.personId).slice(0, 80);
+  const birthDate = cleanIsoDate(raw.birthDate);
+  const sex = ["F", "M"].includes(cleanText(raw.sex).toUpperCase()) ? cleanText(raw.sex).toUpperCase() : "";
+  const licenseNumber = cleanText(raw.licenseNumber).toUpperCase().slice(0, 60);
   const externalClub = raw.externalClub === true;
   const clubId = cleanText(raw.clubId).slice(0, 40);
   const clubName = cleanText(raw.clubName).slice(0, 140);
@@ -3462,13 +3465,22 @@ function cleanEngagementTeamLeader(raw = {}) {
   if (!licenseNumber) {
     throw new HttpsError("invalid-argument", "Numero de licence du chef d'equipe obligatoire.");
   }
+  if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
+    throw new HttpsError("invalid-argument", "Le numero de licence doit respecter le format A-12-34567.");
+  }
   if (externalClub && !clubId) {
     throw new HttpsError("invalid-argument", "Club du chef d'equipe obligatoire.");
   }
+  if (!externalClub && (!birthDate || !sex)) {
+    throw new HttpsError("invalid-argument", "Date de naissance et sexe du chef d'equipe obligatoires.");
+  }
   return {
     mode,
+    personId,
     firstName,
     lastName,
+    birthDate: externalClub ? "" : birthDate,
+    sex: externalClub ? "" : sex,
     licenseNumber,
     externalClub,
     clubId,
@@ -5814,7 +5826,9 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
 function cleanEngagementClubPerson(raw = {}, context = {}) {
   const firstName = cleanText(raw.firstName).slice(0, 80);
   const lastName = cleanText(raw.lastName).slice(0, 80);
-  const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+  const birthDate = cleanIsoDate(raw.birthDate);
+  const sex = ["F", "M"].includes(cleanText(raw.sex).toUpperCase()) ? cleanText(raw.sex).toUpperCase() : "";
+  const licenseNumber = cleanText(raw.licenseNumber).toUpperCase().slice(0, 60);
   const roles = raw.roles || {};
   const official = roles.official === true || raw.official === true;
   const teamLeader = roles.teamLeader === true || raw.teamLeader === true;
@@ -5826,6 +5840,12 @@ function cleanEngagementClubPerson(raw = {}, context = {}) {
   }
   if (!licenseNumber) {
     throw new HttpsError("invalid-argument", "Numero de licence obligatoire.");
+  }
+  if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
+    throw new HttpsError("invalid-argument", "Le numero de licence doit respecter le format A-12-34567.");
+  }
+  if (!birthDate || !sex) {
+    throw new HttpsError("invalid-argument", "Date de naissance et sexe obligatoires.");
   }
   if (!official && !teamLeader) {
     throw new HttpsError("invalid-argument", "Selectionnez au moins un role.");
@@ -5839,9 +5859,9 @@ function cleanEngagementClubPerson(raw = {}, context = {}) {
     licenseNumber,
     swimmerIndexId,
     swimmerSource: swimmer ? (swimmerSource || "performances") : "",
-    birthDate: swimmer ? cleanIsoDate(raw.birthDate) : "",
-    sex: swimmer ? cleanText(raw.sex).toUpperCase().slice(0, 20) : "",
-    identityKey: swimmer ? cleanText(raw.identityKey).slice(0, 180) : "",
+    birthDate,
+    sex,
+    identityKey: engagementSwimmerIdentityKey(firstName, lastName, birthDate),
     roles: {
       swimmer,
       official,
@@ -5920,6 +5940,41 @@ function engagementClubPeopleRosterPeopleFromData(data = {}) {
     .map(engagementClubPeopleRosterPersonItem)
     .filter((person) => person.id && person.clubId)
     .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"));
+}
+
+function engagementClubPersonIdentityConflict(people = [], person = {}, ignoredPersonId = "") {
+  const candidates = people.filter((candidate) => candidate.id && candidate.id !== ignoredPersonId);
+  const licenseKey = engagementSwimmerLicenseNumberKey(person.licenseNumber);
+  const sameLicense = licenseKey && candidates.find((candidate) =>
+    engagementSwimmerLicenseNumberKey(candidate.licenseNumber) === licenseKey
+  );
+  if (sameLicense) return { type: "license", person: sameLicense };
+  const identityKey = engagementSwimmerIdentityKey(person.firstName, person.lastName, person.birthDate);
+  const invertedIdentityKey = engagementSwimmerIdentityKey(person.lastName, person.firstName, person.birthDate);
+  const exact = identityKey && candidates.find((candidate) =>
+    (candidate.identityKey || engagementSwimmerIdentityKey(candidate.firstName, candidate.lastName, candidate.birthDate)) === identityKey
+  );
+  if (exact) return { type: "exact", person: exact };
+  const inverted = invertedIdentityKey && invertedIdentityKey !== identityKey
+    ? candidates.find((candidate) =>
+        (candidate.identityKey || engagementSwimmerIdentityKey(candidate.firstName, candidate.lastName, candidate.birthDate)) === invertedIdentityKey
+      )
+    : null;
+  return inverted ? { type: "inverted", person: inverted } : null;
+}
+
+function throwEngagementClubPersonIdentityConflict(conflict = {}) {
+  const person = conflict.person || {};
+  const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "un membre existant";
+  const reason = conflict.type === "inverted"
+    ? "avec le nom et le prenom inverses"
+    : conflict.type === "license"
+      ? "avec le meme numero de licence"
+      : "avec la meme identite";
+  throw new HttpsError("already-exists", `${name} existe deja ${reason}. Utilisez cette fiche au lieu d'en creer une autre.`, {
+    matchType: conflict.type,
+    person: engagementClubPeopleRosterPersonItem(person)
+  });
 }
 
 function upsertEngagementClubPeopleRosterPerson(batch, db, person = {}, now = "") {
@@ -7242,9 +7297,33 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
   }
   assertEngagementClubWriteOpen(competition.data() || {});
   const rawTeamLeader = cleanEngagementTeamLeader(request.data?.teamLeader || {});
+  let personRef = null;
+  let person = null;
+  if (rawTeamLeader.mode === "person" && !rawTeamLeader.externalClub && rawTeamLeader.personId) {
+    personRef = db.collection("engagementClubPeople").doc(rawTeamLeader.personId);
+    const personSnapshot = await personRef.get();
+    if (!personSnapshot.exists) {
+      throw new HttpsError("not-found", "Membre du club introuvable.");
+    }
+    person = engagementClubPersonItem(personSnapshot);
+    if (person.clubId !== context.clubId || person.active === false) {
+      throw new HttpsError("permission-denied", "Membre hors perimetre club ou inactif.");
+    }
+    if (!person.birthDate || !person.sex) {
+      throw new HttpsError("failed-precondition", "Completez la date de naissance et le sexe de ce membre avant de le choisir comme chef d'equipe.");
+    }
+  }
   const teamLeader = rawTeamLeader.mode === "person" && !rawTeamLeader.externalClub
     ? {
         ...rawTeamLeader,
+        ...(person ? {
+          personId: person.id,
+          firstName: person.firstName,
+          lastName: person.lastName,
+          birthDate: person.birthDate,
+          sex: person.sex,
+          licenseNumber: person.licenseNumber
+        } : {}),
         clubId: context.clubId,
         clubName: context.clubName
       }
@@ -7267,7 +7346,26 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
     updatedBy: context.uid,
     ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
   };
-  await entryRef.set(payload, { merge: true });
+  const batch = db.batch();
+  batch.set(entryRef, payload, { merge: true });
+  if (personRef && person) {
+    const updatedPerson = {
+      ...person,
+      roles: {
+        ...person.roles,
+        teamLeader: true
+      },
+      updatedAt: now,
+      updatedBy: context.uid
+    };
+    batch.set(personRef, {
+      roles: updatedPerson.roles,
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+    upsertEngagementClubPeopleRosterPerson(batch, db, updatedPerson, now);
+  }
+  await batch.commit();
   await writeAuditLog("engagementClubEntry.teamLeaderSaved", context.uid, {
     competitionId,
     clubId: context.clubId,
@@ -7339,9 +7437,23 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   } : rawPerson, context);
   const docId = personId || stableHash(`${context.clubId}|${person.licenseNumber}`).slice(0, 40);
   const ref = db.collection("engagementClubPeople").doc(docId);
-  const snapshot = await ref.get();
+  const [snapshot, peopleRosterSnapshot] = await Promise.all([
+    ref.get(),
+    engagementClubPeopleRosterRef(db, context.clubId).get()
+  ]);
   if (snapshot.exists && cleanText(snapshot.data()?.clubId) !== context.clubId) {
     throw new HttpsError("permission-denied", "Personne hors perimetre club.");
+  }
+  if (!personId && snapshot.exists) {
+    throwEngagementClubPersonIdentityConflict({ type: "license", person: engagementClubPersonItem(snapshot) });
+  }
+  if (peopleRosterSnapshot.exists) {
+    const conflict = engagementClubPersonIdentityConflict(
+      engagementClubPeopleRosterPeopleFromData(peopleRosterSnapshot.data() || {}),
+      person,
+      personId
+    );
+    if (conflict) throwEngagementClubPersonIdentityConflict(conflict);
   }
   const now = new Date().toISOString();
   const payload = {

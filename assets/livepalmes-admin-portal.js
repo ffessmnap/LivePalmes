@@ -280,6 +280,8 @@
     engagementsClubPersonSwimmerSelect: document.querySelector("#adminEngagementsClubPersonSwimmerSelect"),
     engagementsClubPersonFirstName: document.querySelector("#adminEngagementsClubPersonFirstName"),
     engagementsClubPersonLastName: document.querySelector("#adminEngagementsClubPersonLastName"),
+    engagementsClubPersonBirthDate: document.querySelector("#adminEngagementsClubPersonBirthDate"),
+    engagementsClubPersonSex: document.querySelector("#adminEngagementsClubPersonSex"),
     engagementsClubPersonLicense: document.querySelector("#adminEngagementsClubPersonLicense"),
     engagementsClubPersonRoleTeamLeader: document.querySelector("#adminEngagementsClubPersonRoleTeamLeader"),
     engagementsClubPersonRoleOfficial: document.querySelector("#adminEngagementsClubPersonRoleOfficial"),
@@ -379,9 +381,14 @@
     engagementsClubTeamForm: document.querySelector("#adminEngagementsClubTeamForm"),
     engagementsClubTeamSummary: document.querySelector("#adminEngagementsClubTeamSummary"),
     engagementsClubTeamPersonFields: document.querySelector("#adminEngagementsClubTeamPersonFields"),
+    engagementsClubTeamPersonSearch: document.querySelector("#adminEngagementsClubTeamPersonSearch"),
     engagementsClubTeamPersonSelect: document.querySelector("#adminEngagementsClubTeamPersonSelect"),
     engagementsClubTeamFirstName: document.querySelector("#adminEngagementsClubTeamFirstName"),
     engagementsClubTeamLastName: document.querySelector("#adminEngagementsClubTeamLastName"),
+    engagementsClubTeamBirthDateLabel: document.querySelector("#adminEngagementsClubTeamBirthDateLabel"),
+    engagementsClubTeamBirthDate: document.querySelector("#adminEngagementsClubTeamBirthDate"),
+    engagementsClubTeamSexLabel: document.querySelector("#adminEngagementsClubTeamSexLabel"),
+    engagementsClubTeamSex: document.querySelector("#adminEngagementsClubTeamSex"),
     engagementsClubTeamLicense: document.querySelector("#adminEngagementsClubTeamLicense"),
     engagementsClubTeamExternal: document.querySelector("#adminEngagementsClubTeamExternal"),
     engagementsClubTeamExternalClubIdLabel: document.querySelector("#adminEngagementsClubTeamExternalClubIdLabel"),
@@ -2612,52 +2619,82 @@
     const externalClub = elements.engagementsClubTeamExternal?.checked === true;
     return {
       mode: "person",
+      personId: externalClub ? "" : String(elements.engagementsClubTeamPersonSelect?.value || "").trim(),
       firstName: String(elements.engagementsClubTeamFirstName?.value || "").trim(),
-      lastName: String(elements.engagementsClubTeamLastName?.value || "").trim(),
-      licenseNumber: String(elements.engagementsClubTeamLicense?.value || "").trim(),
+      lastName: String(elements.engagementsClubTeamLastName?.value || "").trim().toLocaleUpperCase("fr-FR"),
+      birthDate: externalClub ? "" : String(elements.engagementsClubTeamBirthDate?.value || "").trim(),
+      sex: externalClub ? "" : String(elements.engagementsClubTeamSex?.value || "").trim(),
+      licenseNumber: formatEngagementSwimmerLicense(elements.engagementsClubTeamLicense?.value || ""),
       externalClub,
       clubId: externalClub ? String(elements.engagementsClubTeamExternalClubId?.value || "").trim() : (currentAccessProfile?.clubId || ""),
       clubName: externalClub ? String(elements.engagementsClubTeamExternalClubName?.value || "").trim() : (currentAccessProfile?.clubName || "")
     };
   }
 
-  function engagementClubTeamLeaderPeople() {
+  function engagementClubTeamLeaderPeople(query = "") {
+    const terms = normalizedEngagementClubSearch(query).split(/\s+/).filter(Boolean);
     return engagementClubPeople
-      .filter((person) => person.active && person.roles?.teamLeader)
+      .filter((person) => {
+        if (!person.active) return false;
+        if (!terms.length) return true;
+        const haystack = normalizedEngagementClubSearch([
+          person.lastName,
+          person.firstName,
+          person.licenseNumber
+        ].filter(Boolean).join(" "));
+        return terms.every((term) => haystack.includes(term));
+      })
       .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"));
   }
 
   function renderEngagementClubTeamPersonOptions(selectedPersonId = "") {
     if (!elements.engagementsClubTeamPersonSelect) return;
-    const options = engagementClubTeamLeaderPeople();
+    const query = elements.engagementsClubTeamPersonSearch?.value || "";
+    const options = engagementClubTeamLeaderPeople(query);
     elements.engagementsClubTeamPersonSelect.innerHTML = [
-      '<option value="">Saisie manuelle</option>',
+      `<option value="">${options.length ? "Choisir un membre ou saisir manuellement" : "Aucun membre correspondant — saisie manuelle"}</option>`,
       ...options.map((person) => `
-        <option value="${escapeHtml(person.id)}">${escapeHtml([person.firstName, person.lastName].filter(Boolean).join(" "))} - licence ${escapeHtml(person.licenseNumber || "-")}</option>
+        <option value="${escapeHtml(person.id)}">${escapeHtml([person.lastName, person.firstName].filter(Boolean).join(" "))} - licence ${escapeHtml(person.licenseNumber || "-")}</option>
       `)
     ].join("");
     elements.engagementsClubTeamPersonSelect.value = options.some((person) => person.id === selectedPersonId) ? selectedPersonId : "";
   }
 
   function findEngagementClubTeamPersonFromFields(teamLeader = {}) {
+    if (teamLeader.personId) {
+      return engagementClubPeople.find((person) => person.id === teamLeader.personId) || null;
+    }
     return engagementClubTeamLeaderPeople().find((person) =>
-      person.licenseNumber &&
-      person.licenseNumber === teamLeader.licenseNumber &&
-      person.firstName === teamLeader.firstName &&
-      person.lastName === teamLeader.lastName
+      engagementClubPersonLicenseKey(person.licenseNumber) &&
+      engagementClubPersonLicenseKey(person.licenseNumber) === engagementClubPersonLicenseKey(teamLeader.licenseNumber) &&
+      engagementClubPersonIdentityKey(person) === engagementClubPersonIdentityKey(teamLeader)
     ) || null;
   }
 
   function applyEngagementClubTeamPerson(personId = "") {
     const person = engagementClubPeople.find((item) => item.id === personId);
-    if (!person) return;
+    if (!person) {
+      if (elements.engagementsClubTeamFirstName) elements.engagementsClubTeamFirstName.value = "";
+      if (elements.engagementsClubTeamLastName) elements.engagementsClubTeamLastName.value = "";
+      if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.value = "";
+      if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.value = "";
+      if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = "";
+      if (elements.engagementsClubTeamExternal) elements.engagementsClubTeamExternal.checked = false;
+      if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.value = "";
+      if (elements.engagementsClubTeamExternalClubName) elements.engagementsClubTeamExternalClubName.value = "";
+      updateEngagementClubTeamFormMode();
+      return false;
+    }
     if (elements.engagementsClubTeamFirstName) elements.engagementsClubTeamFirstName.value = person.firstName || "";
     if (elements.engagementsClubTeamLastName) elements.engagementsClubTeamLastName.value = person.lastName || "";
+    if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.value = person.birthDate || "";
+    if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.value = person.sex || "";
     if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = person.licenseNumber || "";
     if (elements.engagementsClubTeamExternal) elements.engagementsClubTeamExternal.checked = false;
     if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.value = "";
     if (elements.engagementsClubTeamExternalClubName) elements.engagementsClubTeamExternalClubName.value = "";
     updateEngagementClubTeamFormMode();
+    return true;
   }
 
   function engagementClubOfficialPeople() {
@@ -2736,11 +2773,15 @@
     if (linked) {
       if (elements.engagementsClubPersonFirstName) elements.engagementsClubPersonFirstName.value = swimmer.firstName || "";
       if (elements.engagementsClubPersonLastName) elements.engagementsClubPersonLastName.value = swimmer.lastName || "";
+      if (elements.engagementsClubPersonBirthDate) elements.engagementsClubPersonBirthDate.value = swimmer.birthDate || "";
+      if (elements.engagementsClubPersonSex) elements.engagementsClubPersonSex.value = swimmer.sex || "";
       if (elements.engagementsClubPersonLicense) elements.engagementsClubPersonLicense.value = swimmer.licenseNumber || "";
     }
-    [elements.engagementsClubPersonFirstName, elements.engagementsClubPersonLastName, elements.engagementsClubPersonLicense]
+    [elements.engagementsClubPersonFirstName, elements.engagementsClubPersonLastName, elements.engagementsClubPersonBirthDate, elements.engagementsClubPersonSex, elements.engagementsClubPersonLicense]
       .forEach((field) => {
-        if (field) field.readOnly = linked;
+        if (!field) return;
+        if (field.matches("select")) field.disabled = linked;
+        else field.readOnly = linked;
       });
   }
 
@@ -2821,6 +2862,121 @@
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
+  }
+
+  function normalizedEngagementClubIdentityPart(value) {
+    return normalizedEngagementClubSearch(value)
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function engagementClubPersonLicenseKey(value) {
+    return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function engagementClubPersonIdentityKey(person = {}, inverted = false) {
+    const firstName = normalizedEngagementClubIdentityPart(inverted ? person.lastName : person.firstName);
+    const lastName = normalizedEngagementClubIdentityPart(inverted ? person.firstName : person.lastName);
+    const birthDate = String(person.birthDate || "").trim();
+    return firstName && lastName && birthDate ? `${lastName}|${firstName}|${birthDate}` : "";
+  }
+
+  function engagementClubIdentityEditDistance(left = "", right = "") {
+    const a = normalizedEngagementClubIdentityPart(left);
+    const b = normalizedEngagementClubIdentityPart(right);
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+    for (let row = 1; row <= a.length; row += 1) {
+      const current = [row];
+      for (let column = 1; column <= b.length; column += 1) {
+        current[column] = Math.min(
+          current[column - 1] + 1,
+          previous[column] + 1,
+          previous[column - 1] + Number(a[row - 1] !== b[column - 1])
+        );
+      }
+      previous = current;
+    }
+    return previous[b.length];
+  }
+
+  function engagementClubIdentityPartSimilar(left = "", right = "") {
+    const a = normalizedEngagementClubIdentityPart(left);
+    const b = normalizedEngagementClubIdentityPart(right);
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (Math.min(a.length, b.length) >= 4 && (a.includes(b) || b.includes(a))) return true;
+    const maximumDistance = Math.min(a.length, b.length) >= 7 ? 2 : 1;
+    return engagementClubIdentityEditDistance(a, b) <= maximumDistance;
+  }
+
+  function engagementClubPersonIdentityMatch(person = {}, ignoredPersonId = "") {
+    const candidates = engagementClubPeople.filter((candidate) => candidate.id && candidate.id !== ignoredPersonId);
+    const licenseKey = engagementClubPersonLicenseKey(person.licenseNumber);
+    const sameLicense = licenseKey && candidates.find((candidate) =>
+      engagementClubPersonLicenseKey(candidate.licenseNumber) === licenseKey
+    );
+    if (sameLicense) return { type: "license", person: sameLicense };
+    const identityKey = engagementClubPersonIdentityKey(person);
+    const invertedIdentityKey = engagementClubPersonIdentityKey(person, true);
+    const exact = identityKey && candidates.find((candidate) => engagementClubPersonIdentityKey(candidate) === identityKey);
+    if (exact) return { type: "exact", person: exact };
+    const inverted = invertedIdentityKey && invertedIdentityKey !== identityKey
+      ? candidates.find((candidate) => engagementClubPersonIdentityKey(candidate) === invertedIdentityKey)
+      : null;
+    if (inverted) return { type: "inverted", person: inverted };
+    const similar = person.birthDate ? candidates.find((candidate) => {
+      if (candidate.birthDate !== person.birthDate) return false;
+      const normalOrder = engagementClubIdentityPartSimilar(candidate.lastName, person.lastName) &&
+        engagementClubIdentityPartSimilar(candidate.firstName, person.firstName);
+      const invertedOrder = engagementClubIdentityPartSimilar(candidate.lastName, person.firstName) &&
+        engagementClubIdentityPartSimilar(candidate.firstName, person.lastName);
+      return normalOrder || invertedOrder;
+    }) : null;
+    return similar ? { type: "similar", person: similar } : null;
+  }
+
+  function engagementClubPersonDisplayName(person = {}) {
+    return [person.lastName, person.firstName].filter(Boolean).join(" ") || person.licenseNumber || "ce membre";
+  }
+
+  function engagementClubPersonPayloadWithRole(person = {}, role = "") {
+    return {
+      firstName: String(person.firstName || "").trim(),
+      lastName: String(person.lastName || "").trim().toLocaleUpperCase("fr-FR"),
+      birthDate: String(person.birthDate || "").trim(),
+      sex: String(person.sex || "").trim().toUpperCase(),
+      licenseNumber: formatEngagementSwimmerLicense(person.licenseNumber || ""),
+      swimmerIndexId: String(person.swimmerIndexId || "").trim(),
+      swimmerSource: String(person.swimmerSource || person.source || "").trim(),
+      roles: {
+        teamLeader: person.roles?.teamLeader === true || role === "teamLeader",
+        official: person.roles?.official === true || role === "official"
+      }
+    };
+  }
+
+  function resolveEngagementClubPersonIdentity(person = {}, roleLabel = "membre", ignoredPersonId = "") {
+    const match = engagementClubPersonIdentityMatch(person, ignoredPersonId);
+    if (!match) return { person: null, cancelled: false };
+    const name = engagementClubPersonDisplayName(match.person);
+    if (match.type === "similar") {
+      if (global.confirm(`Une personne similaire existe peut-être : ${name}. L'utiliser comme ${roleLabel} ?`)) {
+        return { person: match.person, cancelled: false };
+      }
+      const createAnyway = global.confirm(`Créer une nouvelle personne malgré la ressemblance avec ${name} ?`);
+      return { person: null, cancelled: !createAnyway };
+    }
+    const reason = match.type === "inverted"
+      ? "avec le nom et le prénom inversés"
+      : match.type === "license"
+        ? "avec le même numéro de licence"
+        : "avec la même identité";
+    const reuse = global.confirm(`Cette création est impossible : ${name} existe déjà ${reason}. L'utiliser comme ${roleLabel} ?`);
+    return { person: reuse ? match.person : null, cancelled: !reuse };
   }
 
   function engagementAdminPublicSwimmerSearchTokens(value) {
@@ -5061,10 +5217,16 @@
     const externalClub = elements.engagementsClubTeamExternal?.checked === true;
     if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = !declaringPerson;
     if (elements.engagementsClubTeamRenunciationLabel) elements.engagementsClubTeamRenunciationLabel.hidden = !renounced;
-    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = !declaringPerson;
+    const knownPerson = engagementClubPeople.find((person) => person.id === elements.engagementsClubTeamPersonSelect?.value);
+    const knownPersonReady = Boolean(knownPerson?.birthDate && knownPerson?.sex);
+    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = !declaringPerson || (Boolean(knownPerson) && knownPersonReady);
     [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamLicense].forEach((field) => {
       if (field) field.required = declaringPerson;
     });
+    if (elements.engagementsClubTeamBirthDateLabel) elements.engagementsClubTeamBirthDateLabel.hidden = !declaringPerson || externalClub;
+    if (elements.engagementsClubTeamSexLabel) elements.engagementsClubTeamSexLabel.hidden = !declaringPerson || externalClub;
+    if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.required = declaringPerson && !externalClub;
+    if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.required = declaringPerson && !externalClub;
     if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.required = renounced;
     if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = !declaringPerson || !externalClub;
     if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = !declaringPerson || !externalClub;
@@ -5091,11 +5253,14 @@
     }
     if (elements.engagementsClubTeamFirstName) elements.engagementsClubTeamFirstName.value = teamLeader.firstName || "";
     if (elements.engagementsClubTeamLastName) elements.engagementsClubTeamLastName.value = teamLeader.lastName || "";
+    if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.value = teamLeader.birthDate || "";
+    if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.value = teamLeader.sex || "";
     if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = teamLeader.licenseNumber || "";
     if (elements.engagementsClubTeamExternal) elements.engagementsClubTeamExternal.checked = teamLeader.externalClub === true;
     if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.value = teamLeader.externalClub ? (teamLeader.clubId || "") : "";
     if (elements.engagementsClubTeamExternalClubName) elements.engagementsClubTeamExternalClubName.value = teamLeader.externalClub ? (teamLeader.clubName || "") : "";
     if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = teamLeader.renunciationAccepted === true;
+    if (elements.engagementsClubTeamPersonSearch) elements.engagementsClubTeamPersonSearch.value = "";
     renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
     updateEngagementClubTeamFormMode();
     setEngagementClubCompetitionFormsLocked(Boolean(writeLockReason));
@@ -6509,9 +6674,62 @@
       elements.engagementsClubTeamMessage.dataset.tone = "loading";
     }
     try {
+      let teamLeader = selectedEngagementTeamLeaderFromForm();
+      if (teamLeader.mode === "person" && !teamLeader.externalClub) {
+        let person = engagementClubPeople.find((candidate) => candidate.id === teamLeader.personId) || null;
+        if (person && (person.active === false || !person.birthDate || !person.sex)) {
+          const personResult = await callFunction("saveEngagementClubPerson", {
+            personId: person.id,
+            person: {
+              ...engagementClubPersonPayloadWithRole(person, "teamLeader"),
+              ...engagementClubPersonPayloadWithRole(teamLeader, "teamLeader"),
+              roles: {
+                teamLeader: true,
+                official: person.roles?.official === true
+              }
+            }
+          });
+          person = personResult.person || null;
+          if (!person?.id) throw new Error("Membre non retourné après la mise à jour de son identité.");
+          engagementClubPeople = [
+            ...engagementClubPeople.filter((candidate) => candidate.id !== person.id),
+            person
+          ];
+        }
+        if (!person) {
+          const resolution = resolveEngagementClubPersonIdentity(teamLeader, "chef d'équipe");
+          if (resolution.cancelled) {
+            if (elements.engagementsClubTeamMessage) {
+              elements.engagementsClubTeamMessage.textContent = "Création annulée : choisissez le membre existant ou corrigez l'identité.";
+              elements.engagementsClubTeamMessage.dataset.tone = "warning";
+            }
+            return false;
+          }
+          person = resolution.person;
+        }
+        if (!person) {
+          const personResult = await callFunction("saveEngagementClubPerson", {
+            person: engagementClubPersonPayloadWithRole(teamLeader, "teamLeader")
+          });
+          person = personResult.person || null;
+          if (!person?.id) throw new Error("Membre non retourné après sa création.");
+          engagementClubPeople = [
+            ...engagementClubPeople.filter((candidate) => candidate.id !== person.id),
+            person
+          ];
+        }
+        teamLeader = {
+          ...teamLeader,
+          ...engagementClubPersonPayloadWithRole(person, "teamLeader"),
+          personId: person.id,
+          externalClub: false,
+          clubId: currentAccessProfile?.clubId || "",
+          clubName: currentAccessProfile?.clubName || ""
+        };
+      }
       const result = await callFunction("saveEngagementClubTeamLeader", {
         competitionId: selectedEngagementCompetitionId,
-        teamLeader: selectedEngagementTeamLeaderFromForm()
+        teamLeader
       });
       selectedEngagementClubEntry = result.entry || {};
       renderEngagementClubEntry(selectedEngagementClubEntry);
@@ -8663,8 +8881,8 @@
     if (elements.engagementsClubPersonSwimmerId) elements.engagementsClubPersonSwimmerId.value = "";
     if (elements.engagementsClubPersonSwimmerSource) elements.engagementsClubPersonSwimmerSource.value = "";
     applyEngagementClubPersonSwimmer("");
-    if (elements.engagementsClubPersonRoleTeamLeader) elements.engagementsClubPersonRoleTeamLeader.checked = true;
-    if (elements.engagementsClubPersonRoleOfficial) elements.engagementsClubPersonRoleOfficial.checked = false;
+    if (elements.engagementsClubPersonRoleTeamLeader) elements.engagementsClubPersonRoleTeamLeader.checked = false;
+    if (elements.engagementsClubPersonRoleOfficial) elements.engagementsClubPersonRoleOfficial.checked = true;
     if (elements.engagementsClubPersonMessage) elements.engagementsClubPersonMessage.textContent = "";
   }
 
@@ -8675,6 +8893,8 @@
       if (elements.engagementsClubPersonId) elements.engagementsClubPersonId.value = person.id || "";
       if (elements.engagementsClubPersonFirstName) elements.engagementsClubPersonFirstName.value = person.firstName || "";
       if (elements.engagementsClubPersonLastName) elements.engagementsClubPersonLastName.value = person.lastName || "";
+      if (elements.engagementsClubPersonBirthDate) elements.engagementsClubPersonBirthDate.value = person.birthDate || "";
+      if (elements.engagementsClubPersonSex) elements.engagementsClubPersonSex.value = person.sex || "";
       if (elements.engagementsClubPersonLicense) elements.engagementsClubPersonLicense.value = person.licenseNumber || "";
       if (elements.engagementsClubPersonSwimmerId) elements.engagementsClubPersonSwimmerId.value = person.swimmerIndexId || "";
       if (elements.engagementsClubPersonSwimmerSource) elements.engagementsClubPersonSwimmerSource.value = person.swimmerSource || "";
@@ -8689,9 +8909,11 @@
       });
       applyEngagementClubPersonSwimmer(swimmerValue);
       if (!engagementClubSwimmerFromReferenceValue(swimmerValue)) {
-        [elements.engagementsClubPersonFirstName, elements.engagementsClubPersonLastName, elements.engagementsClubPersonLicense]
+        [elements.engagementsClubPersonFirstName, elements.engagementsClubPersonLastName, elements.engagementsClubPersonBirthDate, elements.engagementsClubPersonSex, elements.engagementsClubPersonLicense]
           .forEach((field) => {
-            if (field) field.readOnly = true;
+            if (!field) return;
+            if (field.matches("select")) field.disabled = true;
+            else field.readOnly = true;
           });
       }
     }
@@ -8702,8 +8924,10 @@
   function selectedEngagementClubPersonFromForm() {
     return {
       firstName: String(elements.engagementsClubPersonFirstName?.value || "").trim(),
-      lastName: String(elements.engagementsClubPersonLastName?.value || "").trim(),
-      licenseNumber: String(elements.engagementsClubPersonLicense?.value || "").trim(),
+      lastName: String(elements.engagementsClubPersonLastName?.value || "").trim().toLocaleUpperCase("fr-FR"),
+      birthDate: String(elements.engagementsClubPersonBirthDate?.value || "").trim(),
+      sex: String(elements.engagementsClubPersonSex?.value || "").trim(),
+      licenseNumber: formatEngagementSwimmerLicense(elements.engagementsClubPersonLicense?.value || ""),
       swimmerIndexId: String(elements.engagementsClubPersonSwimmerId?.value || "").trim(),
       swimmerSource: String(elements.engagementsClubPersonSwimmerSource?.value || "").trim(),
       roles: {
@@ -8795,9 +9019,39 @@
       elements.engagementsClubPersonMessage.dataset.tone = "loading";
     }
     try {
+      let personId = elements.engagementsClubPersonId?.value || "";
+      let person = selectedEngagementClubPersonFromForm();
+      if (!personId && person.swimmerIndexId) {
+        const swimmer = engagementClubSwimmerFromReferenceValue(engagementClubSwimmerReferenceValue({
+          swimmerIndexId: person.swimmerIndexId,
+          source: person.swimmerSource || "performances"
+        }));
+        personId = engagementClubPersonForSwimmer(swimmer || {})?.id || "";
+      }
+      if (!personId) {
+        const roleLabel = person.roles.official ? "officiel" : "chef d'équipe";
+        const resolution = resolveEngagementClubPersonIdentity(person, roleLabel);
+        if (resolution.cancelled) {
+          if (elements.engagementsClubPersonMessage) {
+            elements.engagementsClubPersonMessage.textContent = "Création annulée : utilisez la personne proposée ou corrigez l'identité.";
+            elements.engagementsClubPersonMessage.dataset.tone = "warning";
+          }
+          return;
+        }
+        if (resolution.person) {
+          personId = resolution.person.id;
+          person = {
+            ...engagementClubPersonPayloadWithRole(resolution.person),
+            roles: {
+              teamLeader: resolution.person.roles?.teamLeader === true || person.roles.teamLeader,
+              official: resolution.person.roles?.official === true || person.roles.official
+            }
+          };
+        }
+      }
       await callFunction("saveEngagementClubPerson", {
-        personId: elements.engagementsClubPersonId?.value || "",
-        person: selectedEngagementClubPersonFromForm()
+        personId,
+        person
       });
       resetEngagementClubPersonForm();
       if (elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden = true;
@@ -10232,6 +10486,12 @@
     });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
     elements.engagementsClubPersonSwimmerSelect?.addEventListener("change", (event) => applyEngagementClubPersonSwimmer(event.target.value));
+    elements.engagementsClubPersonLicense?.addEventListener("input", (event) => {
+      event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
+    });
+    elements.engagementsClubPersonLastName?.addEventListener("input", (event) => {
+      event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
+    });
     elements.engagementsClubOfficialSwimmerAdd?.addEventListener("click", addEngagementClubSwimmerAsOfficial);
     elements.engagementsClubPersonCancel?.addEventListener("click", () => {
       resetEngagementClubPersonForm();
@@ -10348,16 +10608,36 @@
       if (changedMode === "person" && elements.engagementsClubTeamRenunciation) {
         elements.engagementsClubTeamRenunciation.checked = false;
       }
+      if (event.target === elements.engagementsClubTeamExternal && event.target.checked && elements.engagementsClubTeamPersonSelect) {
+        elements.engagementsClubTeamPersonSelect.value = "";
+      }
+      updateEngagementClubTeamFormMode();
+      if (changedMode === "person") {
+        await loadEngagementClubPeople({ silent: true });
+        renderEngagementClubTeamPersonOptions("");
+        elements.engagementsClubTeamPersonSearch?.focus();
+      }
+      if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
+    });
+    elements.engagementsClubTeamPersonSearch?.addEventListener("input", () => {
+      if (elements.engagementsClubTeamPersonSelect) elements.engagementsClubTeamPersonSelect.value = "";
+      applyEngagementClubTeamPerson("");
+      renderEngagementClubTeamPersonOptions("");
       updateEngagementClubTeamFormMode();
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
     });
-    elements.engagementsClubTeamPersonSelect?.addEventListener("change", () => {
+    elements.engagementsClubTeamPersonSelect?.addEventListener("change", async () => {
       const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
       if (radio) radio.checked = true;
       if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = false;
       updateEngagementClubTeamFormMode();
-      applyEngagementClubTeamPerson(elements.engagementsClubTeamPersonSelect.value);
+      const personId = elements.engagementsClubTeamPersonSelect.value;
+      applyEngagementClubTeamPerson(personId);
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
+      if (personId) {
+        const saved = await saveEngagementClubTeamLeader();
+        if (!saved && elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = false;
+      }
     });
     elements.engagementsClubTeamForm?.addEventListener("input", (event) => {
       if (
@@ -10365,12 +10645,24 @@
         [
           elements.engagementsClubTeamFirstName,
           elements.engagementsClubTeamLastName,
+          elements.engagementsClubTeamBirthDate,
+          elements.engagementsClubTeamSex,
           elements.engagementsClubTeamLicense
         ].includes(event.target)
       ) {
-        elements.engagementsClubTeamPersonSelect.value = "";
+        const selectedPerson = engagementClubPeople.find((person) => person.id === elements.engagementsClubTeamPersonSelect.value);
+        if (!selectedPerson || (selectedPerson.birthDate && selectedPerson.sex)) {
+          elements.engagementsClubTeamPersonSelect.value = "";
+        }
+        updateEngagementClubTeamFormMode();
       }
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
+    });
+    elements.engagementsClubTeamLicense?.addEventListener("input", (event) => {
+      event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
+    });
+    elements.engagementsClubTeamLastName?.addEventListener("input", (event) => {
+      event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
     });
     elements.engagementsClubOfficialsForm?.addEventListener("submit", saveEngagementClubOfficials);
     elements.engagementsClubOfficialsList?.addEventListener("change", () => {
