@@ -6588,13 +6588,37 @@
   background: #ffffff;
 }
 
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-form .admin-engagements-club-person-identity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-identity-grid > label {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  align-items: stretch;
+  border-top: 1px solid #e7efed;
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-identity-grid > label > input,
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-identity-grid > label > select {
+  grid-column: 1;
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-source,
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-roles {
+  grid-column: 1 / -1;
+}
+
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-form input,
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-form select,
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools input {
   border-color: #d8e0e3;
   background: #ffffff;
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-form input:focus,
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-form select:focus,
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools input:focus {
   border-color: #0b7285;
   outline: 3px solid rgba(11, 114, 133, 0.16);
@@ -6618,6 +6642,12 @@
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-roles input {
   accent-color: #0b7285;
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsClubPeoplePanel .admin-engagements-club-person-form .admin-engagements-club-person-identity-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-people-list {
@@ -7350,8 +7380,12 @@
   padding-block: 6px;
 }
 
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-search {
+  grid-column: 1;
+}
+
 #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-picker {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
 }
 
 #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-form-section-grid > .admin-engagements-check {
@@ -8007,6 +8041,10 @@
   }
 
   #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-picker {
+    grid-column: 1;
+  }
+
+  #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-search {
     grid-column: 1;
   }
 

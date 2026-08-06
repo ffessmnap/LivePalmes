@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260806-engagements-3">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260806-engagements-5">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -1110,23 +1110,39 @@
                             <span>D&eacute;clarer un chef d'&eacute;quipe</span>
                           </label>
                           <div id="adminEngagementsClubTeamPersonFields" class="admin-engagements-form-section-grid" hidden>
+                            <label class="admin-engagements-club-team-search">
+                              Rechercher un membre du club
+                              <input id="adminEngagementsClubTeamPersonSearch" type="search" autocomplete="off" placeholder="Nom, prénom ou licence">
+                            </label>
                             <label class="admin-engagements-club-team-picker">
-                              Personne connue
+                              Membre du club
                               <select id="adminEngagementsClubTeamPersonSelect">
-                                <option value="">Saisie manuelle</option>
+                                <option value="">Choisir un membre ou saisir manuellement</option>
                               </select>
+                            </label>
+                            <label>
+                              Nom
+                              <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters">
                             </label>
                             <label>
                               Pr&eacute;nom
                               <input id="adminEngagementsClubTeamFirstName" type="text" maxlength="80" autocomplete="given-name">
                             </label>
-                            <label>
-                              Nom
-                              <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name">
+                            <label id="adminEngagementsClubTeamBirthDateLabel">
+                              Date de naissance
+                              <input id="adminEngagementsClubTeamBirthDate" type="date" autocomplete="bday">
+                            </label>
+                            <label id="adminEngagementsClubTeamSexLabel">
+                              Sexe
+                              <select id="adminEngagementsClubTeamSex">
+                                <option value="">Choisir</option>
+                                <option value="F">Femme</option>
+                                <option value="M">Homme</option>
+                              </select>
                             </label>
                             <label>
                               Num&eacute;ro de licence
-                              <input id="adminEngagementsClubTeamLicense" type="text" maxlength="60" inputmode="numeric">
+                              <input id="adminEngagementsClubTeamLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567">
                             </label>
                             <label class="admin-engagements-check">
                               <input id="adminEngagementsClubTeamExternal" type="checkbox">
@@ -1376,7 +1392,7 @@
                     <input id="adminEngagementsClubPersonId" type="hidden">
                     <input id="adminEngagementsClubPersonSwimmerId" type="hidden">
                     <input id="adminEngagementsClubPersonSwimmerSource" type="hidden">
-                    <div class="admin-engagements-form-section-grid">
+                    <div class="admin-engagements-form-section-grid admin-engagements-club-person-identity-grid">
                       <label class="admin-engagements-club-person-swimmer-source">
                         Personne existante
                         <select id="adminEngagementsClubPersonSwimmerSelect">
@@ -1385,16 +1401,28 @@
                         <small>Choisissez un nageur pour r&eacute;utiliser son identit&eacute;.</small>
                       </label>
                       <label>
+                        Nom
+                        <input id="adminEngagementsClubPersonLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters" required>
+                      </label>
+                      <label>
                         Pr&eacute;nom
                         <input id="adminEngagementsClubPersonFirstName" type="text" maxlength="80" autocomplete="given-name" required>
                       </label>
                       <label>
-                        Nom
-                        <input id="adminEngagementsClubPersonLastName" type="text" maxlength="80" autocomplete="family-name" required>
+                        Date de naissance
+                        <input id="adminEngagementsClubPersonBirthDate" type="date" autocomplete="bday" required>
+                      </label>
+                      <label>
+                        Sexe
+                        <select id="adminEngagementsClubPersonSex" required>
+                          <option value="">Choisir</option>
+                          <option value="F">Femme</option>
+                          <option value="M">Homme</option>
+                        </select>
                       </label>
                       <label>
                         Num&eacute;ro de licence
-                        <input id="adminEngagementsClubPersonLicense" type="text" maxlength="60" inputmode="numeric" required>
+                        <input id="adminEngagementsClubPersonLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" required>
                       </label>
                       <div class="admin-engagements-club-person-roles" role="group" aria-label="Roles">
                         <label class="admin-engagements-check">
@@ -2157,7 +2185,7 @@
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-dtn-qualifications.js?v=20260803-space-home-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260806-engagements-3"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260806-engagements-5"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>
