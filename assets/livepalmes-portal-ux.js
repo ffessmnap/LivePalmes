@@ -6,7 +6,8 @@
     performanceHome: "Données sportives",
     engagementsAdminHome: "Organisation des compétitions",
     dtnHome: "Espace DTN",
-    nationalHome: "Administration nationale"
+    nationalHome: "Administration nationale",
+    accessHome: "Gestion du portail"
   };
   const elements = {
     breadcrumb: document.querySelector("#adminPortalBreadcrumb"),

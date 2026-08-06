@@ -21,6 +21,10 @@
     let currentProfile = null;
     let authReady = false;
     let authUnsubscribe = null;
+    let accessRefreshPromise = null;
+    let accessRefreshUid = "";
+    let accessRefreshCompletedAt = 0;
+    let accessRefreshCompletedUid = "";
     let persistenceReady = Promise.resolve();
     let readyResolver = null;
     const readyPromise = new Promise((resolve) => {
@@ -57,25 +61,40 @@
 
     async function refreshAccessFromServer() {
       if (!currentUser) return;
+      const refreshUid = String(currentUser.uid || "");
+      if (currentProfile && accessRefreshCompletedUid === refreshUid && Date.now() - accessRefreshCompletedAt < 5000) return;
+      if (accessRefreshPromise && accessRefreshUid === refreshUid) return accessRefreshPromise;
       const functions = functionsService();
       if (!functions?.httpsCallable) return;
-      try {
-        const result = await functions.httpsCallable("getCurrentAccessUser")({});
-        const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
-        currentProfile = result.data || null;
-        if (!capabilities.length) return;
-        currentClaims = {
-          ...currentClaims,
-          livepalmesAccess: true,
-          livepalmesCapabilities: capabilities.reduce((acc, capability) => {
-            acc[capability] = true;
-            return acc;
-          }, {})
-        };
-      } catch {
-        currentProfile = null;
-        // No server-side access found; keep the local auth status unchanged.
-      }
+      accessRefreshUid = refreshUid;
+      accessRefreshPromise = (async () => {
+        try {
+          const result = await functions.httpsCallable("getCurrentAccessUser")({});
+          if (String(currentUser?.uid || "") !== refreshUid) return;
+          const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
+          currentProfile = result.data || null;
+          accessRefreshCompletedUid = refreshUid;
+          accessRefreshCompletedAt = Date.now();
+          if (!capabilities.length) return;
+          currentClaims = {
+            ...currentClaims,
+            livepalmesAccess: true,
+            livepalmesCapabilities: capabilities.reduce((acc, capability) => {
+              acc[capability] = true;
+              return acc;
+            }, {})
+          };
+        } catch {
+          if (String(currentUser?.uid || "") === refreshUid) currentProfile = null;
+          // No server-side access found; keep the local auth status unchanged.
+        } finally {
+          if (accessRefreshUid === refreshUid) {
+            accessRefreshPromise = null;
+            accessRefreshUid = "";
+          }
+        }
+      })();
+      return accessRefreshPromise;
     }
 
     function configurePersistence(service) {
@@ -179,9 +198,13 @@
       }
       await persistenceReady;
       const credential = await service.signInWithEmailAndPassword(cleanEmail, password);
-      currentUser = credential.user || service.currentUser || null;
-      currentClaims = {};
-      currentProfile = null;
+      const nextUser = credential.user || service.currentUser || null;
+      const sameUser = Boolean(nextUser?.uid && currentUser?.uid === nextUser.uid);
+      currentUser = nextUser;
+      if (!sameUser) {
+        currentClaims = {};
+        currentProfile = null;
+      }
       if (currentUser?.getIdTokenResult) {
         currentClaims = (await currentUser.getIdTokenResult(true))?.claims || {};
       }
