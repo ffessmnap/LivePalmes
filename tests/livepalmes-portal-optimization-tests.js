@@ -21,6 +21,35 @@ const indexes = JSON.parse(read("firestore.indexes.json"));
 const clubReferenceSource = read("performances/public/data/club-reference.js");
 const sandbox = { window: {} };
 vm.runInNewContext(clubReferenceSource, sandbox);
+const engagementNavigationModeStart = portal.indexOf("function engagementNavigationMode");
+const engagementNavigationModeEnd = portal.indexOf("function engagementNationalPageTitle", engagementNavigationModeStart);
+const engagementNavigationModeFunction = portal.slice(engagementNavigationModeStart, engagementNavigationModeEnd);
+const engagementNavigationModeSandbox = {};
+vm.runInNewContext(`${engagementNavigationModeFunction}
+  result = {
+    club: engagementNavigationMode("club"),
+    clubDirectory: engagementNavigationMode("clubSwimmers"),
+    regionalAdmin: engagementNavigationMode("adminCalendar"),
+    nationalAdmin: engagementNavigationMode("adminDeletionRequests")
+  };`, engagementNavigationModeSandbox);
+const filteredEngagementCompetitionsStart = portal.indexOf("function filteredEngagementCompetitions");
+const filteredEngagementCompetitionsEnd = portal.indexOf("function renderCurrentUser", filteredEngagementCompetitionsStart);
+const filteredEngagementCompetitionsFunction = portal.slice(filteredEngagementCompetitionsStart, filteredEngagementCompetitionsEnd);
+const filteredEngagementCompetitionsSandbox = {};
+vm.runInNewContext(`
+  const engagementCompetitions = [
+    { id: "closed-old", entryStatus: "closed", date: "2026-01-10", name: "Fermée ancienne" },
+    { id: "upcoming", entryStatus: "upcoming", date: "2026-03-10", name: "À venir" },
+    { id: "open-late", entryStatus: "open", date: "2026-04-10", entryDeadlineAt: "2026-04-01T20:00:00Z", name: "Ouverte tardive" },
+    { id: "closed-recent", entryStatus: "closed", date: "2026-02-10", name: "Fermée récente" },
+    { id: "open-urgent", entryStatus: "open", date: "2026-05-10", entryDeadlineAt: "2026-03-20T20:00:00Z", name: "Ouverte urgente" }
+  ];
+  const engagementCalendarFiltersPayload = () => ({ startDate: "2025-09-01", endDate: "2026-08-31", regionId: "", level: "", entryStatus: "", mineOnly: false });
+  const canonicalLivePalmesRegion = (value) => value || "";
+  const canEditEngagementCompetition = () => true;
+  ${filteredEngagementCompetitionsFunction}
+  result = filteredEngagementCompetitions().map((competition) => competition.id);
+`, filteredEngagementCompetitionsSandbox);
 const differentialEntriesStart = functions.indexOf("exports.saveEngagementClubIndividualEntries");
 const differentialEntriesEnd = functions.indexOf("exports.saveEngagementClubSwimmerSelection", differentialEntriesStart);
 const differentialEntriesFunction = functions.slice(differentialEntriesStart, differentialEntriesEnd);
@@ -42,8 +71,53 @@ const clubEntryRead = functions.slice(clubEntryReadStart, clubEntryReadEnd);
 const competitionDetailLoadStart = portal.indexOf("async function loadEngagementCompetitionDetail");
 const competitionDetailLoadEnd = portal.indexOf("async function saveEngagementClubTeamLeader", competitionDetailLoadStart);
 const competitionDetailLoad = portal.slice(competitionDetailLoadStart, competitionDetailLoadEnd);
+const programSessionsForSexStart = portal.indexOf("function engagementClubProgramSessionsForSex");
+const programSessionsForSexEnd = portal.indexOf("function engagementClubProgramItemLabel", programSessionsForSexStart);
+const programSessionsForSexFunction = portal.slice(programSessionsForSexStart, programSessionsForSexEnd);
+const programSessionsForSexSandbox = {};
+vm.runInNewContext(`${programSessionsForSexFunction}
+  result = {
+    female: engagementClubProgramSessionsForSex([{ id: "s1", items: [{ eventCode: "F", genderMode: "female" }, { eventCode: "M", genderMode: "male" }, { eventCode: "X", genderMode: "mixed" }] }], "F"),
+    male: engagementClubProgramSessionsForSex([{ id: "s1", items: [{ eventCode: "F", genderMode: "female" }, { eventCode: "M", genderMode: "male" }, { eventCode: "X", genderMode: "mixed" }] }], "M")
+  };`, programSessionsForSexSandbox);
+const openingDeadlineErrorStart = portal.indexOf("function engagementOpeningDeadlineError");
+const openingDeadlineErrorEnd = portal.indexOf("function shouldSendEngagementOpeningMail", openingDeadlineErrorStart);
+const openingDeadlineErrorFunction = portal.slice(openingDeadlineErrorStart, openingDeadlineErrorEnd);
+const openingDeadlineErrorSandbox = {};
+vm.runInNewContext(`${openingDeadlineErrorFunction}
+  const nowMs = Date.parse("2026-08-08T12:00:00.000Z");
+  result = {
+    past: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs),
+    equal: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T12:00:00.000Z" }, nowMs),
+    future: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T13:00:00.000Z" }, nowMs),
+    closed: engagementOpeningDeadlineError({ entryStatus: "closed", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs)
+  };`, openingDeadlineErrorSandbox);
+const openingDeadlinePastStart = functions.indexOf("function isEngagementOpeningDeadlinePast");
+const openingDeadlinePastEnd = functions.indexOf("function cleanEngagementRegionIds", openingDeadlinePastStart);
+const openingDeadlinePastFunction = functions.slice(openingDeadlinePastStart, openingDeadlinePastEnd);
+const openingDeadlinePastSandbox = {};
+vm.runInNewContext(`
+  const cleanEngagementEntryStatus = (value) => value;
+  ${openingDeadlinePastFunction}
+  const nowMs = Date.parse("2026-08-08T12:00:00.000Z");
+  result = {
+    past: isEngagementOpeningDeadlinePast("open", "2026-08-08T11:00:00.000Z", nowMs),
+    equal: isEngagementOpeningDeadlinePast("open", "2026-08-08T12:00:00.000Z", nowMs),
+    future: isEngagementOpeningDeadlinePast("open", "2026-08-08T13:00:00.000Z", nowMs),
+    closed: isEngagementOpeningDeadlinePast("closed", "2026-08-08T11:00:00.000Z", nowMs)
+  };`, openingDeadlinePastSandbox);
 
 assert.ok(Array.isArray(sandbox.window.LIVEPALMES_CLUB_REFERENCE?.clubs));
+assert.equal(Boolean(openingDeadlineErrorSandbox.result.past), true);
+assert.equal(Boolean(openingDeadlineErrorSandbox.result.equal), true);
+assert.equal(openingDeadlineErrorSandbox.result.future, "");
+assert.equal(openingDeadlineErrorSandbox.result.closed, "");
+assert.deepEqual(JSON.parse(JSON.stringify(openingDeadlinePastSandbox.result)), {
+  past: true,
+  equal: true,
+  future: false,
+  closed: false
+});
 assert.equal(Object.hasOwn(sandbox.window.LIVEPALMES_CLUB_REFERENCE, "swimmers"), false);
 assert.equal(portal.includes("LIVEPALMES_ADMIN_REFERENCE"), false);
 assert.equal(records.includes("LIVEPALMES_ADMIN_REFERENCE"), false);
@@ -68,6 +142,18 @@ assert.ok(portalHtml.includes('id="adminPortalAccessToggle"'));
 assert.ok(portalHtml.includes('href="#gestion-demandes-acces"'));
 assert.ok(portalHtml.includes('href="#gestion-utilisateurs"'));
 assert.ok(portalHtml.includes('data-admin-view="accessHome"'));
+assert.ok(portalHtml.includes('id="adminPortalAccessPendingBadge"'));
+assert.ok(portalHtml.includes('id="adminPortalNationalPendingBadge"'));
+assert.ok(portalHtml.includes('id="adminOverviewAccessPendingBadge"'));
+assert.ok(portalHtml.includes('id="adminOverviewNationalPendingBadge"'));
+assert.ok(portalHtml.includes('id="adminAccessHomePendingBadge"'));
+assert.ok(portal.includes('callFunction("getPortalPendingRequestOverview", {})'));
+assert.ok(portal.includes("const portalPendingOverviewLoaded" ) || portal.includes("let portalPendingOverviewLoaded"));
+assert.ok(portalCss.includes(".admin-pending-badge"));
+assert.ok(functions.includes("exports.getPortalPendingRequestOverview"));
+assert.ok(functions.includes('accessRequestsQuery = accessRequestsQuery.where("regionId", "==", context.regionId)'));
+assert.ok(functions.includes('requestsQuery = requestsQuery.where("regionId", "==", context.regionId)'));
+assert.equal(portal.includes("onSnapshot("), false);
 assert.ok(portal.includes('"#gestion-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" }'));
 assert.ok(portal.includes('activeEngagementsNavEntry === "adminAccessRequests"'));
 assert.ok(portal.includes("function formatEngagementSwimmerLicense"));
@@ -84,6 +170,17 @@ assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-dele
 assert.ok(portal.includes('aria-label="Demander la suppression de ${escapeHtml(name)}"'));
 assert.equal(portal.includes('>Demander la suppression</button>'), false);
 assert.ok(portalCss.includes(".admin-engagements-club-swimmers-directory-delete-button svg"));
+assert.ok(portalHtml.includes('class="admin-engagements-club-swimmers-directory-search-label">Rechercher</span>'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-profile-icon"'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-change-pending" aria-label="Correction en attente"'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-change-pending-short" aria-hidden="true">En attente</span>'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-mobile-actions"'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-sex-category"'));
+assert.ok(portal.includes('<span aria-hidden="true">·</span>'));
+assert.ok(portal.includes('const sexDisplay = sex === "M" ? "H" : (sex || "-");'));
+assert.ok(portalCss.includes("grid-template-columns: repeat(2, minmax(0, 1fr))"));
+assert.equal(portalHtml.includes("adminEngagementsClubSwimmersMissingLicenseFilter"), false);
+assert.equal(portal.includes("engagementsClubSwimmersMissingLicenseFilter"), false);
 assert.equal(portalHtml.includes('id="adminEngagementsClubSwimmersDirectoryTitle"'), false);
 assert.equal(portalHtml.includes('id="adminEngagementsClubPeopleTitle"'), false);
 assert.ok(portalHtml.includes('aria-label="Effectif des nageurs du club"'));
@@ -165,6 +262,25 @@ assert.equal(portalHtml.includes('id="adminEngagementsClubEntriesSaveBar"'), fal
 assert.equal(portalHtml.includes('id="adminEngagementsClubSwimmersSaveButton"'), false);
 assert.equal(portalHtml.includes('id="adminEngagementsClubSwimmersSummary"'), false);
 assert.ok(portal.includes("engagementClubProgramSessionsForEntries"));
+assert.deepEqual(
+  JSON.parse(JSON.stringify(programSessionsForSexSandbox.result.female[0].items.map((item) => item.eventCode))),
+  ["F", "X"]
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(programSessionsForSexSandbox.result.male[0].items.map((item) => item.eventCode))),
+  ["M", "X"]
+);
+assert.ok(portal.includes("function renderEngagementClubEntriesTable"));
+assert.ok(portal.indexOf('{ sex: "F", label: "Femmes"') < portal.indexOf('{ sex: "M", label: "Hommes"'));
+assert.ok(portal.includes('data-engagement-club-entries-sex="${escapeHtml(sex)}"'));
+assert.ok(portal.includes('const identityColumnLabel = sex === "F" ? "Nageuse" : "Nageur";'));
+assert.ok(portal.includes('scope="col">${identityColumnLabel}</th>'));
+assert.ok(portal.includes('category: selected.category || swimmer.category || ""'));
+assert.ok(portal.includes('}, selectedEngagementCompetition?.date || "") || "-";'));
+assert.ok(portal.includes('admin-engagements-club-entry-last-name admin-engagements-club-entry-swimmer'));
+assert.ok(portal.includes('<strong>${escapeHtml(lastName)}</strong><span>${escapeHtml(firstName || "-")}</span>'));
+assert.ok(portalCss.includes(".admin-engagements-club-entry-group-head"));
+assert.ok(portalCss.includes(".admin-engagements-club-entry-swimmer span"));
 assert.ok(portal.includes('renderSwimmerTable(availableSwimmers, "Résultats de recherche")'));
 assert.ok(portal.includes("query && engagementClubSwimmerSearchText(swimmer).includes(query)"));
 assert.equal(portal.includes("Recherchez un nageur par son nom"), false);
@@ -390,7 +506,6 @@ assert.ok(portalCss.includes('.admin-engagements-club-relay-event small'));
 assert.ok(portalCss.includes('box-shadow: inset 3px 0 0 #cf6f9b'));
 assert.ok(portalCss.includes('box-shadow: inset 3px 0 0 #4f8fc5'));
 assert.ok(portal.includes("const sortedSelectedRows = [...selectedRows].sort"));
-assert.ok(portal.includes('const sexRank = (value) => value === "F" ? 0 : value === "M" ? 1 : 2'));
 assert.ok(portal.includes("function renderEngagementClubSelectedSwimmersPreview"));
 assert.ok(portal.includes("sexRank(left.sex) - sexRank(right.sex)"));
 assert.ok(portal.includes("function compareEngagementSwimmersBySexAndName"));
@@ -482,5 +597,55 @@ assert.ok(portalCss.includes(".admin-engagements-club-times-dialog::backdrop"));
 assert.ok(publicSeries.includes("restoredPublicSeriesCache"));
 assert.ok(publicSeries.includes("Index publics indisponibles."));
 assert.ok(publicResults.includes("restoredPublicResultsCache"));
+assert.ok(portalHtml.includes('id="adminEngagementsMobileStepNav"'));
+assert.ok(portalHtml.includes('id="adminEngagementsStepFooter"'));
+assert.ok(portalHtml.includes('id="adminEngagementsSaveState"'));
+assert.ok(portal.includes("function storedEngagementDetailTab"));
+assert.ok(portal.includes("livepalmes.engagement.lastTab."));
+assert.ok(portal.includes('label: "Continuer mes engagements"'));
+assert.ok(portal.includes('label: "Commencer mes engagements"'));
+assert.ok(portal.includes("function updateEngagementMobileStepNavigation"));
+assert.ok(portal.includes('data-engagement-competition-card-id="${escapeHtml(competition.id)}"'));
+assert.ok(portal.includes("function setEngagementSaveState"));
+assert.ok(portal.includes("function initializeEngagementCourseScrollHints"));
+assert.ok(portalCss.includes("Parcours compact des engagements club"));
+assert.ok(portalCss.includes("admin-engagements-mobile-step-nav:not([hidden])"));
+assert.ok(portalCss.includes("admin-engagements-club-entries-scroll-hint"));
+assert.deepEqual(JSON.parse(JSON.stringify(engagementNavigationModeSandbox.result)), {
+  club: "club",
+  clubDirectory: "club",
+  regionalAdmin: "admin",
+  nationalAdmin: "admin"
+});
+assert.ok(portal.includes("const contextChanged = Boolean(previousMode && previousMode !== nextMode);"));
+assert.ok(portal.includes("closeEngagementCompetitionDetail({ skipConfirmation: true })"));
+assert.ok(portal.includes("previousMode !== nextMode && engagementCompetitionsLoaded"));
+assert.ok(portal.includes("function closeEngagementCompetitionDetail({ skipConfirmation = false } = {})"));
+assert.deepEqual(JSON.parse(JSON.stringify(filteredEngagementCompetitionsSandbox.result)), [
+  "open-urgent", "open-late", "upcoming", "closed-recent", "closed-old"
+]);
+assert.ok(portalHtml.indexOf('data-engagement-status=""') < portalHtml.indexOf('data-engagement-status="open"'));
+assert.ok(portal.includes('elements.engagementsStatusFilter.value = "";'));
+assert.ok(portal.includes("admin-engagements-competition-mobile-meta"));
+assert.ok(portalCss.includes("Calendrier Club mobile : filtres et compétitions en lecture dense"));
+assert.ok(portalCss.includes("grid-template-columns: 108px minmax(0, 1fr)"));
+assert.ok(portalCss.includes("grid-template-columns: auto minmax(0, 1fr) 30px"));
+assert.ok(portalCss.includes("toutes les pages du portail"));
+assert.ok(portalCss.includes(".admin-portal-space-home .admin-overview-card"));
+assert.ok(portalCss.includes(".admin-national-home .admin-overview-card"));
+assert.ok(portalCss.includes("#adminAccessView .admin-access-filters"));
+assert.ok(portalCss.includes(".admin-national-directory-toolbar > .admin-national-merge-mode-button"));
+assert.match(portalHtml, /id="adminEngagementsAccessRequestsRefresh"[^>]*hidden/);
+assert.ok(portalCss.includes("white-space: nowrap"));
+assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
+assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
+assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
+assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
+assert.ok(portalHtml.includes("20260808-admin-calendar-mobile-1"));
+assert.ok(portal.includes("elements.engagementsAdvancedFilters.open = false"));
+assert.ok(portal.includes('parts.push(`${days} j`)'));
+assert.ok(portalHtml.includes("20260808-entry-opening-guard-1"));
+assert.ok(functions.includes("isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)"));
+assert.ok(functions.includes("Impossible d'ouvrir les engagements : la date de cloture est depassee."));
 
 console.log("Optimisations portail : OK");
