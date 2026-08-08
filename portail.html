@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260806-national-admin-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260808-admin-calendar-mobile-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -186,7 +186,7 @@
                 <div class="admin-portal-nav-nested" data-engagements-national-menu hidden>
                   <button id="adminPortalNationalToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalNationalSubmenu" data-admin-space-hash="administration-nationale">
                     <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-                    <span>Administration nationale</span><span aria-hidden="true">⌄</span>
+                    <span>Administration nationale</span><span id="adminPortalNationalPendingBadge" class="admin-pending-badge admin-pending-badge-nav" hidden>0</span><span aria-hidden="true">⌄</span>
                   </button>
                   <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
                     <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes &agrave; traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
@@ -201,7 +201,7 @@
                 <div class="admin-portal-nav-nested" data-access-management-nav hidden>
                   <button id="adminPortalAccessToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalAccessSubmenu" data-admin-space-hash="gestion-acces">
                     <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
-                    <span>Gestion des accès</span><span aria-hidden="true">⌄</span>
+                    <span>Gestion des accès</span><span id="adminPortalAccessPendingBadge" class="admin-pending-badge admin-pending-badge-nav" hidden>0</span><span aria-hidden="true">⌄</span>
                   </button>
                   <div id="adminPortalAccessSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de gestion des accès" hidden>
                     <a href="#gestion-demandes-acces" data-admin-view-link="engagements" data-engagements-nav-entry="adminAccessRequests" data-engagements-nav-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d'accès <span id="adminEngagementsAccessRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
@@ -289,6 +289,7 @@
                     <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
                     <span class="admin-overview-card-label">National</span>
                     <strong>Administration nationale</strong>
+                    <span id="adminOverviewNationalPendingBadge" class="admin-pending-badge admin-pending-badge-card" hidden>0</span>
                     <p>Contrôler et maintenir les données réservées au niveau national.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
@@ -306,6 +307,7 @@
                     <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
                     <span class="admin-overview-card-label">Portail</span>
                     <strong>Gestion du portail</strong>
+                    <span id="adminOverviewAccessPendingBadge" class="admin-pending-badge admin-pending-badge-card" hidden>0</span>
                     <p>Administrer les comptes et les habilitations du portail.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
@@ -450,8 +452,8 @@
                     <span class="admin-overview-card-label">D&eacute;cisions nationales</span>
                     <strong>Demandes &agrave; traiter</strong>
                     <p>Corrections de nageurs, suppressions de donn&eacute;es et suppressions de comptes.</p>
-                    <div class="admin-national-overview-counts" aria-label="Demandes en attente">
-                      <span><strong id="adminNationalOverviewPendingCount">&ndash;</strong> en attente</span>
+                    <div id="adminNationalOverviewCounts" class="admin-national-overview-counts" aria-label="Demandes en attente" hidden>
+                      <span><strong id="adminNationalOverviewPendingCount" class="admin-pending-badge admin-pending-badge-large" hidden>0</strong> en attente</span>
                       <small id="adminNationalOverviewPendingBreakdown">Comptage l&eacute;ger &agrave; l&rsquo;ouverture</small>
                     </div>
                     <span class="admin-overview-card-arrow" aria-hidden="true">&rarr;</span>
@@ -810,10 +812,10 @@
                         </select>
                       </label>
                       <div id="adminEngagementsStatusSegments" class="admin-engagements-status-segments" role="group" aria-label="Afficher les compétitions" hidden>
-                        <button type="button" data-engagement-status="open" aria-pressed="true">Ouvertes</button>
+                        <button type="button" data-engagement-status="" aria-pressed="true">Toutes</button>
+                        <button type="button" data-engagement-status="open" aria-pressed="false">Ouvertes</button>
                         <button type="button" data-engagement-status="upcoming" aria-pressed="false">À venir</button>
                         <button type="button" data-engagement-status="closed" aria-pressed="false">Fermées</button>
-                        <button type="button" data-engagement-status="" aria-pressed="false">Toutes</button>
                       </div>
                     </div>
                     <details id="adminEngagementsAdvancedFilters" class="admin-engagements-advanced-filters">
@@ -852,6 +854,7 @@
                           <span id="adminEngagementsEditState" class="admin-engagements-edit-state" hidden>Lecture seule</span>
                           <span id="adminEngagementsDetailLevel" class="admin-engagements-level-badge" hidden></span>
                           <button id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" type="button" aria-label="Statut des engagements" hidden>Statut des engagements</button>
+                          <span id="adminEngagementsSaveState" class="admin-engagements-save-state" aria-live="polite" hidden></span>
                         </div>
                       </div>
                       <div class="admin-engagements-detail-actions">
@@ -894,6 +897,15 @@
                         </div>
                       </div>
                     </div>
+                    <nav id="adminEngagementsMobileStepNav" class="admin-engagements-mobile-step-nav" aria-label="Navigation des étapes" hidden>
+                      <button id="adminEngagementsMobileStepPrev" class="ghost-button" type="button" aria-label="Étape précédente">&larr;</button>
+                      <button id="adminEngagementsMobileStepCurrent" class="admin-engagements-mobile-step-current" type="button" aria-expanded="false" aria-controls="adminEngagementsMobileStepMenu">
+                        <strong id="adminEngagementsMobileStepLabel">Général</strong>
+                        <small id="adminEngagementsMobileStepMeta">Toutes les étapes</small>
+                      </button>
+                      <button id="adminEngagementsMobileStepNext" class="ghost-button" type="button" aria-label="Étape suivante">&rarr;</button>
+                      <div id="adminEngagementsMobileStepMenu" class="admin-engagements-mobile-step-menu" hidden></div>
+                    </nav>
                     <div id="adminEngagementsDetailGeneralPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailGeneralTab" data-engagements-detail-tab-panel="general">
                       <dl id="adminEngagementsDetailList" class="admin-engagements-detail-list"></dl>
                       <form id="adminEngagementsEditForm" class="admin-engagements-form admin-engagements-edit-form" hidden>
@@ -1389,6 +1401,10 @@
                         </section>
                       </div>
                     </div>
+                    <nav id="adminEngagementsStepFooter" class="admin-engagements-step-footer" aria-label="Changer d'étape" hidden>
+                      <button id="adminEngagementsFooterPrev" class="ghost-button" type="button">Étape précédente</button>
+                      <button id="adminEngagementsFooterNext" type="button">Étape suivante</button>
+                    </nav>
                     <p id="adminEngagementsDetailStatus" class="admin-portal-message" aria-live="polite"></p>
                   </section>
                 </section>
@@ -1458,13 +1474,10 @@
               <div id="adminEngagementsClubSwimmersPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubSwimmers" hidden>
                 <section class="admin-engagements-card" aria-label="Effectif des nageurs du club">
                   <form class="admin-engagements-club-swimmers-directory-tools" role="search">
-                    <label>
-                      Rechercher
+                    <label class="admin-engagements-club-swimmers-directory-search-field">
+                      <span class="admin-engagements-club-swimmers-directory-search-label">Rechercher</span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg>
                       <input id="adminEngagementsClubSwimmersDirectorySearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
-                    </label>
-                    <label class="admin-engagements-club-swimmers-directory-filter">
-                      <input id="adminEngagementsClubSwimmersMissingLicenseFilter" type="checkbox">
-                      Licences manquantes
                     </label>
                   </form>
                   <p id="adminEngagementsClubSwimmersDirectoryStatus" class="admin-portal-message" aria-live="polite">Les nageurs seront charg&eacute;s &agrave; l&rsquo;ouverture.</p>
@@ -1611,7 +1624,7 @@
               <div id="adminEngagementsAccessRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="accessRequests" hidden>
                 <section class="admin-engagements-card" aria-label="Demandes d'acc&egrave;s">
                   <div class="admin-engagements-directory-toolbar">
-                    <button id="adminEngagementsAccessRequestsRefresh" class="ghost-button" type="button">Actualiser</button>
+                    <button id="adminEngagementsAccessRequestsRefresh" class="ghost-button" type="button" hidden>Actualiser</button>
                   </div>
                   <p id="adminEngagementsAccessRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
                   <div id="adminEngagementsAccessRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
@@ -2076,6 +2089,7 @@
                   <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span>
                   <span class="admin-overview-card-label">Demandes</span>
                   <strong>Demandes d’accès</strong>
+                  <span id="adminAccessHomePendingBadge" class="admin-pending-badge admin-pending-badge-card" hidden>0</span>
                   <p>Examiner les demandes d’accès transmises par les clubs.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
@@ -2251,7 +2265,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260806-national-admin-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260808-entry-opening-guard-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>

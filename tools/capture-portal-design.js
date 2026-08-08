@@ -17,6 +17,7 @@ const views = [
   { name: "import", hash: "import-competitions", selector: "#adminImportView", authenticated: true, menu: "performance" },
   { name: "correction", hash: "correction-performance", selector: "#adminCorrectionView", authenticated: true, menu: "performance" },
   { name: "engagements", hash: "club-competitions", selector: "#adminEngagementsView", authenticated: true },
+  { name: "club-courses", hash: "club-competitions", selector: "#adminEngagementsView", authenticated: true, menu: "club", clubCoursesFixture: true },
   { name: "club-swimmers", hash: "club-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true },
   { name: "club-swimmer-change", hash: "club-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "club", swimmersFixture: true, swimmerCorrectionDialogFixture: "request" },
   { name: "club-officials", hash: "club-officiels", selector: "#adminEngagementsView", authenticated: true, menu: "club", peopleFixture: true },
@@ -196,7 +197,7 @@ async function waitFor(client, expression, timeoutMs = 8000) {
 
 function clubSwimmersFixtureHtml() {
   const swimmers = [
-    ["DEMO Nageuse", "12/03/2008", "F", "S", "A-00-000001", "Femme"],
+    ["DEMO Nageuse", "12/03/2008", "F", "S", "A-00-000001", "Femme", "pending"],
     ["DEMO Nageur", "04/09/2011", "M", "C", "A-00-000002", "Homme"],
     ["IDENTITE Volontairement longue pour tester la reduction", "18/05/2014", "F", "M", "", "Femme"]
   ];
@@ -205,17 +206,24 @@ function clubSwimmersFixtureHtml() {
       <div class="admin-engagements-club-swimmers-directory-row admin-engagements-club-swimmers-directory-head" role="row">
         <span role="columnheader">Nageur</span><span role="columnheader">Naissance</span><span role="columnheader">Sexe</span><span role="columnheader">Cat.</span><span role="columnheader">Licence</span><span role="columnheader">Action</span>
       </div>
-      ${swimmers.map((row, index) => `
+      ${swimmers.map((row, index) => {
+        const sexDisplay = row[2] === "M" ? "H" : row[2];
+        const profileButton = `<button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${row[0]}" aria-label="Voir la fiche publique de ${row[0]}"><strong>${row[0]}</strong><svg class="admin-engagements-club-swimmers-directory-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-7 7"></path><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></svg></button>`;
+        const correctionAction = row[6] === "pending"
+          ? '<span class="admin-engagements-club-swimmers-directory-change-pending" aria-label="Correction en attente"><span class="admin-engagements-club-swimmers-directory-change-pending-long">Correction en attente</span><span class="admin-engagements-club-swimmers-directory-change-pending-short" aria-hidden="true">En attente</span></span>'
+          : '<button class="admin-engagements-club-swimmers-directory-edit-button" type="button" aria-label="Demander une correction"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button>';
+        return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${row[2]}" data-expanded="false">
-          <button class="admin-engagements-club-swimmers-directory-toggle" type="button" aria-expanded="false" aria-controls="adminEngagementsClubSwimmerFixtureDetails${index}" data-engagement-club-swimmer-directory-toggle>
-            <strong>${row[0]}</strong>
-            <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex" aria-label="${row[5]}">${row[2]}</span><span class="admin-engagements-club-swimmers-directory-category" aria-label="Catégorie ${row[3]}">${row[3]}</span><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></span>
-          </button>
+          <div class="admin-engagements-club-swimmers-directory-toggle">
+            ${profileButton}
+            <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex-category" aria-label="${row[5]}, catégorie ${row[3]}"><span class="admin-engagements-club-swimmers-directory-sex">${sexDisplay}</span><span aria-hidden="true">·</span><span class="admin-engagements-club-swimmers-directory-category">${row[3]}</span></span><span class="admin-engagements-club-swimmers-directory-mobile-actions">${correctionAction}</span><button class="admin-engagements-club-swimmers-directory-details-button" type="button" aria-expanded="false" aria-controls="adminEngagementsClubSwimmerFixtureDetails${index}" aria-label="Afficher le détail de ${row[0]}" data-engagement-club-swimmer-directory-toggle><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></button></span>
+          </div>
           <div id="adminEngagementsClubSwimmerFixtureDetails${index}" class="admin-engagements-club-swimmers-directory-details">
-            <span role="cell"><strong>${row[0]}</strong></span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span><span role="cell" class="admin-engagements-club-swimmers-directory-actions"><button class="admin-engagements-club-swimmers-directory-edit-button" type="button" aria-label="Demander une correction"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button></span>
+            <span role="cell">${profileButton}</span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span><span role="cell" class="admin-engagements-club-swimmers-directory-actions">${correctionAction}</span>
           </div>
         </div>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 }
@@ -243,6 +251,25 @@ function clubPeopleFixtureHtml() {
         </div>
       `).join("")}
     </div>`;
+}
+
+function clubCoursesFixtureHtml() {
+  const groups = [
+    { sex: "F", label: "Femmes", count: "2 nageuses", courses: [["50 m SF", "F"], ["100 m Bi", "F/H"]], swimmers: [["MARTIN", "Camille", "12/03/2008", "J", true], ["DURAND", "Louise", "24/07/2009", "J", false]] },
+    { sex: "M", label: "Hommes", count: "2 nageurs", courses: [["50 m SF", "H"], ["100 m Bi", "F/H"]], swimmers: [["ROBERT", "Alex", "06/11/2008", "J", true], ["BERGERON", "Maxime", "18/01/2007", "J", false]] }
+  ];
+  return groups.map((group) => `
+    <section class="admin-engagements-club-entry-group" data-entry-sex="${group.sex}">
+      <div class="admin-engagements-club-entry-group-head"><h4>${group.label}</h4><span>${group.count}</span></div>
+      <p class="admin-engagements-club-entries-scroll-hint" data-engagement-club-entries-scroll-hint>↔ Faites glisser pour voir les autres courses</p>
+      <div class="admin-engagements-club-entries-table-shell" data-engagement-club-entries-sex="${group.sex}" data-scrollable="true" data-at-end="false" tabindex="0" aria-label="Courses ${group.label.toLowerCase()}, faire défiler horizontalement si nécessaire">
+        <table class="admin-engagements-club-entries-table" aria-label="Courses ${group.label.toLowerCase()}">
+          <thead><tr class="admin-engagements-club-entry-session-head"><th class="admin-engagements-club-entry-identity admin-engagements-club-entry-last-name" rowspan="2">${group.sex === "F" ? "Nageuse" : "Nageur"}</th><th class="admin-engagements-club-entry-identity" rowspan="2">Naissance</th><th class="admin-engagements-club-entry-identity" rowspan="2">Cat.</th><th class="admin-engagements-club-entry-session" colspan="2"><span>Session 1</span><small>15/08/2026 · 09:00</small></th><th class="admin-engagements-club-entry-action" rowspan="2">Temps</th></tr><tr class="admin-engagements-club-entry-course-head">${group.courses.map((course, index) => `<th class="${index === 0 ? "is-session-start" : ""}"><span>${course[0]}</span><small>${course[1]}</small></th>`).join("")}</tr></thead>
+          <tbody>${group.swimmers.map((swimmer, swimmerIndex) => `<tr class="admin-engagements-club-entry-row" data-sex="${group.sex}"><th class="admin-engagements-club-entry-last-name admin-engagements-club-entry-swimmer"><strong>${swimmer[0]}</strong><span>${swimmer[1]}</span></th><td>${swimmer[2]}</td><td>${swimmer[3]}</td>${group.courses.map((course, courseIndex) => `<td class="admin-engagements-club-entry-course ${courseIndex === 0 ? "is-session-start" : ""}"><label data-event-selected title="${course[0]} ${course[1]}"><input type="checkbox" aria-label="${course[0]} ${course[1]} pour ${swimmer[0]} ${swimmer[1]}" ${swimmer[4] && courseIndex === swimmerIndex ? "checked" : ""}><small data-engagement-club-entry-cell-time ${swimmer[4] && courseIndex === swimmerIndex ? "" : "hidden"}>00:59.12</small></label></td>`).join("")}<td class="admin-engagements-club-entry-action"><button class="ghost-button compact admin-engagements-club-times-open" type="button" aria-label="Voir ou modifier les temps"><span>${swimmer[4] ? "1" : "0"}</span><b aria-hidden="true">✎</b></button></td></tr>`).join("")}</tbody>
+        </table>
+      </div>
+    </section>
+  `).join("");
 }
 
 function accessUsersFixtureHtml() {
@@ -288,7 +315,7 @@ function accessUsersFixtureHtml() {
 
 function engagementCompetitionsFixtureHtml() {
   const rows = [
-    ["15–17 août", "TEST LIVEPALMES", "Houilles", "National", "Île-de-France", "Ouverts", "Ferme dans 1 j 4 h", "open", "warning", "Gérer mes engagements"],
+    ["15–17 août", "TEST LIVEPALMES", "Houilles", "National", "Île-de-France", "Ouverts", "Ferme dans 1 j 4 h", "open", "warning", "Commencer mes engagements"],
     ["12 septembre", "Championnat régional", "Beaumont-sur-Oise", "Régional", "Île-de-France", "À venir", "Ouvre dans 18 jours", "upcoming", "neutral", "Voir les informations"],
     ["4 octobre", "Meeting de rentrée", "Corbie", "Départemental", "Hauts-de-France", "Fermés", "Fermés depuis le 28 septembre", "closed", "neutral", "Voir le récapitulatif"]
   ];
@@ -311,9 +338,9 @@ function engagementCompetitionsFixtureHtml() {
 
 function engagementCompetitionFixtureRow(row) {
   return `
-    <article class="admin-engagements-competition" role="row">
+    <article class="admin-engagements-competition" role="row" data-engagement-competition-card-id="fixture" data-engagement-open-tab="team">
       <time class="admin-engagements-competition-date" role="cell" data-label="Date">${row[0]}</time>
-      <div class="admin-engagements-competition-main" role="cell" data-label="Compétition"><strong>${row[1]}</strong><small class="admin-engagements-competition-location">${row[2]}</small></div>
+      <div class="admin-engagements-competition-main" role="cell" data-label="Compétition"><strong>${row[1]}</strong><small class="admin-engagements-competition-location">${row[2]}</small><small class="admin-engagements-competition-mobile-meta">${row[2]} · ${row[3]} · ${row[4]}</small></div>
       <div class="admin-engagements-competition-scope" role="cell" data-label="Niveau / région"><span>${row[3]}</span><small>${row[4]}</small></div>
       <div class="admin-engagements-competition-status" role="cell" data-label="Engagements"><span class="admin-engagements-competition-entry-badge" data-entry-state="${row[7]}">${row[5]}</span><small data-entry-status="${row[8]}">${row[6]}</small></div>
       <div class="admin-engagements-competition-actions" role="cell" data-label="Action"><button class="ghost-button" type="button" aria-label="${row[9]} — ${row[1]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span>${row[9]}</span></button></div>
@@ -406,10 +433,25 @@ function presentationScript(view) {
         }
         if (card) card.dataset.overviewToolCount = String(tools.length);
       }
+      document.querySelectorAll("#adminPortalAccessPendingBadge,#adminOverviewAccessPendingBadge,#adminAccessHomePendingBadge,#adminEngagementsAccessRequestsBadge").forEach((badge) => {
+        badge.hidden = false;
+        badge.textContent = "3";
+        badge.setAttribute("aria-label", "3 demandes d'accès en attente");
+      });
+      document.querySelectorAll("#adminPortalNationalPendingBadge,#adminOverviewNationalPendingBadge,#adminEngagementsDeletionRequestsBadge").forEach((badge) => {
+        badge.hidden = false;
+        badge.textContent = "5";
+        badge.setAttribute("aria-label", "5 demandes nationales en attente");
+      });
       if (${view.name === "national-home" ? "true" : "false"}) {
+        const pendingCounts = document.querySelector("#adminNationalOverviewCounts");
         const pendingCount = document.querySelector("#adminNationalOverviewPendingCount");
         const pendingBreakdown = document.querySelector("#adminNationalOverviewPendingBreakdown");
-        if (pendingCount) pendingCount.textContent = "5";
+        if (pendingCounts) pendingCounts.hidden = false;
+        if (pendingCount) {
+          pendingCount.hidden = false;
+          pendingCount.textContent = "5";
+        }
         if (pendingBreakdown) pendingBreakdown.textContent = "2 corrections · 2 suppressions de données · 1 suppression de compte";
       }
       if (${view.swimmersFixture ? "true" : "false"}) {
@@ -425,6 +467,56 @@ function presentationScript(view) {
           status.dataset.tone = "neutral";
         }
         if (mount) mount.innerHTML = ${JSON.stringify(clubSwimmersFixtureHtml())};
+      }
+      if (${view.clubCoursesFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const card = document.querySelector("#adminEngagementsCalendarCard");
+        const detail = document.querySelector("#adminEngagementsDetail");
+        const close = document.querySelector("#adminEngagementsDetailClose");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "club";
+          engagementsView.dataset.engagementsTab = "calendar";
+        }
+        if (viewTitle) viewTitle.textContent = "Engagements en compétition";
+        if (card) card.dataset.detailOpen = "true";
+        if (detail) detail.hidden = false;
+        if (close) close.hidden = false;
+        ["#adminEngagementsCalendarActions", "#adminEngagementsCalendarFilters", "#adminEngagementsCalendarList", "#adminEngagementsRefreshButton"].forEach((selector) => {
+          document.querySelector(selector)?.setAttribute("hidden", "");
+        });
+        const detailTitle = document.querySelector("#adminEngagementsDetailTitle");
+        const detailSubtitle = document.querySelector("#adminEngagementsDetailSubtitle");
+        const detailEyebrow = document.querySelector("#adminEngagementsDetailEyebrow");
+        if (detailEyebrow) detailEyebrow.hidden = true;
+        if (detailTitle) detailTitle.textContent = "TEST LIVEPALMES";
+        if (detailSubtitle) detailSubtitle.textContent = "15/08/2026 · Houilles";
+        document.querySelectorAll("#adminEngagementsDetail [data-engagements-detail-tab-button]").forEach((tab) => {
+          const selected = tab.id === "adminEngagementsDetailEntriesTab";
+          tab.setAttribute("aria-selected", selected ? "true" : "false");
+          tab.tabIndex = selected ? 0 : -1;
+        });
+        document.querySelectorAll("#adminEngagementsDetail [data-engagements-detail-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDetailEntriesPanel";
+        });
+        const mobileStepNav = document.querySelector("#adminEngagementsMobileStepNav");
+        const mobileStepLabel = document.querySelector("#adminEngagementsMobileStepLabel");
+        const mobileStepMeta = document.querySelector("#adminEngagementsMobileStepMeta");
+        const mobileStepPrev = document.querySelector("#adminEngagementsMobileStepPrev");
+        const mobileStepNext = document.querySelector("#adminEngagementsMobileStepNext");
+        const stepFooter = document.querySelector("#adminEngagementsStepFooter");
+        const footerPrev = document.querySelector("#adminEngagementsFooterPrev");
+        const footerNext = document.querySelector("#adminEngagementsFooterNext");
+        if (mobileStepNav) mobileStepNav.hidden = false;
+        if (mobileStepLabel) mobileStepLabel.textContent = "Courses";
+        if (mobileStepMeta) mobileStepMeta.textContent = "Étape 6/8 · Toutes les étapes";
+        if (mobileStepPrev) mobileStepPrev.disabled = false;
+        if (mobileStepNext) mobileStepNext.disabled = false;
+        if (stepFooter) stepFooter.hidden = false;
+        if (footerPrev) footerPrev.textContent = "← Nageurs";
+        if (footerNext) footerNext.textContent = "Relais →";
+        const mount = document.querySelector("#adminEngagementsClubEntriesList");
+        if (mount) mount.innerHTML = ${JSON.stringify(clubCoursesFixtureHtml())};
       }
       if (${view.nationalRequestsFixture ? "true" : "false"}) {
         const engagementsView = document.querySelector("#adminEngagementsView");
@@ -785,10 +877,20 @@ async function auditInteractions(client, viewport, view) {
       const program = document.querySelector("#adminEngagementsDetailCoursesTab");
       if (detail && general && program) {
         detail.hidden = false;
-        general.focus();
-        general.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
-        result.tabKeyboard = program.getAttribute("aria-selected") === "true" && document.activeElement === program;
-        general.click();
+        if (${viewport.width <= 700 ? "true" : "false"}) {
+          const mobileNav = document.querySelector("#adminEngagementsMobileStepNav");
+          const current = document.querySelector("#adminEngagementsMobileStepCurrent");
+          const menu = document.querySelector("#adminEngagementsMobileStepMenu");
+          if (mobileNav) mobileNav.hidden = false;
+          current?.click();
+          result.tabKeyboard = Boolean(current?.getAttribute("aria-expanded") === "true" && menu && !menu.hidden);
+          current?.click();
+        } else {
+          general.focus();
+          general.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+          result.tabKeyboard = program.getAttribute("aria-selected") === "true" && document.activeElement === program;
+          general.click();
+        }
         detail.hidden = true;
       }
     }
@@ -863,15 +965,15 @@ async function captureView(client, baseUrl, viewport, view) {
       emptyButtons: emptyButtons.length,
       unlabeledControls: unlabeledControls.length,
       h1Count: document.querySelectorAll("h1").length,
-      overweightTableText: overweightTableText.length,
-      overweightSelectedTabs: overweightSelectedTabs.length
+      overweightTableText: overweightTableText.slice(0, 12).map((element) => ({ tag: element.tagName, className: element.className || "", text: element.textContent.trim().slice(0, 36), weight: getComputedStyle(element).fontWeight })),
+      overweightSelectedTabs: overweightSelectedTabs.slice(0, 12).map((element) => ({ id: element.id || "", text: element.textContent.trim().slice(0, 36), weight: getComputedStyle(element).fontWeight }))
     };
   `);
   if (audit.overflow) throw new Error(`${view.name}/${viewport.name} : debordement horizontal global.`);
   if (audit.emptyButtons || audit.unlabeledControls || audit.h1Count !== 1) {
     throw new Error(`${view.name}/${viewport.name} : structure accessible invalide ${JSON.stringify(audit)}.`);
   }
-  if (audit.overweightTableText || audit.overweightSelectedTabs) {
+  if (audit.overweightTableText.length || audit.overweightSelectedTabs.length) {
     throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
   await auditInteractions(client, viewport, view);

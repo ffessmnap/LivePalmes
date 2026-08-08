@@ -225,35 +225,6 @@
   gap: 14px;
 }
 
-.admin-portal-field {
-  display: grid;
-  gap: 6px;
-}
-
-.admin-portal-form label,
-.admin-access-form label,
-.admin-account-form label {
-  display: grid;
-  gap: 6px;
-  color: #455d58;
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.admin-portal-form input,
-.admin-access-form input,
-.admin-access-form select,
-.admin-account-form input {
-  min-height: 42px;
-  box-sizing: border-box;
-  border: 1px solid #cbd9d6;
-  border-radius: 8px;
-  padding: 0 12px;
-  background: #ffffff;
-  color: #12312d;
-  font: inherit;
-}
-
 .admin-access-form input:disabled,
 .admin-access-form select:disabled {
   background: #eef4f2;
@@ -471,6 +442,27 @@
 }
 
 .admin-portal-nav-badge[hidden] {
+  display: none;
+}
+
+.admin-pending-badge {
+  display: inline-grid;
+  box-sizing: border-box;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 5px;
+  color: #ffffff;
+  background: #c92a2a;
+  box-shadow: 0 1px 3px rgba(116, 19, 19, 0.22);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-pending-badge[hidden] {
   display: none;
 }
 
@@ -5673,6 +5665,7 @@
   color: var(--portal-color-brand);
   font-size: clamp(1.18rem, 2vw, 1.45rem);
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .admin-portal-page .admin-portal-brand {
@@ -5774,7 +5767,7 @@
 
 .admin-portal-page .admin-portal-nav a:has(.admin-portal-nav-icon),
 .admin-portal-page .admin-portal-nav-parent {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 9px;
   align-items: center;
 }
@@ -5826,6 +5819,7 @@
 }
 
 .admin-portal-page .admin-portal-nav-parent {
+  position: relative;
   cursor: pointer;
 }
 
@@ -5966,6 +5960,19 @@
   .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav a,
   .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-parent {
     grid-template-columns: 28px minmax(0, 1fr) auto;
+  }
+
+  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-parent > .admin-pending-badge-nav,
+  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-parent > .admin-pending-badge-nav {
+    position: absolute;
+    top: 3px;
+    left: 29px;
+    min-width: 16px;
+    height: 16px;
+    padding-inline: 4px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-size: 0.58rem;
   }
 }
 
@@ -6811,41 +6818,56 @@
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
-  align-items: end;
+  align-items: center;
   margin-top: 0;
   border: 0;
   padding: 0;
   background: transparent;
 }
 
-#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-filter {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  min-height: 40px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  white-space: nowrap;
-  cursor: pointer;
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-search-field {
+  position: relative;
+  display: block;
+  min-width: 0;
 }
 
-#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-filter input {
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-search-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-search-field > svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  z-index: 1;
   width: 16px;
   height: 16px;
-  min-height: 16px;
-  margin: 0;
-  accent-color: #0b7285;
+  fill: none;
+  stroke: #64747a;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools label {
   color: #52636a;
 }
 
-#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools input {
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-search-field input {
+  width: 100%;
   min-height: 40px;
   border-radius: 8px;
+  padding-left: 34px;
 }
 
 #adminEngagementsClubSwimmersDirectoryStatus:empty {
@@ -6879,6 +6901,9 @@
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-name-button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
   max-width: 100%;
   border: 0;
   padding: 0;
@@ -6890,6 +6915,17 @@
   text-decoration-color: transparent;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-profile-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: #75868b;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-name-button:hover,
@@ -6910,6 +6946,28 @@
   align-items: center;
   justify-content: flex-end;
   transform: translateY(-4px);
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions {
+  display: none;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-change-pending {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #fff1d6;
+  color: #80580a;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-change-pending-short {
+  display: none;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-delete-button,
@@ -7443,15 +7501,6 @@
     }
   }
 
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-filter {
-    min-height: 32px;
-  }
-
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-table {
     gap: 0;
     max-height: none;
@@ -7524,27 +7573,51 @@
     align-items: center;
   }
 
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-sex {
-    min-width: 25px;
-    border: 1px solid currentColor;
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-delete-button,
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-edit-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-change-pending {
+    white-space: nowrap;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-change-pending-long {
+    display: none;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-change-pending-short {
+    display: inline;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-sex-category {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    min-width: 47px;
+    border: 1px solid #d7e1e3;
     border-radius: 999px;
-    padding: 2px 6px;
+    padding: 3px 7px;
+    background: #edf2f3;
+    color: #52636a;
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.25;
     text-align: center;
   }
 
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-sex,
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-category {
-    min-width: 28px;
-    border-radius: 999px;
-    padding: 3px 7px;
-    background: #e9eff1;
-    color: #52636a;
-    font-size: 0.68rem;
-    font-weight: 650;
-    line-height: 1.25;
-    text-align: center;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details-button {
@@ -7593,13 +7666,14 @@
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row[data-expanded="true"] .admin-engagements-club-swimmers-directory-details {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span {
     display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 10px;
-    padding: 7px 11px 7px 14px;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px 11px 9px 14px;
     border-top: 1px solid #edf1f2;
   }
 
@@ -7607,8 +7681,15 @@
     display: none;
   }
 
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(2) {
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(2),
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(5) {
     border-top: 0;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(3),
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(4),
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(6) {
+    display: none;
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span::before {
@@ -7894,7 +7975,7 @@
 
 @media (max-width: 700px) {
   #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-table {
-    min-width: 700px;
+    min-width: 100%;
   }
 
   #adminEngagementsDetailRelaysPanel .admin-engagements-inline-actions,
@@ -9822,11 +9903,51 @@
 
 /* Matrice des engagements individuels : nageurs en lignes, programme en colonnes. */
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-list {
-  display: block;
+  display: grid;
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  gap: 16px;
   overflow: visible;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  border-left: 3px solid #8ba0a7;
+  padding: 5px 9px;
+  background: #f5f8f9;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group[data-entry-sex="F"] .admin-engagements-club-entry-group-head {
+  border-left-color: #cf6f9b;
+  background: #fff8fb;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group[data-entry-sex="M"] .admin-engagements-club-entry-group-head {
+  border-left-color: #4f8fc5;
+  background: #f7fbff;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group-head h4 {
+  margin: 0;
+  color: #263940;
+  font-size: 0.9rem;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group-head span {
+  color: #64777c;
+  font-size: 0.74rem;
+  font-weight: 500;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-table-shell {
@@ -9871,7 +9992,7 @@
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-table thead th {
   background: #f5f8f9;
   color: #50646a;
-  font-weight: 800;
+  font-weight: 500;
   text-align: center;
 }
 
@@ -9896,7 +10017,7 @@
   margin-top: 2px;
   color: #718188;
   font-size: 0.63rem;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-course-head th,
@@ -9908,26 +10029,20 @@
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-identity:nth-child(1),
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > :nth-child(1) {
-  width: 132px;
-  min-width: 132px;
+  width: 158px;
+  min-width: 158px;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-identity:nth-child(2),
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > :nth-child(2) {
-  width: 110px;
-  min-width: 110px;
+  width: 86px;
+  min-width: 86px;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-identity:nth-child(3),
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > :nth-child(3) {
-  width: 92px;
-  min-width: 92px;
-}
-
-#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-identity:nth-child(4),
-#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > :nth-child(4) {
-  width: 66px;
-  min-width: 66px;
+  width: 56px;
+  min-width: 56px;
   text-align: center;
 }
 
@@ -9947,8 +10062,25 @@
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > th {
   overflow: hidden;
   font-size: 0.76rem;
-  font-weight: 850;
+  font-weight: 500;
   text-overflow: ellipsis;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-swimmer :is(strong, span) {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-swimmer strong {
+  font-weight: 500;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-swimmer span {
+  margin-top: 2px;
+  color: #65777d;
+  font-size: 0.68rem;
+  font-weight: 400;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-last-name {
@@ -10003,6 +10135,7 @@
   width: 64px;
   height: 32px;
   border-radius: 7px;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -10025,7 +10158,7 @@
   color: #52676d;
   font-size: 0.57rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 750;
+  font-weight: 500;
   line-height: 1;
   text-overflow: ellipsis;
 }
@@ -10040,7 +10173,7 @@
 
 #adminEngagementsDetailEntriesPanel [data-engagement-club-entry-cell-time][data-entry-time-mode="pending"] {
   color: #64777c;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 #adminEngagementsDetailEntriesPanel [data-engagement-club-entry-cell-time][data-entry-time-mode="error"] {
@@ -10061,11 +10194,12 @@
   min-height: 30px;
   border-radius: 7px;
   padding: 3px 7px;
+  font-weight: 500;
 }
 
-#adminEngagementsDetailEntriesPanel .admin-engagements-club-times-open span {
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-times-open :is(span, b) {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .admin-engagements-club-times-dialog {
@@ -10366,8 +10500,8 @@
 @media (max-width: 620px) {
   #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-identity:nth-child(1),
   #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row > :nth-child(1) {
-    width: 96px;
-    min-width: 96px;
+    width: 118px;
+    min-width: 118px;
   }
 
   #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-action {
@@ -11210,6 +11344,18 @@
   font-size: 1.05rem;
 }
 
+.admin-overview-space-main > strong:has(+ .admin-pending-badge-card),
+.admin-overview-card > strong:has(+ .admin-pending-badge-card) {
+  padding-right: 38px;
+}
+
+.admin-pending-badge-card {
+  position: absolute;
+  top: 61px;
+  right: 17px;
+  z-index: 1;
+}
+
 .admin-overview-space-main > p {
   grid-column: 1 / -1;
   margin: 0;
@@ -11435,6 +11581,39 @@
   .admin-portal-page .admin-records-workspace-head,
   .admin-portal-page .admin-module-workspace-head {
     padding: 12px;
+  }
+}
+
+/* Le nom du portail reste lisible sur une ligne, même sur les mobiles étroits. */
+@media (max-width: 380px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .admin-portal-page .admin-portal-topbar h1 {
+    font-size: 0.94rem;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    width: 38px;
+  }
+
+  .admin-portal-page .admin-portal-topbar-actions {
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 8px;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button {
+    min-height: 36px;
+    padding-inline: 7px;
   }
 }
 
@@ -12803,6 +12982,14 @@
   font-size: 1.35rem;
 }
 
+.admin-national-overview-counts .admin-pending-badge-large {
+  min-width: 26px;
+  height: 26px;
+  color: #ffffff;
+  background: #c92a2a;
+  font-size: 0.8rem;
+}
+
 .admin-national-overview-counts small {
   max-width: 260px;
   color: #718087;
@@ -13147,4 +13334,1006 @@
   .admin-national-request-group > summary {
     align-items: flex-start;
   }
+}
+
+/* Parcours compact des engagements club */
+#adminEngagementsDetail .admin-engagements-save-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #edf3f4;
+  color: #51646b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+#adminEngagementsDetail .admin-engagements-save-state[data-state="saving"]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #0b7285;
+  animation: admin-engagement-save-pulse 0.9s ease-in-out infinite alternate;
+}
+
+#adminEngagementsDetail .admin-engagements-save-state[data-state="saved"] {
+  background: #e4f6ed;
+  color: #197044;
+}
+
+#adminEngagementsDetail .admin-engagements-save-state[data-state="error"] {
+  background: #fdebea;
+  color: #b42318;
+}
+
+@keyframes admin-engagement-save-pulse {
+  to { opacity: 0.3; transform: scale(0.78); }
+}
+
+#adminEngagementsDetail .admin-engagements-mobile-step-nav,
+#adminEngagementsDetail .admin-engagements-step-footer,
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-scroll-hint {
+  display: none;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsDetail .admin-engagements-detail-tabs {
+    display: none;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-nav:not([hidden]) {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 6px;
+    align-items: stretch;
+    margin: 8px 0 12px;
+    padding: 7px;
+    border: 1px solid #d9e5e8;
+    border-radius: 12px;
+    background: #f7fafb;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-nav > button {
+    min-height: 42px;
+    padding: 6px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-current {
+    display: grid;
+    gap: 1px;
+    justify-items: start;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #173b45;
+    text-align: left;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-current strong,
+  #adminEngagementsDetail .admin-engagements-mobile-step-current small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-current small {
+    color: #667b82;
+    font-size: 0.7rem;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-menu:not([hidden]) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding-top: 7px;
+    border-top: 1px solid #d9e5e8;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-menu button {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #fff;
+    color: #294a53;
+    font-size: 0.75rem;
+    text-align: left;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-menu button span {
+    display: grid;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 50%;
+    background: #e5eff1;
+    font-size: 0.65rem;
+  }
+
+  #adminEngagementsDetail .admin-engagements-mobile-step-menu button[aria-current="step"] {
+    border-color: #8bc3cd;
+    background: #eaf6f8;
+    color: #075f70;
+    font-weight: 700;
+  }
+
+  #adminEngagementsDetail .admin-engagements-step-footer:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px;
+    margin: 14px -8px -8px;
+    padding: 9px 8px calc(9px + env(safe-area-inset-bottom));
+    border-top: 1px solid #d9e5e8;
+    background: #fff;
+  }
+
+  #adminEngagementsDetail .admin-engagements-step-footer button {
+    min-width: 0;
+    min-height: 38px;
+    overflow: hidden;
+    padding: 7px 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition[data-engagement-competition-card-id] {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(11, 114, 133, 0.12);
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition[data-engagement-competition-card-id]:active {
+    background: #edf7f8;
+  }
+
+  #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group {
+    position: relative;
+  }
+
+  #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group:first-child .admin-engagements-club-entries-scroll-hint:not([hidden]) {
+    display: flex;
+    align-items: center;
+    margin: 6px 0;
+    color: #60747b;
+    font-size: 0.7rem;
+  }
+
+  #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group:has(.admin-engagements-club-entries-table-shell[data-scrollable="true"][data-at-end="false"])::after {
+    content: "";
+    position: absolute;
+    z-index: 6;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(18, 71, 82, 0.13));
+  }
+}
+
+/* Calendrier Club mobile : filtres et compétitions en lecture dense. */
+@media (max-width: 760px) {
+  .admin-portal-breadcrumb {
+    gap: 4px;
+    min-height: 26px;
+    margin-bottom: 5px;
+    padding: 2px 4px;
+    font-size: 0.7rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] {
+    gap: 7px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] > .admin-portal-workspace-head {
+    border: 0;
+    border-radius: 0;
+    padding: 2px 1px 4px;
+    background: transparent;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] > .admin-portal-workspace-head h2 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+    gap: 5px;
+    margin: 0;
+    padding: 6px 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    flex-basis: 100%;
+    gap: 6px;
+    align-items: end;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+    min-width: 0;
+    max-width: none;
+    font-size: 0.68rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters select,
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters button {
+    min-height: 32px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments {
+    display: flex;
+    flex-basis: auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments::-webkit-scrollbar {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-status-segments button {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 32px;
+    padding: 5px 10px;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters {
+    flex-basis: 100%;
+    padding: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters > summary {
+    padding: 1px 0;
+    font-size: 0.72rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarList {
+    margin: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competitions-table {
+    border: 1px solid #dfe5e7;
+    border-radius: 9px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-group {
+    display: contents;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-group > h4 {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-group > .admin-engagements-competition {
+    display: grid;
+    grid-template-areas:
+      "date status action"
+      "name name action";
+    grid-template-columns: auto minmax(0, 1fr) 30px;
+    gap: 3px 7px;
+    min-height: 66px;
+    border: 0;
+    border-bottom: 1px solid #e5eaec;
+    border-radius: 0;
+    padding: 7px 8px 6px 10px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-group:last-child > .admin-engagements-competition:last-child {
+    border-bottom: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-date {
+    grid-area: date;
+    align-self: center;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-main {
+    grid-area: name;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-main strong,
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-main strong {
+    font-size: 0.8rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
+    color: #62747a;
+    font-size: 0.68rem;
+    font-weight: 400;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-location,
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-scope {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-status {
+    display: flex;
+    grid-area: status;
+    gap: 5px;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-status small {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-entry-badge {
+    flex: 0 0 auto;
+    padding: 2px 6px;
+    font-size: 0.64rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-actions {
+    display: grid;
+    grid-area: action;
+    align-self: stretch;
+    min-width: 30px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+    display: grid;
+    width: 30px;
+    min-height: 100%;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #0b7285;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button svg,
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button span {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button::after {
+    font-size: 1.4rem;
+    line-height: 1;
+    content: "›";
+  }
+}
+
+/* Densité mobile commune à toutes les pages du portail. */
+@media (max-width: 760px) {
+  .admin-portal-page [data-admin-view] {
+    gap: 8px;
+  }
+
+  .admin-portal-page :is(
+    .admin-tool-workspace-head,
+    .admin-overview-head,
+    .admin-records-workspace-head,
+    .admin-module-workspace-head
+  ) {
+    min-height: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 2px 1px 4px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .admin-portal-page :is(
+    .admin-tool-workspace-head,
+    .admin-overview-head,
+    .admin-records-workspace-head,
+    .admin-module-workspace-head
+  ) h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .admin-portal-page .admin-overview-head > span {
+    margin-bottom: 1px;
+    font-size: 0.62rem;
+  }
+
+  .admin-portal-page .admin-overview-head > p {
+    display: none;
+  }
+
+  .admin-portal-overview-view,
+  .admin-portal-space-home,
+  .admin-national-home-groups,
+  .admin-national-home-group {
+    gap: 7px;
+  }
+
+  .admin-overview-grid {
+    gap: 6px;
+  }
+
+  .admin-portal-space-home .admin-overview-card,
+  .admin-national-home .admin-overview-card {
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+    grid-template-rows: auto;
+    gap: 0 8px;
+    min-height: 58px;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .admin-portal-space-home .admin-overview-card-icon,
+  .admin-national-home .admin-overview-card-icon {
+    grid-column: 1;
+    grid-row: 1;
+    width: 30px;
+    height: 30px;
+    align-self: center;
+  }
+
+  .admin-portal-space-home .admin-overview-card-icon svg,
+  .admin-national-home .admin-overview-card-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .admin-portal-space-home .admin-overview-card-label,
+  .admin-national-home .admin-overview-card-label,
+  .admin-portal-space-home .admin-overview-card > p,
+  .admin-national-home .admin-overview-card > p {
+    display: none;
+  }
+
+  .admin-portal-space-home .admin-overview-card > strong,
+  .admin-national-home .admin-overview-card > strong {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-portal-space-home .admin-overview-card-arrow,
+  .admin-national-home .admin-overview-card-arrow {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+  }
+
+  .admin-national-home-group-head {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 3px 1px 1px;
+  }
+
+  .admin-national-home-group-head h3 {
+    font-size: 0.82rem;
+  }
+
+  .admin-national-home-group-head > span {
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-national-home .admin-national-home-card-primary {
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+    grid-template-rows: auto auto;
+    min-height: 78px;
+  }
+
+  .admin-national-home-card-primary > .admin-overview-card-icon {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .admin-national-home-card-primary > strong {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .admin-national-home-card-primary > .admin-national-overview-counts {
+    display: flex;
+    grid-column: 2;
+    grid-row: 2;
+    gap: 5px;
+    align-items: center;
+    justify-items: start;
+    min-width: 0;
+    margin: 1px 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .admin-national-overview-counts > span {
+    font-size: 0.68rem;
+  }
+
+  .admin-national-overview-counts > span strong {
+    font-size: 0.68rem;
+  }
+
+  .admin-national-overview-counts small {
+    max-width: 190px;
+    overflow: hidden;
+    font-size: 0.62rem;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-national-home-card-primary > .admin-overview-card-arrow {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+
+  .admin-overview-space-card {
+    border-radius: 8px;
+  }
+
+  .admin-overview-space-main {
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+    grid-template-rows: auto;
+    gap: 0 8px;
+    min-height: 58px;
+    padding: 8px 10px;
+  }
+
+  .admin-overview-space-main > .admin-overview-card-icon {
+    grid-column: 1;
+    grid-row: 1;
+    width: 30px;
+    height: 30px;
+    align-self: center;
+  }
+
+  .admin-overview-space-main > .admin-overview-card-label,
+  .admin-overview-space-main > p {
+    display: none;
+  }
+
+  .admin-overview-space-main > strong,
+  .admin-overview-space-main > strong:has(+ .admin-pending-badge-card) {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    min-width: 0;
+    margin: 0;
+    padding-right: 0;
+    overflow: hidden;
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-overview-space-main > .admin-overview-card-arrow {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .admin-overview-space-main > .admin-pending-badge-card {
+    top: 3px;
+    right: 3px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    font-size: 0.58rem;
+  }
+
+  .admin-overview-space-toggle {
+    width: calc(100% - 20px);
+    min-height: 30px;
+    margin: 0 10px;
+    padding: 5px 0;
+    font-size: 0.7rem;
+  }
+
+  .admin-overview-space-card.is-expanded .admin-overview-space-tools {
+    gap: 3px;
+    padding: 3px 9px 9px;
+  }
+
+  .admin-overview-space-tools a {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  #adminEngagementsAccessRequestsPanel > .admin-engagements-card,
+  .admin-national-page-card,
+  #adminAccessView .admin-access-list-panel {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-directory-toolbar:has(#adminEngagementsAccessRequestsRefresh[hidden]) {
+    display: none;
+  }
+
+  #adminAccessView .admin-access-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    border-radius: 8px;
+    padding: 7px;
+  }
+
+  #adminAccessView .admin-access-filters .admin-access-search {
+    grid-column: 1 / -1;
+  }
+
+  #adminAccessView .admin-access-filters label {
+    gap: 2px;
+    min-width: 0;
+  }
+
+  #adminAccessView .admin-access-filter-label,
+  .admin-national-directory-toolbar label > span,
+  .admin-national-audit-filters label > span {
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+  }
+
+  #adminAccessView .admin-access-filters :is(input, select, button) {
+    min-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 0.72rem;
+  }
+
+  #adminAccessView .admin-access-filter-submit,
+  #adminAccessView .admin-access-filter-reset {
+    width: 100%;
+  }
+
+  .admin-national-directory-toolbar,
+  .admin-national-audit-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(100px, 0.45fr);
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .admin-national-directory-toolbar > label:first-child,
+  .admin-national-audit-filters > label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .admin-national-directory-toolbar :is(input, select, button),
+  .admin-national-audit-filters :is(input, select, button) {
+    min-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 0.72rem;
+  }
+
+  .admin-national-directory-toolbar > label:nth-child(2) {
+    grid-column: 1;
+  }
+
+  .admin-national-directory-toolbar > .admin-national-merge-mode-button {
+    grid-column: 2;
+  }
+
+  .admin-national-directory-toolbar > .admin-national-reset-button {
+    grid-column: 1 / -1;
+  }
+
+  #adminImportView .competition-import-history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  #adminImportView .competition-import-history-filters > label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  #adminImportView .competition-import-history-filters :is(input, select) {
+    min-height: 34px;
+    font-size: 0.72rem;
+  }
+
+  #adminDtnView .admin-dtn-toolbar {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 6px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    padding: 6px 0;
+    background: transparent;
+  }
+
+  #adminDtnView .admin-dtn-toolbar label {
+    min-width: 0;
+    font-size: 0.68rem;
+  }
+
+  #adminDtnView .admin-dtn-toolbar :is(select, button) {
+    min-height: 34px;
+  }
+
+  #adminDtnView .admin-dtn-segment {
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  #adminDtnView .admin-dtn-refresh {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club. */
+@media (max-width: 760px) {
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] {
+    gap: 7px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] .admin-engagements-calendar-head-actions {
+    width: auto;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] .admin-engagements-refresh-meta {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsRefreshButton {
+    display: grid;
+    width: 36px;
+    min-height: 36px;
+    place-items: center;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsRefreshButton::before {
+    font-size: 1.08rem;
+    line-height: 1;
+    content: "↻";
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+    gap: 5px;
+    padding: 6px 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    flex-basis: 100%;
+    gap: 6px;
+    align-items: end;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+    min-width: 0;
+    max-width: none;
+    font-size: 0.68rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters select,
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters button {
+    min-height: 32px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters {
+    flex-basis: 100%;
+    padding: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters > summary {
+    padding: 1px 0;
+    font-size: 0.72rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsFiltersReset,
+  #adminEngagementsView[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsMineFilterLabel {
+    grid-column: 1 / -1;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competitions-table {
+    border: 1px solid #dfe5e7;
+    border-radius: 9px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group {
+    display: contents;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group > h4 {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group > .admin-engagements-competition {
+    display: grid;
+    grid-template-areas:
+      "date status action"
+      "name name action";
+    grid-template-columns: auto minmax(0, 1fr) 30px;
+    gap: 3px 7px;
+    min-height: 66px;
+    border: 0;
+    border-bottom: 1px solid #e5eaec;
+    border-radius: 0;
+    padding: 7px 8px 6px 10px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group:last-child > .admin-engagements-competition:last-child {
+    border-bottom: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-date {
+    grid-area: date;
+    align-self: center;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-main {
+    grid-area: name;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-main strong,
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-main strong {
+    font-size: 0.8rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
+    color: #62747a;
+    font-size: 0.68rem;
+    font-weight: 400;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-location,
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-scope {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-status {
+    display: flex;
+    grid-area: status;
+    gap: 5px;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-status small {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-entry-badge {
+    flex: 0 0 auto;
+    padding: 2px 6px;
+    font-size: 0.64rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-actions {
+    display: grid;
+    grid-area: action;
+    align-self: stretch;
+    min-width: 30px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+    display: grid;
+    width: 30px;
+    min-height: 100%;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #0b7285;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button svg,
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button span {
+    display: none;
+  }
+
+  #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-actions button::after {
+    font-size: 1.4rem;
+    line-height: 1;
+    content: "›";
+  }
+}
+
+.admin-portal-field {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-portal-form label,
+.admin-access-form label,
+.admin-account-form label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.admin-portal-form input,
+.admin-access-form input,
+.admin-access-form select,
+.admin-account-form input {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #cbd9d6;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
 }

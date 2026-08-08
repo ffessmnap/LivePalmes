@@ -2402,11 +2402,14 @@ exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, async (request) 
     ? cleanText(request.data.status)
     : "pending";
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
-  const snapshot = await db
-    .collection("engagementAccessRequests")
-    .where("status", "==", status)
-    .limit(limit)
-    .get();
+  let requestsQuery = db.collection("engagementAccessRequests").where("status", "==", status);
+  if (!context.national) {
+    if (!context.regionId) {
+      throw new HttpsError("failed-precondition", "Perimetre regional requis.");
+    }
+    requestsQuery = requestsQuery.where("regionId", "==", context.regionId);
+  }
+  const snapshot = await requestsQuery.limit(limit).get();
   const requests = snapshot.docs
     .map(engagementAccessRequestItem)
     .filter((item) => context.national || item.regionId === context.regionId)
@@ -6284,6 +6287,12 @@ function cleanEngagementDeadlineAt(value) {
   return date.toISOString();
 }
 
+function isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt, nowMs = Date.now()) {
+  if (cleanEngagementEntryStatus(entryStatus) !== "open" || !entryDeadlineAt) return false;
+  const deadline = new Date(entryDeadlineAt);
+  return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= nowMs;
+}
+
 function cleanEngagementRegionIds(raw = [], excludedRegionId = "") {
   const values = Array.isArray(raw) ? raw : [raw];
   const excludedKey = normalizedEngagementRegionKey(excludedRegionId);
@@ -6342,6 +6351,9 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   }
   if (qualificationTimesMode === "period" && qualificationStartDate > qualificationEndDate) {
     throw new HttpsError("invalid-argument", "La fin de periode des temps doit etre apres le debut.");
+  }
+  if (isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)) {
+    throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements : la date de cloture est depassee.");
   }
 
   const events = Object.prototype.hasOwnProperty.call(raw, "events")
@@ -8483,9 +8495,7 @@ exports.listEngagementSwimmerChangeRequests = onCall(CALLABLE_OPTIONS, async (re
   return { ok: true, status, requests };
 });
 
-exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
-  const context = await engagementAccessContext(request);
-  if (!context.national) throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+async function engagementNationalAdministrationPendingCounts() {
   const [competitionSnapshot, swimmerSnapshot, correctionSnapshot, accountSnapshot] = await Promise.all([
     db.collection("engagementCompetitionDeletionRequests").where("status", "==", "pending").count().get(),
     db.collection("engagementSwimmerDeletionRequests").where("status", "==", "pending").count().get(),
@@ -8497,13 +8507,45 @@ exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, a
   const swimmerChangeCount = Math.max(0, Number(correctionSnapshot.data()?.count || 0));
   const accountDeletionCount = Math.max(0, Number(accountSnapshot.data()?.count || 0));
   return {
+    swimmerChanges: swimmerChangeCount,
+    dataDeletions: competitionDeletionCount + swimmerDeletionCount,
+    accountDeletions: accountDeletionCount,
+    total: competitionDeletionCount + swimmerDeletionCount + swimmerChangeCount + accountDeletionCount
+  };
+}
+
+exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  return {
     ok: true,
-    counts: {
-      swimmerChanges: swimmerChangeCount,
-      dataDeletions: competitionDeletionCount + swimmerDeletionCount,
-      accountDeletions: accountDeletionCount,
-      total: competitionDeletionCount + swimmerDeletionCount + swimmerChangeCount + accountDeletionCount
+    counts: await engagementNationalAdministrationPendingCounts()
+  };
+});
+
+exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  let accessRequestsQuery = db.collection("engagementAccessRequests").where("status", "==", "pending");
+  if (!context.national) {
+    if (!context.regionId) {
+      throw new HttpsError("failed-precondition", "Perimetre regional requis.");
     }
+    accessRequestsQuery = accessRequestsQuery.where("regionId", "==", context.regionId);
+  }
+  const [accessSnapshot, nationalRequests] = await Promise.all([
+    accessRequestsQuery.count().get(),
+    context.national ? engagementNationalAdministrationPendingCounts() : Promise.resolve(null)
+  ]);
+  return {
+    ok: true,
+    scope: {
+      type: context.national ? "national" : "region",
+      regionId: context.national ? "" : context.regionId
+    },
+    accessRequests: {
+      pending: Math.max(0, Number(accessSnapshot.data()?.count || 0))
+    },
+    nationalRequests
   };
 });
 
