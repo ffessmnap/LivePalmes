@@ -6365,6 +6365,9 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (isEngagementOpeningTooEarly(entryStatus, date)) {
     throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements plus de 30 jours avant la competition.");
   }
+  if (entryStatus === "open" && (!cleanText(raw.poolLength) || !poolLaneCount || !cleanText(raw.timingType))) {
+    throw new HttpsError("failed-precondition", "Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements.");
+  }
 
   const events = Object.prototype.hasOwnProperty.call(raw, "events")
     ? cleanEngagementCompetitionEvents(raw.events)

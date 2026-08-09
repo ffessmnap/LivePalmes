@@ -4404,6 +4404,17 @@
   opacity: 0.32;
 }
 
+/* Consultation : garder les coches natives et mettre en évidence les cellules retenues. */
+.admin-engagements-event-restrictions input:disabled,
+.admin-engagements-category-column-control input:disabled {
+  opacity: 0.72;
+}
+
+.admin-engagements-event-restrictions label:has(input:checked),
+.admin-engagements-category-column-control:has(input:checked) {
+  background: #dcefeb;
+}
+
 .admin-engagements-category-blocked {
   display: block;
   min-height: 100%;
@@ -8760,6 +8771,23 @@
   gap: 8px;
   margin: 0;
   padding-left: 22px;
+}
+
+.admin-engagements-preparation-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  border: 1px solid #cfe1e3;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: #f3fafb;
+  color: #174f59;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-preparation-state span {
+  color: #52636a;
 }
 
 .admin-engagements-region-dialog p {

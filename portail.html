@@ -858,9 +858,8 @@
                         <h4 id="adminEngagementsDetailTitle">S&eacute;lectionnez une comp&eacute;tition</h4>
                         <p id="adminEngagementsDetailSubtitle" class="admin-engagements-detail-subtitle"></p>
                         <div class="admin-engagements-detail-state-row">
-                          <span id="adminEngagementsEditState" class="admin-engagements-edit-state" hidden>Lecture seule</span>
                           <span id="adminEngagementsDetailLevel" class="admin-engagements-level-badge" hidden></span>
-                          <button id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" type="button" aria-label="Statut des engagements" hidden>Statut des engagements</button>
+                          <span id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" hidden>Statut des engagements</span>
                           <span id="adminEngagementsSaveState" class="admin-engagements-save-state" aria-live="polite" hidden></span>
                         </div>
                       </div>
@@ -872,13 +871,13 @@
                       </div>
                     </div>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
+                    <div id="adminEngagementsPreparationState" class="admin-engagements-preparation-state" aria-live="polite"></div>
                     <div class="admin-engagements-detail-tabs" role="tablist" aria-label="Fiche competition">
                       <div class="admin-engagements-detail-tab-group">
                         <span class="admin-engagements-detail-tab-group-label" data-engagement-step-label="information">Param&eacute;trage</span>
                         <div class="admin-engagements-detail-tab-group-items">
                           <button id="adminEngagementsDetailGeneralTab" type="button" role="tab" aria-selected="true" aria-controls="adminEngagementsDetailGeneralPanel" data-engagements-detail-tab-button="general">G&eacute;n&eacute;ral</button>
-                          <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Programme</button>
-                          <button id="adminEngagementsDetailFeesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailFeesPanel" data-engagements-detail-tab-button="fees">Frais</button>
+                          <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Courses et programme</button>
                         </div>
                       </div>
                       <div class="admin-engagements-detail-tab-group">
@@ -1096,7 +1095,7 @@
                         <p id="adminEngagementsEventsMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                     </div>
-                    <div id="adminEngagementsDetailFeesPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailFeesTab" data-engagements-detail-tab-panel="fees" hidden>
+                    <section id="adminEngagementsDetailFeesPanel" class="admin-engagements-fees-general">
                       <form id="adminEngagementsFeesForm" class="admin-engagements-fees-form">
                         <div class="admin-engagements-events-head">
                           <div>
@@ -1134,7 +1133,7 @@
                         <p id="adminEngagementsPaymentNote" class="admin-engagements-payment-note">Paiement attendu avant la fin de la premi&egrave;re journ&eacute;e de comp&eacute;tition. Un surplus forfaitaire de 50 &euro; s'applique ensuite.</p>
                         <p id="adminEngagementsFeesMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
-                    </div>
+                    </section>
                     <div id="adminEngagementsDetailTeamPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailTeamTab" data-engagements-detail-tab-panel="team" hidden>
                       <form id="adminEngagementsClubTeamForm" class="admin-engagements-club-step-form">
                         <div class="admin-engagements-events-head">
@@ -1367,51 +1366,32 @@
                       <div class="admin-engagements-documents">
                         <div class="admin-engagements-documents-head">
                           <div>
-                            <strong>Documents de la comp&eacute;tition</strong>
-                            <small id="adminEngagementsDocumentsSummary">Exports, PDF clubs et automatisation.</small>
+                            <strong>Finalisation</strong>
+                            <small id="adminEngagementsDocumentsSummary">Générez puis téléchargez les documents utiles.</small>
                           </div>
-                          <span id="adminEngagementsComputerEmailLabel">Email informatique non renseign&eacute;</span>
+                          <span id="adminEngagementsComputerEmailLabel" hidden></span>
                         </div>
                         <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsFilesTitle">
                           <div class="admin-engagements-documents-section-head">
                             <div>
-                              <strong id="adminEngagementsFilesTitle">Fichiers de la comp&eacute;tition</strong>
-                              <small>Export TXT global et fichiers d&eacute;j&agrave; g&eacute;n&eacute;r&eacute;s.</small>
+                              <strong id="adminEngagementsFilesTitle">Générer les documents</strong>
+                              <small>Export TXT et PDF récapitulatifs des clubs.</small>
                             </div>
                             <div class="admin-engagements-documents-actions">
                               <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer export TXT</button>
                               <button id="adminEngagementsGenerateClubRecapsButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer les PDF clubs</button>
                             </div>
                           </div>
-                          <div id="adminEngagementsGeneratedFiles" class="admin-engagements-generated-files"></div>
                         </section>
-                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsClubRecapsTitle">
+                        <section id="adminEngagementsTechnicalFollowup" class="admin-engagements-documents-section" aria-labelledby="adminEngagementsAutomationTitle" hidden>
                           <div class="admin-engagements-documents-section-head">
                             <div>
-                              <strong id="adminEngagementsClubRecapsTitle">R&eacute;caps clubs</strong>
-                              <small>PDF par club engag&eacute; et totaux indicatifs.</small>
-                            </div>
-                          </div>
-                          <div id="adminEngagementsClubRecapFiles" class="admin-engagements-club-recap-files" aria-live="polite"></div>
-                        </section>
-                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsAutomationTitle">
-                          <div class="admin-engagements-documents-section-head">
-                            <div>
-                              <strong id="adminEngagementsAutomationTitle">Automatisation</strong>
-                              <small>Suivi des mails et de la fermeture automatique.</small>
+                              <strong id="adminEngagementsAutomationTitle">Suivi technique</strong>
+                              <small>Mails préparés et envois automatiques.</small>
                             </div>
                           </div>
                           <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
-                          <details class="admin-engagements-advanced-actions">
-                            <summary>Actions avanc&eacute;es</summary>
-                            <div class="admin-engagements-documents-actions">
-                              <button id="adminEngagementsPrepareOpeningEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails ouverture</button>
-                              <button id="adminEngagementsPrepareClubRecapEmailsButton" class="ghost-button compact" type="button">Pr&eacute;parer mails PDF clubs</button>
-                              <button id="adminEngagementsSendOpeningEmailsButton" class="ghost-button compact" type="button">Envoyer ouvertures</button>
-                              <button id="adminEngagementsSendClubRecapEmailsButton" class="ghost-button compact" type="button">Envoyer PDF clubs</button>
-                            </div>
-                            <div id="adminEngagementsMailJobsList" class="admin-engagements-mail-jobs" aria-live="polite"></div>
-                          </details>
+                          <div id="adminEngagementsMailJobsList" class="admin-engagements-mail-jobs" aria-live="polite"></div>
                         </section>
                       </div>
                     </div>
@@ -1591,7 +1571,7 @@
                       <div class="admin-engagements-form-section-grid">
                         <label>
                           Bassin
-                          <select id="adminEngagementsPoolLength" required>
+                          <select id="adminEngagementsPoolLength">
                             <option value="">À choisir</option>
                             <option value="25">25 m</option>
                             <option value="33">33 m</option>
@@ -1600,11 +1580,11 @@
                         </label>
                         <label>
                           Nombre de lignes d'eau
-                          <input id="adminEngagementsPoolLaneCount" type="number" min="4" max="10" step="1" inputmode="numeric" required>
+                          <input id="adminEngagementsPoolLaneCount" type="number" min="4" max="10" step="1" inputmode="numeric">
                         </label>
                         <label>
                           Chronom&eacute;trage
-                          <select id="adminEngagementsTimingType" required>
+                          <select id="adminEngagementsTimingType">
                             <option value="">À choisir</option>
                             <option value="electronic">Électronique</option>
                             <option value="manual">Manuel</option>
@@ -1661,7 +1641,7 @@
                       </div>
                     </fieldset>
                     <div class="admin-portal-actions">
-                      <button type="submit">Cr&eacute;er</button>
+                      <button type="submit">Ajouter au calendrier</button>
                     </div>
                     <p id="adminEngagementsCreateMessage" class="admin-portal-message" aria-live="polite"></p>
                   </form>

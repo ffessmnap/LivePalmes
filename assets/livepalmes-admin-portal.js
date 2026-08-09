@@ -405,6 +405,7 @@
     engagementsDetailEntryStatus: document.querySelector("#adminEngagementsDetailEntryStatus"),
     engagementsDetailLevel: document.querySelector("#adminEngagementsDetailLevel"),
     engagementsDetailMeta: document.querySelector("#adminEngagementsDetailMeta"),
+    engagementsPreparationState: document.querySelector("#adminEngagementsPreparationState"),
     engagementsDetailList: document.querySelector("#adminEngagementsDetailList"),
     engagementsDetailStatus: document.querySelector("#adminEngagementsDetailStatus"),
     engagementsDetailClose: document.querySelector("#adminEngagementsDetailClose"),
@@ -518,6 +519,7 @@
     engagementsClubNewSwimmerSaveButton: document.querySelector("#adminEngagementsClubNewSwimmerSaveButton"),
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
+    engagementsTechnicalFollowup: document.querySelector("#adminEngagementsTechnicalFollowup"),
     engagementsComputerEmailLabel: document.querySelector("#adminEngagementsComputerEmailLabel"),
     engagementsGenerateTxtExportButton: document.querySelector("#adminEngagementsGenerateTxtExportButton"),
     engagementsPrepareOpeningEmailsButton: document.querySelector("#adminEngagementsPrepareOpeningEmailsButton"),
@@ -1510,17 +1512,20 @@
   }
 
   function setEngagementsDetailTab(tab) {
-    const allowedTabs = new Set(["general", "courses", "fees", "team", "officials", "swimmers", "entries", "relays", "summary", "documents"]);
-    const adminOnlyTabs = new Set(["fees", "documents"]);
+    const allowedTabs = new Set(["general", "courses", "team", "officials", "swimmers", "entries", "relays", "summary", "documents"]);
+    const adminOnlyTabs = new Set(["documents"]);
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
     const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
     const clubOfficialsNotRequired = !isEngagementAdminMode() && selectedEngagementCompetition?.officialsRequired === false;
     const requestedTabHiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(requestedTab);
+    const competitionUpcoming = (selectedEngagementCompetition?.entryStatus || "upcoming") === "upcoming";
     const nextTab = requestedTabHiddenByClubLock
       ? "summary"
       : clubOfficialsNotRequired && requestedTab === "officials"
       ? (engagementClubTeamComplete() ? "swimmers" : "team")
+      : competitionUpcoming && requestedTab === "documents"
+      ? "general"
       : !isEngagementAdminMode() && adminOnlyTabs.has(requestedTab)
       ? "general"
       : isEngagementAdminMode() && clubOnlyTabs.has(requestedTab)
@@ -1534,7 +1539,7 @@
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && buttonTab === "officials";
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && buttonTab === "documents");
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -1547,7 +1552,7 @@
       const clubOnly = clubOnlyTabs.has(panelTab);
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(panelTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
-      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && panelTab === "documents");
     });
     if (!isEngagementAdminMode() && (nextTab === "officials" || nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
       if (!engagementClubSwimmersLoaded) {
@@ -2692,6 +2697,12 @@
     if (form && sportsSection && engagementsSection) sportsSection.insertAdjacentElement("afterend", engagementsSection);
   }
 
+  function moveEngagementFeesToGeneral() {
+    const generalPanel = document.querySelector("#adminEngagementsDetailGeneralPanel");
+    const feesPanel = document.querySelector("#adminEngagementsDetailFeesPanel");
+    if (generalPanel && feesPanel) generalPanel.append(feesPanel);
+  }
+
   function syncInvitedRegionChoice(event, select) {
     const input = event.target.closest("input[type='checkbox']");
     if (!input || !select) return;
@@ -2866,8 +2877,7 @@
 
   function engagementDeadlineDisplay(competition = {}) {
     const status = competition.entryStatus || "upcoming";
-    if (status === "closed") return "Engagements fermés";
-    if (status !== "open") return "Engagements à venir";
+    if (status !== "open") return "";
     if (!competition.entryDeadlineAt) return "Engagements ouverts";
     const deadline = new Date(competition.entryDeadlineAt);
     if (Number.isNaN(deadline.getTime())) return "Engagements ouverts";
@@ -3035,6 +3045,7 @@
     const adminMode = isEngagementAdminMode();
     const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition);
     const noFees = fees.enabled === false;
+    if (elements.engagementsFeesForm?.parentElement) elements.engagementsFeesForm.parentElement.hidden = !canEdit;
     if (elements.engagementsFeesForm) elements.engagementsFeesForm.dataset.readonly = canEdit ? "false" : "true";
     if (elements.engagementsNoFees) {
       elements.engagementsNoFees.checked = noFees;
@@ -6160,6 +6171,7 @@
 
   function renderEngagementMailJobs() {
     const mount = elements.engagementsMailJobsList;
+    if (elements.engagementsTechnicalFollowup) elements.engagementsTechnicalFollowup.hidden = !engagementMailJobs.length;
     if (!mount) return;
     if (!isEngagementAdminMode()) {
       mount.innerHTML = "";
@@ -6251,12 +6263,13 @@
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const definitions = engagementDocumentDefinitions(competition);
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Exports, PDF clubs et automatisation.";
+      elements.engagementsDocumentsSummary.textContent = "Générez puis téléchargez les documents utiles.";
     }
     if (elements.engagementsComputerEmailLabel) {
       elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
         ? `Informatique : ${competition.computerEmail}`
         : "Email du responsable informatique non renseigne";
+      elements.engagementsComputerEmailLabel.hidden = !competition.computerEmail;
     }
     if (elements.engagementsDocumentsList) {
       elements.engagementsDocumentsList.innerHTML = `${definitions.map((item) => `
@@ -6980,6 +6993,7 @@
             ${group.competitions.map((competition) => {
               const action = engagementCompetitionAction(competition);
               const entryStatus = competition.entryStatus || "upcoming";
+              const deadlineLabel = engagementDeadlineDisplay(competition);
               return `
                 <article class="admin-engagements-competition ${competition.id === selectedEngagementCompetitionId ? "selected" : ""}" role="row" data-engagement-competition-card-id="${escapeHtml(competition.id)}" data-engagement-open-tab="${escapeHtml(action.tab)}">
                   <time class="admin-engagements-competition-date" role="cell" data-label="Date" datetime="${escapeHtml(competition.date || "")}">${escapeHtml(formatEngagementCompetitionDate(competition))}</time>
@@ -6998,7 +7012,7 @@
                   </div>
                   <div class="admin-engagements-competition-status" role="cell" data-label="Engagements">
                     <span class="admin-engagements-competition-entry-badge" data-entry-state="${escapeHtml(entryStatus)}">${escapeHtml(engagementStatusLabel(entryStatus))}</span>
-                    <small data-entry-status="${escapeHtml(engagementDeadlineTone(competition))}" data-engagement-deadline-competition-id="${escapeHtml(competition.id)}">${escapeHtml(engagementDeadlineDisplay(competition))}</small>
+                    ${deadlineLabel ? `<small data-entry-status="${escapeHtml(engagementDeadlineTone(competition))}" data-engagement-deadline-competition-id="${escapeHtml(competition.id)}">${escapeHtml(deadlineLabel)}</small>` : ""}
                   </div>
                   <div class="admin-engagements-competition-actions" role="cell" data-label="Action">
                     <button class="ghost-button" type="button" aria-label="${escapeHtml(`${action.label} — ${competition.name || "Compétition sans nom"}`)}" data-engagement-competition-id="${escapeHtml(competition.id)}" data-engagement-open-tab="${escapeHtml(action.tab)}">
@@ -7064,6 +7078,22 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
+    if (elements.engagementsPreparationState) {
+      const technicalReady = Boolean(competition.poolLength && competition.poolLaneCount && competition.timingType);
+      const programReady = Array.isArray(competition.events) && competition.events.length > 0;
+      const openingDate = new Date(`${competition.date || ""}T00:00:00`).getTime() - 30 * 24 * 60 * 60 * 1000;
+      const canOpenSoon = Number.isFinite(openingDate) && Date.now() >= openingDate;
+      const state = competition.entryStatus === "open"
+        ? "Engagements ouverts"
+        : !technicalReady
+        ? "Paramètres techniques à compléter"
+        : !programReady
+        ? "Programme à créer"
+        : canOpenSoon
+        ? "Prête à ouvrir les engagements"
+        : "Calendrier saisi — ouverture à partir de J-30";
+      elements.engagementsPreparationState.innerHTML = `<strong>Préparation</strong><span>${escapeHtml(state)}</span>`;
+    }
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
       elements.engagementsDetailLevel.textContent = engagementLevelLabel(competition.level);
@@ -7072,15 +7102,10 @@
     }
     if (elements.engagementsDetailEntryStatus) {
       const statusLabel = engagementStatusLabel(competition.entryStatus).toLocaleLowerCase("fr-FR");
-      const canChangeStatus = adminMode && canEditEngagementCompetition(competition);
       elements.engagementsDetailEntryStatus.textContent = `Engagements ${statusLabel}`;
       elements.engagementsDetailEntryStatus.dataset.entryStatus = competition.entryStatus || "upcoming";
       elements.engagementsDetailEntryStatus.hidden = false;
-      elements.engagementsDetailEntryStatus.disabled = !canChangeStatus;
-      elements.engagementsDetailEntryStatus.title = canChangeStatus ? "Modifier le statut des engagements" : "";
-      elements.engagementsDetailEntryStatus.setAttribute("aria-label", canChangeStatus
-        ? `Modifier le statut : engagements ${statusLabel}`
-        : `Engagements ${statusLabel}`);
+      elements.engagementsDetailEntryStatus.setAttribute("aria-label", `Statut : engagements ${statusLabel}`);
     }
     const noFees = competition.fees?.enabled === false;
     const sharedRows = [
@@ -11815,15 +11840,6 @@
     });
     elements.engagementsDetailClose?.addEventListener("click", closeEngagementCompetitionDetail);
     elements.engagementsEditButton?.addEventListener("click", () => setEngagementEditMode(true));
-    elements.engagementsDetailEntryStatus?.addEventListener("click", () => {
-      if (!isEngagementAdminMode() || !canEditEngagementCompetition()) return;
-      setEngagementsDetailTab("general");
-      setEngagementEditMode(true);
-      global.requestAnimationFrame?.(() => {
-        elements.engagementsEditEntryStatus?.scrollIntoView?.({ block: "center" });
-        elements.engagementsEditEntryStatus?.focus?.();
-      });
-    });
     elements.engagementsSaveButton?.addEventListener("click", saveEngagementCompetitionDetail);
     elements.engagementsDeleteButton?.addEventListener("click", deleteOrRequestEngagementCompetitionDeletion);
     elements.engagementsEditCancelTop?.addEventListener("click", () => {
@@ -12393,6 +12409,7 @@
     elements.engagementsEditInvitedRegionChoices?.addEventListener("change", (event) => syncInvitedRegionChoice(event, elements.engagementsEditInvitedRegionIds));
     moveEngagementStatusField();
     orderCreateCompetitionFields();
+    moveEngagementFeesToGeneral();
     setDefaultEngagementOfficialsRequired("create");
     updateCreateEngagementFeesMode();
     updateEngagementQualificationFields("create");
