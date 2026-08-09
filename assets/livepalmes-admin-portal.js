@@ -158,6 +158,12 @@
     publicAccessRequestClubSelect: document.querySelector("#adminPublicAccessRequestClubSelect"),
     publicAccessRequestClubName: document.querySelector("#adminPublicAccessRequestClubName"),
     publicAccessRequestClubId: document.querySelector("#adminPublicAccessRequestClubId"),
+    scopeContext: document.querySelector("#adminPortalScopeContext"),
+    scopeClubPrefix: document.querySelector("#adminPortalScopeClubPrefix"),
+    scopeClubCode: document.querySelector("#adminPortalScopeClubCode"),
+    scopeRole: document.querySelector("#adminPortalScopeRole"),
+    scopeRoleLong: document.querySelector("#adminPortalScopeRoleLong"),
+    accountClubCode: document.querySelector("#adminPortalAccountClubCode"),
     publicAccessRequestText: document.querySelector("#adminPublicAccessRequestText"),
     publicAccessRequestMessage: document.querySelector("#adminPublicAccessRequestMessage"),
     sessionLabel: document.querySelector("#adminPortalSessionLabel"),
@@ -537,6 +543,7 @@
     engagementsEditRegionId: document.querySelector("#adminEngagementsEditRegionId"),
     engagementsEditRegionNote: document.querySelector("#adminEngagementsEditRegionNote"),
     engagementsEditInvitedRegionIds: document.querySelector("#adminEngagementsEditInvitedRegionIds"),
+    engagementsEditInvitedRegionChoices: document.querySelector("#adminEngagementsEditInvitedRegionChoices"),
     engagementsEditDeadline: document.querySelector("#adminEngagementsEditDeadline"),
     engagementsEditComputerEmail: document.querySelector("#adminEngagementsEditComputerEmail"),
     engagementsEditPoolLength: document.querySelector("#adminEngagementsEditPoolLength"),
@@ -559,8 +566,19 @@
     engagementsRegionId: document.querySelector("#adminEngagementsRegionId"),
     engagementsRegionNote: document.querySelector("#adminEngagementsRegionNote"),
     engagementsInvitedRegionIds: document.querySelector("#adminEngagementsInvitedRegionIds"),
+    engagementsInvitedRegionChoices: document.querySelector("#adminEngagementsInvitedRegionChoices"),
+    engagementsInvitedRegionDialog: document.querySelector("#adminEngagementsInvitedRegionDialog"),
+    engagementsInvitedRegionDialogOpen: document.querySelector("#adminEngagementsInvitedRegionDialogOpen"),
+    engagementsInvitedRegionSummary: document.querySelector("#adminEngagementsInvitedRegionSummary"),
     engagementsDeadline: document.querySelector("#adminEngagementsDeadline"),
     engagementsComputerEmail: document.querySelector("#adminEngagementsComputerEmail"),
+    engagementsOfficialsManagerEmail: document.querySelector("#adminEngagementsOfficialsManagerEmail"),
+    engagementsCreateFeesEnabled: document.querySelector("#adminEngagementsCreateFeesEnabled"),
+    engagementsCreateFeesGrid: document.querySelector("#adminEngagementsCreateFeesGrid"),
+    engagementsCreateSwimmerFee: document.querySelector("#adminEngagementsCreateSwimmerFee"),
+    engagementsCreateIndividualEventFee: document.querySelector("#adminEngagementsCreateIndividualEventFee"),
+    engagementsCreateRelayFee: document.querySelector("#adminEngagementsCreateRelayFee"),
+    engagementsCreateHelloAssoUrl: document.querySelector("#adminEngagementsCreateHelloAssoUrl"),
     engagementsPoolLength: document.querySelector("#adminEngagementsPoolLength"),
     engagementsPoolLaneCount: document.querySelector("#adminEngagementsPoolLaneCount"),
     engagementsTimingType: document.querySelector("#adminEngagementsTimingType"),
@@ -572,11 +590,13 @@
     engagementsMaxEventsUnlimited: document.querySelector("#adminEngagementsMaxEventsUnlimited"),
     engagementsEntryStatus: document.querySelector("#adminEngagementsEntryStatus"),
     engagementsOfficialsRequired: document.querySelector("#adminEngagementsOfficialsRequired"),
-    engagementsCreateMessage: document.querySelector("#adminEngagementsCreateMessage")
+    engagementsCreateMessage: document.querySelector("#adminEngagementsCreateMessage"),
+    engagementsCreateChecklist: document.querySelector("#adminEngagementsCreateChecklist")
   };
 
   let adminAuth = null;
   let accessUsers = [];
+  let invitedRegionsBeforeDialog = [];
   let editingUid = "";
   let accessCurrentCursor = null;
   let accessNextCursor = null;
@@ -2039,6 +2059,20 @@
     });
   }
 
+  function renderInvitedRegionChoices(select, container) {
+    if (!select || !container) return;
+    container.innerHTML = Array.from(select.options).map((option) => `
+      <label><input type="checkbox" value="${escapeHtml(option.value)}" ${option.selected ? "checked" : ""} ${option.disabled ? "disabled" : ""}><span>${escapeHtml(option.textContent)}</span></label>
+    `).join("");
+    container.hidden = select.disabled;
+    if (select === elements.engagementsInvitedRegionIds && elements.engagementsInvitedRegionSummary) {
+      const selected = selectedRegionMultiSelectValues(select).map(regionDisplayLabel);
+      elements.engagementsInvitedRegionSummary.textContent = selected.length
+        ? selected.join(", ")
+        : "Aucune région invitée";
+    }
+  }
+
   function fillLivePalmesRegionMultiSelect(select) {
     if (!select) return;
     const currentValues = selectedRegionMultiSelectValues(select);
@@ -2056,6 +2090,8 @@
     fillLivePalmesRegionSelect(elements.engagementsRegionFilter, "Toutes les regions");
     fillLivePalmesRegionMultiSelect(elements.engagementsInvitedRegionIds);
     fillLivePalmesRegionMultiSelect(elements.engagementsEditInvitedRegionIds);
+    renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
+    renderInvitedRegionChoices(elements.engagementsEditInvitedRegionIds, elements.engagementsEditInvitedRegionChoices);
   }
 
   function accessReferenceRegionLabel(regionId) {
@@ -2258,7 +2294,10 @@
       populateAccessClubSelect(elements.accessClubId?.value || "");
       populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
       populateEngagementAccessRequestEditClubSelect(elements.engagementsAccessRequestEditClubId?.value || "");
-      if (currentAccessProfile) renderEngagementsProfile(currentAccessProfile);
+      if (currentAccessProfile) {
+        renderPortalScopeContext(currentAccessProfile);
+        renderEngagementsProfile(currentAccessProfile);
+      }
       return accessClubReference;
     }).catch((error) => {
       accessClubReferenceLoadPromise = null;
@@ -2413,10 +2452,37 @@
     if (elements.accountEmail && document.activeElement !== elements.accountEmail) {
       elements.accountEmail.value = accountEmail;
     }
+    renderPortalScopeContext(user);
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
     updateEngagementCreateFormAccess(user);
     void loadPortalPendingOverview();
+  }
+
+  function renderPortalScopeContext(user = {}) {
+    if (!elements.scopeContext) return;
+    const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
+    const clubId = engagementClubScope(user);
+    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
+    const clubName = user.clubName || clubScope.scopeName || referencedClub?.clubName || "";
+    const clubCode = referencedClub?.clubCode || "";
+    const clubLabel = clubCode || clubName || (clubId ? `Club ${clubId}` : "");
+
+    elements.scopeContext.hidden = !clubLabel;
+    elements.scopeContext.title = clubName
+      ? `Club : ${clubCode ? `${clubCode} — ` : ""}${clubName}`
+      : clubLabel;
+    if (elements.scopeClubPrefix) elements.scopeClubPrefix.hidden = !clubLabel;
+    if (elements.scopeClubCode) {
+      elements.scopeClubCode.hidden = !clubLabel;
+      elements.scopeClubCode.textContent = clubLabel;
+    }
+    if (elements.scopeRole) elements.scopeRole.hidden = true;
+    if (elements.scopeRoleLong) elements.scopeRoleLong.textContent = "";
+    if (elements.accountClubCode) {
+      elements.accountClubCode.textContent = clubLabel || "Profil";
+      elements.accountClubCode.title = clubName ? `Club : ${clubName}` : clubLabel || "Profil";
+    }
   }
 
   function renderEngagementsProfile(user = {}) {
@@ -2426,13 +2492,13 @@
     const regionScope = scopeFor("engagements.region.manage");
     const clubId = engagementClubScope(user);
     const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
-    const clubValue = user.clubName || clubScope.scopeName || referencedClub?.clubName || (clubId ? "Nom du club indisponible" : "Aucun");
+    const clubValue = user.clubName || clubScope.scopeName || referencedClub?.clubName || "Nom du club indisponible";
     const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId || referencedClub?.regionId);
     if (elements.accountScopeSentence) {
       if (capabilities.has("engagements.national.manage")) {
-        elements.accountScopeSentence.textContent = "Vous gérez les engagements au niveau national.";
+        elements.accountScopeSentence.innerHTML = `Vos droits LivePalmes sont de niveau national. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>.`;
       } else if (capabilities.has("engagements.region.manage")) {
-        elements.accountScopeSentence.innerHTML = `Vous gérez les engagements de la région <strong>${escapeHtml(regionValue)}</strong>.`;
+        elements.accountScopeSentence.innerHTML = `Vos droits LivePalmes sont de niveau régional${regionValue && regionValue !== "-" ? ` (<strong>${escapeHtml(regionValue)}</strong>)` : ""}. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>.`;
       } else if (capabilities.has("engagements.club.manage")) {
         const regionSuffix = regionValue && regionValue !== "-"
           ? `, région <strong>${escapeHtml(regionValue)}</strong>`
@@ -2503,6 +2569,12 @@
       Array.from(field.options).forEach((option) => {
         option.selected = false;
       });
+    }
+    renderInvitedRegionChoices(field, field === elements.engagementsEditInvitedRegionIds
+      ? elements.engagementsEditInvitedRegionChoices
+      : elements.engagementsInvitedRegionChoices);
+    if (field === elements.engagementsInvitedRegionIds && elements.engagementsInvitedRegionDialogOpen) {
+      elements.engagementsInvitedRegionDialogOpen.disabled = field.disabled;
     }
   }
 
@@ -2596,6 +2668,53 @@
     if (unlimited.checked) input.value = "";
   }
 
+  function setDefaultEngagementOfficialsRequired(prefix = "create") {
+    const level = prefix === "edit" ? elements.engagementsEditLevel : elements.engagementsLevel;
+    const officialsRequired = prefix === "edit" ? elements.engagementsEditOfficialsRequired : elements.engagementsOfficialsRequired;
+    if (level && officialsRequired) officialsRequired.value = level.value === "national" ? "false" : "true";
+  }
+
+  function moveEngagementStatusField() {
+    [
+      [elements.engagementsLevel, elements.engagementsEntryStatus],
+      [elements.engagementsEditLevel, elements.engagementsEditEntryStatus]
+    ].forEach(([level, status]) => {
+      const levelField = level?.closest("label");
+      const statusField = status?.closest("label");
+      if (levelField && statusField) levelField.insertAdjacentElement("afterend", statusField);
+    });
+  }
+
+  function orderCreateCompetitionFields() {
+    const form = elements.engagementsCreateForm;
+    const sportsSection = elements.engagementsPoolLength?.closest("fieldset");
+    const engagementsSection = elements.engagementsDeadline?.closest("fieldset");
+    if (form && sportsSection && engagementsSection) sportsSection.insertAdjacentElement("afterend", engagementsSection);
+  }
+
+  function syncInvitedRegionChoice(event, select) {
+    const input = event.target.closest("input[type='checkbox']");
+    if (!input || !select) return;
+    const option = Array.from(select.options).find((item) => item.value === input.value);
+    if (option) option.selected = input.checked;
+  }
+
+  function openInvitedRegionsDialog() {
+    if (!elements.engagementsInvitedRegionDialog || !elements.engagementsInvitedRegionIds) return;
+    invitedRegionsBeforeDialog = selectedRegionMultiSelectValues(elements.engagementsInvitedRegionIds);
+    renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
+    elements.engagementsInvitedRegionDialog.showModal();
+  }
+
+  function closeInvitedRegionsDialog() {
+    if (elements.engagementsInvitedRegionDialog?.returnValue === "confirm") {
+      renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
+      return;
+    }
+    setRegionMultiSelectValues(elements.engagementsInvitedRegionIds, invitedRegionsBeforeDialog, elements.engagementsRegionId?.value || "");
+    renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
+  }
+
   function fillEngagementEditForm(competition = selectedEngagementCompetition || {}) {
     if (!competition?.id) return;
     if (elements.engagementsEditName) elements.engagementsEditName.value = competition.name || "";
@@ -2618,10 +2737,9 @@
     if (elements.engagementsEditQualificationEnd) elements.engagementsEditQualificationEnd.value = competition.qualificationEndDate || "";
     if (elements.engagementsEditMissingEntryTimeMode) elements.engagementsEditMissingEntryTimeMode.value = competition.missingEntryTimeMode || "manual";
     const maxEventsPerSwimmer = Math.max(0, Math.trunc(Number(competition.maxEventsPerSwimmer) || 0));
-    if (elements.engagementsEditMaxEventsUnlimited) elements.engagementsEditMaxEventsUnlimited.checked = maxEventsPerSwimmer === 0;
-    if (elements.engagementsEditMaxEvents) elements.engagementsEditMaxEvents.value = maxEventsPerSwimmer > 0 ? String(maxEventsPerSwimmer) : "";
+    if (elements.engagementsEditMaxEvents) elements.engagementsEditMaxEvents.value = String(Math.min(5, maxEventsPerSwimmer));
     if (elements.engagementsEditEntryStatus) elements.engagementsEditEntryStatus.value = competition.entryStatus || "upcoming";
-    if (elements.engagementsEditOfficialsRequired) elements.engagementsEditOfficialsRequired.checked = competition.officialsRequired === true;
+    if (elements.engagementsEditOfficialsRequired) elements.engagementsEditOfficialsRequired.value = competition.officialsRequired === true ? "true" : "false";
     updateEngagementEditFormAccess();
     updateEngagementQualificationFields("edit");
     updateEngagementMaxEventsFields("edit");
@@ -2884,6 +3002,23 @@
       helloAssoUrl: enabled ? String(elements.engagementsHelloAssoUrl?.value || "").trim() : "",
       latePaymentSurcharge: 50
     };
+  }
+
+  function selectedCreateEngagementFeesFromForm() {
+    const enabled = elements.engagementsCreateFeesEnabled?.value === "true";
+    return {
+      enabled,
+      swimmerFee: enabled ? engagementFeeAmount(elements.engagementsCreateSwimmerFee?.value) : 0,
+      individualEventFee: enabled ? engagementFeeAmount(elements.engagementsCreateIndividualEventFee?.value) : 0,
+      relayFee: enabled ? engagementFeeAmount(elements.engagementsCreateRelayFee?.value) : 0,
+      helloAssoUrl: enabled ? String(elements.engagementsCreateHelloAssoUrl?.value || "").trim() : "",
+      latePaymentSurcharge: 50
+    };
+  }
+
+  function updateCreateEngagementFeesMode() {
+    const enabled = elements.engagementsCreateFeesEnabled?.value === "true";
+    if (elements.engagementsCreateFeesGrid) elements.engagementsCreateFeesGrid.hidden = !enabled;
   }
 
   function updateEngagementFeesFormMode(canEdit = false) {
@@ -5897,7 +6032,7 @@
         title: "Export TXT engagements",
         description: competition.computerEmail
           ? `Destination : ${competition.computerEmail}`
-          : "Email informatique a renseigner avant l'envoi.",
+          : "Email du responsable informatique a renseigner avant l'envoi.",
         status: engagementDocumentStatus(documents, "entriesTxt")
       },
       {
@@ -5914,7 +6049,7 @@
       },
       {
         key: "computerEmail",
-        title: "Email informatique",
+        title: "Email du responsable informatique",
         description: competition.computerEmail || "Non renseigne",
         status: competition.computerEmail ? "generated" : "pending"
       }
@@ -6121,7 +6256,7 @@
     if (elements.engagementsComputerEmailLabel) {
       elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
         ? `Informatique : ${competition.computerEmail}`
-        : "Email informatique non renseigne";
+        : "Email du responsable informatique non renseigne";
     }
     if (elements.engagementsDocumentsList) {
       elements.engagementsDocumentsList.innerHTML = `${definitions.map((item) => `
@@ -6984,7 +7119,7 @@
     const rows = adminMode ? [
       ["Identifiant", competition.id || "-"],
       ...sharedRows,
-      ["Email informatique", competition.computerEmail || "-"],
+      ["Email du responsable informatique", competition.computerEmail || "-"],
       ["Creation", competition.createdAt ? formatDeadline(competition.createdAt).replace(/^Limite /, "") : "-"],
       ["Derniere mise a jour", competition.updatedAt ? formatDeadline(competition.updatedAt).replace(/^Limite /, "") : "-"]
     ] : clubRows;
@@ -7078,7 +7213,7 @@
     resetEngagementClubNewSwimmerForm();
     if (elements.engagementsClubNewSwimmerAlerts) elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
     if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = "Documents a preparer.";
-    if (elements.engagementsComputerEmailLabel) elements.engagementsComputerEmailLabel.textContent = "Email informatique non renseigne";
+    if (elements.engagementsComputerEmailLabel) elements.engagementsComputerEmailLabel.textContent = "Email du responsable informatique non renseigne";
     if (elements.engagementsDocumentsList) elements.engagementsDocumentsList.innerHTML = "";
     if (elements.engagementsClubRecapFiles) elements.engagementsClubRecapFiles.innerHTML = "";
     if (elements.engagementsMailJobsList) elements.engagementsMailJobsList.innerHTML = "";
@@ -10090,9 +10225,10 @@
     const level = fields.level?.value || "regional";
     const qualificationTimesMode = fields.qualificationMode?.value || "all";
     const missingEntryTimeMode = fields.missingEntryTimeMode?.value || "manual";
-    const maxEventsPerSwimmer = fields.maxEventsUnlimited?.checked
-      ? 0
-      : Math.max(1, Math.min(20, Math.trunc(Number(fields.maxEvents?.value) || 1)));
+    const maxEventsValue = Math.trunc(Number(fields.maxEvents?.value));
+    const maxEventsPerSwimmer = Number.isFinite(maxEventsValue)
+      ? Math.max(0, Math.min(5, maxEventsValue))
+      : 0;
     return {
       name: fields.name?.value || "",
       date: fields.date?.value || "",
@@ -10104,8 +10240,10 @@
         .filter((region) => normalizedRegionKey(region) !== normalizedRegionKey(fields.regionId?.value || "")),
       entryDeadlineAt: deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? deadlineDate.toISOString() : "",
       computerEmail: fields.computerEmail?.value || "",
+      officialsManagerEmail: fields.officialsManagerEmail?.value || "",
+      fees: selectedCreateEngagementFeesFromForm(),
       entryStatus: fields.entryStatus?.value || "upcoming",
-      officialsRequired: fields.officialsRequired?.checked === true,
+      officialsRequired: fields.officialsRequired?.value === "true",
       poolLength: fields.poolLength?.value || "50",
       poolLaneCount: Math.trunc(Number(fields.poolLaneCount?.value) || 0),
       timingType: fields.timingType?.value || "electronic",
@@ -10128,6 +10266,7 @@
       invitedRegionIds: elements.engagementsInvitedRegionIds,
       deadline: elements.engagementsDeadline,
       computerEmail: elements.engagementsComputerEmail,
+      officialsManagerEmail: elements.engagementsOfficialsManagerEmail,
       poolLength: elements.engagementsPoolLength,
       poolLaneCount: elements.engagementsPoolLaneCount,
       timingType: elements.engagementsTimingType,
@@ -10302,6 +10441,7 @@
         if (!sendOpeningMail) elements.engagementsCreateMessage.textContent = `Competition creee : ${result.competition?.name || "engagements"}.`;
         if (!sendOpeningMail) elements.engagementsCreateMessage.dataset.tone = "ok";
       }
+      elements.engagementsCreateChecklist?.showModal();
     } catch (error) {
       if (elements.engagementsCreateMessage) {
         elements.engagementsCreateMessage.textContent = `Creation impossible : ${error?.message || error}`;
@@ -10623,6 +10763,7 @@
     const authUid = global.firebase?.auth?.().currentUser?.uid || "";
     if (activeAuthUid && activeAuthUid !== authUid) {
       currentAccessProfile = null;
+      renderPortalScopeContext({});
       portalPendingOverviewLoaded = false;
       portalPendingOverviewLoading = false;
       renderPortalPendingOverview();
@@ -10641,6 +10782,7 @@
     activeAuthUid = signedIn ? authUid : "";
     if (!signedIn) {
       currentAccessProfile = null;
+      renderPortalScopeContext({});
       portalPendingOverviewLoaded = false;
       portalPendingOverviewLoading = false;
       renderPortalPendingOverview();
@@ -12230,14 +12372,29 @@
     elements.engagementsClubEntriesList?.addEventListener("input", () => {
       if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
     });
-    elements.engagementsLevel?.addEventListener("change", () => updateEngagementCreateFormAccess());
+    elements.engagementsLevel?.addEventListener("change", () => {
+      setDefaultEngagementOfficialsRequired("create");
+      updateEngagementCreateFormAccess();
+    });
     elements.engagementsRegionId?.addEventListener("change", () => updateEngagementCreateFormAccess());
-    elements.engagementsEditLevel?.addEventListener("change", () => updateEngagementEditFormAccess());
+    elements.engagementsEditLevel?.addEventListener("change", () => {
+      setDefaultEngagementOfficialsRequired("edit");
+      updateEngagementEditFormAccess();
+    });
     elements.engagementsEditRegionId?.addEventListener("change", () => updateEngagementEditFormAccess());
     elements.engagementsQualificationMode?.addEventListener("change", () => updateEngagementQualificationFields("create"));
+    elements.engagementsCreateFeesEnabled?.addEventListener("change", updateCreateEngagementFeesMode);
     elements.engagementsEditQualificationMode?.addEventListener("change", () => updateEngagementQualificationFields("edit"));
     elements.engagementsMaxEventsUnlimited?.addEventListener("change", () => updateEngagementMaxEventsFields("create"));
     elements.engagementsEditMaxEventsUnlimited?.addEventListener("change", () => updateEngagementMaxEventsFields("edit"));
+    elements.engagementsInvitedRegionChoices?.addEventListener("change", (event) => syncInvitedRegionChoice(event, elements.engagementsInvitedRegionIds));
+    elements.engagementsInvitedRegionDialogOpen?.addEventListener("click", openInvitedRegionsDialog);
+    elements.engagementsInvitedRegionDialog?.addEventListener("close", closeInvitedRegionsDialog);
+    elements.engagementsEditInvitedRegionChoices?.addEventListener("change", (event) => syncInvitedRegionChoice(event, elements.engagementsEditInvitedRegionIds));
+    moveEngagementStatusField();
+    orderCreateCompetitionFields();
+    setDefaultEngagementOfficialsRequired("create");
+    updateCreateEngagementFeesMode();
     updateEngagementQualificationFields("create");
     updateEngagementQualificationFields("edit");
     updateEngagementMaxEventsFields("create");

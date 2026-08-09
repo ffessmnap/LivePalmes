@@ -10,16 +10,23 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260808-admin-calendar-mobile-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260809-header-reset-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
       <img class="admin-portal-federal-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260722-admin-portal-1" alt="FFESSM Nage avec palmes">
       <div class="admin-portal-brand">
-        <h1>Portail LivePalmes</h1>
+        <h1><span class="admin-portal-title-prefix">Portail </span>LivePalmes</h1>
         <img class="admin-portal-livepalmes-logo" src="logo-livepalmes.png?v=20260602-admin-portal-1" alt="">
       </div>
       <div class="admin-portal-topbar-actions">
+        <div id="adminPortalScopeContext" class="admin-portal-scope-context" aria-label="Périmètre de gestion" hidden>
+          <span id="adminPortalScopeClubPrefix" class="admin-portal-scope-prefix">Club</span>
+          <strong id="adminPortalScopeClubCode"></strong>
+          <span id="adminPortalScopeRole" class="admin-portal-scope-role" hidden>
+            <span id="adminPortalScopeRoleLong"></span>
+          </span>
+        </div>
         <button id="adminPortalNavToggle" class="admin-portal-nav-toggle" type="button" aria-expanded="false" aria-controls="adminPortalNavigation" aria-label="Ouvrir le menu de navigation" title="Ouvrir le menu de navigation" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
           <span id="adminPortalNavCurrent" class="admin-portal-nav-current">Navigation</span>
@@ -27,7 +34,7 @@
         <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
           <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
             <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
-            <span class="admin-portal-account-short">Profil</span>
+            <span id="adminPortalAccountClubCode" class="admin-portal-account-short">Profil</span>
             <span aria-hidden="true">⌄</span>
           </button>
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
@@ -941,18 +948,19 @@
                               <select id="adminEngagementsEditRegionId"></select>
                               <small id="adminEngagementsEditRegionNote" class="admin-engagements-field-note"></small>
                             </label>
-                            <label>
+                            <div class="admin-engagements-invited-regions-field">
                               R&eacute;gions invit&eacute;es
-                              <select id="adminEngagementsEditInvitedRegionIds" multiple size="4"></select>
-                              <small class="admin-engagements-field-note">Pour le mail d'ouverture uniquement.</small>
-                            </label>
+                              <div id="adminEngagementsEditInvitedRegionChoices" class="admin-engagements-region-choices"></div>
+                              <select id="adminEngagementsEditInvitedRegionIds" multiple hidden></select>
+                              <small>Pour le mail d'ouverture uniquement.</small>
+                            </div>
                           </div>
                         </fieldset>
                         <fieldset class="admin-engagements-form-section">
                           <legend>Engagements</legend>
                           <div class="admin-engagements-form-section-grid">
                             <label>
-                              Limite des engagements
+                              Clôture des engagements
                               <input id="adminEngagementsEditDeadline" type="datetime-local" step="3600">
                             </label>
                             <label class="admin-engagements-entry-status-field">
@@ -964,16 +972,22 @@
                               </select>
                             </label>
                             <label>
-                              Max &eacute;preuves par nageur
-                              <input id="adminEngagementsEditMaxEvents" type="number" min="1" max="20" step="1" inputmode="numeric">
+                              Limite par nageur
+                              <select id="adminEngagementsEditMaxEvents">
+                                <option value="0">Aucune limite</option>
+                                <option value="1">1 épreuve</option>
+                                <option value="2">2 épreuves</option>
+                                <option value="3">3 épreuves</option>
+                                <option value="4">4 épreuves</option>
+                                <option value="5">5 épreuves</option>
+                              </select>
                             </label>
-                            <label class="admin-engagements-check admin-engagements-max-events-unlimited">
-                              <input id="adminEngagementsEditMaxEventsUnlimited" type="checkbox">
-                              <span>Aucune limite d'&eacute;preuves par nageur</span>
-                            </label>
-                            <label class="admin-engagements-check">
-                              <input id="adminEngagementsEditOfficialsRequired" type="checkbox">
-                              <span>Officiels requis</span>
+                            <label>
+                              Officiels requis
+                              <select id="adminEngagementsEditOfficialsRequired">
+                                <option value="true">Oui</option>
+                                <option value="false">Non</option>
+                              </select>
                             </label>
                           </div>
                         </fieldset>
@@ -1029,7 +1043,7 @@
                           <legend>Documents</legend>
                           <div class="admin-engagements-form-section-grid">
                             <label>
-                              Email informatique
+                              Email du responsable informatique de la comp&eacute;tition
                               <input id="adminEngagementsEditComputerEmail" type="email" maxlength="180" autocomplete="email">
                             </label>
                           </div>
@@ -1487,7 +1501,13 @@
 
               <div id="adminEngagementsCreatePanel" class="admin-engagements-tab-panel" data-engagements-tab-panel="create" data-engagements-create hidden>
                 <section class="admin-engagements-card" aria-label="Cr&eacute;er une comp&eacute;tition">
-                  <form id="adminEngagementsCreateForm" class="admin-engagements-form">
+                  <form id="adminEngagementsCreateForm" class="admin-engagements-form admin-engagements-create-form">
+                    <div class="admin-engagements-create-intro">
+                      <div>
+                        <span>Nouvelle compétition</span>
+                      </div>
+                      <small>Les engagements ne peuvent être ouverts qu’à partir de J-30.</small>
+                    </div>
                     <fieldset class="admin-engagements-form-section">
                       <legend>Compétition</legend>
                       <div class="admin-engagements-form-section-grid">
@@ -1520,18 +1540,22 @@
                           <select id="adminEngagementsRegionId"></select>
                           <small id="adminEngagementsRegionNote" class="admin-engagements-field-note"></small>
                         </label>
-                        <label>
+                        <div class="admin-engagements-invited-regions-field">
                           R&eacute;gions invit&eacute;es
-                          <select id="adminEngagementsInvitedRegionIds" multiple size="4"></select>
-                          <small class="admin-engagements-field-note">Pour le mail d'ouverture uniquement.</small>
-                        </label>
+                          <div class="admin-engagements-invited-regions-summary">
+                            <button id="adminEngagementsInvitedRegionDialogOpen" class="ghost-button compact" type="button">Choisir les régions</button>
+                            <small id="adminEngagementsInvitedRegionSummary">Aucune région invitée</small>
+                          </div>
+                          <select id="adminEngagementsInvitedRegionIds" multiple hidden></select>
+                          <small>Destinataires du mail d'ouverture.</small>
+                        </div>
                       </div>
                     </fieldset>
                     <fieldset class="admin-engagements-form-section">
-                      <legend>Engagements</legend>
+                      <legend>Engagements <small>(facultatif)</small></legend>
                       <div class="admin-engagements-form-section-grid">
                         <label>
-                          Limite des engagements
+                          Clôture des engagements
                           <input id="adminEngagementsDeadline" type="datetime-local" step="3600">
                         </label>
                         <label>
@@ -1543,16 +1567,22 @@
                           </select>
                         </label>
                         <label>
-                          Max &eacute;preuves par nageur
-                          <input id="adminEngagementsMaxEvents" type="number" min="1" max="20" step="1" inputmode="numeric" disabled>
+                          Limite par nageur
+                          <select id="adminEngagementsMaxEvents">
+                            <option value="0">Aucune limite</option>
+                            <option value="1">1 épreuve</option>
+                            <option value="2">2 épreuves</option>
+                            <option value="3">3 épreuves</option>
+                            <option value="4">4 épreuves</option>
+                            <option value="5">5 épreuves</option>
+                          </select>
                         </label>
-                        <label class="admin-engagements-check admin-engagements-max-events-unlimited">
-                          <input id="adminEngagementsMaxEventsUnlimited" type="checkbox" checked>
-                          <span>Aucune limite d'&eacute;preuves par nageur</span>
-                        </label>
-                        <label class="admin-engagements-check">
-                          <input id="adminEngagementsOfficialsRequired" type="checkbox">
-                          <span>Officiels requis</span>
+                        <label>
+                          Officiels requis
+                          <select id="adminEngagementsOfficialsRequired">
+                            <option value="true">Oui</option>
+                            <option value="false">Non</option>
+                          </select>
                         </label>
                       </div>
                     </fieldset>
@@ -1604,13 +1634,30 @@
                         </label>
                       </div>
                     </fieldset>
-                    <fieldset class="admin-engagements-form-section">
-                      <legend>Documents</legend>
+                      <fieldset class="admin-engagements-form-section">
+                      <legend>Informations complémentaires</legend>
                       <div class="admin-engagements-form-section-grid">
                         <label>
-                          Email informatique
+                          Email du responsable informatique de la comp&eacute;tition
                           <input id="adminEngagementsComputerEmail" type="email" maxlength="180" autocomplete="email">
                         </label>
+                        <label>
+                          Email du responsable juge de la compétition
+                          <input id="adminEngagementsOfficialsManagerEmail" type="email" maxlength="180" autocomplete="email">
+                        </label>
+                        <label>
+                          Frais d'engagement
+                          <select id="adminEngagementsCreateFeesEnabled">
+                            <option value="false">Aucun frais</option>
+                            <option value="true">Renseigner les frais</option>
+                          </select>
+                        </label>
+                        <div id="adminEngagementsCreateFeesGrid" class="admin-engagements-fees-grid" hidden>
+                          <label>Forfait par nageur<input id="adminEngagementsCreateSwimmerFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
+                          <label>Frais par course<input id="adminEngagementsCreateIndividualEventFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
+                          <label>Frais par relais<input id="adminEngagementsCreateRelayFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
+                          <label>Lien HelloAsso<input id="adminEngagementsCreateHelloAssoUrl" type="url" maxlength="300" placeholder="https://www.helloasso.com/..."></label>
+                        </div>
                       </div>
                     </fieldset>
                     <div class="admin-portal-actions">
@@ -1618,6 +1665,33 @@
                     </div>
                     <p id="adminEngagementsCreateMessage" class="admin-portal-message" aria-live="polite"></p>
                   </form>
+                  <dialog id="adminEngagementsInvitedRegionDialog" class="admin-engagements-region-dialog" aria-labelledby="adminEngagementsInvitedRegionDialogTitle">
+                    <form method="dialog">
+                      <div class="admin-engagements-region-dialog-head">
+                        <div>
+                          <h3 id="adminEngagementsInvitedRegionDialogTitle">Régions invitées</h3>
+                          <p>Cochez les régions à inviter, puis validez votre sélection.</p>
+                        </div>
+                        <button class="ghost-button compact" value="cancel" type="submit">Fermer</button>
+                      </div>
+                      <div id="adminEngagementsInvitedRegionChoices" class="admin-engagements-region-choices"></div>
+                      <div class="admin-portal-actions">
+                        <button value="confirm" type="submit">Valider la sélection</button>
+                      </div>
+                    </form>
+                  </dialog>
+                  <dialog id="adminEngagementsCreateChecklist" class="admin-engagements-create-checklist" aria-labelledby="adminEngagementsCreateChecklistTitle">
+                    <form method="dialog">
+                      <h3 id="adminEngagementsCreateChecklistTitle">Compétition créée</h3>
+                      <p>Les informations principales sont enregistrées. À compléter ensuite :</p>
+                      <ul>
+                        <li>Créer le programme des courses.</li>
+                        <li>Vérifier les frais d’engagement, si nécessaire.</li>
+                        <li>Ouvrir les engagements à partir de J-30.</li>
+                      </ul>
+                      <div class="admin-portal-actions"><button value="close" type="submit">Voir la compétition</button></div>
+                    </form>
+                  </dialog>
                 </section>
               </div>
 
@@ -2265,7 +2339,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260808-entry-opening-guard-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260809-header-reset-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>

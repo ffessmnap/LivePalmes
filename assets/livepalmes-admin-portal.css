@@ -8556,6 +8556,225 @@
   background: #f8fafb;
 }
 
+.admin-engagements-invited-regions-field {
+  display: grid;
+  gap: 8px;
+  min-height: 50px;
+  border-top: 1px solid #e7ecee;
+  padding: 8px 12px;
+  color: #52636a;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-invited-regions-field small {
+  color: #5f746f;
+  font-size: 0.74rem;
+}
+
+.admin-engagements-region-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px 12px;
+  max-height: 168px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 7px;
+  background: #f8fafb;
+}
+
+.admin-engagements-region-choices label,
+.admin-engagements-inline-control-values {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-engagements-region-choices input {
+  min-height: 18px;
+  width: 18px;
+}
+
+.admin-engagements-inline-control {
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr) !important;
+  align-items: center;
+}
+
+.admin-engagements-inline-control-values input[type="number"] {
+  width: 76px;
+  min-height: 36px;
+}
+
+
+/* Création : une fiche compacte qui sépare l'essentiel des réglages rares. */
+.admin-engagements-create-form {
+  gap: 12px;
+}
+
+.admin-engagements-create-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #cfe1e3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f3fafb;
+}
+
+.admin-engagements-create-intro > div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-engagements-create-intro span,
+.admin-engagements-create-intro small {
+  color: #5f746f;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.admin-engagements-create-intro strong {
+  color: #12312d;
+  font-size: 0.9rem;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section {
+  overflow: hidden;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section-grid {
+  gap: 0;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section-grid > label,
+.admin-engagements-create-form .admin-engagements-invited-regions-field {
+  min-height: 58px;
+}
+
+.admin-engagements-create-more {
+  border: 1px solid #d8e0e3;
+  border-radius: 9px;
+  background: #fbfcfc;
+}
+
+.admin-engagements-create-more > summary {
+  cursor: pointer;
+  padding: 12px;
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-create-more[open] > summary {
+  border-bottom: 1px solid #e7ecee;
+}
+
+.admin-engagements-create-more .admin-engagements-form-section {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+@media (max-width: 700px) {
+  .admin-engagements-create-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.admin-engagements-invited-regions-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-engagements-invited-regions-summary small {
+  color: #5f746f;
+  font-weight: 700;
+}
+
+.admin-engagements-region-dialog {
+  width: min(620px, calc(100vw - 24px));
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-region-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-region-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.admin-engagements-region-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-engagements-region-dialog h3,
+.admin-engagements-region-dialog p {
+  margin: 0;
+}
+
+.admin-engagements-create-checklist {
+  width: min(460px, calc(100vw - 24px));
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-create-checklist::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-create-checklist form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.admin-engagements-create-checklist h3,
+.admin-engagements-create-checklist p {
+  margin: 0;
+}
+
+.admin-engagements-create-checklist p,
+.admin-engagements-create-checklist li {
+  color: #52636a;
+}
+
+.admin-engagements-create-checklist ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.admin-engagements-region-dialog p {
+  margin-top: 4px;
+  color: #5f746f;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 560px) {
+  .admin-engagements-invited-regions-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 #adminEngagementsDetail .admin-engagements-form {
   gap: 14px;
 }
@@ -14336,4 +14555,167 @@
   background: #ffffff;
   color: #12312d;
   font: inherit;
+}
+
+/* Bandeau portail : marque, périmètre et compte restent lisibles à toutes les largeurs. */
+.admin-portal-page .admin-portal-topbar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px max(var(--portal-page-gutter), calc((100vw - var(--portal-shell-max)) / 2));
+}
+
+.admin-portal-page .admin-portal-federal-logo {
+  grid-column: 1;
+  width: 46px;
+}
+
+.admin-portal-page .admin-portal-brand {
+  grid-column: 2;
+  justify-self: start;
+  gap: 0;
+}
+
+.admin-portal-page .admin-portal-brand h1 {
+  font-size: 1.12rem;
+}
+
+.admin-portal-page .admin-portal-livepalmes-logo {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-topbar-actions {
+  display: flex;
+  grid-column: 3;
+  gap: 8px;
+  justify-self: end;
+}
+
+.admin-portal-page .admin-portal-scope-context {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 5px;
+  border-color: #cfe1e3;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #f3fafb;
+  color: #31454c;
+  font-size: 0.76rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-portal-page .admin-portal-scope-context[hidden] {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-scope-prefix {
+  color: #61757c;
+}
+
+.admin-portal-page .admin-portal-scope-context > strong {
+  color: var(--portal-color-accent-strong);
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-portal-page .admin-portal-scope-role {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-account-menu > button strong {
+  max-width: min(22vw, 220px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .admin-portal-page .admin-portal-topbar {
+    min-height: 54px;
+    gap: 8px;
+    padding-block: 6px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    width: 40px;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1rem;
+  }
+
+  .admin-portal-page .admin-portal-scope-prefix {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-scope-context {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button strong {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    min-height: 48px;
+    gap: 6px;
+    padding: 4px 8px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    grid-column: 1;
+    grid-row: 1;
+    width: 36px;
+  }
+
+  .admin-portal-page .admin-portal-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 0.92rem;
+  }
+
+  .admin-portal-page .admin-portal-topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-portal-scope-context {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button {
+    min-height: 36px;
+    border-color: transparent;
+    padding-inline: 7px;
+    background: transparent;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button strong {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    display: inline-block;
+    max-width: 72px;
+    overflow: hidden;
+    color: var(--portal-color-accent-strong);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-portal-page .admin-portal-title-prefix {
+    display: none;
+  }
 }
