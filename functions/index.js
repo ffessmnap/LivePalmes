@@ -6293,6 +6293,12 @@ function isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt, nowMs = D
   return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= nowMs;
 }
 
+function isEngagementOpeningTooEarly(entryStatus, competitionDate, nowMs = Date.now()) {
+  if (cleanEngagementEntryStatus(entryStatus) !== "open" || !competitionDate) return false;
+  const startMs = Date.parse(`${competitionDate}T00:00:00.000Z`);
+  return Number.isFinite(startMs) && startMs - nowMs > 30 * 24 * 60 * 60 * 1000;
+}
+
 function cleanEngagementRegionIds(raw = [], excludedRegionId = "") {
   const values = Array.isArray(raw) ? raw : [raw];
   const excludedKey = normalizedEngagementRegionKey(excludedRegionId);
@@ -6317,7 +6323,8 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const location = cleanText(raw.location).slice(0, 160);
   const level = cleanEngagementCompetitionLevel(raw.level);
   const entryDeadlineAt = cleanEngagementDeadlineAt(raw.entryDeadlineAt);
-  const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email informatique");
+  const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
+  const officialsManagerEmail = cleanOptionalEmail(raw.officialsManagerEmail, "Email du responsable juge");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
   const poolLength = cleanEngagementPoolLength(raw.poolLength);
   const poolLaneCount = cleanEngagementPoolLaneCount(raw.poolLaneCount);
@@ -6355,6 +6362,9 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)) {
     throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements : la date de cloture est depassee.");
   }
+  if (isEngagementOpeningTooEarly(entryStatus, date)) {
+    throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements plus de 30 jours avant la competition.");
+  }
 
   const events = Object.prototype.hasOwnProperty.call(raw, "events")
     ? cleanEngagementCompetitionEvents(raw.events)
@@ -6370,6 +6380,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     level,
     entryDeadlineAt,
     computerEmail,
+    officialsManagerEmail,
     entryStatus,
     officialsRequired: raw.officialsRequired === true,
     poolLength,
@@ -6977,7 +6988,7 @@ async function prepareEngagementTxtEmailJob(db, competitionSnapshot, options = {
       jobCount: 0,
       errorCount: 1,
       errors: [{
-        message: "Email informatique non renseigne."
+        message: "Email du responsable informatique non renseigne."
       }],
       generatedFiles: cleanEngagementGeneratedFiles(competition.generatedFiles || [])
     };
