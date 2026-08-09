@@ -358,7 +358,8 @@ assert.ok(portal.includes("!selectedEngagementCompetition?.id || !isEngagementAd
 assert.ok(portalCss.includes(".admin-engagements-workspace-back"));
 assert.ok(portalCss.includes('.admin-engagements-level-badge'));
 assert.ok(portalCss.includes('#adminEngagementsView[data-engagements-tab="calendar"] #adminEngagementsDetail'));
-assert.ok(portal.includes('setEngagementsDetailTab("general");\n      setEngagementEditMode(true);'));
+assert.ok(portal.includes('Statut : engagements ${statusLabel}'));
+assert.equal(portalHtml.includes('id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" type="button"'), false);
 assert.ok(portalHtml.includes('id="adminEngagementsClubOfficialSwimmerSelect"'));
 assert.equal(portalHtml.includes('id="adminEngagementsClubPersonSwimmerSelect"'), false);
 assert.ok(portalHtml.includes('id="adminEngagementsClubPersonSwimmerSearch"'));
