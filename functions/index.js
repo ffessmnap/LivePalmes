@@ -6570,8 +6570,7 @@ exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
   }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
-  const peopleRosterRef = engagementClubPeopleRosterRef(db, context.clubId);
-  const [competition, entry, peopleRoster] = await db.getAll(competitionRef, entryRef, peopleRosterRef);
+  const [competition, entry] = await db.getAll(competitionRef, entryRef);
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
@@ -6585,14 +6584,9 @@ exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
       regionId: context.regionId,
       status: "active"
     }),
-    peopleRosterReady: Boolean(peopleRoster.exists && cleanText(peopleRoster.data()?.generatedAt)),
-    people: peopleRoster.exists && cleanText(peopleRoster.data()?.generatedAt)
-      ? engagementClubPeopleRosterPeopleFromData(peopleRoster.data() || {})
-        .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"))
-      : [],
     readStats: portalReadStats("getEngagementClubEntry", startedAt, {
-      baseDocuments: 4,
-      cacheHit: Boolean(peopleRoster.exists && cleanText(peopleRoster.data()?.generatedAt))
+      baseDocuments: 3,
+      cacheHit: false
     })
   };
 });

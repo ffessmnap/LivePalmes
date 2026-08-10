@@ -261,14 +261,9 @@
     engagementsTabPanels: document.querySelectorAll("[data-engagements-tab-panel]"),
     engagementsDetailTabButtons: document.querySelectorAll("[data-engagements-detail-tab-button]"),
     engagementsDetailTabPanels: document.querySelectorAll("[data-engagements-detail-tab-panel]"),
+    engagementsDetailStepButtons: document.querySelectorAll("[data-engagement-step-button]"),
+    engagementsDetailTabGroups: document.querySelectorAll("[data-engagement-step-group]"),
     engagementsSaveState: document.querySelector("#adminEngagementsSaveState"),
-    engagementsMobileStepNav: document.querySelector("#adminEngagementsMobileStepNav"),
-    engagementsMobileStepPrev: document.querySelector("#adminEngagementsMobileStepPrev"),
-    engagementsMobileStepCurrent: document.querySelector("#adminEngagementsMobileStepCurrent"),
-    engagementsMobileStepLabel: document.querySelector("#adminEngagementsMobileStepLabel"),
-    engagementsMobileStepMeta: document.querySelector("#adminEngagementsMobileStepMeta"),
-    engagementsMobileStepNext: document.querySelector("#adminEngagementsMobileStepNext"),
-    engagementsMobileStepMenu: document.querySelector("#adminEngagementsMobileStepMenu"),
     engagementsStepFooter: document.querySelector("#adminEngagementsStepFooter"),
     engagementsFooterPrev: document.querySelector("#adminEngagementsFooterPrev"),
     engagementsFooterNext: document.querySelector("#adminEngagementsFooterNext"),
@@ -406,7 +401,6 @@
     engagementsDetailEntryStatus: document.querySelector("#adminEngagementsDetailEntryStatus"),
     engagementsDetailLevel: document.querySelector("#adminEngagementsDetailLevel"),
     engagementsDetailMeta: document.querySelector("#adminEngagementsDetailMeta"),
-    engagementsPreparationState: document.querySelector("#adminEngagementsPreparationState"),
     engagementsDetailList: document.querySelector("#adminEngagementsDetailList"),
     engagementsDetailStatus: document.querySelector("#adminEngagementsDetailStatus"),
     engagementsDetailClose: document.querySelector("#adminEngagementsDetailClose"),
@@ -1376,8 +1370,15 @@
 
   const ENGAGEMENT_DETAIL_TAB_LABELS = Object.freeze({
     general: "Général", courses: "Programme", fees: "Frais", team: "Chef d'équipe",
-    officials: "Officiels", swimmers: "Nageurs", entries: "Courses", relays: "Relais",
+    officials: "Officiels", swimmers: "Nageurs", entries: "Courses individuelles", relays: "Relais",
     summary: "Récapitulatif", documents: "Documents"
+  });
+
+  const ENGAGEMENT_DETAIL_TAB_GROUPS = Object.freeze({
+    information: ["general", "courses"],
+    participants: ["team", "officials", "swimmers"],
+    entries: ["entries", "relays"],
+    summary: ["summary", "documents"]
   });
 
   function engagementDetailTabLabel(tab = "") {
@@ -1430,20 +1431,34 @@
     }
   }
 
-  function updateEngagementMobileStepNavigation() {
+  function engagementDetailTabGroup(tab = "") {
+    return Object.entries(ENGAGEMENT_DETAIL_TAB_GROUPS).find(([, tabs]) => tabs.includes(tab))?.[0] || "information";
+  }
+
+  function updateEngagementStepNavigation() {
     const tabs = visibleEngagementDetailTabs();
     const currentIndex = Math.max(0, tabs.indexOf(activeEngagementsDetailTab));
     const previousTab = tabs[currentIndex - 1] || "";
     const nextTab = tabs[currentIndex + 1] || "";
-    if (elements.engagementsMobileStepNav) elements.engagementsMobileStepNav.hidden = tabs.length < 2;
-    if (elements.engagementsMobileStepLabel) elements.engagementsMobileStepLabel.textContent = engagementDetailTabLabel(tabs[currentIndex] || activeEngagementsDetailTab);
-    if (elements.engagementsMobileStepMeta) elements.engagementsMobileStepMeta.textContent = `Étape ${currentIndex + 1}/${tabs.length} · Toutes les étapes`;
-    [elements.engagementsMobileStepPrev, elements.engagementsFooterPrev].forEach((button) => {
+    const activeGroup = engagementDetailTabGroup(activeEngagementsDetailTab);
+    const visibleTabs = new Set(tabs);
+    elements.engagementsDetailStepButtons?.forEach((button) => {
+      const group = button.dataset.engagementStepButton || "";
+      const groupVisible = (ENGAGEMENT_DETAIL_TAB_GROUPS[group] || []).some((tab) => visibleTabs.has(tab));
+      button.hidden = !groupVisible;
+      button.setAttribute("aria-pressed", group === activeGroup ? "true" : "false");
+    });
+    elements.engagementsDetailTabGroups?.forEach((group) => {
+      const groupName = group.dataset.engagementStepGroup || "";
+      const visibleGroupTabCount = (ENGAGEMENT_DETAIL_TAB_GROUPS[groupName] || []).filter((tab) => visibleTabs.has(tab)).length;
+      group.hidden = groupName !== activeGroup || visibleGroupTabCount < 2;
+    });
+    [elements.engagementsFooterPrev].forEach((button) => {
       if (!button) return;
       button.disabled = !previousTab;
       button.dataset.engagementStepTarget = previousTab;
     });
-    [elements.engagementsMobileStepNext, elements.engagementsFooterNext].forEach((button) => {
+    [elements.engagementsFooterNext].forEach((button) => {
       if (!button) return;
       button.disabled = !nextTab;
       button.dataset.engagementStepTarget = nextTab;
@@ -1451,13 +1466,6 @@
     if (elements.engagementsFooterPrev) elements.engagementsFooterPrev.textContent = previousTab ? `← ${engagementDetailTabLabel(previousTab)}` : "Première étape";
     if (elements.engagementsFooterNext) elements.engagementsFooterNext.textContent = nextTab ? `${engagementDetailTabLabel(nextTab)} →` : "Dernière étape";
     if (elements.engagementsStepFooter) elements.engagementsStepFooter.hidden = tabs.length < 2;
-    if (elements.engagementsMobileStepMenu) {
-      elements.engagementsMobileStepMenu.innerHTML = tabs.map((tab, index) => `
-        <button type="button" data-engagement-mobile-step="${escapeHtml(tab)}" aria-current="${tab === activeEngagementsDetailTab ? "step" : "false"}">
-          <span>${index + 1}</span>${escapeHtml(engagementDetailTabLabel(tab))}
-        </button>
-      `).join("");
-    }
   }
 
   function navigateEngagementStep(button) {
@@ -1466,8 +1474,6 @@
   }
 
   function requestEngagementDetailTab(tab) {
-    if (elements.engagementsMobileStepMenu) elements.engagementsMobileStepMenu.hidden = true;
-    if (elements.engagementsMobileStepCurrent) elements.engagementsMobileStepCurrent.setAttribute("aria-expanded", "false");
     if (tab === activeEngagementsDetailTab) return;
     if (!confirmLeaveDirtyEngagementTab()) return;
     if (!isEngagementAdminMode() && engagementClubWriteLocked() && clubEngagementTabHiddenWhenWriteLocked(tab)) {
@@ -1574,6 +1580,9 @@
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
       panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && panelTab === "documents");
     });
+    if (!isEngagementAdminMode() && (nextTab === "team" || nextTab === "officials") && canUse("engagements.club.manage") && !engagementClubPeopleLoaded) {
+      void loadEngagementClubPeople({ silent: true });
+    }
     if (!isEngagementAdminMode() && (nextTab === "team" || nextTab === "officials" || nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
       if (!engagementClubSwimmersLoaded) {
         void loadEngagementClubSwimmers({ silent: engagementClubSwimmersLoaded });
@@ -1595,7 +1604,7 @@
       loadEngagementMailJobs();
     }
     rememberEngagementDetailTab(nextTab);
-    updateEngagementMobileStepNavigation();
+    updateEngagementStepNavigation();
   }
 
   function firebaseAccountError(error) {
@@ -2382,10 +2391,10 @@
           summary: "Finalisation"
         }
       : {
-          information: "1. Informations",
-          participants: "2. Participants",
-          entries: "3. Engagements",
-          summary: "4. Vérification et envoi"
+          information: "Informations",
+          participants: "Participants",
+          entries: "Engagements",
+          summary: "Récapitulatif"
         };
     document.querySelectorAll("[data-engagement-step-label]").forEach((label) => {
       label.textContent = labels[label.dataset.engagementStepLabel] || "";
@@ -2481,6 +2490,7 @@
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
     updateEngagementCreateFormAccess(user);
+    if (canUse("engagements.club.manage")) void loadEngagementCompetitions();
     void loadPortalPendingOverview();
   }
 
@@ -4183,13 +4193,14 @@
   function engagementEntryTimeHelpLabel(entry = {}, manualAllowed = false) {
     const warning = entry.entryTimeWarning ? ` - Alerte : ${entry.entryTimeWarning}` : "";
     if (entry.entryTimeMode === "known") {
-      return `Temps LivePalmes${entry.date ? ` - ${formatShortDate(entry.date)}` : ""}${entry.location ? ` - ${entry.location}` : ""}${warning}`;
+      return `${[
+        entry.date ? formatShortDate(entry.date) : "",
+        entry.location || ""
+      ].filter(Boolean).join(" · ")}${warning}`;
     }
-    if (entry.entryTimeMode === "manual") return `Temps modifie manuellement${warning}`;
-    if (entry.entryTimeMode === "default595999") return `Aucun historique - 59:59.99${warning}`;
-    return manualAllowed
-      ? "Temps calcule automatiquement a partir de LivePalmes. Si aucun temps n'existe, 59:59.99 sera utilise."
-      : "Temps calcule automatiquement a partir de LivePalmes. Si aucun temps n'existe, 59:59.99 sera utilise.";
+    if (entry.entryTimeMode === "manual") return `Temps saisi manuellement${warning}`;
+    if (entry.entryTimeMode === "default595999") return `Aucun temps connu${warning}`;
+    return "Temps en cours de calcul";
   }
 
   function engagementClubProgramSessionsForEntries() {
@@ -5169,11 +5180,20 @@
   }
 
   function engagementClubEntryTimeHistoryLabel(item = {}) {
-    return [
-      formatEngagementEntryTimeInput(item.entryTime) || item.entryTime || "Temps inconnu",
-      item.date ? formatShortDate(item.date) : "",
-      item.location || ""
-    ].filter(Boolean).join(" — ");
+    return formatEngagementEntryTimeInput(item.entryTime) || item.entryTime || "Temps inconnu";
+  }
+
+  function updateEngagementClubTimeDialogHelp(select) {
+    const row = select?.closest("[data-engagement-club-time-dialog-row]");
+    const help = row?.querySelector("[data-engagement-club-time-dialog-help]");
+    const option = select?.selectedOptions?.[0];
+    if (!help || !option) return;
+    const mode = option.dataset.entryTimeMode || select.dataset.entryTimeMode || "";
+    help.textContent = mode === "manual"
+      ? "Temps saisi manuellement"
+      : mode === "default595999"
+      ? "Aucun temps connu"
+      : [option.dataset.historyDate || "", option.dataset.historyLocation || ""].filter(Boolean).join(" · ");
   }
 
   function populateEngagementClubEntryTimeHistory(swimmer = {}) {
@@ -5189,18 +5209,24 @@
         select.querySelectorAll("option[data-history-option]").forEach((option) => option.remove());
         (historyByEvent.get(eventCode) || []).forEach((item) => {
           const value = formatEngagementEntryTimeInput(item.entryTime) || item.entryTime || "";
-          const identity = [value, item.date || "", item.location || ""].join("|");
-          if (!value || seen.has(identity) || value === originalTime) return;
-          seen.add(identity);
+          if (!value || seen.has(value)) return;
+          seen.add(value);
           const option = document.createElement("option");
           option.value = value;
           option.textContent = engagementClubEntryTimeHistoryLabel(item);
           option.dataset.historyOption = "true";
+          option.dataset.entryTimeMode = "known";
+          option.dataset.historyDate = item.date ? formatShortDate(item.date) : "";
+          option.dataset.historyLocation = item.location || "";
           select.append(option);
         });
         select.value = Array.from(select.options).some((option) => option.value === selectedTime)
           ? selectedTime
           : originalTime;
+        const hasAlternatives = select.querySelectorAll("option[data-history-option]").length > 0;
+        select.disabled = !hasAlternatives;
+        select.dataset.hasAlternatives = hasAlternatives ? "true" : "false";
+        updateEngagementClubTimeDialogHelp(select);
       });
   }
 
@@ -5299,18 +5325,18 @@
           </div>
           <div class="admin-engagements-club-time-dialog-value">
             ${manualAllowed ? `
-              <select class="admin-engagements-club-time-history-select" data-engagement-club-time-history-select="${escapeHtml(eventCode)}" data-original-time="${escapeHtml(displayLabel)}" data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" aria-label="Temps d'engagement ${escapeHtml(event.shortLabel || eventCode)}">
-                <option value="${escapeHtml(displayLabel)}">${escapeHtml(displayLabel)}</option>
+              <select class="admin-engagements-club-time-history-select" data-engagement-club-time-history-select="${escapeHtml(eventCode)}" data-original-time="${escapeHtml(displayLabel)}" data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-has-alternatives="false" aria-label="Temps d'engagement ${escapeHtml(event.shortLabel || eventCode)}" disabled>
+                <option value="${escapeHtml(displayLabel)}" data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-history-date="${escapeHtml(displayedEntry.date ? formatShortDate(displayedEntry.date) : "")}" data-history-location="${escapeHtml(displayedEntry.location || "")}">${escapeHtml(displayLabel)}</option>
               </select>
             ` : `
               <span data-engagement-club-time-dialog-display data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-automatic-label="${escapeHtml(automaticLabel)}">${escapeHtml(displayLabel)}</span>
             `}
             ${manualAllowed ? `
-              <button class="ghost-button compact" type="button" data-engagement-club-time-toggle data-automatic-time="${escapeHtml(automaticValue)}">${manualEditing ? "Rétablir auto" : "Modifier"}</button>
+              <button class="ghost-button compact" type="button" data-engagement-club-time-toggle data-automatic-time="${escapeHtml(automaticValue)}">${manualEditing ? "Rétablir auto" : "Saisie libre"}</button>
               <input type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" aria-label="Temps manuel ${escapeHtml(event.shortLabel || eventCode)}" data-engagement-club-time-dialog-input value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
             ` : ""}
           </div>
-          <small class="admin-engagements-club-time-dialog-help">${escapeHtml(help)}</small>
+          <small class="admin-engagements-club-time-dialog-help" data-engagement-club-time-dialog-help>${escapeHtml(help)}</small>
         </div>
       `;
     }).join("");
@@ -7423,6 +7449,17 @@
     if (!visible) setEngagementSaveState("");
   }
 
+  function setEngagementClubEntryLoadingState(state = "") {
+    if (!elements.engagementsDetail) return;
+    if (state) {
+      elements.engagementsDetail.dataset.clubEntryLoading = state;
+      elements.engagementsDetail.setAttribute("aria-busy", state === "loading" ? "true" : "false");
+      return;
+    }
+    delete elements.engagementsDetail.dataset.clubEntryLoading;
+    elements.engagementsDetail.removeAttribute("aria-busy");
+  }
+
   function renderEngagementCompetitionDetail(competition = {}) {
     setEngagementCompetitionDetailVisible(true);
     engagementDetailEditing = false;
@@ -7456,22 +7493,6 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
-    if (elements.engagementsPreparationState) {
-      const technicalReady = Boolean(competition.poolLength && competition.poolLaneCount && competition.timingType);
-      const programReady = Array.isArray(competition.events) && competition.events.length > 0;
-      const openingDate = new Date(`${competition.date || ""}T00:00:00`).getTime() - 30 * 24 * 60 * 60 * 1000;
-      const canOpenSoon = Number.isFinite(openingDate) && Date.now() >= openingDate;
-      const state = competition.entryStatus === "open"
-        ? "Engagements ouverts"
-        : !technicalReady
-        ? "Paramètres techniques à compléter"
-        : !programReady
-        ? "Programme à créer"
-        : canOpenSoon
-        ? "Prête à ouvrir les engagements"
-        : "Calendrier saisi — ouverture à partir de J-30";
-      elements.engagementsPreparationState.innerHTML = `<strong>Préparation</strong><span>${escapeHtml(state)}</span>`;
-    }
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
       elements.engagementsDetailLevel.textContent = engagementLevelLabel(competition.level);
@@ -7559,6 +7580,7 @@
     resetEngagementClubEntriesAutosave();
     engagementClubPersistedSwimmerIds.clear();
     setEngagementClubEntriesDirty(false);
+    setEngagementClubEntryLoadingState("");
     engagementClubRecapEntries = [];
     engagementClubRecapEntriesCompetitionId = "";
     engagementClubRecapEntriesLoading = false;
@@ -7658,6 +7680,7 @@
     setEngagementCompetitionDetailVisible(true);
     setEngagementsDetailTab(initialTab);
     if (cachedWorkspace) {
+      setEngagementClubEntryLoadingState("");
       selectedEngagementCompetition = cloneEngagementClubEntry(cachedWorkspace.competition);
       selectedEngagementClubEntry = cloneEngagementClubEntry(cachedWorkspace.entry);
       renderEngagementCompetitionDetail(selectedEngagementCompetition);
@@ -7666,15 +7689,23 @@
       clearEngagementDetailTabDirty();
       if (cachedWorkspaceFresh) return;
     } else {
-      if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
-      if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
-      if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
+      const calendarCompetition = engagementCompetitions.find((competition) => competition.id === cleanId) || null;
+      if (calendarCompetition) {
+        selectedEngagementCompetition = cloneEngagementClubEntry(calendarCompetition);
+        renderEngagementCompetitionDetail(selectedEngagementCompetition);
+      } else {
+        if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
+        if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
+        if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
+      }
+      if (clubMode) setEngagementClubEntryLoadingState("loading");
       if (elements.engagementsDetailStatus) {
-        elements.engagementsDetailStatus.textContent = "Chargement de la fiche...";
+        elements.engagementsDetailStatus.textContent = clubMode
+          ? "Chargement de vos engagements enregistrés..."
+          : "Chargement de la fiche...";
         elements.engagementsDetailStatus.dataset.tone = "loading";
       }
     }
-    let clubPeoplePromise = null;
     const pendingEntryMutations = engagementClubEntryMutationQueue;
     try {
       const result = await (clubMode
@@ -7682,15 +7713,11 @@
         : callFunction("getEngagementCompetition", { competitionId: cleanId }));
       if (selectedEngagementCompetitionId !== cleanId) return;
       selectedEngagementCompetition = result.competition || null;
+      setEngagementClubEntryLoadingState("");
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty();
       if (clubMode) {
         selectedEngagementClubEntry = result.entry || {};
-        if (result.peopleRosterReady) {
-          engagementClubPeople = Array.isArray(result.people) ? result.people : [];
-          engagementClubPeopleLoaded = true;
-          renderEngagementClubPeople();
-        }
         setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
         renderEngagementClubEntry(selectedEngagementClubEntry);
         engagementClubWorkspaceCache.set(cleanId, {
@@ -7703,18 +7730,13 @@
           elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
           elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
         }
-        if (!result.peopleRosterReady) clubPeoplePromise ||= loadEngagementClubPeople({ silent: true });
-        clubPeoplePromise?.then(() => {
-          if (selectedEngagementCompetitionId !== cleanId) return;
-          const teamLeader = selectedEngagementClubEntry?.teamLeader || {};
-          renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(teamLeader)?.id || "");
-        });
       } else {
         selectedEngagementClubEntry = null;
         renderEngagementClubEntry({});
       }
     } catch (error) {
       if (selectedEngagementCompetitionId !== cleanId) return;
+      setEngagementClubEntryLoadingState(clubMode && !cachedWorkspace ? "error" : "");
       if (elements.engagementsDetailStatus) {
         elements.engagementsDetailStatus.textContent = cachedWorkspace
           ? `Actualisation impossible, derniere version affichee : ${error?.message || error}`
@@ -10518,6 +10540,16 @@
     if (!canManageEngagements() || engagementCompetitionsLoading) return;
     if (engagementCompetitionsLoaded && !force) return;
     engagementCompetitionsLoading = true;
+    if (!engagementCompetitions.length && elements.engagementsCalendarList) {
+      elements.engagementsCalendarList.innerHTML = `
+        <div class="admin-engagements-calendar-loading" role="status">
+          <strong>Chargement des compétitions...</strong>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </div>
+      `;
+    }
     if (elements.engagementsStatus) {
       elements.engagementsStatus.hidden = false;
       elements.engagementsStatus.textContent = "Chargement du calendrier...";
@@ -11839,17 +11871,18 @@
     elements.engagementsDetailTabButtons?.forEach((button) => {
       button.addEventListener("click", () => requestEngagementDetailTab(button.dataset.engagementsDetailTabButton));
     });
-    [elements.engagementsMobileStepPrev, elements.engagementsMobileStepNext, elements.engagementsFooterPrev, elements.engagementsFooterNext].forEach((button) => {
+    elements.engagementsDetailStepButtons?.forEach((button) => {
+      button.addEventListener("click", () => {
+        const requestedGroup = button.dataset.engagementStepButton || "";
+        if (requestedGroup === engagementDetailTabGroup(activeEngagementsDetailTab)) return;
+        const groupTabs = ENGAGEMENT_DETAIL_TAB_GROUPS[requestedGroup] || [];
+        const visibleTabs = new Set(visibleEngagementDetailTabs());
+        const target = groupTabs.find((tab) => visibleTabs.has(tab)) || "";
+        if (target) requestEngagementDetailTab(target);
+      });
+    });
+    [elements.engagementsFooterPrev, elements.engagementsFooterNext].forEach((button) => {
       button?.addEventListener("click", () => navigateEngagementStep(button));
-    });
-    elements.engagementsMobileStepCurrent?.addEventListener("click", () => {
-      const opening = Boolean(elements.engagementsMobileStepMenu?.hidden);
-      if (elements.engagementsMobileStepMenu) elements.engagementsMobileStepMenu.hidden = !opening;
-      elements.engagementsMobileStepCurrent.setAttribute("aria-expanded", opening ? "true" : "false");
-    });
-    elements.engagementsMobileStepMenu?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-engagement-mobile-step]");
-      if (button) requestEngagementDetailTab(button.dataset.engagementMobileStep);
     });
     elements.engagementsCalendarList?.addEventListener("click", (event) => {
       if (event.target.closest("[data-engagement-filters-reset]")) {
@@ -12603,22 +12636,26 @@
       const row = button.closest("[data-engagement-club-time-dialog-row]");
       const input = row?.querySelector("[data-engagement-club-time-dialog-input]");
       const display = row?.querySelector("[data-engagement-club-time-dialog-display]");
+      const historySelect = row?.querySelector("[data-engagement-club-time-history-select]");
+      const help = row?.querySelector("[data-engagement-club-time-dialog-help]");
       if (!input) return;
       if (input.disabled) {
         input.value = button.dataset.automaticTime || "59:59.99";
         input.hidden = false;
         input.disabled = false;
         button.textContent = "Rétablir auto";
+        if (help) help.textContent = "Temps saisi manuellement";
         input.focus?.();
       } else {
         input.value = "";
         input.hidden = true;
         input.disabled = true;
-        button.textContent = "Modifier";
+        button.textContent = "Saisie libre";
         if (display) {
           display.textContent = display.dataset.automaticLabel || "59:59.99";
           display.dataset.entryTimeMode = "known";
         }
+        if (historySelect) updateEngagementClubTimeDialogHelp(historySelect);
       }
       if (elements.engagementsClubTimesDialogMessage) {
         elements.engagementsClubTimesDialogMessage.textContent = "";
@@ -12628,6 +12665,8 @@
     elements.engagementsClubTimesDialogList?.addEventListener("input", (event) => {
       if (!event.target.matches("[data-engagement-club-time-dialog-input]")) return;
       event.target.setCustomValidity?.("");
+      const help = event.target.closest("[data-engagement-club-time-dialog-row]")?.querySelector("[data-engagement-club-time-dialog-help]");
+      if (help) help.textContent = "Temps saisi manuellement";
       if (elements.engagementsClubTimesDialogMessage) {
         elements.engagementsClubTimesDialogMessage.textContent = "";
         elements.engagementsClubTimesDialogMessage.dataset.tone = "";
@@ -12644,9 +12683,10 @@
           input.disabled = true;
         }
         if (toggle) {
-          toggle.textContent = "Modifier";
+          toggle.textContent = "Saisie libre";
           toggle.dataset.automaticTime = event.target.value;
         }
+        updateEngagementClubTimeDialogHelp(event.target);
         if (elements.engagementsClubTimesDialogMessage) {
           elements.engagementsClubTimesDialogMessage.textContent = "";
           elements.engagementsClubTimesDialogMessage.dataset.tone = "";
