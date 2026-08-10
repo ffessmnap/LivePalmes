@@ -8094,6 +8094,86 @@
   grid-column: 1;
 }
 
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields {
+  grid-template-columns: minmax(0, 640px);
+  gap: 10px;
+  max-width: 680px;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults {
+  display: grid;
+  grid-column: 1;
+  max-height: 230px;
+  overflow: auto;
+  border: 1px solid #d8e2e5;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults[hidden] {
+  display: none;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-top: 1px solid #e5edef;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #26383f;
+  text-align: left;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults button:first-child {
+  border-top: 0;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults button:hover,
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults button:focus-visible {
+  background: #eef7f8;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults small {
+  color: #64747a;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults .admin-engagements-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: #64747a;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonCreate {
+  grid-column: 1;
+  justify-self: start;
+  min-height: 0;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #087f8c;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonCreate:hover,
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonCreate:focus-visible {
+  color: #075d66;
+  text-decoration: underline;
+}
+
 #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-picker {
   grid-column: 2 / -1;
 }

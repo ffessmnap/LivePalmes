@@ -523,6 +523,17 @@ assert.ok(functions.includes("Renseignez la date et l'heure de cloture avant d'o
 assert.ok(functions.includes("Seule une competition a venir peut etre retiree du calendrier par la region."));
 assert.ok(portal.includes("Programme en préparation."));
 assert.ok(portal.includes("function confirmOpenedCompetitionSensitiveChanges"));
+assert.ok(portal.includes("const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false"));
+assert.ok(functions.includes("const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false"));
+assert.ok(portal.includes("preserveLocalSwimmerSelections: true"));
+assert.ok(portalHtml.includes('id="adminEngagementsClubTeamPersonResults"'));
+assert.ok(portalHtml.includes('id="adminEngagementsClubTeamPersonCreate"'));
+assert.ok(portal.includes("data-engagement-club-team-person-result"));
+assert.ok(portal.includes("...engagementClubSwimmers"));
+assert.ok(portal.includes("function confirmEngagementClubTeamLeaderCandidate"));
+assert.ok(portal.includes("Voulez-vous lui attribuer ce rôle ?"));
+assert.ok(portal.includes("renderEngagementClubTeamPersonOptions(personId)"));
+assert.ok(portal.includes("let selectionFailed = false"));
 assert.ok(portalCss.includes("#adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dd"));
 assert.ok(portalCss.includes("#adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-action"));
 assert.ok(portalCss.includes("#adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-members"));

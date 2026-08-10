@@ -59,7 +59,7 @@ const ENGAGEMENT_POOL_LENGTHS = new Set(["25", "33", "50"]);
 const ENGAGEMENT_TIMING_TYPES = new Set(["manual", "electronic"]);
 const ENGAGEMENT_QUALIFICATION_TIME_MODES = new Set(["all", "period"]);
 const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999"]);
-const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
 const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
 const ENGAGEMENT_LICENSE_VERIFICATION_STATUSES = new Set(["verified", "pending", "rejected", "conflict"]);
 const ENGAGEMENT_LICENSE_SEASON_STATUSES = new Set(["to_check", "valid", "invalid"]);
@@ -9789,7 +9789,7 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     if (ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE && !licenseNumber) {
       throw new HttpsError("invalid-argument", "Numero de licence obligatoire pour chaque nageur.");
     }
-    if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
+    if (licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
       throw new HttpsError("invalid-argument", "Chaque licence doit respecter le format A-12-34567.");
     }
     const licenseVerificationStatus = storedLicenseNumber
