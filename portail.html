@@ -1136,7 +1136,7 @@
                           <div id="adminEngagementsClubTeamPersonFields" class="admin-engagements-form-section-grid" hidden>
                             <label class="admin-engagements-club-team-search">
                               Rechercher un membre du club
-                              <input id="adminEngagementsClubTeamPersonSearch" type="search" autocomplete="off" placeholder="Nom, prénom ou licence">
+                              <input id="adminEngagementsClubTeamPersonSearch" type="search" autocomplete="off" placeholder="Nom, prénom ou licence" aria-controls="adminEngagementsClubTeamPersonResults">
                             </label>
                             <label class="admin-engagements-club-team-picker">
                               Membre du club
@@ -1144,6 +1144,8 @@
                                 <option value="">Choisir un membre ou saisir manuellement</option>
                               </select>
                             </label>
+                            <div id="adminEngagementsClubTeamPersonResults" class="admin-engagements-club-person-swimmer-results" aria-live="polite"></div>
+                            <button id="adminEngagementsClubTeamPersonCreate" class="ghost-button" type="button">La personne n&rsquo;apparaît pas ? L&rsquo;ajouter</button>
                             <label>
                               Nom
                               <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters">

@@ -1,5 +1,5 @@
 (function attachLivePalmesAdminPortal(global) {
-  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = true;
+  const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
   const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260803-national-swimmers-all-1";
@@ -443,6 +443,8 @@
     engagementsClubTeamPersonFields: document.querySelector("#adminEngagementsClubTeamPersonFields"),
     engagementsClubTeamPersonSearch: document.querySelector("#adminEngagementsClubTeamPersonSearch"),
     engagementsClubTeamPersonSelect: document.querySelector("#adminEngagementsClubTeamPersonSelect"),
+    engagementsClubTeamPersonResults: document.querySelector("#adminEngagementsClubTeamPersonResults"),
+    engagementsClubTeamPersonCreate: document.querySelector("#adminEngagementsClubTeamPersonCreate"),
     engagementsClubTeamFirstName: document.querySelector("#adminEngagementsClubTeamFirstName"),
     engagementsClubTeamLastName: document.querySelector("#adminEngagementsClubTeamLastName"),
     engagementsClubTeamBirthDateLabel: document.querySelector("#adminEngagementsClubTeamBirthDateLabel"),
@@ -1556,7 +1558,7 @@
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
       panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && panelTab === "documents");
     });
-    if (!isEngagementAdminMode() && (nextTab === "officials" || nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
+    if (!isEngagementAdminMode() && (nextTab === "team" || nextTab === "officials" || nextTab === "swimmers" || nextTab === "entries" || nextTab === "relays") && canUse("engagements.club.manage")) {
       if (!engagementClubSwimmersLoaded) {
         void loadEngagementClubSwimmers({ silent: engagementClubSwimmersLoaded });
       } else if (nextTab === "officials") {
@@ -3124,7 +3126,33 @@
 
   function engagementClubTeamLeaderPeople(query = "") {
     const terms = normalizedEngagementClubSearch(query).split(/\s+/).filter(Boolean);
-    return engagementClubPeople
+    const peopleBySwimmer = new Map();
+    const peopleByLicense = new Map();
+    engagementClubPeople.forEach((person) => {
+      if (!person.active) return;
+      const swimmerKey = [person.swimmerSource || "performances", person.swimmerIndexId].filter(Boolean).join(":");
+      if (swimmerKey) peopleBySwimmer.set(swimmerKey, person);
+      const licenseKey = engagementClubPersonLicenseKey(person.licenseNumber);
+      if (licenseKey) peopleByLicense.set(licenseKey, person);
+    });
+    const candidates = [
+      ...engagementClubPeople
+        .filter((person) => person.active)
+        .map((person) => ({ ...person, selectionId: person.id, source: "person" })),
+      ...engagementClubSwimmers
+        .filter((swimmer) => swimmer.active !== false)
+        .filter((swimmer) => {
+          const swimmerKey = [swimmer.source || "performances", swimmer.swimmerIndexId || swimmer.id].filter(Boolean).join(":");
+          return !peopleBySwimmer.has(swimmerKey) && !peopleByLicense.has(engagementClubPersonLicenseKey(swimmer.licenseNumber));
+        })
+        .map((swimmer) => ({
+          ...swimmer,
+          selectionId: `swimmer:${swimmer.source || "performances"}:${swimmer.swimmerIndexId || swimmer.id}`,
+          source: "swimmer",
+          roles: { swimmer: true, teamLeader: false }
+        }))
+    ];
+    return candidates
       .filter((person) => {
         if (!person.active) return false;
         if (!terms.length) return true;
@@ -3145,10 +3173,47 @@
     elements.engagementsClubTeamPersonSelect.innerHTML = [
       `<option value="">${options.length ? "Choisir un membre ou saisir manuellement" : "Aucun membre correspondant — saisie manuelle"}</option>`,
       ...options.map((person) => `
-        <option value="${escapeHtml(person.id)}">${escapeHtml([person.lastName, person.firstName].filter(Boolean).join(" "))} - licence ${escapeHtml(person.licenseNumber || "-")}</option>
+        <option value="${escapeHtml(person.selectionId || person.id)}">${escapeHtml([person.lastName, person.firstName].filter(Boolean).join(" "))} - licence ${escapeHtml(person.licenseNumber || "-")}</option>
       `)
     ].join("");
-    elements.engagementsClubTeamPersonSelect.value = options.some((person) => person.id === selectedPersonId) ? selectedPersonId : "";
+    elements.engagementsClubTeamPersonSelect.value = options.some((person) => (person.selectionId || person.id) === selectedPersonId) ? selectedPersonId : "";
+    if (elements.engagementsClubTeamPersonResults) {
+      const hasQuery = Boolean(String(query).trim());
+      const visiblePeople = options.slice(0, 12);
+      elements.engagementsClubTeamPersonResults.hidden = !hasQuery;
+      elements.engagementsClubTeamPersonResults.innerHTML = !hasQuery
+        ? ""
+        : visiblePeople.length
+        ? visiblePeople.map((person) => {
+          const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Membre sans nom";
+          const role = person.roles?.teamLeader ? "chef d'équipe" : person.source === "swimmer" ? "nageur du club" : "membre du club";
+          const details = [person.licenseNumber ? `licence ${person.licenseNumber}` : "licence non renseignée", role];
+          return `<button type="button" data-engagement-club-team-person-result="${escapeHtml(person.selectionId || person.id)}"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(details.join(" · "))}</small></button>`;
+        }).join("")
+        : `<p class="admin-engagements-empty">Aucun membre trouvé.</p>`;
+    }
+  }
+
+  function setEngagementClubTeamManualFieldsVisible(visible) {
+    if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.dataset.manualEntry = visible ? "true" : "false";
+    const pickerLabel = elements.engagementsClubTeamPersonSelect?.closest("label");
+    if (pickerLabel) pickerLabel.hidden = true;
+    [
+      elements.engagementsClubTeamFirstName,
+      elements.engagementsClubTeamLastName,
+      elements.engagementsClubTeamBirthDate,
+      elements.engagementsClubTeamSex,
+      elements.engagementsClubTeamLicense,
+      elements.engagementsClubTeamExternal
+    ].forEach((field) => {
+      const label = field?.closest("label");
+      if (label) label.hidden = !visible;
+    });
+    if (!visible) {
+      if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = true;
+      if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = true;
+    }
+    if (elements.engagementsClubTeamPersonCreate) elements.engagementsClubTeamPersonCreate.hidden = visible;
   }
 
   function findEngagementClubTeamPersonFromFields(teamLeader = {}) {
@@ -3186,6 +3251,26 @@
     if (elements.engagementsClubTeamExternalClubName) elements.engagementsClubTeamExternalClubName.value = "";
     updateEngagementClubTeamFormMode();
     return true;
+  }
+
+  async function confirmEngagementClubTeamLeaderCandidate(candidate = {}) {
+    if (!candidate?.selectionId) return null;
+    if (candidate.roles?.teamLeader === true) return candidate;
+    const name = engagementClubPersonDisplayName(candidate);
+    if (!global.confirm(`${name} n'est pas encore déclaré comme chef d'équipe. Voulez-vous lui attribuer ce rôle ?`)) {
+      return null;
+    }
+    if (candidate.source !== "swimmer") return candidate;
+    const result = await callFunction("saveEngagementClubPerson", {
+      person: engagementClubPersonPayloadWithRole(candidate, "teamLeader")
+    });
+    const person = result.person || null;
+    if (!person?.id) throw new Error("Membre non retourné après l'ajout du rôle chef d'équipe.");
+    engagementClubPeople = [
+      ...engagementClubPeople.filter((item) => item.id !== person.id),
+      person
+    ];
+    return { ...person, selectionId: person.id, source: "person" };
   }
 
   function engagementClubOfficialPeople() {
@@ -4148,7 +4233,10 @@
       } catch (error) {
         if (revision === engagementClubEntryMutationRevision && competitionId === selectedEngagementCompetitionId && engagementClubLastPersistedEntry) {
           setEngagementClubEntriesDirty(false);
-          renderEngagementClubMutationResult(cloneEngagementClubEntry(engagementClubLastPersistedEntry), renderScope);
+          const entryToRender = preserveLocalSwimmerSelections
+            ? mergeEngagementClubEntryWithLocalSwimmerSelections(cloneEngagementClubEntry(engagementClubLastPersistedEntry))
+            : cloneEngagementClubEntry(engagementClubLastPersistedEntry);
+          renderEngagementClubMutationResult(entryToRender, renderScope);
         }
         if (messageElement && competitionId === selectedEngagementCompetitionId) {
           messageElement.textContent = `${errorPrefix} : ${error?.message || error}`;
@@ -4174,6 +4262,7 @@
       competitionId,
       messageElement: elements.engagementsClubSwimmersMessage,
       loadingMessage: changes.length > 1 ? `Enregistrement de ${changes.length} modifications...` : "Enregistrement du nageur...",
+      preserveLocalSwimmerSelections: true,
       execute: () => callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes })
     });
   }
@@ -4536,7 +4625,7 @@
                   <span role="cell" data-label="Sexe">${escapeHtml(swimmer.sex || "-")}</span>
                   <span role="cell" data-label="Catégorie">${escapeHtml(category || "-")}</span>
                   <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numero de licence">
-                    ${licenseNumber ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>` : `<input type="text" maxlength="60" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" aria-label="Numero de licence obligatoire, format A-12-34567" data-engagement-club-swimmer-license required>`}
+                    ${licenseNumber ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>` : `<input type="text" maxlength="60" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" aria-label="Numero de licence, format A-12-34567" data-engagement-club-swimmer-license>`}
                     ${licenseStatusLabel ? `<small title="${escapeHtml(licenseStatusLabel)}">${escapeHtml(licenseStatusLabel)}</small>` : ""}
                   </div>
                 </div>
@@ -4643,7 +4732,7 @@
             <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numero de licence">
               ${licenseLocked
                 ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>`
-                : `<input type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres" aria-label="Numero de licence obligatoire, format A-12-34567" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>`}
+                : `<input type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres" aria-label="Numero de licence, format A-12-34567" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>`}
               ${licenseStatusLabel ? `<small title="${escapeHtml(licenseStatusLabel)}">${escapeHtml(licenseStatusLabel)}</small>` : ""}
             </div>
           </div>
@@ -5905,18 +5994,21 @@
     if (elements.engagementsClubTeamRenunciationLabel) elements.engagementsClubTeamRenunciationLabel.hidden = !renounced;
     const knownPerson = engagementClubPeople.find((person) => person.id === elements.engagementsClubTeamPersonSelect?.value);
     const knownPersonReady = Boolean(knownPerson?.birthDate && knownPerson?.sex);
-    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = !declaringPerson || (Boolean(knownPerson) && knownPersonReady);
+    const manualEntry = elements.engagementsClubTeamPersonFields?.dataset.manualEntry === "true";
+    const showManualFields = declaringPerson && (Boolean(knownPerson) ? !knownPersonReady : manualEntry);
+    setEngagementClubTeamManualFieldsVisible(showManualFields);
+    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = !declaringPerson || (Boolean(knownPerson) && knownPersonReady) || (!knownPerson && !manualEntry);
     [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamLicense].forEach((field) => {
-      if (field) field.required = declaringPerson;
+      if (field) field.required = showManualFields;
     });
-    if (elements.engagementsClubTeamBirthDateLabel) elements.engagementsClubTeamBirthDateLabel.hidden = !declaringPerson || externalClub;
-    if (elements.engagementsClubTeamSexLabel) elements.engagementsClubTeamSexLabel.hidden = !declaringPerson || externalClub;
-    if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.required = declaringPerson && !externalClub;
-    if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.required = declaringPerson && !externalClub;
+    if (elements.engagementsClubTeamBirthDateLabel) elements.engagementsClubTeamBirthDateLabel.hidden = !showManualFields || externalClub;
+    if (elements.engagementsClubTeamSexLabel) elements.engagementsClubTeamSexLabel.hidden = !showManualFields || externalClub;
+    if (elements.engagementsClubTeamBirthDate) elements.engagementsClubTeamBirthDate.required = showManualFields && !externalClub;
+    if (elements.engagementsClubTeamSex) elements.engagementsClubTeamSex.required = showManualFields && !externalClub;
     if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.required = renounced;
-    if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = !declaringPerson || !externalClub;
-    if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = !declaringPerson || !externalClub;
-    if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.required = declaringPerson && externalClub;
+    if (elements.engagementsClubTeamExternalClubIdLabel) elements.engagementsClubTeamExternalClubIdLabel.hidden = !showManualFields || !externalClub;
+    if (elements.engagementsClubTeamExternalClubNameLabel) elements.engagementsClubTeamExternalClubNameLabel.hidden = !showManualFields || !externalClub;
+    if (elements.engagementsClubTeamExternalClubId) elements.engagementsClubTeamExternalClubId.required = showManualFields && externalClub;
   }
 
   function renderEngagementClubEntry(entry = selectedEngagementClubEntry || {}) {
@@ -7584,6 +7676,10 @@
       return;
     }
     if (!selectedEngagementCompetitionId) return;
+    if (activeEngagementsDetailTab === "team") {
+      renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
+      return;
+    }
     if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
     if (activeEngagementsDetailTab === "swimmers") renderEngagementClubSwimmers();
     if (activeEngagementsDetailTab === "entries") renderEngagementClubEntries();
@@ -7673,7 +7769,7 @@
       missingLicenseInput?.focus?.();
       return;
     }
-    const invalidLicense = selectedSwimmers.some((swimmer) => !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(swimmer.licenseNumber));
+    const invalidLicense = selectedSwimmers.some((swimmer) => swimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(swimmer.licenseNumber));
     if (invalidLicense) {
       if (messageElement) {
         messageElement.textContent = "Chaque licence doit respecter le format A-12-34567.";
@@ -11985,7 +12081,11 @@
       }
       updateEngagementClubTeamFormMode();
       if (changedMode === "person") {
-        await loadEngagementClubPeople({ silent: true });
+        await Promise.all([
+          loadEngagementClubPeople({ silent: true }),
+          loadEngagementClubSwimmers({ silent: true })
+        ]);
+        setEngagementClubTeamManualFieldsVisible(false);
         renderEngagementClubTeamPersonOptions("");
         elements.engagementsClubTeamPersonSearch?.focus();
       }
@@ -11993,6 +12093,7 @@
     });
     elements.engagementsClubTeamPersonSearch?.addEventListener("input", () => {
       if (elements.engagementsClubTeamPersonSelect) elements.engagementsClubTeamPersonSelect.value = "";
+      setEngagementClubTeamManualFieldsVisible(false);
       applyEngagementClubTeamPerson("");
       renderEngagementClubTeamPersonOptions("");
       updateEngagementClubTeamFormMode();
@@ -12003,13 +12104,55 @@
       if (radio) radio.checked = true;
       if (elements.engagementsClubTeamRenunciation) elements.engagementsClubTeamRenunciation.checked = false;
       updateEngagementClubTeamFormMode();
-      const personId = elements.engagementsClubTeamPersonSelect.value;
+      const selectionId = elements.engagementsClubTeamPersonSelect.value;
+      let person = engagementClubTeamLeaderPeople().find((candidate) => (candidate.selectionId || candidate.id) === selectionId) || null;
+      let selectionFailed = false;
+      try {
+        person = await confirmEngagementClubTeamLeaderCandidate(person || {});
+      } catch (error) {
+        if (elements.engagementsClubTeamMessage) {
+          elements.engagementsClubTeamMessage.textContent = `Ajout du chef d'équipe impossible : ${error?.message || error}`;
+          elements.engagementsClubTeamMessage.dataset.tone = "error";
+        }
+        person = null;
+        selectionFailed = true;
+      }
+      const personId = person?.id || "";
+      if (!personId) {
+        elements.engagementsClubTeamPersonSelect.value = "";
+        applyEngagementClubTeamPerson("");
+        if (!selectionFailed && elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
+        return;
+      }
+      renderEngagementClubTeamPersonOptions(personId);
+      elements.engagementsClubTeamPersonSelect.value = personId;
       applyEngagementClubTeamPerson(personId);
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
       if (personId) {
         const saved = await saveEngagementClubTeamLeader();
+        if (saved && person) {
+          engagementClubPeople = engagementClubPeople.map((candidate) => candidate.id === person.id
+            ? { ...candidate, roles: { ...candidate.roles, teamLeader: true } }
+            : candidate);
+          renderEngagementClubTeamPersonOptions(person.id);
+        }
         if (!saved && elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = false;
       }
+    });
+    elements.engagementsClubTeamPersonResults?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-engagement-club-team-person-result]");
+      const personId = button?.dataset.engagementClubTeamPersonResult || "";
+      if (!personId || !elements.engagementsClubTeamPersonSelect) return;
+      elements.engagementsClubTeamPersonSelect.value = personId;
+      elements.engagementsClubTeamPersonSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    elements.engagementsClubTeamPersonCreate?.addEventListener("click", () => {
+      const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
+      if (radio) radio.checked = true;
+      if (elements.engagementsClubTeamPersonSelect) elements.engagementsClubTeamPersonSelect.value = "";
+      setEngagementClubTeamManualFieldsVisible(true);
+      applyEngagementClubTeamPerson("");
+      elements.engagementsClubTeamFirstName?.focus();
     });
     elements.engagementsClubTeamForm?.addEventListener("input", (event) => {
       if (
@@ -12118,7 +12261,7 @@
       if (selectionChanged) {
         const swimmerIndexId = checkbox?.dataset.engagementClubSwimmerId || "";
         if (checkbox?.checked !== true) discardPendingEngagementClubIndividualEntries(swimmerIndexId);
-        const shouldExpandLicense = checkbox?.checked === true && Boolean(license?.matches("input"));
+        const shouldExpandLicense = checkbox?.checked === true && Boolean(license?.matches("input") && license.value);
         const swimmers = selectedEngagementClubSwimmerRows();
         const changedSwimmer = swimmers.find((swimmer) => swimmer.swimmerIndexId === swimmerIndexId) || {
           swimmerIndexId,
@@ -12137,9 +12280,9 @@
         }
         renderEngagementClubEntries();
         renderEngagementClubRelays();
-        if (checkbox?.checked && (!changedSwimmer.licenseNumber || !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber))) {
+        if (checkbox?.checked && changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
           if (elements.engagementsClubSwimmersMessage) {
-            elements.engagementsClubSwimmersMessage.textContent = "Renseignez une licence au format A-12-34567 pour enregistrer ce nageur.";
+            elements.engagementsClubSwimmersMessage.textContent = "La licence doit respecter le format A-12-34567 lorsqu'elle est renseignée.";
             elements.engagementsClubSwimmersMessage.dataset.tone = "error";
           }
           return;
@@ -12155,7 +12298,7 @@
       const swimmerIndexId = checkbox?.dataset.engagementClubSwimmerId || "";
       const changedSwimmer = swimmers.find((swimmer) => swimmer.swimmerIndexId === swimmerIndexId);
       if (event.target.matches("input[data-engagement-club-swimmer-license]") && checkbox?.checked && changedSwimmer && !engagementClubPersistedSwimmerIds.has(swimmerIndexId)) {
-        if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
+        if (changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
           if (elements.engagementsClubSwimmersMessage) {
             elements.engagementsClubSwimmersMessage.textContent = "La licence doit respecter le format A-12-34567.";
             elements.engagementsClubSwimmersMessage.dataset.tone = "error";
