@@ -904,7 +904,7 @@
                         <fieldset class="admin-engagements-form-section">
                           <legend>Compétition</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label>
+                            <label id="adminEngagementsClubTeamLastNameLabel">
                               Nom
                               <input id="adminEngagementsEditName" type="text" maxlength="160" required>
                             </label>
@@ -1125,7 +1125,7 @@
                         <div class="admin-engagements-events-head">
                           <div>
                             <strong>Chef d'&eacute;quipe</strong>
-                            <small id="adminEngagementsClubTeamSummary">A renseigner avant de commencer les engagements.</small>
+                            <small id="adminEngagementsClubTeamSummary" class="admin-engagements-club-team-summary" data-complete="false">A renseigner avant de commencer les engagements.</small>
                           </div>
                         </div>
                         <div class="admin-engagements-club-choice-list">
@@ -1150,7 +1150,7 @@
                               Nom
                               <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters">
                             </label>
-                            <label>
+                            <label id="adminEngagementsClubTeamFirstNameLabel">
                               Pr&eacute;nom
                               <input id="adminEngagementsClubTeamFirstName" type="text" maxlength="80" autocomplete="given-name">
                             </label>
@@ -1166,7 +1166,7 @@
                                 <option value="M">Homme</option>
                               </select>
                             </label>
-                            <label>
+                            <label id="adminEngagementsClubTeamLicenseLabel">
                               Num&eacute;ro de licence
                               <input id="adminEngagementsClubTeamLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567">
                             </label>
@@ -1174,14 +1174,11 @@
                               <input id="adminEngagementsClubTeamExternal" type="checkbox">
                               <span>Chef d'&eacute;quipe hors club</span>
                             </label>
-                            <label id="adminEngagementsClubTeamExternalClubIdLabel" hidden>
-                              Club du chef d'&eacute;quipe
-                              <input id="adminEngagementsClubTeamExternalClubId" type="text" maxlength="40" inputmode="numeric">
-                            </label>
                             <label id="adminEngagementsClubTeamExternalClubNameLabel" hidden>
-                              Nom du club
+                              Club du chef d'&eacute;quipe
                               <input id="adminEngagementsClubTeamExternalClubName" type="text" maxlength="140">
                             </label>
+                            <p id="adminEngagementsClubTeamExternalNote" class="admin-engagements-field-note" hidden>Un chef d&rsquo;&eacute;quipe hors club ne peut pas &ecirc;tre nageur sur cette comp&eacute;tition et doit disposer d&rsquo;une licence &agrave; jour.</p>
                           </div>
                           <div class="admin-portal-actions admin-engagements-club-team-validation" hidden>
                             <button id="adminEngagementsClubTeamSaveButton" type="submit">Valider le chef d'&eacute;quipe</button>
@@ -1194,6 +1191,28 @@
                         </div>
                         <p id="adminEngagementsClubTeamMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
+                      <dialog id="adminEngagementsClubTeamExternalDialog" class="admin-engagements-club-times-dialog" aria-labelledby="adminEngagementsClubTeamExternalDialogTitle">
+                        <form id="adminEngagementsClubTeamExternalDialogForm">
+                          <div class="admin-engagements-club-times-dialog-head">
+                            <div>
+                              <span>Chef d&rsquo;équipe hors club</span>
+                              <h3 id="adminEngagementsClubTeamExternalDialogTitle">Déclarer un chef d&rsquo;équipe</h3>
+                            </div>
+                            <button id="adminEngagementsClubTeamExternalDialogClose" class="ghost-button compact" type="button" aria-label="Fermer la fenêtre">&times;</button>
+                          </div>
+                          <div class="admin-engagements-form-section-grid admin-engagements-club-external-team-grid">
+                            <label>Nom<input id="adminEngagementsClubTeamExternalLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters" required></label>
+                            <label>Prénom<input id="adminEngagementsClubTeamExternalFirstName" type="text" maxlength="80" autocomplete="given-name" required></label>
+                            <label>Club du chef d&rsquo;équipe<input id="adminEngagementsClubTeamExternalDialogClubName" type="text" maxlength="140" required></label>
+                          </div>
+                          <p class="admin-engagements-club-external-team-note">Le chef d&rsquo;équipe hors club ne peut pas être nageur sur cette compétition et doit disposer d&rsquo;une licence à jour.</p>
+                          <p id="adminEngagementsClubTeamExternalDialogMessage" class="admin-portal-message" aria-live="polite"></p>
+                          <div class="admin-engagements-club-times-dialog-actions">
+                            <button id="adminEngagementsClubTeamExternalDialogCancel" class="ghost-button" type="button">Annuler</button>
+                            <button id="adminEngagementsClubTeamExternalDialogApply" type="submit">Valider le chef d&rsquo;équipe</button>
+                          </div>
+                        </form>
+                      </dialog>
                     </div>
                     <div id="adminEngagementsDetailOfficialsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailOfficialsTab" data-engagements-detail-tab-panel="officials" hidden>
                       <form id="adminEngagementsClubOfficialsForm" class="admin-engagements-club-step-form" data-club-step="officials">
@@ -1204,19 +1223,11 @@
                           </div>
                           <button id="adminEngagementsClubOfficialsSaveButton" type="submit">Enregistrer</button>
                         </div>
-                        <details id="adminEngagementsClubOfficialSwimmerPicker" class="admin-engagements-official-swimmer-picker">
-                          <summary>Ajouter un nageur comme officiel</summary>
-                          <div>
-                            <label>
-                              Nageur du club
-                              <select id="adminEngagementsClubOfficialSwimmerSelect">
-                                <option value="">Choisir une personne</option>
-                              </select>
-                            </label>
-                            <button id="adminEngagementsClubOfficialSwimmerAdd" class="ghost-button" type="button">Ajouter comme officiel</button>
-                          </div>
-                          <small>Le nom et la licence seront partag&eacute;s avec sa fiche nageur.</small>
-                        </details>
+                        <div id="adminEngagementsClubSelectedOfficialsList" class="admin-engagements-club-officials-list" aria-live="polite"></div>
+                        <label class="admin-engagements-club-search">
+                          Rechercher parmi les membres du club
+                          <input id="adminEngagementsClubOfficialsSearch" type="search" maxlength="120" placeholder="Nom, prénom, date de naissance ou licence...">
+                        </label>
                         <div id="adminEngagementsClubOfficialsList" class="admin-engagements-club-officials-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubOfficialsMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
