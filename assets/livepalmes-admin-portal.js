@@ -124,7 +124,7 @@
     "#club-nageurs": { entry: "clubSwimmers", tab: "clubSwimmers" },
     "#club-officiels": { entry: "clubPeople", tab: "clubPeople" },
     "#competitions-calendrier": { entry: "adminCalendar", tab: "calendar" },
-    "#competitions-creation": { entry: "adminCreate", tab: "create" },
+    "#competitions-creation": { entry: "adminCalendar", tab: "calendar" },
     "#competitions-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#gestion-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#administration-suppressions": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
@@ -274,8 +274,9 @@
     engagementsFooterNext: document.querySelector("#adminEngagementsFooterNext"),
     engagementsStatus: document.querySelector("#adminEngagementsStatus"),
     engagementsCalendarActions: document.querySelector("#adminEngagementsCalendarActions"),
-    engagementsRefreshMeta: document.querySelector("#adminEngagementsRefreshMeta"),
-    engagementsRefresh: document.querySelector("#adminEngagementsRefreshButton"),
+    engagementsCreateOpen: document.querySelector("#adminEngagementsCreateOpen"),
+    engagementsCreateDialog: document.querySelector("#adminEngagementsCreateDialog"),
+    engagementsCreateDialogClose: document.querySelector("#adminEngagementsCreateDialogClose"),
     engagementsCalendarPanel: document.querySelector("#adminEngagementsCalendarPanel"),
     engagementsCalendarCard: document.querySelector("#adminEngagementsCalendarCard"),
     engagementsCalendarFilters: document.querySelector("#adminEngagementsCalendarFilters"),
@@ -903,6 +904,12 @@
     return canUse("engagements.national.manage");
   }
 
+  function canDeleteEngagementCompetitionImmediately(competition = {}) {
+    return canDeleteEngagementCompetitionDirectly() || (
+      canEditEngagementCompetition(competition) && (competition.entryStatus || "upcoming") === "upcoming"
+    );
+  }
+
   function canReviewEngagementAccessRequests() {
     return canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
@@ -1467,16 +1474,13 @@
     const canClubPeople = canUse("engagements.club.manage");
     const canClubSwimmers = canUse("engagements.club.manage");
     const allowedTabs = new Set(["calendar"]);
-    if (canCreate) allowedTabs.add("create");
     if (canNationalRequests) allowedTabs.add("deletionRequests");
     if (canAccessRequests) allowedTabs.add("accessRequests");
     if (canClubPeople) allowedTabs.add("clubPeople");
     if (canClubSwimmers) allowedTabs.add("clubSwimmers");
     const nextTab = allowedTabs.has(tab) ? tab : "calendar";
     activeEngagementsTab = nextTab;
-    if (nextTab === "create") {
-      activeEngagementsNavEntry = "adminCreate";
-    } else if (nextTab === "accessRequests") {
+    if (nextTab === "accessRequests") {
       activeEngagementsNavEntry = "adminAccessRequests";
     } else if (nextTab === "deletionRequests") {
       activeEngagementsNavEntry = "adminDeletionRequests";
@@ -1489,24 +1493,22 @@
     }
     elements.engagementsTabButtons?.forEach((button) => {
       const buttonTab = button.dataset.engagementsTabButton;
-      const createOnly = buttonTab === "create";
       const nationalOnly = buttonTab === "deletionRequests";
       const accessRequestsOnly = buttonTab === "accessRequests";
       const clubOnly = buttonTab === "clubPeople";
       const clubSwimmersOnly = buttonTab === "clubSwimmers";
-      button.hidden = (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      button.hidden = buttonTab === "create" || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
       const selected = buttonTab === nextTab;
       button.setAttribute("aria-selected", selected ? "true" : "false");
       button.tabIndex = selected ? 0 : -1;
     });
     elements.engagementsTabPanels?.forEach((panel) => {
       const panelTab = panel.dataset.engagementsTabPanel;
-      const createOnly = panelTab === "create";
       const nationalOnly = panelTab === "deletionRequests";
       const accessRequestsOnly = panelTab === "accessRequests";
       const clubOnly = panelTab === "clubPeople";
       const clubSwimmersOnly = panelTab === "clubSwimmers";
-      panel.hidden = panelTab !== nextTab || (createOnly && !canCreate) || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      panel.hidden = panelTab === "create" || panelTab !== nextTab || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
     });
     if (nextTab === "deletionRequests") setEngagementNationalTab(activeEngagementNationalTab);
   }
@@ -2524,11 +2526,6 @@
       elements.engagementsStatus.hidden = true;
       delete elements.engagementsStatus.dataset.tone;
     }
-    if (elements.engagementsRefreshMeta) {
-      elements.engagementsRefreshMeta.textContent = "";
-      elements.engagementsRefreshMeta.hidden = true;
-      delete elements.engagementsRefreshMeta.dataset.lastRefreshAt;
-    }
   }
 
   function updateEngagementRegionField({ field, note, levelInput, user = currentAccessProfile || {}, submitButton = null }) {
@@ -2600,6 +2597,8 @@
     });
     const nationalOption = elements.engagementsLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
+    const closedStatusOption = elements.engagementsEntryStatus?.querySelector("option[value='closed']");
+    if (closedStatusOption) closedStatusOption.disabled = true;
     if (!isNational && elements.engagementsLevel?.value === "national") {
       elements.engagementsLevel.value = "regional";
       updateEngagementRegionField({
@@ -2634,6 +2633,11 @@
     });
     const nationalOption = elements.engagementsEditLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
+    const closedStatusOption = elements.engagementsEditEntryStatus?.querySelector("option[value='closed']");
+    if (closedStatusOption) closedStatusOption.disabled = true;
+    if (elements.engagementsEditEntryStatus) {
+      elements.engagementsEditEntryStatus.disabled = !isNational && elements.engagementsEditEntryStatus.value === "closed";
+    }
     if (!isNational && elements.engagementsEditLevel?.value === "national") {
       elements.engagementsEditLevel.value = "regional";
       updateEngagementRegionField({
@@ -2697,6 +2701,26 @@
     if (form && sportsSection && engagementsSection) sportsSection.insertAdjacentElement("afterend", engagementsSection);
   }
 
+  function prepareCreateCompetitionDialog() {
+    const dialog = elements.engagementsCreateDialog;
+    const form = elements.engagementsCreateForm;
+    if (!dialog || !form || dialog.contains(form)) return;
+    const optional = document.createElement("details");
+    optional.className = "admin-engagements-create-optional";
+    optional.innerHTML = "<summary>Ajouter des informations complémentaires</summary>";
+    Array.from(form.querySelectorAll(":scope > fieldset")).slice(1).forEach((section) => optional.append(section));
+    const actions = form.querySelector(":scope > .admin-portal-actions");
+    if (actions) form.insertBefore(optional, actions);
+    else form.append(optional);
+    dialog.append(form);
+  }
+
+  function openCreateCompetitionDialog() {
+    if (!canCreateEngagementCompetition()) return;
+    prepareCreateCompetitionDialog();
+    elements.engagementsCreateDialog?.showModal();
+  }
+
   function moveEngagementFeesToGeneral() {
     const generalPanel = document.querySelector("#adminEngagementsDetailGeneralPanel");
     const feesPanel = document.querySelector("#adminEngagementsDetailFeesPanel");
@@ -2740,9 +2764,9 @@
     setRegionMultiSelectValues(elements.engagementsEditInvitedRegionIds, competition.invitedRegionIds || [], competition.regionId || "");
     if (elements.engagementsEditDeadline) elements.engagementsEditDeadline.value = isoToDatetimeLocal(competition.entryDeadlineAt);
     if (elements.engagementsEditComputerEmail) elements.engagementsEditComputerEmail.value = competition.computerEmail || "";
-    if (elements.engagementsEditPoolLength) elements.engagementsEditPoolLength.value = competition.poolLength || "50";
+    if (elements.engagementsEditPoolLength) elements.engagementsEditPoolLength.value = competition.poolLength || "";
     if (elements.engagementsEditPoolLaneCount) elements.engagementsEditPoolLaneCount.value = competition.poolLaneCount || "";
-    if (elements.engagementsEditTimingType) elements.engagementsEditTimingType.value = competition.timingType || "electronic";
+    if (elements.engagementsEditTimingType) elements.engagementsEditTimingType.value = competition.timingType || "";
     if (elements.engagementsEditQualificationMode) elements.engagementsEditQualificationMode.value = competition.qualificationTimesMode || "all";
     if (elements.engagementsEditQualificationStart) elements.engagementsEditQualificationStart.value = competition.qualificationStartDate || "";
     if (elements.engagementsEditQualificationEnd) elements.engagementsEditQualificationEnd.value = competition.qualificationEndDate || "";
@@ -2935,15 +2959,16 @@
   }
 
   function engagementPoolLabel(competition = {}) {
-    const length = engagementPoolLengthLabel(competition.poolLength || "50");
+    const length = engagementPoolLengthLabel(competition.poolLength);
     const laneCount = Math.trunc(Number(competition.poolLaneCount) || 0);
+    if (length === "-" && !laneCount) return "Non renseigné";
     return laneCount >= 4 && laneCount <= 10
       ? `${length} · ${laneCount} lignes d'eau`
       : `${length} · nombre de lignes non renseigné`;
   }
 
   function engagementTimingTypeLabel(value) {
-    return value === "manual" ? "Manuel" : "Electronique";
+    return value === "manual" ? "Manuel" : value === "electronic" ? "Electronique" : "Non renseigné";
   }
 
   function engagementQualificationPeriodLabel(competition = {}) {
@@ -6517,7 +6542,7 @@
     }
     updateEngagementEventsSectionSummaries(selectedEngagementEventsFromForm(), sessions);
     if (!eventOptions.length) {
-      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Selectionnez d'abord les epreuves qui seront nagees." : "Programme de la competition non renseigne."}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Selectionnez d'abord les epreuves qui seront nagees." : "Programme en préparation."}</p>`;
       return;
     }
     if (!sessions.length) {
@@ -6931,7 +6956,7 @@
     renderEngagementEventGroup(elements.engagementsIndividualEvents, "individual", selectedCodes, canEdit);
     renderEngagementEventGroup(elements.engagementsRelayEvents, "relay", selectedCodes, canEdit);
     if (elements.engagementsEventsSummary) {
-      elements.engagementsEventsSummary.textContent = engagementEventSummary(events);
+      elements.engagementsEventsSummary.textContent = clubProgramView && !events.length ? "Programme en préparation." : engagementEventSummary(events);
     }
     if (elements.engagementsEventsSaveButton) {
       elements.engagementsEventsSaveButton.hidden = true;
@@ -6994,6 +7019,7 @@
               const action = engagementCompetitionAction(competition);
               const entryStatus = competition.entryStatus || "upcoming";
               const deadlineLabel = engagementDeadlineDisplay(competition);
+              const showStatusBadge = entryStatus !== "open";
               return `
                 <article class="admin-engagements-competition ${competition.id === selectedEngagementCompetitionId ? "selected" : ""}" role="row" data-engagement-competition-card-id="${escapeHtml(competition.id)}" data-engagement-open-tab="${escapeHtml(action.tab)}">
                   <time class="admin-engagements-competition-date" role="cell" data-label="Date" datetime="${escapeHtml(competition.date || "")}">${escapeHtml(formatEngagementCompetitionDate(competition))}</time>
@@ -7011,7 +7037,7 @@
                     ${competition.regionId ? `<small>${escapeHtml(regionDisplayLabel(competition.regionId))}</small>` : ""}
                   </div>
                   <div class="admin-engagements-competition-status" role="cell" data-label="Engagements">
-                    <span class="admin-engagements-competition-entry-badge" data-entry-state="${escapeHtml(entryStatus)}">${escapeHtml(engagementStatusLabel(entryStatus))}</span>
+                    ${showStatusBadge ? `<span class="admin-engagements-competition-entry-badge" data-entry-state="${escapeHtml(entryStatus)}">${escapeHtml(engagementStatusLabel(entryStatus))}</span>` : ""}
                     ${deadlineLabel ? `<small data-entry-status="${escapeHtml(engagementDeadlineTone(competition))}" data-engagement-deadline-competition-id="${escapeHtml(competition.id)}">${escapeHtml(deadlineLabel)}</small>` : ""}
                   </div>
                   <div class="admin-engagements-competition-actions" role="cell" data-label="Action">
@@ -7039,7 +7065,6 @@
     if (elements.engagementsCalendarFilters) elements.engagementsCalendarFilters.hidden = visible;
     if (elements.engagementsCalendarList) elements.engagementsCalendarList.hidden = visible;
     if (elements.engagementsCalendarActions) elements.engagementsCalendarActions.hidden = visible || !isEngagementAdminMode();
-    if (elements.engagementsRefresh) elements.engagementsRefresh.hidden = visible;
     if (elements.engagementsDetail) elements.engagementsDetail.hidden = !visible;
     if (elements.engagementsDetailClose) elements.engagementsDetailClose.hidden = !visible;
     if (!visible) setEngagementSaveState("");
@@ -7057,7 +7082,7 @@
     if (elements.engagementsDeleteButton) {
       const canRequestOrDelete = isEngagementAdminMode() && canEditEngagementCompetition(competition);
       const deletionPending = isEngagementAdminMode() && competition.deletionRequestStatus === "pending";
-      const directDelete = canDeleteEngagementCompetitionDirectly();
+      const directDelete = canDeleteEngagementCompetitionImmediately(competition);
       elements.engagementsDeleteButton.hidden = !canRequestOrDelete;
       elements.engagementsDeleteButton.disabled = deletionPending && !directDelete;
       elements.engagementsDeleteButton.textContent = deletionPending && !directDelete
@@ -8282,7 +8307,7 @@
     if (engagementDetailEditing && !confirmLeaveDirtyEngagementTab()) return;
 
     const competition = selectedEngagementCompetition;
-    const directDelete = canDeleteEngagementCompetitionDirectly();
+    const directDelete = canDeleteEngagementCompetitionImmediately(competition);
     const actionLabel = directDelete ? "Supprimer definitivement" : "Demander la suppression de";
     const confirmMessage = directDelete
       ? `${actionLabel} la competition "${competition.name || "sans nom"}" ? Cette action est irreversible.`
@@ -10205,7 +10230,6 @@
     if (!canManageEngagements() || engagementCompetitionsLoading) return;
     if (engagementCompetitionsLoaded && !force) return;
     engagementCompetitionsLoading = true;
-    if (elements.engagementsRefresh) elements.engagementsRefresh.disabled = true;
     if (elements.engagementsStatus) {
       elements.engagementsStatus.hidden = false;
       elements.engagementsStatus.textContent = "Chargement du calendrier...";
@@ -10223,11 +10247,6 @@
       engagementCompetitionsLoaded = true;
       engagementCompetitionsLoadedRange = requestedRange;
       renderEngagementCompetitions();
-      if (elements.engagementsRefreshMeta) {
-        markLastRefresh(elements.engagementsRefreshMeta);
-        elements.engagementsRefreshMeta.textContent = `Actualisé à ${lastRefreshTime(elements.engagementsRefreshMeta)}`;
-        elements.engagementsRefreshMeta.hidden = false;
-      }
       if (elements.engagementsStatus) {
         elements.engagementsStatus.textContent = "";
         delete elements.engagementsStatus.dataset.tone;
@@ -10240,7 +10259,6 @@
       }
     } finally {
       engagementCompetitionsLoading = false;
-      if (elements.engagementsRefresh) elements.engagementsRefresh.disabled = false;
     }
   }
 
@@ -10269,9 +10287,9 @@
       fees: selectedCreateEngagementFeesFromForm(),
       entryStatus: fields.entryStatus?.value || "upcoming",
       officialsRequired: fields.officialsRequired?.value === "true",
-      poolLength: fields.poolLength?.value || "50",
+      poolLength: fields.poolLength?.value || "",
       poolLaneCount: Math.trunc(Number(fields.poolLaneCount?.value) || 0),
-      timingType: fields.timingType?.value || "electronic",
+      timingType: fields.timingType?.value || "",
       qualificationTimesMode,
       qualificationStartDate: qualificationTimesMode === "period" ? fields.qualificationStart?.value || "" : "",
       qualificationEndDate: qualificationTimesMode === "period" ? fields.qualificationEnd?.value || "" : "",
@@ -10340,7 +10358,12 @@
   }
 
   function engagementOpeningDeadlineError(payload = {}, nowMs = Date.now()) {
-    if (payload.entryStatus !== "open" || !payload.entryDeadlineAt) return "";
+    if (payload.entryStatus !== "open") return "";
+    if (!payload.entryDeadlineAt) return "Renseignez la date et l’heure de clôture avant d’ouvrir les engagements.";
+    const competitionDate = new Date(`${payload.date || ""}T00:00:00`);
+    if (!Number.isNaN(competitionDate.getTime()) && competitionDate.getTime() - nowMs > 30 * 24 * 60 * 60 * 1000) {
+      return "Impossible d’ouvrir les engagements plus de 30 jours avant la compétition.";
+    }
     const deadline = new Date(payload.entryDeadlineAt);
     if (Number.isNaN(deadline.getTime()) || deadline.getTime() > nowMs) return "";
     return "Impossible d’ouvrir les engagements : la date de clôture est dépassée.";
@@ -10375,6 +10398,21 @@
       "Souhaitez-vous renvoyer le mail d'ouverture aux clubs ?",
       engagementOpeningMailScopeLabel(payload),
       "OK : réouvrir et renvoyer le mail.\nAnnuler : réouvrir sans renvoyer de mail."
+    ].join("\n\n"));
+  }
+
+  function confirmOpenedCompetitionSensitiveChanges(competition = {}, payload = {}) {
+    const changes = [];
+    if (competition.date !== payload.date || (competition.endDate || competition.date) !== (payload.endDate || payload.date)) {
+      changes.push("date de la compétition");
+    }
+    if ((competition.regionId || "") !== (payload.regionId || "")) changes.push("région");
+    if ((competition.level || "regional") !== (payload.level || "regional")) changes.push("niveau");
+    if (!changes.length) return true;
+    return global.confirm([
+      "Des clubs peuvent déjà avoir commencé leurs engagements.",
+      `Vous modifiez : ${changes.join(", ")}.`,
+      "Confirmer ces changements ?"
     ].join("\n\n"));
   }
 
@@ -10449,6 +10487,7 @@
       updateEngagementMaxEventsFields("create");
       updateEngagementCreateFormAccess();
       engagementCompetitionsLoaded = false;
+      elements.engagementsCreateDialog?.close();
       setEngagementsTab("calendar");
       await loadEngagementCompetitions({ force: true });
       if (result.competition?.id) await loadEngagementCompetitionDetail(result.competition.id);
@@ -10501,6 +10540,13 @@
         return;
       }
       const previousStatus = selectedEngagementCompetition.entryStatus || "upcoming";
+      if (previousStatus === "open" && !confirmOpenedCompetitionSensitiveChanges(selectedEngagementCompetition, payload)) {
+        if (elements.engagementsDetailStatus) {
+          elements.engagementsDetailStatus.textContent = "Modification annulée.";
+          elements.engagementsDetailStatus.dataset.tone = "loading";
+        }
+        return;
+      }
       const reopening = previousStatus === "closed" && payload.entryStatus === "open";
       let sendOpeningMail = shouldSendEngagementOpeningMail(previousStatus, payload.entryStatus);
       if (reopening) sendOpeningMail = confirmEngagementReopeningMail(payload);
@@ -10595,6 +10641,13 @@
         return;
       }
       const previousStatus = selectedEngagementCompetition.entryStatus || "upcoming";
+      if (previousStatus === "open" && !confirmOpenedCompetitionSensitiveChanges(selectedEngagementCompetition, payload)) {
+        if (elements.engagementsDetailStatus) {
+          elements.engagementsDetailStatus.textContent = "Modification annulée.";
+          elements.engagementsDetailStatus.dataset.tone = "loading";
+        }
+        return;
+      }
       const reopening = previousStatus === "closed" && payload.entryStatus === "open";
       let sendOpeningMail = shouldSendEngagementOpeningMail(previousStatus, payload.entryStatus);
       if (reopening) sendOpeningMail = confirmEngagementReopeningMail(payload);
@@ -11451,7 +11504,6 @@
     elements.publicAccessRequestRegionId?.addEventListener("change", () => populatePublicAccessRequestClubSelect());
     elements.publicAccessRequestClubSelect?.addEventListener("change", syncPublicAccessRequestClubFieldsFromSelect);
     elements.signOut?.addEventListener("click", signOut);
-    elements.engagementsRefresh?.addEventListener("click", () => loadEngagementCompetitions({ force: true }));
     elements.engagementsAccessRequestsRefresh?.addEventListener("click", () => loadEngagementAccessRequests({ force: true }));
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
     elements.engagementsNationalSwimmersRefresh?.addEventListener("click", () => loadEngagementNationalSwimmers({ force: true }));
@@ -12392,6 +12444,8 @@
       setDefaultEngagementOfficialsRequired("create");
       updateEngagementCreateFormAccess();
     });
+    elements.engagementsCreateOpen?.addEventListener("click", openCreateCompetitionDialog);
+    elements.engagementsCreateDialogClose?.addEventListener("click", () => elements.engagementsCreateDialog?.close());
     elements.engagementsRegionId?.addEventListener("change", () => updateEngagementCreateFormAccess());
     elements.engagementsEditLevel?.addEventListener("change", () => {
       setDefaultEngagementOfficialsRequired("edit");
@@ -12409,6 +12463,7 @@
     elements.engagementsEditInvitedRegionChoices?.addEventListener("change", (event) => syncInvitedRegionChoice(event, elements.engagementsEditInvitedRegionIds));
     moveEngagementStatusField();
     orderCreateCompetitionFields();
+    prepareCreateCompetitionDialog();
     moveEngagementFeesToGeneral();
     setDefaultEngagementOfficialsRequired("create");
     updateCreateEngagementFeesMode();
@@ -12449,7 +12504,7 @@
       collapsePortalNavigationAfterSelection();
     });
     elements.engagementsAdminToggle?.addEventListener("click", () => {
-      togglePortalSpace("engagementsAdmin", "engagementsAdminHome", "organisation-competitions", elements.engagementsAdminToggle);
+      global.location.hash = "competitions-calendrier";
       collapsePortalNavigationAfterSelection();
     });
     elements.dtnToggle?.addEventListener("click", () => {

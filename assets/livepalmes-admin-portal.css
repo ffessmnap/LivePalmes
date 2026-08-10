@@ -1842,6 +1842,24 @@
   color: #245d70;
 }
 
+#adminEngagementsCalendarCard .admin-engagements-competition-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-status small[data-entry-status] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin: 0;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 #adminEngagementsCalendarCard .admin-engagements-competition-actions {
   display: flex;
   justify-content: flex-end;
@@ -8773,6 +8791,39 @@
   padding-left: 22px;
 }
 
+.admin-engagements-create-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-create-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-create-dialog .admin-engagements-create-intro {
+  margin-bottom: 12px;
+}
+
+.admin-engagements-create-optional {
+  margin-top: 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+}
+
+.admin-engagements-create-optional > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
 .admin-engagements-preparation-state {
   display: flex;
   align-items: center;
@@ -14746,4 +14797,12 @@
   .admin-portal-page .admin-portal-title-prefix {
     display: none;
   }
+}
+
+/* Les deux informations d'engagement restent visuellement équivalentes. */
+#adminEngagementsCalendarCard .admin-engagements-competition-status small[data-entry-status] {
+  padding: 2px 7px;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
 }

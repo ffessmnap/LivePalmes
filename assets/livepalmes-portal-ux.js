@@ -50,10 +50,13 @@
       label: clubIsHome ? "Accueil club" : "Vue d’ensemble",
       href: clubIsHome ? "#espace-club" : "#accueil"
     }];
-    if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
+    const engagementCalendar = global.location.hash === "#competitions-calendrier" && parentLabel === "Organisation des compétitions";
+    if (engagementCalendar) {
+      items.push({ label: parentLabel });
+    } else if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
       items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
     }
-    if (currentLabel) items.push({ label: currentLabel });
+    if (currentLabel && !engagementCalendar) items.push({ label: currentLabel });
     const nextSignature = JSON.stringify(items);
     if (nextSignature === breadcrumbSignature) {
       mount.hidden = items.length < 2;
