@@ -3074,7 +3074,7 @@
 .admin-engagements-club-officials-head,
 .admin-engagements-club-official-row {
   display: grid;
-  grid-template-columns: minmax(230px, 1fr) 110px;
+  grid-template-columns: minmax(190px, 1fr) 105px 120px;
   gap: 5px;
   align-items: center;
 }
@@ -8204,6 +8204,47 @@
   margin-top: -2px;
 }
 
+#adminEngagementsDetailTeamPanel .admin-engagements-club-team-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 5px;
+  border: 1px solid #c9e4e5;
+  border-radius: 7px;
+  padding: 4px 9px;
+  background: #f0faf9;
+  color: #086d78;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+#adminEngagementsDetailTeamPanel .admin-engagements-club-team-summary[data-complete="false"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+  color: #80620d;
+}
+
+#adminEngagementsClubTeamExternalDialog {
+  width: min(92vw, 520px);
+}
+
+#adminEngagementsClubTeamExternalDialog .admin-engagements-club-external-team-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+#adminEngagementsClubTeamExternalDialog .admin-engagements-club-external-team-note {
+  margin: 14px 0 0;
+  border: 1px solid #eadb9d;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff8df;
+  color: #705a12;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 #adminEngagementsDetailTeamPanel .admin-engagements-club-renunciation {
   min-height: 48px;
   background: #fffae9;
@@ -8235,9 +8276,14 @@
   color: #52636a;
 }
 
+#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-head {
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
 #adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row {
-  min-height: 38px;
-  padding: 5px 10px;
+  min-height: 28px;
+  padding: 2px 8px;
   border-color: #e7ecee;
 }
 
@@ -8433,7 +8479,7 @@
 
   #adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-head,
   #adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row {
-    grid-template-columns: minmax(0, 1fr) 92px;
+    grid-template-columns: minmax(0, 1fr) 88px 104px;
   }
 
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-list {
@@ -10689,6 +10735,24 @@
   color: #6e4b00;
 }
 
+.admin-engagements-club-time-history-select {
+  width: min(100%, 230px);
+  min-height: 30px;
+  border: 1px solid #b7d8c1;
+  border-radius: 6px;
+  padding: 4px 28px 4px 7px;
+  background-color: #f3fbf5;
+  color: #20502c;
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.admin-engagements-club-time-history-select[data-entry-time-mode="manual"] {
+  border-color: #d7c58b;
+  background-color: #fffaf0;
+  color: #6e4b00;
+}
+
 .admin-engagements-club-time-dialog-value input {
   min-height: 30px;
   padding: 4px 7px;
@@ -10907,6 +10971,10 @@
 
   .admin-engagements-club-time-dialog-value {
     grid-template-columns: minmax(72px, auto) auto minmax(88px, 110px);
+  }
+
+  .admin-engagements-club-time-history-select {
+    width: 100%;
   }
 
   .admin-engagements-club-time-dialog-help {
