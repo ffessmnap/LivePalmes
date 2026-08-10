@@ -87,7 +87,7 @@ const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEM
 const PORTAL_ACCESS_REQUEST_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 30 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
-  schedule: "1 * * * *",
+  schedule: "*/5 * * * *",
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
@@ -3098,7 +3098,7 @@ function cleanOptionalEmail(value, label = "Email") {
 
 function cleanEngagementPoolLength(value) {
   const poolLength = cleanText(value);
-  return ENGAGEMENT_POOL_LENGTHS.has(poolLength) ? poolLength : "50";
+  return ENGAGEMENT_POOL_LENGTHS.has(poolLength) ? poolLength : "";
 }
 
 function cleanEngagementPoolLaneCount(value) {
@@ -3112,7 +3112,7 @@ function cleanEngagementPoolLaneCount(value) {
 
 function cleanEngagementTimingType(value) {
   const timingType = cleanText(value);
-  return ENGAGEMENT_TIMING_TYPES.has(timingType) ? timingType : "electronic";
+  return ENGAGEMENT_TIMING_TYPES.has(timingType) ? timingType : "";
 }
 
 function cleanEngagementQualificationTimesMode(value) {
@@ -4564,7 +4564,8 @@ function engagementPdfStatusLabel(status) {
 }
 
 function engagementPdfTimingLabel(value) {
-  return cleanEngagementTimingType(value) === "manual" ? "Manuel" : "Électronique";
+  const timingType = cleanEngagementTimingType(value);
+  return timingType === "manual" ? "Manuel" : timingType === "electronic" ? "Électronique" : "Non renseigné";
 }
 
 function engagementPdfMoney(value) {
@@ -5015,7 +5016,7 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     ["Région", competition.regionId || "-"],
     ["Statut", engagementPdfStatusLabel(competition.entryStatus)],
     ["Bassin", [
-      `${cleanEngagementPoolLength(competition.poolLength)} m`,
+      cleanEngagementPoolLength(competition.poolLength) ? `${cleanEngagementPoolLength(competition.poolLength)} m` : "bassin non renseigné",
       cleanEngagementPoolLaneCount(competition.poolLaneCount)
         ? `${cleanEngagementPoolLaneCount(competition.poolLaneCount)} lignes d'eau`
         : "nombre de lignes non renseigne"
@@ -6344,6 +6345,9 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (!context.national && level === "national") {
     throw new HttpsError("permission-denied", "Une competition nationale doit etre creee par le niveau national.");
   }
+  if (!context.national && entryStatus === "closed") {
+    throw new HttpsError("permission-denied", "La fermeture des engagements est automatique apres la date de cloture.");
+  }
   if (!name || !date || !location) {
     throw new HttpsError("invalid-argument", "Nom, date et lieu sont obligatoires.");
   }
@@ -6359,13 +6363,16 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (qualificationTimesMode === "period" && qualificationStartDate > qualificationEndDate) {
     throw new HttpsError("invalid-argument", "La fin de periode des temps doit etre apres le debut.");
   }
+  if (entryStatus === "open" && !entryDeadlineAt) {
+    throw new HttpsError("failed-precondition", "Renseignez la date et l'heure de cloture avant d'ouvrir les engagements.");
+  }
   if (isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)) {
     throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements : la date de cloture est depassee.");
   }
   if (isEngagementOpeningTooEarly(entryStatus, date)) {
     throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements plus de 30 jours avant la competition.");
   }
-  if (entryStatus === "open" && (!cleanText(raw.poolLength) || !poolLaneCount || !cleanText(raw.timingType))) {
+  if (entryStatus === "open" && (!poolLength || !poolLaneCount || !timingType)) {
     throw new HttpsError("failed-precondition", "Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements.");
   }
 
@@ -10457,9 +10464,6 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
-  if (!competition.poolLaneCount) {
-    throw new HttpsError("invalid-argument", "Le nombre de lignes d'eau est obligatoire.");
-  }
   const now = new Date().toISOString();
   const docRef = db.collection("engagementCompetitions").doc();
   const payload = {
@@ -10525,9 +10529,6 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
 
 exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
-  if (!context.national) {
-    throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
-  }
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
@@ -10540,6 +10541,19 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   }
 
   const competition = snapshot.data() || {};
+  if (!context.national) {
+    assertCanManageEngagementCompetition(context, competition);
+    if (cleanEngagementEntryStatus(competition.entryStatus || competition.status) !== "upcoming") {
+      throw new HttpsError("failed-precondition", "Seule une competition a venir peut etre retiree du calendrier par la region.");
+    }
+    const entriesSnapshot = await db.collection("engagementClubEntries")
+      .where("competitionId", "==", competitionId)
+      .limit(1)
+      .get();
+    if (!entriesSnapshot.empty) {
+      throw new HttpsError("failed-precondition", "Impossible de retirer cette competition : au moins un club a deja commence ses engagements.");
+    }
+  }
   const now = new Date().toISOString();
   const deletionRequestRef = db.collection("engagementCompetitionDeletionRequests").doc(competitionId);
   const deletionRequest = await deletionRequestRef.get();

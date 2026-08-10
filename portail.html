@@ -150,13 +150,12 @@
               <section class="admin-portal-nav-group" aria-labelledby="adminNavCompetition">
                 <h2 id="adminNavCompetition">Compétitions</h2>
                 <div class="admin-portal-nav-nested" data-engagements-admin-nav hidden>
-                  <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu" data-admin-space-hash="organisation-competitions">
+                  <button id="adminPortalEngagementsToggle" class="admin-portal-nav-parent" type="button" aria-expanded="false" aria-controls="adminPortalEngagementsSubmenu" data-admin-space-hash="competitions-calendrier">
                     <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
                     <span>Organisation des compétitions</span><span aria-hidden="true">⌄</span>
                   </button>
                   <div id="adminPortalEngagementsSubmenu" class="admin-portal-nav-submenu" aria-label="Organisation des compétitions" hidden>
                     <a href="#competitions-calendrier" data-admin-view-link="engagements" data-engagements-nav-entry="adminCalendar" data-engagements-nav-tab="calendar">Calendrier</a>
-                    <a href="#competitions-creation" data-admin-view-link="engagements" data-engagements-nav-entry="adminCreate" data-engagements-nav-tab="create">Cr&eacute;er une comp&eacute;tition</a>
                   </div>
                 </div>
                 <a href="pilotage-livepalmes.html" target="_blank" rel="noopener" data-capability-nav="consoles.access"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"></rect><path d="M8 22h8M12 18v4"></path></svg></span><span>Consoles comp&eacute;tition</span><span aria-hidden="true">↗</span></a>
@@ -246,18 +245,13 @@
                 </article>
 
                 <article class="admin-overview-space-card" data-overview-space data-overview-competition hidden>
-                  <a class="admin-overview-space-main" href="#organisation-competitions">
+                  <a class="admin-overview-space-main" href="#competitions-calendrier">
                     <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
                     <span class="admin-overview-card-label">Compétitions</span>
                     <strong>Organisation des compétitions</strong>
                     <p>Créer et administrer les compétitions de votre périmètre.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewCompetitionTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
-                  <div id="adminOverviewCompetitionTools" class="admin-overview-space-tools">
-                    <a href="#competitions-calendrier" data-overview-tool data-engagements-home-entry="adminCalendar" data-engagements-home-tab="calendar">Calendrier <span aria-hidden="true">→</span></a>
-                    <a href="#competitions-creation" data-overview-tool data-engagements-home-entry="adminCreate" data-engagements-home-tab="create">Créer une compétition <span aria-hidden="true">→</span></a>
-                  </div>
                 </article>
 
                 <article class="admin-overview-space-card" data-overview-space data-overview-performance hidden>
@@ -429,13 +423,6 @@
                   <span class="admin-overview-card-label">Calendrier</span>
                   <strong>Compétitions</strong>
                   <p>Consulter et administrer les compétitions de votre périmètre.</p>
-                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
-                </a>
-                <a class="admin-overview-card" href="#competitions-creation" data-engagements-home-entry="adminCreate" data-engagements-home-tab="create">
-                  <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></span>
-                  <span class="admin-overview-card-label">Création</span>
-                  <strong>Créer une compétition</strong>
-                  <p>Définir une nouvelle compétition et son cadre d’engagement.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
               </div>
@@ -792,8 +779,7 @@
               <div class="admin-portal-workspace-head admin-tool-workspace-head">
                 <h2 id="adminEngagementsViewTitle">Organisation des comp&eacute;titions</h2>
                 <div id="adminEngagementsCalendarActions" class="admin-engagements-calendar-head-actions" hidden>
-                  <small id="adminEngagementsRefreshMeta" class="admin-engagements-refresh-meta" hidden></small>
-                  <button id="adminEngagementsRefreshButton" class="ghost-button" type="button">Actualiser</button>
+                  <button id="adminEngagementsCreateOpen" type="button">Ajouter une compétition</button>
                 </div>
                 <div id="adminEngagementsClubPeopleActions" class="admin-engagements-club-people-head-actions" hidden>
                   <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
@@ -967,7 +953,7 @@
                               <select id="adminEngagementsEditEntryStatus">
                                 <option value="upcoming">À venir</option>
                                 <option value="open">Ouverts</option>
-                                <option value="closed">Ferm&eacute;s</option>
+                                <option value="closed" disabled>Ferm&eacute;s (automatique)</option>
                               </select>
                             </label>
                             <label>
@@ -1486,7 +1472,10 @@
                       <div>
                         <span>Nouvelle compétition</span>
                       </div>
-                      <small>Les engagements ne peuvent être ouverts qu’à partir de J-30.</small>
+                      <div>
+                        <small>Les engagements ne peuvent être ouverts qu’à partir de J-30.</small>
+                        <button id="adminEngagementsCreateDialogClose" class="ghost-button compact" type="button">Annuler</button>
+                      </div>
                     </div>
                     <fieldset class="admin-engagements-form-section">
                       <legend>Compétition</legend>
@@ -1543,7 +1532,7 @@
                           <select id="adminEngagementsEntryStatus">
                             <option value="upcoming">À venir</option>
                             <option value="open">Ouverts</option>
-                            <option value="closed">Ferm&eacute;s</option>
+                            <option value="closed" disabled>Ferm&eacute;s (automatique)</option>
                           </select>
                         </label>
                         <label>
@@ -1674,6 +1663,7 @@
                   </dialog>
                 </section>
               </div>
+              <dialog id="adminEngagementsCreateDialog" class="admin-engagements-create-dialog" aria-label="Ajouter une compétition au calendrier"></dialog>
 
               <div id="adminEngagementsAccessRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="accessRequests" hidden>
                 <section class="admin-engagements-card" aria-label="Demandes d'acc&egrave;s">
