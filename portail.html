@@ -857,46 +857,38 @@
                       </div>
                     </div>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
-                    <div id="adminEngagementsPreparationState" class="admin-engagements-preparation-state" aria-live="polite"></div>
-                    <div class="admin-engagements-detail-tabs" role="tablist" aria-label="Fiche competition">
-                      <div class="admin-engagements-detail-tab-group">
-                        <span class="admin-engagements-detail-tab-group-label" data-engagement-step-label="information">Param&eacute;trage</span>
-                        <div class="admin-engagements-detail-tab-group-items">
+                    <nav class="admin-engagements-detail-tabs" aria-label="Parcours d'engagement">
+                      <div class="admin-engagements-detail-step-bar" aria-label="Étapes">
+                        <button type="button" data-engagement-step-button="information" aria-pressed="true"><span>1</span><strong data-engagement-step-label="information">Informations</strong></button>
+                        <button type="button" data-engagement-step-button="participants" aria-pressed="false"><span>2</span><strong data-engagement-step-label="participants">Participants</strong></button>
+                        <button type="button" data-engagement-step-button="entries" aria-pressed="false"><span>3</span><strong data-engagement-step-label="entries">Engagements</strong></button>
+                        <button type="button" data-engagement-step-button="summary" aria-pressed="false"><span>4</span><strong data-engagement-step-label="summary">Récapitulatif</strong></button>
+                      </div>
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="information">
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Informations">
                           <button id="adminEngagementsDetailGeneralTab" type="button" role="tab" aria-selected="true" aria-controls="adminEngagementsDetailGeneralPanel" data-engagements-detail-tab-button="general">G&eacute;n&eacute;ral</button>
-                          <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Courses et programme</button>
+                          <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Programme</button>
                         </div>
                       </div>
-                      <div class="admin-engagements-detail-tab-group">
-                        <span class="admin-engagements-detail-tab-group-label" data-engagement-step-label="participants">Participants</span>
-                        <div class="admin-engagements-detail-tab-group-items">
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="participants" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Participants">
                           <button id="adminEngagementsDetailTeamTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailTeamPanel" data-engagements-detail-tab-button="team">Chef d'&eacute;quipe</button>
                           <button id="adminEngagementsDetailOfficialsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailOfficialsPanel" data-engagements-detail-tab-button="officials">Officiels</button>
                           <button id="adminEngagementsDetailSwimmersTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailSwimmersPanel" data-engagements-detail-tab-button="swimmers">Nageurs</button>
                         </div>
                       </div>
-                      <div class="admin-engagements-detail-tab-group">
-                        <span class="admin-engagements-detail-tab-group-label" data-engagement-step-label="entries">Engagements</span>
-                        <div class="admin-engagements-detail-tab-group-items">
-                          <button id="adminEngagementsDetailEntriesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailEntriesPanel" data-engagements-detail-tab-button="entries">Courses</button>
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="entries" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Engagements">
+                          <button id="adminEngagementsDetailEntriesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailEntriesPanel" data-engagements-detail-tab-button="entries">Courses individuelles</button>
                           <button id="adminEngagementsDetailRelaysTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailRelaysPanel" data-engagements-detail-tab-button="relays">Relais</button>
                         </div>
                       </div>
-                      <div class="admin-engagements-detail-tab-group">
-                        <span class="admin-engagements-detail-tab-group-label" data-engagement-step-label="summary">Finalisation</span>
-                        <div class="admin-engagements-detail-tab-group-items">
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="summary" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Vérification et envoi">
                           <button id="adminEngagementsDetailSummaryTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailSummaryPanel" data-engagements-detail-tab-button="summary">R&eacute;capitulatif</button>
                           <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents">Documents</button>
                         </div>
                       </div>
-                    </div>
-                    <nav id="adminEngagementsMobileStepNav" class="admin-engagements-mobile-step-nav" aria-label="Navigation des étapes" hidden>
-                      <button id="adminEngagementsMobileStepPrev" class="ghost-button" type="button" aria-label="Étape précédente">&larr;</button>
-                      <button id="adminEngagementsMobileStepCurrent" class="admin-engagements-mobile-step-current" type="button" aria-expanded="false" aria-controls="adminEngagementsMobileStepMenu">
-                        <strong id="adminEngagementsMobileStepLabel">Général</strong>
-                        <small id="adminEngagementsMobileStepMeta">Toutes les étapes</small>
-                      </button>
-                      <button id="adminEngagementsMobileStepNext" class="ghost-button" type="button" aria-label="Étape suivante">&rarr;</button>
-                      <div id="adminEngagementsMobileStepMenu" class="admin-engagements-mobile-step-menu" hidden></div>
                     </nav>
                     <div id="adminEngagementsDetailGeneralPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailGeneralTab" data-engagements-detail-tab-panel="general">
                       <dl id="adminEngagementsDetailList" class="admin-engagements-detail-list"></dl>
