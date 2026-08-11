@@ -540,8 +540,17 @@
     engagementsSendClubRecapEmailsButton: document.querySelector("#adminEngagementsSendClubRecapEmailsButton"),
     engagementsDocumentsList: document.querySelector("#adminEngagementsDocumentsList"),
     engagementsClubRecapFiles: document.querySelector("#adminEngagementsClubRecapFiles"),
+    engagementsClubPdfSelect: document.querySelector("#adminEngagementsClubPdfSelect"),
+    engagementsClubPdfDownloadButton: document.querySelector("#adminEngagementsClubPdfDownloadButton"),
     engagementsMailJobsList: document.querySelector("#adminEngagementsMailJobsList"),
     engagementsGeneratedFiles: document.querySelector("#adminEngagementsGeneratedFiles"),
+    engagementsStatisticsRefreshButton: document.querySelector("#adminEngagementsStatisticsRefreshButton"),
+    engagementsStatisticsUpdatedAt: document.querySelector("#adminEngagementsStatisticsUpdatedAt"),
+    engagementsStatisticsSummary: document.querySelector("#adminEngagementsStatisticsSummary"),
+    engagementsStatisticsAlerts: document.querySelector("#adminEngagementsStatisticsAlerts"),
+    engagementsStatisticsEventSelect: document.querySelector("#adminEngagementsStatisticsEventSelect"),
+    engagementsStatisticsEventRows: document.querySelector("#adminEngagementsStatisticsEventRows"),
+    engagementsStatisticsClubRows: document.querySelector("#adminEngagementsStatisticsClubRows"),
     engagementsEditButton: document.querySelector("#adminEngagementsEditButton"),
     engagementsSaveButton: document.querySelector("#adminEngagementsSaveButton"),
     engagementsEditCancelTop: document.querySelector("#adminEngagementsEditCancelTop"),
@@ -674,6 +683,9 @@
   let engagementMailJobs = [];
   let engagementMailJobsCompetitionId = "";
   let engagementMailJobsLoading = false;
+  let engagementCompetitionStatistics = null;
+  let engagementCompetitionStatisticsCompetitionId = "";
+  let engagementCompetitionStatisticsLoading = false;
   let engagementCalendarFiltersInitialized = false;
   let activeEngagementsTab = "calendar";
   let activeEngagementsNavEntry = "club";
@@ -1400,14 +1412,17 @@
   const ENGAGEMENT_DETAIL_TAB_LABELS = Object.freeze({
     general: "Général", courses: "Programme", fees: "Frais", team: "Chef d'équipe",
     officials: "Officiels", swimmers: "Nageurs", entries: "Courses individuelles", relays: "Relais",
-    summary: "Récapitulatif", documents: "Documents"
+    summary: "Récapitulatif", statistics: "Statistiques", documents: "GED", delivery: "Diffusion"
   });
 
   const ENGAGEMENT_DETAIL_TAB_GROUPS = Object.freeze({
     information: ["general", "courses"],
     participants: ["team", "officials", "swimmers"],
     entries: ["entries", "relays"],
-    summary: ["summary", "documents"]
+    summary: ["summary"],
+    statistics: ["statistics"],
+    documents: ["documents"],
+    delivery: ["delivery"]
   });
 
   function engagementDetailTabLabel(tab = "") {
@@ -1494,7 +1509,7 @@
     });
     if (elements.engagementsFooterPrev) elements.engagementsFooterPrev.textContent = previousTab ? `← ${engagementDetailTabLabel(previousTab)}` : "Première étape";
     if (elements.engagementsFooterNext) elements.engagementsFooterNext.textContent = nextTab ? `${engagementDetailTabLabel(nextTab)} →` : "Dernière étape";
-    if (elements.engagementsStepFooter) elements.engagementsStepFooter.hidden = tabs.length < 2;
+    if (elements.engagementsStepFooter) elements.engagementsStepFooter.hidden = isEngagementAdminMode() || tabs.length < 2;
   }
 
   function navigateEngagementStep(button) {
@@ -1567,20 +1582,17 @@
   }
 
   function setEngagementsDetailTab(tab) {
-    const allowedTabs = new Set(["general", "courses", "team", "officials", "swimmers", "entries", "relays", "summary", "documents"]);
-    const adminOnlyTabs = new Set(["documents"]);
+    const allowedTabs = new Set(["general", "courses", "team", "officials", "swimmers", "entries", "relays", "summary", "statistics", "documents", "delivery"]);
+    const adminOnlyTabs = new Set(["statistics", "documents", "delivery"]);
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
     const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
     const clubOfficialsNotRequired = !isEngagementAdminMode() && selectedEngagementCompetition?.officialsRequired === false;
     const requestedTabHiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(requestedTab);
-    const competitionUpcoming = (selectedEngagementCompetition?.entryStatus || "upcoming") === "upcoming";
     const nextTab = requestedTabHiddenByClubLock
       ? "summary"
       : clubOfficialsNotRequired && requestedTab === "officials"
       ? (engagementClubTeamComplete() ? "swimmers" : "team")
-      : competitionUpcoming && requestedTab === "documents"
-      ? "general"
       : !isEngagementAdminMode() && adminOnlyTabs.has(requestedTab)
       ? "general"
       : isEngagementAdminMode() && clubOnlyTabs.has(requestedTab)
@@ -1594,7 +1606,7 @@
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && buttonTab === "officials";
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && buttonTab === "documents");
+      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -1607,7 +1619,7 @@
       const clubOnly = clubOnlyTabs.has(panelTab);
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(panelTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
-      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired || (competitionUpcoming && panelTab === "documents");
+      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
     });
     if (!isEngagementAdminMode() && (nextTab === "team" || nextTab === "officials") && canUse("engagements.club.manage") && !engagementClubPeopleLoaded) {
       void loadEngagementClubPeople({ silent: true });
@@ -1628,8 +1640,13 @@
     if (!isEngagementAdminMode() && nextTab === "summary" && canUse("engagements.club.manage")) {
       renderEngagementClubSummary();
     }
+    if (isEngagementAdminMode() && nextTab === "statistics") {
+      loadEngagementCompetitionStatistics();
+    }
     if (isEngagementAdminMode() && nextTab === "documents") {
       loadEngagementClubRecapFiles();
+    }
+    if (isEngagementAdminMode() && nextTab === "delivery") {
       loadEngagementMailJobs();
     }
     rememberEngagementDetailTab(nextTab);
@@ -2417,22 +2434,31 @@
   }
 
   function updateEngagementDetailStepLabels() {
-    const labels = isEngagementAdminMode()
+    const adminMode = isEngagementAdminMode();
+    const labels = adminMode
       ? {
           information: "Paramétrage",
           participants: "Participants",
           entries: "Engagements",
-          summary: "Finalisation"
+          summary: "Récapitulatif",
+          statistics: "Statistiques",
+          documents: "GED",
+          delivery: "Diffusion"
         }
       : {
           information: "Informations",
           participants: "Participants",
           entries: "Engagements",
-          summary: "Récapitulatif"
+          summary: "Récapitulatif",
+          statistics: "Statistiques",
+          documents: "GED",
+          delivery: "Diffusion"
         };
     document.querySelectorAll("[data-engagement-step-label]").forEach((label) => {
       label.textContent = labels[label.dataset.engagementStepLabel] || "";
     });
+    const navigation = document.querySelector(".admin-engagements-detail-step-bar");
+    if (navigation) navigation.setAttribute("aria-label", adminMode ? "Rubriques de la compétition" : "Étapes");
   }
 
   function initializeEngagementCalendarFilters(user = currentAccessProfile || {}) {
@@ -6459,19 +6485,6 @@
     }
   }
 
-  function engagementDocumentStatusLabel(status) {
-    return {
-      pending: "A generer",
-      generated: "Genere",
-      sent: "Envoye"
-    }[status] || "A generer";
-  }
-
-  function engagementDocumentStatus(documents = {}, key) {
-    const status = String(documents?.[key]?.status || "").trim();
-    return ["pending", "generated", "sent"].includes(status) ? status : "pending";
-  }
-
   function engagementClosureAutomationStatusLabel(status) {
     return {
       processing: "En cours",
@@ -6529,113 +6542,14 @@
     `;
   }
 
-  function engagementDocumentDefinitions(competition = {}) {
-    const documents = competition.documents || {};
-    return [
-      {
-        key: "entriesTxt",
-        title: "Export TXT engagements",
-        description: competition.computerEmail
-          ? `Destination : ${competition.computerEmail}`
-          : "Email du responsable informatique a renseigner avant l'envoi.",
-        status: engagementDocumentStatus(documents, "entriesTxt")
-      },
-      {
-        key: "clubRecapPdf",
-        title: "Recap PDF clubs",
-        description: "Telechargement a la demande pour chaque club engage.",
-        status: engagementDocumentStatus(documents, "clubRecapPdf")
-      },
-      {
-        key: "clubRecapEmails",
-        title: "Emails clubs",
-        description: "Envoi automatique aux adresses admin du club a la fermeture.",
-        status: engagementDocumentStatus(documents, "clubRecapEmails")
-      },
-      {
-        key: "computerEmail",
-        title: "Email du responsable informatique",
-        description: competition.computerEmail || "Non renseigne",
-        status: competition.computerEmail ? "generated" : "pending"
-      }
-    ];
-  }
-
-  function engagementDocumentProgressLabel(competition = {}) {
-    const definitions = engagementDocumentDefinitions(competition);
-    const readyCount = definitions.filter((item) => item.status !== "pending").length;
-    return `${readyCount}/${definitions.length} element${definitions.length > 1 ? "s" : ""} GED`;
-  }
-
-  function renderEngagementClubRecapFiles() {
-    const mount = elements.engagementsClubRecapFiles;
-    if (!mount) return;
-    if (!isEngagementAdminMode()) {
-      mount.innerHTML = "";
-      return;
-    }
-    if (engagementClubRecapEntriesLoading) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des recap PDF clubs...</p>';
-      return;
-    }
-    if (!selectedEngagementCompetitionId) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Selectionnez une competition pour afficher les recap clubs.</p>';
-      return;
-    }
-    if (!engagementClubRecapEntriesCompetitionId || engagementClubRecapEntriesCompetitionId !== selectedEngagementCompetitionId) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Recap PDF clubs a charger.</p>';
-      return;
-    }
-    if (!engagementClubRecapEntries.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Aucun club engage pour le moment.</p>';
-      return;
-    }
-    mount.innerHTML = `
-      <div class="admin-engagements-club-recap-head">
-        <strong>Recap PDF clubs</strong>
-        <small>${engagementClubRecapEntries.length} club${engagementClubRecapEntries.length > 1 ? "s" : ""} engage${engagementClubRecapEntries.length > 1 ? "s" : ""}</small>
-      </div>
-      <div class="admin-engagements-club-recap-table" role="table" aria-label="Recap PDF clubs">
-        <div class="admin-engagements-club-recap-row admin-engagements-club-recap-row-head" role="row">
-          <span role="columnheader">Club</span>
-          <span role="columnheader">Nageurs</span>
-          <span role="columnheader">Courses</span>
-          <span role="columnheader">Relais</span>
-          <span role="columnheader">Total</span>
-          <span role="columnheader">PDF</span>
-        </div>
-        ${engagementClubRecapEntries.map((entry) => {
-      const recapPdf = entry.recapPdf || {};
-      const pdfReady = recapPdf.status === "generated" && recapPdf.generatedAt;
-      return `
-          <div class="admin-engagements-club-recap-row" role="row" data-recap-pdf-ready="${pdfReady ? "true" : "false"}">
-            <span role="cell">
-              <strong>${escapeHtml(entry.clubName || entry.clubId || "Club")}</strong>
-              <small>${escapeHtml([entry.clubId ? `Club ${entry.clubId}` : "", entry.updatedAt ? `MAJ ${formatDeadline(entry.updatedAt).replace(/^Limite /, "")}` : ""].filter(Boolean).join(" - ") || "-")}</small>
-            </span>
-            <span role="cell">${escapeHtml(String(entry.swimmerCount || 0))}</span>
-            <span role="cell">${escapeHtml(String(entry.individualCount || 0))}</span>
-            <span role="cell">${escapeHtml(String(entry.relayCount || 0))}</span>
-            <span role="cell">${escapeHtml(formatEngagementFee(entry.totalFee))}</span>
-            <span role="cell">
-              <button class="ghost-button compact" type="button" data-engagement-admin-club-pdf="${escapeHtml(entry.clubId)}" ${entry.teamLeaderComplete ? "" : "disabled"}>${pdfReady ? "Telecharger" : "Generer"}</button>
-              <small>${escapeHtml(pdfReady ? `GED ${formatDeadline(recapPdf.generatedAt).replace(/^Limite /, "")}` : "Non genere")}</small>
-            </span>
-          </div>
-        `;
-    }).join("")}
-      </div>
-    `;
-  }
-
   async function loadEngagementClubRecapFiles({ force = false } = {}) {
     if (!isEngagementAdminMode() || !selectedEngagementCompetitionId || engagementClubRecapEntriesLoading) return;
     if (!force && engagementClubRecapEntriesCompetitionId === selectedEngagementCompetitionId) {
-      renderEngagementClubRecapFiles();
+      renderEngagementClubRecapSelector();
       return;
     }
     engagementClubRecapEntriesLoading = true;
-    renderEngagementClubRecapFiles();
+    renderEngagementClubRecapSelector();
     try {
       const result = await callFunction("listEngagementCompetitionClubRecaps", {
         competitionId: selectedEngagementCompetitionId
@@ -6652,7 +6566,172 @@
     } finally {
       engagementClubRecapEntriesLoading = false;
     }
-    renderEngagementClubRecapFiles();
+    renderEngagementClubRecapSelector();
+  }
+
+  function renderEngagementClubRecapSelector() {
+    const select = elements.engagementsClubPdfSelect;
+    const button = elements.engagementsClubPdfDownloadButton;
+    const status = elements.engagementsClubRecapFiles;
+    if (!select || !button || !status) return;
+    const previousValue = select.value;
+    select.innerHTML = "";
+    if (engagementClubRecapEntriesLoading) {
+      select.append(new Option("Chargement des clubs…", ""));
+      button.disabled = true;
+      status.innerHTML = '<p class="admin-engagements-empty">Chargement des dossiers clubs…</p>';
+      return;
+    }
+    if (!engagementClubRecapEntries.length) {
+      select.append(new Option("Aucun club engagé", ""));
+      button.disabled = true;
+      status.innerHTML = '<p class="admin-engagements-empty">Aucun dossier club n’est disponible pour le moment.</p>';
+      return;
+    }
+    engagementClubRecapEntries.forEach((entry) => {
+      select.append(new Option([entry.clubId, entry.clubName].filter(Boolean).join(" — ") || "Club", entry.clubId || ""));
+    });
+    select.value = Array.from(select.options).some((option) => option.value === previousValue)
+      ? previousValue
+      : select.options[0]?.value || "";
+    button.disabled = !select.value;
+    const selectedEntry = engagementClubRecapEntries.find((entry) => entry.clubId === select.value) || engagementClubRecapEntries[0];
+    status.innerHTML = selectedEntry
+      ? `<small>${escapeHtml(`${selectedEntry.swimmerCount || 0} nageur${Number(selectedEntry.swimmerCount || 0) > 1 ? "s" : ""} · ${selectedEntry.individualCount || 0} course${Number(selectedEntry.individualCount || 0) > 1 ? "s" : ""} · ${selectedEntry.relayCount || 0} relais`)}</small>`
+      : "";
+  }
+
+  function engagementStatisticsTimeModeLabel(mode = "") {
+    return {
+      known: "Temps connu",
+      manual: "Saisie manuelle",
+      default595999: "Temps par défaut"
+    }[String(mode || "")] || "";
+  }
+
+  function renderEngagementCompetitionStatistics() {
+    const summary = elements.engagementsStatisticsSummary;
+    const alerts = elements.engagementsStatisticsAlerts;
+    const select = elements.engagementsStatisticsEventSelect;
+    const eventRows = elements.engagementsStatisticsEventRows;
+    const clubRows = elements.engagementsStatisticsClubRows;
+    if (!summary || !alerts || !select || !eventRows || !clubRows) return;
+    if (engagementCompetitionStatisticsLoading) {
+      summary.innerHTML = '<p class="admin-engagements-empty">Calcul des statistiques en cours…</p>';
+      alerts.innerHTML = "";
+      eventRows.innerHTML = "";
+      clubRows.innerHTML = "";
+      if (elements.engagementsStatisticsRefreshButton) elements.engagementsStatisticsRefreshButton.disabled = true;
+      return;
+    }
+    if (elements.engagementsStatisticsRefreshButton) elements.engagementsStatisticsRefreshButton.disabled = false;
+    const statistics = engagementCompetitionStatistics;
+    if (!statistics) {
+      summary.innerHTML = '<p class="admin-engagements-empty">Ouvrez cet onglet pour calculer les statistiques.</p>';
+      alerts.innerHTML = "";
+      eventRows.innerHTML = "";
+      clubRows.innerHTML = "";
+      return;
+    }
+    if (statistics.error) {
+      summary.innerHTML = `<p class="admin-portal-message" data-tone="error">Calcul impossible : ${escapeHtml(statistics.error)}</p>`;
+      alerts.innerHTML = "";
+      eventRows.innerHTML = "";
+      clubRows.innerHTML = "";
+      return;
+    }
+    const counts = statistics.counts || {};
+    const cards = [
+      ["Participants", counts.swimmerCount || 0, `${counts.femaleCount || 0} F · ${counts.maleCount || 0} H`],
+      ["Clubs", counts.clubCount || 0, "dossiers engagés"],
+      ["Courses", counts.individualEntryCount || 0, "engagements individuels"],
+      ["Relais", counts.relayCount || 0, "équipes engagées"],
+      ["Officiels", counts.officialCount || 0, "déclarés"]
+    ];
+    summary.innerHTML = cards.map(([label, value, detail]) => `
+      <article><small>${escapeHtml(label)}</small><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(detail)}</span></article>
+    `).join("");
+    const warningParts = [
+      counts.incompleteClubCount ? `${counts.incompleteClubCount} dossier${counts.incompleteClubCount > 1 ? "s" : ""} à vérifier` : "",
+      counts.manualTimeCount ? `${counts.manualTimeCount} temps saisi${counts.manualTimeCount > 1 ? "s" : ""} manuellement` : "",
+      counts.defaultTimeCount ? `${counts.defaultTimeCount} temps par défaut 59:59.99` : "",
+      counts.unknownSexCount ? `${counts.unknownSexCount} sexe${counts.unknownSexCount > 1 ? "s" : ""} non renseigné${counts.unknownSexCount > 1 ? "s" : ""}` : "",
+      statistics.truncated ? "Liste détaillée limitée aux 10 000 premiers engagements" : ""
+    ].filter(Boolean);
+    alerts.innerHTML = warningParts.length
+      ? `<div class="admin-engagements-statistics-warning"><strong>Points de contrôle</strong><span>${escapeHtml(warningParts.join(" · "))}</span></div>`
+      : '<div class="admin-engagements-statistics-ok">Aucun point de contrôle détecté.</div>';
+
+    const events = Array.isArray(statistics.events) ? statistics.events : [];
+    const selectedEventCode = select.value;
+    select.innerHTML = "";
+    events.forEach((event) => {
+      const suffix = event.type === "relay" ? `${event.entryCount || 0} relais` : `${event.entryCount || 0} engagé${Number(event.entryCount || 0) > 1 ? "s" : ""}`;
+      select.append(new Option(`${event.label || event.eventCode} — ${suffix}`, event.eventCode || ""));
+    });
+    if (events.some((event) => event.eventCode === selectedEventCode)) select.value = selectedEventCode;
+    const selectedEvent = events.find((event) => event.eventCode === select.value) || events[0];
+    if (!selectedEvent) {
+      select.append(new Option("Aucune course au programme", ""));
+      eventRows.innerHTML = '<p class="admin-engagements-empty">Aucune course n’est disponible.</p>';
+    } else if (!selectedEvent.rows?.length) {
+      eventRows.innerHTML = '<p class="admin-engagements-empty">Aucun engagement pour cette course.</p>';
+    } else if (selectedEvent.type === "relay") {
+      eventRows.innerHTML = `
+        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head" role="row"><span>Ordre</span><span>Club</span><span>Catégorie</span><span>Composition</span><span>Temps</span></div>
+        ${selectedEvent.rows.map((row, index) => `
+          <div class="admin-engagements-statistics-row" role="row">
+            <span data-label="Ordre">${index + 1}</span><span data-label="Club"><strong>${escapeHtml(row.clubId || "-")}</strong></span>
+            <span data-label="Catégorie">${escapeHtml([row.category, engagementProgramGenderModeDisplayLabel(row.genderMode, row.eventCode)].filter(Boolean).join(" · ") || "-")}</span>
+            <span data-label="Composition">${escapeHtml((row.members || []).map((member) => [member.lastName, member.firstName].filter(Boolean).join(" ")).join(", ") || "-")}</span>
+            <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong></span>
+          </div>`).join("")}`;
+    } else {
+      eventRows.innerHTML = `
+        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head" role="row"><span>Ordre</span><span>Nageur</span><span>Club</span><span>Sexe · catégorie</span><span>Temps</span></div>
+        ${selectedEvent.rows.map((row, index) => `
+          <div class="admin-engagements-statistics-row" role="row">
+            <span data-label="Ordre">${index + 1}</span>
+            <span data-label="Nageur"><strong>${escapeHtml(row.lastName || "-")}</strong><small>${escapeHtml(row.firstName || "")}</small></span>
+            <span data-label="Club"><strong>${escapeHtml(row.clubId || "-")}</strong></span>
+            <span data-label="Sexe · catégorie">${escapeHtml([row.sex, row.category].filter(Boolean).join(" · ") || "-")}</span>
+            <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong><small>${escapeHtml(engagementStatisticsTimeModeLabel(row.entryTimeMode))}</small></span>
+          </div>`).join("")}`;
+    }
+    const clubs = Array.isArray(statistics.clubs) ? statistics.clubs : [];
+    clubRows.innerHTML = clubs.length ? `
+      <div class="admin-engagements-statistics-club-row admin-engagements-statistics-row-head" role="row"><span>Club</span><span>Nageurs</span><span>Courses</span><span>Relais</span><span>Officiels</span><span>Dernière modification</span></div>
+      ${clubs.map((club) => `
+        <div class="admin-engagements-statistics-club-row" role="row">
+          <span data-label="Club"><strong>${escapeHtml(club.clubId || "-")}</strong><small>${escapeHtml(club.clubName || "")}</small></span>
+          <span data-label="Nageurs">${escapeHtml(`${club.swimmerCount || 0} (${club.femaleCount || 0} F · ${club.maleCount || 0} H)`)}</span>
+          <span data-label="Courses">${escapeHtml(String(club.individualCount || 0))}</span><span data-label="Relais">${escapeHtml(String(club.relayCount || 0))}</span>
+          <span data-label="Officiels">${escapeHtml(String(club.officialCount || 0))}</span>
+          <span data-label="Dernière modification">${escapeHtml(club.updatedAt ? formatDeadline(club.updatedAt).replace(/^Limite /, "") : "-")}</span>
+        </div>`).join("")}` : '<p class="admin-engagements-empty">Aucun club engagé pour le moment.</p>';
+  }
+
+  async function loadEngagementCompetitionStatistics({ force = false } = {}) {
+    if (!isEngagementAdminMode() || !selectedEngagementCompetitionId || engagementCompetitionStatisticsLoading) return;
+    if (!force && engagementCompetitionStatisticsCompetitionId === selectedEngagementCompetitionId && engagementCompetitionStatistics) {
+      renderEngagementCompetitionStatistics();
+      return;
+    }
+    engagementCompetitionStatisticsLoading = true;
+    renderEngagementCompetitionStatistics();
+    try {
+      engagementCompetitionStatistics = await callFunction("getEngagementCompetitionStatistics", { competitionId: selectedEngagementCompetitionId });
+      engagementCompetitionStatisticsCompetitionId = selectedEngagementCompetitionId;
+      if (elements.engagementsStatisticsUpdatedAt) {
+        elements.engagementsStatisticsUpdatedAt.textContent = `Actualisé ${formatDeadline(engagementCompetitionStatistics.generatedAt).replace(/^Limite /, "")}`;
+      }
+    } catch (error) {
+      engagementCompetitionStatistics = { error: error?.message || String(error) };
+      engagementCompetitionStatisticsCompetitionId = selectedEngagementCompetitionId;
+    } finally {
+      engagementCompetitionStatisticsLoading = false;
+    }
+    renderEngagementCompetitionStatistics();
   }
 
   function engagementMailJobTypeLabel(type) {
@@ -6665,14 +6744,13 @@
 
   function renderEngagementMailJobs() {
     const mount = elements.engagementsMailJobsList;
-    if (elements.engagementsTechnicalFollowup) elements.engagementsTechnicalFollowup.hidden = !engagementMailJobs.length;
     if (!mount) return;
     if (!isEngagementAdminMode()) {
       mount.innerHTML = "";
       return;
     }
     if (engagementMailJobsLoading) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Chargement des mails prepares...</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Chargement du suivi des envois…</p>';
       return;
     }
     if (!selectedEngagementCompetitionId) {
@@ -6680,11 +6758,11 @@
       return;
     }
     if (!engagementMailJobsCompetitionId || engagementMailJobsCompetitionId !== selectedEngagementCompetitionId) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Mails prepares a charger.</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Suivi des envois à charger.</p>';
       return;
     }
     if (!engagementMailJobs.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Aucun mail prepare pour le moment.</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucun courriel envoyé pour le moment.</p>';
       return;
     }
     const sentCount = engagementMailJobs.filter((job) => job.status === "sent").length;
@@ -6692,17 +6770,17 @@
     const failedCount = engagementMailJobs.filter((job) => job.status === "failed").length;
     const blockedCount = engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
     const statusParts = [
-      readyCount ? `${readyCount} pret${readyCount > 1 ? "s" : ""}` : "",
+      readyCount ? `${readyCount} en attente d'envoi` : "",
       sentCount ? `${sentCount} envoye${sentCount > 1 ? "s" : ""}` : "",
       failedCount ? `${failedCount} erreur${failedCount > 1 ? "s" : ""}` : "",
       blockedCount ? `${blockedCount} configuration manquante` : ""
     ].filter(Boolean);
     mount.innerHTML = `
       <div class="admin-engagements-mail-jobs-head">
-        <strong>Mails prepares</strong>
-        <small>${engagementMailJobs.length} mail${engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` - ${statusParts.join(" - ")}` : ""}</small>
+        <strong>Courriels</strong>
+        <small>${engagementMailJobs.length} courriel${engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` · ${statusParts.join(" · ")}` : ""}</small>
       </div>
-      <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Mails prepares">
+      <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Suivi des envois">
         <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
           <span role="columnheader">Type</span>
           <span role="columnheader">Destinataire</span>
@@ -6718,7 +6796,7 @@
             </span>
             <span role="cell">${escapeHtml(job.clubName || job.clubId || "-")}</span>
             <span role="cell">
-              <span class="admin-engagements-mail-status">${escapeHtml(job.statusLabel || job.status || "Prepare")}</span>
+              <span class="admin-engagements-mail-status">${escapeHtml({ ready: "En attente d'envoi", sent: "Envoyé", failed: "En erreur", blocked_missing_config: "Configuration manquante" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
               <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
             </span>
           </div>
@@ -6755,9 +6833,8 @@
   }
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
-    const definitions = engagementDocumentDefinitions(competition);
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Générez puis téléchargez les documents utiles.";
+      elements.engagementsDocumentsSummary.textContent = "Téléchargez les documents utiles de la compétition.";
     }
     if (elements.engagementsComputerEmailLabel) {
       elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
@@ -6766,15 +6843,7 @@
       elements.engagementsComputerEmailLabel.hidden = !competition.computerEmail;
     }
     if (elements.engagementsDocumentsList) {
-      elements.engagementsDocumentsList.innerHTML = `${definitions.map((item) => `
-        <article class="admin-engagements-document-card" data-document-status="${escapeHtml(item.status)}">
-          <div>
-            <strong>${escapeHtml(item.title)}</strong>
-            <small>${escapeHtml(item.description)}</small>
-          </div>
-          <span>${escapeHtml(engagementDocumentStatusLabel(item.status))}</span>
-        </article>
-      `).join("")}${renderEngagementClosureAutomation(competition)}`;
+      elements.engagementsDocumentsList.innerHTML = renderEngagementClosureAutomation(competition);
     }
     if (elements.engagementsGeneratedFiles) {
       const files = Array.isArray(competition.generatedFiles) ? competition.generatedFiles : [];
@@ -6782,7 +6851,7 @@
         ? files.map((file) => `<a href="${escapeHtml(file.url || "#")}" target="_blank" rel="noopener">${escapeHtml(file.name || "Document")}</a>`).join("")
         : `<p class="admin-engagements-empty">Aucun fichier disponible pour le moment.</p>`;
     }
-    renderEngagementClubRecapFiles();
+    renderEngagementClubRecapSelector();
     renderEngagementMailJobs();
   }
 
@@ -7678,6 +7747,9 @@
     engagementMailJobs = [];
     engagementMailJobsCompetitionId = "";
     engagementMailJobsLoading = false;
+    engagementCompetitionStatistics = null;
+    engagementCompetitionStatisticsCompetitionId = "";
+    engagementCompetitionStatisticsLoading = false;
     setEngagementsDetailTab("general");
     setEngagementCompetitionDetailVisible(false);
     if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Selectionnez une competition";
@@ -7733,6 +7805,12 @@
     if (elements.engagementsDocumentsList) elements.engagementsDocumentsList.innerHTML = "";
     if (elements.engagementsClubRecapFiles) elements.engagementsClubRecapFiles.innerHTML = "";
     if (elements.engagementsMailJobsList) elements.engagementsMailJobsList.innerHTML = "";
+    if (elements.engagementsStatisticsSummary) elements.engagementsStatisticsSummary.innerHTML = "";
+    if (elements.engagementsStatisticsAlerts) elements.engagementsStatisticsAlerts.innerHTML = "";
+    if (elements.engagementsStatisticsEventRows) elements.engagementsStatisticsEventRows.innerHTML = "";
+    if (elements.engagementsStatisticsClubRows) elements.engagementsStatisticsClubRows.innerHTML = "";
+    if (elements.engagementsStatisticsEventSelect) elements.engagementsStatisticsEventSelect.innerHTML = "";
+    if (elements.engagementsStatisticsUpdatedAt) elements.engagementsStatisticsUpdatedAt.textContent = "Les statistiques sont calculées à la demande.";
     if (elements.engagementsGeneratedFiles) elements.engagementsGeneratedFiles.innerHTML = "";
     if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "";
     renderEngagementCompetitions();
@@ -7767,6 +7845,9 @@
     engagementMailJobs = [];
     engagementMailJobsCompetitionId = "";
     engagementMailJobsLoading = false;
+    engagementCompetitionStatistics = null;
+    engagementCompetitionStatisticsCompetitionId = "";
+    engagementCompetitionStatisticsLoading = false;
     renderEngagementCompetitions();
     setEngagementCompetitionDetailVisible(true);
     setEngagementsDetailTab(initialTab);
@@ -8251,9 +8332,9 @@
   async function downloadEngagementAdminClubRecapPdf(clubId) {
     const cleanClubId = String(clubId || "").trim();
     if (!selectedEngagementCompetitionId || !cleanClubId || !isEngagementAdminMode()) return;
-    const escapedClubId = global.CSS?.escape ? global.CSS.escape(cleanClubId) : cleanClubId.replace(/"/g, "\\\"");
-    const button = elements.engagementsClubRecapFiles?.querySelector(`[data-engagement-admin-club-pdf="${escapedClubId}"]`);
+    const button = elements.engagementsClubPdfDownloadButton;
     if (button) button.disabled = true;
+    if (elements.engagementsClubRecapFiles) elements.engagementsClubRecapFiles.innerHTML = '<p class="admin-engagements-empty">Préparation du PDF…</p>';
     try {
       const result = await callFunction("generateEngagementClubRecapPdfForAdmin", {
         competitionId: selectedEngagementCompetitionId,
@@ -8278,17 +8359,17 @@
           }
         };
         renderEngagementDocuments(selectedEngagementCompetition);
-        renderEngagementClubRecapFiles();
+        renderEngagementClubRecapSelector();
+      }
+      if (elements.engagementsClubRecapFiles) {
+        elements.engagementsClubRecapFiles.innerHTML = `<p class="admin-portal-message" data-tone="ok">PDF ${escapeHtml(result.fromStorage ? "téléchargé" : "préparé et téléchargé")}.</p>`;
       }
     } catch (error) {
       if (elements.engagementsClubRecapFiles) {
-        elements.engagementsClubRecapFiles.insertAdjacentHTML(
-          "afterbegin",
-          `<p class="admin-portal-message" data-tone="error">Generation PDF impossible : ${escapeHtml(error?.message || error)}</p>`
-        );
+        elements.engagementsClubRecapFiles.innerHTML = `<p class="admin-portal-message" data-tone="error">Téléchargement PDF impossible : ${escapeHtml(error?.message || error)}</p>`;
       }
     } finally {
-      if (button) button.disabled = false;
+      if (button) button.disabled = !elements.engagementsClubPdfSelect?.value;
     }
   }
 
@@ -8327,7 +8408,7 @@
         };
       }
       renderEngagementDocuments(selectedEngagementCompetition);
-      renderEngagementClubRecapFiles();
+      renderEngagementClubRecapSelector();
       if (elements.engagementsDocumentsSummary) {
         const generatedCount = Number(result.generatedCount || 0);
         const reusedCount = Number(result.reusedCount || 0);
@@ -8363,7 +8444,7 @@
     const button = elements.engagementsGenerateTxtExportButton;
     if (button) button.disabled = true;
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Generation de l'export TXT...";
+      elements.engagementsDocumentsSummary.textContent = "Préparation de l'export TXT…";
     }
     try {
       const result = await callFunction("generateEngagementCompetitionTxtExport", {
@@ -8391,11 +8472,11 @@
       renderEngagementDocuments(selectedEngagementCompetition);
       if (elements.engagementsDocumentsSummary) {
         const entryCount = Number(result.entryCount || 0);
-        elements.engagementsDocumentsSummary.textContent = `Export TXT genere pour ${entryCount} club${entryCount > 1 ? "s" : ""}.`;
+        elements.engagementsDocumentsSummary.textContent = `Export TXT téléchargé pour ${entryCount} club${entryCount > 1 ? "s" : ""}.`;
       }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = `Generation TXT impossible : ${error?.message || error}`;
+        elements.engagementsDocumentsSummary.textContent = `Téléchargement TXT impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -12534,6 +12615,10 @@
     elements.engagementsClubEntriesForm?.addEventListener("submit", (event) => event.preventDefault());
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
     elements.engagementsGenerateTxtExportButton?.addEventListener("click", generateEngagementAdminTxtExport);
+    elements.engagementsClubPdfSelect?.addEventListener("change", renderEngagementClubRecapSelector);
+    elements.engagementsClubPdfDownloadButton?.addEventListener("click", () => downloadEngagementAdminClubRecapPdf(elements.engagementsClubPdfSelect?.value));
+    elements.engagementsStatisticsRefreshButton?.addEventListener("click", () => loadEngagementCompetitionStatistics({ force: true }));
+    elements.engagementsStatisticsEventSelect?.addEventListener("change", renderEngagementCompetitionStatistics);
     elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);

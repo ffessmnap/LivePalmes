@@ -877,20 +877,10 @@ async function auditInteractions(client, viewport, view) {
       const program = document.querySelector("#adminEngagementsDetailCoursesTab");
       if (detail && general && program) {
         detail.hidden = false;
-        if (${viewport.width <= 700 ? "true" : "false"}) {
-          const mobileNav = document.querySelector("#adminEngagementsMobileStepNav");
-          const current = document.querySelector("#adminEngagementsMobileStepCurrent");
-          const menu = document.querySelector("#adminEngagementsMobileStepMenu");
-          if (mobileNav) mobileNav.hidden = false;
-          current?.click();
-          result.tabKeyboard = Boolean(current?.getAttribute("aria-expanded") === "true" && menu && !menu.hidden);
-          current?.click();
-        } else {
-          general.focus();
-          general.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
-          result.tabKeyboard = program.getAttribute("aria-selected") === "true" && document.activeElement === program;
-          general.click();
-        }
+        general.focus();
+        general.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        result.tabKeyboard = program.getAttribute("aria-selected") === "true" && document.activeElement === program;
+        general.click();
         detail.hidden = true;
       }
     }

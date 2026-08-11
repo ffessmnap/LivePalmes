@@ -9154,6 +9154,216 @@
   padding-top: 14px;
 }
 
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail .admin-engagements-detail-step-bar > button span {
+  display: none;
+}
+
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="participants"],
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="entries"],
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="summary"],
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="statistics"],
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="documents"],
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="delivery"] {
+  display: none !important;
+}
+
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail .admin-engagements-detail-step-bar > button {
+  min-height: 38px;
+  font-size: 0.76rem;
+}
+
+.admin-engagements-statistics,
+.admin-engagements-documents {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-engagements-statistics-head,
+.admin-engagements-statistics-section-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-statistics-head > div,
+.admin-engagements-statistics-section-head > div,
+.admin-engagements-ged-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-engagements-statistics-head small,
+.admin-engagements-statistics-section-head small,
+.admin-engagements-ged-card small {
+  color: #64767c;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-statistics-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-engagements-statistics-summary article {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  border: 1px solid #dfe7e9;
+  border-radius: 9px;
+  padding: 10px 11px;
+  background: #f8fafb;
+}
+
+.admin-engagements-statistics-summary article small,
+.admin-engagements-statistics-summary article span {
+  overflow: hidden;
+  color: #607278;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-statistics-summary article strong {
+  color: #12312d;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-engagements-statistics-warning,
+.admin-engagements-statistics-ok {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  border: 1px solid #eadcae;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffae9;
+  color: #70590b;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-statistics-ok {
+  border-color: #b9dfd2;
+  background: #f1faf7;
+  color: #15624c;
+}
+
+.admin-engagements-statistics-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #e2e8ea;
+  padding-top: 13px;
+}
+
+.admin-engagements-statistics-section-head label,
+.admin-engagements-ged-club-choice label {
+  display: grid;
+  gap: 4px;
+  min-width: min(330px, 100%);
+  color: #53666c;
+  font-size: 0.7rem;
+}
+
+.admin-engagements-statistics-section-head select,
+.admin-engagements-ged-club-choice select {
+  min-height: 36px;
+}
+
+.admin-engagements-statistics-table {
+  overflow-x: auto;
+  border: 1px solid #dfe6e8;
+  border-radius: 8px;
+}
+
+.admin-engagements-statistics-row,
+.admin-engagements-statistics-club-row {
+  display: grid;
+  grid-template-columns: 54px minmax(170px, 1.4fr) minmax(90px, 0.65fr) minmax(140px, 1fr) minmax(105px, 0.7fr);
+  min-width: 720px;
+  border-top: 1px solid #e7ecee;
+  background: #ffffff;
+}
+
+.admin-engagements-statistics-club-row {
+  grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 0.9fr) 75px 65px 75px minmax(145px, 1fr);
+  min-width: 800px;
+}
+
+.admin-engagements-statistics-row:first-child,
+.admin-engagements-statistics-club-row:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-statistics-row > span,
+.admin-engagements-statistics-club-row > span {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  color: #354b52;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-engagements-statistics-row > span + span,
+.admin-engagements-statistics-club-row > span + span {
+  border-left: 1px solid #edf1f2;
+}
+
+.admin-engagements-statistics-row small,
+.admin-engagements-statistics-club-row small {
+  overflow: hidden;
+  color: #6c7d82;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-statistics-row-head {
+  background: #f1f6f7;
+}
+
+.admin-engagements-statistics-row-head > span {
+  min-height: 32px;
+  color: #4f6268;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.admin-engagements-ged-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-engagements-ged-card {
+  display: grid;
+  gap: 13px;
+  align-content: start;
+  border: 1px solid #dfe6e8;
+  border-radius: 9px;
+  padding: 13px;
+  background: #ffffff;
+}
+
+.admin-engagements-ged-card > button {
+  justify-self: start;
+}
+
+.admin-engagements-ged-club-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.admin-engagements-ged-card #adminEngagementsClubRecapFiles small {
+  display: block;
+}
+
 #adminEngagementsDetail .admin-engagements-document-card {
   padding: 11px 12px;
   background: #ffffff;
@@ -9212,6 +9422,33 @@
   }
 
   #adminEngagementsDetail .admin-engagements-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-statistics-head,
+  .admin-engagements-statistics-section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-statistics-head button,
+  .admin-engagements-statistics-section-head label,
+  .admin-engagements-ged-card > button,
+  .admin-engagements-ged-club-choice button {
+    width: 100%;
+  }
+
+  .admin-engagements-statistics-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-engagements-statistics-warning {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-ged-grid,
+  .admin-engagements-ged-club-choice {
     grid-template-columns: 1fr;
   }
 }
