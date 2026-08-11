@@ -2732,7 +2732,11 @@
   function prepareCreateCompetitionDialog() {
     const dialog = elements.engagementsCreateDialog;
     const form = elements.engagementsCreateForm;
-    if (!dialog || !form || dialog.contains(form)) return;
+    if (!dialog || !form) return;
+    [elements.engagementsInvitedRegionDialog, elements.engagementsCreateChecklist].forEach((modal) => {
+      if (modal && modal.parentElement !== dialog.parentElement) dialog.insertAdjacentElement("afterend", modal);
+    });
+    if (dialog.contains(form)) return;
     const optional = document.createElement("details");
     optional.className = "admin-engagements-create-optional";
     optional.innerHTML = "<summary>Ajouter des informations complémentaires</summary>";
@@ -10659,7 +10663,9 @@
       entryStatus: fields.entryStatus?.value || "upcoming",
       officialsRequired: fields.officialsRequired?.value === "true",
       poolLength: fields.poolLength?.value || "",
-      poolLaneCount: Math.trunc(Number(fields.poolLaneCount?.value) || 0),
+      poolLaneCount: fields.poolLaneCount?.value === ""
+        ? ""
+        : Math.trunc(Number(fields.poolLaneCount?.value)),
       timingType: fields.timingType?.value || "",
       qualificationTimesMode,
       qualificationStartDate: qualificationTimesMode === "period" ? fields.qualificationStart?.value || "" : "",
