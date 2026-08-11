@@ -867,6 +867,9 @@
                         <button type="button" data-engagement-step-button="participants" aria-pressed="false"><span>2</span><strong data-engagement-step-label="participants">Participants</strong></button>
                         <button type="button" data-engagement-step-button="entries" aria-pressed="false"><span>3</span><strong data-engagement-step-label="entries">Engagements</strong></button>
                         <button type="button" data-engagement-step-button="summary" aria-pressed="false"><span>4</span><strong data-engagement-step-label="summary">Récapitulatif</strong></button>
+                        <button type="button" data-engagement-step-button="statistics" aria-pressed="false"><span>2</span><strong data-engagement-step-label="statistics">Statistiques</strong></button>
+                        <button type="button" data-engagement-step-button="documents" aria-pressed="false"><span>3</span><strong data-engagement-step-label="documents">GED</strong></button>
+                        <button type="button" data-engagement-step-button="delivery" aria-pressed="false"><span>4</span><strong data-engagement-step-label="delivery">Diffusion</strong></button>
                       </div>
                       <div class="admin-engagements-detail-tab-group" data-engagement-step-group="information">
                         <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Informations">
@@ -888,9 +891,23 @@
                         </div>
                       </div>
                       <div class="admin-engagements-detail-tab-group" data-engagement-step-group="summary" hidden>
-                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Vérification et envoi">
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Récapitulatif">
                           <button id="adminEngagementsDetailSummaryTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailSummaryPanel" data-engagements-detail-tab-button="summary">R&eacute;capitulatif</button>
-                          <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents">Documents</button>
+                        </div>
+                      </div>
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="statistics" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Statistiques">
+                          <button id="adminEngagementsDetailStatisticsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailStatisticsPanel" data-engagements-detail-tab-button="statistics">Statistiques</button>
+                        </div>
+                      </div>
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="documents" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="GED">
+                          <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents">GED</button>
+                        </div>
+                      </div>
+                      <div class="admin-engagements-detail-tab-group" data-engagement-step-group="delivery" hidden>
+                        <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Diffusion">
+                          <button id="adminEngagementsDetailDeliveryTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDeliveryPanel" data-engagements-detail-tab-button="delivery">Diffusion</button>
                         </div>
                       </div>
                     </nav>
@@ -932,7 +949,7 @@
                             <div class="admin-engagements-invited-regions-field">
                               R&eacute;gions invit&eacute;es
                               <div id="adminEngagementsEditInvitedRegionChoices" class="admin-engagements-region-choices"></div>
-                              <select id="adminEngagementsEditInvitedRegionIds" multiple hidden></select>
+                              <select id="adminEngagementsEditInvitedRegionIds" multiple hidden aria-label="Régions invitées"></select>
                               <small>Pour le mail d'ouverture uniquement.</small>
                             </div>
                           </div>
@@ -1357,32 +1374,82 @@
                         </div>
                       </section>
                     </div>
+                    <div id="adminEngagementsDetailStatisticsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailStatisticsTab" data-engagements-detail-tab-panel="statistics" hidden>
+                      <div class="admin-engagements-statistics">
+                        <div class="admin-engagements-statistics-head">
+                          <div>
+                            <strong>Vue d'ensemble</strong>
+                            <small id="adminEngagementsStatisticsUpdatedAt">Les statistiques sont calcul&eacute;es &agrave; la demande.</small>
+                          </div>
+                          <button id="adminEngagementsStatisticsRefreshButton" class="ghost-button compact" type="button">Actualiser</button>
+                        </div>
+                        <div id="adminEngagementsStatisticsSummary" class="admin-engagements-statistics-summary" aria-live="polite"></div>
+                        <div id="adminEngagementsStatisticsAlerts" class="admin-engagements-statistics-alerts"></div>
+                        <section class="admin-engagements-statistics-section" aria-labelledby="adminEngagementsStatisticsEventsTitle">
+                          <div class="admin-engagements-statistics-section-head">
+                            <div>
+                              <strong id="adminEngagementsStatisticsEventsTitle">Engag&eacute;s par course</strong>
+                              <small>Ordre des temps d'engagement, du plus rapide au plus lent.</small>
+                            </div>
+                            <label>Course<select id="adminEngagementsStatisticsEventSelect" aria-label="Course à consulter"></select></label>
+                          </div>
+                          <div id="adminEngagementsStatisticsEventRows" class="admin-engagements-statistics-table" aria-live="polite"></div>
+                        </section>
+                        <section class="admin-engagements-statistics-section" aria-labelledby="adminEngagementsStatisticsClubsTitle">
+                          <div class="admin-engagements-statistics-section-head">
+                            <div>
+                              <strong id="adminEngagementsStatisticsClubsTitle">Synth&egrave;se par club</strong>
+                              <small>Nageurs, courses, relais et derni&egrave;re modification.</small>
+                            </div>
+                          </div>
+                          <div id="adminEngagementsStatisticsClubRows" class="admin-engagements-statistics-table"></div>
+                        </section>
+                      </div>
+                    </div>
                     <div id="adminEngagementsDetailDocumentsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDocumentsTab" data-engagements-detail-tab-panel="documents" hidden>
                       <div class="admin-engagements-documents">
                         <div class="admin-engagements-documents-head">
                           <div>
-                            <strong>Finalisation</strong>
-                            <small id="adminEngagementsDocumentsSummary">Générez puis téléchargez les documents utiles.</small>
+                            <strong>GED</strong>
+                            <small id="adminEngagementsDocumentsSummary">Téléchargez les documents utiles de la compétition.</small>
                           </div>
                           <span id="adminEngagementsComputerEmailLabel" hidden></span>
                         </div>
-                        <section class="admin-engagements-documents-section" aria-labelledby="adminEngagementsFilesTitle">
-                          <div class="admin-engagements-documents-section-head">
+                        <div class="admin-engagements-ged-grid">
+                          <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsTxtTitle">
                             <div>
-                              <strong id="adminEngagementsFilesTitle">Générer les documents</strong>
-                              <small>Export TXT et PDF récapitulatifs des clubs.</small>
+                              <strong id="adminEngagementsTxtTitle">Export TXT de la compétition</strong>
+                              <small>Fichier complet des engagements pour le traitement informatique.</small>
                             </div>
-                            <div class="admin-engagements-documents-actions">
-                              <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer export TXT</button>
-                              <button id="adminEngagementsGenerateClubRecapsButton" class="ghost-button compact" type="button">G&eacute;n&eacute;rer les PDF clubs</button>
+                            <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button" type="button">Télécharger le TXT</button>
+                          </section>
+                          <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsClubPdfTitle">
+                            <div>
+                              <strong id="adminEngagementsClubPdfTitle">Récapitulatif PDF d'un club</strong>
+                              <small>Choisissez le club dont vous souhaitez consulter le dossier.</small>
                             </div>
+                            <div class="admin-engagements-ged-club-choice">
+                              <label>Club<select id="adminEngagementsClubPdfSelect" aria-label="Club pour le récapitulatif PDF"></select></label>
+                              <button id="adminEngagementsClubPdfDownloadButton" class="ghost-button" type="button">Télécharger le PDF</button>
+                            </div>
+                            <div id="adminEngagementsClubRecapFiles" aria-live="polite"></div>
+                          </section>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="adminEngagementsDetailDeliveryPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDeliveryTab" data-engagements-detail-tab-panel="delivery" hidden>
+                      <div class="admin-engagements-documents">
+                        <div class="admin-engagements-documents-head">
+                          <div>
+                            <strong>Diffusion</strong>
+                            <small>Suivez les courriels effectivement envoyés pour cette compétition.</small>
                           </div>
-                        </section>
-                        <section id="adminEngagementsTechnicalFollowup" class="admin-engagements-documents-section" aria-labelledby="adminEngagementsAutomationTitle" hidden>
+                        </div>
+                        <section id="adminEngagementsTechnicalFollowup" class="admin-engagements-documents-section" aria-labelledby="adminEngagementsAutomationTitle">
                           <div class="admin-engagements-documents-section-head">
                             <div>
-                              <strong id="adminEngagementsAutomationTitle">Suivi technique</strong>
-                              <small>Mails préparés et envois automatiques.</small>
+                              <strong id="adminEngagementsAutomationTitle">Suivi des envois</strong>
+                              <small>Ouverture des engagements, PDF clubs et export informatique.</small>
                             </div>
                           </div>
                           <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
@@ -1524,7 +1591,7 @@
                             <button id="adminEngagementsInvitedRegionDialogOpen" class="ghost-button compact" type="button">Choisir les régions</button>
                             <small id="adminEngagementsInvitedRegionSummary">Aucune région invitée</small>
                           </div>
-                          <select id="adminEngagementsInvitedRegionIds" multiple hidden></select>
+                          <select id="adminEngagementsInvitedRegionIds" multiple hidden aria-label="Régions invitées"></select>
                           <small>Destinataires du mail d'ouverture.</small>
                         </div>
                       </div>
