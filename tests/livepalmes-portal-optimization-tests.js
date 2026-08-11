@@ -544,6 +544,7 @@ assert.ok(portalHtml.includes('id="adminEngagementsEditPoolLaneCount" type="numb
 assert.ok(portal.includes('poolLaneCount: fields.poolLaneCount?.value === ""'));
 assert.ok(portal.includes('dialog.insertAdjacentElement("afterend", modal)'));
 assert.ok(functions.includes("function cleanEngagementPoolLaneCount"));
+assert.ok(functions.includes('value === 0 || value === "0"'));
 assert.ok(functions.includes("Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements."));
 assert.ok(functions.includes("Renseignez la date et l'heure de cloture avant d'ouvrir les engagements."));
 assert.ok(functions.includes("Seule une competition a venir peut etre retiree du calendrier par la region."));
