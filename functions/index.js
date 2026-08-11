@@ -5704,24 +5704,30 @@ function engagementRecipientsByClub(recipients = []) {
 }
 
 function engagementOpeningMailSubject(competition = {}) {
-  return `Ouverture des engagements - ${competition.name || "Competition LivePalmes"}`;
+  return `Ouverture des engagements - ${competition.name || "Compétition LivePalmes"}`;
 }
 
 function engagementOpeningMailText(competition = {}) {
-  const fees = competition.fees || {};
-  const feeLines = fees.enabled === false
-    ? ["Frais d'engagement : aucun."]
-    : [
-      `Frais : ${engagementPdfMoney(fees.swimmerFee)} par nageur, ${engagementPdfMoney(fees.individualEventFee)} par course et ${engagementPdfMoney(fees.relayFee)} par relais.`,
-      fees.helloAssoUrl ? `Paiement HelloAsso : ${fees.helloAssoUrl}` : "Le lien de paiement HelloAsso sera communiqué ultérieurement."
-    ];
   return [
-    `Les engagements sont ouverts pour ${competition.name || "la competition"}.`,
-    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
-    `Lieu : ${competition.location || "-"}.`,
-    `Limite des engagements : ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
-    ...feeLines,
-    "Connectez-vous au portail LivePalmes pour effectuer vos engagements."
+    "Bonjour,",
+    "",
+    "Les engagements sont désormais ouverts pour la compétition suivante :",
+    "",
+    `Compétition : ${competition.name || "-"}`,
+    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
+    `Lieu : ${competition.location || "-"}`,
+    `Date limite des engagements : ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}`,
+    "",
+    "Pour saisir et suivre les engagements de votre club, connectez-vous au portail LivePalmes :",
+    "",
+    "https://livepalmes.web.app/portail.html#club-competitions",
+    "",
+    "Utilisez les identifiants de votre club, puis sélectionnez la compétition concernée. Vos modifications sont enregistrées progressivement : vous pouvez interrompre votre saisie et la reprendre ultérieurement, y compris depuis un autre appareil.",
+    "",
+    "Pensez à vérifier l'ensemble des nageurs, courses, temps d'engagement, relais et informations du chef d'équipe avant la date limite.",
+    "",
+    "Sportivement,",
+    "FFESSM - CNNP"
   ].join("\n");
 }
 

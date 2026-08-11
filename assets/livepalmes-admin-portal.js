@@ -257,6 +257,8 @@
     correctionWorkbench: document.querySelector("#correctionWorkbench"),
     engagementsView: document.querySelector("#adminEngagementsView"),
     engagementsViewTitle: document.querySelector("#adminEngagementsViewTitle"),
+    engagementsClubContext: document.querySelector("#adminEngagementsClubContext"),
+    engagementsClubContextName: document.querySelector("#adminEngagementsClubContextName"),
     engagementsTabButtons: document.querySelectorAll("[data-engagements-tab-button]"),
     engagementsTabPanels: document.querySelectorAll("[data-engagements-tab-panel]"),
     engagementsDetailTabButtons: document.querySelectorAll("[data-engagements-detail-tab-button]"),
@@ -924,6 +926,22 @@
     return canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
 
+  function canAccessEngagementRoute(entry) {
+    if (["club", "clubSwimmers", "clubPeople"].includes(entry)) {
+      return canUse("engagements.club.manage");
+    }
+    if (entry === "adminDeletionRequests") return canDeleteEngagementCompetitionDirectly();
+    if (entry === "adminAccessRequests") return canReviewEngagementAccessRequests();
+    if (entry === "adminCalendar" || entry === "adminCreate") return canCreateEngagementCompetition();
+    return false;
+  }
+
+  function preferredEngagementRouteHash() {
+    if (canUse("engagements.club.manage")) return "#club-competitions";
+    if (canCreateEngagementCompetition()) return "#competitions-calendrier";
+    return "#accueil";
+  }
+
   function canManageAccessDirectory() {
     return canUse("admin.full") || canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
@@ -1080,6 +1098,16 @@
     }[tab] || "Administration nationale";
   }
 
+  function renderEngagementClubContext(user = currentAccessProfile || {}) {
+    if (!elements.engagementsClubContext) return;
+    const clubId = engagementClubScope(user);
+    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
+    const clubLabel = referencedClub?.clubCode || clubId || "";
+    const visible = !isEngagementAdminMode() && canUse("engagements.club.manage") && Boolean(clubLabel);
+    elements.engagementsClubContext.hidden = !visible;
+    if (elements.engagementsClubContextName) elements.engagementsClubContextName.textContent = clubLabel || "Votre club";
+  }
+
   function updateEngagementsModeView() {
     const adminMode = isEngagementAdminMode();
     const nextMode = adminMode ? "admin" : "club";
@@ -1094,6 +1122,7 @@
       elements.engagementsView.dataset.engagementsMode = nextMode;
       elements.engagementsView.dataset.engagementsTab = activeEngagementsTab;
     }
+    renderEngagementClubContext();
     if (elements.engagementsViewTitle) {
       elements.engagementsViewTitle.textContent = accessRequestsMode
         ? "Demandes d'accès"
@@ -1736,7 +1765,12 @@
   }
 
   function syncEngagementRouteFromHash() {
-    const route = ENGAGEMENT_ROUTE_BY_HASH[global.location.hash];
+    let route = ENGAGEMENT_ROUTE_BY_HASH[global.location.hash];
+    if (global.location.hash === "#engagements" || (route && !canAccessEngagementRoute(route.entry))) {
+      const fallbackHash = preferredEngagementRouteHash();
+      if (global.location.hash !== fallbackHash) global.history.replaceState(null, "", fallbackHash);
+      route = ENGAGEMENT_ROUTE_BY_HASH[fallbackHash];
+    }
     if (!route) return false;
     const previousMode = elements.engagementsView?.dataset.engagementsMode || "";
     const nextMode = engagementNavigationMode(route.entry);
@@ -2529,6 +2563,7 @@
     const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
     const clubValue = user.clubName || clubScope.scopeName || referencedClub?.clubName || "Nom du club indisponible";
     const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId || referencedClub?.regionId);
+    renderEngagementClubContext(user);
     if (elements.accountScopeSentence) {
       if (capabilities.has("engagements.national.manage")) {
         elements.accountScopeSentence.innerHTML = `Vos droits LivePalmes sont de niveau national. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>.`;
@@ -3004,18 +3039,25 @@
   }
 
   function engagementQualificationPeriodLabel(competition = {}) {
-    if (competition.qualificationTimesMode !== "period") return "Tous les temps connus";
+    if (competition.qualificationTimesMode !== "period") return "Meilleur temps parmi tous les temps connus";
     const start = formatShortDate(competition.qualificationStartDate);
     const end = formatShortDate(competition.qualificationEndDate);
-    return `Du ${start} au ${end}`;
+    return `Meilleur temps connu réalisé du ${start} au ${end} inclus`;
   }
 
   function engagementMissingEntryTimeModeLabel(value) {
     return {
-      manual: "Saisie manuelle autorisee",
-      forbidden: "Saisie manuelle non autorisee",
-      default595999: "Saisie manuelle non autorisee"
-    }[value] || "Saisie manuelle autorisee";
+      manual: "Saisie manuelle autorisée",
+      forbidden: "Saisie manuelle non autorisée",
+      default595999: "Temps par défaut : 59:59.99"
+    }[value] || "Saisie manuelle autorisée";
+  }
+
+  function engagementEntryTimeRulesLabel(competition = {}) {
+    const manualLabel = competition.missingEntryTimeMode === "manual"
+      ? "saisie manuelle autorisée"
+      : "saisie manuelle non autorisée";
+    return `${engagementQualificationPeriodLabel(competition)} · ${manualLabel}`;
   }
 
   function engagementMaxEventsLabel(value) {
@@ -7580,6 +7622,7 @@
       ["Lieu", competition.location || "-"],
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
       ["Programme", engagementCompetitionProgramOverview(competition)],
+      ["Temps d'engagement", engagementEntryTimeRulesLabel(competition)],
       ["Frais d'engagement", engagementFeesSummary(competition.fees || {})],
       ...(!noFees ? [["HelloAsso", engagementHelloAssoLabel(competition.fees || {})]] : []),
       ["Niveau", engagementLevelLabel(competition.level)],
