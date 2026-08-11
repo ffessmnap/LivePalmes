@@ -541,7 +541,8 @@ assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected=
 assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected="true"][data-sex="M"]'));
 assert.ok(portalHtml.includes('id="adminEngagementsPoolLaneCount" type="number" min="4" max="10"'));
 assert.ok(portalHtml.includes('id="adminEngagementsEditPoolLaneCount" type="number" min="4" max="10"'));
-assert.ok(portal.includes("poolLaneCount: Math.trunc(Number(fields.poolLaneCount?.value) || 0)"));
+assert.ok(portal.includes('poolLaneCount: fields.poolLaneCount?.value === ""'));
+assert.ok(portal.includes('dialog.insertAdjacentElement("afterend", modal)'));
 assert.ok(functions.includes("function cleanEngagementPoolLaneCount"));
 assert.ok(functions.includes("Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements."));
 assert.ok(functions.includes("Renseignez la date et l'heure de cloture avant d'ouvrir les engagements."));
@@ -741,7 +742,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("20260811-engagement-persistence-1"));
+assert.ok(portalHtml.includes("20260811-competition-create-1"));
 assert.ok(portalHtml.includes('id="adminPortalScopeContext"'));
 assert.ok(portalHtml.includes('id="adminPortalAccountClubCode"'));
 assert.ok(portalHtml.includes('class="admin-portal-title-prefix"'));
