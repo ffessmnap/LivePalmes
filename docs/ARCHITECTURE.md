@@ -167,7 +167,7 @@ Les pages publiques utilisent des fichiers optimises dans :
 performances/public/data/
 ```
 
-Le portail ne charge pas le referentiel complet des nageurs a son ouverture. La liste des clubs provient de `performances/public/data/club-reference.js`, generee par `tools/build-admin-club-reference.js`. Le fichier de travail `admin-reference.js`, qui contient des donnees nageurs, est exclu de Firebase Hosting. Dans l'administration Records / MPF, les suggestions de nageurs sont chargees a la demande depuis les shards statiques `performance-public/search/`.
+Le portail ne charge pas le referentiel complet des nageurs a son ouverture. La liste des clubs provient de `performances/public/data/club-reference.js`, generee par `tools/build-admin-club-reference.js`. Le meme generateur produit `functions/assets/club-reference.json` afin que les fonctions serveur utilisent le code club dans les statistiques et documents destines aux humains, tout en conservant l'identifiant numerique comme cle technique. Le fichier de travail `admin-reference.js`, qui contient des donnees nageurs, est exclu de Firebase Hosting. Dans l'administration Records / MPF, les suggestions de nageurs sont chargees a la demande depuis les shards statiques `performance-public/search/`.
 
 Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent actifs. L'annuaire des acces est pagine et borne cote Cloud Functions ; les recherches regionales s'appuient sur les index declares dans `firestore.indexes.json`. Les calculs DTN utilisent leur cache et refusent un recalcul si la limite explicite de performances par course est depassee, afin de ne jamais produire un resultat partiel silencieux.
 

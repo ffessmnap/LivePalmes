@@ -704,6 +704,7 @@
   let importSpreadsheetLoadPromise = null;
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
+  let accessClubReferenceById = new Map();
   let activeAuthUid = "";
   let engagementClubEntriesDirty = false;
   const engagementClubEntriesDirtySwimmerIds = new Set();
@@ -1113,8 +1114,7 @@
   function renderEngagementClubContext(user = currentAccessProfile || {}) {
     if (!elements.engagementsClubContext) return;
     const clubId = engagementClubScope(user);
-    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
-    const clubLabel = referencedClub?.clubCode || clubId || "";
+    const clubLabel = clubId ? clubDisplayCode({ clubId, clubName: user.clubName }, "") : "";
     const visible = !isEngagementAdminMode() && canUse("engagements.club.manage") && Boolean(clubLabel);
     elements.engagementsClubContext.hidden = !visible;
     if (elements.engagementsClubContextName) elements.engagementsClubContextName.textContent = clubLabel || "Votre club";
@@ -1155,10 +1155,8 @@
     }
     if (elements.engagementsClubPeopleActions) elements.engagementsClubPeopleActions.hidden = !peopleMode;
     if (elements.engagementsDetailEyebrow) elements.engagementsDetailEyebrow.hidden = true;
-    const capabilities = new Set(currentAccessProfile?.capabilities || []);
-    const showMineFilter = adminMode && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage");
-    if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = !showMineFilter;
-    if (!showMineFilter && elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
+    if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = true;
+    if (elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
     if (elements.engagementsStatusFilterLabel) elements.engagementsStatusFilterLabel.hidden = !adminMode;
     if (elements.engagementsStatusSegments) elements.engagementsStatusSegments.hidden = adminMode;
     if (elements.engagementsAdvancedFilters && previousMode !== nextMode) elements.engagementsAdvancedFilters.open = false;
@@ -1166,8 +1164,11 @@
       elements.engagementsStatusFilter.value = "";
       engagementCompetitionsVisibleLimit = 24;
     }
-    if (previousMode && previousMode !== nextMode && engagementCompetitionsLoaded) {
-      renderEngagementCompetitions();
+    if (previousMode && previousMode !== nextMode) {
+      applyEngagementCalendarRegionScope(currentAccessProfile, nextMode);
+      engagementCompetitions = [];
+      engagementCompetitionsLoaded = false;
+      engagementCompetitionsLoadedRange = "";
     }
     syncEngagementStatusSegments();
     updateEngagementDetailStepLabels();
@@ -1372,6 +1373,10 @@
 
   function engagementClubWriteLocked() {
     return Boolean(engagementClubWriteLockReason());
+  }
+
+  function engagementClubInformationOnly(competition = selectedEngagementCompetition || {}) {
+    return !isEngagementAdminMode() && (competition.entryStatus || "upcoming") === "upcoming";
   }
 
   function setEngagementClubFormControlsLocked(form, locked) {
@@ -1587,9 +1592,12 @@
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
     const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
+    const clubInformationOnly = engagementClubInformationOnly();
     const clubOfficialsNotRequired = !isEngagementAdminMode() && selectedEngagementCompetition?.officialsRequired === false;
     const requestedTabHiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(requestedTab);
-    const nextTab = requestedTabHiddenByClubLock
+    const nextTab = clubInformationOnly && clubOnlyTabs.has(requestedTab)
+      ? "general"
+      : requestedTabHiddenByClubLock
       ? "summary"
       : clubOfficialsNotRequired && requestedTab === "officials"
       ? (engagementClubTeamComplete() ? "swimmers" : "team")
@@ -1606,7 +1614,7 @@
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && buttonTab === "officials";
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -1619,7 +1627,7 @@
       const clubOnly = clubOnlyTabs.has(panelTab);
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(panelTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && panelTab === "officials";
-      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && isEngagementAdminMode()) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+      panel.hidden = panelTab !== nextTab || (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
     });
     if (!isEngagementAdminMode() && (nextTab === "team" || nextTab === "officials") && canUse("engagements.club.manage") && !engagementClubPeopleLoaded) {
       void loadEngagementClubPeople({ silent: true });
@@ -2202,8 +2210,27 @@
   function accessClubLabel(club) {
     if (!club) return "";
     const name = club.clubName || "Club sans nom";
-    const code = club.clubCode ? `${club.clubCode} - ` : "";
-    return `${code}${name} (${club.clubId})`;
+    return club.clubCode ? `${club.clubCode} — ${name}` : name;
+  }
+
+  function accessClubFromId(clubId) {
+    const cleanClubId = String(clubId || "").trim();
+    return cleanClubId ? accessClubReferenceById.get(cleanClubId) || null : null;
+  }
+
+  function clubDisplayCode(club = {}, fallback = "Club non renseigné") {
+    const data = club && typeof club === "object" ? club : { clubId: club };
+    const reference = accessClubFromId(data.clubId);
+    return String(data.clubCode || reference?.clubCode || data.clubName || reference?.clubName || fallback).trim();
+  }
+
+  function clubDisplayLabel(club = {}, { includeName = true, fallback = "Club non renseigné" } = {}) {
+    const data = club && typeof club === "object" ? club : { clubId: club };
+    const reference = accessClubFromId(data.clubId);
+    const code = String(data.clubCode || reference?.clubCode || "").trim();
+    const name = String(data.clubName || reference?.clubName || "").trim();
+    if (includeName && code && name && normalizedAccessSearch(code) !== normalizedAccessSearch(name)) return `${code} — ${name}`;
+    return code || name || fallback;
   }
 
   function populateAccessRegionChoices() {
@@ -2254,7 +2281,7 @@
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
-      select.append(new Option(`${label} (${selectedId})`, selectedId));
+      select.append(new Option(label, selectedId));
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
@@ -2302,7 +2329,7 @@
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
-      select.append(new Option(`${label} (${selectedId})`, selectedId));
+      select.append(new Option(label, selectedId));
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
@@ -2350,7 +2377,7 @@
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
-      select.append(new Option(`${label} (${selectedId})`, selectedId));
+      select.append(new Option(label, selectedId));
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
@@ -2375,6 +2402,7 @@
       accessClubReference = (global.LIVEPALMES_CLUB_REFERENCE?.clubs || [])
         .map(normalizeAccessClubReference)
         .filter((club) => club.clubId && club.clubName);
+      accessClubReferenceById = new Map(accessClubReference.map((club) => [club.clubId, club]));
       populateAccessRegionChoices();
       populateAccessClubSelect(elements.accessClubId?.value || "");
       populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
@@ -2463,19 +2491,24 @@
 
   function initializeEngagementCalendarFilters(user = currentAccessProfile || {}) {
     if (engagementCalendarFiltersInitialized) return;
-    const capabilities = new Set(user.capabilities || []);
-    const regionId = engagementRegionScope(user);
     if (elements.engagementsSeasonFilter) {
       elements.engagementsSeasonFilter.value = String(currentEngagementSeasonStartYear());
     }
     if (elements.engagementsStatusFilter) {
       elements.engagementsStatusFilter.value = "";
     }
-    if (elements.engagementsRegionFilter && capabilities.has("engagements.region.manage") && !capabilities.has("engagements.national.manage") && regionId) {
-      setRegionSelectValue(elements.engagementsRegionFilter, regionId);
-    }
+    applyEngagementCalendarRegionScope(user, engagementNavigationMode());
     engagementCalendarFiltersInitialized = true;
     syncEngagementStatusSegments();
+  }
+
+  function applyEngagementCalendarRegionScope(user = currentAccessProfile || {}, mode = engagementNavigationMode()) {
+    if (!elements.engagementsRegionFilter) return;
+    const capabilities = new Set(user.capabilities || []);
+    const regionalAdministration = mode === "admin" &&
+      capabilities.has("engagements.region.manage") &&
+      !capabilities.has("engagements.national.manage");
+    setRegionSelectValue(elements.engagementsRegionFilter, regionalAdministration ? engagementRegionScope(user) : "");
   }
 
   function resetEngagementCalendarFilters() {
@@ -2558,10 +2591,10 @@
     if (!elements.scopeContext) return;
     const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
     const clubId = engagementClubScope(user);
-    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
+    const referencedClub = accessClubFromId(clubId);
     const clubName = user.clubName || clubScope.scopeName || referencedClub?.clubName || "";
-    const clubCode = referencedClub?.clubCode || "";
-    const clubLabel = clubCode || clubName || (clubId ? `Club ${clubId}` : "");
+    const clubCode = clubDisplayCode({ clubId, clubName }, "");
+    const clubLabel = clubCode || clubName;
 
     elements.scopeContext.hidden = !clubLabel;
     elements.scopeContext.title = clubName
@@ -2586,8 +2619,8 @@
     const clubScope = scopeFor("engagements.club.manage");
     const regionScope = scopeFor("engagements.region.manage");
     const clubId = engagementClubScope(user);
-    const referencedClub = clubId ? accessClubReference.find((club) => club.clubId === clubId) : null;
-    const clubValue = user.clubName || clubScope.scopeName || referencedClub?.clubName || "Nom du club indisponible";
+    const referencedClub = accessClubFromId(clubId);
+    const clubValue = clubDisplayLabel({ clubId, clubName: user.clubName || clubScope.scopeName }, { fallback: "Club indisponible" });
     const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId || referencedClub?.regionId);
     renderEngagementClubContext(user);
     if (elements.accountScopeSentence) {
@@ -3031,7 +3064,7 @@
   function engagementCompetitionAction(competition = {}) {
     if (isEngagementAdminMode()) {
       return {
-        label: canEditEngagementCompetition(competition) ? "Administrer" : "Voir la fiche",
+        label: "Administrer",
         tab: "general"
       };
     }
@@ -4762,10 +4795,7 @@
   function renderEngagementClubSwimmersDirectory() {
     const mount = elements.engagementsClubSwimmersDirectoryList;
     if (!mount) return;
-    const clubLabel = [
-      currentAccessProfile?.clubId ? `club ${currentAccessProfile.clubId}` : "",
-      currentAccessProfile?.clubName || ""
-    ].filter(Boolean).join(" - ") || "votre club";
+    const clubLabel = clubDisplayLabel(currentAccessProfile || {}, { fallback: "votre club" });
     if (engagementClubSwimmersLoading) {
       mount.innerHTML = '<p class="admin-engagements-empty">Chargement des nageurs du club...</p>';
       if (elements.engagementsClubSwimmersDirectoryStatus) {
@@ -6210,7 +6240,7 @@
     const name = [teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ") || "Chef d'equipe";
     const details = [
       teamLeader.licenseNumber ? `licence ${teamLeader.licenseNumber}` : "",
-      teamLeader.externalClub ? (teamLeader.clubName || teamLeader.clubId || "club externe") : ""
+      teamLeader.externalClub ? clubDisplayLabel(teamLeader, { fallback: "club externe" }) : ""
     ].filter(Boolean).join(" - ");
     return details ? `${name} (${details})` : name;
   }
@@ -6589,7 +6619,7 @@
       return;
     }
     engagementClubRecapEntries.forEach((entry) => {
-      select.append(new Option([entry.clubId, entry.clubName].filter(Boolean).join(" — ") || "Club", entry.clubId || ""));
+      select.append(new Option(clubDisplayLabel(entry, { fallback: "Club" }), entry.clubId || ""));
     });
     select.value = Array.from(select.options).some((option) => option.value === previousValue)
       ? previousValue
@@ -6681,7 +6711,7 @@
         <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head" role="row"><span>Ordre</span><span>Club</span><span>Catégorie</span><span>Composition</span><span>Temps</span></div>
         ${selectedEvent.rows.map((row, index) => `
           <div class="admin-engagements-statistics-row" role="row">
-            <span data-label="Ordre">${index + 1}</span><span data-label="Club"><strong>${escapeHtml(row.clubId || "-")}</strong></span>
+            <span data-label="Ordre">${index + 1}</span><span data-label="Club"><strong>${escapeHtml(clubDisplayCode(row, "-"))}</strong></span>
             <span data-label="Catégorie">${escapeHtml([row.category, engagementProgramGenderModeDisplayLabel(row.genderMode, row.eventCode)].filter(Boolean).join(" · ") || "-")}</span>
             <span data-label="Composition">${escapeHtml((row.members || []).map((member) => [member.lastName, member.firstName].filter(Boolean).join(" ")).join(", ") || "-")}</span>
             <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong></span>
@@ -6693,7 +6723,7 @@
           <div class="admin-engagements-statistics-row" role="row">
             <span data-label="Ordre">${index + 1}</span>
             <span data-label="Nageur"><strong>${escapeHtml(row.lastName || "-")}</strong><small>${escapeHtml(row.firstName || "")}</small></span>
-            <span data-label="Club"><strong>${escapeHtml(row.clubId || "-")}</strong></span>
+            <span data-label="Club"><strong>${escapeHtml(clubDisplayCode(row, "-"))}</strong></span>
             <span data-label="Sexe · catégorie">${escapeHtml([row.sex, row.category].filter(Boolean).join(" · ") || "-")}</span>
             <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong><small>${escapeHtml(engagementStatisticsTimeModeLabel(row.entryTimeMode))}</small></span>
           </div>`).join("")}`;
@@ -6703,7 +6733,7 @@
       <div class="admin-engagements-statistics-club-row admin-engagements-statistics-row-head" role="row"><span>Club</span><span>Nageurs</span><span>Courses</span><span>Relais</span><span>Officiels</span><span>Dernière modification</span></div>
       ${clubs.map((club) => `
         <div class="admin-engagements-statistics-club-row" role="row">
-          <span data-label="Club"><strong>${escapeHtml(club.clubId || "-")}</strong><small>${escapeHtml(club.clubName || "")}</small></span>
+          <span data-label="Club"><strong>${escapeHtml(clubDisplayCode(club, "-"))}</strong><small>${escapeHtml(club.clubName || accessClubFromId(club.clubId)?.clubName || "")}</small></span>
           <span data-label="Nageurs">${escapeHtml(`${club.swimmerCount || 0} (${club.femaleCount || 0} F · ${club.maleCount || 0} H)`)}</span>
           <span data-label="Courses">${escapeHtml(String(club.individualCount || 0))}</span><span data-label="Relais">${escapeHtml(String(club.relayCount || 0))}</span>
           <span data-label="Officiels">${escapeHtml(String(club.officialCount || 0))}</span>
@@ -6794,7 +6824,7 @@
               <strong>${escapeHtml(job.toEmail || "-")}</strong>
               <small>${escapeHtml(job.subject || "-")}</small>
             </span>
-            <span role="cell">${escapeHtml(job.clubName || job.clubId || "-")}</span>
+            <span role="cell">${escapeHtml(clubDisplayLabel(job, { fallback: "-" }))}</span>
             <span role="cell">
               <span class="admin-engagements-mail-status">${escapeHtml({ ready: "En attente d'envoi", sent: "Envoyé", failed: "En erreur", blocked_missing_config: "Configuration manquante" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
               <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
@@ -7602,7 +7632,10 @@
     if (elements.engagementsCalendarCard) elements.engagementsCalendarCard.dataset.detailOpen = visible ? "true" : "false";
     if (elements.engagementsCalendarFilters) elements.engagementsCalendarFilters.hidden = visible;
     if (elements.engagementsCalendarList) elements.engagementsCalendarList.hidden = visible;
-    if (elements.engagementsCalendarActions) elements.engagementsCalendarActions.hidden = visible || !isEngagementAdminMode();
+    if (elements.engagementsCalendarActions) {
+      const calendarActionsVisible = !visible && isEngagementAdminMode() && activeEngagementsTab === "calendar";
+      elements.engagementsCalendarActions.hidden = !calendarActionsVisible;
+    }
     if (elements.engagementsDetail) elements.engagementsDetail.hidden = !visible;
     if (elements.engagementsDetailClose) elements.engagementsDetailClose.hidden = !visible;
     if (!visible) setEngagementSaveState("");
@@ -8423,7 +8456,7 @@
       }
       if (Array.isArray(result.errors) && result.errors.length && elements.engagementsClubRecapFiles) {
         const details = result.errors.slice(0, 5).map((item) =>
-          `${item.clubName || item.clubId || "Club"} : ${item.message || "erreur inconnue"}`
+          `${clubDisplayLabel(item, { fallback: "Club" })} : ${item.message || "erreur inconnue"}`
         ).join(" | ");
         elements.engagementsClubRecapFiles.insertAdjacentHTML(
           "afterbegin",
@@ -8535,7 +8568,7 @@
       }
       if (Array.isArray(result.errors) && result.errors.length && elements.engagementsMailJobsList) {
         const details = result.errors.slice(0, 5).map((item) =>
-          `${item.clubName || item.clubId || "Club"} : ${item.message || "erreur inconnue"}`
+          `${clubDisplayLabel(item, { fallback: "Club" })} : ${item.message || "erreur inconnue"}`
         ).join(" | ");
         elements.engagementsMailJobsList.insertAdjacentHTML(
           "afterbegin",
@@ -8686,8 +8719,7 @@
             <small>${escapeHtml([
               alert.name,
               alert.birthDate ? formatShortDate(alert.birthDate) : "",
-              alert.clubId ? `Club ${alert.clubId}` : "",
-              alert.clubName || "",
+              alert.clubId || alert.clubName ? clubDisplayLabel(alert) : "",
               alert.latestDate ? `dernier resultat ${formatShortDate(alert.latestDate)}` : ""
             ].filter(Boolean).join(" - "))}</small>
           </article>
@@ -8700,8 +8732,7 @@
     const preview = alerts.slice(0, 3).map((alert) => [
       alert.name || "Nageur rapproche",
       alert.birthDate ? formatShortDate(alert.birthDate) : "",
-      alert.clubId ? `club ${alert.clubId}` : "",
-      alert.clubName || ""
+      alert.clubId || alert.clubName ? clubDisplayLabel(alert) : ""
     ].filter(Boolean).join(" - ")).join("\n");
     return [
       `${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}.`,
@@ -8874,7 +8905,7 @@
             <small>${escapeHtml([request.email, request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
           </div>
           <div class="admin-engagements-request-meta">
-            <span>${escapeHtml([request.clubId ? `Club ${request.clubId}` : "", request.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne")}</span>
+            <span>${escapeHtml(clubDisplayLabel(request, { fallback: "Club non renseigné" }))}</span>
             <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Region non renseignee")}</span>
             <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
           </div>
@@ -9123,7 +9154,7 @@
             swimmerRequest ? "Nageur désactivé" : request.competitionDate ? formatShortDate(request.competitionDate) : "",
             swimmerRequest ? request.birthDate ? formatShortDate(request.birthDate) : "" : engagementLevelLabel(request.competitionLevel),
             swimmerRequest ? request.licenseNumber ? `Licence ${request.licenseNumber}` : "" : request.regionId ? regionDisplayLabel(request.regionId) : "",
-            swimmerRequest ? [request.clubId ? `Club ${request.clubId}` : "", request.clubName || ""].filter(Boolean).join(" - ") : "",
+            swimmerRequest ? clubDisplayLabel(request, { fallback: "Club non renseigné" }) : "",
             usageDetails
           ].filter(Boolean).join(" - "))}</small>
         </div>
@@ -9260,7 +9291,7 @@
       const mergeOpen = engagementNationalSwimmerMergeMode && engagementNationalSwimmerMergeSourceId === sourceKey;
       const mergeTargets = mergeOpen ? engagementNationalSwimmerMergeTargets : [];
       const alertLabel = engagementNationalSwimmerDuplicateAlertLabel(swimmer, swimmers);
-      const clubLabel = [swimmer.clubId ? `Club ${swimmer.clubId}` : "", swimmer.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
+      const clubLabel = clubDisplayLabel(swimmer, { fallback: "Club non renseigné" });
       const perfCount = Number(swimmer.performanceCount || 0) || 0;
       return `
         <tr class="admin-engagements-national-swimmer-row" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" data-engagement-national-swimmer-key="${escapeHtml(sourceKey)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
@@ -9312,7 +9343,7 @@
                       const candidateId = candidate.id || candidate.swimmerIndexId || "";
                       const candidateSource = candidate.source || "performances";
                       const candidateName = [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.name || candidateId;
-                      return `<option value="${escapeHtml(`${candidateSource}:${candidateId}`)}">${escapeHtml(candidateName)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(candidate.clubName || candidate.clubId || "club non renseigne")} - ${escapeHtml(candidateSource === "performances" ? "LivePalmes" : "creation club")}</option>`;
+                      return `<option value="${escapeHtml(`${candidateSource}:${candidateId}`)}">${escapeHtml(candidateName)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(clubDisplayLabel(candidate, { fallback: "club non renseigné" }))} - ${escapeHtml(candidateSource === "performances" ? "LivePalmes" : "creation club")}</option>`;
                     }).join("")}
                   </select>
                 </label>
@@ -9417,7 +9448,7 @@
           <div class="admin-engagements-swimmer-change-request-head">
             <div>
               <strong>${escapeHtml(name)}</strong>
-              <span>${escapeHtml(item.clubName || item.clubId || "Club non renseigné")} · ${escapeHtml(formatAccessDateTime(item.requestedAt) || "Date inconnue")}</span>
+              <span>${escapeHtml(clubDisplayLabel(item, { fallback: "Club non renseigné" }))} · ${escapeHtml(formatAccessDateTime(item.requestedAt) || "Date inconnue")}</span>
             </div>
             <span class="admin-engagements-request-status" data-status="pending">En attente</span>
           </div>
@@ -9543,7 +9574,7 @@
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.licenseNumber || "";
     if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = direct ? "Modifier le nageur" : "Demander une correction";
-    if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${swimmer.clubName || swimmer.clubId || "Club non renseigné"}`;
+    if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
     if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = direct ? "Motif de la correction" : "Motif de la demande";
     if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.textContent = direct ? "Enregistrer la correction" : "Envoyer la demande";
     if (typeof dialog.showModal === "function") dialog.showModal();
@@ -9817,7 +9848,7 @@
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
-    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${source.clubName || source.clubId} / ${target.clubName || target.clubId}). Confirmer quand meme la fusion ?`)) return;
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand meme la fusion ?`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = "Fusion nageur en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
@@ -9940,7 +9971,7 @@
       const mergeOpen = engagementNationalPeopleMergeMode && engagementNationalPersonMergeSourceId === sourceId;
       const mergeCandidates = engagementNationalPersonMergeCandidates(sourceId);
       const alertLabel = engagementNationalPersonDuplicateAlertLabel(person, people);
-      const clubLabel = [person.clubId ? `Club ${person.clubId}` : "", person.clubName || ""].filter(Boolean).join(" - ") || "Club non renseigne";
+      const clubLabel = clubDisplayLabel(person, { fallback: "Club non renseigné" });
       return `
         <tr class="admin-engagements-national-person-row" data-engagement-national-person-id="${escapeHtml(sourceId)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
           <td class="admin-engagements-national-choice">${merged ? "" : `<input type="radio" name="adminEngagementsNationalPersonKeep" value="${escapeHtml(sourceId)}" title="Conserver cette fiche" data-engagement-national-person-keep>`}</td>
@@ -9972,7 +10003,7 @@
                   <select data-engagement-national-person-merge-target>
                     <option value="">Choisir la fiche a conserver</option>
                     ${mergeCandidates.map((candidate) => `
-                      <option value="${escapeHtml(candidate.id)}">${escapeHtml([candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.licenseNumber || candidate.id)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(candidate.clubName || candidate.clubId || "club non renseigne")}</option>
+                      <option value="${escapeHtml(candidate.id)}">${escapeHtml([candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.licenseNumber || candidate.id)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(clubDisplayLabel(candidate, { fallback: "club non renseigné" }))}</option>
                     `).join("")}
                   </select>
                 </label>
@@ -10220,7 +10251,7 @@
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
-    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${source.clubName || source.clubId} / ${target.clubName || target.clubId}). Confirmer quand meme la fusion ?`)) return;
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand meme la fusion ?`)) return;
     if (elements.engagementsNationalPeopleStatus) {
       elements.engagementsNationalPeopleStatus.textContent = "Fusion en cours...";
       elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
@@ -10314,7 +10345,7 @@
     if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
     if (target.clubName) return target.clubName;
     if (target.competitionId) return `Compétition ${String(target.competitionId).slice(0, 8)}`;
-    if (target.clubId || target.sourceClubId) return `Club ${target.clubId || target.sourceClubId}`;
+    if (target.clubId || target.sourceClubId) return clubDisplayLabel({ clubId: target.clubId || target.sourceClubId });
     if (target.requestId) return `Demande ${String(target.requestId).slice(0, 8)}`;
     if (target.swimmerId || target.sourceSwimmerId) return `Nageur ${String(target.swimmerId || target.sourceSwimmerId).slice(0, 8)}`;
     if (target.personId || target.sourcePersonId) return `Personne ${String(target.personId || target.sourcePersonId).slice(0, 8)}`;
@@ -10740,9 +10771,13 @@
       const result = await callFunction("listEngagementCompetitions", {
         fromDate: filters.startDate,
         toDate: filters.endDate,
+        manageOnly: isEngagementAdminMode(),
         limit: 250
       });
       engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
+      if (isEngagementAdminMode() && !canUse("engagements.national.manage")) {
+        engagementCompetitions = engagementCompetitions.filter((competition) => canEditEngagementCompetition(competition));
+      }
       engagementCompetitionsLoaded = true;
       engagementCompetitionsLoadedRange = requestedRange;
       renderEngagementCompetitions();
@@ -11606,7 +11641,7 @@
       const rights = (user.capabilities || []).map(capabilityLabel);
       const rightsLabel = rights.join(" · ") || "Aucune habilitation active";
       const inactive = user.status !== "active";
-      const clubLine = user.clubId ? `Club ${user.clubId}` : "Club non renseigné";
+      const clubLine = clubDisplayLabel(user, { fallback: "Club non renseigné" });
       const regionLine = user.regionId ? `Région ${regionDisplayLabel(user.regionId)}` : "Région non renseignée";
       const currentUid = global.firebase?.auth?.().currentUser?.uid || "";
       const isCurrentUser = user.uid && user.uid === currentUid;
@@ -11639,8 +11674,8 @@
             </div>
             <div class="admin-access-first-name" role="cell" data-label="Prénom">${escapeHtml(firstName)}</div>
             <div class="admin-access-email" role="cell" data-label="Email" title="${escapeHtml(user.email || user.uid)}">${escapeHtml(user.email || user.uid)}</div>
-            <div class="admin-access-scope" role="cell" data-label="Club" title="${escapeHtml(`${user.clubName || "Club non renseigné"} · ${clubLine} · ${regionLine}`)}">
-              <span>${escapeHtml(user.clubName || "—")}</span>
+            <div class="admin-access-scope" role="cell" data-label="Club" title="${escapeHtml(`${clubLine} · ${regionLine}`)}">
+              <span>${escapeHtml(clubLine)}</span>
             </div>
             <div role="cell" data-label="Connexion">
               <small class="admin-access-login">${escapeHtml(user.lastLoginAt ? formatAccessDateTime(user.lastLoginAt) : "Non disponible")}</small>
@@ -11655,7 +11690,7 @@
           <div id="${detailsId}" class="admin-access-row-expanded">
             <div class="admin-access-row-expanded-data">
               <div><span>Licence</span><strong>${escapeHtml(user.licenseNumber || "Non renseignée")}</strong></div>
-              <div><span>Périmètre</span><strong>${escapeHtml(user.clubName || "Club non renseigné")}</strong><small>${escapeHtml(`${clubLine} · ${regionLine}`)}</small></div>
+              <div><span>Périmètre</span><strong>${escapeHtml(clubLine)}</strong><small>${escapeHtml(regionLine)}</small></div>
               <div class="admin-access-row-expanded-rights"><span>Habilitations</span><strong>${escapeHtml(rightsLabel)}</strong></div>
             </div>
             <div class="admin-access-row-actions">

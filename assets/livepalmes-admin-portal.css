@@ -9172,6 +9172,10 @@
   font-size: 0.76rem;
 }
 
+#adminEngagementsView:not([data-engagements-tab="calendar"]) #adminEngagementsCalendarActions {
+  display: none !important;
+}
+
 .admin-engagements-statistics,
 .admin-engagements-documents {
   display: grid;
