@@ -58,6 +58,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 - Ouvrir une fiche competition et verifier que le message permanent « Fiche chargee » n'apparait dans aucun onglet, tout en conservant les messages de chargement et d'erreur.
 - Ouvrir une compétition côté Club avec une inscription existante : vérifier que la fiche compétition et les données déjà enregistrées apparaissent ensemble, sans second écran d'attente pour l'inscription.
+- Depuis un navigateur ou un profil vierge, ouvrir directement Courses sans passer par Nageurs : le chef d'équipe, les officiels, les nageurs, les courses, les temps et les relais déjà enregistrés doivent être restaurés. Cocher ensuite une course, attendre « Enregistré », rouvrir le crayon et vérifier que la fenêtre contient immédiatement les courses et leurs temps.
 - Revenir au calendrier puis rouvrir la même compétition dans le même onglet : la dernière inscription connue doit apparaître immédiatement, puis rester cohérente après l'actualisation silencieuse du serveur.
 - Dans Chef d'equipe, verifier sur ordinateur que personne connue, prenom, nom et licence forment un formulaire compact, puis verifier le retour a une colonne sur mobile.
 - Dans Courses, verifier que les nageurs sont affiches en lignes avec Nom, Prenom, Naissance et Categorie, et que les courses suivent l'ordre du programme avec une separation discrete entre les sessions.

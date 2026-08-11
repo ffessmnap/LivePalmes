@@ -4531,8 +4531,11 @@ function engagementClubEntryItem(doc, fallback = {}) {
     status: cleanText(data.status || "active"),
     teamLeader: {
       mode: cleanText(teamLeader.mode),
+      personId: cleanText(teamLeader.personId).slice(0, 80),
       firstName: cleanText(teamLeader.firstName),
       lastName: cleanText(teamLeader.lastName),
+      birthDate: cleanIsoDate(teamLeader.birthDate),
+      sex: ["F", "M"].includes(cleanText(teamLeader.sex).toUpperCase()) ? cleanText(teamLeader.sex).toUpperCase() : "",
       licenseNumber: cleanText(teamLeader.licenseNumber),
       externalClub: teamLeader.externalClub === true,
       clubId: cleanText(teamLeader.clubId),
@@ -10184,20 +10187,35 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
     changedSwimmers = validateEngagementIndividualEntryTimes(changedSwimmers, competitionTimeRules, recordsData);
   }
   const changedById = new Map(changedSwimmers.map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
-  const swimmers = savedSwimmers.map((swimmer) => changedById.get(swimmer.swimmerIndexId) || swimmer);
   const now = new Date().toISOString();
-  const updatedEntryData = {
-    ...(entry.data() || {}),
-    swimmers,
-    updatedAt: now,
-    updatedBy: context.uid
-  };
+  let updatedEntryData = entry.data() || {};
   if (changedSwimmers.length) {
-    await entryRef.set({
-      swimmers,
-      updatedAt: now,
-      updatedBy: context.uid
-    }, { merge: true });
+    await db.runTransaction(async (transaction) => {
+      const latestEntry = await transaction.get(entryRef);
+      if (!latestEntry.exists || !engagementTeamLeaderComplete(latestEntry.data()?.teamLeader || {})) {
+        throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
+      }
+      const latestSwimmers = (Array.isArray(latestEntry.data()?.swimmers) ? latestEntry.data().swimmers : [])
+        .map(cleanEngagementEntrySwimmer)
+        .filter((swimmer) => swimmer.swimmerIndexId);
+      const latestIds = new Set(latestSwimmers.map((swimmer) => swimmer.swimmerIndexId));
+      const missingSwimmer = changedSwimmers.find((swimmer) => !latestIds.has(swimmer.swimmerIndexId));
+      if (missingSwimmer) {
+        throw new HttpsError("failed-precondition", "Un nageur modifie n'est plus selectionne dans cette competition. Rechargez la fiche.");
+      }
+      const swimmers = latestSwimmers.map((swimmer) => changedById.get(swimmer.swimmerIndexId) || swimmer);
+      updatedEntryData = {
+        ...(latestEntry.data() || {}),
+        swimmers,
+        updatedAt: now,
+        updatedBy: context.uid
+      };
+      transaction.set(entryRef, {
+        swimmers,
+        updatedAt: now,
+        updatedBy: context.uid
+      }, { merge: true });
+    });
     await writeAuditLog("engagementClubEntry.individualEntriesSaved", context.uid, {
       competitionId,
       clubId: context.clubId,
