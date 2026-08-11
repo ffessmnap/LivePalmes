@@ -3102,7 +3102,7 @@ function cleanEngagementPoolLength(value) {
 }
 
 function cleanEngagementPoolLaneCount(value) {
-  if (value === "" || value === null || value === undefined) return 0;
+  if (value === "" || value === null || value === undefined || value === 0 || value === "0") return 0;
   const laneCount = Number(value);
   if (!Number.isInteger(laneCount) || laneCount < 4 || laneCount > 10) {
     throw new HttpsError("invalid-argument", "Le nombre de lignes d'eau doit etre compris entre 4 et 10.");
