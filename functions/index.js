@@ -12,6 +12,7 @@ const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require("fir
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
+const clubReference = require("./assets/club-reference.json");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
@@ -295,6 +296,22 @@ const CATEGORY_LABELS = {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubReference.clubs : [])
+  .map((club) => [cleanText(club?.[0]), {
+    clubId: cleanText(club?.[0]),
+    clubCode: cleanText(club?.[1]),
+    clubName: cleanText(club?.[2])
+  }])
+  .filter(([clubId]) => clubId));
+
+function engagementClubCode(clubId, fallback = "") {
+  return CLUB_REFERENCE_BY_ID.get(cleanText(clubId))?.clubCode || cleanText(fallback);
+}
+
+function engagementClubName(clubId, fallback = "") {
+  return CLUB_REFERENCE_BY_ID.get(cleanText(clubId))?.clubName || cleanText(fallback);
 }
 
 function cleanFirestoreValue(value) {
@@ -4508,7 +4525,7 @@ async function assertNoEngagementSwimmerLicenseConflict(db, swimmer = {}, ignore
   const conflict = await findEngagementSwimmerLicenseConflict(db, swimmer, ignoredSwimmerIds);
   if (!conflict) return null;
   const name = [conflict.firstName, conflict.lastName].filter(Boolean).join(" ") || conflict.name || "un nageur existant";
-  const club = conflict.clubName || conflict.clubId || "club non renseigne";
+  const club = engagementClubCode(conflict.clubId) || engagementClubName(conflict.clubId, conflict.clubName) || "club non renseigne";
   throw new HttpsError("already-exists", `Licence deja utilisee par ${name} (${club}). Utilisez la fiche existante au lieu de creer un doublon.`, {
     conflict
   });
@@ -4526,7 +4543,8 @@ function engagementClubEntryItem(doc, fallback = {}) {
     id: doc?.id || engagementClubEntryId(data.competitionId, data.clubId),
     competitionId: cleanText(data.competitionId).slice(0, 128),
     clubId: cleanText(data.clubId).slice(0, 40),
-    clubName: cleanText(data.clubName).slice(0, 140),
+    clubCode: engagementClubCode(data.clubId, data.clubCode).slice(0, 40),
+    clubName: engagementClubName(data.clubId, data.clubName).slice(0, 140),
     regionId: cleanText(data.regionId).slice(0, 80),
     status: cleanText(data.status || "active"),
     teamLeader: {
@@ -4811,7 +4829,8 @@ function engagementCompetitionEntrySummaryItem(entry = {}) {
     id: cleanText(entry.id || engagementClubEntryId(entry.competitionId, entry.clubId)).slice(0, 180),
     competitionId: cleanText(entry.competitionId).slice(0, 128),
     clubId: cleanText(entry.clubId).slice(0, 40),
-    clubName: cleanText(entry.clubName || entry.clubId || "Club").slice(0, 140),
+    clubCode: engagementClubCode(entry.clubId, entry.clubCode).slice(0, 40),
+    clubName: engagementClubName(entry.clubId, entry.clubName || "Club").slice(0, 140),
     regionId: cleanText(entry.regionId).slice(0, 80),
     teamLeaderComplete: entry.teamLeaderComplete === true,
     officialCount: Array.isArray(entry.officials) ? entry.officials.length : Math.max(0, Math.trunc(Number(entry.officialCount) || 0)),
@@ -5073,7 +5092,7 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
   y = engagementPdfSection(doc, "Club", y);
   y = engagementPdfKeyValues(doc, [
     ["Club", entry.clubName || "-"],
-    ["Numéro club", entry.clubId || "-"],
+    ["Code club", engagementClubCode(entry.clubId, entry.clubCode) || "-"],
     ["Région", entry.regionId || "-"],
     ["Dernière mise à jour", engagementPdfFormatDateTime(entry.updatedAt)]
   ], y);
@@ -5085,7 +5104,7 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     : [
         ["Nom", engagementPdfPersonName(teamLeader)],
         ["Licence", teamLeader.licenseNumber || "-"],
-        ["Club externe", teamLeader.externalClub ? (teamLeader.clubName || teamLeader.clubId || "-") : "Non"]
+        ["Club externe", teamLeader.externalClub ? (engagementClubCode(teamLeader.clubId) || engagementClubName(teamLeader.clubId, teamLeader.clubName) || "-") : "Non"]
       ];
   y = engagementPdfKeyValues(doc, teamLeaderRows, y);
 
@@ -5589,7 +5608,7 @@ function engagementMailRecipientFromUserDoc(doc) {
     firstName: cleanText(data.firstName).slice(0, 80),
     lastName: cleanText(data.lastName).slice(0, 80),
     clubId: cleanText(data.clubId).slice(0, 40),
-    clubName: cleanText(data.clubName).slice(0, 140),
+    clubName: engagementClubName(data.clubId, data.clubName).slice(0, 140),
     regionId: cleanText(data.regionId).slice(0, 80),
     capabilities
   });
@@ -5781,6 +5800,7 @@ function engagementMailJobItemFromData(data = {}, id = "") {
     statusLabel: engagementMailStatusLabel(data.status),
     competitionId: cleanText(data.competitionId).slice(0, 128),
     clubId: cleanText(data.clubId).slice(0, 40),
+    clubCode: engagementClubCode(data.clubId, data.clubCode).slice(0, 40),
     clubName: cleanText(data.clubName).slice(0, 140),
     toEmail: normalizeEmail(data.toEmail).slice(0, 180),
     toName: cleanText(data.toName).slice(0, 180),
@@ -6500,7 +6520,12 @@ function assertEngagementClubWriteOpen(competition = {}) {
 
 exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
-  await assertEngagementsAccess(request);
+  const manageOnly = request.data?.manageOnly === true;
+  const managementContext = manageOnly ? await engagementAccessContext(request) : null;
+  if (!manageOnly) await assertEngagementsAccess(request);
+  if (manageOnly && !managementContext.national && (!managementContext.region || !managementContext.regionId)) {
+    throw new HttpsError("permission-denied", "Droit gestion competition engagements requis.");
+  }
   const fromDate = cleanIsoDate(request.data?.fromDate) || new Date().toISOString().slice(0, 10);
   const season = engagementSeasonBoundsFromEndYear(engagementSeasonEndYearFromIsoDate(fromDate));
   const requestedToDate = cleanIsoDate(request.data?.toDate);
@@ -6530,7 +6555,12 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     regionId,
     level,
     entryStatus
-  }).slice(0, limit);
+  })
+    .filter((competition) => !manageOnly || managementContext.national || (
+      cleanEngagementCompetitionLevel(competition.level) !== "national" &&
+      cleanText(competition.regionId) === managementContext.regionId
+    ))
+    .slice(0, limit);
 
   return {
     ok: true,
@@ -6550,7 +6580,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
 });
 
 exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
-  await assertEngagementsAccess(request);
+  const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
@@ -6559,6 +6589,7 @@ exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   if (!doc.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  assertCanManageEngagementCompetition(context, doc.data() || {});
   const deletionRequest = await db.collection("engagementCompetitionDeletionRequests").doc(competitionId).get();
   const deletionRequestData = deletionRequest.exists ? deletionRequest.data() || {} : {};
   return {
@@ -6733,6 +6764,7 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
           sex: sex === "F" || sex === "M" ? sex : "",
           category: ageCategoryFromDates(competition.date, swimmer.birthDate) || "",
           clubId: cleanText(entry.clubId).slice(0, 40),
+          clubCode: engagementClubCode(entry.clubId, entry.clubCode).slice(0, 40),
           entryTime: cleanText(individualEntry.entryTime || individualEntry.manualEntryTime).slice(0, 20) || "-",
           entryTimeValue: Number(individualEntry.entryTimeValue || 0) || 0,
           entryTimeMode
@@ -6751,6 +6783,7 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
       relayRowsByEvent.get(eventCode).push({
         eventCode,
         clubId: cleanText(entry.clubId).slice(0, 40),
+        clubCode: engagementClubCode(entry.clubId, entry.clubCode).slice(0, 40),
         category: cleanText(relay.category).slice(0, 20),
         genderMode: cleanText(relay.genderMode).slice(0, 20),
         entryTime: cleanText(relay.entryTime || relay.manualEntryTime).slice(0, 20) || "-",
@@ -6764,7 +6797,8 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
     });
     clubRows.push({
       clubId: cleanText(entry.clubId).slice(0, 40),
-      clubName: cleanText(entry.clubName || entry.clubId).slice(0, 140),
+      clubCode: engagementClubCode(entry.clubId, entry.clubCode).slice(0, 40),
+      clubName: engagementClubName(entry.clubId, entry.clubName).slice(0, 140),
       swimmerCount: swimmers.length,
       femaleCount: swimmers.filter((swimmer) => cleanText(swimmer.sex).toUpperCase() === "F").length,
       maleCount: swimmers.filter((swimmer) => cleanText(swimmer.sex).toUpperCase() === "M").length,
@@ -6779,11 +6813,11 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
   const sortByEntryTime = (left, right) => {
     const leftTime = Number(left.entryTimeValue || 0) || Number.MAX_SAFE_INTEGER;
     const rightTime = Number(right.entryTimeValue || 0) || Number.MAX_SAFE_INTEGER;
-    return leftTime - rightTime || cleanText(left.lastName || left.clubId).localeCompare(cleanText(right.lastName || right.clubId), "fr");
+    return leftTime - rightTime || cleanText(left.lastName || left.clubCode || left.clubId).localeCompare(cleanText(right.lastName || right.clubCode || right.clubId), "fr");
   };
   individualRowsByEvent.forEach((rows) => rows.sort(sortByEntryTime));
   relayRowsByEvent.forEach((rows) => rows.sort(sortByEntryTime));
-  clubRows.sort((left, right) => cleanText(left.clubId).localeCompare(cleanText(right.clubId), "fr"));
+  clubRows.sort((left, right) => cleanText(left.clubCode || left.clubName).localeCompare(cleanText(right.clubCode || right.clubName), "fr"));
 
   const configuredEvents = Array.isArray(competition.events) ? competition.events : [];
   const eventCodes = [];
