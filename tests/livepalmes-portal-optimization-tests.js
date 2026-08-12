@@ -4,7 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8").replace(/\r\n/g, "\n");
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const portal = read("assets/livepalmes-admin-portal.js");
 const portalAuth = read("assets/livepalmes-admin-auth.js");
@@ -21,6 +21,34 @@ const indexes = JSON.parse(read("firestore.indexes.json"));
 const functionsClubReference = JSON.parse(read("functions/assets/club-reference.json"));
 const clubReferenceGenerator = read("tools/build-admin-club-reference.js");
 const clubReferenceSource = read("performances/public/data/club-reference.js");
+const { mergeRosterSwimmers } = require(path.join(root, "tools", "dedupe-engagement-club-rosters.js"));
+const { initialActivityStatus } = require(path.join(root, "tools", "initialize-engagement-club-swimmer-activity.js"));
+assert.equal(initialActivityStatus("2023-08-31"), "inactive");
+assert.equal(initialActivityStatus("2023-09-01"), "active");
+assert.equal(initialActivityStatus("2026-08-31"), "active");
+assert.equal(initialActivityStatus("2026-09-01"), "inactive");
+const mergedRosterFixture = mergeRosterSwimmers({
+  reference: {
+    id: "14908", swimmerIndexId: "14908", swimmerId: "14908", source: "reference",
+    identityKey: "DUQUESNE FRESSON|EMILIEN|2005-03-09", firstName: "Emilien", lastName: "DUQUESNE FRESSON",
+    birthDate: "2005-03-09", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 18
+  },
+  performances: {
+    id: "performance-index", swimmerIndexId: "performance-index", swimmerId: "14908", source: "performances",
+    identityKey: "DUQUESNE FRESSON|EMILIEN|2005-03-09", firstName: "Emilien", lastName: "DUQUESNE FRESSON",
+    birthDate: "2005-03-09", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 0
+  },
+  other: {
+    id: "other", swimmerIndexId: "other", swimmerId: "15000", source: "performances",
+    identityKey: "AUTRE|NAGEUR|2005-01-01", firstName: "Nageur", lastName: "AUTRE", birthDate: "2005-01-01", sex: "M", clubId: "106"
+  }
+});
+const mergedRosterItems = Object.values(mergedRosterFixture.entries);
+assert.equal(mergedRosterFixture.beforeCount, 3);
+assert.equal(mergedRosterFixture.afterCount, 2);
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.source, "performances");
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.swimmerIndexId, "performance-index");
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.performanceCount, 18);
 const sandbox = { window: {} };
 vm.runInNewContext(clubReferenceSource, sandbox);
 const engagementNavigationModeStart = portal.indexOf("function engagementNavigationMode");
@@ -348,6 +376,13 @@ assert.ok(engagementCompetitionListSource.includes("variableDocumentsMax: 0"));
 assert.equal(engagementClubSwimmerListSource.includes("rebuildEngagementClubRoster"), false);
 assert.equal(engagementClubSwimmerListSource.includes("forceRoster"), false);
 assert.ok(engagementClubSwimmerListSource.includes("variableDocumentsMax: 0"));
+assert.ok(functions.includes("function engagementClubSwimmerMatchKeys"));
+assert.ok(functions.includes("function mergeEngagementClubSwimmerItems"));
+assert.ok(functions.includes("const identityKey = normalizePerformanceSearchText(swimmer.identityKey"));
+assert.equal(functions.includes("const identityKey = normalizeSearchText(swimmer.identityKey"), false);
+assert.ok(functions.includes("return Array.from(new Set((swimmerId ? ["));
+assert.ok(functions.includes("`swimmer:${swimmerId}`"));
+assert.ok(functions.includes("merged.performanceCount = Math.max"));
 assert.equal(engagementClubRecapListSource.includes("rebuildEngagementCompetitionEntrySummary"), false);
 assert.equal(engagementClubRecapListSource.includes("forceSummary"), false);
 assert.ok(functions.includes("generatedAt: now || new Date().toISOString()"));
@@ -360,6 +395,21 @@ assert.ok(functions.includes("ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3"));
 const engagementQualificationSource = functions.slice(functions.indexOf("function engagementQualificationRowAllowed"), functions.indexOf("function bestEngagementKnownTime"));
 assert.equal(engagementQualificationSource.includes("isIntermediate"), false);
 assert.ok(functions.includes("function engagementKnownTimeHistory"));
+assert.ok(functions.includes("async function assertPublicSwimmerIdentityReplaced"));
+assert.ok(functions.includes("async function replacePublicSwimmerIdentity"));
+assert.ok(functions.includes("for (let attempt = 1; attempt <= 3; attempt += 1)"));
+assert.ok(functions.includes("L'ancienne fiche reste presente dans la recherche publique."));
+assert.ok(functions.includes("Un identifiant public ne pointe pas vers la fiche corrigee."));
+assert.ok(functions.includes("const licenseCandidateIds = Array.from(new Set(["));
+assert.ok(functions.includes('licenseDocumentId: licenseSnapshot?.id || ""'));
+assert.ok(functions.includes("const oldLicenseDocId = cleanText(target.licenseDocumentId)"));
+assert.ok(functions.includes("async function hydratePerformanceBaseRows(rows = [])"));
+assert.ok(functions.includes('const source = id.startsWith("import:") ? "livepalmes-import" : "intranap";'));
+assert.ok(functions.includes("return hydratePerformanceBaseRows(pageRows);"));
+assert.ok(functions.includes("return hydratePerformanceBaseRows(publicRows);"));
+assert.ok(portal.includes("Number(existing.performanceCount || 0) > Number(swimmer.performanceCount || 0)"));
+assert.ok(portal.includes('const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";'));
+assert.ok(portal.includes('const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";'));
 assert.ok(functions.includes('.slice(0, Math.max(1, Math.min(10, Number(limit || 10))))'));
 assert.ok(functions.includes("exports.saveEngagementClubIndividualEntries"));
 assert.ok(functions.includes("exports.saveEngagementClubSwimmerSelection"));
@@ -378,7 +428,7 @@ assert.equal(portal.includes("selectedEngagementClubEntryCompetitionId"), false)
 assert.ok(portal.includes("function flushEngagementClubIndividualEntriesAutosave"));
 assert.ok(portal.includes("engagementClubEntriesAutosaveSwimmers.set(swimmerIndexId"));
 assert.ok(portal.includes("}, 500)"));
-assert.match(portal, /swimmers\r?\n\s+\}\)/);
+assert.ok(portal.includes("swimmers\n      })"));
 assert.ok(portal.includes("discardPendingEngagementClubIndividualEntries(swimmerIndexId)"));
 assert.ok(portal.includes("const selectedRows = currentEngagementClubSwimmersForSummary();"));
 assert.ok(closeCompetitionDetailFunction.indexOf("flushEngagementClubIndividualEntriesAutosave()") < closeCompetitionDetailFunction.indexOf('selectedEngagementCompetitionId = ""'));
@@ -432,8 +482,8 @@ assert.ok(portal.includes("engagementCategoryColumnInputs(mount"));
 assert.ok(portalCss.includes('.admin-engagements-mixed-choice input[type="checkbox"]'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTimesDialog"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsClubSelectedSwimmersList"') < portalHtml.indexOf('id="adminEngagementsClubSwimmersSearch"'));
-assert.ok(portalHtml.indexOf('id="adminEngagementsClubSwimmersSearch"') < portalHtml.indexOf('id="adminEngagementsClubSwimmersList"'));
-assert.ok(portalHtml.indexOf('id="adminEngagementsClubSwimmersList"') < portalHtml.indexOf('class="admin-engagements-club-new-swimmer"'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsClubSwimmersSearch"') < portalHtml.indexOf('class="admin-engagements-club-new-swimmer"'));
+assert.ok(portalHtml.indexOf('class="admin-engagements-club-new-swimmer"') < portalHtml.indexOf('id="adminEngagementsClubSwimmersList"'));
 assert.equal(portalHtml.includes('id="adminEngagementsClubEntriesSummary"'), false);
 assert.equal(portalHtml.includes('id="adminEngagementsClubEntriesSaveBar"'), false);
 assert.equal(portalHtml.includes('id="adminEngagementsClubSwimmersSaveButton"'), false);
@@ -458,8 +508,9 @@ assert.ok(portal.includes('admin-engagements-club-entry-last-name admin-engageme
 assert.ok(portal.includes('<strong>${escapeHtml(lastName)}</strong><span>${escapeHtml(firstName || "-")}</span>'));
 assert.ok(portalCss.includes(".admin-engagements-club-entry-group-head"));
 assert.ok(portalCss.includes(".admin-engagements-club-entry-swimmer span"));
-assert.ok(portal.includes('renderSwimmerTable(availableSwimmers, "Résultats de recherche")'));
-assert.ok(portal.includes("query && engagementClubSwimmerSearchText(swimmer).includes(query)"));
+assert.ok(portal.includes('query ? "Résultats de recherche" : "Nageurs actifs"'));
+assert.ok(portal.includes("? engagementClubSwimmerSearchText(swimmer).includes(query)"));
+assert.ok(portal.includes(": engagementClubSwimmerIsActive(swimmer)"));
 assert.equal(portal.includes("Recherchez un nageur par son nom"), false);
 assert.ok(portalCss.includes("#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer summary"));
 assert.ok(portalCss.includes("font-weight: 500"));
@@ -691,7 +742,7 @@ assert.ok(portal.includes("function renderEngagementClubSelectedSwimmersPreview"
 assert.ok(portal.includes("sexRank(left.sex) - sexRank(right.sex)"));
 assert.ok(portal.includes("function compareEngagementSwimmersBySexAndName"));
 assert.ok(portal.includes("].sort(compareEngagementSwimmersBySexAndName)"));
-assert.ok(portal.includes(".sort(compareEngagementSwimmersBySexAndName)\n      .slice(0, 50)"));
+assert.ok(portal.includes(".sort(compareEngagementSwimmersBySexAndName)\n      .slice(0, visibleAvailableLimit)"));
 assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected="true"][data-sex="F"]'));
 assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected="true"][data-sex="M"]'));
 assert.ok(portalHtml.includes('id="adminEngagementsPoolLaneCount" type="number" min="4" max="10"'));
@@ -749,6 +800,24 @@ assert.ok(portalCss.includes("#adminEngagementsDetailEntriesPanel .admin-engagem
 assert.ok(portalCss.includes("#adminEngagementsDetailRelaysPanel .admin-engagements-club-relay-members"));
 assert.ok(portal.includes('data-engagement-club-swimmer-delete="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}"'));
 assert.ok(portal.includes('callFunction("requestEngagementClubSwimmerDeletion"'));
+assert.ok(portal.includes('callFunction("setEngagementClubSwimmerActivityStatus"'));
+assert.ok(portal.includes('cache: "no-cache"'));
+assert.ok(portal.includes("publicPerformanceSwimmerSearchShards.clear();"));
+assert.ok(portal.includes("stablePerformanceId || swimmer.swimmerId || swimmer.identityKey"));
+assert.ok(portal.includes("function engagementClubSwimmerIsActive"));
+assert.ok(portal.includes('data-engagement-club-swimmer-activity-status="${nextActivityStatus}"'));
+assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-activity-separator"'));
+assert.ok(portal.includes(': engagementClubSwimmerIsActive(swimmer)'));
+assert.ok(portal.includes('query ? "Résultats de recherche" : "Nageurs actifs"'));
+assert.ok(functions.includes("exports.setEngagementClubSwimmerActivityStatus"));
+assert.ok(functions.includes("async function reactivateEngagementClubRosterSwimmersFromPerformanceRows"));
+assert.ok(functions.includes("indexDocs.set(snapshot.id, { ...(snapshot.data() || {}), id: snapshot.id })"));
+assert.ok(functions.includes("indexDocs.set(doc.id, { ...(doc.data() || {}), id: doc.id })"));
+assert.ok(functions.includes('clubActivityStatusSource: "new-performance"'));
+assert.ok(functions.includes("clubActivityReactivation = await reactivateEngagementClubRosterSwimmersFromPerformanceRows"));
+assert.ok(portalCss.includes(".admin-engagements-club-swimmers-directory-activity-separator"));
+assert.ok(portalCss.includes(".admin-engagements-club-swimmers-directory-activity-button"));
+assert.ok(portalHtml.indexOf('class="admin-engagements-club-new-swimmer"') < portalHtml.indexOf('id="adminEngagementsClubSwimmersList"'));
 assert.ok(portal.includes('callFunction("listEngagementSwimmerDeletionRequests"'));
 assert.ok(portal.includes('"resolveEngagementSwimmerDeletionRequest"'));
 assert.ok(functions.includes("async function engagementClubSwimmerDeletionUsage"));
@@ -929,7 +998,9 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.equal((portalHtml.match(/20260812-admin-pilotage-18/g) || []).length, 2);
+assert.equal((portalHtml.match(/20260812-admin-pilotage-19/g) || []).length, 2);
+assert.ok(portalCss.includes(".admin-national-row-menu > div"));
+assert.ok(portalCss.includes("right: 0;\n  z-index: 20;"));
 assert.ok(portal.includes('activeEngagementsTab === "calendar"'));
 assert.ok(portalCss.includes('#adminEngagementsView:not([data-engagements-tab="calendar"]) #adminEngagementsCalendarActions'));
 assert.ok(portal.includes("manageOnly: isEngagementAdminMode()"));
@@ -990,7 +1061,6 @@ assert.ok(portal.includes("elements.engagementsAdvancedFilters.open = false"));
 assert.ok(portal.includes('parts.push(`${days} j`)'));
 assert.ok(functions.includes("isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)"));
 assert.ok(functions.includes("Impossible d'ouvrir les engagements : la date de cloture est depassee."));
-
 assert.ok(functions.includes('"engagements.club.switch"'));
 assert.ok(functions.includes("Le droit de changement de club requiert le droit engagements club."));
 assert.ok(functions.includes("const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);"));

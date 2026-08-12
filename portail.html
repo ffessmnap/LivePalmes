@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260812-admin-pilotage-18">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260812-admin-pilotage-19">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -52,11 +52,17 @@
     <dialog id="adminPortalClubSwitchDialog" class="admin-portal-club-switch-dialog" aria-labelledby="adminPortalClubSwitchTitle">
       <form method="dialog">
         <div class="admin-portal-club-switch-head">
-          <div><span>Session temporaire</span><h2 id="adminPortalClubSwitchTitle">Changer de club</h2></div>
+          <div>
+            <span>Session temporaire</span>
+            <h2 id="adminPortalClubSwitchTitle">Changer de club</h2>
+          </div>
           <button id="adminPortalClubSwitchClose" class="ghost-button" value="cancel" aria-label="Fermer la fenêtre">×</button>
         </div>
         <p>Choisissez le club à gérer pour cette session. Votre club d&rsquo;appartenance sera rétabli à la déconnexion.</p>
-        <label>Rechercher un club<input id="adminPortalClubSwitchSearch" type="search" autocomplete="off" placeholder="Code ou nom du club"></label>
+        <label>
+          Rechercher un club
+          <input id="adminPortalClubSwitchSearch" type="search" autocomplete="off" placeholder="Code ou nom du club">
+        </label>
         <div id="adminPortalClubSwitchResults" class="admin-portal-club-switch-results" aria-live="polite"></div>
         <p id="adminPortalClubSwitchStatus" class="admin-portal-message" aria-live="polite"></p>
         <div class="admin-portal-actions">
@@ -1271,9 +1277,8 @@
                           Rechercher dans les nageurs connus du club
                           <input id="adminEngagementsClubSwimmersSearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
                         </label>
-                        <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
                         <details class="admin-engagements-club-new-swimmer">
-                          <summary>Nageur introuvable ? Ajouter un nageur absent de la base</summary>
+                          <summary>Nageur absent de votre club ? Ajouter un nouveau nageur ou récupérer un nageur déjà licencié dans un autre club, uniquement pour sa première compétition de la saison.</summary>
                           <div class="admin-engagements-form-section-grid admin-engagements-club-new-swimmer-grid">
                             <label>
                               Nom
@@ -1302,10 +1307,12 @@
                           </div>
                           <div class="admin-engagements-club-new-swimmer-actions">
                             <button id="adminEngagementsClubNewSwimmerResetButton" class="ghost-button" type="button" aria-label="R&eacute;initialiser le formulaire d'ajout d'un nageur">RAZ</button>
-                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Cr&eacute;er le nageur</button>
+                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Vérifier ou créer le nageur</button>
+                            <button id="adminEngagementsClubRecoverSwimmerButton" type="button" hidden>Récupérer ce nageur</button>
                           </div>
                           <div id="adminEngagementsClubNewSwimmerAlerts" class="admin-engagements-club-swimmer-alerts" aria-live="polite"></div>
                         </details>
+                        <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubSwimmersMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                     </div>
@@ -2408,7 +2415,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260812-admin-pilotage-18"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260812-admin-pilotage-19"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>
