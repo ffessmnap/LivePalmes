@@ -127,6 +127,7 @@
         capabilities["competitions.import"] === true ||
         capabilities["dtn.view"] === true ||
         capabilities["engagements.club.manage"] === true ||
+        capabilities["engagements.club.switch"] === true ||
         capabilities["engagements.region.manage"] === true ||
         capabilities["engagements.national.manage"] === true
       );
@@ -235,7 +236,10 @@
       if (allowedEmails.size && !allowedEmails.has(cleanEmail)) {
         throw createAuthError("Cet email n'est pas autorise comme admin LivePalmes.");
       }
-      await service.sendPasswordResetEmail(cleanEmail);
+      await service.sendPasswordResetEmail(cleanEmail, {
+        url: "https://livepalmes.firebaseapp.com/portail.html",
+        handleCodeInApp: false
+      });
     }
 
     async function signOut() {

@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260811-admin-pilotage-11">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260812-admin-pilotage-46">
   </head>
-  <body class="admin-portal-page" data-admin-auth="loading">
+  <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
       <img class="admin-portal-federal-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260722-admin-portal-1" alt="FFESSM Nage avec palmes">
       <div class="admin-portal-brand">
@@ -21,8 +21,10 @@
       </div>
       <div class="admin-portal-topbar-actions">
         <div id="adminPortalScopeContext" class="admin-portal-scope-context" aria-label="Périmètre de gestion" hidden>
-          <span id="adminPortalScopeClubPrefix" class="admin-portal-scope-prefix">Club</span>
-          <strong id="adminPortalScopeClubCode"></strong>
+          <button id="adminPortalScopeClubButton" class="admin-portal-scope-club-button" type="button" aria-haspopup="dialog" hidden>
+            <span id="adminPortalScopeClubPrefix" class="admin-portal-scope-prefix">Club</span>
+            <strong id="adminPortalScopeClubCode"></strong>
+          </button>
           <span id="adminPortalScopeRole" class="admin-portal-scope-role" hidden>
             <span id="adminPortalScopeRoleLong"></span>
           </span>
@@ -39,6 +41,7 @@
           </button>
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
             <a href="#mon-compte" role="menuitem">Mon compte</a>
+            <button id="adminPortalAccountClubSwitch" type="button" role="menuitem" hidden>Changer de club</button>
             <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
             <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
           </div>
@@ -46,7 +49,34 @@
       </div>
     </header>
 
+    <dialog id="adminPortalClubSwitchDialog" class="admin-portal-club-switch-dialog" aria-labelledby="adminPortalClubSwitchTitle">
+      <form method="dialog">
+        <div class="admin-portal-club-switch-head">
+          <div>
+            <span>Session temporaire</span>
+            <h2 id="adminPortalClubSwitchTitle">Changer de club</h2>
+          </div>
+          <button id="adminPortalClubSwitchClose" class="ghost-button" value="cancel" aria-label="Fermer la fenêtre">×</button>
+        </div>
+        <p>Choisissez le club à gérer pour cette session. Votre club d&rsquo;appartenance sera rétabli à la déconnexion.</p>
+        <label>
+          Rechercher un club
+          <input id="adminPortalClubSwitchSearch" type="search" autocomplete="off" placeholder="Code ou nom du club">
+        </label>
+        <div id="adminPortalClubSwitchResults" class="admin-portal-club-switch-results" aria-live="polite"></div>
+        <p id="adminPortalClubSwitchStatus" class="admin-portal-message" aria-live="polite"></p>
+        <div class="admin-portal-actions">
+          <button id="adminPortalClubSwitchReset" class="ghost-button" type="button">Revenir à mon club</button>
+          <button class="ghost-button" value="cancel">Fermer</button>
+        </div>
+      </form>
+    </dialog>
+
     <main class="admin-portal-shell">
+      <section class="admin-portal-auth-loading" role="status" aria-live="polite">
+        <span aria-hidden="true"></span>
+        <p>Chargement du portail</p>
+      </section>
       <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion au portail LivePalmes">
         <div>
           <span>Accès protégé</span>
@@ -1139,12 +1169,22 @@
                             <strong>Chef d'&eacute;quipe</strong>
                             <small id="adminEngagementsClubTeamSummary" class="admin-engagements-club-team-summary" data-complete="false">A renseigner avant de commencer les engagements.</small>
                           </div>
+                          <div class="admin-engagements-club-team-actions">
+                            <button id="adminEngagementsClubTeamModifyButton" class="ghost-button compact" type="button" hidden>Modifier le chef d&rsquo;équipe</button>
+                            <button id="adminEngagementsClubTeamRemoveButton" class="ghost-button compact admin-engagements-club-team-remove" type="button" hidden>Retirer</button>
+                          </div>
                         </div>
-                        <div class="admin-engagements-club-choice-list">
-                          <label class="admin-engagements-club-choice">
-                            <input type="radio" name="adminEngagementsClubTeamMode" value="person">
-                            <span>D&eacute;clarer un chef d'&eacute;quipe</span>
-                          </label>
+                        <div id="adminEngagementsClubTeamChoices" class="admin-engagements-club-choice-list">
+                          <div class="admin-engagements-club-team-primary-choices">
+                            <label class="admin-engagements-club-choice">
+                              <input type="radio" name="adminEngagementsClubTeamMode" value="person">
+                              <span>Chef d&rsquo;équipe de mon club</span>
+                            </label>
+                            <button id="adminEngagementsClubTeamRenunciationButton" class="admin-engagements-club-choice" type="button">
+                              <span>Aucun chef d&rsquo;équipe</span>
+                            </button>
+                            <input type="radio" name="adminEngagementsClubTeamMode" value="renounced" hidden>
+                          </div>
                           <div id="adminEngagementsClubTeamPersonFields" class="admin-engagements-form-section-grid" hidden>
                             <label class="admin-engagements-club-team-search">
                               Rechercher un membre du club
@@ -1157,7 +1197,7 @@
                               </select>
                             </label>
                             <div id="adminEngagementsClubTeamPersonResults" class="admin-engagements-club-person-swimmer-results" aria-live="polite"></div>
-                            <button id="adminEngagementsClubTeamPersonCreate" class="ghost-button" type="button">La personne n&rsquo;apparaît pas ? L&rsquo;ajouter</button>
+                            <button id="adminEngagementsClubTeamPersonCreate" class="ghost-button admin-engagements-club-team-add" type="button"><span aria-hidden="true">+</span> Ajouter une personne</button>
                             <label>
                               Nom
                               <input id="adminEngagementsClubTeamLastName" type="text" maxlength="80" autocomplete="family-name" autocapitalize="characters">
@@ -1182,10 +1222,6 @@
                               Num&eacute;ro de licence
                               <input id="adminEngagementsClubTeamLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567">
                             </label>
-                            <label class="admin-engagements-check">
-                              <input id="adminEngagementsClubTeamExternal" type="checkbox">
-                              <span>Chef d'&eacute;quipe hors club</span>
-                            </label>
                             <label id="adminEngagementsClubTeamExternalClubNameLabel" hidden>
                               Club du chef d'&eacute;quipe
                               <input id="adminEngagementsClubTeamExternalClubName" type="text" maxlength="140">
@@ -1195,14 +1231,28 @@
                           <div class="admin-portal-actions admin-engagements-club-team-validation" hidden>
                             <button id="adminEngagementsClubTeamSaveButton" type="submit">Valider le chef d'&eacute;quipe</button>
                           </div>
-                          <label class="admin-engagements-club-choice">
-                            <input type="radio" name="adminEngagementsClubTeamMode" value="renounced">
-                            <span>Ne pas d&eacute;clarer de chef d'&eacute;quipe</span>
-                          </label>
+                          <button id="adminEngagementsClubTeamExternalOpen" class="admin-engagements-club-team-external-open" type="button">Déclarer exceptionnellement un chef d&rsquo;équipe hors du club</button>
+                          <input id="adminEngagementsClubTeamExternal" type="checkbox" aria-label="Chef d’équipe hors du club" hidden>
                           <input id="adminEngagementsClubTeamRenunciation" type="checkbox" aria-label="Renonciation au droit de r&eacute;clamation" hidden>
                         </div>
                         <p id="adminEngagementsClubTeamMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
+                      <dialog id="adminEngagementsClubTeamRenunciationDialog" class="admin-engagements-club-times-dialog" aria-labelledby="adminEngagementsClubTeamRenunciationDialogTitle">
+                        <form id="adminEngagementsClubTeamRenunciationDialogForm">
+                          <div class="admin-engagements-club-times-dialog-head">
+                            <div>
+                              <span>Chef d&rsquo;équipe</span>
+                              <h3 id="adminEngagementsClubTeamRenunciationDialogTitle">Ne déclarer aucun chef d&rsquo;équipe ?</h3>
+                            </div>
+                            <button id="adminEngagementsClubTeamRenunciationDialogClose" class="ghost-button compact" type="button" aria-label="Fermer la fenêtre">&times;</button>
+                          </div>
+                          <p>En choisissant cette option, votre club renonce au droit de réclamation pour cette compétition.</p>
+                          <div class="admin-engagements-club-times-dialog-actions">
+                            <button id="adminEngagementsClubTeamRenunciationDialogCancel" class="ghost-button" type="button">Annuler</button>
+                            <button type="submit">Confirmer aucun chef d&rsquo;équipe</button>
+                          </div>
+                        </form>
+                      </dialog>
                       <dialog id="adminEngagementsClubTeamExternalDialog" class="admin-engagements-club-times-dialog" aria-labelledby="adminEngagementsClubTeamExternalDialogTitle">
                         <form id="adminEngagementsClubTeamExternalDialogForm">
                           <div class="admin-engagements-club-times-dialog-head">
@@ -1247,13 +1297,21 @@
                     <div id="adminEngagementsDetailSwimmersPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailSwimmersTab" data-engagements-detail-tab-panel="swimmers" hidden>
                       <form id="adminEngagementsClubSwimmersForm" class="admin-engagements-club-step-form" data-club-step="swimmers">
                         <div id="adminEngagementsClubSelectedSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
+                        <div class="admin-engagements-club-swimmer-tools">
                         <label class="admin-engagements-club-search">
                           Rechercher dans les nageurs connus du club
                           <input id="adminEngagementsClubSwimmersSearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
                         </label>
-                        <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
-                        <details class="admin-engagements-club-new-swimmer">
-                          <summary>Nageur introuvable ? Ajouter un nageur absent de la base</summary>
+                        <button id="adminEngagementsClubNewSwimmerDialogOpen" class="admin-engagements-club-new-swimmer-open" type="button"><span aria-hidden="true">+</span> Ajouter ou récupérer un nageur</button>
+                        </div>
+                        <dialog id="adminEngagementsClubNewSwimmerDialog" class="admin-engagements-swimmer-correction-dialog admin-engagements-club-new-swimmer-dialog" aria-labelledby="adminEngagementsClubNewSwimmerDialogTitle">
+                          <div class="admin-engagements-club-new-swimmer-dialog-head">
+                            <div>
+                              <h3 id="adminEngagementsClubNewSwimmerDialogTitle">Ajouter ou récupérer un nageur</h3>
+                              <p>La récupération d’un nageur déjà licencié dans un autre club est possible uniquement pour sa première compétition de la saison.</p>
+                            </div>
+                            <button type="button" data-engagement-club-new-swimmer-dialog-close aria-label="Fermer la fenêtre">×</button>
+                          </div>
                           <div class="admin-engagements-form-section-grid admin-engagements-club-new-swimmer-grid">
                             <label>
                               Nom
@@ -1271,8 +1329,8 @@
                               Sexe
                               <select id="adminEngagementsClubNewSwimmerSex">
                                 <option value="">Choisir</option>
-                                <option value="F">Femmes</option>
-                                <option value="M">Hommes</option>
+                                <option value="F">Femme</option>
+                                <option value="M">Homme</option>
                               </select>
                             </label>
                             <label class="admin-engagements-club-new-swimmer-license">
@@ -1281,11 +1339,15 @@
                             </label>
                           </div>
                           <div class="admin-engagements-club-new-swimmer-actions">
+                            <button class="ghost-button" type="button" data-engagement-club-new-swimmer-dialog-close>Annuler</button>
                             <button id="adminEngagementsClubNewSwimmerResetButton" class="ghost-button" type="button" aria-label="R&eacute;initialiser le formulaire d'ajout d'un nageur">RAZ</button>
-                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Cr&eacute;er le nageur</button>
+                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Vérifier ou créer le nageur</button>
+                            <button id="adminEngagementsClubRecoverSwimmerButton" type="button" hidden>Récupérer ce nageur</button>
                           </div>
                           <div id="adminEngagementsClubNewSwimmerAlerts" class="admin-engagements-club-swimmer-alerts" aria-live="polite"></div>
-                        </details>
+                          <p id="adminEngagementsClubNewSwimmerMessage" class="admin-portal-message" aria-live="polite"></p>
+                        </dialog>
+                        <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubSwimmersMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                     </div>
@@ -1529,11 +1591,17 @@
               <div id="adminEngagementsClubSwimmersPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="clubSwimmers" hidden>
                 <section class="admin-engagements-card" aria-label="Effectif des nageurs du club">
                   <form class="admin-engagements-club-swimmers-directory-tools" role="search">
-                    <label class="admin-engagements-club-swimmers-directory-search-field">
-                      <span class="admin-engagements-club-swimmers-directory-search-label">Rechercher</span>
+                    <div class="admin-engagements-club-swimmers-directory-search-field">
+                      <span id="adminEngagementsClubSwimmersDirectorySearchLabel" class="admin-engagements-club-swimmers-directory-search-label">Rechercher</span>
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg>
-                      <input id="adminEngagementsClubSwimmersDirectorySearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence...">
-                    </label>
+                      <input id="adminEngagementsClubSwimmersDirectorySearch" type="search" maxlength="120" placeholder="Nom, pr&eacute;nom, ann&eacute;e, licence..." aria-labelledby="adminEngagementsClubSwimmersDirectorySearchLabel">
+                      <button id="adminEngagementsClubSwimmersDirectorySearchClear" type="button" aria-label="Effacer la recherche" title="Effacer la recherche" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg></button>
+                    </div>
+                    <div id="adminEngagementsClubSwimmersDirectorySexFilter" class="admin-engagements-club-swimmers-directory-sex-filter" role="group" aria-label="Filtrer les nageurs par sexe">
+                      <button type="button" data-engagement-club-swimmer-sex-filter="all" aria-pressed="true">Tous</button>
+                      <button type="button" data-engagement-club-swimmer-sex-filter="F" aria-pressed="false">Femmes</button>
+                      <button type="button" data-engagement-club-swimmer-sex-filter="M" aria-pressed="false">Hommes</button>
+                    </div>
                   </form>
                   <p id="adminEngagementsClubSwimmersDirectoryStatus" class="admin-portal-message" aria-live="polite">Les nageurs seront charg&eacute;s &agrave; l&rsquo;ouverture.</p>
                   <div id="adminEngagementsClubSwimmersDirectoryList" class="admin-engagements-club-swimmers-directory-list" aria-live="polite"></div>
@@ -2349,6 +2417,10 @@
                 <span>Engagements club</span>
               </label>
               <label>
+                <input type="checkbox" name="capability" value="engagements.club.switch">
+                <span>Changement de club national</span>
+              </label>
+              <label>
                 <input type="checkbox" name="capability" value="engagements.region.manage">
                 <span>Engagements région</span>
               </label>
@@ -2384,7 +2456,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260811-admin-pilotage-11"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260812-admin-pilotage-46"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>
