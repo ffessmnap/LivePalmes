@@ -52,6 +52,10 @@ function stableHash(value) {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex");
 }
 
+function performanceSwimmerIndexId(swimmer = {}) {
+  return stableHash(String(swimmer.identityKey || "").trim()).slice(0, 40);
+}
+
 async function main() {
   const projectId = option("project");
   const inputPath = path.resolve(option("input"));
@@ -80,8 +84,9 @@ async function main() {
   });
 
   const admin = require(path.join(__dirname, "..", "functions", "node_modules", "firebase-admin"));
-  if (!admin.apps.length) admin.initializeApp({ projectId });
-  const db = admin.firestore();
+  const { getFirestore } = require(path.join(__dirname, "..", "functions", "node_modules", "firebase-admin", "lib", "firestore"));
+  if (!admin.getApps().length) admin.initializeApp({ projectId });
+  const db = getFirestore();
   const now = new Date().toISOString();
   const outcomes = [];
 
@@ -123,6 +128,16 @@ async function main() {
     rowsByClub.get(clubId).push(item);
   });
   const batch = db.batch();
+  corrections.filter((item) => correctedIds.has(String(item.conflict.livepalmesId))).forEach(({ row, swimmer }) => {
+    batch.update(db.collection("performanceSwimmerIndex").doc(performanceSwimmerIndexId(swimmer)), {
+      licenseNumber: row.licence,
+      licenseVerificationStatus: "verified",
+      licenseSeasonLabel: season,
+      licenseSeasonStatus: "to_check",
+      licenseUpdatedAt: now,
+      licenseUpdatedBy: "admin_import"
+    });
+  });
   for (const [clubId, clubRows] of rowsByClub) {
     const rosterSwimmers = {};
     clubRows.forEach(({ conflict, row, swimmer }) => {

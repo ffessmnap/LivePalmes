@@ -77,6 +77,11 @@ function rosterSwimmerKey(swimmer) {
   return stableHash(`reference|${swimmer.id}`).slice(0, 40);
 }
 
+function performanceSwimmerIndexId(swimmer = {}) {
+  const identityKey = `${normalizeName(swimmer.lastName)}|${normalizeName(swimmer.firstName)}|${isoDate(swimmer.birthDate)}`;
+  return identityKey === "||" ? "" : stableHash(identityKey).slice(0, 40);
+}
+
 function readValidatedRows(inputPath, indexPath) {
   const index = JSON.parse(fs.readFileSync(indexPath, "utf8"));
   const byId = new Map();
@@ -133,8 +138,9 @@ async function applyImport(rows, season, inputPath) {
   if (confirmCount !== rows.length) throw new Error(`L'application exige --confirm-count ${rows.length}.`);
   if (!process.argv.includes("--create-only")) throw new Error("L'application exige --create-only pour interdire tout ecrasement de numero.");
   const admin = require(path.join(__dirname, "..", "functions", "node_modules", "firebase-admin"));
-  if (!admin.apps.length) admin.initializeApp({ projectId });
-  const db = admin.firestore();
+  const { getFirestore } = require(path.join(__dirname, "..", "functions", "node_modules", "firebase-admin", "lib", "firestore"));
+  if (!admin.getApps().length) admin.initializeApp({ projectId });
+  const db = getFirestore();
   const now = new Date().toISOString();
   const buildPayload = (row) => {
     const swimmer = row.swimmer;
@@ -289,6 +295,27 @@ async function applyImport(rows, season, inputPath) {
   await rosterWriter.close();
   await Promise.all(rosterOperations);
 
+  const indexedRows = successfulRows.map((row) => ({
+    row,
+    indexId: performanceSwimmerIndexId(row.swimmer)
+  }));
+  const indexWriter = db.bulkWriter({ throttling: { initialOpsPerSecond: 50, maxOpsPerSecond: 100 } });
+  const indexOperations = indexedRows.map(({ row, indexId }) => {
+    if (!indexId) return Promise.resolve({ row, status: "missing_index_id" });
+    return indexWriter.update(db.collection("performanceSwimmerIndex").doc(indexId), {
+      licenseNumber: row.licenseNumber,
+      licenseVerificationStatus: "verified",
+      licenseSeasonLabel: season,
+      licenseSeasonStatus: "to_check",
+      licenseUpdatedAt: now,
+      licenseUpdatedBy: "admin_import"
+    })
+      .then(() => ({ row, status: "updated" }))
+      .catch((error) => ({ row, status: "failed", error: error?.message || String(error), code: error?.code }));
+  });
+  await indexWriter.close();
+  const indexOutcomes = await Promise.all(indexOperations);
+
   const counts = outcomes.reduce((result, outcome) => {
     result[outcome.status] = (result[outcome.status] || 0) + 1;
     return result;
@@ -305,6 +332,7 @@ async function applyImport(rows, season, inputPath) {
     preflightQueries,
     preflightDocumentsFound: existingById.size,
     rosterDocumentsWritten: rowsByClub.size,
+    performanceIndexesUpdated: indexOutcomes.filter((outcome) => outcome.status === "updated").length,
     counts,
     exceptions: outcomes
       .filter((outcome) => ["conflict", "failed"].includes(outcome.status))
@@ -317,6 +345,15 @@ async function applyImport(rows, season, inputPath) {
         error: outcome.error || "",
         code: outcome.code ?? ""
       }))
+      .concat(indexOutcomes
+        .filter((outcome) => outcome.status !== "updated")
+        .map((outcome) => ({
+          livepalmesId: outcome.row.id,
+          licenseNumber: outcome.row.licenseNumber,
+          status: `performance_index_${outcome.status}`,
+          error: outcome.error || "",
+          code: outcome.code ?? ""
+        })))
   };
   const reportPath = path.join(path.dirname(inputPath), `rapport-import-firestore-${now.replace(/[:.]/g, "-")}.json`);
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
