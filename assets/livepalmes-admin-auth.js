@@ -127,6 +127,7 @@
         capabilities["competitions.import"] === true ||
         capabilities["dtn.view"] === true ||
         capabilities["engagements.club.manage"] === true ||
+        capabilities["engagements.club.switch"] === true ||
         capabilities["engagements.region.manage"] === true ||
         capabilities["engagements.national.manage"] === true
       );

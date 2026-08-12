@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260811-admin-pilotage-11">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260812-admin-pilotage-17">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading">
     <header class="admin-portal-topbar">
@@ -21,8 +21,10 @@
       </div>
       <div class="admin-portal-topbar-actions">
         <div id="adminPortalScopeContext" class="admin-portal-scope-context" aria-label="Périmètre de gestion" hidden>
-          <span id="adminPortalScopeClubPrefix" class="admin-portal-scope-prefix">Club</span>
-          <strong id="adminPortalScopeClubCode"></strong>
+          <button id="adminPortalScopeClubButton" class="admin-portal-scope-club-button" type="button" aria-haspopup="dialog" hidden>
+            <span id="adminPortalScopeClubPrefix" class="admin-portal-scope-prefix">Club</span>
+            <strong id="adminPortalScopeClubCode"></strong>
+          </button>
           <span id="adminPortalScopeRole" class="admin-portal-scope-role" hidden>
             <span id="adminPortalScopeRoleLong"></span>
           </span>
@@ -39,12 +41,30 @@
           </button>
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
             <a href="#mon-compte" role="menuitem">Mon compte</a>
+            <button id="adminPortalAccountClubSwitch" type="button" role="menuitem" hidden>Changer de club</button>
             <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
             <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
           </div>
         </div>
       </div>
     </header>
+
+    <dialog id="adminPortalClubSwitchDialog" class="admin-portal-club-switch-dialog" aria-labelledby="adminPortalClubSwitchTitle">
+      <form method="dialog">
+        <div class="admin-portal-club-switch-head">
+          <div><span>Session temporaire</span><h2 id="adminPortalClubSwitchTitle">Changer de club</h2></div>
+          <button id="adminPortalClubSwitchClose" class="ghost-button" value="cancel" aria-label="Fermer la fenêtre">×</button>
+        </div>
+        <p>Choisissez le club à gérer pour cette session. Votre club d&rsquo;appartenance sera rétabli à la déconnexion.</p>
+        <label>Rechercher un club<input id="adminPortalClubSwitchSearch" type="search" autocomplete="off" placeholder="Code ou nom du club"></label>
+        <div id="adminPortalClubSwitchResults" class="admin-portal-club-switch-results" aria-live="polite"></div>
+        <p id="adminPortalClubSwitchStatus" class="admin-portal-message" aria-live="polite"></p>
+        <div class="admin-portal-actions">
+          <button id="adminPortalClubSwitchReset" class="ghost-button" type="button">Revenir à mon club</button>
+          <button class="ghost-button" value="cancel">Fermer</button>
+        </div>
+      </form>
+    </dialog>
 
     <main class="admin-portal-shell">
       <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion au portail LivePalmes">
@@ -2349,6 +2369,10 @@
                 <span>Engagements club</span>
               </label>
               <label>
+                <input type="checkbox" name="capability" value="engagements.club.switch">
+                <span>Changement de club national</span>
+              </label>
+              <label>
                 <input type="checkbox" name="capability" value="engagements.region.manage">
                 <span>Engagements région</span>
               </label>
@@ -2384,7 +2408,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
     <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260811-admin-pilotage-11"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260812-admin-pilotage-17"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
   </body>
 </html>

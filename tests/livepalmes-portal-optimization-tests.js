@@ -4,7 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8").replace(/\r\n/g, "\n");
 
 const portal = read("assets/livepalmes-admin-portal.js");
 const portalAuth = read("assets/livepalmes-admin-auth.js");
@@ -378,7 +378,7 @@ assert.equal(portal.includes("selectedEngagementClubEntryCompetitionId"), false)
 assert.ok(portal.includes("function flushEngagementClubIndividualEntriesAutosave"));
 assert.ok(portal.includes("engagementClubEntriesAutosaveSwimmers.set(swimmerIndexId"));
 assert.ok(portal.includes("}, 500)"));
-assert.ok(portal.includes("swimmers\n      })"));
+assert.match(portal, /swimmers\r?\n\s+\}\)/);
 assert.ok(portal.includes("discardPendingEngagementClubIndividualEntries(swimmerIndexId)"));
 assert.ok(portal.includes("const selectedRows = currentEngagementClubSwimmersForSummary();"));
 assert.ok(closeCompetitionDetailFunction.indexOf("flushEngagementClubIndividualEntriesAutosave()") < closeCompetitionDetailFunction.indexOf('selectedEngagementCompetitionId = ""'));
@@ -929,7 +929,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.equal((portalHtml.match(/20260811-admin-pilotage-11/g) || []).length, 2);
+assert.equal((portalHtml.match(/20260812-admin-pilotage-17/g) || []).length, 2);
 assert.ok(portal.includes('activeEngagementsTab === "calendar"'));
 assert.ok(portalCss.includes('#adminEngagementsView:not([data-engagements-tab="calendar"]) #adminEngagementsCalendarActions'));
 assert.ok(portal.includes("manageOnly: isEngagementAdminMode()"));
@@ -990,5 +990,25 @@ assert.ok(portal.includes("elements.engagementsAdvancedFilters.open = false"));
 assert.ok(portal.includes('parts.push(`${days} j`)'));
 assert.ok(functions.includes("isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt)"));
 assert.ok(functions.includes("Impossible d'ouvrir les engagements : la date de cloture est depassee."));
+
+assert.ok(functions.includes('"engagements.club.switch"'));
+assert.ok(functions.includes("Le droit de changement de club requiert le droit engagements club."));
+assert.ok(functions.includes("const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);"));
+assert.ok(functions.includes("const activeClub = isSwitchingClub ? CLUB_REFERENCE_BY_ID.get(requestedClubId) : null;"));
+assert.ok(functions.includes("!activeClub || !CLUB_REFERENCE_REGION_LABELS[activeClub.regionId]"));
+assert.ok(functions.includes("Droit de changement de club requis."));
+assert.ok(functions.includes("Club actif inconnu."));
+assert.ok(portalAuth.includes('capabilities["engagements.club.switch"] === true'));
+assert.ok(portalHtml.includes('id="adminPortalScopeClubButton"'));
+assert.ok(portalHtml.includes('id="adminPortalClubSwitchDialog"'));
+assert.ok(portalHtml.includes('value="engagements.club.switch"'));
+assert.ok(portal.includes('const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";'));
+assert.ok(portal.includes("function activeEngagementClubIdForProfile"));
+assert.ok(portal.includes("function changeActiveEngagementClub"));
+assert.ok(portal.includes("...(activeClubId ? { activeClubId } : {})"));
+assert.ok(portal.includes("Boolean(LIVEPALMES_REFERENCE_REGION_LABELS[club.referenceRegionId])"));
+assert.ok(portal.includes("if (!signedIn && status.ready)"));
+assert.ok(portalCss.includes(".admin-portal-club-switch-dialog"));
+assert.ok(portalCss.includes(".admin-portal-club-switch-result"));
 
 console.log("Optimisations portail : OK");

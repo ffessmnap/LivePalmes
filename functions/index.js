@@ -72,6 +72,7 @@ const ACCESS_CAPABILITIES = [
   "competitions.import",
   "dtn.view",
   "engagements.club.manage",
+  "engagements.club.switch",
   "engagements.region.manage",
   "engagements.national.manage"
 ];
@@ -307,9 +308,22 @@ const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubR
   .map((club) => [cleanText(club?.[0]), {
     clubId: cleanText(club?.[0]),
     clubCode: cleanText(club?.[1]),
-    clubName: cleanText(club?.[2])
+    clubName: cleanText(club?.[2]),
+    regionId: cleanText(club?.[3]).slice(0, 80)
   }])
   .filter(([clubId]) => clubId));
+
+const CLUB_REFERENCE_REGION_LABELS = {
+  "1": "Grand Est", "2": "Nouvelle Aquitaine", "3": "Ile de France",
+  "6": "Bretagne Pays de la Loire", "8": "Centre", "9": "Guadeloupe",
+  "10": "Pyrénées Méditerranée Occitanie", "11": "Martinique Guyane", "12": "Corse",
+  "13": "Hauts de France", "15": "Normandie", "16": "Sud",
+  "17": "Auvergne Rhône Alpes", "18": "Réunion", "22": "Bourgogne Franche Comté"
+};
+
+function engagementClubRegionId(club = {}, fallback = "") {
+  return CLUB_REFERENCE_REGION_LABELS[cleanText(club.regionId)] || cleanText(fallback).slice(0, 80);
+}
 
 function engagementClubCode(clubId, fallback = "") {
   return CLUB_REFERENCE_BY_ID.get(cleanText(clubId))?.clubCode || cleanText(fallback);
@@ -419,6 +433,9 @@ function cleanAccessProfile(raw = {}) {
   }
   if (capabilities.includes("engagements.club.manage") && !clubId) {
     throw new HttpsError("invalid-argument", "Numero de club obligatoire pour un acces engagements club.");
+  }
+  if (capabilities.includes("engagements.club.switch") && !capabilities.includes("engagements.club.manage")) {
+    throw new HttpsError("invalid-argument", "Le droit de changement de club requiert le droit engagements club.");
   }
   if (capabilities.includes("engagements.region.manage") && !regionId) {
     throw new HttpsError("invalid-argument", "Region obligatoire pour un acces engagements region.");
@@ -578,22 +595,36 @@ async function engagementClubAccessContext(request) {
   if (!snapshot.exists || data.status !== "active") {
     throw new HttpsError("permission-denied", "Acces LivePalmes desactive.");
   }
-  const capabilities = data.capabilities || request.auth?.token?.livepalmesCapabilities || {};
+  const capabilities = ADMIN_UIDS.has(uid)
+    ? capabilitiesMap(ACCESS_CAPABILITIES)
+    : (data.capabilities || request.auth?.token?.livepalmesCapabilities || {});
   if (capabilities["engagements.club.manage"] !== true) {
     throw new HttpsError("permission-denied", "Droit engagements club requis.");
   }
   const accessScopes = data.accessScopes || {};
   const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
-  const clubId = cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
-  if (!clubId) {
+  const homeClubId = cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
+  if (!homeClubId) {
     throw new HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
   }
+  const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);
+  const isSwitchingClub = Boolean(requestedClubId && requestedClubId !== homeClubId);
+  if (isSwitchingClub && capabilities["engagements.club.switch"] !== true) {
+    throw new HttpsError("permission-denied", "Droit de changement de club requis.");
+  }
+  const activeClub = isSwitchingClub ? CLUB_REFERENCE_BY_ID.get(requestedClubId) : null;
+  if (isSwitchingClub && (!activeClub || !CLUB_REFERENCE_REGION_LABELS[activeClub.regionId])) {
+    throw new HttpsError("invalid-argument", "Club actif inconnu.");
+  }
+  const clubId = activeClub?.clubId || homeClubId;
   return {
     uid,
     email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
     clubId,
-    clubName: cleanText(data.clubName).slice(0, 140),
-    regionId: cleanText(data.regionId).slice(0, 80)
+    clubName: activeClub?.clubName || cleanText(data.clubName).slice(0, 140),
+    regionId: activeClub ? engagementClubRegionId(activeClub, data.regionId) : cleanText(data.regionId).slice(0, 80),
+    homeClubId,
+    switchedClub: isSwitchingClub
   };
 }
 

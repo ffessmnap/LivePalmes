@@ -15271,9 +15271,71 @@
   color: #61757c;
 }
 
-.admin-portal-page .admin-portal-scope-context > strong {
+.admin-portal-page .admin-portal-scope-club-button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled) { cursor: pointer; }
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled):hover strong { text-decoration: underline; }
+.admin-portal-page .admin-portal-scope-club-button:focus-visible { outline: 3px solid var(--portal-focus-ring); outline-offset: 2px; }
+.admin-portal-page .admin-portal-scope-club-button:disabled { cursor: default; }
+
+.admin-portal-page .admin-portal-scope-club-button > strong {
   color: var(--portal-color-accent-strong);
   font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-portal-club-switch-dialog {
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(12, 35, 32, 0.24);
+}
+.admin-portal-club-switch-dialog::backdrop { background: rgba(12, 35, 32, 0.45); }
+.admin-portal-club-switch-dialog form { display: grid; gap: 14px; padding: 16px; }
+.admin-portal-club-switch-dialog h2, .admin-portal-club-switch-dialog p { margin: 0; }
+.admin-portal-club-switch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.admin-portal-club-switch-head > div > span { color: #5f746f; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.admin-portal-club-switch-dialog label { display: grid; gap: 6px; color: #36544f; font-size: 0.86rem; font-weight: 700; }
+.admin-portal-club-switch-dialog input { width: 100%; min-height: 42px; box-sizing: border-box; }
+.admin-portal-club-switch-results { display: grid; max-height: min(48vh, 380px); overflow: auto; border: 1px solid #d9e5e3; border-radius: 8px; }
+.admin-portal-club-switch-result {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid #e3ebea;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #243b42;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.admin-portal-club-switch-result:last-child { border-bottom: 0; }
+.admin-portal-club-switch-result:hover, .admin-portal-club-switch-result[aria-pressed="true"] { background: #f0f8f7; }
+.admin-portal-club-switch-result:focus-visible { position: relative; z-index: 1; outline: 3px solid var(--portal-focus-ring); outline-offset: -3px; }
+.admin-portal-club-switch-result strong { color: var(--portal-color-accent-strong); }
+.admin-portal-club-switch-result span { min-width: 0; }
+.admin-portal-club-switch-result small { color: #176454; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .admin-portal-club-switch-dialog form { padding: 14px; }
+  .admin-portal-club-switch-result { grid-template-columns: minmax(0, 1fr) auto; }
+  .admin-portal-club-switch-result span { grid-column: 1 / -1; font-size: 0.84rem; }
 }
 
 .admin-portal-page .admin-portal-scope-role {

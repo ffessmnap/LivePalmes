@@ -2,6 +2,7 @@
   const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
   const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
+  const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260803-national-swimmers-all-1";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "performances/public/data/performance-public";
   const publicPerformanceSwimmerSearchShards = new Map();
@@ -159,10 +160,17 @@
     publicAccessRequestClubName: document.querySelector("#adminPublicAccessRequestClubName"),
     publicAccessRequestClubId: document.querySelector("#adminPublicAccessRequestClubId"),
     scopeContext: document.querySelector("#adminPortalScopeContext"),
+    scopeClubButton: document.querySelector("#adminPortalScopeClubButton"),
     scopeClubPrefix: document.querySelector("#adminPortalScopeClubPrefix"),
     scopeClubCode: document.querySelector("#adminPortalScopeClubCode"),
     scopeRole: document.querySelector("#adminPortalScopeRole"),
     scopeRoleLong: document.querySelector("#adminPortalScopeRoleLong"),
+    clubSwitchDialog: document.querySelector("#adminPortalClubSwitchDialog"),
+    clubSwitchClose: document.querySelector("#adminPortalClubSwitchClose"),
+    clubSwitchSearch: document.querySelector("#adminPortalClubSwitchSearch"),
+    clubSwitchResults: document.querySelector("#adminPortalClubSwitchResults"),
+    clubSwitchStatus: document.querySelector("#adminPortalClubSwitchStatus"),
+    clubSwitchReset: document.querySelector("#adminPortalClubSwitchReset"),
     accountClubCode: document.querySelector("#adminPortalAccountClubCode"),
     publicAccessRequestText: document.querySelector("#adminPublicAccessRequestText"),
     publicAccessRequestMessage: document.querySelector("#adminPublicAccessRequestMessage"),
@@ -171,6 +179,7 @@
     accountControl: document.querySelector("#adminPortalAccount"),
     accountToggle: document.querySelector("#adminPortalAccountToggle"),
     accountActions: document.querySelector("#adminPortalAccountActions"),
+    accountClubSwitch: document.querySelector("#adminPortalAccountClubSwitch"),
     navToggle: document.querySelector("#adminPortalNavToggle"),
     navCurrent: document.querySelector("#adminPortalNavCurrent"),
     homeLink: document.querySelector("#adminPortalHomeLink"),
@@ -705,6 +714,7 @@
   let accessClubReferenceLoadPromise = null;
   let accessClubReference = [];
   let accessClubReferenceById = new Map();
+  let activeEngagementClubId = "";
   let activeAuthUid = "";
   let engagementClubEntriesDirty = false;
   const engagementClubEntriesDirtySwimmerIds = new Set();
@@ -770,7 +780,11 @@
   async function callFunction(name, payload) {
     const functions = functionsService();
     if (!functions?.httpsCallable) throw new Error("Cloud Functions LivePalmes indisponibles.");
-    const result = await functions.httpsCallable(name)(payload);
+    const activeClubId = activeEngagementClubIdForProfile(currentAccessProfile);
+    const result = await functions.httpsCallable(name)({
+      ...(payload || {}),
+      ...(activeClubId ? { activeClubId } : {})
+    });
     return result.data || {};
   }
 
@@ -964,8 +978,57 @@
   }
 
   function engagementClubScope(user = currentAccessProfile || {}) {
+    const activeClubId = activeEngagementClubIdForProfile(user);
+    if (activeClubId) return activeClubId;
     const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
     return clubScope.scopeId || user.clubId || "";
+  }
+
+  function canSwitchEngagementClub(user = currentAccessProfile || {}) {
+    const capabilities = new Set(user?.capabilities || []);
+    return capabilities.has("engagements.club.manage") && capabilities.has("engagements.club.switch");
+  }
+
+  function activeEngagementClubIdForProfile(user = currentAccessProfile || {}) {
+    if (!activeEngagementClubId || !canSwitchEngagementClub(user)) return "";
+    return accessClubReferenceById.has(activeEngagementClubId) ? activeEngagementClubId : "";
+  }
+
+  function activeEngagementClubProfile(user = currentAccessProfile || {}) {
+    const activeClubId = activeEngagementClubIdForProfile(user);
+    const activeClub = accessClubFromId(activeClubId);
+    if (!activeClub) return user;
+    return {
+      ...user, clubId: activeClub.clubId, clubName: activeClub.clubName,
+      regionId: activeClub.regionId || user.regionId || "",
+      accessScopes: { ...(user.accessScopes || {}), "engagements.club.manage": {
+        ...(user.accessScopes?.["engagements.club.manage"] || {}), scopeType: "club",
+        scopeId: activeClub.clubId, scopeName: activeClub.clubName
+      } }
+    };
+  }
+
+  function restoreActiveEngagementClubFromSession() {
+    try { activeEngagementClubId = String(global.sessionStorage?.getItem(PORTAL_ACTIVE_CLUB_SESSION_KEY) || "").trim(); }
+    catch { activeEngagementClubId = ""; }
+  }
+
+  function clearActiveEngagementClub() {
+    activeEngagementClubId = "";
+    try { global.sessionStorage?.removeItem(PORTAL_ACTIVE_CLUB_SESSION_KEY); } catch {}
+  }
+
+  function setActiveEngagementClub(clubId = "") {
+    const nextClubId = String(clubId || "").trim();
+    const homeClubId = currentAccessProfile?.accessScopes?.["engagements.club.manage"]?.scopeId || currentAccessProfile?.clubId || "";
+    if (!nextClubId || nextClubId === homeClubId) clearActiveEngagementClub();
+    else {
+      activeEngagementClubId = nextClubId;
+      try { global.sessionStorage?.setItem(PORTAL_ACTIVE_CLUB_SESSION_KEY, nextClubId); } catch {}
+    }
+    resetEngagementClubData();
+    renderCurrentUser(currentAccessProfile || {});
+    updateNavigationView();
   }
 
   function resetEngagementClubData() {
@@ -1113,6 +1176,7 @@
 
   function renderEngagementClubContext(user = currentAccessProfile || {}) {
     if (!elements.engagementsClubContext) return;
+    user = activeEngagementClubProfile(user);
     const clubId = engagementClubScope(user);
     const clubLabel = clubId ? clubDisplayCode({ clubId, clubName: user.clubName }, "") : "";
     const visible = !isEngagementAdminMode() && canUse("engagements.club.manage") && Boolean(clubLabel);
@@ -2083,6 +2147,7 @@
       "competitions.import": "Import des compétitions",
       "dtn.view": "Espace DTN",
       "engagements.club.manage": "Engagements club",
+      "engagements.club.switch": "Changement de club national",
       "engagements.region.manage": "Engagements région",
       "engagements.national.manage": "Engagements national"
     }[capability] || capability;
@@ -2421,6 +2486,55 @@
     return accessClubReferenceLoadPromise;
   }
 
+  function renderClubSwitchResults() {
+    const results = elements.clubSwitchResults;
+    if (!results) return;
+    const query = normalizedAccessSearch(elements.clubSwitchSearch?.value || "");
+    const clubs = accessClubReference
+      .filter((club) => Boolean(LIVEPALMES_REFERENCE_REGION_LABELS[club.referenceRegionId]))
+      .filter((club) => !query || normalizedAccessSearch([club.clubCode, club.clubName].join(" ")).includes(query))
+      .sort((left, right) => accessClubLabel(left).localeCompare(accessClubLabel(right), "fr", { numeric: true }))
+      .slice(0, 80);
+    if (!accessClubReference.length) {
+      results.innerHTML = '<p class="admin-engagements-empty">Référentiel des clubs indisponible.</p>';
+      return;
+    }
+    if (!clubs.length) {
+      results.innerHTML = '<p class="admin-engagements-empty">Aucun club ne correspond à cette recherche.</p>';
+      return;
+    }
+    const activeClubId = engagementClubScope(currentAccessProfile || {});
+    results.innerHTML = clubs.map((club) => {
+      const active = club.clubId === activeClubId;
+      return `<button class="admin-portal-club-switch-result" type="button" data-portal-active-club-id="${escapeHtml(club.clubId)}" aria-pressed="${active ? "true" : "false"}"><strong>${escapeHtml(club.clubCode || club.clubName)}</strong><span>${escapeHtml(club.clubName)}</span>${active ? '<small>Club actif</small>' : ""}</button>`;
+    }).join("");
+  }
+
+  function openClubSwitchDialog() {
+    if (!canSwitchEngagementClub(currentAccessProfile || {})) return;
+    if (!accessClubReference.length) { void loadAccessClubReference().then(openClubSwitchDialog); return; }
+    if (elements.clubSwitchStatus) { elements.clubSwitchStatus.textContent = ""; delete elements.clubSwitchStatus.dataset.tone; }
+    if (elements.clubSwitchSearch) elements.clubSwitchSearch.value = "";
+    renderClubSwitchResults();
+    if (!elements.clubSwitchDialog?.open) elements.clubSwitchDialog?.showModal();
+    elements.clubSwitchSearch?.focus();
+  }
+
+  function changeActiveEngagementClub(clubId = "") {
+    if (!canSwitchEngagementClub(currentAccessProfile || {})) return;
+    if (selectedEngagementCompetitionId && !confirmLeaveDirtyEngagementTab()) return;
+    setActiveEngagementClub(clubId);
+    closeEngagementCompetitionDetail({ skipConfirmation: true });
+    if (elements.clubSwitchStatus) {
+      const activeClub = activeEngagementClubProfile(currentAccessProfile || {});
+      elements.clubSwitchStatus.textContent = clubId
+        ? `${clubDisplayLabel(activeClub)} est maintenant le club actif de cette session.`
+        : "Votre club d’appartenance est de nouveau actif.";
+      elements.clubSwitchStatus.dataset.tone = "ok";
+    }
+    renderClubSwitchResults();
+  }
+
   function currentEngagementSeasonStartYear(date = new Date()) {
     const year = date.getFullYear();
     return date.getMonth() >= 8 ? year : year - 1;
@@ -2618,6 +2732,7 @@
 
   function renderPortalScopeContext(user = {}) {
     if (!elements.scopeContext) return;
+    user = activeEngagementClubProfile(user);
     const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
     const clubId = engagementClubScope(user);
     const referencedClub = accessClubFromId(clubId);
@@ -2634,6 +2749,16 @@
       elements.scopeClubCode.hidden = !clubLabel;
       elements.scopeClubCode.textContent = clubLabel;
     }
+    const switchEnabled = Boolean(clubLabel) && canSwitchEngagementClub(currentAccessProfile || user);
+    if (elements.scopeClubButton) {
+      elements.scopeClubButton.hidden = !clubLabel;
+      elements.scopeClubButton.disabled = !switchEnabled;
+      elements.scopeClubButton.title = switchEnabled ? "Changer de club pour cette session" : "Club de la session";
+      elements.scopeClubButton.setAttribute("aria-label", switchEnabled
+        ? `Changer de club pour cette session. Club actif : ${clubLabel}`
+        : `Club de la session : ${clubLabel}`);
+    }
+    if (elements.accountClubSwitch) elements.accountClubSwitch.hidden = !switchEnabled;
     if (elements.scopeRole) elements.scopeRole.hidden = true;
     if (elements.scopeRoleLong) elements.scopeRoleLong.textContent = "";
     if (elements.accountClubCode) {
@@ -2643,6 +2768,7 @@
   }
 
   function renderEngagementsProfile(user = {}) {
+    user = activeEngagementClubProfile(user);
     const capabilities = new Set(user.capabilities || []);
     const scopeFor = (capability) => user.accessScopes?.[capability] || {};
     const clubScope = scopeFor("engagements.club.manage");
@@ -3273,6 +3399,7 @@
       };
     }
     const externalClub = elements.engagementsClubTeamExternal?.checked === true;
+    const activeClubProfile = activeEngagementClubProfile(currentAccessProfile || {});
     return {
       mode: "person",
       personId: externalClub ? "" : String(elements.engagementsClubTeamPersonSelect?.value || "").trim(),
@@ -3282,8 +3409,8 @@
       sex: externalClub ? "" : String(elements.engagementsClubTeamSex?.value || "").trim(),
       licenseNumber: formatEngagementSwimmerLicense(elements.engagementsClubTeamLicense?.value || ""),
       externalClub,
-      clubId: externalClub ? String(elements.engagementsClubTeamExternalClubId?.value || "").trim() : (currentAccessProfile?.clubId || ""),
-      clubName: externalClub ? String(elements.engagementsClubTeamExternalClubName?.value || "").trim() : (currentAccessProfile?.clubName || "")
+      clubId: externalClub ? String(elements.engagementsClubTeamExternalClubId?.value || "").trim() : (activeClubProfile.clubId || ""),
+      clubName: externalClub ? String(elements.engagementsClubTeamExternalClubName?.value || "").trim() : (activeClubProfile.clubName || "")
     };
   }
 
@@ -11460,6 +11587,7 @@
     const signedIn = Boolean(status.signedIn);
     const authUid = global.firebase?.auth?.().currentUser?.uid || "";
     if (activeAuthUid && activeAuthUid !== authUid) {
+      clearActiveEngagementClub();
       currentAccessProfile = null;
       renderPortalScopeContext({});
       portalPendingOverviewLoaded = false;
@@ -11478,7 +11606,8 @@
       accessDeletionRequestsLoaded = false;
     }
     activeAuthUid = signedIn ? authUid : "";
-    if (!signedIn) {
+    if (!signedIn && status.ready) {
+      clearActiveEngagementClub();
       currentAccessProfile = null;
       renderPortalScopeContext({});
       portalPendingOverviewLoaded = false;
@@ -11540,6 +11669,7 @@
 
   async function signOut() {
     try {
+      clearActiveEngagementClub();
       await ensureAdminAuth()?.signOut?.();
     } catch (error) {
       setMessage(`Deconnexion impossible : ${error?.message || error}`);
@@ -12111,6 +12241,7 @@
       engagementDeadlineCountdownTimer = global.setInterval(refreshEngagementDeadlineCountdowns, 60000);
     }
     restorePortalNavigationPinned();
+    restoreActiveEngagementClubFromSession();
     populateLivePalmesRegionSelects();
     populateAccessClubSelect();
     loadAccessClubReference();
@@ -12119,6 +12250,15 @@
     updateView(auth?.status?.() || {});
     elements.form?.addEventListener("submit", signIn);
     elements.passwordToggle?.addEventListener("click", toggleLoginPasswordVisibility);
+    elements.scopeClubButton?.addEventListener("click", openClubSwitchDialog);
+    elements.accountClubSwitch?.addEventListener("click", () => { closeAccountMenu(); openClubSwitchDialog(); });
+    elements.clubSwitchSearch?.addEventListener("input", renderClubSwitchResults);
+    elements.clubSwitchResults?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-portal-active-club-id]");
+      if (button) changeActiveEngagementClub(button.dataset.portalActiveClubId || "");
+    });
+    elements.clubSwitchReset?.addEventListener("click", () => changeActiveEngagementClub(""));
+    elements.clubSwitchClose?.addEventListener("click", () => elements.clubSwitchDialog?.close());
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
     elements.publicAccessRequestRegionId?.addEventListener("change", () => populatePublicAccessRequestClubSelect());
