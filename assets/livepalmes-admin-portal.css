@@ -6960,12 +6960,38 @@
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row {
-  min-width: 720px;
+  grid-template-columns: minmax(210px, 1.4fr) 92px 48px 54px minmax(110px, 0.7fr) minmax(190px, auto);
+  min-width: 820px;
   min-height: 42px;
   border: 0;
   border-top: 1px solid #e7ecee;
   border-radius: 0;
   padding: 8px 10px;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-separator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 820px;
+  padding: 7px 12px;
+  border-top: 1px solid #d9e2e4;
+  background: #f5f8f8;
+  color: #36544f;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-separator span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 20px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: #dfe9e7;
+  font-size: 0.7rem;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details {
@@ -7059,6 +7085,30 @@
   color: #a23a3a;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-button {
+  min-height: 30px;
+  border: 1px solid #b9d4cf;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #f3faf8;
+  color: #176454;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-button:hover {
+  border-color: #79b7aa;
+  background: #e4f5f1;
+}
+
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-button:focus-visible {
+  outline: 3px solid rgba(23, 100, 84, 0.2);
+  outline-offset: 1px;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-edit-button {
@@ -7586,6 +7636,11 @@
     background: #ffffff;
   }
 
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-activity-separator {
+    min-width: 0;
+    padding: 7px 11px;
+  }
+
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-actions {
     transform: none;
   }
@@ -7659,6 +7714,12 @@
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-edit-button {
     width: 32px;
     height: 32px;
+  }
+
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-activity-button {
+    min-height: 30px;
+    padding-inline: 8px;
+    font-size: 0.68rem;
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-change-pending {
@@ -14088,6 +14149,10 @@
 }
 
 .admin-national-row-menu > div {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
   display: grid;
   gap: 4px;
   min-width: 160px;
@@ -15283,10 +15348,22 @@
   font: inherit;
 }
 
-.admin-portal-page .admin-portal-scope-club-button:not(:disabled) { cursor: pointer; }
-.admin-portal-page .admin-portal-scope-club-button:not(:disabled):hover strong { text-decoration: underline; }
-.admin-portal-page .admin-portal-scope-club-button:focus-visible { outline: 3px solid var(--portal-focus-ring); outline-offset: 2px; }
-.admin-portal-page .admin-portal-scope-club-button:disabled { cursor: default; }
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled) {
+  cursor: pointer;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled):hover strong {
+  text-decoration: underline;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:focus-visible {
+  outline: 3px solid var(--portal-focus-ring);
+  outline-offset: 2px;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:disabled {
+  cursor: default;
+}
 
 .admin-portal-page .admin-portal-scope-club-button > strong {
   color: var(--portal-color-accent-strong);
@@ -15303,14 +15380,59 @@
   color: #12312d;
   box-shadow: 0 20px 60px rgba(12, 35, 32, 0.24);
 }
-.admin-portal-club-switch-dialog::backdrop { background: rgba(12, 35, 32, 0.45); }
-.admin-portal-club-switch-dialog form { display: grid; gap: 14px; padding: 16px; }
-.admin-portal-club-switch-dialog h2, .admin-portal-club-switch-dialog p { margin: 0; }
-.admin-portal-club-switch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.admin-portal-club-switch-head > div > span { color: #5f746f; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.admin-portal-club-switch-dialog label { display: grid; gap: 6px; color: #36544f; font-size: 0.86rem; font-weight: 700; }
-.admin-portal-club-switch-dialog input { width: 100%; min-height: 42px; box-sizing: border-box; }
-.admin-portal-club-switch-results { display: grid; max-height: min(48vh, 380px); overflow: auto; border: 1px solid #d9e5e3; border-radius: 8px; }
+
+.admin-portal-club-switch-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-portal-club-switch-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.admin-portal-club-switch-dialog h2,
+.admin-portal-club-switch-dialog p {
+  margin: 0;
+}
+
+.admin-portal-club-switch-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-portal-club-switch-head > div > span {
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-portal-club-switch-dialog label {
+  display: grid;
+  gap: 6px;
+  color: #36544f;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.admin-portal-club-switch-dialog input {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.admin-portal-club-switch-results {
+  display: grid;
+  max-height: min(48vh, 380px);
+  overflow: auto;
+  border: 1px solid #d9e5e3;
+  border-radius: 8px;
+}
+
 .admin-portal-club-switch-result {
   display: grid;
   grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
@@ -15325,17 +15447,51 @@
   font: inherit;
   cursor: pointer;
 }
-.admin-portal-club-switch-result:last-child { border-bottom: 0; }
-.admin-portal-club-switch-result:hover, .admin-portal-club-switch-result[aria-pressed="true"] { background: #f0f8f7; }
-.admin-portal-club-switch-result:focus-visible { position: relative; z-index: 1; outline: 3px solid var(--portal-focus-ring); outline-offset: -3px; }
-.admin-portal-club-switch-result strong { color: var(--portal-color-accent-strong); }
-.admin-portal-club-switch-result span { min-width: 0; }
-.admin-portal-club-switch-result small { color: #176454; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+
+.admin-portal-club-switch-result:last-child {
+  border-bottom: 0;
+}
+
+.admin-portal-club-switch-result:hover,
+.admin-portal-club-switch-result[aria-pressed="true"] {
+  background: #f0f8f7;
+}
+
+.admin-portal-club-switch-result:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--portal-focus-ring);
+  outline-offset: -3px;
+}
+
+.admin-portal-club-switch-result strong {
+  color: var(--portal-color-accent-strong);
+}
+
+.admin-portal-club-switch-result span {
+  min-width: 0;
+}
+
+.admin-portal-club-switch-result small {
+  color: #176454;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
 
 @media (max-width: 520px) {
-  .admin-portal-club-switch-dialog form { padding: 14px; }
-  .admin-portal-club-switch-result { grid-template-columns: minmax(0, 1fr) auto; }
-  .admin-portal-club-switch-result span { grid-column: 1 / -1; font-size: 0.84rem; }
+  .admin-portal-club-switch-dialog form {
+    padding: 14px;
+  }
+
+  .admin-portal-club-switch-result {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .admin-portal-club-switch-result span {
+    grid-column: 1 / -1;
+    font-size: 0.84rem;
+  }
 }
 
 .admin-portal-page .admin-portal-scope-role {

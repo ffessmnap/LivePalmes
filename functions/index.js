@@ -314,11 +314,21 @@ const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubR
   .filter(([clubId]) => clubId));
 
 const CLUB_REFERENCE_REGION_LABELS = {
-  "1": "Grand Est", "2": "Nouvelle Aquitaine", "3": "Ile de France",
-  "6": "Bretagne Pays de la Loire", "8": "Centre", "9": "Guadeloupe",
-  "10": "Pyrénées Méditerranée Occitanie", "11": "Martinique Guyane", "12": "Corse",
-  "13": "Hauts de France", "15": "Normandie", "16": "Sud",
-  "17": "Auvergne Rhône Alpes", "18": "Réunion", "22": "Bourgogne Franche Comté"
+  "1": "Grand Est",
+  "2": "Nouvelle Aquitaine",
+  "3": "Ile de France",
+  "6": "Bretagne Pays de la Loire",
+  "8": "Centre",
+  "9": "Guadeloupe",
+  "10": "Pyrénées Méditerranée Occitanie",
+  "11": "Martinique Guyane",
+  "12": "Corse",
+  "13": "Hauts de France",
+  "15": "Normandie",
+  "16": "Sud",
+  "17": "Auvergne Rhône Alpes",
+  "18": "Réunion",
+  "22": "Bourgogne Franche Comté"
 };
 
 function engagementClubRegionId(club = {}, fallback = "") {
@@ -4407,6 +4417,11 @@ function engagementClubRosterRef(db, clubId) {
   return db.collection(ENGAGEMENT_CLUB_ROSTERS_COLLECTION).doc(engagementClubRosterId(clubId));
 }
 
+function cleanEngagementClubActivityStatus(value = "", fallback = "active") {
+  const status = cleanText(value).toLowerCase();
+  return ["active", "inactive"].includes(status) ? status : fallback;
+}
+
 function engagementClubRosterSwimmerKey(swimmer = {}) {
   return stableHash([
     cleanText(swimmer.source || "performances"),
@@ -4443,6 +4458,10 @@ function engagementClubRosterSwimmerItem(swimmer = {}) {
     latestDate: cleanIsoDate(swimmer.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0)),
     active: swimmer.active !== false,
+    clubActivityStatus: cleanEngagementClubActivityStatus(swimmer.clubActivityStatus, ""),
+    clubActivityStatusSource: cleanText(swimmer.clubActivityStatusSource).slice(0, 40),
+    clubActivityStatusUpdatedAt: cleanText(swimmer.clubActivityStatusUpdatedAt).slice(0, 40),
+    clubActivityStatusUpdatedBy: cleanText(swimmer.clubActivityStatusUpdatedBy).slice(0, 80),
     updatedAt: cleanText(swimmer.updatedAt).slice(0, 40),
     changeRequestStatus: cleanText(swimmer.changeRequestStatus).slice(0, 40),
     changeRequestId: cleanText(swimmer.changeRequestId).slice(0, 80),
@@ -4643,6 +4662,55 @@ async function assertNoEngagementSwimmerLicenseConflict(db, swimmer = {}, ignore
   throw new HttpsError("already-exists", `Licence deja utilisee par ${name} (${club}). Utilisez la fiche existante au lieu de creer un doublon.`, {
     conflict
   });
+}
+
+async function engagementSwimmerRecoveryPreview(db, licenseNumber, context = {}) {
+  const cleanLicense = cleanText(licenseNumber).toUpperCase().slice(0, 60);
+  if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(cleanLicense)) {
+    throw new HttpsError("invalid-argument", "Le numero de licence doit respecter le format A-12-34567.");
+  }
+  const conflict = await findEngagementSwimmerLicenseConflict(db, { licenseNumber: cleanLicense });
+  if (!conflict) return { found: false, licenseNumber: cleanLicense };
+
+  const [performanceSnapshot, licenseSnapshot] = await Promise.all([
+    db.collection(PERFORMANCE_SWIMMERS_COLLECTION).where("licenseNumber", "==", cleanLicense).limit(2).get(),
+    db.collection("engagementSwimmerLicenses").where("licenseNumber", "==", cleanLicense).limit(2).get()
+  ]);
+  const conflictSwimmerId = cleanText(conflict.swimmerIndexId || conflict.swimmerId).slice(0, 80);
+  let engagementDoc = null;
+  if (conflictSwimmerId) {
+    const snapshot = await db.collection("engagementClubSwimmers").doc(conflictSwimmerId).get();
+    if (snapshot.exists && engagementSwimmerLicenseNumberKey(snapshot.data()?.licenseNumber) === engagementSwimmerLicenseNumberKey(cleanLicense)) {
+      engagementDoc = snapshot;
+    }
+  }
+  const performanceDoc = performanceSnapshot.docs[0] || null;
+  const stored = engagementDoc ? engagementNewSwimmerItem(engagementDoc) : null;
+  const performance = performanceDoc
+    ? engagementClubRosterSwimmerItem({ ...(performanceDoc.data() || {}), id: performanceDoc.id, swimmerIndexId: performanceDoc.id, source: "performances" })
+    : null;
+  const swimmer = stored || performance || engagementClubRosterSwimmerItem({ ...conflict, source: conflict.source || "reference" });
+  const season = currentEngagementSeasonInfo();
+  const bounds = engagementSeasonBoundsFromEndYear(season.endYear);
+  const publishedResult = performanceSnapshot.docs.some((doc) => {
+    const date = cleanIsoDate(doc.data()?.latestDate);
+    return date >= bounds.startDate && date <= bounds.endDate;
+  });
+  return {
+    found: true,
+    sameClub: cleanText(swimmer.clubId) === cleanText(context.clubId),
+    eligible: cleanText(swimmer.clubId) !== cleanText(context.clubId) && !publishedResult,
+    publishedResult,
+    swimmer,
+    source: stored ? "engagement" : performance ? "performances" : "reference",
+    engagementSwimmerId: stored?.swimmerIndexId || "",
+    licenseRecordIds: licenseSnapshot.docs.map((doc) => doc.id),
+    season: {
+      label: season.label,
+      startDate: bounds.startDate,
+      endDate: bounds.endDate
+    }
+  };
 }
 
 function engagementClubEntryItem(doc, fallback = {}) {
@@ -6770,11 +6838,72 @@ function sortEngagementClubSwimmers(swimmers = []) {
   );
 }
 
+function engagementClubSwimmerMatchKeys(swimmer = {}) {
+  const swimmerId = cleanText(swimmer.swimmerId);
+  const licenseKey = engagementSwimmerLicenseNumberKey(swimmer.licenseNumber);
+  const identityKey = normalizePerformanceSearchText(swimmer.identityKey || [swimmer.lastName, swimmer.firstName, swimmer.birthDate].filter(Boolean).join("|"));
+  const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id);
+  const source = cleanText(swimmer.source || "performances");
+  return Array.from(new Set((swimmerId ? [
+    `swimmer:${swimmerId}`,
+    swimmerIndexId ? `index:${source}:${swimmerIndexId}` : ""
+  ] : [
+    licenseKey ? `license:${licenseKey}` : "",
+    identityKey ? `identity:${identityKey}` : "",
+    swimmerIndexId ? `index:${source}:${swimmerIndexId}` : ""
+  ]).filter(Boolean)));
+}
+
+function engagementClubSwimmerSourceRank(source = "") {
+  return {
+    performances: 3,
+    engagement: 2,
+    reference: 1
+  }[cleanText(source)] || 0;
+}
+
+function mergeEngagementClubSwimmerItems(left = {}, right = {}) {
+  const rightPreferred = engagementClubSwimmerSourceRank(right.source) > engagementClubSwimmerSourceRank(left.source);
+  const preferred = rightPreferred ? right : left;
+  const fallback = rightPreferred ? left : right;
+  const merged = { ...fallback, ...preferred };
+  [
+    "id", "swimmerIndexId", "swimmerId", "identityKey", "firstName", "lastName", "name", "birthDate", "sex", "category",
+    "clubId", "club", "clubName", "licenseNumber", "licenseVerificationStatus", "licenseSeasonLabel", "licenseSeasonStatus",
+    "changeRequestStatus", "changeRequestId", "changeRequestedAt", "clubActivityStatus", "clubActivityStatusSource",
+    "clubActivityStatusUpdatedAt", "clubActivityStatusUpdatedBy"
+  ].forEach((key) => {
+    if (!cleanText(merged[key]) && cleanText(fallback[key])) merged[key] = fallback[key];
+  });
+  merged.performanceCount = Math.max(Number(left.performanceCount || 0), Number(right.performanceCount || 0));
+  merged.latestDate = [cleanIsoDate(left.latestDate), cleanIsoDate(right.latestDate)].filter(Boolean).sort().pop() || "";
+  merged.updatedAt = [cleanText(left.updatedAt), cleanText(right.updatedAt)].filter(Boolean).sort().pop() || "";
+  merged.active = left.active !== false || right.active !== false;
+  return engagementClubRosterSwimmerItem(merged);
+}
+
 function uniqueEngagementClubSwimmers(swimmers = [], limit = 800) {
-  return swimmers.filter((swimmer, index, list) => {
-    if (!swimmer.swimmerIndexId) return false;
-    return list.findIndex((candidate) => candidate.swimmerIndexId === swimmer.swimmerIndexId) === index;
-  }).slice(0, limit);
+  const groups = [];
+  swimmers.filter((swimmer) => swimmer.swimmerIndexId).forEach((swimmer) => {
+    const keys = engagementClubSwimmerMatchKeys(swimmer);
+    const matchingIndexes = groups
+      .map((group, index) => group.keys.some((key) => keys.includes(key)) ? index : -1)
+      .filter((index) => index >= 0);
+    if (!matchingIndexes.length) {
+      groups.push({ item: engagementClubRosterSwimmerItem(swimmer), keys });
+      return;
+    }
+    const targetIndex = matchingIndexes[0];
+    const target = groups[targetIndex];
+    target.item = mergeEngagementClubSwimmerItems(target.item, swimmer);
+    target.keys = Array.from(new Set([...target.keys, ...keys, ...engagementClubSwimmerMatchKeys(target.item)]));
+    matchingIndexes.slice(1).reverse().forEach((index) => {
+      target.item = mergeEngagementClubSwimmerItems(target.item, groups[index].item);
+      target.keys = Array.from(new Set([...target.keys, ...groups[index].keys, ...engagementClubSwimmerMatchKeys(target.item)]));
+      groups.splice(index, 1);
+    });
+  });
+  return groups.map((group) => group.item).slice(0, limit);
 }
 
 async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
@@ -6873,6 +7002,53 @@ exports.syncEngagementClubSwimmerToRoster = onDocumentWritten({
 }, async (event) => {
   await syncEngagementClubRosterFromSwimmerChange(event, "engagement");
 });
+
+async function reactivateEngagementClubRosterSwimmersFromPerformanceRows(rows = [], context = {}) {
+  const byClub = new Map();
+  rows.filter((row) => row && row.isIntermediate !== true).forEach((row) => {
+    const clubId = cleanText(row.clubId).slice(0, 40);
+    const swimmerId = cleanText(row.swimmerId || row.originalSwimmerId).slice(0, 80);
+    const identityKey = cleanText(row.swimmerIdentityKey).slice(0, 180);
+    if (!clubId || (!swimmerId && !identityKey)) return;
+    if (!byClub.has(clubId)) byClub.set(clubId, { swimmerIds: new Set(), identityKeys: new Set() });
+    if (swimmerId) byClub.get(clubId).swimmerIds.add(swimmerId);
+    if (identityKey) byClub.get(clubId).identityKeys.add(identityKey);
+  });
+  if (!byClub.size) return { affectedClubs: 0, reactivatedSwimmers: 0 };
+  if (byClub.size > 200) throw new Error("Trop de clubs à réactiver dans un seul import.");
+  const clubIds = Array.from(byClub.keys());
+  const refs = clubIds.map((clubId) => engagementClubRosterRef(db, clubId));
+  const snapshots = await db.getAll(...refs);
+  const now = context.now || new Date().toISOString();
+  const writer = db.bulkWriter({ throttling: { initialOpsPerSecond: 50, maxOpsPerSecond: 100 } });
+  let affectedClubs = 0;
+  let reactivatedSwimmers = 0;
+  snapshots.forEach((snapshot, index) => {
+    if (!snapshot.exists) return;
+    const targets = byClub.get(clubIds[index]);
+    const data = snapshot.data() || {};
+    const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
+    const updates = {};
+    Object.entries(entries).forEach(([key, swimmer]) => {
+      const matches = targets.swimmerIds.has(cleanText(swimmer?.swimmerId)) ||
+        targets.identityKeys.has(cleanText(swimmer?.identityKey));
+      if (!matches || cleanEngagementClubActivityStatus(swimmer?.clubActivityStatus) === "active") return;
+      updates[key] = engagementClubRosterSwimmerItem({
+        ...swimmer,
+        clubActivityStatus: "active",
+        clubActivityStatusSource: "new-performance",
+        clubActivityStatusUpdatedAt: now,
+        clubActivityStatusUpdatedBy: context.actorUid || "system:performance-import"
+      });
+      reactivatedSwimmers += 1;
+    });
+    if (!Object.keys(updates).length) return;
+    affectedClubs += 1;
+    writer.set(snapshot.ref, { updatedAt: now, swimmers: updates }, { merge: true });
+  });
+  await writer.close();
+  return { affectedClubs, reactivatedSwimmers };
+}
 
 function cleanIsoDateTime(value) {
   const text = cleanText(value).slice(0, 40);
@@ -8467,6 +8643,56 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
+exports.setEngagementClubSwimmerActivityStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementClubAccessContext(request);
+  const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
+  const source = cleanText(request.data?.source || "performances").slice(0, 40) || "performances";
+  const status = cleanEngagementClubActivityStatus(request.data?.status, "");
+  if (!swimmerIndexId || !status) {
+    throw new HttpsError("invalid-argument", "Nageur et statut actif ou inactif requis.");
+  }
+  const rosterRef = engagementClubRosterRef(db, context.clubId);
+  const snapshot = await rosterRef.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Effectif du club introuvable.");
+  const data = snapshot.data() || {};
+  const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
+  const match = Object.entries(entries).find(([, swimmer]) =>
+    cleanText(swimmer?.swimmerIndexId || swimmer?.id) === swimmerIndexId &&
+    cleanText(swimmer?.source || "performances") === source
+  );
+  if (!match) throw new HttpsError("not-found", "Nageur introuvable dans l'effectif du club.");
+  const [key, swimmer] = match;
+  const now = new Date().toISOString();
+  const updated = engagementClubRosterSwimmerItem({
+    ...swimmer,
+    clubActivityStatus: status,
+    clubActivityStatusSource: "club",
+    clubActivityStatusUpdatedAt: now,
+    clubActivityStatusUpdatedBy: context.uid
+  });
+  await rosterRef.set({
+    updatedAt: now,
+    swimmers: { [key]: updated }
+  }, { merge: true });
+  await writeAuditLog("engagementClubSwimmer.activityStatusUpdated", context.uid, {
+    clubId: context.clubId,
+    swimmerIndexId,
+    swimmerId: cleanText(updated.swimmerId),
+    source,
+    status
+  });
+  return {
+    ok: true,
+    swimmer: updated,
+    readStats: portalReadStats("setEngagementClubSwimmerActivityStatus", startedAt, {
+      baseDocuments: 3,
+      variableDocumentsMax: 0,
+      cacheHit: true
+    })
+  };
+});
+
 exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
@@ -8522,6 +8748,130 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
+exports.previewEngagementClubSwimmerRecovery = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementClubAccessContext(request);
+  const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
+  return {
+    ok: true,
+    ...preview,
+    readStats: portalReadStats("previewEngagementClubSwimmerRecovery", startedAt, {
+      baseDocuments: 2,
+      variableDocumentsMax: 4,
+      cacheHit: false
+    })
+  };
+});
+
+exports.recoverEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementClubAccessContext(request);
+  const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
+  if (!preview.found) throw new HttpsError("not-found", "Nageur introuvable dans la base.");
+  if (preview.sameClub) throw new HttpsError("already-exists", "Ce nageur est deja connu dans votre club.");
+  if (!preview.eligible) {
+    throw new HttpsError("failed-precondition", "Ce nageur a deja un resultat publie cette saison. Son changement de club necessite une derogation nationale.");
+  }
+
+  const now = new Date().toISOString();
+  const previousSwimmer = preview.swimmer || {};
+  const swimmer = cleanEngagementNewSwimmer({
+    ...previousSwimmer,
+    licenseNumber: request.data?.licenseNumber
+  }, context);
+  const swimmerId = preview.engagementSwimmerId || stableHash([
+    context.clubId,
+    swimmer.identityKey || swimmer.name,
+    swimmer.licenseNumber
+  ].join("|")).slice(0, 40);
+  const swimmerRef = db.collection("engagementClubSwimmers").doc(swimmerId);
+  const licensePayload = {
+    ...engagementSwimmerLicensePayload({ ...swimmer, swimmerIndexId: swimmerId }, context, {
+      type: "club-recovery",
+      competitionId: cleanText(request.data?.competitionId).slice(0, 128),
+      collectedAt: now
+    }),
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  const batch = db.batch();
+  if (preview.engagementSwimmerId) {
+    deleteEngagementClubRosterSwimmer(batch, db, {
+      ...previousSwimmer,
+      swimmerIndexId: swimmerId,
+      source: "engagement"
+    }, now);
+  }
+  const payload = {
+    ...swimmer,
+    source: "engagement",
+    clubActivityStatus: "active",
+    clubActivityStatusSource: "club-recovery",
+    clubActivityStatusUpdatedAt: now,
+    clubActivityStatusUpdatedBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid,
+    ...(preview.engagementSwimmerId ? {} : { createdAt: now, createdBy: context.uid })
+  };
+  batch.set(swimmerRef, payload, { merge: true });
+  batch.set(db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId({ ...swimmer, swimmerIndexId: swimmerId })), licensePayload, { merge: true });
+  preview.licenseRecordIds
+    .filter((id) => id !== engagementSwimmerLicenseId({ ...swimmer, swimmerIndexId: swimmerId }))
+    .forEach((id) => batch.delete(db.collection("engagementSwimmerLicenses").doc(id)));
+  const licenseNumberRefId = engagementSwimmerLicenseNumberId(swimmer.licenseNumber);
+  if (licenseNumberRefId) {
+    batch.set(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(licenseNumberRefId), {
+      ...licensePayload,
+      swimmerIndexId: swimmerId,
+      licenseKey: engagementSwimmerLicenseNumberKey(swimmer.licenseNumber)
+    }, { merge: true });
+  }
+  upsertEngagementClubRosterSwimmer(batch, db, { ...payload, id: swimmerId, swimmerIndexId: swimmerId }, now);
+  const transferAlertRef = db.collection("engagementSwimmerAlerts").doc(stableHash([
+    "club-change",
+    swimmer.licenseNumber,
+    preview.season.label,
+    previousSwimmer.clubId,
+    context.clubId
+  ].join("|")).slice(0, 40));
+  batch.set(transferAlertRef, {
+    type: "club-change",
+    status: "confirmed-by-club",
+    swimmerIndexId: swimmerId,
+    identityKey: swimmer.identityKey,
+    licenseNumber: swimmer.licenseNumber,
+    name: swimmer.name,
+    fromClubId: cleanText(previousSwimmer.clubId),
+    fromClubName: cleanText(previousSwimmer.clubName),
+    clubId: context.clubId,
+    clubName: context.clubName,
+    seasonLabel: preview.season.label,
+    reason: "no-published-result-this-season",
+    confirmedAt: now,
+    confirmedBy: context.uid,
+    updatedAt: now
+  }, { merge: true });
+  await batch.commit();
+  await writeAuditLog("engagementClubSwimmer.recovered", context.uid, {
+    swimmerId,
+    licenseNumber: swimmer.licenseNumber,
+    fromClubId: cleanText(previousSwimmer.clubId),
+    toClubId: context.clubId,
+    seasonLabel: preview.season.label,
+    publishedResult: false
+  });
+  const updated = await swimmerRef.get();
+  return {
+    ok: true,
+    swimmer: engagementNewSwimmerItem(updated),
+    readStats: portalReadStats("recoverEngagementClubSwimmer", startedAt, {
+      baseDocuments: 2,
+      variableDocumentsMax: 8,
+      cacheHit: false
+    })
+  };
+});
+
 exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
@@ -8565,6 +8915,10 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
     alertValidatedBy: alerts.length ? context.uid : "",
     seasonStartYear: season.startYear,
     seasonLabel: season.label,
+    clubActivityStatus: "active",
+    clubActivityStatusSource: "club-creation",
+    clubActivityStatusUpdatedAt: now,
+    clubActivityStatusUpdatedBy: context.uid,
     updatedAt: now,
     updatedBy: context.uid,
     ...(snapshot.exists ? {} : { createdAt: now, createdBy: context.uid })
@@ -8835,19 +9189,28 @@ async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId =
     identityKey || referenceSwimmer?.identityKey || ""
   );
   if (performanceSnapshot?.exists) {
-    const licenseSnapshot = await db.collection("engagementSwimmerLicenses")
-      .doc(engagementSwimmerLicenseId({ swimmerIndexId: performanceSnapshot.id }))
-      .get();
-    const license = licenseSnapshot.exists ? engagementSwimmerLicenseItem(licenseSnapshot) : null;
+    const performanceSwimmer = engagementClubSwimmerItem(performanceSnapshot);
+    const licenseCandidateIds = Array.from(new Set([
+      performanceSnapshot.id,
+      cleanId,
+      performanceSwimmer.swimmerId,
+      ...(performanceSwimmer.sourceIds || [])
+    ].map((id) => cleanText(id).slice(0, 80)).filter(Boolean)));
+    const licenseRefs = licenseCandidateIds.map((candidateId) => db.collection("engagementSwimmerLicenses")
+      .doc(engagementSwimmerLicenseId({ swimmerIndexId: candidateId })));
+    const licenseSnapshots = licenseRefs.length ? await db.getAll(...licenseRefs) : [];
+    const licenseSnapshot = licenseSnapshots.find((candidate) => candidate.exists) || null;
+    const license = licenseSnapshot?.exists ? engagementSwimmerLicenseItem(licenseSnapshot) : null;
     return {
       requestedSource: cleanSource,
       requestedSwimmerId: cleanId,
       source: "performances",
       swimmerId: performanceSnapshot.id,
+      licenseDocumentId: licenseSnapshot?.id || "",
       ref: performanceSnapshot.ref,
       snapshot: performanceSnapshot,
       swimmer: {
-        ...engagementClubSwimmerItem(performanceSnapshot),
+        ...performanceSwimmer,
         ...(license?.licenseNumber ? {
           licenseNumber: license.licenseNumber,
           licenseVerificationStatus: license.verificationStatus,
@@ -9106,7 +9469,8 @@ async function applyEngagementSwimmerIdentityCorrection(target = {}, correction 
   }, { merge: true });
   const cleanupBatch = db.batch();
   const oldIndexId = target.source === "performances" ? target.swimmerId : "";
-  const oldLicenseDocId = oldIndexId ? engagementSwimmerLicenseId({ swimmerIndexId: oldIndexId }) : "";
+  const oldLicenseDocId = cleanText(target.licenseDocumentId)
+    || (oldIndexId ? engagementSwimmerLicenseId({ swimmerIndexId: oldIndexId }) : "");
   const newLicenseDocId = engagementSwimmerLicenseId({ swimmerIndexId: newIndexId });
   const oldLicenseRefId = engagementSwimmerLicenseNumberId(current.licenseNumber);
   const newLicenseRefId = engagementSwimmerLicenseNumberId(correction.licenseNumber);
@@ -9161,26 +9525,19 @@ async function applyEngagementSwimmerIdentityCorrection(target = {}, correction 
   try {
     const oldPublicKey = publicSwimmerKey(rows[0] || {});
     const newPublicKey = publicSwimmerKey(updatedRows[0] || {});
-    const removedFiles = [];
     if (oldPublicKey && newPublicKey && oldPublicKey !== newPublicKey) {
-      const oldPerfFile = publicPerformanceSwimmerFilePath(oldPublicKey);
-      const existingPublicSwimmer = await readPublicPerformanceJson(oldPerfFile, null);
-      if (existingPublicSwimmer) {
-        const removedIndexes = await removePublicSearchIndexes(existingPublicSwimmer, oldPerfFile);
-        removedFiles.push(...removedIndexes);
-      }
-      removedFiles.push(await deletePublicPerformanceFile(oldPerfFile));
+      publicSnapshot = await replacePublicSwimmerIdentity(oldPublicKey, newPublicKey, updatedRows);
+    } else {
+      publicSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(updatedRows, {
+        now,
+        reason: "engagement.swimmerIdentityCorrected"
+      });
     }
-    publicSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(updatedRows, {
-      now,
-      reason: "engagement.swimmerIdentityCorrected"
-    });
     await invalidateEngagementEntryTimeCachesForPerformanceRows([...rows, ...updatedRows]);
     const correctedTopFiles = await rebuildPublicTopFilesForAffectedRows(
       [...rows, ...updatedRows],
       new Map([[newPublicKey, updatedRows]])
     );
-    publicSnapshot.removedFiles = removedFiles.length;
     publicSnapshot.correctedTopBuckets = correctedTopFiles.affectedTopBuckets;
   } catch (error) {
     console.error("Publication publique ciblee impossible apres correction nageur", {
@@ -11752,6 +12109,20 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     };
   }
 
+  let clubActivityReactivation = null;
+  try {
+    clubActivityReactivation = await reactivateEngagementClubRosterSwimmersFromPerformanceRows(normalizedImportedPerformances, {
+      now,
+      actorUid
+    });
+  } catch (error) {
+    console.warn("Réactivation des nageurs de club impossible après import", {
+      importId,
+      message: error?.message || String(error)
+    });
+    clubActivityReactivation = { ok: false, error: error?.message || String(error) };
+  }
+
   await writeAuditLog("performanceImport.created", actorUid, {
     importId,
     fileName,
@@ -11759,7 +12130,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     competitionName: parsed.metadata.competitionName,
     date: parsed.metadata.date,
     importedPerformances: parsed.summary.importedPerformances,
-    performanceBaseSync
+    performanceBaseSync,
+    clubActivityReactivation
   });
 
   let publicSnapshot = null;
@@ -11799,6 +12171,7 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     recordAlertCount: recordAlerts.length,
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
     performanceBaseSync,
+    clubActivityReactivation,
     publicSnapshot,
     publicFilesSnapshot
   };
@@ -13146,6 +13519,32 @@ async function writePerformanceSwimmerPageRows(rows = [], context = {}) {
   return { ok: true, writtenPages };
 }
 
+async function hydratePerformanceBaseRows(rows = []) {
+  const normalizedRows = rows.map(publicPerformanceBaseRow);
+  const missingTechnicalKeys = normalizedRows.filter((row) =>
+    !cleanText(row.performanceBaseId) && !cleanText(row.publicKey) && cleanText(row.id)
+  );
+  if (!missingTechnicalKeys.length) return normalizedRows;
+  if (missingTechnicalKeys.length > 1200) {
+    throw new HttpsError("failed-precondition", "Hydratation des performances trop volumineuse.");
+  }
+  const refs = missingTechnicalKeys.map((row) => {
+    const id = cleanText(row.id);
+    const source = id.startsWith("import:") ? "livepalmes-import" : "intranap";
+    return db.collection(PERFORMANCE_BASE_COLLECTION).doc(stableHash(`${source}|${id}`).slice(0, 40));
+  });
+  const snapshots = await db.getAll(...refs);
+  const hydratedById = new Map();
+  snapshots.forEach((snapshot, index) => {
+    if (!snapshot.exists) return;
+    hydratedById.set(cleanText(missingTechnicalKeys[index].id), {
+      performanceBaseId: snapshot.id,
+      ...(snapshot.data() || {})
+    });
+  });
+  return normalizedRows.map((row) => hydratedById.get(cleanText(row.id)) || row);
+}
+
 async function getPerformanceBaseRowsBySwimmer(data = {}) {
   const ids = Array.from(new Set([
     ...(Array.isArray(data.swimmerIds) ? data.swimmerIds : []),
@@ -13163,14 +13562,14 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
   const directSnapshots = candidateIndexRefs.length ? await db.getAll(...candidateIndexRefs) : [];
   const indexDocs = new Map();
   directSnapshots.forEach((snapshot) => {
-    if (snapshot.exists) indexDocs.set(snapshot.id, { id: snapshot.id, ...(snapshot.data() || {}) });
+    if (snapshot.exists) indexDocs.set(snapshot.id, { ...(snapshot.data() || {}), id: snapshot.id });
   });
   if (!indexDocs.size && identityKey) {
     const snapshot = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION)
       .where("identityKey", "==", identityKey)
       .limit(3)
       .get();
-    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { id: doc.id, ...(doc.data() || {}) }));
+    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { ...(doc.data() || {}), id: doc.id }));
   }
   for (const id of ids.slice(0, 5)) {
     if (indexDocs.size) break;
@@ -13178,7 +13577,7 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
       .where("sourceIds", "array-contains", id)
       .limit(3)
       .get();
-    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { id: doc.id, ...(doc.data() || {}) }));
+    snapshot.docs.forEach((doc) => indexDocs.set(doc.id, { ...(doc.data() || {}), id: doc.id }));
   }
 
   const pageRefs = [];
@@ -13190,19 +13589,21 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
   });
   if (pageRefs.length) {
     const snapshots = await db.getAll(...pageRefs.slice(0, 20));
-    return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) => {
+    const pageRows = uniquePublicPerformanceRows(snapshots.flatMap((snapshot) => {
       const page = snapshot.exists ? snapshot.data() || {} : {};
       return Array.isArray(page.rows) ? page.rows : [];
     }).map(publicPerformanceBaseRow));
+    return hydratePerformanceBaseRows(pageRows);
   }
 
   const sourceKeys = Array.from(new Set([identityKey, ...ids].map(cleanText).filter(Boolean))).slice(0, 10);
   for (const sourceKey of sourceKeys) {
     const payload = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(sourceKey), null);
     if (!Array.isArray(payload?.rows)) continue;
-    return uniquePublicPerformanceRows(payload.rows
+    const publicRows = uniquePublicPerformanceRows(payload.rows
       .map(publicPerformanceBaseRow)
       .filter((row) => row.active !== false && row.status !== "deleted"));
+    return hydratePerformanceBaseRows(publicRows);
   }
   return [];
 }
@@ -13988,6 +14389,74 @@ async function removePublicSearchIndexes(swimmerPayload = {}, perfFile = "") {
   }
 
   return written;
+}
+
+async function assertPublicSwimmerIdentityReplaced(oldPayload = {}, oldPerfFile = "", newPayload = {}, newPerfFile = "") {
+  const oldFile = await readPublicPerformanceJson(oldPerfFile, null);
+  if (oldFile) throw new Error("L'ancienne fiche publique existe encore apres la correction.");
+
+  const oldSearchRow = buildPublicSearchRow(oldPayload, oldPerfFile);
+  const oldSearchShards = new Set((oldSearchRow.searchPrefixes || []).map(publicPerformanceSearchShard).filter(Boolean));
+  for (const shard of oldSearchShards) {
+    const rows = await readPublicPerformanceJson(`search/${shard}.json`, []);
+    const stale = (Array.isArray(rows) ? rows : []).some((row) =>
+      cleanText(row.identityKey) === cleanText(oldSearchRow.identityKey) ||
+      cleanText(row.perfFile) === cleanText(oldPerfFile)
+    );
+    if (stale) throw new Error("L'ancienne fiche reste presente dans la recherche publique.");
+  }
+
+  const newSearchRow = buildPublicSearchRow(newPayload, newPerfFile);
+  const idValues = [newSearchRow.id, ...(newSearchRow.sourceIds || []), ...(newSearchRow.aliases || [])]
+    .map(cleanText)
+    .filter(Boolean);
+  const idsByShard = new Map();
+  idValues.forEach((id) => {
+    const shard = publicPerformanceIdShard(id);
+    if (!shard) return;
+    if (!idsByShard.has(shard)) idsByShard.set(shard, []);
+    idsByShard.get(shard).push(id);
+  });
+  for (const [shard, ids] of idsByShard.entries()) {
+    const items = await readPublicPerformanceJson(`ids/${shard}.json`, {});
+    const invalid = ids.some((id) =>
+      cleanText(items?.[id]?.identityKey) !== cleanText(newSearchRow.identityKey) ||
+      cleanText(items?.[id]?.perfFile) !== cleanText(newPerfFile)
+    );
+    if (invalid) throw new Error("Un identifiant public ne pointe pas vers la fiche corrigee.");
+  }
+}
+
+async function replacePublicSwimmerIdentity(oldKey = "", newKey = "", updatedRows = []) {
+  const oldPerfFile = publicPerformanceSwimmerFilePath(oldKey);
+  const newPerfFile = publicPerformanceSwimmerFilePath(newKey);
+  const oldPayload = await readPublicPerformanceJson(oldPerfFile, null);
+  let publicSnapshot = null;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const removedFiles = [];
+      if (oldPayload) {
+        const removedIndexes = await removePublicSearchIndexes(oldPayload, oldPerfFile);
+        removedFiles.push(...removedIndexes);
+      }
+      removedFiles.push(await deletePublicPerformanceFile(oldPerfFile));
+      publicSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(updatedRows, {
+        now: new Date().toISOString(),
+        reason: "engagement.swimmerIdentityCorrected"
+      });
+      const newPayload = await readPublicPerformanceJson(newPerfFile, null);
+      if (!newPayload) throw new Error("La nouvelle fiche publique n'a pas ete generee.");
+      await assertPublicSwimmerIdentityReplaced(oldPayload || {}, oldPerfFile, newPayload, newPerfFile);
+      publicSnapshot.removedFiles = removedFiles.length;
+      publicSnapshot.identityReplacementAttempts = attempt;
+      return publicSnapshot;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Remplacement de la fiche publique impossible.");
 }
 
 function publicPerformanceTopKey(row = {}) {
