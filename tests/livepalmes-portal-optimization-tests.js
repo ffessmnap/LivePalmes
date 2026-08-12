@@ -4,7 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8").replace(/\r\n/g, "\n");
 
 const portal = read("assets/livepalmes-admin-portal.js");
 const portalAuth = read("assets/livepalmes-admin-auth.js");
@@ -433,7 +433,7 @@ assert.equal(portal.includes("selectedEngagementClubEntryCompetitionId"), false)
 assert.ok(portal.includes("function flushEngagementClubIndividualEntriesAutosave"));
 assert.ok(portal.includes("engagementClubEntriesAutosaveSwimmers.set(swimmerIndexId"));
 assert.ok(portal.includes("}, 500)"));
-assert.ok(portal.includes("swimmers\n      })"));
+assert.match(portal, /swimmers\r?\n\s+\}\)/);
 assert.ok(portal.includes("discardPendingEngagementClubIndividualEntries(swimmerIndexId)"));
 assert.ok(portal.includes("const selectedRows = currentEngagementClubSwimmersForSummary();"));
 assert.ok(closeCompetitionDetailFunction.indexOf("flushEngagementClubIndividualEntriesAutosave()") < closeCompetitionDetailFunction.indexOf('selectedEngagementCompetitionId = ""'));
