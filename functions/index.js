@@ -127,9 +127,13 @@ const ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = "engagementClubPeopleRosters";
 const ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION = "engagementSwimmerLicenseNumbers";
 const ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION = "engagementSwimmerChangeRequests";
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
-const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 2;
+const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
 const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
+const ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION = "engagementMailRecipientShards";
+const ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION = "engagementMailRecipientIndexState";
+const ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32;
+const ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT = 167;
 const ENGAGEMENT_CLOSURE_QUEUE_COLLECTION = "engagementClosureQueue";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
@@ -149,6 +153,7 @@ const DTN_EDF_COMPETITION_IDS_BY_SEASON = {
   2026: ["5039", "4978", "4979", DTN_EDF_LIMOGES_COMPETITION_ID]
 };
 const PERFORMANCE_SWIMMER_PAGE_SIZE = 500;
+const ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT = 3;
 const PERFORMANCE_PUBLIC_DATA_URL = "https://livepalmes.web.app/performances/public/data";
 const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
 const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
@@ -3402,7 +3407,10 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
   const beforeSeason = beforeDate ? engagementSeasonEndYearFromIsoDate(beforeDate) : null;
   const afterSeason = afterDate ? engagementSeasonEndYearFromIsoDate(afterDate) : null;
   if (beforeSeason !== null && (!after || beforeSeason !== afterSeason)) {
+    const season = engagementSeasonBoundsFromEndYear(beforeSeason);
     batch.set(engagementCompetitionCalendarRef(db, beforeSeason), {
+      ...season,
+      generatedAt: now,
       updatedAt: now,
       competitions: {
         [competitionId]: FieldValue.delete()
@@ -3411,7 +3419,10 @@ async function syncEngagementCompetitionCalendarFromChange(event = {}) {
     batchSize += 1;
   }
   if (after && afterDate && afterSeason !== null) {
+    const season = engagementSeasonBoundsFromEndYear(afterSeason);
     batch.set(engagementCompetitionCalendarRef(db, afterSeason), {
+      ...season,
+      generatedAt: now,
       updatedAt: now,
       competitions: {
         [competitionId]: engagementCompetitionCalendarItem(after, competitionId)
@@ -3827,7 +3838,7 @@ function engagementKnownTimeHistory(rows = [], eventCode = "", competition = {},
 function engagementEntryTimeCacheId(swimmer = {}) {
   return stableHash([
     cleanText(swimmer.source || "performances"),
-    cleanText(swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId || swimmer.identityKey)
+    cleanText(swimmer.identityKey || swimmer.swimmerIdentityKey || swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId)
   ].filter(Boolean).join("|")).slice(0, 40);
 }
 
@@ -3876,15 +3887,44 @@ function engagementEntryTimeRowsToEvents(rows = []) {
   return events;
 }
 
+const engagementEntryTimeCacheBuilds = new Map();
+
+function engagementEntryTimeSourceKeys(swimmer = {}) {
+  return Array.from(new Set([
+    swimmer.identityKey,
+    swimmer.swimmerIdentityKey,
+    swimmer.swimmerId,
+    ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : [])
+  ].map(cleanText).filter(Boolean))).slice(0, ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT);
+}
+
+async function readEngagementEntryTimeSourceRows(swimmer = {}) {
+  const sourceKeys = engagementEntryTimeSourceKeys(swimmer);
+  for (const sourceKey of sourceKeys) {
+    const payload = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(sourceKey), null);
+    if (!payload || !Array.isArray(payload.rows)) continue;
+    return {
+      sourceKey,
+      rows: payload.rows.map(publicPerformanceBaseRow)
+    };
+  }
+  return null;
+}
+
 async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
   const source = cleanText(swimmer.source || "performances");
-  const rows = source === "engagement"
-    ? []
-    : await getPerformanceBaseRowsBySwimmer({
-      swimmerId: swimmer.swimmerId,
-      swimmerIds: [swimmer.swimmerId, ...(Array.isArray(swimmer.sourceIds) ? swimmer.sourceIds : [])],
-      identityKey: swimmer.identityKey
+  const indexedSource = source === "engagement" ? { sourceKey: "", rows: [] } : await readEngagementEntryTimeSourceRows(swimmer);
+  if (!indexedSource) {
+    console.warn("livepalmes.engagement.times.source_missing", {
+      cacheId: engagementEntryTimeCacheId(swimmer),
+      sourceKeyCount: engagementEntryTimeSourceKeys(swimmer).length
     });
+    throw new HttpsError(
+      "failed-precondition",
+      "Historique des performances momentanement indisponible pour ce nageur. Aucun parcours massif n'a ete lance."
+    );
+  }
+  const rows = indexedSource.rows;
   const activeRows = rows
     .map(publicPerformanceBaseRow)
     .filter((row) => engagementQualificationRowAllowed(row, { qualificationTimesMode: "all" }));
@@ -3896,6 +3936,8 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
     swimmerIndexId: cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80),
     swimmerId: cleanText(swimmer.swimmerId).slice(0, 80),
     identityKey: cleanText(swimmer.identityKey).slice(0, 180),
+    sourceDataset: source === "engagement" ? "engagement" : "public-performance-file",
+    sourceKey: cleanText(indexedSource.sourceKey).slice(0, 180),
     generatedAt: now,
     updatedAt: now,
     rowCount: Object.values(events).reduce((sum, eventRows) => sum + eventRows.length, 0),
@@ -3906,19 +3948,55 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
 
 async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}) {
   if (cleanText(swimmer.source) === "engagement") return [];
+  const cacheId = engagementEntryTimeCacheId(swimmer);
   const cacheSnapshot = await engagementEntryTimeCacheRef(db, swimmer).get();
   const cacheReady = cacheSnapshot.exists &&
     Number(cacheSnapshot.data()?.version || 0) === ENGAGEMENT_ENTRY_TIME_CACHE_VERSION &&
     cleanText(cacheSnapshot.data()?.generatedAt);
-  return cacheReady
-    ? engagementEntryTimeCacheRowsFromData(cacheSnapshot.data() || {})
-    : rebuildEngagementEntryTimeCache(db, swimmer);
+  if (cacheReady) {
+    console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: true });
+    return engagementEntryTimeCacheRowsFromData(cacheSnapshot.data() || {});
+  }
+  if (engagementEntryTimeCacheBuilds.has(cacheId)) {
+    console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: false, sharedBuild: true });
+    return engagementEntryTimeCacheBuilds.get(cacheId);
+  }
+  console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: false, sharedBuild: false });
+  const build = rebuildEngagementEntryTimeCache(db, swimmer)
+    .finally(() => engagementEntryTimeCacheBuilds.delete(cacheId));
+  engagementEntryTimeCacheBuilds.set(cacheId, build);
+  return build;
 }
 
 function deleteEngagementEntryTimeCache(batch, db, swimmer = {}) {
   const cacheId = engagementEntryTimeCacheId(swimmer);
   if (!cacheId) return;
   batch.delete(db.collection(ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION).doc(cacheId));
+}
+
+async function invalidateEngagementEntryTimeCachesForPerformanceRows(rows = []) {
+  const cacheIds = Array.from(new Set(rows
+    .map((row) => engagementEntryTimeCacheId({
+      source: "performances",
+      identityKey: performanceSwimmerIndexKey(row),
+      swimmerId: row.swimmerId
+    }))
+    .filter(Boolean)));
+  let batch = db.batch();
+  let batchSize = 0;
+  const commits = [];
+  cacheIds.forEach((cacheId) => {
+    batch.delete(db.collection(ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION).doc(cacheId));
+    batchSize += 1;
+    if (batchSize >= 450) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  });
+  if (batchSize) commits.push(batch.commit());
+  await Promise.all(commits);
+  return cacheIds.length;
 }
 
 function engagementCompetitionAppliesToFranceRecords(competition = {}) {
@@ -4355,6 +4433,7 @@ function upsertEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
   batch.set(engagementClubRosterRef(db, item.clubId), {
     clubId: item.clubId,
     clubName: item.clubName,
+    generatedAt: now || new Date().toISOString(),
     updatedAt: now || new Date().toISOString(),
     swimmers: {
       [key]: item
@@ -4368,6 +4447,7 @@ function deleteEngagementClubRosterSwimmer(batch, db, swimmer = {}, now = "") {
   if (!clubId || !swimmerIndexId) return;
   const key = engagementClubRosterSwimmerKey({ ...swimmer, swimmerIndexId });
   batch.set(engagementClubRosterRef(db, clubId), {
+    generatedAt: now || new Date().toISOString(),
     updatedAt: now || new Date().toISOString(),
     swimmers: {
       [key]: FieldValue.delete()
@@ -4400,8 +4480,11 @@ async function engagementLegacySwimmerLicensesByClub(db, clubId) {
   if (!cleanClubId) return new Map();
   const snapshot = await db.collection("engagementSwimmerLicenses")
     .where("clubId", "==", cleanClubId)
-    .limit(1000)
+    .limit(201)
     .get();
+  if (snapshot.size > 200) {
+    throw new HttpsError("failed-precondition", "Trop de licences historiques pour une reconstruction directe de ce club.");
+  }
   const byIndexId = new Map();
   snapshot.docs.forEach((doc) => {
     const license = engagementSwimmerLicenseItem(doc);
@@ -4878,6 +4961,7 @@ function upsertEngagementCompetitionEntrySummary(batch, db, entry = {}, now = ""
   if (!item.competitionId || !item.clubId) return;
   batch.set(engagementCompetitionEntrySummaryRef(db, item.competitionId), {
     competitionId: item.competitionId,
+    generatedAt: now || new Date().toISOString(),
     updatedAt: now || new Date().toISOString(),
     entries: {
       [item.clubId]: item
@@ -4890,6 +4974,7 @@ function deleteEngagementCompetitionEntrySummary(batch, db, entry = {}, now = ""
   const clubId = cleanText(entry.clubId).slice(0, 40);
   if (!competitionId || !clubId) return;
   batch.set(engagementCompetitionEntrySummaryRef(db, competitionId), {
+    generatedAt: now || new Date().toISOString(),
     updatedAt: now || new Date().toISOString(),
     entries: {
       [clubId]: FieldValue.delete()
@@ -4939,6 +5024,156 @@ function engagementPdfCollectIndividualRows(entry = {}, competition = {}) {
     .sort((left, right) => left.swimmer.localeCompare(right.swimmer, "fr"));
 }
 
+function engagementPdfIndividualProgramColumns(competition = {}, sex = "") {
+  const eventsByCode = new Map((Array.isArray(competition.events) ? competition.events : [])
+    .map((event) => [normalizeCourseCode(event.code || event.eventCode), event])
+    .filter(([code]) => code));
+  const genderMode = sex === "F" ? "female" : sex === "M" ? "male" : "mixed";
+  const columns = [];
+  const seen = new Set();
+  (Array.isArray(competition.programSessions) ? competition.programSessions : []).forEach((session, sessionIndex) => {
+    (Array.isArray(session.items) ? session.items : []).forEach((item) => {
+      const eventCode = normalizeCourseCode(item.eventCode || item.code);
+      const event = eventsByCode.get(eventCode) || ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(eventCode) || {};
+      const itemGenderMode = cleanText(item.genderMode) || "mixed";
+      if (!eventCode || seen.has(eventCode) || event.type === "relay" || (itemGenderMode !== "mixed" && itemGenderMode !== genderMode)) return;
+      seen.add(eventCode);
+      columns.push({ eventCode, label: engagementPdfEventLabel(eventCode), sessionLabel: session.label || `S${sessionIndex + 1}` });
+    });
+  });
+  if (columns.length) return columns;
+  (Array.isArray(competition.events) ? competition.events : []).forEach((event) => {
+    const eventCode = normalizeCourseCode(event.code || event.eventCode);
+    if (!eventCode || seen.has(eventCode) || event.type === "relay") return;
+    seen.add(eventCode);
+    columns.push({ eventCode, label: engagementPdfEventLabel(eventCode), sessionLabel: "" });
+  });
+  return columns;
+}
+
+function engagementPdfIndividualMatrix(entry = {}, competition = {}, sex = "", title = "") {
+  const rows = (Array.isArray(entry.swimmers) ? entry.swimmers : [])
+    .filter((swimmer) => cleanText(swimmer.sex).toUpperCase() === sex)
+    .filter((swimmer) => Array.isArray(swimmer.individualEntries) && swimmer.individualEntries.length)
+    .sort((left, right) => engagementPdfSwimmerName(left).localeCompare(engagementPdfSwimmerName(right), "fr"));
+  if (!rows.length) return null;
+  const selectedCodes = new Set(rows.flatMap((swimmer) => (swimmer.individualEntries || []).map((item) => normalizeCourseCode(item.eventCode))));
+  const columns = engagementPdfIndividualProgramColumns(competition, sex);
+  const fallbackColumns = Array.from(selectedCodes).map((eventCode) => ({ eventCode, label: engagementPdfEventLabel(eventCode), sessionLabel: "" }));
+  return { title, rows, columns: columns.length ? columns : fallbackColumns };
+}
+
+function engagementPdfCompactSummary(doc, items = [], y) {
+  const width = doc.page.width - 84;
+  const height = 36;
+  y = engagementPdfEnsureSpace(doc, y, height + 8);
+  doc.roundedRect(42, y, width, height, 3).fill("#eef5f4");
+  const itemWidth = width / items.length;
+  items.forEach((item, index) => {
+    const x = 52 + index * itemWidth;
+    doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#6b7f7a").text(item.label, x, y + 6, { width: itemWidth - 20 });
+    doc.font("Helvetica").fontSize(7.5).fillColor("#102f35").text(item.value || "-", x, y + 17, { width: itemWidth - 20 });
+  });
+  return y + height + 8;
+}
+
+function engagementPdfDrawIndividualMatrix(doc, matrix = {}, competition = {}, y) {
+  const left = 42;
+  const tableWidth = doc.page.width - 84;
+  const identityWidth = 92;
+  const categoryWidth = 24;
+  const columns = matrix.columns || [];
+  if (columns.length) {
+    const chunk = columns;
+    const courseWidth = (tableWidth - identityWidth - categoryWidth) / chunk.length;
+    const headerHeight = 30;
+    const sessionGroups = chunk.reduce((groups, column, index) => {
+      const previous = groups[groups.length - 1];
+      if (previous && previous.label === column.sessionLabel) previous.count += 1;
+      else groups.push({ label: column.sessionLabel || "Programme", start: index, count: 1 });
+      return groups;
+    }, []);
+    const drawHeader = () => {
+      const headerFill = matrix.title === "Nageuse" ? "#f2e8eb" : "#e7eef3";
+      doc.rect(left, y, tableWidth, headerHeight).fill(headerFill);
+      sessionGroups.forEach((group, groupIndex) => {
+        const x = left + identityWidth + categoryWidth + group.start * courseWidth;
+        const sessionFill = matrix.title === "Nageuse"
+          ? (groupIndex % 2 ? "#eee3e6" : "#e5d7dc")
+          : (groupIndex % 2 ? "#e2ebf0" : "#d5e2e9");
+        doc.rect(x, y, group.count * courseWidth, 13).fill(sessionFill);
+      });
+      doc.font("Helvetica-Bold").fontSize(6.2).fillColor("#173b42").text(matrix.title, left + 4, y + 11, { width: identityWidth - 8 });
+      doc.text("Cat.", left + identityWidth + 2, y + 11, { width: categoryWidth - 4, align: "center" });
+      sessionGroups.forEach((group) => {
+        const x = left + identityWidth + categoryWidth + group.start * courseWidth;
+        doc.font("Helvetica-Bold").fontSize(5.6).fillColor("#274b51").text(group.label, x + 2, y + 3, { width: group.count * courseWidth - 4, align: "center" });
+      });
+      chunk.forEach((column, index) => {
+        const x = left + identityWidth + categoryWidth + index * courseWidth;
+        doc.font("Helvetica-Bold").fontSize(5.1).fillColor("#173b42").text(column.label, x + 1, y + 19, { width: courseWidth - 2, align: "center" });
+      });
+      doc.lineWidth(0.3).strokeColor("#c4d2d4");
+      [identityWidth, identityWidth + categoryWidth, ...chunk.map((_, index) => identityWidth + categoryWidth + (index + 1) * courseWidth)].forEach((offset) => {
+        doc.moveTo(left + offset, y + 13).lineTo(left + offset, y + headerHeight).stroke();
+      });
+      doc.lineWidth(1.15).strokeColor("#879da1");
+      [identityWidth, identityWidth + categoryWidth, ...sessionGroups.slice(1).map((group) => identityWidth + categoryWidth + group.start * courseWidth), identityWidth + categoryWidth + chunk.length * courseWidth].forEach((offset) => {
+        doc.moveTo(left + offset, y).lineTo(left + offset, y + headerHeight).stroke();
+      });
+      doc.lineWidth(0.45).strokeColor("#c4d2d4").moveTo(left + identityWidth + categoryWidth, y + 13).lineTo(left + tableWidth, y + 13).stroke();
+      y += headerHeight;
+    };
+    y = engagementPdfEnsureSpace(doc, y, headerHeight + 23);
+    drawHeader();
+    matrix.rows.forEach((swimmer, rowIndex) => {
+      const rowHeight = 17;
+      if (y + rowHeight > doc.page.height - 57) {
+        doc.addPage();
+        y = typeof doc.engagementPdfContinuationHeader === "function"
+          ? doc.engagementPdfContinuationHeader()
+          : 42;
+        drawHeader();
+      }
+      doc.rect(left, y, tableWidth, rowHeight).fill(rowIndex % 2 ? "#f8fbfa" : "#ffffff").stroke("#d8e5e2");
+      doc.lineWidth(0.35).strokeColor("#d8e5e2");
+      [identityWidth, identityWidth + categoryWidth, ...chunk.map((_, index) => identityWidth + categoryWidth + (index + 1) * courseWidth)].forEach((offset) => {
+        doc.moveTo(left + offset, y).lineTo(left + offset, y + rowHeight).stroke();
+      });
+      doc.lineWidth(1.15).strokeColor("#879da1");
+      [identityWidth, identityWidth + categoryWidth, ...sessionGroups.slice(1).map((group) => identityWidth + categoryWidth + group.start * courseWidth), identityWidth + categoryWidth + chunk.length * courseWidth].forEach((offset) => {
+        doc.moveTo(left + offset, y).lineTo(left + offset, y + rowHeight).stroke();
+      });
+      const lastName = (cleanText(swimmer.lastName || swimmer.name) || "Nageur").toUpperCase();
+      const firstName = cleanText(swimmer.firstName);
+      const availableNameWidth = identityWidth - 8;
+      const baseNameSize = 6.1;
+      doc.font("Helvetica-Bold").fontSize(baseNameSize);
+      const combinedWidth = doc.widthOfString(lastName) + (firstName ? 3 + doc.font("Helvetica").widthOfString(firstName) : 0);
+      const nameSize = combinedWidth > availableNameWidth ? 5.2 : baseNameSize;
+      doc.font("Helvetica-Bold").fontSize(nameSize).fillColor("#102f35").text(lastName, left + 4, y + 5, { width: availableNameWidth });
+      const firstNameX = left + 6 + doc.widthOfString(lastName);
+      if (firstName) doc.font("Helvetica").fontSize(nameSize).text(firstName, firstNameX, y + 5, { width: Math.max(12, left + identityWidth - 3 - firstNameX) });
+      doc.font("Helvetica").fontSize(5.7).text(ageCategoryFromDates(competition.date, swimmer.birthDate) || "-", left + identityWidth + 2, y + 5.5, { width: categoryWidth - 4, align: "center" });
+      const entriesByCode = new Map((swimmer.individualEntries || []).map((item) => [normalizeCourseCode(item.eventCode), item]));
+      chunk.forEach((column, index) => {
+        const item = entriesByCode.get(column.eventCode);
+        const value = cleanText(item?.entryTime || item?.manualEntryTime);
+        const x = left + identityWidth + categoryWidth + index * courseWidth;
+        if (value) {
+          const marker = cleanText(item?.entryTimeMode) === "manual" ? "*" : "";
+          doc.font("Helvetica").fontSize(5.15).fillColor("#102f35").text(`${value}${marker}`, x + 1, y + 5.5, { width: courseWidth - 2, align: "center" });
+        } else if (item) {
+          doc.font("Helvetica-Bold").fontSize(5.4).fillColor("#6b7f7a").text("?", x + 1, y + 5.5, { width: courseWidth - 2, align: "center" });
+        }
+      });
+      y += rowHeight;
+    });
+    y += 10;
+  }
+  return y;
+}
+
 function engagementPdfCollectRelayRows(entry = {}) {
   return (Array.isArray(entry.relays) ? entry.relays : [])
     .map((relay) => ({
@@ -4967,29 +5202,40 @@ function engagementPdfAddFooter(doc, generatedAt) {
   const range = doc.bufferedPageRange();
   for (let index = range.start; index < range.start + range.count; index += 1) {
     doc.switchToPage(index);
-    doc.fontSize(7).fillColor("#6b7f7a");
-    doc.text(`LivePalmes - document généré le ${engagementPdfFormatDateTime(generatedAt)} - page ${index + 1}/${range.count}`, 42, 810, {
-      width: 511,
+    doc.fontSize(6.3).fillColor("#6b7f7a");
+    doc.text(`Récapitulatif indicatif LivePalmes, sous réserve de modifications - généré le ${engagementPdfFormatDateTime(generatedAt)} - page ${index + 1}/${range.count}`, 42, doc.page.height - 52, {
+      width: doc.page.width - 84,
       align: "center"
     });
   }
 }
 
 function engagementPdfEnsureSpace(doc, y, height) {
-  if (y + height <= 785) return y;
+  if (y + height <= doc.page.height - 57) return y;
   doc.addPage();
-  return 42;
+  return typeof doc.engagementPdfContinuationHeader === "function"
+    ? doc.engagementPdfContinuationHeader()
+    : 42;
 }
 
 function engagementPdfSection(doc, title, y) {
-  y = engagementPdfEnsureSpace(doc, y, 32);
-  doc.roundedRect(42, y, 511, 20, 3).fill("#e8f3f5");
-  doc.font("Helvetica-Bold").fontSize(10).fillColor("#073b44").text(title, 52, y + 5, { width: 491 });
-  return y + 30;
+  y = engagementPdfEnsureSpace(doc, y, 28);
+  const width = doc.page.width - 84;
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("#073b44").text(title, 42, y + 2, { width });
+  doc.moveTo(42, y + 18).lineTo(42 + width, y + 18).lineWidth(0.6).strokeColor("#c7d6d7").stroke();
+  return y + 26;
+}
+
+function engagementPdfEmptyState(doc, message, y) {
+  y = engagementPdfEnsureSpace(doc, y, 20);
+  doc.font("Helvetica").fontSize(8).fillColor("#6b7f7a").text(message, 46, y + 2, {
+    width: doc.page.width - 92
+  });
+  return y + 18;
 }
 
 function engagementPdfKeyValues(doc, rows, y) {
-  const colWidth = 255.5;
+  const colWidth = (doc.page.width - 84) / 2;
   rows.forEach((row, index) => {
     y = engagementPdfEnsureSpace(doc, y, 30);
     const x = 42 + (index % 2) * colWidth;
@@ -5001,19 +5247,103 @@ function engagementPdfKeyValues(doc, rows, y) {
   return rows.length % 2 ? y + 30 : y + 6;
 }
 
+function engagementPdfFeesTable(doc, stats = {}, fees = {}, y) {
+  const left = 42;
+  const tableWidth = doc.page.width - 84;
+  const columns = [
+    { key: "type", label: "Type", width: 220, align: "left" },
+    { key: "quantity", label: "Quantité", width: 68, align: "right" },
+    { key: "rate", label: "Tarif", width: 101, align: "right" },
+    { key: "subtotal", label: "Sous-total", width: 122, align: "right" }
+  ];
+  const scale = tableWidth / columns.reduce((sum, column) => sum + column.width, 0);
+  const scaledColumns = columns.map((column) => ({ ...column, width: column.width * scale }));
+  const rows = [
+    {
+      type: "Nageurs",
+      quantity: stats.swimmerCount,
+      rate: engagementPdfMoney(fees.swimmerFee),
+      subtotal: engagementPdfMoney(stats.swimmerCount * (Number(fees.swimmerFee) || 0))
+    },
+    {
+      type: "Courses individuelles",
+      quantity: stats.individualCount,
+      rate: engagementPdfMoney(fees.individualEventFee),
+      subtotal: engagementPdfMoney(stats.individualCount * (Number(fees.individualEventFee) || 0))
+    },
+    {
+      type: "Relais",
+      quantity: stats.relayCount,
+      rate: engagementPdfMoney(fees.relayFee),
+      subtotal: engagementPdfMoney(stats.relayCount * (Number(fees.relayFee) || 0))
+    }
+  ];
+  const drawCells = (row, rowY, font = "Helvetica", color = "#102f35") => {
+    let x = left;
+    scaledColumns.forEach((column) => {
+      const rawValue = row[column.key];
+      const value = rawValue === 0 ? "0" : cleanText(rawValue) || "-";
+      doc.font(font).fontSize(8).fillColor(color).text(value, x + 6, rowY + 6, {
+        width: column.width - 12,
+        align: column.align
+      });
+      x += column.width;
+    });
+  };
+
+  doc.rect(left, y, tableWidth, 18).fill("#e8f1f1");
+  drawCells(Object.fromEntries(scaledColumns.map((column) => [column.key, column.label])), y, "Helvetica-Bold", "#173b42");
+  y += 18;
+  rows.forEach((row, index) => {
+    doc.rect(left, y, tableWidth, 20).fill(index % 2 ? "#f8fbfa" : "#ffffff");
+    doc.moveTo(left, y + 20).lineTo(left + tableWidth, y + 20).lineWidth(0.5).strokeColor("#d8e5e2").stroke();
+    drawCells(row, y);
+    y += 20;
+  });
+
+  doc.roundedRect(left, y, tableWidth, 24, 2).fill("#edf5f5").strokeColor("#a8bfc0").stroke();
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#073b44").text("TOTAL ESTIMÉ", left + 8, y + 7, {
+    width: tableWidth - scaledColumns[3].width - 16
+  });
+  doc.font("Helvetica-Bold").fontSize(9).fillColor("#073b44").text(engagementPdfMoney(engagementPdfFeeTotal({
+    swimmerCount: stats.swimmerCount,
+    individualCount: stats.individualCount,
+    relayCount: stats.relayCount
+  }, { fees })), left + tableWidth - scaledColumns[3].width + 6, y + 7, {
+    width: scaledColumns[3].width - 14,
+    align: "right"
+  });
+  y += 32;
+
+  const paymentRows = [
+    ["Paiement", fees.helloAssoUrl ? "Lien HelloAsso publié" : "Lien HelloAsso en attente de publication"],
+    ["Échéance", "Avant la fin de la première journée"],
+    ["Après l'échéance", `Supplément forfaitaire de ${engagementPdfMoney(fees.latePaymentSurcharge ?? 50)}`]
+  ];
+  doc.roundedRect(left, y, tableWidth, 50, 3).fill("#f8fbfa").strokeColor("#d8e5e2").stroke();
+  paymentRows.forEach((row, index) => {
+    const rowY = y + 7 + index * 13;
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#6b7f7a").text(row[0], left + 8, rowY, { width: 92 });
+    doc.font("Helvetica").fontSize(8).fillColor("#102f35").text(row[1], left + 106, rowY, { width: tableWidth - 114 });
+  });
+  return y + 58;
+}
+
 function engagementPdfTextHeight(doc, text, width, fontSize = 8) {
   return doc.font("Helvetica").fontSize(fontSize).heightOfString(cleanText(text) || "-", { width });
 }
 
 function engagementPdfTable(doc, columns, rows, y) {
   const left = 42;
-  const tableWidth = 511;
+  const tableWidth = doc.page.width - 84;
+  const columnsWidth = columns.reduce((sum, column) => sum + column.width, 0) || 1;
+  const scaledColumns = columns.map((column) => ({ ...column, width: column.width * tableWidth / columnsWidth }));
   const headerHeight = 18;
   const drawHeader = () => {
-    doc.rect(left, y, tableWidth, headerHeight).fill("#073b44");
+    doc.rect(left, y, tableWidth, headerHeight).fill("#e8f1f1");
     let x = left;
-    columns.forEach((column) => {
-      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#ffffff").text(column.label, x + 5, y + 5, { width: column.width - 10 });
+    scaledColumns.forEach((column) => {
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#173b42").text(column.label, x + 5, y + 5, { width: column.width - 10 });
       x += column.width;
     });
     y += headerHeight;
@@ -5026,16 +5356,18 @@ function engagementPdfTable(doc, columns, rows, y) {
     return y + 28;
   }
   rows.forEach((row, index) => {
-    const heights = columns.map((column) => engagementPdfTextHeight(doc, row[column.key], column.width - 10, 8));
+    const heights = scaledColumns.map((column) => engagementPdfTextHeight(doc, row[column.key], column.width - 10, 8));
     const rowHeight = Math.max(20, Math.ceil(Math.max(...heights)) + 10);
-    if (y + rowHeight > 785) {
+    if (y + rowHeight > doc.page.height - 57) {
       doc.addPage();
-      y = 42;
+      y = typeof doc.engagementPdfContinuationHeader === "function"
+        ? doc.engagementPdfContinuationHeader()
+        : 42;
       drawHeader();
     }
     doc.rect(left, y, tableWidth, rowHeight).fill(index % 2 ? "#f8fbfa" : "#ffffff").stroke("#d8e5e2");
     let x = left;
-    columns.forEach((column) => {
+    scaledColumns.forEach((column) => {
       doc.font("Helvetica").fontSize(8).fillColor("#102f35").text(cleanText(row[column.key]) || "-", x + 5, y + 6, {
         width: column.width - 10
       });
@@ -5050,6 +5382,7 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
   const generatedAt = new Date().toISOString();
   const doc = new PDFDocument({
     size: "A4",
+    layout: "portrait",
     margin: 42,
     bufferPages: true,
     info: {
@@ -5059,108 +5392,103 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     }
   });
 
-  doc.rect(0, 0, 595.28, 95).fill("#f4faf9");
+  const pageWidth = doc.page.width;
+  doc.engagementPdfContinuationHeader = () => {
+    const competitionLabel = cleanText(competition.name) || "Compétition";
+    const clubLabel = cleanText(entry.clubName) || engagementClubCode(entry.clubId, entry.clubCode) || "Club";
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#173b42").text(`${competitionLabel} · ${clubLabel}`, 42, 24, {
+      width: pageWidth - 84
+    });
+    doc.moveTo(42, 38).lineTo(pageWidth - 42, 38).lineWidth(0.5).strokeColor("#c7d6d7").stroke();
+    return 48;
+  };
+  doc.rect(0, 0, pageWidth, 70).fill("#f4faf9");
   if (fs.existsSync(ENGAGEMENT_PDF_LOGO_PATH)) {
-    doc.image(ENGAGEMENT_PDF_LOGO_PATH, 42, 22, { width: 112 });
+    doc.image(ENGAGEMENT_PDF_LOGO_PATH, 42, 10, { width: 70 });
   }
-  doc.font("Helvetica-Bold").fontSize(18).fillColor("#073b44").text("Récapitulatif des engagements", 185, 24, { width: 368 });
-  doc.font("Helvetica").fontSize(10).fillColor("#46625d").text(competition.name || "Compétition", 185, 50, { width: 368 });
-  doc.font("Helvetica-Bold").fontSize(9).fillColor("#0b7285").text("LivePalmes", 185, 68, { width: 368 });
-
-  let y = 115;
-  y = engagementPdfSection(doc, "Compétition", y);
-  y = engagementPdfKeyValues(doc, [
-    ["Nom", competition.name || "-"],
-    ["Date", competition.endDate && competition.endDate !== competition.date
+  doc.font("Helvetica-Bold").fontSize(13).fillColor("#073b44").text("Récapitulatif des engagements", 125, 11, { width: pageWidth - 167 });
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#173b42").text(competition.name || "Compétition", 125, 29, { width: pageWidth - 167 });
+  doc.font("Helvetica").fontSize(7).fillColor("#46625d").text([
+    competition.endDate && competition.endDate !== competition.date
       ? `${engagementPdfFormatDate(competition.date)} au ${engagementPdfFormatDate(competition.endDate)}`
-      : engagementPdfFormatDate(competition.date)],
-    ["Lieu", competition.location || "-"],
-    ["Niveau", engagementPdfLevelLabel(competition.level)],
-    ["Région", competition.regionId || "-"],
-    ["Statut", engagementPdfStatusLabel(competition.entryStatus)],
-    ["Bassin", [
-      cleanEngagementPoolLength(competition.poolLength) ? `${cleanEngagementPoolLength(competition.poolLength)} m` : "bassin non renseigné",
-      cleanEngagementPoolLaneCount(competition.poolLaneCount)
-        ? `${cleanEngagementPoolLaneCount(competition.poolLaneCount)} lignes d'eau`
-        : "nombre de lignes non renseigne"
-    ].join(" - ")],
-    ["Chronométrage", engagementPdfTimingLabel(competition.timingType)],
-    ["Limite engagements", engagementPdfFormatDateTime(competition.entryDeadlineAt)],
-    ["Généré le", engagementPdfFormatDateTime(generatedAt)]
-  ], y);
+      : engagementPdfFormatDate(competition.date),
+    competition.location,
+    engagementPdfLevelLabel(competition.level)
+  ].filter(Boolean).join(" · "), 125, 48, { width: pageWidth - 167 });
 
-  y = engagementPdfSection(doc, "Club", y);
-  y = engagementPdfKeyValues(doc, [
-    ["Club", entry.clubName || "-"],
-    ["Code club", engagementClubCode(entry.clubId, entry.clubCode) || "-"],
-    ["Région", entry.regionId || "-"],
-    ["Dernière mise à jour", engagementPdfFormatDateTime(entry.updatedAt)]
-  ], y);
-
+  let y = 86;
   const teamLeader = entry.teamLeader || {};
-  y = engagementPdfSection(doc, "Chef d'équipe", y);
-  const teamLeaderRows = teamLeader.mode === "renounced"
-    ? [["Déclaration", "Le club renonce au droit de réclamation."]]
-    : [
-        ["Nom", engagementPdfPersonName(teamLeader)],
-        ["Licence", teamLeader.licenseNumber || "-"],
-        ["Club externe", teamLeader.externalClub ? (engagementClubCode(teamLeader.clubId) || engagementClubName(teamLeader.clubId, teamLeader.clubName) || "-") : "Non"]
-      ];
-  y = engagementPdfKeyValues(doc, teamLeaderRows, y);
+  const stats = engagementPdfEntryStats(entry);
+  const teamLeaderLabel = teamLeader.mode === "renounced"
+    ? "Renonciation au droit de réclamation"
+    : [engagementPdfPersonName(teamLeader), teamLeader.licenseNumber].filter((value) => value && value !== "-").join(" · ") || "-";
+  y = engagementPdfCompactSummary(doc, [
+    { label: "Club", value: [entry.clubName || "-", engagementClubCode(entry.clubId, entry.clubCode)].filter(Boolean).join(" · ") },
+    { label: "Chef d'équipe", value: teamLeaderLabel },
+    { label: "Engagements", value: `${stats.swimmerCount} nageur${stats.swimmerCount > 1 ? "s" : ""} · ${stats.individualCount} course${stats.individualCount > 1 ? "s" : ""} · ${stats.relayCount} relais` }
+  ], y);
+
+  y = engagementPdfSection(doc, "Nageurs et courses individuelles", y);
+  const individualMatrices = [
+    engagementPdfIndividualMatrix(entry, competition, "F", "Nageuse"),
+    engagementPdfIndividualMatrix(entry, competition, "M", "Nageur")
+  ].filter(Boolean);
+  if (individualMatrices.length) {
+    individualMatrices.forEach((matrix) => {
+      y = engagementPdfDrawIndividualMatrix(doc, matrix, competition, y);
+    });
+    const hasManualTime = individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
+      (swimmer.individualEntries || []).some((item) => cleanText(item.entryTimeMode) === "manual")
+    ));
+    const hasMissingTime = individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
+      (swimmer.individualEntries || []).some((item) => !cleanText(item.entryTime || item.manualEntryTime))
+    ));
+    if (hasManualTime || hasMissingTime) {
+      y = engagementPdfEnsureSpace(doc, y, 18);
+      doc.font("Helvetica").fontSize(6.5).fillColor("#6b7f7a").text([
+        hasManualTime ? "* temps manuel" : "",
+        hasMissingTime ? "? temps à vérifier" : ""
+      ].filter(Boolean).join(" · "), 42, y, { width: doc.page.width - 84 });
+      y += 14;
+    }
+  } else {
+    y = engagementPdfEmptyState(doc, "Aucun engagement individuel.", y);
+  }
+
+  y = engagementPdfSection(doc, "Relais", y);
+  const relayRows = engagementPdfCollectRelayRows(entry);
+  y = relayRows.length
+    ? engagementPdfTable(doc, [
+      { key: "event", label: "Relais", width: 80 },
+      { key: "category", label: "Catégorie", width: 82 },
+      { key: "gender", label: "Sexe", width: 62 },
+      { key: "time", label: "Temps", width: 58 },
+      { key: "members", label: "Relayeurs", width: 229 }
+    ], relayRows, y)
+    : engagementPdfEmptyState(doc, "Aucun relais engagé.", y);
 
   y = engagementPdfSection(doc, "Officiels", y);
-  const officialRows = competition.officialsRequired === false
-    ? [{ name: "Officiels non requis pour cette compétition.", license: "-", role: "-" }]
-    : (Array.isArray(entry.officials) ? entry.officials : []).map((official) => ({
+  const officialRows = (Array.isArray(entry.officials) ? entry.officials : []).map((official) => ({
         name: engagementPdfPersonName(official),
         license: official.licenseNumber || "-",
         role: "Officiel"
       }));
-  y = engagementPdfTable(doc, [
-    { key: "name", label: "Nom", width: 260 },
-    { key: "license", label: "Licence", width: 120 },
-    { key: "role", label: "Rôle", width: 131 }
-  ], officialRows, y);
-
-  y = engagementPdfSection(doc, "Nageurs et courses individuelles", y);
-  y = engagementPdfTable(doc, [
-    { key: "license", label: "Licence", width: 72 },
-    { key: "swimmer", label: "Nageur", width: 150 },
-    { key: "sex", label: "Sexe", width: 38 },
-    { key: "category", label: "Cat.", width: 45 },
-    { key: "entries", label: "Courses", width: 206 }
-  ], engagementPdfCollectIndividualRows(entry, competition), y);
-
-  y = engagementPdfSection(doc, "Relais", y);
-  y = engagementPdfTable(doc, [
-    { key: "event", label: "Relais", width: 80 },
-    { key: "category", label: "Catégorie", width: 82 },
-    { key: "gender", label: "Sexe", width: 62 },
-    { key: "time", label: "Temps", width: 58 },
-    { key: "members", label: "Relayeurs", width: 229 }
-  ], engagementPdfCollectRelayRows(entry), y);
+  y = competition.officialsRequired === false
+    ? engagementPdfEmptyState(doc, "Officiels non requis pour cette compétition.", y)
+    : officialRows.length
+      ? engagementPdfTable(doc, [
+        { key: "name", label: "Nom", width: 260 },
+        { key: "license", label: "Licence", width: 120 },
+        { key: "role", label: "Rôle", width: 131 }
+      ], officialRows, y)
+      : engagementPdfEmptyState(doc, "Aucun officiel déclaré.", y);
 
   const fees = competition.fees || {};
-  const stats = engagementPdfEntryStats(entry);
+  y = engagementPdfEnsureSpace(doc, y, fees.enabled === false ? 58 : 201);
   y = engagementPdfSection(doc, "Frais d'engagement", y);
-  y = engagementPdfKeyValues(doc, fees.enabled === false
-    ? [["Frais", "Aucun frais d'engagement"]]
-    : [
-      ["Nageurs", `${stats.swimmerCount} x ${engagementPdfMoney(fees.swimmerFee)}`],
-      ["Courses individuelles", `${stats.individualCount} x ${engagementPdfMoney(fees.individualEventFee)}`],
-      ["Relais", `${stats.relayCount} x ${engagementPdfMoney(fees.relayFee)}`],
-      ["Total indicatif", engagementPdfMoney(engagementPdfFeeTotal(entry, competition))],
-      ["HelloAsso", fees.helloAssoUrl ? "Lien publié" : "En attente de publication du lien"],
-      ["Rappel", "Paiement attendu avant la fin de la première journée. Surplus forfaitaire de 50 EUR ensuite."]
-    ], y);
-
-  y = engagementPdfEnsureSpace(doc, y, 34);
-  doc.font("Helvetica-Oblique").fontSize(8).fillColor("#6b7f7a").text(
-    "Récapitulatif indicatif généré depuis LivePalmes, sous réserve de modifications ultérieures des engagements ou des frais.",
-    42,
-    y,
-    { width: 511 }
-  );
+  y = fees.enabled === false
+    ? engagementPdfEmptyState(doc, "Aucun frais d'engagement.", y)
+    : engagementPdfFeesTable(doc, stats, fees, y);
 
   engagementPdfAddFooter(doc, generatedAt);
   const buffer = await engagementPdfDocToBuffer(doc);
@@ -5614,23 +5942,116 @@ function engagementMailRecipientFromUserDoc(doc) {
   });
 }
 
+function engagementMailRecipientShardNumber(uid = "") {
+  return Number.parseInt(stableHash(uid).slice(0, 8), 16) % ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT;
+}
+
+function engagementMailRecipientShardRef(db, capability, shardNumber) {
+  const capabilityKey = cleanText(capability).replace(/[^a-z0-9]+/gi, "_");
+  return db.collection(ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION).doc(`${capabilityKey}-${shardNumber}`);
+}
+
+function engagementMailRecipientIndexStateRef(db) {
+  return db.collection(ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION).doc("default");
+}
+
+function engagementMailRecipientIndexKey(uid = "") {
+  return stableHash(uid).slice(0, 24);
+}
+
+function engagementMailRecipientShardRefs(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
+  return capabilities.flatMap((capability) => Array.from(
+    { length: ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT },
+    (_, shardNumber) => engagementMailRecipientShardRef(db, capability, shardNumber)
+  ));
+}
+
+function engagementMailRecipientShardGroups(recipients = []) {
+  const groups = new Map();
+  recipients.forEach((recipient) => {
+    (recipient.capabilities || []).forEach((capability) => {
+      if (!ENGAGEMENT_MAIL_CAPABILITIES.includes(capability)) return;
+      const shardNumber = engagementMailRecipientShardNumber(recipient.uid);
+      const groupKey = `${capability}|${shardNumber}`;
+      if (!groups.has(groupKey)) groups.set(groupKey, { capability, shardNumber, recipients: {} });
+      groups.get(groupKey).recipients[engagementMailRecipientIndexKey(recipient.uid)] = recipient;
+    });
+  });
+  return groups;
+}
+
+async function replaceEngagementMailRecipientIndex(db, recipients = [], context = {}) {
+  const now = context.now || new Date().toISOString();
+  const deleteBatch = db.batch();
+  engagementMailRecipientShardRefs(db).forEach((ref) => deleteBatch.delete(ref));
+  await deleteBatch.commit();
+
+  const writeBatch = db.batch();
+  engagementMailRecipientShardGroups(recipients).forEach((group) => {
+    writeBatch.set(engagementMailRecipientShardRef(db, group.capability, group.shardNumber), {
+      capability: group.capability,
+      shardNumber: group.shardNumber,
+      recipients: group.recipients,
+      generatedAt: now
+    }, { merge: false });
+  });
+  writeBatch.set(engagementMailRecipientIndexStateRef(db), {
+    status: "ready",
+    cursor: "",
+    recipientCount: recipients.length,
+    generatedAt: now,
+    updatedAt: now,
+    source: context.source || "bounded-bootstrap"
+  }, { merge: true });
+  await writeBatch.commit();
+}
+
+async function bootstrapEngagementMailRecipientIndex(db) {
+  const snapshots = await Promise.all(ENGAGEMENT_MAIL_CAPABILITIES.map((capability) => {
+    const capabilityField = new FieldPath("capabilities", capability);
+    return db.collection("users")
+      .where(capabilityField, "==", true)
+      .limit(ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT + 1)
+      .get();
+  }));
+  if (snapshots.some((snapshot) => snapshot.size > ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT)) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Index des destinataires a initialiser par lots avant de preparer les courriels."
+    );
+  }
+  const recipientsByUid = new Map();
+  snapshots.flatMap((snapshot) => snapshot.docs)
+    .filter((doc) => (doc.data() || {}).status === "active")
+    .forEach((doc) => recipientsByUid.set(doc.id, engagementMailRecipientFromUserDoc(doc)));
+  const recipients = Array.from(recipientsByUid.values()).filter((recipient) => recipient.email && recipient.capabilities?.length);
+  await replaceEngagementMailRecipientIndex(db, recipients);
+  return recipients;
+}
+
+async function engagementMailRecipientsFromIndex(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
+  const refs = engagementMailRecipientShardRefs(db, capabilities);
+  const snapshots = refs.length ? await db.getAll(...refs) : [];
+  return snapshots.flatMap((snapshot) => {
+    const recipients = snapshot.exists ? snapshot.data()?.recipients : null;
+    return recipients && typeof recipients === "object" ? Object.values(recipients) : [];
+  });
+}
+
 function engagementRecipientHasCapability(recipient = {}, capability) {
   return Array.isArray(recipient.capabilities) && recipient.capabilities.includes(capability);
 }
 
 async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
   const mailCapabilities = capabilities.filter((capability) => ENGAGEMENT_MAIL_CAPABILITIES.includes(capability));
-  const snapshots = await Promise.all(mailCapabilities.map((capability) => {
-    const capabilityField = new FieldPath("capabilities", capability);
-    return db.collection("users")
-      .where(capabilityField, "==", true)
-      .limit(1000)
-      .get();
-  }));
+  if (!mailCapabilities.length) return [];
+  const stateSnapshot = await engagementMailRecipientIndexStateRef(db).get();
+  const indexedRecipients = stateSnapshot.data()?.status === "ready"
+    ? await engagementMailRecipientsFromIndex(db, mailCapabilities)
+    : await bootstrapEngagementMailRecipientIndex(db);
   const recipientsByEmail = new Map();
-  snapshots.flatMap((snapshot) => snapshot.docs)
-    .filter((doc) => (doc.data() || {}).status === "active")
-    .map(engagementMailRecipientFromUserDoc)
+  indexedRecipients
+    .filter((recipient) => mailCapabilities.some((capability) => engagementRecipientHasCapability(recipient, capability)))
     .filter((recipient) => recipient.email && recipient.capabilities?.length)
     .forEach((recipient) => {
       const existing = recipientsByEmail.get(recipient.email);
@@ -5646,6 +6067,85 @@ async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL
     });
   return [...recipientsByEmail.values()];
 }
+
+exports.syncEngagementMailRecipientIndex = onDocumentWritten({
+  region: REGION,
+  document: "users/{uid}"
+}, async (event) => {
+  const uid = cleanText(event.params.uid);
+  if (!uid) return;
+  const before = event.data?.before?.exists ? engagementMailRecipientFromUserDoc(event.data.before) : null;
+  const afterData = event.data?.after?.exists ? event.data.after.data() || {} : {};
+  const after = event.data?.after?.exists && afterData.status === "active"
+    ? engagementMailRecipientFromUserDoc(event.data.after)
+    : null;
+  const now = new Date().toISOString();
+  const key = engagementMailRecipientIndexKey(uid);
+  const capabilities = new Set([...(before?.capabilities || []), ...(after?.capabilities || [])]);
+  if (!capabilities.size) return;
+  const batch = db.batch();
+  capabilities.forEach((capability) => {
+    const shardNumber = engagementMailRecipientShardNumber(uid);
+    const value = after?.capabilities?.includes(capability) ? after : FieldValue.delete();
+    batch.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
+      capability,
+      shardNumber,
+      recipients: { [key]: value },
+      generatedAt: now
+    }, { merge: true });
+  });
+  await batch.commit();
+});
+
+exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "engagements.national.manage");
+  const reset = request.data?.reset === true;
+  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 200) || 200, 50), 250);
+  const stateRef = engagementMailRecipientIndexStateRef(db);
+  const stateSnapshot = await stateRef.get();
+  const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+  if (!reset && state.status !== "rebuilding") {
+    throw new HttpsError("failed-precondition", "Commence la reconstruction des destinataires avec reset: true.");
+  }
+  const cursor = reset ? "" : cleanText(state.cursor);
+  const now = new Date().toISOString();
+  if (reset) {
+    const deleteBatch = db.batch();
+    engagementMailRecipientShardRefs(db).forEach((ref) => deleteBatch.delete(ref));
+    deleteBatch.set(stateRef, { status: "rebuilding", cursor: "", processedCount: 0, updatedAt: now }, { merge: true });
+    await deleteBatch.commit();
+  }
+
+  let query = db.collection("users").orderBy(FieldPath.documentId()).limit(pageSize);
+  if (cursor) query = query.startAfter(cursor);
+  const snapshot = await query.get();
+  const recipients = snapshot.docs
+    .filter((doc) => (doc.data() || {}).status === "active")
+    .map(engagementMailRecipientFromUserDoc)
+    .filter((recipient) => recipient.email && recipient.capabilities?.length);
+  const batch = db.batch();
+  engagementMailRecipientShardGroups(recipients).forEach((group) => {
+    batch.set(engagementMailRecipientShardRef(db, group.capability, group.shardNumber), {
+      capability: group.capability,
+      shardNumber: group.shardNumber,
+      recipients: group.recipients,
+      generatedAt: now
+    }, { merge: true });
+  });
+  const nextCursor = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1].id : cursor;
+  const done = snapshot.size < pageSize;
+  const processedCount = (reset ? 0 : Number(state.processedCount || 0) || 0) + snapshot.size;
+  batch.set(stateRef, {
+    status: done ? "ready" : "rebuilding",
+    cursor: done ? "" : nextCursor,
+    processedCount,
+    generatedAt: done ? now : cleanText(state.generatedAt),
+    updatedAt: now,
+    source: "paged-rebuild"
+  }, { merge: true });
+  await batch.commit();
+  return { ok: true, done, pageCount: snapshot.size, processedCount, nextCursor: done ? "" : nextCursor };
+});
 
 async function engagementActiveClubMailRecipients(db) {
   return (await engagementActiveMailRecipients(db, ["engagements.club.manage"]))
@@ -6323,7 +6823,7 @@ async function syncEngagementClubRosterFromSwimmerChange(event = {}, source = "p
     batchSize += 1;
   }
   if (source !== "engagement" && docId) {
-    deleteEngagementEntryTimeCache(batch, db, { source, swimmerIndexId: docId });
+    deleteEngagementEntryTimeCache(batch, db, { ...(after || before || {}), source, swimmerIndexId: docId });
     batchSize += 1;
   }
   if (batchSize) await batch.commit();
@@ -6539,16 +7039,11 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   const entryStatus = ENGAGEMENT_ENTRY_STATUSES.has(cleanText(request.data?.entryStatus))
     ? cleanText(request.data.entryStatus)
     : "";
-  const forceRebuild = request.data?.forceCalendar === true;
-  const calendarSnapshot = forceRebuild ? null : await engagementCompetitionCalendarRef(db, season.endYear).get();
+  const calendarSnapshot = await engagementCompetitionCalendarRef(db, season.endYear).get();
   const calendarReady = calendarSnapshot?.exists && cleanText(calendarSnapshot.data()?.generatedAt);
-  let calendarGenerated = false;
-  const calendarItems = calendarReady
+  const calendarItems = calendarSnapshot?.exists
     ? engagementCompetitionCalendarItemsFromData(calendarSnapshot.data() || {})
-    : await rebuildEngagementCompetitionCalendar(db, season.endYear).then((items) => {
-      calendarGenerated = true;
-      return items;
-    });
+    : [];
   const competitions = filterEngagementCompetitionCalendarItems(calendarItems, {
     startDate,
     endDate,
@@ -6569,11 +7064,11 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     toDate: endDate,
     seasonStartYear: season.startYear,
     seasonEndYear: season.endYear,
-    calendarGenerated,
+    calendarGenerated: false,
     readStats: portalReadStats("listEngagementCompetitions", startedAt, {
       baseDocuments: 2,
-      variableDocumentsMax: calendarGenerated ? 1200 : 0,
-      cacheHit: !calendarGenerated
+      variableDocumentsMax: 0,
+      cacheHit: Boolean(calendarReady)
     }),
     competitions
   };
@@ -6684,16 +7179,11 @@ exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (re
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
   assertCanManageEngagementCompetition(context, competition.data() || {});
-  const forceRebuild = request.data?.forceSummary === true;
-  const summarySnapshot = forceRebuild ? null : await engagementCompetitionEntrySummaryRef(db, competitionId).get();
+  const summarySnapshot = await engagementCompetitionEntrySummaryRef(db, competitionId).get();
   const summaryReady = summarySnapshot?.exists && cleanText(summarySnapshot.data()?.generatedAt);
-  let summaryGenerated = false;
-  const summaryEntries = summaryReady
+  const summaryEntries = summarySnapshot?.exists
     ? engagementCompetitionEntrySummariesFromData(summarySnapshot.data() || {})
-    : await rebuildEngagementCompetitionEntrySummary(db, competitionId).then((items) => {
-      summaryGenerated = true;
-      return items;
-    });
+    : [];
   const competitionDetail = engagementCompetitionDetailItem(competition);
   const entries = summaryEntries.map((entry) => ({
     ...entry,
@@ -6703,7 +7193,8 @@ exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (re
     ok: true,
     competitionId,
     collection: ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION,
-    summaryGenerated,
+    summaryGenerated: false,
+    summaryReady: Boolean(summaryReady),
     entries
   };
 });
@@ -7921,24 +8412,25 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
-  const forceRebuild = request.data?.forceRoster === true;
-  const rosterSnapshot = forceRebuild ? null : await engagementClubRosterRef(db, context.clubId).get();
+  const rosterSnapshot = await engagementClubRosterRef(db, context.clubId).get();
   const rosterReady = rosterSnapshot?.exists && cleanText(rosterSnapshot.data()?.generatedAt);
-  let rosterGenerated = false;
-  const swimmers = rosterReady
-    ? sortEngagementClubSwimmers(uniqueEngagementClubSwimmers(engagementClubRosterSwimmersFromData(rosterSnapshot.data() || {}), limit))
-    : await rebuildEngagementClubRoster(db, context, limit).then((items) => {
-      rosterGenerated = true;
-      return items;
-    });
+  if (!rosterReady) {
+    throw new HttpsError(
+      "unavailable",
+      "Effectif agrege momentanement indisponible. Aucune reconstruction massive n'a ete lancee."
+    );
+  }
+  const swimmers = sortEngagementClubSwimmers(
+    uniqueEngagementClubSwimmers(engagementClubRosterSwimmersFromData(rosterSnapshot.data() || {}), limit)
+  );
   return {
     ok: true,
     clubId: context.clubId,
-    rosterGenerated,
+    rosterGenerated: false,
     readStats: portalReadStats("listEngagementClubSwimmers", startedAt, {
       baseDocuments: 2,
-      variableDocumentsMax: rosterGenerated ? 2000 : 0,
-      cacheHit: !rosterGenerated
+      variableDocumentsMax: 0,
+      cacheHit: true
     }),
     swimmers
   };
@@ -7952,7 +8444,7 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   }
   const clubIds = Array.from(new Set((Array.isArray(request.data?.clubIds) ? request.data.clubIds : [])
     .map((clubId) => cleanText(clubId).slice(0, 40))
-    .filter(Boolean))).slice(0, 10);
+    .filter(Boolean))).slice(0, 1);
   if (!clubIds.length) throw new HttpsError("invalid-argument", "Au moins un club est requis.");
   const results = [];
   for (const clubId of clubIds) {
@@ -7964,7 +8456,7 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
       regionId: cleanText(user.regionId).slice(0, 80)
     };
     const [swimmers, people] = await Promise.all([
-      rebuildEngagementClubRoster(db, clubContext, 800),
+      rebuildEngagementClubRoster(db, clubContext, 200),
       rebuildEngagementClubPeopleRoster(db, clubContext)
     ]);
     results.push({ clubId, swimmerCount: swimmers.length, personCount: people.length });
@@ -7978,7 +8470,7 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
     results,
     readStats: portalReadStats("rebuildEngagementClubAggregates", startedAt, {
       baseDocuments: clubIds.length,
-      variableDocumentsMax: clubIds.length * 2200,
+      variableDocumentsMax: clubIds.length * 801,
       cacheHit: false
     })
   };
@@ -8652,6 +9144,7 @@ async function applyEngagementSwimmerIdentityCorrection(target = {}, correction 
       now,
       reason: "engagement.swimmerIdentityCorrected"
     });
+    await invalidateEngagementEntryTimeCachesForPerformanceRows([...rows, ...updatedRows]);
     const correctedTopFiles = await rebuildPublicTopFilesForAffectedRows(
       [...rows, ...updatedRows],
       new Map([[newPublicKey, updatedRows]])
@@ -9442,21 +9935,15 @@ async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}
   ].map((id) => cleanText(id).slice(0, 80)).filter(Boolean))).slice(0, 25);
   const identityKey = cleanText(sourceSwimmer.identityKey).slice(0, 180);
   if (!ids.length && !identityKey) return [];
-  const reads = [];
-  for (let index = 0; index < ids.length; index += 10) {
-    const chunk = ids.slice(index, index + 10);
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).limit(limit + 1).get());
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).limit(limit + 1).get());
-  }
-  if (identityKey) {
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).limit(limit + 1).get());
-  }
-  const snapshots = await Promise.all(reads);
-  const docs = new Map();
-  snapshots.forEach((snapshot) => {
-    snapshot.docs.forEach((doc) => docs.set(doc.id, doc));
-  });
-  const rows = Array.from(docs.values());
+  const performanceRows = await getPerformanceBaseRowsBySwimmer({ swimmerIds: ids, identityKey });
+  const rows = performanceRows.map((row) => {
+    const id = cleanText(row.performanceBaseId || performanceBaseDocId(row));
+    return {
+      id,
+      ref: db.collection(PERFORMANCE_BASE_COLLECTION).doc(id),
+      data: () => row
+    };
+  }).filter((doc) => doc.id);
   if (rows.length > limit) {
     throw new HttpsError("failed-precondition", "Fusion trop volumineuse pour une action directe. Une migration dediee est necessaire.");
   }
@@ -10174,7 +10661,7 @@ exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (requ
     })),
     readStats: portalReadStats("getEngagementClubEntryTimeHistory", startedAt, {
       baseDocuments: savedCodes.length ? 3 : 2,
-      variableDocumentsMax: savedCodes.length ? 3512 : 0,
+      variableDocumentsMax: savedCodes.length ? 1 : 0,
       cacheHit: null
     })
   };
@@ -10299,7 +10786,7 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
     swimmers,
     readStats: portalReadStats("previewEngagementClubSwimmerEventTimesBatch", startedAt, {
       baseDocuments: 3,
-      variableDocumentsMax: swimmerIds.length * 3512,
+      variableDocumentsMax: swimmerIds.length,
       cacheHit: null
     })
   };
@@ -10893,6 +11380,20 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   const deletionRequest = await deletionRequestRef.get();
   const batch = db.batch();
   batch.delete(docRef);
+  const competitionDate = cleanIsoDate(competition.date);
+  const seasonEndYear = competitionDate ? engagementSeasonEndYearFromIsoDate(competitionDate) : null;
+  if (seasonEndYear !== null) {
+    const season = engagementSeasonBoundsFromEndYear(seasonEndYear);
+    batch.set(engagementCompetitionCalendarRef(db, seasonEndYear), {
+      ...season,
+      generatedAt: now,
+      updatedAt: now,
+      competitions: {
+        [competitionId]: FieldValue.delete()
+      }
+    }, { merge: true });
+  }
+  batch.delete(engagementClosureQueueRef(db, competitionId));
   if (deletionRequest.exists) {
     batch.set(deletionRequestRef, {
       status: "approved",
@@ -11247,6 +11748,7 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
       importId,
       now
     });
+    await invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedImportedPerformances);
   } catch (error) {
     console.warn("Publication publique incrementale des fichiers performances impossible", error);
     publicFilesSnapshot = {
@@ -11321,6 +11823,18 @@ async function markCompetitionImportDeleted(importId, context = {}) {
     };
   }
 
+  const publishedSnapshot = await readPublishedAdditionalPerformanceDataSnapshot();
+  const affectedRows = (publishedSnapshot.performances || [])
+    .filter((row) => cleanText(row.importId) === importId)
+    .map(publicPerformanceBaseRow);
+  const expectedPerformanceCount = Number(importData.performanceBaseCount || importData.summary?.importedPerformances || 0) || 0;
+  if (expectedPerformanceCount && affectedRows.length < expectedPerformanceCount) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Fichier public incomplet pour cet import. Republie les donnees avant de supprimer l'import."
+    );
+  }
+
   let batch = db.batch();
   let batchSize = 0;
   const commits = [];
@@ -11341,9 +11855,10 @@ async function markCompetitionImportDeleted(importId, context = {}) {
   }, { merge: true });
   batchSize += 1;
 
-  const importPerformancesSnapshot = await importRef.collection("performances").get();
-  importPerformancesSnapshot.docs.forEach((doc) => {
-    batch.set(doc.ref, {
+  affectedRows.forEach((row) => {
+    const performanceId = cleanText(row.id || row.performanceId);
+    if (!performanceId) return;
+    batch.set(importRef.collection("performances").doc(performanceId), {
       active: false,
       status: "deleted",
       deletedAt: now,
@@ -11354,18 +11869,12 @@ async function markCompetitionImportDeleted(importId, context = {}) {
     commitIfNeeded();
   });
 
-  const performanceBaseSnapshot = await db.collection(PERFORMANCE_BASE_COLLECTION)
-    .where("importId", "==", importId)
-    .get();
-  const performanceBaseDocs = performanceBaseSnapshot.docs
-    .filter((doc) => (doc.data() || {}).source === "livepalmes-import");
-  const affectedRows = performanceBaseDocs.map((doc) => ({
-    performanceBaseId: doc.id,
-    ...(doc.data() || {})
-  }));
-  performanceBaseDocs.forEach((doc) => {
-    const data = doc.data() || {};
-    batch.set(doc.ref, {
+  const performanceBaseIds = new Set();
+  affectedRows.forEach((data) => {
+    const performanceBaseId = cleanText(data.performanceBaseId || performanceBaseDocId(data));
+    if (!performanceBaseId || performanceBaseIds.has(performanceBaseId)) return;
+    performanceBaseIds.add(performanceBaseId);
+    batch.set(db.collection(PERFORMANCE_BASE_COLLECTION).doc(performanceBaseId), {
       active: false,
       status: "deleted",
       deletedAt: now,
@@ -11376,16 +11885,16 @@ async function markCompetitionImportDeleted(importId, context = {}) {
       updatedByEmail: context.actorEmail || "",
       sourceAction: "performanceImport.deleted"
     }, { merge: true });
-    const changeId = stableHash([doc.id, "performanceImport.deleted", now, importId].join("|")).slice(0, 40);
+    const changeId = stableHash([performanceBaseId, "performanceImport.deleted", now, importId].join("|")).slice(0, 40);
     batch.set(db.collection(PERFORMANCE_BASE_CHANGES_COLLECTION).doc(changeId), {
-      performanceBaseId: doc.id,
+      performanceBaseId,
       publicKey: cleanText(data.publicKey),
       action: "performanceImport.deleted",
       importId,
       status: "deleted",
       row: cleanFirestoreValue({
         ...data,
-        performanceBaseId: doc.id,
+        performanceBaseId,
         active: false,
         status: "deleted"
       }),
@@ -11399,12 +11908,14 @@ async function markCompetitionImportDeleted(importId, context = {}) {
 
   commitIfNeeded(true);
   await Promise.all(commits);
+  await invalidateEngagementEntryTimeCachesForPerformanceRows(affectedRows);
   return {
     ok: true,
     importId,
-    importPerformanceCount: importPerformancesSnapshot.size,
-    performanceBaseCount: performanceBaseDocs.length,
-    affectedRows
+    importPerformanceCount: affectedRows.length,
+    performanceBaseCount: performanceBaseIds.size,
+    affectedRows,
+    publishedSnapshot
   };
 }
 
@@ -11422,6 +11933,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
     actorUid,
     actorEmail
   });
+  if (result.alreadyDeleted) return result;
   await touchDtnQualificationCacheState(result.affectedRows || [], {
     action: "performanceImport.deleted",
     now
@@ -11429,7 +11941,11 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
 
   let publicSnapshot = null;
   try {
-    publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
+    publicSnapshot = await saveAdditionalPerformanceDataSnapshot({
+      ...(result.publishedSnapshot || {}),
+      performances: (result.publishedSnapshot?.performances || [])
+        .filter((row) => cleanText(row.importId) !== importId)
+    });
   } catch (error) {
     console.error("Publication publique impossible apres suppression import", {
       importId,
@@ -11448,6 +11964,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
       reason: "performanceImport.deleted",
       importId
     });
+    await invalidateEngagementEntryTimeCachesForPerformanceRows(result.affectedRows || []);
   } catch (error) {
     console.error("Publication publique ciblee impossible apres suppression import", {
       importId,
@@ -11468,7 +11985,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
     publicFilesSnapshot
   });
 
-  const { affectedRows, ...publicResult } = result;
+  const { affectedRows, publishedSnapshot, ...publicResult } = result;
   return {
     ...publicResult,
     publicSnapshot,
@@ -11727,6 +12244,7 @@ async function writePerformanceBaseRows(rows = [], context = {}) {
 
   commitIfNeeded(true);
   await Promise.all(commits);
+  await invalidateEngagementEntryTimeCachesForPerformanceRows(rows);
   await touchDtnQualificationCacheState([
     ...rows,
     ...(Array.isArray(context.dtnInvalidationRows) ? context.dtnInvalidationRows : [])
@@ -12124,19 +12642,25 @@ function emptyDtnQualificationPayload({ seasonYear, sex, standards, competitionI
 
 async function buildDtnQualificationPayload({ seasonYear, sex, standards, competitionIds }) {
   const indexedCourses = await Promise.all(POOL_COURSES.map(async (course) => {
-    const snapshot = await db.collection(PERFORMANCE_BASE_COLLECTION)
-      .where("seasonYear", "==", seasonYear)
-      .where("course", "==", course)
-      .where("sex", "==", sex)
-      .where("active", "==", true)
-      .limit(DTN_QUALIFICATION_MAX_ROWS_PER_COURSE + 1)
-      .get();
-    if (snapshot.size > DTN_QUALIFICATION_MAX_ROWS_PER_COURSE) {
-      throw new Error(`Qualification DTN bornee pour ${course} (${snapshot.size} lignes).`);
+    const categoryRows = await Promise.all(ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES.map((category) =>
+      readPublicPerformanceJson(`tops/${course}/${publicPerformanceTopFileName(sex, category)}`, [])
+    ));
+    const rows = uniquePublicPerformanceRows(categoryRows.flat()
+      .map(publicPerformanceBaseRow)
+      .filter((row) =>
+        Number(row.seasonYear || 0) === seasonYear &&
+        row.course === course &&
+        row.sex === sex &&
+        row.active !== false &&
+        row.status !== "hidden" &&
+        row.status !== "deleted"
+      ));
+    if (rows.length > DTN_QUALIFICATION_MAX_ROWS_PER_COURSE) {
+      throw new Error(`Qualification DTN bornee pour ${course} (${rows.length} lignes).`);
     }
     return {
       course,
-      rows: snapshot.docs.map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
+      rows
     };
   }));
   const scannedRows = indexedCourses.reduce((total, item) => total + item.rows.length, 0);
@@ -12154,7 +12678,7 @@ async function buildDtnQualificationPayload({ seasonYear, sex, standards, compet
       })
     })),
     competitionIds,
-    readStats: { scannedRows, bounded: true }
+    readStats: { scannedRows, firestoreDocuments: 0, source: "public-storage-top-files", bounded: true }
   };
 }
 
@@ -12290,6 +12814,23 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
       };
     }
   }
+  const stalePayload = cacheSnapshot.exists && cacheSnapshot.data()?.payload && typeof cacheSnapshot.data().payload === "object"
+    ? cacheSnapshot.data().payload
+    : emptyDtnQualificationPayload({ seasonYear, sex, standards, competitionIds });
+  if (request.data?.rebuild !== true) {
+    console.info("Vue DTN absente ou obsolete, recalcul manuel requis", { seasonYear, sex, sourceVersion, stale: cacheSnapshot.exists });
+    return {
+      ...stalePayload,
+      cache: {
+        hit: false,
+        pending: false,
+        stale: cacheSnapshot.exists,
+        refreshRequired: true,
+        generatedAt: cleanText(cacheSnapshot.data()?.generatedAt)
+      },
+      portalReadStats: portalReadStats("getDtnQualificationOverview", startedAt, { baseDocuments: 2, cacheHit: false })
+    };
+  }
   const jobId = await enqueueDtnQualificationJob({
     seasonYear,
     sex,
@@ -12298,9 +12839,6 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
     sourceVersion,
     fingerprint
   });
-  const stalePayload = cacheSnapshot.exists && cacheSnapshot.data()?.payload && typeof cacheSnapshot.data().payload === "object"
-    ? cacheSnapshot.data().payload
-    : emptyDtnQualificationPayload({ seasonYear, sex, standards, competitionIds });
   console.info("Vue DTN mise en file", { seasonYear, sex, sourceVersion, jobId, stale: cacheSnapshot.exists });
   return {
     ...stalePayload,
@@ -12620,31 +13158,22 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
     }
   });
   if (pageRefs.length) {
-    const snapshots = await db.getAll(...pageRefs);
+    const snapshots = await db.getAll(...pageRefs.slice(0, 20));
     return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) => {
       const page = snapshot.exists ? snapshot.data() || {} : {};
       return Array.isArray(page.rows) ? page.rows : [];
     }).map(publicPerformanceBaseRow));
   }
 
-  const reads = [];
-
-  for (let index = 0; index < ids.length; index += 10) {
-    const chunk = ids.slice(index, index + 10);
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).limit(500).get());
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).limit(500).get());
-  }
-  if (identityKey) {
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).limit(500).get());
-  }
-
-  const snapshots = await Promise.all(reads);
-  return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) =>
-    snapshot.docs
-      .map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
-      .filter((row) => row.active !== false)
+  const sourceKeys = Array.from(new Set([identityKey, ...ids].map(cleanText).filter(Boolean))).slice(0, 10);
+  for (const sourceKey of sourceKeys) {
+    const payload = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(sourceKey), null);
+    if (!Array.isArray(payload?.rows)) continue;
+    return uniquePublicPerformanceRows(payload.rows
       .map(publicPerformanceBaseRow)
-  ));
+      .filter((row) => row.active !== false && row.status !== "deleted"));
+  }
+  return [];
 }
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
@@ -12653,7 +13182,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
   const reset = request.data?.reset === true;
-  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 2500) || 2500, 250), 5000);
+  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 500) || 500, 100), 500);
   const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
   const cursor = reset ? "" : cleanText(state.cursor);
   let query = db.collection(PERFORMANCE_BASE_COLLECTION)
@@ -12707,7 +13236,7 @@ exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
   const reset = request.data?.reset === true;
-  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 1000) || 1000, 250), 2000);
+  const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 500) || 500, 100), 500);
   const startedAt = reset || !state.startedAt ? new Date().toISOString() : cleanText(state.startedAt);
   const cursor = reset ? "" : cleanText(state.cursor);
   let query = db.collection(PERFORMANCE_BASE_COLLECTION)
@@ -12815,6 +13344,7 @@ function buildAdditionalPerformanceSwimmers(performances = []) {
 function emptyAdditionalPerformanceDataSnapshot() {
   return {
     ok: true,
+    available: false,
     generatedAt: "",
     importCount: 0,
     performanceCount: 0,
@@ -12833,6 +13363,7 @@ function normalizeAdditionalPerformanceDataSnapshot(snapshot = {}) {
   const importCount = Array.from(new Set(performances.map((row) => cleanText(row.importId)).filter(Boolean))).length;
   return {
     ok: snapshot.ok !== false,
+    available: snapshot.available !== false,
     generatedAt: cleanText(snapshot.generatedAt),
     importCount: importCount || Number(snapshot.importCount || 0) || 0,
     performanceCount: performances.length,
@@ -13445,32 +13976,18 @@ function publicPerformanceActiveRow(row = {}) {
 }
 
 async function getActivePublicRowsForAffectedSwimmer(seedRows = []) {
-  const identityKeys = Array.from(new Set(seedRows
-    .map((row) => cleanText(row.swimmerIdentityKey))
-    .filter(Boolean)));
-  const ids = Array.from(new Set(seedRows
-    .flatMap((row) => [row.swimmerId, row.originalSwimmerId])
-    .map(cleanText)
-    .filter(Boolean)));
-  const reads = [];
-
-  identityKeys.forEach((identityKey) => {
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerIdentityKey", "==", identityKey).get());
-  });
-  for (let index = 0; index < ids.length; index += 10) {
-    const chunk = ids.slice(index, index + 10);
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("swimmerId", "in", chunk).get());
-    reads.push(db.collection(PERFORMANCE_BASE_COLLECTION).where("originalSwimmerId", "in", chunk).get());
-  }
-
-  if (!reads.length) return [];
-  const snapshots = await Promise.all(reads);
-  return uniquePublicPerformanceRows(snapshots.flatMap((snapshot) =>
-    snapshot.docs
-      .map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
-      .filter(publicPerformanceActiveRow)
-      .map(publicPerformanceBaseRow)
-  ));
+  const publicSeedRows = seedRows.map(publicPerformanceBaseRow);
+  const swimmerKey = publicSwimmerKey(publicSeedRows[0] || {});
+  if (!swimmerKey) return publicSeedRows.filter(publicPerformanceActiveRow);
+  const current = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(swimmerKey), null);
+  const affectedKeys = new Set(publicSeedRows.map(publicPerformanceRowKey).filter(Boolean));
+  const keptRows = (Array.isArray(current?.rows) ? current.rows : [])
+    .map(publicPerformanceBaseRow)
+    .filter((row) => !affectedKeys.has(publicPerformanceRowKey(row)));
+  return uniquePublicPerformanceRows([
+    ...keptRows,
+    ...publicSeedRows.filter(publicPerformanceActiveRow)
+  ]);
 }
 
 async function rebuildPublicSwimmerFilesForAffectedRows(affectedRows = []) {
@@ -13787,64 +14304,11 @@ async function migrateHistoricalPerformanceBaseChunk(chunkName, request) {
 }
 
 async function buildAdditionalPerformanceDataSnapshot() {
-  const performanceSnapshot = await db
-    .collection(PERFORMANCE_BASE_COLLECTION)
-    .where("source", "==", "livepalmes-import")
-    .get();
-
-  const performances = performanceSnapshot.docs
-    .map((doc) => publicPerformanceBaseRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }))
-    .filter((row) => row.active !== false && row.status !== "hidden");
-
-  const correctionsSnapshot = await db
-    .collection("performanceCorrections")
-    .orderBy("updatedAt", "desc")
-    .limit(2000)
-    .get();
-  const correctionUserIds = Array.from(new Set(correctionsSnapshot.docs
-    .map((doc) => cleanText((doc.data() || {}).updatedBy))
-    .filter(Boolean)));
-  const correctionUserNames = new Map();
-  for (let index = 0; index < correctionUserIds.length; index += 10) {
-    const chunk = correctionUserIds.slice(index, index + 10);
-    const usersSnapshot = await db
-      .collection("users")
-      .where("uid", "in", chunk)
-      .get();
-    usersSnapshot.docs.forEach((doc) => {
-      const data = doc.data() || {};
-      correctionUserNames.set(doc.id, displayNameFromProfile(data));
-    });
+  const snapshot = await readPublishedAdditionalPerformanceDataSnapshot();
+  if (snapshot.available === false) {
+    throw new HttpsError("failed-precondition", "Fichier public des performances indisponible.");
   }
-  const corrections = correctionsSnapshot.docs
-    .map((doc) => {
-      const data = doc.data() || {};
-      const updatedBy = cleanText(data.updatedBy);
-      return {
-        id: doc.id,
-        targetKey: cleanText(data.targetKey),
-        targetId: cleanText(data.targetId),
-        targetSource: cleanText(data.targetSource),
-        targetRow: data.targetRow && typeof data.targetRow === "object" ? data.targetRow : {},
-        hidden: data.hidden === true,
-        patch: data.patch && typeof data.patch === "object" ? data.patch : {},
-        updatedAt: cleanText(data.updatedAt),
-        updatedByName: cleanText(data.updatedByName) || correctionUserNames.get(updatedBy) || ""
-      };
-    })
-    .filter((correction) => correction.targetKey);
-
-  return {
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    importCount: Array.from(new Set(performances.map((row) => cleanText(row.importId)).filter(Boolean))).length,
-    performanceCount: performances.length,
-    correctionCount: corrections.length,
-    source: PERFORMANCE_BASE_COLLECTION,
-    swimmers: buildAdditionalPerformanceSwimmers(performances),
-    performances,
-    corrections
-  };
+  return snapshot;
 }
 
 async function publishAdditionalPerformanceDataSnapshot() {
@@ -14111,6 +14575,10 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       reason: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
       correctionId
     });
+    await invalidateEngagementEntryTimeCachesForPerformanceRows([
+      safePayload.targetRow || {},
+      correctedBaseRow || {}
+    ]);
   } catch (error) {
     console.error("Publication publique ciblee impossible apres correction", {
       correctionId,

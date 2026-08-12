@@ -58,7 +58,7 @@ function evaluateEngagementRoutePolicy(capabilities) {
   `, sandbox);
   return JSON.parse(JSON.stringify(sandbox.result));
 }
-const filteredEngagementCompetitionsStart = portal.indexOf("function filteredEngagementCompetitions");
+const filteredEngagementCompetitionsStart = portal.indexOf("function engagementCalendarSeptemberPreview");
 const filteredEngagementCompetitionsEnd = portal.indexOf("function renderCurrentUser", filteredEngagementCompetitionsStart);
 const filteredEngagementCompetitionsFunction = portal.slice(filteredEngagementCompetitionsStart, filteredEngagementCompetitionsEnd);
 const filteredEngagementCompetitionsSandbox = {};
@@ -68,13 +68,21 @@ vm.runInNewContext(`
     { id: "upcoming", entryStatus: "upcoming", date: "2026-03-10", name: "À venir" },
     { id: "open-late", entryStatus: "open", date: "2026-04-10", entryDeadlineAt: "2026-04-01T20:00:00Z", name: "Ouverte tardive" },
     { id: "closed-recent", entryStatus: "closed", date: "2026-02-10", name: "Fermée récente" },
-    { id: "open-urgent", entryStatus: "open", date: "2026-05-10", entryDeadlineAt: "2026-03-20T20:00:00Z", name: "Ouverte urgente" }
+    { id: "open-urgent", entryStatus: "open", date: "2026-05-10", entryDeadlineAt: "2026-03-20T20:00:00Z", name: "Ouverte urgente" },
+    { id: "next-september", entryStatus: "open", date: "2026-09-12", entryDeadlineAt: "2026-09-05T20:00:00Z", name: "Saison suivante" },
+    { id: "next-october", entryStatus: "open", date: "2026-10-03", entryDeadlineAt: "2026-09-25T20:00:00Z", name: "Hors aperçu" }
   ];
-  const engagementCalendarFiltersPayload = () => ({ startDate: "2025-09-01", endDate: "2026-08-31", regionId: "", level: "", entryStatus: "", mineOnly: false });
+  const currentEngagementSeasonStartYear = (date = new Date()) => date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1;
+  const engagementCalendarFiltersPayload = () => ({ startYear: 2025, startDate: "2025-09-01", endDate: "2026-08-31", regionId: "", level: "", entryStatus: "", mineOnly: false });
   const canonicalLivePalmesRegion = (value) => value || "";
   const canEditEngagementCompetition = () => true;
   ${filteredEngagementCompetitionsFunction}
-  result = filteredEngagementCompetitions().map((competition) => competition.id);
+  result = {
+    competitions: filteredEngagementCompetitions().map((competition) => competition.id),
+    augustPreview: engagementCalendarSeptemberPreview(engagementCalendarFiltersPayload(), new Date("2026-08-11T12:00:00")),
+    julyPreview: engagementCalendarSeptemberPreview(engagementCalendarFiltersPayload(), new Date("2026-07-11T12:00:00")),
+    otherSeasonPreview: engagementCalendarSeptemberPreview({ ...engagementCalendarFiltersPayload(), startYear: 2024 }, new Date("2026-08-11T12:00:00"))
+  };
 `, filteredEngagementCompetitionsSandbox);
 const differentialEntriesStart = functions.indexOf("exports.saveEngagementClubIndividualEntries");
 const differentialEntriesEnd = functions.indexOf("exports.saveEngagementClubSwimmerSelection", differentialEntriesStart);
@@ -94,9 +102,26 @@ const fullSwimmerSave = functions.slice(fullSwimmerSaveStart, fullSwimmerSaveEnd
 const clubEntryReadStart = functions.indexOf("exports.getEngagementClubEntry");
 const clubEntryReadEnd = functions.indexOf("exports.generateEngagementClubRecapPdf", clubEntryReadStart);
 const clubEntryRead = functions.slice(clubEntryReadStart, clubEntryReadEnd);
+const engagementEntryTimeCacheStart = functions.indexOf("async function rebuildEngagementEntryTimeCache");
+const engagementEntryTimeCacheEnd = functions.indexOf("function deleteEngagementEntryTimeCache", engagementEntryTimeCacheStart);
+const engagementEntryTimeCacheSource = functions.slice(engagementEntryTimeCacheStart, engagementEntryTimeCacheEnd);
 const competitionDetailLoadStart = portal.indexOf("async function loadEngagementCompetitionDetail");
 const competitionDetailLoadEnd = portal.indexOf("async function saveEngagementClubTeamLeader", competitionDetailLoadStart);
 const competitionDetailLoad = portal.slice(competitionDetailLoadStart, competitionDetailLoadEnd);
+const engagementCompetitionListStart = functions.indexOf("exports.listEngagementCompetitions");
+const engagementCompetitionListEnd = functions.indexOf("exports.getEngagementCompetition", engagementCompetitionListStart);
+const engagementCompetitionListSource = functions.slice(engagementCompetitionListStart, engagementCompetitionListEnd);
+const engagementClubSwimmerListStart = functions.indexOf("exports.listEngagementClubSwimmers");
+const engagementClubSwimmerListEnd = functions.indexOf("exports.rebuildEngagementClubAggregates", engagementClubSwimmerListStart);
+const engagementClubSwimmerListSource = functions.slice(engagementClubSwimmerListStart, engagementClubSwimmerListEnd);
+const engagementClubRecapListStart = functions.indexOf("exports.listEngagementCompetitionClubRecaps");
+const engagementClubRecapListEnd = functions.indexOf("function engagementCompetitionStatisticsItem", engagementClubRecapListStart);
+const engagementClubRecapListSource = functions.slice(engagementClubRecapListStart, engagementClubRecapListEnd);
+const dtnBuildSource = functions.slice(functions.indexOf("async function buildDtnQualificationPayload"), functions.indexOf("async function enqueueDtnQualificationJob"));
+const dtnOverviewSource = functions.slice(functions.indexOf("exports.getDtnQualificationOverview"), functions.indexOf("function normalizePerformanceSearchText"));
+const mailRecipientSource = functions.slice(functions.indexOf("async function engagementActiveMailRecipients"), functions.indexOf("async function engagementActiveClubMailRecipients"));
+const additionalPerformanceSnapshotSource = functions.slice(functions.indexOf("async function buildAdditionalPerformanceDataSnapshot"), functions.indexOf("async function publishAdditionalPerformanceDataSnapshot"));
+const importDeletionSource = functions.slice(functions.indexOf("async function markCompetitionImportDeleted"), functions.indexOf("exports.updateCompetitionImportRecordAlertDecision"));
 const programSessionsForSexStart = portal.indexOf("function engagementClubProgramSessionsForSex");
 const programSessionsForSexEnd = portal.indexOf("function engagementClubProgramItemLabel", programSessionsForSexStart);
 const programSessionsForSexFunction = portal.slice(programSessionsForSexStart, programSessionsForSexEnd);
@@ -223,7 +248,8 @@ assert.equal(firebase.firestore.indexes, "firestore.indexes.json");
 assert.ok(indexes.indexes.some((index) => index.collectionGroup === "users"));
 assert.equal(portal.includes("withTimeout(loadRemoteRecordsData"), false);
 assert.ok(imports.includes('global.location.hash === "#import-competitions"'));
-assert.ok(functions.includes("DTN_QUALIFICATION_MAX_ROWS_PER_COURSE + 1"));
+assert.ok(dtnBuildSource.includes('source: "public-storage-top-files"'));
+assert.equal(dtnBuildSource.includes(".collection(PERFORMANCE_BASE_COLLECTION)"), false);
 assert.equal(functions.includes('licenseUpdatedBy: "engagement-roster-migration"'), false);
 assert.ok(functions.includes("revokeRefreshTokens(uid)"));
 assert.ok(functions.includes("nextPortalAccessRateLimit"));
@@ -305,15 +331,32 @@ assert.ok(portalCss.includes("padding: 10px 14px"));
 assert.equal(portal.includes('textContent = "Fiche chargee."'), false);
 assert.ok(portal.includes('callFunction("previewEngagementClubSwimmerEventTimesBatch"'));
 assert.ok(portal.includes("engagementClubSwimmerEventTimesCache.has(cacheKey)"));
-assert.ok(portal.includes("if (event.target.checked) void ensureEngagementClubSwimmerEventTimes(swimmer)"));
 assert.ok(portal.includes("if (!swimmerFormRows.length)"));
 assert.ok(portal.includes("entriesBySwimmer.get(swimmer.swimmerIndexId) || cloneEngagementClubEntry(swimmer.individualEntries || [])"));
 assert.ok(portal.includes("async function openEngagementClubTimesDialog"));
-assert.ok(portal.includes("await ensureEngagementClubSwimmerEventTimes(swimmer)"));
+assert.ok(portal.includes("if (stillPending) await ensureEngagementClubSwimmerEventTimes(refreshedSwimmer)"));
+assert.ok(portal.includes("if (engagementClubEntriesAutosaveTimer) await flushEngagementClubIndividualEntriesAutosave();"));
+assert.equal(portal.includes("if (event.target.checked) void ensureEngagementClubSwimmerEventTimes(swimmer);"), false);
+assert.ok(engagementEntryTimeCacheSource.includes("readEngagementEntryTimeSourceRows(swimmer)"));
+assert.ok(engagementEntryTimeCacheSource.includes("engagementEntryTimeCacheBuilds.has(cacheId)"));
+assert.equal(engagementEntryTimeCacheSource.includes("getPerformanceBaseRowsBySwimmer"), false);
+assert.equal(engagementEntryTimeCacheSource.includes("PERFORMANCE_BASE_COLLECTION"), false);
+assert.ok(functions.includes("variableDocumentsMax: swimmerIds.length"));
+assert.equal(engagementCompetitionListSource.includes("rebuildEngagementCompetitionCalendar"), false);
+assert.equal(engagementCompetitionListSource.includes("forceCalendar"), false);
+assert.ok(engagementCompetitionListSource.includes("variableDocumentsMax: 0"));
+assert.equal(engagementClubSwimmerListSource.includes("rebuildEngagementClubRoster"), false);
+assert.equal(engagementClubSwimmerListSource.includes("forceRoster"), false);
+assert.ok(engagementClubSwimmerListSource.includes("variableDocumentsMax: 0"));
+assert.equal(engagementClubRecapListSource.includes("rebuildEngagementCompetitionEntrySummary"), false);
+assert.equal(engagementClubRecapListSource.includes("forceSummary"), false);
+assert.ok(functions.includes("generatedAt: now || new Date().toISOString()"));
+assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedImportedPerformances)"));
+assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceRows(result.affectedRows || [])"));
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimes"));
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimesBatch"));
 assert.ok(functions.includes("exports.getEngagementClubEntryTimeHistory"));
-assert.ok(functions.includes("ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 2"));
+assert.ok(functions.includes("ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3"));
 const engagementQualificationSource = functions.slice(functions.indexOf("function engagementQualificationRowAllowed"), functions.indexOf("function bestEngagementKnownTime"));
 assert.equal(engagementQualificationSource.includes("isIntermediate"), false);
 assert.ok(functions.includes("function engagementKnownTimeHistory"));
@@ -784,9 +827,20 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portalAuth.includes("accessRefreshPromise && accessRefreshUid === refreshUid"));
 assert.ok(functions.includes('console.info("livepalmes.portal.reads"'));
 assert.ok(functions.includes("exports.rebuildEngagementClubAggregates"));
-assert.ok(functions.includes('.where("swimmerIdentityKey", "==", identityKey).limit(500).get()'));
+assert.ok(functions.includes("publicPerformanceSwimmerFilePath(sourceKey)"));
 assert.ok(functions.includes("exports.buildDtnQualificationView = onDocumentCreated"));
 assert.ok(functions.includes("enqueueDtnQualificationJob"));
+assert.ok(dtnOverviewSource.includes("request.data?.rebuild !== true"));
+assert.ok(dtn.includes("rebuild: options.rebuild === true"));
+assert.ok(mailRecipientSource.includes("engagementMailRecipientsFromIndex"));
+assert.equal(mailRecipientSource.includes(".limit(1000)"), false);
+assert.ok(functions.includes("exports.rebuildEngagementMailRecipientIndexNextPage"));
+assert.ok(functions.includes("ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32"));
+assert.equal(additionalPerformanceSnapshotSource.includes(".collection("), false);
+assert.ok(additionalPerformanceSnapshotSource.includes("readPublishedAdditionalPerformanceDataSnapshot"));
+assert.equal(importDeletionSource.includes('.collection("performances").get()'), false);
+assert.equal(importDeletionSource.includes('.where("importId", "==", importId)'), false);
+assert.ok(functions.includes("Number(request.data?.pageSize || 500) || 500, 100), 500"));
 assert.equal(functions.slice(functions.indexOf("const DTN_QUALIFICATION_JOB_OPTIONS"), functions.indexOf("const PORTAL_ACCESS_RATE_LIMIT_COLLECTION")).includes("retry: true"), false);
 assert.ok(dtn.includes("Recalcul lancé en arrière-plan"));
 assert.equal(portalHtml.includes("assets/livepalmes-dtn-qualifications.js"), false);
@@ -803,8 +857,8 @@ assert.ok(portalHtml.includes('id="adminEngagementsStepFooter"'));
 assert.ok(portalHtml.includes('id="adminEngagementsSaveState"'));
 assert.ok(portal.includes("function storedEngagementDetailTab"));
 assert.ok(portal.includes("livepalmes.engagement.lastTab."));
-assert.ok(portal.includes('label: "Continuer mes engagements"'));
-assert.ok(portal.includes('label: "Commencer mes engagements"'));
+assert.ok(portal.includes('label: "Mes engagements"'));
+assert.ok(portal.includes('label: "S’engager"'));
 assert.ok(portal.includes("function updateEngagementStepNavigation"));
 assert.ok(portal.includes('data-engagement-competition-card-id="${escapeHtml(competition.id)}"'));
 assert.ok(portal.includes("function setEngagementSaveState"));
@@ -848,9 +902,16 @@ assert.ok(portal.includes("const contextChanged = Boolean(previousMode && previo
 assert.ok(portal.includes("closeEngagementCompetitionDetail({ skipConfirmation: true })"));
 assert.ok(portal.includes('engagementCompetitionsLoadedRange = "";'));
 assert.ok(portal.includes("function closeEngagementCompetitionDetail({ skipConfirmation = false } = {})"));
-assert.deepEqual(JSON.parse(JSON.stringify(filteredEngagementCompetitionsSandbox.result)), [
-  "open-urgent", "open-late", "upcoming", "closed-recent", "closed-old"
-]);
+assert.deepEqual(JSON.parse(JSON.stringify(filteredEngagementCompetitionsSandbox.result)), {
+  competitions: ["open-urgent", "open-late", "upcoming", "closed-recent", "closed-old", "next-september"],
+  augustPreview: {
+    startYear: 2026,
+    startDate: "2026-09-01",
+    endDate: "2026-09-30"
+  },
+  julyPreview: null,
+  otherSeasonPreview: null
+});
 assert.ok(portalHtml.indexOf('data-engagement-status=""') < portalHtml.indexOf('data-engagement-status="open"'));
 assert.ok(portal.includes('elements.engagementsStatusFilter.value = "";'));
 assert.ok(portal.includes("admin-engagements-competition-mobile-meta"));
@@ -868,7 +929,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.equal((portalHtml.match(/20260811-admin-pilotage-6/g) || []).length, 2);
+assert.equal((portalHtml.match(/20260811-admin-pilotage-11/g) || []).length, 2);
 assert.ok(portal.includes('activeEngagementsTab === "calendar"'));
 assert.ok(portalCss.includes('#adminEngagementsView:not([data-engagements-tab="calendar"]) #adminEngagementsCalendarActions'));
 assert.ok(portal.includes("manageOnly: isEngagementAdminMode()"));
@@ -878,6 +939,12 @@ assert.ok(functions.includes("const manageOnly = request.data?.manageOnly === tr
 assert.ok(functions.includes("const managementContext = manageOnly ? await engagementAccessContext(request) : null;"));
 assert.ok(functions.includes('cleanText(competition.regionId) === managementContext.regionId'));
 assert.ok(functions.includes("assertCanManageEngagementCompetition(context, doc.data() || {});"));
+assert.ok(portal.includes('elements.engagementsDeleteButton.textContent = directDelete ? "Suppression en cours..." : "Envoi en cours...";'));
+assert.ok(portal.includes("engagementCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);"));
+assert.ok(portal.includes("elements.engagementsStatus?.textContent !== successMessage"));
+assert.ok(portal.includes("}, 4000);"));
+assert.ok(functions.includes("batch.set(engagementCompetitionCalendarRef(db, seasonEndYear)"));
+assert.ok(functions.includes("batch.delete(engagementClosureQueueRef(db, competitionId));"));
 assert.ok(Array.isArray(functionsClubReference.clubs));
 assert.ok(functionsClubReference.clubs.some((club) => club[0] === "106" && String(club[1]).trim() === "CNHC"));
 assert.ok(clubReferenceGenerator.includes('functionsOutputPath = path.join(rootDir, "functions", "assets", "club-reference.json")'));
@@ -892,7 +959,22 @@ assert.ok(portal.includes('regionalAdministration ? engagementRegionScope(user) 
 assert.ok(portal.includes("applyEngagementCalendarRegionScope(currentAccessProfile, nextMode)"));
 assert.equal(portal.includes('return `${code}${name} (${club.clubId})`;'), false);
 assert.ok(functions.includes('const clubReference = require("./assets/club-reference.json");'));
-assert.ok(functions.includes('["Code club", engagementClubCode(entry.clubId, entry.clubCode) || "-"]'));
+assert.ok(functions.includes('engagementPdfCompactSummary(doc, ['));
+assert.ok(functions.includes('function engagementPdfFeesTable'));
+assert.ok(functions.includes('function engagementPdfEmptyState'));
+assert.ok(functions.includes('label: "Sous-total"'));
+assert.ok(functions.includes('text("TOTAL ESTIMÉ"'));
+assert.ok(functions.includes('["Échéance", "Avant la fin de la première journée"]'));
+assert.ok(functions.includes('doc.engagementPdfContinuationHeader = () =>'));
+assert.ok(functions.includes('engagementPdfEmptyState(doc, "Aucun relais engagé."'));
+assert.ok(functions.includes('engagementPdfEmptyState(doc, "Aucun officiel déclaré."'));
+assert.ok(functions.includes('engagementClubCode(entry.clubId, entry.clubCode)].filter(Boolean).join(" · ")'));
+assert.ok(functions.includes('const chunk = columns;'));
+assert.ok(functions.includes('sessionGroups.forEach((group, groupIndex) => {'));
+assert.ok(functions.includes('doc.lineWidth(1.15).strokeColor("#879da1")'));
+assert.ok(functions.includes('layout: "portrait"'));
+assert.equal(functions.includes('layout: "landscape"'), false);
+assert.equal(functions.includes('columns.slice(start, start + 14)'), false);
 assert.ok(functions.includes("clubCode: engagementClubCode(entry.clubId, entry.clubCode)"));
 assert.ok(portalHtml.includes('id="adminPortalScopeContext"'));
 assert.ok(portalHtml.includes('id="adminPortalAccountClubCode"'));

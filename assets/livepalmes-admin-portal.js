@@ -1955,7 +1955,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260806-performance-audit-1",
+      "assets/livepalmes-dtn-qualifications.js?v=20260812-read-budget-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -2534,15 +2534,44 @@
     };
   }
 
+  function engagementCalendarSeptemberPreview(filters = {}, date = new Date()) {
+    const currentSeason = currentEngagementSeasonStartYear(date);
+    if (date.getMonth() !== 7 || Number(filters.startYear) !== currentSeason) return null;
+    const septemberYear = currentSeason + 1;
+    return {
+      startYear: septemberYear,
+      startDate: `${septemberYear}-09-01`,
+      endDate: `${septemberYear}-09-30`
+    };
+  }
+
+  function engagementCalendarRequestedRange(filters = {}, date = new Date()) {
+    const preview = engagementCalendarSeptemberPreview(filters, date);
+    return [filters.startDate, filters.endDate, preview?.startDate, preview?.endDate]
+      .filter(Boolean)
+      .join("|");
+  }
+
+  function engagementCompetitionIsInSeptemberPreview(competition = {}, filters = {}, date = new Date()) {
+    const preview = engagementCalendarSeptemberPreview(filters, date);
+    return Boolean(competition.date && preview && competition.date >= preview.startDate && competition.date <= preview.endDate);
+  }
+
   function filteredEngagementCompetitions() {
     const filters = engagementCalendarFiltersPayload();
+    const septemberPreview = engagementCalendarSeptemberPreview(filters);
     return engagementCompetitions
-      .filter((competition) => !competition.date || (competition.date >= filters.startDate && competition.date <= filters.endDate))
+      .filter((competition) => !competition.date ||
+        (competition.date >= filters.startDate && competition.date <= filters.endDate) ||
+        (septemberPreview && competition.date >= septemberPreview.startDate && competition.date <= septemberPreview.endDate))
       .filter((competition) => !filters.regionId || canonicalLivePalmesRegion(competition.regionId) === filters.regionId)
       .filter((competition) => !filters.level || competition.level === filters.level)
       .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
       .filter((competition) => !filters.mineOnly || canEditEngagementCompetition(competition))
       .sort((left, right) => {
+        const previewDifference = Number(engagementCompetitionIsInSeptemberPreview(left, filters)) -
+          Number(engagementCompetitionIsInSeptemberPreview(right, filters));
+        if (previewDifference) return previewDifference;
         const statusRank = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : competition.entryStatus === "closed" ? 2 : 1;
         const rankDifference = statusRank(left) - statusRank(right);
         if (rankDifference) return rankDifference;
@@ -3058,7 +3087,10 @@
     const date = new Date(`${competition.date}T12:00:00`);
     if (Number.isNaN(date.getTime())) return "Date à confirmer";
     const label = date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    const monthLabel = label.charAt(0).toUpperCase() + label.slice(1);
+    return engagementCompetitionIsInSeptemberPreview(competition, engagementCalendarFiltersPayload())
+      ? `${monthLabel} — saison suivante`
+      : monthLabel;
   }
 
   function engagementCompetitionAction(competition = {}) {
@@ -3071,8 +3103,8 @@
     if (competition.entryStatus === "open" && engagementDeadlineTone(competition) !== "deadline-passed") {
       const rememberedTab = storedEngagementDetailTab(competition.id);
       return rememberedTab
-        ? { label: "Continuer mes engagements", tab: rememberedTab }
-        : { label: "Commencer mes engagements", tab: "team" };
+        ? { label: "Mes engagements", tab: rememberedTab }
+        : { label: "S’engager", tab: "team" };
     }
     if (competition.entryStatus === "closed" || engagementDeadlineTone(competition) === "deadline-passed") {
       return { label: "Consulter le récapitulatif", tab: "summary" };
@@ -5495,7 +5527,13 @@
     renderEngagementClubTimesDialog();
     if (!swimmer) return;
     if (engagementClubTimesDialogLoading) {
-      await ensureEngagementClubSwimmerEventTimes(swimmer);
+      if (engagementClubEntriesAutosaveTimer) await flushEngagementClubIndividualEntriesAutosave();
+      else await engagementClubEntryMutationQueue;
+      if (engagementClubTimesDialogSwimmerId !== swimmerIndexId) return;
+      const refreshedSwimmer = engagementClubTimesDialogSwimmer() || swimmer;
+      const stillPending = (refreshedSwimmer.individualEntries || [])
+        .some((entry) => !entry.entryTimeMode || entry.entryTimeMode === "pending");
+      if (stillPending) await ensureEngagementClubSwimmerEventTimes(refreshedSwimmer);
       if (engagementClubTimesDialogSwimmerId !== swimmerIndexId) return;
       engagementClubTimesDialogLoading = false;
       renderEngagementClubTimesDialog();
@@ -6717,16 +6755,34 @@
             <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong></span>
           </div>`).join("")}`;
     } else {
+      const individualRows = selectedEvent.rows
+        .map((row, index) => ({ row, index }))
+        .sort((left, right) => {
+          const sexOrder = { F: 0, M: 1 };
+          return (sexOrder[String(left.row.sex || "").toUpperCase()] ?? 2) - (sexOrder[String(right.row.sex || "").toUpperCase()] ?? 2)
+            || left.index - right.index;
+        })
+        .map(({ row }) => row);
+      const groupedIndividualRows = [
+        { sex: "F", label: "Femmes", tone: "female" },
+        { sex: "M", label: "Hommes", tone: "male" },
+        { sex: "", label: "Sexe à vérifier", tone: "unknown" }
+      ].map((group) => ({
+        ...group,
+        rows: individualRows.filter((row) => String(row.sex || "").toUpperCase() === group.sex)
+      })).filter((group) => group.rows.length);
       eventRows.innerHTML = `
-        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head" role="row"><span>Ordre</span><span>Nageur</span><span>Club</span><span>Sexe · catégorie</span><span>Temps</span></div>
-        ${selectedEvent.rows.map((row, index) => `
-          <div class="admin-engagements-statistics-row" role="row">
+        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head admin-engagements-statistics-individual-row" role="row"><span>Ordre</span><span>Nageur</span><span>Club</span><span>Catégorie</span><span>Temps</span></div>
+        ${groupedIndividualRows.map((group) => `
+          <div class="admin-engagements-statistics-gender-heading is-${escapeHtml(group.tone)}" role="row"><strong>${escapeHtml(group.label)}</strong><span>${group.rows.length} engagé${group.rows.length > 1 ? "s" : ""}</span></div>
+          ${group.rows.map((row, index) => `
+          <div class="admin-engagements-statistics-row admin-engagements-statistics-individual-row" role="row" data-sex="${escapeHtml(group.sex || "unknown")}">
             <span data-label="Ordre">${index + 1}</span>
-            <span data-label="Nageur"><strong>${escapeHtml(row.lastName || "-")}</strong><small>${escapeHtml(row.firstName || "")}</small></span>
+            <span data-label="Nageur"><strong>${escapeHtml([row.lastName, row.firstName].filter(Boolean).join(" ") || "-")}</strong></span>
             <span data-label="Club"><strong>${escapeHtml(clubDisplayCode(row, "-"))}</strong></span>
-            <span data-label="Sexe · catégorie">${escapeHtml([row.sex, row.category].filter(Boolean).join(" · ") || "-")}</span>
-            <span data-label="Temps"><strong>${escapeHtml(row.entryTime || "-")}</strong><small>${escapeHtml(engagementStatisticsTimeModeLabel(row.entryTimeMode))}</small></span>
-          </div>`).join("")}`;
+            <span data-label="Catégorie">${escapeHtml(row.category || "-")}</span>
+            <span data-label="Temps" title="${escapeHtml(engagementStatisticsTimeModeLabel(row.entryTimeMode))}"><strong>${escapeHtml(row.entryTime || "-")}</strong></span>
+          </div>`).join("")}`).join("")}`;
     }
     const clubs = Array.isArray(statistics.clubs) ? statistics.clubs : [];
     clubRows.innerHTML = clubs.length ? `
@@ -8834,7 +8890,13 @@
       : `${actionLabel} la competition "${competition.name || "sans nom"}" ? Un administrateur national devra valider la suppression.`;
     if (!global.confirm(confirmMessage)) return;
 
-    if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.disabled = true;
+    const deleteButtonLabel = elements.engagementsDeleteButton?.textContent || "";
+    let deletionCompleted = false;
+    if (elements.engagementsDeleteButton) {
+      elements.engagementsDeleteButton.disabled = true;
+      elements.engagementsDeleteButton.textContent = directDelete ? "Suppression en cours..." : "Envoi en cours...";
+      elements.engagementsDeleteButton.setAttribute("aria-busy", "true");
+    }
     if (elements.engagementsDetailStatus) {
       elements.engagementsDetailStatus.textContent = directDelete
         ? "Suppression de la competition..."
@@ -8846,16 +8908,25 @@
       await callFunction(directDelete ? "deleteEngagementCompetition" : "requestEngagementCompetitionDeletion", {
         competitionId: competition.id
       });
-      engagementCompetitionsLoaded = false;
+      deletionCompleted = true;
       if (directDelete) {
+        engagementCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);
+        engagementCompetitionsLoaded = true;
+        renderEngagementCompetitions();
         clearEngagementDetailTabDirty();
         closeEngagementCompetitionDetail();
         if (elements.engagementsStatus) {
+          const successMessage = "Competition supprimee.";
           elements.engagementsStatus.hidden = false;
-          elements.engagementsStatus.textContent = "Competition supprimee.";
+          elements.engagementsStatus.textContent = successMessage;
           elements.engagementsStatus.dataset.tone = "ok";
+          global.setTimeout(() => {
+            if (elements.engagementsStatus?.textContent !== successMessage || elements.engagementsStatus?.dataset.tone !== "ok") return;
+            elements.engagementsStatus.textContent = "";
+            delete elements.engagementsStatus.dataset.tone;
+            elements.engagementsStatus.hidden = true;
+          }, 4000);
         }
-        await loadEngagementCompetitions({ force: true });
       } else if (elements.engagementsDetailStatus) {
         selectedEngagementCompetition = {
           ...selectedEngagementCompetition,
@@ -8871,7 +8942,13 @@
         elements.engagementsDetailStatus.dataset.tone = "error";
       }
     } finally {
-      if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.disabled = false;
+      if (elements.engagementsDeleteButton) {
+        elements.engagementsDeleteButton.removeAttribute("aria-busy");
+        if (!deletionCompleted) {
+          elements.engagementsDeleteButton.disabled = false;
+          elements.engagementsDeleteButton.textContent = deleteButtonLabel;
+        }
+      }
     }
   }
 
@@ -10767,14 +10844,21 @@
     }
     try {
       const filters = engagementCalendarFiltersPayload();
-      const requestedRange = `${filters.startDate}|${filters.endDate}`;
-      const result = await callFunction("listEngagementCompetitions", {
-        fromDate: filters.startDate,
-        toDate: filters.endDate,
+      const septemberPreview = engagementCalendarSeptemberPreview(filters);
+      const requestedRange = engagementCalendarRequestedRange(filters);
+      const ranges = [
+        { startDate: filters.startDate, endDate: filters.endDate },
+        ...(septemberPreview ? [septemberPreview] : [])
+      ];
+      const results = await Promise.all(ranges.map((range) => callFunction("listEngagementCompetitions", {
+        fromDate: range.startDate,
+        toDate: range.endDate,
         manageOnly: isEngagementAdminMode(),
         limit: 250
-      });
-      engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
+      })));
+      engagementCompetitions = Array.from(new Map(results
+        .flatMap((result) => Array.isArray(result.competitions) ? result.competitions : [])
+        .map((competition) => [competition.id, competition])).values());
       if (isEngagementAdminMode() && !canUse("engagements.national.manage")) {
         engagementCompetitions = engagementCompetitions.filter((competition) => canEditEngagementCompetition(competition));
       }
@@ -12066,7 +12150,7 @@
     elements.engagementsFiltersReset?.addEventListener("click", () => {
       resetEngagementCalendarFilters();
       const filters = engagementCalendarFiltersPayload();
-      const requestedRange = `${filters.startDate}|${filters.endDate}`;
+      const requestedRange = engagementCalendarRequestedRange(filters);
       if (engagementCompetitionsLoadedRange === requestedRange) renderEngagementCompetitions();
       else loadEngagementCompetitions({ force: true });
     });
@@ -12104,7 +12188,7 @@
       if (event.target.closest("[data-engagement-filters-reset]")) {
         resetEngagementCalendarFilters();
         const filters = engagementCalendarFiltersPayload();
-        const requestedRange = `${filters.startDate}|${filters.endDate}`;
+        const requestedRange = engagementCalendarRequestedRange(filters);
         if (engagementCompetitionsLoadedRange === requestedRange) renderEngagementCompetitions();
         else loadEngagementCompetitions({ force: true });
         return;
@@ -12839,7 +12923,6 @@
         selectedEngagementClubEntry = { ...(selectedEngagementClubEntry || {}), swimmers };
         if (swimmer) {
           void persistEngagementClubIndividualEntries(swimmer);
-          if (event.target.checked) void ensureEngagementClubSwimmerEventTimes(swimmer);
         }
       }
       updateEngagementClubEntriesSummary();

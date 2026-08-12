@@ -169,7 +169,11 @@ performances/public/data/
 
 Le portail ne charge pas le referentiel complet des nageurs a son ouverture. La liste des clubs provient de `performances/public/data/club-reference.js`, generee par `tools/build-admin-club-reference.js`. Le meme generateur produit `functions/assets/club-reference.json` afin que les fonctions serveur utilisent le code club dans les statistiques et documents destines aux humains, tout en conservant l'identifiant numerique comme cle technique. Le fichier de travail `admin-reference.js`, qui contient des donnees nageurs, est exclu de Firebase Hosting. Dans l'administration Records / MPF, les suggestions de nageurs sont chargees a la demande depuis les shards statiques `performance-public/search/`.
 
-Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent actifs. L'annuaire des acces est pagine et borne cote Cloud Functions ; les recherches regionales s'appuient sur les index declares dans `firestore.indexes.json`. Les calculs DTN utilisent leur cache et refusent un recalcul si la limite explicite de performances par course est depassee, afin de ne jamais produire un resultat partiel silencieux.
+Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent actifs. L'annuaire des acces est pagine et borne cote Cloud Functions ; les recherches regionales s'appuient sur les index declares dans `firestore.indexes.json`. L'ouverture de l'espace DTN lit seulement son cache : un cache absent ou perime demande une action explicite « Recalculer ». Ce recalcul utilise les fichiers TOP de Storage, et non un parcours de la collection Firestore `performances`.
+
+Les destinataires des courriels d'engagements sont conserves dans 32 fragments par capacite. Ils sont mis a jour a chaque modification d'un utilisateur. L'initialisation automatique est plafonnee a 505 lectures reparties entre les trois capacites et son etat ; au-dela, une reconstruction nationale paginee de 250 utilisateurs maximum par appel est obligatoire.
+
+Les parcours interactifs des engagements n'effectuent aucune reconstruction massive automatique. Le calendrier et les effectifs clubs lisent leurs documents agreges, maintenus par les declencheurs Firestore. Le calcul d'un temps lit le cache du nageur puis, si necessaire, son unique fichier public `performance-public-firestore/swimmers/`. Un agregat ou fichier absent produit un etat d'indisponibilite explicite ; les reconstructions nationales volontaires sont paginees et plafonnees sous mille lectures par appel.
 
 ## Donnees et Firebase
 
