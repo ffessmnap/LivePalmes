@@ -161,6 +161,10 @@ Elle est découpée en plusieurs bibliothèques spécialisées :
 
 Ces fichiers statiques sont rapides à servir et évitent de facturer une lecture Firestore pour chaque ligne affichée. Ils sont générés automatiquement : il ne faut pas les modifier à la main.
 
+Le calcul interactif des temps d’engagement utilise également le fichier `swimmers/` du nageur pour reconstruire son cache. Il ne parcourt jamais directement la collection Firestore `performances`. Si le fichier individuel manque, le calcul s’arrête avec un état d’indisponibilité explicite afin de préserver un budget de lectures strictement borné.
+
+Les exports, republications et suppressions d'import relisent le fichier consolidé `performance-public/additional-data.json` ainsi que les fichiers nageurs ciblés. Les qualifications DTN sont recalculées explicitement depuis les fichiers TOP de Storage. Ces traitements n'effectuent donc plus de parcours complet de la collection Firestore `performances`.
+
 ## À retenir
 
 - INTRANAP reste la **source historique conservée intacte**.

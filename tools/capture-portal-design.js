@@ -315,7 +315,7 @@ function accessUsersFixtureHtml() {
 
 function engagementCompetitionsFixtureHtml() {
   const rows = [
-    ["15–17 août", "TEST LIVEPALMES", "Houilles", "National", "Île-de-France", "Ouverts", "Ferme dans 1 j 4 h", "open", "warning", "Commencer mes engagements"],
+    ["15–17 août", "TEST LIVEPALMES", "Houilles", "National", "Île-de-France", "Ouverts", "Ferme dans 1 j 4 h", "open", "warning", "S’engager"],
     ["12 septembre", "Championnat régional", "Beaumont-sur-Oise", "Régional", "Île-de-France", "À venir", "Ouvre dans 18 jours", "upcoming", "neutral", "Voir les informations"],
     ["4 octobre", "Meeting de rentrée", "Corbie", "Départemental", "Hauts-de-France", "Fermés", "Fermés depuis le 28 septembre", "closed", "neutral", "Voir le récapitulatif"]
   ];

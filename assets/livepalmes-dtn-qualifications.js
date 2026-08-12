@@ -123,16 +123,17 @@
     }));
   }
 
-  function loadEdfOverview(season, sex) {
+  function loadEdfOverview(season, sex, options = {}) {
     const key = `${season.id}|${sex}`;
-    if (overviewCache.has(key)) return overviewCache.get(key);
+    if (!options.rebuild && overviewCache.has(key)) return overviewCache.get(key);
     const promise = waitForAuthenticatedUser().then(() => {
       const functions = functionsService();
       if (!functions?.httpsCallable) throw new Error("Service DTN indisponible");
       return functions.httpsCallable("getDtnQualificationOverview")({
         seasonYear: season.performanceSeason,
         sex,
-        standards: edfThresholdPayload(season, sex)
+        standards: edfThresholdPayload(season, sex),
+        rebuild: options.rebuild === true
       });
     }).then((result) => {
       const overview = result.data || {};
@@ -141,6 +142,11 @@
         elements.refreshStatus.textContent = overview.cache.stale
           ? "Dernière vue affichée. Actualisation en arrière-plan."
           : "Calcul lancé en arrière-plan. Revenez dans quelques instants.";
+      } else if (overview.cache?.refreshRequired && elements.refreshStatus) {
+        elements.refreshStatus.dataset.tone = "";
+        elements.refreshStatus.textContent = overview.cache.stale
+          ? "Dernière vue affichée. Utilisez Recalculer pour l'actualiser."
+          : "Qualifications non calculées. Utilisez Recalculer pour les préparer.";
       }
       return overview;
     });
@@ -164,9 +170,9 @@
       Array.from(overviewCache.keys()).forEach((key) => {
         if (key.startsWith(`${season.id}|`)) overviewCache.delete(key);
       });
-      renderGrid();
       const sexes = state.edfTab === "summary" ? ["F", "M"] : [state.sex];
-      const overviews = await Promise.all(sexes.map((sex) => loadEdfOverview(season, sex)));
+      const overviews = await Promise.all(sexes.map((sex) => loadEdfOverview(season, sex, { rebuild: true })));
+      renderGrid();
       elements.refreshStatus.textContent = overviews.some((overview) => overview.cache?.pending)
         ? "Recalcul lancé en arrière-plan. La dernière vue reste disponible."
         : "Qualifications actualisées.";
