@@ -12314,10 +12314,17 @@
     elements.engagementsDetailStepButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         const requestedGroup = button.dataset.engagementStepButton || "";
-        if (requestedGroup === engagementDetailTabGroup(activeEngagementsDetailTab)) return;
         const groupTabs = ENGAGEMENT_DETAIL_TAB_GROUPS[requestedGroup] || [];
         const visibleTabs = new Set(visibleEngagementDetailTabs());
-        const target = groupTabs.find((tab) => visibleTabs.has(tab)) || "";
+        const preferredClubTab = !isEngagementAdminMode()
+          && requestedGroup === "participants"
+          && engagementClubTeamComplete()
+          && visibleTabs.has("swimmers")
+          ? "swimmers"
+          : "";
+        if (requestedGroup === engagementDetailTabGroup(activeEngagementsDetailTab)
+          && (!preferredClubTab || activeEngagementsDetailTab === preferredClubTab)) return;
+        const target = preferredClubTab || groupTabs.find((tab) => visibleTabs.has(tab)) || "";
         if (target) requestEngagementDetailTab(target);
       });
     });
