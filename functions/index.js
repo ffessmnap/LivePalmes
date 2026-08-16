@@ -28,6 +28,12 @@ const {
 } = require("./public-records-data");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
 const { engagementAccessAcknowledgement } = require("./portal-access-mail");
+const { engagementSwimmerChangeResolutionMail } = require("./engagement-swimmer-change-mail");
+const {
+  findReferenceSwimmerCorrectionTarget,
+  swimmerMergeIds,
+  recoveredPerformanceRowsAreComplete
+} = require("./engagement-swimmer-corrections");
 
 initializeApp();
 const auth = getAuth();
@@ -86,6 +92,11 @@ const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
+const ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 540, memory: "1GiB" };
+const ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS = {
+  ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS,
+  secrets: ENGAGEMENT_MAIL_SECRETS
+};
 const PORTAL_ACCESS_REQUEST_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 30 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
@@ -154,6 +165,8 @@ const DTN_EDF_COMPETITION_IDS_BY_SEASON = {
   2026: ["5039", "4978", "4979", DTN_EDF_LIMOGES_COMPETITION_ID]
 };
 const PERFORMANCE_SWIMMER_PAGE_SIZE = 500;
+const ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS = 5000;
+const ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE = 250;
 const ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT = 3;
 const PERFORMANCE_PUBLIC_DATA_URL = "https://livepalmes.web.app/performances/public/data";
 const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
@@ -630,6 +643,8 @@ async function engagementClubAccessContext(request) {
   return {
     uid,
     email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+    firstName: cleanText(data.firstName || request.auth?.token?.given_name).slice(0, 80),
+    lastName: cleanText(data.lastName || request.auth?.token?.family_name).slice(0, 80),
     clubId,
     clubName: activeClub?.clubName || cleanText(data.clubName).slice(0, 140),
     regionId: activeClub ? engagementClubRegionId(activeClub, data.regionId) : cleanText(data.regionId).slice(0, 80),
@@ -9254,9 +9269,26 @@ async function findPerformanceSwimmerCorrectionTarget(db, swimmerId = "", identi
   return null;
 }
 
+async function findEngagementSwimmerCorrectionLicense(db, swimmerIds = []) {
+  const documentIds = Array.from(new Set((Array.isArray(swimmerIds) ? swimmerIds : [])
+    .map((candidateId) => cleanText(candidateId).slice(0, 80))
+    .filter(Boolean)
+    .map((candidateId) => engagementSwimmerLicenseId({ swimmerIndexId: candidateId })))).slice(0, 25);
+  if (!documentIds.length) return { license: null, documentId: "" };
+  const snapshots = await db.getAll(...documentIds.map((documentId) =>
+    db.collection("engagementSwimmerLicenses").doc(documentId)
+  ));
+  const snapshot = snapshots.find((candidate) => candidate.exists) || null;
+  return {
+    license: snapshot?.exists ? engagementSwimmerLicenseItem(snapshot) : null,
+    documentId: snapshot?.id || ""
+  };
+}
+
 async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId = "", identityKey = "") {
   const cleanSource = ["engagement", "performances", "reference"].includes(cleanText(source)) ? cleanText(source) : "performances";
   const cleanId = cleanText(swimmerId).slice(0, 80);
+  const cleanIdentityKey = cleanText(identityKey).slice(0, 180);
   if (!cleanId) throw new HttpsError("invalid-argument", "Nageur requis.");
   if (cleanSource === "engagement") {
     const ref = db.collection("engagementClubSwimmers").doc(cleanId);
@@ -9272,14 +9304,10 @@ async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId =
       swimmer: engagementNewSwimmerItem(snapshot)
     };
   }
-  const reference = cleanSource === "reference"
-    ? intranapSwimmersIndex.find((item) => cleanText(item.id || item.swimmerId) === cleanId) || null
-    : null;
-  const referenceSwimmer = reference ? engagementReferenceSwimmerItem(reference) : null;
   const performanceSnapshot = await findPerformanceSwimmerCorrectionTarget(
     db,
     cleanId,
-    identityKey || referenceSwimmer?.identityKey || ""
+    cleanIdentityKey
   );
   if (performanceSnapshot?.exists) {
     const performanceSwimmer = engagementClubSwimmerItem(performanceSnapshot);
@@ -9289,17 +9317,14 @@ async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId =
       performanceSwimmer.swimmerId,
       ...(performanceSwimmer.sourceIds || [])
     ].map((id) => cleanText(id).slice(0, 80)).filter(Boolean)));
-    const licenseRefs = licenseCandidateIds.map((candidateId) => db.collection("engagementSwimmerLicenses")
-      .doc(engagementSwimmerLicenseId({ swimmerIndexId: candidateId })));
-    const licenseSnapshots = licenseRefs.length ? await db.getAll(...licenseRefs) : [];
-    const licenseSnapshot = licenseSnapshots.find((candidate) => candidate.exists) || null;
-    const license = licenseSnapshot?.exists ? engagementSwimmerLicenseItem(licenseSnapshot) : null;
+    const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, licenseCandidateIds);
+    const license = licenseMatch.license;
     return {
       requestedSource: cleanSource,
       requestedSwimmerId: cleanId,
       source: "performances",
       swimmerId: performanceSnapshot.id,
-      licenseDocumentId: licenseSnapshot?.id || "",
+      licenseDocumentId: licenseMatch.documentId,
       ref: performanceSnapshot.ref,
       snapshot: performanceSnapshot,
       swimmer: {
@@ -9314,7 +9339,75 @@ async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId =
       }
     };
   }
+  const performanceRows = await getPerformanceBaseRowsBySwimmer({
+    swimmerIds: [cleanId],
+    identityKey: cleanIdentityKey
+  });
+  if (performanceRows.length) {
+    const candidates = aggregateSwimmerIndexRows(performanceRows);
+    const matchingCandidates = candidates.filter((candidate) => {
+      const candidateIds = [candidate.id, ...(candidate.sourceIds || []), ...(candidate.aliases || [])]
+        .map(cleanText)
+        .filter(Boolean);
+      return candidateIds.includes(cleanId) || (cleanIdentityKey && cleanText(candidate.identityKey) === cleanIdentityKey);
+    });
+    if (matchingCandidates.length > 1) {
+      throw new HttpsError("failed-precondition", "Plusieurs fiches de performances correspondent a cet identifiant. Utilisez la fusion avant la correction.");
+    }
+    if (matchingCandidates.length === 1) {
+      const recovered = matchingCandidates[0];
+      if (cleanIdentityKey && cleanText(recovered.identityKey) !== cleanIdentityKey) {
+        throw new HttpsError("failed-precondition", "La fiche de performances a change depuis la recherche. Rechargez-la avant de corriger.");
+      }
+      const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, [
+        cleanId,
+        recovered.id,
+        ...(recovered.sourceIds || []),
+        ...(recovered.aliases || [])
+      ]);
+      return {
+        requestedSource: cleanSource,
+        requestedSwimmerId: cleanId,
+        source: "performance-base",
+        swimmerId: cleanText(recovered.id || cleanId).slice(0, 80),
+        ref: null,
+        snapshot: null,
+        licenseDocumentId: licenseMatch.documentId,
+        swimmer: {
+          ...recovered,
+          source: "performances",
+          ...(licenseMatch.license?.licenseNumber ? {
+            licenseNumber: licenseMatch.license.licenseNumber,
+            licenseVerificationStatus: licenseMatch.license.verificationStatus,
+            licenseSeasonLabel: licenseMatch.license.licenseSeasonLabel,
+            licenseSeasonStatus: licenseMatch.license.licenseSeasonStatus,
+            licenseSeasons: licenseMatch.license.licenseSeasons
+          } : {})
+        },
+        performanceRows,
+        resolvedBy: "performance-base"
+      };
+    }
+  }
+  const referenceTarget = findReferenceSwimmerCorrectionTarget(intranapSwimmersIndex, {
+    swimmerId: cleanId,
+    identityKey: cleanIdentityKey
+  });
+  if (referenceTarget.ambiguous) {
+    throw new HttpsError("failed-precondition", "Plusieurs fiches nationales correspondent a cet identifiant. Utilisez la fusion avant la correction.");
+  }
+  if (referenceTarget.stale) {
+    throw new HttpsError("failed-precondition", "La fiche nationale a change depuis la recherche. Rechargez-la avant de corriger.");
+  }
+  const referenceSwimmer = referenceTarget.swimmer
+    ? engagementReferenceSwimmerItem(referenceTarget.swimmer)
+    : null;
   if (referenceSwimmer) {
+    const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, [
+      cleanId,
+      referenceSwimmer.id,
+      ...(referenceSwimmer.sourceIds || [])
+    ]);
     return {
       requestedSource: cleanSource,
       requestedSwimmerId: cleanId,
@@ -9322,7 +9415,18 @@ async function getEngagementSwimmerCorrectionTarget(db, source = "", swimmerId =
       swimmerId: cleanId,
       ref: null,
       snapshot: null,
-      swimmer: referenceSwimmer
+      licenseDocumentId: licenseMatch.documentId,
+      swimmer: {
+        ...referenceSwimmer,
+        ...(licenseMatch.license?.licenseNumber ? {
+          licenseNumber: licenseMatch.license.licenseNumber,
+          licenseVerificationStatus: licenseMatch.license.verificationStatus,
+          licenseSeasonLabel: licenseMatch.license.licenseSeasonLabel,
+          licenseSeasonStatus: licenseMatch.license.licenseSeasonStatus,
+          licenseSeasons: licenseMatch.license.licenseSeasons
+        } : {})
+      },
+      resolvedBy: `reference-${referenceTarget.matchedBy || "fallback"}`
     };
   }
   throw new HttpsError("not-found", "Nageur introuvable dans la base nationale.");
@@ -9403,36 +9507,48 @@ function engagementEntryRelayCorrectionResult(relays = [], oldIds = new Set(), n
 async function updateEngagementEntriesForSwimmerCorrection(db, current = {}, next = {}, context = {}) {
   const clubId = cleanText(current.clubId || next.clubId).slice(0, 40);
   if (!clubId) return { scannedEntryCount: 0, entryUpdateCount: 0, relayUpdateCount: 0 };
-  const snapshot = await db.collection("engagementClubEntries").where("clubId", "==", clubId).limit(301).get();
-  if (snapshot.size > 300) {
-    throw new HttpsError("failed-precondition", "Correction trop volumineuse pour les engagements du club. Une migration dediee est necessaire.");
-  }
   const oldIds = new Set([
     current.id,
     current.swimmerIndexId,
     current.swimmerId,
     ...(Array.isArray(current.sourceIds) ? current.sourceIds : [])
   ].map((id) => cleanText(id)).filter(Boolean));
-  const batch = db.batch();
+  let scannedEntryCount = 0;
   let entryUpdateCount = 0;
   let relayUpdateCount = 0;
   const now = context.now || new Date().toISOString();
-  snapshot.docs.forEach((doc) => {
-    const entry = doc.data() || {};
-    const swimmerResult = engagementEntrySwimmerCorrectionResult(entry.swimmers || [], oldIds, next);
-    const relayResult = engagementEntryRelayCorrectionResult(entry.relays || [], oldIds, next);
-    if (!swimmerResult.changed && !relayResult.changed) return;
-    batch.set(doc.ref, cleanFirestoreValue({
-      ...(swimmerResult.changed ? { swimmers: swimmerResult.items } : {}),
-      ...(relayResult.changed ? { relays: relayResult.relays } : {}),
-      updatedAt: now,
-      updatedBy: context.uid || ""
-    }), { merge: true });
-    if (swimmerResult.changed) entryUpdateCount += 1;
-    if (relayResult.changed) relayUpdateCount += 1;
-  });
-  if (entryUpdateCount || relayUpdateCount) await batch.commit();
-  return { scannedEntryCount: snapshot.size, entryUpdateCount, relayUpdateCount };
+  let cursor = null;
+  do {
+    let query = db.collection("engagementClubEntries")
+      .where("clubId", "==", clubId)
+      .orderBy(FieldPath.documentId())
+      .limit(ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE);
+    if (cursor) query = query.startAfter(cursor);
+    const snapshot = await query.get();
+    scannedEntryCount += snapshot.size;
+    const batch = db.batch();
+    let pageUpdateCount = 0;
+    snapshot.docs.forEach((doc) => {
+      const entry = doc.data() || {};
+      const swimmerResult = engagementEntrySwimmerCorrectionResult(entry.swimmers || [], oldIds, next);
+      const relayResult = engagementEntryRelayCorrectionResult(entry.relays || [], oldIds, next);
+      if (!swimmerResult.changed && !relayResult.changed) return;
+      batch.set(doc.ref, cleanFirestoreValue({
+        ...(swimmerResult.changed ? { swimmers: swimmerResult.items } : {}),
+        ...(relayResult.changed ? { relays: relayResult.relays } : {}),
+        updatedAt: now,
+        updatedBy: context.uid || ""
+      }), { merge: true });
+      pageUpdateCount += 1;
+      if (swimmerResult.changed) entryUpdateCount += 1;
+      if (relayResult.changed) relayUpdateCount += 1;
+    });
+    if (pageUpdateCount) await batch.commit();
+    cursor = snapshot.size === ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE
+      ? snapshot.docs[snapshot.docs.length - 1]
+      : null;
+  } while (cursor);
+  return { scannedEntryCount, entryUpdateCount, relayUpdateCount };
 }
 
 function setEngagementSwimmerChangeRequestRosterState(batch, target = {}, status = "", requestId = "", now = "") {
@@ -9508,20 +9624,22 @@ async function applyEngagementSwimmerIdentityCorrection(target = {}, correction 
     return { current, swimmer: next, performanceUpdateCount: 0, publicSnapshot: null, ...entryResult };
   }
 
-  const rows = await getPerformanceBaseRowsBySwimmer({
-    swimmerIds: Array.from(new Set([
-      target.requestedSwimmerId,
-      target.swimmerId,
-      current.swimmerId,
-      ...(current.sourceIds || [])
-    ].map(cleanText).filter(Boolean))),
-    identityKey: current.identityKey
-  });
+  const rows = Array.isArray(target.performanceRows) && target.performanceRows.length
+    ? target.performanceRows
+    : await getPerformanceBaseRowsBySwimmer({
+      swimmerIds: Array.from(new Set([
+        target.requestedSwimmerId,
+        target.swimmerId,
+        current.swimmerId,
+        ...(current.sourceIds || [])
+      ].map(cleanText).filter(Boolean))),
+      identityKey: current.identityKey
+    });
   const finalPerformanceCount = rows.filter((row) => row.isIntermediate !== true).length;
   if (!rows.length) {
     throw new HttpsError("failed-precondition", "Les performances de ce nageur ne sont pas encore disponibles dans la base active. Synchronisez la base avant la correction.");
   }
-  if (rows.length > 1200 || (current.performanceCount > 0 && finalPerformanceCount < current.performanceCount)) {
+  if (rows.length > ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS || (current.performanceCount > 0 && finalPerformanceCount < current.performanceCount)) {
     throw new HttpsError("failed-precondition", "Correction trop volumineuse ou index incomplet. Une migration dediee est necessaire.");
   }
   const updatedRows = rows.map((row) => ({
@@ -9660,19 +9778,75 @@ function engagementSwimmerChangeRequestItem(doc) {
     targetSwimmerId: cleanText(data.targetSwimmerId).slice(0, 80),
     current: data.current && typeof data.current === "object" ? engagementSwimmerIdentitySnapshot(data.current, data.current.source) : {},
     proposed: data.proposed && typeof data.proposed === "object" ? engagementSwimmerIdentitySnapshot(data.proposed, data.proposed.source) : {},
+    resolvedProposed: data.resolvedProposed && typeof data.resolvedProposed === "object" ? engagementSwimmerIdentitySnapshot(data.resolvedProposed, data.resolvedProposed.source) : {},
+    proposalAdjusted: data.proposalAdjusted === true,
     reason: cleanText(data.reason).slice(0, 500),
     clubId: cleanText(data.clubId).slice(0, 40),
     clubName: cleanText(data.clubName).slice(0, 140),
     requestedAt: cleanText(data.requestedAt).slice(0, 40),
     requestedBy: cleanText(data.requestedBy).slice(0, 128),
     requestedByEmail: cleanText(data.requestedByEmail).slice(0, 180),
+    requestedByFirstName: cleanText(data.requestedByFirstName).slice(0, 80),
+    requestedByLastName: cleanText(data.requestedByLastName).slice(0, 80),
     resolvedAt: cleanText(data.resolvedAt).slice(0, 40),
     resolvedBy: cleanText(data.resolvedBy).slice(0, 128),
-    resolutionNote: cleanText(data.resolutionNote).slice(0, 500)
+    resolutionNote: cleanText(data.resolutionNote).slice(0, 500),
+    resolutionNotification: {
+      status: cleanText(data.resolutionNotification?.status).slice(0, 40),
+      attemptedAt: cleanText(data.resolutionNotification?.attemptedAt).slice(0, 40),
+      sentAt: cleanText(data.resolutionNotification?.sentAt).slice(0, 40),
+      reason: cleanText(data.resolutionNotification?.reason).slice(0, 180)
+    }
   });
 }
 
-exports.requestEngagementClubSwimmerChange = onCall(CALLABLE_OPTIONS, async (request) => {
+async function sendEngagementSwimmerChangeResolutionNotification(payload = {}) {
+  const attemptedAt = new Date().toISOString();
+  const recipientEmail = normalizeEmail(payload.requestedByEmail);
+  if (!recipientEmail) {
+    return {
+      status: "skipped_missing_recipient",
+      attemptedAt,
+      reason: "Adresse e-mail du demandeur absente."
+    };
+  }
+  const config = engagementMailSmtpConfig();
+  if (!config.ready) {
+    return {
+      status: "skipped_missing_config",
+      attemptedAt,
+      reason: "Configuration SMTP incomplete."
+    };
+  }
+  const mail = engagementSwimmerChangeResolutionMail(payload);
+  try {
+    const transporter = nodemailer.createTransport(config.transport);
+    await transporter.sendMail({
+      from: `LivePalmes <${config.fromEmail}>`,
+      to: recipientEmail,
+      subject: mail.subject,
+      text: mail.text
+    });
+    return {
+      status: "sent",
+      attemptedAt,
+      sentAt: new Date().toISOString(),
+      reason: ""
+    };
+  } catch (error) {
+    console.error(
+      "Notification de resolution de correction nageur impossible.",
+      cleanText(error?.code || error?.name || "smtp-error").slice(0, 80)
+    );
+    return {
+      status: "failed",
+      attemptedAt,
+      reason: "Envoi SMTP impossible."
+    };
+  }
+}
+
+exports.requestEngagementClubSwimmerChange = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const requestedSource = cleanText(request.data?.source).slice(0, 40);
   const requestedSwimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
@@ -9714,6 +9888,8 @@ exports.requestEngagementClubSwimmerChange = onCall(CALLABLE_OPTIONS, async (req
     requestedAt: now,
     requestedBy: context.uid,
     requestedByEmail: context.email || "",
+    requestedByFirstName: context.firstName || "",
+    requestedByLastName: context.lastName || "",
     updatedAt: now,
     updatedBy: context.uid
   };
@@ -9805,7 +9981,7 @@ exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.resolveEngagementSwimmerChangeRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.resolveEngagementSwimmerChangeRequest = onCall(ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
@@ -9834,8 +10010,18 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(CALLABLE_OPTIONS, async (
   }
   const now = new Date().toISOString();
   let result = null;
+  let requestedCorrection = null;
+  let resolvedProposed = null;
+  let proposalAdjusted = false;
   if (decision === "approved") {
-    const correction = cleanEngagementSwimmerIdentityCorrection(data.proposed || {}, current);
+    requestedCorrection = cleanEngagementSwimmerIdentityCorrection(data.proposed || {}, current);
+    const reviewedProposal = request.data?.proposed && typeof request.data.proposed === "object" && !Array.isArray(request.data.proposed)
+      ? request.data.proposed
+      : data.proposed || {};
+    const correction = cleanEngagementSwimmerIdentityCorrection(reviewedProposal, current);
+    proposalAdjusted = ["firstName", "lastName", "birthDate", "sex", "licenseNumber"]
+      .some((field) => cleanText(correction[field]) !== cleanText(requestedCorrection[field]));
+    resolvedProposed = engagementSwimmerIdentitySnapshot({ ...current, ...correction }, target.source);
     result = await applyEngagementSwimmerIdentityCorrection(target, correction, { ...context, now });
   } else {
     const batch = db.batch();
@@ -9850,7 +10036,23 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(CALLABLE_OPTIONS, async (
     resolvedByEmail: context.email || "",
     updatedAt: now,
     updatedBy: context.uid,
+    ...(decision === "approved" ? { resolvedProposed, proposalAdjusted } : {}),
     result: cleanFirestoreValue(result || {})
+  }, { merge: true });
+  const resolutionNotification = await sendEngagementSwimmerChangeResolutionNotification({
+    decision,
+    requestedByEmail: data.requestedByEmail,
+    requestedByFirstName: data.requestedByFirstName,
+    requestedByLastName: data.requestedByLastName,
+    swimmer: current,
+    current,
+    resolvedProposed: resolvedProposed || data.proposed || {},
+    clubName: data.clubName,
+    resolutionNote
+  });
+  await ref.set({
+    resolutionNotification,
+    updatedAt: new Date().toISOString()
   }, { merge: true });
   await writeAuditLog(`engagementClubSwimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid, {
     requestId,
@@ -9859,6 +10061,10 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(CALLABLE_OPTIONS, async (
     clubId: cleanText(data.clubId),
     reason: cleanText(data.reason),
     resolutionNote,
+    requestedProposed: requestedCorrection || data.proposed || {},
+    resolvedProposed: resolvedProposed || {},
+    proposalAdjusted,
+    notificationStatus: resolutionNotification.status,
     performanceUpdateCount: Number(result?.performanceUpdateCount || 0),
     entryUpdateCount: Number(result?.entryUpdateCount || 0),
     relayUpdateCount: Number(result?.relayUpdateCount || 0)
@@ -9867,7 +10073,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(CALLABLE_OPTIONS, async (
   return { ok: true, request: engagementSwimmerChangeRequestItem(updated), result };
 });
 
-exports.updateEngagementNationalSwimmerIdentity = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.updateEngagementNationalSwimmerIdentity = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Correction reservee au niveau national.");
   const target = await getEngagementSwimmerCorrectionTarget(
@@ -10209,38 +10415,88 @@ function engagementNationalSwimmerItemFromDoc(doc, source = "") {
     : engagementNewSwimmerItem(doc);
 }
 
-async function getEngagementNationalSwimmerForMerge(db, source = "", swimmerId = "") {
-  const cleanSource = cleanText(source || "engagement");
-  const cleanId = cleanText(swimmerId).slice(0, 80);
-  if (!cleanId) throw new HttpsError("invalid-argument", "Nageur requis.");
-  const collection = engagementNationalSwimmerCollectionForSource(db, cleanSource);
-  let ref = collection.doc(cleanId);
-  let snapshot = await ref.get();
-  if (!snapshot.exists && cleanSource === "performances") {
-    const identityKey = cleanText(swimmerId).slice(0, 180);
-    const lookups = [
-      collection.where("sourceIds", "array-contains", cleanId).limit(1).get(),
-      collection.where("aliases", "array-contains", cleanId).limit(1).get()
-    ];
-    if (identityKey) {
-      lookups.push(collection.where("identityKey", "==", identityKey).limit(1).get());
-    }
-    const snapshots = await Promise.all(lookups);
-    const match = snapshots.flatMap((item) => item.docs)[0];
-    if (match) {
-      ref = match.ref;
-      snapshot = match;
-    }
+async function materializeEngagementNationalPerformanceSwimmerForMerge(target = {}, context = {}) {
+  if (target.ref?.id && target.snapshot?.exists) {
+    return {
+      ref: target.ref,
+      snapshot: target.snapshot,
+      swimmer: target.swimmer,
+      source: "performances",
+      performanceRows: target.performanceRows || [],
+      recoveredIndex: false
+    };
   }
+  const rows = Array.isArray(target.performanceRows) ? target.performanceRows : [];
+  const finalPerformanceCount = rows.filter((row) => row.isIntermediate !== true).length;
+  if (!rows.length) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Les performances de ce nageur ne sont pas encore disponibles dans la base active. Synchronisez la base avant la fusion."
+    );
+  }
+  if (rows.length > ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS ||
+      !recoveredPerformanceRowsAreComplete(rows, target.swimmer?.performanceCount)) {
+    throw new HttpsError("failed-precondition", "Fusion trop volumineuse ou index incomplet. Une migration dediee est necessaire.");
+  }
+  const now = context.now || new Date().toISOString();
+  await writePerformanceSwimmerIndexRows(rows, {
+    now,
+    action: "engagement.swimmerMergeIndexRecovered",
+    mode: "replace"
+  });
+  await writePerformanceSwimmerPageRows(rows, {
+    now,
+    action: "engagement.swimmerMergeIndexRecovered"
+  });
+  const indexId = performanceSwimmerIndexDocId(rows[0]);
+  const ref = db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(indexId);
+  if (target.swimmer?.licenseNumber) {
+    await ref.set({
+      licenseNumber: cleanText(target.swimmer.licenseNumber).slice(0, 60),
+      updatedAt: now
+    }, { merge: true });
+  }
+  const snapshot = await ref.get();
   if (!snapshot.exists) {
-    throw new HttpsError("not-found", "Nageur introuvable.");
+    throw new HttpsError("internal", "Reconstruction de l'index nageur impossible.");
   }
   return {
     ref,
     snapshot,
-    swimmer: engagementNationalSwimmerItemFromDoc(snapshot, cleanSource),
-    source: cleanSource
+    swimmer: {
+      ...engagementClubSwimmerItem(snapshot),
+      ...(target.swimmer?.licenseNumber ? { licenseNumber: target.swimmer.licenseNumber } : {})
+    },
+    source: "performances",
+    performanceRows: rows,
+    recoveredIndex: true
   };
+}
+
+async function getEngagementNationalSwimmerForMerge(db, source = "", swimmerId = "", identityKey = "", context = {}) {
+  const cleanSource = cleanText(source || "engagement");
+  const cleanId = cleanText(swimmerId).slice(0, 80);
+  const cleanIdentityKey = cleanText(identityKey).slice(0, 180);
+  if (!cleanId) throw new HttpsError("invalid-argument", "Nageur requis.");
+  if (cleanSource === "engagement") {
+    const collection = engagementNationalSwimmerCollectionForSource(db, cleanSource);
+    const ref = collection.doc(cleanId);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) throw new HttpsError("not-found", "Nageur introuvable.");
+    const swimmer = engagementNationalSwimmerItemFromDoc(snapshot, cleanSource);
+    if (cleanIdentityKey && cleanText(swimmer.identityKey) !== cleanIdentityKey) {
+      throw new HttpsError("failed-precondition", "La fiche nageur a change depuis la recherche. Rechargez-la avant la fusion.");
+    }
+    return { ref, snapshot, swimmer, source: cleanSource, recoveredIndex: false };
+  }
+  if (cleanSource !== "performances") {
+    engagementNationalSwimmerCollectionForSource(db, cleanSource);
+  }
+  const target = await getEngagementSwimmerCorrectionTarget(db, "performances", cleanId, cleanIdentityKey);
+  if (cleanIdentityKey && cleanText(target.swimmer?.identityKey) !== cleanIdentityKey) {
+    throw new HttpsError("failed-precondition", "La fiche nageur a change depuis la recherche. Rechargez-la avant la fusion.");
+  }
+  return materializeEngagementNationalPerformanceSwimmerForMerge(target, context);
 }
 
 function engagementNationalSwimmerFullName(swimmer = {}) {
@@ -10269,12 +10525,14 @@ function mergeEngagementEntryIndividualEntries(targetEntries = [], sourceEntries
   return Array.from(byEvent.values());
 }
 
-function mergeEngagementClubEntrySwimmers(swimmers = [], sourceId = "", targetSnapshot = {}) {
-  const sourceKey = cleanText(sourceId).slice(0, 80);
+function mergeEngagementClubEntrySwimmers(swimmers = [], sourceIds = [], targetSnapshot = {}) {
+  const sourceKeys = new Set((Array.isArray(sourceIds) ? sourceIds : [sourceIds])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean));
   const targetKey = cleanText(targetSnapshot.swimmerIndexId || targetSnapshot.id).slice(0, 80);
-  if (!sourceKey || !targetKey) return { swimmers: Array.isArray(swimmers) ? swimmers : [], changed: false };
+  if (!sourceKeys.size || !targetKey) return { swimmers: Array.isArray(swimmers) ? swimmers : [], changed: false };
   const cleanSwimmers = (Array.isArray(swimmers) ? swimmers : []).map(cleanEngagementEntrySwimmer);
-  const sourceSwimmer = cleanSwimmers.find((swimmer) => cleanText(swimmer.swimmerIndexId).slice(0, 80) === sourceKey);
+  const sourceSwimmer = cleanSwimmers.find((swimmer) => sourceKeys.has(cleanText(swimmer.swimmerIndexId).slice(0, 80)));
   if (!sourceSwimmer) return { swimmers: cleanSwimmers, changed: false };
   const existingTarget = cleanSwimmers.find((swimmer) => cleanText(swimmer.swimmerIndexId).slice(0, 80) === targetKey);
   const mergedTarget = cleanEngagementEntrySwimmer({
@@ -10285,7 +10543,7 @@ function mergeEngagementClubEntrySwimmers(swimmers = [], sourceId = "", targetSn
   let targetInserted = false;
   cleanSwimmers.forEach((swimmer) => {
     const swimmerKey = cleanText(swimmer.swimmerIndexId).slice(0, 80);
-    if (swimmerKey === sourceKey) {
+    if (sourceKeys.has(swimmerKey)) {
       if (!targetInserted && !existingTarget) {
         next.push(mergedTarget);
         targetInserted = true;
@@ -10303,10 +10561,12 @@ function mergeEngagementClubEntrySwimmers(swimmers = [], sourceId = "", targetSn
   return { swimmers: next, changed: true };
 }
 
-function mergeEngagementClubEntryRelays(relays = [], sourceId = "", targetSnapshot = {}) {
-  const sourceKey = cleanText(sourceId).slice(0, 80);
+function mergeEngagementClubEntryRelays(relays = [], sourceIds = [], targetSnapshot = {}) {
+  const sourceKeys = new Set((Array.isArray(sourceIds) ? sourceIds : [sourceIds])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean));
   const targetKey = cleanText(targetSnapshot.swimmerIndexId || targetSnapshot.id).slice(0, 80);
-  if (!sourceKey || !targetKey) return { relays: Array.isArray(relays) ? relays : [], changed: false };
+  if (!sourceKeys.size || !targetKey) return { relays: Array.isArray(relays) ? relays : [], changed: false };
   let changed = false;
   const targetMember = {
     swimmerIndexId: targetKey,
@@ -10322,17 +10582,17 @@ function mergeEngagementClubEntryRelays(relays = [], sourceId = "", targetSnapsh
     const memberIds = (Array.isArray(relay?.memberIds) ? relay.memberIds : [])
       .map((id) => cleanText(id).slice(0, 80))
       .filter(Boolean);
-    if (!memberIds.includes(sourceKey)) return relay;
+    if (!memberIds.some((id) => sourceKeys.has(id))) return relay;
     if (memberIds.includes(targetKey)) {
       throw new HttpsError("failed-precondition", "Fusion impossible : source et cible sont dans le meme relais. Corrigez ce relais avant de fusionner.");
     }
     changed = true;
     const members = (Array.isArray(relay?.members) ? relay.members : []).map((member) =>
-      cleanText(member?.swimmerIndexId).slice(0, 80) === sourceKey ? targetMember : member
+      sourceKeys.has(cleanText(member?.swimmerIndexId).slice(0, 80)) ? targetMember : member
     );
     return cleanFirestoreValue({
       ...relay,
-      memberIds: memberIds.map((id) => id === sourceKey ? targetKey : id),
+      memberIds: Array.from(new Set(memberIds.map((id) => sourceKeys.has(id) ? targetKey : id))),
       members
     });
   });
@@ -10406,6 +10666,64 @@ function performanceMergeTargetPayloadFromSwimmer(targetSwimmer = {}) {
   });
 }
 
+function publicPerformanceRowsFromSwimmerPayload(payload = {}) {
+  return (Array.isArray(payload?.rows) ? payload.rows : []).map((row) => publicPerformanceBaseRow({
+    ...row,
+    swimmerId: cleanText(payload.id),
+    swimmerIdentityKey: cleanText(payload.identityKey),
+    swimmer: cleanText(payload.name),
+    firstName: cleanText(payload.firstName),
+    lastName: cleanText(payload.lastName),
+    birthDate: cleanText(payload.birthDate),
+    sex: cleanText(payload.sex),
+    clubId: cleanText(row.clubId || payload.clubId),
+    club: cleanText(row.club || payload.club),
+    clubName: cleanText(row.clubName || payload.clubName)
+  }));
+}
+
+async function publishEngagementNationalSwimmerMerge(sourceSwimmer = {}, targetSwimmer = {}, targetRows = [], context = {}) {
+  const oldPublicKey = cleanText(sourceSwimmer.identityKey) || publicSwimmerKey(sourceSwimmer);
+  const newPublicKey = cleanText(targetSwimmer.identityKey) || publicSwimmerKey(targetSwimmer);
+  const rows = uniquePublicPerformanceRows((Array.isArray(targetRows) ? targetRows : []).map(publicPerformanceBaseRow));
+  if (!oldPublicKey || !newPublicKey || !rows.length) {
+    throw new Error("Donnees insuffisantes pour publier la fusion nageur.");
+  }
+  const oldPayload = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(oldPublicKey), null);
+  const oldRows = publicPerformanceRowsFromSwimmerPayload(oldPayload || {});
+  const now = context.now || new Date().toISOString();
+  const newPerfFile = publicPerformanceSwimmerFilePath(newPublicKey);
+  const existingTargetPayload = await readPublicPerformanceJson(newPerfFile, null);
+  if (existingTargetPayload) {
+    await removePublicSearchIndexes(existingTargetPayload, newPerfFile);
+    await deletePublicPerformanceFile(newPerfFile);
+  }
+  const publicSnapshot = oldPublicKey === newPublicKey
+    ? await rebuildPublicPerformanceFilesForAffectedRows(rows, {
+        now,
+        reason: "engagement.swimmerMerged"
+      })
+    : await replacePublicSwimmerIdentity(oldPublicKey, newPublicKey, rows);
+  const topSnapshot = await rebuildPublicTopFilesForAffectedRows(
+    [...oldRows, ...rows],
+    new Map([[newPublicKey, rows]])
+  );
+  return {
+    ...publicSnapshot,
+    oldPublicKey,
+    newPublicKey,
+    correctedTopBuckets: topSnapshot.affectedTopBuckets
+  };
+}
+
+async function activePerformanceRowsForNationalSwimmer(target = {}) {
+  const swimmer = target.swimmer || {};
+  return getPerformanceBaseRowsBySwimmer({
+    swimmerIds: swimmerMergeIds(swimmer, target.ref?.id).slice(0, 25),
+    identityKey: cleanText(swimmer.identityKey).slice(0, 180)
+  });
+}
+
 async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}, sourceSwimmerId = "", limit = 180) {
   const ids = Array.from(new Set([
     sourceSwimmerId,
@@ -10431,25 +10749,34 @@ async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}
   return rows;
 }
 
-exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
   }
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
+  const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
   const targetSwimmerId = cleanText(request.data?.targetSwimmerId).slice(0, 80);
   const targetSource = cleanText(request.data?.targetSource || "performances").slice(0, 40);
+  const targetIdentityKey = cleanText(request.data?.targetIdentityKey).slice(0, 180);
   if (!sourceSwimmerId || !targetSwimmerId || (sourceSource === targetSource && sourceSwimmerId === targetSwimmerId)) {
     throw new HttpsError("invalid-argument", "Nageurs source et cible requis.");
   }
   if (request.data?.confirmMerge !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
   }
-  const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId);
-  const target = await getEngagementNationalSwimmerForMerge(db, targetSource, targetSwimmerId);
+  const recoveryContext = { uid: context.uid, now: new Date().toISOString() };
+  const source = await getEngagementNationalSwimmerForMerge(db, sourceSource, sourceSwimmerId, sourceIdentityKey, recoveryContext);
+  const target = await getEngagementNationalSwimmerForMerge(db, targetSource, targetSwimmerId, targetIdentityKey, recoveryContext);
+  if (source.ref.path === target.ref.path) {
+    throw new HttpsError("invalid-argument", "Les deux selections correspondent a la meme fiche nageur.");
+  }
   const sourceSwimmer = source.swimmer;
   const targetSwimmer = target.swimmer;
+  const sourceMergeIds = swimmerMergeIds(sourceSwimmer, sourceSwimmerId).slice(0, 25);
+  const resolvedSourceSwimmerId = source.ref.id;
+  const resolvedTargetSwimmerId = target.ref.id;
   if (sourceSwimmer.status === "merged" || sourceSwimmer.mergedIntoId) {
     throw new HttpsError("failed-precondition", "Ce nageur est deja fusionne.");
   }
@@ -10468,7 +10795,12 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
       code: "license-mismatch"
     });
   }
-  const performanceDocs = await readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer, sourceSwimmerId, 180);
+  const performanceDocs = source.performanceRows?.length
+    ? source.performanceRows.map((row) => {
+        const id = cleanText(row.performanceBaseId || performanceBaseDocId(row));
+        return { id, ref: db.collection(PERFORMANCE_BASE_COLLECTION).doc(id), data: () => row };
+      }).filter((doc) => doc.id)
+    : await readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer, sourceSwimmerId, 180);
   const now = new Date().toISOString();
   const targetName = engagementNationalSwimmerFullName(targetSwimmer);
   const targetSnapshot = engagementNationalSwimmerEntrySnapshot(targetSwimmer, target.source);
@@ -10479,7 +10811,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
   const targetPayload = {
     active: true,
     status: "active",
-    mergedSourceIds: FieldValue.arrayUnion(sourceSwimmerId),
+    mergedSourceIds: FieldValue.arrayUnion(...sourceMergeIds),
     updatedAt: now,
     updatedBy: context.uid
   };
@@ -10490,7 +10822,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
   const sourcePayload = {
     active: false,
     status: "merged",
-    mergedIntoId: targetSwimmerId,
+    mergedIntoId: resolvedTargetSwimmerId,
     mergedIntoSource: target.source,
     mergedIntoName: targetName,
     mergedAt: now,
@@ -10501,13 +10833,15 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
   batch.set(target.ref, targetPayload, { merge: true });
   batch.set(source.ref, sourcePayload, { merge: true });
   upsertEngagementClubRosterSwimmer(batch, db, { ...targetSwimmer, ...targetPayload, swimmerIndexId: targetSwimmer.swimmerIndexId || targetSwimmer.id, source: target.source }, now);
-  deleteEngagementClubRosterSwimmer(batch, db, { ...sourceSwimmer, id: sourceSwimmerId, swimmerIndexId: sourceSwimmerId, source: source.source }, now);
-  deleteEngagementEntryTimeCache(batch, db, { source: source.source, swimmerIndexId: sourceSwimmerId });
+  sourceMergeIds.forEach((sourceId) => {
+    deleteEngagementClubRosterSwimmer(batch, db, { ...sourceSwimmer, id: sourceId, swimmerIndexId: sourceId, source: source.source }, now);
+    deleteEngagementEntryTimeCache(batch, db, { source: source.source, swimmerIndexId: sourceId });
+  });
   deleteEngagementEntryTimeCache(batch, db, { source: target.source, swimmerIndexId: targetSwimmer.swimmerIndexId || targetSwimmer.id });
   if (source.source === "performances") {
     const pageCount = Math.min(50, Math.max(0, Math.trunc(Number(source.snapshot.data()?.pageCount || 0) || 0)));
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-      batch.delete(db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(sourceSwimmerId, pageIndex)));
+      batch.delete(db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(resolvedSourceSwimmerId, pageIndex)));
     }
   }
   let entrySwimmerUpdateCount = 0;
@@ -10515,12 +10849,12 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
   entriesSnapshot.docs.forEach((entryDoc) => {
     const entry = entryDoc.data() || {};
     const updates = {};
-    const swimmersResult = mergeEngagementClubEntrySwimmers(entry.swimmers || [], sourceSwimmerId, targetSnapshot);
+    const swimmersResult = mergeEngagementClubEntrySwimmers(entry.swimmers || [], sourceMergeIds, targetSnapshot);
     if (swimmersResult.changed) {
       updates.swimmers = swimmersResult.swimmers;
       entrySwimmerUpdateCount += 1;
     }
-    const relaysResult = mergeEngagementClubEntryRelays(entry.relays || [], sourceSwimmerId, targetSnapshot);
+    const relaysResult = mergeEngagementClubEntryRelays(entry.relays || [], sourceMergeIds, targetSnapshot);
     if (relaysResult.changed) {
       updates.relays = relaysResult.relays;
       relayUpdateCount += 1;
@@ -10558,7 +10892,9 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
     if (sourceLicenseNumberRefId) {
       batch.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(sourceLicenseNumberRefId));
     }
-    batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(sourceSwimmerId).slice(0, 40)));
+    sourceMergeIds.forEach((sourceId) => {
+      batch.delete(db.collection("engagementSwimmerLicenses").doc(stableHash(sourceId).slice(0, 40)));
+    });
   }
   if (targetPayload.licenseNumber) {
     const targetLicensePayload = engagementSwimmerLicensePayload(
@@ -10577,15 +10913,42 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
     await writePerformanceSwimmerIndexRows(updatedPerformanceRows, { action: "engagement.swimmerMerged", now });
     await writePerformanceSwimmerPageRows(updatedPerformanceRows, { action: "engagement.swimmerMerged", now });
   }
+  let publicSnapshot = { ok: true, skipped: true, reason: "Aucune performance source a publier." };
+  if (updatedPerformanceRows.length) {
+    try {
+      const targetRows = await activePerformanceRowsForNationalSwimmer({
+        ...target,
+        swimmer: { ...targetSwimmer, ...targetPayload }
+      });
+      publicSnapshot = await publishEngagementNationalSwimmerMerge(
+        sourceSwimmer,
+        { ...targetSwimmer, ...targetPayload },
+        targetRows,
+        { now }
+      );
+    } catch (error) {
+      console.error("Publication publique ciblee impossible apres fusion nageur", {
+        sourceSwimmerId: resolvedSourceSwimmerId,
+        targetSwimmerId: resolvedTargetSwimmerId,
+        message: error?.message || String(error)
+      });
+      publicSnapshot = { ok: false, error: error?.message || "Publication publique ciblee impossible." };
+    }
+  }
   await writeAuditLog("engagementClubSwimmer.nationalMerged", context.uid, {
     sourceSwimmerId,
+    resolvedSourceSwimmerId,
     sourceSource: source.source,
     targetSwimmerId,
+    resolvedTargetSwimmerId,
     targetSource: target.source,
     sourceClubId: sourceSwimmer.clubId,
     targetClubId: targetSwimmer.clubId,
     clubMismatch,
     licenseMismatch,
+    sourceIndexRecovered: source.recoveredIndex === true,
+    targetIndexRecovered: target.recoveredIndex === true,
+    publicSnapshotOk: publicSnapshot.ok !== false,
     scannedEntryCount: entriesSnapshot.size,
     entrySwimmerUpdateCount,
     relayUpdateCount,
@@ -10599,8 +10962,51 @@ exports.mergeEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (req
     scannedEntryCount: entriesSnapshot.size,
     entrySwimmerUpdateCount,
     relayUpdateCount,
-    performanceUpdateCount: updatedPerformanceRows.length
+    performanceUpdateCount: updatedPerformanceRows.length,
+    publicSnapshot
   };
+});
+
+exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError("permission-denied", "Reparation reservee au niveau national.");
+  const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
+  const sourceSource = cleanText(request.data?.sourceSource || "performances").slice(0, 40);
+  const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
+  if (!sourceSwimmerId) throw new HttpsError("invalid-argument", "Fiche fusionnee requise.");
+  const source = await getEngagementNationalSwimmerForMerge(
+    db,
+    sourceSource,
+    sourceSwimmerId,
+    sourceIdentityKey,
+    { uid: context.uid, now: new Date().toISOString() }
+  );
+  const sourceSwimmer = source.swimmer;
+  if (cleanText(sourceSwimmer.status) !== "merged" || !cleanText(sourceSwimmer.mergedIntoId)) {
+    throw new HttpsError("failed-precondition", "Cette fiche n'est pas marquee comme fusionnee.");
+  }
+  const target = await getEngagementNationalSwimmerForMerge(
+    db,
+    sourceSwimmer.mergedIntoSource || "performances",
+    sourceSwimmer.mergedIntoId,
+    "",
+    { uid: context.uid, now: new Date().toISOString() }
+  );
+  const targetRows = await activePerformanceRowsForNationalSwimmer(target);
+  const publicSnapshot = await publishEngagementNationalSwimmerMerge(
+    sourceSwimmer,
+    target.swimmer,
+    targetRows,
+    { now: new Date().toISOString() }
+  );
+  await writeAuditLog("engagementClubSwimmer.mergePublicationRepaired", context.uid, {
+    sourceSwimmerId: source.ref.id,
+    targetSwimmerId: target.ref.id,
+    affectedRows: targetRows.length,
+    writtenFiles: Number(publicSnapshot.writtenFiles || 0),
+    correctedTopBuckets: Number(publicSnapshot.correctedTopBuckets || 0)
+  });
+  return { ok: true, publicSnapshot };
 });
 
 exports.listEngagementNationalClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
