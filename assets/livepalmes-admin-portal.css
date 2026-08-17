@@ -15102,7 +15102,7 @@
 
 .admin-national-club-card {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) minmax(170px, 0.8fr) auto auto;
+  grid-template-columns: minmax(210px, 1.35fr) minmax(150px, 0.7fr) minmax(220px, 1fr) auto auto;
   gap: 12px;
   align-items: center;
   border: 1px solid #dfe5e7;
@@ -15112,14 +15112,16 @@
 }
 
 .admin-national-club-card-main,
-.admin-national-club-card-reference {
+.admin-national-club-card-reference,
+.admin-national-club-card-administrators {
   display: grid;
   gap: 1px;
   min-width: 0;
 }
 
 .admin-national-club-card-main strong,
-.admin-national-club-card-reference strong {
+.admin-national-club-card-reference strong,
+.admin-national-club-card-administrators strong {
   color: #153f47;
   font-size: 0.84rem;
 }
@@ -15127,12 +15129,24 @@
 .admin-national-club-card-main span,
 .admin-national-club-card-main small,
 .admin-national-club-card-reference span,
-.admin-national-club-card-reference small {
+.admin-national-club-card-reference small,
+.admin-national-club-card-administrators > span,
+.admin-national-club-card-administrators > small,
+.admin-national-club-card-administrators > small span {
   overflow: hidden;
   color: #6a7a80;
   font-size: 0.7rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admin-national-club-card-administrators > small {
+  display: grid;
+  gap: 0;
+}
+
+.admin-national-club-card-administrators > small + small {
+  margin-top: 3px;
 }
 
 .admin-national-club-status {
@@ -15198,7 +15212,8 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .admin-national-club-card-reference {
+  .admin-national-club-card-reference,
+  .admin-national-club-card-administrators {
     grid-column: 1;
   }
 
