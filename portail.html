@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260812-admin-pilotage-46">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260817-access-workflows-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -132,6 +132,19 @@
                 <input id="adminPublicAccessRequestClubName" type="hidden">
                 <input id="adminPublicAccessRequestClubId" type="hidden">
               </label>
+              <label class="admin-access-wide-field admin-access-new-club-toggle">
+                <span>Club absent de la liste</span>
+                <span><input id="adminPublicAccessRequestNewClub" type="checkbox"> Mon club n&rsquo;est pas dans la liste</span>
+              </label>
+              <fieldset id="adminPublicAccessRequestNewClubFields" class="admin-access-new-club-fields admin-access-wide-field" hidden>
+                <legend>Informations du nouveau club</legend>
+                <label>Nom officiel<input id="adminPublicAccessRequestNewClubName" type="text" maxlength="140"></label>
+                <label>Sigle<input id="adminPublicAccessRequestNewClubCode" type="text" maxlength="40"></label>
+                <label>Num&eacute;ro f&eacute;d&eacute;ral<input id="adminPublicAccessRequestNewClubFederalNumber" type="text" maxlength="24"></label>
+                <label>Ville<input id="adminPublicAccessRequestNewClubCity" type="text" maxlength="100"></label>
+                <label>Code postal<input id="adminPublicAccessRequestNewClubPostalCode" type="text" maxlength="16" inputmode="numeric"></label>
+                <p id="adminPublicAccessRequestNewClubMatch" class="admin-portal-message admin-access-wide-field" aria-live="polite"></p>
+              </fieldset>
               <label class="admin-access-wide-field">
                 Message facultatif
                 <textarea id="adminPublicAccessRequestText" rows="2" maxlength="600"></textarea>
@@ -214,6 +227,7 @@
                   <div id="adminPortalDtnSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’espace DTN" hidden>
                     <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
                     <a href="#espace-dtn-edf" data-admin-view-link="dtn" data-dtn-grid-link="edf" data-capability-nav="dtn.view">Équipe de France</a>
+                    <a href="#espace-dtn-listes" data-admin-view-link="dtn" data-dtn-grid-link="listes" data-capability-nav="dtn.view">Mise en liste</a>
                   </div>
                 </div>
               </section>
@@ -226,6 +240,7 @@
                   </button>
                   <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
                     <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes &agrave; traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                    <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
                     <a href="#administration-doublons-nageurs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Nageurs</a>
                     <a href="#administration-officiels" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
                     <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" data-engagements-national-nav hidden>Journal d&rsquo;activit&eacute;</a>
@@ -305,13 +320,14 @@
                     <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
                     <span class="admin-overview-card-label">Suivi DTN</span>
                     <strong>Espace DTN</strong>
-                    <p>Consulter les qualifications France et Équipe de France.</p>
+                    <p>Consulter les qualifications France, Équipe de France et les mises en liste.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
                   <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewDtnTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
                   <div id="adminOverviewDtnTools" class="admin-overview-space-tools">
                     <a href="#espace-dtn-france" data-overview-tool>Championnats de France <span aria-hidden="true">→</span></a>
                     <a href="#espace-dtn-edf" data-overview-tool>Équipe de France <span aria-hidden="true">→</span></a>
+                    <a href="#espace-dtn-listes" data-overview-tool>Mise en liste <span aria-hidden="true">→</span></a>
                   </div>
                 </article>
 
@@ -327,6 +343,7 @@
                   <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewNationalTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
                   <div id="adminOverviewNationalTools" class="admin-overview-space-tools">
                     <a href="#administration-suppressions" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">Demandes &agrave; traiter <span aria-hidden="true">→</span></a>
+                    <a href="#administration-clubs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">Clubs <span aria-hidden="true">→</span></a>
                     <a href="#administration-doublons-nageurs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">Nageurs <span aria-hidden="true">→</span></a>
                     <a href="#administration-officiels" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="people">Officiels <span aria-hidden="true">→</span></a>
                     <a href="#administration-historique" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">Journal d&rsquo;activit&eacute; <span aria-hidden="true">→</span></a>
@@ -419,7 +436,7 @@
               <div class="admin-portal-workspace-head admin-overview-head">
                 <span>Espace DTN</span>
                 <h2 id="adminDtnHomeTitle">Suivi sportif national</h2>
-                <p>Accédez aux qualifications des Championnats de France et des Équipes de France.</p>
+                <p>Accédez aux qualifications France, Équipe de France et aux mises en liste ministérielle.</p>
               </div>
 
               <div class="admin-overview-grid" aria-label="Outils de l’espace DTN">
@@ -435,6 +452,13 @@
                   <span class="admin-overview-card-label">International</span>
                   <strong>Équipe de France</strong>
                   <p>Consulter les temps de sélection et le suivi des sportifs concernés.</p>
+                  <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="admin-overview-card" href="#espace-dtn-listes">
+                  <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10M18 17l2 2 3-4"></path></svg></span>
+                  <span class="admin-overview-card-label">Listes ministérielles</span>
+                  <strong>Mise en liste</strong>
+                  <p>Identifier les sportifs éligibles aux listes Relève et Espoir.</p>
                   <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                 </a>
               </div>
@@ -490,6 +514,13 @@
                     <span>Rechercher, corriger et rapprocher les fiches</span>
                   </div>
                   <div class="admin-overview-grid admin-national-reference-grid">
+                    <a class="admin-overview-card" href="#administration-clubs" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">
+                      <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M8 21v-6h8v6M8 10h1M15 10h1"></path></svg></span>
+                      <span class="admin-overview-card-label">Base nationale</span>
+                      <strong>Clubs</strong>
+                      <p>Créer et maintenir les identifiants fédéraux et les informations officielles des clubs.</p>
+                      <span class="admin-overview-card-arrow" aria-hidden="true">&rarr;</span>
+                    </a>
                     <a class="admin-overview-card" href="#administration-doublons-nageurs" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">
                       <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="16" cy="8" r="3"></circle><path d="M2 21a6 6 0 0 1 12 0M10 21a6 6 0 0 1 12 0"></path></svg></span>
                       <span class="admin-overview-card-label">Base nationale</span>
@@ -1479,10 +1510,10 @@
                         <div class="admin-engagements-ged-grid">
                           <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsTxtTitle">
                             <div>
-                              <strong id="adminEngagementsTxtTitle">Export TXT de la compétition</strong>
-                              <small>Fichier complet des engagements pour le traitement informatique.</small>
+                            <strong id="adminEngagementsTxtTitle">Export WinPalme de la compétition</strong>
+                            <small>Fichier TXT compatible WinPalme, généré automatiquement à la clôture.</small>
                             </div>
-                            <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button" type="button">Télécharger le TXT</button>
+                            <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button" type="button">Télécharger le TXT WinPalme</button>
                           </section>
                           <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsClubPdfTitle">
                             <div>
@@ -1518,10 +1549,6 @@
                         </section>
                       </div>
                     </div>
-                    <nav id="adminEngagementsStepFooter" class="admin-engagements-step-footer" aria-label="Changer d'étape" hidden>
-                      <button id="adminEngagementsFooterPrev" class="ghost-button" type="button">Étape précédente</button>
-                      <button id="adminEngagementsFooterNext" type="button">Étape suivante</button>
-                    </nav>
                     <p id="adminEngagementsDetailStatus" class="admin-portal-message" aria-live="polite"></p>
                   </section>
                 </section>
@@ -1847,6 +1874,15 @@
                         <input id="adminEngagementsAccessRequestEditClubId" type="hidden">
                       </label>
                     </div>
+                    <fieldset id="adminEngagementsAccessRequestEditNewClubFields" class="admin-access-new-club-fields admin-access-wide-field" hidden>
+                      <legend>Nouveau club demand&eacute;</legend>
+                      <label>Nom officiel<input id="adminEngagementsAccessRequestEditNewClubName" type="text" maxlength="140"></label>
+                      <label>Sigle<input id="adminEngagementsAccessRequestEditNewClubCode" type="text" maxlength="40"></label>
+                      <label>Num&eacute;ro f&eacute;d&eacute;ral<input id="adminEngagementsAccessRequestEditNewClubFederalNumber" type="text" maxlength="24"></label>
+                      <label>Ville<input id="adminEngagementsAccessRequestEditNewClubCity" type="text" maxlength="100"></label>
+                      <label>Code postal<input id="adminEngagementsAccessRequestEditNewClubPostalCode" type="text" maxlength="16"></label>
+                      <small>La validation cr&eacute;era le club dans le r&eacute;f&eacute;rentiel national avant d&rsquo;accorder l&rsquo;acc&egrave;s.</small>
+                    </fieldset>
                     <div class="admin-portal-actions">
                       <button type="submit">Valider avec ces informations</button>
                       <button id="adminEngagementsAccessRequestEditCancel" class="ghost-button" type="button">Annuler</button>
@@ -1855,6 +1891,24 @@
                   </form>
                 </section>
               </div>
+              <dialog id="adminEngagementsAccessRequestRejectDialog" class="admin-engagements-create-dialog" aria-labelledby="adminEngagementsAccessRequestRejectTitle">
+                <form id="adminEngagementsAccessRequestRejectForm" class="admin-access-form">
+                  <input id="adminEngagementsAccessRequestRejectId" type="hidden">
+                  <div>
+                    <span>Demande d&rsquo;acc&egrave;s</span>
+                    <h3 id="adminEngagementsAccessRequestRejectTitle">Refuser la demande</h3>
+                  </div>
+                  <label>
+                    Motif communiqu&eacute; au demandeur
+                    <textarea id="adminEngagementsAccessRequestRejectReason" rows="4" maxlength="600" required></textarea>
+                  </label>
+                  <div class="admin-portal-actions">
+                    <button type="submit">Confirmer le refus</button>
+                    <button id="adminEngagementsAccessRequestRejectCancel" class="ghost-button" type="button">Annuler</button>
+                  </div>
+                  <p id="adminEngagementsAccessRequestRejectMessage" class="admin-portal-message" aria-live="polite"></p>
+                </form>
+              </dialog>
 
               <div id="adminEngagementsDeletionRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid admin-engagements-national-workspace" data-engagements-tab-panel="deletionRequests" hidden>
                 <section class="admin-engagements-card admin-national-page-card admin-national-requests-page" aria-label="Demandes à traiter" data-engagements-national-panel="deletions">
@@ -1886,6 +1940,56 @@
                     <p id="adminEngagementsNationalAccountsStatus" class="admin-portal-message admin-national-page-status" data-tone="loading">Demandes de suppression de comptes.</p>
                     <div id="adminEngagementsNationalAccountsList" class="admin-engagements-request-list" aria-live="polite"></div>
                   </details>
+                </section>
+
+                <section class="admin-engagements-card admin-national-page-card admin-national-clubs-page" aria-label="Clubs" data-engagements-national-panel="clubs" hidden>
+                  <div class="admin-engagements-national-filters admin-national-directory-toolbar" aria-label="Recherche des clubs">
+                    <label>
+                      <span>Recherche</span>
+                      <input id="adminEngagementsNationalClubsSearch" type="search" placeholder="Nom, sigle, numéro fédéral, ville..." autocomplete="off">
+                    </label>
+                    <label>
+                      <span>Statut</span>
+                      <select id="adminEngagementsNationalClubsStatusFilter">
+                        <option value="">Tous</option>
+                        <option value="active">Actifs</option>
+                        <option value="inactive">Inactifs</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Région</span>
+                      <select id="adminEngagementsNationalClubsRegionFilter">
+                        <option value="">Toutes les régions</option>
+                        <option value="1">Grand Est</option><option value="2">Nouvelle Aquitaine</option><option value="3">Île-de-France</option><option value="5">Étranger</option><option value="6">Bretagne Pays de la Loire</option><option value="8">Centre-Val de Loire</option><option value="9">Guadeloupe</option><option value="10">Pyrénées Méditerranée Occitanie</option><option value="11">Martinique Guyane</option><option value="12">Corse</option><option value="13">Hauts-de-France</option><option value="15">Normandie</option><option value="16">Sud</option><option value="17">Auvergne Rhône-Alpes</option><option value="18">Réunion</option><option value="22">Bourgogne Franche-Comté</option>
+                      </select>
+                    </label>
+                    <button id="adminEngagementsNationalClubsCreate" type="button">Ajouter un club</button>
+                    <button id="adminEngagementsNationalClubsReset" class="ghost-button admin-national-reset-button" type="button">Effacer les filtres</button>
+                  </div>
+                  <p id="adminEngagementsNationalClubsStatus" class="admin-portal-message admin-national-page-status" data-tone="loading">Chargement du référentiel clubs.</p>
+                  <div id="adminEngagementsNationalClubsList" class="admin-engagements-request-list admin-national-clubs-list" aria-live="polite"></div>
+                  <dialog id="adminEngagementsNationalClubDialog" class="admin-national-club-dialog" aria-labelledby="adminEngagementsNationalClubDialogTitle">
+                    <form id="adminEngagementsNationalClubForm" method="dialog" class="admin-engagements-form">
+                      <div class="admin-engagements-region-dialog-head">
+                        <div><span>Référentiel national</span><h3 id="adminEngagementsNationalClubDialogTitle">Ajouter un club</h3></div>
+                        <button id="adminEngagementsNationalClubClose" class="ghost-button compact" type="button" aria-label="Fermer">Fermer</button>
+                      </div>
+                      <input id="adminEngagementsNationalClubId" type="hidden">
+                      <div class="admin-national-club-form-grid">
+                        <label>Numéro fédéral<input id="adminEngagementsNationalClubFederalNumber" type="text" maxlength="24" required autocomplete="off"></label>
+                        <label>Sigle<input id="adminEngagementsNationalClubCode" type="text" maxlength="40" required autocomplete="off"></label>
+                        <label class="admin-national-club-form-wide">Nom officiel<input id="adminEngagementsNationalClubName" type="text" maxlength="140" required autocomplete="organization"></label>
+                        <label>Région / comité<select id="adminEngagementsNationalClubRegion" required>
+                          <option value="">Choisir</option><option value="1">Grand Est</option><option value="2">Nouvelle Aquitaine</option><option value="3">Île-de-France</option><option value="5">Étranger</option><option value="6">Bretagne Pays de la Loire</option><option value="8">Centre-Val de Loire</option><option value="9">Guadeloupe</option><option value="10">Pyrénées Méditerranée Occitanie</option><option value="11">Martinique Guyane</option><option value="12">Corse</option><option value="13">Hauts-de-France</option><option value="15">Normandie</option><option value="16">Sud</option><option value="17">Auvergne Rhône-Alpes</option><option value="18">Réunion</option><option value="22">Bourgogne Franche-Comté</option>
+                        </select></label>
+                        <label>Ville<input id="adminEngagementsNationalClubCity" type="text" maxlength="100" autocomplete="address-level2"></label>
+                        <label>Code postal<input id="adminEngagementsNationalClubPostalCode" type="text" maxlength="16" autocomplete="postal-code"></label>
+                        <label class="admin-national-club-active"><input id="adminEngagementsNationalClubActive" type="checkbox" checked><span>Club actif</span></label>
+                      </div>
+                      <p id="adminEngagementsNationalClubMessage" class="admin-portal-message" aria-live="polite"></p>
+                      <div class="admin-portal-actions"><button id="adminEngagementsNationalClubDelete" class="danger-button" type="button" hidden>Supprimer le club</button><button id="adminEngagementsNationalClubCancel" class="ghost-button" type="button">Annuler</button><button type="submit">Enregistrer</button></div>
+                    </form>
+                  </dialog>
                 </section>
 
                 <section class="admin-engagements-card admin-national-page-card" aria-label="Nageurs" data-engagements-national-panel="swimmers" hidden>
@@ -1951,6 +2055,7 @@
                         <option value="">Toutes</option>
                         <option value="requests">Demandes</option>
                         <option value="people">Personnes</option>
+                        <option value="clubs">Clubs</option>
                         <option value="competitions">Comp&eacute;titions</option>
                         <option value="access">Comptes et acc&egrave;s</option>
                       </select>
@@ -2215,15 +2320,12 @@
             </section>
 
             <section id="adminDtnView" class="admin-portal-dtn-view" data-admin-view="dtn" data-capability-panel="dtn.view" aria-labelledby="adminDtnViewTitle" hidden>
-              <div class="admin-portal-workspace-head admin-tool-workspace-head">
+              <div class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head">
                 <h2 id="adminDtnViewTitle">Espace DTN</h2>
+                <select id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN" title="Saison DTN"></select>
               </div>
 
-              <section class="admin-dtn-toolbar" aria-label="Filtres des temps de qualification">
-                <label>
-                  Saison
-                  <select id="adminDtnSeason"></select>
-                </label>
+              <section id="adminDtnToolbar" class="admin-dtn-toolbar" aria-label="Actions des qualifications DTN">
                 <div id="adminDtnSexSegment" class="admin-dtn-segment admin-dtn-sex-segment" role="group" aria-label="Sexe" hidden>
                   <button type="button" data-dtn-sex="F" aria-pressed="true">Femmes</button>
                   <button type="button" data-dtn-sex="M" aria-pressed="false">Hommes</button>
@@ -2451,12 +2553,14 @@
       </section>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
-    <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
-    <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260816-swimmer-merge-publication-1"></script>
-    <script src="assets/livepalmes-portal-ux.js?v=20260804-portal-ux-audit-2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+<script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
+<script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
+<script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260817-access-workflows-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"></script>
   </body>
 </html>

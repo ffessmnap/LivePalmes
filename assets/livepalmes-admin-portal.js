@@ -3,6 +3,8 @@
   const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";
+  const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";
+  const ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE = 48;
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
   const publicPerformanceSwimmerSearchShards = new Map();
@@ -129,6 +131,7 @@
     "#competitions-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#gestion-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#administration-suppressions": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
+    "#administration-clubs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "clubs" },
     "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
     "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
     "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
@@ -136,6 +139,7 @@
   });
   const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
     deletions: "#administration-suppressions",
+    clubs: "#administration-clubs",
     swimmers: "#administration-doublons-nageurs",
     people: "#administration-officiels",
     audit: "#administration-historique"
@@ -159,6 +163,14 @@
     publicAccessRequestClubSelect: document.querySelector("#adminPublicAccessRequestClubSelect"),
     publicAccessRequestClubName: document.querySelector("#adminPublicAccessRequestClubName"),
     publicAccessRequestClubId: document.querySelector("#adminPublicAccessRequestClubId"),
+    publicAccessRequestNewClub: document.querySelector("#adminPublicAccessRequestNewClub"),
+    publicAccessRequestNewClubFields: document.querySelector("#adminPublicAccessRequestNewClubFields"),
+    publicAccessRequestNewClubName: document.querySelector("#adminPublicAccessRequestNewClubName"),
+    publicAccessRequestNewClubCode: document.querySelector("#adminPublicAccessRequestNewClubCode"),
+    publicAccessRequestNewClubFederalNumber: document.querySelector("#adminPublicAccessRequestNewClubFederalNumber"),
+    publicAccessRequestNewClubCity: document.querySelector("#adminPublicAccessRequestNewClubCity"),
+    publicAccessRequestNewClubPostalCode: document.querySelector("#adminPublicAccessRequestNewClubPostalCode"),
+    publicAccessRequestNewClubMatch: document.querySelector("#adminPublicAccessRequestNewClubMatch"),
     scopeContext: document.querySelector("#adminPortalScopeContext"),
     scopeClubButton: document.querySelector("#adminPortalScopeClubButton"),
     scopeClubPrefix: document.querySelector("#adminPortalScopeClubPrefix"),
@@ -275,9 +287,6 @@
     engagementsDetailStepButtons: document.querySelectorAll("[data-engagement-step-button]"),
     engagementsDetailTabGroups: document.querySelectorAll("[data-engagement-step-group]"),
     engagementsSaveState: document.querySelector("#adminEngagementsSaveState"),
-    engagementsStepFooter: document.querySelector("#adminEngagementsStepFooter"),
-    engagementsFooterPrev: document.querySelector("#adminEngagementsFooterPrev"),
-    engagementsFooterNext: document.querySelector("#adminEngagementsFooterNext"),
     engagementsStatus: document.querySelector("#adminEngagementsStatus"),
     engagementsCalendarActions: document.querySelector("#adminEngagementsCalendarActions"),
     engagementsCreateOpen: document.querySelector("#adminEngagementsCreateOpen"),
@@ -340,11 +349,45 @@
     engagementsAccessRequestEditClubSelect: document.querySelector("#adminEngagementsAccessRequestEditClubSelect"),
     engagementsAccessRequestEditClubName: document.querySelector("#adminEngagementsAccessRequestEditClubName"),
     engagementsAccessRequestEditClubId: document.querySelector("#adminEngagementsAccessRequestEditClubId"),
+    engagementsAccessRequestEditNewClubFields: document.querySelector("#adminEngagementsAccessRequestEditNewClubFields"),
+    engagementsAccessRequestEditNewClubName: document.querySelector("#adminEngagementsAccessRequestEditNewClubName"),
+    engagementsAccessRequestEditNewClubCode: document.querySelector("#adminEngagementsAccessRequestEditNewClubCode"),
+    engagementsAccessRequestEditNewClubFederalNumber: document.querySelector("#adminEngagementsAccessRequestEditNewClubFederalNumber"),
+    engagementsAccessRequestEditNewClubCity: document.querySelector("#adminEngagementsAccessRequestEditNewClubCity"),
+    engagementsAccessRequestEditNewClubPostalCode: document.querySelector("#adminEngagementsAccessRequestEditNewClubPostalCode"),
     engagementsAccessRequestEditCancel: document.querySelector("#adminEngagementsAccessRequestEditCancel"),
     engagementsAccessRequestEditMessage: document.querySelector("#adminEngagementsAccessRequestEditMessage"),
+    engagementsAccessRequestRejectDialog: document.querySelector("#adminEngagementsAccessRequestRejectDialog"),
+    engagementsAccessRequestRejectForm: document.querySelector("#adminEngagementsAccessRequestRejectForm"),
+    engagementsAccessRequestRejectId: document.querySelector("#adminEngagementsAccessRequestRejectId"),
+    engagementsAccessRequestRejectReason: document.querySelector("#adminEngagementsAccessRequestRejectReason"),
+    engagementsAccessRequestRejectCancel: document.querySelector("#adminEngagementsAccessRequestRejectCancel"),
+    engagementsAccessRequestRejectMessage: document.querySelector("#adminEngagementsAccessRequestRejectMessage"),
     engagementsDeletionRequestsPanel: document.querySelector("#adminEngagementsDeletionRequestsPanel"),
     engagementsNationalTabButtons: document.querySelectorAll("[data-engagements-national-tab-button]"),
     engagementsNationalPanels: document.querySelectorAll("[data-engagements-national-panel]"),
+    engagementsNationalClubsSearch: document.querySelector("#adminEngagementsNationalClubsSearch"),
+    engagementsNationalClubsStatusFilter: document.querySelector("#adminEngagementsNationalClubsStatusFilter"),
+    engagementsNationalClubsRegionFilter: document.querySelector("#adminEngagementsNationalClubsRegionFilter"),
+    engagementsNationalClubsCreate: document.querySelector("#adminEngagementsNationalClubsCreate"),
+    engagementsNationalClubsReset: document.querySelector("#adminEngagementsNationalClubsReset"),
+    engagementsNationalClubsStatus: document.querySelector("#adminEngagementsNationalClubsStatus"),
+    engagementsNationalClubsList: document.querySelector("#adminEngagementsNationalClubsList"),
+    engagementsNationalClubDialog: document.querySelector("#adminEngagementsNationalClubDialog"),
+    engagementsNationalClubForm: document.querySelector("#adminEngagementsNationalClubForm"),
+    engagementsNationalClubDialogTitle: document.querySelector("#adminEngagementsNationalClubDialogTitle"),
+    engagementsNationalClubClose: document.querySelector("#adminEngagementsNationalClubClose"),
+    engagementsNationalClubCancel: document.querySelector("#adminEngagementsNationalClubCancel"),
+    engagementsNationalClubDelete: document.querySelector("#adminEngagementsNationalClubDelete"),
+    engagementsNationalClubId: document.querySelector("#adminEngagementsNationalClubId"),
+    engagementsNationalClubFederalNumber: document.querySelector("#adminEngagementsNationalClubFederalNumber"),
+    engagementsNationalClubCode: document.querySelector("#adminEngagementsNationalClubCode"),
+    engagementsNationalClubName: document.querySelector("#adminEngagementsNationalClubName"),
+    engagementsNationalClubRegion: document.querySelector("#adminEngagementsNationalClubRegion"),
+    engagementsNationalClubCity: document.querySelector("#adminEngagementsNationalClubCity"),
+    engagementsNationalClubPostalCode: document.querySelector("#adminEngagementsNationalClubPostalCode"),
+    engagementsNationalClubActive: document.querySelector("#adminEngagementsNationalClubActive"),
+    engagementsNationalClubMessage: document.querySelector("#adminEngagementsNationalClubMessage"),
     engagementsDeletionRequestsRefresh: document.querySelector("#adminEngagementsDeletionRequestsRefresh"),
     engagementsDeletionRequestsGroup: document.querySelector("#adminEngagementsDeletionRequestsGroup"),
     engagementsDeletionRequestsCount: document.querySelector("#adminEngagementsDeletionRequestsCount"),
@@ -671,6 +714,10 @@
   let engagementAccessRequestsLoaded = false;
   let engagementAccessRequestsLoading = false;
   let activeEngagementNationalTab = "deletions";
+  let engagementNationalClubs = [];
+  let engagementNationalClubsLoaded = false;
+  let engagementNationalClubsLoading = false;
+  let engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
   let engagementNationalSwimmers = [];
   let engagementNationalSwimmersLoaded = false;
   let engagementNationalSwimmersLoading = false;
@@ -700,7 +747,9 @@
   let engagementClubSwimmersLoading = false;
   let engagementClubSwimmersClubId = "";
   let engagementClubSwimmersDirectorySexFilter = "all";
+  let engagementClubInactiveSwimmersDirectoryExpanded = false;
   let engagementClubAvailableSwimmersSexFilter = "all";
+  let engagementClubInactiveSwimmersExpanded = false;
   let engagementClubSwimmerRecovery = null;
   let engagementClubSwimmersRenderedCompetitionId = "";
   let engagementClubEntriesRenderedCompetitionId = "";
@@ -733,6 +782,7 @@
   let dtnModuleLoadPromise = null;
   let importSpreadsheetLoadPromise = null;
   let accessClubReferenceLoadPromise = null;
+  let publicClubDirectoryLoadPromise = null;
   let accessClubReference = [];
   let accessClubReferenceById = new Map();
   let activeEngagementClubId = "";
@@ -1290,7 +1340,9 @@
 
   function loadActiveEngagementNationalTab() {
     if (!canDeleteEngagementCompetitionDirectly()) return;
-    if (activeEngagementNationalTab === "swimmers") {
+    if (activeEngagementNationalTab === "clubs") {
+      loadEngagementNationalClubs();
+    } else if (activeEngagementNationalTab === "swimmers") {
       loadEngagementNationalSwimmers();
     } else if (activeEngagementNationalTab === "people") {
       loadEngagementNationalPeople();
@@ -1304,7 +1356,7 @@
   }
 
   function setEngagementNationalTab(tab = "deletions") {
-    const allowedTabs = new Set(["deletions", "swimmers", "people", "audit"]);
+    const allowedTabs = new Set(["deletions", "clubs", "swimmers", "people", "audit"]);
     const nextTab = allowedTabs.has(tab) ? tab : "deletions";
     activeEngagementNationalTab = nextTab;
     elements.engagementsNationalTabButtons?.forEach((button) => {
@@ -1581,7 +1633,7 @@
   }
 
   function engagementLastTabStorageKey(competitionId = selectedEngagementCompetitionId) {
-    const clubId = String(currentAccessProfile?.clubId || "club").trim();
+    const clubId = String(engagementClubScope(currentAccessProfile || {}) || "club").trim();
     return `livepalmes.engagement.lastTab.${clubId}.${String(competitionId || "").trim()}`;
   }
 
@@ -1625,9 +1677,6 @@
 
   function updateEngagementStepNavigation() {
     const tabs = visibleEngagementDetailTabs();
-    const currentIndex = Math.max(0, tabs.indexOf(activeEngagementsDetailTab));
-    const previousTab = tabs[currentIndex - 1] || "";
-    const nextTab = tabs[currentIndex + 1] || "";
     const activeGroup = engagementDetailTabGroup(activeEngagementsDetailTab);
     const visibleTabs = new Set(tabs);
     elements.engagementsDetailStepButtons?.forEach((button) => {
@@ -1641,24 +1690,6 @@
       const visibleGroupTabCount = (ENGAGEMENT_DETAIL_TAB_GROUPS[groupName] || []).filter((tab) => visibleTabs.has(tab)).length;
       group.hidden = groupName !== activeGroup || visibleGroupTabCount < 2;
     });
-    [elements.engagementsFooterPrev].forEach((button) => {
-      if (!button) return;
-      button.disabled = !previousTab;
-      button.dataset.engagementStepTarget = previousTab;
-    });
-    [elements.engagementsFooterNext].forEach((button) => {
-      if (!button) return;
-      button.disabled = !nextTab;
-      button.dataset.engagementStepTarget = nextTab;
-    });
-    if (elements.engagementsFooterPrev) elements.engagementsFooterPrev.textContent = previousTab ? `← ${engagementDetailTabLabel(previousTab)}` : "Première étape";
-    if (elements.engagementsFooterNext) elements.engagementsFooterNext.textContent = nextTab ? `${engagementDetailTabLabel(nextTab)} →` : "Dernière étape";
-    if (elements.engagementsStepFooter) elements.engagementsStepFooter.hidden = isEngagementAdminMode() || tabs.length < 2;
-  }
-
-  function navigateEngagementStep(button) {
-    const target = button?.dataset.engagementStepTarget || "";
-    if (target) requestEngagementDetailTab(target);
   }
 
   function requestEngagementDetailTab(tab) {
@@ -1968,7 +1999,7 @@
     if (global.location.hash === "#administration-nationale") return "nationalHome";
     if (global.location.hash === "#engagements" || ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
     if (global.location.hash === "#espace-dtn") return "dtnHome";
-    if (["#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) return "dtn";
+    if (["#espace-dtn-france", "#espace-dtn-edf", "#espace-dtn-listes"].includes(global.location.hash)) return "dtn";
     return "dashboard";
   }
 
@@ -2095,7 +2126,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260812-read-budget-1",
+      "assets/livepalmes-dtn-qualifications.js?v=20260815-dtn-header-density-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -2121,7 +2152,7 @@
       const scripts = [
         ["performances/public/data/records-data.js?v=records-firestore-20260629060432", "adminRecordDataScript"],
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
-        ["performances/public/data/club-reference.js?v=20260804-portal-clubs-1", "adminRecordReferenceScript"],
+        ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
         ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
         ["performances/public/store.js?v=20260804-records-static-auto-1", "adminRecordStoreScript"],
         ["performances/public/admin-records.js?v=20260721-default-filters-1", "adminRecordModuleScript"]
@@ -2331,10 +2362,24 @@
   function accessReferenceRegionLabel(regionId) {
     const value = String(regionId || "").trim();
     if (!value) return "";
+    const namedRegion = LIVEPALMES_REGION_DEFINITIONS.find((region) => normalizedRegionKey(region) === normalizedRegionKey(value));
+    if (namedRegion) return namedRegion;
     return LIVEPALMES_REFERENCE_REGION_LABELS[value] || `Autre / code ${value}`;
   }
 
   function normalizeAccessClubReference(row = []) {
+    if (row && !Array.isArray(row) && typeof row === "object") {
+      const referenceRegionId = String(row.referenceRegionId || row.regionId || "").trim();
+      return {
+        ...row,
+        clubId: String(row.clubId || row.id || "").trim(),
+        clubCode: String(row.clubCode || "").trim(),
+        clubName: String(row.clubName || "").trim(),
+        federalNumber: String(row.federalNumber || "").trim(),
+        referenceRegionId,
+        regionId: accessReferenceRegionLabel(referenceRegionId)
+      };
+    }
     const clubId = String(row[0] || "").trim();
     const clubCode = String(row[1] || "").trim();
     const clubName = String(row[2] || "").trim();
@@ -2343,8 +2388,12 @@
       clubId,
       clubCode,
       clubName,
+      federalNumber: String(row[4] || "").trim(),
       referenceRegionId,
-      regionId: accessReferenceRegionLabel(referenceRegionId)
+      regionId: accessReferenceRegionLabel(referenceRegionId),
+      city: String(row[5] || "").trim(),
+      postalCode: String(row[6] || "").trim(),
+      active: row[7] !== false
     };
   }
 
@@ -2416,7 +2465,7 @@
     }
     const regionKey = normalizedRegionKey(regionId);
     const clubs = accessClubReference
-      .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
+      .filter((club) => club.active !== false && normalizedRegionKey(club.regionId) === regionKey)
       .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
     select.append(new Option("A choisir", ""));
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
@@ -2485,6 +2534,66 @@
     syncPublicAccessRequestClubFieldsFromSelect();
   }
 
+  function normalizedClubFederalNumber(value = "") {
+    return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function publicAccessRequestNewClubInputs() {
+    return [
+      elements.publicAccessRequestNewClubName,
+      elements.publicAccessRequestNewClubCode,
+      elements.publicAccessRequestNewClubFederalNumber,
+      elements.publicAccessRequestNewClubCity,
+      elements.publicAccessRequestNewClubPostalCode
+    ].filter(Boolean);
+  }
+
+  function updatePublicAccessRequestNewClubMode({ preserveMessage = false } = {}) {
+    const newClub = elements.publicAccessRequestNewClub?.checked === true;
+    if (elements.publicAccessRequestNewClubFields) elements.publicAccessRequestNewClubFields.hidden = !newClub;
+    publicAccessRequestNewClubInputs().forEach((input) => { input.required = newClub; });
+    if (elements.publicAccessRequestClubSelect) {
+      elements.publicAccessRequestClubSelect.required = !newClub;
+      if (newClub) elements.publicAccessRequestClubSelect.disabled = true;
+      else populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
+    }
+    if (newClub) {
+      if (elements.publicAccessRequestClubId) elements.publicAccessRequestClubId.value = "";
+      if (elements.publicAccessRequestClubName) elements.publicAccessRequestClubName.value = "";
+    }
+    if (!preserveMessage && elements.publicAccessRequestNewClubMatch) {
+      elements.publicAccessRequestNewClubMatch.textContent = "";
+      delete elements.publicAccessRequestNewClubMatch.dataset.tone;
+    }
+  }
+
+  function matchPublicAccessRequestClubByFederalNumber() {
+    if (elements.publicAccessRequestNewClub?.checked !== true) return null;
+    const federalNumber = normalizedClubFederalNumber(elements.publicAccessRequestNewClubFederalNumber?.value || "");
+    if (!federalNumber) return null;
+    const club = accessClubReference.find((candidate) =>
+      normalizedClubFederalNumber(candidate.federalNumber) === federalNumber
+    );
+    if (!club) {
+      if (elements.publicAccessRequestNewClubMatch) {
+        elements.publicAccessRequestNewClubMatch.textContent = "Aucun club existant ne porte ce numéro fédéral.";
+        elements.publicAccessRequestNewClubMatch.dataset.tone = "loading";
+      }
+      return null;
+    }
+    setRegionSelectValue(elements.publicAccessRequestRegionId, club.regionId || "");
+    if (elements.publicAccessRequestNewClub) elements.publicAccessRequestNewClub.checked = false;
+    if (elements.publicAccessRequestClubId) elements.publicAccessRequestClubId.value = club.clubId || "";
+    populatePublicAccessRequestClubSelect(club.clubId || "", club.clubName || "");
+    updatePublicAccessRequestNewClubMode({ preserveMessage: true });
+    if (elements.publicAccessRequestNewClubMatch) {
+      elements.publicAccessRequestNewClubMatch.textContent = `Ce numéro correspond à ${accessClubLabel(club)}. Le club existant a été sélectionné.`;
+      elements.publicAccessRequestNewClubMatch.dataset.tone = "ok";
+    }
+    setPublicAccessRequestMessage(`Club existant trouvé : ${accessClubLabel(club)}.`, "ok");
+    return club;
+  }
+
   function syncEngagementAccessRequestEditClubFieldsFromSelect() {
     const selectedClubId = elements.engagementsAccessRequestEditClubSelect?.value || "";
     const club = accessClubReference.find((item) => item.clubId === selectedClubId);
@@ -2537,12 +2646,18 @@
     if (accessClubReference.length) return Promise.resolve(accessClubReference);
     if (accessClubReferenceLoadPromise) return accessClubReferenceLoadPromise;
     accessClubReferenceLoadPromise = loadScriptOnce(
-      "performances/public/data/club-reference.js?v=20260804-portal-clubs-1",
+      "performances/public/data/club-reference.js?v=20260813-national-clubs-3",
       "adminAccessReferenceScript"
-    ).then(() => {
+    ).then(async () => {
       accessClubReference = (global.LIVEPALMES_CLUB_REFERENCE?.clubs || [])
         .map(normalizeAccessClubReference)
         .filter((club) => club.clubId && club.clubName);
+      if (!publicClubDirectoryLoadPromise) {
+        publicClubDirectoryLoadPromise = callFunction("getPublicEngagementClubDirectory", {})
+          .then((result) => Array.isArray(result?.clubs) ? result.clubs : [])
+          .catch(() => []);
+      }
+      mergeNationalClubsIntoAccessReference(await publicClubDirectoryLoadPromise);
       accessClubReferenceById = new Map(accessClubReference.map((club) => [club.clubId, club]));
       populateAccessRegionChoices();
       populateAccessClubSelect(elements.accessClubId?.value || "");
@@ -3078,9 +3193,31 @@
     dialog.append(form);
   }
 
+  function resetCreateCompetitionDialog() {
+    const form = elements.engagementsCreateForm;
+    if (!form) return;
+    form.reset();
+    if (elements.engagementsEndDate) {
+      elements.engagementsEndDate.value = "";
+      elements.engagementsEndDate.dataset.autoFromStart = "true";
+    }
+    setRegionMultiSelectValues(elements.engagementsInvitedRegionIds, []);
+    form.querySelectorAll("details").forEach((details) => { details.open = false; });
+    if (elements.engagementsCreateMessage) {
+      elements.engagementsCreateMessage.textContent = "";
+      delete elements.engagementsCreateMessage.dataset.tone;
+    }
+    setDefaultEngagementOfficialsRequired("create");
+    updateEngagementQualificationFields("create");
+    updateCreateEngagementFeesMode();
+    updateEngagementMaxEventsFields("create");
+    updateEngagementCreateFormAccess();
+  }
+
   function openCreateCompetitionDialog() {
     if (!canCreateEngagementCompetition()) return;
     prepareCreateCompetitionDialog();
+    resetCreateCompetitionDialog();
     elements.engagementsCreateDialog?.showModal();
   }
 
@@ -3310,14 +3447,35 @@
     }
     if (competition.entryStatus === "open" && engagementDeadlineTone(competition) !== "deadline-passed") {
       const rememberedTab = storedEngagementDetailTab(competition.id);
-      return rememberedTab
-        ? { label: "Mes engagements", tab: rememberedTab }
+      const hasClubEntry = competition.clubEntryExists === true;
+      return hasClubEntry
+        ? { label: "Mes engagements", tab: rememberedTab || "team" }
         : { label: "S’engager", tab: "team" };
     }
     if (competition.entryStatus === "closed" || engagementDeadlineTone(competition) === "deadline-passed") {
       return { label: "Consulter le récapitulatif", tab: "summary" };
     }
     return { label: "Voir les informations", tab: "general" };
+  }
+
+  function mergeNationalClubsIntoAccessReference(clubs = []) {
+    if (!Array.isArray(clubs) || !clubs.length) return;
+    const byId = new Map(accessClubReference.map((club) => [club.clubId, club]));
+    clubs.map(normalizeAccessClubReference).filter((club) => club.clubId && club.clubName).forEach((club) => byId.set(club.clubId, club));
+    accessClubReference = Array.from(byId.values());
+    accessClubReferenceById = new Map(accessClubReference.map((club) => [club.clubId, club]));
+  }
+
+  function setSelectedEngagementCompetitionClubEntryExists(entryExists) {
+    if (!selectedEngagementCompetitionId) return;
+    const nextValue = entryExists === true;
+    selectedEngagementCompetition = {
+      ...(selectedEngagementCompetition || {}),
+      clubEntryExists: nextValue
+    };
+    engagementCompetitions = engagementCompetitions.map((competition) => competition.id === selectedEngagementCompetitionId
+      ? { ...competition, clubEntryExists: nextValue }
+      : competition);
   }
 
   function engagementPoolLengthLabel(value) {
@@ -5198,11 +5356,11 @@
       const activitySeparator = index === 0 && activeCount
         ? `<div class="admin-engagements-club-swimmers-directory-activity-separator" role="row"><strong>Actifs</strong><span>${activeCount}</span></div>`
         : index === activeCount && inactiveCount
-          ? `<div class="admin-engagements-club-swimmers-directory-activity-separator" role="row"><strong>Inactifs</strong><span>${inactiveCount}</span></div>`
+          ? `<button class="admin-engagements-club-swimmers-directory-activity-separator admin-engagements-club-inactive-toggle" type="button" role="row" data-engagement-club-directory-inactive-toggle aria-expanded="${engagementClubInactiveSwimmersDirectoryExpanded}"><strong>Nageurs inactifs</strong><span>${inactiveCount}</span><i aria-hidden="true"></i></button>`
           : "";
       return `
         ${activitySeparator}
-        <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${escapeHtml(sex)}" data-activity-status="${isActive ? "active" : "inactive"}" data-expanded="false">
+        <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${escapeHtml(sex)}" data-activity-status="${isActive ? "active" : "inactive"}" data-expanded="false" ${!isActive && !engagementClubInactiveSwimmersDirectoryExpanded ? "hidden" : ""}>
           <div class="admin-engagements-club-swimmers-directory-toggle">
             ${profileButton}
             <span class="admin-engagements-club-swimmers-directory-toggle-meta">
@@ -5469,7 +5627,7 @@
       </div>`;
     const renderSwimmerTable = (rows, label, options = {}) => `
       <section class="admin-engagements-club-swimmers-section">
-        ${renderSwimmerSectionHead(rows, label, options)}
+        ${options.hideSectionHead ? "" : renderSwimmerSectionHead(rows, label, options)}
         <div class="admin-engagements-club-swimmers-table" role="table" aria-label="${escapeHtml(label)}">
           <div class="admin-engagements-club-swimmers-head" role="row">
             <span role="columnheader">Nageur</span>
@@ -5491,24 +5649,39 @@
     const availableMatches = engagementClubSwimmers
       .filter((swimmer) => !selectedIds.has(swimmer.id))
       .filter(availableSexMatches)
-      .filter((swimmer) => query
-        ? engagementClubSwimmerSearchText(swimmer).includes(query)
-        : engagementClubSwimmerIsActive(swimmer));
-    const availableSwimmers = swimmers
-      .filter((swimmer) => !selectedIds.has(swimmer.id))
+      .filter((swimmer) => !query || engagementClubSwimmerSearchText(swimmer).includes(query));
+    const activeAvailableMatches = availableMatches.filter(engagementClubSwimmerIsActive);
+    const inactiveAvailableMatches = availableMatches.filter((swimmer) => !engagementClubSwimmerIsActive(swimmer));
+    const availableSwimmers = (query ? availableMatches : activeAvailableMatches)
       .sort(compareAvailableSwimmers)
       .slice(0, visibleAvailableLimit);
-    const hiddenAvailableCount = Math.max(0, availableMatches.length - availableSwimmers.length);
+    const inactiveAvailableSwimmers = !query && engagementClubInactiveSwimmersExpanded
+      ? inactiveAvailableMatches.sort(compareAvailableSwimmers).slice(0, visibleAvailableLimit)
+      : [];
+    const hiddenAvailableCount = Math.max(0, (query ? availableMatches : activeAvailableMatches).length - availableSwimmers.length);
+    const hiddenInactiveCount = Math.max(0, inactiveAvailableMatches.length - inactiveAvailableSwimmers.length);
     selectedMount.innerHTML = selectedSwimmers.length
       ? renderSwimmerTable(selectedSwimmers, "Nageurs engagés", { showCount: true })
       : "";
+    const inactiveAccordion = !query && inactiveAvailableMatches.length
+      ? `<section class="admin-engagements-club-swimmers-inactive">
+          <button type="button" class="admin-engagements-club-inactive-toggle" data-engagement-club-inactive-swimmers-toggle aria-expanded="${engagementClubInactiveSwimmersExpanded}" aria-controls="adminEngagementsClubInactiveSwimmers">
+            <strong>Nageurs inactifs</strong><span>${inactiveAvailableMatches.length}</span><i aria-hidden="true"></i>
+          </button>
+          <div id="adminEngagementsClubInactiveSwimmers" ${engagementClubInactiveSwimmersExpanded ? "" : "hidden"}>
+            ${renderSwimmerTable(inactiveAvailableSwimmers, "Nageurs inactifs", { hideSectionHead: true })}
+            ${hiddenInactiveCount ? '<p class="admin-engagements-empty">Affinez votre recherche pour afficher les autres nageurs inactifs.</p>' : ""}
+          </div>
+        </section>`
+      : "";
     mount.innerHTML = availableSwimmers.length
       ? `${renderSwimmerTable(availableSwimmers, query ? "Résultats de recherche" : "Nageurs actifs", { showCount: !query, showSexFilter: true })}
-          ${hiddenAvailableCount ? '<p class="admin-engagements-empty">Affinez votre recherche pour afficher les autres résultats.</p>' : ""}`
+          ${hiddenAvailableCount ? '<p class="admin-engagements-empty">Affinez votre recherche pour afficher les autres résultats.</p>' : ""}
+          ${inactiveAccordion}`
       : `<section class="admin-engagements-club-swimmers-section admin-engagements-club-swimmers-section-empty">
           ${renderSwimmerSectionHead([], query ? "Résultats de recherche" : "Nageurs actifs", { showCount: !query, showSexFilter: true })}
           <p class="admin-engagements-empty">${query ? "Aucun nageur ne correspond à la recherche et au filtre." : "Aucun nageur actif ne correspond au filtre."}</p>
-        </section>`;
+        </section>${inactiveAccordion}`;
     engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
     setEngagementClubFormControlsLocked(elements.engagementsClubSwimmersForm, false);
     updateEngagementClubSwimmersSummary();
@@ -6843,7 +7016,11 @@
     if (teamSearchLabel) teamSearchLabel.hidden = !declaringPerson || externalClub;
     if (elements.engagementsClubTeamPersonResults) elements.engagementsClubTeamPersonResults.hidden = !declaringPerson || externalClub || !String(elements.engagementsClubTeamPersonSearch?.value || "").trim();
     if (elements.engagementsClubTeamPersonCreate) elements.engagementsClubTeamPersonCreate.hidden = !declaringPerson || externalClub;
-    if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = externalClub || !declaringPerson || (Boolean(knownPerson) && knownPersonReady) || (!knownPerson && !manualEntry);
+    if (elements.engagementsClubTeamSaveButton) {
+      elements.engagementsClubTeamSaveButton.hidden = externalClub || !declaringPerson || (Boolean(knownPerson) && knownPersonReady) || (!knownPerson && !manualEntry);
+      const validation = elements.engagementsClubTeamSaveButton.closest(".admin-engagements-club-team-validation");
+      if (validation) validation.hidden = elements.engagementsClubTeamSaveButton.hidden;
+    }
     [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName].forEach((field) => {
       if (field) field.required = showManualFields;
     });
@@ -8255,6 +8432,8 @@
     if (elements.engagementsClubSwimmersSummary) elements.engagementsClubSwimmersSummary.textContent = "Aucun nageur engagé.";
     if (elements.engagementsClubSwimmersSearch) elements.engagementsClubSwimmersSearch.value = "";
     engagementClubAvailableSwimmersSexFilter = "all";
+    engagementClubInactiveSwimmersDirectoryExpanded = false;
+    engagementClubInactiveSwimmersExpanded = false;
     if (elements.engagementsClubSelectedSwimmersList) elements.engagementsClubSelectedSwimmersList.innerHTML = "";
     if (elements.engagementsClubSwimmersList) elements.engagementsClubSwimmersList.innerHTML = "";
     if (elements.engagementsClubSwimmersMessage) elements.engagementsClubSwimmersMessage.textContent = "";
@@ -8464,6 +8643,7 @@
         teamLeader
       });
       selectedEngagementClubEntry = result.entry || {};
+      setSelectedEngagementCompetitionClubEntryExists(true);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = "Etape chef d'equipe enregistree. Vous pouvez continuer les engagements.";
@@ -8472,6 +8652,14 @@
       setEngagementSaveState("saved");
       return true;
     } catch (error) {
+      if (error?.details?.outsideClubExistingPerson === true) {
+        if (elements.engagementsClubTeamMessage) {
+          elements.engagementsClubTeamMessage.textContent = "Cette personne existe déjà dans un autre club. Déclarez-la comme chef d'équipe hors club.";
+          elements.engagementsClubTeamMessage.dataset.tone = "warning";
+        }
+        openEngagementClubExternalTeamDialog();
+        return false;
+      }
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = `Enregistrement impossible : ${error?.message || error}`;
         elements.engagementsClubTeamMessage.dataset.tone = "error";
@@ -8509,6 +8697,7 @@
         competitionId: selectedEngagementCompetitionId
       });
       selectedEngagementClubEntry = result.entry || {};
+      setSelectedEngagementCompetitionClubEntryExists(false);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = "Chef d'équipe retiré. Le dossier vide n'est plus compté dans les engagements.";
@@ -8625,8 +8814,8 @@
       engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
       engagementClubSwimmersLoaded = true;
       if (!silent && elements.engagementsClubSwimmersMessage) {
-        elements.engagementsClubSwimmersMessage.textContent = `${engagementClubSwimmers.length} nageur${engagementClubSwimmers.length > 1 ? "s" : ""} connu${engagementClubSwimmers.length > 1 ? "s" : ""} charge${engagementClubSwimmers.length > 1 ? "s" : ""}.`;
-        elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
+        elements.engagementsClubSwimmersMessage.textContent = "";
+        elements.engagementsClubSwimmersMessage.dataset.tone = "neutral";
       }
     } catch (error) {
       if (elements.engagementsClubSwimmersMessage) {
@@ -8777,7 +8966,9 @@
           category: relay.category || "",
           genderMode: relay.genderMode || "",
           manualEntryTime: relay.manualEntryTime || "",
-          memberIds: Array.isArray(relay.memberIds) ? relay.memberIds : []
+          memberIds: Array.isArray(relay.memberIds)
+            ? relay.memberIds
+            : (Array.isArray(relay.members) ? relay.members.map((member) => member.swimmerIndexId).filter(Boolean) : [])
         }))
       });
       selectedEngagementClubEntry = result.entry || selectedEngagementClubEntry || {};
@@ -8962,13 +9153,13 @@
     const button = elements.engagementsGenerateTxtExportButton;
     if (button) button.disabled = true;
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Préparation de l'export TXT…";
+      elements.engagementsDocumentsSummary.textContent = "Préparation de l'export WinPalme…";
     }
     try {
       const result = await callFunction("generateEngagementCompetitionTxtExport", {
         competitionId: selectedEngagementCompetitionId
       });
-      if (!result.txtBase64) throw new Error("TXT non retourne par le serveur.");
+      if (!result.txtBase64) throw new Error("TXT WinPalme non retourne par le serveur.");
       downloadBase64File(result.txtBase64, result.fileName || "export-engagements-livepalmes.txt", result.contentType || "text/plain");
       const generatedAt = result.generatedAt || new Date().toISOString();
       selectedEngagementCompetition = {
@@ -8990,7 +9181,7 @@
       renderEngagementDocuments(selectedEngagementCompetition);
       if (elements.engagementsDocumentsSummary) {
         const entryCount = Number(result.entryCount || 0);
-        elements.engagementsDocumentsSummary.textContent = `Export TXT téléchargé pour ${entryCount} club${entryCount > 1 ? "s" : ""}.`;
+        elements.engagementsDocumentsSummary.textContent = `Export WinPalme téléchargé pour ${entryCount} club${entryCount > 1 ? "s" : ""}.`;
       }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
@@ -9489,6 +9680,9 @@
     }
     elements.engagementsAccessRequestsList.innerHTML = engagementAccessRequests.map((request) => {
       const name = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "Demande sans nom";
+      const newClubRequested = request.newClubRequested === true;
+      const newClub = request.newClub || {};
+      const nationalOnly = newClubRequested && !canUse("engagements.national.manage");
       return `
         <article class="admin-engagements-request-card" data-engagement-access-request-id="${escapeHtml(request.id || "")}">
           <div class="admin-engagements-request-main">
@@ -9496,14 +9690,15 @@
             <small>${escapeHtml([request.email, request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
           </div>
           <div class="admin-engagements-request-meta">
-            <span>${escapeHtml(clubDisplayLabel(request, { fallback: "Club non renseigné" }))}</span>
+            <span>${escapeHtml(newClubRequested ? `${newClub.clubCode || "Nouveau club"} — ${newClub.clubName || "Nom non renseigné"}` : clubDisplayLabel(request, { fallback: "Club non renseigné" }))}</span>
             <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Region non renseignee")}</span>
             <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
           </div>
           <div class="admin-engagements-request-actions">
-            <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Modifier / valider</button>
+            <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${escapeHtml(request.id || "")}" ${nationalOnly ? "disabled title=\"Traitement réservé au niveau national\"" : ""}>${newClubRequested ? "Créer le club / valider" : "Modifier / valider"}</button>
             <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Refuser</button>
           </div>
+          ${newClubRequested ? `<p class="admin-engagements-request-note">Nouveau club demandé · N° fédéral ${escapeHtml(newClub.federalNumber || "-")} · ${escapeHtml([newClub.postalCode, newClub.city].filter(Boolean).join(" ") || "Localité non renseignée")}${nationalOnly ? " · Traitement national requis" : ""}</p>` : ""}
           ${request.message ? `<p class="admin-engagements-request-note">${escapeHtml(request.message)}</p>` : ""}
         </article>
       `;
@@ -9550,6 +9745,7 @@
   function closeEngagementAccessRequestEditForm() {
     elements.engagementsAccessRequestEditForm?.reset();
     if (elements.engagementsAccessRequestEditForm) elements.engagementsAccessRequestEditForm.hidden = true;
+    if (elements.engagementsAccessRequestEditNewClubFields) elements.engagementsAccessRequestEditNewClubFields.hidden = true;
     setEngagementAccessRequestEditMessage("");
   }
 
@@ -9565,13 +9761,34 @@
     if (elements.engagementsAccessRequestEditRegionId) {
       elements.engagementsAccessRequestEditRegionId.disabled = !canUse("engagements.national.manage");
     }
+    const newClubRequested = request.newClubRequested === true;
+    const newClub = request.newClub || {};
     populateEngagementAccessRequestEditClubSelect(request.clubId || "", request.clubName || "");
+    if (elements.engagementsAccessRequestEditClubSelect) {
+      elements.engagementsAccessRequestEditClubSelect.required = !newClubRequested;
+      if (newClubRequested) elements.engagementsAccessRequestEditClubSelect.disabled = true;
+    }
+    if (elements.engagementsAccessRequestEditNewClubFields) elements.engagementsAccessRequestEditNewClubFields.hidden = !newClubRequested;
+    [
+      [elements.engagementsAccessRequestEditNewClubName, newClub.clubName],
+      [elements.engagementsAccessRequestEditNewClubCode, newClub.clubCode],
+      [elements.engagementsAccessRequestEditNewClubFederalNumber, newClub.federalNumber],
+      [elements.engagementsAccessRequestEditNewClubCity, newClub.city],
+      [elements.engagementsAccessRequestEditNewClubPostalCode, newClub.postalCode]
+    ].forEach(([field, value]) => {
+      if (!field) return;
+      field.value = value || "";
+      field.required = newClubRequested;
+    });
     elements.engagementsAccessRequestEditForm.hidden = false;
     setEngagementAccessRequestEditMessage("Verifiez les informations avant validation.", "loading");
     elements.engagementsAccessRequestEditForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function correctedEngagementAccessRequestFromEditForm() {
+    const requestId = elements.engagementsAccessRequestEditId?.value || "";
+    const request = engagementAccessRequests.find((item) => item.id === requestId) || {};
+    const newClubRequested = request.newClubRequested === true;
     return {
       firstName: String(elements.engagementsAccessRequestEditFirstName?.value || "").trim(),
       lastName: String(elements.engagementsAccessRequestEditLastName?.value || "").trim(),
@@ -9579,11 +9796,21 @@
       licenseNumber: String(elements.engagementsAccessRequestEditLicenseNumber?.value || "").trim(),
       regionId: elements.engagementsAccessRequestEditRegionId?.value || "",
       clubId: elements.engagementsAccessRequestEditClubId?.value || "",
-      clubName: elements.engagementsAccessRequestEditClubName?.value || ""
+      clubName: elements.engagementsAccessRequestEditClubName?.value || "",
+      newClubRequested,
+      ...(newClubRequested ? {
+        newClub: {
+          clubName: String(elements.engagementsAccessRequestEditNewClubName?.value || "").trim(),
+          clubCode: String(elements.engagementsAccessRequestEditNewClubCode?.value || "").trim(),
+          federalNumber: String(elements.engagementsAccessRequestEditNewClubFederalNumber?.value || "").trim(),
+          city: String(elements.engagementsAccessRequestEditNewClubCity?.value || "").trim(),
+          postalCode: String(elements.engagementsAccessRequestEditNewClubPostalCode?.value || "").trim()
+        }
+      } : {})
     };
   }
 
-  async function resolveEngagementAccessRequest(requestId, decision, correctedRequest = null) {
+  async function resolveEngagementAccessRequest(requestId, decision, correctedRequest = null, resolutionReason = "") {
     const cleanId = String(requestId || "").trim();
     if (!cleanId || !canReviewEngagementAccessRequests()) return;
     const request = engagementAccessRequests.find((item) => item.id === cleanId) || {};
@@ -9592,7 +9819,7 @@
     const message = approve
       ? `Valider la demande de ${label} et creer l'acces engagements club ?`
       : `Refuser la demande de ${label} ?`;
-    if (!global.confirm(message)) return false;
+    if (approve && !global.confirm(message)) return false;
     if (elements.engagementsAccessRequestsStatus) {
       elements.engagementsAccessRequestsStatus.textContent = approve ? "Validation en cours..." : "Refus en cours...";
       elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
@@ -9601,7 +9828,8 @@
       const result = await callFunction("resolveEngagementAccessRequest", {
         requestId: cleanId,
         decision: approve ? "approved" : "rejected",
-        ...(approve && correctedRequest ? { correctedRequest } : {})
+        ...(approve && correctedRequest ? { correctedRequest } : {}),
+        ...(!approve ? { resolutionReason: String(resolutionReason || "").trim() } : {})
       });
       if (approve && result.access?.email) {
         await global.firebase?.auth?.().sendPasswordResetEmail(result.access.email, {
@@ -9615,10 +9843,13 @@
       portalPendingOverviewLoaded = false;
       await loadPortalPendingOverview({ force: true });
       if (elements.engagementsAccessRequestsStatus) {
+        const notificationFailed = !approve && result.resolutionNotification?.status !== "sent";
         elements.engagementsAccessRequestsStatus.textContent = approve
           ? "Demande validee. L'acces club est actif et un email de mot de passe a ete envoye si possible."
-          : "Demande refusee.";
-        elements.engagementsAccessRequestsStatus.dataset.tone = "ok";
+          : notificationFailed
+            ? "Demande refusée, mais l’e-mail d’information n’a pas pu être envoyé."
+            : "Demande refusée et demandeur informé par e-mail.";
+        elements.engagementsAccessRequestsStatus.dataset.tone = notificationFailed ? "error" : "ok";
       }
       return true;
     } catch (error) {
@@ -9647,6 +9878,7 @@
   }
 
   function publicAccessRequestPayloadFromForm() {
+    const newClubRequested = elements.publicAccessRequestNewClub?.checked === true;
     return {
       firstName: String(elements.publicAccessRequestFirstName?.value || "").trim(),
       lastName: String(elements.publicAccessRequestLastName?.value || "").trim(),
@@ -9655,6 +9887,16 @@
       regionId: elements.publicAccessRequestRegionId?.value || "",
       clubId: elements.publicAccessRequestClubId?.value || "",
       clubName: elements.publicAccessRequestClubName?.value || "",
+      newClubRequested,
+      ...(newClubRequested ? {
+        newClub: {
+          clubName: String(elements.publicAccessRequestNewClubName?.value || "").trim(),
+          clubCode: String(elements.publicAccessRequestNewClubCode?.value || "").trim(),
+          federalNumber: String(elements.publicAccessRequestNewClubFederalNumber?.value || "").trim(),
+          city: String(elements.publicAccessRequestNewClubCity?.value || "").trim(),
+          postalCode: String(elements.publicAccessRequestNewClubPostalCode?.value || "").trim()
+        }
+      } : {}),
       message: String(elements.publicAccessRequestText?.value || "").trim(),
       website: String(elements.publicAccessRequestWebsite?.value || "").trim()
     };
@@ -9666,9 +9908,11 @@
     if (button) button.disabled = true;
     setPublicAccessRequestMessage("Envoi de la demande...", "loading");
     try {
+      matchPublicAccessRequestClubByFederalNumber();
       await callFunction("submitEngagementAccessRequest", publicAccessRequestPayloadFromForm());
       elements.publicAccessRequestForm?.reset();
       populatePublicAccessRequestClubSelect();
+      updatePublicAccessRequestNewClubMode();
       engagementAccessRequestsLoaded = false;
       setPublicAccessRequestMessage("Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.", "ok");
     } catch (error) {
@@ -10179,6 +10423,40 @@
     }
   }
 
+  function openEngagementAccessRequestRejectDialog(requestId = "") {
+    const request = engagementAccessRequests.find((item) => item.id === requestId);
+    if (!request || !elements.engagementsAccessRequestRejectDialog) return;
+    elements.engagementsAccessRequestRejectForm?.reset();
+    if (elements.engagementsAccessRequestRejectId) elements.engagementsAccessRequestRejectId.value = requestId;
+    if (elements.engagementsAccessRequestRejectMessage) elements.engagementsAccessRequestRejectMessage.textContent = "";
+    elements.engagementsAccessRequestRejectDialog.showModal();
+    elements.engagementsAccessRequestRejectReason?.focus();
+  }
+
+  function closeEngagementAccessRequestRejectDialog() {
+    if (elements.engagementsAccessRequestRejectDialog?.open) elements.engagementsAccessRequestRejectDialog.close();
+  }
+
+  async function submitEngagementAccessRequestRejection(event) {
+    event?.preventDefault?.();
+    const requestId = elements.engagementsAccessRequestRejectId?.value || "";
+    const reason = String(elements.engagementsAccessRequestRejectReason?.value || "").trim();
+    if (!requestId || !reason) return;
+    const button = elements.engagementsAccessRequestRejectForm?.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    if (elements.engagementsAccessRequestRejectMessage) {
+      elements.engagementsAccessRequestRejectMessage.textContent = "Refus et envoi de l’e-mail en cours...";
+      elements.engagementsAccessRequestRejectMessage.dataset.tone = "loading";
+    }
+    const resolved = await resolveEngagementAccessRequest(requestId, "rejected", null, reason);
+    if (resolved) closeEngagementAccessRequestRejectDialog();
+    else if (elements.engagementsAccessRequestRejectMessage) {
+      elements.engagementsAccessRequestRejectMessage.textContent = "Refus impossible. Vérifiez le message affiché dans la liste des demandes.";
+      elements.engagementsAccessRequestRejectMessage.dataset.tone = "error";
+    }
+    if (button) button.disabled = false;
+  }
+
   function closeEngagementSwimmerCorrectionDialog() {
     if (elements.engagementsSwimmerCorrectionDialog?.open) elements.engagementsSwimmerCorrectionDialog.close();
   }
@@ -10298,6 +10576,270 @@
         elements.engagementsSwimmerCorrectionMessage.textContent = `Correction impossible : ${error?.message || error}`;
         elements.engagementsSwimmerCorrectionMessage.dataset.tone = "error";
       }
+    }
+  }
+
+  function normalizeEngagementNationalClub(row = []) {
+    if (row && !Array.isArray(row) && typeof row === "object") {
+      return {
+        ...row,
+        clubId: String(row.clubId || row.id || "").trim(),
+        clubCode: String(row.clubCode || "").trim(),
+        clubName: String(row.clubName || "").trim(),
+        regionId: String(row.referenceRegionId || row.regionId || "").trim(),
+        federalNumber: String(row.federalNumber || "").trim(),
+        city: String(row.city || "").trim(),
+        postalCode: String(row.postalCode || "").trim(),
+        active: row.active !== false,
+        deleted: row.deleted === true
+      };
+    }
+    return {
+      clubId: String(row[0] || "").trim(),
+      clubCode: String(row[1] || "").trim(),
+      clubName: String(row[2] || "").trim(),
+      regionId: String(row[3] || "").trim(),
+      federalNumber: String(row[4] || "").trim(),
+      city: String(row[5] || "").trim(),
+      postalCode: String(row[6] || "").trim(),
+      active: row[7] !== false,
+      deleted: false,
+      source: "intranap"
+    };
+  }
+
+  function readEngagementNationalClubCache() {
+    try {
+      const cached = JSON.parse(global.localStorage?.getItem(ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY) || "null");
+      if (!cached || cached.version !== 1 || !Array.isArray(cached.clubs)) return { clubs: [], syncedThrough: "" };
+      return {
+        clubs: cached.clubs.map(normalizeEngagementNationalClub).filter((club) => club.clubId),
+        syncedThrough: String(cached.syncedThrough || "").trim()
+      };
+    } catch (_) {
+      return { clubs: [], syncedThrough: "" };
+    }
+  }
+
+  function writeEngagementNationalClubCache(clubs = [], syncedThrough = "") {
+    try {
+      global.localStorage?.setItem(ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY, JSON.stringify({
+        version: 1,
+        syncedThrough,
+        clubs: clubs.map(normalizeEngagementNationalClub).filter((club) => club.clubId)
+      }));
+    } catch (_) {
+      // Le cache reste facultatif si le stockage local est indisponible.
+    }
+  }
+
+  function engagementNationalClubSyncStart(syncedThrough = "") {
+    const date = new Date(syncedThrough);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Date(date.getTime() - 1000).toISOString();
+  }
+
+  function mergeEngagementNationalClubDirectory(referenceRows = [], storedClubs = []) {
+    const byId = new Map(referenceRows
+      .map(normalizeEngagementNationalClub)
+      .filter((club) => club.clubId && club.clubName)
+      .map((club) => [club.clubId, club]));
+    storedClubs.map(normalizeEngagementNationalClub).filter((club) => club.clubId).forEach((club) => {
+      if (club.deleted === true) byId.delete(club.clubId);
+      else byId.set(club.clubId, { ...(byId.get(club.clubId) || {}), ...club });
+    });
+    return Array.from(byId.values()).sort((left, right) =>
+      String(left.clubName || "").localeCompare(String(right.clubName || ""), "fr")
+      || String(left.clubCode || "").localeCompare(String(right.clubCode || ""), "fr")
+    );
+  }
+
+  function filteredEngagementNationalClubs() {
+    const terms = normalizedEngagementClubSearch(elements.engagementsNationalClubsSearch?.value || "").split(/\s+/).filter(Boolean);
+    const status = elements.engagementsNationalClubsStatusFilter?.value || "";
+    const regionId = elements.engagementsNationalClubsRegionFilter?.value || "";
+    return engagementNationalClubs.filter((club) => {
+      if (status === "active" && club.active === false) return false;
+      if (status === "inactive" && club.active !== false) return false;
+      if (regionId && club.regionId !== regionId) return false;
+      const haystack = normalizedEngagementClubSearch([
+        club.clubId, club.clubCode, club.clubName, club.federalNumber,
+        club.city, club.postalCode, club.regionId
+      ].filter(Boolean).join(" "));
+      return terms.every((term) => haystack.includes(term));
+    });
+  }
+
+  function renderEngagementNationalClubs() {
+    if (!elements.engagementsNationalClubsList) return;
+    const clubs = filteredEngagementNationalClubs();
+    const renderedClubs = clubs.slice(0, engagementNationalClubsVisibleLimit);
+    if (elements.engagementsNationalClubsStatus) {
+      elements.engagementsNationalClubsStatus.textContent = `${renderedClubs.length} club${renderedClubs.length > 1 ? "s" : ""} affiché${renderedClubs.length > 1 ? "s" : ""} sur ${clubs.length} correspondant${clubs.length > 1 ? "s" : ""} (${engagementNationalClubs.length} au total).`;
+      elements.engagementsNationalClubsStatus.dataset.tone = "ok";
+    }
+    elements.engagementsNationalClubsList.innerHTML = clubs.length
+      ? renderedClubs.map((club) => `<article class="admin-national-club-card" data-national-club-id="${escapeHtml(club.clubId)}">
+          <div class="admin-national-club-card-main"><strong>${escapeHtml(club.clubCode || club.clubName)}</strong><span>${escapeHtml(club.clubName)}</span><small>${escapeHtml([club.city, club.postalCode].filter(Boolean).join(" · ") || "Localité non renseignée")}</small></div>
+          <div class="admin-national-club-card-reference"><span>Numéro fédéral</span><strong>${escapeHtml(club.federalNumber || "À renseigner")}</strong><small>${escapeHtml(LIVEPALMES_REFERENCE_REGION_LABELS[club.regionId] || club.regionId || "Région inconnue")}</small></div>
+          <span class="admin-national-club-status" data-active="${club.active !== false}">${club.active !== false ? "Actif" : "Inactif"}</span>
+          <button class="ghost-button compact" type="button" data-engagement-national-club-edit="${escapeHtml(club.clubId)}">Modifier</button>
+        </article>`).join("") + (renderedClubs.length < clubs.length
+          ? '<button class="ghost-button admin-national-clubs-show-more" type="button" data-engagement-national-clubs-show-more>Afficher plus de clubs</button>'
+          : "")
+      : '<p class="admin-engagements-empty">Aucun club ne correspond aux filtres.</p>';
+  }
+
+  async function loadEngagementNationalClubs({ force = false } = {}) {
+    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalClubsLoading) return;
+    if (engagementNationalClubsLoaded && !force) {
+      renderEngagementNationalClubs();
+      return;
+    }
+    engagementNationalClubsLoading = true;
+    engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+    if (elements.engagementsNationalClubsStatus) {
+      elements.engagementsNationalClubsStatus.textContent = "Chargement du référentiel clubs...";
+      elements.engagementsNationalClubsStatus.dataset.tone = "loading";
+    }
+    try {
+      await loadAccessClubReference();
+      const referenceRows = global.LIVEPALMES_CLUB_REFERENCE?.clubs || [];
+      const cached = force ? { clubs: [], syncedThrough: "" } : readEngagementNationalClubCache();
+      const storedById = new Map(cached.clubs.map((club) => [club.clubId, club]));
+      engagementNationalClubs = mergeEngagementNationalClubDirectory(referenceRows, cached.clubs);
+      mergeNationalClubsIntoAccessReference(cached.clubs);
+      renderEngagementNationalClubs();
+      const updatedAfter = force ? "" : engagementNationalClubSyncStart(cached.syncedThrough);
+      let pageUpdatedAfter = updatedAfter;
+      let afterClubId = "";
+      let syncedThrough = cached.syncedThrough;
+      let hasMore = true;
+      while (hasMore) {
+        const result = await callFunction("listEngagementNationalClubs", {
+          limit: 250,
+          ...(pageUpdatedAfter ? { updatedAfter: pageUpdatedAfter } : {}),
+          ...(afterClubId ? { afterClubId } : {})
+        });
+        (Array.isArray(result.clubs) ? result.clubs : [])
+          .map(normalizeEngagementNationalClub)
+          .filter((club) => club.clubId)
+          .forEach((club) => {
+            if (club.deleted === true) storedById.delete(club.clubId);
+            else storedById.set(club.clubId, club);
+          });
+        hasMore = result.hasMore === true && Boolean(result.cursor?.updatedAt && result.cursor?.clubId);
+        if (hasMore) {
+          pageUpdatedAfter = String(result.cursor.updatedAt);
+          afterClubId = String(result.cursor.clubId);
+        }
+        const watermark = String(result.syncWatermark || "");
+        if (watermark && (!syncedThrough || watermark > syncedThrough)) syncedThrough = watermark;
+      }
+      const storedClubs = Array.from(storedById.values());
+      writeEngagementNationalClubCache(storedClubs, syncedThrough);
+      engagementNationalClubs = mergeEngagementNationalClubDirectory(referenceRows, storedClubs);
+      mergeNationalClubsIntoAccessReference(storedClubs);
+      engagementNationalClubsLoaded = true;
+      renderEngagementNationalClubs();
+    } catch (error) {
+      if (elements.engagementsNationalClubsStatus) {
+        elements.engagementsNationalClubsStatus.textContent = `Lecture des clubs impossible : ${error?.message || error}`;
+        elements.engagementsNationalClubsStatus.dataset.tone = "error";
+      }
+    } finally {
+      engagementNationalClubsLoading = false;
+    }
+  }
+
+  function closeEngagementNationalClubDialog() {
+    if (elements.engagementsNationalClubDialog?.open) elements.engagementsNationalClubDialog.close();
+  }
+
+  function openEngagementNationalClubDialog(clubId = "") {
+    const club = engagementNationalClubs.find((item) => item.clubId === clubId) || {};
+    if (elements.engagementsNationalClubForm) elements.engagementsNationalClubForm.reset();
+    if (elements.engagementsNationalClubId) elements.engagementsNationalClubId.value = club.clubId || "";
+    if (elements.engagementsNationalClubFederalNumber) {
+      elements.engagementsNationalClubFederalNumber.value = club.federalNumber || "";
+      elements.engagementsNationalClubFederalNumber.readOnly = Boolean(club.clubId && club.federalNumber);
+    }
+    if (elements.engagementsNationalClubCode) elements.engagementsNationalClubCode.value = club.clubCode || "";
+    if (elements.engagementsNationalClubName) elements.engagementsNationalClubName.value = club.clubName || "";
+    if (elements.engagementsNationalClubRegion) elements.engagementsNationalClubRegion.value = club.regionId || "";
+    if (elements.engagementsNationalClubCity) elements.engagementsNationalClubCity.value = club.city || "";
+    if (elements.engagementsNationalClubPostalCode) elements.engagementsNationalClubPostalCode.value = club.postalCode || "";
+    if (elements.engagementsNationalClubActive) elements.engagementsNationalClubActive.checked = club.active !== false;
+    if (elements.engagementsNationalClubDelete) elements.engagementsNationalClubDelete.hidden = !club.clubId || club.source !== "national";
+    if (elements.engagementsNationalClubDialogTitle) elements.engagementsNationalClubDialogTitle.textContent = club.clubId ? `Modifier ${club.clubCode || club.clubName}` : "Ajouter un club";
+    if (elements.engagementsNationalClubMessage) elements.engagementsNationalClubMessage.textContent = club.clubId && club.federalNumber ? "Le numéro fédéral permanent ne peut pas être modifié." : "";
+    if (!elements.engagementsNationalClubDialog?.open) elements.engagementsNationalClubDialog?.showModal();
+    elements.engagementsNationalClubFederalNumber?.focus();
+  }
+
+  async function saveEngagementNationalClub(event) {
+    event.preventDefault();
+    const submit = elements.engagementsNationalClubForm?.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (elements.engagementsNationalClubMessage) {
+      elements.engagementsNationalClubMessage.textContent = "Enregistrement du club...";
+      elements.engagementsNationalClubMessage.dataset.tone = "loading";
+    }
+    try {
+      const result = await callFunction("saveEngagementNationalClub", {
+        clubId: elements.engagementsNationalClubId?.value || "",
+        club: {
+          federalNumber: elements.engagementsNationalClubFederalNumber?.value || "",
+          clubCode: elements.engagementsNationalClubCode?.value || "",
+          clubName: elements.engagementsNationalClubName?.value || "",
+          regionId: elements.engagementsNationalClubRegion?.value || "",
+          city: elements.engagementsNationalClubCity?.value || "",
+          postalCode: elements.engagementsNationalClubPostalCode?.value || "",
+          active: elements.engagementsNationalClubActive?.checked === true
+        }
+      });
+      const saved = result.club || {};
+      engagementNationalClubs = engagementNationalClubs.filter((club) => club.clubId !== saved.clubId).concat(saved)
+        .sort((left, right) => String(left.clubName || "").localeCompare(String(right.clubName || ""), "fr"));
+      mergeNationalClubsIntoAccessReference([saved]);
+      engagementNationalClubsLoaded = true;
+      renderEngagementNationalClubs();
+      closeEngagementNationalClubDialog();
+    } catch (error) {
+      if (elements.engagementsNationalClubMessage) {
+        elements.engagementsNationalClubMessage.textContent = `Enregistrement impossible : ${error?.message || error}`;
+        elements.engagementsNationalClubMessage.dataset.tone = "error";
+      }
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  }
+
+  async function deleteEngagementNationalClub() {
+    const clubId = elements.engagementsNationalClubId?.value || "";
+    const club = engagementNationalClubs.find((item) => item.clubId === clubId);
+    if (!club || club.source !== "national") return;
+    if (!global.confirm(`Supprimer définitivement ${club.clubCode || club.clubName} ? Cette action n'est possible que si aucune donnée n'est liée à ce club.`)) return;
+    if (elements.engagementsNationalClubDelete) elements.engagementsNationalClubDelete.disabled = true;
+    if (elements.engagementsNationalClubMessage) {
+      elements.engagementsNationalClubMessage.textContent = "Vérification des données liées au club...";
+      elements.engagementsNationalClubMessage.dataset.tone = "loading";
+    }
+    try {
+      await callFunction("deleteEngagementNationalClub", { clubId, confirmPermanent: true });
+      engagementNationalClubs = engagementNationalClubs.filter((item) => item.clubId !== clubId);
+      accessClubReference = accessClubReference.filter((item) => item.clubId !== clubId);
+      accessClubReferenceById.delete(clubId);
+      engagementNationalClubsLoaded = true;
+      renderEngagementNationalClubs();
+      closeEngagementNationalClubDialog();
+    } catch (error) {
+      if (elements.engagementsNationalClubMessage) {
+        elements.engagementsNationalClubMessage.textContent = `Suppression impossible : ${error?.message || error}`;
+        elements.engagementsNationalClubMessage.dataset.tone = "error";
+      }
+    } finally {
+      if (elements.engagementsNationalClubDelete) elements.engagementsNationalClubDelete.disabled = false;
     }
   }
 
@@ -11073,7 +11615,9 @@
       "engagementClubEntry.swimmerRemoved": "Nageur retiré d'un engagement",
       "engagementClubEntry.individualEntriesSaved": "Engagements individuels enregistrés",
       "engagementClubEntry.relaysSaved": "Relais enregistrés",
-      "engagementClubEntry.recapPdfGenerated": "Récapitulatif PDF généré"
+      "engagementClubEntry.recapPdfGenerated": "Récapitulatif PDF généré",
+      "engagementClub.created": "Club créé",
+      "engagementClub.updated": "Club modifié"
     }[action] || action || "-";
   }
 
@@ -11081,6 +11625,7 @@
     const value = String(action || "");
     if (/request|deletion|changeRequested|changeApproved|changeRejected/i.test(value)) return "requests";
     if (value.startsWith("accessUser.")) return "access";
+    if (/^engagementClub\.(created|updated)$/.test(value)) return "clubs";
     if (/ClubSwimmer|ClubPerson/i.test(value)) return "people";
     if (/Competition|ClubEntry/i.test(value)) return "competitions";
     return "";
@@ -12764,8 +13309,15 @@
     elements.clubSwitchClose?.addEventListener("click", () => elements.clubSwitchDialog?.close());
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
-    elements.publicAccessRequestRegionId?.addEventListener("change", () => populatePublicAccessRequestClubSelect());
+    elements.publicAccessRequestRegionId?.addEventListener("change", () => {
+      if (elements.publicAccessRequestNewClub?.checked !== true) populatePublicAccessRequestClubSelect();
+    });
     elements.publicAccessRequestClubSelect?.addEventListener("change", syncPublicAccessRequestClubFieldsFromSelect);
+    elements.publicAccessRequestNewClub?.addEventListener("change", () => updatePublicAccessRequestNewClubMode());
+    elements.publicAccessRequestNewClubFederalNumber?.addEventListener("input", (event) => {
+      event.currentTarget.value = event.currentTarget.value.toUpperCase();
+    });
+    elements.publicAccessRequestNewClubFederalNumber?.addEventListener("change", matchPublicAccessRequestClubByFederalNumber);
     elements.signOut?.addEventListener("click", signOut);
     elements.engagementsAccessRequestsRefresh?.addEventListener("click", () => loadEngagementAccessRequests({ force: true }));
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
@@ -12831,9 +13383,6 @@
         if (target) requestEngagementDetailTab(target);
       });
     });
-    [elements.engagementsFooterPrev, elements.engagementsFooterNext].forEach((button) => {
-      button?.addEventListener("click", () => navigateEngagementStep(button));
-    });
     elements.engagementsCalendarList?.addEventListener("click", (event) => {
       if (event.target.closest("[data-engagement-filters-reset]")) {
         resetEngagementCalendarFilters();
@@ -12880,17 +13429,20 @@
         openEngagementAccessRequestEditForm(button.dataset.engagementAccessRequestId || "");
         return;
       }
-      const decision = button.dataset.engagementAccessRequestAction === "approve"
-        ? "approved"
-        : button.dataset.engagementAccessRequestAction === "reject"
-          ? "rejected"
-          : "";
-      if (decision) resolveEngagementAccessRequest(button.dataset.engagementAccessRequestId, decision);
+      if (button.dataset.engagementAccessRequestAction === "reject") {
+        openEngagementAccessRequestRejectDialog(button.dataset.engagementAccessRequestId || "");
+      }
     });
     elements.engagementsAccessRequestEditForm?.addEventListener("submit", submitEngagementAccessRequestEdit);
     elements.engagementsAccessRequestEditCancel?.addEventListener("click", closeEngagementAccessRequestEditForm);
     elements.engagementsAccessRequestEditRegionId?.addEventListener("change", () => populateEngagementAccessRequestEditClubSelect());
     elements.engagementsAccessRequestEditClubSelect?.addEventListener("change", syncEngagementAccessRequestEditClubFieldsFromSelect);
+    elements.engagementsAccessRequestRejectForm?.addEventListener("submit", submitEngagementAccessRequestRejection);
+    elements.engagementsAccessRequestRejectCancel?.addEventListener("click", closeEngagementAccessRequestRejectDialog);
+    elements.engagementsAccessRequestRejectDialog?.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeEngagementAccessRequestRejectDialog();
+    });
     elements.engagementsNationalTabButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         const tab = button.dataset.engagementsNationalTabButton;
@@ -12900,6 +13452,39 @@
       });
     });
     elements.engagementsNationalAccountsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
+    elements.engagementsNationalClubsSearch?.addEventListener("input", () => {
+      engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+      renderEngagementNationalClubs();
+    });
+    elements.engagementsNationalClubsStatusFilter?.addEventListener("change", () => {
+      engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+      renderEngagementNationalClubs();
+    });
+    elements.engagementsNationalClubsRegionFilter?.addEventListener("change", () => {
+      engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+      renderEngagementNationalClubs();
+    });
+    elements.engagementsNationalClubsReset?.addEventListener("click", () => {
+      if (elements.engagementsNationalClubsSearch) elements.engagementsNationalClubsSearch.value = "";
+      if (elements.engagementsNationalClubsStatusFilter) elements.engagementsNationalClubsStatusFilter.value = "";
+      if (elements.engagementsNationalClubsRegionFilter) elements.engagementsNationalClubsRegionFilter.value = "";
+      engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+      renderEngagementNationalClubs();
+    });
+    elements.engagementsNationalClubsCreate?.addEventListener("click", () => openEngagementNationalClubDialog());
+    elements.engagementsNationalClubsList?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-engagement-national-clubs-show-more]")) {
+        engagementNationalClubsVisibleLimit += ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+        renderEngagementNationalClubs();
+        return;
+      }
+      const button = event.target.closest("[data-engagement-national-club-edit]");
+      if (button) openEngagementNationalClubDialog(button.dataset.engagementNationalClubEdit || "");
+    });
+    elements.engagementsNationalClubForm?.addEventListener("submit", saveEngagementNationalClub);
+    elements.engagementsNationalClubClose?.addEventListener("click", closeEngagementNationalClubDialog);
+    elements.engagementsNationalClubCancel?.addEventListener("click", closeEngagementNationalClubDialog);
+    elements.engagementsNationalClubDelete?.addEventListener("click", deleteEngagementNationalClub);
     elements.engagementsNationalAccountsList?.addEventListener("click", (event) => {
       const decisionButton = event.target.closest("[data-access-deletion-decision]");
       if (!decisionButton) return;
@@ -13058,6 +13643,18 @@
     });
     elements.engagementsClubSwimmersDirectorySearch?.form?.addEventListener("submit", (event) => event.preventDefault());
     elements.engagementsClubSwimmersDirectoryList?.addEventListener("click", (event) => {
+      const inactiveToggle = event.target.closest("[data-engagement-club-directory-inactive-toggle]");
+      if (inactiveToggle) {
+        const scrollContainer = inactiveToggle.closest(".admin-engagements-club-swimmers-directory-table");
+        const scrollTop = scrollContainer?.scrollTop || 0;
+        engagementClubInactiveSwimmersDirectoryExpanded = inactiveToggle.getAttribute("aria-expanded") !== "true";
+        inactiveToggle.setAttribute("aria-expanded", String(engagementClubInactiveSwimmersDirectoryExpanded));
+        elements.engagementsClubSwimmersDirectoryList
+          .querySelectorAll('[data-activity-status="inactive"]')
+          .forEach((row) => { row.hidden = !engagementClubInactiveSwimmersDirectoryExpanded; });
+        if (scrollContainer) scrollContainer.scrollTop = scrollTop;
+        return;
+      }
       const activityButton = event.target.closest("[data-engagement-club-swimmer-activity]");
       if (activityButton) {
         void setEngagementClubSwimmerActivityStatus(
@@ -13119,6 +13716,7 @@
     elements.engagementsSwimmerCorrectionCancel?.addEventListener("click", closeEngagementSwimmerCorrectionDialog);
     elements.engagementsSwimmerCorrectionDialog?.addEventListener("close", () => {
       resetEngagementSwimmerCorrectionDialog();
+      engagementSwimmerCorrectionReview = null;
       const opener = engagementSwimmerCorrectionOpener;
       engagementSwimmerCorrectionOpener = null;
       opener?.focus?.();
@@ -13497,6 +14095,12 @@
       closeEngagementClubNewSwimmerDialog();
     });
     elements.engagementsClubSwimmersForm?.addEventListener("click", (event) => {
+      const inactiveToggle = event.target.closest("[data-engagement-club-inactive-swimmers-toggle]");
+      if (inactiveToggle) {
+        engagementClubInactiveSwimmersExpanded = inactiveToggle.getAttribute("aria-expanded") !== "true";
+        renderEngagementClubSwimmers();
+        return;
+      }
       const sexFilterButton = event.target.closest("[data-engagement-club-available-swimmer-sex-filter]");
       if (sexFilterButton) {
         const requestedFilter = sexFilterButton.dataset.engagementClubAvailableSwimmerSexFilter || "all";

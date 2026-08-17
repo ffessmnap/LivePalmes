@@ -88,7 +88,7 @@
   }
 
   function enhanceResponsiveTables() {
-    document.querySelectorAll(".admin-dtn-results-table,.admin-engagements-national-table").forEach((table) => {
+    document.querySelectorAll(".admin-dtn-results-table:not(.admin-dtn-listing-table),.admin-engagements-national-table").forEach((table) => {
       table.classList.add("admin-portal-responsive-table");
       const labels = [...table.querySelectorAll("thead th")].map((cell) => cell.textContent.trim());
       table.querySelectorAll("tbody tr").forEach((row) => {
@@ -97,11 +97,15 @@
         });
       });
     });
+    document.querySelectorAll(".admin-dtn-listing-table").forEach((table) => table.classList.remove("admin-portal-responsive-table"));
   }
 
   function enhanceLoadingStates() {
     document.querySelectorAll("[aria-live]").forEach((status) => {
-      const text = normalizedText(status.textContent);
+      const loadingSource = status.matches("#adminDtnGrid")
+        ? status.querySelector(".admin-dtn-summary-loading,.admin-record-module-status")
+        : status;
+      const text = normalizedText(loadingSource?.textContent || "");
       status.classList.toggle("is-loading", /chargement|recherche en cours|mise a jour en cours|recalcul/.test(text));
     });
   }
