@@ -23,6 +23,45 @@ const functionsClubReference = JSON.parse(read("functions/assets/club-reference.
 const clubReferenceGenerator = read("tools/build-admin-club-reference.js");
 const publicPerformanceGenerator = read("tools/build-public-performance-files.js");
 const clubReferenceSource = read("performances/public/data/club-reference.js");
+[
+  "Modifications non enregistrees",
+  "Etape chef d'equipe",
+  "Renonciation au droit de reclamation",
+  "Competition creee",
+  "Parametres enregistres",
+  "Aucune epreuve selectionnee",
+  "Region non renseignee",
+  "Email de reinitialisation envoye",
+  "Selectionnez une competition",
+  "A choisir"
+].forEach((legacyLabel) => {
+  assert.equal(portal.includes(legacyLabel), false, `Libellé sans accents encore présent : ${legacyLabel}`);
+});
+[
+  "Étape chef d'équipe validée.",
+  "Renonciation au droit de réclamation confirmée.",
+  "Compétition créée",
+  "Paramètres enregistrés",
+  "Aucune épreuve sélectionnée",
+  "Région non renseignée",
+  "E-mail de réinitialisation envoyé",
+  "Sélectionnez une compétition",
+  "À choisir"
+].forEach((expectedLabel) => {
+  assert.ok(portal.includes(expectedLabel), `Libellé français attendu absent : ${expectedLabel}`);
+});
+assert.ok(portal.includes("function normalizePortalFrenchError(error)"));
+assert.ok(portal.includes("throw normalizePortalFrenchError(error)"));
+const frenchErrorNormalizationStart = portal.indexOf("const PORTAL_FRENCH_ERROR_REPLACEMENTS");
+const frenchErrorNormalizationEnd = portal.indexOf("async function callFunction", frenchErrorNormalizationStart);
+const frenchErrorNormalizationSandbox = {};
+vm.runInNewContext(`${portal.slice(frenchErrorNormalizationStart, frenchErrorNormalizationEnd)}
+  const sourceError = new Error("Acces desactive : competition deja supprimee.");
+  sourceError.code = "functions/failed-precondition";
+  result = normalizePortalFrenchError(sourceError);
+`, frenchErrorNormalizationSandbox);
+assert.equal(frenchErrorNormalizationSandbox.result.message, "Accès désactivé : compétition déjà supprimée.");
+assert.equal(frenchErrorNormalizationSandbox.result.code, "functions/failed-precondition");
 const { mergeRosterSwimmers } = require(path.join(root, "tools", "dedupe-engagement-club-rosters.js"));
 const { initialActivityStatus } = require(path.join(root, "tools", "initialize-engagement-club-swimmer-activity.js"));
 assert.equal(initialActivityStatus("2023-08-31"), "inactive");
@@ -1105,7 +1144,7 @@ assert.ok(functions.includes('status: "cancelled_no_participants"'));
 assert.ok(functions.includes("function engagementPdfRelayCategoryLabel(code)"));
 assert.ok(functions.includes('P: "Poussin"'));
 assert.equal((functions.match(/relayCategoryLabelVersion: 2/g) || []).length, 1);
-assert.ok(functions.includes('format: "winpalme-v1"'));
+assert.ok(functions.includes('format: "winpalme-v2"'));
 assert.ok(functions.includes("deleteEngagementCompetitionEntrySummary(transaction, db, entry, now)"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubPdfSelect"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubPdfDownloadButton"'));
@@ -1167,7 +1206,7 @@ assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-t
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
 assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260817-access-workflows-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-existing-account-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-french-copy-1"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1300,7 +1339,7 @@ assert.ok(portal.includes("performances/public/data/club-reference.js?v=20260813
 assert.ok(portal.includes('elements.engagementsNationalClubFederalNumber.readOnly'));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-existing-account-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-french-copy-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);

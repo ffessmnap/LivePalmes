@@ -848,15 +848,91 @@
     }
   }
 
+  const PORTAL_FRENCH_ERROR_REPLACEMENTS = [
+    [/\bAcces\b/g, "Accès"],
+    [/\bacces\b/g, "accès"],
+    [/\bCompetition\b/g, "Compétition"],
+    [/\bcompetition\b/g, "compétition"],
+    [/\bEpreuve\b/g, "Épreuve"],
+    [/\bepreuve\b/g, "épreuve"],
+    [/\bRegion\b/g, "Région"],
+    [/\bregion\b/g, "région"],
+    [/\bNumero\b/g, "Numéro"],
+    [/\bnumero\b/g, "numéro"],
+    [/\bPrenom\b/g, "Prénom"],
+    [/\bprenom\b/g, "prénom"],
+    [/\bSelectionnez\b/g, "Sélectionnez"],
+    [/\bselectionne(e|es|s)?\b/g, "sélectionné$1"],
+    [/\bequipe\b/g, "équipe"],
+    [/\bperimetre\b/g, "périmètre"],
+    [/\bdesactive(e|es|s)?\b/g, "désactivé$1"],
+    [/\breactive(e|es|s)?\b/g, "réactivé$1"],
+    [/\bcree(e|es|s)?\b/g, "créé$1"],
+    [/\bsupprime(e|es|s)?\b/g, "supprimé$1"],
+    [/\benregistre(e|es|s)?\b/g, "enregistré$1"],
+    [/\butilise(e|es|s)?\b/g, "utilisé$1"],
+    [/\breserve(e|es|s)?\b/g, "réservé$1"],
+    [/\blimite(e|es|s)?\b/g, "limité$1"],
+    [/\bdedie(e|es|s)?\b/g, "dédié$1"],
+    [/\bnecessaire\b/g, "nécessaire"],
+    [/\bdefinitive\b/g, "définitive"],
+    [/\birreversible\b/g, "irréversible"],
+    [/\bDecision\b/g, "Décision"],
+    [/\bdeja\b/g, "déjà"],
+    [/\bmeme\b/g, "même"],
+    [/\betre\b/g, "être"],
+    [/\bete\b/g, "été"],
+    [/\bcreer\b/g, "créer"],
+    [/\bCompletez\b/g, "Complétez"],
+    [/\bperiode\b/g, "période"],
+    [/\bdebut\b/g, "début"],
+    [/\bcloture\b/g, "clôture"],
+    [/\bdepassee\b/g, "dépassée"],
+    [/\bposterieur(e|es|s)?\b/g, "postérieur$1"],
+    [/\begale\b/g, "égale"],
+    [/\brecapitulatif\b/g, "récapitulatif"],
+    [/\bderogation\b/g, "dérogation"],
+    [/\bidentite\b/g, "identité"],
+    [/\bplutot\b/g, "plutôt"],
+    [/\blie(e|es|s)?\b/g, "lié$1"],
+    [/\belement\b/g, "élément"],
+    [/\breferentiel\b/g, "référentiel"],
+    [/\bfederal\b/g, "fédéral"],
+    [/\bprevisualisation\b/g, "prévisualisation"],
+    [/\bimportee\b/g, "importée"]
+  ];
+
+  function normalizePortalFrenchError(error) {
+    const source = String(error?.message || "");
+    const message = PORTAL_FRENCH_ERROR_REPLACEMENTS.reduce(
+      (value, [pattern, replacement]) => value.replace(pattern, replacement),
+      source
+    );
+    if (!message || message === source) return error;
+    try {
+      error.message = message;
+      return error;
+    } catch {
+      const normalizedError = new Error(message);
+      normalizedError.code = error?.code;
+      normalizedError.details = error?.details;
+      return normalizedError;
+    }
+  }
+
   async function callFunction(name, payload) {
     const functions = functionsService();
     if (!functions?.httpsCallable) throw new Error("Cloud Functions LivePalmes indisponibles.");
     const activeClubId = activeEngagementClubIdForProfile(currentAccessProfile);
-    const result = await functions.httpsCallable(name)({
-      ...(payload || {}),
-      ...(activeClubId ? { activeClubId } : {})
-    });
-    return result.data || {};
+    try {
+      const result = await functions.httpsCallable(name)({
+        ...(payload || {}),
+        ...(activeClubId ? { activeClubId } : {})
+      });
+      return result.data || {};
+    } catch (error) {
+      throw normalizePortalFrenchError(error);
+    }
   }
 
   async function callFunctionWithTimeout(name, payload, timeoutMs = 30000) {
@@ -865,7 +941,7 @@
       return await Promise.race([
         callFunction(name, payload),
         new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error("Delai de lecture depasse. Reessayez dans quelques instants.")), timeoutMs);
+          timeoutId = setTimeout(() => reject(new Error("Délai de lecture dépassé. Réessayez dans quelques instants.")), timeoutMs);
         })
       ]);
     } finally {
@@ -1474,9 +1550,9 @@
             ? "readonly"
             : "consultation";
     elements.engagementsEditState.textContent = deletionPending
-      ? "Suppression demandee"
+      ? "Suppression demandée"
       : hasDirty
-        ? "Modifications non enregistrees"
+        ? "Modifications non enregistrées"
         : engagementDetailEditing
           ? "Modification en cours"
           : canEdit
@@ -1501,7 +1577,7 @@
 
   function confirmLeaveDirtyEngagementTab(tab = activeEngagementsDetailTab) {
     if (!dirtyEngagementDetailTabs.has(tab)) return true;
-    return global.confirm("Des modifications n'ont pas ete enregistrees sur cet onglet. Changer d'onglet sans enregistrer ?");
+    return global.confirm("Des modifications n'ont pas été enregistrées sur cet onglet. Changer d'onglet sans enregistrer ?");
   }
 
   function isClubEngagementWorkflowTab(tab = "") {
@@ -1702,7 +1778,7 @@
     if (!isEngagementAdminMode() && isClubEngagementWorkflowTab(tab) && !canOpenClubEngagementTab(tab)) {
       setEngagementsDetailTab("team");
       if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = "Renseignez le chef d'equipe ou confirmez la renonciation avant de commencer les engagements.";
+        elements.engagementsClubTeamMessage.textContent = "Renseignez le chef d'équipe ou confirmez la renonciation avant de commencer les engagements.";
         elements.engagementsClubTeamMessage.dataset.tone = "error";
       }
       return;
@@ -2287,7 +2363,7 @@
     select.value = nextValue;
   }
 
-  function fillLivePalmesRegionSelect(select, placeholder = "A choisir") {
+  function fillLivePalmesRegionSelect(select, placeholder = "À choisir") {
     if (!select) return;
     const currentValue = select.value;
     select.innerHTML = "";
@@ -2349,10 +2425,10 @@
   }
 
   function populateLivePalmesRegionSelects() {
-    fillLivePalmesRegionSelect(elements.accessRegionId, "A choisir");
-    fillLivePalmesRegionSelect(elements.engagementsRegionId, "A choisir");
-    fillLivePalmesRegionSelect(elements.engagementsEditRegionId, "A choisir");
-    fillLivePalmesRegionSelect(elements.engagementsRegionFilter, "Toutes les regions");
+    fillLivePalmesRegionSelect(elements.accessRegionId, "À choisir");
+    fillLivePalmesRegionSelect(elements.engagementsRegionId, "À choisir");
+    fillLivePalmesRegionSelect(elements.engagementsEditRegionId, "À choisir");
+    fillLivePalmesRegionSelect(elements.engagementsRegionFilter, "Toutes les régions");
     fillLivePalmesRegionMultiSelect(elements.engagementsInvitedRegionIds);
     fillLivePalmesRegionMultiSelect(elements.engagementsEditInvitedRegionIds);
     renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
@@ -2432,7 +2508,7 @@
       .sort((a, b) => a.localeCompare(b, "fr"));
     selects.forEach((select) => {
       const currentValue = select.value;
-      fillLivePalmesRegionSelect(select, "A choisir");
+      fillLivePalmesRegionSelect(select, "À choisir");
       extraRegions.forEach((region) => select.append(new Option(region, region)));
       setRegionSelectValue(select, currentValue);
     });
@@ -2458,7 +2534,7 @@
     const regionId = canonicalLivePalmesRegion(elements.accessRegionId?.value || "");
     select.innerHTML = "";
     if (!regionId) {
-      select.append(new Option("Choisissez d'abord une region", ""));
+      select.append(new Option("Choisissez d'abord une région", ""));
       select.disabled = true;
       syncAccessClubFieldsFromSelect();
       return;
@@ -2467,7 +2543,7 @@
     const clubs = accessClubReference
       .filter((club) => club.active !== false && normalizedRegionKey(club.regionId) === regionKey)
       .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
-    select.append(new Option("A choisir", ""));
+    select.append(new Option("À choisir", ""));
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
@@ -2475,7 +2551,7 @@
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
-      select.options[0].textContent = "Aucun club trouve pour cette region";
+      select.options[0].textContent = "Aucun club trouvé pour cette région";
     }
     select.value = selectedId;
     if (selectedId && !knownClub) {
@@ -2506,7 +2582,7 @@
     const regionId = canonicalLivePalmesRegion(elements.publicAccessRequestRegionId?.value || "");
     select.innerHTML = "";
     if (!regionId) {
-      select.append(new Option("Choisissez d'abord une region", ""));
+      select.append(new Option("Choisissez d'abord une région", ""));
       select.disabled = true;
       syncPublicAccessRequestClubFieldsFromSelect();
       return;
@@ -2515,7 +2591,7 @@
     const clubs = accessClubReference
       .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
       .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
-    select.append(new Option("A choisir", ""));
+    select.append(new Option("À choisir", ""));
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
@@ -2523,7 +2599,7 @@
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
-      select.options[0].textContent = "Aucun club trouve pour cette region";
+      select.options[0].textContent = "Aucun club trouvé pour cette région";
     }
     select.value = selectedId;
     if (selectedId && !knownClub) {
@@ -2614,7 +2690,7 @@
     const regionId = canonicalLivePalmesRegion(elements.engagementsAccessRequestEditRegionId?.value || "");
     select.innerHTML = "";
     if (!regionId) {
-      select.append(new Option("Choisissez d'abord une region", ""));
+      select.append(new Option("Choisissez d'abord une région", ""));
       select.disabled = true;
       syncEngagementAccessRequestEditClubFieldsFromSelect();
       return;
@@ -2623,7 +2699,7 @@
     const clubs = accessClubReference
       .filter((club) => normalizedRegionKey(club.regionId) === regionKey)
       .sort((a, b) => accessClubLabel(a).localeCompare(accessClubLabel(b), "fr", { numeric: true }));
-    select.append(new Option("A choisir", ""));
+    select.append(new Option("À choisir", ""));
     clubs.forEach((club) => select.append(new Option(accessClubLabel(club), club.clubId)));
     if (selectedId && !clubs.some((club) => club.clubId === selectedId)) {
       const label = fallbackClubName || knownClub?.clubName || "ancienne valeur";
@@ -2631,7 +2707,7 @@
     }
     select.disabled = clubs.length === 0 && !selectedId;
     if (!clubs.length && !selectedId) {
-      select.options[0].textContent = "Aucun club trouve pour cette region";
+      select.options[0].textContent = "Aucun club trouvé pour cette région";
     }
     select.value = selectedId;
     if (selectedId && !knownClub) {
@@ -3017,15 +3093,15 @@
     }
     if (note) {
       if (nationalCompetition) {
-        note.textContent = "Non requis pour une competition nationale.";
+        note.textContent = "Non requis pour une compétition nationale.";
       } else if (isNational) {
-        note.textContent = "Region obligatoire pour une competition departementale ou regionale.";
+        note.textContent = "Région obligatoire pour une compétition départementale ou régionale.";
       } else if (isRegional && regionId) {
-        note.textContent = `Region imposee par votre droit regional : ${regionDisplayLabel(regionId)}.`;
+        note.textContent = `Région imposée par votre droit régional : ${regionDisplayLabel(regionId)}.`;
       } else if (isRegional) {
-        note.textContent = "Region manquante sur votre acces. Mettez a jour le compte avant de creer une competition.";
+        note.textContent = "Région manquante sur votre accès. Mettez à jour le compte avant de créer une compétition.";
       } else {
-        note.textContent = "Droit regional ou national requis pour creer une competition.";
+        note.textContent = "Droit régional ou national requis pour créer une compétition.";
       }
     }
     if (submitButton) submitButton.disabled = Boolean(!nationalCompetition && isRegional && !isNational && !regionId);
@@ -3359,10 +3435,10 @@
 
   function engagementLevelLabel(level) {
     return {
-      departemental: "Departemental",
-      regional: "Regional",
+      departemental: "Départemental",
+      regional: "Régional",
       national: "National"
-    }[level] || "Regional";
+    }[level] || "Régional";
   }
 
   function engagementStatusLabel(status) {
@@ -3519,7 +3595,7 @@
 
   function engagementMaxEventsLabel(value) {
     const count = Math.trunc(Number(value) || 0);
-    return count > 0 ? `${count} epreuve${count > 1 ? "s" : ""}` : "Non limite";
+    return count > 0 ? `${count} épreuve${count > 1 ? "s" : ""}` : "Non limité";
   }
 
   function engagementFeeAmount(value) {
@@ -3625,7 +3701,7 @@
     if (elements.engagementsFeesMessage) {
       elements.engagementsFeesMessage.textContent = !adminMode
         ? ""
-        : canEditEngagementCompetition(competition) ? "" : "Frais consultables uniquement avec un droit de gestion sur cette competition.";
+        : canEditEngagementCompetition(competition) ? "" : "Frais consultables uniquement avec un droit de gestion sur cette compétition.";
       elements.engagementsFeesMessage.dataset.tone = canEdit ? "ok" : "loading";
     }
   }
@@ -4018,8 +4094,8 @@
     if (!elements.engagementsClubOfficialsSummary) return;
     const selectedCount = selectedEngagementClubOfficialIds().length;
     elements.engagementsClubOfficialsSummary.textContent = selectedCount
-      ? `${selectedCount} officiel${selectedCount > 1 ? "s" : ""} selectionne${selectedCount > 1 ? "s" : ""}.`
-      : "Aucun officiel selectionne.";
+      ? `${selectedCount} officiel${selectedCount > 1 ? "s" : ""} sélectionné${selectedCount > 1 ? "s" : ""}.`
+      : "Aucun officiel sélectionné.";
     renderEngagementClubSummary();
   }
 
@@ -4039,7 +4115,7 @@
     const members = engagementClubOfficialPeople();
     if (locked) {
       if (selectedMount) selectedMount.innerHTML = "";
-      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape.")}</p>`;
       updateEngagementClubOfficialsSummary();
       return;
     }
@@ -4481,12 +4557,12 @@
       engagementNationalSwimmerKey(candidate) !== key &&
       String(candidate.licenseNumber || "").trim() === license
     );
-    if (sameLicense) return { score: "high", label: "Meme licence" };
+    if (sameLicense) return { score: "high", label: "Même licence" };
     const sameIdentity = identity && swimmers.some((candidate) =>
       engagementNationalSwimmerKey(candidate) !== key &&
       engagementNationalSwimmerIdentityKey(candidate) === identity
     );
-    if (sameIdentity) return { score: "high", label: "Meme identite" };
+    if (sameIdentity) return { score: "high", label: "Même identité" };
     const sameBirthNearName = swimmer.birthDate && normalizedName && swimmers.some((candidate) => {
       if (engagementNationalSwimmerKey(candidate) === key || candidate.birthDate !== swimmer.birthDate) return false;
       const candidateName = normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" "));
@@ -4522,8 +4598,8 @@
       const keep = engagementNationalSwimmerByKey(keepKey);
       const keepName = keep ? ([keep.firstName, keep.lastName].filter(Boolean).join(" ") || keep.name || keepKey) : "";
       elements.engagementsNationalSwimmersSelectionSummary.textContent = keepKey && mergeKeys.length
-        ? `${mergeKeys.length} fiche${mergeKeys.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
-        : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
+        ? `${mergeKeys.length} fiche${mergeKeys.length > 1 ? "s" : ""} à fusionner vers ${keepName}.`
+        : "Choisissez une fiche à conserver et au moins une fiche à fusionner.";
     }
   }
 
@@ -4749,7 +4825,7 @@
         item.resolve();
       });
       if (elements.engagementsClubEntriesMessage) {
-        elements.engagementsClubEntriesMessage.textContent = `Le temps d'engagement n'a pas pu etre calcule : ${error?.message || error}`;
+        elements.engagementsClubEntriesMessage.textContent = `Le temps d'engagement n'a pas pu être calculé : ${error?.message || error}`;
         elements.engagementsClubEntriesMessage.dataset.tone = "error";
       }
     } finally {
@@ -5317,7 +5393,7 @@
     if (!swimmers.length) {
       mount.innerHTML = engagementClubSwimmers.length
         ? '<p class="admin-engagements-empty">Aucun nageur ne correspond aux filtres.</p>'
-        : "<p class=\"admin-engagements-empty\">Aucun nageur trouve dans l'effectif du club.</p>";
+        : "<p class=\"admin-engagements-empty\">Aucun nageur trouvé dans l'effectif du club.</p>";
       return;
     }
     mount.innerHTML = `
@@ -5492,8 +5568,8 @@
                   <span role="cell" data-label="Naissance">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
                   <span role="cell" data-label="Sexe">${escapeHtml(swimmer.sex || "-")}</span>
                   <span role="cell" data-label="Catégorie">${escapeHtml(category || "-")}</span>
-                  <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numero de licence">
-                    ${licenseNumber ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>` : `<input type="text" maxlength="60" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" aria-label="Numero de licence, format A-12-34567" data-engagement-club-swimmer-license>`}
+                  <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numéro de licence">
+                    ${licenseNumber ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>` : `<input type="text" maxlength="60" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" aria-label="Numéro de licence, format A-12-34567" data-engagement-club-swimmer-license>`}
                     ${engagementSwimmerLicenseStatusIndicator(swimmer, swimmer)}
                   </div>
                 </div>
@@ -5528,7 +5604,7 @@
     });
     if (locked) {
       selectedMount.innerHTML = "";
-      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape.")}</p>`;
       engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
       updateEngagementClubSwimmersSummary();
       return;
@@ -5606,10 +5682,10 @@
             <span role="cell" data-label="Naissance">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
             <span role="cell" data-label="Sexe">${escapeHtml(swimmer.sex || "-")}</span>
             <span role="cell" data-label="Catégorie">${escapeHtml(category || "-")}</span>
-            <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numero de licence">
+              <div class="admin-engagements-club-swimmer-license-cell" role="cell" data-label="Licence" aria-label="Numéro de licence">
               ${licenseLocked
                 ? `<span class="admin-engagements-club-swimmer-license-value" data-engagement-club-swimmer-license="${escapeHtml(licenseNumber)}">${escapeHtml(licenseNumber)}</span>`
-                : `<input type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres" aria-label="Numero de licence, format A-12-34567" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>`}
+                  : `<input type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres" aria-label="Numéro de licence, format A-12-34567" data-engagement-club-swimmer-license value="${escapeHtml(licenseNumber)}" ${selected && ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE ? "required" : ""}>`}
               ${engagementSwimmerLicenseStatusIndicator(swimmer, selected || {})}
             </div>
           </div>
@@ -5824,7 +5900,7 @@
     if (elements.engagementsClubEntriesForm) elements.engagementsClubEntriesForm.dataset.locked = locked ? "true" : "false";
     syncEngagementClubEntriesSaveBar();
     if (locked) {
-      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape.")}</p>`;
       updateEngagementClubEntriesSummary();
       return;
     }
@@ -5840,7 +5916,7 @@
     }
     const selectedRows = currentEngagementClubSwimmersForSummary();
     if (!selectedRows.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Selectionnez d\'abord les nageurs dans l\'onglet Nageurs.</p>';
+        mount.innerHTML = '<p class="admin-engagements-empty">Sélectionnez d\'abord les nageurs dans l\'onglet Nageurs.</p>';
       updateEngagementClubEntriesSummary();
       return;
     }
@@ -6712,7 +6788,7 @@
         return;
       }
       if (!event) {
-        issues.push(`${rowLabel} : distance de relais non ouverte sur cette competition.`);
+        issues.push(`${rowLabel} : distance de relais non ouverte sur cette compétition.`);
         return;
       }
       if (!relay.category) {
@@ -6727,14 +6803,14 @@
       if (relay.category && relay.genderMode) {
         const duplicateKey = [relay.eventCode, relay.category, relay.genderMode].join("|");
         if (!event.multipleRelaysAllowed && seenRelays.has(duplicateKey)) {
-          issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relais identique existe deja pour ce club.`);
+      issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relais identique existe déjà pour ce club.`);
         }
         seenRelays.add(duplicateKey);
       }
       const memberIds = Array.isArray(relay.memberIds) ? relay.memberIds.filter(Boolean) : [];
       const uniqueMemberIds = Array.from(new Set(memberIds));
       if (uniqueMemberIds.length !== memberIds.length) {
-        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur est selectionne plusieurs fois dans le meme relais.`);
+        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur est sélectionné plusieurs fois dans le même relais.`);
       }
       const expectedLegs = engagementRelayLegCount(event);
       if (memberIds.length > 0 && memberIds.length !== expectedLegs) {
@@ -6743,7 +6819,7 @@
       if (!memberIds.length || memberIds.length !== expectedLegs) return;
       const members = memberIds.map((id) => swimmers.get(id)).filter(Boolean);
       if (members.length !== memberIds.length) {
-        issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur n'est plus dans les nageurs de la competition.`);
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : un relayeur n'est plus dans les nageurs de la compétition.`);
         return;
       }
       if (relay.genderMode === "female" && members.some((member) => member.sex !== "F")) {
@@ -6779,7 +6855,7 @@
         const slotKey = [member.swimmerIndexId, event.distance, event.discipline].join("|");
         if (memberSlots.has(slotKey)) {
           const name = member.name || [member.firstName, member.lastName].filter(Boolean).join(" ") || "Un relayeur";
-          issues.push(`${rowLabel} ${event.shortLabel || event.code} : ${name} est deja dans un relais de meme distance et meme nature.`);
+          issues.push(`${rowLabel} ${event.shortLabel || event.code} : ${name} est déjà dans un relais de même distance et même nature.`);
         }
         memberSlots.add(slotKey);
       });
@@ -6802,7 +6878,7 @@
             ? `${count} relais - ${issues.length} point${issues.length > 1 ? "s" : ""} a corriger.`
             : count
               ? `${count} relais.`
-              : "Aucun relais selectionne.";
+      : "Aucun relais sélectionné.";
     }
     renderEngagementClubSummary();
   }
@@ -6823,8 +6899,8 @@
   function engagementClubSummaryTeamLeaderLabel(entry = selectedEngagementClubEntry || {}) {
     if (!engagementClubTeamComplete(entry)) return "Non renseigne";
     const teamLeader = entry.teamLeader || {};
-    if (teamLeader.mode === "renounced") return "Renonciation au droit de reclamation";
-    const name = [teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ") || "Chef d'equipe";
+    if (teamLeader.mode === "renounced") return "Renonciation au droit de réclamation";
+    const name = [teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ") || "Chef d'équipe";
     const details = [
       teamLeader.licenseNumber ? `licence ${teamLeader.licenseNumber}` : "",
       teamLeader.externalClub ? clubDisplayLabel(teamLeader, { fallback: "club externe" }) : ""
@@ -6845,7 +6921,7 @@
       individualCount * engagementFeeAmount(fees.individualEventFee) +
       relays.length * engagementFeeAmount(fees.relayFee);
     const rows = [
-      ["Chef d'equipe", engagementClubSummaryTeamLeaderLabel(entry)],
+      ["Chef d'équipe", engagementClubSummaryTeamLeaderLabel(entry)],
       ["Officiels", competition.officialsRequired === false ? "Non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`],
       ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`],
       ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`],
@@ -6889,12 +6965,12 @@
       elements.engagementsClubRelaysAddButton.title = pendingRelay ? "Validez le relais en cours avant d'en ajouter un autre." : "";
     }
     if (locked) {
-      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape.")}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${escapeHtml(writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape.")}</p>`;
       updateEngagementClubRelaysSummary();
       return;
     }
     if (!relayEvents.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Aucun relais ouvert sur cette competition.</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucun relais ouvert sur cette compétition.</p>';
       updateEngagementClubRelaysSummary();
       return;
     }
@@ -6989,7 +7065,7 @@
     if (issues.length) {
       mount.insertAdjacentHTML("beforeend", `
         <div class="admin-engagements-club-relay-issues" role="status">
-          <strong>Points a corriger avant enregistrement</strong>
+          <strong>Points à corriger avant enregistrement</strong>
           <ul>${issues.slice(0, 8).map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
           ${issues.length > 8 ? `<small>+ ${issues.length - 8} autre${issues.length - 8 > 1 ? "s" : ""} point${issues.length - 8 > 1 ? "s" : ""}.</small>` : ""}
         </div>
@@ -7075,9 +7151,9 @@
     if (elements.engagementsClubTeamSummary) {
       elements.engagementsClubTeamSummary.textContent = engagementClubTeamComplete()
         ? teamLeader.mode === "renounced"
-          ? "Renonciation au droit de reclamation confirmee."
-          : `Chef d'equipe : ${[teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ")}${teamLeader.externalClub ? ` · ${teamLeader.clubName || "hors du club"}` : ""}.`
-        : "A renseigner avant de commencer les engagements.";
+          ? "Renonciation au droit de réclamation confirmée."
+          : `Chef d'équipe : ${[teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ")}${teamLeader.externalClub ? ` · ${teamLeader.clubName || "hors du club"}` : ""}.`
+        : "À renseigner avant de commencer les engagements.";
       elements.engagementsClubTeamSummary.dataset.complete = engagementClubTeamComplete() ? "true" : "false";
     }
     if (writeLockReason && elements.engagementsClubTeamMessage) {
@@ -7092,15 +7168,15 @@
       if (firstParagraph) {
         const unlockedTexts = {
           officials: selectedEngagementCompetition?.officialsRequired === false
-            ? "Les officiels ne sont pas requis pour cette competition."
+        ? "Les officiels ne sont pas requis pour cette compétition."
             : "Structure prete. La saisie des officiels arrive dans le lot suivant.",
-          swimmers: "Selectionnez les nageurs du club pour cette competition.",
+        swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
           entries: "Choisissez les courses individuelles des nageurs engagés.",
-          relays: "Ajoutez les relais du club pour cette competition.",
-          summary: "Structure prete. Le recapitulatif se remplira avec les prochaines etapes."
+        relays: "Ajoutez les relais du club pour cette compétition.",
+        summary: "Structure prête. Le récapitulatif se remplira avec les prochaines étapes."
         };
         firstParagraph.textContent = locked
-          ? writeLockReason || "Renseignez le chef d'equipe ou confirmez la renonciation pour activer cette etape."
+        ? writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
           : unlockedTexts[step.dataset.clubStep] || "";
       }
     });
@@ -7114,8 +7190,8 @@
   function engagementClosureAutomationStatusLabel(status) {
     return {
       processing: "En cours",
-      completed: "Terminee",
-      completed_with_errors: "Terminee avec erreurs",
+      completed: "Terminée",
+      completed_with_errors: "Terminée avec erreurs",
       failed: "Erreur"
     }[String(status || "")] || "En attente";
   }
@@ -7140,11 +7216,11 @@
     if (!shouldShow) return "";
     const updatedAt = summary.updatedAt || competition.closureAutomationCompletedAt || competition.closureAutomationFailedAt || competition.closureAutomationStartedAt;
     const rows = [
-      ["Derniere execution", formatEngagementAutomationDate(updatedAt)],
+      ["Dernière exécution", formatEngagementAutomationDate(updatedAt)],
       ["Clubs traites", `${Number(summary.clubEntryCount || 0)}${Number(summary.skippedClubCount || 0) ? ` - ${Number(summary.skippedClubCount || 0)} ignore${Number(summary.skippedClubCount || 0) > 1 ? "s" : ""}` : ""}`],
-      ["PDF", `${Number(summary.pdfGeneratedCount || 0)} genere${Number(summary.pdfGeneratedCount || 0) > 1 ? "s" : ""} - ${Number(summary.pdfReusedCount || 0)} deja a jour`],
-      ["TXT", `${Number(summary.txtGeneratedCount || 0)} genere - ${Number(summary.txtSentMailCount || 0)}/${Number(summary.txtAttemptedMailCount || 0)} envoye${Number(summary.txtSentMailCount || 0) > 1 ? "s" : ""}`],
-      ["Mails", `${Number(summary.sentMailCount || 0)}/${Number(summary.attemptedMailCount || 0)} envoye${Number(summary.sentMailCount || 0) > 1 ? "s" : ""}`]
+      ["PDF", `${Number(summary.pdfGeneratedCount || 0)} généré${Number(summary.pdfGeneratedCount || 0) > 1 ? "s" : ""} - ${Number(summary.pdfReusedCount || 0)} déjà à jour`],
+      ["TXT", `${Number(summary.txtGeneratedCount || 0)} généré - ${Number(summary.txtSentMailCount || 0)}/${Number(summary.txtAttemptedMailCount || 0)} envoyé${Number(summary.txtSentMailCount || 0) > 1 ? "s" : ""}`],
+      ["E-mails", `${Number(summary.sentMailCount || 0)}/${Number(summary.attemptedMailCount || 0)} envoyé${Number(summary.sentMailCount || 0) > 1 ? "s" : ""}`]
     ];
     const errorCount = Number(summary.prepareErrorCount || 0) + Number(summary.sendErrorCount || 0);
     if (errorCount || competition.closureAutomationReason) {
@@ -7415,7 +7491,7 @@
     const blockedCount = engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
     const statusParts = [
       readyCount ? `${readyCount} en attente d'envoi` : "",
-      sentCount ? `${sentCount} envoye${sentCount > 1 ? "s" : ""}` : "",
+          sentCount ? `${sentCount} envoyé${sentCount > 1 ? "s" : ""}` : "",
       failedCount ? `${failedCount} erreur${failedCount > 1 ? "s" : ""}` : "",
       blockedCount ? `${blockedCount} configuration manquante` : ""
     ].filter(Boolean);
@@ -7467,7 +7543,7 @@
       engagementMailJobs = [];
       engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
       if (elements.engagementsMailJobsList) {
-        elements.engagementsMailJobsList.innerHTML = `<p class="admin-portal-message" data-tone="error">Lecture mails prepares impossible : ${escapeHtml(error?.message || error)}</p>`;
+      elements.engagementsMailJobsList.innerHTML = `<p class="admin-portal-message" data-tone="error">Lecture des e-mails préparés impossible : ${escapeHtml(error?.message || error)}</p>`;
       }
       return;
     } finally {
@@ -7519,7 +7595,7 @@
     const eventList = Array.isArray(events) ? events : [];
     const individualCount = eventList.filter((event) => event.type === "individual").length;
     const relayCount = eventList.filter((event) => event.type === "relay").length;
-    if (!eventList.length) return "Aucune epreuve selectionnee";
+    if (!eventList.length) return "Aucune épreuve sélectionnée";
     const restrictedCount = eventList.filter((event) => Array.isArray(event.categoryRestrictions) && event.categoryRestrictions.length).length;
     const restrictionLabel = restrictedCount ? `, ${restrictedCount} restriction${restrictedCount > 1 ? "s" : ""}` : "";
     return `${individualCount} course${individualCount > 1 ? "s" : ""} individuelle${individualCount > 1 ? "s" : ""}, ${relayCount} relais${restrictionLabel}`;
@@ -7542,7 +7618,7 @@
     const eventList = Array.isArray(events) ? events : [];
     const individualCount = eventList.filter((event) => event.type === "individual").length;
     const relayCount = eventList.filter((event) => event.type === "relay").length;
-    if (!individualCount && !relayCount) return "Aucune epreuve selectionnee.";
+    if (!individualCount && !relayCount) return "Aucune épreuve sélectionnée.";
     const parts = [];
     if (individualCount) parts.push(`${individualCount} course${individualCount > 1 ? "s" : ""} individuelle${individualCount > 1 ? "s" : ""}`);
     if (relayCount) parts.push(`${relayCount} relais`);
@@ -7583,7 +7659,7 @@
       const missingCount = missingEngagementProgramEventCount(events, sessions);
       const summary = engagementProgramSummary(sessions);
       elements.engagementsProgramSummary.textContent = missingCount
-        ? `${summary} ${missingCount} epreuve${missingCount > 1 ? "s" : ""} a placer.`
+      ? `${summary} ${missingCount} épreuve${missingCount > 1 ? "s" : ""} à placer.`
         : summary;
       if (elements.engagementsProgramSection) {
         elements.engagementsProgramSection.dataset.warning = missingCount ? "true" : "false";
@@ -7592,7 +7668,7 @@
       if (coursesTab) {
         coursesTab.dataset.warning = missingCount ? "true" : "false";
         coursesTab.title = missingCount
-          ? `${missingCount} epreuve${missingCount > 1 ? "s" : ""} selectionnee${missingCount > 1 ? "s" : ""} non placee${missingCount > 1 ? "s" : ""} dans le programme.`
+      ? `${missingCount} épreuve${missingCount > 1 ? "s" : ""} sélectionnée${missingCount > 1 ? "s" : ""} non placée${missingCount > 1 ? "s" : ""} dans le programme.`
           : "";
       }
     }
@@ -7602,7 +7678,7 @@
   function engagementEventCountLabel(competition = {}) {
     const count = Number(competition.eventCount || 0);
     if (!count) return "";
-    return `${count} epreuve${count > 1 ? "s" : ""}`;
+    return `${count} épreuve${count > 1 ? "s" : ""}`;
   }
 
   function selectedEngagementEventOptions() {
@@ -7724,11 +7800,11 @@
     }
     updateEngagementEventsSectionSummaries(selectedEngagementEventsFromForm(), sessions);
     if (!eventOptions.length) {
-      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Selectionnez d'abord les epreuves qui seront nagees." : "Programme en préparation."}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Sélectionnez d'abord les épreuves qui seront nagées." : "Programme en préparation."}</p>`;
       return;
     }
     if (!sessions.length) {
-      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Ajoutez une session pour definir l'ordre des epreuves." : "Ordre des epreuves non renseigne."}</p>`;
+      mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Ajoutez une session pour définir l'ordre des épreuves." : "Ordre des épreuves non renseigné."}</p>`;
       return;
     }
     const availableHtml = eventOptions.map((event) => `
@@ -7775,7 +7851,7 @@
               : `<span class="admin-engagements-program-read-value">${escapeHtml(session.startTime || "-")}</span>`}
           </label>
           <div class="admin-engagements-program-actions">
-            <button class="ghost-button" type="button" title="Les epreuves disponibles s'ajoutent dans cette session" aria-label="Choisir cette session comme cible" data-engagement-program-action="select-session" ${canEdit ? "" : "hidden"}>${active ? "Cible" : "Choisir"}</button>
+            <button class="ghost-button" type="button" title="Les épreuves disponibles s'ajoutent dans cette session" aria-label="Choisir cette session comme cible" data-engagement-program-action="select-session" ${canEdit ? "" : "hidden"}>${active ? "Cible" : "Choisir"}</button>
             <button class="ghost-button" type="button" title="Supprimer la session" aria-label="Supprimer la session" data-engagement-program-action="remove-session" ${canEdit ? "" : "hidden"}>&times;</button>
           </div>
         </div>
@@ -7927,7 +8003,7 @@
       .filter((item) => item.querySelector("[data-engagement-event-code]")?.checked === true);
     const invalidItem = selectedItems.find((item) => !item.querySelectorAll("[data-engagement-category-code]:checked").length);
     const label = invalidItem?.querySelector("[data-engagement-event-label]")?.textContent?.trim();
-    return invalidItem ? `Au moins une categorie doit rester autorisee pour ${label || "chaque epreuve"}.` : "";
+    return invalidItem ? `Au moins une catégorie doit rester autorisée pour ${label || "chaque épreuve"}.` : "";
   }
 
   function selectedEngagementProgramError() {
@@ -8041,7 +8117,7 @@
       ? ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS
       : ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS;
     const categoryHead = categoryDefinitions.map(([code, label]) => `
-      <label class="admin-engagements-category-column-control" title="${escapeHtml(label)} : appliquer a toutes les courses selectionnees">
+      <label class="admin-engagements-category-column-control" title="${escapeHtml(label)} : appliquer à toutes les courses sélectionnées">
         <input type="checkbox" data-engagement-category-column="${escapeHtml(code)}" aria-label="${escapeHtml(label)} pour toutes les courses" ${canEdit ? "" : "disabled"}>
         <span>${escapeHtml(code)}</span>
       </label>
@@ -8155,7 +8231,7 @@
         ? ""
         : canEditEngagementCompetition(competition)
         ? ""
-        : "Programme consultable uniquement avec un droit de gestion sur cette competition.";
+      : "Programme consultable uniquement avec un droit de gestion sur cette compétition.";
       elements.engagementsEventsMessage.dataset.tone = canEdit ? "ok" : "loading";
     }
   }
@@ -8282,13 +8358,13 @@
       elements.engagementsDeleteButton.hidden = !canRequestOrDelete;
       elements.engagementsDeleteButton.disabled = deletionPending && !directDelete;
       elements.engagementsDeleteButton.textContent = deletionPending && !directDelete
-        ? "Suppression demandee"
+        ? "Suppression demandée"
         : directDelete
         ? "Supprimer"
         : "Demander la suppression";
     }
     if (elements.engagementsDetailTitle) {
-      elements.engagementsDetailTitle.textContent = competition.name || "Competition sans nom";
+    elements.engagementsDetailTitle.textContent = competition.name || "Compétition sans nom";
     }
     if (elements.engagementsDetailSubtitle) {
       elements.engagementsDetailSubtitle.textContent = [
@@ -8317,8 +8393,8 @@
       ["Date", formatShortDate(competition.date)],
       ["Date de fin", formatShortDate(competition.endDate || competition.date)],
       ["Lieu", competition.location || "-"],
-      ["Region", regionDisplayLabel(competition.regionId)],
-      ["Regions invitees", (competition.invitedRegionIds || []).map(regionDisplayLabel).filter((region) => region && region !== "-").join(", ") || "-"],
+      ["Région", regionDisplayLabel(competition.regionId)],
+      ["Régions invitées", (competition.invitedRegionIds || []).map(regionDisplayLabel).filter((region) => region && region !== "-").join(", ") || "-"],
       ["Niveau", engagementLevelLabel(competition.level)],
       ["Statut engagements", engagementStatusLabel(competition.entryStatus)],
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
@@ -8326,7 +8402,7 @@
       ["Chronometrage", engagementTimingTypeLabel(competition.timingType)],
       ["Temps engagements", engagementQualificationPeriodLabel(competition)],
       ["Sans temps connu", engagementMissingEntryTimeModeLabel(competition.missingEntryTimeMode)],
-      ["Max epreuves nageur", engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
+      ["Max épreuves nageur", engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
       ["Officiels", competition.officialsRequired ? "Requis" : "Non requis"],
       ["Programme", engagementEventSummary(competition.events || [])],
       ["Frais", engagementFeesSummary(competition.fees || {})]
@@ -8342,8 +8418,8 @@
       ["Frais d'engagement", engagementFeesSummary(competition.fees || {})],
       ...(!noFees ? [["HelloAsso", engagementHelloAssoLabel(competition.fees || {})]] : []),
       ["Niveau", engagementLevelLabel(competition.level)],
-      ["Region", regionDisplayLabel(competition.regionId)],
-      ["Officiels", competition.officialsRequired ? "A declarer" : "Non requis"],
+      ["Région", regionDisplayLabel(competition.regionId)],
+      ["Officiels", competition.officialsRequired ? "À déclarer" : "Non requis"],
       ["Bassin", engagementPoolLabel(competition)],
       ["Chronometrage", engagementTimingTypeLabel(competition.timingType)]
     ];
@@ -8351,8 +8427,8 @@
       ["Identifiant", competition.id || "-"],
       ...sharedRows,
       ["Email du responsable informatique", competition.computerEmail || "-"],
-      ["Creation", competition.createdAt ? formatDeadline(competition.createdAt).replace(/^Limite /, "") : "-"],
-      ["Derniere mise a jour", competition.updatedAt ? formatDeadline(competition.updatedAt).replace(/^Limite /, "") : "-"]
+      ["Création", competition.createdAt ? formatDeadline(competition.createdAt).replace(/^Limite /, "") : "-"],
+      ["Dernière mise à jour", competition.updatedAt ? formatDeadline(competition.updatedAt).replace(/^Limite /, "") : "-"]
     ] : clubRows;
     if (elements.engagementsDetailList) {
       elements.engagementsDetailList.innerHTML = rows.map(([label, value]) => `
@@ -8399,7 +8475,7 @@
     engagementCompetitionStatisticsLoading = false;
     setEngagementsDetailTab("general");
     setEngagementCompetitionDetailVisible(false);
-    if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Selectionnez une competition";
+    if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Sélectionnez une compétition";
     if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
     if (elements.engagementsEditState) elements.engagementsEditState.hidden = true;
     if (elements.engagementsDetailEntryStatus) elements.engagementsDetailEntryStatus.hidden = true;
@@ -8413,10 +8489,10 @@
     if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.hidden = true;
     if (elements.engagementsIndividualEvents) elements.engagementsIndividualEvents.innerHTML = "";
     if (elements.engagementsRelayEvents) elements.engagementsRelayEvents.innerHTML = "";
-    if (elements.engagementsEventsSummary) elements.engagementsEventsSummary.textContent = "Aucune epreuve selectionnee.";
-    if (elements.engagementsProgramSummary) elements.engagementsProgramSummary.textContent = "Ordre non renseigne.";
+    if (elements.engagementsEventsSummary) elements.engagementsEventsSummary.textContent = "Aucune épreuve sélectionnée.";
+    if (elements.engagementsProgramSummary) elements.engagementsProgramSummary.textContent = "Ordre non renseigné.";
     if (elements.engagementsProgramSessions) elements.engagementsProgramSessions.innerHTML = "";
-    if (elements.engagementsEventsChoiceSummary) elements.engagementsEventsChoiceSummary.textContent = "Aucune epreuve selectionnee.";
+    if (elements.engagementsEventsChoiceSummary) elements.engagementsEventsChoiceSummary.textContent = "Aucune épreuve sélectionnée.";
     if (elements.engagementsEventsMessage) elements.engagementsEventsMessage.textContent = "";
     setEngagementEventsSectionOpen(elements.engagementsEventsChoiceSection, false);
     setEngagementEventsSectionOpen(elements.engagementsProgramSection, false);
@@ -8424,9 +8500,9 @@
     if (elements.engagementsFeesSummary) elements.engagementsFeesSummary.textContent = "Aucun frais renseigne.";
     if (elements.engagementsFeesMessage) elements.engagementsFeesMessage.textContent = "";
     if (elements.engagementsClubTeamForm) elements.engagementsClubTeamForm.reset();
-    if (elements.engagementsClubTeamSummary) elements.engagementsClubTeamSummary.textContent = "A renseigner avant de commencer les engagements.";
+    if (elements.engagementsClubTeamSummary) elements.engagementsClubTeamSummary.textContent = "À renseigner avant de commencer les engagements.";
     if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
-    if (elements.engagementsClubOfficialsSummary) elements.engagementsClubOfficialsSummary.textContent = "Aucun officiel selectionne.";
+    if (elements.engagementsClubOfficialsSummary) elements.engagementsClubOfficialsSummary.textContent = "Aucun officiel sélectionné.";
     if (elements.engagementsClubOfficialsList) elements.engagementsClubOfficialsList.innerHTML = "";
     if (elements.engagementsClubOfficialsMessage) elements.engagementsClubOfficialsMessage.textContent = "";
     if (elements.engagementsClubSwimmersSummary) elements.engagementsClubSwimmersSummary.textContent = "Aucun nageur engagé.";
@@ -8440,7 +8516,7 @@
     if (elements.engagementsClubEntriesList) elements.engagementsClubEntriesList.innerHTML = "";
     if (elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = "";
     engagementClubRelaysDraft = [];
-    if (elements.engagementsClubRelaysSummary) elements.engagementsClubRelaysSummary.textContent = "Aucun relais selectionne.";
+    if (elements.engagementsClubRelaysSummary) elements.engagementsClubRelaysSummary.textContent = "Aucun relais sélectionné.";
     if (elements.engagementsClubRelaysList) elements.engagementsClubRelaysList.innerHTML = "";
     if (elements.engagementsClubRelaysMessage) elements.engagementsClubRelaysMessage.textContent = "";
     if (elements.engagementsClubSummaryStatus) {
@@ -8450,7 +8526,7 @@
     if (elements.engagementsClubSummaryList) elements.engagementsClubSummaryList.innerHTML = "";
     resetEngagementClubNewSwimmerForm();
     if (elements.engagementsClubNewSwimmerAlerts) elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
-    if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = "Documents a preparer.";
+    if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = "Documents à préparer.";
     if (elements.engagementsComputerEmailLabel) elements.engagementsComputerEmailLabel.textContent = "Email du responsable informatique non renseigne";
     if (elements.engagementsDocumentsList) elements.engagementsDocumentsList.innerHTML = "";
     if (elements.engagementsClubRecapFiles) elements.engagementsClubRecapFiles.innerHTML = "";
@@ -8549,7 +8625,7 @@
         });
         if (elements.engagementsClubTeamMessage) {
           const writeLockReason = engagementClubWriteLockReason();
-          elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Etape chef d'equipe validee." : "");
+          elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Étape chef d'équipe validée." : "");
           elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
         }
       } else {
@@ -8580,7 +8656,7 @@
     if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = true;
     setEngagementSaveState("saving");
     if (elements.engagementsClubTeamMessage) {
-      elements.engagementsClubTeamMessage.textContent = "Enregistrement du chef d'equipe...";
+      elements.engagementsClubTeamMessage.textContent = "Enregistrement du chef d'équipe...";
       elements.engagementsClubTeamMessage.dataset.tone = "loading";
     }
     try {
@@ -8646,7 +8722,7 @@
       setSelectedEngagementCompetitionClubEntryExists(true);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = "Etape chef d'equipe enregistree. Vous pouvez continuer les engagements.";
+        elements.engagementsClubTeamMessage.textContent = "Étape chef d'équipe enregistrée. Vous pouvez continuer les engagements.";
         elements.engagementsClubTeamMessage.dataset.tone = "ok";
       }
       setEngagementSaveState("saved");
@@ -8725,7 +8801,7 @@
     if (showEngagementClubWriteLock(elements.engagementsClubOfficialsMessage)) return false;
     if (!engagementClubTeamComplete()) {
       if (elements.engagementsClubOfficialsMessage) {
-        elements.engagementsClubOfficialsMessage.textContent = "Validez le chef d'equipe ou la renonciation avant les officiels.";
+      elements.engagementsClubOfficialsMessage.textContent = "Validez le chef d'équipe ou la renonciation avant les officiels.";
         elements.engagementsClubOfficialsMessage.dataset.tone = "error";
       }
       return false;
@@ -8747,7 +8823,7 @@
       selectedEngagementClubEntry = result.entry || selectedEngagementClubEntry || {};
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubOfficialsMessage) {
-        elements.engagementsClubOfficialsMessage.textContent = "Officiels enregistres.";
+      elements.engagementsClubOfficialsMessage.textContent = "Officiels enregistrés.";
         elements.engagementsClubOfficialsMessage.dataset.tone = "ok";
       }
       setEngagementSaveState("saved");
@@ -8848,7 +8924,7 @@
     if (showEngagementClubWriteLock(messageElement)) return;
     if (!engagementClubTeamComplete()) {
       if (messageElement) {
-        messageElement.textContent = "Validez le chef d'equipe ou la renonciation avant les engagements.";
+      messageElement.textContent = "Validez le chef d'équipe ou la renonciation avant les engagements.";
         messageElement.dataset.tone = "error";
       }
       return;
@@ -8910,7 +8986,7 @@
       setEngagementClubEntriesDirty(false);
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (messageElement) {
-        messageElement.textContent = fromEntries ? "Courses enregistrees." : "Nageurs enregistres.";
+      messageElement.textContent = fromEntries ? "Courses enregistrées." : "Nageurs enregistrés.";
         messageElement.dataset.tone = "ok";
       }
       setEngagementSaveState("saved");
@@ -8932,7 +9008,7 @@
     if (showEngagementClubWriteLock(messageElement)) return false;
     if (!engagementClubTeamComplete()) {
       if (messageElement) {
-        messageElement.textContent = "Validez le chef d'equipe ou la renonciation avant les relais.";
+      messageElement.textContent = "Validez le chef d'équipe ou la renonciation avant les relais.";
         messageElement.dataset.tone = "error";
       }
       return false;
@@ -9023,7 +9099,7 @@
         };
       }
       if (elements.engagementsClubSummaryStatus) {
-        elements.engagementsClubSummaryStatus.textContent = result.fromStorage ? "PDF telecharge depuis la GED." : "PDF genere et telecharge.";
+        elements.engagementsClubSummaryStatus.textContent = result.fromStorage ? "PDF téléchargé depuis la GED." : "PDF généré et téléchargé.";
         elements.engagementsClubSummaryStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -9124,8 +9200,8 @@
         const skippedCount = Number(result.skippedCount || 0);
         const errorCount = Number(result.errorCount || 0);
         elements.engagementsDocumentsSummary.textContent = [
-          `${generatedCount} PDF genere${generatedCount > 1 ? "s" : ""}`,
-          `${reusedCount} deja a jour`,
+          `${generatedCount} PDF généré${generatedCount > 1 ? "s" : ""}`,
+        `${reusedCount} déjà à jour`,
           skippedCount ? `${skippedCount} ignore${skippedCount > 1 ? "s" : ""}` : "",
           errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
         ].filter(Boolean).join(" - ");
@@ -9136,7 +9212,7 @@
         ).join(" | ");
         elements.engagementsClubRecapFiles.insertAdjacentHTML(
           "afterbegin",
-          `<p class="admin-portal-message" data-tone="error">PDF non generes : ${escapeHtml(details)}</p>`
+          `<p class="admin-portal-message" data-tone="error">PDF non générés : ${escapeHtml(details)}</p>`
         );
       }
     } catch (error) {
@@ -9206,7 +9282,7 @@
       await loadEngagementMailJobs({ force: true });
       if (elements.engagementsDocumentsSummary) {
         const count = Number(result.jobCount || 0);
-        elements.engagementsDocumentsSummary.textContent = `${count} mail${count > 1 ? "s" : ""} d'ouverture prepare${count > 1 ? "s" : ""}, non envoye${count > 1 ? "s" : ""}.`;
+        elements.engagementsDocumentsSummary.textContent = `${count} e-mail${count > 1 ? "s" : ""} d'ouverture préparé${count > 1 ? "s" : ""}, non envoyé${count > 1 ? "s" : ""}.`;
       }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
@@ -9237,8 +9313,8 @@
         const skippedCount = Number(result.skippedClubCount || 0);
         const errorCount = Number(result.errorCount || 0);
         elements.engagementsDocumentsSummary.textContent = [
-          `${jobCount} mail${jobCount > 1 ? "s" : ""} PDF prepare${jobCount > 1 ? "s" : ""}, non envoye${jobCount > 1 ? "s" : ""}`,
-          skippedCount ? `${skippedCount} club${skippedCount > 1 ? "s" : ""} ignore${skippedCount > 1 ? "s" : ""}` : "",
+          `${jobCount} e-mail${jobCount > 1 ? "s" : ""} PDF préparé${jobCount > 1 ? "s" : ""}, non envoyé${jobCount > 1 ? "s" : ""}`,
+          skippedCount ? `${skippedCount} club${skippedCount > 1 ? "s" : ""} ignoré${skippedCount > 1 ? "s" : ""}` : "",
           errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
         ].filter(Boolean).join(" - ");
       }
@@ -9248,12 +9324,12 @@
         ).join(" | ");
         elements.engagementsMailJobsList.insertAdjacentHTML(
           "afterbegin",
-          `<p class="admin-portal-message" data-tone="error">Mails PDF non prepares : ${escapeHtml(details)}</p>`
+          `<p class="admin-portal-message" data-tone="error">E-mails PDF non préparés : ${escapeHtml(details)}</p>`
         );
       }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = `Preparation mails PDF impossible : ${error?.message || error}`;
+        elements.engagementsDocumentsSummary.textContent = `Préparation des e-mails PDF impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -9282,23 +9358,23 @@
     const actionLabel = engagementMailSendActionLabel(type);
     if (!pendingCount) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = `Aucun mail ${actionLabel} a envoyer.`;
+        elements.engagementsDocumentsSummary.textContent = `Aucun e-mail ${actionLabel} à envoyer.`;
       }
       return;
     }
     const sampleRecipients = pendingJobs.slice(0, 6).map((job) => job.toEmail).filter(Boolean);
     const confirmed = global.confirm(
       [
-        `Envoyer ${pendingCount} mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
+        `Envoyer ${pendingCount} e-mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
         sampleRecipients.length ? `Destinataires : ${sampleRecipients.join(", ")}${pendingCount > sampleRecipients.length ? ", ..." : ""}` : "",
-        "Seuls les mails prepares, bloques ou en erreur seront envoyes."
+        "Seuls les e-mails préparés, bloqués ou en erreur seront envoyés."
       ].filter(Boolean).join("\n\n")
     );
     if (!confirmed) return;
     const button = engagementMailSendButton(type);
     if (button) button.disabled = true;
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = `Envoi des mails ${actionLabel}...`;
+      elements.engagementsDocumentsSummary.textContent = `Envoi des e-mails ${actionLabel}...`;
     }
     try {
       const result = await callFunction("sendEngagementPreparedEmails", {
@@ -9318,13 +9394,13 @@
         const errorCount = Number(result.errorCount || 0);
         const attemptedCount = Number(result.attemptedCount || 0);
         elements.engagementsDocumentsSummary.textContent = [
-          `${sentCount}/${attemptedCount} mail${attemptedCount > 1 ? "s" : ""} ${actionLabel} envoye${sentCount > 1 ? "s" : ""}`,
+          `${sentCount}/${attemptedCount} e-mail${attemptedCount > 1 ? "s" : ""} ${actionLabel} envoyé${sentCount > 1 ? "s" : ""}`,
           errorCount ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : ""
         ].filter(Boolean).join(" - ");
       }
     } catch (error) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = `Envoi mails impossible : ${error?.message || error}`;
+        elements.engagementsDocumentsSummary.textContent = `Envoi des e-mails impossible : ${error?.message || error}`;
       }
     } finally {
       if (button) button.disabled = false;
@@ -9412,16 +9488,16 @@
     const mount = elements.engagementsClubNewSwimmerAlerts;
     if (!mount) return;
     if (!alerts.length) {
-      mount.innerHTML = '<p class="admin-portal-message" data-tone="ok">Aucune ressemblance forte detectee.</p>';
+      mount.innerHTML = '<p class="admin-portal-message" data-tone="ok">Aucune ressemblance forte détectée.</p>';
       return;
     }
     const blocksCreation = alerts.some((alert) => alert.type === "inverted-identity");
     mount.innerHTML = `
       <p class="admin-portal-message" data-tone="error">${blocksCreation
-        ? "Creation impossible : une fiche avec la meme date de naissance utilise deja ce nom et ce prenom dans l'ordre inverse."
+        ? "Création impossible : une fiche avec la même date de naissance utilise déjà ce nom et ce prénom dans l'ordre inverse."
         : confirmed
-        ? `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Le nageur est cree, l'alerte est tracee comme validee par le club.`
-        : `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}. Confirmez la creation uniquement si ce nageur est bien nouveau pour votre club.`}</p>
+        ? `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouvé${alerts.length > 1 ? "s" : ""}. Le nageur est créé, l'alerte est tracée comme validée par le club.`
+        : `Alerte : ${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouvé${alerts.length > 1 ? "s" : ""}. Confirmez la création uniquement si ce nageur est bien nouveau pour votre club.`}</p>
       <div class="admin-engagements-club-swimmer-alert-list">
         ${alerts.map((alert) => `
           <article>
@@ -9430,7 +9506,7 @@
               alert.name,
               alert.birthDate ? formatShortDate(alert.birthDate) : "",
               alert.clubId || alert.clubName ? clubDisplayLabel(alert) : "",
-              alert.latestDate ? `dernier resultat ${formatShortDate(alert.latestDate)}` : ""
+              alert.latestDate ? `dernier résultat ${formatShortDate(alert.latestDate)}` : ""
             ].filter(Boolean).join(" - "))}</small>
           </article>
         `).join("")}
@@ -9458,15 +9534,15 @@
 
   function engagementClubNewSwimmerConfirmationMessage(alerts = []) {
     const preview = alerts.slice(0, 3).map((alert) => [
-      alert.name || "Nageur rapproche",
+      alert.name || "Nageur rapproché",
       alert.birthDate ? formatShortDate(alert.birthDate) : "",
       alert.clubId || alert.clubName ? clubDisplayLabel(alert) : ""
     ].filter(Boolean).join(" - ")).join("\n");
     return [
-      `${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouve${alerts.length > 1 ? "s" : ""}.`,
+      `${alerts.length} rapprochement${alerts.length > 1 ? "s" : ""} trouvé${alerts.length > 1 ? "s" : ""}.`,
       preview,
       alerts.length > 3 ? `+ ${alerts.length - 3} autre${alerts.length - 3 > 1 ? "s" : ""} rapprochement${alerts.length - 3 > 1 ? "s" : ""}.` : "",
-      "Confirmer la creation de ce nageur ? Cette validation sera tracee."
+      "Confirmer la création de ce nageur ? Cette validation sera tracée."
     ].filter(Boolean).join("\n\n");
   }
 
@@ -9542,7 +9618,7 @@
         renderEngagementClubSwimmers();
       }
       if (elements.engagementsClubSwimmersMessage) {
-        elements.engagementsClubSwimmersMessage.textContent = "Nageur cree. Vous pouvez maintenant le selectionner dans la liste.";
+        elements.engagementsClubSwimmersMessage.textContent = "Nageur créé. Vous pouvez maintenant le sélectionner dans la liste.";
         elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
       }
     } catch (error) {
@@ -9589,10 +9665,10 @@
 
     const competition = selectedEngagementCompetition;
     const directDelete = canDeleteEngagementCompetitionImmediately(competition);
-    const actionLabel = directDelete ? "Supprimer definitivement" : "Demander la suppression de";
+    const actionLabel = directDelete ? "Supprimer définitivement" : "Demander la suppression de";
     const confirmMessage = directDelete
-      ? `${actionLabel} la competition "${competition.name || "sans nom"}" ? Cette action est irreversible.`
-      : `${actionLabel} la competition "${competition.name || "sans nom"}" ? Un administrateur national devra valider la suppression.`;
+      ? `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Cette action est irréversible.`
+      : `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Un administrateur national devra valider la suppression.`;
     if (!global.confirm(confirmMessage)) return;
 
     const deleteButtonLabel = elements.engagementsDeleteButton?.textContent || "";
@@ -9604,7 +9680,7 @@
     }
     if (elements.engagementsDetailStatus) {
       elements.engagementsDetailStatus.textContent = directDelete
-        ? "Suppression de la competition..."
+        ? "Suppression de la compétition..."
         : "Envoi de la demande de suppression...";
       elements.engagementsDetailStatus.dataset.tone = "loading";
     }
@@ -9621,7 +9697,7 @@
         clearEngagementDetailTabDirty();
         closeEngagementCompetitionDetail();
         if (elements.engagementsStatus) {
-          const successMessage = "Competition supprimee.";
+          const successMessage = "Compétition supprimée.";
           elements.engagementsStatus.hidden = false;
           elements.engagementsStatus.textContent = successMessage;
           elements.engagementsStatus.dataset.tone = "ok";
@@ -9638,7 +9714,7 @@
           deletionRequestStatus: "pending"
         };
         renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
-        elements.engagementsDetailStatus.textContent = "Demande de suppression envoyee au niveau national.";
+        elements.engagementsDetailStatus.textContent = "Demande de suppression envoyée au niveau national.";
         elements.engagementsDetailStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -9674,7 +9750,7 @@
       return;
     }
     if (!engagementAccessRequests.length) {
-      elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'acces en attente.</p>';
+      elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'accès en attente.</p>';
       closeEngagementAccessRequestEditForm();
       return;
     }
@@ -9691,7 +9767,7 @@
           </div>
           <div class="admin-engagements-request-meta">
             <span>${escapeHtml(newClubRequested ? `${newClub.clubCode || "Nouveau club"} — ${newClub.clubName || "Nom non renseigné"}` : clubDisplayLabel(request, { fallback: "Club non renseigné" }))}</span>
-            <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Region non renseignee")}</span>
+            <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Région non renseignée")}</span>
             <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
           </div>
           <div class="admin-engagements-request-actions">
@@ -9781,7 +9857,7 @@
       field.required = newClubRequested;
     });
     elements.engagementsAccessRequestEditForm.hidden = false;
-    setEngagementAccessRequestEditMessage("Verifiez les informations avant validation.", "loading");
+    setEngagementAccessRequestEditMessage("Vérifiez les informations avant validation.", "loading");
     elements.engagementsAccessRequestEditForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -9817,7 +9893,7 @@
     const approve = decision === "approved";
     const label = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "cette demande";
     const message = approve
-      ? `Valider la demande de ${label} et creer l'acces engagements club ?`
+      ? `Valider la demande de ${label} et créer l'accès aux engagements du club ?`
       : `Refuser la demande de ${label} ?`;
     if (approve && !global.confirm(message)) return false;
     if (elements.engagementsAccessRequestsStatus) {
@@ -9845,7 +9921,7 @@
       if (elements.engagementsAccessRequestsStatus) {
         const notificationFailed = !approve && result.resolutionNotification?.status !== "sent";
         elements.engagementsAccessRequestsStatus.textContent = approve
-          ? "Demande validee. L'acces club est actif et un email de mot de passe a ete envoye si possible."
+          ? "Demande validée. L'accès club est actif et un e-mail de mot de passe a été envoyé si possible."
           : notificationFailed
             ? "Demande refusée, mais l’e-mail d’information n’a pas pu être envoyé."
             : "Demande refusée et demandeur informé par e-mail.";
@@ -9916,8 +9992,8 @@
       engagementAccessRequestsLoaded = false;
       setPublicAccessRequestMessage(
         result.existingAccount
-          ? "Cette adresse semble deja associee a un compte LivePalmes. Consultez l'e-mail que nous venons de vous envoyer."
-          : "Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.",
+          ? "Cette adresse semble déjà associée à un compte LivePalmes. Consultez l'e-mail que nous venons de vous envoyer."
+          : "Demande envoyée. Elle doit maintenant être validée par la région ou le niveau national.",
         "ok"
       );
     } catch (error) {
@@ -9992,7 +10068,7 @@
       return `
       <article class="admin-engagements-request-card" data-engagement-deletion-request-id="${escapeHtml(request.id || request.competitionId || request.swimmerId || "")}" data-request-type="${swimmerRequest ? "swimmer" : "competition"}">
         <div class="admin-engagements-request-main">
-          <strong>${escapeHtml(swimmerRequest ? request.swimmerName || "Nageur sans nom" : request.competitionName || "Competition sans nom")}</strong>
+          <strong>${escapeHtml(swimmerRequest ? request.swimmerName || "Nageur sans nom" : request.competitionName || "Compétition sans nom")}</strong>
           <small>${escapeHtml([
             swimmerRequest ? "Nageur désactivé" : request.competitionDate ? formatShortDate(request.competitionDate) : "",
             swimmerRequest ? request.birthDate ? formatShortDate(request.birthDate) : "" : engagementLevelLabel(request.competitionLevel),
@@ -10070,7 +10146,7 @@
         ? "Confirmer le retrait de ce nageur ? Sa fiche restera archivée et désactivée pour préserver l'historique."
         : "Refuser cette demande et réactiver le nageur dans l'effectif de son club ?"
       : approve
-        ? "Approuver cette demande et supprimer definitivement la competition ?"
+        ? "Approuver cette demande et supprimer définitivement la compétition ?"
         : "Refuser cette demande de suppression ?";
     if (!global.confirm(message)) return;
     if (elements.engagementsDeletionRequestsStatus) {
@@ -10175,7 +10251,7 @@
               <div class="admin-engagements-national-merge" data-engagement-national-swimmer-merge="${escapeHtml(sourceKey)}">
                 <label>
                   <span>Recherche cible</span>
-                  <input type="search" value="${escapeHtml(engagementNationalSwimmerMergeQuery)}" placeholder="Nom, prenom ou licence" data-engagement-national-swimmer-merge-query>
+                  <input type="search" value="${escapeHtml(engagementNationalSwimmerMergeQuery)}" placeholder="Nom, prénom ou licence" data-engagement-national-swimmer-merge-query>
                 </label>
                 <div class="admin-engagements-request-actions">
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="search-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" ${engagementNationalSwimmerMergeLoading ? "disabled" : ""}>Rechercher</button>
@@ -10183,12 +10259,12 @@
                 <label class="admin-engagements-national-merge-target">
                   <span>Fusionner vers</span>
                   <select data-engagement-national-swimmer-merge-target>
-                    <option value="">Choisir la fiche a conserver</option>
+                    <option value="">Choisir la fiche à conserver</option>
                     ${mergeTargets.map((candidate) => {
                       const candidateId = candidate.id || candidate.swimmerIndexId || "";
                       const candidateSource = candidate.source || "performances";
                       const candidateName = [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.name || candidateId;
-                      return `<option value="${escapeHtml(`${candidateSource}:${candidateId}`)}">${escapeHtml(candidateName)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(clubDisplayLabel(candidate, { fallback: "club non renseigné" }))} - ${escapeHtml(candidateSource === "performances" ? "LivePalmes" : "creation club")}</option>`;
+                      return `<option value="${escapeHtml(`${candidateSource}:${candidateId}`)}">${escapeHtml(candidateName)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(clubDisplayLabel(candidate, { fallback: "club non renseigné" }))} - ${escapeHtml(candidateSource === "performances" ? "LivePalmes" : "création club")}</option>`;
                     }).join("")}
                   </select>
                 </label>
@@ -10196,7 +10272,7 @@
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="cancel-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Annuler</button>
                   <button type="button" data-engagement-national-swimmer-action="confirm-merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" ${mergeTargets.length ? "" : "disabled"}>Confirmer la fusion</button>
                 </div>
-                <p class="admin-engagements-request-note">${escapeHtml(engagementNationalSwimmerMergeLoading ? "Recherche en cours..." : mergeTargets.length ? `${mergeTargets.length} cible${mergeTargets.length > 1 ? "s" : ""} trouvee${mergeTargets.length > 1 ? "s" : ""}.` : "Lancez une recherche pour trouver la fiche a conserver.")}</p>
+                <p class="admin-engagements-request-note">${escapeHtml(engagementNationalSwimmerMergeLoading ? "Recherche en cours..." : mergeTargets.length ? `${mergeTargets.length} cible${mergeTargets.length > 1 ? "s" : ""} trouvée${mergeTargets.length > 1 ? "s" : ""}.` : "Lancez une recherche pour trouver la fiche à conserver.")}</p>
               </div>
             </td>
           </tr>
@@ -10212,7 +10288,7 @@
               <th class="admin-engagements-national-choice">Fusionner</th>
               <th class="admin-engagements-national-merge-only">Alerte</th>
               <th>Nom</th>
-              <th>Prenom</th>
+              <th>Prénom</th>
               <th>Naissance</th>
               <th>Sexe</th>
               <th>Licence</th>
@@ -10940,11 +11016,11 @@
     const swimmer = engagementNationalSwimmers.find((item) => item.id === cleanId || item.swimmerIndexId === cleanId) || {};
     const name = engagementSwimmerDisplayName(swimmer, "ce nageur");
     const message = active
-      ? `Reactiver ${name} ? Il redeviendra utilisable par son club.`
-      : `Desactiver ${name} ? Il ne sera plus proposable dans les engagements du club.`;
+      ? `Réactiver ${name} ? Il redeviendra utilisable par son club.`
+      : `Désactiver ${name} ? Il ne sera plus proposable dans les engagements du club.`;
     if (!global.confirm(message)) return;
     if (elements.engagementsNationalSwimmersStatus) {
-      elements.engagementsNationalSwimmersStatus.textContent = active ? "Reactivation en cours..." : "Desactivation en cours...";
+      elements.engagementsNationalSwimmersStatus.textContent = active ? "Réactivation en cours..." : "Désactivation en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
     }
     try {
@@ -10968,9 +11044,9 @@
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const swimmer = engagementNationalSwimmers.find((item) => item.id === cleanId || item.swimmerIndexId === cleanId) || {};
     const name = engagementSwimmerDisplayName(swimmer, "ce nageur");
-    if (!global.confirm(`Supprimer definitivement ${name} de la base des nageurs crees par les clubs ? Cette action est irreversible.`)) return;
+    if (!global.confirm(`Supprimer définitivement ${name} de la base des nageurs créés par les clubs ? Cette action est irréversible.`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
-      elements.engagementsNationalSwimmersStatus.textContent = "Suppression definitive en cours...";
+      elements.engagementsNationalSwimmersStatus.textContent = "Suppression définitive en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
     }
     try {
@@ -11024,7 +11100,7 @@
         .filter((swimmer) => swimmer.status !== "merged" && !swimmer.mergedIntoId)
         .slice(0, 40);
       if (elements.engagementsNationalSwimmersStatus) {
-        elements.engagementsNationalSwimmersStatus.textContent = `${engagementNationalSwimmerMergeTargets.length} fiche${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} cible${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} trouvee${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""}.`;
+        elements.engagementsNationalSwimmersStatus.textContent = `${engagementNationalSwimmerMergeTargets.length} fiche${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} cible${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""} trouvée${engagementNationalSwimmerMergeTargets.length > 1 ? "s" : ""}.`;
         elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -11054,11 +11130,11 @@
     ) || {};
     const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || "cette fiche";
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || "la fiche cible";
-    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquee comme fusionnee et retiree des listes club.`)) return;
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquée comme fusionnée et retirée des listes club.`)) return;
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
-    if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
+    if (licenseMismatch && !global.confirm(`Attention : les numéros de licence sont différents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand même la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
-    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand meme la fusion ?`)) return;
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont différents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand même la fusion ?`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = "Fusion nageur en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
@@ -11081,7 +11157,7 @@
       await loadEngagementNationalSwimmers({ force: true });
       if (elements.engagementsNationalSwimmersStatus) {
         const totalUpdates = Number(result.entrySwimmerUpdateCount || 0) + Number(result.relayUpdateCount || 0) + Number(result.performanceUpdateCount || 0);
-        elements.engagementsNationalSwimmersStatus.textContent = `Fusion terminee. ${totalUpdates} element${totalUpdates > 1 ? "s" : ""} mis a jour.`;
+        elements.engagementsNationalSwimmersStatus.textContent = `Fusion terminée. ${totalUpdates} élément${totalUpdates > 1 ? "s" : ""} mis à jour.`;
         elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -11106,8 +11182,8 @@
     const licenseMismatch = sources.some((source) => source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     const clubMismatch = sources.some((source) => source.clubId && target.clubId && source.clubId !== target.clubId);
     const warning = [
-      licenseMismatch ? "numeros de licence differents" : "",
-      clubMismatch ? "clubs differents" : ""
+      licenseMismatch ? "numéros de licence différents" : "",
+      clubMismatch ? "clubs différents" : ""
     ].filter(Boolean).join(", ");
     const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ? Les performances, engagements et relais seront rattaches a la fiche conservee.${warning ? ` Attention : ${warning}.` : ""}`;
     if (!global.confirm(message)) return;
@@ -11193,7 +11269,7 @@
     }
     if (!engagementNationalPeople.length) {
       updateEngagementNationalPeopleStatus(0);
-      elements.engagementsNationalPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'equipe cree par un club.</p>';
+      elements.engagementsNationalPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'équipe créé par un club.</p>';
       updateEngagementNationalPeopleSelectionState();
       return;
     }
@@ -11245,7 +11321,7 @@
                 <label>
                   <span>Fusionner vers</span>
                   <select data-engagement-national-person-merge-target>
-                    <option value="">Choisir la fiche a conserver</option>
+                    <option value="">Choisir la fiche à conserver</option>
                     ${mergeCandidates.map((candidate) => `
                       <option value="${escapeHtml(candidate.id)}">${escapeHtml([candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.licenseNumber || candidate.id)} - ${escapeHtml(candidate.licenseNumber || "sans licence")} - ${escapeHtml(clubDisplayLabel(candidate, { fallback: "club non renseigné" }))}</option>
                     `).join("")}
@@ -11271,7 +11347,7 @@
               <th class="admin-engagements-national-choice">Fusionner</th>
               <th class="admin-engagements-national-merge-only">Alerte</th>
               <th>Nom</th>
-              <th>Prenom</th>
+              <th>Prénom</th>
               <th>Licence</th>
               <th>Role</th>
               <th>Club</th>
@@ -11342,13 +11418,13 @@
     const license = String(person.licenseNumber || "").trim();
     const normalizedName = normalizedEngagementClubSearch([person.lastName, person.firstName].filter(Boolean).join(" "));
     const sameLicense = license && people.some((candidate) => candidate.id !== personId && String(candidate.licenseNumber || "").trim() === license);
-    if (sameLicense) return { score: "high", label: "Meme licence" };
+    if (sameLicense) return { score: "high", label: "Même licence" };
     const sameNameClub = normalizedName && people.some((candidate) =>
       candidate.id !== personId &&
       normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" ")) === normalizedName &&
       (!person.clubId || !candidate.clubId || person.clubId === candidate.clubId)
     );
-    if (sameNameClub) return { score: "high", label: "Meme identite" };
+    if (sameNameClub) return { score: "high", label: "Même identité" };
     const nearName = normalizedName && people.some((candidate) => {
       if (candidate.id === personId) return false;
       const candidateName = normalizedEngagementClubSearch([candidate.lastName, candidate.firstName].filter(Boolean).join(" "));
@@ -11387,8 +11463,8 @@
       const keep = engagementNationalPersonById(keepId);
       const keepName = keep ? ([keep.firstName, keep.lastName].filter(Boolean).join(" ") || keep.licenseNumber || keepId) : "";
       elements.engagementsNationalPeopleSelectionSummary.textContent = keepId && mergeIds.length
-        ? `${mergeIds.length} fiche${mergeIds.length > 1 ? "s" : ""} a fusionner vers ${keepName}.`
-        : "Choisissez une fiche a conserver et au moins une fiche a fusionner.";
+        ? `${mergeIds.length} fiche${mergeIds.length > 1 ? "s" : ""} à fusionner vers ${keepName}.`
+        : "Choisissez une fiche à conserver et au moins une fiche à fusionner.";
     }
   }
 
@@ -11434,11 +11510,11 @@
     const person = engagementNationalPeople.find((item) => item.id === cleanId) || {};
     const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "cette personne";
     const message = active
-      ? `Reactiver ${name} ? Cette personne redeviendra utilisable par son club.`
-      : `Desactiver ${name} ? Cette personne ne sera plus proposable comme officiel ou chef d'equipe.`;
+      ? `Réactiver ${name} ? Cette personne redeviendra utilisable par son club.`
+      : `Désactiver ${name} ? Cette personne ne sera plus proposable comme officiel ou chef d'équipe.`;
     if (!global.confirm(message)) return;
     if (elements.engagementsNationalPeopleStatus) {
-      elements.engagementsNationalPeopleStatus.textContent = active ? "Reactivation en cours..." : "Desactivation en cours...";
+      elements.engagementsNationalPeopleStatus.textContent = active ? "Réactivation en cours..." : "Désactivation en cours...";
       elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
     }
     try {
@@ -11462,9 +11538,9 @@
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const person = engagementNationalPeople.find((item) => item.id === cleanId) || {};
     const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || "cette personne";
-    if (!global.confirm(`Supprimer definitivement ${name} de la base des officiels / chefs d'equipe ? Cette action est irreversible.`)) return;
+    if (!global.confirm(`Supprimer définitivement ${name} de la base des officiels / chefs d'équipe ? Cette action est irréversible.`)) return;
     if (elements.engagementsNationalPeopleStatus) {
-      elements.engagementsNationalPeopleStatus.textContent = "Suppression definitive en cours...";
+      elements.engagementsNationalPeopleStatus.textContent = "Suppression définitive en cours...";
       elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
     }
     try {
@@ -11491,11 +11567,11 @@
     const target = engagementNationalPeople.find((item) => item.id === targetId) || {};
     const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || "cette fiche";
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.licenseNumber || "la fiche cible";
-    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquee comme fusionnee et retiree des listes club.`)) return;
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquée comme fusionnée et retirée des listes club.`)) return;
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
-    if (licenseMismatch && !global.confirm(`Attention : les numeros de licence sont differents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand meme la fusion ?`)) return;
+    if (licenseMismatch && !global.confirm(`Attention : les numéros de licence sont différents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand même la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
-    if (clubMismatch && !global.confirm(`Attention : les clubs sont differents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand meme la fusion ?`)) return;
+    if (clubMismatch && !global.confirm(`Attention : les clubs sont différents (${clubDisplayLabel(source)} / ${clubDisplayLabel(target)}). Confirmer quand même la fusion ?`)) return;
     if (elements.engagementsNationalPeopleStatus) {
       elements.engagementsNationalPeopleStatus.textContent = "Fusion en cours...";
       elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
@@ -11514,7 +11590,7 @@
       await loadEngagementNationalPeople({ force: true });
       if (elements.engagementsNationalPeopleStatus) {
         const totalUpdates = Number(result.teamLeaderUpdateCount || 0) + Number(result.officialsUpdateCount || 0);
-        elements.engagementsNationalPeopleStatus.textContent = `Fusion terminee. ${totalUpdates} engagement${totalUpdates > 1 ? "s" : ""} mis a jour.`;
+        elements.engagementsNationalPeopleStatus.textContent = `Fusion terminée. ${totalUpdates} engagement${totalUpdates > 1 ? "s" : ""} mis à jour.`;
         elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -11539,8 +11615,8 @@
     const licenseMismatch = sources.some((source) => source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     const clubMismatch = sources.some((source) => source.clubId && target.clubId && source.clubId !== target.clubId);
     const warning = [
-      licenseMismatch ? "numeros de licence differents" : "",
-      clubMismatch ? "clubs differents" : ""
+      licenseMismatch ? "numéros de licence différents" : "",
+      clubMismatch ? "clubs différents" : ""
     ].filter(Boolean).join(", ");
     if (!global.confirm(`Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ?${warning ? ` Attention : ${warning}.` : ""}`)) return;
     engagementNationalPeopleLoading = true;
@@ -11598,11 +11674,11 @@
 
   function auditActionLabel(action = "") {
     return {
-      "accessUser.created": "Compte cree",
+      "accessUser.created": "Compte créé",
       "accessUser.updated": "Compte modifie",
-      "accessUser.deleted": "Compte supprime",
-      "accessUser.deletionRequested": "Suppression compte demandee",
-      "accessUser.deletionRequestResolved": "Demande compte traitee",
+      "accessUser.deleted": "Compte supprimé",
+      "accessUser.deletionRequested": "Suppression du compte demandée",
+      "accessUser.deletionRequestResolved": "Demande de compte traitée",
       "engagementClubSwimmer.changeRequested": "Correction de nageur demandée",
       "engagementClubSwimmer.changeApproved": "Correction de nageur validée",
       "engagementClubSwimmer.changeRejected": "Correction de nageur refusée",
@@ -11610,11 +11686,11 @@
       "engagementClubSwimmer.nationalMerged": "Fusion nageur",
       "engagementClubPerson.nationalMerged": "Fusion officiel",
       "engagementClubPerson.saved": "Officiel enregistré",
-      "engagementClubSwimmer.deleted": "Nageur supprime",
-      "engagementClubPerson.nationalDeleted": "Officiel supprime",
+      "engagementClubSwimmer.deleted": "Nageur supprimé",
+      "engagementClubPerson.nationalDeleted": "Officiel supprimé",
       "engagementCompetition.updated": "Compétition modifiée",
-      "engagementCompetition.deleted": "Competition supprimee",
-      "engagementCompetition.deletionRequestResolved": "Demande competition traitee",
+      "engagementCompetition.deleted": "Compétition supprimée",
+      "engagementCompetition.deletionRequestResolved": "Demande de compétition traitée",
       "engagementClubEntry.teamLeaderSaved": "Chef d'équipe enregistré",
       "engagementClubEntry.swimmerAdded": "Nageur ajouté à un engagement",
       "engagementClubEntry.swimmerRemoved": "Nageur retiré d'un engagement",
@@ -11753,7 +11829,7 @@
   function engagementClubPersonRoleLabel(person = {}) {
     const roles = [];
     if (person.roles?.swimmer || person.swimmerIndexId) roles.push("Nageur");
-    if (person.roles?.teamLeader) roles.push("Chef d'equipe");
+    if (person.roles?.teamLeader) roles.push("Chef d'équipe");
     if (person.roles?.official) roles.push("Officiel");
     return roles.join(" - ") || "-";
   }
@@ -11823,7 +11899,7 @@
   function renderEngagementClubPeople() {
     if (!elements.engagementsClubPeopleList) return;
     if (!engagementClubPeople.length) {
-      elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'equipe enregistre pour ce club.</p>';
+      elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'équipe enregistré pour ce club.</p>';
       return;
     }
     elements.engagementsClubPeopleList.innerHTML = `
@@ -11912,7 +11988,7 @@
     if (!canUse("engagements.club.manage")) return;
     if (!elements.engagementsClubPersonRoleTeamLeader?.checked && !elements.engagementsClubPersonRoleOfficial?.checked) {
       if (elements.engagementsClubPersonMessage) {
-        elements.engagementsClubPersonMessage.textContent = "Selectionnez au moins un role.";
+      elements.engagementsClubPersonMessage.textContent = "Sélectionnez au moins un rôle.";
         elements.engagementsClubPersonMessage.dataset.tone = "error";
       }
       return;
@@ -11981,7 +12057,7 @@
     const person = engagementClubPeople.find((item) => item.id === personId);
     if (!person) return;
     const label = [person.firstName, person.lastName].filter(Boolean).join(" ") || person.licenseNumber;
-    if (!global.confirm(`${active ? "Reactiver" : "Desactiver"} ${label} ?`)) return;
+    if (!global.confirm(`${active ? "Réactiver" : "Désactiver"} ${label} ?`)) return;
     try {
       await callFunction("setEngagementClubPersonStatus", { personId, active });
       engagementClubPeopleLoaded = false;
@@ -12166,20 +12242,20 @@
 
   function engagementOpeningMailScopeLabel(payload = {}) {
     if ((payload.level || "regional") === "national") {
-      return "Destinataires : admins LivePalmes club, region et national, toutes regions.";
+      return "Destinataires : admins LivePalmes club, région et national, toutes régions.";
     }
     const regions = [
       payload.regionId,
       ...(Array.isArray(payload.invitedRegionIds) ? payload.invitedRegionIds : [])
     ].map(regionDisplayLabel).filter((region) => region && region !== "-");
-    return `Destinataires : admins LivePalmes club, region et national${regions.length ? ` - regions ${regions.join(", ")}` : ""}.`;
+    return `Destinataires : admins LivePalmes club, région et national${regions.length ? ` - régions ${regions.join(", ")}` : ""}.`;
   }
 
   function confirmEngagementOpeningMail(payload = {}) {
     return global.confirm([
       "Ouvrir les engagements et envoyer le mail d'ouverture ?",
       engagementOpeningMailScopeLabel(payload),
-      "Les mails seront prepares pour ce cycle d'ouverture puis envoyes aux destinataires concernes."
+        "Les e-mails seront préparés pour ce cycle d'ouverture puis envoyés aux destinataires concernés."
     ].join("\n\n"));
   }
 
@@ -12218,7 +12294,7 @@
     const jobCount = Number(preparation.jobCount || 0);
     if (!jobCount) {
       if (statusTarget) {
-        statusTarget.textContent = "Engagements ouverts. Aucun destinataire mail trouve.";
+        statusTarget.textContent = "Engagements ouverts. Aucun destinataire d'e-mail trouvé.";
         statusTarget.dataset.tone = "ok";
       }
       return preparation;
@@ -12250,7 +12326,7 @@
     event?.preventDefault?.();
     if (!canCreateEngagementCompetition()) {
       if (elements.engagementsCreateMessage) {
-        elements.engagementsCreateMessage.textContent = "Droit creation competition engagements requis.";
+      elements.engagementsCreateMessage.textContent = "Droit de création des compétitions d'engagements requis.";
         elements.engagementsCreateMessage.dataset.tone = "error";
       }
       return;
@@ -12269,7 +12345,7 @@
     const button = elements.engagementsCreateForm?.querySelector("button[type='submit']");
     if (button) button.disabled = true;
     if (elements.engagementsCreateMessage) {
-      elements.engagementsCreateMessage.textContent = "Creation en cours...";
+      elements.engagementsCreateMessage.textContent = "Création en cours...";
       elements.engagementsCreateMessage.dataset.tone = "loading";
     }
     try {
@@ -12287,19 +12363,19 @@
           await prepareAndSendEngagementOpeningEmails(result.competition.id, elements.engagementsCreateMessage);
         } catch (mailError) {
           if (elements.engagementsCreateMessage) {
-            elements.engagementsCreateMessage.textContent = `Competition creee, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsCreateMessage.textContent = `Compétition créée, mais e-mail d'ouverture impossible : ${mailError?.message || mailError}`;
             elements.engagementsCreateMessage.dataset.tone = "error";
           }
         }
       }
       if (elements.engagementsCreateMessage) {
-        if (!sendOpeningMail) elements.engagementsCreateMessage.textContent = `Competition creee : ${result.competition?.name || "engagements"}.`;
+        if (!sendOpeningMail) elements.engagementsCreateMessage.textContent = `Compétition créée : ${result.competition?.name || "engagements"}.`;
         if (!sendOpeningMail) elements.engagementsCreateMessage.dataset.tone = "ok";
       }
       elements.engagementsCreateChecklist?.showModal();
     } catch (error) {
       if (elements.engagementsCreateMessage) {
-        elements.engagementsCreateMessage.textContent = `Creation impossible : ${error?.message || error}`;
+        elements.engagementsCreateMessage.textContent = `Création impossible : ${error?.message || error}`;
         elements.engagementsCreateMessage.dataset.tone = "error";
       }
     } finally {
@@ -12359,7 +12435,7 @@
           await prepareAndSendEngagementOpeningEmails(selectedEngagementCompetition.id, elements.engagementsDetailStatus);
         } catch (mailError) {
           if (elements.engagementsDetailStatus) {
-            elements.engagementsDetailStatus.textContent = `Parametres enregistres, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsDetailStatus.textContent = `Paramètres enregistrés, mais e-mail d'ouverture impossible : ${mailError?.message || mailError}`;
             elements.engagementsDetailStatus.dataset.tone = "error";
           }
         }
@@ -12367,8 +12443,8 @@
       if (elements.engagementsDetailStatus) {
         if (!sendOpeningMail) {
           elements.engagementsDetailStatus.textContent = reopening
-            ? "Competition reouverte sans renvoi du mail d'ouverture."
-            : "Parametres enregistres.";
+            ? "Compétition rouverte sans renvoi de l'e-mail d'ouverture."
+            : "Paramètres enregistrés.";
           elements.engagementsDetailStatus.dataset.tone = "ok";
         }
       }
@@ -12468,7 +12544,7 @@
           await prepareAndSendEngagementOpeningEmails(selectedEngagementCompetition.id, elements.engagementsDetailStatus);
         } catch (mailError) {
           if (elements.engagementsDetailStatus) {
-            elements.engagementsDetailStatus.textContent = `Fiche enregistree, mais mail d'ouverture impossible : ${mailError?.message || mailError}`;
+            elements.engagementsDetailStatus.textContent = `Fiche enregistrée, mais e-mail d'ouverture impossible : ${mailError?.message || mailError}`;
             elements.engagementsDetailStatus.dataset.tone = "error";
           }
         }
@@ -12476,8 +12552,8 @@
       if (elements.engagementsDetailStatus) {
         if (!sendOpeningMail) {
           elements.engagementsDetailStatus.textContent = reopening
-            ? "Competition reouverte sans renvoi du mail d'ouverture."
-            : "Fiche competition enregistree.";
+          ? "Compétition rouverte sans renvoi de l'e-mail d'ouverture."
+          : "Fiche compétition enregistrée.";
           elements.engagementsDetailStatus.dataset.tone = "ok";
         }
       }
@@ -12566,8 +12642,8 @@
       setEngagementEventsSectionOpen(elements.engagementsProgramSection, true);
       if (elements.engagementsEventsMessage) {
         elements.engagementsEventsMessage.textContent = programConfirmed
-          ? "Programme enregistre."
-          : "Programme conserve a l'ecran, mais non confirme par le serveur. Redeploie les Functions avant de tester l'enregistrement reel.";
+          ? "Programme enregistré."
+          : "Programme conservé à l'écran, mais non confirmé par le serveur. Redéployez les Functions avant de tester l'enregistrement réel.";
         elements.engagementsEventsMessage.dataset.tone = programConfirmed ? "ok" : "error";
       }
     } catch (error) {
@@ -12601,7 +12677,7 @@
       clearEngagementDetailTabDirty("fees");
       setEngagementsDetailTab("fees");
       if (elements.engagementsFeesMessage) {
-        elements.engagementsFeesMessage.textContent = "Frais enregistres.";
+      elements.engagementsFeesMessage.textContent = "Frais enregistrés.";
         elements.engagementsFeesMessage.dataset.tone = "ok";
       }
     } catch (error) {
@@ -12707,9 +12783,9 @@
     }
     try {
       await auth.sendPasswordReset(elements.email?.value);
-      setMessage("Email de reinitialisation envoye.", "ok");
+      setMessage("E-mail de réinitialisation envoyé.", "ok");
     } catch (error) {
-      setMessage(`Reinitialisation impossible : ${error?.message || error}`);
+      setMessage(`Réinitialisation impossible : ${error?.message || error}`);
     }
   }
 
@@ -13098,12 +13174,12 @@
   async function setAccessStatus(uid, status) {
     const user = accessUsers.find((item) => item.uid === uid);
     const label = user?.email || uid;
-    const verb = status === "active" ? "reactiver" : "desactiver";
+    const verb = status === "active" ? "réactiver" : "désactiver";
     if (!window.confirm(`Confirmer : ${verb} ${label} ?`)) return;
     try {
       await callFunction("setAccessUserStatus", { uid, status });
       await loadAccessUsers({ force: true });
-      setAccessMessage(`Acces ${status === "active" ? "reactive" : "desactive"}.`, "ok");
+      setAccessMessage(`Accès ${status === "active" ? "réactivé" : "désactivé"}.`, "ok");
     } catch (error) {
       setAccessMessage(`Changement de statut impossible : ${error?.message || error}`);
     }
@@ -13130,17 +13206,17 @@
     }
     const html = accessDeletionRequests.map((request) => {
       const name = [request.targetFirstName, request.targetLastName].filter(Boolean).join(" ") || request.targetEmail || "Compte LivePalmes";
-      const region = request.targetRegionId ? regionDisplayLabel(request.targetRegionId) : "Region non renseignee";
+      const region = request.targetRegionId ? regionDisplayLabel(request.targetRegionId) : "Région non renseignée";
       const rights = (request.targetCapabilities || []).map(capabilityLabel).join(", ") || "Aucun droit actif";
       return `
         <article class="admin-engagements-request-card" data-access-deletion-request-id="${request.id}">
           <div class="admin-engagements-request-main">
             <strong>${escapeHtml(name)}</strong>
             <small>${escapeHtml(request.targetEmail || request.targetUid)}</small>
-            <small>${escapeHtml(`Region ${region} - ${rights}`)}</small>
+            <small>${escapeHtml(`Région ${region} - ${rights}`)}</small>
           </div>
           <div class="admin-engagements-request-meta">
-            <span>Demande par ${escapeHtml(request.requestedByEmail || request.requestedBy || "admin regional")}</span>
+            <span>Demande par ${escapeHtml(request.requestedByEmail || request.requestedBy || "admin régional")}</span>
             <span>${escapeHtml(request.requestedAt ? formatAccessDateTime(request.requestedAt) : "")}</span>
           </div>
           <div class="admin-engagements-request-actions">
@@ -13201,13 +13277,13 @@
   async function deleteAccessUser(uid) {
     const user = accessUsers.find((item) => item.uid === uid);
     const label = user?.email || uid;
-    if (!global.confirm(`Suppression definitive du compte ${label} ? Cette action supprime le compte Firebase et ses droits LivePalmes.`)) return;
+    if (!global.confirm(`Suppression définitive du compte ${label} ? Cette action supprime le compte Firebase et ses droits LivePalmes.`)) return;
     try {
       await callFunction("deleteAccessUser", { uid, confirmPermanent: true });
       accessDeletionRequestsLoaded = false;
       await loadAccessUsers({ reset: true });
       if (canDeleteAccessUserDirectly()) await loadAccessDeletionRequests({ force: true });
-      setAccessMessage("Compte supprime definitivement.", "ok");
+      setAccessMessage("Compte supprimé définitivement.", "ok");
     } catch (error) {
       setAccessMessage(`Suppression impossible : ${error?.message || error}`);
     }
@@ -13216,10 +13292,10 @@
   async function requestAccessUserDeletion(uid) {
     const user = accessUsers.find((item) => item.uid === uid);
     const label = user?.email || uid;
-    if (!global.confirm(`Demander a un admin national de supprimer le compte ${label} ?`)) return;
+    if (!global.confirm(`Demander à un admin national de supprimer le compte ${label} ?`)) return;
     try {
       await callFunction("requestAccessUserDeletion", { uid });
-      setAccessMessage("Demande de suppression envoyee a l'administration nationale.", "ok");
+      setAccessMessage("Demande de suppression envoyée à l'administration nationale.", "ok");
     } catch (error) {
       setAccessMessage(`Demande impossible : ${error?.message || error}`);
     }
@@ -13230,7 +13306,7 @@
     const label = request?.targetEmail || request?.targetUid || "ce compte";
     const approve = decision === "approved";
     const message = approve
-      ? `Accepter la demande et supprimer definitivement ${label} ?`
+      ? `Accepter la demande et supprimer définitivement ${label} ?`
       : `Refuser la demande de suppression de ${label} ?`;
     if (!global.confirm(message)) return;
     if (statusElement) {
@@ -13245,7 +13321,7 @@
       await loadAccessDeletionRequests({ force: true });
       await loadPortalPendingOverview({ force: true });
       if (statusElement) {
-        statusElement.textContent = approve ? "Demande acceptee et compte supprime." : "Demande refusee.";
+      statusElement.textContent = approve ? "Demande acceptée et compte supprimé." : "Demande refusée.";
         statusElement.dataset.tone = "ok";
       }
     } catch (error) {
@@ -13259,7 +13335,7 @@
   async function saveAccessUser(event) {
     event?.preventDefault?.();
     if (!canUse("admin.full")) {
-      setAccessMessage("Droit admin general requis.");
+      setAccessMessage("Droit d'administration générale requis.");
       return;
     }
     const payload = accessPayloadFromForm();
@@ -13276,7 +13352,7 @@
       resetAccessForm(true);
       await loadAccessUsers({ reset: true });
       setAccessMessage(
-        `${result.created ? "Compte cree" : "Compte mis a jour"} : ${result.email}. ${sendReset ? "Email de mot de passe envoye." : ""}`,
+        `${result.created ? "Compte créé" : "Compte mis à jour"} : ${result.email}. ${sendReset ? "E-mail de mot de passe envoyé." : ""}`,
         "ok"
       );
     } catch (error) {

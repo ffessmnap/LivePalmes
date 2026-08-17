@@ -17,8 +17,19 @@ function formatDate(value) {
 
 function formatGeneratedAt(value) {
   const date = value instanceof Date ? value : new Date(value || Date.now());
-  const pad = (number) => String(number).padStart(2, "0");
-  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date).reduce((result, part) => {
+    result[part.type] = part.value;
+    return result;
+  }, {});
+  return `${parts.day}-${parts.month}-${parts.year} ${parts.hour}:${parts.minute}`;
 }
 
 function formatTime(value) {
@@ -65,11 +76,12 @@ function regionCode(club = {}) {
     "1": "EST",
     "2": "CSNA",
     "3": "IDF",
-    "5": "ETR",
+    "4": "CNNP",
+    "5": "CMAS",
     "6": "BPL",
     "8": "CENT",
     "9": "GUAD",
-    "10": "PMO",
+    "10": "OPM",
     "11": "MAR",
     "12": "CORS",
     "13": "HDF",
@@ -85,7 +97,33 @@ function stableMeetingId(competition = {}) {
   if (competition.winPalmeId) return text(competition.winPalmeId).toUpperCase();
   const date = text(competition.date).replace(/\D/g, "").slice(0, 8);
   const suffix = parseInt(crypto.createHash("sha256").update(text(competition.id || competition.name)).digest("hex").slice(0, 6), 16) % 10000;
-  return `LP${date}${String(suffix).padStart(4, "0")}`;
+  return `CNNP${date}${String(suffix).padStart(4, "0")}`;
+}
+
+function compareWinPalmeText(left, right) {
+  return text(left).localeCompare(text(right), "fr", { sensitivity: "base", numeric: true });
+}
+
+function sortedSwimmers(swimmers = []) {
+  return [...swimmers].sort((left, right) =>
+    compareWinPalmeText(left.lastName, right.lastName)
+    || compareWinPalmeText(left.firstName, right.firstName)
+    || compareWinPalmeText(left.birthDate, right.birthDate)
+    || compareWinPalmeText(swimmerWinPalmeId(left), swimmerWinPalmeId(right))
+  );
+}
+
+function sortedIndividualEntries(entries = []) {
+  return [...entries].sort((left, right) =>
+    compareWinPalmeText(left.eventCode, right.eventCode)
+    || compareWinPalmeText(left.entryTime || left.manualEntryTime, right.entryTime || right.manualEntryTime)
+  );
+}
+
+function relayMemberIds(relay = {}) {
+  const ids = (relay.members || []).slice(0, 4).map(swimmerWinPalmeId);
+  while (ids.length < 4) ids.push("");
+  return ids;
 }
 
 function swimmerWinPalmeId(swimmer = {}) {
@@ -114,8 +152,8 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
       line(["CLU", entry.clubCode || club.clubCode, entry.clubName || club.clubName, federalNumber, regionCode(club), ""]),
       ""
     );
-    (entry.swimmers || []).forEach((swimmer) => {
-      (swimmer.individualEntries || []).forEach((individual) => {
+    sortedSwimmers(entry.swimmers || []).forEach((swimmer) => {
+      sortedIndividualEntries(swimmer.individualEntries || []).forEach((individual) => {
         lines.push(line([
           "NAG",
           swimmer.lastName,
@@ -139,7 +177,7 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
         relayCategoryCode(relay.category, relay.genderMode),
         relay.eventCode,
         formatTime(relay.entryTime || relay.manualEntryTime),
-        ...(relay.members || []).slice(0, 6).map(swimmerWinPalmeId)
+        ...relayMemberIds(relay)
       ]));
     });
     const leader = entry.teamLeader || {};
@@ -168,6 +206,7 @@ module.exports = {
   formatTime,
   regionCode,
   relayCategoryCode,
+  relayMemberIds,
   stableMeetingId,
   swimmerWinPalmeId
 };
