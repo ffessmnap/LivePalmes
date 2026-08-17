@@ -763,6 +763,9 @@
   let engagementMailJobs = [];
   let engagementMailJobsCompetitionId = "";
   let engagementMailJobsLoading = false;
+  let engagementMailJobsCursor = null;
+  let engagementMailJobsHasMore = false;
+  let engagementMailJobsTotalCount = 0;
   let engagementCompetitionStatistics = null;
   let engagementCompetitionStatisticsCompetitionId = "";
   let engagementCompetitionStatisticsLoading = false;
@@ -923,17 +926,51 @@
     }
   }
 
+  const portalCallSamples = new Map();
+
+  function recordPortalCall(name, startedAt, data, ok) {
+    const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+    let responseBytes = 0;
+    try {
+      responseBytes = new TextEncoder().encode(JSON.stringify(data || {})).length;
+    } catch {}
+    const samples = portalCallSamples.get(name) || [];
+    samples.push({ durationMs, responseBytes, ok, measuredAt: new Date().toISOString() });
+    if (samples.length > 100) samples.splice(0, samples.length - 100);
+    portalCallSamples.set(name, samples);
+  }
+
+  function portalCallMetrics() {
+    return Object.fromEntries([...portalCallSamples.entries()].map(([name, samples]) => {
+      const durations = samples.map((sample) => sample.durationMs).sort((left, right) => left - right);
+      const percentile = (ratio) => durations[Math.min(durations.length - 1, Math.max(0, Math.ceil(durations.length * ratio) - 1))] || 0;
+      return [name, {
+        count: samples.length,
+        errorCount: samples.filter((sample) => !sample.ok).length,
+        p50Ms: percentile(0.5),
+        p95Ms: percentile(0.95),
+        lastResponseBytes: samples.at(-1)?.responseBytes || 0
+      }];
+    }));
+  }
+
+  if (typeof globalThis !== "undefined") globalThis.LivePalmesPortalMetrics = portalCallMetrics;
+
   async function callFunction(name, payload) {
     const functions = functionsService();
     if (!functions?.httpsCallable) throw new Error("Cloud Functions LivePalmes indisponibles.");
     const activeClubId = activeEngagementClubIdForProfile(currentAccessProfile);
+    const startedAt = performance.now();
     try {
       const result = await functions.httpsCallable(name)({
         ...(payload || {}),
         ...(activeClubId ? { activeClubId } : {})
       });
-      return result.data || {};
+      const data = result.data || {};
+      recordPortalCall(name, startedAt, data, true);
+      return data;
     } catch (error) {
+      recordPortalCall(name, startedAt, null, false);
       throw normalizePortalFrenchError(error);
     }
   }
@@ -2153,7 +2190,7 @@
     if (elements.importStyles) elements.importStyles.disabled = !importModuleActive;
     document.body.classList.toggle("performance-admin-page", performanceModuleActive);
     if (recordsActive) loadRecordModule();
-    if (importModuleActive) loadImportModule({ includeSpreadsheet: importActive });
+    if (importModuleActive) loadImportModule();
     if (dtnSpaceActive && activeView === "dtn") loadDtnModule();
     if (activeView === "nationalHome") loadEngagementNationalOverview();
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
@@ -2229,14 +2266,13 @@
         );
       }
       const scripts = [
-        ["performances/public/data/records-data.js?v=records-firestore-20260629060432", "adminRecordDataScript"],
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
         ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
-        ["performances/public/store.js?v=20260804-records-static-auto-1", "adminRecordStoreScript"],
-        ["performances/public/admin-records.js?v=20260721-default-filters-1", "adminRecordModuleScript"]
+        ["performances/public/store.js?v=20260817-records-source-1", "adminRecordStoreScript"]
       ];
-      for (const [src, id] of scripts) await loadScriptOnce(src, id);
+      await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
+      await loadScriptOnce("performances/public/admin-records.js?v=20260817-records-source-1", "adminRecordModuleScript");
       watchRecordWorkbench();
     })().catch((error) => {
       recordModuleLoadPromise = null;
@@ -2282,6 +2318,8 @@
     return importSpreadsheetLoadPromise;
   }
 
+  global.LivePalmesLoadImportSpreadsheet = loadImportSpreadsheet;
+
   function loadImportModule({ includeSpreadsheet = false } = {}) {
     if (importModuleLoadPromise) {
       return includeSpreadsheet
@@ -2303,9 +2341,9 @@
         ["performances/public/data/intranap-summary.js?v=consolidated-20260603140205", "adminImportSummaryScript"],
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
-      for (const [src, id] of scripts) await loadScriptOnce(src, id);
-      if (includeSpreadsheet) await loadImportSpreadsheet();
+      await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
       await loadScriptOnce("performances/public/import-competitions.js?v=20260804-portal-lazy-1", "adminImportModuleScript");
+      if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
       importModuleLoadPromise = null;
@@ -7443,7 +7481,10 @@
     engagementCompetitionStatisticsLoading = true;
     renderEngagementCompetitionStatistics();
     try {
-      engagementCompetitionStatistics = await callFunction("getEngagementCompetitionStatistics", { competitionId: selectedEngagementCompetitionId });
+      engagementCompetitionStatistics = await callFunction("getEngagementCompetitionStatistics", {
+        competitionId: selectedEngagementCompetitionId,
+        force
+      });
       engagementCompetitionStatisticsCompetitionId = selectedEngagementCompetitionId;
       if (elements.engagementsStatisticsUpdatedAt) {
         elements.engagementsStatisticsUpdatedAt.textContent = `Actualisé ${formatDeadline(engagementCompetitionStatistics.generatedAt).replace(/^Limite /, "")}`;
@@ -7472,7 +7513,7 @@
       mount.innerHTML = "";
       return;
     }
-    if (engagementMailJobsLoading) {
+    if (engagementMailJobsLoading && !engagementMailJobs.length) {
       mount.innerHTML = '<p class="admin-engagements-empty">Chargement du suivi des envois…</p>';
       return;
     }
@@ -7501,7 +7542,7 @@
     mount.innerHTML = `
       <div class="admin-engagements-mail-jobs-head">
         <strong>Courriels</strong>
-        <small>${engagementMailJobs.length} courriel${engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` · ${statusParts.join(" · ")}` : ""}</small>
+        <small>${engagementMailJobs.length}${engagementMailJobsTotalCount > engagementMailJobs.length ? ` sur ${engagementMailJobsTotalCount}` : ""} courriel${engagementMailJobsTotalCount > 1 || engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` · ${statusParts.join(" · ")}` : ""}</small>
       </div>
       <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Suivi des envois">
         <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
@@ -7525,30 +7566,50 @@
           </div>
         `).join("")}
       </div>
+      ${engagementMailJobsHasMore ? `<button class="ghost-button" type="button" data-engagement-mail-jobs-more ${engagementMailJobsLoading ? "disabled" : ""}>${engagementMailJobsLoading ? "Chargement…" : "Afficher plus de courriels"}</button>` : ""}
     `;
   }
 
-  async function loadEngagementMailJobs({ force = false } = {}) {
+  async function loadEngagementMailJobs({ force = false, append = false } = {}) {
     if (!isEngagementAdminMode() || !selectedEngagementCompetitionId || engagementMailJobsLoading) return;
-    if (!force && engagementMailJobsCompetitionId === selectedEngagementCompetitionId) {
+    if (!force && !append && engagementMailJobsCompetitionId === selectedEngagementCompetitionId) {
       renderEngagementMailJobs();
       return;
     }
     engagementMailJobsLoading = true;
+    if (force || engagementMailJobsCompetitionId !== selectedEngagementCompetitionId) {
+      engagementMailJobs = [];
+      engagementMailJobsCursor = null;
+      engagementMailJobsHasMore = false;
+      engagementMailJobsTotalCount = 0;
+    }
     renderEngagementMailJobs();
     try {
       const result = await callFunction("listEngagementCompetitionMailJobs", {
-        competitionId: selectedEngagementCompetitionId
+        competitionId: selectedEngagementCompetitionId,
+        pageSize: 100,
+        ...(append && engagementMailJobsCursor ? { cursor: engagementMailJobsCursor } : {})
       });
-      engagementMailJobs = Array.isArray(result.jobs) ? result.jobs : [];
+      const nextJobs = Array.isArray(result.jobs) ? result.jobs : [];
+      engagementMailJobs = append ? [...engagementMailJobs, ...nextJobs] : nextJobs;
+      engagementMailJobsCursor = result.nextCursor || null;
+      engagementMailJobsHasMore = result.hasMore === true;
+      if (result.totalCount !== null && result.totalCount !== undefined && Number.isFinite(Number(result.totalCount))) {
+        engagementMailJobsTotalCount = Number(result.totalCount);
+      }
       engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
     } catch (error) {
-      engagementMailJobs = [];
-      engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
-      if (elements.engagementsMailJobsList) {
-      elements.engagementsMailJobsList.innerHTML = `<p class="admin-portal-message" data-tone="error">Lecture des e-mails préparés impossible : ${escapeHtml(error?.message || error)}</p>`;
+      if (!append) {
+        engagementMailJobs = [];
+        engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
+        if (elements.engagementsMailJobsList) {
+          elements.engagementsMailJobsList.innerHTML = `<p class="admin-portal-message" data-tone="error">Lecture des e-mails préparés impossible : ${escapeHtml(error?.message || error)}</p>`;
+        }
+        return;
       }
-      return;
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Lecture de la page suivante impossible : ${error?.message || error}`;
+      }
     } finally {
       engagementMailJobsLoading = false;
     }
@@ -9359,7 +9420,7 @@
     const pendingJobs = matchingJobs.filter((job) => job.status !== "sent");
     const pendingCount = pendingJobs.length;
     const actionLabel = engagementMailSendActionLabel(type);
-    if (!pendingCount) {
+    if (!pendingCount && !engagementMailJobsHasMore) {
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Aucun e-mail ${actionLabel} à envoyer.`;
       }
@@ -9368,8 +9429,11 @@
     const sampleRecipients = pendingJobs.slice(0, 6).map((job) => job.toEmail).filter(Boolean);
     const confirmed = global.confirm(
       [
-        `Envoyer ${pendingCount} e-mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
+        engagementMailJobsHasMore
+          ? `${pendingCount ? `Envoyer au moins ${pendingCount} e-mail${pendingCount > 1 ? "s" : ""}` : "Envoyer les e-mails non affichés"} ${actionLabel} ?`
+          : `Envoyer ${pendingCount} e-mail${pendingCount > 1 ? "s" : ""} ${actionLabel} ?`,
         sampleRecipients.length ? `Destinataires : ${sampleRecipients.join(", ")}${pendingCount > sampleRecipients.length ? ", ..." : ""}` : "",
+        engagementMailJobsHasMore ? "La liste affichée est paginée ; l'envoi inclura aussi les courriels suivants." : "",
         "Seuls les e-mails préparés, bloqués ou en erreur seront envoyés."
       ].filter(Boolean).join("\n\n")
     );
@@ -10846,6 +10910,7 @@
         const result = await callFunction("listEngagementNationalClubs", {
           limit: 250,
           includeAdministrators,
+          directoryMode: true,
           ...(pageUpdatedAfter ? { updatedAfter: pageUpdatedAfter } : {}),
           ...(afterClubId ? { afterClubId } : {})
         });
@@ -10856,6 +10921,7 @@
           );
           renderEngagementNationalClubs();
         }
+        if (includeAdministrators && result.replaceDirectory === true) storedById.clear();
         includeAdministrators = false;
         (Array.isArray(result.clubs) ? result.clubs : [])
           .map(normalizeEngagementNationalClub)
@@ -12164,15 +12230,12 @@
         { startDate: filters.startDate, endDate: filters.endDate },
         ...(septemberPreview ? [septemberPreview] : [])
       ];
-      const results = await Promise.all(ranges.map((range) => callFunction("listEngagementCompetitions", {
-        fromDate: range.startDate,
-        toDate: range.endDate,
+      const result = await callFunction("listEngagementCompetitions", {
+        ranges: ranges.map((range) => ({ fromDate: range.startDate, toDate: range.endDate })),
         manageOnly: isEngagementAdminMode(),
         limit: 250
-      })));
-      engagementCompetitions = Array.from(new Map(results
-        .flatMap((result) => Array.isArray(result.competitions) ? result.competitions : [])
-        .map((competition) => [competition.id, competition])).values());
+      });
+      engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
       if (isEngagementAdminMode() && !canUse("engagements.national.manage")) {
         engagementCompetitions = engagementCompetitions.filter((competition) => canEditEngagementCompetition(competition));
       }
@@ -13198,7 +13261,7 @@
       });
       if (loadSequence !== accessLoadSequence) return;
       const returnedUsers = Array.isArray(result.users) ? result.users : [];
-      if (result.directoryVersion === 2) {
+      if (Number(result.directoryVersion) >= 2) {
         accessUsers = returnedUsers;
         accessNextCursor = result.nextCursor || null;
         accessDirectoryTruncated = result.truncated === true;
@@ -13436,7 +13499,6 @@
     restoreActiveEngagementClubFromSession();
     populateLivePalmesRegionSelects();
     populateAccessClubSelect();
-    loadAccessClubReference();
     populateEngagementSeasonFilter();
     const auth = ensureAdminAuth();
     updateView(auth?.status?.() || {});
@@ -13458,8 +13520,11 @@
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
     elements.publicAccessRequestRegionId?.addEventListener("change", () => {
-      if (elements.publicAccessRequestNewClub?.checked !== true) populatePublicAccessRequestClubSelect();
+      if (elements.publicAccessRequestNewClub?.checked !== true) {
+        void loadAccessClubReference().then(() => populatePublicAccessRequestClubSelect());
+      }
     });
+    elements.publicAccessRequestClubSelect?.addEventListener("focus", () => void loadAccessClubReference().then(() => populatePublicAccessRequestClubSelect()));
     elements.publicAccessRequestClubSelect?.addEventListener("change", syncPublicAccessRequestClubFieldsFromSelect);
     elements.publicAccessRequestNewClub?.addEventListener("change", () => updatePublicAccessRequestNewClubMode());
     elements.publicAccessRequestNewClubFederalNumber?.addEventListener("input", (event) => {
@@ -13468,6 +13533,9 @@
     elements.publicAccessRequestNewClubFederalNumber?.addEventListener("change", matchPublicAccessRequestClubByFederalNumber);
     elements.signOut?.addEventListener("click", signOut);
     elements.engagementsAccessRequestsRefresh?.addEventListener("click", () => loadEngagementAccessRequests({ force: true }));
+    elements.engagementsMailJobsList?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-engagement-mail-jobs-more]")) void loadEngagementMailJobs({ append: true });
+    });
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
     elements.engagementsNationalSwimmersRefresh?.addEventListener("click", () => loadEngagementNationalSwimmers({ force: true }));
     elements.engagementsCalendarFilters?.addEventListener("submit", (event) => event.preventDefault());
@@ -14829,7 +14897,8 @@
       });
     });
     elements.accessForm?.addEventListener("submit", saveAccessUser);
-    elements.accessRegionId?.addEventListener("change", () => populateAccessClubSelect());
+    elements.accessRegionId?.addEventListener("change", () => void loadAccessClubReference().then(() => populateAccessClubSelect()));
+    elements.accessClubSelect?.addEventListener("focus", () => void loadAccessClubReference().then(() => populateAccessClubSelect()));
     elements.accessClubSelect?.addEventListener("change", syncAccessClubFieldsFromSelect);
     elements.accessDeletionRequestsRefresh?.addEventListener("click", () => loadAccessDeletionRequests({ force: true }));
     elements.accessAdd?.addEventListener("click", () => {

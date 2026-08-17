@@ -68,6 +68,8 @@
   let correctionSelectedRow = null;
   let migrationAutoRunning = false;
   let importsCache = [];
+  let importsLoadPromise = null;
+  let spreadsheetLoadPromise = null;
   let importsVisibleCount = 5;
   const openImportIds = new Set();
   const importsPageSize = 5;
@@ -846,6 +848,30 @@
     return name.endsWith(".xlsx");
   }
 
+  function ensureSpreadsheetReader() {
+    if (global.XLSX?.read) return Promise.resolve(global.XLSX);
+    if (spreadsheetLoadPromise) return spreadsheetLoadPromise;
+    const portalLoader = global.LivePalmesLoadImportSpreadsheet;
+    spreadsheetLoadPromise = (typeof portalLoader === "function"
+      ? portalLoader()
+      : new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1";
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", () => reject(new Error("Lecteur Excel indisponible.")), { once: true });
+          document.head.appendChild(script);
+        }))
+      .then(() => {
+        if (!global.XLSX?.read) throw new Error("Lecteur Excel indisponible.");
+        return global.XLSX;
+      })
+      .catch((error) => {
+        spreadsheetLoadPromise = null;
+        throw error;
+      });
+    return spreadsheetLoadPromise;
+  }
+
   function workbookSheetRows(workbook, sheetName) {
     const sheet = workbook?.Sheets?.[sheetName];
     if (!sheet) throw new Error(`Onglet ${sheetName} introuvable dans la trame Excel.`);
@@ -859,9 +885,7 @@
   }
 
   async function readInternationalWorkbook(file) {
-    if (!global.XLSX?.read) {
-      throw new Error("Lecteur Excel indisponible. Recharge la page puis reessaie.");
-    }
+    await ensureSpreadsheetReader();
     const buffer = await file.arrayBuffer();
     const workbook = global.XLSX.read(buffer, {
       type: "array",
@@ -917,6 +941,7 @@
     const excel = isExcelFile(file);
     if (elements.encoding) elements.encoding.disabled = excel;
     if (elements.encodingLabel) elements.encodingLabel.dataset.disabled = excel ? "true" : "false";
+    if (excel) void ensureSpreadsheetReader().catch(() => {});
   }
 
   function renderPreview(result) {
@@ -1338,16 +1363,18 @@
     }
   }
 
-  async function loadImports() {
+  function loadImports() {
     if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
-    try {
-      const result = await callFunction("listCompetitionImports", {});
-      renderImports(Array.isArray(result.imports) ? result.imports : []);
-    } catch (error) {
-      if (elements.importsList) {
-        elements.importsList.innerHTML = `<p class="admin-access-empty">Lecture des imports impossible : ${escapeHtml(error?.message || error)}</p>`;
-      }
-    }
+    if (importsLoadPromise) return importsLoadPromise;
+    importsLoadPromise = callFunction("listCompetitionImports", {})
+      .then((result) => renderImports(Array.isArray(result.imports) ? result.imports : []))
+      .catch((error) => {
+        if (elements.importsList) {
+          elements.importsList.innerHTML = `<p class="admin-access-empty">Lecture des imports impossible : ${escapeHtml(error?.message || error)}</p>`;
+        }
+      })
+      .finally(() => { importsLoadPromise = null; });
+    return importsLoadPromise;
   }
 
   function downloadJson(fileName, payload) {

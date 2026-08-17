@@ -1,12 +1,14 @@
 # Module engagements LivePalmes
 
-<!-- description: Cahier des charges fonctionnel du futur module de gestion des engagements en compétition. -->
+<!-- description: Cahier des charges fonctionnel de référence du module de gestion des engagements en compétition, actuellement en finalisation et en test. -->
+
+> **Statut du document :** ce cahier des charges a guide la construction du module integre au Portail LivePalmes. Le module existe maintenant dans le code, mais le portail complet n'est pas encore considere comme operationnel : il reste en finalisation, en test et en amelioration continue. Les formulations de conception conservees plus bas servent de reference fonctionnelle et d'historique des decisions.
 
 ## Objectif
 
-Ce document cadre la premiere version du futur module d'engagements LivePalmes.
+Ce document cadre la premiere version du module d'engagements LivePalmes integre au portail.
 
-Le module doit permettre aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une gestion regionale et nationale des competitions, des acces, des documents et des exports.
+Le module permet aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une gestion regionale et nationale des competitions, des acces, des documents et des exports. Son fonctionnement reste soumis aux tests et validations necessaires avant mise en service operationnelle.
 
 Les priorites restent celles du projet LivePalmes :
 
@@ -667,16 +669,14 @@ Sont volontairement reportes :
 - regles avancees de derogation sportive ;
 - statistiques avancees multi-saisons.
 
-## Prochaine etape
+## Etat actuel et prochaines etapes
 
-Avant de commencer le developpement, il faudra analyser l'existant :
+Le socle decrit dans ce document est maintenant integre au Portail LivePalmes. La phase actuelle consiste a :
 
-- authentification et droits ;
-- structure des clubs et utilisateurs ;
-- base nageurs et performances ;
-- donnees records et MPF ;
-- pages admin existantes ;
-- modules JavaScript reutilisables ;
-- contraintes Firebase et Cloud Functions.
+- finaliser les parcours existants ;
+- les tester avec les differents profils et perimetres ;
+- corriger les ecarts constates ;
+- ameliorer progressivement l'ergonomie et la fiabilite ;
+- ajouter seulement les petits modules complementaires confirmes par l'usage.
 
-Cette analyse permettra ensuite de proposer un decoupage technique par lots.
+Les fonctions presentes dans le code et les tests constituent la reference technique de l'etat reel. Les elements explicitement reportes restent hors du perimetre operationnel tant qu'ils n'ont pas ete developpes et valides.

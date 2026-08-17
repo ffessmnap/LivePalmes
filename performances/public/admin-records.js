@@ -192,20 +192,29 @@ function applyRecordsData(nextData, { loaded = true } = {}) {
   updateAuthView();
 }
 
+function localRecordsDataUrl(cacheBust = "") {
+  const moduleScript = document.getElementById("adminRecordModuleScript") || [...document.scripts]
+    .find((script) => String(script.src || "").includes("/performances/public/admin-records.js"));
+  if (moduleScript?.src) {
+    return new URL(`data/records-data.js?v=records-firestore-20260803223824${cacheBust}`, moduleScript.src).href;
+  }
+  return `public/data/records-data.js?v=records-firestore-20260803223824`;
+}
+
 async function loadLocalRecordsData() {
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => setTimeout(resolve, 0));
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   await new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `public/data/records-data.js?v=records-firestore-20260803223824&reload=${Date.now()}`;
+    script.src = localRecordsDataUrl(`&reload=${Date.now()}`);
     script.onload = () => resolve();
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
   if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
   try {
-    const response = await fetch("public/data/records-data.js?v=records-firestore-20260803223824", { cache: "no-store" });
+    const response = await fetch(localRecordsDataUrl(), { cache: "no-store" });
     if (!response.ok) return window.LIVEPALMES_RECORDS || {};
     const text = await response.text();
     const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
@@ -1896,16 +1905,15 @@ async function startAdmin() {
   elements.courseFilter.value = "";
   updateAuthView();
 
-  const localData = completeRecordsData(await withTimeout(loadLocalRecordsData(), 4000, {}));
-  const firstData = localData;
-  applyRecordsData(firstData, { loaded: true });
-
+  let firstData = {};
   if (window.LivePalmesPerformanceStore?.loadData) {
     const storeData = await withTimeout(window.LivePalmesPerformanceStore.loadData(), 5000, {});
     if (hasRecordData(storeData)) {
-      applyRecordsData(mergeRecordsData(firstData, storeData), { loaded: true });
+      firstData = storeData;
     }
   }
+  if (!hasRecordData(firstData)) firstData = completeRecordsData(await withTimeout(loadLocalRecordsData(), 4000, {}));
+  applyRecordsData(firstData, { loaded: true });
   applyQueuedRecordAlertDrafts();
 }
 

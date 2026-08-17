@@ -1,10 +1,12 @@
-# Architecture LivePalmes
+# Architecture de LivePalmes Direct
 
-<!-- description: Architecture cible des consoles par rôle et principes d'évolution modulaire du code. -->
+<!-- description: Architecture des consoles de LivePalmes Direct par rôle et principes d'évolution modulaire de ce dispositif national. -->
 
 ## Objectif
 
-LivePalmes doit rester simple a utiliser en competition, mais son code doit permettre de continuer a ajouter des fonctions sans fragiliser les consoles existantes.
+LivePalmes Direct doit rester simple a utiliser lors des competitions nationales concernees, mais son code doit permettre de continuer a ajouter des fonctions sans fragiliser les consoles existantes.
+
+Ce document concerne uniquement le Direct. Il ne decrit ni le Portail LivePalmes de preparation et d'engagements, ni l'espace public permanent des performances.
 
 L'architecture cible est une application composee de pages par role, appuyees sur des modules communs.
 
@@ -12,7 +14,7 @@ L'architecture cible est une application composee de pages par role, appuyees su
 
 Pages principales :
 
-- `index.html` : accueil et acces historique aux consoles.
+- `pilotage-livepalmes.html` : accueil et acces au pilotage du Direct.
 - `live.html` : console live.
 - `speaker.html` : console speaker.
 - `ja.html` : console juge arbitre.
@@ -38,7 +40,7 @@ Modules communs :
 
 `app.js` est encore le point d'entree principal des consoles internes, mais il ne doit plus recevoir de nouvelle logique metier.
 
-Les pages dediees par role reutilisent encore le moteur commun, mais elles ciblent directement leur console sans supprimer l'acces historique par `index.html`.
+Les pages dediees par role reutilisent encore le moteur commun, mais elles ciblent directement leur console depuis le pilotage du Direct.
 
 `app.js` sert progressivement a assembler :
 
@@ -57,7 +59,7 @@ Les pages dediees par role reutilisent encore le moteur commun, mais elles cible
 
 ## Pages consoles
 
-Les pages dediees (`live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`) sont generees depuis `index.html`.
+Les pages dediees (`live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`) sont generees depuis `pilotage-livepalmes.html`.
 
 Commande :
 
@@ -75,11 +77,11 @@ Le controle `tools/check-console-page-loads.js` mesure les scripts charges par p
 2. Garder les pages dediees synchronisees avec le moteur commun.
 3. Extraire ensuite les modules utiles par role.
 4. Faire charger a chaque page uniquement ce dont elle a besoin.
-5. Garder `index.html` comme accueil et acces rapide aux consoles.
+5. Garder `pilotage-livepalmes.html` comme accueil et acces rapide aux consoles.
 
 ## Critere "architecture propre finale"
 
-LivePalmes pourra etre considere comme propre quand :
+L'architecture de LivePalmes Direct pourra etre consideree comme propre quand :
 
 - aucune console ne depend d'un fichier geant commun difficile a lire ;
 - chaque page charge seulement les modules utiles a son role ;

@@ -2,7 +2,7 @@
 
 ## Principes
 
-LivePalmes est une application web bénévole de nage avec palmes : direct, résultats, records, MPF, performances, classements, médailles et espaces autorisés.
+LivePalmes est un écosystème web bénévole dédié à la nage avec palmes. Son cœur est le Portail LivePalmes, actuellement en finalisation et en test, qui prépare les compétitions et les engagements et gère clubs, nageurs, officiels, comptes, droits, performances, Records/MPF et espaces autorisés. L'espace public diffuse les Records, MPF, TOP, performances et fiches nageurs. LivePalmes Direct est un dispositif distinct réservé aux compétitions nationales concernées, avec consoles terrain et publication en direct des séries, résultats, médailles et archives.
 
 Priorités : fiabilité, simplicité, performance, fonctionnalités. Faire évoluer l’existant, réutiliser ses conventions et limiter les changements au nécessaire. Ne pas introduire de framework, de dépendance ou de nouvelle architecture sans justification forte.
 
@@ -12,12 +12,16 @@ Application statique en HTML, CSS et JavaScript natif, sans bundler racine. Les 
 
 Pour tout Markdown autre qu’un `AGENTS.md`, rechercher d’abord sa ligne `<!-- description: ... -->`, puis lire seulement les sections utiles. Ignorer les dépendances, sorties générées et dossiers tiers sauf besoin explicite.
 
-- Frontend, consoles et responsive : `docs/agents/FRONTEND.md`.
+- Portail LivePalmes : `docs/agents/PORTAIL.md`, puis uniquement la documentation métier correspondant à la demande.
+- Interface commune et responsive : `docs/agents/FRONTEND.md`.
+- LivePalmes Direct et consoles nationales : `docs/LIVEPALMES_DIRECT.md`, puis les seules sections utiles de `docs/agents/FRONTEND.md`.
 - Backend : lire `functions/AGENTS.md` avant toute intervention dans `functions/`.
 - Records, MPF et performances : `docs/agents/PERFORMANCES.md`.
 - Git, publication et déploiement : `docs/agents/PUBLICATION.md`.
 - Architecture : `docs/STRUCTURE_LIVEPALMES.md` ou `docs/ARCHITECTURE.md`.
 - Tests sensibles : `docs/TESTS_MANUELS.md`.
+
+Identifier avant toute lecture si la demande concerne le portail, l’espace public permanent, LivePalmes Direct ou une couche réellement partagée. Pour une tâche limitée au portail, ne pas charger la documentation, les pages, scripts ou tests du Direct. Pour une tâche limitée au Direct, ne pas charger les modules métier du portail. N’élargir la lecture que si une dépendance commune est effectivement touchée.
 
 ## Travail et sécurité
 
@@ -41,6 +45,8 @@ Ne jamais inventer une règle sportive ; demander validation en cas de doute mé
 ## Données et interface
 
 Toute lecture Firestore doit être indexable, bornée et estimée en documents lus par ouverture. Interdire les lectures N+1, lectures par ligne, scans complets non bornés et listeners nombreux ou inutiles. Pour les pages publiques fréquentes, privilégier fichiers statiques générés, agrégats, caches et pagination.
+
+Toute évolution qui ajoute ou modifie un accès aux données doit être conçue avec un budget de lectures avant son implémentation. Estimer séparément le coût de l’ouverture initiale, d’une action utilisateur, d’un rafraîchissement et du pire cas réaliste. Vérifier que ce coût ne croît pas avec la taille totale de la base ou le nombre de lignes affichées. Réutiliser en priorité les agrégats, index, caches, fichiers publics et appels groupés existants. Une donnée absente ou un cache périmé ne doit jamais déclencher silencieusement une reconstruction massive dans un parcours interactif.
 
 Concevoir mobile first sans rendre une action essentielle inaccessible. Les actions doivent fonctionner au toucher ; adapter ou faire défiler les tableaux larges. Respecter les composants existants. Après un changement visuel, mettre à jour `docs/DESIGN_SYSTEM.md` uniquement pour les règles, composants ou variantes réellement modifiés.
 

@@ -6,38 +6,81 @@ Ce document explique l'organisation de LivePalmes avec des mots simples.
 
 Il sert a comprendre :
 
-- ce qui pilote une competition ;
-- ce qui est visible par le public ;
+- ce qui appartient au portail metier ;
+- ce qui est consultable en permanence par le public ;
+- ce qui appartient au dispositif Direct des competitions nationales ;
 - ou sont stockees les donnees ;
 - quelles zones sont sensibles ;
 - quelles verifications faire avant de publier.
 
 ## Idee generale
 
-LivePalmes est une application web statique.
+LivePalmes est un ecosysteme web dont l'interface reste volontairement simple.
 
-Cela veut dire qu'elle est faite principalement avec :
+L'interface est faite principalement avec :
 
 - des pages HTML ;
 - des fichiers CSS pour l'apparence ;
 - des fichiers JavaScript pour les actions ;
-- Firebase pour partager les donnees en direct.
+- Firebase pour les comptes, les donnees, les traitements serveur, les fichiers et l'hebergement.
 
 Il n'y a pas de framework comme React, Vue ou Angular.
 
 Les pages HTML restent a la racine du projet pour garder des adresses simples et stables.
 
-## Deux parties a bien distinguer
+Le Portail LivePalmes est construit mais reste en cours de finalisation et de test. Il continue d'evoluer par ameliorations et petits modules complementaires lorsque le besoin est valide.
 
-LivePalmes a deux grandes familles de pages.
+## Trois composantes a bien distinguer
 
-### 1. Les pages de pilotage
+### 1. Le Portail LivePalmes
 
-Ces pages servent aux personnes qui organisent ou pilotent la competition.
+Le portail est le coeur fonctionnel actuel de l'ecosysteme. Il sert aux clubs, responsables regionaux, responsables nationaux et gestionnaires habilites.
+
+Page principale :
+
+- `portail.html`.
+
+Le portail permet notamment :
+
+- de gerer les comptes, droits et perimetres d'intervention ;
+- de preparer les competitions et leur programme ;
+- aux clubs de gerer nageurs, officiels et engagements ;
+- de produire les recapitulatifs PDF et exports WinPalme ;
+- d'importer et corriger les performances ;
+- de mettre a jour les Records de France et MPF ;
+- d'acceder aux espaces DTN et d'administration selon les droits.
+
+Il utilise principalement :
+
+- les modules `assets/livepalmes-admin-*.js` ;
+- Firebase Authentication ;
+- Firestore ;
+- les Cloud Functions.
+
+Chaque compte ne voit et ne modifie que les espaces autorises par ses capacites et son perimetre.
+
+### 2. L'espace public LivePalmes
+
+Cet espace est consultable toute l'annee, sans connexion, par les nageurs, clubs, entraineurs et familles.
 
 Exemples :
 
-- `pilotage-livepalmes.html` : acces global au pilotage ;
+- `index.html` ou `/` : accueil public de l'ecosysteme ;
+- `public.html` : copie de compatibilite de cet accueil ;
+- `performances/records.html` : Records de France ;
+- `performances/mpf.html` : meilleures performances francaises ;
+- `performances/tops.html` : classements TOP ;
+- `performances/nageur.html` : fiches et historiques des nageurs.
+
+Ces pages lisent surtout des fichiers publics prepares et optimises. Elles ne doivent pas parcourir directement la grande base interne des performances.
+
+### 3. LivePalmes Direct
+
+LivePalmes Direct est un dispositif distinct, utilise uniquement pour les competitions nationales concernees. Il ne faut pas le melanger avec la preparation des competitions et les engagements du portail.
+
+Il comprend les consoles terrain :
+
+- `pilotage-livepalmes.html` : acces au pilotage du Direct ;
 - `live.html` : console Live ;
 - `speaker.html` : console Speaker ;
 - `ja.html` : console Juge Arbitre ;
@@ -45,69 +88,58 @@ Exemples :
 - `bureau-perf.html` : bureau des performances ;
 - `secretariat.html` : secretariat.
 
-Ces pages utilisent le moteur interne de LivePalmes :
+Il comprend aussi les pages publiques liees au deroulement de cette competition :
 
-- `app.js` ;
-- les modules `assets/livepalmes-*.js` ;
-- Firebase Authentication ;
-- Firestore ;
-- les Cloud Functions.
-
-Elles peuvent lire et ecrire des donnees, selon les droits de l'utilisateur.
-
-### 2. Les pages publiques
-
-Ces pages sont faites pour les visiteurs, nageurs, clubs, entraineurs et familles.
-
-Exemples :
-
-- `public.html` ou `/` : accueil public ;
 - `series-public.html` ou `/series` : series publiees ;
 - `resultats.html` ou `/resultats` : resultats publies ;
 - `medailles.html` : tableau des medailles ;
 - `archives.html` : archives.
 
-Ces pages utilisent surtout :
+Les consoles utilisent notamment :
+
+- `app.js` ;
+- les modules `assets/livepalmes-*.js` ;
+- Firebase Authentication, Firestore et les Cloud Functions.
+
+Les pages publiques du Direct utilisent surtout :
 
 - `public.css` ;
 - les scripts `assets/pages/*.js` ;
 - des donnees publiees dans Firebase ou dans des fichiers publics.
 
-Elles ne chargent pas `app.js`.
+Elles ne chargent pas `app.js` et ne permettent pas de piloter la competition.
 
-Elles ne doivent pas permettre de piloter la competition.
+## Relations entre les composantes
 
-## Relation entre pilotage et public
+Le portail, l'espace public permanent et le Direct appartiennent au meme ecosysteme, mais repondent a des usages differents.
 
-La partie pilotage et les pages publiques sont separees cote interface.
+Le portail gere les donnees metier durables :
 
-Mais elles partagent certaines donnees, ce qui est normal.
+- comptes et droits ;
+- clubs, nageurs et officiels ;
+- preparation des competitions et engagements ;
+- performances, Records et MPF.
 
-Schema simple :
+Une partie de ces donnees est transformee en fichiers rapides pour l'espace public permanent.
+
+Le Direct possede son propre parcours pour une competition nationale :
 
 ```text
-Consoles de pilotage
+Consoles LivePalmes Direct
   -> publient series, resultats, medailles, archives
   -> Firebase / fichiers publics
-  -> pages publiques affichent ces informations
+  -> pages publiques du Direct affichent ces informations
 ```
 
-Autrement dit :
-
-- le pilotage ecrit les informations ;
-- Firebase ou les fichiers publics servent de tableau d'affichage ;
-- les pages publiques lisent et affichent.
-
-Une erreur de publication cote pilotage peut donc etre visible cote public.
-
-Mais un visiteur public ne doit pas pouvoir modifier ou piloter la competition.
+Le fait que le Direct partage Firebase et certains composants techniques avec le portail ne signifie pas qu'il soit utilise pour toutes les competitions.
 
 ## Organisation des fichiers
 
 ### Pages HTML principales
 
-- `index.html` : accueil historique et acces aux consoles ;
-- `public.html` : accueil public ;
+- `portail.html` : portail metier principal ;
+- `index.html` : accueil public principal de l'ecosysteme ;
+- `public.html` : copie de compatibilite de l'accueil public ;
 - `pilotage-livepalmes.html` : page de pilotage ;
 - `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : consoles dediees ;
 - `resultats.html`, `series-public.html`, `medailles.html`, `archives.html` : pages publiques ;
@@ -130,11 +162,17 @@ Mais un visiteur public ne doit pas pouvoir modifier ou piloter la competition.
 - `assets/livepalmes-results-*.js` : resultats et publication ;
 - `assets/livepalmes-result-*.js` : lecture PDF, publication, maintenance ;
 - `assets/livepalmes-final-*.js` : finalistes, forfaits, repechages ;
-- `assets/livepalmes-admin-*.js` : portail ;
 - `assets/livepalmes-publication.js` : preparation des donnees publiees ;
 - `assets/livepalmes-firestore-refs.js` : acces aux chemins Firestore.
 
 Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y remettre de grosse logique metier.
+
+### JavaScript du portail
+
+- `assets/livepalmes-admin-portal.js` : assembleur principal du portail ;
+- `assets/livepalmes-admin-auth.js` : connexion et session ;
+- `assets/livepalmes-admin-*.js` : vues et operations administratives ;
+- `performances/public/admin*.js` et `performances/public/import-competitions.js` : gestion des donnees sportives integree au portail.
 
 ### JavaScript des pages publiques
 
@@ -174,6 +212,10 @@ Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent acti
 Les destinataires des courriels d'engagements sont conserves dans 32 fragments par capacite. Ils sont mis a jour a chaque modification d'un utilisateur. L'initialisation automatique est plafonnee a 505 lectures reparties entre les trois capacites et son etat ; au-dela, une reconstruction nationale paginee de 250 utilisateurs maximum par appel est obligatoire.
 
 Les parcours interactifs des engagements n'effectuent aucune reconstruction massive automatique. Le calendrier et les effectifs clubs lisent leurs documents agreges, maintenus par les declencheurs Firestore. Le calcul d'un temps lit le cache du nageur puis, si necessaire, son unique fichier public `performance-public-firestore/swimmers/`. Un agregat ou fichier absent produit un etat d'indisponibilite explicite ; les reconstructions nationales volontaires sont paginees et plafonnees sous mille lectures par appel.
+
+Le calendrier club conserve aussi un index `engagementClubCompetitionIndexes` par club. Sa premiere lecture couvre au maximum les saisons demandees, puis les declencheurs d'engagement le maintiennent. Les statistiques detaillees d'une competition sont compressees dans `engagementCompetitionStatisticsCache` et invalidees a chaque modification de la competition ou de ses engagements. Le suivi des courriels est pagine par 100 lignes dans le portail.
+
+L'annuaire des acces utilise les cles composees `accessDirectoryKeys` une fois l'etat `accessDirectoryIndexState/default` passe a `ready`. Avant cet etat, la fonction conserve automatiquement son parcours borne historique. Pour une mise en service, deployer d'abord les index de `firestore.indexes.json` et les Cloud Functions, appeler `rebuildAccessDirectoryIndexNextPage` par pages jusqu'a `completed: true`, puis seulement publier le portail. Cette reconstruction est une action nationale explicite ; elle ne doit pas etre lancee pendant une verification locale.
 
 ## Donnees et Firebase
 
@@ -281,7 +323,7 @@ Ces fonctions font partie des zones sensibles.
 
 ## Pages consoles generees
 
-Les pages consoles dediees sont generees depuis `index.html`.
+Les pages consoles dediees sont generees depuis `pilotage-livepalmes.html`.
 
 Commande :
 
@@ -298,7 +340,7 @@ Pages concernees :
 - `bureau-perf.html` ;
 - `secretariat.html`.
 
-Apres une modification du socle console dans `index.html`, il faut regenerer ou verifier ces pages.
+Apres une modification du socle console dans `pilotage-livepalmes.html`, il faut regenerer ou verifier ces pages.
 
 La verification globale le controle automatiquement.
 
@@ -329,7 +371,7 @@ Demander validation avant une modification importante sur :
 
 ## Regles simples pour modifier LivePalmes
 
-1. Identifier si la demande concerne le pilotage, le public, les performances ou Firebase.
+1. Identifier si la demande concerne le portail, l'espace public permanent, le Direct ou Firebase.
 2. Lire le fichier existant le plus proche du besoin.
 3. Modifier le plus petit nombre de fichiers possible.
 4. Ne pas creer une nouvelle architecture si un module existe deja.
@@ -386,14 +428,10 @@ Tester manuellement en particulier apres une modification sur :
 ## Resume ultra court
 
 ```text
-Pilotage competition
-  -> ecrit et publie
-  -> Firebase / fichiers publics
-  -> pages publiques lisent et affichent
+LivePalmes
+  -> Portail : preparation, engagements, comptes, droits et donnees sportives
+  -> Public : Records, MPF, TOP, performances et fiches nageurs
+  -> Direct national : consoles, series et resultats en direct
 ```
 
-Le pilotage et le public sont separes cote interface.
-
-Ils sont relies par les donnees publiees.
-
-Les pages publiques ne doivent jamais devenir des pages de pilotage.
+Les trois composantes partagent une infrastructure technique, mais leurs responsabilites restent separees.

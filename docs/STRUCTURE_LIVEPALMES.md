@@ -2,7 +2,9 @@
 
 <!-- description: Carte fonctionnelle des pages, dossiers et grandes zones du dépôt LivePalmes. -->
 
-Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de LivePalmes sans imposer de deplacement de fichiers.
+Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de l'ecosysteme LivePalmes sans imposer de deplacement de fichiers.
+
+Le Portail LivePalmes est le coeur fonctionnel actuel. Il est en cours de finalisation et de test. Les espaces publics permanents et le dispositif Direct national sont des composantes distinctes.
 
 ## Principe important
 
@@ -22,13 +24,46 @@ Exemples :
 
 Le dossier peut donc paraitre charge a la racine, mais une partie de cette organisation est volontaire.
 
-## 1. Console competition
+## 1. Portail LivePalmes
 
-Cette partie concerne les utilisateurs en competition : juges, speaker, JA, video, secretariat, bureau performance et pilotage.
+Cette partie concerne la preparation des competitions et des engagements, les espaces club, region et national, ainsi que la gestion des donnees sportives, des comptes et des droits.
+
+Page principale :
+
+- `portail.html`
+
+Principaux espaces fonctionnels :
+
+- espace club : competitions, nageurs, officiels et engagements ;
+- organisation des competitions : calendrier, parametrage, programme, documents et diffusion ;
+- donnees sportives : Records / MPF, imports et corrections ;
+- espace DTN ;
+- administration nationale ;
+- gestion des utilisateurs, demandes d'acces et habilitations.
+
+Styles principaux :
+
+- `styles.css`
+- `assets/livepalmes-admin-portal.css`
+
+Scripts principaux :
+
+- `assets/livepalmes-admin-portal.js`
+- `assets/livepalmes-admin-auth.js`
+- `assets/livepalmes-admin-*.js`
+- `performances/public/admin*.js`
+- `performances/public/import-competitions.js`
+
+Le portail utilise aussi les Cloud Functions de `functions/` pour les operations sensibles et les traitements serveur.
+
+## 2. LivePalmes Direct - consoles nationales
+
+Cette partie concerne les utilisateurs des competitions nationales equipees de LivePalmes Direct : juges, speaker, JA, video, secretariat, bureau performance et pilotage.
+
+Ces consoles ne sont pas utilisees pour toutes les competitions et ne doivent pas etre confondues avec leur preparation dans le portail.
 
 Pages principales :
 
-- `index.html`
 - `live.html`
 - `speaker.html`
 - `ja.html`
@@ -36,20 +71,17 @@ Pages principales :
 - `bureau-perf.html`
 - `secretariat.html`
 - `pilotage-livepalmes.html`
-- `portail.html`
 
 Styles principaux :
 
 - `styles.css`
 - `console.css`
-- `assets/livepalmes-admin-portal.css`
 - `assets/livepalmes-admin-session-badge.css`
 
 Scripts principaux :
 
 - `app.js`
 - `assets/livepalmes-app-*.js`
-- `assets/livepalmes-admin-*.js`
 - `assets/livepalmes-alert-*.js`
 - `assets/livepalmes-console-*.js`
 - `assets/livepalmes-decision-*.js`
@@ -72,13 +104,12 @@ Generation des pages consoles :
 - `tools/build-console-pages.js`
 - `tools/check-console-page-loads.js`
 
-## 2. Live public competition
+## 3. Publication publique du Direct
 
-Cette partie concerne le public pendant une competition : series, resultats, medailles, archives et vues PDF.
+Cette partie accompagne LivePalmes Direct pendant une competition nationale : series, resultats, medailles, archives et vues PDF.
 
 Pages principales :
 
-- `public.html`
 - `resultats.html`
 - `series-public.html`
 - `medailles.html`
@@ -108,9 +139,9 @@ Scripts principaux :
 - `assets/pages/series-pdf.js`
 - `assets/public/livepalmes-public-*.js`
 
-## 3. Performances consultables tout le temps
+## 4. Espace public permanent
 
-Cette partie concerne les records, MPF, TOP, fiches nageurs, imports et donnees publiques de performances.
+Cette partie concerne les Records, MPF, TOP, fiches nageurs et donnees publiques de performances consultables toute l'annee, sans connexion.
 
 Dossier principal :
 
@@ -118,6 +149,8 @@ Dossier principal :
 
 Pages principales :
 
+- `index.html`
+- `public.html`
 - `performances/index.html`
 - `performances/records.html`
 - `performances/mpf.html`
@@ -125,7 +158,7 @@ Pages principales :
 - `performances/nageur.html`
 - `performances/construction.html`
 
-Les interfaces de gestion des performances sont integrees au portail principal :
+Les interfaces de gestion de ces donnees sont integrees au Portail LivePalmes :
 
 - `portail.html#records-mpf`
 - `portail.html#import-competitions`
@@ -151,7 +184,7 @@ Donnees publiques :
 
 Attention : ce dossier contient beaucoup de fichiers generes. Ce volume est normal.
 
-## 4. Technique et maintenance
+## 5. Technique et maintenance
 
 Firebase :
 
@@ -172,7 +205,7 @@ Documentation :
 
 - `docs/`
 - `README.md`
-- `AGENTS.MD`
+- `AGENTS.md`
 
 Sauvegardes et traces locales :
 
