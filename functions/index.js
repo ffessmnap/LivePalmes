@@ -6174,7 +6174,7 @@ function engagementTxtDownloadUrl(storagePath, token) {
 
 function engagementTxtSourceHash(competition = {}, entries = [], clubsById = new Map()) {
   return stableHash(JSON.stringify({
-    format: "winpalme-v1",
+    format: "winpalme-v2",
     competition: {
       id: competition.id,
       name: competition.name,

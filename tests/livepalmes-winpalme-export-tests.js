@@ -4,7 +4,9 @@ const {
   categoryCode,
   formatDate,
   formatTime,
+  regionCode,
   relayCategoryCode,
+  relayMemberIds,
   stableMeetingId,
   swimmerWinPalmeId
 } = require("../functions/winpalme-export");
@@ -20,6 +22,10 @@ assert.equal(categoryCode("M", "F"), "FMI");
 assert.equal(categoryCode("S", "M"), "HSE");
 assert.equal(categoryCode("M50+", "F"), "F50+");
 assert.equal(relayCategoryCode("S", "mixed"), "XSE");
+assert.equal(regionCode({ regionId: "4" }), "CNNP");
+assert.equal(regionCode({ regionId: "5" }), "CMAS");
+assert.equal(regionCode({ regionId: "10" }), "OPM");
+assert.deepEqual(relayMemberIds({ members: [] }), ["", "", "", ""]);
 
 const officialFederalNumbers = new Set(["07780252", "03290017", "08110293"]);
 assert.deepEqual(reconcileFederalNumber("07780252", officialFederalNumbers), {
@@ -74,7 +80,7 @@ const competition = {
   location: "La Roche-sur-Yon",
   date: "2026-06-06"
 };
-assert.match(stableMeetingId(competition), /^LP20260606\d{4}$/);
+assert.match(stableMeetingId(competition), /^CNNP20260606\d{4}$/);
 assert.equal(swimmerWinPalmeId({ swimmerIndexId: "3631" }), "3631");
 assert.match(swimmerWinPalmeId({ swimmerIndexId: "new-swimmer-hash" }), /^\d{9}$/);
 
@@ -105,12 +111,65 @@ const result = buildWinPalmeCompetitionTxt(competition, [{
 }], new Map(clubs.map((club) => [club.clubId, club])), { generatedAt: "2026-05-30T00:00:00+02:00" });
 
 const output = result.buffer.toString("utf8");
+assert.ok(output.startsWith("XXX;GENERER PAR LIVEPALMES le 30-05-2026 00:00\r\n\r\n"));
+assert.match(output, /\r\nWID;CNNP20260606\d{4};\r\n/);
 assert.ok(output.includes("XXX;RENCONTRE;La Roche-sur-Yon;06/06/2026;Piscine;\r\n"));
 assert.ok(output.includes("CLU;CNHC;Club Nautique de Houilles Carrières;07780252;IDF;;\r\n"));
 assert.ok(output.includes("NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50BI;002684;H50+;3631;;\r\n"));
 assert.ok(output.includes("REL;CNHC;XSE;4X100SB;044000;3631;18094;18134;10146;\r\n"));
 assert.ok(output.includes("CEQ;BIRNAL-PETIT;Carole;CNHC;30/11/2022;;\r\n"));
 assert.equal(/(^|[^\r])\n/.test(output), false);
+assert.equal(result.buffer.subarray(0, 3).equals(Buffer.from([0xEF, 0xBB, 0xBF])), false);
+output.split("\r\n").filter((row) => row.startsWith("REL;")).forEach((row) => {
+  assert.equal(row.split(";").length, 10);
+});
+
+const goldenResult = buildWinPalmeCompetitionTxt({
+  ...competition,
+  winPalmeId: "CNNP202606064981"
+}, [{
+  clubId: "106",
+  clubCode: "CNHC",
+  clubName: "Club Nautique de Houilles Carrières",
+  swimmers: [{
+    swimmerIndexId: "3631",
+    lastName: "BULTEL",
+    firstName: "Stéphane",
+    birthDate: "1970-07-04",
+    sex: "M",
+    category: "M50+",
+    individualEntries: [
+      { eventCode: "50SF", entryTime: "25.01" },
+      { eventCode: "50BI", entryTime: "26.84" }
+    ]
+  }],
+  relays: [{
+    category: "S",
+    genderMode: "mixed",
+    eventCode: "4X100SB",
+    entryTime: "4:40.00",
+    members: []
+  }],
+  teamLeader: { mode: "person", lastName: "BIRNAL-PETIT", firstName: "carole", birthDate: "2022-11-30" }
+}], new Map(clubs.map((club) => [club.clubId, club])), { generatedAt: "2026-05-30T00:00:00+02:00" });
+
+assert.equal(goldenResult.buffer.toString("utf8"), [
+  "XXX;GENERER PAR LIVEPALMES le 30-05-2026 00:00",
+  "",
+  "XXX;RENCONTRE;La Roche-sur-Yon;06/06/2026;Piscine;",
+  "",
+  "WID;CNNP202606064981;",
+  "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "CLU;CNHC;Club Nautique de Houilles Carrières;07780252;IDF;;",
+  "",
+  "NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50BI;002684;H50+;3631;;",
+  "NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50SF;002501;H50+;3631;;",
+  "REL;CNHC;XSE;4X100SB;044000;;;;;",
+  "CEQ;BIRNAL-PETIT;carole;CNHC;30/11/2022;;",
+  "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx",
+  "",
+  ""
+].join("\r\n"));
 
 assert.throws(() => buildWinPalmeCompetitionTxt(competition, [{
   clubId: "missing",
