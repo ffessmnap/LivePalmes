@@ -46,6 +46,10 @@ const FIREBASE_CONFIG = {
   appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
 };
 const FIREBASE_FUNCTIONS_REGION = "europe-west1";
+// Cle publique reCAPTCHA Enterprise App Check. Elle doit etre renseignee apres
+// l'enregistrement de l'application web dans Firebase Console > App Check.
+// Laisser vide conserve le comportement actuel et permet un deploiement progressif.
+const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY = "";
 const LOCAL_FUNCTIONS_EMULATOR = (() => {
   const params = new URLSearchParams(window.location.search || "");
   const enabled = params.get("emulator") === "1" || params.get("functionsEmulator") === "1";
@@ -149,6 +153,9 @@ const fallbackData = {
     speakerInfoSheets: SPEAKER_INFO_SHEETS,
     firebaseConfig: FIREBASE_CONFIG,
     firebaseFunctionsRegion: FIREBASE_FUNCTIONS_REGION,
+    appCheck: {
+      recaptchaEnterpriseSiteKey: APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY
+    },
     localFunctionsEmulator: LOCAL_FUNCTIONS_EMULATOR,
     configureFunctionsService,
     performanceAdditionalDataUrl: PERFORMANCE_ADDITIONAL_DATA_URL,

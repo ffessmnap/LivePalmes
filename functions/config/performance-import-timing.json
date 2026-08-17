@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "expectedPerformanceCount": 4287,
+  "competitions": [
+    {
+      "importId": "321ee91d055c8a0469dd526c99dfbfd2",
+      "seasonYear": 2019,
+      "competition": "27th CMAS Finswimming European Championship",
+      "location": "Ioannina, Grece",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "c686b9e90ab1ad44aa1c17ca582a9495",
+      "seasonYear": 2021,
+      "competition": "17th CMAS Finswimming Junior World Championship",
+      "location": "Lignano Sabbiadoro, Italie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "e85c9b1d6be5fe668996fc4fe22a07e1",
+      "seasonYear": 2021,
+      "competition": "CMAS Finswimming World Championship Tomsk 2021",
+      "location": "Tomsk, Russie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "0bfabff93e5df3a85d41a738c2cff1f5",
+      "seasonYear": 2022,
+      "competition": "17th CMAS European Junior Finswimming Championship",
+      "location": "Poznan, Pologne",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "6b03bd6da69534ebb1001ea07d4f0c61",
+      "seasonYear": 2022,
+      "competition": "CMAS Finswimming World Championship Cali 2022",
+      "location": "Cali, Colombie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "76ea53200b83c165768639a61e5f2f76",
+      "seasonYear": 2023,
+      "competition": "18th CMAS Finswimming World Junior Championship",
+      "location": "Cairo, Egypte",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "1becfc5181476640eb14c559d3b0fa78",
+      "seasonYear": 2023,
+      "competition": "28th CMAS Finswimming European Championship",
+      "location": "Godollo, Hongrie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "2b9dd3b3c3f7787b375e5cb106111d80",
+      "seasonYear": 2023,
+      "competition": "3rd CMAS Finswimming World Masters",
+      "location": "Cairo, Egypte",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "5d3d37382a5f599d77fc130f4897b99e",
+      "seasonYear": 2024,
+      "competition": "18th CMAS European Championship Finswimming Indoor Juniors",
+      "location": "Klaipeda, Lituanie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "3df7d1a3a8c05d428e13c5e131941ba9",
+      "seasonYear": 2024,
+      "competition": "23rd CMAS World Championship Finswimming Indoor",
+      "location": "Belgrade, Serbie",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "2741a950dbf9d03ca525a2387658e72d",
+      "seasonYear": 2025,
+      "competition": "2025 CMAS European Championship Finswimming Indoor",
+      "location": "Olsztyn, Pologne",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "ecd68d7077207993196cce38c7971ced",
+      "seasonYear": 2025,
+      "competition": "2025 CMAS World Championship Finswimming Indoor Juniors - Chios",
+      "location": "Chios, Grece",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "e2e0e43c290a36b3b163caaec6cae361",
+      "seasonYear": 2025,
+      "competition": "Championnat du Monde Masters",
+      "location": "Chios (GRE), Grèce",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "a43c50a3ecc05a04599264d00eff449c",
+      "seasonYear": 2026,
+      "competition": "2026 CMAS European Championship Finswimming Indoor Juniors - Chios",
+      "location": "Chios, Grece",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "2d137487f341b60db756223481b537c1",
+      "seasonYear": 2026,
+      "competition": "2026 CMAS World Championship Finswimming Indoor",
+      "location": "Incheon, Corée du Sud",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "e40fe3129ffd5d76286774193a2855ed",
+      "seasonYear": 2026,
+      "competition": "Championnat de France Elite Piscine",
+      "location": "Limoges",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "d18c4f3dc04b5cc5402f340fe2af1ca5",
+      "seasonYear": 2026,
+      "competition": "Championnat de France Piscine Masters et Trophée Damien Hébert",
+      "location": "La Roche-Sur-Yon",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "dbc3b0332ac4ed7e67afb459e911f243",
+      "seasonYear": 2026,
+      "competition": "Championnat de Grèce Masters",
+      "location": "Thessaloniki, Grèce",
+      "timingType": "electronic"
+    },
+    {
+      "importId": "d7ed8c863962e177507dc09796026dea",
+      "seasonYear": 2026,
+      "competition": "Championnat du Monde Masters",
+      "location": "Sharm el-Sheikh (EGP), Egypte",
+      "timingType": "electronic"
+    }
+  ]
+}

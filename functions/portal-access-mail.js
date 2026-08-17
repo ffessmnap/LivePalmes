@@ -28,6 +28,32 @@ function engagementAccessAcknowledgement(profile = {}) {
   };
 }
 
+function engagementAccessRejection(profile = {}) {
+  const firstName = cleanMailText(profile.firstName);
+  const clubName = cleanMailText(profile.clubName || profile.newClub?.clubName);
+  const reason = cleanMailText(profile.resolutionReason);
+  const greeting = firstName ? `Bonjour ${firstName},` : "Bonjour,";
+  const clubLine = clubName ? ` concernant le club ${clubName}` : "";
+
+  return {
+    subject: "Votre demande d’accès LivePalmes a été refusée",
+    text: [
+      greeting,
+      "",
+      `Votre demande d’accès LivePalmes${clubLine} a été refusée.`,
+      "",
+      `Motif : ${reason || "Aucun motif communiqué."}`,
+      "",
+      "Vous pouvez transmettre une nouvelle demande après avoir corrigé les informations concernées.",
+      "",
+      "Sportivement,",
+      "L’équipe LivePalmes",
+      "Commission Nationale Nage avec Palmes – FFESSM"
+    ].join("\n")
+  };
+}
+
 module.exports = {
-  engagementAccessAcknowledgement
+  engagementAccessAcknowledgement,
+  engagementAccessRejection
 };

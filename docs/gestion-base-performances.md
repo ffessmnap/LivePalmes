@@ -190,6 +190,12 @@ La trame est ici :
 
 `docs/Trame_import_competition_internationale_LivePalmes.xlsx`
 
+Le type de chronometrage des imports historiques confirmes est conserve par identifiant d'import dans :
+
+`functions/config/performance-import-timing.json`
+
+Cette information est propagee dans la base consolidee et les fichiers publics lors de leur normalisation. Une valeur de chronometrage explicitement fournie par un import reste prioritaire.
+
 ## Etapes d'un import
 
 Un import ne va pas directement dans la base sans controle.

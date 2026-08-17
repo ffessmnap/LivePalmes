@@ -9,6 +9,9 @@
   };
   const ALL_CATEGORIES = ["P", "B", "M", "C", "J", "S", "M30+", "M40+", "M50+", "M60+", "M70+", "M80+"];
   const SENIOR_AND_OLDER_CATEGORIES = ["S", "M30+", "M40+", "M50+", "M60+", "M70+", "M80+"];
+  const TIME_GRID_IDS = ["TSP", "TRP", "TJP", "TEP", "TU16C2", "TU16C1"];
+  const LISTING_REFRESH_DELAYS_MS = [1500, 2500, 4000, 7000, 12000, 18000];
+  const LISTING_PREFERENCES_KEY = "livepalmes:dtn-listing-preferences";
   const EDF_STANDARDS = [
     { id: "TSP", label: "TSP", tabLabel: "Temps senior", tabGroup: "senior", description: "Temps senior piscine · tous âges", birthMin: 0 },
     { id: "TRP", label: "TRP", tabLabel: "Temps relève", tabGroup: "senior", description: "Temps relève piscine · 2005 et après", birthMin: 2005 },
@@ -25,6 +28,13 @@
     franceCompetitionIds: ["4978", "5039", "4979"],
     franceCompetitions: ["France des clubs · Dijon", "Meeting national de Rennes", "World Cup · Aix-en-Provence"],
     edfCompetitions: ["Meeting national de Rennes", "France des clubs · Dijon", "World Cup · Aix-en-Provence", "France Élite · Limoges"],
+    listingRules: {
+      releve: { id: "RELEVE", sourceId: "TRP", minAge: 0, maxAge: 21 },
+      espoir: [
+        { id: "TEC1", sourceId: "TU16C1", minAge: 14, maxAge: 15 },
+        { id: "TEP", sourceId: "TEP", minAge: 16, maxAge: 18 }
+      ]
+    },
     france: {
       F: {
         S: ["21.75", "48.90", "1:50.00", "4:02.00", "8:33.00", "18:00.00", "20.75", "48.40", "1:49.00", "4:40.00", "25.50", "55.80", "2:03.00", "4:30.00"],
@@ -46,11 +56,11 @@
         "200SF": ["012239", "012489", "012819", "013089", "013399", "013749"],
         "400SF": ["030299", "030699", "031479", "031879", "032599", "033699"],
         "800SF": ["063399", null, "065499", "070199", "071799", "073599"],
-        "1500SF": ["124799", null, "131899", "133199", null, null],
+        "1500SF": ["124799", null, "131899", "133199", null, "143699"],
         "50AP": ["001459", "001499", "001569", "001619", "001719", "001799"],
         "100IS": ["003359", null, "003689", "003849", "003999", "004249"],
         "200IS": ["011699", null, "012399", "012649", "013199", "013699"],
-        "400IS": ["025299", null, "030449", "031019", null, null]
+        "400IS": ["025299", null, "030449", "031019", null, "033199"]
       },
       F: {
         "50BI": ["002219", "002269", "002329", "002359", "002439", "002509"],
@@ -62,20 +72,45 @@
         "200SF": ["013169", "013399", "013599", "013749", "014399", "014699"],
         "400SF": ["032249", "032599", "033179", "033399", "034399", "035199"],
         "800SF": ["070999", null, "071999", "072699", "074999", "080299"],
-        "1500SF": ["135399", null, "140899", "141999", null, null],
+        "1500SF": ["135399", null, "140899", "141999", null, "152500"],
         "50AP": ["001669", "001699", "001759", "001789", "001929", "002009"],
         "100IS": ["003779", null, "004039", "004159", "004399", "004599"],
         "200IS": ["012599", null, "012999", "013349", "013899", "014199"],
-        "400IS": ["030999", null, "032079", "032619", null, null]
+        "400IS": ["030999", null, "032079", "032619", null, "034200"]
       }
     }
   }];
 
   const elements = {};
-  const state = { grid: "france", sex: "F", edfTab: "TSP", seasonId: SEASONS[0].id, initialized: false, requestId: 0 };
+  const state = {
+    grid: "france",
+    sex: "F",
+    edfTab: "TSP",
+    listingTab: "releve",
+    listingFilters: { performance: "all", sex: "all", club: "all", course: "all" },
+    seasonId: SEASONS[0].id,
+    initialized: false,
+    requestId: 0
+  };
   const rowCache = new Map();
   const overviewCache = new Map();
+  const listingOverviewCache = new Map();
+  let currentListingOverview = null;
   let xlsxLoadPromise = null;
+
+  function restoreListingPreferences() {
+    try {
+      const preferences = JSON.parse(global.sessionStorage?.getItem(LISTING_PREFERENCES_KEY) || "{}");
+      if (["releve", "espoir"].includes(preferences.tab)) state.listingTab = preferences.tab;
+      if (["all", "F", "M"].includes(preferences.sex)) state.listingFilters.sex = preferences.sex;
+    } catch {}
+  }
+
+  function persistListingPreferences() {
+    try {
+      global.sessionStorage?.setItem(LISTING_PREFERENCES_KEY, JSON.stringify({ tab: state.listingTab, sex: state.listingFilters.sex }));
+    } catch {}
+  }
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
@@ -116,11 +151,50 @@
   }
 
   function edfThresholdPayload(season, sex) {
-    return EDF_STANDARDS.map((standard, index) => ({
+    return EDF_STANDARDS.map((standard) => ({
       id: standard.id,
       birthMin: standard.birthMin,
-      thresholds: Object.fromEntries(COURSE_ORDER.map((course) => [course, encodedTime(season.edf[sex][course]?.[index])?.value || 0]))
+      thresholds: Object.fromEntries(COURSE_ORDER.map((course) => [course, encodedTime(season.edf[sex][course]?.[TIME_GRID_IDS.indexOf(standard.id)])?.value || 0]))
     }));
+  }
+
+  function listingRulesPayload(season) {
+    const rules = [season.listingRules.releve, ...season.listingRules.espoir];
+    return rules.map((rule) => ({
+      ...rule,
+      thresholds: Object.fromEntries(["F", "M"].map((sex) => [sex, Object.fromEntries(COURSE_ORDER.map((course) => {
+        const encoded = season.edf[sex][course]?.[TIME_GRID_IDS.indexOf(rule.sourceId)];
+        return [course, encodedTime(encoded)?.value || 0];
+      }))]))
+    }));
+  }
+
+  function loadListingOverview(season, options = {}) {
+    const key = season.id;
+    if (!options.rebuild && !options.refresh && listingOverviewCache.has(key)) return listingOverviewCache.get(key);
+    const promise = waitForAuthenticatedUser().then(() => {
+      const functions = functionsService();
+      if (!functions?.httpsCallable) throw new Error("Service DTN indisponible");
+      return functions.httpsCallable("getDtnListingOverview")({
+        seasonYear: season.performanceSeason,
+        rules: listingRulesPayload(season),
+        rebuild: options.rebuild === true
+      });
+    }).then((result) => result.data || {});
+    listingOverviewCache.set(key, promise);
+    promise.catch(() => listingOverviewCache.delete(key));
+    return promise;
+  }
+
+  async function waitForListingRefresh(season, initialOverview) {
+    let overview = initialOverview;
+    for (const delay of LISTING_REFRESH_DELAYS_MS) {
+      if (overview?.cache?.hit && !overview.cache.pending) return { overview, completed: true };
+      await new Promise((resolve) => global.setTimeout(resolve, delay));
+      if (state.grid !== "listing" || selectedSeason().id !== season.id) return { overview, completed: false, cancelled: true };
+      overview = await loadListingOverview(season, { refresh: true });
+    }
+    return { overview, completed: Boolean(overview?.cache?.hit && !overview.cache.pending) };
   }
 
   function loadEdfOverview(season, sex, options = {}) {
@@ -184,6 +258,46 @@
     }
   }
 
+  async function refreshListingQualifications() {
+    const season = selectedSeason();
+    const button = elements.refresh;
+    if (!button) return;
+    button.disabled = true;
+    elements.refreshStatus.dataset.tone = "";
+    elements.refreshStatus.textContent = "Recalcul en cours…";
+    try {
+      await waitForAuthenticatedUser();
+      const functions = functionsService();
+      if (!functions?.httpsCallable) throw new Error("Service DTN indisponible");
+      await functions.httpsCallable("refreshDtnListingCache")({ seasonYear: season.performanceSeason });
+      listingOverviewCache.delete(season.id);
+      let overview = await loadListingOverview(season, { rebuild: true });
+      renderListingContent(overview);
+      if (overview.cache?.pending) {
+        elements.refreshStatus.textContent = "Recalcul lancé en arrière-plan. Vérification automatique en cours…";
+        const refreshResult = await waitForListingRefresh(season, overview);
+        if (refreshResult.cancelled) return;
+        overview = refreshResult.overview;
+        renderListingContent(overview);
+        elements.refreshStatus.textContent = refreshResult.completed
+          ? "Mise en liste actualisée."
+          : "Le calcul continue en arrière-plan. La liste sera vérifiée à la prochaine ouverture.";
+      } else {
+        elements.refreshStatus.textContent = "Mise en liste actualisée.";
+      }
+    } catch (error) {
+      elements.refreshStatus.dataset.tone = "error";
+      elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function refreshCurrentQualifications() {
+    if (state.grid === "listing") return refreshListingQualifications();
+    return refreshEdfQualifications();
+  }
+
   function timeValue(display) {
     const value = String(display || "").trim().replace(",", ".");
     if (!value) return 0;
@@ -230,7 +344,7 @@
     elements.sexSegment.hidden = true;
     elements.grid.innerHTML = `
       <div class="admin-dtn-grid-head">
-        <div><span>Championnats de France</span><strong>Épreuves individuelles · Saison ${escapeHtml(season.label)}</strong></div>
+        <div><span>Championnats de France</span><strong>Épreuves individuelles</strong></div>
         <small>Cliquez sur un temps pour afficher les nageurs qualifiés.</small>
       </div>
       <div class="admin-dtn-table-wrap">
@@ -242,6 +356,7 @@
           }).join("")}</tr>`).join("")}</tbody>
         </table>
       </div>`;
+    elements.grid.after(elements.definitions);
   }
 
   function edfStandardFromOverview(overview, standardId) {
@@ -260,18 +375,21 @@
   }
 
   function edfExportHtml() {
-    return `<div class="admin-dtn-export">
-      <div class="admin-dtn-export-head"><strong>Export Excel</strong><button type="button" class="primary-button" data-dtn-edf-export>Exporter</button></div>
-      <div class="admin-dtn-export-options" role="group" aria-label="Référentiels à exporter">
-        ${EDF_STANDARDS.map((standard) => `<label><input type="checkbox" data-dtn-edf-export-standard value="${standard.id}" checked><span>${escapeHtml(standard.label)}</span></label>`).join("")}
+    return `<details class="admin-dtn-export">
+      <summary>Exporter Excel</summary>
+      <div class="admin-dtn-export-content">
+        <div class="admin-dtn-export-head"><strong>Référentiels à exporter</strong><button type="button" class="primary-button" data-dtn-edf-export>Exporter</button></div>
+        <div class="admin-dtn-export-options" role="group" aria-label="Référentiels à exporter">
+          ${EDF_STANDARDS.map((standard) => `<label><input type="checkbox" data-dtn-edf-export-standard value="${standard.id}" checked><span>${escapeHtml(standard.label)}</span></label>`).join("")}
+        </div>
+        <p class="admin-dtn-export-status" data-dtn-edf-export-status aria-live="polite"></p>
       </div>
-      <p class="admin-dtn-export-status" data-dtn-edf-export-status aria-live="polite"></p>
-    </div>`;
+    </details>`;
   }
 
   function edfStandardTableHtml(season, overview, loading = false) {
     const standard = EDF_STANDARDS.find((item) => item.id === state.edfTab) || EDF_STANDARDS[0];
-    const standardIndex = EDF_STANDARDS.findIndex((item) => item.id === standard.id);
+    const standardIndex = TIME_GRID_IDS.indexOf(standard.id);
     const rows = COURSE_ORDER.map((course) => {
       const time = encodedTime(season.edf[state.sex][course]?.[standardIndex]);
       const result = edfCourseFromOverview(overview, standard.id, course);
@@ -424,12 +542,16 @@
     elements.definitions.innerHTML = `<span class="admin-dtn-competition-scope"><strong>Périmètre</strong>TSP et TRP : ${escapeHtml(season.edfCompetitions.join(" · "))} · TJP et TEP : mêmes compétitions hors Limoges · TU16 : toutes les compétitions de la saison</span>`;
     elements.grid.innerHTML = `
       <div class="admin-dtn-grid-head">
-        <div><span>Équipe de France${summaryActive ? "" : ` · ${state.sex === "F" ? "Femmes" : "Hommes"}`}</span><strong>Temps piscine · Saison ${escapeHtml(season.label)}</strong></div>
-        <small>${summaryActive ? "Chaque sportif apparaît une seule fois par référentiel." : "Effectifs et détail par course."}</small>
+        <div><span>Équipe de France</span><strong>${summaryActive ? "Synthèse des sportifs" : "Temps piscine"}</strong></div>
+        <div class="admin-dtn-grid-actions"></div>
       </div>
       ${edfTabsHtml()}
       <div id="adminDtnEdfContent">${summaryActive ? edfSummaryHtml({}, true) : edfStandardTableHtml(season, {}, true)}</div>
       ${edfExportHtml()}`;
+
+    const gridActions = elements.grid.querySelector(".admin-dtn-grid-actions");
+    if (gridActions) gridActions.append(elements.sexSegment, elements.refreshBox);
+    elements.grid.after(elements.definitions);
 
     const renderKey = `${state.edfTab}|${state.sex}|${season.id}`;
     const content = elements.grid.querySelector("#adminDtnEdfContent");
@@ -445,12 +567,168 @@
     });
   }
 
+  function listingRows(overview, listingTab = state.listingTab) {
+    const standardIds = listingTab === "releve" ? ["RELEVE"] : ["TEC1", "TEP"];
+    return standardIds.flatMap((standardId) => {
+      const standard = (overview?.standards || []).find((item) => item.id === standardId);
+      return (standard?.athletes || []).map((athlete) => ({
+        ...athlete,
+        performance: standardId === "RELEVE" ? "TRP" : standardId,
+        sourceId: standard?.sourceId || ""
+      }));
+    }).sort((a, b) => String(a.lastName || a.swimmer).localeCompare(String(b.lastName || b.swimmer), "fr-FR") || String(a.firstName).localeCompare(String(b.firstName), "fr-FR"));
+  }
+
+  function filteredListingRows(overview, options = {}) {
+    return listingRows(overview).filter((athlete) => {
+      if (state.listingTab === "espoir" && state.listingFilters.performance !== "all" && athlete.performance !== state.listingFilters.performance) return false;
+      if (!options.ignoreSex && state.listingFilters.sex !== "all" && athlete.sex !== state.listingFilters.sex) return false;
+      if (state.listingFilters.club !== "all" && athlete.club !== state.listingFilters.club) return false;
+      if (state.listingFilters.course !== "all" && !(athlete.qualifications || []).some((qualification) => qualification.course === state.listingFilters.course)) return false;
+      return true;
+    });
+  }
+
+  function listingFilterOptions(overview) {
+    const rows = listingRows(overview);
+    const clubs = Array.from(new Set(rows.map((athlete) => athlete.club).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr-FR"));
+    const courses = COURSE_ORDER.filter((course) => rows.some((athlete) => (athlete.qualifications || []).some((qualification) => qualification.course === course)));
+    return { clubs, courses };
+  }
+
+  function listingQualificationDetails(athlete) {
+    const qualifications = athlete.qualifications || [];
+    return `<details class="admin-dtn-listing-details">
+      <summary>${qualifications.length} performance${qualifications.length > 1 ? "s" : ""}</summary>
+      <div class="admin-dtn-qualified-courses">${qualifications.map((qualification) => `<span class="admin-dtn-qualified-course">
+        <span><strong>${escapeHtml(COURSE_LABELS[qualification.course] || qualification.course)}</strong>${escapeHtml(qualification.time || "-")}</span>
+        <small><b>Minima ${escapeHtml(displayTimeValue(qualification.threshold))}</b> · ${escapeHtml(qualification.competition || "-")} · ${escapeHtml(formatDate(qualification.date))}</small>
+      </span>`).join("")}</div>
+    </details>`;
+  }
+
+  function renderListingContent(overview) {
+    currentListingOverview = overview;
+    const content = elements.grid?.querySelector("[data-dtn-listing-content]");
+    if (!content) return;
+    const rows = filteredListingRows(overview);
+    const rowsIgnoringSex = filteredListingRows(overview, { ignoreSex: true });
+    const filterOptions = listingFilterOptions(overview);
+    const sexCounts = {
+      all: rowsIgnoringSex.length,
+      F: rowsIgnoringSex.filter((athlete) => athlete.sex === "F").length,
+      M: rowsIgnoringSex.filter((athlete) => athlete.sex === "M").length
+    };
+    const tabCounts = {
+      releve: listingRows(overview, "releve").length,
+      espoir: listingRows(overview, "espoir").length
+    };
+    const releveTab = elements.grid?.querySelector('[data-dtn-listing-tab="releve"]');
+    const espoirTab = elements.grid?.querySelector('[data-dtn-listing-tab="espoir"]');
+    if (releveTab) releveTab.textContent = `Relève · ${tabCounts.releve}`;
+    if (espoirTab) espoirTab.textContent = `Espoir · ${tabCounts.espoir}`;
+    const cacheMessage = overview?.cache?.pending
+      ? (overview.cache.stale ? "Dernière vue affichée. Actualisation en arrière-plan." : "Calcul lancé en arrière-plan. Revenez dans quelques instants.")
+      : overview?.cache?.refreshRequired
+        ? (overview.cache.stale ? "Dernière vue disponible. Utilisez Recalculer pour l’actualiser." : "Mise en liste non calculée. Utilisez Recalculer pour la préparer.")
+        : "";
+    content.innerHTML = `
+      ${cacheMessage ? `<p class="admin-record-module-status">${escapeHtml(cacheMessage)}</p>` : ""}
+      <div class="admin-dtn-listing-filters" data-listing-tab="${escapeHtml(state.listingTab)}" aria-label="Filtres de la mise en liste">
+        ${state.listingTab === "espoir" ? `<label>Performance<select data-dtn-listing-filter="performance">
+          <option value="all">Tous</option><option value="TEP"${state.listingFilters.performance === "TEP" ? " selected" : ""}>TEP</option><option value="TEC1"${state.listingFilters.performance === "TEC1" ? " selected" : ""}>TEC1</option>
+        </select></label>` : ""}
+        <div class="admin-dtn-segment admin-dtn-listing-sex" role="group" aria-label="Sexe">
+          <button type="button" data-dtn-listing-sex="all" aria-pressed="${state.listingFilters.sex === "all" ? "true" : "false"}">Tous · ${sexCounts.all}</button>
+          <button type="button" data-dtn-listing-sex="F" aria-pressed="${state.listingFilters.sex === "F" ? "true" : "false"}">Femmes · ${sexCounts.F}</button>
+          <button type="button" data-dtn-listing-sex="M" aria-pressed="${state.listingFilters.sex === "M" ? "true" : "false"}">Hommes · ${sexCounts.M}</button>
+        </div>
+        <label>Club<select data-dtn-listing-filter="club"><option value="all">Tous</option>${filterOptions.clubs.map((club) => `<option value="${escapeHtml(club)}"${state.listingFilters.club === club ? " selected" : ""}>${escapeHtml(club)}</option>`).join("")}</select></label>
+        <label>Épreuve<select data-dtn-listing-filter="course"><option value="all">Toutes</option>${filterOptions.courses.map((course) => `<option value="${escapeHtml(course)}"${state.listingFilters.course === course ? " selected" : ""}>${escapeHtml(COURSE_LABELS[course] || course)}</option>`).join("")}</select></label>
+        <button type="button" class="primary-button" data-dtn-listing-export>Exporter Excel</button>
+      </div>
+      <div class="admin-dtn-results-wrap"><table class="admin-dtn-results-table admin-dtn-listing-table">
+        <thead><tr><th>Nom</th><th>Prénom</th><th>Année</th><th>Sexe</th><th>Club</th><th>Performance</th><th>Détail</th></tr></thead>
+        <tbody>${rows.length ? rows.map((athlete) => `<tr data-sex="${escapeHtml(athlete.sex)}">
+          <td data-label="Nom"><strong>${escapeHtml(athlete.lastName || athlete.swimmer || "-")}</strong></td>
+          <td data-label="Prénom">${escapeHtml(athlete.firstName || (!athlete.lastName ? "" : "-"))}</td>
+          <td data-label="Année">${escapeHtml(String(athlete.birthDate || "").slice(0, 4) || "-")}</td>
+          <td data-label="Sexe">${athlete.sex === "F" ? "F" : "H"}</td>
+          <td data-label="Club">${escapeHtml(athlete.club || "-")}</td>
+          <td data-label="Performance"><span class="admin-dtn-listing-badge" data-level="${escapeHtml(athlete.performance)}">${escapeHtml(athlete.performance)}</span></td>
+          <td data-label="Détail">${listingQualificationDetails(athlete)}</td>
+        </tr>`).join("") : '<tr><td colspan="7" class="admin-dtn-empty">Aucun sportif ne correspond aux critères.</td></tr>'}</tbody>
+      </table></div>`;
+  }
+
+  function renderListing(season) {
+    elements.sexSegment.hidden = true;
+    elements.definitions.hidden = false;
+    elements.definitions.innerHTML = `<span class="admin-dtn-competition-scope"><strong>Règles ${escapeHtml(season.label)}</strong>Relève : TRP jusqu’à 21 ans · Espoir : TEC1 de 14 à 15 ans, puis TEP de 16 à 18 ans · Priorité Relève sur Espoir · Performances actives de la saison en bassin de 50 m avec chronométrage électronique uniquement</span>`;
+    elements.grid.innerHTML = `
+      <div class="admin-dtn-grid-head">
+        <div><span>Mise en liste</span><strong>Sportifs éligibles</strong></div>
+      </div>
+      <div class="admin-dtn-listing-tabs" role="tablist" aria-label="Type de mise en liste">
+        <button type="button" role="tab" data-dtn-listing-tab="releve" aria-selected="${state.listingTab === "releve" ? "true" : "false"}">Relève</button>
+        <button type="button" role="tab" data-dtn-listing-tab="espoir" aria-selected="${state.listingTab === "espoir" ? "true" : "false"}">Espoir</button>
+      </div>
+      <div data-dtn-listing-content><p class="admin-dtn-summary-loading">Chargement de la mise en liste…</p></div>`;
+    elements.grid.querySelector(".admin-dtn-grid-head")?.append(elements.refreshBox);
+    elements.grid.after(elements.definitions);
+    const renderKey = `${state.listingTab}|${season.id}`;
+    currentListingOverview = null;
+    loadListingOverview(season).then((overview) => {
+      if (`${state.listingTab}|${selectedSeason().id}` !== renderKey || state.grid !== "listing") return;
+      renderListingContent(overview);
+    }).catch((error) => {
+      const content = elements.grid.querySelector("[data-dtn-listing-content]");
+      if (content) content.innerHTML = `<p class="admin-dtn-summary-loading" data-tone="error">Calcul indisponible : ${escapeHtml(error?.message || error)}</p>`;
+    });
+  }
+
+  async function exportListingQualifications(button) {
+    const status = elements.refreshStatus;
+    const rows = filteredListingRows(currentListingOverview || {});
+    button.disabled = true;
+    if (status) status.textContent = "Préparation du fichier Excel…";
+    try {
+      const XLSX = await loadXlsxLibrary();
+      const sheetRows = rows.length ? rows.map((athlete) => ({
+        "Nom": athlete.lastName || athlete.swimmer || "-",
+        "Prénom": athlete.firstName || "",
+        "Année de naissance": String(athlete.birthDate || "").slice(0, 4),
+        "Sexe": athlete.sex === "F" ? "Femme" : "Homme",
+        "Club": athlete.club || "-",
+        "Performance": athlete.performance,
+        "Performances qualifiantes": (athlete.qualifications || []).map((qualification) => `${COURSE_LABELS[qualification.course] || qualification.course} : ${qualification.time} (minima ${displayTimeValue(qualification.threshold)}) · ${qualification.competition || "-"} · ${formatDate(qualification.date)}`).join(" | ")
+      })) : [{ "Nom": "Aucun sportif affiché" }];
+      const worksheet = XLSX.utils.json_to_sheet(sheetRows);
+      worksheet["!cols"] = [{ wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 80 }];
+      if (rows.length) worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, state.listingTab === "releve" ? "Relève" : "Espoir");
+      XLSX.writeFile(workbook, `mise-en-liste-${state.listingTab}-${selectedSeason().id}.xlsx`);
+      if (status) status.textContent = `${rows.length} sportif${rows.length > 1 ? "s" : ""} exporté${rows.length > 1 ? "s" : ""}.`;
+    } catch (error) {
+      if (status) status.textContent = `Export impossible : ${error?.message || error}`;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   function renderGrid() {
     const season = selectedSeason();
+    if (elements.toolbar && elements.refreshBox?.parentElement !== elements.toolbar) elements.toolbar.append(elements.refreshBox);
+    if (elements.grid && elements.definitions?.nextElementSibling !== elements.grid) elements.grid.before(elements.definitions);
     elements.sexButtons.forEach((button) => button.setAttribute("aria-pressed", button.dataset.dtnSex === state.sex ? "true" : "false"));
-    elements.refreshBox.hidden = state.grid !== "edf";
-    if (state.grid !== "edf") elements.refreshStatus.textContent = "";
-    if (state.grid === "edf") renderEdf(season); else renderFrance(season);
+    if (elements.toolbar) elements.toolbar.hidden = true;
+    elements.refreshBox.hidden = state.grid === "france";
+    if (elements.refresh) elements.refresh.textContent = state.grid === "listing" ? "Recalculer la mise en liste" : "Recalculer les qualifications";
+    if (state.grid === "france") elements.refreshStatus.textContent = "";
+    if (state.grid === "edf") renderEdf(season);
+    else if (state.grid === "listing") renderListing(season);
+    else renderFrance(season);
     closeQualifiers();
   }
 
@@ -610,6 +888,7 @@
   function init() {
     if (state.initialized) return;
     elements.season = document.querySelector("#adminDtnSeason");
+    elements.toolbar = document.querySelector("#adminDtnToolbar");
     elements.grid = document.querySelector("#adminDtnGrid");
     elements.definitions = document.querySelector("#adminDtnDefinitions");
     elements.sexSegment = document.querySelector("#adminDtnSexSegment");
@@ -623,13 +902,36 @@
     elements.refreshStatus = document.querySelector("#adminDtnRefreshStatus");
     elements.sexButtons = Array.from(document.querySelectorAll("[data-dtn-sex]"));
     if (!elements.season || !elements.grid || !elements.qualifiers) return;
+    restoreListingPreferences();
     state.initialized = true;
     elements.season.innerHTML = SEASONS.map((season) => `<option value="${escapeHtml(season.id)}">${escapeHtml(season.label)}</option>`).join("");
     elements.season.value = state.seasonId;
     elements.season.addEventListener("change", () => { state.seasonId = elements.season.value; renderGrid(); });
-    elements.refresh?.addEventListener("click", refreshEdfQualifications);
+    elements.refresh?.addEventListener("click", refreshCurrentQualifications);
     elements.sexButtons.forEach((button) => button.addEventListener("click", () => { state.sex = button.dataset.dtnSex; renderGrid(); }));
     elements.grid.addEventListener("click", (event) => {
+      const listingExport = event.target.closest("[data-dtn-listing-export]");
+      if (listingExport) {
+        exportListingQualifications(listingExport);
+        return;
+      }
+      const listingTab = event.target.closest("[data-dtn-listing-tab]");
+      if (listingTab) {
+        state.listingTab = listingTab.dataset.dtnListingTab;
+        state.listingFilters.performance = "all";
+        state.listingFilters.club = "all";
+        state.listingFilters.course = "all";
+        persistListingPreferences();
+        renderListing(selectedSeason());
+        return;
+      }
+      const listingSex = event.target.closest("[data-dtn-listing-sex]");
+      if (listingSex && currentListingOverview) {
+        state.listingFilters.sex = listingSex.dataset.dtnListingSex;
+        persistListingPreferences();
+        renderListingContent(currentListingOverview);
+        return;
+      }
       const exportButton = event.target.closest("[data-dtn-edf-export]");
       if (exportButton) {
         exportEdfQualifications(exportButton);
@@ -656,11 +958,25 @@
       const button = event.target.closest("[data-dtn-time]");
       if (button) showQualifiers(button);
     });
+    elements.grid.addEventListener("change", (event) => {
+      const filter = event.target.closest("[data-dtn-listing-filter]");
+      if (!filter || !currentListingOverview) return;
+      state.listingFilters[filter.dataset.dtnListingFilter] = filter.value;
+      renderListingContent(currentListingOverview);
+    });
+    elements.grid.addEventListener("toggle", (event) => {
+      const details = event.target.closest?.(".admin-dtn-listing-details");
+      if (!details?.open) return;
+      elements.grid.querySelectorAll(".admin-dtn-listing-details[open]").forEach((item) => {
+        if (item !== details) item.open = false;
+      });
+    }, true);
     elements.qualifiersClose.addEventListener("click", closeQualifiers);
     const syncGridFromHash = () => {
       if (global.location.hash === "#espace-dtn-edf") state.grid = "edf";
       if (global.location.hash === "#espace-dtn-france") state.grid = "france";
-      if (["#espace-dtn-france", "#espace-dtn-edf"].includes(global.location.hash)) renderGrid();
+      if (global.location.hash === "#espace-dtn-listes") state.grid = "listing";
+      if (["#espace-dtn-france", "#espace-dtn-edf", "#espace-dtn-listes"].includes(global.location.hash)) renderGrid();
     };
     global.addEventListener("hashchange", syncGridFromHash);
     syncGridFromHash();

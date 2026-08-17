@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { engagementAccessAcknowledgement } = require("../functions/portal-access-mail");
+const { engagementAccessAcknowledgement, engagementAccessRejection } = require("../functions/portal-access-mail");
 
 const personalized = engagementAccessAcknowledgement({
   firstName: "  Camille  ",
@@ -21,5 +21,16 @@ const generic = engagementAccessAcknowledgement();
 assert.match(generic.text, /^Bonjour,/);
 assert.match(generic.text, /réception de votre demande d’accès LivePalmes\./);
 assert.doesNotMatch(generic.text, /pour le club/);
+
+const rejected = engagementAccessRejection({
+  firstName: "Camille",
+  clubName: "Palmes Atlantique",
+  resolutionReason: "Le numéro de licence ne correspond pas au demandeur."
+});
+assert.equal(rejected.subject, "Votre demande d’accès LivePalmes a été refusée");
+assert.match(rejected.text, /^Bonjour Camille,/);
+assert.match(rejected.text, /concernant le club Palmes Atlantique/);
+assert.match(rejected.text, /Motif : Le numéro de licence ne correspond pas au demandeur\./);
+assert.doesNotMatch(rejected.text, /undefined|null/);
 
 console.log("Tests du mail d’accusé de réception du portail réussis.");
