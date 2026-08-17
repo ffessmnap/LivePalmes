@@ -23,6 +23,39 @@ function cleanTimingType(value) {
   return "";
 }
 
+function timingCodeFromType(value) {
+  return TIMING_CODE_BY_TYPE[cleanTimingType(value)] || "";
+}
+
+function ffessmBasTimingType(cells = []) {
+  return cleanTimingType(cells[2]);
+}
+
+function applyCompetitionImportTiming(parsed = {}, value = "", timingSource = "") {
+  const timingType = cleanTimingType(value);
+  const chrono = timingCodeFromType(timingType);
+  const metadata = {
+    ...(parsed.metadata || {}),
+    timingType,
+    chrono,
+    timingSource: timingType ? String(timingSource || "").trim() : ""
+  };
+  const warnings = Array.isArray(parsed.warnings) ? [...parsed.warnings] : [];
+  if (!timingType && !warnings.includes("Type de chronometrage absent ou invalide.")) {
+    warnings.push("Type de chronometrage absent ou invalide.");
+  }
+  return {
+    ...parsed,
+    metadata,
+    performances: (parsed.performances || []).map((performance) => ({
+      ...performance,
+      timingType,
+      chrono
+    })),
+    warnings
+  };
+}
+
 function performanceImportTimingType(row = {}) {
   const explicitTiming = cleanTimingType(
     row.chrono || row.timingType || row.metadata?.timingType || row.metadata?.chrono
@@ -39,7 +72,11 @@ function performanceImportChrono(row = {}) {
 }
 
 module.exports = {
+  applyCompetitionImportTiming,
+  cleanTimingType,
+  ffessmBasTimingType,
   performanceImportChrono,
   performanceImportTimingType,
+  timingCodeFromType,
   timingConfig
 };

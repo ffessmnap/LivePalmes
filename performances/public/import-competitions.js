@@ -906,6 +906,12 @@
     return value || "Stocke";
   }
 
+  function timingTypeLabel(value) {
+    if (value === "electronic") return "Electronique (E)";
+    if (value === "manual") return "Manuel (M)";
+    return "Non renseigne";
+  }
+
   function updateFileMode() {
     const file = elements.file?.files?.[0];
     const excel = isExcelFile(file);
@@ -925,6 +931,7 @@
       <div><span>Date</span><strong>${escapeHtml(formatDate(metadata.date))}</strong></div>
       <div><span>Lieu</span><strong>${escapeHtml(metadata.location || "-")}</strong></div>
       <div><span>Bassin</span><strong>${escapeHtml(metadata.poolSize || "-")} m</strong></div>
+      <div><span>Chronometrage</span><strong>${escapeHtml(timingTypeLabel(metadata.timingType))}</strong></div>
       <div><span>Performances</span><strong>${escapeHtml(summary.importedPerformances || 0)}</strong></div>
       <div><span>Avec passage</span><strong>${escapeHtml(summary.performancesWithIntermediateTimes || 0)}</strong></div>
       <div><span>Perfs avec passage</span><strong>${escapeHtml(summary.intermediatePerformances || 0)}</strong></div>
@@ -995,7 +1002,7 @@
         <td>${escapeHtml(perf.club || "-")}</td>
       </tr>
     `).join("") : `<tr><td colspan="6">Aucune performance a afficher.</td></tr>`;
-    elements.validate.disabled = result.alreadyImported || !summary.importedPerformances;
+    elements.validate.disabled = result.alreadyImported || !summary.importedPerformances || !metadata.timingType;
   }
 
   async function previewImport(event) {
@@ -1240,6 +1247,7 @@
           <div class="competition-import-details">
             <div><span>Statut</span><strong>${escapeHtml(importStatusLabel(item.status))}</strong></div>
             <div><span>Format</span><strong>${escapeHtml(sourceTypeLabel(item.sourceType))}</strong></div>
+            <div><span>Chronometrage</span><strong>${escapeHtml(timingTypeLabel(item.metadata?.timingType || item.timingType))}</strong></div>
             <div><span>Fichier</span><strong>${escapeHtml(item.fileName || item.importId || "-")}</strong></div>
             <div><span>Clubs</span><strong>${escapeHtml(summary.clubs || 0)}</strong></div>
             <div><span>Warnings</span><strong>${escapeHtml(warnings)}</strong></div>

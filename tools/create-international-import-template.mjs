@@ -29,6 +29,7 @@ const competitionRows = [
   ["competition_country", "OUI", "", "Italie", "Pays de la competition"],
   ["pool_size", "OUI", "", "50", "Seulement 25 ou 50 m sont acceptes"],
   ["pool_kind", "OUI", "", "Piscine", "Les courses hors bassin ne seront pas importees"],
+  ["timing_type", "OUI", "", "Electronique", "Electronique ou Manuel - obligatoire pour chaque import"],
   ["competition_level", "NON", "", "Internationale", "Information de controle"],
   ["external_competition_id", "NON", "", "CMAS-2026-WC1", "Reference externe si disponible"],
   ["source_url", "NON", "", "https://...", "Lien vers resultats officiels"],
@@ -144,6 +145,7 @@ const helpRows = [
   ["Categorie", "Ne pas se fier uniquement a la categorie fournie. LivePalmes recalculera la categorie avec l'age du nageur et la date de course."],
   ["Temps", "Saisir les temps en texte avec un point pour les centiemes : 45.54 ou 3:18.42. Eviter les formats Excel automatiques."],
   ["Passages", "TI1=100 m, TI2=200 m, TI3=400 m, TI4=800 m. Ces passages pourront alimenter les tops correspondants."],
+  ["Chronometrage", "Renseigner obligatoirement Electronique ou Manuel dans l'onglet Competition. LivePalmes conservera E ou M avec chaque performance."],
   ["Courses", "Seules les courses bassin listees dans l'onglet Listes sont prevues : SF, AP, IS et BI."],
   ["Statut", "Mettre OK pour une performance valide. DNS, DNF et DSQ sont gardes pour controle mais ne doivent pas alimenter les tops."],
   ["Club / federation", "Pour un nageur international, renseigner club_name avec l'equipe/federation visible dans les resultats officiels si le club reel n'est pas connu."],
@@ -215,7 +217,7 @@ function sheetXml({ name, rows, columns, merges = [], validations = [], autofilt
     : "";
   const validationXml = validations.length
     ? `<dataValidations count="${validations.length}">${validations.map((validation) => (
-      `<dataValidation type="list" allowBlank="1" showErrorMessage="1" sqref="${validation.ref}"><formula1>${xml(validation.formula)}</formula1></dataValidation>`
+      `<dataValidation type="list" allowBlank="${validation.allowBlank === false ? 0 : 1}" showErrorMessage="1" sqref="${validation.ref}"><formula1>${xml(validation.formula)}</formula1></dataValidation>`
     )).join("")}</dataValidations>`
     : "";
   const autofilterXml = autofilter ? `<autoFilter ref="${autofilter}"/>` : "";
@@ -416,7 +418,8 @@ const sheets = [
       freezeRows: 3,
       validations: [
         { ref: "C9", formula: '"25,50"' },
-        { ref: "C10", formula: '"Piscine"' }
+        { ref: "C10", formula: '"Piscine"' },
+        { ref: "C11", formula: '"Electronique,Manuel"', allowBlank: false }
       ]
     })
   },
