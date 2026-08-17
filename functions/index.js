@@ -42,7 +42,12 @@ const {
   recoveredPerformanceRowsAreComplete
 } = require("./engagement-swimmer-corrections");
 const { buildWinPalmeCompetitionTxt } = require("./winpalme-export");
-const { performanceImportChrono } = require("./performance-import-timing");
+const {
+  applyCompetitionImportTiming,
+  cleanTimingType,
+  ffessmBasTimingType,
+  performanceImportChrono
+} = require("./performance-import-timing");
 
 initializeApp();
 const auth = getAuth();
@@ -1437,6 +1442,9 @@ function parseFfessmTxtImport(rawText) {
     location: "",
     poolSize: "",
     poolKind: "",
+    timingType: "",
+    chrono: "",
+    timingSource: "",
     wid: "",
     wpv: ""
   };
@@ -1466,7 +1474,8 @@ function parseFfessmTxtImport(rawText) {
 
     if (kind === "BAS") {
       metadata.poolSize = cells[1] || "";
-      metadata.poolKind = cells[2] || "";
+      metadata.poolKind = "Piscine";
+      metadata.timingType = ffessmBasTimingType(cells);
       return;
     }
 
@@ -1646,7 +1655,7 @@ function parseFfessmTxtImport(rawText) {
     return acc;
   }, {});
 
-  return {
+  return applyCompetitionImportTiming({
     metadata,
     clubs: Array.from(clubs.values()),
     performances,
@@ -1663,7 +1672,7 @@ function parseFfessmTxtImport(rawText) {
     },
     warnings,
     duplicateDetails
-  };
+  }, metadata.timingType, "ffessm-txt:BAS");
 }
 
 function cleanWorkbookRows(value, sheetName) {
@@ -1778,6 +1787,9 @@ function parseInternationalWorkbookImport(workbookPayload) {
     country,
     poolSize,
     poolKind: competitionValueFromRows(competitionRows, "pool_kind"),
+    timingType: competitionValueFromRows(competitionRows, "timing_type"),
+    chrono: "",
+    timingSource: "",
     competitionLevel: competitionValueFromRows(competitionRows, "competition_level"),
     sourceUrl: competitionValueFromRows(competitionRows, "source_url"),
     contactEmail: competitionValueFromRows(competitionRows, "contact_email"),
@@ -1977,7 +1989,7 @@ function parseInternationalWorkbookImport(workbookPayload) {
     return acc;
   }, {});
 
-  return {
+  return applyCompetitionImportTiming({
     sourceType: "international-xlsx",
     fileHashSeed: JSON.stringify(workbook),
     metadata,
@@ -1996,7 +2008,7 @@ function parseInternationalWorkbookImport(workbookPayload) {
     },
     warnings,
     duplicateDetails
-  };
+  }, metadata.timingType, "international-xlsx:Competition.timing_type");
 }
 
 function parseCompetitionImportPayload(data = {}) {
@@ -13169,6 +13181,9 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const fileName = cleanText(request.data?.fileName).slice(0, 180);
   const confirmImportId = cleanText(request.data?.importId);
   const parsed = parseCompetitionImportPayload(request.data || {});
+  if (!cleanTimingType(parsed.metadata?.timingType)) {
+    throw new HttpsError("failed-precondition", "Le type de chronometrage electronique ou manuel est obligatoire.");
+  }
   if (!parsed.performances.length) {
     throw new HttpsError("failed-precondition", "Aucune performance importable dans ce fichier.");
   }
@@ -13210,6 +13225,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     fileName,
     fileHash,
     competitionName: parsed.metadata.competitionName,
+    timingType: parsed.metadata.timingType,
+    chrono: parsed.metadata.chrono,
     metadata: parsed.metadata,
     summary: parsed.summary,
     warnings: parsed.warnings,
@@ -13315,6 +13332,8 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     fileHash,
     competitionName: parsed.metadata.competitionName,
     date: parsed.metadata.date,
+    timingType: parsed.metadata.timingType,
+    chrono: parsed.metadata.chrono,
     importedPerformances: parsed.summary.importedPerformances,
     performanceBaseSync,
     clubActivityReactivation
@@ -13730,6 +13749,7 @@ function normalizeLivePalmesImportPerformances(rawPerformances = []) {
         date,
         seasonYear: perf.seasonYear || importSeasonYear(date),
         pool: perf.poolSize ? String(perf.poolSize) : "",
+        timingType: cleanTimingType(perf.timingType || perf.metadata?.timingType),
         chrono: performanceImportChrono(perf),
         course,
         courseLabel: courseMeta.label,

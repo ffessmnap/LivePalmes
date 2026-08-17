@@ -163,6 +163,7 @@ Le systeme lit notamment :
 - la date ;
 - le lieu ;
 - le bassin ;
+- le type de chronometrage porte par la ligne `BAS` (`E` electronique ou `M` manuel) ;
 - les clubs ;
 - les nageurs ;
 - les courses ;
@@ -190,11 +191,13 @@ La trame est ici :
 
 `docs/Trame_import_competition_internationale_LivePalmes.xlsx`
 
+Le champ `timing_type` de l'onglet `Competition` est obligatoire. Il accepte `Electronique` ou `Manuel`. La previsualisation affiche la valeur detectee et la validation est bloquee si elle est absente ou invalide.
+
 Le type de chronometrage des imports historiques confirmes est conserve par identifiant d'import dans :
 
 `functions/config/performance-import-timing.json`
 
-Cette information est propagee dans la base consolidee et les fichiers publics lors de leur normalisation. Une valeur de chronometrage explicitement fournie par un import reste prioritaire.
+Cette information est integree aux metadonnees de l'import et a chaque performance, puis propagee dans la base consolidee et les fichiers publics lors de leur normalisation. Une valeur de chronometrage explicitement fournie par un import reste prioritaire. Le referentiel historique sert uniquement a migrer les imports deja confirmes ; il ne remplace pas le controle des futurs fichiers.
 
 ## Etapes d'un import
 
