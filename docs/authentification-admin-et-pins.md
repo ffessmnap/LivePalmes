@@ -4,46 +4,36 @@
 
 ## Objectif
 
-## Acces actuel aux consoles
+Expliquer deux mecanismes distincts :
 
-Les consoles de competition utilisent deux niveaux d'acces :
+- la connexion et les habilitations du Portail LivePalmes ;
+- l'acces temporaire aux consoles de LivePalmes Direct lors des competitions nationales concernees.
+
+Le portail et ces mecanismes sont encore en phase de finalisation et de test.
+
+## Comptes du Portail LivePalmes
+
+Les utilisateurs se connectent avec une adresse email et un mot de passe geres par Firebase Authentication.
+
+Le compte LivePalmes porte ensuite des capacites et un perimetre qui determinent ce que la personne peut consulter ou modifier : club, region, national, Records / MPF, import de competitions, DTN, administration ou acces au Direct.
+
+Masquer un bouton dans l'interface ne suffit jamais a proteger une action. Les fonctions serveur et les regles Firestore doivent aussi verifier le compte, son statut, ses capacites et son perimetre.
+
+## Acces actuel a LivePalmes Direct
+
+Les consoles utilisees lors des competitions nationales concernees demandent deux niveaux d'acces :
 
 1. un compte LivePalmes actif avec email et mot de passe ;
 2. le PIN temporaire du role utilise pendant la competition.
 
 Le compte doit disposer de `consoles.access` ou `consoles.manage`.
 
-Comportement actuel de transition : `admin.full` est encore accepte comme fallback pour l'acces console. La cible fonctionnelle est de rendre l'acces console explicite avec `consoles.access` ou `consoles.manage`.
+Comportement actuel de transition : `admin.full` est encore accepte comme solution de secours pour l'acces console. La cible fonctionnelle reste un acces explicite avec `consoles.access` ou `consoles.manage`.
 La validation du PIN ajoute ensuite un claim `livepalmesConsoleAccess`, le role et la competition, sans supprimer les claims permanents du compte. Les regles Firestore exigent ce claim et un grant console non expire.
 
 Une session Firebase anonyme ne peut pas verifier un PIN. Les comptes console doivent etre crees ou approuves depuis le Portail LivePalmes. Un compte distinct par personne ou tablette reste recommande afin de conserver le cloisonnement des roles et la possibilite de revoquer un seul appareil.
 
-Faire évoluer LivePalmes pour que le code admin ne soit plus présent ni vérifiable directement dans le front.
-
-L'idée retenue :
-
-- l'administrateur se connecte avec un email et un mot de passe via Firebase Authentication ;
-- les autres rôles utilisent un compte LivePalmes puis leur code PIN ;
-- l'administrateur authentifié est le seul à pouvoir modifier les PIN et lancer les actions sensibles.
-
-## Architecture cible
-
-### Administrateur
-
-L'admin utilise Firebase Authentication avec email + mot de passe.
-
-Une fois connecté, il peut accéder aux fonctions sensibles :
-
-- modification des codes PIN ;
-- activation ou désactivation des codes ;
-- RAZ ;
-- fonctions de pilotage globales.
-
-Les règles Firestore doivent vérifier `request.auth` pour autoriser ces actions uniquement à l'admin.
-
-### Rôles terrain
-
-Les autres consoles utilisent une connexion en deux etapes :
+Les roles terrain sont :
 
 - speaker ;
 - live ;
@@ -52,83 +42,33 @@ Les autres consoles utilisent une connexion en deux etapes :
 - bureau des performances ;
 - secrétariat.
 
-Chaque utilisateur se connecte d'abord avec son compte LivePalmes, puis saisit le code PIN du rôle.
+Chaque utilisateur se connecte d'abord avec son compte LivePalmes, puis saisit le code PIN du role. L'autorisation temporaire obtenue est rattachee au compte, au role et a la competition.
 
-Les PIN ne doivent plus être codés en dur dans le JavaScript public.
+## Fonctionnement actuel des PIN
 
-## Point de sécurité important
+Les PIN ne sont pas codes en dur dans le JavaScript public et ne sont pas envoyes au navigateur pour verification.
 
-Si les PIN sont stockés dans Firestore et lus directement par le front, ils ne sont pas totalement secrets.
+Le parcours est le suivant :
 
-Même s'ils ne sont pas affichés à l'écran, une personne curieuse pourrait inspecter les données chargées par le navigateur.
+1. La console envoie le role et le PIN saisi a la Cloud Function `verifyPin`.
+2. La fonction verifie d'abord le compte LivePalmes et son droit d'acces aux consoles.
+3. Elle compare le PIN avec son empreinte protegee stockee cote serveur.
+4. Elle bloque temporairement les tentatives apres plusieurs erreurs.
+5. Si le PIN est correct, elle cree une autorisation temporaire pour ce role et cette competition.
+6. La console recoit seulement le resultat de la verification, jamais le PIN conserve cote serveur.
 
-La meilleure solution est donc :
+Seuls les comptes disposant du droit `consoles.manage` peuvent modifier les PIN avec la fonction serveur prevue a cet effet.
 
-1. Le front envoie le rôle et le PIN saisi à une Cloud Function.
-2. La Cloud Function vérifie le PIN côté serveur.
-3. Le front reçoit seulement une réponse du type `ok` ou `refusé`.
-4. Les PIN réels ne sont jamais envoyés au navigateur.
+## Transition encore presente
 
-## Stockage conseillé des PIN
+Quelques identifiants administrateurs restent codes en dur comme filet de securite technique. Cette transition doit etre finalisee et testee avant leur retrait.
 
-Les PIN doivent idéalement être stockés sous forme hachée, pas en clair.
+La cible fonctionnelle reste :
 
-Exemple de logique :
+- des comptes nominatifs avec email et mot de passe ;
+- des capacites metier explicites et cumulables ;
+- des controles effectues cote serveur ;
+- un PIN supplementaire uniquement pour le role temporaire dans LivePalmes Direct ;
+- des pages publiques accessibles sans connexion.
 
-- Firestore stocke un hash du PIN par rôle ;
-- la Cloud Function reçoit le PIN saisi ;
-- elle calcule le hash ;
-- elle compare avec le hash stocké ;
-- elle renvoie une autorisation temporaire si le PIN est correct.
-
-## Étapes possibles
-
-### Étape 1 : Firebase Authentication admin
-
-- Activer Firebase Authentication email + mot de passe.
-- Créer le compte admin.
-- Ajouter la connexion admin dans LivePalmes.
-- Identifier l'admin par son UID Firebase.
-- Adapter les règles Firestore pour protéger les actions sensibles.
-
-### Étape 2 : PIN stockés en base
-
-- Déplacer les PIN des consoles vers Firestore.
-- Ajouter une interface admin pour modifier les PIN.
-- Autoriser seulement l'admin authentifié à écrire ces PIN.
-
-### Étape 3 : vérification PIN côté serveur
-
-- Créer une Cloud Function `verifyPin(role, pin)`.
-- Ne plus laisser le front lire directement les PIN.
-- Faire répondre la fonction avec une autorisation temporaire.
-
-### Étape 4 : règles Firestore renforcées
-
-- Distinguer les droits admin et les droits consoles.
-- Vérifier `request.auth` pour les actions admin.
-- Limiter les écritures sensibles aux seuls utilisateurs autorisés.
-
-## Recommandation
-
-Ne pas faire cette migration juste avant ou pendant une compétition.
-
-C'est une évolution structurelle qui touche :
-
-- l'accès admin ;
-- les règles Firestore ;
-- la gestion des PIN ;
-- les permissions d'écriture ;
-- potentiellement les Cloud Functions.
-
-Le bon plan serait de la réaliser hors urgence, sur une période de test, avec possibilité de revenir à l'ancien système si besoin.
-
-## Décision proposée pour LivePalmes
-
-À terme :
-
-- admin : email + mot de passe Firebase Authentication ;
-- consoles terrain : compte LivePalmes actif puis PIN du role ;
-- PIN : stockés en base et modifiables uniquement par l'admin ;
-- vérification PIN : idéalement via Cloud Function ;
-- pages publiques : aucun changement, elles restent accessibles sans connexion.
+Toute modification de ce dispositif reste sensible et doit etre realisee hors competition, avec tests des regles Firestore, des Cloud Functions, des comptes et des differents roles.

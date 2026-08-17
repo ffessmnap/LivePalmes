@@ -109,7 +109,7 @@
     try {
       const snapshot = await ref.get({ source: "server" });
       const remote = snapshot.exists ? snapshot.data() : null;
-      if (!remote?.records && !remote?.franceRecords) return completeData(fallback);
+      if (!remote?.records && !remote?.franceRecords) return loadPublicRecordsData(fallback);
       return completeData({
         ...cloneData(fallback),
         ...cloneData(remote),
@@ -121,7 +121,7 @@
       });
     } catch (error) {
       console.warn("Lecture des performances Firebase impossible", error);
-      return completeData(fallback);
+      return loadPublicRecordsData(fallback);
     }
   }
 
