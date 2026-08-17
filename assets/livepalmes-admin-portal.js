@@ -718,6 +718,9 @@
   let engagementNationalClubsLoaded = false;
   let engagementNationalClubsLoading = false;
   let engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+  let engagementNationalClubAdministratorsByClub = new Map();
+  let engagementNationalClubAdministratorsLoaded = false;
+  let engagementNationalClubAdministratorsAvailable = false;
   let engagementNationalSwimmers = [];
   let engagementNationalSwimmersLoaded = false;
   let engagementNationalSwimmersLoading = false;
@@ -10751,6 +10754,42 @@
     });
   }
 
+  function setEngagementNationalClubAdministrators(administrators = [], available = true) {
+    const byClub = new Map();
+    (Array.isArray(administrators) ? administrators : []).forEach((administrator) => {
+      const clubId = String(administrator?.clubId || "").trim();
+      if (!clubId || !administrator?.email) return;
+      if (!byClub.has(clubId)) byClub.set(clubId, []);
+      byClub.get(clubId).push({
+        uid: String(administrator.uid || "").trim(),
+        email: String(administrator.email || "").trim(),
+        firstName: String(administrator.firstName || "").trim(),
+        lastName: String(administrator.lastName || "").trim()
+      });
+    });
+    byClub.forEach((items) => items.sort((left, right) =>
+      `${left.lastName} ${left.firstName} ${left.email}`.localeCompare(`${right.lastName} ${right.firstName} ${right.email}`, "fr", { sensitivity: "base" })
+    ));
+    engagementNationalClubAdministratorsByClub = byClub;
+    engagementNationalClubAdministratorsLoaded = true;
+    engagementNationalClubAdministratorsAvailable = available;
+  }
+
+  function engagementNationalClubAdministratorsHtml(clubId = "") {
+    const administrators = engagementNationalClubAdministratorsByClub.get(clubId) || [];
+    const content = !engagementNationalClubAdministratorsLoaded
+      ? '<small>Chargement…</small>'
+      : !engagementNationalClubAdministratorsAvailable
+        ? '<small>Annuaire temporairement indisponible</small>'
+        : administrators.length
+          ? administrators.map((administrator) => {
+              const name = [administrator.firstName, administrator.lastName].filter(Boolean).join(" ") || administrator.email;
+              return `<small title="${escapeHtml(administrator.email)}"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(administrator.email)}</span></small>`;
+            }).join("")
+          : '<small>Aucun administrateur actif</small>';
+    return `<div class="admin-national-club-card-administrators"><span>Administrateurs engagements</span>${content}</div>`;
+  }
+
   function renderEngagementNationalClubs() {
     if (!elements.engagementsNationalClubsList) return;
     const clubs = filteredEngagementNationalClubs();
@@ -10763,6 +10802,7 @@
       ? renderedClubs.map((club) => `<article class="admin-national-club-card" data-national-club-id="${escapeHtml(club.clubId)}">
           <div class="admin-national-club-card-main"><strong>${escapeHtml(club.clubCode || club.clubName)}</strong><span>${escapeHtml(club.clubName)}</span><small>${escapeHtml([club.city, club.postalCode].filter(Boolean).join(" · ") || "Localité non renseignée")}</small></div>
           <div class="admin-national-club-card-reference"><span>Numéro fédéral</span><strong>${escapeHtml(club.federalNumber || "À renseigner")}</strong><small>${escapeHtml(LIVEPALMES_REFERENCE_REGION_LABELS[club.regionId] || club.regionId || "Région inconnue")}</small></div>
+          ${engagementNationalClubAdministratorsHtml(club.clubId)}
           <span class="admin-national-club-status" data-active="${club.active !== false}">${club.active !== false ? "Actif" : "Inactif"}</span>
           <button class="ghost-button compact" type="button" data-engagement-national-club-edit="${escapeHtml(club.clubId)}">Modifier</button>
         </article>`).join("") + (renderedClubs.length < clubs.length
@@ -10779,6 +10819,11 @@
     }
     engagementNationalClubsLoading = true;
     engagementNationalClubsVisibleLimit = ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE;
+    if (force) {
+      engagementNationalClubAdministratorsByClub = new Map();
+      engagementNationalClubAdministratorsLoaded = false;
+      engagementNationalClubAdministratorsAvailable = false;
+    }
     if (elements.engagementsNationalClubsStatus) {
       elements.engagementsNationalClubsStatus.textContent = "Chargement du référentiel clubs...";
       elements.engagementsNationalClubsStatus.dataset.tone = "loading";
@@ -10796,12 +10841,22 @@
       let afterClubId = "";
       let syncedThrough = cached.syncedThrough;
       let hasMore = true;
+      let includeAdministrators = true;
       while (hasMore) {
         const result = await callFunction("listEngagementNationalClubs", {
           limit: 250,
+          includeAdministrators,
           ...(pageUpdatedAfter ? { updatedAfter: pageUpdatedAfter } : {}),
           ...(afterClubId ? { afterClubId } : {})
         });
+        if (includeAdministrators && Array.isArray(result.clubAdministrators)) {
+          setEngagementNationalClubAdministrators(
+            result.clubAdministrators,
+            result.clubAdministratorsAvailable !== false
+          );
+          renderEngagementNationalClubs();
+        }
+        includeAdministrators = false;
         (Array.isArray(result.clubs) ? result.clubs : [])
           .map(normalizeEngagementNationalClub)
           .filter((club) => club.clubId)
@@ -10843,7 +10898,8 @@
     if (elements.engagementsNationalClubId) elements.engagementsNationalClubId.value = club.clubId || "";
     if (elements.engagementsNationalClubFederalNumber) {
       elements.engagementsNationalClubFederalNumber.value = club.federalNumber || "";
-      elements.engagementsNationalClubFederalNumber.readOnly = Boolean(club.clubId && club.federalNumber);
+      elements.engagementsNationalClubFederalNumber.readOnly = false;
+      elements.engagementsNationalClubFederalNumber.dataset.originalValue = club.federalNumber || "";
     }
     if (elements.engagementsNationalClubCode) elements.engagementsNationalClubCode.value = club.clubCode || "";
     if (elements.engagementsNationalClubName) elements.engagementsNationalClubName.value = club.clubName || "";
@@ -10853,13 +10909,23 @@
     if (elements.engagementsNationalClubActive) elements.engagementsNationalClubActive.checked = club.active !== false;
     if (elements.engagementsNationalClubDelete) elements.engagementsNationalClubDelete.hidden = !club.clubId || club.source !== "national";
     if (elements.engagementsNationalClubDialogTitle) elements.engagementsNationalClubDialogTitle.textContent = club.clubId ? `Modifier ${club.clubCode || club.clubName}` : "Ajouter un club";
-    if (elements.engagementsNationalClubMessage) elements.engagementsNationalClubMessage.textContent = club.clubId && club.federalNumber ? "Le numéro fédéral permanent ne peut pas être modifié." : "";
+    if (elements.engagementsNationalClubMessage) {
+      elements.engagementsNationalClubMessage.textContent = club.clubId && club.federalNumber
+        ? "Une correction du numéro fédéral demandera une confirmation et sera journalisée."
+        : "";
+      elements.engagementsNationalClubMessage.dataset.tone = "loading";
+    }
     if (!elements.engagementsNationalClubDialog?.open) elements.engagementsNationalClubDialog?.showModal();
     elements.engagementsNationalClubFederalNumber?.focus();
   }
 
   async function saveEngagementNationalClub(event) {
     event.preventDefault();
+    const clubId = elements.engagementsNationalClubId?.value || "";
+    const previousFederalNumber = String(elements.engagementsNationalClubFederalNumber?.dataset.originalValue || "").trim().toUpperCase();
+    const nextFederalNumber = String(elements.engagementsNationalClubFederalNumber?.value || "").trim().toUpperCase();
+    const federalNumberChanged = Boolean(clubId && previousFederalNumber && previousFederalNumber !== nextFederalNumber);
+    if (federalNumberChanged && !global.confirm(`Corriger le numéro fédéral de ${previousFederalNumber} vers ${nextFederalNumber} ? Cette modification sera journalisée.`)) return;
     const submit = elements.engagementsNationalClubForm?.querySelector('button[type="submit"]');
     if (submit) submit.disabled = true;
     if (elements.engagementsNationalClubMessage) {
@@ -10868,7 +10934,8 @@
     }
     try {
       const result = await callFunction("saveEngagementNationalClub", {
-        clubId: elements.engagementsNationalClubId?.value || "",
+        clubId,
+        confirmFederalNumberChange: federalNumberChanged,
         club: {
           federalNumber: elements.engagementsNationalClubFederalNumber?.value || "",
           clubCode: elements.engagementsNationalClubCode?.value || "",

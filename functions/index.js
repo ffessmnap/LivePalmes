@@ -162,8 +162,10 @@ const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
 const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
 const ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION = "engagementMailRecipientShards";
 const ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION = "engagementMailRecipientIndexState";
+const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION = "engagementClubAdminDirectories";
 const ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32;
 const ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT = 167;
+const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES = 800000;
 const ENGAGEMENT_CLOSURE_QUEUE_COLLECTION = "engagementClosureQueue";
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
@@ -2502,12 +2504,19 @@ async function findEngagementClubByFederalNumber(federalNumber = "") {
   const cleanNumber = cleanText(federalNumber).toUpperCase().slice(0, 24);
   if (!cleanNumber) return null;
   const referenceClub = CLUB_REFERENCE_BY_FEDERAL_NUMBER.get(cleanNumber);
-  if (referenceClub) return referenceClub;
+  if (referenceClub) {
+    const overrideSnapshot = await db.collection(ENGAGEMENT_CLUBS_COLLECTION).doc(referenceClub.clubId).get();
+    if (!overrideSnapshot.exists) return referenceClub;
+    const override = engagementStoredClubItem(overrideSnapshot);
+    if (override.deleted === true || override.federalNumber.toUpperCase() !== cleanNumber) return null;
+    return { ...referenceClub, ...override };
+  }
   const snapshot = await db.collection(ENGAGEMENT_CLUBS_COLLECTION)
     .where("federalNumber", "==", cleanNumber)
-    .limit(1)
+    .limit(2)
     .get();
-  return snapshot.empty ? null : engagementStoredClubItem(snapshot.docs[0]);
+  const storedClub = snapshot.docs.map(engagementStoredClubItem).find((club) => club.deleted !== true);
+  return storedClub || null;
 }
 
 async function resolveExistingClubForAccessRequest(payload = {}) {
@@ -6423,6 +6432,105 @@ function engagementMailRecipientIndexKey(uid = "") {
   return stableHash(uid).slice(0, 24);
 }
 
+function engagementClubAdminDirectoryRef(db) {
+  return db.collection(ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION).doc("default");
+}
+
+function engagementClubAdminDirectoryEntry(recipient = {}) {
+  if (
+    !recipient.uid ||
+    !recipient.clubId ||
+    !recipient.email ||
+    !engagementRecipientHasCapability(recipient, "engagements.club.manage")
+  ) return null;
+  return cleanFirestoreValue({
+    uid: cleanText(recipient.uid).slice(0, 128),
+    email: normalizeEmail(recipient.email).slice(0, 180),
+    firstName: cleanText(recipient.firstName).slice(0, 80),
+    lastName: cleanText(recipient.lastName).slice(0, 80),
+    clubId: cleanText(recipient.clubId).slice(0, 40)
+  });
+}
+
+function engagementClubAdminDirectoryMap(recipients = []) {
+  return recipients.reduce((admins, recipient) => {
+    const entry = engagementClubAdminDirectoryEntry(recipient);
+    if (entry) admins[engagementMailRecipientIndexKey(entry.uid)] = entry;
+    return admins;
+  }, {});
+}
+
+function assertEngagementClubAdminDirectorySize(admins = {}) {
+  const byteLength = Buffer.byteLength(JSON.stringify(admins), "utf8");
+  if (byteLength > ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES) {
+    throw new Error(`Annuaire des administrateurs de clubs trop volumineux (${byteLength} octets).`);
+  }
+  return byteLength;
+}
+
+async function writeEngagementClubAdminDirectory(db, recipients = [], now = new Date().toISOString()) {
+  const admins = engagementClubAdminDirectoryMap(recipients);
+  const byteLength = assertEngagementClubAdminDirectorySize(admins);
+  await engagementClubAdminDirectoryRef(db).set({
+    status: "ready",
+    admins,
+    adminCount: Object.keys(admins).length,
+    byteLength,
+    updatedAt: now
+  }, { merge: false });
+  return { admins, byteLength };
+}
+
+async function updateEngagementClubAdminDirectory(db, before = null, after = null, now = new Date().toISOString()) {
+  const uid = cleanText(after?.uid || before?.uid);
+  if (!uid) return;
+  const key = engagementMailRecipientIndexKey(uid);
+  await db.runTransaction(async (transaction) => {
+    const ref = engagementClubAdminDirectoryRef(db);
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.data()?.status !== "ready") return;
+    const admins = { ...(snapshot.data()?.admins || {}) };
+    const entry = engagementClubAdminDirectoryEntry(after || {});
+    if (entry) admins[key] = entry;
+    else delete admins[key];
+    const byteLength = assertEngagementClubAdminDirectorySize(admins);
+    transaction.set(ref, {
+      status: "ready",
+      admins,
+      adminCount: Object.keys(admins).length,
+      byteLength,
+      updatedAt: now
+    }, { merge: false });
+  });
+}
+
+async function readEngagementClubAdminDirectory(db) {
+  const ref = engagementClubAdminDirectoryRef(db);
+  const snapshot = await ref.get();
+  if (snapshot.exists && snapshot.data()?.status === "ready") {
+    return {
+      administrators: Object.values(snapshot.data()?.admins || {}),
+      bootstrapped: false
+    };
+  }
+  const stateSnapshot = await engagementMailRecipientIndexStateRef(db).get();
+  if (stateSnapshot.data()?.status !== "ready") {
+    return { administrators: [], available: false, bootstrapped: false };
+  }
+  const recipients = await engagementMailRecipientsFromIndex(db, ["engagements.club.manage"]);
+  try {
+    const directory = await writeEngagementClubAdminDirectory(db, recipients);
+    return {
+      administrators: Object.values(directory.admins),
+      available: true,
+      bootstrapped: true
+    };
+  } catch (error) {
+    console.error("Initialisation de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
+    return { administrators: [], available: false, bootstrapped: false };
+  }
+}
+
 function engagementMailRecipientShardRefs(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
   return capabilities.flatMap((capability) => Array.from(
     { length: ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT },
@@ -6468,6 +6576,7 @@ async function replaceEngagementMailRecipientIndex(db, recipients = [], context 
     source: context.source || "bounded-bootstrap"
   }, { merge: true });
   await writeBatch.commit();
+  await writeEngagementClubAdminDirectory(db, recipients, now);
 }
 
 async function bootstrapEngagementMailRecipientIndex(db) {
@@ -6559,6 +6668,9 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
     }, { merge: true });
   });
   await batch.commit();
+  await updateEngagementClubAdminDirectory(db, before, after, now).catch((error) => {
+    console.error("Mise à jour de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
+  });
 });
 
 exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6608,6 +6720,10 @@ exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, a
     source: "paged-rebuild"
   }, { merge: true });
   await batch.commit();
+  if (done) {
+    const indexedRecipients = await engagementMailRecipientsFromIndex(db, ["engagements.club.manage"]);
+    await writeEngagementClubAdminDirectory(db, indexedRecipients, now);
+  }
   return { ok: true, done, pageCount: snapshot.size, processedCount, nextCursor: done ? "" : nextCursor };
 });
 
@@ -10329,13 +10445,17 @@ exports.listEngagementNationalClubs = onCall(CALLABLE_OPTIONS, async (request) =
   const pageLimit = Math.min(500, Math.max(50, Math.trunc(Number(request.data?.limit) || 250)));
   const updatedAfter = cleanText(request.data?.updatedAfter).slice(0, 40);
   const afterClubId = cleanText(request.data?.afterClubId).slice(0, 40);
+  const includeAdministrators = request.data?.includeAdministrators === true && !afterClubId;
   const syncWatermark = new Date().toISOString();
   let query = db.collection(ENGAGEMENT_CLUBS_COLLECTION)
     .orderBy("updatedAt", "asc")
     .orderBy(FieldPath.documentId(), "asc");
   if (updatedAfter && afterClubId) query = query.startAfter(updatedAfter, afterClubId);
   else if (updatedAfter) query = query.where("updatedAt", ">", updatedAfter);
-  const snapshot = await query.limit(pageLimit + 1).get();
+  const [snapshot, adminDirectory] = await Promise.all([
+    query.limit(pageLimit + 1).get(),
+    includeAdministrators ? readEngagementClubAdminDirectory(db) : Promise.resolve(null)
+  ]);
   const pageDocuments = snapshot.docs.slice(0, pageLimit);
   const lastDocument = pageDocuments[pageDocuments.length - 1];
   return {
@@ -10346,10 +10466,15 @@ exports.listEngagementNationalClubs = onCall(CALLABLE_OPTIONS, async (request) =
       updatedAt: cleanText(lastDocument.get("updatedAt")).slice(0, 40),
       clubId: lastDocument.id
     } : null,
+    ...(adminDirectory ? {
+      clubAdministrators: adminDirectory.administrators,
+      clubAdministratorsAvailable: adminDirectory.available !== false,
+      clubAdministratorsBootstrapped: adminDirectory.bootstrapped === true
+    } : {}),
     syncWatermark,
     readStats: portalReadStats("listEngagementNationalClubs", startedAt, {
-      baseDocuments: 1,
-      variableDocumentsMax: pageLimit + 1
+      baseDocuments: includeAdministrators ? 2 : 1,
+      variableDocumentsMax: pageLimit + 1 + (adminDirectory?.bootstrapped ? ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT + 1 : 0)
     })
   };
 });
@@ -10389,22 +10514,24 @@ exports.saveEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) =>
   } catch (error) {
     throw new HttpsError("invalid-argument", cleanText(error?.message || error));
   }
-  if (current.federalNumber && current.federalNumber.toUpperCase() !== cleaned.federalNumber) {
-    throw new HttpsError("failed-precondition", "Le numero federal permanent d'un club ne peut pas etre modifie.");
+  const previousFederalNumber = cleanText(current.federalNumber).toUpperCase();
+  const federalNumberChanged = Boolean(requestedClubId && previousFederalNumber && previousFederalNumber !== cleaned.federalNumber);
+  if (federalNumberChanged && request.data?.confirmFederalNumberChange !== true) {
+    throw new HttpsError("failed-precondition", "Confirmez explicitement la correction du numéro fédéral.");
   }
-  if (!current.federalNumber) {
+  if (!requestedClubId || previousFederalNumber !== cleaned.federalNumber) {
     const staticConflict = CLUB_REFERENCE_BY_FEDERAL_NUMBER.get(cleaned.federalNumber);
     if (staticConflict && staticConflict.clubId !== requestedClubId) {
-      throw new HttpsError("already-exists", `Ce numero federal appartient deja a ${staticConflict.clubCode || staticConflict.clubName}.`);
+      throw new HttpsError("already-exists", `Ce numéro fédéral appartient déjà à ${staticConflict.clubCode || staticConflict.clubName}.`);
     }
     const storedConflictSnapshot = await db.collection(ENGAGEMENT_CLUBS_COLLECTION)
       .where("federalNumber", "==", cleaned.federalNumber)
       .limit(2)
       .get();
-    const storedConflict = storedConflictSnapshot.docs.find((doc) => doc.id !== requestedClubId);
-    if (storedConflict) {
-      const conflict = engagementStoredClubItem(storedConflict);
-      throw new HttpsError("already-exists", `Ce numero federal appartient deja a ${conflict.clubCode || conflict.clubName}.`);
+    const storedConflictDocument = storedConflictSnapshot.docs.find((doc) => doc.id !== requestedClubId && doc.data()?.deleted !== true);
+    if (storedConflictDocument) {
+      const conflict = engagementStoredClubItem(storedConflictDocument);
+      throw new HttpsError("already-exists", `Ce numéro fédéral appartient déjà à ${conflict.clubCode || conflict.clubName}.`);
     }
   }
   const clubId = requestedClubId || `club-${stableHash(cleaned.federalNumber).slice(0, 16)}`;
@@ -10430,6 +10557,7 @@ exports.saveEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) =>
   await writeAuditLog(requestedClubId ? "engagementClub.updated" : "engagementClub.created", context.uid, {
     clubId,
     federalNumber: cleaned.federalNumber,
+    ...(federalNumberChanged ? { previousFederalNumber, federalNumberChanged: true } : {}),
     clubCode: cleaned.clubCode,
     clubName: cleaned.clubName,
     active: cleaned.active
@@ -10463,18 +10591,16 @@ exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) 
   if (club.source !== "national") {
     throw new HttpsError("failed-precondition", "Seuls les clubs crees par l'administration nationale peuvent etre supprimes.");
   }
-  const dependencyCollections = [
-    [PERFORMANCE_BASE_COLLECTION, "performance"],
-    ["users", "compte"],
-    ["engagementAccessRequests", "demande d'acces"],
-    ["engagementClubSwimmers", "nageur"],
-    ["engagementClubPeople", "officiel ou chef d'equipe"],
-    ["engagementClubEntries", "engagement"]
+  const dependencyQueries = [
+    ["performance", db.collection(PERFORMANCE_BASE_COLLECTION).where("clubId", "==", clubId)],
+    ["compte", db.collection("users").where("clubId", "==", clubId)],
+    ["demande d'accès en attente", db.collection("engagementAccessRequests").where("clubId", "==", clubId).where("status", "==", "pending")],
+    ["nageur", db.collection("engagementClubSwimmers").where("clubId", "==", clubId)],
+    ["officiel ou chef d'équipe", db.collection("engagementClubPeople").where("clubId", "==", clubId)],
+    ["engagement", db.collection("engagementClubEntries").where("clubId", "==", clubId)]
   ];
-  const dependencySnapshots = await Promise.all(dependencyCollections.map(([collection]) =>
-    db.collection(collection).where("clubId", "==", clubId).limit(1).get()
-  ));
-  const blockers = dependencyCollections
+  const dependencySnapshots = await Promise.all(dependencyQueries.map(([, query]) => query.limit(1).get()));
+  const blockers = dependencyQueries
     .filter((_, index) => !dependencySnapshots[index].empty)
     .map(([, label]) => label);
   if (blockers.length) {
@@ -10511,7 +10637,7 @@ exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) 
     clubId,
     readStats: portalReadStats("deleteEngagementNationalClub", startedAt, {
       baseDocuments: 2,
-      variableDocumentsMax: dependencyCollections.length
+      variableDocumentsMax: dependencyQueries.length
     })
   };
 });
