@@ -50,7 +50,7 @@ function engagementSwimmerChangeResolutionMail(payload = {}) {
       : "Aucune modification n’a été appliquée à la fiche du nageur.",
     "",
     "Sportivement,",
-    "La Commission Nationale Nage avec Palmes – FFESSM"
+    "Commission Nationale Nage avec Palmes - FFESSM"
   );
   return {
     subject: `Votre demande de correction LivePalmes a été ${decisionLabel}`,

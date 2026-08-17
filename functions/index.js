@@ -27,7 +27,13 @@ const {
   shouldPublishRecordsManifest
 } = require("./public-records-data");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
-const { engagementAccessAcknowledgement, engagementAccessRejection } = require("./portal-access-mail");
+const {
+  engagementAccessAcknowledgement,
+  engagementAccessRejection,
+  engagementExistingAccountNotice,
+  engagementAccessAdminNotification,
+  engagementAccessAdminNotificationRecipients
+} = require("./portal-access-mail");
 const { engagementSwimmerChangeResolutionMail } = require("./engagement-swimmer-change-mail");
 const { cleanClubPayload } = require("./engagement-clubs");
 const {
@@ -2613,6 +2619,153 @@ async function sendEngagementAccessRejection(payload = {}) {
   }
 }
 
+async function sendEngagementExistingAccountNotice(payload = {}) {
+  const config = engagementMailSmtpConfig();
+  const attemptedAt = new Date().toISOString();
+  if (!config.ready) {
+    return { status: "skipped_missing_config", attemptedAt, reason: "Configuration SMTP incomplete." };
+  }
+  const mail = engagementExistingAccountNotice(payload);
+  try {
+    const transporter = nodemailer.createTransport(config.transport);
+    await transporter.sendMail({
+      from: `LivePalmes <${config.fromEmail}>`,
+      to: payload.email,
+      subject: mail.subject,
+      text: mail.text
+    });
+    return { status: "sent", attemptedAt, sentAt: new Date().toISOString(), reason: "" };
+  } catch (error) {
+    console.error(
+      "Notification de compte existant impossible.",
+      cleanText(error?.code || error?.name || "smtp-error").slice(0, 80)
+    );
+    return { status: "failed", attemptedAt, reason: "Envoi SMTP impossible." };
+  }
+}
+
+async function engagementExistingAccessAccount(email = "") {
+  let authUser;
+  try {
+    authUser = await auth.getUserByEmail(normalizeEmail(email));
+  } catch (error) {
+    if (error?.code === "auth/user-not-found") return null;
+    throw error;
+  }
+  const snapshot = await db.collection("users").doc(authUser.uid).get();
+  if (!snapshot.exists) return null;
+  const data = snapshot.data() || {};
+  if (!["active", "inactive"].includes(cleanText(data.status))) return null;
+  return {
+    uid: authUser.uid,
+    email: normalizeEmail(authUser.email || email),
+    firstName: cleanText(data.firstName).slice(0, 80),
+    status: cleanText(data.status),
+    clubId: cleanText(data.clubId).slice(0, 40),
+    clubCode: engagementClubCode(data.clubId, data.clubCode).slice(0, 40),
+    clubName: cleanText(data.clubName).slice(0, 140)
+  };
+}
+
+async function consumePublicAccessRequestRateLimit(request = {}, now = "") {
+  if (cleanText(request.auth?.uid)) return;
+  const headers = request.rawRequest?.headers || {};
+  const forwardedIp = cleanText(headers["x-forwarded-for"]).split(",")[0].trim();
+  const clientIp = forwardedIp || cleanText(request.rawRequest?.ip || request.rawRequest?.socket?.remoteAddress);
+  const userAgent = cleanText(headers["user-agent"]).slice(0, 240);
+  const rateId = stableHash(`${clientIp || "unknown"}|${userAgent || "unknown"}`).slice(0, 40);
+  const rateRef = db.collection(PORTAL_ACCESS_RATE_LIMIT_COLLECTION).doc(rateId);
+  await db.runTransaction(async (transaction) => {
+    const rateSnapshot = await transaction.get(rateRef);
+    const rate = nextPortalAccessRateLimit(rateSnapshot.data() || {}, Date.parse(now));
+    if (!rate.allowed) {
+      throw new HttpsError("resource-exhausted", "Trop de demandes. Reessayez plus tard.", {
+        retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000)
+      });
+    }
+    transaction.set(rateRef, rate.next, { merge: false });
+  });
+}
+
+async function sendEngagementAccessAdminNotifications(payload = {}) {
+  const attemptedAt = new Date().toISOString();
+  const config = engagementMailSmtpConfig();
+  if (!config.ready) {
+    return {
+      status: "skipped_missing_config",
+      attemptedAt,
+      recipientCount: 0,
+      sentCount: 0,
+      failedCount: 0,
+      reason: "Configuration SMTP incomplete."
+    };
+  }
+  const capabilities = [
+    "engagements.region.manage",
+    ...(payload.newClubRequested === true ? ["engagements.national.manage"] : [])
+  ];
+  let recipients;
+  try {
+    recipients = engagementAccessAdminNotificationRecipients(
+      await engagementActiveMailRecipients(db, capabilities),
+      payload
+    );
+  } catch (error) {
+    console.error(
+      "Lecture des destinataires de demande d'acces impossible.",
+      cleanText(error?.code || error?.name || "firestore-error").slice(0, 80)
+    );
+    return { status: "failed", attemptedAt, recipientCount: 0, sentCount: 0, failedCount: 0, reason: "Destinataires indisponibles." };
+  }
+  if (!recipients.length) {
+    return { status: "skipped_no_recipient", attemptedAt, recipientCount: 0, sentCount: 0, failedCount: 0, reason: "Aucun administrateur destinataire." };
+  }
+  const transporter = nodemailer.createTransport(config.transport);
+  const notificationPayload = {
+    ...payload,
+    clubCode: engagementClubCode(payload.clubId, payload.clubCode).slice(0, 40),
+    clubName: engagementClubName(payload.clubId, payload.clubName).slice(0, 140),
+    regionName: CLUB_REFERENCE_REGION_LABELS[cleanText(payload.regionId)] || cleanText(payload.regionId).slice(0, 80)
+  };
+  let sentCount = 0;
+  let failedCount = 0;
+  for (let index = 0; index < recipients.length; index += 5) {
+    const batch = recipients.slice(index, index + 5);
+    const results = await Promise.allSettled(batch.map((recipient) => {
+      const mail = engagementAccessAdminNotification({
+        ...notificationPayload,
+        recipientFirstName: recipient.firstName
+      });
+      return transporter.sendMail({
+        from: `LivePalmes <${config.fromEmail}>`,
+        to: recipient.email,
+        subject: mail.subject,
+        text: mail.text
+      });
+    }));
+    results.forEach((result) => {
+      if (result.status === "fulfilled") sentCount += 1;
+      else failedCount += 1;
+    });
+  }
+  if (failedCount) {
+    console.error("Certaines notifications administratives de demande d'acces ont echoue.", {
+      recipientCount: recipients.length,
+      sentCount,
+      failedCount
+    });
+  }
+  return {
+    status: failedCount ? sentCount ? "partial" : "failed" : "sent",
+    attemptedAt,
+    ...(sentCount ? { sentAt: new Date().toISOString() } : {}),
+    recipientCount: recipients.length,
+    sentCount,
+    failedCount,
+    reason: failedCount ? "Envoi SMTP partiellement ou totalement impossible." : ""
+  };
+}
+
 exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, async (request) => {
   const uid = cleanText(request.auth?.uid);
   if (cleanText(request.data?.website)) {
@@ -2621,6 +2774,21 @@ exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, as
   let payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
   payload = await resolveExistingClubForAccessRequest(payload);
   const now = new Date().toISOString();
+  await consumePublicAccessRequestRateLimit(request, now);
+  const existingAccount = await engagementExistingAccessAccount(payload.email);
+  if (existingAccount) {
+    const guidanceEmail = await sendEngagementExistingAccountNotice(existingAccount);
+    await writeAuditLog("engagementAccessRequest.redirectedExistingAccount", uid || "public-login-page", {
+      email: payload.email,
+      guidanceEmailStatus: guidanceEmail.status
+    });
+    return {
+      ok: true,
+      request: null,
+      existingAccount: true,
+      guidanceEmailSent: guidanceEmail.status === "sent"
+    };
+  }
   const requestClubKey = payload.clubId || payload.newClub?.federalNumber || "new-club";
   const requestId = stableHash(`${payload.email}|${requestClubKey}|engagements.club.manage`).slice(0, 40);
   const ref = db.collection("engagementAccessRequests").doc(requestId);
@@ -2639,22 +2807,6 @@ exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, as
     if (snapshot.exists && snapshot.data()?.status === "pending") {
       throw new HttpsError("already-exists", "Une demande est deja en attente pour cet email et ce club.");
     }
-    if (!uid) {
-      const headers = request.rawRequest?.headers || {};
-      const forwardedIp = cleanText(headers["x-forwarded-for"]).split(",")[0].trim();
-      const clientIp = forwardedIp || cleanText(request.rawRequest?.ip || request.rawRequest?.socket?.remoteAddress);
-      const userAgent = cleanText(headers["user-agent"]).slice(0, 240);
-      const rateId = stableHash(`${clientIp || "unknown"}|${userAgent || "unknown"}`).slice(0, 40);
-      const rateRef = db.collection(PORTAL_ACCESS_RATE_LIMIT_COLLECTION).doc(rateId);
-      const rateSnapshot = await transaction.get(rateRef);
-      const rate = nextPortalAccessRateLimit(rateSnapshot.data() || {}, Date.parse(now));
-      if (!rate.allowed) {
-        throw new HttpsError("resource-exhausted", "Trop de demandes. Reessayez plus tard.", {
-          retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000)
-        });
-      }
-      transaction.set(rateRef, rate.next, { merge: false });
-    }
     transaction.set(ref, savedPayload, { merge: true });
   });
   await writeAuditLog("engagementAccessRequest.submitted", uid || "public-login-page", {
@@ -2664,19 +2816,22 @@ exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, as
     regionId: payload.regionId
   });
   const acknowledgementEmail = await sendEngagementAccessAcknowledgement(payload);
+  const adminNotification = await sendEngagementAccessAdminNotifications(payload);
   await ref.set({
     acknowledgementEmail,
+    adminNotification,
     updatedAt: new Date().toISOString()
   }, { merge: true }).catch((error) => {
     console.error(
-      "Statut de l'accuse de reception non enregistre.",
+      "Statut des notifications de demande d'acces non enregistre.",
       cleanText(error?.code || error?.name || "firestore-error").slice(0, 80)
     );
   });
   return {
     ok: true,
     request: engagementAccessRequestItem({ id: requestId, data: () => savedPayload }),
-    acknowledgementEmailSent: acknowledgementEmail.status === "sent"
+    acknowledgementEmailSent: acknowledgementEmail.status === "sent",
+    adminNotificationStatus: adminNotification.status
   };
 });
 
@@ -2747,6 +2902,13 @@ exports.resolveEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, a
       }, request)
     };
     assertEngagementAccessRequestScope(context, resolvedData);
+    const existingAccount = await engagementExistingAccessAccount(resolvedData.email);
+    if (existingAccount) {
+      throw new HttpsError(
+        "already-exists",
+        "Cette adresse possede deja un compte LivePalmes. Utilisez la gestion des comptes pour modifier son club sans remplacer ses droits."
+      );
+    }
     if (resolvedData.newClubRequested === true) {
       if (!context.national) {
         throw new HttpsError("permission-denied", "La creation d'un club est reservee au niveau national.");
@@ -6548,7 +6710,7 @@ function engagementOpeningMailText(competition = {}) {
     "Pensez à vérifier l'ensemble des nageurs, courses, temps d'engagement, relais et informations du chef d'équipe avant la date limite.",
     "",
     "Sportivement,",
-    "FFESSM - CNNP"
+    "Commission Nationale Nage avec Palmes - FFESSM"
   ].join("\n");
 }
 
@@ -6573,7 +6735,8 @@ function engagementClubRecapMailText(competition = {}, entry = {}) {
     `Vous trouverez en piece jointe le recapitulatif des engagements de ${entry.clubName || entry.clubId || "votre club"} pour ${competition.name || "la competition"}.`,
     ...feeLines,
     "",
-    "LivePalmes"
+    "Sportivement,",
+    "Commission Nationale Nage avec Palmes - FFESSM"
   ].join("\n");
 }
 
@@ -6590,7 +6753,8 @@ function engagementTxtMailText(competition = {}, txt = {}) {
     `Lieu : ${competition.location || "-"}.`,
     `Fichier : ${txt.document?.fileName || txt.fileName || "export-engagements-livepalmes.txt"}.`,
     "",
-    "LivePalmes"
+    "Sportivement,",
+    "Commission Nationale Nage avec Palmes - FFESSM"
   ].join("\n");
 }
 

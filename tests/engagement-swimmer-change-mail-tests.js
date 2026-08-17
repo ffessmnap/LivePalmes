@@ -37,7 +37,7 @@ assert.match(approved.text, /VILLEGA Anais \(Union Sportive Palaiseau\)/);
 assert.match(approved.text, /- Prénom : Anna/);
 assert.match(approved.text, /Commentaire de l’administrateur national : Correction vérifiée\./);
 assert.match(approved.text, /fiche du nageur a été mise à jour/);
-assert.match(approved.text, /La Commission Nationale Nage avec Palmes – FFESSM$/);
+assert.match(approved.text, /Commission Nationale Nage avec Palmes - FFESSM$/);
 assert.doesNotMatch(approved.text, /L’équipe LivePalmes/);
 
 const rejected = engagementSwimmerChangeResolutionMail({

@@ -228,11 +228,12 @@ vm.runInNewContext(`
     closed: isEngagementOpeningDeadlinePast("closed", "2026-08-08T11:00:00.000Z", nowMs)
   };`, openingDeadlinePastSandbox);
 const openingMailStart = functions.indexOf("function engagementOpeningMailSubject");
-const openingMailEnd = functions.indexOf("function engagementClubRecapMailSubject", openingMailStart);
+const openingMailEnd = functions.indexOf("function engagementMailJobItemFromData", openingMailStart);
 const openingMailFunctions = functions.slice(openingMailStart, openingMailEnd);
 const openingMailSandbox = {};
 vm.runInNewContext(`
   const engagementPdfMoney = (value) => value + " €";
+  const engagementPdfFeeTotal = () => 12;
   const engagementPdfFormatDate = (value) => value;
   const engagementPdfFormatDateTime = (value) => value;
   ${openingMailFunctions}
@@ -244,7 +245,15 @@ vm.runInNewContext(`
       location: "Piscine test",
       entryDeadlineAt: "2026-09-05 23:59",
       fees: { swimmerFee: 2, individualEventFee: 3, relayFee: 4, helloAssoUrl: "https://example.test/paiement" }
-    })
+    }),
+    recapText: engagementClubRecapMailText(
+      { name: "Meeting test", fees: { enabled: false } },
+      { clubName: "Club test" }
+    ),
+    txtText: engagementTxtMailText(
+      { name: "Meeting test", date: "2026-09-12", location: "Piscine test" },
+      { fileName: "engagements.txt" }
+    )
   };
 `, openingMailSandbox);
 
@@ -254,7 +263,9 @@ assert.match(openingMailSandbox.result.text, /^Bonjour,/);
 assert.match(openingMailSandbox.result.text, /https:\/\/livepalmes\.web\.app\/portail\.html#club-competitions/);
 assert.match(openingMailSandbox.result.text, /Vos modifications sont enregistrées progressivement/);
 assert.doesNotMatch(openingMailSandbox.result.text, /frais|HelloAsso/i);
-assert.match(openingMailSandbox.result.text, /Sportivement,\nFFESSM - CNNP$/);
+assert.match(openingMailSandbox.result.text, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
+assert.match(openingMailSandbox.result.recapText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
+assert.match(openingMailSandbox.result.txtText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
 assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.club.manage"]), {
   club: true,
   clubSwimmers: true,
@@ -1156,7 +1167,7 @@ assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-t
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
 assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260817-access-workflows-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-access-workflows-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-existing-account-1"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1289,7 +1300,7 @@ assert.ok(portal.includes("performances/public/data/club-reference.js?v=20260813
 assert.ok(portal.includes('elements.engagementsNationalClubFederalNumber.readOnly'));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-access-workflows-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260817-existing-account-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);

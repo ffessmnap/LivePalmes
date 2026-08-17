@@ -9909,12 +9909,17 @@
     setPublicAccessRequestMessage("Envoi de la demande...", "loading");
     try {
       matchPublicAccessRequestClubByFederalNumber();
-      await callFunction("submitEngagementAccessRequest", publicAccessRequestPayloadFromForm());
+      const result = await callFunction("submitEngagementAccessRequest", publicAccessRequestPayloadFromForm());
       elements.publicAccessRequestForm?.reset();
       populatePublicAccessRequestClubSelect();
       updatePublicAccessRequestNewClubMode();
       engagementAccessRequestsLoaded = false;
-      setPublicAccessRequestMessage("Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.", "ok");
+      setPublicAccessRequestMessage(
+        result.existingAccount
+          ? "Cette adresse semble deja associee a un compte LivePalmes. Consultez l'e-mail que nous venons de vous envoyer."
+          : "Demande envoyee. Elle doit maintenant etre validee par la region ou le niveau national.",
+        "ok"
+      );
     } catch (error) {
       setPublicAccessRequestMessage(`Demande impossible : ${error?.message || error}`);
     } finally {
