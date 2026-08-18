@@ -597,6 +597,18 @@
     engagementsClubRecoverSwimmerButton: document.querySelector("#adminEngagementsClubRecoverSwimmerButton"),
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
+    engagementsDocumentsTitle: document.querySelector("#adminEngagementsDocumentsTitle"),
+    engagementsSharedDocumentsCount: document.querySelector("#adminEngagementsSharedDocumentsCount"),
+    engagementsSharedDocumentsList: document.querySelector("#adminEngagementsSharedDocumentsList"),
+    engagementsDocumentAddButton: document.querySelector("#adminEngagementsDocumentAddButton"),
+    engagementsDocumentForm: document.querySelector("#adminEngagementsDocumentForm"),
+    engagementsDocumentFiles: document.querySelector("#adminEngagementsDocumentFiles"),
+    engagementsDocumentDrafts: document.querySelector("#adminEngagementsDocumentDrafts"),
+    engagementsDocumentNotify: document.querySelector("#adminEngagementsDocumentNotify"),
+    engagementsDocumentNotifyLabel: document.querySelector("#adminEngagementsDocumentNotifyLabel"),
+    engagementsDocumentFormMessage: document.querySelector("#adminEngagementsDocumentFormMessage"),
+    engagementsDocumentCancelButton: document.querySelector("#adminEngagementsDocumentCancelButton"),
+    engagementsDocumentSubmitButton: document.querySelector("#adminEngagementsDocumentSubmitButton"),
     engagementsTechnicalFollowup: document.querySelector("#adminEngagementsTechnicalFollowup"),
     engagementsComputerEmailLabel: document.querySelector("#adminEngagementsComputerEmailLabel"),
     engagementsGenerateTxtExportButton: document.querySelector("#adminEngagementsGenerateTxtExportButton"),
@@ -766,6 +778,9 @@
   let engagementMailJobsCursor = null;
   let engagementMailJobsHasMore = false;
   let engagementMailJobsTotalCount = 0;
+  let engagementCompetitionDocumentFiles = [];
+  let engagementCompetitionDocumentEditingId = "";
+  let engagementCompetitionDocumentSaving = false;
   let engagementCompetitionStatistics = null;
   let engagementCompetitionStatisticsCompetitionId = "";
   let engagementCompetitionStatisticsLoading = false;
@@ -1265,6 +1280,9 @@
     engagementClubRecapEntriesCompetitionId = "";
     engagementMailJobs = [];
     engagementMailJobsCompetitionId = "";
+    engagementCompetitionDocumentFiles = [];
+    engagementCompetitionDocumentEditingId = "";
+    engagementCompetitionDocumentSaving = false;
     selectedEngagementClubEntry = null;
     engagementClubWorkspaceCache.clear();
     engagementSwimmerCorrectionOpener = null;
@@ -1621,7 +1639,7 @@
   }
 
   function isClubEngagementWorkflowTab(tab = "") {
-    return ["team", "officials", "swimmers", "entries", "relays", "summary"].includes(tab);
+    return ["documents", "team", "officials", "swimmers", "entries", "relays", "summary"].includes(tab);
   }
 
   function engagementClubTeamComplete(entry = selectedEngagementClubEntry || {}) {
@@ -1713,6 +1731,7 @@
   }
 
   function canOpenClubEngagementTab(tab = "") {
+    if (tab === "documents") return true;
     if (tab === "summary" && engagementClubWriteLocked()) return true;
     return tab === "team" || engagementClubTeamComplete();
   }
@@ -1738,7 +1757,16 @@
   });
 
   function engagementDetailTabLabel(tab = "") {
+    if (tab === "documents" && !isEngagementAdminMode()) return "Documents";
     return ENGAGEMENT_DETAIL_TAB_LABELS[tab] || tab;
+  }
+
+  function engagementDetailTabsForGroup(group = "") {
+    const tabs = ENGAGEMENT_DETAIL_TAB_GROUPS[group] || [];
+    if (isEngagementAdminMode()) return tabs;
+    if (group === "information") return [...tabs, "documents"];
+    if (group === "documents") return [];
+    return tabs;
   }
 
   function visibleEngagementDetailTabs() {
@@ -1788,6 +1816,7 @@
   }
 
   function engagementDetailTabGroup(tab = "") {
+    if (tab === "documents" && !isEngagementAdminMode()) return "information";
     return Object.entries(ENGAGEMENT_DETAIL_TAB_GROUPS).find(([, tabs]) => tabs.includes(tab))?.[0] || "information";
   }
 
@@ -1795,15 +1824,19 @@
     const tabs = visibleEngagementDetailTabs();
     const activeGroup = engagementDetailTabGroup(activeEngagementsDetailTab);
     const visibleTabs = new Set(tabs);
+    let visibleStepIndex = 0;
     elements.engagementsDetailStepButtons?.forEach((button) => {
       const group = button.dataset.engagementStepButton || "";
-      const groupVisible = (ENGAGEMENT_DETAIL_TAB_GROUPS[group] || []).some((tab) => visibleTabs.has(tab));
+      const groupVisible = engagementDetailTabsForGroup(group).some((tab) => visibleTabs.has(tab));
       button.hidden = !groupVisible;
+      const number = button.querySelector("span");
+      if (groupVisible) visibleStepIndex += 1;
+      if (number && groupVisible) number.textContent = String(visibleStepIndex);
       button.setAttribute("aria-pressed", group === activeGroup ? "true" : "false");
     });
     elements.engagementsDetailTabGroups?.forEach((group) => {
       const groupName = group.dataset.engagementStepGroup || "";
-      const visibleGroupTabCount = (ENGAGEMENT_DETAIL_TAB_GROUPS[groupName] || []).filter((tab) => visibleTabs.has(tab)).length;
+      const visibleGroupTabCount = engagementDetailTabsForGroup(groupName).filter((tab) => visibleTabs.has(tab)).length;
       group.hidden = groupName !== activeGroup || visibleGroupTabCount < 2;
     });
   }
@@ -1874,7 +1907,7 @@
 
   function setEngagementsDetailTab(tab) {
     const allowedTabs = new Set(["general", "courses", "team", "officials", "swimmers", "entries", "relays", "summary", "statistics", "documents", "delivery"]);
-    const adminOnlyTabs = new Set(["statistics", "documents", "delivery"]);
+    const adminOnlyTabs = new Set(["statistics", "delivery"]);
     const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "general";
     const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
@@ -1901,7 +1934,9 @@
       const hiddenByClubLock = clubWriteLocked && clubEngagementTabHiddenWhenWriteLocked(buttonTab);
       const hiddenBecauseOfficialsNotRequired = clubOfficialsNotRequired && buttonTab === "officials";
       const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
-      button.hidden = (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+      const hiddenForMode = (button.hasAttribute("data-engagements-club-documents-tab") && isEngagementAdminMode())
+        || (button.hasAttribute("data-engagements-admin-documents-tab") && !isEngagementAdminMode());
+      button.hidden = hiddenForMode || (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
       button.dataset.locked = lockedClubStep ? "true" : "false";
       button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
       const selected = buttonTab === nextTab;
@@ -2907,7 +2942,7 @@
           entries: "Engagements",
           summary: "Récapitulatif",
           statistics: "Statistiques",
-          documents: "GED",
+          documents: "Documents",
           delivery: "Diffusion"
         };
     document.querySelectorAll("[data-engagement-step-label]").forEach((label) => {
@@ -7502,7 +7537,8 @@
     return {
       opening_notification: "Ouverture",
       entries_txt: "TXT informatique",
-      club_recap_pdf: "PDF club"
+      club_recap_pdf: "PDF club",
+      competition_documents: "Documents"
     }[String(type || "")] || "Mail";
   }
 
@@ -7616,15 +7652,354 @@
     renderEngagementMailJobs();
   }
 
+  const ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+  const ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT = 20;
+  const ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|jpe?g|png|zip)$/i;
+
+  function engagementCompetitionDocumentCategoryLabel(category = "") {
+    return {
+      poster: "Affiche",
+      circular: "Circulaire",
+      rules: "Règlement",
+      information: "Note d'information",
+      access: "Plan / accès",
+      other: "Autre"
+    }[String(category || "")] || "Autre";
+  }
+
+  function engagementCompetitionDocumentCategoryOptions(selected = "other") {
+    return Object.entries({
+      poster: "Affiche",
+      circular: "Circulaire",
+      rules: "Règlement",
+      information: "Note d'information",
+      access: "Plan / accès",
+      other: "Autre"
+    }).map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
+  }
+
+  function engagementCompetitionDocumentFileSize(size = 0) {
+    const bytes = Math.max(0, Number(size) || 0);
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
+    return `${(bytes / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+  }
+
+  function engagementCompetitionDocumentTypeLabel(fileName = "") {
+    return String(fileName || "").split(".").pop()?.toUpperCase() || "FICHIER";
+  }
+
+  function renderEngagementCompetitionDocumentDrafts() {
+    const mount = elements.engagementsDocumentDrafts;
+    if (!mount) return;
+    const documents = Array.isArray(selectedEngagementCompetition?.clubDocuments) ? selectedEngagementCompetition.clubDocuments : [];
+    const editing = documents.find((document) => document.id === engagementCompetitionDocumentEditingId) || null;
+    const drafts = editing
+      ? [{
+          file: engagementCompetitionDocumentFiles[0] || null,
+          title: editing.title || "",
+          category: editing.category || "other",
+          description: editing.description || "",
+          fileName: engagementCompetitionDocumentFiles[0]?.name || editing.fileName || ""
+        }]
+      : engagementCompetitionDocumentFiles.map((file) => ({
+          file,
+          title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim(),
+          category: "other",
+          description: "",
+          fileName: file.name
+        }));
+    mount.innerHTML = drafts.map((draft, index) => `
+      <div class="admin-engagements-document-draft" data-engagement-document-draft="${index}">
+        <small class="admin-engagements-document-draft-file">${escapeHtml(draft.fileName)}${draft.file ? ` · ${escapeHtml(engagementCompetitionDocumentFileSize(draft.file.size))}` : " · fichier actuel conservé"}</small>
+        <label>Titre<input type="text" maxlength="160" required data-engagement-document-title value="${escapeHtml(draft.title)}"></label>
+        <label>Catégorie<select data-engagement-document-category>${engagementCompetitionDocumentCategoryOptions(draft.category)}</select></label>
+        <label>Description facultative<textarea maxlength="500" rows="2" data-engagement-document-description>${escapeHtml(draft.description)}</textarea></label>
+      </div>
+    `).join("");
+    if (elements.engagementsDocumentNotifyLabel) {
+      elements.engagementsDocumentNotifyLabel.hidden = Boolean(editing && !engagementCompetitionDocumentFiles.length);
+    }
+    if (elements.engagementsDocumentSubmitButton) {
+      elements.engagementsDocumentSubmitButton.textContent = editing
+        ? (engagementCompetitionDocumentFiles.length ? "Remplacer le document" : "Enregistrer")
+        : `Mettre en ligne${drafts.length > 1 ? ` (${drafts.length})` : ""}`;
+    }
+  }
+
+  function openEngagementCompetitionDocumentForm(documentId = "") {
+    if (!isEngagementAdminMode() || engagementCompetitionDocumentSaving) return;
+    engagementCompetitionDocumentEditingId = String(documentId || "");
+    engagementCompetitionDocumentFiles = [];
+    if (elements.engagementsDocumentFiles) {
+      elements.engagementsDocumentFiles.value = "";
+      elements.engagementsDocumentFiles.multiple = !engagementCompetitionDocumentEditingId;
+      elements.engagementsDocumentFiles.required = !engagementCompetitionDocumentEditingId;
+    }
+    if (elements.engagementsDocumentNotify) elements.engagementsDocumentNotify.checked = false;
+    if (elements.engagementsDocumentFormMessage) {
+      elements.engagementsDocumentFormMessage.textContent = "";
+      elements.engagementsDocumentFormMessage.dataset.tone = "";
+    }
+    if (elements.engagementsDocumentForm) elements.engagementsDocumentForm.hidden = false;
+    if (elements.engagementsDocumentAddButton) elements.engagementsDocumentAddButton.hidden = true;
+    renderEngagementCompetitionDocumentDrafts();
+    elements.engagementsDocumentFiles?.focus();
+  }
+
+  function closeEngagementCompetitionDocumentForm() {
+    engagementCompetitionDocumentEditingId = "";
+    engagementCompetitionDocumentFiles = [];
+    if (elements.engagementsDocumentFiles) elements.engagementsDocumentFiles.value = "";
+    if (elements.engagementsDocumentDrafts) elements.engagementsDocumentDrafts.innerHTML = "";
+    if (elements.engagementsDocumentNotify) elements.engagementsDocumentNotify.checked = false;
+    if (elements.engagementsDocumentForm) elements.engagementsDocumentForm.hidden = true;
+    if (elements.engagementsDocumentAddButton) elements.engagementsDocumentAddButton.hidden = false;
+  }
+
+  function engagementCompetitionDocumentDraftValues() {
+    return Array.from(elements.engagementsDocumentDrafts?.querySelectorAll("[data-engagement-document-draft]") || []).map((row) => ({
+      title: row.querySelector("[data-engagement-document-title]")?.value.trim() || "",
+      category: row.querySelector("[data-engagement-document-category]")?.value || "other",
+      description: row.querySelector("[data-engagement-document-description]")?.value.trim() || ""
+    }));
+  }
+
+  function readEngagementCompetitionDocumentFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
+      reader.addEventListener("error", () => reject(reader.error || new Error("Lecture du fichier impossible.")), { once: true });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleEngagementCompetitionDocumentFiles() {
+    const files = Array.from(elements.engagementsDocumentFiles?.files || []);
+    const invalid = files.find((file) => !ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN.test(file.name) || file.size <= 0 || file.size > ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES);
+    const currentCount = Array.isArray(selectedEngagementCompetition?.clubDocuments) ? selectedEngagementCompetition.clubDocuments.length : 0;
+    const tooMany = !engagementCompetitionDocumentEditingId && currentCount + files.length > ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
+    if (invalid || tooMany) {
+      engagementCompetitionDocumentFiles = [];
+      if (elements.engagementsDocumentFiles) elements.engagementsDocumentFiles.value = "";
+      if (elements.engagementsDocumentFormMessage) {
+        elements.engagementsDocumentFormMessage.textContent = tooMany
+          ? `La compétition est limitée à ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT} documents actifs.`
+          : `${invalid?.name || "Ce fichier"} est vide, dépasse 10 Mo ou utilise un format non autorisé.`;
+        elements.engagementsDocumentFormMessage.dataset.tone = "error";
+      }
+      renderEngagementCompetitionDocumentDrafts();
+      return;
+    }
+    engagementCompetitionDocumentFiles = engagementCompetitionDocumentEditingId ? files.slice(0, 1) : files;
+    if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "";
+    renderEngagementCompetitionDocumentDrafts();
+  }
+
+  function updateSelectedEngagementCompetitionDocuments(documents = []) {
+    selectedEngagementCompetition = {
+      ...(selectedEngagementCompetition || {}),
+      clubDocuments: Array.isArray(documents) ? documents : []
+    };
+    renderEngagementDocuments(selectedEngagementCompetition);
+  }
+
+  async function saveEngagementCompetitionDocuments(event) {
+    event?.preventDefault();
+    if (!selectedEngagementCompetitionId || !isEngagementAdminMode() || engagementCompetitionDocumentSaving) return;
+    const editingDocument = (selectedEngagementCompetition?.clubDocuments || [])
+      .find((document) => document.id === engagementCompetitionDocumentEditingId) || null;
+    const values = engagementCompetitionDocumentDraftValues();
+    if (!values.length || values.some((draft) => !draft.title)) {
+      if (elements.engagementsDocumentFormMessage) {
+        elements.engagementsDocumentFormMessage.textContent = engagementCompetitionDocumentEditingId
+          ? "Renseignez le titre du document."
+          : "Choisissez au moins un fichier et renseignez chaque titre.";
+        elements.engagementsDocumentFormMessage.dataset.tone = "error";
+      }
+      return;
+    }
+    const publishesFile = engagementCompetitionDocumentFiles.length > 0;
+    const notify = publishesFile && elements.engagementsDocumentNotify?.checked === true;
+    if (notify) {
+      try {
+        if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Calcul des destinataires…";
+        const audience = await callFunction("previewEngagementCompetitionDocumentNotification", {
+          competitionId: selectedEngagementCompetitionId
+        });
+        const confirmed = global.confirm(
+          `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document${engagementCompetitionDocumentFiles.length > 1 ? "s" : ""} et envoyer un e-mail à ${Number(audience.recipientCount || 0)} administrateur${Number(audience.recipientCount || 0) > 1 ? "s" : ""} de ${Number(audience.clubCount || 0)} club${Number(audience.clubCount || 0) > 1 ? "s" : ""} ?`
+        );
+        if (!confirmed) {
+          if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Mise en ligne annulée.";
+          return;
+        }
+      } catch (error) {
+        if (elements.engagementsDocumentFormMessage) {
+          elements.engagementsDocumentFormMessage.textContent = `Calcul des destinataires impossible : ${error?.message || error}`;
+          elements.engagementsDocumentFormMessage.dataset.tone = "error";
+        }
+        return;
+      }
+    }
+    engagementCompetitionDocumentSaving = true;
+    if (elements.engagementsDocumentSubmitButton) elements.engagementsDocumentSubmitButton.disabled = true;
+    if (elements.engagementsDocumentCancelButton) elements.engagementsDocumentCancelButton.disabled = true;
+    if (elements.engagementsDocumentFiles) elements.engagementsDocumentFiles.disabled = true;
+    const publishedIds = [];
+    const errors = [];
+    try {
+      if (editingDocument && !publishesFile) {
+        if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Enregistrement…";
+        const result = await callFunction("updateEngagementCompetitionDocument", {
+          competitionId: selectedEngagementCompetitionId,
+          documentId: editingDocument.id,
+          ...values[0]
+        });
+        updateSelectedEngagementCompetitionDocuments(result.documents || []);
+      } else {
+        for (let index = 0; index < engagementCompetitionDocumentFiles.length; index += 1) {
+          const file = engagementCompetitionDocumentFiles[index];
+          const draft = values[editingDocument ? 0 : index];
+          if (elements.engagementsDocumentFormMessage) {
+            elements.engagementsDocumentFormMessage.textContent = `Mise en ligne ${index + 1}/${engagementCompetitionDocumentFiles.length} : ${file.name}`;
+          }
+          try {
+            const fileDataUrl = await readEngagementCompetitionDocumentFile(file);
+            const result = await callFunction("uploadEngagementCompetitionDocument", {
+              competitionId: selectedEngagementCompetitionId,
+              ...(editingDocument ? { documentId: editingDocument.id } : {}),
+              ...draft,
+              fileName: file.name,
+              fileDataUrl
+            });
+            publishedIds.push(result.documentId);
+            updateSelectedEngagementCompetitionDocuments(result.documents || []);
+          } catch (error) {
+            errors.push(`${file.name} : ${error?.message || error}`);
+          }
+        }
+      }
+      let notification = null;
+      if (notify && publishedIds.length) {
+        if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Envoi de la notification aux clubs…";
+        try {
+          notification = await callFunction("notifyEngagementCompetitionDocuments", {
+            competitionId: selectedEngagementCompetitionId,
+            documentIds: publishedIds
+          });
+          engagementMailJobsCompetitionId = "";
+        } catch (error) {
+          errors.push(`Notification : ${error?.message || error}`);
+        }
+      }
+      if (!errors.length) {
+        closeEngagementCompetitionDocumentForm();
+      } else if (elements.engagementsDocumentFormMessage) {
+        elements.engagementsDocumentFormMessage.textContent = errors.join(" · ");
+        elements.engagementsDocumentFormMessage.dataset.tone = "error";
+      }
+      renderEngagementDocuments(selectedEngagementCompetition || {});
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = errors.length
+          ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne. ${errors.join(" · ")}`
+          : notification
+            ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne · ${Number(notification.sentCount || 0)} e-mail${Number(notification.sentCount || 0) > 1 ? "s" : ""} envoyé${Number(notification.sentCount || 0) > 1 ? "s" : ""}${notification.configurationMissing ? " · configuration e-mail manquante" : Number(notification.errorCount || 0) ? ` · ${notification.errorCount} en erreur` : ""}.`
+            : editingDocument && !publishesFile
+              ? "Informations du document enregistrées."
+              : `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne.`;
+        elements.engagementsDocumentsSummary.dataset.tone = errors.length || notification?.configurationMissing || Number(notification?.errorCount || 0) ? "warning" : "success";
+      }
+    } finally {
+      engagementCompetitionDocumentSaving = false;
+      if (elements.engagementsDocumentSubmitButton) elements.engagementsDocumentSubmitButton.disabled = false;
+      if (elements.engagementsDocumentCancelButton) elements.engagementsDocumentCancelButton.disabled = false;
+      if (elements.engagementsDocumentFiles) elements.engagementsDocumentFiles.disabled = false;
+    }
+  }
+
+  async function deleteEngagementCompetitionDocument(documentId = "") {
+    const document = (selectedEngagementCompetition?.clubDocuments || []).find((item) => item.id === documentId);
+    if (!document || engagementCompetitionDocumentSaving) return;
+    if (!global.confirm(`Supprimer définitivement « ${document.title || document.fileName} » ? Les clubs ne seront pas informés.`)) return;
+    engagementCompetitionDocumentSaving = true;
+    try {
+      const result = await callFunction("deleteEngagementCompetitionDocument", {
+        competitionId: selectedEngagementCompetitionId,
+        documentId
+      });
+      updateSelectedEngagementCompetitionDocuments(result.documents || []);
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = result.storageDeleted === false
+          ? "Document retiré de la compétition. Le nettoyage du fichier de stockage devra être vérifié."
+          : "Document supprimé.";
+        elements.engagementsDocumentsSummary.dataset.tone = result.storageDeleted === false ? "warning" : "success";
+      }
+    } catch (error) {
+      if (elements.engagementsDocumentsSummary) {
+        elements.engagementsDocumentsSummary.textContent = `Suppression impossible : ${error?.message || error}`;
+        elements.engagementsDocumentsSummary.dataset.tone = "error";
+      }
+    } finally {
+      engagementCompetitionDocumentSaving = false;
+    }
+  }
+
+  function renderEngagementSharedDocuments(competition = {}) {
+    const documents = Array.isArray(competition.clubDocuments) ? competition.clubDocuments : [];
+    const adminMode = isEngagementAdminMode();
+    if (elements.engagementsSharedDocumentsCount) {
+      elements.engagementsSharedDocumentsCount.textContent = documents.length
+        ? `${documents.length} document${documents.length > 1 ? "s" : ""} disponible${documents.length > 1 ? "s" : ""} · maximum ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT}`
+        : "Affiches, circulaires, règlements et informations utiles.";
+    }
+    if (elements.engagementsDocumentAddButton) {
+      elements.engagementsDocumentAddButton.disabled = documents.length >= ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
+      elements.engagementsDocumentAddButton.title = documents.length >= ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT
+        ? `La limite de ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT} documents est atteinte.`
+        : "";
+    }
+    if (!elements.engagementsSharedDocumentsList) return;
+    elements.engagementsSharedDocumentsList.innerHTML = documents.length ? documents.map((document) => {
+      const uploader = adminMode && document.uploadedBy
+        ? [document.uploadedBy.name || document.uploadedBy.email, document.uploadedBy.name && document.uploadedBy.email ? document.uploadedBy.email : ""].filter(Boolean).join(" · ")
+        : "";
+      return `
+        <article class="admin-engagements-shared-document-card">
+          <div class="admin-engagements-shared-document-main">
+            <div class="admin-engagements-shared-document-badges">
+              <span>${escapeHtml(engagementCompetitionDocumentCategoryLabel(document.category))}</span>
+              <span>${escapeHtml(engagementCompetitionDocumentTypeLabel(document.fileName))}</span>
+              <span>${escapeHtml(engagementCompetitionDocumentFileSize(document.size))}</span>
+            </div>
+            <a href="${escapeHtml(document.url || "#")}" target="_blank" rel="noopener">${escapeHtml(document.title || document.fileName || "Document")}</a>
+            ${document.description ? `<p>${escapeHtml(document.description)}</p>` : ""}
+            <small class="admin-engagements-shared-document-meta">Mis en ligne ${escapeHtml(document.updatedAt ? formatDeadline(document.updatedAt).replace(/^Limite /, "") : "")}${uploader ? ` · par ${escapeHtml(uploader)}` : ""}</small>
+          </div>
+          ${adminMode ? `
+            <div class="admin-engagements-shared-document-actions">
+              <a class="ghost-button compact" href="${escapeHtml(document.url || "#")}" target="_blank" rel="noopener">Télécharger</a>
+              <button class="ghost-button compact" type="button" data-engagement-document-edit="${escapeHtml(document.id)}">Modifier / remplacer</button>
+              <button class="ghost-button compact admin-engagements-danger-button" type="button" data-engagement-document-delete="${escapeHtml(document.id)}">Supprimer</button>
+            </div>` : ""}
+        </article>`;
+    }).join("") : '<p class="admin-engagements-empty">Aucun document mis en ligne pour cette compétition.</p>';
+  }
+
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
+    const adminMode = isEngagementAdminMode();
+    if (elements.engagementsDocumentsTitle) elements.engagementsDocumentsTitle.textContent = adminMode ? "GED" : "Documents";
     if (elements.engagementsDocumentsSummary) {
-      elements.engagementsDocumentsSummary.textContent = "Téléchargez les documents utiles de la compétition.";
+      elements.engagementsDocumentsSummary.textContent = adminMode
+        ? "Gérez les documents destinés aux clubs et téléchargez les fichiers techniques."
+        : "Consultez et téléchargez les documents utiles de la compétition.";
+      elements.engagementsDocumentsSummary.dataset.tone = "";
     }
     if (elements.engagementsComputerEmailLabel) {
       elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
         ? `Informatique : ${competition.computerEmail}`
         : "Email du responsable informatique non renseigne";
-      elements.engagementsComputerEmailLabel.hidden = !competition.computerEmail;
+      elements.engagementsComputerEmailLabel.hidden = !adminMode || !competition.computerEmail;
     }
     if (elements.engagementsDocumentsList) {
       elements.engagementsDocumentsList.innerHTML = renderEngagementClosureAutomation(competition);
@@ -7635,6 +8010,7 @@
         ? files.map((file) => `<a href="${escapeHtml(file.url || "#")}" target="_blank" rel="noopener">${escapeHtml(file.name || "Document")}</a>`).join("")
         : `<p class="admin-engagements-empty">Aucun fichier disponible pour le moment.</p>`;
     }
+    renderEngagementSharedDocuments(competition);
     renderEngagementClubRecapSelector();
     renderEngagementMailJobs();
   }
@@ -8534,6 +8910,9 @@
     engagementMailJobs = [];
     engagementMailJobsCompetitionId = "";
     engagementMailJobsLoading = false;
+    engagementCompetitionDocumentFiles = [];
+    engagementCompetitionDocumentEditingId = "";
+    engagementCompetitionDocumentSaving = false;
     engagementCompetitionStatistics = null;
     engagementCompetitionStatisticsCompetitionId = "";
     engagementCompetitionStatisticsLoading = false;
@@ -8602,6 +8981,8 @@
     if (elements.engagementsStatisticsEventSelect) elements.engagementsStatisticsEventSelect.innerHTML = "";
     if (elements.engagementsStatisticsUpdatedAt) elements.engagementsStatisticsUpdatedAt.textContent = "Les statistiques sont calculées à la demande.";
     if (elements.engagementsGeneratedFiles) elements.engagementsGeneratedFiles.innerHTML = "";
+    if (elements.engagementsSharedDocumentsList) elements.engagementsSharedDocumentsList.innerHTML = "";
+    closeEngagementCompetitionDocumentForm();
     if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "";
     renderEngagementCompetitions();
     return true;
@@ -8611,6 +8992,7 @@
     const cleanId = String(competitionId || "").trim();
     if (!cleanId) return;
     if (selectedEngagementCompetitionId && selectedEngagementCompetitionId !== cleanId && !confirmLeaveDirtyEngagementTab()) return;
+    closeEngagementCompetitionDocumentForm();
     if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
     const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
     const cachedWorkspace = clubMode ? engagementClubWorkspaceCache.get(cleanId) : null;
@@ -13585,7 +13967,7 @@
     elements.engagementsDetailStepButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         const requestedGroup = button.dataset.engagementStepButton || "";
-        const groupTabs = ENGAGEMENT_DETAIL_TAB_GROUPS[requestedGroup] || [];
+        const groupTabs = engagementDetailTabsForGroup(requestedGroup);
         const visibleTabs = new Set(visibleEngagementDetailTabs());
         const preferredClubTab = !isEngagementAdminMode()
           && requestedGroup === "participants"
@@ -14261,6 +14643,19 @@
     elements.engagementsClubEntriesForm?.addEventListener("submit", (event) => event.preventDefault());
     elements.engagementsClubSummaryPdfButton?.addEventListener("click", downloadEngagementClubSummaryPdf);
     elements.engagementsGenerateTxtExportButton?.addEventListener("click", generateEngagementAdminTxtExport);
+    elements.engagementsDocumentAddButton?.addEventListener("click", () => openEngagementCompetitionDocumentForm());
+    elements.engagementsDocumentFiles?.addEventListener("change", handleEngagementCompetitionDocumentFiles);
+    elements.engagementsDocumentForm?.addEventListener("submit", saveEngagementCompetitionDocuments);
+    elements.engagementsDocumentCancelButton?.addEventListener("click", closeEngagementCompetitionDocumentForm);
+    elements.engagementsSharedDocumentsList?.addEventListener("click", (event) => {
+      const editButton = event.target.closest("[data-engagement-document-edit]");
+      if (editButton) {
+        openEngagementCompetitionDocumentForm(editButton.dataset.engagementDocumentEdit);
+        return;
+      }
+      const deleteButton = event.target.closest("[data-engagement-document-delete]");
+      if (deleteButton) void deleteEngagementCompetitionDocument(deleteButton.dataset.engagementDocumentDelete);
+    });
     elements.engagementsClubPdfSelect?.addEventListener("change", renderEngagementClubRecapSelector);
     elements.engagementsClubPdfDownloadButton?.addEventListener("click", () => downloadEngagementAdminClubRecapPdf(elements.engagementsClubPdfSelect?.value));
     elements.engagementsStatisticsRefreshButton?.addEventListener("click", () => loadEngagementCompetitionStatistics({ force: true }));

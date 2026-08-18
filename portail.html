@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260817-club-admins-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260818-competition-documents-2">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -935,6 +935,7 @@
                         <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="Informations">
                           <button id="adminEngagementsDetailGeneralTab" type="button" role="tab" aria-selected="true" aria-controls="adminEngagementsDetailGeneralPanel" data-engagements-detail-tab-button="general">G&eacute;n&eacute;ral</button>
                           <button id="adminEngagementsDetailCoursesTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailCoursesPanel" data-engagements-detail-tab-button="courses">Programme</button>
+                          <button id="adminEngagementsDetailClubDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents" data-engagements-club-documents-tab hidden>Documents</button>
                         </div>
                       </div>
                       <div class="admin-engagements-detail-tab-group" data-engagement-step-group="participants" hidden>
@@ -962,7 +963,7 @@
                       </div>
                       <div class="admin-engagements-detail-tab-group" data-engagement-step-group="documents" hidden>
                         <div class="admin-engagements-detail-tab-group-items" role="tablist" aria-label="GED">
-                          <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents">GED</button>
+                          <button id="adminEngagementsDetailDocumentsTab" type="button" role="tab" aria-selected="false" aria-controls="adminEngagementsDetailDocumentsPanel" data-engagements-detail-tab-button="documents" data-engagements-admin-documents-tab>GED</button>
                         </div>
                       </div>
                       <div class="admin-engagements-detail-tab-group" data-engagement-step-group="delivery" hidden>
@@ -1498,16 +1499,45 @@
                         </section>
                       </div>
                     </div>
-                    <div id="adminEngagementsDetailDocumentsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDocumentsTab" data-engagements-detail-tab-panel="documents" hidden>
+                    <div id="adminEngagementsDetailDocumentsPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailDocumentsTab adminEngagementsDetailClubDocumentsTab" data-engagements-detail-tab-panel="documents" hidden>
                       <div class="admin-engagements-documents">
                         <div class="admin-engagements-documents-head">
                           <div>
-                            <strong>GED</strong>
+                            <strong id="adminEngagementsDocumentsTitle">GED</strong>
                             <small id="adminEngagementsDocumentsSummary">Téléchargez les documents utiles de la compétition.</small>
                           </div>
                           <span id="adminEngagementsComputerEmailLabel" hidden></span>
                         </div>
-                        <div class="admin-engagements-ged-grid">
+                        <section class="admin-engagements-shared-documents" aria-labelledby="adminEngagementsSharedDocumentsTitle">
+                          <div class="admin-engagements-documents-section-head">
+                            <div>
+                              <strong id="adminEngagementsSharedDocumentsTitle">Documents de la compétition</strong>
+                              <small id="adminEngagementsSharedDocumentsCount">Affiches, circulaires, règlements et informations utiles.</small>
+                            </div>
+                            <button id="adminEngagementsDocumentAddButton" class="ghost-button compact admin-engagements-shared-documents-admin" type="button">Ajouter des documents</button>
+                          </div>
+                          <form id="adminEngagementsDocumentForm" class="admin-engagements-document-form admin-engagements-shared-documents-admin" hidden>
+                            <div class="admin-engagements-document-file-field">
+                              <label>
+                                Fichiers
+                                <input id="adminEngagementsDocumentFiles" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.jpg,.jpeg,.png,.zip">
+                              </label>
+                              <small>20 documents actifs maximum · 10 Mo par fichier · PDF, bureautique, images ou ZIP.</small>
+                            </div>
+                            <div id="adminEngagementsDocumentDrafts" class="admin-engagements-document-drafts"></div>
+                            <label id="adminEngagementsDocumentNotifyLabel" class="admin-engagements-document-notify">
+                              <input id="adminEngagementsDocumentNotify" type="checkbox">
+                              Informer les clubs par e-mail après la mise en ligne
+                            </label>
+                            <p id="adminEngagementsDocumentFormMessage" class="admin-portal-message" aria-live="polite"></p>
+                            <div class="admin-engagements-document-form-actions">
+                              <button id="adminEngagementsDocumentCancelButton" class="ghost-button" type="button">Annuler</button>
+                              <button id="adminEngagementsDocumentSubmitButton" type="submit">Mettre en ligne</button>
+                            </div>
+                          </form>
+                          <div id="adminEngagementsSharedDocumentsList" class="admin-engagements-shared-documents-list" aria-live="polite"></div>
+                        </section>
+                        <div class="admin-engagements-ged-grid admin-engagements-generated-documents-admin">
                           <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsTxtTitle">
                             <div>
                             <strong id="adminEngagementsTxtTitle">Export WinPalme de la compétition</strong>
@@ -2560,7 +2590,7 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260817-portal-reads-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260818-competition-documents-2"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"></script>
   </body>
 </html>

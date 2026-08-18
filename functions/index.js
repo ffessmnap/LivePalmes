@@ -44,6 +44,14 @@ const {
 } = require("./engagement-swimmer-corrections");
 const { buildWinPalmeCompetitionTxt } = require("./winpalme-export");
 const {
+  MAX_COMPETITION_DOCUMENTS,
+  cleanCompetitionDocumentInput,
+  cleanCompetitionDocuments,
+  competitionDocumentDownloadUrl,
+  competitionDocumentStoragePath,
+  decodeCompetitionDocumentDataUrl
+} = require("./engagement-competition-documents");
+const {
   applyCompetitionImportTiming,
   cleanTimingType,
   ffessmBasTimingType,
@@ -108,6 +116,7 @@ const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
+const ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 120, memory: "512MiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 540, memory: "1GiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS = {
   ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS,
@@ -167,6 +176,7 @@ const ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION = "engagementSwimmerChangeRe
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
 const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
+const ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX = "competition-documents";
 const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
 const ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION = "engagementMailRecipientShards";
 const ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION = "engagementMailRecipientIndexState";
@@ -4043,7 +4053,7 @@ exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
   await syncEngagementCompetitionCalendarFromChange(event);
 });
 
-function engagementCompetitionDetailItem(doc) {
+function engagementCompetitionDetailItem(doc, options = {}) {
   const data = doc.data() || {};
   const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
   const closureSummary = data.closureAutomationSummary && typeof data.closureAutomationSummary === "object"
@@ -4054,6 +4064,9 @@ function engagementCompetitionDetailItem(doc) {
     events,
     programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
     fees: cleanEngagementFees(data.fees || {}, { strict: false }),
+    clubDocuments: cleanCompetitionDocuments(data.clubDocuments || [], {
+      includeUploader: options.includeDocumentUploader === true
+    }),
     documents: engagementCompetitionDocumentsMetadata(data.documents || {}),
     generatedFiles: cleanEngagementGeneratedFiles(data.generatedFiles || []),
     closureAutomationStatus: cleanText(data.closureAutomationStatus).slice(0, 80),
@@ -6652,12 +6665,14 @@ function engagementMailPreparedReason() {
 }
 
 function engagementMailJobId(payload = {}) {
-  return stableHash([
+  const identity = [
     cleanText(payload.type),
     cleanText(payload.competitionId),
     cleanText(payload.clubId),
     normalizeEmail(payload.toEmail)
-  ].join("|")).slice(0, 40);
+  ];
+  if (cleanText(payload.notificationId)) identity.push(cleanText(payload.notificationId));
+  return stableHash(identity.join("|")).slice(0, 40);
 }
 
 function engagementMailRecipientFromUserDoc(doc) {
@@ -7053,6 +7068,46 @@ function engagementCompetitionOpeningRecipients(recipients = [], competition = {
   });
 }
 
+function engagementCompetitionDocumentRecipients(recipients = [], competition = {}) {
+  const level = cleanEngagementCompetitionLevel(competition.level);
+  const regionKeys = new Set([
+    cleanText(competition.regionId),
+    ...cleanEngagementRegionIds(competition.invitedRegionIds, competition.regionId)
+  ].map(normalizedEngagementRegionKey).filter(Boolean));
+  return engagementDedupMailRecipients(recipients).filter((recipient) => {
+    if (!recipient.clubId || !engagementRecipientHasCapability(recipient, "engagements.club.manage")) return false;
+    if (level === "national") return true;
+    const recipientRegionKey = normalizedEngagementRegionKey(recipient.regionId);
+    return Boolean(recipientRegionKey && regionKeys.has(recipientRegionKey));
+  });
+}
+
+function engagementCompetitionDocumentMailSubject(competition = {}, documents = []) {
+  const count = documents.length;
+  return `${count > 1 ? "Nouveaux documents" : "Nouveau document"} - ${competition.name || "Compétition LivePalmes"}`;
+}
+
+function engagementCompetitionDocumentMailText(competition = {}, documents = []) {
+  return [
+    "Bonjour,",
+    "",
+    `${documents.length > 1 ? "De nouveaux documents ont été mis en ligne" : "Un nouveau document a été mis en ligne"} pour la compétition suivante :`,
+    "",
+    `Compétition : ${competition.name || "-"}`,
+    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
+    `Lieu : ${competition.location || "-"}`,
+    "",
+    ...documents.map((document) => `- ${document.title || document.fileName || "Document"}`),
+    "",
+    "Consultez les documents depuis la fiche de la compétition dans le portail LivePalmes :",
+    "",
+    "https://livepalmes.web.app/portail.html#club-competitions",
+    "",
+    "Sportivement,",
+    "Commission Nationale Nage avec Palmes - FFESSM"
+  ].join("\n");
+}
+
 function engagementRecipientsByClub(recipients = []) {
   return recipients.reduce((acc, recipient) => {
     const clubId = cleanText(recipient.clubId);
@@ -7142,6 +7197,7 @@ function engagementMailJobItemFromData(data = {}, id = "") {
     status: cleanText(data.status).slice(0, 80),
     statusLabel: engagementMailStatusLabel(data.status),
     competitionId: cleanText(data.competitionId).slice(0, 128),
+    notificationId: cleanText(data.notificationId).slice(0, 80),
     clubId: cleanText(data.clubId).slice(0, 40),
     clubCode: engagementClubCode(data.clubId, data.clubCode).slice(0, 40),
     clubName: cleanText(data.clubName).slice(0, 140),
@@ -7175,6 +7231,7 @@ async function upsertEngagementMailJob(payload = {}, now = "") {
     textPreview: cleanText(payload.text).slice(0, 1200),
     competitionId: cleanText(payload.competitionId).slice(0, 128),
     competitionName: cleanText(payload.competitionName).slice(0, 160),
+    notificationId: cleanText(payload.notificationId).slice(0, 80),
     clubId: cleanText(payload.clubId).slice(0, 40),
     clubName: cleanText(payload.clubName).slice(0, 140),
     regionId: cleanText(payload.regionId).slice(0, 80),
@@ -8087,9 +8144,320 @@ exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   return {
     ok: true,
     competition: {
-      ...engagementCompetitionDetailItem(doc),
+      ...engagementCompetitionDetailItem(doc, { includeDocumentUploader: true }),
       deletionRequestStatus: deletionRequestData.status === "pending" ? "pending" : ""
     }
+  };
+});
+
+function engagementCompetitionDocumentUploader(context = {}) {
+  return {
+    uid: cleanText(context.uid).slice(0, 128),
+    name: [cleanText(context.firstName), cleanText(context.lastName)].filter(Boolean).join(" ").slice(0, 180),
+    email: normalizeEmail(context.email).slice(0, 180)
+  };
+}
+
+function assertEngagementCompetitionDocumentPath(storagePath = "") {
+  const cleanPath = cleanText(storagePath);
+  if (!cleanPath.startsWith(`${ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX}/`) || cleanPath.includes("..")) {
+    throw new HttpsError("failed-precondition", "Chemin de document de compétition invalide.");
+  }
+  return cleanPath;
+}
+
+async function engagementCompetitionDocumentContext(request) {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  if (!competitionId) throw new HttpsError("invalid-argument", "Compétition requise.");
+  const ref = db.collection("engagementCompetitions").doc(competitionId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
+  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  return { context, competitionId, ref, snapshot };
+}
+
+exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, async (request) => {
+  const { context, competitionId, ref, snapshot } = await engagementCompetitionDocumentContext(request);
+  const requestedDocumentId = cleanText(request.data?.documentId).slice(0, 80);
+  const initialDocuments = cleanCompetitionDocuments(snapshot.data()?.clubDocuments || [], { includeUploader: true });
+  const existingDocument = requestedDocumentId
+    ? initialDocuments.find((document) => document.id === requestedDocumentId)
+    : null;
+  if (requestedDocumentId && !existingDocument) {
+    throw new HttpsError("not-found", "Document à remplacer introuvable.");
+  }
+  if (!existingDocument && initialDocuments.length >= MAX_COMPETITION_DOCUMENTS) {
+    throw new HttpsError("resource-exhausted", `La compétition contient déjà ${MAX_COMPETITION_DOCUMENTS} documents.`);
+  }
+  let input;
+  let decoded;
+  try {
+    input = cleanCompetitionDocumentInput(request.data || {});
+    decoded = decodeCompetitionDocumentDataUrl(request.data?.fileDataUrl, input.fileName);
+  } catch (error) {
+    throw new HttpsError("invalid-argument", cleanText(error?.message || error).slice(0, 220));
+  }
+  const documentId = existingDocument?.id || crypto.randomUUID();
+  const storagePath = competitionDocumentStoragePath({
+    competitionId,
+    documentId,
+    fileName: input.fileName,
+    buffer: decoded.buffer
+  });
+  const token = crypto.randomUUID();
+  const bucket = storage.bucket(LIVEPALMES_STORAGE_BUCKET);
+  const file = bucket.file(storagePath);
+  await file.save(decoded.buffer, {
+    resumable: false,
+    metadata: {
+      contentType: decoded.contentType,
+      cacheControl: "public, max-age=3600",
+      metadata: { firebaseStorageDownloadTokens: token }
+    }
+  });
+  const now = new Date().toISOString();
+  const document = {
+    id: documentId,
+    ...input,
+    contentType: decoded.contentType,
+    storagePath,
+    url: competitionDocumentDownloadUrl(LIVEPALMES_STORAGE_BUCKET, storagePath, token),
+    size: decoded.buffer.length,
+    uploadedAt: existingDocument?.uploadedAt || now,
+    updatedAt: now,
+    uploadedBy: engagementCompetitionDocumentUploader(context)
+  };
+  let previousStoragePath = existingDocument?.storagePath || "";
+  let updatedDocuments = [];
+  try {
+    await db.runTransaction(async (transaction) => {
+      const currentSnapshot = await transaction.get(ref);
+      if (!currentSnapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
+      assertCanManageEngagementCompetition(context, currentSnapshot.data() || {});
+      const currentDocuments = cleanCompetitionDocuments(currentSnapshot.data()?.clubDocuments || [], { includeUploader: true });
+      const currentIndex = currentDocuments.findIndex((item) => item.id === documentId);
+      if (existingDocument && currentIndex < 0) throw new HttpsError("not-found", "Document à remplacer introuvable.");
+      if (!existingDocument && currentIndex < 0 && currentDocuments.length >= MAX_COMPETITION_DOCUMENTS) {
+        throw new HttpsError("resource-exhausted", `La compétition contient déjà ${MAX_COMPETITION_DOCUMENTS} documents.`);
+      }
+      if (currentIndex >= 0) {
+        previousStoragePath = currentDocuments[currentIndex].storagePath;
+        currentDocuments[currentIndex] = document;
+      } else {
+        currentDocuments.push(document);
+      }
+      updatedDocuments = cleanCompetitionDocuments(currentDocuments, { includeUploader: true });
+      transaction.update(ref, {
+        clubDocuments: updatedDocuments,
+        documentsUpdatedAt: now,
+        documentsUpdatedBy: context.uid
+      });
+    });
+  } catch (error) {
+    await file.delete({ ignoreNotFound: true }).catch(() => undefined);
+    throw error;
+  }
+  if (previousStoragePath && previousStoragePath !== storagePath) {
+    await bucket.file(assertEngagementCompetitionDocumentPath(previousStoragePath)).delete({ ignoreNotFound: true }).catch(() => undefined);
+  }
+  await writeAuditLog(existingDocument ? "engagementCompetition.documentReplaced" : "engagementCompetition.documentUploaded", context.uid, {
+    competitionId,
+    documentId,
+    title: document.title,
+    category: document.category,
+    fileName: document.fileName,
+    size: document.size
+  });
+  return {
+    ok: true,
+    competitionId,
+    documentId,
+    documents: updatedDocuments
+  };
+});
+
+exports.updateEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
+  const { context, competitionId, ref } = await engagementCompetitionDocumentContext(request);
+  const documentId = cleanText(request.data?.documentId).slice(0, 80);
+  if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
+  const now = new Date().toISOString();
+  let updatedDocuments = [];
+  await db.runTransaction(async (transaction) => {
+    const currentSnapshot = await transaction.get(ref);
+    if (!currentSnapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
+    assertCanManageEngagementCompetition(context, currentSnapshot.data() || {});
+    const documents = cleanCompetitionDocuments(currentSnapshot.data()?.clubDocuments || [], { includeUploader: true });
+    const index = documents.findIndex((document) => document.id === documentId);
+    if (index < 0) throw new HttpsError("not-found", "Document introuvable.");
+    let input;
+    try {
+      input = cleanCompetitionDocumentInput({ ...request.data, fileName: documents[index].fileName });
+    } catch (error) {
+      throw new HttpsError("invalid-argument", cleanText(error?.message || error).slice(0, 220));
+    }
+    documents[index] = { ...documents[index], ...input, updatedAt: now };
+    updatedDocuments = cleanCompetitionDocuments(documents, { includeUploader: true });
+    transaction.update(ref, {
+      clubDocuments: updatedDocuments,
+      documentsUpdatedAt: now,
+      documentsUpdatedBy: context.uid
+    });
+  });
+  await writeAuditLog("engagementCompetition.documentUpdated", context.uid, {
+    competitionId,
+    documentId,
+    title: updatedDocuments.find((document) => document.id === documentId)?.title || ""
+  });
+  return { ok: true, competitionId, documentId, documents: updatedDocuments };
+});
+
+exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
+  const { context, competitionId, ref } = await engagementCompetitionDocumentContext(request);
+  const documentId = cleanText(request.data?.documentId).slice(0, 80);
+  if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
+  const now = new Date().toISOString();
+  let deletedDocument = null;
+  let updatedDocuments = [];
+  await db.runTransaction(async (transaction) => {
+    const currentSnapshot = await transaction.get(ref);
+    if (!currentSnapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
+    assertCanManageEngagementCompetition(context, currentSnapshot.data() || {});
+    const documents = cleanCompetitionDocuments(currentSnapshot.data()?.clubDocuments || [], { includeUploader: true });
+    deletedDocument = documents.find((document) => document.id === documentId) || null;
+    if (!deletedDocument) throw new HttpsError("not-found", "Document introuvable.");
+    updatedDocuments = documents.filter((document) => document.id !== documentId);
+    transaction.update(ref, {
+      clubDocuments: updatedDocuments,
+      documentsUpdatedAt: now,
+      documentsUpdatedBy: context.uid
+    });
+  });
+  let storageDeleted = true;
+  try {
+    await storage.bucket(LIVEPALMES_STORAGE_BUCKET)
+      .file(assertEngagementCompetitionDocumentPath(deletedDocument.storagePath))
+      .delete({ ignoreNotFound: true });
+  } catch (_) {
+    storageDeleted = false;
+  }
+  await writeAuditLog("engagementCompetition.documentDeleted", context.uid, {
+    competitionId,
+    documentId,
+    title: deletedDocument.title,
+    fileName: deletedDocument.fileName,
+    storageDeleted
+  });
+  return { ok: true, competitionId, documentId, documents: updatedDocuments, storageDeleted };
+});
+
+exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIONS, async (request) => {
+  const { competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
+  const recipients = engagementCompetitionDocumentRecipients(
+    await engagementActiveClubMailRecipients(db),
+    engagementCompetitionDetailItem(snapshot)
+  );
+  return {
+    ok: true,
+    competitionId,
+    recipientCount: recipients.length,
+    clubCount: new Set(recipients.map((recipient) => cleanText(recipient.clubId)).filter(Boolean)).size
+  };
+});
+
+exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
+  const competition = engagementCompetitionDetailItem(snapshot);
+  const documentIds = Array.from(new Set((Array.isArray(request.data?.documentIds) ? request.data.documentIds : [])
+    .map((id) => cleanText(id).slice(0, 80))
+    .filter(Boolean))).slice(0, MAX_COMPETITION_DOCUMENTS);
+  const documents = cleanCompetitionDocuments(snapshot.data()?.clubDocuments || [])
+    .filter((document) => documentIds.includes(document.id));
+  if (!documents.length || documents.length !== documentIds.length) {
+    throw new HttpsError("invalid-argument", "Documents à notifier introuvables.");
+  }
+  const recipients = engagementCompetitionDocumentRecipients(
+    await engagementActiveClubMailRecipients(db),
+    competition
+  );
+  const notificationId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const subject = engagementCompetitionDocumentMailSubject(competition, documents);
+  const text = engagementCompetitionDocumentMailText(competition, documents);
+  const preparedJobs = [];
+  for (let offset = 0; offset < recipients.length; offset += 25) {
+    const chunk = recipients.slice(offset, offset + 25);
+    const chunkJobs = await Promise.all(chunk.map(async (recipient) => {
+      const payload = {
+        type: "competition_documents",
+        notificationId,
+        competitionId,
+        competitionName: competition.name,
+        clubId: recipient.clubId,
+        clubName: recipient.clubName,
+        regionId: recipient.regionId,
+        toEmail: recipient.email,
+        toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+        subject,
+        text
+      };
+      const item = await upsertEngagementMailJob(payload, now);
+      return item ? {
+        item,
+        data: {
+          ...payload,
+          status: engagementMailPreparedStatus(),
+          textBody: text,
+          createdAt: now,
+          updatedAt: now
+        }
+      } : null;
+    }));
+    preparedJobs.push(...chunkJobs.filter(Boolean));
+  }
+  const config = engagementMailSmtpConfig();
+  let sentCount = 0;
+  let errorCount = 0;
+  if (config.ready && preparedJobs.length) {
+    const transporter = nodemailer.createTransport({
+      ...config.transport,
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100
+    });
+    for (let offset = 0; offset < preparedJobs.length; offset += 5) {
+      const results = await Promise.all(preparedJobs.slice(offset, offset + 5).map(({ item, data }) =>
+        sendEngagementMailJob(transporter, {
+          id: item.id,
+          ref: db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(item.id),
+          data: () => data
+        }, config, context)
+      ));
+      sentCount += results.filter((job) => job.status === "sent").length;
+      errorCount += results.filter((job) => job.status === "failed").length;
+    }
+    await transporter.close();
+  }
+  await writeAuditLog("engagementCompetition.documentsNotified", context.uid, {
+    competitionId,
+    notificationId,
+    documentIds,
+    documentCount: documents.length,
+    recipientCount: recipients.length,
+    sentCount,
+    errorCount,
+    configurationMissing: !config.ready
+  });
+  return {
+    ok: true,
+    competitionId,
+    notificationId,
+    documentCount: documents.length,
+    recipientCount: recipients.length,
+    clubCount: new Set(recipients.map((recipient) => cleanText(recipient.clubId)).filter(Boolean)).size,
+    sentCount,
+    errorCount,
+    configurationMissing: !config.ready
   };
 });
 
@@ -13281,7 +13649,7 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   const updated = await docRef.get();
   return {
     ok: true,
-    competition: engagementCompetitionDetailItem(updated)
+    competition: engagementCompetitionDetailItem(updated, { includeDocumentUploader: true })
   };
 });
 
@@ -13342,12 +13710,20 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     }, { merge: true });
   }
   await batch.commit();
+  const competitionDocuments = cleanCompetitionDocuments(competition.clubDocuments || [], { includeUploader: true });
+  const documentDeletionResults = await Promise.allSettled(competitionDocuments.map((document) =>
+    storage.bucket(LIVEPALMES_STORAGE_BUCKET)
+      .file(assertEngagementCompetitionDocumentPath(document.storagePath))
+      .delete({ ignoreNotFound: true })
+  ));
   await writeAuditLog("engagementCompetition.deleted", context.uid, {
     competitionId,
     name: competition.name || "",
     date: competition.date || "",
     regionId: competition.regionId || "",
-    level: competition.level || ""
+    level: competition.level || "",
+    competitionDocumentCount: competitionDocuments.length,
+    competitionDocumentDeleteErrorCount: documentDeletionResults.filter((result) => result.status === "rejected").length
   });
   return {
     ok: true,

@@ -516,7 +516,8 @@ Chaque competition dispose d'une GED simple.
 Documents prevus :
 
 - export TXT global ;
-- PDF recapitulatif de chaque club.
+- PDF recapitulatif de chaque club ;
+- documents d'information mis en ligne par l'organisation : affiche, circulaire, reglement, note d'information, plan ou autre document utile.
 
 Les niveaux 2 et 3 peuvent telecharger :
 
@@ -525,7 +526,11 @@ Les niveaux 2 et 3 peuvent telecharger :
 
 Chaque club peut telecharger uniquement son propre PDF.
 
-La GED conserve seulement la derniere version des documents.
+Tous les clubs connectes peuvent consulter les documents d'information d'une competition, qu'ils appartiennent ou non a une region invitee. Un administrateur regional peut mettre en ligne ces documents pour une competition de sa region ; un administrateur national peut le faire pour toutes les competitions.
+
+Un depot peut contenir plusieurs fichiers. Les formats PDF, bureautiques, images et ZIP sont acceptes dans la limite de 10 Mo par fichier et de 20 documents actifs par competition. Le titre est obligatoire ; la categorie et une description facultative facilitent la consultation. L'identite de l'auteur est visible uniquement par les administrateurs regionaux et nationaux.
+
+La GED conserve seulement la derniere version des documents. Un remplacement supprime l'ancien fichier et une suppression ne produit pas de notification.
 
 ## Exports et PDF
 
@@ -581,6 +586,15 @@ A la fermeture :
 - le responsable informatique recoit l'export TXT ;
 - chaque club engage recoit son PDF recapitulatif ;
 - le PDF est envoye a toutes les adresses mail admin du club.
+
+### Mise en ligne de documents
+
+Lors d'un ajout ou d'un remplacement, l'administrateur peut choisir d'informer les clubs. Un depot groupe produit un seul courriel recapitulatif par destinataire, sans piece jointe, avec la liste des documents et un lien vers la competition.
+
+- competition nationale : notification a tous les administrateurs actifs des clubs ;
+- competition regionale ou departementale : notification aux administrateurs actifs des clubs de la region organisatrice et des regions invitees.
+
+Les fichiers possedent une URL techniquement publique afin de preparer leur future diffusion dans le calendrier public. Tant que ce calendrier n'existe pas, leur liste est affichee uniquement dans le portail connecte.
 
 L'adresse d'expedition souhaitee est :
 
