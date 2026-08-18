@@ -9861,8 +9861,12 @@
 #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="entries"],
 #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="summary"],
 #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="statistics"],
-#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="documents"],
 #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="delivery"] {
+  display: none !important;
+}
+
+#adminEngagementsView[data-engagements-mode="club"] .admin-engagements-shared-documents-admin,
+#adminEngagementsView[data-engagements-mode="club"] .admin-engagements-generated-documents-admin {
   display: none !important;
 }
 
@@ -10116,6 +10120,171 @@
   display: block;
 }
 
+.admin-engagements-shared-documents {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dfe6e8;
+  border-radius: 9px;
+  padding: 13px;
+  background: #ffffff;
+}
+
+.admin-engagements-document-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #bcd9dd;
+  border-radius: 9px;
+  padding: 12px;
+  background: #f5fafb;
+}
+
+.admin-engagements-document-form[hidden] {
+  display: none;
+}
+
+.admin-engagements-document-file-field,
+.admin-engagements-document-file-field label {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-engagements-document-file-field label {
+  color: #425b62;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.admin-engagements-document-file-field input[type="file"] {
+  min-height: 42px;
+  border: 1px solid #ccdadd;
+  border-radius: 8px;
+  padding: 7px;
+  background: #ffffff;
+}
+
+.admin-engagements-document-file-field small,
+.admin-engagements-document-draft-file,
+.admin-engagements-shared-document-meta {
+  color: #64767c;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-document-drafts,
+.admin-engagements-shared-documents-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-document-draft {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 0.75fr) minmax(220px, 1.5fr);
+  gap: 8px;
+  border-top: 1px solid #dce7e8;
+  padding-top: 10px;
+}
+
+.admin-engagements-document-draft:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.admin-engagements-document-draft > label {
+  display: grid;
+  gap: 4px;
+  color: #53666c;
+  font-size: 0.7rem;
+}
+
+.admin-engagements-document-draft-file {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-document-draft textarea {
+  min-height: 38px;
+  resize: vertical;
+}
+
+.admin-engagements-document-notify {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: #304a50;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-document-notify input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.admin-engagements-document-form-actions,
+.admin-engagements-shared-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.admin-engagements-shared-document-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e0e7e9;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-shared-document-card:hover {
+  border-color: #b7d8dc;
+  background: #fbfdfd;
+}
+
+.admin-engagements-shared-document-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-engagements-shared-document-main > a {
+  color: #075f70;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-shared-document-main p {
+  margin: 0;
+  color: #52666c;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.admin-engagements-shared-document-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.admin-engagements-shared-document-badges span {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #edf5f4;
+  color: #31524c;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.admin-engagements-shared-document-actions a,
+.admin-engagements-shared-document-actions button {
+  min-height: 34px;
+}
+
 #adminEngagementsDetail .admin-engagements-document-card {
   padding: 11px 12px;
   background: #ffffff;
@@ -10202,6 +10371,23 @@
   .admin-engagements-ged-grid,
   .admin-engagements-ged-club-choice {
     grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-document-draft,
+  .admin-engagements-shared-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-document-form-actions,
+  .admin-engagements-shared-document-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-document-form-actions button,
+  .admin-engagements-shared-document-actions a,
+  .admin-engagements-shared-document-actions button {
+    width: 100%;
   }
 }
 

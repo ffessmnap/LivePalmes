@@ -53,6 +53,7 @@ function runUnitTests() {
     "livepalmes-public-results-index-tests.js",
     "livepalmes-publication-tests.js",
     "livepalmes-public-pdf-storage-tests.js",
+    "engagement-competition-documents-tests.js",
     "livepalmes-public-records-data-tests.js",
     "livepalmes-public-records-store-tests.js",
     "livepalmes-console-access-tests.js",

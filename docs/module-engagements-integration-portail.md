@@ -47,9 +47,11 @@ D'autres collections conservent les demandes de suppression et les traces d'admi
 
 ## Documents et courriels
 
-Les pièces liées aux engagements sont stockées dans Firebase Storage sous le préfixe `entry-documents`.
+Les pièces générées liées aux engagements sont stockées dans Firebase Storage sous le préfixe `entry-documents`. Les documents d'information déposés par les organisateurs utilisent `competition-documents`. Leurs métadonnées sont bornées à 20 entrées dans le document `engagementCompetitions` afin que leur consultation n'ajoute aucune lecture Firestore à l'ouverture d'une fiche.
 
-Les courriels sont préparés et envoyés côté serveur. Les identifiants d'envoi restent dans les secrets Firebase et ne doivent jamais être placés dans le code du navigateur ou la documentation.
+Les URL des documents d'information sont techniquement publiques et partageables. La réponse destinée aux clubs exclut systématiquement l'identité de l'auteur ; cette information est ajoutée uniquement à la réponse contrôlée des administrateurs régionaux ou nationaux.
+
+Les courriels sont préparés et envoyés côté serveur. Pour les documents, le ciblage lit l'index existant des administrateurs de clubs : niveau national pour toutes les régions, ou région organisatrice et régions invitées pour une compétition régionale ou départementale. Les identifiants d'envoi restent dans les secrets Firebase et ne doivent jamais être placés dans le code du navigateur ou la documentation.
 
 ## Lien avec les performances
 
