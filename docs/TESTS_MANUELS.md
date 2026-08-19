@@ -172,6 +172,10 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ## Pages publiques
 
+- Publier depuis le portail une compétition puis une formation de test. Sans être connecté, ouvrir `calendrier.html` et vérifier la saison courante, l'ordre `En cours` puis `À venir`, les filtres saison/région/niveau/type et l'affichage des événements annulés. Refaire le contrôle en 390 px sans débordement ni action inaccessible.
+- Ouvrir `competition.html?id=...` et vérifier dates, ville, niveau, organisateur sans contact personnel, carte, programme par réunion, documents et rappel indiquant que seul un responsable de club effectue les engagements. Copier l'URL d'un document, remplacer son fichier depuis le portail puis vérifier que l'ancienne URL télécharge la nouvelle version.
+- Dépublier l'événement : il doit disparaître de la saison et sa fiche JSON publique doit devenir inaccessible. Les TXT WinPalme et PDF clubs ne doivent jamais apparaître sur la fiche publique.
+
 - Verifier `resultats.html`.
 - Verifier `series-public.html`.
 - Verifier le bouton actualiser.

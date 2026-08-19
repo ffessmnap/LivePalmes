@@ -13,6 +13,9 @@ Le parcours quotidien d'un club repose sur des documents agrégés et des appels
 | Connexion et profil | 1, sans doublon concurrent |
 | Calendrier Club d'une saison, agrégats prêts | 3 : contrôle du profil, calendrier, index « Mes engagements » ; 4 en août avec l'aperçu de septembre |
 | Calendrier Organisation d'une saison, agrégat prêt | 2 : contrôle du profil et calendrier ; 3 en août avec l'aperçu de septembre |
+| Calendrier Organisation avec événements non compétitifs | 3 : contrôle du profil et deux agrégats saisonniers ; 5 en août avec l'aperçu de septembre |
+| Calendrier public, ouverture et filtres | 0 lecture Firestore : un manifeste puis un fichier JSON de saison ; filtres locaux |
+| Fiche publique d'un événement | 0 lecture Firestore : un fichier JSON statique borné |
 | Retour sur un calendrier en cache pendant 5 minutes | 0, avec affichage immédiat |
 | Filtre région, niveau, statut ou « mes compétitions » | 0 |
 | Ouverture initiale d'une compétition club | 4 : profil, compétition, engagement, agrégat officiels |

@@ -4,6 +4,7 @@ const {
   canonicalDocumentContentType,
   cleanCompetitionDocuments,
   competitionDocumentDownloadUrl,
+  competitionDocumentTokenFromUrl,
   competitionDocumentStoragePath,
   decodeCompetitionDocumentDataUrl
 } = require("../functions/engagement-competition-documents");
@@ -48,6 +49,7 @@ const storagePath = competitionDocumentStoragePath({
 });
 assert.match(storagePath, /^competition-documents\/Championnat-regional-2026\/document-1\/Affiche-ete-[a-f0-9]{16}\.pdf$/);
 assert.match(competitionDocumentDownloadUrl("bucket.test", storagePath, "token-test"), /firebasestorage\.googleapis\.com/);
+assert.equal(competitionDocumentTokenFromUrl(competitionDocumentDownloadUrl("bucket.test", storagePath, "token-test")), "token-test");
 
 const uploader = { uid: "admin-1", name: "Admin Régional", email: "admin@example.test" };
 const documents = cleanCompetitionDocuments([{

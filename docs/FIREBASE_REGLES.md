@@ -36,6 +36,8 @@ Les principales zones concernées sont les données du direct, les alertes, les 
 
 ## Accès publics
 
+Le calendrier public n'ouvre aucune collection Firestore. Les pages lisent les instantanés JSON générés dans le bucket public sous `calendar/`; les écritures et la publication restent réservées aux Cloud Functions authentifiées du portail.
+
 Certaines données destinées à l'affichage public peuvent être lues sans compte, notamment une partie des informations de direct, des résultats publiés et des données de performances prévues à cet effet.
 
 Une lecture publique ne donne jamais automatiquement le droit de modifier ces données.
