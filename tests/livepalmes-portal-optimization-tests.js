@@ -289,6 +289,10 @@ vm.runInNewContext(`
       { name: "Meeting test", fees: { enabled: false } },
       { clubName: "Club test" }
     ),
+    recapFeeText: engagementClubRecapMailText(
+      { name: "Meeting test", fees: { enabled: true } },
+      { clubName: "Club test" }
+    ),
     txtText: engagementTxtMailText(
       { name: "Meeting test", date: "2026-09-12", location: "Piscine test" },
       { fileName: "engagements.txt" }
@@ -300,9 +304,11 @@ assert.ok(Array.isArray(sandbox.window.LIVEPALMES_CLUB_REFERENCE?.clubs));
 assert.equal(openingMailSandbox.result.subject, "Ouverture des engagements - Meeting test");
 assert.match(openingMailSandbox.result.text, /^Bonjour,/);
 assert.match(openingMailSandbox.result.text, /https:\/\/livepalmes\.web\.app\/portail\.html#club-competitions/);
-assert.match(openingMailSandbox.result.text, /Vos modifications sont enregistrées progressivement/);
+assert.match(openingMailSandbox.result.text, /Merci de finaliser et de vérifier les engagements de votre club au plus tard le 2026-09-05 23:59\./);
+assert.doesNotMatch(openingMailSandbox.result.text, /Vos modifications sont enregistrées progressivement|Pensez à vérifier l'ensemble/);
 assert.doesNotMatch(openingMailSandbox.result.text, /frais|HelloAsso/i);
 assert.match(openingMailSandbox.result.text, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
+assert.match(openingMailSandbox.result.recapFeeText, /Total indicatif des frais d'engagement : 12 €/);
 assert.match(openingMailSandbox.result.recapText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
 assert.match(openingMailSandbox.result.txtText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
 assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.club.manage"]), {
@@ -759,6 +765,12 @@ assert.ok(portalCss.includes(".admin-engagements-club-person-row"));
 assert.ok(portalCss.includes(".admin-engagements-club-person-details"));
 assert.ok(portalCss.includes("#adminEngagementsClubPeopleStatus:empty"));
 assert.equal(portalHtml.includes('id="adminAccessRefreshButton"'), false);
+assert.ok(portalHtml.includes('id="adminPublicAccessRequestLastName" type="text" autocomplete="family-name" autocapitalize="characters" required'));
+const publicAccessRequestPayloadSource = portal.slice(portal.indexOf("function publicAccessRequestPayloadFromForm"), portal.indexOf("async function submitPublicEngagementAccessRequest"));
+assert.ok(publicAccessRequestPayloadSource.includes('trim().toLocaleUpperCase("fr-FR")'));
+assert.ok(portal.includes('elements.publicAccessRequestLastName?.addEventListener("input"'));
+const cleanAccessRequestSource = functions.slice(functions.indexOf("function cleanEngagementAccessRequestPayload"), functions.indexOf("function engagementAccessRequestItem"));
+assert.ok(cleanAccessRequestSource.includes('cleanText(raw.lastName).toLocaleUpperCase("fr-FR")'));
 assert.ok(portalHtml.includes('id="adminAccessAddButton" class="ghost-button admin-access-add-button"'));
 assert.ok(portalHtml.indexOf('id="adminAccessAddButton"') < portalHtml.indexOf('id="adminAccessListPanel"'));
 assert.ok(portalHtml.includes('<dialog id="adminAccessPanel"'));
@@ -775,6 +787,10 @@ assert.ok(portal.includes('<span role="columnheader">Nom</span>'));
 assert.ok(portal.includes('<span role="columnheader">Prénom</span>'));
 assert.ok(portal.includes('<span role="columnheader">Email</span>'));
 assert.ok(portal.includes('const name = [user.lastName, user.firstName]'));
+const accessUsersRenderSource = portal.slice(portal.indexOf("function renderAccessUsers"), portal.indexOf("function renderAccessPagination"));
+assert.ok(accessUsersRenderSource.includes("const sortedUsers = [...accessUsers].sort"));
+assert.ok(accessUsersRenderSource.includes('String(left.lastName || "").localeCompare'));
+assert.ok(accessUsersRenderSource.includes('String(left.firstName || "").localeCompare'));
 assert.ok(portalCss.includes("#adminAccessView .admin-access-row-toggle"));
 assert.ok(portalCss.includes("#adminAccessView .admin-access-action-button svg"));
 assert.ok(portalCss.includes("#adminAccessView .admin-access-row > div::before"));
@@ -1167,7 +1183,7 @@ assert.ok(functions.includes("exports.removeEngagementClubTeamLeader"));
 assert.ok(functions.includes("function engagementClubEntryHasParticipants"));
 assert.ok(functions.includes("entries.filter(engagementClubEntryHasParticipants).forEach"));
 assert.ok(functions.includes("!engagementClubEntryHasParticipants(entry) || !recipients.length"));
-assert.ok(functions.includes('status: "cancelled_no_participants"'));
+assert.ok(functions.includes('"cancelled_no_participants"'));
 assert.ok(functions.includes("function engagementPdfRelayCategoryLabel(code)"));
 assert.ok(functions.includes('P: "Poussin"'));
 assert.equal((functions.match(/relayCategoryLabelVersion: 2/g) || []).length, 1);
@@ -1578,6 +1594,23 @@ assert.ok(portal.includes("ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES = 10 * 1024
 assert.ok(functions.includes("exports.uploadEngagementCompetitionDocument"));
 assert.ok(functions.includes("exports.deleteEngagementCompetitionDocument"));
 assert.ok(functions.includes("includeDocumentUploader: true"));
+assert.ok(functions.includes('OPTIONAL_COMPETITION_MAIL_TYPES'));
+assert.ok(functions.includes('"club_recap_pdf"'));
+assert.ok(functions.includes("exports.disableCompetitionEmailNotifications"));
+assert.ok(functions.includes("exports.updateCurrentEmailNotificationPreferences"));
+assert.ok(functions.includes("competitionNotificationPreferenceUrl"));
+assert.ok(functions.includes("cancelled_notifications_disabled"));
+assert.ok(functions.includes("batch.set(userRef, preferencePatch, { merge: true })"));
+assert.ok(functions.includes("recipients: { [recipientKey]: value }"));
+assert.ok(functions.includes("gérer ou désactiver les notifications email LivePalmes en cliquant sur"));
+assert.ok(functions.includes('href="https://livepalmes.web.app/portail.html#mon-compte"'));
+assert.equal(functions.includes("Les messages indispensables concernant votre compte et sa sécurité resteront envoyés.</p>"), false);
+assert.ok(portalHtml.includes('id="adminAccountCompetitionNotifications"'));
+assert.ok(portalHtml.includes('role="switch" aria-checked="true"'));
+assert.equal(portalHtml.includes("Enregistrer mes préférences"), false);
+assert.ok(portal.includes("updateCurrentEmailNotificationPreferences"));
+assert.ok(portal.includes("Désactiver les notifications de compétition ?"));
+assert.ok(portal.includes('addEventListener("click", toggleAccountNotificationPreferences)'));
 assert.ok(portalCss.includes(".admin-engagements-shared-document-card"));
 assert.equal(portalCss.includes('[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="documents"]'), false);
 assert.ok(portal.includes('if (tab === "documents" && !isEngagementAdminMode()) return "information"'));

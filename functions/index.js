@@ -36,6 +36,7 @@ const {
   engagementAccessAdminNotificationRecipients
 } = require("./portal-access-mail");
 const { engagementSwimmerChangeResolutionMail } = require("./engagement-swimmer-change-mail");
+const { escapeMailHtml, livePalmesMailHtml } = require("./livepalmes-mail-html");
 const { cleanClubPayload } = require("./engagement-clubs");
 const {
   findReferenceSwimmerCorrectionTarget,
@@ -77,6 +78,7 @@ const LIVEPALMES_SMTP_USER = defineSecret("LIVEPALMES_SMTP_USER");
 const LIVEPALMES_SMTP_PASS = defineSecret("LIVEPALMES_SMTP_PASS");
 const LIVEPALMES_SMTP_SECURE = defineSecret("LIVEPALMES_SMTP_SECURE");
 const LIVEPALMES_MAIL_FROM = defineSecret("LIVEPALMES_MAIL_FROM");
+const LIVEPALMES_NOTIFICATION_LINK_SECRET = defineSecret("LIVEPALMES_NOTIFICATION_LINK_SECRET");
 const LIVEPALMES_ENFORCE_APP_CHECK = defineBoolean("LIVEPALMES_ENFORCE_APP_CHECK", { default: false });
 const ENGAGEMENT_MAIL_SECRETS = [
   LIVEPALMES_SMTP_HOST,
@@ -85,6 +87,10 @@ const ENGAGEMENT_MAIL_SECRETS = [
   LIVEPALMES_SMTP_PASS,
   LIVEPALMES_SMTP_SECURE,
   LIVEPALMES_MAIL_FROM
+];
+const ENGAGEMENT_NOTIFICATION_MAIL_SECRETS = [
+  ...ENGAGEMENT_MAIL_SECRETS,
+  LIVEPALMES_NOTIFICATION_LINK_SECRET
 ];
 const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
@@ -121,10 +127,16 @@ const ENGAGEMENT_MAIL_CAPABILITIES = [
   "engagements.region.manage",
   "engagements.national.manage"
 ];
+const OPTIONAL_COMPETITION_MAIL_TYPES = new Set([
+  "competition_documents",
+  "opening_notification",
+  "club_recap_pdf"
+]);
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
-const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_MAIL_SECRETS, timeoutSeconds: 300 };
+const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS, timeoutSeconds: 300 };
+const NOTIFICATION_PREFERENCE_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: [LIVEPALMES_NOTIFICATION_LINK_SECRET] };
 const ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 120, memory: "512MiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 540, memory: "1GiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS = {
@@ -144,7 +156,7 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
-  secrets: ENGAGEMENT_MAIL_SECRETS
+  secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
@@ -385,6 +397,40 @@ const CATEGORY_LABELS = {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function competitionEmailNotificationsEnabled(value = {}) {
+  return value?.emailPreferences?.competitionNotifications !== false && value?.competitionNotificationsEnabled !== false;
+}
+
+function notificationPreferenceSecretValue() {
+  try {
+    return String(LIVEPALMES_NOTIFICATION_LINK_SECRET.value() || process.env.LIVEPALMES_NOTIFICATION_LINK_SECRET || "");
+  } catch (_) {
+    return String(process.env.LIVEPALMES_NOTIFICATION_LINK_SECRET || "");
+  }
+}
+
+function competitionNotificationPreferenceToken(uid = "") {
+  const cleanUid = cleanText(uid).slice(0, 128);
+  const secret = notificationPreferenceSecretValue();
+  if (!cleanUid || !secret) return "";
+  return crypto.createHmac("sha256", secret)
+    .update(`competition-notifications|${cleanUid}`)
+    .digest("base64url");
+}
+
+function validCompetitionNotificationPreferenceToken(uid = "", token = "") {
+  const expected = competitionNotificationPreferenceToken(uid);
+  const provided = cleanText(token);
+  if (!expected || !provided || expected.length !== provided.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
+}
+
+function competitionNotificationPreferenceUrl(uid = "") {
+  const token = competitionNotificationPreferenceToken(uid);
+  if (!token) return "";
+  return `https://livepalmes.web.app/notifications.html?uid=${encodeURIComponent(cleanText(uid))}&token=${encodeURIComponent(token)}`;
 }
 
 const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubReference.clubs : [])
@@ -690,7 +736,8 @@ async function engagementAccessContext(request) {
       email: cleanText(request.auth?.token?.email).slice(0, 180),
       national: true,
       region: true,
-      regionId: ""
+      regionId: "",
+      competitionNotificationsEnabled: true
     };
   }
   const snapshot = await db.collection("users").doc(uid).get();
@@ -708,7 +755,8 @@ async function engagementAccessContext(request) {
     email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
     national,
     region,
-    regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80)
+    regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80),
+    competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data)
   };
 }
 
@@ -2498,7 +2546,7 @@ function cleanEngagementAccessRequestPayload(raw = {}, request = {}) {
   const email = normalizeEmail(raw.email || authEmail);
   assertEmail(email);
   const firstName = cleanText(raw.firstName).slice(0, 80);
-  const lastName = cleanText(raw.lastName).slice(0, 80);
+  const lastName = cleanText(raw.lastName).toLocaleUpperCase("fr-FR").slice(0, 80);
   const clubRole = cleanText(raw.clubRole).slice(0, 120);
   const clubId = cleanText(raw.clubId).slice(0, 40);
   const clubName = cleanText(raw.clubName).slice(0, 140);
@@ -2671,8 +2719,9 @@ async function sendEngagementAccessAcknowledgement(payload = {}) {
     await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: payload.email,
-      subject: mail.subject,
-      text: mail.text
+      subject: cleanText(mail.subject).slice(0, 220),
+      text: mail.text,
+      html: livePalmesMailHtml(mail.text)
     });
     return {
       status: "sent",
@@ -2705,8 +2754,9 @@ async function sendEngagementAccessRejection(payload = {}) {
     await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: payload.email,
-      subject: mail.subject,
-      text: mail.text
+      subject: cleanText(mail.subject).slice(0, 220),
+      text: mail.text,
+      html: livePalmesMailHtml(mail.text)
     });
     return { status: "sent", attemptedAt, sentAt: new Date().toISOString(), reason: "" };
   } catch (error) {
@@ -2730,8 +2780,9 @@ async function sendEngagementExistingAccountNotice(payload = {}) {
     await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: payload.email,
-      subject: mail.subject,
-      text: mail.text
+      subject: cleanText(mail.subject).slice(0, 220),
+      text: mail.text,
+      html: livePalmesMailHtml(mail.text)
     });
     return { status: "sent", attemptedAt, sentAt: new Date().toISOString(), reason: "" };
   } catch (error) {
@@ -2838,8 +2889,9 @@ async function sendEngagementAccessAdminNotifications(payload = {}) {
       return transporter.sendMail({
         from: `LivePalmes <${config.fromEmail}>`,
         to: recipient.email,
-        subject: mail.subject,
-        text: mail.text
+        subject: cleanText(mail.subject).slice(0, 220),
+        text: mail.text,
+        html: livePalmesMailHtml(mail.text)
       });
     }));
     results.forEach((result) => {
@@ -3657,6 +3709,78 @@ exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, async (request) => 
   };
 });
 
+async function setCompetitionEmailNotificationPreference(uid = "", enabled = true, source = "portal") {
+  const cleanUid = cleanText(uid).slice(0, 128);
+  if (!cleanUid) throw new HttpsError("invalid-argument", "Compte requis.");
+  const userRef = db.collection("users").doc(cleanUid);
+  const snapshot = await userRef.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Compte LivePalmes introuvable.");
+  const userData = snapshot.data() || {};
+  const now = new Date().toISOString();
+  const preferencePatch = {
+    emailPreferences: {
+      competitionNotifications: enabled === true,
+      updatedAt: now,
+      source: cleanText(source).slice(0, 40)
+    },
+    updatedAt: now
+  };
+  const before = engagementMailRecipientFromUserDoc(snapshot);
+  const afterData = {
+    ...userData,
+    ...preferencePatch,
+    emailPreferences: {
+      ...(userData.emailPreferences || {}),
+      ...preferencePatch.emailPreferences
+    }
+  };
+  const after = afterData.status === "active"
+    ? engagementMailRecipientFromUserDoc({ id: cleanUid, data: () => afterData })
+    : null;
+  const recipientKey = engagementMailRecipientIndexKey(cleanUid);
+  const capabilities = new Set([...(before.capabilities || []), ...(after?.capabilities || [])]);
+  const batch = db.batch();
+  batch.set(userRef, preferencePatch, { merge: true });
+  capabilities.forEach((capability) => {
+    const shardNumber = engagementMailRecipientShardNumber(cleanUid);
+    const value = after?.capabilities?.includes(capability) ? after : FieldValue.delete();
+    batch.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
+      capability,
+      shardNumber,
+      recipients: { [recipientKey]: value },
+      generatedAt: now
+    }, { merge: true });
+  });
+  await batch.commit();
+  await writeAuditLog("accessUser.competitionEmailPreferenceUpdated", cleanUid, {
+    uid: cleanUid,
+    enabled: enabled === true,
+    source: cleanText(source).slice(0, 40)
+  }).catch((error) => console.warn("Journalisation de la préférence mail impossible", error));
+  return { enabled: enabled === true, updatedAt: now };
+}
+
+exports.updateCurrentEmailNotificationPreferences = onCall(CALLABLE_OPTIONS, async (request) => {
+  await assertLivePalmesAccess(request);
+  const uid = cleanText(request.auth?.uid);
+  const result = await setCompetitionEmailNotificationPreference(
+    uid,
+    request.data?.competitionNotifications === true,
+    "portal"
+  );
+  return { ok: true, competitionNotificationsEnabled: result.enabled, updatedAt: result.updatedAt };
+});
+
+exports.disableCompetitionEmailNotifications = onCall(NOTIFICATION_PREFERENCE_CALLABLE_OPTIONS, async (request) => {
+  const uid = cleanText(request.data?.uid).slice(0, 128);
+  const token = cleanText(request.data?.token).slice(0, 180);
+  if (!validCompetitionNotificationPreferenceToken(uid, token)) {
+    throw new HttpsError("permission-denied", "Lien de désinscription invalide.");
+  }
+  const result = await setCompetitionEmailNotificationPreference(uid, false, "email_link");
+  return { ok: true, competitionNotificationsEnabled: result.enabled, updatedAt: result.updatedAt };
+});
+
 exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   const uid = cleanText(request.auth?.uid);
@@ -3686,6 +3810,7 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
       status: "active",
       capabilities: ACCESS_CAPABILITIES,
       accessScopes: data.accessScopes || {},
+      competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data),
       lastLoginAt,
       readStats: portalReadStats("getCurrentAccessUser", startedAt, { baseDocuments: 1, cacheHit: false })
     };
@@ -3713,6 +3838,7 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
     status: "active",
     capabilities,
     accessScopes: data.accessScopes || {},
+    competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data),
     lastLoginAt,
     readStats: portalReadStats("getCurrentAccessUser", startedAt, { baseDocuments: 1, cacheHit: false })
   };
@@ -4010,6 +4136,7 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     waterBodyType: competitionType === "openWater" ? cleanEngagementWaterBodyType(data.waterBodyType) : "",
     entryDeadlineAt: cleanText(data.entryDeadlineAt).slice(0, 40),
     computerEmail: normalizeEmail(data.computerEmail).slice(0, 180),
+    officialsManagerEmail: normalizeEmail(data.officialsManagerEmail).slice(0, 180),
     entryStatus: cleanEngagementEntryStatus(data.entryStatus || data.status),
     officialsRequired: data.officialsRequired === true,
     poolLength: cleanEngagementPoolLength(data.poolLength),
@@ -4200,6 +4327,10 @@ function engagementCompetitionDetailItem(doc, options = {}) {
       pdfReusedCount: Math.max(0, Math.trunc(Number(closureSummary.pdfReusedCount) || 0)),
       txtGeneratedCount: Math.max(0, Math.trunc(Number(closureSummary.txtGeneratedCount) || 0)),
       txtMailJobCount: Math.max(0, Math.trunc(Number(closureSummary.txtMailJobCount) || 0)),
+      officialsPdfGeneratedCount: Math.max(0, Math.trunc(Number(closureSummary.officialsPdfGeneratedCount) || 0)),
+      officialsMailJobCount: Math.max(0, Math.trunc(Number(closureSummary.officialsMailJobCount) || 0)),
+      officialCount: Math.max(0, Math.trunc(Number(closureSummary.officialCount) || 0)),
+      officialsPersonLookupReadCount: Math.max(0, Math.trunc(Number(closureSummary.officialsPersonLookupReadCount) || 0)),
       prepareErrorCount: Math.max(0, Math.trunc(Number(closureSummary.prepareErrorCount) || 0)),
       attemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.attemptedMailCount) || 0)),
       sentMailCount: Math.max(0, Math.trunc(Number(closureSummary.sentMailCount) || 0)),
@@ -4207,6 +4338,9 @@ function engagementCompetitionDetailItem(doc, options = {}) {
       txtAttemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.txtAttemptedMailCount) || 0)),
       txtSentMailCount: Math.max(0, Math.trunc(Number(closureSummary.txtSentMailCount) || 0)),
       txtSendErrorCount: Math.max(0, Math.trunc(Number(closureSummary.txtSendErrorCount) || 0)),
+      officialsAttemptedMailCount: Math.max(0, Math.trunc(Number(closureSummary.officialsAttemptedMailCount) || 0)),
+      officialsSentMailCount: Math.max(0, Math.trunc(Number(closureSummary.officialsSentMailCount) || 0)),
+      officialsSendErrorCount: Math.max(0, Math.trunc(Number(closureSummary.officialsSendErrorCount) || 0)),
       updatedAt: cleanText(closureSummary.updatedAt).slice(0, 40)
     },
     createdAt: cleanText(data.createdAt).slice(0, 40),
@@ -4349,6 +4483,7 @@ function cleanEngagementEntryOfficial(raw = {}) {
     personId: cleanText(raw.personId).slice(0, 80),
     firstName: cleanText(raw.firstName).slice(0, 80),
     lastName: cleanText(raw.lastName).slice(0, 80),
+    birthDate: cleanIsoDate(raw.birthDate),
     licenseNumber: cleanText(raw.licenseNumber).slice(0, 60)
   };
 }
@@ -5621,8 +5756,10 @@ function cleanEngagementGeneratedFiles(rawFiles = []) {
 function engagementCompetitionDocumentsMetadata(raw = {}) {
   const documents = raw && typeof raw === "object" ? raw : {};
   const clubRecapPdf = cleanEngagementDocumentMetadata(documents.clubRecapPdf || {});
+  const officialsPdf = cleanEngagementDocumentMetadata(documents.officialsPdf || {});
   return cleanFirestoreValue({
     ...(clubRecapPdf ? { clubRecapPdf } : {}),
+    ...(officialsPdf ? { officialsPdf } : {}),
     entriesTxt: documents.entriesTxt && typeof documents.entriesTxt === "object"
       ? {
           status: cleanText(documents.entriesTxt.status) === "generated" ? "generated" : cleanText(documents.entriesTxt.status) === "sent" ? "sent" : "pending",
@@ -5633,6 +5770,12 @@ function engagementCompetitionDocumentsMetadata(raw = {}) {
       ? {
           status: cleanText(documents.clubRecapEmails.status) === "sent" ? "sent" : cleanText(documents.clubRecapEmails.status) === "generated" ? "generated" : "pending",
           generatedAt: cleanText(documents.clubRecapEmails.generatedAt).slice(0, 40)
+        }
+      : undefined,
+    officialsEmail: documents.officialsEmail && typeof documents.officialsEmail === "object"
+      ? {
+          status: cleanText(documents.officialsEmail.status) === "sent" ? "sent" : cleanText(documents.officialsEmail.status) === "generated" ? "generated" : "pending",
+          generatedAt: cleanText(documents.officialsEmail.generatedAt).slice(0, 40)
         }
       : undefined
   });
@@ -6571,6 +6714,220 @@ async function getOrCreateEngagementClubRecapPdf(competitionSnapshot, entrySnaps
   };
 }
 
+function engagementOfficialsPdfStoragePath(competitionId) {
+  return [
+    ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX,
+    engagementPdfFileName(competitionId),
+    "officiels",
+    "liste-officiels.pdf"
+  ].join("/");
+}
+
+function engagementOfficialsPdfRows(entries = [], birthDatesByPersonId = new Map()) {
+  const rows = [];
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    (Array.isArray(entry.officials) ? entry.officials : []).forEach((official) => {
+      rows.push({
+        club: cleanText(entry.clubName) || engagementClubCode(entry.clubId, entry.clubCode) || "-",
+        clubCode: engagementClubCode(entry.clubId, entry.clubCode),
+        lastName: cleanText(official.lastName).toUpperCase(),
+        firstName: cleanText(official.firstName),
+        birthDate: cleanIsoDate(official.birthDate) || cleanIsoDate(birthDatesByPersonId.get(cleanText(official.personId))),
+        licenseNumber: cleanText(official.licenseNumber),
+        personId: cleanText(official.personId)
+      });
+    });
+  });
+  if (rows.length > 5000) {
+    throw new Error("La liste des officiels depasse la limite de 5 000 lignes pour un PDF.");
+  }
+  return rows.sort((left, right) =>
+    left.club.localeCompare(right.club, "fr", { sensitivity: "base", numeric: true }) ||
+    left.lastName.localeCompare(right.lastName, "fr", { sensitivity: "base" }) ||
+    left.firstName.localeCompare(right.firstName, "fr", { sensitivity: "base" }) ||
+    left.licenseNumber.localeCompare(right.licenseNumber, "fr", { sensitivity: "base", numeric: true })
+  );
+}
+
+async function resolveEngagementOfficialsPdfRows(db, entries = []) {
+  const missingPersonIds = Array.from(new Set((Array.isArray(entries) ? entries : []).flatMap((entry) =>
+    (Array.isArray(entry.officials) ? entry.officials : [])
+      .filter((official) => !cleanIsoDate(official.birthDate))
+      .map((official) => cleanText(official.personId).slice(0, 80))
+      .filter(Boolean)
+  )));
+  if (missingPersonIds.length > 5000) {
+    throw new Error("Trop de fiches d'officiels a completer pour generer le PDF.");
+  }
+  const birthDatesByPersonId = new Map();
+  for (let index = 0; index < missingPersonIds.length; index += 200) {
+    const personIds = missingPersonIds.slice(index, index + 200);
+    const snapshots = await db.getAll(...personIds.map((personId) => db.collection("engagementClubPeople").doc(personId)));
+    snapshots.forEach((snapshot) => {
+      if (!snapshot.exists) return;
+      const birthDate = cleanIsoDate(snapshot.data()?.birthDate);
+      if (birthDate) birthDatesByPersonId.set(snapshot.id, birthDate);
+    });
+  }
+  return {
+    rows: engagementOfficialsPdfRows(entries, birthDatesByPersonId),
+    personLookupReadCount: missingPersonIds.length
+  };
+}
+
+function engagementOfficialsPdfSourceHash(competition = {}, rows = []) {
+  return stableHash(JSON.stringify({
+    formatVersion: 1,
+    competition: {
+      id: competition.id,
+      name: competition.name,
+      date: competition.date,
+      endDate: competition.endDate,
+      location: competition.location,
+      level: competition.level
+    },
+    rows
+  }));
+}
+
+async function buildEngagementOfficialsPdf(competition = {}, rows = []) {
+  const generatedAt = new Date().toISOString();
+  const doc = new PDFDocument({
+    size: "A4",
+    layout: "portrait",
+    margin: 42,
+    bufferPages: true,
+    info: {
+      Title: `Liste des officiels - ${competition.name || ""}`,
+      Author: "LivePalmes",
+      Subject: "Officiels inscrits sur la compétition"
+    }
+  });
+  const pageWidth = doc.page.width;
+  doc.engagementPdfContinuationHeader = () => {
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#173b42").text(
+      `${cleanText(competition.name) || "Compétition"} · Liste des officiels`,
+      42,
+      24,
+      { width: pageWidth - 84 }
+    );
+    doc.moveTo(42, 38).lineTo(pageWidth - 42, 38).lineWidth(0.5).strokeColor("#c7d6d7").stroke();
+    return 48;
+  };
+  doc.rect(0, 0, pageWidth, 70).fill("#f4faf9");
+  if (fs.existsSync(ENGAGEMENT_PDF_LOGO_PATH)) doc.image(ENGAGEMENT_PDF_LOGO_PATH, 42, 10, { width: 70 });
+  doc.font("Helvetica-Bold").fontSize(13).fillColor("#073b44").text("Liste des officiels", 125, 11, { width: pageWidth - 167 });
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#173b42").text(competition.name || "Compétition", 125, 29, { width: pageWidth - 167 });
+  doc.font("Helvetica").fontSize(7).fillColor("#46625d").text([
+    competition.endDate && competition.endDate !== competition.date
+      ? `${engagementPdfFormatDate(competition.date)} au ${engagementPdfFormatDate(competition.endDate)}`
+      : engagementPdfFormatDate(competition.date),
+    competition.location,
+    `${rows.length} officiel${rows.length > 1 ? "s" : ""}`
+  ].filter(Boolean).join(" · "), 125, 48, { width: pageWidth - 167 });
+
+  let y = 88;
+  if (rows.length) {
+    y = engagementPdfTable(doc, [
+      { key: "club", label: "Club", width: 145 },
+      { key: "lastName", label: "Nom", width: 105 },
+      { key: "firstName", label: "Prénom", width: 90 },
+      { key: "birthDateLabel", label: "Date de naissance", width: 91 },
+      { key: "licenseNumber", label: "Licence", width: 80 }
+    ], rows.map((row) => ({ ...row, birthDateLabel: engagementPdfFormatDate(row.birthDate) })), y);
+  } else {
+    y = engagementPdfEmptyState(doc, "Aucun officiel déclaré pour cette compétition.", y);
+  }
+  const range = doc.bufferedPageRange();
+  for (let index = range.start; index < range.start + range.count; index += 1) {
+    doc.switchToPage(index);
+    doc.fontSize(6.3).fillColor("#6b7f7a").text(
+      `Liste des officiels générée le ${engagementPdfFormatDateTime(generatedAt)} · page ${index + 1}/${range.count}`,
+      42,
+      doc.page.height - 52,
+      { width: doc.page.width - 84, align: "center" }
+    );
+  }
+  const buffer = await engagementPdfDocToBuffer(doc);
+  return {
+    buffer,
+    generatedAt,
+    officialCount: rows.length,
+    fileName: `liste-officiels-${engagementPdfFileName(competition.name)}.pdf`
+  };
+}
+
+async function saveEngagementOfficialsPdfDocument(competition = {}, pdf = {}, sourceHash = "") {
+  const generatedAt = cleanText(pdf.generatedAt) || new Date().toISOString();
+  const storagePath = engagementOfficialsPdfStoragePath(competition.id);
+  const buffer = Buffer.isBuffer(pdf.buffer) ? pdf.buffer : Buffer.from(pdf.buffer || []);
+  await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(buffer, {
+    resumable: false,
+    contentType: "application/pdf",
+    metadata: {
+      cacheControl: "private, max-age=0, no-transform",
+      metadata: {
+        competitionId: cleanText(competition.id).slice(0, 128),
+        generatedAt,
+        sourceHash: cleanText(sourceHash).slice(0, 80)
+      }
+    }
+  });
+  const document = cleanEngagementDocumentMetadata({
+    status: "generated",
+    type: "officialsPdf",
+    fileName: pdf.fileName,
+    contentType: "application/pdf",
+    storagePath,
+    size: buffer.length,
+    generatedAt,
+    sourceHash,
+    competitionId: competition.id
+  });
+  await db.collection("engagementCompetitions").doc(competition.id).set({
+    documents: { officialsPdf: document }
+  }, { merge: true });
+  return document;
+}
+
+async function getOrCreateEngagementOfficialsPdf(db, competitionSnapshot, entryDocs = [], options = {}) {
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const entries = entryDocs.map((entryDoc) => engagementClubEntryItem(entryDoc));
+  const resolved = await resolveEngagementOfficialsPdfRows(db, entries);
+  const sourceHash = engagementOfficialsPdfSourceHash(competition, resolved.rows);
+  const existingDocument = competition.documents?.officialsPdf || null;
+  if (options.force !== true && existingDocument?.storagePath && existingDocument.sourceHash === sourceHash) {
+    try {
+      const buffer = await readStoredEngagementClubRecapPdf(existingDocument);
+      if (buffer?.length) {
+        return {
+          buffer,
+          generatedAt: existingDocument.generatedAt,
+          officialCount: resolved.rows.length,
+          personLookupReadCount: resolved.personLookupReadCount,
+          fileName: existingDocument.fileName || "liste-officiels-livepalmes.pdf",
+          document: existingDocument,
+          fromStorage: true
+        };
+      }
+    } catch (error) {
+      console.warn("engagement officials pdf storage read failed", {
+        competitionId: competition.id,
+        storagePath: existingDocument.storagePath,
+        message: error?.message || String(error)
+      });
+    }
+  }
+  const pdf = await buildEngagementOfficialsPdf(competition, resolved.rows);
+  const document = await saveEngagementOfficialsPdfDocument(competition, pdf, sourceHash);
+  return {
+    ...pdf,
+    personLookupReadCount: resolved.personLookupReadCount,
+    document,
+    fromStorage: false
+  };
+}
+
 function engagementTxtStoragePath(competitionId) {
   return [
     ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX,
@@ -6746,7 +7103,8 @@ function engagementMailStatusLabel(status) {
     ready: "Pret a envoyer",
     sent: "Envoye",
     failed: "Erreur",
-    cancelled_no_participants: "Annule - aucun participant"
+    cancelled_no_participants: "Annule - aucun participant",
+    cancelled_notifications_disabled: "Annule - notifications désactivées"
   }[cleanText(status)] || "Brouillon";
 }
 
@@ -6815,6 +7173,7 @@ function engagementMailRecipientFromUserDoc(doc) {
     clubId: cleanText(data.clubId).slice(0, 40),
     clubName: engagementClubName(data.clubId, data.clubName).slice(0, 140),
     regionId: cleanText(data.regionId).slice(0, 80),
+    competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data),
     capabilities
   });
 }
@@ -7019,6 +7378,10 @@ function engagementRecipientHasCapability(recipient = {}, capability) {
   return Array.isArray(recipient.capabilities) && recipient.capabilities.includes(capability);
 }
 
+function engagementCompetitionNotificationRecipients(recipients = []) {
+  return recipients.filter((recipient) => recipient?.competitionNotificationsEnabled !== false);
+}
+
 async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL_CAPABILITIES) {
   const mailCapabilities = capabilities.filter((capability) => ENGAGEMENT_MAIL_CAPABILITIES.includes(capability));
   if (!mailCapabilities.length) return [];
@@ -7039,6 +7402,7 @@ async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL
       recipientsByEmail.set(recipient.email, {
         ...existing,
         ...recipient,
+        competitionNotificationsEnabled: existing.competitionNotificationsEnabled !== false && recipient.competitionNotificationsEnabled !== false,
         capabilities: Array.from(new Set([...(existing.capabilities || []), ...(recipient.capabilities || [])]))
       });
     });
@@ -7152,6 +7516,7 @@ function engagementMailRecipientFromContext(context = {}) {
     clubId: "",
     clubName: "",
     regionId: cleanText(context.regionId).slice(0, 80),
+    competitionNotificationsEnabled: context.competitionNotificationsEnabled !== false,
     capabilities
   };
 }
@@ -7171,6 +7536,7 @@ function engagementDedupMailRecipients(recipients = []) {
         ...existing,
         ...recipient,
         email,
+        competitionNotificationsEnabled: existing.competitionNotificationsEnabled !== false && recipient.competitionNotificationsEnabled !== false,
         capabilities: Array.from(new Set([...(existing.capabilities || []), ...(recipient.capabilities || [])]))
       });
     });
@@ -7183,7 +7549,9 @@ function engagementCompetitionOpeningRecipients(recipients = [], competition = {
     cleanText(competition.regionId),
     ...cleanEngagementRegionIds(competition.invitedRegionIds, competition.regionId)
   ].map(normalizedEngagementRegionKey).filter(Boolean));
-  return engagementDedupMailRecipients([...extraRecipients, ...recipients]).filter((recipient) => {
+  return engagementCompetitionNotificationRecipients(
+    engagementDedupMailRecipients([...extraRecipients, ...recipients])
+  ).filter((recipient) => {
     if (engagementRecipientHasCapability(recipient, "engagements.national.manage")) return true;
     if (level === "national") {
       return engagementRecipientHasCapability(recipient, "engagements.club.manage") ||
@@ -7202,7 +7570,7 @@ function engagementCompetitionDocumentRecipients(recipients = [], competition = 
     cleanText(competition.regionId),
     ...cleanEngagementRegionIds(competition.invitedRegionIds, competition.regionId)
   ].map(normalizedEngagementRegionKey).filter(Boolean));
-  return engagementDedupMailRecipients(recipients).filter((recipient) => {
+  return engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(recipients)).filter((recipient) => {
     if (!recipient.clubId || !engagementRecipientHasCapability(recipient, "engagements.club.manage")) return false;
     if (level === "national") return true;
     const recipientRegionKey = normalizedEngagementRegionKey(recipient.regionId);
@@ -7225,7 +7593,10 @@ function engagementCompetitionDocumentMailText(competition = {}, documents = [])
     `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
     `Lieu : ${competition.location || "-"}`,
     "",
-    ...documents.map((document) => `- ${document.title || document.fileName || "Document"}`),
+    ...documents.flatMap((document) => [
+      `- ${document.title || document.fileName || "Document"}`,
+      `  ${document.url || ""}`
+    ]),
     "",
     "Consultez les documents depuis la fiche de la compétition dans le portail LivePalmes :",
     "",
@@ -7234,6 +7605,25 @@ function engagementCompetitionDocumentMailText(competition = {}, documents = [])
     "Sportivement,",
     "Commission Nationale Nage avec Palmes - FFESSM"
   ].join("\n");
+}
+
+function engagementCompetitionDocumentMailHtml(competition = {}, documents = []) {
+  const date = `${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`;
+  const documentItems = documents.map((document) => {
+    const label = escapeMailHtml(document.title || document.fileName || "Document");
+    const url = escapeMailHtml(document.url || "");
+    return `<li><a href="${url}">${label}</a></li>`;
+  }).join("");
+  return [
+    "<p>Bonjour,</p>",
+    `<p>${documents.length > 1 ? "De nouveaux documents ont été mis en ligne" : "Un nouveau document a été mis en ligne"} pour la compétition suivante :</p>`,
+    `<p><strong>Compétition :</strong> ${escapeMailHtml(competition.name || "-")}<br>`,
+    `<strong>Date :</strong> ${escapeMailHtml(date)}<br>`,
+    `<strong>Lieu :</strong> ${escapeMailHtml(competition.location || "-")}</p>`,
+    `<ul>${documentItems}</ul>`,
+    '<p><a href="https://livepalmes.web.app/portail.html#club-competitions">Accéder à la compétition dans le portail LivePalmes</a></p>',
+    "<p>Sportivement,<br>Commission Nationale Nage avec Palmes - FFESSM</p>"
+  ].join("");
 }
 
 function engagementRecipientsByClub(recipients = []) {
@@ -7259,15 +7649,12 @@ function engagementOpeningMailText(competition = {}) {
     `Compétition : ${competition.name || "-"}`,
     `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
     `Lieu : ${competition.location || "-"}`,
-    `Date limite des engagements : ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}`,
     "",
     "Pour saisir et suivre les engagements de votre club, connectez-vous au portail LivePalmes :",
     "",
     "https://livepalmes.web.app/portail.html#club-competitions",
     "",
-    "Utilisez les identifiants de votre club, puis sélectionnez la compétition concernée. Vos modifications sont enregistrées progressivement : vous pouvez interrompre votre saisie et la reprendre ultérieurement, y compris depuis un autre appareil.",
-    "",
-    "Pensez à vérifier l'ensemble des nageurs, courses, temps d'engagement, relais et informations du chef d'équipe avant la date limite.",
+    `Merci de finaliser et de vérifier les engagements de votre club au plus tard le ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
     "",
     "Sportivement,",
     "Commission Nationale Nage avec Palmes - FFESSM"
@@ -7283,7 +7670,7 @@ function engagementClubRecapMailText(competition = {}, entry = {}) {
   const feeLines = fees.enabled === false
     ? ["Aucun frais d'engagement n'est demandé pour cette compétition."]
     : [
-      `Total indicatif : ${engagementPdfMoney(engagementPdfFeeTotal(entry, competition))}.`,
+      `Total indicatif des frais d'engagement : ${engagementPdfMoney(engagementPdfFeeTotal(entry, competition))}.`,
       fees.helloAssoUrl
         ? `Paiement HelloAsso : ${fees.helloAssoUrl}`
         : "Lien HelloAsso en attente de publication.",
@@ -7312,6 +7699,25 @@ function engagementTxtMailText(competition = {}, txt = {}) {
     `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
     `Lieu : ${competition.location || "-"}.`,
     `Fichier : ${txt.document?.fileName || txt.fileName || "export-engagements-livepalmes.txt"}.`,
+    "",
+    "Sportivement,",
+    "Commission Nationale Nage avec Palmes - FFESSM"
+  ].join("\n");
+}
+
+function engagementOfficialsMailSubject(competition = {}) {
+  return `Liste des officiels - ${competition.name || "Compétition LivePalmes"}`;
+}
+
+function engagementOfficialsMailText(competition = {}, pdf = {}) {
+  return [
+    "Bonjour,",
+    "",
+    `Vous trouverez en pièce jointe la liste consolidée des officiels inscrits pour ${competition.name || "la compétition"}.`,
+    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
+    `Lieu : ${competition.location || "-"}.`,
+    `Nombre d'officiels déclarés : ${Math.max(0, Math.trunc(Number(pdf.officialCount) || 0))}.`,
+    "Le tableau est classé par club, puis par nom et prénom.",
     "",
     "Sportivement,",
     "Commission Nationale Nage avec Palmes - FFESSM"
@@ -7354,8 +7760,10 @@ async function upsertEngagementMailJob(payload = {}, now = "") {
     fromEmail: "livepalmes@nap-ffessm.fr",
     toEmail: normalizeEmail(payload.toEmail).slice(0, 180),
     toName: cleanText(payload.toName).slice(0, 180),
+    recipientUid: cleanText(payload.recipientUid).slice(0, 128),
     subject: cleanText(payload.subject).slice(0, 220),
     textBody: cleanText(payload.text).slice(0, 5000),
+    htmlBody: String(payload.html || "").trim().slice(0, 20000),
     textPreview: cleanText(payload.text).slice(0, 1200),
     competitionId: cleanText(payload.competitionId).slice(0, 128),
     competitionName: cleanText(payload.competitionName).slice(0, 160),
@@ -7400,12 +7808,32 @@ async function engagementMailAttachments(job = {}) {
   return attachments;
 }
 
+function engagementMailWithNotificationPreferenceFooter(text = "", html = "", uid = "") {
+  const preferenceUrl = competitionNotificationPreferenceUrl(uid);
+  if (!preferenceUrl) throw new Error("Configuration du lien de gestion des notifications manquante.");
+  const footerText = [
+    "",
+    "Vous pouvez gérer ou désactiver les notifications email LivePalmes en utilisant ce lien :",
+    preferenceUrl,
+    "ou depuis la rubrique Mon compte du portail LivePalmes :",
+    "https://livepalmes.web.app/portail.html#mon-compte"
+  ].join("\n");
+  const htmlBody = html || livePalmesMailHtml(text);
+  const footerHtml = [
+    '<hr style="margin:24px 0;border:0;border-top:1px solid #d8e0e5">',
+    '<p style="color:#66717a;font-family:Arial,sans-serif;font-size:13px;line-height:1.5">',
+    `Vous pouvez gérer ou désactiver les notifications email LivePalmes en cliquant sur <a href="${escapeMailHtml(preferenceUrl)}">ce lien</a>, ou depuis la rubrique <a href="https://livepalmes.web.app/portail.html#mon-compte">« Mon compte »</a> du portail LivePalmes.</p>`
+  ].join("");
+  return { text: `${text}${footerText}`, html: `${htmlBody}${footerHtml}` };
+}
+
 async function sendEngagementMailJob(transporter, doc, config, context) {
   const data = doc.data() || {};
   const now = new Date().toISOString();
   const toEmail = normalizeEmail(data.toEmail);
   const subject = cleanText(data.subject).slice(0, 220);
-  const text = cleanText(data.textBody || data.textPreview).slice(0, 5000);
+  let text = cleanText(data.textBody || data.textPreview).slice(0, 5000);
+  let html = String(data.htmlBody || "").trim().slice(0, 20000);
   if (!toEmail || !subject || !text) {
     const update = {
       status: "failed",
@@ -7418,11 +7846,18 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
     return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
   }
   try {
+    if (OPTIONAL_COMPETITION_MAIL_TYPES.has(cleanText(data.type))) {
+      const content = engagementMailWithNotificationPreferenceFooter(text, html, data.recipientUid);
+      text = content.text;
+      html = content.html;
+    }
+    if (!html) html = livePalmesMailHtml(text);
     const info = await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: toEmail,
       subject,
       text,
+      ...(html ? { html } : {}),
       attachments: await engagementMailAttachments(data)
     });
     const update = cleanFirestoreValue({
@@ -8597,6 +9032,7 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_O
   const now = new Date().toISOString();
   const subject = engagementCompetitionDocumentMailSubject(competition, documents);
   const text = engagementCompetitionDocumentMailText(competition, documents);
+  const html = engagementCompetitionDocumentMailHtml(competition, documents);
   const preparedJobs = [];
   for (let offset = 0; offset < recipients.length; offset += 25) {
     const chunk = recipients.slice(offset, offset + 25);
@@ -8611,8 +9047,10 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_O
         regionId: recipient.regionId,
         toEmail: recipient.email,
         toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+        recipientUid: recipient.uid,
         subject,
-        text
+        text,
+        html
       };
       const item = await upsertEngagementMailJob(payload, now);
       return item ? {
@@ -8621,6 +9059,7 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_O
           ...payload,
           status: engagementMailPreparedStatus(),
           textBody: text,
+          htmlBody: html,
           createdAt: now,
           updatedAt: now
         }
@@ -9212,6 +9651,7 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
       regionId: recipient.regionId,
       toEmail: recipient.email,
       toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+      recipientUid: recipient.uid,
       subject: engagementOpeningMailSubject(competition),
       text: engagementOpeningMailText(competition)
     }, now);
@@ -9235,7 +9675,9 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, as
 async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, options = {}) {
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
   const competitionId = cleanText(competition.id).slice(0, 128);
-  const recipientsByClub = engagementRecipientsByClub(await engagementActiveClubMailRecipients(db));
+  const recipientsByClub = engagementRecipientsByClub(engagementCompetitionNotificationRecipients(
+    await engagementActiveClubMailRecipients(db)
+  ));
   const entriesSnapshot = await db.collection("engagementClubEntries")
     .where("competitionId", "==", competitionId)
     .limit(500)
@@ -9280,6 +9722,7 @@ async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, opti
         regionId: entry.regionId,
         toEmail: recipient.email,
         toName: [recipient.firstName, recipient.lastName].filter(Boolean).join(" "),
+        recipientUid: recipient.uid,
         subject: engagementClubRecapMailSubject(competition, entry),
         text: engagementClubRecapMailText(competition, entry),
         attachments: [{
@@ -9426,6 +9869,80 @@ async function prepareEngagementTxtEmailJob(db, competitionSnapshot, options = {
   };
 }
 
+async function prepareEngagementOfficialsEmailJob(db, competitionSnapshot, options = {}) {
+  const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  const competitionId = cleanText(competition.id).slice(0, 128);
+  if (competition.officialsRequired !== true) {
+    return {
+      competitionId,
+      jobCount: 0,
+      errorCount: 0,
+      officialCount: 0,
+      personLookupReadCount: 0,
+      skippedReason: "officials_not_required"
+    };
+  }
+  const officialsManagerEmail = normalizeEmail(competition.officialsManagerEmail);
+  if (!officialsManagerEmail) {
+    return {
+      competitionId,
+      jobCount: 0,
+      errorCount: 1,
+      officialCount: 0,
+      personLookupReadCount: 0,
+      errors: [{ message: "Email du responsable juge non renseigne." }]
+    };
+  }
+  const entriesSnapshot = await db.collection("engagementClubEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(500)
+    .get();
+  const pdf = await getOrCreateEngagementOfficialsPdf(db, competitionSnapshot, entriesSnapshot.docs, {
+    force: options.forcePdf === true
+  });
+  const now = new Date().toISOString();
+  const job = await upsertEngagementMailJob({
+    type: "officials_pdf",
+    competitionId,
+    competitionName: competition.name,
+    clubId: "jury",
+    clubName: "Jury compétition",
+    regionId: competition.regionId,
+    toEmail: officialsManagerEmail,
+    toName: "Responsable juge",
+    subject: engagementOfficialsMailSubject(competition),
+    text: engagementOfficialsMailText(competition, pdf),
+    attachments: [{
+      type: "officialsPdf",
+      fileName: pdf.document?.fileName || pdf.fileName,
+      contentType: "application/pdf",
+      storagePath: pdf.document?.storagePath
+    }]
+  }, now);
+  await db.collection("engagementCompetitions").doc(competitionId).set({
+    documents: {
+      officialsEmail: {
+        status: "generated",
+        generatedAt: pdf.generatedAt,
+        updatedAt: now,
+        jobCount: job ? 1 : 0
+      }
+    }
+  }, { merge: true });
+  return {
+    competitionId,
+    jobCount: job ? 1 : 0,
+    errorCount: 0,
+    officialCount: pdf.officialCount,
+    personLookupReadCount: pdf.personLookupReadCount,
+    mailStatus: engagementMailPreparedStatus(),
+    generatedAt: pdf.generatedAt,
+    pdfFileName: pdf.fileName,
+    pdfFromStorage: pdf.fromStorage,
+    jobs: job ? [job] : []
+  };
+}
+
 async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context = {}, options = {}) {
   const competitionId = cleanText(competitionSnapshot.id).slice(0, 128);
   const requestedType = cleanText(options.type).slice(0, 80);
@@ -9459,21 +9976,41 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
       if (requestedType && cleanText(data.type) !== requestedType) return false;
       return status === "ready" || status === "blocked_missing_config" || status === "failed";
     });
-  const cancelledDocs = eligibleRecapClubIds
+  const notificationCapabilities = requestedType === "club_recap_pdf"
+    ? ["engagements.club.manage"]
+    : ENGAGEMENT_MAIL_CAPABILITIES;
+  const enabledNotificationUids = pendingDocs.some((doc) => OPTIONAL_COMPETITION_MAIL_TYPES.has(cleanText(doc.data()?.type)))
+    ? new Set(engagementCompetitionNotificationRecipients(await engagementActiveMailRecipients(db, notificationCapabilities))
+        .map((recipient) => cleanText(recipient.uid))
+        .filter(Boolean))
+    : null;
+  const notificationsDisabledDocs = enabledNotificationUids
+    ? pendingDocs.filter((doc) => {
+        const data = doc.data() || {};
+        const recipientUid = cleanText(data.recipientUid);
+        return OPTIONAL_COMPETITION_MAIL_TYPES.has(cleanText(data.type)) && recipientUid && !enabledNotificationUids.has(recipientUid);
+      })
+    : [];
+  const noParticipantsDocs = eligibleRecapClubIds
     ? pendingDocs.filter((doc) => !eligibleRecapClubIds.has(cleanText(doc.data()?.clubId)))
     : [];
+  const cancelledDocs = [...new Map([...notificationsDisabledDocs, ...noParticipantsDocs].map((doc) => [doc.id, doc])).values()];
   if (cancelledDocs.length) {
     const now = new Date().toISOString();
     const batch = db.batch();
-    cancelledDocs.forEach((doc) => batch.set(doc.ref, {
-      status: "cancelled_no_participants",
-      updatedAt: now,
-      cancelledAt: now
-    }, { merge: true }));
+    cancelledDocs.forEach((doc) => {
+      const notificationsDisabled = notificationsDisabledDocs.some((item) => item.id === doc.id);
+      batch.set(doc.ref, {
+        status: notificationsDisabled ? "cancelled_notifications_disabled" : "cancelled_no_participants",
+        updatedAt: now,
+        cancelledAt: now
+      }, { merge: true });
+    });
     await batch.commit();
   }
   const candidates = pendingDocs
     .filter((doc) => !eligibleRecapClubIds || eligibleRecapClubIds.has(cleanText(doc.data()?.clubId)))
+    .filter((doc) => !notificationsDisabledDocs.some((item) => item.id === doc.id))
     .sort((left, right) =>
       cleanText(left.data()?.updatedAt).localeCompare(cleanText(right.data()?.updatedAt)) ||
       cleanText(left.data()?.toEmail).localeCompare(cleanText(right.data()?.toEmail))
@@ -9489,7 +10026,7 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
     else if (job.status === "failed") errorCount += 1;
     jobs.push(job);
   }
-  if ((requestedType === "club_recap_pdf" || requestedType === "entries_txt") && candidates.length) {
+  if ((requestedType === "club_recap_pdf" || requestedType === "entries_txt" || requestedType === "officials_pdf") && candidates.length) {
     const now = new Date().toISOString();
     await db.collection("engagementCompetitions").doc(competitionId).set({
       documents: requestedType === "entries_txt"
@@ -9503,7 +10040,18 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
               errorCount
             }
           }
-        : {
+        : requestedType === "officials_pdf"
+          ? {
+              officialsEmail: {
+                status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
+                generatedAt: now,
+                updatedAt: now,
+                attemptedCount: candidates.length,
+                sentCount,
+                errorCount
+              }
+            }
+          : {
             clubRecapEmails: {
               status: sentCount === candidates.length && !errorCount ? "sent" : "generated",
               generatedAt: now,
@@ -9615,6 +10163,9 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
     const txtPreparation = await prepareEngagementTxtEmailJob(db, closedSnapshot, {
       forceTxt: false
     });
+    const officialsPreparation = await prepareEngagementOfficialsEmailJob(db, closedSnapshot, {
+      forcePdf: false
+    });
     const sendResult = preparation.jobCount
       ? await sendEngagementPreparedEmailJobs(db, closedSnapshot, context, {
           type: "club_recap_pdf",
@@ -9639,8 +10190,20 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
           errorCount: 0,
           jobs: []
         };
+    const officialsSendResult = officialsPreparation.jobCount
+      ? await sendEngagementPreparedEmailJobs(db, closedSnapshot, context, {
+          type: "officials_pdf",
+          limit: 10
+        })
+      : {
+          competitionId: closedSnapshot.id,
+          attemptedCount: 0,
+          sentCount: 0,
+          errorCount: 0,
+          jobs: []
+        };
     const completedAt = new Date().toISOString();
-    const status = preparation.errorCount || txtPreparation.errorCount || sendResult.errorCount || txtSendResult.errorCount
+    const status = preparation.errorCount || txtPreparation.errorCount || officialsPreparation.errorCount || sendResult.errorCount || txtSendResult.errorCount || officialsSendResult.errorCount
       ? "completed_with_errors"
       : "completed";
     await competitionRef.set({
@@ -9656,13 +10219,20 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
         pdfReusedCount: preparation.pdfReusedCount,
         txtGeneratedCount: txtPreparation.generatedAt ? 1 : 0,
         txtMailJobCount: txtPreparation.jobCount,
-        prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0),
-        attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0),
-        sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0),
-        sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0),
+        officialsPdfGeneratedCount: officialsPreparation.generatedAt ? 1 : 0,
+        officialsMailJobCount: officialsPreparation.jobCount,
+        officialCount: officialsPreparation.officialCount,
+        officialsPersonLookupReadCount: officialsPreparation.personLookupReadCount,
+        prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0) + Number(officialsPreparation.errorCount || 0),
+        attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0) + Number(officialsSendResult.attemptedCount || 0),
+        sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0) + Number(officialsSendResult.sentCount || 0),
+        sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0) + Number(officialsSendResult.errorCount || 0),
         txtAttemptedMailCount: txtSendResult.attemptedCount,
         txtSentMailCount: txtSendResult.sentCount,
         txtSendErrorCount: txtSendResult.errorCount,
+        officialsAttemptedMailCount: officialsSendResult.attemptedCount,
+        officialsSentMailCount: officialsSendResult.sentCount,
+        officialsSendErrorCount: officialsSendResult.errorCount,
         updatedAt: completedAt
       }),
       updatedAt: completedAt,
@@ -9678,13 +10248,20 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
       pdfReusedCount: preparation.pdfReusedCount,
       txtGeneratedCount: txtPreparation.generatedAt ? 1 : 0,
       txtMailJobCount: txtPreparation.jobCount,
-      prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0),
-      attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0),
-      sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0),
-      sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0),
+      officialsPdfGeneratedCount: officialsPreparation.generatedAt ? 1 : 0,
+      officialsMailJobCount: officialsPreparation.jobCount,
+      officialCount: officialsPreparation.officialCount,
+      officialsPersonLookupReadCount: officialsPreparation.personLookupReadCount,
+      prepareErrorCount: Number(preparation.errorCount || 0) + Number(txtPreparation.errorCount || 0) + Number(officialsPreparation.errorCount || 0),
+      attemptedMailCount: Number(sendResult.attemptedCount || 0) + Number(txtSendResult.attemptedCount || 0) + Number(officialsSendResult.attemptedCount || 0),
+      sentMailCount: Number(sendResult.sentCount || 0) + Number(txtSendResult.sentCount || 0) + Number(officialsSendResult.sentCount || 0),
+      sendErrorCount: Number(sendResult.errorCount || 0) + Number(txtSendResult.errorCount || 0) + Number(officialsSendResult.errorCount || 0),
       txtAttemptedMailCount: txtSendResult.attemptedCount,
       txtSentMailCount: txtSendResult.sentCount,
-      txtSendErrorCount: txtSendResult.errorCount
+      txtSendErrorCount: txtSendResult.errorCount,
+      officialsAttemptedMailCount: officialsSendResult.attemptedCount,
+      officialsSentMailCount: officialsSendResult.sentCount,
+      officialsSendErrorCount: officialsSendResult.errorCount
     });
     return {
       competitionId: closedSnapshot.id,
@@ -9692,8 +10269,10 @@ async function processEngagementCompetitionAutomaticClosure(db, competitionSnaps
       status,
       preparation,
       txtPreparation,
+      officialsPreparation,
       sendResult,
-      txtSendResult
+      txtSendResult,
+      officialsSendResult
     };
   } catch (error) {
     const failedAt = new Date().toISOString();
@@ -10107,6 +10686,7 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
       personId: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
+      birthDate: person.birthDate,
       licenseNumber: person.licenseNumber
     };
   });
@@ -11239,8 +11819,9 @@ async function sendEngagementSwimmerChangeResolutionNotification(payload = {}) {
     await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: recipientEmail,
-      subject: mail.subject,
-      text: mail.text
+      subject: cleanText(mail.subject).slice(0, 220),
+      text: mail.text,
+      html: livePalmesMailHtml(mail.text)
     });
     return {
       status: "sent",

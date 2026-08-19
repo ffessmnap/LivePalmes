@@ -13018,6 +13018,100 @@
   background: #fbfcfd;
 }
 
+.admin-account-notification-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #dce5e7;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafb;
+}
+
+.admin-account-notification-setting > div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-account-notification-setting strong {
+  color: #183f47;
+  font-size: 0.9rem;
+}
+
+.admin-account-notification-setting span {
+  color: #607279;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.admin-account-notification-switch {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 82px;
+  min-height: 42px;
+  border: 1px solid #b8c7ca;
+  border-radius: 999px;
+  padding: 5px 9px 5px 6px;
+  background: #e7ecee;
+  color: #53666c;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-account-notification-switch-track {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: #a8b5b8;
+  transition: background 160ms ease;
+}
+
+.admin-account-notification-switch-track > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(21 54 61 / 24%);
+  transition: transform 160ms ease;
+}
+
+.admin-account-notification-switch[aria-checked="true"] {
+  border-color: #69aa9d;
+  background: #e7f5f1;
+  color: #196556;
+}
+
+.admin-account-notification-switch[aria-checked="true"] .admin-account-notification-switch-track {
+  background: #238b78;
+}
+
+.admin-account-notification-switch[aria-checked="true"] .admin-account-notification-switch-track > span {
+  transform: translateX(16px);
+}
+
+.admin-account-notification-switch:focus-visible {
+  outline: 3px solid rgb(11 114 133 / 24%);
+  outline-offset: 2px;
+}
+
+.admin-account-notification-switch:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.admin-account-notification-switch-state {
+  min-width: 24px;
+  color: inherit !important;
+  font-size: 0.72rem !important;
+}
+
 #adminAccessRequestView .admin-access-preview {
   gap: 18px;
   padding: 17px;

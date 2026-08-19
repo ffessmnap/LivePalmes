@@ -41,6 +41,7 @@
           </button>
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
             <a href="#mon-compte" role="menuitem">Mon compte</a>
+            <a href="https://forms.gle/kPg4NcqhyzP6KV5L8" target="_blank" rel="noopener" role="menuitem">Signaler un bug ou une amélioration <span aria-hidden="true">↗</span></a>
             <button id="adminPortalAccountClubSwitch" type="button" role="menuitem" hidden>Changer de club</button>
             <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
             <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
@@ -106,7 +107,7 @@
             <div class="admin-access-identity-grid">
               <label>
                 Nom
-                <input id="adminPublicAccessRequestLastName" type="text" autocomplete="family-name" required>
+                <input id="adminPublicAccessRequestLastName" type="text" autocomplete="family-name" autocapitalize="characters" required>
               </label>
               <label>
                 Pr&eacute;nom
@@ -175,6 +176,7 @@
                 <h2 id="adminNavGeneral">Général</h2>
                 <a id="adminPortalHomeLink" href="#accueil" data-admin-view-link="dashboard"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></span><span id="adminPortalHomeLabel">Vue d’ensemble</span></a>
                 <a href="#mon-compte" data-admin-view-link="account"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span>Mon compte</span></a>
+                <a href="https://forms.gle/kPg4NcqhyzP6KV5L8" target="_blank" rel="noopener"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 4V5Z"></path><path d="M8 9h8M8 13h5"></path></svg></span><span>Aide et retours</span><span aria-hidden="true">↗</span></a>
               </section>
               <section class="admin-portal-nav-group" aria-labelledby="adminNavClub">
                 <h2 id="adminNavClub">Club</h2>
@@ -581,6 +583,31 @@
                     <div id="adminAccountCapabilities" class="admin-account-capabilities">-</div>
                   </details>
                 </section>
+
+                <details id="adminAccountNotificationsDetails" class="admin-account-card admin-account-edit-card" aria-labelledby="adminAccountNotificationsTitle">
+                  <summary class="admin-simple-card-head">
+                    <span class="admin-simple-card-icon tone-email" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></span>
+                    <div>
+                      <span>Préférences</span>
+                      <h3 id="adminAccountNotificationsTitle">Notifications par email</h3>
+                      <p id="adminAccountNotificationsSummary">Gérer les informations reçues pour les compétitions.</p>
+                    </div>
+                  </summary>
+                  <div id="adminAccountNotificationsForm" class="admin-account-form">
+                    <div class="admin-account-notification-setting">
+                      <div>
+                        <strong>Notifications de compétition</strong>
+                        <span>Ouvertures de compétitions, nouveaux documents et récapitulatifs PDF d’engagement</span>
+                      </div>
+                      <button id="adminAccountCompetitionNotifications" class="admin-account-notification-switch" type="button" role="switch" aria-checked="true" aria-label="Notifications de compétition activées">
+                        <span class="admin-account-notification-switch-track" aria-hidden="true"><span></span></span>
+                        <span id="adminAccountCompetitionNotificationsState" class="admin-account-notification-switch-state">ON</span>
+                      </button>
+                    </div>
+                    <p>Les messages indispensables concernant votre compte et sa sécurité restent toujours envoyés.</p>
+                    <p id="adminAccountNotificationsMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </div>
+                </details>
 
                 <details id="adminAccountEmailDetails" class="admin-account-card admin-account-edit-card" aria-labelledby="adminAccountEmailTitle">
                   <summary class="admin-simple-card-head">
@@ -1128,6 +1155,10 @@
                             <label>
                               Email du responsable informatique de la comp&eacute;tition
                               <input id="adminEngagementsEditComputerEmail" type="email" maxlength="180" autocomplete="email">
+                            </label>
+                            <label>
+                              Email du responsable juge de la comp&eacute;tition
+                              <input id="adminEngagementsEditOfficialsManagerEmail" type="email" maxlength="180" autocomplete="email">
                             </label>
                           </div>
                         </fieldset>
