@@ -114,6 +114,7 @@ function evaluateEngagementRoutePolicy(capabilities) {
     const canCreateEngagementCompetition = () => canUse("engagements.region.manage") || canUse("engagements.national.manage");
     const canDeleteEngagementCompetitionDirectly = () => canUse("engagements.national.manage");
     const canReviewEngagementAccessRequests = () => canUse("engagements.region.manage") || canUse("engagements.national.manage");
+    const canViewActivityLog = () => canUse("admin.full");
     ${engagementRoutePolicyFunctions}
     result = {
       club: canAccessEngagementRoute("club"),
@@ -121,6 +122,7 @@ function evaluateEngagementRoutePolicy(capabilities) {
       adminCalendar: canAccessEngagementRoute("adminCalendar"),
       adminAccessRequests: canAccessEngagementRoute("adminAccessRequests"),
       adminDeletionRequests: canAccessEngagementRoute("adminDeletionRequests"),
+      adminAudit: canAccessEngagementRoute("adminAudit"),
       unknown: canAccessEngagementRoute("unknown"),
       fallback: preferredEngagementRouteHash()
     };
@@ -317,6 +319,7 @@ assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.club.manage"]), {
   adminCalendar: false,
   adminAccessRequests: false,
   adminDeletionRequests: false,
+  adminAudit: false,
   unknown: false,
   fallback: "#club-competitions"
 });
@@ -326,6 +329,7 @@ assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.region.manage"]), {
   adminCalendar: true,
   adminAccessRequests: true,
   adminDeletionRequests: false,
+  adminAudit: false,
   unknown: false,
   fallback: "#competitions-calendrier"
 });
@@ -335,6 +339,7 @@ assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.national.manage"]),
   adminCalendar: true,
   adminAccessRequests: true,
   adminDeletionRequests: true,
+  adminAudit: false,
   unknown: false,
   fallback: "#competitions-calendrier"
 });
@@ -344,6 +349,7 @@ assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.club.manage", "enga
   adminCalendar: true,
   adminAccessRequests: true,
   adminDeletionRequests: false,
+  adminAudit: false,
   unknown: false,
   fallback: "#club-competitions"
 });
@@ -353,8 +359,19 @@ assert.deepEqual(evaluateEngagementRoutePolicy([]), {
   adminCalendar: false,
   adminAccessRequests: false,
   adminDeletionRequests: false,
+  adminAudit: false,
   unknown: false,
   fallback: "#accueil"
+});
+assert.deepEqual(evaluateEngagementRoutePolicy(["admin.full"]), {
+  club: false,
+  clubSwimmers: false,
+  adminCalendar: false,
+  adminAccessRequests: false,
+  adminDeletionRequests: false,
+  adminAudit: true,
+  unknown: false,
+  fallback: "#administration-historique"
 });
 assert.equal(Boolean(openingDeadlineErrorSandbox.result.past), true);
 assert.equal(Boolean(openingDeadlineErrorSandbox.result.equal), true);
@@ -1018,6 +1035,43 @@ assert.equal(portalHtml.includes('class="admin-engagements-national-tabs"'), fal
 assert.ok(portalHtml.includes('id="adminEngagementsNationalSwimmersMergeMode"'));
 assert.ok(portalHtml.includes('id="adminEngagementsNationalPeopleMergeMode"'));
 assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditSearch"'));
+assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditPeriod"'));
+assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditClub"'));
+assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditActor"'));
+assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditOrigin"'));
+assert.ok(portalHtml.includes('id="adminEngagementsNationalAuditLoadMore"'));
+assert.ok(portalHtml.includes('data-engagements-nav-entry="adminAudit"'));
+assert.equal(portal.includes("normalizePerformanceSearchText"), false);
+assert.ok(portal.includes("function canViewActivityLog()"));
+assert.ok(portal.includes('return canUse("admin.full")'));
+assert.ok(portal.includes("function groupedEngagementNationalAuditLogs"));
+assert.ok(portal.includes("10 * 60 * 1000"));
+assert.ok(portal.includes('actionLabel = grouped ? "Engagements mis à jour"'));
+assert.ok(portal.includes('callFunction("listEngagementNationalAuditLogs"'));
+assert.ok(functions.includes("async function auditManagementContext"));
+assert.ok(functions.includes('data.capabilities?.["admin.full"] !== true'));
+assert.ok(functions.includes('const AUDIT_LEGACY_VISIBLE_SINCE = "2026-08-12T00:00:00.000Z"'));
+assert.ok(functions.includes('orderBy(FieldPath.documentId(), "desc")'));
+assert.ok(functions.includes("query.limit(limit + 1).get()"));
+assert.ok(functions.includes("AUDIT_ACTOR_RESOLUTION_LIMIT = 25"));
+assert.ok(functions.includes("AUDIT_COMPETITION_RESOLUTION_LIMIT = 25"));
+assert.ok(functions.includes('db.collection("engagementCompetitions").doc(competitionId)'));
+assert.ok(functions.includes("auth.getUsers(unresolvedAuthUids.map"));
+assert.ok(portal.includes("engagementNationalAuditCompetitions"));
+assert.ok(portal.includes("knownCompetitionIds"));
+assert.ok(portal.includes('actor.name || actor.email || "Utilisateur non identifié"'));
+assert.ok(portal.includes('(competitionId ? "Compétition" : "")'));
+assert.ok(portalCss.includes("minmax(140px, 1.6fr) repeat(5, minmax(72px, 1fr)) auto"));
+assert.ok(portalHtml.includes('class="admin-national-audit-filter-actions"'));
+assert.ok(portalHtml.includes("Recharger le journal"));
+assert.ok(portalHtml.indexOf('id="adminEngagementsNationalAuditRefresh"') < portalHtml.indexOf('data-engagements-national-panel="audit"'));
+assert.ok(functions.includes('writeAuditLogOnce("recordsMpf.published"'));
+assert.ok(functions.includes('data.updatedBy).slice(0, 160) || "system:records-publication"'));
+assert.ok(portal.includes('"recordsMpf.published": ["Records et MPF publiés", "performances"]'));
+const auditIndexes = indexes.indexes.filter((index) => index.collectionGroup === "auditLogs");
+assert.equal(auditIndexes.length, 3);
+assert.ok(auditIndexes.some((index) => index.fields.some((field) => field.fieldPath === "actorUid")));
+assert.ok(auditIndexes.some((index) => index.fields.some((field) => field.fieldPath === "target.clubId")));
 assert.ok(portalHtml.includes('id="adminEngagementsNationalSwimmersSearch"'));
 assert.ok(portal.includes("data-engagement-club-swimmer-change"));
 assert.ok(portal.includes('data-engagement-national-swimmer-action="edit"'));
@@ -1250,9 +1304,9 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260819-club-calendar-filters-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260819-activity-log-5"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260819-activity-log-5"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1394,7 +1448,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260819-activity-log-5"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);

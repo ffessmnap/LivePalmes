@@ -249,7 +249,7 @@
     "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
     "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
     "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
-    "#administration-historique": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "audit" }
+    "#administration-historique": { entry: "adminAudit", tab: "deletionRequests", nationalTab: "audit" }
   });
   const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
     deletions: "#administration-suppressions",
@@ -566,10 +566,15 @@
     engagementsNationalAccountsList: document.querySelector("#adminEngagementsNationalAccountsList"),
     engagementsNationalAuditRefresh: document.querySelector("#adminEngagementsNationalAuditRefresh"),
     engagementsNationalAuditSearch: document.querySelector("#adminEngagementsNationalAuditSearch"),
+    engagementsNationalAuditPeriod: document.querySelector("#adminEngagementsNationalAuditPeriod"),
+    engagementsNationalAuditClub: document.querySelector("#adminEngagementsNationalAuditClub"),
+    engagementsNationalAuditActor: document.querySelector("#adminEngagementsNationalAuditActor"),
     engagementsNationalAuditType: document.querySelector("#adminEngagementsNationalAuditType"),
+    engagementsNationalAuditOrigin: document.querySelector("#adminEngagementsNationalAuditOrigin"),
     engagementsNationalAuditReset: document.querySelector("#adminEngagementsNationalAuditReset"),
     engagementsNationalAuditStatus: document.querySelector("#adminEngagementsNationalAuditStatus"),
     engagementsNationalAuditList: document.querySelector("#adminEngagementsNationalAuditList"),
+    engagementsNationalAuditLoadMore: document.querySelector("#adminEngagementsNationalAuditLoadMore"),
     engagementsDetail: document.querySelector("#adminEngagementsDetail"),
     engagementsDetailEyebrow: document.querySelector("#adminEngagementsDetailEyebrow"),
     engagementsDetailTitle: document.querySelector("#adminEngagementsDetailTitle"),
@@ -932,6 +937,12 @@
   let engagementNationalAuditLogs = [];
   let engagementNationalAuditLogsLoaded = false;
   let engagementNationalAuditLogsLoading = false;
+  let engagementNationalAuditNextCursor = null;
+  let engagementNationalAuditHasMore = false;
+  let engagementNationalAuditVisibleFrom = "";
+  const engagementNationalAuditActors = new Map();
+  const engagementNationalAuditClubs = new Map();
+  const engagementNationalAuditCompetitions = new Map();
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
   let engagementClubPeopleLoading = false;
@@ -1316,6 +1327,14 @@
       canUse("engagements.national.manage");
   }
 
+  function canViewActivityLog() {
+    return canUse("admin.full");
+  }
+
+  function canAccessEngagementsView() {
+    return canManageEngagements() || canViewActivityLog();
+  }
+
   function canCreateEngagementCompetition() {
     return canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
@@ -1339,6 +1358,7 @@
       return canUse("engagements.club.manage");
     }
     if (entry === "adminDeletionRequests") return canDeleteEngagementCompetitionDirectly();
+    if (entry === "adminAudit") return canViewActivityLog();
     if (entry === "adminAccessRequests") return canReviewEngagementAccessRequests();
     if (entry === "adminCalendar" || entry === "adminCreate") return canCreateEngagementCompetition();
     return false;
@@ -1347,6 +1367,7 @@
   function preferredEngagementRouteHash() {
     if (canUse("engagements.club.manage")) return "#club-competitions";
     if (canCreateEngagementCompetition()) return "#competitions-calendrier";
+    if (canViewActivityLog()) return "#administration-historique";
     return "#accueil";
   }
 
@@ -1506,7 +1527,7 @@
   }
 
   function setNationalMenuOpen(open) {
-    const expanded = Boolean(open) && canDeleteEngagementCompetitionDirectly();
+    const expanded = Boolean(open) && (canDeleteEngagementCompetitionDirectly() || canViewActivityLog());
     elements.nationalToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (elements.nationalSubmenu) elements.nationalSubmenu.hidden = !expanded;
   }
@@ -1618,6 +1639,9 @@
       elements.engagementsCalendarActions.hidden = !adminCalendarMode || elements.engagementsCalendarCard?.dataset.detailOpen === "true";
     }
     if (elements.engagementsClubPeopleActions) elements.engagementsClubPeopleActions.hidden = !peopleMode;
+    if (elements.engagementsNationalAuditRefresh) {
+      elements.engagementsNationalAuditRefresh.hidden = !nationalMode || activeEngagementNationalTab !== "audit";
+    }
     if (elements.engagementsDetailEyebrow) elements.engagementsDetailEyebrow.hidden = true;
     if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = true;
     if (elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
@@ -1653,6 +1677,10 @@
   }
 
   function loadActiveEngagementNationalTab() {
+    if (activeEngagementNationalTab === "audit") {
+      if (canViewActivityLog()) loadEngagementNationalAuditLogs();
+      return;
+    }
     if (!canDeleteEngagementCompetitionDirectly()) return;
     if (activeEngagementNationalTab === "clubs") {
       loadEngagementNationalClubs();
@@ -1660,8 +1688,6 @@
       loadEngagementNationalSwimmers();
     } else if (activeEngagementNationalTab === "people") {
       loadEngagementNationalPeople();
-    } else if (activeEngagementNationalTab === "audit") {
-      loadEngagementNationalAuditLogs();
     } else {
       loadEngagementDeletionRequests();
       loadEngagementSwimmerChangeRequests();
@@ -1671,7 +1697,10 @@
 
   function setEngagementNationalTab(tab = "deletions") {
     const allowedTabs = new Set(["deletions", "clubs", "swimmers", "people", "audit"]);
-    const nextTab = allowedTabs.has(tab) ? tab : "deletions";
+    const requestedTab = allowedTabs.has(tab) ? tab : "deletions";
+    const nextTab = requestedTab === "audit"
+      ? (canViewActivityLog() ? "audit" : "deletions")
+      : (canDeleteEngagementCompetitionDirectly() ? requestedTab : "audit");
     activeEngagementNationalTab = nextTab;
     elements.engagementsNationalTabButtons?.forEach((button) => {
       const selected = button.dataset.engagementsNationalTabButton === nextTab;
@@ -2074,11 +2103,12 @@
   function setEngagementsTab(tab) {
     const canCreate = canCreateEngagementCompetition();
     const canNationalRequests = canDeleteEngagementCompetitionDirectly();
+    const canAudit = canViewActivityLog();
     const canAccessRequests = canReviewEngagementAccessRequests();
     const canClubPeople = canUse("engagements.club.manage");
     const canClubSwimmers = canUse("engagements.club.manage");
     const allowedTabs = new Set(["calendar"]);
-    if (canNationalRequests) allowedTabs.add("deletionRequests");
+    if (canNationalRequests || canAudit) allowedTabs.add("deletionRequests");
     if (canAccessRequests) allowedTabs.add("accessRequests");
     if (canClubPeople) allowedTabs.add("clubPeople");
     if (canClubSwimmers) allowedTabs.add("clubSwimmers");
@@ -2087,12 +2117,12 @@
     if (nextTab === "accessRequests") {
       activeEngagementsNavEntry = "adminAccessRequests";
     } else if (nextTab === "deletionRequests") {
-      activeEngagementsNavEntry = "adminDeletionRequests";
+      activeEngagementsNavEntry = activeEngagementsNavEntry === "adminAudit" ? "adminAudit" : "adminDeletionRequests";
     } else if (nextTab === "clubPeople") {
       activeEngagementsNavEntry = "clubPeople";
     } else if (nextTab === "clubSwimmers") {
       activeEngagementsNavEntry = "clubSwimmers";
-    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminAccessRequests" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
+    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminAccessRequests" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "adminAudit" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
       activeEngagementsNavEntry = canCreate ? "adminCalendar" : "club";
     }
     elements.engagementsTabButtons?.forEach((button) => {
@@ -2101,7 +2131,7 @@
       const accessRequestsOnly = buttonTab === "accessRequests";
       const clubOnly = buttonTab === "clubPeople";
       const clubSwimmersOnly = buttonTab === "clubSwimmers";
-      button.hidden = buttonTab === "create" || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      button.hidden = buttonTab === "create" || (nationalOnly && !canNationalRequests && !canAudit) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
       const selected = buttonTab === nextTab;
       button.setAttribute("aria-selected", selected ? "true" : "false");
       button.tabIndex = selected ? 0 : -1;
@@ -2112,7 +2142,7 @@
       const accessRequestsOnly = panelTab === "accessRequests";
       const clubOnly = panelTab === "clubPeople";
       const clubSwimmersOnly = panelTab === "clubSwimmers";
-      panel.hidden = panelTab === "create" || panelTab !== nextTab || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      panel.hidden = panelTab === "create" || panelTab !== nextTab || (nationalOnly && !canNationalRequests && !canAudit) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
     });
     if (nextTab === "deletionRequests") setEngagementNationalTab(activeEngagementNationalTab);
   }
@@ -2258,7 +2288,7 @@
       item.hidden = !canUse(item.dataset.capabilityNav);
     });
     document.querySelectorAll("[data-engagements-nav], [data-engagements-panel]").forEach((item) => {
-      item.hidden = !canManageEngagements();
+      item.hidden = !canAccessEngagementsView();
     });
     document.querySelectorAll("[data-engagements-admin-nav]").forEach((item) => {
       item.hidden = !canCreateEngagementCompetition();
@@ -2275,8 +2305,14 @@
     document.querySelectorAll("[data-engagements-national-nav]").forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
     });
-    document.querySelectorAll("[data-engagements-national-home]").forEach((item) => {
+    document.querySelectorAll('[data-engagements-national-target]:not([data-engagements-national-target="audit"])').forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
+    });
+    document.querySelectorAll('[data-engagements-national-target="audit"]').forEach((item) => {
+      item.hidden = !canViewActivityLog();
+    });
+    document.querySelectorAll("[data-engagements-national-home]").forEach((item) => {
+      item.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     });
     document.querySelectorAll("[data-overview-club]").forEach((item) => {
       item.hidden = !canUse("engagements.club.manage");
@@ -2288,7 +2324,7 @@
       item.hidden = !canManagePerformances();
     });
     document.querySelectorAll("[data-overview-national]").forEach((item) => {
-      item.hidden = !canDeleteEngagementCompetitionDirectly();
+      item.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     });
     document.querySelectorAll("[data-engagements-admin-request-nav]").forEach((item) => {
       item.hidden = !canReviewEngagementAccessRequests();
@@ -2297,7 +2333,7 @@
       item.hidden = !canManageAccessDirectory();
     });
     if (elements.clubMenu) elements.clubMenu.hidden = !canUse("engagements.club.manage");
-    if (elements.nationalMenu) elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly();
+    if (elements.nationalMenu) elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     if (elements.accessAdd) elements.accessAdd.hidden = !canUse("admin.full");
     if (elements.accessPanel && !canUse("admin.full")) elements.accessPanel.hidden = true;
     if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
@@ -2305,6 +2341,9 @@
       renderPendingBadgeCollection(elements.nationalPendingBadges, 0);
       renderEngagementNationalOverview();
     }
+    document.querySelectorAll(".admin-national-home-group").forEach((group) => {
+      group.hidden = !Array.from(group.querySelectorAll("a")).some((link) => !link.hidden);
+    });
     if (!canReviewEngagementAccessRequests()) renderPendingBadgeCollection(elements.accessPendingBadges, 0);
     setEngagementsTab(activeEngagementsTab);
     if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
@@ -2377,8 +2416,8 @@
     const clubHomeDenied = requestedView === "clubHome" && !canUse("engagements.club.manage");
     const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
     const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
-    const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly();
-    const engagementsDenied = requestedView === "engagements" && !canManageEngagements();
+    const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
+    const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
     const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || engagementsDenied
       ? "dashboard"
       : requestedView;
@@ -2405,9 +2444,9 @@
     const performanceSpaceActive = ["performanceHome", "records", "import", "correction"].includes(activeView);
     const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
     const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(activeEngagementsNavEntry));
-    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && activeEngagementsNavEntry === "adminDeletionRequests");
+    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const accessSpaceActive = activeView === "accessHome" || activeView === "access" || (activeView === "engagements" && activeEngagementsNavEntry === "adminAccessRequests");
-    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests"].includes(activeEngagementsNavEntry));
+    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : accessSpaceActive ? "access" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
     setExclusivePortalMenu(activeMenu, Boolean(activeMenu));
     [
@@ -2516,7 +2555,7 @@
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
         ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
-        ["performances/public/store.js?v=20260817-records-source-1", "adminRecordStoreScript"]
+        ["performances/public/store.js?v=20260819-activity-log-1", "adminRecordStoreScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
       await loadScriptOnce("performances/public/admin-records.js?v=20260817-records-source-1", "adminRecordModuleScript");
@@ -12652,173 +12691,422 @@
     }
   }
 
-  function auditTargetSummary(target = {}) {
-    if (!target || typeof target !== "object") return "Élément concerné";
-    const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
-      .filter(Boolean).join(" ");
-    if (target.email || target.targetEmail) return target.email || target.targetEmail;
-    if (target.competitionName) return target.competitionName;
-    if (personName) return personName;
-    if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
-    if (target.clubName) return target.clubName;
-    if (target.competitionId) return `Compétition ${String(target.competitionId).slice(0, 8)}`;
-    if (target.clubId || target.sourceClubId) return clubDisplayLabel({ clubId: target.clubId || target.sourceClubId });
-    if (target.requestId) return `Demande ${String(target.requestId).slice(0, 8)}`;
-    if (target.swimmerId || target.sourceSwimmerId) return `Nageur ${String(target.swimmerId || target.sourceSwimmerId).slice(0, 8)}`;
-    if (target.personId || target.sourcePersonId) return `Personne ${String(target.personId || target.sourcePersonId).slice(0, 8)}`;
-    return "Élément concerné";
-  }
+  const AUDIT_ACTION_METADATA = Object.freeze({
+    "accessUser.created": ["Compte créé", "access"],
+    "accessUser.updated": ["Compte et habilitations modifiés", "access"],
+    "accessUser.activated": ["Compte activé", "access"],
+    "accessUser.deactivated": ["Compte désactivé", "access"],
+    "accessUser.deleted": ["Compte supprimé", "access"],
+    "accessUser.emailUpdated": ["Adresse du compte modifiée", "access"],
+    "accessUser.competitionEmailPreferenceUpdated": ["Préférence de notification modifiée", "access"],
+    "accessUser.deletionRequested": ["Suppression de compte demandée", "requests"],
+    "accessUser.deletionRequestResolved": ["Demande de suppression de compte traitée", "requests"],
+    "engagementAccessRequest.submitted": ["Demande d'accès déposée", "requests"],
+    "engagementAccessRequest.resolved": ["Demande d'accès traitée", "requests"],
+    "engagementAccessRequest.redirectedExistingAccount": ["Demande rattachée à un compte existant", "requests"],
+    "engagementClub.createdFromAccessRequest": ["Club créé depuis une demande d'accès", "clubs"],
+    "engagementClub.created": ["Club créé", "clubs"],
+    "engagementClub.updated": ["Club modifié", "clubs"],
+    "engagementClub.deleted": ["Club supprimé", "clubs"],
+    "engagementClubSwimmer.created": ["Nageur créé", "people"],
+    "engagementClubSwimmer.recovered": ["Nageur restauré", "people"],
+    "engagementClubSwimmer.statusChanged": ["Statut d'un nageur modifié", "people"],
+    "engagementClubSwimmer.activityStatusUpdated": ["Activité d'un nageur mise à jour", "people"],
+    "engagementClubSwimmer.changeRequested": ["Correction de nageur demandée", "requests"],
+    "engagementClubSwimmer.changeApproved": ["Correction de nageur validée", "requests"],
+    "engagementClubSwimmer.changeRejected": ["Correction de nageur refusée", "requests"],
+    "engagementClubSwimmer.identityCorrected": ["Identité de nageur corrigée", "people"],
+    "engagementClubSwimmer.nationalMerged": ["Fiches nageur fusionnées", "people"],
+    "engagementClubSwimmer.mergePublicationRepaired": ["Publication d'une fusion nageur réparée", "technical"],
+    "engagementClubSwimmer.deleted": ["Nageur supprimé", "people"],
+    "engagementClubSwimmer.deletionRequested": ["Suppression de nageur demandée", "requests"],
+    "engagementClubSwimmer.deletionRequestResolved": ["Demande de suppression de nageur traitée", "requests"],
+    "engagementClubPerson.saved": ["Officiel enregistré", "people"],
+    "engagementClubPerson.statusChanged": ["Statut d'un officiel modifié", "people"],
+    "engagementClubPerson.nationalStatusChanged": ["Statut national d'un officiel modifié", "people"],
+    "engagementClubPerson.nationalMerged": ["Fiches officiel fusionnées", "people"],
+    "engagementClubPerson.nationalDeleted": ["Officiel supprimé", "people"],
+    "engagementCompetition.created": ["Compétition créée", "competitions"],
+    "engagementCompetition.updated": ["Compétition modifiée", "competitions"],
+    "engagementCompetition.deleted": ["Compétition supprimée", "competitions"],
+    "engagementCompetition.deletionRequested": ["Suppression de compétition demandée", "requests"],
+    "engagementCompetition.deletionRequestResolved": ["Demande de suppression de compétition traitée", "requests"],
+    "engagementCompetition.closedAutomatically": ["Engagements fermés automatiquement", "technical"],
+    "engagementCompetition.automaticClosureFailed": ["Fermeture automatique en échec", "technical"],
+    "engagementCompetition.automaticClosureSweep": ["Contrôle des fermetures automatiques", "technical"],
+    "engagementCompetition.documentUploaded": ["Document de compétition ajouté", "competitions"],
+    "engagementCompetition.documentReplaced": ["Document de compétition remplacé", "competitions"],
+    "engagementCompetition.documentUpdated": ["Document de compétition modifié", "competitions"],
+    "engagementCompetition.documentDeleted": ["Document de compétition supprimé", "competitions"],
+    "engagementCompetition.documentsNotified": ["Nouveaux documents notifiés", "competitions"],
+    "engagementCompetition.openingEmailsPrepared": ["Courriels d'ouverture préparés", "technical"],
+    "engagementCompetition.clubRecapEmailsPrepared": ["Courriels récapitulatifs préparés", "technical"],
+    "engagementCompetition.preparedEmailsSent": ["Courriels préparés envoyés", "technical"],
+    "engagementCompetition.clubRecapPdfGeneratedByAdmin": ["Récapitulatif club généré", "technical"],
+    "engagementCompetition.clubRecapPdfsGenerated": ["Récapitulatifs clubs générés", "technical"],
+    "engagementCompetition.txtExportGenerated": ["Export WinPalme généré", "technical"],
+    "engagementClubEntry.teamLeaderSaved": ["Chef d'équipe enregistré", "competitions"],
+    "engagementClubEntry.teamLeaderRemoved": ["Chef d'équipe retiré", "competitions"],
+    "engagementClubEntry.officialsSaved": ["Officiels de la compétition enregistrés", "competitions"],
+    "engagementClubEntry.swimmerAdded": ["Nageur ajouté aux engagements", "competitions"],
+    "engagementClubEntry.swimmerRemoved": ["Nageur retiré des engagements", "competitions"],
+    "engagementClubEntry.swimmerSelectionsSaved": ["Sélection des nageurs enregistrée", "competitions"],
+    "engagementClubEntry.swimmersSaved": ["Nageurs engagés enregistrés", "competitions"],
+    "engagementClubEntry.individualEntriesSaved": ["Courses individuelles enregistrées", "competitions"],
+    "engagementClubEntry.relaysSaved": ["Relais enregistrés", "competitions"],
+    "engagementClubEntry.recapPdfGenerated": ["Récapitulatif d'engagement généré", "technical"],
+    "engagementClubAggregates.rebuilt": ["Agrégats du club reconstruits", "technical"],
+    "engagementOpenWaterCourse.created": ["Course d'eau libre créée", "competitions"],
+    "engagementOpenWaterCourse.statusChanged": ["Statut d'une course d'eau libre modifié", "competitions"],
+    "performanceImport.created": ["Résultats importés", "performances"],
+    "performanceImport.deleted": ["Import de résultats annulé", "performances"],
+    "performanceImport.publicationResumed": ["Publication d'un import reprise", "performances"],
+    "performanceImport.recordAlertDecision": ["Alerte Record/MPF traitée", "performances"],
+    "performancePublicData.published": ["Performances publiques publiées", "performances"],
+    "recordsMpf.published": ["Records et MPF publiés", "performances"],
+    "performanceCorrection.updated": ["Performance corrigée", "performances"],
+    "performanceCorrection.hidden": ["Performance masquée", "performances"]
+  });
+
+  const AUDIT_DETAIL_LABELS = Object.freeze({
+    active: "Statut actif", capabilities: "Habilitations", changedCount: "Modifications appliquées",
+    changedSwimmerCount: "Nageurs modifiés", chrono: "Chronométrage", clubCode: "Sigle du club",
+    clubId: "Identifiant du club", clubName: "Club", competitionId: "Identifiant de la compétition",
+    competitionName: "Compétition", date: "Date", decision: "Décision", email: "Adresse électronique",
+    entryStatus: "État des engagements", eventCode: "Épreuve", federalNumber: "Numéro fédéral",
+    fileName: "Fichier", hidden: "Masquée", importedPerformances: "Performances importées",
+    individualEntryCount: "Courses individuelles", level: "Niveau", name: "Nom",
+    performanceCount: "Performances", personId: "Identifiant de la personne", reason: "Motif",
+    changeCount: "Lignes modifiées", publishedAt: "Date de publication", sourceDate: "Date source", version: "Version publique",
+    relayCount: "Relais", requestedChangeCount: "Modifications demandées", requestId: "Identifiant de la demande",
+    sourceClubId: "Club d'origine", status: "Statut", swimmerCount: "Nageurs engagés",
+    swimmerId: "Identifiant du nageur", swimmerIndexId: "Identifiant du nageur", timingType: "Type de chronométrage",
+    uid: "Identifiant utilisateur"
+  });
 
   function auditActionLabel(action = "") {
-    return {
-      "accessUser.created": "Compte créé",
-      "accessUser.updated": "Compte modifie",
-      "accessUser.deleted": "Compte supprimé",
-      "accessUser.deletionRequested": "Suppression du compte demandée",
-      "accessUser.deletionRequestResolved": "Demande de compte traitée",
-      "engagementClubSwimmer.changeRequested": "Correction de nageur demandée",
-      "engagementClubSwimmer.changeApproved": "Correction de nageur validée",
-      "engagementClubSwimmer.changeRejected": "Correction de nageur refusée",
-      "engagementClubSwimmer.identityCorrected": "Identité de nageur corrigée",
-      "engagementClubSwimmer.nationalMerged": "Fusion nageur",
-      "engagementClubPerson.nationalMerged": "Fusion officiel",
-      "engagementClubPerson.saved": "Officiel enregistré",
-      "engagementClubSwimmer.deleted": "Nageur supprimé",
-      "engagementClubPerson.nationalDeleted": "Officiel supprimé",
-      "engagementCompetition.updated": "Compétition modifiée",
-      "engagementCompetition.deleted": "Compétition supprimée",
-      "engagementCompetition.deletionRequestResolved": "Demande de compétition traitée",
-      "engagementClubEntry.teamLeaderSaved": "Chef d'équipe enregistré",
-      "engagementClubEntry.swimmerAdded": "Nageur ajouté à un engagement",
-      "engagementClubEntry.swimmerRemoved": "Nageur retiré d'un engagement",
-      "engagementClubEntry.individualEntriesSaved": "Engagements individuels enregistrés",
-      "engagementClubEntry.relaysSaved": "Relais enregistrés",
-      "engagementClubEntry.recapPdfGenerated": "Récapitulatif PDF généré",
-      "engagementClub.created": "Club créé",
-      "engagementClub.updated": "Club modifié"
-    }[action] || action || "-";
+    return AUDIT_ACTION_METADATA[action]?.[0] || String(action || "Action non reconnue").replaceAll(".", " · ");
   }
 
   function auditActionCategory(action = "") {
+    if (AUDIT_ACTION_METADATA[action]?.[1]) return AUDIT_ACTION_METADATA[action][1];
     const value = String(action || "");
-    if (/request|deletion|changeRequested|changeApproved|changeRejected/i.test(value)) return "requests";
-    if (value.startsWith("accessUser.")) return "access";
-    if (/^engagementClub\.(created|updated)$/.test(value)) return "clubs";
+    if (/request|deletion/i.test(value)) return "requests";
+    if (/performance|record|mpf/i.test(value)) return "performances";
     if (/ClubSwimmer|ClubPerson/i.test(value)) return "people";
     if (/Competition|ClubEntry/i.test(value)) return "competitions";
-    return "";
+    return "technical";
+  }
+
+  function auditActorOrigin(log = {}) {
+    const uid = String(log.actorUid || "");
+    return !uid || uid.startsWith("system:") || uid === "public-login-page" ? "system" : "human";
   }
 
   function auditActorLabel(log = {}) {
     const actorUid = String(log.actorUid || "");
-    if (actorUid && actorUid === String(currentAccessProfile?.uid || "")) return "Vous";
-    return actorUid ? "Administrateur LivePalmes" : "Système LivePalmes";
+    if (!actorUid || actorUid.startsWith("system:")) return "Système LivePalmes";
+    if (actorUid === "public-login-page") return "Demande publique";
+    const actor = engagementNationalAuditActors.get(actorUid) || {};
+    const currentUserName = [currentAccessProfile?.firstName, currentAccessProfile?.lastName].filter(Boolean).join(" ");
+    const isCurrentUser = actorUid === String(currentAccessProfile?.uid || "");
+    const label = (isCurrentUser ? currentUserName || currentAccessProfile?.displayName || currentAccessProfile?.email : "")
+      || actor.name || actor.email || "Utilisateur non identifié";
+    return label;
+  }
+
+  function auditClubId(log = {}) {
+    return String(log.target?.clubId || log.target?.sourceClubId || "");
+  }
+
+  function auditClubLabel(log = {}) {
+    const clubId = auditClubId(log);
+    return log.target?.clubName || engagementNationalAuditClubs.get(clubId)
+      || (clubId ? clubDisplayLabel({ clubId }, { fallback: "" }) : "");
+  }
+
+  function auditCompetitionLabel(target = {}) {
+    const competitionId = String(target.competitionId || "");
+    const auditCompetition = engagementNationalAuditCompetitions.get(competitionId);
+    const cachedCompetition = engagementCompetitions.find((competition) => competition.id === competitionId);
+    return target.competitionName || target.name || auditCompetition?.name || cachedCompetition?.name || (competitionId ? "Compétition" : "");
+  }
+
+  function auditTargetSummary(target = {}, action = "") {
+    if (!target || typeof target !== "object") target = {};
+    const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
+      .filter(Boolean).join(" ");
+    const competition = auditCompetitionLabel(target);
+    if (competition) return competition;
+    if (personName) return personName;
+    if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
+    if (target.clubName) return target.clubName;
+    if (target.email || target.targetEmail) return target.email || target.targetEmail;
+    if (target.fileName) return target.fileName;
+    if (target.clubId || target.sourceClubId) {
+      const clubLabel = clubDisplayLabel({ clubId: target.clubId || target.sourceClubId }, { fallback: "" });
+      if (clubLabel) return clubLabel;
+    }
+    if (action === "accessUser.competitionEmailPreferenceUpdated") return "Notifications du compte";
+    if (action.startsWith("engagementAccessRequest.")) return "Demande d'accès";
+    if (action.startsWith("engagementOpenWaterCourse.")) return "Course d'eau libre";
+    if (action.startsWith("engagementClubSwimmer.")) return "Fiche nageur";
+    if (action.startsWith("engagementClubPerson.")) return "Fiche officiel";
+    if (action.startsWith("engagementClubAggregates.")) return "Données du club";
+    if (action.startsWith("performanceImport.")) return "Import de résultats";
+    if (action.startsWith("performancePublicData.")) return "Données publiques des performances";
+    if (action.startsWith("recordsMpf.")) return "Référentiels Records et MPF";
+    if (action.startsWith("performanceCorrection.")) return "Performance concernée";
+    if (action.startsWith("accessUser.")) return "Compte utilisateur";
+    return "Action LivePalmes";
+  }
+
+  function auditDateLabel(value = "") {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "Date inconnue";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+    }).format(date);
+  }
+
+  function auditDetailValue(value) {
+    if (value === true) return "Oui";
+    if (value === false) return "Non";
+    if (value === null || value === undefined || value === "") return "Non renseigné";
+    if (Array.isArray(value)) return value.map((item) => typeof item === "object" ? JSON.stringify(item) : String(item)).join(", ");
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
+  function auditDetailRows(log = {}) {
+    const target = log.target && typeof log.target === "object" ? log.target : {};
+    const preferredKeys = Object.keys(AUDIT_DETAIL_LABELS).filter((key) => Object.hasOwn(target, key));
+    const additionalKeys = Object.keys(target)
+      .filter((key) => !preferredKeys.includes(key) && !["fileHash", "performanceBaseSync", "clubActivityReactivation"].includes(key))
+      .slice(0, 8);
+    const rows = [...preferredKeys, ...additionalKeys].map((key) => {
+      const rawValue = auditDetailValue(target[key]);
+      const value = rawValue.length > 500 ? `${rawValue.slice(0, 497)}…` : rawValue;
+      const label = AUDIT_DETAIL_LABELS[key] || key.replace(/([a-z])([A-Z])/g, "$1 $2");
+      return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    });
+    rows.push(`<div><dt>Code technique</dt><dd><code>${escapeHtml(log.action || "-")}</code></dd></div>`);
+    return rows.join("");
+  }
+
+  function auditActionIsCritical(action = "") {
+    return /deleted|deletion|Merged|identityCorrected|accessUser\.(created|updated|activated|deactivated)|performanceCorrection\.(hidden|updated)/i.test(action);
+  }
+
+  function auditActionIsGroupable(action = "") {
+    return [
+      "engagementClubEntry.teamLeaderSaved", "engagementClubEntry.teamLeaderRemoved",
+      "engagementClubEntry.officialsSaved", "engagementClubEntry.swimmerAdded",
+      "engagementClubEntry.swimmerRemoved", "engagementClubEntry.swimmerSelectionsSaved",
+      "engagementClubEntry.swimmersSaved", "engagementClubEntry.individualEntriesSaved",
+      "engagementClubEntry.relaysSaved"
+    ].includes(action);
   }
 
   function filteredEngagementNationalAuditLogs() {
-    const query = normalizePerformanceSearchText(elements.engagementsNationalAuditSearch?.value || "");
+    const query = normalizedEngagementClubSearch(elements.engagementsNationalAuditSearch?.value || "");
     const type = elements.engagementsNationalAuditType?.value || "";
+    const origin = elements.engagementsNationalAuditOrigin?.value || "";
     return engagementNationalAuditLogs.filter((log) => {
       if (type && auditActionCategory(log.action) !== type) return false;
+      if (origin && auditActorOrigin(log) !== origin) return false;
       if (!query) return true;
-      const haystack = normalizePerformanceSearchText([
-        auditActionLabel(log.action),
-        log.action,
-        auditActorLabel(log),
-        auditTargetSummary(log.target),
-        JSON.stringify(log.target || {})
+      const haystack = normalizedEngagementClubSearch([
+        auditActionLabel(log.action), log.action, auditActorLabel(log), auditTargetSummary(log.target, log.action),
+        auditClubLabel(log), JSON.stringify(log.target || {})
       ].join(" "));
       return haystack.includes(query);
     });
   }
 
+  function groupedEngagementNationalAuditLogs(logs = []) {
+    const groups = [];
+    logs.forEach((log) => {
+      const groupable = auditActionIsGroupable(log.action) && !auditActionIsCritical(log.action);
+      const key = groupable
+        ? [log.actorUid || "system", auditClubId(log), log.target?.competitionId || ""].join("|")
+        : "";
+      const previous = groups.at(-1);
+      const previousOldestAt = Date.parse(previous?.logs?.at(-1)?.createdAt || "");
+      const currentAt = Date.parse(log.createdAt || "");
+      const withinTenMinutes = Number.isFinite(previousOldestAt) && Number.isFinite(currentAt) && previousOldestAt - currentAt <= 10 * 60 * 1000;
+      if (key && previous?.groupKey === key && withinTenMinutes) {
+        previous.logs.push(log);
+      } else {
+        groups.push({ groupKey: key, logs: [log] });
+      }
+    });
+    return groups;
+  }
+
+  function auditEntryHtml(group = {}) {
+    const logs = group.logs || [];
+    const first = logs[0] || {};
+    const grouped = logs.length > 1;
+    const actionLabel = grouped ? "Engagements mis à jour" : auditActionLabel(first.action);
+    const targetLabel = auditTargetSummary(first.target, first.action);
+    const clubLabel = auditClubLabel(first);
+    const category = auditActionCategory(first.action);
+    const detailHtml = grouped
+      ? `<ol class="admin-national-audit-grouped-actions">${logs.map((log) => `<li><time>${escapeHtml(auditDateLabel(log.createdAt))}</time><strong>${escapeHtml(auditActionLabel(log.action))}</strong><dl>${auditDetailRows(log)}</dl></li>`).join("")}</ol>`
+      : `<dl class="admin-national-audit-detail-grid">${auditDetailRows(first)}</dl>`;
+    return `
+      <details class="admin-national-audit-entry" data-audit-category="${escapeHtml(category)}">
+        <summary>
+          <time datetime="${escapeHtml(first.createdAt || "")}">${escapeHtml(auditDateLabel(first.createdAt))}</time>
+          <span class="admin-national-audit-entry-main"><strong>${escapeHtml(actionLabel)}</strong><small>${escapeHtml(targetLabel)}</small></span>
+          <span class="admin-national-audit-actor">${escapeHtml(auditActorLabel(first))}</span>
+          ${clubLabel ? `<span class="admin-national-audit-club">${escapeHtml(clubLabel)}</span>` : ""}
+          ${grouped ? `<span class="admin-national-audit-count">${logs.length} actions</span>` : ""}
+          <span class="admin-national-audit-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="admin-national-audit-entry-details">
+          ${detailHtml}
+          ${first.actorUid ? `<p class="admin-national-audit-technical">Identifiant acteur : <code>${escapeHtml(first.actorUid)}</code></p>` : ""}
+        </div>
+      </details>`;
+  }
+
+  function updateEngagementNationalAuditFilterOptions() {
+    engagementNationalAuditLogs.forEach((log) => {
+      const clubId = String(log.target?.clubId || "");
+      if (clubId && !engagementNationalAuditClubs.has(clubId)) {
+        const clubLabel = log.target?.clubName || clubDisplayLabel({ clubId }, { fallback: "" });
+        if (clubLabel) engagementNationalAuditClubs.set(clubId, clubLabel);
+      }
+    });
+    const replaceOptions = (select, options, emptyLabel) => {
+      if (!select) return;
+      const selected = select.value;
+      select.innerHTML = `<option value="">${escapeHtml(emptyLabel)}</option>${options.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+      select.value = selected;
+    };
+    replaceOptions(elements.engagementsNationalAuditClub,
+      [...engagementNationalAuditClubs.entries()].sort((left, right) => left[1].localeCompare(right[1], "fr")),
+      "Tous les clubs");
+    replaceOptions(elements.engagementsNationalAuditActor,
+      [...engagementNationalAuditActors.entries()]
+        .map(([uid, actor]) => [uid, auditActorLabel({ actorUid: uid })])
+        .sort((left, right) => left[1].localeCompare(right[1], "fr")),
+      "Tous les utilisateurs");
+  }
+
   function resetEngagementNationalAuditFilters() {
     if (elements.engagementsNationalAuditSearch) elements.engagementsNationalAuditSearch.value = "";
+    if (elements.engagementsNationalAuditPeriod) elements.engagementsNationalAuditPeriod.value = "7";
+    if (elements.engagementsNationalAuditClub) elements.engagementsNationalAuditClub.value = "";
+    if (elements.engagementsNationalAuditActor) elements.engagementsNationalAuditActor.value = "";
     if (elements.engagementsNationalAuditType) elements.engagementsNationalAuditType.value = "";
-    renderEngagementNationalAuditLogs();
+    if (elements.engagementsNationalAuditOrigin) elements.engagementsNationalAuditOrigin.value = "";
+    void loadEngagementNationalAuditLogs({ force: true });
+  }
+
+  function resetEngagementNationalAuditData() {
+    engagementNationalAuditLogs = [];
+    engagementNationalAuditLogsLoaded = false;
+    engagementNationalAuditLogsLoading = false;
+    engagementNationalAuditNextCursor = null;
+    engagementNationalAuditHasMore = false;
+    engagementNationalAuditVisibleFrom = "";
+    engagementNationalAuditActors.clear();
+    engagementNationalAuditClubs.clear();
+    engagementNationalAuditCompetitions.clear();
   }
 
   function renderEngagementNationalAuditLogs() {
     if (!elements.engagementsNationalAuditList) return;
-    if (!canDeleteEngagementCompetitionDirectly()) {
+    if (!canViewActivityLog()) {
       elements.engagementsNationalAuditList.innerHTML = "";
       return;
     }
+    updateEngagementNationalAuditFilterOptions();
+    const filteredLogs = filteredEngagementNationalAuditLogs();
+    const groups = groupedEngagementNationalAuditLogs(filteredLogs);
     if (!engagementNationalAuditLogs.length) {
-      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action recente a afficher.</p>';
-      return;
-    }
-    const logs = filteredEngagementNationalAuditLogs();
-    if (!logs.length) {
+      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action enregistrée sur cette période.</p>';
+    } else if (!groups.length) {
       elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action ne correspond aux filtres.</p>';
-      if (elements.engagementsNationalAuditStatus) elements.engagementsNationalAuditStatus.textContent = "0 action affichée.";
-      return;
+    } else {
+      elements.engagementsNationalAuditList.innerHTML = `<div class="admin-national-audit-list">${groups.map(auditEntryHtml).join("")}</div>`;
     }
-    if (elements.engagementsNationalAuditStatus) {
-      elements.engagementsNationalAuditStatus.textContent = `${logs.length} action${logs.length > 1 ? "s" : ""} affichée${logs.length > 1 ? "s" : ""}.`;
+    if (elements.engagementsNationalAuditStatus && !engagementNationalAuditLogsLoading) {
+      const loaded = engagementNationalAuditLogs.length;
+      const groupedCount = groups.length;
+      const visibleFromLabel = engagementNationalAuditVisibleFrom ? auditDateLabel(engagementNationalAuditVisibleFrom).split(" ")[0] : "";
+      elements.engagementsNationalAuditStatus.textContent = `${groupedCount} ligne${groupedCount > 1 ? "s" : ""} affichée${groupedCount > 1 ? "s" : ""} · ${loaded} trace${loaded > 1 ? "s" : ""} chargée${loaded > 1 ? "s" : ""}${visibleFromLabel ? ` depuis le ${visibleFromLabel}` : ""}.`;
       elements.engagementsNationalAuditStatus.dataset.tone = "ok";
     }
-    elements.engagementsNationalAuditList.innerHTML = `
-      <div class="admin-engagements-national-table-wrap">
-        <table class="admin-engagements-national-table admin-engagements-national-audit-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Action</th>
-              <th>Acteur</th>
-              <th>Objet</th>
-              <th>Détails</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${logs.map((log) => `
-              <tr>
-                <td>${escapeHtml(log.createdAt ? formatDeadline(log.createdAt).replace(/^Limite /, "") : "-")}</td>
-                <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong></td>
-                <td>${escapeHtml(auditActorLabel(log))}</td>
-                <td>${escapeHtml(auditTargetSummary(log.target))}</td>
-                <td>
-                  <details class="admin-national-audit-details">
-                    <summary>Voir</summary>
-                    <code>${escapeHtml(log.action || "Action inconnue")}</code>
-                    ${log.actorUid ? `<code>Acteur : ${escapeHtml(log.actorUid)}</code>` : ""}
-                  </details>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+    if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.hidden = !engagementNationalAuditHasMore;
   }
 
-  async function loadEngagementNationalAuditLogs({ force = false, silent = false } = {}) {
-    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalAuditLogsLoading) return;
-    if (engagementNationalAuditLogsLoaded && !force) return;
+  async function loadEngagementNationalAuditLogs({ force = false, silent = false, append = false } = {}) {
+    if (!canViewActivityLog() || engagementNationalAuditLogsLoading) return;
+    if (engagementNationalAuditLogsLoaded && !force && !append) return;
+    if (append && (!engagementNationalAuditHasMore || !engagementNationalAuditNextCursor)) return;
     engagementNationalAuditLogsLoading = true;
+    if (force) {
+      engagementNationalAuditLogs = [];
+      engagementNationalAuditNextCursor = null;
+      engagementNationalAuditHasMore = false;
+    }
     if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = true;
+    if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.disabled = true;
     if (elements.engagementsNationalAuditStatus && !silent) {
-      elements.engagementsNationalAuditStatus.textContent = "Chargement de l'historique...";
+      elements.engagementsNationalAuditStatus.textContent = append ? "Chargement des actions précédentes..." : "Chargement du journal...";
       elements.engagementsNationalAuditStatus.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("listEngagementNationalAuditLogs", { limit: 80 });
-      engagementNationalAuditLogs = Array.isArray(result.logs) ? result.logs : [];
+      await loadAccessClubReference();
+      const result = await callFunction("listEngagementNationalAuditLogs", {
+        limit: 50,
+        days: Number(elements.engagementsNationalAuditPeriod?.value || 7),
+        actorUid: elements.engagementsNationalAuditActor?.value || "",
+        clubId: elements.engagementsNationalAuditClub?.value || "",
+        cursor: append ? engagementNationalAuditNextCursor : null,
+        knownActorUids: [...engagementNationalAuditActors.entries()]
+          .filter(([, actor]) => actor.name || actor.email)
+          .map(([uid]) => uid)
+          .slice(0, 100),
+        knownCompetitionIds: [...engagementNationalAuditCompetitions.entries()]
+          .filter(([, competition]) => competition.name)
+          .map(([competitionId]) => competitionId)
+          .slice(0, 100)
+      });
+      (Array.isArray(result.actors) ? result.actors : []).forEach((actor) => {
+        if (actor?.uid) engagementNationalAuditActors.set(actor.uid, actor);
+      });
+      (Array.isArray(result.competitions) ? result.competitions : []).forEach((competition) => {
+        if (competition?.id) engagementNationalAuditCompetitions.set(competition.id, competition);
+      });
+      const returnedLogs = Array.isArray(result.logs) ? result.logs : [];
+      returnedLogs.forEach((log) => {
+        const uid = String(log.actorUid || "");
+        if (uid && !uid.startsWith("system:") && uid !== "public-login-page" && !engagementNationalAuditActors.has(uid)) {
+          engagementNationalAuditActors.set(uid, { uid, name: "", email: "" });
+        }
+      });
+      const previousIds = new Set(engagementNationalAuditLogs.map((log) => log.id));
+      engagementNationalAuditLogs = append
+        ? [...engagementNationalAuditLogs, ...returnedLogs.filter((log) => !previousIds.has(log.id))]
+        : returnedLogs;
+      engagementNationalAuditNextCursor = result.nextCursor || null;
+      engagementNationalAuditHasMore = result.hasMore === true;
+      engagementNationalAuditVisibleFrom = result.visibleFrom || "";
       engagementNationalAuditLogsLoaded = true;
-      renderEngagementNationalAuditLogs();
-      if (elements.engagementsNationalAuditStatus && !silent) {
-        markLastRefresh(elements.engagementsNationalAuditStatus);
-        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} disponible${engagementNationalAuditLogs.length > 1 ? "s" : ""}.`;
-        elements.engagementsNationalAuditStatus.dataset.tone = "ok";
-      }
     } catch (error) {
       if (elements.engagementsNationalAuditStatus && !silent) {
-        elements.engagementsNationalAuditStatus.textContent = `Lecture historique impossible : ${error?.message || error}`;
+        elements.engagementsNationalAuditStatus.textContent = `Lecture du journal impossible : ${error?.message || error}`;
         elements.engagementsNationalAuditStatus.dataset.tone = "error";
       }
     } finally {
       engagementNationalAuditLogsLoading = false;
       if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = false;
+      if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.disabled = false;
       if (engagementNationalAuditLogsLoaded) renderEngagementNationalAuditLogs();
     }
   }
@@ -13753,6 +14041,7 @@
       accessPreviousCursors = [];
       accessPage = 1;
       accessDeletionRequestsLoaded = false;
+      resetEngagementNationalAuditData();
     }
     activeAuthUid = signedIn ? authUid : "";
     if (!signedIn && status.ready) {
@@ -13763,6 +14052,7 @@
       portalPendingOverviewLoading = false;
       renderPortalPendingOverview();
       resetEngagementClubData();
+      resetEngagementNationalAuditData();
     }
     document.body.dataset.adminAuth = !authReady ? "loading" : signedIn ? "unlocked" : "locked";
     document.body.setAttribute("aria-busy", authReady ? "false" : "true");
@@ -14659,8 +14949,13 @@
     });
     elements.engagementsNationalAuditRefresh?.addEventListener("click", () => loadEngagementNationalAuditLogs({ force: true }));
     elements.engagementsNationalAuditSearch?.addEventListener("input", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditPeriod?.addEventListener("change", () => loadEngagementNationalAuditLogs({ force: true }));
+    elements.engagementsNationalAuditClub?.addEventListener("change", () => loadEngagementNationalAuditLogs({ force: true }));
+    elements.engagementsNationalAuditActor?.addEventListener("change", () => loadEngagementNationalAuditLogs({ force: true }));
     elements.engagementsNationalAuditType?.addEventListener("change", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditOrigin?.addEventListener("change", renderEngagementNationalAuditLogs);
     elements.engagementsNationalAuditReset?.addEventListener("click", resetEngagementNationalAuditFilters);
+    elements.engagementsNationalAuditLoadMore?.addEventListener("click", () => loadEngagementNationalAuditLogs({ append: true }));
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
       if (!button) return;

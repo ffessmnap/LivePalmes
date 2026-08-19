@@ -129,6 +129,7 @@
     const ref = documentRef();
     if (!ref) throw new Error("Firebase Firestore n'est pas disponible.");
     const completed = completeData(cloneData(nextData));
+    const currentUser = ensureFirebase()?.auth?.().currentUser || null;
     const payload = {
       id: DOCUMENT,
       records: Array.isArray(completed.records) ? completed.records : [],
@@ -138,7 +139,9 @@
       ...(completed.sourceDate ? { sourceDate: completed.sourceDate } : {}),
       ...(completed.generatedAt ? { generatedAt: completed.generatedAt } : {}),
       ...(completed.cutoffDate ? { cutoffDate: completed.cutoffDate } : {}),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser?.uid || "",
+      updatedByEmail: currentUser?.email || ""
     };
     await ref.set(payload, { merge: false });
     global.LIVEPALMES_RECORDS = payload;

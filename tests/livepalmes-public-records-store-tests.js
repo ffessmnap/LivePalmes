@@ -54,6 +54,26 @@ require(path.join(__dirname, "..", "performances", "public", "store.js"));
   assert.equal(fallbackData.franceRecords[0].key, "fallback-rf");
   assert.equal(fallbackData.updatedAt, "old");
   assert.match(fallbackWarning, /Lecture du fichier public RF\/MPF impossible/);
+
+  let savedPayload = null;
+  global.firebase = {
+    apps: [{}],
+    initializeApp() {},
+    auth: () => ({ currentUser: { uid: "admin-full-uid", email: "admin@example.fr" } }),
+    firestore: () => ({
+      collection: () => ({
+        doc: () => ({
+          collection: () => ({
+            doc: () => ({ set: async (payload) => { savedPayload = payload; } })
+          })
+        })
+      })
+    })
+  };
+  global.dispatchEvent = () => {};
+  await global.LivePalmesPerformanceStore.saveData({ records: [], franceRecords: [], filters: {} });
+  assert.equal(savedPayload.updatedBy, "admin-full-uid");
+  assert.equal(savedPayload.updatedByEmail, "admin@example.fr");
   console.log("LivePalmes public records store tests OK");
 })().catch((error) => {
   console.error(error);
