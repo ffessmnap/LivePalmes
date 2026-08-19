@@ -168,6 +168,11 @@ const PUBLIC_RESULT_TRIGGER_OPTIONS = {
 };
 const PIN_MAX_FAILED_ATTEMPTS = 5;
 const PIN_LOCK_MS_BY_LEVEL = [2 * 60 * 1000, 5 * 60 * 1000];
+const AUDIT_LEGACY_VISIBLE_SINCE = "2026-08-12T00:00:00.000Z";
+const AUDIT_PAGE_LIMIT = 50;
+const AUDIT_ACTOR_RESOLUTION_LIMIT = 25;
+const AUDIT_COMPETITION_RESOLUTION_LIMIT = 25;
+const AUDIT_PERSON_RESOLUTION_LIMIT = 25;
 const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
 const LIVEPALMES_STORAGE_BUCKET = "livepalmes.firebasestorage.app";
 const ENGAGEMENT_CLOSURE_BATCH_LIMIT = 5;
@@ -799,6 +804,23 @@ async function accessManagementContext(request) {
   };
 }
 
+async function auditManagementContext(request) {
+  const uid = request.auth?.uid || "";
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
+  }
+  const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
+  if (ADMIN_UIDS.has(uid) || FUNCTIONS_EMULATOR_ACTIVE || tokenCapabilities["admin.full"] === true) {
+    return { uid, adminFull: true, profileReadCount: 0 };
+  }
+  const snapshot = await db.collection("users").doc(uid).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  if (!snapshot.exists || data.status !== "active" || data.capabilities?.["admin.full"] !== true) {
+    throw new HttpsError("permission-denied", "Journal reserve a la gestion generale.");
+  }
+  return { uid, adminFull: true, profileReadCount: 1 };
+}
+
 function accessUserRegionIdFromData(data = {}) {
   const regionScope = normalizedAccessScope(data.accessScopes?.["engagements.region.manage"]);
   return regionScope.scopeId || cleanText(data.regionId).slice(0, 80);
@@ -977,6 +999,17 @@ async function writeAuditLog(action, actorUid, target = {}) {
     target,
     createdAt: now
   });
+}
+
+async function writeAuditLogOnce(action, actorUid, target = {}, eventId = "") {
+  const now = new Date().toISOString();
+  const auditId = stableHash([action, eventId || now].join("|")).slice(0, 40);
+  await db.collection("auditLogs").doc(auditId).set({
+    action,
+    actorUid,
+    target,
+    createdAt: now
+  }, { merge: false });
 }
 
 async function writeAccessGrants(uid, email, capabilities, status, actorUid, now, accessScopes = {}) {
@@ -4353,7 +4386,7 @@ function engagementClubEntryId(competitionId, clubId) {
   return `${cleanText(competitionId).slice(0, 128)}_${cleanText(clubId).slice(0, 40)}`;
 }
 
-async function engagementClubEntryCompetitionIds(competitions = [], clubId = "", coverageKeys = []) {
+async function engagementClubEntryCompetitionIds(competitions = [], clubId = "", coverageKeys = [], prefetchedIndexSnapshot = null) {
   const competitionIds = Array.from(new Set((Array.isArray(competitions) ? competitions : [])
     .map((competition) => cleanText(competition?.id).slice(0, 128))
     .filter(Boolean)));
@@ -4363,7 +4396,7 @@ async function engagementClubEntryCompetitionIds(competitions = [], clubId = "",
     .map((key) => cleanText(key).slice(0, 20))
     .filter(Boolean)));
   const indexRef = engagementClubCompetitionIndexRef(db, cleanClubId);
-  const indexSnapshot = await indexRef.get();
+  const indexSnapshot = prefetchedIndexSnapshot || await indexRef.get();
   const indexData = indexSnapshot.exists ? indexSnapshot.data() || {} : {};
   const coveredRanges = indexData.coveredRanges && typeof indexData.coveredRanges === "object" ? indexData.coveredRanges : {};
   if (cleanCoverageKeys.length && cleanCoverageKeys.every((key) => coveredRanges[key] === true)) {
@@ -8645,7 +8678,11 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     ? cleanText(request.data.entryStatus)
     : "";
   const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
-  const calendarSnapshots = await db.getAll(...seasonEndYears.map((endYear) => engagementCompetitionCalendarRef(db, endYear)));
+  const calendarRefs = seasonEndYears.map((endYear) => engagementCompetitionCalendarRef(db, endYear));
+  const clubEntryIndexRef = clubContext ? engagementClubCompetitionIndexRef(db, clubContext.clubId) : null;
+  const prefetchedSnapshots = await db.getAll(...calendarRefs, ...[clubEntryIndexRef].filter(Boolean));
+  const calendarSnapshots = prefetchedSnapshots.slice(0, calendarRefs.length);
+  const clubEntryIndexSnapshot = clubEntryIndexRef ? prefetchedSnapshots[calendarRefs.length] : null;
   const calendarByEndYear = new Map(calendarSnapshots.map((snapshot, index) => [seasonEndYears[index], snapshot]));
   const calendarReady = calendarSnapshots.every((snapshot) => snapshot?.exists && cleanText(snapshot.data()?.generatedAt));
   const allCalendarCompetitions = Array.from(new Map(calendarSnapshots.flatMap((snapshot) => {
@@ -8669,7 +8706,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     ))
     .slice(0, limit);
   const clubEntryIndexResult = clubContext
-    ? await engagementClubEntryCompetitionIds(allCalendarCompetitions, clubContext.clubId, seasonEndYears.map(String))
+    ? await engagementClubEntryCompetitionIds(allCalendarCompetitions, clubContext.clubId, seasonEndYears.map(String), clubEntryIndexSnapshot)
     : { ids: new Set(), cacheHit: true, fallbackDocumentsMax: 0 };
   const competitions = calendarCompetitions.map((competition) => clubContext
     ? { ...competition, clubEntryExists: clubEntryIndexResult.ids.has(competition.id) }
@@ -10590,6 +10627,8 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   await batch.commit();
   await writeAuditLog("engagementClubPerson.saved", context.uid, {
     personId: docId,
+    firstName: person.firstName,
+    lastName: person.lastName,
     clubId: context.clubId,
     licenseNumber: person.licenseNumber,
     roles: person.roles
@@ -10630,6 +10669,8 @@ exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request)
   await batch.commit();
   await writeAuditLog("engagementClubPerson.statusChanged", context.uid, {
     personId,
+    firstName: cleanText(snapshot.data()?.firstName).slice(0, 80),
+    lastName: cleanText(snapshot.data()?.lastName).slice(0, 80),
     clubId: context.clubId,
     active
   });
@@ -13287,6 +13328,8 @@ exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (
   await batch.commit();
   await writeAuditLog("engagementClubPerson.nationalStatusChanged", context.uid, {
     personId,
+    firstName: cleanText(snapshot.data()?.firstName).slice(0, 80),
+    lastName: cleanText(snapshot.data()?.lastName).slice(0, 80),
     clubId: cleanText(snapshot.data()?.clubId).slice(0, 40),
     active
   });
@@ -13321,6 +13364,8 @@ exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (req
   await batch.commit();
   await writeAuditLog("engagementClubPerson.nationalDeleted", context.uid, {
     personId,
+    firstName: cleanText(data.firstName).slice(0, 80),
+    lastName: cleanText(data.lastName).slice(0, 80),
     clubId: cleanText(data.clubId).slice(0, 40),
     roles: data.roles || {}
   });
@@ -13331,28 +13376,124 @@ exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (req
 });
 
 exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, async (request) => {
-  const context = await engagementAccessContext(request);
-  if (!context.national) {
-    throw new HttpsError("permission-denied", "Historique reserve au niveau national.");
-  }
-  const limit = Math.min(120, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
-  const snapshot = await db
-    .collection("auditLogs")
-    .orderBy("createdAt", "desc")
-    .limit(limit)
-    .get();
+  const context = await auditManagementContext(request);
+  const limit = Math.min(AUDIT_PAGE_LIMIT, Math.max(20, Math.trunc(Number(request.data?.limit) || AUDIT_PAGE_LIMIT)));
+  const requestedDays = [7, 30, 90, 365].includes(Math.trunc(Number(request.data?.days)))
+    ? Math.trunc(Number(request.data.days))
+    : 30;
+  const requestedCutoff = new Date(Date.now() - requestedDays * 24 * 60 * 60 * 1000).toISOString();
+  const visibleFrom = requestedCutoff > AUDIT_LEGACY_VISIBLE_SINCE ? requestedCutoff : AUDIT_LEGACY_VISIBLE_SINCE;
+  const actorUid = cleanText(request.data?.actorUid).slice(0, 160);
+  const clubId = cleanText(request.data?.clubId).slice(0, 80);
+  const cursorCreatedAt = cleanText(request.data?.cursor?.createdAt).slice(0, 40);
+  const cursorId = cleanText(request.data?.cursor?.id).slice(0, 160);
+
+  let query = db.collection("auditLogs").where("createdAt", ">=", visibleFrom);
+  if (actorUid) query = query.where("actorUid", "==", actorUid);
+  if (clubId) query = query.where("target.clubId", "==", clubId);
+  query = query.orderBy("createdAt", "desc").orderBy(FieldPath.documentId(), "desc");
+  if (cursorCreatedAt && cursorId) query = query.startAfter(cursorCreatedAt, cursorId);
+  const snapshot = await query.limit(limit + 1).get();
+  const pageDocuments = snapshot.docs.slice(0, limit);
+  const hasMore = snapshot.docs.length > limit;
+  const logs = pageDocuments.map((doc) => {
+    const data = doc.data() || {};
+    return cleanFirestoreValue({
+      id: doc.id,
+      action: cleanText(data.action).slice(0, 120),
+      actorUid: cleanText(data.actorUid).slice(0, 160),
+      createdAt: cleanText(data.createdAt).slice(0, 40),
+      target: typeof data.target === "object" && data.target ? data.target : {}
+    });
+  });
+  const knownActorUids = new Set((Array.isArray(request.data?.knownActorUids) ? request.data.knownActorUids : [])
+    .slice(0, 100)
+    .map((value) => cleanText(value).slice(0, 160))
+    .filter(Boolean));
+  const actorUidsToResolve = Array.from(new Set(logs
+    .map((log) => log.actorUid)
+    .filter((uid) => uid && !knownActorUids.has(uid) && !uid.startsWith("system:") && uid !== "public-login-page")))
+    .slice(0, AUDIT_ACTOR_RESOLUTION_LIMIT);
+  const actorSnapshots = actorUidsToResolve.length
+    ? await db.getAll(...actorUidsToResolve.map((uid) => db.collection("users").doc(uid)))
+    : [];
+  const unresolvedAuthUids = actorSnapshots
+    .filter((actorSnapshot) => {
+      const data = actorSnapshot.exists ? actorSnapshot.data() || {} : {};
+      return !displayNameFromProfile(data) && !cleanText(data.email);
+    })
+    .map((actorSnapshot) => actorSnapshot.id);
+  const authUsers = unresolvedAuthUids.length
+    ? await auth.getUsers(unresolvedAuthUids.map((uid) => ({ uid }))).catch(() => ({ users: [] }))
+    : { users: [] };
+  const authUsersByUid = new Map(authUsers.users.map((user) => [user.uid, user]));
+  const actors = actorSnapshots.map((actorSnapshot) => {
+    const data = actorSnapshot.exists ? actorSnapshot.data() || {} : {};
+    const authUser = authUsersByUid.get(actorSnapshot.id);
+    return {
+      uid: actorSnapshot.id,
+      name: displayNameFromProfile(data) || cleanText(authUser?.displayName).slice(0, 160),
+      email: (cleanText(data.email) || cleanText(authUser?.email)).slice(0, 180)
+    };
+  });
+  const knownCompetitionIds = new Set((Array.isArray(request.data?.knownCompetitionIds) ? request.data.knownCompetitionIds : [])
+    .slice(0, 100)
+    .map((value) => cleanText(value).slice(0, 128))
+    .filter(Boolean));
+  const competitionIdsToResolve = Array.from(new Set(logs
+    .map((log) => cleanText(log.target?.competitionId).slice(0, 128))
+    .filter((competitionId) => competitionId && !knownCompetitionIds.has(competitionId))))
+    .slice(0, AUDIT_COMPETITION_RESOLUTION_LIMIT);
+  const competitionSnapshots = competitionIdsToResolve.length
+    ? await db.getAll(...competitionIdsToResolve.map((competitionId) => db.collection("engagementCompetitions").doc(competitionId)))
+    : [];
+  const competitions = competitionSnapshots.map((competitionSnapshot) => {
+    const data = competitionSnapshot.exists ? competitionSnapshot.data() || {} : {};
+    return {
+      id: competitionSnapshot.id,
+      name: cleanText(data.name || data.title).slice(0, 180),
+      date: cleanText(data.date).slice(0, 20)
+    };
+  });
+  const knownPersonIds = new Set((Array.isArray(request.data?.knownPersonIds) ? request.data.knownPersonIds : [])
+    .slice(0, 100)
+    .map((value) => cleanText(value).slice(0, 80))
+    .filter(Boolean));
+  const personIdsToResolve = Array.from(new Set(logs
+    .map((log) => cleanText(log.target?.personId).slice(0, 80))
+    .filter((personId) => personId && !knownPersonIds.has(personId))))
+    .slice(0, AUDIT_PERSON_RESOLUTION_LIMIT);
+  const personSnapshots = personIdsToResolve.length
+    ? await db.getAll(...personIdsToResolve.map((personId) => db.collection("engagementClubPeople").doc(personId)))
+    : [];
+  const people = personSnapshots.map((personSnapshot) => {
+    const data = personSnapshot.exists ? personSnapshot.data() || {} : {};
+    return {
+      id: personSnapshot.id,
+      name: displayNameFromProfile(data),
+      licenseNumber: cleanText(data.licenseNumber).slice(0, 60)
+    };
+  });
+  const lastDocument = pageDocuments.at(-1);
   return {
     ok: true,
-    logs: snapshot.docs.map((doc) => {
-      const data = doc.data() || {};
-      return cleanFirestoreValue({
-        id: doc.id,
-        action: cleanText(data.action).slice(0, 120),
-        actorUid: cleanText(data.actorUid).slice(0, 160),
-        createdAt: cleanText(data.createdAt).slice(0, 40),
-        target: typeof data.target === "object" && data.target ? data.target : {}
-      });
-    })
+    logs,
+    actors,
+    competitions,
+    people,
+    hasMore,
+    nextCursor: hasMore && lastDocument
+      ? { id: lastDocument.id, createdAt: cleanText(lastDocument.data()?.createdAt).slice(0, 40) }
+      : null,
+    visibleFrom,
+    readBudget: {
+      auditDocuments: snapshot.docs.length,
+      actorDocuments: actorSnapshots.length,
+      competitionDocuments: competitionSnapshots.length,
+      personDocuments: personSnapshots.length,
+      profileDocuments: context.profileReadCount,
+      maximumDocuments: limit + 1 + AUDIT_ACTOR_RESOLUTION_LIMIT + AUDIT_COMPETITION_RESOLUTION_LIMIT + AUDIT_PERSON_RESOLUTION_LIMIT + 1
+    }
   };
 });
 
@@ -13512,7 +13653,9 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
   await batch.commit();
   await writeAuditLog("engagementClubPerson.nationalMerged", context.uid, {
     sourcePersonId,
+    sourcePersonName: engagementClubPersonFullName(sourcePerson),
     targetPersonId,
+    targetPersonName: engagementClubPersonFullName(targetPerson),
     sourceClubId: sourcePerson.clubId,
     targetClubId: targetPerson.clubId,
     clubMismatch,
@@ -17190,7 +17333,22 @@ exports.syncPublicRecordsData = onDocumentWritten({
   memory: "512MiB"
 }, async (event) => {
   if (event.params?.competitionId !== "livepalmes-active" || !event.data?.after?.exists) return null;
-  return publishPublicRecordsSnapshot(event.data.after.data() || {}, event.time || "");
+  const data = event.data.after.data() || {};
+  const publication = await publishPublicRecordsSnapshot(data, event.time || "");
+  const eventVersionIsCurrent = publication.published || publication.manifest?.version === publication.version;
+  if (eventVersionIsCurrent) {
+    const latestPublishedAt = cleanText(data.recordHistory?.[0]?.publishedAt).slice(0, 40);
+    const changeCount = (Array.isArray(data.recordHistory) ? data.recordHistory : [])
+      .filter((entry) => !latestPublishedAt || cleanText(entry?.publishedAt) === latestPublishedAt)
+      .length;
+    await writeAuditLogOnce("recordsMpf.published", cleanText(data.updatedBy).slice(0, 160) || "system:records-publication", {
+      changeCount,
+      publishedAt: latestPublishedAt || cleanText(data.updatedAt).slice(0, 40),
+      sourceDate: cleanText(data.sourceDate).slice(0, 20),
+      version: publication.version
+    }, event.id);
+  }
+  return publication;
 });
 
 function publicPerformanceCompactObject(object = {}) {

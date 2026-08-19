@@ -194,6 +194,10 @@ function buildPage(source, page) {
   return html;
 }
 
+function normalizeLineEndings(content) {
+  return content.replace(/\r+\n/g, "\n");
+}
+
 function main() {
   const checkOnly = process.argv.includes("--check");
   const source = fs.readFileSync(path.join(rootDir, "pilotage-livepalmes.html"), "utf8");
@@ -204,7 +208,7 @@ function main() {
     const outputPath = path.join(rootDir, page.file);
     if (checkOnly) {
       const current = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
-      if (current !== expected) mismatches.push(page.file);
+      if (normalizeLineEndings(current) !== normalizeLineEndings(expected)) mismatches.push(page.file);
       return;
     }
     fs.writeFileSync(outputPath, expected, "utf8");
