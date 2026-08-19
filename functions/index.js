@@ -9180,6 +9180,57 @@ exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
+exports.preloadEngagementClubWorkspaces = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementClubAccessContext(request);
+  const competitionIds = Array.from(new Set(
+    (Array.isArray(request.data?.competitionIds) ? request.data.competitionIds : [])
+      .map((competitionId) => cleanText(competitionId).slice(0, 128))
+      .filter(Boolean)
+  )).slice(0, 4);
+  if (!competitionIds.length) {
+    return {
+      ok: true,
+      workspaces: [],
+      readStats: portalReadStats("preloadEngagementClubWorkspaces", startedAt, {
+        baseDocuments: 1,
+        variableDocumentsMax: 0,
+        cacheHit: false
+      })
+    };
+  }
+  const refs = competitionIds.flatMap((competitionId) => [
+    db.collection("engagementCompetitions").doc(competitionId),
+    db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId))
+  ]);
+  const snapshots = await db.getAll(...refs);
+  const workspaces = competitionIds.flatMap((competitionId, index) => {
+    const competition = snapshots[index * 2];
+    const entry = snapshots[index * 2 + 1];
+    if (!competition?.exists) return [];
+    return [{
+      competitionId,
+      competition: engagementCompetitionDetailItem(competition),
+      entry: engagementClubEntryItem(entry, {
+        competitionId,
+        clubId: context.clubId,
+        clubName: context.clubName,
+        regionId: context.regionId,
+        status: "active"
+      })
+    }];
+  });
+  return {
+    ok: true,
+    workspaces,
+    readStats: portalReadStats("preloadEngagementClubWorkspaces", startedAt, {
+      baseDocuments: 1 + refs.length,
+      variableDocumentsMax: 0,
+      cacheHit: false
+    })
+  };
+});
+
 exports.generateEngagementClubRecapPdf = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
