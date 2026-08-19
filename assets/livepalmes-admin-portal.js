@@ -6,6 +6,11 @@
   const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";
   const ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v1.";
   const ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000;
+  const ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v1.";
+  const ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS = 5 * 60 * 1000;
+  const ENGAGEMENT_CLUB_WORKSPACE_PRELOAD_LIMIT = 4;
+  const ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementSwimmers.v1.";
+  const ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS = 5 * 60 * 1000;
   const ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE = 48;
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
@@ -964,6 +969,8 @@
   let engagementClubSwimmersLoaded = false;
   let engagementClubSwimmersLoading = false;
   let engagementClubSwimmersClubId = "";
+  let engagementClubSwimmersCachedAt = 0;
+  let engagementClubSwimmersLoadPromise = null;
   let engagementClubSwimmersDirectorySexFilter = "all";
   let engagementClubInactiveSwimmersDirectoryExpanded = false;
   let engagementClubAvailableSwimmersSexFilter = "all";
@@ -1019,7 +1026,7 @@
   let engagementClubEntryMutationRevision = 0;
   let engagementClubLastPersistedEntry = null;
   const engagementClubWorkspaceCache = new Map();
-  const ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS = 30 * 1000;
+  const engagementClubWorkspaceRequests = new Map();
   const engagementClubEntriesAutosaveSwimmers = new Map();
   const engagementClubSelectionChanges = new Map();
   let engagementClubSelectionTimer = null;
@@ -1487,6 +1494,8 @@
     engagementClubSwimmersLoaded = false;
     engagementClubSwimmersLoading = false;
     engagementClubSwimmersClubId = "";
+    engagementClubSwimmersCachedAt = 0;
+    engagementClubSwimmersLoadPromise = null;
     engagementClubSwimmersRenderedCompetitionId = "";
     engagementClubEntriesRenderedCompetitionId = "";
     engagementClubRelaysRenderedCompetitionId = "";
@@ -1499,6 +1508,7 @@
     engagementCompetitionDocumentSaving = false;
     selectedEngagementClubEntry = null;
     engagementClubWorkspaceCache.clear();
+    engagementClubWorkspaceRequests.clear();
     engagementSwimmerCorrectionOpener = null;
   }
 
@@ -3487,6 +3497,7 @@
     void loadPortalPendingOverview();
     if (canUse("engagements.club.manage")) {
       void loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
+      void loadEngagementClubSwimmers({ silent: true });
     }
   }
 
@@ -5432,7 +5443,7 @@
       elements.engagementsClubEntriesSaveBar.hidden = !engagementClubEntriesDirty;
     }
     if (elements.engagementsClubEntriesSaveButton) {
-      elements.engagementsClubEntriesSaveButton.disabled = !engagementClubEntriesDirty || engagementClubSwimmersLoading || engagementClubWriteLocked();
+      elements.engagementsClubEntriesSaveButton.disabled = !engagementClubEntriesDirty || (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded) || engagementClubWriteLocked();
     }
   }
 
@@ -5458,15 +5469,199 @@
     return JSON.parse(JSON.stringify(entry || {}));
   }
 
+  function engagementClubWorkspaceScopeKey() {
+    const uid = currentAccessProfile?.uid || activeAuthUid || global.firebase?.auth?.().currentUser?.uid || "anonymous";
+    const clubId = engagementClubScope(activeEngagementClubProfile(currentAccessProfile || {})) || "none";
+    return [uid, clubId].map((part) => encodeURIComponent(String(part || ""))).join(".");
+  }
+
+  function engagementClubWorkspaceCacheKey(competitionId, scopeKey = engagementClubWorkspaceScopeKey()) {
+    return `${scopeKey}.${encodeURIComponent(String(competitionId || "").trim())}`;
+  }
+
+  function readEngagementClubWorkspaceCache(competitionId) {
+    const cacheKey = engagementClubWorkspaceCacheKey(competitionId);
+    const memoryEntry = engagementClubWorkspaceCache.get(cacheKey);
+    if (memoryEntry) return memoryEntry;
+    try {
+      const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
+      if (!stored || stored.version !== 1 || !stored.competition || !stored.entry || !Number(stored.cachedAt)) return null;
+      const entry = {
+        competition: cloneEngagementClubEntry(stored.competition),
+        entry: cloneEngagementClubEntry(stored.entry),
+        cachedAt: Number(stored.cachedAt)
+      };
+      engagementClubWorkspaceCache.set(cacheKey, entry);
+      return entry;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeEngagementClubWorkspaceCache(competitionId, workspace = {}, cachedAt = Date.now()) {
+    const cleanId = String(competitionId || workspace.competition?.id || "").trim();
+    if (!cleanId) return null;
+    const cacheKey = engagementClubWorkspaceCacheKey(cleanId);
+    const current = engagementClubWorkspaceCache.get(cacheKey);
+    if (current?.cachedAt && current.cachedAt > cachedAt) return current;
+    const entry = {
+      competition: cloneEngagementClubEntry(workspace.competition || {}),
+      entry: cloneEngagementClubEntry(workspace.entry || {}),
+      cachedAt
+    };
+    engagementClubWorkspaceCache.set(cacheKey, entry);
+    try {
+      global.sessionStorage?.setItem(`${ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
+        version: 1,
+        ...entry
+      }));
+    } catch (_) {
+      // Le cache reste facultatif si le stockage de session est indisponible.
+    }
+    return entry;
+  }
+
+  function clearEngagementClubWorkspaceSessionCaches() {
+    engagementClubWorkspaceCache.clear();
+    engagementClubWorkspaceRequests.clear();
+    try {
+      const keys = [];
+      for (let index = 0; index < (global.sessionStorage?.length || 0); index += 1) {
+        const key = global.sessionStorage?.key(index) || "";
+        if (key.startsWith(ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX)) keys.push(key);
+      }
+      keys.forEach((key) => global.sessionStorage?.removeItem(key));
+    } catch (_) {}
+  }
+
+  function engagementClubSwimmersCacheKey() {
+    return engagementClubWorkspaceScopeKey();
+  }
+
+  function readEngagementClubSwimmersCache() {
+    try {
+      const cacheKey = engagementClubSwimmersCacheKey();
+      const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
+      if (!stored || stored.version !== 1 || !Array.isArray(stored.swimmers) || !Number(stored.cachedAt)) return null;
+      const expectedClubId = engagementClubScope();
+      if (expectedClubId && stored.clubId && String(stored.clubId) !== expectedClubId) return null;
+      return {
+        clubId: String(stored.clubId || expectedClubId || ""),
+        swimmers: stored.swimmers.map((swimmer) => ({ ...swimmer })),
+        cachedAt: Number(stored.cachedAt)
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeEngagementClubSwimmersCache(swimmers = engagementClubSwimmers, clubId = engagementClubSwimmersClubId, cachedAt = Date.now()) {
+    engagementClubSwimmersCachedAt = cachedAt;
+    try {
+      global.sessionStorage?.setItem(`${ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${engagementClubSwimmersCacheKey()}`, JSON.stringify({
+        version: 1,
+        clubId: String(clubId || engagementClubScope() || ""),
+        cachedAt,
+        swimmers
+      }));
+    } catch (_) {
+      // Le cache reste facultatif si le stockage de session est indisponible.
+    }
+  }
+
+  function invalidateEngagementClubSwimmersCache() {
+    engagementClubSwimmersLoaded = false;
+    engagementClubSwimmersCachedAt = 0;
+    try {
+      global.sessionStorage?.removeItem(`${ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${engagementClubSwimmersCacheKey()}`);
+    } catch (_) {}
+  }
+
+  function clearEngagementClubSwimmersSessionCaches() {
+    engagementClubSwimmersCachedAt = 0;
+    engagementClubSwimmersLoadPromise = null;
+    try {
+      const keys = [];
+      for (let index = 0; index < (global.sessionStorage?.length || 0); index += 1) {
+        const key = global.sessionStorage?.key(index) || "";
+        if (key.startsWith(ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX)) keys.push(key);
+      }
+      keys.forEach((key) => global.sessionStorage?.removeItem(key));
+    } catch (_) {}
+  }
+
+  function pendingEngagementClubWorkspaceRequest(competitionId) {
+    return engagementClubWorkspaceRequests.get(engagementClubWorkspaceCacheKey(competitionId)) || null;
+  }
+
+  function preloadEngagementClubWorkspaces(competitions = []) {
+    if (!canUse("engagements.club.manage")) return Promise.resolve([]);
+    const candidates = competitions
+      .filter((competition) => competition?.id && competition.clubEntryExists === true)
+      .sort((left, right) => {
+        const priority = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : 2;
+        return priority(left) - priority(right) || String(left.date || "").localeCompare(String(right.date || ""));
+      })
+      .slice(0, ENGAGEMENT_CLUB_WORKSPACE_PRELOAD_LIMIT);
+    const competitionIds = candidates
+      .filter((competition) => {
+        const cached = readEngagementClubWorkspaceCache(competition.id);
+        return !cached?.cachedAt || Date.now() - cached.cachedAt >= ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS;
+      })
+      .map((competition) => competition.id)
+      .filter((competitionId) => !pendingEngagementClubWorkspaceRequest(competitionId));
+    if (!competitionIds.length) return Promise.resolve([]);
+    const scopeKey = engagementClubWorkspaceScopeKey();
+    const requestedAt = Date.now();
+    const requestPromise = callFunction("preloadEngagementClubWorkspaces", { competitionIds })
+      .then((result) => {
+        if (scopeKey !== engagementClubWorkspaceScopeKey()) return [];
+        const workspaces = Array.isArray(result.workspaces) ? result.workspaces : [];
+        workspaces.forEach((workspace) => {
+          writeEngagementClubWorkspaceCache(workspace.competitionId, workspace, requestedAt);
+        });
+        return workspaces;
+      })
+      .catch(() => [])
+      .finally(() => {
+        competitionIds.forEach((competitionId) => {
+          const cacheKey = engagementClubWorkspaceCacheKey(competitionId, scopeKey);
+          if (engagementClubWorkspaceRequests.get(cacheKey) === requestPromise) {
+            engagementClubWorkspaceRequests.delete(cacheKey);
+          }
+        });
+      });
+    competitionIds.forEach((competitionId) => {
+      engagementClubWorkspaceRequests.set(engagementClubWorkspaceCacheKey(competitionId, scopeKey), requestPromise);
+    });
+    return requestPromise;
+  }
+
+  function scheduleEngagementClubWorkspacePreload(competitions = []) {
+    global.setTimeout(() => { void preloadEngagementClubWorkspaces(competitions); }, 0);
+  }
+
+  function resetEngagementClubTransientMessages() {
+    [
+      elements.engagementsClubTeamMessage,
+      elements.engagementsClubOfficialsMessage,
+      elements.engagementsClubSwimmersMessage,
+      elements.engagementsClubEntriesMessage,
+      elements.engagementsClubRelaysMessage
+    ].filter(Boolean).forEach((message) => {
+      message.textContent = "";
+      delete message.dataset.tone;
+    });
+  }
+
   function rememberEngagementClubPersistedEntry(entry = {}) {
     engagementClubLastPersistedEntry = cloneEngagementClubEntry(entry);
     setEngagementClubPersistedSwimmers(entry);
     if (selectedEngagementCompetitionId && !isEngagementAdminMode() && canUse("engagements.club.manage")) {
-      const cached = engagementClubWorkspaceCache.get(selectedEngagementCompetitionId) || {};
-      engagementClubWorkspaceCache.set(selectedEngagementCompetitionId, {
+      const cached = readEngagementClubWorkspaceCache(selectedEngagementCompetitionId) || {};
+      writeEngagementClubWorkspaceCache(selectedEngagementCompetitionId, {
         competition: cloneEngagementClubEntry(selectedEngagementCompetition || cached.competition || {}),
-        entry: cloneEngagementClubEntry(entry),
-        cachedAt: Date.now()
+        entry: cloneEngagementClubEntry(entry)
       });
     }
   }
@@ -5831,7 +6026,7 @@
       button.setAttribute("aria-pressed", String(button.dataset.engagementClubSwimmerSexFilter === engagementClubSwimmersDirectorySexFilter));
     });
     const clubLabel = clubDisplayLabel(currentAccessProfile || {}, { fallback: "votre club" });
-    if (engagementClubSwimmersLoading) {
+    if (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded) {
       mount.innerHTML = '<p class="admin-engagements-empty">Chargement des nageurs du club...</p>';
       if (elements.engagementsClubSwimmersDirectoryStatus) {
         elements.engagementsClubSwimmersDirectoryStatus.textContent = `Lecture de la base nageurs pour ${clubLabel}...`;
@@ -5970,6 +6165,7 @@
           ...(result.swimmer || {}),
           clubActivityStatus: cleanStatus
         };
+        writeEngagementClubSwimmersCache();
       }
       renderEngagementClubSwimmersDirectory();
       renderEngagementClubSwimmers();
@@ -5995,7 +6191,7 @@
     }
     try {
       const result = await callFunction("requestEngagementClubSwimmerDeletion", { swimmerId: cleanId });
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementClubSwimmers({ force: true, silent: true });
       if (elements.engagementsClubSwimmersDirectoryStatus) {
         elements.engagementsClubSwimmersDirectoryStatus.textContent = result.deleted
@@ -6062,7 +6258,7 @@
     const writeLockReason = engagementClubWriteLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubSwimmersForm) elements.engagementsClubSwimmersForm.dataset.locked = locked ? "true" : "false";
-    if (elements.engagementsClubSwimmersSaveButton) elements.engagementsClubSwimmersSaveButton.disabled = locked || engagementClubSwimmersLoading;
+    if (elements.engagementsClubSwimmersSaveButton) elements.engagementsClubSwimmersSaveButton.disabled = locked || (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded);
     if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = Boolean(writeLockReason);
     if (elements.engagementsClubNewSwimmerDialogOpen) elements.engagementsClubNewSwimmerDialogOpen.disabled = Boolean(writeLockReason);
     const selectedById = new Map((selectedEngagementClubEntry?.swimmers || [])
@@ -6084,7 +6280,7 @@
       updateEngagementClubSwimmersSummary();
       return;
     }
-    if (engagementClubSwimmersLoading) {
+    if (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded) {
       renderEngagementClubSelectedSwimmersPreview(selectedMount, selectedById);
       mount.innerHTML = '<p class="admin-engagements-empty">Préparation de la recherche des nageurs...</p>';
       engagementClubSwimmersRenderedCompetitionId = selectedEngagementCompetitionId;
@@ -6382,7 +6578,7 @@
       updateEngagementClubEntriesSummary();
       return;
     }
-    if (engagementClubSwimmersLoading) {
+    if (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded) {
       mount.innerHTML = '<p class="admin-engagements-empty">Chargement des nageurs du club...</p>';
       updateEngagementClubEntriesSummary();
       return;
@@ -9598,7 +9794,7 @@
     closeEngagementCompetitionDocumentForm();
     if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
     const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
-    const cachedWorkspace = clubMode ? engagementClubWorkspaceCache.get(cleanId) : null;
+    const cachedWorkspace = clubMode ? readEngagementClubWorkspaceCache(cleanId) : null;
     const cachedWorkspaceFresh = Boolean(cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
     clearEngagementDetailTabDirty();
     selectedEngagementCompetitionId = cleanId;
@@ -9623,13 +9819,14 @@
     engagementCompetitionStatistics = null;
     engagementCompetitionStatisticsCompetitionId = "";
     engagementCompetitionStatisticsLoading = false;
+    resetEngagementClubTransientMessages();
     renderEngagementCompetitions();
     setEngagementCompetitionDetailVisible(true);
-    setEngagementsDetailTab(initialTab);
     if (cachedWorkspace) {
       setEngagementClubEntryLoadingState("");
       selectedEngagementCompetition = cloneEngagementClubEntry(cachedWorkspace.competition);
       selectedEngagementClubEntry = cloneEngagementClubEntry(cachedWorkspace.entry);
+      setEngagementsDetailTab(initialTab);
       renderEngagementCompetitionDetail(selectedEngagementCompetition);
       setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
       renderEngagementClubEntry(selectedEngagementClubEntry);
@@ -9639,8 +9836,11 @@
       const calendarCompetition = engagementCompetitions.find((competition) => competition.id === cleanId) || null;
       if (calendarCompetition) {
         selectedEngagementCompetition = cloneEngagementClubEntry(calendarCompetition);
+        setEngagementsDetailTab(initialTab);
         renderEngagementCompetitionDetail(selectedEngagementCompetition);
       } else {
+        selectedEngagementCompetition = null;
+        setEngagementsDetailTab("general");
         if (elements.engagementsDetailTitle) elements.engagementsDetailTitle.textContent = "Chargement...";
         if (elements.engagementsDetailSubtitle) elements.engagementsDetailSubtitle.textContent = "";
         if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
@@ -9656,7 +9856,15 @@
     const pendingEntryMutations = engagementClubEntryMutationQueue;
     try {
       const result = await (clubMode
-        ? pendingEntryMutations.then(() => callFunction("getEngagementClubEntry", { competitionId: cleanId }))
+        ? pendingEntryMutations.then(async () => {
+            const preloadRequest = pendingEngagementClubWorkspaceRequest(cleanId);
+            if (preloadRequest) await preloadRequest;
+            const prefetchedWorkspace = readEngagementClubWorkspaceCache(cleanId);
+            if (prefetchedWorkspace?.cachedAt && Date.now() - prefetchedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS) {
+              return prefetchedWorkspace;
+            }
+            return callFunction("getEngagementClubEntry", { competitionId: cleanId });
+          })
         : callFunction("getEngagementCompetition", { competitionId: cleanId }));
       if (selectedEngagementCompetitionId !== cleanId) return;
       selectedEngagementCompetition = result.competition || null;
@@ -9667,10 +9875,9 @@
         selectedEngagementClubEntry = result.entry || {};
         setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
         renderEngagementClubEntry(selectedEngagementClubEntry);
-        engagementClubWorkspaceCache.set(cleanId, {
+        writeEngagementClubWorkspaceCache(cleanId, {
           competition: cloneEngagementClubEntry(selectedEngagementCompetition || {}),
-          entry: cloneEngagementClubEntry(selectedEngagementClubEntry),
-          cachedAt: Date.now()
+          entry: cloneEngagementClubEntry(selectedEngagementClubEntry)
         });
         if (elements.engagementsClubTeamMessage) {
           const writeLockReason = engagementClubWriteLockReason();
@@ -9912,56 +10119,86 @@
   }
 
   async function loadEngagementClubSwimmers({ force = false, silent = false } = {}) {
-    if (!canUse("engagements.club.manage") || engagementClubSwimmersLoading) return;
+    if (!canUse("engagements.club.manage")) return [];
+    if (engagementClubSwimmersLoadPromise) {
+      return force
+        ? engagementClubSwimmersLoadPromise.then(() => loadEngagementClubSwimmers({ force: true, silent }))
+        : engagementClubSwimmersLoadPromise;
+    }
     const expectedClubId = engagementClubScope();
     if (engagementClubSwimmersClubId && expectedClubId && engagementClubSwimmersClubId !== expectedClubId) {
       engagementClubSwimmers = [];
       engagementClubSwimmersLoaded = false;
       engagementClubSwimmersClubId = "";
+      engagementClubSwimmersCachedAt = 0;
     }
-    if (engagementClubSwimmersLoaded && !force) {
+    if (!engagementClubSwimmersLoaded && !force) {
+      const cached = readEngagementClubSwimmersCache();
+      if (cached) {
+        engagementClubSwimmers = cached.swimmers;
+        engagementClubSwimmersClubId = cached.clubId || expectedClubId || "";
+        engagementClubSwimmersCachedAt = cached.cachedAt;
+        engagementClubSwimmersLoaded = true;
+      }
+    }
+    const cacheFresh = Boolean(engagementClubSwimmersLoaded && engagementClubSwimmersCachedAt && Date.now() - engagementClubSwimmersCachedAt < ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS);
+    if (!force && cacheFresh) {
       renderActiveEngagementClubSwimmerConsumer();
-      return;
+      return engagementClubSwimmers;
     }
+    const cachedListVisible = engagementClubSwimmersLoaded;
     engagementClubSwimmersLoading = true;
-    if (!silent && elements.engagementsClubSwimmersMessage) {
+    if (!silent && !cachedListVisible && elements.engagementsClubSwimmersMessage) {
       elements.engagementsClubSwimmersMessage.textContent = "Chargement des nageurs du club...";
       elements.engagementsClubSwimmersMessage.dataset.tone = "loading";
     }
-    try {
-      renderActiveEngagementClubSwimmerConsumer();
-      const result = await callFunctionWithTimeout("listEngagementClubSwimmers", { limit: 800 }, 30000);
-      const resultClubId = String(result.clubId || "").trim();
-      if (expectedClubId && resultClubId && resultClubId !== expectedClubId) {
-        throw new Error(`Profil club incoherent : ${resultClubId} retourne au lieu de ${expectedClubId}.`);
-      }
-      engagementClubSwimmers = Array.isArray(result.swimmers) ? result.swimmers : [];
-      engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
-      engagementClubSwimmersLoaded = true;
-      if (!silent && elements.engagementsClubSwimmersMessage) {
-        elements.engagementsClubSwimmersMessage.textContent = "";
-        elements.engagementsClubSwimmersMessage.dataset.tone = "neutral";
-      }
-    } catch (error) {
-      if (elements.engagementsClubSwimmersMessage) {
-        elements.engagementsClubSwimmersMessage.textContent = `Lecture impossible : ${error?.message || error}`;
-        elements.engagementsClubSwimmersMessage.dataset.tone = "error";
-      }
-      if (elements.engagementsClubSwimmersDirectoryStatus) {
-        elements.engagementsClubSwimmersDirectoryStatus.textContent = `Lecture impossible : ${error?.message || error}`;
-        elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
-      }
-    } finally {
-      engagementClubSwimmersLoading = false;
+    renderActiveEngagementClubSwimmerConsumer();
+    const requestPromise = (async () => {
       try {
-        renderActiveEngagementClubSwimmerConsumer();
-      } catch (renderError) {
-        if (elements.engagementsClubSwimmersDirectoryStatus) {
-          elements.engagementsClubSwimmersDirectoryStatus.textContent = `Affichage nageurs impossible : ${renderError?.message || renderError}`;
-          elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
+        const result = await callFunctionWithTimeout("listEngagementClubSwimmers", { limit: 800 }, 30000);
+        if (expectedClubId && engagementClubScope() !== expectedClubId) return [];
+        const resultClubId = String(result.clubId || "").trim();
+        if (expectedClubId && resultClubId && resultClubId !== expectedClubId) {
+          throw new Error(`Profil club incoherent : ${resultClubId} retourne au lieu de ${expectedClubId}.`);
+        }
+        engagementClubSwimmers = Array.isArray(result.swimmers) ? result.swimmers : [];
+        engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
+        engagementClubSwimmersLoaded = true;
+        writeEngagementClubSwimmersCache();
+        if (!silent && elements.engagementsClubSwimmersMessage) {
+          elements.engagementsClubSwimmersMessage.textContent = "";
+          elements.engagementsClubSwimmersMessage.dataset.tone = "neutral";
+        }
+        return engagementClubSwimmers;
+      } catch (error) {
+        if (!silent && elements.engagementsClubSwimmersMessage) {
+          elements.engagementsClubSwimmersMessage.textContent = cachedListVisible
+            ? `Effectif affiché depuis le cache ; actualisation impossible : ${error?.message || error}`
+            : `Lecture impossible : ${error?.message || error}`;
+          elements.engagementsClubSwimmersMessage.dataset.tone = cachedListVisible ? "warning" : "error";
+        }
+        if (!silent && elements.engagementsClubSwimmersDirectoryStatus) {
+          elements.engagementsClubSwimmersDirectoryStatus.textContent = cachedListVisible
+            ? "Effectif affiché depuis le cache ; actualisation momentanément indisponible."
+            : `Lecture impossible : ${error?.message || error}`;
+          elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = cachedListVisible ? "warning" : "error";
+        }
+        return cachedListVisible ? engagementClubSwimmers : [];
+      } finally {
+        engagementClubSwimmersLoading = false;
+        if (engagementClubSwimmersLoadPromise === requestPromise) engagementClubSwimmersLoadPromise = null;
+        try {
+          renderActiveEngagementClubSwimmerConsumer();
+        } catch (renderError) {
+          if (elements.engagementsClubSwimmersDirectoryStatus) {
+            elements.engagementsClubSwimmersDirectoryStatus.textContent = `Affichage nageurs impossible : ${renderError?.message || renderError}`;
+            elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "error";
+          }
         }
       }
-    }
+    })();
+    engagementClubSwimmersLoadPromise = requestPromise;
+    return requestPromise;
   }
 
   async function saveEngagementClubSwimmers(event) {
@@ -10702,7 +10939,7 @@
         swimmer,
         confirmAlerts: alerts.length > 0
       });
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementClubSwimmers({ force: true, silent: true });
       renderEngagementClubNewSwimmerAlerts(Array.isArray(result.alerts) ? result.alerts : [], { confirmed: true });
       resetEngagementClubNewSwimmerForm();
@@ -10734,7 +10971,7 @@
         licenseNumber: recovery.swimmer.licenseNumber,
         competitionId: selectedEngagementCompetitionId || ""
       });
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementClubSwimmers({ force: true, silent: true });
       resetEngagementClubNewSwimmerForm();
       closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
@@ -11572,7 +11809,7 @@
       portalPendingOverviewLoaded = false;
       engagementSwimmerChangeRequestsLoaded = false;
       engagementNationalSwimmersLoaded = false;
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementSwimmerChangeRequests({ force: true });
       await loadPortalPendingOverview({ force: true });
       if (elements.engagementsNationalSwimmersSearch?.value.trim().length >= 2) {
@@ -11722,7 +11959,7 @@
           }
         )
         : await callFunction(direct ? "updateEngagementNationalSwimmerIdentity" : "requestEngagementClubSwimmerChange", payload);
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       engagementNationalSwimmersLoaded = false;
       engagementSwimmerChangeRequestsLoaded = false;
       closeEngagementSwimmerCorrectionDialog();
@@ -12192,7 +12429,7 @@
         active
       });
       engagementNationalSwimmersLoaded = false;
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementNationalSwimmers({ force: true });
     } catch (error) {
       if (elements.engagementsNationalSwimmersStatus) {
@@ -12218,7 +12455,7 @@
         confirmPermanent: true
       });
       engagementNationalSwimmersLoaded = false;
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementNationalSwimmers({ force: true });
     } catch (error) {
       if (elements.engagementsNationalSwimmersStatus) {
@@ -12316,7 +12553,7 @@
       });
       resetEngagementNationalSwimmerMergeState();
       engagementNationalSwimmersLoaded = false;
-      engagementClubSwimmersLoaded = false;
+      invalidateEngagementClubSwimmersCache();
       await loadEngagementNationalSwimmers({ force: true });
       if (elements.engagementsNationalSwimmersStatus) {
         const totalUpdates = Number(result.entrySwimmerUpdateCount || 0) + Number(result.relayUpdateCount || 0) + Number(result.performanceUpdateCount || 0);
@@ -12383,7 +12620,7 @@
     engagementNationalSwimmerMergeLoading = false;
     resetEngagementNationalSwimmerMergeState();
     engagementNationalSwimmersLoaded = false;
-    engagementClubSwimmersLoaded = false;
+    invalidateEngagementClubSwimmersCache();
     await loadEngagementNationalSwimmers({ force: true, silent: true });
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = errors.length
@@ -13788,7 +14025,10 @@
       activateEngagementCalendarCache(cacheKey, requestedRange, cachedEntry);
     }
     const cacheFresh = Boolean(cachedEntry?.cachedAt && Date.now() - cachedEntry.cachedAt < ENGAGEMENT_CALENDAR_CACHE_TTL_MS);
-    if (!force && cacheFresh) return cachedEntry;
+    if (!force && cacheFresh) {
+      if (requestedMode === "club") scheduleEngagementClubWorkspacePreload(cachedEntry.competitions);
+      return cachedEntry;
+    }
     const cachedListVisible = Boolean(cachedEntry?.competitions?.length && shouldActivate);
     if (!cachedListVisible && shouldActivate && elements.engagementsCalendarList) {
       elements.engagementsCalendarList.innerHTML = `
@@ -13840,6 +14080,7 @@
           competitions = competitions.filter((competition) => canEditEngagementCompetition(competition));
         }
         const entry = writeEngagementCalendarCache(cacheKey, competitions);
+        if (requestedMode === "club") scheduleEngagementClubWorkspacePreload(entry.competitions);
         const currentFilters = engagementCalendarFiltersPayload();
         const stillActive = shouldActivate && requestedMode === engagementNavigationMode() &&
           engagementCalendarCacheKey(requestedMode, engagementCalendarRequestedRange(currentFilters)) === cacheKey;
@@ -14484,6 +14725,8 @@
     const authReady = status.ready === true;
     const authUid = global.firebase?.auth?.().currentUser?.uid || "";
     if (activeAuthUid && activeAuthUid !== authUid) {
+      clearEngagementClubWorkspaceSessionCaches();
+      clearEngagementClubSwimmersSessionCaches();
       clearActiveEngagementClub();
       currentAccessProfile = null;
       renderPortalScopeContext({});
