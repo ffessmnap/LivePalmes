@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8").replace(/\r\n/g, "\n");
 
 const portal = read("assets/livepalmes-admin-portal.js");
+const calendarEvents = read("assets/livepalmes-admin-calendar-events.js");
 const portalAuth = read("assets/livepalmes-admin-auth.js");
 const dtn = read("assets/livepalmes-dtn-qualifications.js");
 const portalCss = read("assets/livepalmes-admin-portal.css");
@@ -1219,6 +1220,28 @@ assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
 assert.ok(portal.includes('loadEngagementCompetitions({ mode: "club", activate: false, silent: true })'));
 assert.ok(portal.includes('manageOnly: requestedMode === "admin"'));
 assert.ok(portal.includes("global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`"));
+assert.ok(portal.includes("function upsertEngagementCalendarItemFromServer"));
+assert.ok(portal.includes('upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition")'));
+assert.ok(calendarEvents.includes('detail: { action: "upsert", event: result.event }'));
+assert.ok(calendarEvents.includes('detail: { action: "delete", calendarEventId }'));
+const calendarCacheReconciliationStart = portal.indexOf("function upsertEngagementCalendarItemFromServer");
+const calendarCacheReconciliationEnd = portal.indexOf("function invalidateEngagementCalendarCaches", calendarCacheReconciliationStart);
+const calendarCacheReconciliationSandbox = {};
+vm.runInNewContext(`
+  let engagementCompetitions = [{ id: "competition-1", sourceType: "competition", publicationStatus: "draft" }];
+  const engagementCalendarCacheCompetition = (item) => ({ ...item });
+  let persisted = 0;
+  let rendered = 0;
+  const persistActiveEngagementCalendarCache = () => { persisted += 1; };
+  const renderEngagementCompetitions = () => { rendered += 1; };
+  ${portal.slice(calendarCacheReconciliationStart, calendarCacheReconciliationEnd)}
+  upsertEngagementCalendarItemFromServer({ id: "competition-1", publicationStatus: "published" }, "competition");
+  result = { engagementCompetitions, persisted, rendered };
+`, calendarCacheReconciliationSandbox);
+assert.equal(calendarCacheReconciliationSandbox.result.engagementCompetitions.length, 1);
+assert.equal(calendarCacheReconciliationSandbox.result.engagementCompetitions[0].publicationStatus, "published");
+assert.equal(calendarCacheReconciliationSandbox.result.persisted, 1);
+assert.equal(calendarCacheReconciliationSandbox.result.rendered, 1);
 assert.ok(engagementCompetitionListSource.includes("const prefetchedSnapshots = await db.getAll"));
 assert.ok(engagementCompetitionListSource.includes("clubEntryIndexSnapshot"));
 assert.ok(portalAuth.includes("accessRefreshPromise && accessRefreshUid === refreshUid"));
