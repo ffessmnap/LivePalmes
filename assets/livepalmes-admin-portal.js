@@ -368,8 +368,14 @@
     accountEmail: document.querySelector("#adminAccountEmail"),
     accountEmailPassword: document.querySelector("#adminAccountEmailPassword"),
     accountEmailMessage: document.querySelector("#adminAccountEmailMessage"),
+    accountNotificationsForm: document.querySelector("#adminAccountNotificationsForm"),
+    accountCompetitionNotifications: document.querySelector("#adminAccountCompetitionNotifications"),
+    accountCompetitionNotificationsState: document.querySelector("#adminAccountCompetitionNotificationsState"),
+    accountNotificationsSummary: document.querySelector("#adminAccountNotificationsSummary"),
+    accountNotificationsMessage: document.querySelector("#adminAccountNotificationsMessage"),
     accountPasswordForm: document.querySelector("#adminAccountPasswordForm"),
     accountEmailDetails: document.querySelector("#adminAccountEmailDetails"),
+    accountNotificationsDetails: document.querySelector("#adminAccountNotificationsDetails"),
     accountPasswordDetails: document.querySelector("#adminAccountPasswordDetails"),
     accountCurrentPassword: document.querySelector("#adminAccountCurrentPassword"),
     accountNewPassword: document.querySelector("#adminAccountNewPassword"),
@@ -776,6 +782,7 @@
     engagementsEditInvitedRegionChoices: document.querySelector("#adminEngagementsEditInvitedRegionChoices"),
     engagementsEditDeadline: document.querySelector("#adminEngagementsEditDeadline"),
     engagementsEditComputerEmail: document.querySelector("#adminEngagementsEditComputerEmail"),
+    engagementsEditOfficialsManagerEmail: document.querySelector("#adminEngagementsEditOfficialsManagerEmail"),
     engagementsEditPoolLength: document.querySelector("#adminEngagementsEditPoolLength"),
     engagementsEditPoolLaneCount: document.querySelector("#adminEngagementsEditPoolLaneCount"),
     engagementsEditTimingType: document.querySelector("#adminEngagementsEditTimingType"),
@@ -3297,6 +3304,23 @@
     if (elements.accountEmail && document.activeElement !== elements.accountEmail) {
       elements.accountEmail.value = accountEmail;
     }
+    const competitionNotificationsEnabled = user.competitionNotificationsEnabled !== false;
+    if (elements.accountCompetitionNotifications) {
+      elements.accountCompetitionNotifications.setAttribute("aria-checked", String(competitionNotificationsEnabled));
+      elements.accountCompetitionNotifications.setAttribute(
+        "aria-label",
+        `Notifications de compétition ${competitionNotificationsEnabled ? "activées" : "désactivées"}`
+      );
+      elements.accountCompetitionNotifications.dataset.enabled = String(competitionNotificationsEnabled);
+    }
+    if (elements.accountCompetitionNotificationsState) {
+      elements.accountCompetitionNotificationsState.textContent = competitionNotificationsEnabled ? "ON" : "OFF";
+    }
+    if (elements.accountNotificationsSummary) {
+      elements.accountNotificationsSummary.textContent = competitionNotificationsEnabled
+        ? "Notifications de compétition activées."
+        : "Notifications de compétition désactivées.";
+    }
     renderPortalScopeContext(user);
     renderEngagementsProfile(user);
     initializeEngagementCalendarFilters(user);
@@ -3611,6 +3635,7 @@
     setRegionMultiSelectValues(elements.engagementsEditInvitedRegionIds, competition.invitedRegionIds || [], competition.regionId || "");
     if (elements.engagementsEditDeadline) elements.engagementsEditDeadline.value = isoToDatetimeLocal(competition.entryDeadlineAt);
     if (elements.engagementsEditComputerEmail) elements.engagementsEditComputerEmail.value = competition.computerEmail || "";
+    if (elements.engagementsEditOfficialsManagerEmail) elements.engagementsEditOfficialsManagerEmail.value = competition.officialsManagerEmail || "";
     if (elements.engagementsEditPoolLength) elements.engagementsEditPoolLength.value = competition.poolLength || "";
     if (elements.engagementsEditPoolLaneCount) elements.engagementsEditPoolLaneCount.value = competition.poolLaneCount || "";
     if (elements.engagementsEditTimingType) elements.engagementsEditTimingType.value = competition.timingType || "";
@@ -8170,9 +8195,14 @@
   function renderEngagementSharedDocuments(competition = {}) {
     const documents = Array.isArray(competition.clubDocuments) ? competition.clubDocuments : [];
     const adminMode = isEngagementAdminMode();
+    if (elements.engagementsSharedDocumentsTitle) {
+      elements.engagementsSharedDocumentsTitle.textContent = adminMode ? "Documents de la compétition" : "Documents disponibles";
+    }
     if (elements.engagementsSharedDocumentsCount) {
       elements.engagementsSharedDocumentsCount.textContent = documents.length
-        ? `${documents.length} document${documents.length > 1 ? "s" : ""} disponible${documents.length > 1 ? "s" : ""} · maximum ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT}`
+        ? adminMode
+          ? `${documents.length} document${documents.length > 1 ? "s" : ""} disponible${documents.length > 1 ? "s" : ""} · maximum ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT}`
+          : `${documents.length} document${documents.length > 1 ? "s" : ""}`
         : "Affiches, circulaires, règlements et informations utiles.";
     }
     if (elements.engagementsDocumentAddButton) {
@@ -8211,6 +8241,8 @@
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const adminMode = isEngagementAdminMode();
     const openWater = engagementCompetitionType(competition) === "openWater";
+    const documentsHead = elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
+    if (documentsHead) documentsHead.hidden = !adminMode;
     if (elements.engagementsGenerateTxtExportButton) {
       elements.engagementsGenerateTxtExportButton.disabled = openWater;
       elements.engagementsGenerateTxtExportButton.title = openWater
@@ -10856,7 +10888,7 @@
     const newClubRequested = elements.publicAccessRequestNewClub?.checked === true;
     return {
       firstName: String(elements.publicAccessRequestFirstName?.value || "").trim(),
-      lastName: String(elements.publicAccessRequestLastName?.value || "").trim(),
+      lastName: String(elements.publicAccessRequestLastName?.value || "").trim().toLocaleUpperCase("fr-FR"),
       email: String(elements.publicAccessRequestEmail?.value || "").trim(),
       licenseNumber: String(elements.publicAccessRequestLicenseNumber?.value || "").trim(),
       regionId: elements.publicAccessRequestRegionId?.value || "",
@@ -13169,6 +13201,7 @@
       invitedRegionIds: elements.engagementsEditInvitedRegionIds,
       deadline: elements.engagementsEditDeadline,
       computerEmail: elements.engagementsEditComputerEmail,
+      officialsManagerEmail: elements.engagementsEditOfficialsManagerEmail,
       poolLength: elements.engagementsEditPoolLength,
       poolLaneCount: elements.engagementsEditPoolLaneCount,
       timingType: elements.engagementsEditTimingType,
@@ -13835,6 +13868,38 @@
     }
   }
 
+  async function toggleAccountNotificationPreferences() {
+    const button = elements.accountCompetitionNotifications;
+    if (!button || button.disabled) return;
+    const currentlyEnabled = button.getAttribute("aria-checked") !== "false";
+    const enabled = !currentlyEnabled;
+    if (!enabled && !global.confirm(
+      "Désactiver les notifications de compétition ? Vous ne recevrez plus les ouvertures de compétitions, les nouveaux documents ni les récapitulatifs PDF d’engagement."
+    )) return;
+    if (button) button.disabled = true;
+    setAccountMessage(elements.accountNotificationsMessage, "Enregistrement…", "loading");
+    try {
+      const result = await callFunction("updateCurrentEmailNotificationPreferences", {
+        competitionNotifications: enabled
+      });
+      renderCurrentUser({
+        ...(currentAccessProfile || {}),
+        competitionNotificationsEnabled: result.competitionNotificationsEnabled !== false
+      });
+      setAccountMessage(
+        elements.accountNotificationsMessage,
+        result.competitionNotificationsEnabled !== false
+          ? "Notifications de compétition activées."
+          : "Notifications de compétition désactivées.",
+        "ok"
+      );
+    } catch (error) {
+      setAccountMessage(elements.accountNotificationsMessage, `Enregistrement impossible : ${error?.message || error}`);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   async function updateAccountPassword(event) {
     event?.preventDefault?.();
     const currentPassword = elements.accountCurrentPassword?.value || "";
@@ -13965,7 +14030,12 @@
       renderAccessPagination();
       return;
     }
-    const rows = accessUsers.map((user, index) => {
+    const sortedUsers = [...accessUsers].sort((left, right) =>
+      String(left.lastName || "").localeCompare(String(right.lastName || ""), "fr-FR", { sensitivity: "base", numeric: true }) ||
+      String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr-FR", { sensitivity: "base", numeric: true }) ||
+      String(left.email || "").localeCompare(String(right.email || ""), "fr-FR", { sensitivity: "base", numeric: true })
+    );
+    const rows = sortedUsers.map((user, index) => {
       const lastName = user.lastName || "—";
       const firstName = user.firstName || "—";
       const name = [user.lastName, user.firstName].filter(Boolean).join(" ") || user.email || "Compte LivePalmes";
@@ -14384,6 +14454,9 @@
     elements.clubSwitchClose?.addEventListener("click", () => elements.clubSwitchDialog?.close());
     elements.reset?.addEventListener("click", sendPasswordReset);
     elements.publicAccessRequestForm?.addEventListener("submit", submitPublicEngagementAccessRequest);
+    elements.publicAccessRequestLastName?.addEventListener("input", (event) => {
+      event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
+    });
     elements.publicAccessRequestRegionId?.addEventListener("change", () => {
       if (elements.publicAccessRequestNewClub?.checked !== true) {
         void loadAccessClubReference().then(() => populatePublicAccessRequestClubSelect());
@@ -15783,8 +15856,9 @@
       collapsePortalNavigationAfterSelection();
     });
     elements.accountEmailForm?.addEventListener("submit", updateAccountEmail);
+    elements.accountCompetitionNotifications?.addEventListener("click", toggleAccountNotificationPreferences);
     elements.accountPasswordForm?.addEventListener("submit", updateAccountPassword);
-    [elements.accountEmailDetails, elements.accountPasswordDetails].forEach((details) => {
+    [elements.accountNotificationsDetails, elements.accountEmailDetails, elements.accountPasswordDetails].forEach((details) => {
       details?.querySelector(":scope > summary")?.addEventListener("click", () => {
         if (details.open) return;
         [elements.accountEmailDetails, elements.accountPasswordDetails].forEach((otherDetails) => {

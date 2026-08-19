@@ -20,6 +20,8 @@ L'accès repose sur trois éléments complémentaires :
 
 Les informations du profil sont conservées dans `users/{uid}`. Elles comprennent notamment l'adresse électronique, l'identité, le club ou la région, l'état du compte, les capacités et les périmètres autorisés.
 
+Le profil conserve aussi la préférence `emailPreferences.competitionNotifications`. Lorsqu'elle vaut `false`, le compte est exclu des courriels d'ouverture de compétition, de nouveaux documents et de récapitulatif PDF d'engagement. Les messages indispensables au compte, à sa sécurité et les envois techniques restent actifs. Cette préférence est reprise dans l'index borné des destinataires afin d'éviter une lecture par adresse lors d'un envoi groupé. Le profil et son entrée d'index sont mis à jour dans un même lot atomique : la désactivation est donc prise en compte immédiatement, y compris pour un courriel déjà préparé mais pas encore envoyé.
+
 ## Capacités actuelles
 
 | Capacité | Utilité simple |

@@ -206,6 +206,7 @@ La configuration complete d'une competition contient notamment :
 - chronometrage : manuel ou electronique ;
 - date et heure limite des engagements ;
 - email du responsable informatique ;
+- email du responsable juge ;
 - lien HelloAsso si connu ;
 - officiels requis : oui ou non ;
 - plusieurs relais de meme categorie par club autorises : oui ou non.
@@ -598,6 +599,7 @@ Lors de l'ouverture des engagements :
 A la fermeture :
 
 - le responsable informatique recoit l'export TXT ;
+- lorsque la declaration des officiels est requise, le responsable juge recoit un PDF unique regroupant tous les officiels, classe par club puis par nom et prenom, avec leur date de naissance et leur numero de licence ; aucun PDF ni courriel n'est prepare lorsque les officiels ne sont pas requis ;
 - chaque club engage recoit son PDF recapitulatif ;
 - le PDF est envoye a toutes les adresses mail admin du club.
 
@@ -633,6 +635,7 @@ Apres nouvelle fermeture :
 
 - l'export TXT est regenere ;
 - les PDF clubs sont regeneres ;
+- le PDF consolide des officiels est regenere et renvoye au responsable juge ;
 - les mails sont renvoyes ;
 - la GED conserve seulement la derniere version.
 
