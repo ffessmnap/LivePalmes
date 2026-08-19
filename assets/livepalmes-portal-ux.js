@@ -13,8 +13,95 @@
     breadcrumb: document.querySelector("#adminPortalBreadcrumb"),
     navigation: document.querySelector("#adminPortalNavigation")
   };
+  const longOperationControllers = new WeakMap();
   let breadcrumbSignature = "";
   let refreshTimer = null;
+
+  function formatLongOperationElapsed(milliseconds) {
+    const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const minutes = Math.floor(seconds / 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function createLongOperation(options = {}) {
+    const panel = typeof options.element === "string" ? document.querySelector(options.element) : options.element;
+    if (!panel) return null;
+    if (longOperationControllers.has(panel)) return longOperationControllers.get(panel);
+    panel.classList.add("admin-long-operation");
+    panel.setAttribute("role", "status");
+    panel.setAttribute("aria-live", "polite");
+    panel.setAttribute("aria-atomic", "true");
+    const icon = document.createElement("span");
+    icon.className = "admin-long-operation-icon";
+    icon.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("div");
+    copy.className = "admin-long-operation-copy";
+    const title = document.createElement("strong");
+    const detail = document.createElement("p");
+    copy.append(title, detail);
+    const elapsed = document.createElement("span");
+    elapsed.className = "admin-long-operation-elapsed";
+    elapsed.setAttribute("aria-hidden", "true");
+    const bar = document.createElement("span");
+    bar.className = "admin-long-operation-bar";
+    bar.setAttribute("aria-hidden", "true");
+    bar.append(document.createElement("span"));
+    panel.replaceChildren(icon, copy, elapsed, bar);
+    let timer = null;
+    let startedAt = 0;
+    const busyTargets = (Array.isArray(options.busyTargets) ? options.busyTargets : [options.busyTargets]).filter(Boolean);
+
+    function updateElapsed() {
+      if (!startedAt) return;
+      elapsed.textContent = `Temps écoulé ${formatLongOperationElapsed(Date.now() - startedAt)}`;
+    }
+
+    function setBusy(busy) {
+      busyTargets.forEach((target) => target.setAttribute("aria-busy", busy ? "true" : "false"));
+    }
+
+    function stopTimer() {
+      if (timer) global.clearInterval(timer);
+      timer = null;
+    }
+
+    const controller = {
+      start(content = {}) {
+        stopTimer();
+        panel.hidden = false;
+        panel.dataset.state = "loading";
+        title.textContent = content.title || "Opération en cours...";
+        detail.textContent = content.detail || "Cette opération peut prendre quelques instants.";
+        startedAt = Date.now();
+        updateElapsed();
+        timer = global.setInterval(updateElapsed, 1000);
+        setBusy(true);
+      },
+      update(content = {}) {
+        if (content.title) title.textContent = content.title;
+        if (content.detail) detail.textContent = content.detail;
+      },
+      finish(content = {}) {
+        stopTimer();
+        panel.hidden = false;
+        panel.dataset.state = content.state || "success";
+        title.textContent = content.title || (content.state === "error" ? "Opération impossible" : "Opération terminée");
+        detail.textContent = content.detail || "";
+        updateElapsed();
+        startedAt = 0;
+        setBusy(false);
+      },
+      hide() {
+        stopTimer();
+        startedAt = 0;
+        panel.hidden = true;
+        setBusy(false);
+      },
+      panel
+    };
+    longOperationControllers.set(panel, controller);
+    return controller;
+  }
 
   function normalizedText(value = "") {
     return String(value)
@@ -175,5 +262,6 @@
     subtree: true,
     characterData: true
   });
+  global.LivePalmesLongOperation = { create: createLongOperation };
   refreshEnhancements();
 })(window);

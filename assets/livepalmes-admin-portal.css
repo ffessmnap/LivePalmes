@@ -2496,6 +2496,252 @@
   grid-column: 1 / -1;
 }
 
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="pool"] {
+  border-left: 3px solid #91bcc5;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="openWater"] {
+  border-left: 3px solid #8dbb9d;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-type {
+  width: fit-content;
+  color: #537078;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="openWater"] .admin-engagements-competition-type {
+  color: #47745a;
+}
+
+.admin-engagements-open-water-library {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid #dbe7df;
+  border-radius: 9px;
+  padding: 12px;
+  background: #f8fbf9;
+}
+
+.admin-engagements-open-water-library[hidden] {
+  display: none;
+}
+
+.admin-engagements-open-water-library-head {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.admin-engagements-open-water-library-head > div,
+.admin-engagements-open-water-course-creator label {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-engagements-open-water-library-head small {
+  color: #607169;
+}
+
+.admin-engagements-open-water-course-creator {
+  display: grid;
+  grid-template-columns: 125px 145px auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.admin-engagements-open-water-course-creator label > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-engagements-open-water-course-creator input {
+  width: 100%;
+}
+
+.admin-engagements-open-water-course-list {
+  overflow-x: auto;
+}
+
+.admin-engagements-open-water-course-list table {
+  width: 100%;
+  min-width: 410px;
+  border-spacing: 0;
+  border: 1px solid #d5e2d9;
+  border-radius: 7px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.admin-engagements-open-water-course-list th,
+.admin-engagements-open-water-course-list td {
+  border-right: 1px solid #e2ebe5;
+  border-bottom: 1px solid #e2ebe5;
+  padding: 4px 7px;
+  text-align: center;
+}
+
+.admin-engagements-open-water-course-list tr:last-child > * {
+  border-bottom: 0;
+}
+
+.admin-engagements-open-water-course-list tr > *:last-child {
+  border-right: 0;
+}
+
+.admin-engagements-open-water-course-list thead th {
+  background: #eef5f1;
+  color: #456159;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-open-water-course-list tbody th {
+  color: #12312d;
+  font-size: 0.78rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-engagements-open-water-course-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.admin-engagements-open-water-course-actions[data-open-water-course-active="false"] {
+  opacity: 0.68;
+}
+
+.admin-engagements-open-water-course-add,
+.admin-engagements-open-water-course-status {
+  display: inline-grid;
+  width: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.admin-engagements-open-water-course-status {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border: 0;
+  background: transparent;
+  color: #61766f;
+  font-size: 0.85rem;
+  opacity: 0.3;
+}
+
+.admin-engagements-open-water-course-actions:hover .admin-engagements-open-water-course-status,
+.admin-engagements-open-water-course-status:focus-visible {
+  opacity: 1;
+}
+
+.admin-engagements-open-water-course-add[data-open-water-course-selected="true"] {
+  border-color: #b9d7c6;
+  background: #e8f3ec;
+  color: #3f7157;
+}
+
+.admin-engagements-open-water-course-add:disabled,
+.admin-engagements-open-water-course-status:disabled {
+  cursor: default;
+}
+
+.admin-engagements-open-water-unavailable {
+  color: #a3b0ab;
+}
+
+.admin-engagements-open-water-label-short {
+  display: none;
+}
+
+.admin-engagements-open-water-action-short {
+  display: none;
+}
+
+.admin-engagements-open-water-empty {
+  margin: 0;
+  padding: 12px;
+  color: #607169;
+}
+
+.admin-engagements-club-entry-count {
+  display: inline-grid;
+  min-width: 30px;
+  min-height: 30px;
+  place-items: center;
+  color: #385158;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .admin-engagements-open-water-library-head {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-open-water-course-creator {
+    grid-template-columns: minmax(105px, 0.8fr) minmax(130px, 1fr) auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-engagements-open-water-library {
+    padding: 8px;
+  }
+
+  .admin-engagements-open-water-course-creator {
+    gap: 5px;
+  }
+
+  .admin-engagements-open-water-course-creator label {
+    font-size: 0.72rem;
+  }
+
+  .admin-engagements-open-water-course-creator button {
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+
+  .admin-engagements-open-water-course-status {
+    opacity: 0.6;
+  }
+
+  .admin-engagements-open-water-course-list table {
+    min-width: 330px;
+  }
+
+  .admin-engagements-open-water-course-list th,
+  .admin-engagements-open-water-course-list td {
+    padding: 3px 5px;
+  }
+
+  .admin-engagements-open-water-label-full {
+    display: none;
+  }
+
+  .admin-engagements-open-water-label-short {
+    display: inline;
+  }
+
+  .admin-engagements-open-water-action-full {
+    display: none;
+  }
+
+  .admin-engagements-open-water-action-short {
+    display: inline;
+  }
+}
+
 .admin-access-new-club-toggle > span:last-child {
   display: flex;
   gap: 8px;
@@ -9502,37 +9748,21 @@
 }
 
 
-/* Création : une fiche compacte qui sépare l'essentiel des réglages rares. */
+/* Création : une fiche compacte limitée aux informations du calendrier. */
 .admin-engagements-create-form {
   gap: 12px;
 }
 
-.admin-engagements-create-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid #cfe1e3;
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #f3fafb;
+.admin-engagements-create-header {
+  padding: 2px 2px 12px;
+  border-bottom: 1px solid #dce7e8;
 }
 
-.admin-engagements-create-intro > div {
-  display: grid;
-  gap: 2px;
-}
-
-.admin-engagements-create-intro span,
-.admin-engagements-create-intro small {
-  color: #5f746f;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.admin-engagements-create-intro strong {
+.admin-engagements-create-header h2 {
+  margin: 0;
   color: #12312d;
-  font-size: 0.9rem;
+  font-size: 1.12rem;
+  line-height: 1.25;
 }
 
 .admin-engagements-create-form .admin-engagements-form-section {
@@ -9572,11 +9802,12 @@
   border-radius: 0;
 }
 
-@media (max-width: 700px) {
-  .admin-engagements-create-intro {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+.admin-engagements-create-form > .admin-portal-actions {
+  justify-content: flex-end;
+}
+
+.admin-engagements-create-form > #adminEngagementsCreateMessage:empty {
+  display: none;
 }
 
 .admin-engagements-invited-regions-summary {
@@ -9672,8 +9903,45 @@
   background: rgba(12, 35, 32, 0.45);
 }
 
-.admin-engagements-create-dialog .admin-engagements-create-intro {
-  margin-bottom: 12px;
+.admin-engagements-unsaved-dialog {
+  width: min(520px, calc(100vw - 24px));
+  border: 1px solid #d7e1df;
+  border-radius: 12px;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-unsaved-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-unsaved-dialog > div {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.admin-engagements-unsaved-dialog h3,
+.admin-engagements-unsaved-dialog p {
+  margin: 0;
+}
+
+.admin-engagements-unsaved-dialog p {
+  color: #52636a;
+}
+
+.admin-engagements-unsaved-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .admin-engagements-unsaved-dialog-actions button {
+    width: 100%;
+  }
 }
 
 .admin-engagements-create-optional {
@@ -13848,6 +14116,145 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+.admin-portal-page .admin-long-operation {
+  position: sticky;
+  top: 12px;
+  z-index: 18;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  margin: 12px 0;
+  border: 1px solid #e3b64d;
+  border-radius: 10px;
+  padding: 13px 15px 11px;
+  background: #fff8df;
+  box-shadow: 0 8px 24px rgba(38, 54, 50, 0.14);
+  color: #634700;
+}
+
+.admin-portal-page .admin-long-operation[hidden] { display: none; }
+
+.admin-portal-page .admin-long-operation-icon {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 3px solid rgba(151, 104, 0, 0.24);
+  border-top-color: #976800;
+  border-radius: 999px;
+  animation: admin-long-operation-spin 0.85s linear infinite;
+}
+
+.admin-portal-page .admin-long-operation-copy { min-width: 0; }
+
+.admin-portal-page .admin-long-operation-copy strong,
+.admin-portal-page .admin-long-operation-copy p {
+  display: block;
+  margin: 0;
+}
+
+.admin-portal-page .admin-long-operation-copy strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.admin-portal-page .admin-long-operation-copy p {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.admin-portal-page .admin-long-operation-elapsed {
+  min-width: 105px;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  text-align: right;
+}
+
+.admin-portal-page .admin-long-operation-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(151, 104, 0, 0.18);
+}
+
+.admin-portal-page .admin-long-operation-bar > span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: #bd8000;
+  animation: admin-long-operation-slide 1.35s ease-in-out infinite;
+}
+
+.admin-portal-page .admin-long-operation:is([data-state="success"], [data-state="error"], [data-state="background"]) {
+  position: static;
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-long-operation[data-state="success"] {
+  border-color: #90cbbd;
+  background: #effaf6;
+  color: #0f5f57;
+}
+
+.admin-portal-page .admin-long-operation[data-state="error"] {
+  border-color: #efb3aa;
+  background: #fff1ef;
+  color: #9f2f21;
+}
+
+.admin-portal-page .admin-long-operation[data-state="background"] {
+  border-color: #9fc7dc;
+  background: #eef8fc;
+  color: #245c75;
+}
+
+.admin-portal-page .admin-long-operation:is([data-state="success"], [data-state="error"], [data-state="background"]) .admin-long-operation-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: currentColor;
+  color: #ffffff;
+  animation: none;
+}
+
+.admin-portal-page .admin-long-operation[data-state="success"] .admin-long-operation-icon::before { content: "✓"; }
+.admin-portal-page .admin-long-operation[data-state="error"] .admin-long-operation-icon::before { content: "!"; }
+.admin-portal-page .admin-long-operation[data-state="background"] .admin-long-operation-icon::before { content: "…"; }
+
+.admin-portal-page .admin-long-operation:is([data-state="success"], [data-state="error"], [data-state="background"]) .admin-long-operation-bar {
+  display: none;
+}
+
+@keyframes admin-long-operation-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes admin-long-operation-slide {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(300%); }
+}
+
+@media (max-width: 760px) {
+  .admin-portal-page .admin-long-operation {
+    top: 6px;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .admin-portal-page .admin-long-operation-elapsed {
+    grid-column: 2;
+    min-width: 0;
+    text-align: left;
+  }
+}
+
 @media (max-width: 620px) {
   .admin-portal-responsive-table,
   .admin-portal-responsive-table tbody,
@@ -13901,6 +14308,15 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-portal-page [aria-live].is-loading::before {
     animation: none;
+  }
+
+  .admin-portal-page .admin-long-operation-icon,
+  .admin-portal-page .admin-long-operation-bar > span {
+    animation: none;
+  }
+
+  .admin-portal-page .admin-long-operation-bar > span {
+    width: 100%;
   }
 }
 

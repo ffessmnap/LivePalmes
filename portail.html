@@ -9,8 +9,8 @@
     <link rel="icon" type="image/png" href="logo-livepalmes.png?v=20260602-admin-portal-1">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
-    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260721-import-history-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260818-competition-documents-2">
+    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260818-import-progress-1" disabled>
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260818-open-water-library-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -848,6 +848,8 @@
                 <button id="adminEngagementsDetailClose" class="ghost-button admin-engagements-workspace-back" type="button" hidden>&larr; Retour aux comp&eacute;titions</button>
               </div>
 
+              <aside id="adminEngagementsLongOperation" class="admin-long-operation" hidden></aside>
+
               <div id="adminEngagementsCalendarPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="calendar">
                 <section id="adminEngagementsCalendarCard" class="admin-engagements-card" aria-label="Calendrier des comp&eacute;titions">
                   <form id="adminEngagementsCalendarFilters" class="admin-engagements-calendar-filters" role="search">
@@ -862,6 +864,14 @@
                           <option value="upcoming">À venir</option>
                           <option value="open">Ouverts</option>
                           <option value="closed">Ferm&eacute;s</option>
+                        </select>
+                      </label>
+                      <label>
+                        Type
+                        <select id="adminEngagementsTypeFilter">
+                          <option value="">Tous</option>
+                          <option value="pool">Piscine</option>
+                          <option value="openWater">Eau libre</option>
                         </select>
                       </label>
                       <div id="adminEngagementsStatusSegments" class="admin-engagements-status-segments" role="group" aria-label="Afficher les compétitions" hidden>
@@ -978,6 +988,10 @@
                         <fieldset class="admin-engagements-form-section">
                           <legend>Compétition</legend>
                           <div class="admin-engagements-form-section-grid">
+                            <label>
+                              Type de compétition
+                              <input id="adminEngagementsEditCompetitionType" type="text" readonly>
+                            </label>
                             <label id="adminEngagementsClubTeamLastNameLabel">
                               Nom
                               <input id="adminEngagementsEditName" type="text" maxlength="160" required>
@@ -1053,7 +1067,17 @@
                         <fieldset class="admin-engagements-form-section">
                           <legend>Paramètres sportifs</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label>
+                            <label data-engagements-open-water-field hidden>
+                              Type de plan d’eau
+                              <select id="adminEngagementsEditWaterBodyType">
+                                <option value="">Non renseigné</option>
+                                <option value="sea">Mer</option>
+                                <option value="lake">Lac</option>
+                                <option value="river">Rivière</option>
+                                <option value="other">Autre</option>
+                              </select>
+                            </label>
+                            <label data-engagements-pool-field>
                               Bassin
                               <select id="adminEngagementsEditPoolLength" required>
                                 <option value="">À choisir</option>
@@ -1062,7 +1086,7 @@
                                 <option value="50">50 m</option>
                               </select>
                             </label>
-                            <label>
+                            <label data-engagements-pool-field>
                               Nombre de lignes d'eau
                               <input id="adminEngagementsEditPoolLaneCount" type="number" min="4" max="10" step="1" inputmode="numeric" required>
                             </label>
@@ -1074,22 +1098,22 @@
                                 <option value="manual">Manuel</option>
                               </select>
                             </label>
-                            <label>
+                            <label data-engagements-pool-time-field>
                               Temps d'engagement
                               <select id="adminEngagementsEditQualificationMode">
                                 <option value="all">Tous les temps connus</option>
                                 <option value="period">P&eacute;riode d&eacute;finie</option>
                               </select>
                             </label>
-                            <label>
+                            <label data-engagements-pool-time-field>
                               D&eacute;but p&eacute;riode temps
                               <input id="adminEngagementsEditQualificationStart" type="date">
                             </label>
-                            <label>
+                            <label data-engagements-pool-time-field>
                               Fin p&eacute;riode temps
                               <input id="adminEngagementsEditQualificationEnd" type="date">
                             </label>
-                            <label>
+                            <label data-engagements-pool-time-field>
                               Saisie manuelle des temps
                               <select id="adminEngagementsEditMissingEntryTimeMode">
                                 <option value="manual">Autoris&eacute;e</option>
@@ -1132,6 +1156,31 @@
                           </summary>
                           <fieldset>
                             <legend>Courses individuelles</legend>
+                            <div id="adminEngagementsOpenWaterLibrary" class="admin-engagements-open-water-library" hidden>
+                              <div class="admin-engagements-open-water-library-head">
+                                <div>
+                                  <strong>Bibliothèque nationale des courses</strong>
+                                </div>
+                                <div id="adminEngagementsOpenWaterCourseCreator" class="admin-engagements-open-water-course-creator">
+                                  <label>
+                                    Distance
+                                    <span><input id="adminEngagementsOpenWaterDistance" type="number" min="1" max="100000" step="1" inputmode="numeric"> m</span>
+                                  </label>
+                                  <label>
+                                    Spécialité
+                                    <select id="adminEngagementsOpenWaterDiscipline">
+                                      <option value="">À choisir</option>
+                                      <option value="SF">Surface</option>
+                                      <option value="BI">Bi-palmes</option>
+                                      <option value="SUP">Support</option>
+                                    </select>
+                                  </label>
+                                  <button id="adminEngagementsOpenWaterCourseAdd" type="button"><span class="admin-engagements-open-water-action-full">Ajouter la course</span><span class="admin-engagements-open-water-action-short">Ajouter</span></button>
+                                </div>
+                              </div>
+                              <div id="adminEngagementsOpenWaterCourseList" class="admin-engagements-open-water-course-list"></div>
+                              <p id="adminEngagementsOpenWaterCourseMessage" class="admin-portal-message" aria-live="polite"></p>
+                            </div>
                             <div id="adminEngagementsIndividualEvents" class="admin-engagements-events-list"></div>
                           </fieldset>
                           <fieldset>
@@ -1436,7 +1485,7 @@
                               <span>Sexe</span>
                               <select id="adminEngagementsClubRelayDialogGender" required></select>
                             </label>
-                            <label>
+                            <label data-engagements-relay-time-field>
                               <span>Temps</span>
                               <input id="adminEngagementsClubRelayDialogTime" type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" aria-label="Temps d'engagement au format MM:SS.CC" required>
                             </label>
@@ -1668,18 +1717,20 @@
               <div id="adminEngagementsCreatePanel" class="admin-engagements-tab-panel" data-engagements-tab-panel="create" data-engagements-create hidden>
                 <section class="admin-engagements-card" aria-label="Cr&eacute;er une comp&eacute;tition">
                   <form id="adminEngagementsCreateForm" class="admin-engagements-form admin-engagements-create-form">
-                    <div class="admin-engagements-create-intro">
-                      <div>
-                        <span>Nouvelle compétition</span>
-                      </div>
-                      <div>
-                        <small>Les engagements ne peuvent être ouverts qu’à partir de J-30.</small>
-                        <button id="adminEngagementsCreateDialogClose" class="ghost-button compact" type="button">Annuler</button>
-                      </div>
-                    </div>
+                    <header class="admin-engagements-create-header">
+                      <h2 id="adminEngagementsCreateDialogTitle">Ajout d’un événement au calendrier</h2>
+                    </header>
                     <fieldset class="admin-engagements-form-section">
                       <legend>Compétition</legend>
                       <div class="admin-engagements-form-section-grid">
+                        <label>
+                          Type de compétition
+                          <select id="adminEngagementsCompetitionType" required>
+                            <option value="">À choisir</option>
+                            <option value="pool">Piscine</option>
+                            <option value="openWater">Eau libre</option>
+                          </select>
+                        </label>
                         <label>
                           Nom
                           <input id="adminEngagementsName" type="text" maxlength="160" required>
@@ -1707,163 +1758,39 @@
                         <label>
                           R&eacute;gion
                           <select id="adminEngagementsRegionId"></select>
-                          <small id="adminEngagementsRegionNote" class="admin-engagements-field-note"></small>
                         </label>
-                        <div class="admin-engagements-invited-regions-field">
-                          R&eacute;gions invit&eacute;es
-                          <div class="admin-engagements-invited-regions-summary">
-                            <button id="adminEngagementsInvitedRegionDialogOpen" class="ghost-button compact" type="button">Choisir les régions</button>
-                            <small id="adminEngagementsInvitedRegionSummary">Aucune région invitée</small>
-                          </div>
-                          <select id="adminEngagementsInvitedRegionIds" multiple hidden aria-label="Régions invitées"></select>
-                          <small>Destinataires du mail d'ouverture.</small>
-                        </div>
-                      </div>
-                    </fieldset>
-                    <fieldset class="admin-engagements-form-section">
-                      <legend>Engagements <small>(facultatif)</small></legend>
-                      <div class="admin-engagements-form-section-grid">
-                        <label>
-                          Clôture des engagements
-                          <input id="adminEngagementsDeadline" type="datetime-local" step="3600">
-                        </label>
-                        <label>
-                          Statut
-                          <select id="adminEngagementsEntryStatus">
-                            <option value="upcoming">À venir</option>
-                            <option value="open">Ouverts</option>
-                            <option value="closed" disabled>Ferm&eacute;s (automatique)</option>
-                          </select>
-                        </label>
-                        <label>
-                          Limite par nageur
-                          <select id="adminEngagementsMaxEvents">
-                            <option value="0">Aucune limite</option>
-                            <option value="1">1 épreuve</option>
-                            <option value="2">2 épreuves</option>
-                            <option value="3">3 épreuves</option>
-                            <option value="4">4 épreuves</option>
-                            <option value="5">5 épreuves</option>
-                          </select>
-                        </label>
-                        <label>
-                          Officiels requis
-                          <select id="adminEngagementsOfficialsRequired">
-                            <option value="true">Oui</option>
-                            <option value="false">Non</option>
-                          </select>
-                        </label>
-                      </div>
-                    </fieldset>
-                    <fieldset class="admin-engagements-form-section">
-                      <legend>Paramètres sportifs</legend>
-                      <div class="admin-engagements-form-section-grid">
-                        <label>
-                          Bassin
-                          <select id="adminEngagementsPoolLength">
-                            <option value="">À choisir</option>
-                            <option value="25">25 m</option>
-                            <option value="33">33 m</option>
-                            <option value="50">50 m</option>
-                          </select>
-                        </label>
-                        <label>
-                          Nombre de lignes d'eau
-                          <input id="adminEngagementsPoolLaneCount" type="number" min="4" max="10" step="1" inputmode="numeric">
-                        </label>
-                        <label>
-                          Chronom&eacute;trage
-                          <select id="adminEngagementsTimingType">
-                            <option value="">À choisir</option>
-                            <option value="electronic">Électronique</option>
-                            <option value="manual">Manuel</option>
-                          </select>
-                        </label>
-                        <label>
-                          Temps d'engagement
-                          <select id="adminEngagementsQualificationMode">
-                            <option value="all">Tous les temps connus</option>
-                            <option value="period">P&eacute;riode d&eacute;finie</option>
-                          </select>
-                        </label>
-                        <label>
-                          D&eacute;but p&eacute;riode temps
-                          <input id="adminEngagementsQualificationStart" type="date">
-                        </label>
-                        <label>
-                          Fin p&eacute;riode temps
-                          <input id="adminEngagementsQualificationEnd" type="date">
-                        </label>
-                        <label>
-                          Saisie manuelle des temps
-                          <select id="adminEngagementsMissingEntryTimeMode">
-                            <option value="manual">Autoris&eacute;e</option>
-                            <option value="default595999">Non autoris&eacute;e</option>
-                          </select>
-                        </label>
-                      </div>
-                    </fieldset>
-                      <fieldset class="admin-engagements-form-section">
-                      <legend>Informations complémentaires</legend>
-                      <div class="admin-engagements-form-section-grid">
-                        <label>
-                          Email du responsable informatique de la comp&eacute;tition
-                          <input id="adminEngagementsComputerEmail" type="email" maxlength="180" autocomplete="email">
-                        </label>
-                        <label>
-                          Email du responsable juge de la compétition
-                          <input id="adminEngagementsOfficialsManagerEmail" type="email" maxlength="180" autocomplete="email">
-                        </label>
-                        <label>
-                          Frais d'engagement
-                          <select id="adminEngagementsCreateFeesEnabled">
-                            <option value="false">Aucun frais</option>
-                            <option value="true">Renseigner les frais</option>
-                          </select>
-                        </label>
-                        <div id="adminEngagementsCreateFeesGrid" class="admin-engagements-fees-grid" hidden>
-                          <label>Forfait par nageur<input id="adminEngagementsCreateSwimmerFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
-                          <label>Frais par course<input id="adminEngagementsCreateIndividualEventFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
-                          <label>Frais par relais<input id="adminEngagementsCreateRelayFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal"></label>
-                          <label>Lien HelloAsso<input id="adminEngagementsCreateHelloAssoUrl" type="url" maxlength="300" placeholder="https://www.helloasso.com/..."></label>
-                        </div>
                       </div>
                     </fieldset>
                     <div class="admin-portal-actions">
+                      <button id="adminEngagementsCreateDialogClose" class="ghost-button" type="button">Annuler</button>
                       <button type="submit">Ajouter au calendrier</button>
                     </div>
                     <p id="adminEngagementsCreateMessage" class="admin-portal-message" aria-live="polite"></p>
                   </form>
-                  <dialog id="adminEngagementsInvitedRegionDialog" class="admin-engagements-region-dialog" aria-labelledby="adminEngagementsInvitedRegionDialogTitle">
-                    <form method="dialog">
-                      <div class="admin-engagements-region-dialog-head">
-                        <div>
-                          <h3 id="adminEngagementsInvitedRegionDialogTitle">Régions invitées</h3>
-                          <p>Cochez les régions à inviter, puis validez votre sélection.</p>
-                        </div>
-                        <button class="ghost-button compact" value="cancel" type="submit">Fermer</button>
-                      </div>
-                      <div id="adminEngagementsInvitedRegionChoices" class="admin-engagements-region-choices"></div>
-                      <div class="admin-portal-actions">
-                        <button value="confirm" type="submit">Valider la sélection</button>
-                      </div>
-                    </form>
-                  </dialog>
                   <dialog id="adminEngagementsCreateChecklist" class="admin-engagements-create-checklist" aria-labelledby="adminEngagementsCreateChecklistTitle">
                     <form method="dialog">
-                      <h3 id="adminEngagementsCreateChecklistTitle">Compétition créée</h3>
-                      <p>Les informations principales sont enregistrées. À compléter ensuite :</p>
-                      <ul>
-                        <li>Créer le programme des courses.</li>
-                        <li>Vérifier les frais d’engagement, si nécessaire.</li>
-                        <li>Ouvrir les engagements à partir de J-30.</li>
-                      </ul>
-                      <div class="admin-portal-actions"><button value="close" type="submit">Voir la compétition</button></div>
+                      <h3 id="adminEngagementsCreateChecklistTitle">Compétition ajoutée au calendrier</h3>
+                      <p>Souhaitez-vous compléter et administrer cette compétition maintenant&nbsp;?</p>
+                      <div class="admin-portal-actions">
+                        <button class="ghost-button" value="later" type="submit">Plus tard</button>
+                        <button id="adminEngagementsCreateCompleteNow" value="complete" type="button">Compléter maintenant</button>
+                      </div>
                     </form>
                   </dialog>
                 </section>
               </div>
-              <dialog id="adminEngagementsCreateDialog" class="admin-engagements-create-dialog" aria-label="Ajouter une compétition au calendrier"></dialog>
+              <dialog id="adminEngagementsCreateDialog" class="admin-engagements-create-dialog" aria-labelledby="adminEngagementsCreateDialogTitle"></dialog>
+              <dialog id="adminEngagementsUnsavedDialog" class="admin-engagements-unsaved-dialog" aria-labelledby="adminEngagementsUnsavedDialogTitle">
+                <div>
+                  <h3 id="adminEngagementsUnsavedDialogTitle">Modifications non enregistrées</h3>
+                  <p>Des modifications n’ont pas été enregistrées sur cet onglet. Que souhaitez-vous faire&nbsp;?</p>
+                  <div class="admin-engagements-unsaved-dialog-actions">
+                    <button id="adminEngagementsUnsavedSave" type="button">Enregistrer et continuer</button>
+                    <button id="adminEngagementsUnsavedDiscard" class="ghost-button" type="button">Abandonner et continuer</button>
+                    <button id="adminEngagementsUnsavedStay" class="ghost-button" type="button">Rester sur cet onglet</button>
+                  </div>
+                </div>
+              </dialog>
 
               <div id="adminEngagementsAccessRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="accessRequests" hidden>
                 <section class="admin-engagements-card" aria-label="Demandes d'acc&egrave;s">
@@ -2198,6 +2125,8 @@
                   <p id="competitionImportMessage" class="admin-portal-message" aria-live="polite"></p>
                 </section>
 
+                <aside id="competitionImportProgress" class="admin-long-operation" hidden></aside>
+
                 <section id="competitionImportPreview" class="import-card" hidden>
                   <div class="import-card-head">
                     <span>Étape 2</span>
@@ -2365,6 +2294,7 @@
                   <span id="adminDtnRefreshStatus" aria-live="polite"></span>
                 </div>
               </section>
+              <aside id="adminDtnLongOperation" class="admin-long-operation" hidden></aside>
 
               <div id="adminDtnDefinitions" class="admin-dtn-definitions" hidden></div>
               <div id="adminDtnGrid" class="admin-dtn-grid" aria-live="polite"></div>
@@ -2590,7 +2520,7 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260818-competition-documents-2"></script>
-    <script src="assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
 </html>

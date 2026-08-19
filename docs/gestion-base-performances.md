@@ -27,6 +27,10 @@ Un import confirmé crée ou met à jour :
 - le journal dans `performanceChanges` ;
 - les index utiles aux recherches et aux TOP.
 
+Le lot conserve aussi son état de publication (`pending`, `publishing`, `failed` ou `published`). Si l'enregistrement Firestore est terminé mais que la génération des fichiers publics est interrompue, le portail propose « Reprendre la publication ». Cette reprise réutilise les performances déjà stockées et ne les recrée pas.
+
+La reprise lit un document de lot puis uniquement sa sous-collection de performances, avec une limite stricte de 5 000 performances et une lecture sentinelle supplémentaire pour détecter un lot incohérent. Elle ne parcourt jamais la collection globale `performances` et n'effectue aucune lecture par ligne en dehors de ce lot borné. En fonctionnement normal, le coût est donc de `1 + N` lectures pour un lot de `N` performances ; en cas de concurrence, la transaction de réservation peut relire le seul document du lot.
+
 L'aperçu avant validation est essentiel : il permet de repérer un mauvais fichier ou une interprétation incorrecte avant l'écriture définitive.
 
 ## Corrections
