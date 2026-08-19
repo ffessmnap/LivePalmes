@@ -4495,9 +4495,13 @@ async function publishPublicCalendarSeason(endYear) {
   return publishedPayload;
 }
 
-async function publishPublicCalendarChange(event = {}, sourceType = "competition") {
-  const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
-  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
+async function publishPublicCalendarChange(event = {}, sourceType = "competition", resolvedChange = null) {
+  const before = resolvedChange
+    ? resolvedChange.before
+    : (event.data?.before?.exists ? event.data.before.data() || {} : null);
+  const after = resolvedChange
+    ? resolvedChange.after
+    : (event.data?.after?.exists ? event.data.after.data() || {} : null);
   const eventId = cleanText(event.params?.competitionId || event.params?.calendarEventId).slice(0, 128);
   if (!eventId) return;
   if (after) await publishPublicCalendarDetail(after, eventId, sourceType);
@@ -4583,61 +4587,83 @@ async function rebuildEngagementCompetitionCalendar(db, endYear) {
   return Object.values(competitions);
 }
 
+exports.rebuildEngagementCompetitionCalendars = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementAccessContext(request);
+  if (!context.national) {
+    throw new HttpsError("permission-denied", "Reconstruction du calendrier reservee au niveau national.");
+  }
+  const endYears = Array.from(new Set((Array.isArray(request.data?.endYears) ? request.data.endYears : [])
+    .map((value) => Math.trunc(Number(value) || 0))
+    .filter((value) => value >= 2020 && value <= 2100))).slice(0, 2);
+  if (!endYears.length) throw new HttpsError("invalid-argument", "Au moins une saison est requise.");
+  const results = [];
+  for (const endYear of endYears) {
+    const competitions = await rebuildEngagementCompetitionCalendar(db, endYear);
+    const published = await publishPublicCalendarSeason(endYear);
+    results.push({ endYear, competitionCount: competitions.length, publishedEventCount: published.eventCount });
+  }
+  await writeAuditLog("engagementCompetitionCalendars.rebuilt", context.uid, {
+    endYears,
+    competitionCount: results.reduce((sum, result) => sum + result.competitionCount, 0)
+  });
+  return {
+    ok: true,
+    results,
+    readStats: portalReadStats("rebuildEngagementCompetitionCalendars", startedAt, {
+      baseDocuments: 1 + (endYears.length * 2),
+      variableDocumentsMax: endYears.length * 1200,
+      cacheHit: false
+    })
+  };
+});
+
 async function syncEngagementCompetitionCalendarFromChange(event = {}) {
   const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
-  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
   const competitionId = cleanText(event.params?.competitionId);
   if (!competitionId) return;
-  const now = new Date().toISOString();
-  const batch = db.batch();
-  let batchSize = 0;
   const beforeDate = before ? cleanIsoDate(before.date) : "";
-  const afterDate = after ? cleanIsoDate(after.date) : "";
+  const eventAfter = event.data?.after?.exists ? event.data.after.data() || {} : null;
+  const eventAfterDate = eventAfter ? cleanIsoDate(eventAfter.date) : "";
   const beforeSeason = beforeDate ? engagementSeasonEndYearFromIsoDate(beforeDate) : null;
-  const afterSeason = afterDate ? engagementSeasonEndYearFromIsoDate(afterDate) : null;
-  if (beforeSeason !== null && (!after || beforeSeason !== afterSeason)) {
-    const season = engagementSeasonBoundsFromEndYear(beforeSeason);
-    batch.set(engagementCompetitionCalendarRef(db, beforeSeason), {
-      ...season,
-      generatedAt: now,
-      updatedAt: now,
-      competitions: {
-        [competitionId]: FieldValue.delete()
-      }
-    }, { merge: true });
-    batchSize += 1;
-  }
-  if (after && afterDate && afterSeason !== null) {
-    const season = engagementSeasonBoundsFromEndYear(afterSeason);
-    batch.set(engagementCompetitionCalendarRef(db, afterSeason), {
-      ...season,
-      generatedAt: now,
-      updatedAt: now,
-      competitions: {
-        [competitionId]: engagementCompetitionCalendarItem(after, competitionId)
-      }
-    }, { merge: true });
-    batchSize += 1;
-  }
-  invalidateEngagementCompetitionStatistics(batch, db, competitionId, now);
-  batchSize += 1;
-  const queueItem = after ? engagementClosureQueueItem(after, competitionId, now) : null;
-  if (queueItem) {
-    batch.set(engagementClosureQueueRef(db, competitionId), queueItem, { merge: true });
-    batchSize += 1;
-  } else {
-    batch.delete(engagementClosureQueueRef(db, competitionId));
-    batchSize += 1;
-  }
-  if (batchSize) await batch.commit();
+  const eventAfterSeason = eventAfterDate ? engagementSeasonEndYearFromIsoDate(eventAfterDate) : null;
+  const sourceRef = db.collection("engagementCompetitions").doc(competitionId);
+  let resolvedAfter = null;
+  await db.runTransaction(async (transaction) => {
+    const currentSnapshot = await transaction.get(sourceRef);
+    const current = currentSnapshot.exists ? currentSnapshot.data() || {} : null;
+    const currentDate = current ? cleanIsoDate(current.date) : "";
+    const currentSeason = currentDate ? engagementSeasonEndYearFromIsoDate(currentDate) : null;
+    const now = new Date().toISOString();
+    const touchedSeasons = new Set([beforeSeason, eventAfterSeason, currentSeason].filter((season) => season !== null));
+    touchedSeasons.forEach((endYear) => {
+      const season = engagementSeasonBoundsFromEndYear(endYear);
+      transaction.set(engagementCompetitionCalendarRef(db, endYear), {
+        ...season,
+        generatedAt: now,
+        updatedAt: now,
+        competitions: {
+          [competitionId]: current && currentSeason === endYear
+            ? engagementCompetitionCalendarItem(current, competitionId)
+            : FieldValue.delete()
+        }
+      }, { merge: true });
+    });
+    invalidateEngagementCompetitionStatistics(transaction, db, competitionId, now);
+    const queueItem = current ? engagementClosureQueueItem(current, competitionId, now) : null;
+    if (queueItem) transaction.set(engagementClosureQueueRef(db, competitionId), queueItem, { merge: true });
+    else transaction.delete(engagementClosureQueueRef(db, competitionId));
+    resolvedAfter = current;
+  });
+  return { before, after: resolvedAfter, competitionId };
 }
 
 exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
   region: REGION,
   document: "engagementCompetitions/{competitionId}"
 }, async (event) => {
-  await syncEngagementCompetitionCalendarFromChange(event);
-  await publishPublicCalendarChange(event, "competition");
+  const resolvedChange = await syncEngagementCompetitionCalendarFromChange(event);
+  await publishPublicCalendarChange(event, "competition", resolvedChange);
 });
 
 async function syncEngagementCalendarEventFromChange(event = {}) {
