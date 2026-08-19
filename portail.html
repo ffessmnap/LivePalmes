@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260818-import-progress-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260819-club-calendar-filters-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260819-activity-log-5">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -245,7 +245,7 @@
                     <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
                     <a href="#administration-doublons-nageurs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Nageurs</a>
                     <a href="#administration-officiels" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
-                    <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" data-engagements-national-nav hidden>Journal d&rsquo;activit&eacute;</a>
+                    <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminAudit" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" hidden>Journal d&rsquo;activit&eacute;</a>
                   </div>
                 </div>
               </section>
@@ -348,7 +348,7 @@
                     <a href="#administration-clubs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">Clubs <span aria-hidden="true">→</span></a>
                     <a href="#administration-doublons-nageurs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">Nageurs <span aria-hidden="true">→</span></a>
                     <a href="#administration-officiels" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="people">Officiels <span aria-hidden="true">→</span></a>
-                    <a href="#administration-historique" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">Journal d&rsquo;activit&eacute; <span aria-hidden="true">→</span></a>
+                    <a href="#administration-historique" data-overview-tool data-engagements-home-entry="adminAudit" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">Journal d&rsquo;activit&eacute; <span aria-hidden="true">→</span></a>
                   </div>
                 </article>
 
@@ -545,7 +545,7 @@
                     <h3 id="adminNationalTrackingTitle">Suivi</h3>
                     <span>Comprendre les op&eacute;rations r&eacute;centes</span>
                   </div>
-                  <a class="admin-overview-card admin-national-home-card-journal" href="#administration-historique" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">
+                  <a class="admin-overview-card admin-national-home-card-journal" href="#administration-historique" data-engagements-home-entry="adminAudit" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">
                     <span class="admin-overview-card-icon tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"></path></svg></span>
                     <span class="admin-overview-card-label">Tra&ccedil;abilit&eacute;</span>
                     <strong>Journal d&rsquo;activit&eacute;</strong>
@@ -872,6 +872,7 @@
                 <div id="adminEngagementsClubPeopleActions" class="admin-engagements-club-people-head-actions" hidden>
                   <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
                 </div>
+                <button id="adminEngagementsNationalAuditRefresh" class="ghost-button compact admin-national-audit-head-refresh" type="button" hidden>Recharger le journal</button>
                 <button id="adminEngagementsDetailClose" class="ghost-button admin-engagements-workspace-back" type="button" hidden>&larr; Retour aux comp&eacute;titions</button>
               </div>
 
@@ -2033,6 +2034,27 @@
                       <input id="adminEngagementsNationalAuditSearch" type="search" placeholder="Action, acteur, club, comp&eacute;tition...">
                     </label>
                     <label>
+                      <span>P&eacute;riode</span>
+                      <select id="adminEngagementsNationalAuditPeriod">
+                        <option value="7" selected>7 derniers jours</option>
+                        <option value="30">30 derniers jours</option>
+                        <option value="90">3 derniers mois</option>
+                        <option value="365">1 an</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Club</span>
+                      <select id="adminEngagementsNationalAuditClub">
+                        <option value="">Tous les clubs</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Utilisateur</span>
+                      <select id="adminEngagementsNationalAuditActor">
+                        <option value="">Tous les utilisateurs</option>
+                      </select>
+                    </label>
+                    <label>
                       <span>Cat&eacute;gorie</span>
                       <select id="adminEngagementsNationalAuditType">
                         <option value="">Toutes</option>
@@ -2041,12 +2063,27 @@
                         <option value="clubs">Clubs</option>
                         <option value="competitions">Comp&eacute;titions</option>
                         <option value="access">Comptes et acc&egrave;s</option>
+                        <option value="performances">Performances</option>
+                        <option value="technical">Technique</option>
                       </select>
                     </label>
-                    <button id="adminEngagementsNationalAuditReset" class="ghost-button admin-national-reset-button" type="button">Effacer les filtres</button>
+                    <label>
+                      <span>Origine</span>
+                      <select id="adminEngagementsNationalAuditOrigin">
+                        <option value="">Toutes</option>
+                        <option value="human">Utilisateurs</option>
+                        <option value="system">Syst&egrave;me</option>
+                      </select>
+                    </label>
+                    <div class="admin-national-audit-filter-actions">
+                      <button id="adminEngagementsNationalAuditReset" class="ghost-button admin-national-reset-button" type="button" aria-label="Effacer les filtres">Effacer</button>
+                    </div>
                   </div>
-                  <p id="adminEngagementsNationalAuditStatus" class="admin-portal-message admin-national-page-status" data-tone="loading">Dernieres actions d'administration nationale.</p>
+                  <p id="adminEngagementsNationalAuditStatus" class="admin-portal-message admin-national-page-status" data-tone="loading">Derni&egrave;res actions importantes.</p>
                   <div id="adminEngagementsNationalAuditList" class="admin-engagements-request-list" aria-live="polite"></div>
+                  <div class="admin-national-audit-pagination">
+                    <button id="adminEngagementsNationalAuditLoadMore" class="ghost-button" type="button" hidden>Charger plus</button>
+                  </div>
                 </section>
               </div>
             </section>
@@ -2546,7 +2583,7 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260819-activity-log-5"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
 </html>

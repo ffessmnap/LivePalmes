@@ -67,6 +67,8 @@ Un administrateur général ou national peut gérer les comptes dans son domaine
 
 Les fonctions serveur vérifient ces limites même si un utilisateur tente de contourner l'interface. Les actions importantes sont enregistrées dans `auditLogs` afin de conserver une trace.
 
+La consultation du Journal d’activité est réservée à la capacité `admin.full`. Une capacité nationale, régionale ou de gestion des performances ne donne pas accès à ce journal. Les traces antérieures à sa mise en service sont reprises sur sept jours ; les nouvelles traces restent consultables pendant une période glissante maximale d’un an.
+
 ## Cas particulier de LivePalmes Direct
 
 Les consoles ajoutent un deuxième verrou :
