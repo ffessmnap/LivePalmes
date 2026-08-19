@@ -57,6 +57,12 @@ const {
   ffessmBasTimingType,
   performanceImportChrono
 } = require("./performance-import-timing");
+const {
+  canResumeImportPublication,
+  importPublicationError,
+  importPublicationResultStatus,
+  importPublicationStatus
+} = require("./performance-import-publication");
 
 initializeApp();
 const auth = getAuth();
@@ -82,14 +88,17 @@ const ENGAGEMENT_MAIL_SECRETS = [
 ];
 const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
 const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
+const FUNCTIONS_EMULATOR_ACTIVE = process.env.FUNCTIONS_EMULATOR === "true";
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
 const ENGAGEMENT_COMPETITION_LEVELS = new Set(["departemental", "regional", "national"]);
 const ENGAGEMENT_ENTRY_STATUSES = new Set(["upcoming", "open", "closed"]);
+const ENGAGEMENT_COMPETITION_TYPES = new Set(["pool", "openWater"]);
+const ENGAGEMENT_WATER_BODY_TYPES = new Set(["sea", "lake", "river", "other"]);
 const ENGAGEMENT_POOL_LENGTHS = new Set(["25", "33", "50"]);
 const ENGAGEMENT_TIMING_TYPES = new Set(["manual", "electronic"]);
 const ENGAGEMENT_QUALIFICATION_TIME_MODES = new Set(["all", "period"]);
-const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999"]);
+const ENGAGEMENT_MISSING_ENTRY_TIME_MODES = new Set(["manual", "forbidden", "default595999", "none"]);
 const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false;
 const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
 const ENGAGEMENT_LICENSE_VERIFICATION_STATUSES = new Set(["verified", "pending", "rejected", "conflict"]);
@@ -139,6 +148,7 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
+const COMPETITION_IMPORT_CALLABLE_OPTIONS = { ...PUBLIC_PERFORMANCE_CALLABLE_OPTIONS };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
   region: REGION,
   document: "competitions/{competitionId}/results/{resultId}",
@@ -155,6 +165,7 @@ const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
 const PUBLIC_COMPETITION_PDF_PREFIX = "competition-pdfs";
 const ENGAGEMENT_PDF_LOGO_PATH = path.join(__dirname, "assets", "logo-ffessm-nage-avec-palmes.png");
 const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
+const MAX_COMPETITION_IMPORT_PERFORMANCES = 5000;
 const PERFORMANCE_BASE_COLLECTION = "performances";
 const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
 const PERFORMANCE_BASE_MIGRATION_COLLECTION = "performanceMigrationJobs";
@@ -167,6 +178,7 @@ const ENGAGEMENT_CLUB_ROSTERS_COLLECTION = "engagementClubRosters";
 const ENGAGEMENT_CLUBS_COLLECTION = "engagementClubs";
 const ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION = "engagementPublicDirectories";
 const ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION = "engagementCompetitionCalendars";
+const ENGAGEMENT_CONFIGURATION_COLLECTION = "engagementConfigurations";
 const ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION = "engagementCompetitionEntrySummaries";
 const ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION = "engagementClubCompetitionIndexes";
 const ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION = "engagementCompetitionStatisticsCache";
@@ -186,6 +198,22 @@ const ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32;
 const ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT = 167;
 const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES = 800000;
 const ENGAGEMENT_CLOSURE_QUEUE_COLLECTION = "engagementClosureQueue";
+const ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID = "open-water-courses";
+const ENGAGEMENT_OPEN_WATER_COURSE_LIMIT = 100;
+const ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES = new Set(["SF", "BI", "SUP"]);
+const ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES = [
+  { id: "150-elimination-SF", distance: 150, discipline: "SF", label: "150 m élimination Surface", format: "elimination", active: true },
+  { id: "150-elimination-BI", distance: 150, discipline: "BI", label: "150 m élimination Bi-palmes", format: "elimination", active: true },
+  { id: "1000-SF", distance: 1000, discipline: "SF", label: "1000 m Surface", format: "standard", active: true },
+  { id: "1000-BI", distance: 1000, discipline: "BI", label: "1000 m Bi-palmes", format: "standard", active: true },
+  { id: "1000-SUP", distance: 1000, discipline: "SUP", label: "1000 m Support", format: "standard", active: true },
+  { id: "3000-SF", distance: 3000, discipline: "SF", label: "3000 m Surface", format: "standard", active: true },
+  { id: "3000-BI", distance: 3000, discipline: "BI", label: "3000 m Bi-palmes", format: "standard", active: true },
+  { id: "3000-SUP", distance: 3000, discipline: "SUP", label: "3000 m Support", format: "standard", active: true },
+  { id: "5000-SF", distance: 5000, discipline: "SF", label: "5000 m Surface", format: "standard", active: true },
+  { id: "5000-BI", distance: 5000, discipline: "BI", label: "5000 m Bi-palmes", format: "standard", active: true },
+  { id: "5000-SUP", distance: 5000, discipline: "SUP", label: "5000 m Support", format: "standard", active: true }
+];
 const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
@@ -244,7 +272,8 @@ const ENGAGEMENT_RELAY_EVENTS = [
   ["4X100SF", "4 x 100 m Surface", "4 x 100 SF", "SF", 100, 4],
   ["4X200SF", "4 x 200 m Surface", "4 x 200 SF", "SF", 200, 4],
   ["4X100BI", "4 x 100 m Bi-palmes mixte", "4 x 100 BI", "BI", 100, 4, "required"],
-  ["4X100SB", "4 x 100 m Surface/Bi-palmes mixte", "4 x 100 SB", "SB", 100, 4, "required"]
+  ["4X100SB", "4 x 100 m Surface/Bi-palmes mixte", "4 x 100 SB", "SB", 100, 4, "required"],
+  ["OW4X1000SB", "4 x 1000 m Surface/Bi-palmes mixte", "4 x 1000 SB", "SB", 1000, 4, "required"]
 ];
 const ENGAGEMENT_EVENT_DEFINITIONS = [
   ...POOL_COURSES.map((code) => {
@@ -655,7 +684,7 @@ async function engagementAccessContext(request) {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
   }
-  if (ADMIN_UIDS.has(uid)) {
+  if (ADMIN_UIDS.has(uid) || FUNCTIONS_EMULATOR_ACTIVE) {
     return {
       uid,
       email: cleanText(request.auth?.token?.email).slice(0, 180),
@@ -689,7 +718,7 @@ async function accessManagementContext(request) {
     throw new HttpsError("unauthenticated", "Connexion Firebase requise.");
   }
   const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
-  if (ADMIN_UIDS.has(uid) || tokenCapabilities["admin.full"] === true) {
+  if (ADMIN_UIDS.has(uid) || FUNCTIONS_EMULATOR_ACTIVE || tokenCapabilities["admin.full"] === true) {
     return {
       uid,
       email: cleanText(request.auth?.token?.email).slice(0, 180),
@@ -3643,7 +3672,7 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, async (request) => {
       console.warn("Mise a jour de la derniere connexion impossible", error);
     });
   }
-  if (ADMIN_UIDS.has(uid)) {
+  if (ADMIN_UIDS.has(uid) || FUNCTIONS_EMULATOR_ACTIVE) {
     return {
       ok: true,
       uid,
@@ -3702,6 +3731,82 @@ function cleanEngagementCompetitionLevel(value) {
 function cleanEngagementEntryStatus(value) {
   const status = cleanText(value);
   return ENGAGEMENT_ENTRY_STATUSES.has(status) ? status : "upcoming";
+}
+
+function cleanEngagementCompetitionType(value) {
+  const type = cleanText(value);
+  return ENGAGEMENT_COMPETITION_TYPES.has(type) ? type : "pool";
+}
+
+function cleanEngagementWaterBodyType(value) {
+  const type = cleanText(value);
+  return ENGAGEMENT_WATER_BODY_TYPES.has(type) ? type : "";
+}
+
+function cleanEngagementOpenWaterCourse(raw = {}, options = {}) {
+  const strict = options.strict !== false;
+  const distance = Math.trunc(Number(raw.distance));
+  const discipline = cleanText(raw.discipline).toUpperCase();
+  if (!Number.isInteger(distance) || distance < 1 || distance > 100000) {
+    if (strict) throw new HttpsError("invalid-argument", "La distance eau libre doit etre comprise entre 1 et 100000 metres.");
+    return null;
+  }
+  if (!ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES.has(discipline)) {
+    if (strict) throw new HttpsError("invalid-argument", "Choisissez la specialite : Surface, Bi-palmes ou Support.");
+    return null;
+  }
+  if (distance === 150 && discipline === "SUP") {
+    if (strict) throw new HttpsError("invalid-argument", "Le 150 m elimination est disponible uniquement en Surface et Bi-palmes.");
+    return null;
+  }
+  const format = distance === 150 ? "elimination" : "standard";
+  const distanceLabel = format === "elimination" ? "150 m élimination" : `${distance} m`;
+  const disciplineLabel = { SF: "Surface", BI: "Bi-palmes", SUP: "Support" }[discipline];
+  const id = `${format === "elimination" ? "150-elimination" : distance}-${discipline}`;
+  return {
+    id,
+    distance,
+    discipline,
+    label: `${distanceLabel} ${disciplineLabel}`,
+    format,
+    active: raw.active !== false
+  };
+}
+
+function cleanEngagementOpenWaterCourses(rawCourses = []) {
+  const byId = new Map();
+  ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES.forEach((course) => byId.set(course.id, { ...course }));
+  (Array.isArray(rawCourses) ? rawCourses : []).slice(0, ENGAGEMENT_OPEN_WATER_COURSE_LIMIT).forEach((rawCourse) => {
+    const course = cleanEngagementOpenWaterCourse(rawCourse, { strict: false });
+    if (course) byId.set(course.id, course);
+  });
+  return Array.from(byId.values()).sort((left, right) => left.distance - right.distance || left.label.localeCompare(right.label, "fr"));
+}
+
+function engagementOpenWaterCourseConfigRef(database = db) {
+  return database.collection(ENGAGEMENT_CONFIGURATION_COLLECTION).doc(ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID);
+}
+
+function engagementOpenWaterEventDefinition(rawEvent = {}) {
+  const code = cleanText(rawEvent.code).toUpperCase().replace(/\s+/g, "");
+  const match = code.match(/^OW(\d{1,6})(ELIM)?(SF|BI|SUP)$/);
+  if (!match) return null;
+  const distance = Number(match[1]);
+  const format = match[2] ? "elimination" : "standard";
+  const discipline = match[3];
+  if ((distance === 150) !== (format === "elimination")) return null;
+  const cleanedCourse = cleanEngagementOpenWaterCourse({ distance, discipline }, { strict: false });
+  if (!cleanedCourse) return null;
+  return {
+    code,
+    type: "individual",
+    label: cleanedCourse.label,
+    shortLabel: cleanedCourse.label,
+    discipline,
+    distance,
+    openWaterCourseId: cleanedCourse.id,
+    openWaterFormat: format
+  };
 }
 
 function cleanOptionalEmail(value, label = "Email") {
@@ -3786,7 +3891,11 @@ function cleanEngagementCompetitionEvents(rawEvents = [], options = {}) {
   const events = [];
   rawEvents.slice(0, 80).forEach((rawEvent) => {
     const code = cleanText(rawEvent?.code).toUpperCase().replace(/\s+/g, "");
-    const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(code);
+    const competitionType = cleanEngagementCompetitionType(options.competitionType);
+    const staticDefinition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(code);
+    const definition = competitionType === "openWater"
+      ? (code === "OW4X1000SB" ? staticDefinition : engagementOpenWaterEventDefinition(rawEvent))
+      : (code === "OW4X1000SB" ? null : staticDefinition);
     if (!definition) {
       if (strict) throw new HttpsError("invalid-argument", `Course engagements inconnue : ${code || "-"}.`);
       return;
@@ -3885,7 +3994,8 @@ function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], o
 }
 
 function engagementCompetitionCalendarItem(data = {}, id = "") {
-  const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
+  const competitionType = cleanEngagementCompetitionType(data.competitionType);
+  const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false, competitionType });
   const programSessions = cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false });
   return {
     id: cleanText(id || data.id).slice(0, 128),
@@ -3896,6 +4006,8 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     regionId: cleanText(data.regionId).slice(0, 80),
     invitedRegionIds: cleanEngagementRegionIds(data.invitedRegionIds, data.regionId),
     level: cleanEngagementCompetitionLevel(data.level || data.competitionLevel),
+    competitionType,
+    waterBodyType: competitionType === "openWater" ? cleanEngagementWaterBodyType(data.waterBodyType) : "",
     entryDeadlineAt: cleanText(data.entryDeadlineAt).slice(0, 40),
     computerEmail: normalizeEmail(data.computerEmail).slice(0, 180),
     entryStatus: cleanEngagementEntryStatus(data.entryStatus || data.status),
@@ -3966,6 +4078,7 @@ function filterEngagementCompetitionCalendarItems(items = [], filters = {}) {
     .filter((competition) => !filters.endDate || !competition.date || competition.date <= filters.endDate)
     .filter((competition) => !filters.regionId || competition.regionId === filters.regionId)
     .filter((competition) => !filters.level || competition.level === filters.level)
+    .filter((competition) => !filters.competitionType || competition.competitionType === filters.competitionType)
     .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
     .sort((left, right) =>
       cleanText(left.date).localeCompare(cleanText(right.date)) ||
@@ -4055,7 +4168,10 @@ exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
 
 function engagementCompetitionDetailItem(doc, options = {}) {
   const data = doc.data() || {};
-  const events = cleanEngagementCompetitionEvents(data.events || [], { strict: false });
+  const events = cleanEngagementCompetitionEvents(data.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(data.competitionType)
+  });
   const closureSummary = data.closureAutomationSummary && typeof data.closureAutomationSummary === "object"
     ? data.closureAutomationSummary
     : {};
@@ -4426,18 +4542,19 @@ function cleanEngagementEntryRelays(rawRelays = [], competition = {}, swimmers =
       throw new HttpsError("failed-precondition", "Un relais identique existe deja pour ce club.");
     }
     seenRelays.add(duplicateKey);
-    const manual = parseEngagementEntryTime(rawRelay?.manualEntryTime || rawRelay?.entryTime);
-    if (!manual) {
+    const openWater = cleanEngagementCompetitionType(competition.competitionType) === "openWater";
+    const manual = openWater ? null : parseEngagementEntryTime(rawRelay?.manualEntryTime || rawRelay?.entryTime);
+    if (!openWater && !manual) {
       throw new HttpsError("invalid-argument", `Temps d'engagement requis pour ${event.shortLabel || event.code}.`);
     }
     const relay = {
-      relayId: cleanText(rawRelay?.relayId).slice(0, 80) || stableHash([eventCode, category, genderMode, manual.display].join("|")).slice(0, 24),
+      relayId: cleanText(rawRelay?.relayId).slice(0, 80) || stableHash([eventCode, category, genderMode, manual?.display || "no-time"].join("|")).slice(0, 24),
       eventCode,
       category,
       genderMode,
       manualEntryTime: cleanText(rawRelay?.manualEntryTime || rawRelay?.entryTime).slice(0, 20),
-      entryTime: manual.display,
-      entryTimeValue: manual.value,
+      entryTime: manual?.display || "",
+      entryTimeValue: manual?.value || 0,
       memberIds: Array.isArray(rawRelay?.memberIds) ? rawRelay.memberIds : []
     };
     const members = assertEngagementRelayMembers(relay, event, swimmerById, competition);
@@ -6001,7 +6118,9 @@ function engagementPdfDrawIndividualMatrix(doc, matrix = {}, competition = {}, y
         const item = entriesByCode.get(column.eventCode);
         const value = cleanText(item?.entryTime || item?.manualEntryTime);
         const x = left + identityWidth + categoryWidth + index * courseWidth;
-        if (value) {
+        if (cleanEngagementCompetitionType(competition.competitionType) === "openWater" && item) {
+          doc.font("Helvetica-Bold").fontSize(6).fillColor("#47745a").text("X", x + 1, y + 5.5, { width: courseWidth - 2, align: "center" });
+        } else if (value) {
           const marker = cleanText(item?.entryTimeMode) === "manual" ? "*" : "";
           doc.font("Helvetica").fontSize(5.15).fillColor("#102f35").text(`${value}${marker}`, x + 1, y + 5.5, { width: courseWidth - 2, align: "center" });
         } else if (item) {
@@ -6278,10 +6397,11 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     individualMatrices.forEach((matrix) => {
       y = engagementPdfDrawIndividualMatrix(doc, matrix, competition, y);
     });
-    const hasManualTime = individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
+    const poolCompetition = cleanEngagementCompetitionType(competition.competitionType) === "pool";
+    const hasManualTime = poolCompetition && individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
       (swimmer.individualEntries || []).some((item) => cleanText(item.entryTimeMode) === "manual")
     ));
-    const hasMissingTime = individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
+    const hasMissingTime = poolCompetition && individualMatrices.some((matrix) => matrix.rows.some((swimmer) =>
       (swimmer.individualEntries || []).some((item) => !cleanText(item.entryTime || item.manualEntryTime))
     ));
     if (hasManualTime || hasMissingTime) {
@@ -6298,14 +6418,22 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
 
   y = engagementPdfSection(doc, "Relais", y);
   const relayRows = engagementPdfCollectRelayRows(entry);
+  const relayColumns = cleanEngagementCompetitionType(competition.competitionType) === "openWater"
+    ? [
+        { key: "event", label: "Relais", width: 90 },
+        { key: "category", label: "Catégorie", width: 90 },
+        { key: "gender", label: "Sexe", width: 70 },
+        { key: "members", label: "Relayeurs", width: 261 }
+      ]
+    : [
+        { key: "event", label: "Relais", width: 80 },
+        { key: "category", label: "Catégorie", width: 82 },
+        { key: "gender", label: "Sexe", width: 62 },
+        { key: "time", label: "Temps", width: 58 },
+        { key: "members", label: "Relayeurs", width: 229 }
+      ];
   y = relayRows.length
-    ? engagementPdfTable(doc, [
-      { key: "event", label: "Relais", width: 80 },
-      { key: "category", label: "Catégorie", width: 82 },
-      { key: "gender", label: "Sexe", width: 62 },
-      { key: "time", label: "Temps", width: 58 },
-      { key: "members", label: "Relayeurs", width: 229 }
-    ], relayRows, y)
+    ? engagementPdfTable(doc, relayColumns, relayRows, y)
     : engagementPdfEmptyState(doc, "Aucun relais engagé.", y);
 
   y = engagementPdfSection(doc, "Officiels", y);
@@ -7925,13 +8053,15 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
   const officialsManagerEmail = cleanOptionalEmail(raw.officialsManagerEmail, "Email du responsable juge");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
-  const poolLength = cleanEngagementPoolLength(raw.poolLength);
-  const poolLaneCount = cleanEngagementPoolLaneCount(raw.poolLaneCount);
+  const competitionType = cleanEngagementCompetitionType(raw.competitionType);
+  const waterBodyType = competitionType === "openWater" ? cleanEngagementWaterBodyType(raw.waterBodyType) : "";
+  const poolLength = competitionType === "pool" ? cleanEngagementPoolLength(raw.poolLength) : "";
+  const poolLaneCount = competitionType === "pool" ? cleanEngagementPoolLaneCount(raw.poolLaneCount) : 0;
   const timingType = cleanEngagementTimingType(raw.timingType);
-  const qualificationTimesMode = cleanEngagementQualificationTimesMode(raw.qualificationTimesMode);
+  const qualificationTimesMode = competitionType === "openWater" ? "all" : cleanEngagementQualificationTimesMode(raw.qualificationTimesMode);
   const qualificationStartDate = qualificationTimesMode === "period" ? cleanIsoDate(raw.qualificationStartDate) : "";
   const qualificationEndDate = qualificationTimesMode === "period" ? cleanIsoDate(raw.qualificationEndDate) : "";
-  const missingEntryTimeMode = cleanEngagementMissingEntryTimeMode(raw.missingEntryTimeMode);
+  const missingEntryTimeMode = competitionType === "openWater" ? "none" : cleanEngagementMissingEntryTimeMode(raw.missingEntryTimeMode);
   const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(raw.maxEventsPerSwimmer);
   const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
   const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
@@ -7970,12 +8100,15 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (isEngagementOpeningTooEarly(entryStatus, date)) {
     throw new HttpsError("failed-precondition", "Impossible d'ouvrir les engagements plus de 30 jours avant la competition.");
   }
-  if (entryStatus === "open" && (!poolLength || !poolLaneCount || !timingType)) {
-    throw new HttpsError("failed-precondition", "Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements.");
+  if (entryStatus === "open" && !timingType) {
+    throw new HttpsError("failed-precondition", "Renseignez le chronometrage avant d'ouvrir les engagements.");
+  }
+  if (entryStatus === "open" && competitionType === "pool" && (!poolLength || !poolLaneCount)) {
+    throw new HttpsError("failed-precondition", "Renseignez le bassin et le nombre de lignes d'eau avant d'ouvrir les engagements.");
   }
 
   const events = Object.prototype.hasOwnProperty.call(raw, "events")
-    ? cleanEngagementCompetitionEvents(raw.events)
+    ? cleanEngagementCompetitionEvents(raw.events, { competitionType })
     : null;
 
   return {
@@ -7986,6 +8119,8 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     regionId,
     invitedRegionIds,
     level,
+    competitionType,
+    waterBodyType,
     entryDeadlineAt,
     computerEmail,
     officialsManagerEmail,
@@ -8126,6 +8261,84 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     }),
     competitions
   };
+});
+
+exports.listEngagementOpenWaterCourses = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  await engagementAccessContext(request);
+  const snapshot = await engagementOpenWaterCourseConfigRef().get();
+  return {
+    ok: true,
+    courses: cleanEngagementOpenWaterCourses(snapshot.exists ? snapshot.data()?.courses : []),
+    readStats: portalReadStats("listEngagementOpenWaterCourses", startedAt, {
+      baseDocuments: 2,
+      variableDocumentsMax: 0,
+      cacheHit: snapshot.exists
+    })
+  };
+});
+
+exports.addEngagementOpenWaterCourse = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national && (!context.region || !context.regionId)) {
+    throw new HttpsError("permission-denied", "Droit regional ou national requis pour modifier la bibliotheque eau libre.");
+  }
+  const course = cleanEngagementOpenWaterCourse({
+    distance: request.data?.distance,
+    discipline: request.data?.discipline
+  });
+  const ref = engagementOpenWaterCourseConfigRef();
+  const now = new Date().toISOString();
+  let courses = [];
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    courses = cleanEngagementOpenWaterCourses(snapshot.exists ? snapshot.data()?.courses : []);
+    if (courses.some((item) => item.id === course.id)) {
+      throw new HttpsError("already-exists", "Cette course existe deja dans la bibliotheque eau libre.");
+    }
+    if (courses.length >= ENGAGEMENT_OPEN_WATER_COURSE_LIMIT) {
+      throw new HttpsError("resource-exhausted", "La bibliotheque eau libre a atteint sa limite de courses.");
+    }
+    courses = [...courses, course].sort((left, right) => left.distance - right.distance || left.label.localeCompare(right.label, "fr"));
+    transaction.set(ref, {
+      courses,
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+  });
+  await writeAuditLog("engagementOpenWaterCourse.created", context.uid, {
+    distance: course.distance,
+    discipline: course.discipline,
+    courseId: course.id
+  });
+  return { ok: true, course, courses };
+});
+
+exports.setEngagementOpenWaterCourseStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national && (!context.region || !context.regionId)) {
+    throw new HttpsError("permission-denied", "Droit regional ou national requis pour modifier la bibliotheque eau libre.");
+  }
+  const courseId = cleanText(request.data?.courseId).slice(0, 60);
+  const active = request.data?.active === true;
+  if (!courseId) throw new HttpsError("invalid-argument", "Course eau libre requise.");
+  const ref = engagementOpenWaterCourseConfigRef();
+  const now = new Date().toISOString();
+  let courses = [];
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    courses = cleanEngagementOpenWaterCourses(snapshot.exists ? snapshot.data()?.courses : []);
+    const index = courses.findIndex((course) => course.id === courseId);
+    if (index < 0) throw new HttpsError("not-found", "Course eau libre introuvable.");
+    courses[index] = { ...courses[index], active };
+    transaction.set(ref, {
+      courses,
+      updatedAt: now,
+      updatedBy: context.uid
+    }, { merge: true });
+  });
+  await writeAuditLog("engagementOpenWaterCourse.statusChanged", context.uid, { courseId, active });
+  return { ok: true, courses };
 });
 
 exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -8891,6 +9104,9 @@ exports.generateEngagementCompetitionTxtExport = onCall(CALLABLE_OPTIONS, async 
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
+  if (cleanEngagementCompetitionType(competition.data()?.competitionType) === "openWater") {
+    throw new HttpsError("failed-precondition", "L'export TXT eau libre sera disponible apres validation de son format.");
+  }
   assertCanManageEngagementCompetition(context, competition.data() || {});
   const entriesSnapshot = await db.collection("engagementClubEntries")
     .where("competitionId", "==", competitionId)
@@ -9136,6 +9352,18 @@ exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (reque
 async function prepareEngagementTxtEmailJob(db, competitionSnapshot, options = {}) {
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
   const competitionId = cleanText(competition.id).slice(0, 128);
+  if (cleanEngagementCompetitionType(competition.competitionType) === "openWater") {
+    return {
+      competitionId,
+      entryCount: 0,
+      jobCount: 0,
+      errorCount: 0,
+      generatedAt: "",
+      skippedReason: "open_water_export_pending",
+      errors: [],
+      generatedFiles: cleanEngagementGeneratedFiles(competition.generatedFiles || [])
+    };
+  }
   const computerEmail = normalizeEmail(competition.computerEmail);
   const now = new Date().toISOString();
   if (!computerEmail) {
@@ -12725,7 +12953,11 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
 });
 
 async function buildEngagementClubSwimmersFromRequest(requestData = {}, context = {}, competitionData = {}) {
-  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  const openWater = cleanEngagementCompetitionType(competitionData.competitionType) === "openWater";
+  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
+  });
   const competitionTimeRules = {
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
@@ -12851,11 +13083,13 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
     const licenseSeason = storedLicenseNumber && knownLicense
       ? engagementLicenseSeasonState(knownLicense)
       : engagementLicenseSeasonState(swimmer);
-    const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
-      { ...swimmer, source: requestedSwimmer.source },
-      requestedSwimmer.individualEntries,
-      competitionTimeRules
-    );
+    const individualEntries = openWater
+      ? requestedSwimmer.individualEntries.map((entry) => ({ eventCode: entry.eventCode, status: "selected", entryTimeMode: "notRequired" }))
+      : await resolveEngagementIndividualEntriesForSwimmer(
+          { ...swimmer, source: requestedSwimmer.source },
+          requestedSwimmer.individualEntries,
+          competitionTimeRules
+        );
     return cleanEngagementEntrySwimmer({
       ...swimmer,
       swimmerIndexId: swimmer.id,
@@ -12868,7 +13102,7 @@ async function buildEngagementClubSwimmersFromRequest(requestData = {}, context 
       individualEntries
     });
   }));
-  if (swimmers.some((swimmer) => swimmer.individualEntries.some((entry) => entry.entryTimeMode === "manual"))) {
+  if (!openWater && swimmers.some((swimmer) => swimmer.individualEntries.some((entry) => entry.entryTimeMode === "manual"))) {
     const recordsData = await loadPerformanceRecordsData();
     swimmers = validateEngagementIndividualEntryTimes(swimmers, competitionTimeRules, recordsData);
   }
@@ -13031,7 +13265,10 @@ exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async 
     qualificationEndDate: cleanIsoDate(competitionData.qualificationEndDate),
     missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode)
   };
-  const eventEntries = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false })
+  const eventEntries = cleanEngagementCompetitionEvents(competitionData.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
+  })
     .filter((event) => event.type === "individual")
     .map((event) => ({ eventCode: event.code }));
   const individualEntries = await resolveEngagementIndividualEntriesForSwimmer(
@@ -13068,6 +13305,17 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
     .filter((swimmer) => swimmer.swimmerIndexId)
     .map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
   const competitionData = competition.data() || {};
+  if (cleanEngagementCompetitionType(competitionData.competitionType) === "openWater") {
+    return {
+      ok: true,
+      swimmers: swimmerIds.map((swimmerIndexId) => ({ swimmerIndexId, individualEntries: [] })),
+      readStats: portalReadStats("previewEngagementClubSwimmerEventTimesBatch", startedAt, {
+        baseDocuments: 3,
+        variableDocumentsMax: 0,
+        cacheHit: true
+      })
+    };
+  }
   const competitionTimeRules = {
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
@@ -13077,7 +13325,10 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
     qualificationEndDate: cleanIsoDate(competitionData.qualificationEndDate),
     missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode)
   };
-  const eventEntries = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false })
+  const eventEntries = cleanEngagementCompetitionEvents(competitionData.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
+  })
     .filter((event) => event.type === "individual")
     .map((event) => ({ eventCode: event.code }));
   const swimmers = await Promise.all(swimmerIds.map(async (swimmerIndexId) => {
@@ -13116,7 +13367,11 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
   }
 
   const competitionData = competition.data() || {};
-  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  const openWater = cleanEngagementCompetitionType(competitionData.competitionType) === "openWater";
+  const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
+  });
   const allowedIndividualEventCodes = new Set(
     competitionEvents.filter((event) => event.type === "individual").map((event) => event.code)
   );
@@ -13162,18 +13417,16 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
     if (maxEventsPerSwimmer > 0 && individualEntries.length > maxEventsPerSwimmer) {
       throw new HttpsError("failed-precondition", `Maximum ${maxEventsPerSwimmer} course(s) individuelle(s) par nageur.`);
     }
-    const resolvedEntries = await resolveEngagementIndividualEntriesForSwimmer(
-      savedSwimmer,
-      individualEntries,
-      competitionTimeRules
-    );
+    const resolvedEntries = openWater
+      ? individualEntries.map((entry) => ({ eventCode: entry.eventCode, status: "selected", entryTimeMode: "notRequired" }))
+      : await resolveEngagementIndividualEntriesForSwimmer(savedSwimmer, individualEntries, competitionTimeRules);
     return cleanEngagementEntrySwimmer({
       ...savedSwimmer,
       individualEntries: resolvedEntries
     });
   }));
 
-  if (changedSwimmers.some((swimmer) => swimmer.individualEntries.some((entryItem) => entryItem.entryTimeMode === "manual"))) {
+  if (!openWater && changedSwimmers.some((swimmer) => swimmer.individualEntries.some((entryItem) => entryItem.entryTimeMode === "manual"))) {
     const recordsData = await loadPerformanceRecordsData();
     changedSwimmers = validateEngagementIndividualEntryTimes(changedSwimmers, competitionTimeRules, recordsData);
   }
@@ -13556,12 +13809,16 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
     .map(cleanEngagementEntrySwimmer)
     .filter((swimmer) => swimmer.swimmerIndexId);
   const competitionData = competition.data() || {};
-  const events = cleanEngagementCompetitionEvents(competitionData.events || [], { strict: false });
+  const events = cleanEngagementCompetitionEvents(competitionData.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
+  });
   let relays = cleanEngagementEntryRelays(request.data?.relays || [], {
     date: cleanIsoDate(competitionData.date),
+    competitionType: cleanEngagementCompetitionType(competitionData.competitionType),
     events
   }, swimmers);
-  if (relays.length) {
+  if (relays.length && cleanEngagementCompetitionType(competitionData.competitionType) !== "openWater") {
     const recordsData = await loadPerformanceRecordsData();
     relays = validateEngagementRelayEntryTimes(relays, {
       date: cleanIsoDate(competitionData.date),
@@ -13589,7 +13846,14 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
 
 exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
-  const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
+  if (!ENGAGEMENT_COMPETITION_TYPES.has(cleanText(request.data?.competitionType))) {
+    throw new HttpsError("invalid-argument", "Choisissez le type de competition : piscine ou eau libre.");
+  }
+  const competition = cleanEngagementCompetitionPayload({
+    ...(request.data || {}),
+    entryStatus: "upcoming",
+    entryDeadlineAt: ""
+  }, context);
   const now = new Date().toISOString();
   const docRef = db.collection("engagementCompetitions").doc();
   const payload = {
@@ -13630,6 +13894,27 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   }
   assertCanManageEngagementCompetition(context, snapshot.data() || {});
   const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
+  const storedCompetitionType = cleanEngagementCompetitionType(snapshot.data()?.competitionType);
+  if (competition.competitionType !== storedCompetitionType) {
+    throw new HttpsError("failed-precondition", "Le type de competition ne peut pas etre modifie apres sa creation.");
+  }
+  if (storedCompetitionType === "openWater" && Array.isArray(competition.events)) {
+    const courseSnapshot = await engagementOpenWaterCourseConfigRef().get();
+    const configuredCourses = cleanEngagementOpenWaterCourses(courseSnapshot.exists ? courseSnapshot.data()?.courses : []);
+    const existingCourseIds = new Set(cleanEngagementCompetitionEvents(snapshot.data()?.events || [], {
+      strict: false,
+      competitionType: "openWater"
+    }).map((event) => event.openWaterCourseId).filter(Boolean));
+    const selectableCourseIds = new Set(configuredCourses
+      .filter((course) => course.active !== false || existingCourseIds.has(course.id))
+      .map((course) => course.id));
+    const unknownCourse = competition.events.find((event) =>
+      event.type === "individual" && !selectableCourseIds.has(event.openWaterCourseId)
+    );
+    if (unknownCourse) {
+      throw new HttpsError("failed-precondition", "Une course eau libre n'est pas disponible dans la bibliotheque nationale.");
+    }
+  }
   assertCanManageEngagementCompetition(context, competition);
   const now = new Date().toISOString();
   const payload = {
@@ -13886,11 +14171,14 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const importId = importDocumentId(parsed.metadata, fileHash);
   const existing = await db.collection("performanceImports").doc(importId).get();
   const existingData = existing.exists ? existing.data() || {} : {};
+  const publicationStatus = importPublicationStatus(existingData);
   const recordAlerts = detectRecordAlerts(parsed.performances, await loadPerformanceRecordsData());
   return {
     ok: true,
     importId,
     alreadyImported: existing.exists && existingData.status !== "deleted",
+    publicationStatus: publicationStatus || (existing.exists ? "published" : ""),
+    canResumePublication: existing.exists && canResumeImportPublication(existingData),
     fileHash,
     sourceType: parsed.sourceType,
     metadata: parsed.metadata,
@@ -13903,7 +14191,76 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
-exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
+function competitionImportPublicSnapshotSummary(snapshot = {}) {
+  return cleanFirestoreValue({
+    ok: snapshot.ok === true,
+    path: cleanText(snapshot.path),
+    generatedAt: cleanText(snapshot.generatedAt),
+    importCount: Number(snapshot.importCount || 0) || 0,
+    performanceCount: Number(snapshot.performanceCount || 0) || 0,
+    rowCount: Number(snapshot.rowCount || 0) || 0,
+    affectedSwimmers: Number(snapshot.affectedSwimmers || 0) || 0,
+    affectedTopBuckets: Number(snapshot.affectedTopBuckets || 0) || 0,
+    writtenFiles: Number(snapshot.writtenFiles || 0) || 0,
+    error: cleanText(snapshot.error).slice(0, 500)
+  });
+}
+
+async function publishCompetitionImportOutputs(normalizedPerformances = [], importRef, context = {}) {
+  const importId = cleanText(context.importId || importRef?.id);
+  const startedAt = new Date().toISOString();
+  await importRef.set({
+    publicationStatus: "publishing",
+    publicationStartedAt: startedAt,
+    publicationUpdatedAt: startedAt,
+    publicationError: ""
+  }, { merge: true });
+
+  let publicSnapshot = null;
+  try {
+    publicSnapshot = await publishIncrementalPerformanceImport(normalizedPerformances, importId);
+  } catch (error) {
+    console.warn("Publication publique des performances LivePalmes impossible", error);
+    publicSnapshot = {
+      ok: false,
+      error: error?.message || String(error)
+    };
+  }
+
+  let publicFilesSnapshot = null;
+  try {
+    publicFilesSnapshot = await publishIncrementalPublicPerformanceFiles(normalizedPerformances, {
+      importId,
+      now: context.now || startedAt
+    });
+    await invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedPerformances);
+  } catch (error) {
+    console.warn("Publication publique incrementale des fichiers performances impossible", error);
+    publicFilesSnapshot = {
+      ok: false,
+      error: error?.message || String(error)
+    };
+  }
+
+  const publicationStatus = importPublicationResultStatus(publicSnapshot, publicFilesSnapshot);
+  const completedAt = new Date().toISOString();
+  await importRef.set({
+    publicationStatus,
+    publicationCompletedAt: publicationStatus === "published" ? completedAt : "",
+    publicationUpdatedAt: completedAt,
+    publicationError: importPublicationError(publicSnapshot, publicFilesSnapshot),
+    publicSnapshot: competitionImportPublicSnapshotSummary(publicSnapshot),
+    publicFilesSnapshot: competitionImportPublicSnapshotSummary(publicFilesSnapshot)
+  }, { merge: true });
+
+  return {
+    publicationStatus,
+    publicSnapshot,
+    publicFilesSnapshot
+  };
+}
+
+exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
   const fileName = cleanText(request.data?.fileName).slice(0, 180);
   const confirmImportId = cleanText(request.data?.importId);
@@ -13963,7 +14320,10 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     importedBy: actorUid,
     importedByEmail: actorEmail,
     importedAt: now,
-    updatedAt: now
+    updatedAt: now,
+    publicationStatus: "pending",
+    publicationUpdatedAt: now,
+    publicationError: ""
   }, { merge: false });
   batchSize += 1;
 
@@ -14066,31 +14426,10 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     clubActivityReactivation
   });
 
-  let publicSnapshot = null;
-  try {
-    publicSnapshot = await publishIncrementalPerformanceImport(normalizedImportedPerformances, importId);
-  } catch (error) {
-    console.warn("Publication publique des performances LivePalmes impossible", error);
-    publicSnapshot = {
-      ok: false,
-      error: error?.message || String(error)
-    };
-  }
-
-  let publicFilesSnapshot = null;
-  try {
-    publicFilesSnapshot = await publishIncrementalPublicPerformanceFiles(normalizedImportedPerformances, {
-      importId,
-      now
-    });
-    await invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedImportedPerformances);
-  } catch (error) {
-    console.warn("Publication publique incrementale des fichiers performances impossible", error);
-    publicFilesSnapshot = {
-      ok: false,
-      error: error?.message || String(error)
-    };
-  }
+  const publication = await publishCompetitionImportOutputs(normalizedImportedPerformances, importRef, {
+    importId,
+    now
+  });
 
   return {
     ok: true,
@@ -14104,8 +14443,101 @@ exports.createCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
     performanceBaseSync,
     clubActivityReactivation,
-    publicSnapshot,
-    publicFilesSnapshot
+    publicationStatus: publication.publicationStatus,
+    publicSnapshot: publication.publicSnapshot,
+    publicFilesSnapshot: publication.publicFilesSnapshot
+  };
+});
+
+exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const importId = cleanText(request.data?.importId).slice(0, 160);
+  if (!importId) {
+    throw new HttpsError("invalid-argument", "Import inconnu.");
+  }
+
+  const importRef = db.collection("performanceImports").doc(importId);
+  const claimedAt = new Date().toISOString();
+  let importData = {};
+  await db.runTransaction(async (transaction) => {
+    const importSnapshot = await transaction.get(importRef);
+    if (!importSnapshot.exists) {
+      throw new HttpsError("not-found", "Import introuvable.");
+    }
+    importData = importSnapshot.data() || {};
+    if (!canResumeImportPublication(importData, Date.parse(claimedAt))) {
+      throw new HttpsError("failed-precondition", "Cet import ne necessite pas de reprise de publication.");
+    }
+    transaction.set(importRef, {
+      publicationStatus: "publishing",
+      publicationStartedAt: claimedAt,
+      publicationUpdatedAt: claimedAt,
+      publicationError: ""
+    }, { merge: true });
+  });
+
+  let rawSnapshot = null;
+  let normalizedPerformances = [];
+  try {
+    const expectedCount = Number(importData.performanceBaseCount || importData.summary?.importedPerformances || 0) || 0;
+    if (!expectedCount || expectedCount > MAX_COMPETITION_IMPORT_PERFORMANCES) {
+      throw new HttpsError("failed-precondition", "Volume de l'import incompatible avec la reprise automatique.");
+    }
+    rawSnapshot = await importRef.collection("performances").limit(expectedCount + 1).get();
+    if (rawSnapshot.size !== expectedCount) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Import incomplet : ${rawSnapshot.size} performance(s) stockee(s) sur ${expectedCount} attendue(s).`
+      );
+    }
+
+    const rawPerformances = rawSnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    normalizedPerformances = normalizeLivePalmesImportPerformances(rawPerformances);
+    if (normalizedPerformances.length !== expectedCount) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Reprise incomplete : ${normalizedPerformances.length} performance(s) normalisee(s) sur ${expectedCount} attendue(s).`
+      );
+    }
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    await importRef.set({
+      publicationStatus: "failed",
+      publicationUpdatedAt: failedAt,
+      publicationError: cleanText(error?.message || error).slice(0, 500)
+    }, { merge: true });
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const actorUid = request.auth.uid;
+  const actorEmail = request.auth.token?.email || "";
+  const publication = await publishCompetitionImportOutputs(normalizedPerformances, importRef, {
+    importId,
+    now
+  });
+  await writeAuditLog("performanceImport.publicationResumed", actorUid, {
+    importId,
+    actorEmail,
+    performanceCount: normalizedPerformances.length,
+    publicationStatus: publication.publicationStatus,
+    publicSnapshot: competitionImportPublicSnapshotSummary(publication.publicSnapshot),
+    publicFilesSnapshot: competitionImportPublicSnapshotSummary(publication.publicFilesSnapshot)
+  });
+
+  return {
+    ok: publication.publicationStatus === "published",
+    importId,
+    performanceCount: normalizedPerformances.length,
+    publicationStatus: publication.publicationStatus,
+    publicSnapshot: publication.publicSnapshot,
+    publicFilesSnapshot: publication.publicFilesSnapshot,
+    readStats: {
+      importDocuments: 1,
+      performanceDocuments: rawSnapshot?.size || 0,
+      maximumPerformanceDocuments: MAX_COMPETITION_IMPORT_PERFORMANCES,
+      maximumPerformanceDocumentReads: MAX_COMPETITION_IMPORT_PERFORMANCES + 1
+    }
   };
 });
 
@@ -14134,6 +14566,10 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
         recordAlertCount: recordAlerts.length,
         recordAlerts: recordAlerts.slice(0, 20),
         duplicateDetails: data.duplicateDetails || [],
+        publicationStatus: importPublicationStatus(data) || (data.status === "stored" ? "published" : ""),
+        publicationUpdatedAt: data.publicationUpdatedAt || "",
+        publicationError: data.publicationError || "",
+        canResumePublication: canResumeImportPublication(data),
         importedByEmail: data.importedByEmail || "",
         importedAt: data.importedAt || ""
       };

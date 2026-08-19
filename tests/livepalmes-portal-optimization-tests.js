@@ -368,6 +368,26 @@ assert.equal(firebase.firestore.indexes, "firestore.indexes.json");
 assert.ok(indexes.indexes.some((index) => index.collectionGroup === "users"));
 assert.equal(portal.includes("withTimeout(loadRemoteRecordsData"), false);
 assert.ok(imports.includes('global.location.hash === "#import-competitions"'));
+[
+  "competitionImportProgress",
+  "adminDtnLongOperation",
+  "adminEngagementsLongOperation"
+].forEach((id) => assert.ok(portalHtml.includes(`id="${id}" class="admin-long-operation"`)));
+assert.ok(portalUx.includes("function createLongOperation"));
+assert.ok(portalUx.includes('panel.setAttribute("role", "status")'));
+assert.ok(portalUx.includes("Temps écoulé"));
+assert.ok(portalUx.includes('panel.dataset.state = "loading"'));
+assert.ok(portalUx.includes('content.state || "success"'));
+assert.ok(portalCss.includes(".admin-portal-page .admin-long-operation"));
+assert.ok(portalCss.includes('[data-state="background"]'));
+assert.ok(imports.includes("startImportProgress("));
+assert.ok(imports.includes('setImportControlsBusy(true, phase)'));
+assert.ok(imports.includes("Correction et publication en cours"));
+assert.ok(imports.includes("Republication complète en cours"));
+assert.ok(dtn.includes("Recalcul des qualifications en cours"));
+assert.ok(dtn.includes("Recalcul de la mise en liste en cours"));
+assert.ok(portal.includes("Génération des PDF clubs en cours"));
+assert.ok(portal.includes("Envoi des courriels"));
 assert.ok(dtnBuildSource.includes('source: "public-storage-top-files"'));
 assert.equal(dtnBuildSource.includes(".collection(PERFORMANCE_BASE_COLLECTION)"), false);
 assert.equal(functions.includes('licenseUpdatedBy: "engagement-roster-migration"'), false);
@@ -486,7 +506,10 @@ assert.ok(functions.includes("merged.performanceCount = Math.max"));
 assert.equal(engagementClubRecapListSource.includes("rebuildEngagementCompetitionEntrySummary"), false);
 assert.equal(engagementClubRecapListSource.includes("forceSummary"), false);
 assert.ok(functions.includes("generatedAt: now || new Date().toISOString()"));
-assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedImportedPerformances)"));
+assert.ok(functions.includes("async function publishCompetitionImportOutputs(normalizedPerformances = [], importRef, context = {})"));
+assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceRows(normalizedPerformances)"));
+assert.ok(functions.includes("publishCompetitionImportOutputs(normalizedImportedPerformances, importRef"));
+assert.ok(functions.includes("exports.resumeCompetitionImportPublication"));
 assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceRows(result.affectedRows || [])"));
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimes"));
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimesBatch"));
@@ -772,7 +795,7 @@ const clubGeneralRowsSource = portal.slice(portal.indexOf("const clubRows = ["),
 assert.equal(clubGeneralRowsSource.includes('"Statut engagements"'), false);
 assert.ok(portalCss.includes("#adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dd"));
 assert.ok(portalCss.includes("font-size: 0.82rem"));
-assert.ok(portalHtml.includes('id="adminEngagementsMaxEvents"'));
+assert.equal(portalHtml.includes('id="adminEngagementsMaxEvents"'), false);
 assert.ok(portalHtml.includes('id="adminEngagementsEditMaxEvents"'));
 assert.ok(portalHtml.includes('<option value="0">Aucune limite</option>'));
 assert.ok(portal.includes("const maxEventsValue = Math.trunc(Number(fields.maxEvents?.value))"));
@@ -870,13 +893,14 @@ assert.ok(portal.includes("].sort(compareEngagementSwimmersBySexAndName)"));
 assert.ok(portal.includes(".sort(compareAvailableSwimmers)\n      .slice(0, visibleAvailableLimit)"));
 assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected="true"][data-sex="F"]'));
 assert.ok(portalCss.includes('.admin-engagements-club-swimmer-row[data-selected="true"][data-sex="M"]'));
-assert.ok(portalHtml.includes('id="adminEngagementsPoolLaneCount" type="number" min="4" max="10"'));
+assert.equal(portalHtml.includes('id="adminEngagementsPoolLaneCount"'), false);
 assert.ok(portalHtml.includes('id="adminEngagementsEditPoolLaneCount" type="number" min="4" max="10"'));
 assert.ok(portal.includes('poolLaneCount: fields.poolLaneCount?.value === ""'));
 assert.ok(portal.includes('dialog.insertAdjacentElement("afterend", modal)'));
 assert.ok(functions.includes("function cleanEngagementPoolLaneCount"));
 assert.ok(functions.includes('value === 0 || value === "0"'));
-assert.ok(functions.includes("Renseignez le bassin, le nombre de lignes d'eau et le chronometrage avant d'ouvrir les engagements."));
+assert.ok(functions.includes("Renseignez le bassin et le nombre de lignes d'eau avant d'ouvrir les engagements."));
+assert.ok(functions.includes("Renseignez le chronometrage avant d'ouvrir les engagements."));
 assert.ok(functions.includes("Renseignez la date et l'heure de cloture avant d'ouvrir les engagements."));
 assert.ok(functions.includes("Seule une competition a venir peut etre retiree du calendrier par la region."));
 assert.ok(portal.includes("Programme en préparation."));
@@ -1072,7 +1096,8 @@ assert.ok(portal.includes("engagementClubSwimmerEventTimesCache.has(cacheKey)"))
 assert.equal(portal.includes('callFunction("previewEngagementClubEntryTimes"'), false);
 assert.ok(portal.includes("ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS = 30 * 1000"));
 assert.ok(portal.includes("if (cachedWorkspaceFresh) return"));
-assert.ok(portal.includes('if (canUse("engagements.club.manage")) void loadEngagementCompetitions()'));
+assert.equal(portal.includes('if (canUse("engagements.club.manage")) void loadEngagementCompetitions()'), false);
+assert.ok(portal.includes('if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();'));
 assert.ok(portal.includes('setEngagementClubEntryLoadingState("loading")'));
 assert.ok(portal.includes("Chargement de vos engagements enregistrés..."));
 assert.ok(portal.includes("admin-engagements-calendar-loading"));
@@ -1206,9 +1231,9 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260818-competition-documents-2"));
-assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260815-dtn-loading-indicator-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-competition-documents-2"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260818-open-water-library-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1232,8 +1257,10 @@ assert.ok(portalCss.includes('#adminEngagementsView:not([data-engagements-tab="c
 assert.ok(portal.includes("manageOnly: isEngagementAdminMode()"));
 assert.ok(portal.includes('label: "Administrer"'));
 assert.equal(portal.includes('label: canEditEngagementCompetition(competition) ? "Administrer" : "Voir la fiche"'), false);
+assert.ok(portal.includes("const staleInitialCalendar = !previousMode && engagementCompetitionsLoaded"));
 assert.ok(functions.includes("const manageOnly = request.data?.manageOnly === true;"));
 assert.ok(functions.includes("const managementContext = manageOnly ? await engagementAccessContext(request) : null;"));
+assert.ok(functions.includes('entryStatus: "upcoming",\n    entryDeadlineAt: ""'));
 assert.ok(functions.includes('cleanText(competition.regionId) === managementContext.regionId'));
 assert.ok(functions.includes("assertCanManageEngagementCompetition(context, doc.data() || {});"));
 assert.ok(portal.includes('elements.engagementsDeleteButton.textContent = directDelete ? "Suppression en cours..." : "Envoi en cours...";'));
@@ -1348,7 +1375,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-competition-documents-2"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
@@ -1440,11 +1467,77 @@ assert.ok(functions.includes('portalReadStats("getDtnListingOverview", startedAt
 assert.equal(functions.slice(functions.indexOf("async function buildDtnListingPayload"), functions.indexOf("async function enqueueDtnQualificationJob")).includes(".collection("), false);
 assert.ok(portal.includes("function resetCreateCompetitionDialog"));
 assert.ok(portal.includes('elements.engagementsEndDate.dataset.autoFromStart = "true"'));
-assert.ok(portal.includes('updateEngagementQualificationFields("create")'));
+assert.equal(portal.includes('updateEngagementQualificationFields("create")'), false);
+[
+  "adminEngagementsName",
+  "adminEngagementsCompetitionType",
+  "adminEngagementsDate",
+  "adminEngagementsEndDate",
+  "adminEngagementsLocation",
+  "adminEngagementsLevel",
+  "adminEngagementsRegionId"
+].forEach((id) => assert.ok(portalHtml.includes(`id="${id}"`)));
+assert.equal(portalHtml.includes('id="adminEngagementsRegionNote"'), false);
+[
+  "adminEngagementsDeadline",
+  "adminEngagementsEntryStatus",
+  "adminEngagementsPoolLength",
+  "adminEngagementsTimingType",
+  "adminEngagementsInvitedRegionIds",
+  "adminEngagementsCreateFeesEnabled"
+].forEach((id) => assert.equal(portalHtml.includes(`id="${id}"`), false));
+assert.equal(portalHtml.includes("Ajouter des informations complémentaires"), false);
+assert.equal(portalHtml.includes("Renseignez uniquement les informations nécessaires à l’ajout au calendrier."), false);
+assert.ok(portalHtml.includes('<h2 id="adminEngagementsCreateDialogTitle">Ajout d’un événement au calendrier</h2>'));
+assert.ok(portalHtml.includes('aria-labelledby="adminEngagementsCreateDialogTitle"'));
+const quickCreateActions = portalHtml.slice(
+  portalHtml.indexOf('<div class="admin-portal-actions">', portalHtml.indexOf('id="adminEngagementsCreateForm"')),
+  portalHtml.indexOf('</div>', portalHtml.indexOf('<div class="admin-portal-actions">', portalHtml.indexOf('id="adminEngagementsCreateForm"')))
+);
+assert.ok(quickCreateActions.includes('id="adminEngagementsCreateDialogClose"'));
+assert.ok(quickCreateActions.includes('type="submit">Ajouter au calendrier</button>'));
+assert.ok(portalCss.includes(".admin-engagements-create-form > .admin-portal-actions"));
+assert.ok(portalCss.includes("justify-content: flex-end"));
+assert.ok(portalCss.includes(".admin-engagements-create-form > #adminEngagementsCreateMessage:empty"));
+assert.ok(portalHtml.includes('id="adminEngagementsCreateCompleteNow"'));
+assert.ok(portalHtml.includes("Compléter maintenant"));
+assert.ok(portalHtml.includes("Plus tard"));
+assert.ok(portal.includes('entryStatus: "upcoming"'));
+assert.ok(portal.includes("function completeNewlyCreatedEngagementCompetition"));
+assert.ok(portalHtml.includes('id="adminEngagementsTypeFilter"'));
+assert.ok(portalHtml.includes('id="adminEngagementsEditCompetitionType" type="text" readonly'));
+assert.ok(portalHtml.includes('id="adminEngagementsEditWaterBodyType"'));
+assert.ok(portalHtml.includes('id="adminEngagementsOpenWaterCourseCreator"'));
+assert.ok(portalHtml.includes('id="adminEngagementsOpenWaterDiscipline"'));
+assert.ok(portal.includes('class="admin-engagements-open-water-course-add"'));
+assert.ok(portal.includes('shortLabel: "SP"'));
+assert.ok(portalCss.includes(".admin-engagements-open-water-label-short"));
+assert.equal(portal.includes("Ajoutée au programme"), false);
+assert.ok(portalHtml.includes('id="adminEngagementsUnsavedDialog"'));
+assert.equal(portalHtml.includes('Classement automatique de la plus courte à la plus longue.'), false);
+assert.ok(portal.includes('function engagementOpenWaterEventDefinitions'));
+assert.ok(portal.includes('engagementCompetitionType(selectedEngagementCompetition) === "openWater"'));
+assert.ok(portal.includes('saveEngagementCompetitionDetail(null, { continueEditing: true })'));
+assert.ok(portal.includes('discardEngagementDetailTabChanges(activeEngagementsDetailTab)'));
+assert.ok(portalCss.includes('[data-competition-type="openWater"]'));
+assert.ok(functions.includes('const ENGAGEMENT_COMPETITION_TYPES = new Set(["pool", "openWater"])'));
+assert.ok(functions.includes('const FUNCTIONS_EMULATOR_ACTIVE = process.env.FUNCTIONS_EMULATOR === "true"'));
+assert.ok(functions.includes('exports.listEngagementOpenWaterCourses'));
+assert.ok(functions.includes('exports.addEngagementOpenWaterCourse'));
+assert.ok(functions.includes('exports.setEngagementOpenWaterCourseStatus'));
+assert.ok(functions.includes('Le 150 m elimination est disponible uniquement en Surface et Bi-palmes.'));
+assert.ok(functions.includes('Droit regional ou national requis pour modifier la bibliotheque eau libre.'));
+assert.ok(functions.includes('Le type de competition ne peut pas etre modifie apres sa creation.'));
+assert.ok(functions.includes('open_water_export_pending'));
+assert.equal(portal.includes("await loadEngagementCompetitionDetail(result.competition.id)"), false);
 assert.ok(portalHtml.includes('id="adminPublicAccessRequestNewClub"'));
 assert.ok(portalHtml.includes('id="adminPublicAccessRequestNewClubFederalNumber"'));
 assert.ok(portalHtml.includes('id="adminEngagementsAccessRequestRejectReason"'));
-assert.ok(portal.includes("function matchPublicAccessRequestClubByFederalNumber"));
+assert.ok(portal.includes('fillLivePalmesRegionSelect(elements.publicAccessRequestRegionId, "À choisir")'));
+assert.ok(portal.includes("async function matchPublicAccessRequestClubByFederalNumber"));
+assert.ok(portal.includes("await loadAccessClubReference()"));
+assert.ok(portal.includes("await matchPublicAccessRequestClubByFederalNumber()"));
+assert.ok(portal.includes("Le référentiel des clubs est temporairement indisponible"));
 assert.ok(portal.includes("openEngagementAccessRequestRejectDialog"));
 assert.ok(functions.includes("async function findEngagementClubByFederalNumber"));
 assert.ok(functions.includes("async function createClubFromEngagementAccessRequest"));

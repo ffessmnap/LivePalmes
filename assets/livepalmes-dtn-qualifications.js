@@ -97,6 +97,17 @@
   const listingOverviewCache = new Map();
   let currentListingOverview = null;
   let xlsxLoadPromise = null;
+  let longOperation = null;
+
+  function ensureLongOperation() {
+    if (!longOperation && global.LivePalmesLongOperation?.create) {
+      longOperation = global.LivePalmesLongOperation.create({
+        element: document.querySelector("#adminDtnLongOperation"),
+        busyTargets: [document.querySelector("#adminDtnView")]
+      });
+    }
+    return longOperation;
+  }
 
   function restoreListingPreferences() {
     try {
@@ -235,7 +246,16 @@
     if (!button) return;
     button.disabled = true;
     elements.refreshStatus.dataset.tone = "";
-    elements.refreshStatus.textContent = "Recalcul en cours…";
+    const operation = ensureLongOperation();
+    if (operation) {
+      elements.refreshStatus.textContent = "";
+      operation.start({
+        title: "Recalcul des qualifications en cours...",
+        detail: "Les performances de la saison sont analysées pour actualiser les référentiels DTN."
+      });
+    } else {
+      elements.refreshStatus.textContent = "Recalcul en cours…";
+    }
     try {
       await waitForAuthenticatedUser();
       const functions = functionsService();
@@ -247,12 +267,24 @@
       const sexes = state.edfTab === "summary" ? ["F", "M"] : [state.sex];
       const overviews = await Promise.all(sexes.map((sex) => loadEdfOverview(season, sex, { rebuild: true })));
       renderGrid();
-      elements.refreshStatus.textContent = overviews.some((overview) => overview.cache?.pending)
-        ? "Recalcul lancé en arrière-plan. La dernière vue reste disponible."
-        : "Qualifications actualisées.";
+      const pending = overviews.some((overview) => overview.cache?.pending);
+      if (operation) {
+        operation.finish({
+          state: pending ? "background" : "success",
+          title: pending ? "Recalcul poursuivi en arrière-plan" : "Qualifications actualisées",
+          detail: pending
+            ? "La dernière vue reste disponible pendant la fin du calcul."
+            : "Les qualifications sont maintenant à jour."
+        });
+      } else {
+        elements.refreshStatus.textContent = pending
+          ? "Recalcul lancé en arrière-plan. La dernière vue reste disponible."
+          : "Qualifications actualisées.";
+      }
     } catch (error) {
       elements.refreshStatus.dataset.tone = "error";
-      elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;
+      if (operation) operation.finish({ state: "error", title: "Recalcul impossible", detail: error?.message || String(error) });
+      else elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;
     } finally {
       button.disabled = false;
     }
@@ -264,7 +296,16 @@
     if (!button) return;
     button.disabled = true;
     elements.refreshStatus.dataset.tone = "";
-    elements.refreshStatus.textContent = "Recalcul en cours…";
+    const operation = ensureLongOperation();
+    if (operation) {
+      elements.refreshStatus.textContent = "";
+      operation.start({
+        title: "Recalcul de la mise en liste en cours...",
+        detail: "Les performances sont analysées puis la liste est vérifiée automatiquement."
+      });
+    } else {
+      elements.refreshStatus.textContent = "Recalcul en cours…";
+    }
     try {
       await waitForAuthenticatedUser();
       const functions = functionsService();
@@ -274,20 +315,40 @@
       let overview = await loadListingOverview(season, { rebuild: true });
       renderListingContent(overview);
       if (overview.cache?.pending) {
-        elements.refreshStatus.textContent = "Recalcul lancé en arrière-plan. Vérification automatique en cours…";
+        if (operation) operation.update({ detail: "Le calcul serveur continue. Vérification automatique de son achèvement..." });
+        else elements.refreshStatus.textContent = "Recalcul lancé en arrière-plan. Vérification automatique en cours…";
         const refreshResult = await waitForListingRefresh(season, overview);
-        if (refreshResult.cancelled) return;
+        if (refreshResult.cancelled) {
+          operation?.finish({
+            state: "background",
+            title: "Recalcul poursuivi en arrière-plan",
+            detail: "Vous avez quitté la vue ; la mise en liste sera vérifiée à sa prochaine ouverture."
+          });
+          return;
+        }
         overview = refreshResult.overview;
         renderListingContent(overview);
-        elements.refreshStatus.textContent = refreshResult.completed
-          ? "Mise en liste actualisée."
-          : "Le calcul continue en arrière-plan. La liste sera vérifiée à la prochaine ouverture.";
+        if (operation) {
+          operation.finish({
+            state: refreshResult.completed ? "success" : "background",
+            title: refreshResult.completed ? "Mise en liste actualisée" : "Calcul poursuivi en arrière-plan",
+            detail: refreshResult.completed
+              ? "La mise en liste est maintenant à jour."
+              : "La liste sera vérifiée automatiquement à sa prochaine ouverture."
+          });
+        } else {
+          elements.refreshStatus.textContent = refreshResult.completed
+            ? "Mise en liste actualisée."
+            : "Le calcul continue en arrière-plan. La liste sera vérifiée à la prochaine ouverture.";
+        }
       } else {
-        elements.refreshStatus.textContent = "Mise en liste actualisée.";
+        if (operation) operation.finish({ state: "success", title: "Mise en liste actualisée", detail: "La mise en liste est maintenant à jour." });
+        else elements.refreshStatus.textContent = "Mise en liste actualisée.";
       }
     } catch (error) {
       elements.refreshStatus.dataset.tone = "error";
-      elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;
+      if (operation) operation.finish({ state: "error", title: "Recalcul impossible", detail: error?.message || String(error) });
+      else elements.refreshStatus.textContent = `Recalcul impossible : ${error?.message || error}`;
     } finally {
       button.disabled = false;
     }

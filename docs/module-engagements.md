@@ -189,16 +189,20 @@ Creation :
 
 Pour un niveau 2, la region de la competition est automatiquement celle de l'administrateur regional.
 
+L'ajout initial au calendrier est volontairement rapide : type obligatoire (`pool` ou `openWater`), nom, dates de debut et de fin, lieu, niveau et region organisatrice lorsque le niveau l'exige. Aucun type n'est preselectionne et il devient definitif apres la creation. La competition est toujours creee avec le statut `upcoming` (`A venir`), sans ouverture des engagements ni envoi de courriel. Apres validation, l'administrateur choisit de completer immediatement la fiche ou de revenir au calendrier ; tous les autres parametres sont renseignes depuis la fiche d'administration. Les competitions historiques sans type sont interpretees comme des competitions piscine.
+
 ### Parametres generaux
 
-Une competition contient au minimum :
+La configuration complete d'une competition contient notamment :
 
 - nom ;
 - date ;
 - lieu ;
 - region ;
 - niveau de competition ;
-- bassin : 25 m, 33 m ou 50 m ;
+- type de competition : piscine ou eau libre ;
+- en piscine, bassin : 25 m, 33 m ou 50 m et nombre de lignes d'eau ;
+- en eau libre, type de plan d'eau facultatif : mer, lac, riviere ou autre ;
 - chronometrage : manuel ou electronique ;
 - date et heure limite des engagements ;
 - email du responsable informatique ;
@@ -209,6 +213,12 @@ Une competition contient au minimum :
 Si le lien HelloAsso n'est pas encore connu, l'interface affiche que le lien est en attente de publication.
 
 ### Courses et restrictions
+
+En piscine, la bibliotheque des courses existante et les regles de temps sont conservees. En eau libre, une bibliotheque nationale de courses, commune aux regions, est chargee seulement a l'ouverture du parametrage de la competition. Une course associe une distance et une specialite (`Surface`, `Bi-palmes` ou `Support`). La bibliotheque est un tableau compact, classe par distance croissante, avec une ligne par distance et une colonne par specialite. Un bouton `+` ajoute la course au programme ; sur petit ecran, les colonnes sont abregees en `SF`, `BI` et `SP`. Un administrateur regional ou national peut ajouter une association distance-specialite depuis un formulaire aligne sur une seule ligne, qui reste disponible pour les competitions suivantes. Une course deja utilisee n'est jamais supprimee : elle peut etre desactivee pour les futurs programmes sans modifier les competitions existantes.
+
+La bibliotheque initiale propose `1000 m`, `3000 m` et `5000 m` dans les trois specialites. Le `150 m elimination` constitue une exception et n'est propose qu'en Surface et Bi-palmes. Le relais `4 x 1000 m SB mixte` impose deux femmes et deux hommes et reprend les controles du `4 x 100 m SB` piscine.
+
+Lorsqu'un administrateur change d'onglet avec des modifications non enregistrees, une fenetre propose d'enregistrer et continuer, d'abandonner reellement les modifications et continuer, ou de rester sur l'onglet. Un echec de validation ou d'enregistrement interdit le changement d'onglet.
 
 Le parametrage des restrictions se fait par course.
 
@@ -403,6 +413,8 @@ Si un club retire un nageur de la competition, les courses individuelles et part
 
 ## Temps d'engagement individuels
 
+Cette section concerne uniquement les competitions piscine. Une competition eau libre enregistre les nageurs et leurs courses sans temps d'engagement, sans recherche dans les performances et sans controle Records/MPF.
+
 Les temps d'engagement viennent d'abord de la base LivePalmes.
 
 Pour chaque nageur et chaque course, le module recherche les temps compatibles avec :
@@ -539,6 +551,8 @@ La GED conserve seulement la derniere version des documents. Un remplacement sup
 L'export TXT global contient les engagements de la competition.
 
 Le format exact sera fourni plus tard.
+
+L'export piscine conserve le format WinPalme existant. L'export eau libre reste indisponible tant que son exemple TXT n'a pas ete valide ; sa fermeture automatique ne doit donc ni generer ni envoyer de TXT.
 
 Il doit etre :
 
