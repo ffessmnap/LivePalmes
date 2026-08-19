@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260818-import-progress-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260818-open-water-library-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260819-club-calendar-filters-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -882,6 +882,7 @@
                   <form id="adminEngagementsCalendarFilters" class="admin-engagements-calendar-filters" role="search">
                     <div class="admin-engagements-filter-primary">
                       <label>
+                        Saison
                         <select id="adminEngagementsSeasonFilter" aria-label="Saison"></select>
                       </label>
                       <label id="adminEngagementsStatusFilterLabel">
@@ -901,29 +902,23 @@
                           <option value="openWater">Eau libre</option>
                         </select>
                       </label>
-                      <div id="adminEngagementsStatusSegments" class="admin-engagements-status-segments" role="group" aria-label="Afficher les compétitions" hidden>
-                        <button type="button" data-engagement-status="" aria-pressed="true">Toutes</button>
-                        <button type="button" data-engagement-status="open" aria-pressed="false">Ouvertes</button>
-                        <button type="button" data-engagement-status="upcoming" aria-pressed="false">À venir</button>
-                        <button type="button" data-engagement-status="closed" aria-pressed="false">Fermées</button>
-                      </div>
+                      <label>
+                        R&eacute;gion
+                        <select id="adminEngagementsRegionFilter"></select>
+                      </label>
+                      <label>
+                        Niveau
+                        <select id="adminEngagementsLevelFilter">
+                          <option value="">Tous</option>
+                          <option value="national">National</option>
+                          <option value="regional">R&eacute;gional</option>
+                          <option value="departemental">D&eacute;partemental</option>
+                        </select>
+                      </label>
                     </div>
                     <details id="adminEngagementsAdvancedFilters" class="admin-engagements-advanced-filters">
                       <summary>Plus de filtres</summary>
                       <div>
-                        <label>
-                          R&eacute;gion organisatrice
-                          <select id="adminEngagementsRegionFilter"></select>
-                        </label>
-                        <label>
-                          Niveau
-                          <select id="adminEngagementsLevelFilter">
-                            <option value="">Tous</option>
-                            <option value="national">National</option>
-                            <option value="regional">R&eacute;gional</option>
-                            <option value="departemental">D&eacute;partemental</option>
-                          </select>
-                        </label>
                         <label id="adminEngagementsMineFilterLabel" class="admin-engagements-filter-check" hidden>
                           <input id="adminEngagementsMineFilter" type="checkbox">
                           <span>Mes comp&eacute;titions</span>
