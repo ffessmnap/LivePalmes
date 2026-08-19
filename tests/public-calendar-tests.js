@@ -48,11 +48,17 @@ for (const file of ["calendrier.html", "competition.html"]) {
   const html = fs.readFileSync(path.join(root, file), "utf8");
   assert.ok(html.includes("livepalmes-public-calendar.js"));
   assert.ok(html.includes("livepalmes-public-calendar.css"));
+  assert.ok(html.includes("Une erreur ou un bug à signaler ?"));
+  assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 
 const portalHtml = fs.readFileSync(path.join(root, "portail.html"), "utf8");
 assert.ok(portalHtml.includes('value="training"'));
 assert.ok(portalHtml.includes("livepalmes-admin-calendar-events.js"));
 assert.ok(portalHtml.includes("Ces documents sont publics"));
+
+const calendarCss = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.css"), "utf8");
+assert.ok(calendarCss.includes(".public-calendar-page .public-footer"));
+assert.ok(calendarCss.includes("text-align:center"));
 
 console.log("Public calendar tests OK");
