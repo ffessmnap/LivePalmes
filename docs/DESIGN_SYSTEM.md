@@ -349,7 +349,7 @@ Ce composant convient à un petit nombre de choix mutuellement exclusifs. Un `se
 
 Le calendrier public utilise une liste compacte groupée par mois. Sur ordinateur, chaque ligne aligne date, nom/ville/type, périmètre et badge de statut. Sous 820 px, elle devient une carte à deux colonnes et le statut passe sur sa propre ligne. Les filtres sont regroupés dans un panneau blanc ; ils restent collants uniquement sur ordinateur afin de préserver la surface utile sur mobile.
 
-Son introduction prend la forme d'un bandeau aquatique bleu-turquoise avec une accroche courte et des vagues décoratives discrètes. Le fond de page utilise un dégradé très clair, tandis que les contenus restent sur des cartes blanches pour conserver contraste et lisibilité.
+Son introduction prend la forme d'un bandeau aquatique bleu-turquoise avec une accroche courte et le logo fédéral Nage avec Palmes dans une carte blanche. Le fond de page utilise un dégradé très clair, tandis que les contenus restent sur des cartes blanches pour conserver contraste et lisibilité.
 
 Les tableaux utilisent :
 

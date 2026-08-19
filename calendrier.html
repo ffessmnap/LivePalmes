@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#087f8c">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="assets/public/livepalmes-public-calendar.css?v=20260819-2">
+    <link rel="stylesheet" href="assets/public/livepalmes-public-calendar.css?v=20260819-3">
   </head>
   <body class="public-calendar-page">
     <main class="calendar-shell">
@@ -22,10 +22,12 @@
       <section class="calendar-hero" aria-labelledby="calendarTitle">
         <div>
           <span class="calendar-kicker">Saison sportive</span>
-          <h1 id="calendarTitle">Le calendrier de la nage avec palmes</h1>
+          <h1 id="calendarTitle">Calendrier fédéral</h1>
           <p>Compétitions, formations, stages et rendez-vous fédéraux, partout en France.</p>
         </div>
-        <div class="calendar-hero-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="calendar-hero-federal-logo">
+          <img src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes">
+        </div>
       </section>
       <form id="calendarFilters" class="calendar-filters">
         <label>Saison<select id="calendarSeason"></select></label>
@@ -37,7 +39,7 @@
       <div class="calendar-summary"><strong id="calendarCount">Chargement…</strong><span id="calendarUpdated"></span></div>
       <div id="calendarList" aria-live="polite"></div>
     </main>
-    <footer class="public-footer">LivePalmes est un outil développé bénévolement par la Commission Nationale Nage avec Palmes.</footer>
+    <footer class="public-footer">LivePalmes est un outil développé bénévolement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug à signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
     <script src="assets/public/livepalmes-public-calendar.js?v=20260819-2"></script>
     <script src="assets/pages/calendrier.js?v=20260819-3"></script>
   </body>
