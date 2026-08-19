@@ -14049,7 +14049,10 @@
     const septemberPreview = engagementCalendarSeptemberPreview(filters);
     const requestedRange = engagementCalendarRequestedRange(filters);
     const cacheKey = engagementCalendarCacheKey(requestedMode, requestedRange);
-    const shouldActivate = activate === null ? requestedMode === engagementNavigationMode() : activate === true;
+    const clubCalendarAlreadyOpen = requestedMode === "club" && global.location.hash === "#club-competitions";
+    const shouldActivate = activate === null
+      ? requestedMode === engagementNavigationMode()
+      : activate === true || clubCalendarAlreadyOpen;
     const cachedEntry = engagementCompetitionsLoadedCacheKey === cacheKey && engagementCompetitionsLoaded
       ? { competitions: engagementCompetitions, cachedAt: engagementCompetitionsCachedAt }
       : readEngagementCalendarCache(cacheKey);
@@ -14080,6 +14083,9 @@
     const pendingRequest = engagementCompetitionCalendarRequests.get(cacheKey);
     if (pendingRequest) {
       return pendingRequest.then((entry) => {
+        if (!entry && shouldActivate) {
+          return loadEngagementCompetitions({ force: true, mode: requestedMode, activate: true, silent: false });
+        }
         const currentFilters = engagementCalendarFiltersPayload();
         const stillActive = entry && shouldActivate && requestedMode === engagementNavigationMode() &&
           engagementCalendarCacheKey(requestedMode, engagementCalendarRequestedRange(currentFilters)) === cacheKey;
@@ -14147,6 +14153,9 @@
             ? `Liste affichée depuis le cache ; actualisation impossible : ${error?.message || error}`
             : `Calendrier indisponible : ${error?.message || error}`;
           elements.engagementsStatus.dataset.tone = "error";
+        }
+        if (!cachedEntry && shouldActivate && elements.engagementsCalendarList) {
+          elements.engagementsCalendarList.innerHTML = '<p class="admin-engagements-empty">Le calendrier est momentanément indisponible. Réessayez dans quelques instants.</p>';
         }
         return cachedEntry || null;
       } finally {
