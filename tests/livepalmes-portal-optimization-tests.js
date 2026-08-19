@@ -1230,7 +1230,10 @@ assert.deepEqual(JSON.parse(JSON.stringify(filteredEngagementCompetitionsSandbox
   julyPreview: null,
   otherSeasonPreview: null
 });
-assert.ok(portalHtml.indexOf('data-engagement-status=""') < portalHtml.indexOf('data-engagement-status="open"'));
+assert.equal(portalHtml.includes("data-engagement-status"), false);
+assert.ok(portalHtml.indexOf('id="adminEngagementsSeasonFilter"') < portalHtml.indexOf('id="adminEngagementsTypeFilter"'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsTypeFilter"') < portalHtml.indexOf('id="adminEngagementsRegionFilter"'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsRegionFilter"') < portalHtml.indexOf('id="adminEngagementsLevelFilter"'));
 assert.ok(portal.includes('elements.engagementsStatusFilter.value = "";'));
 assert.ok(portal.includes("admin-engagements-competition-mobile-meta"));
 assert.ok(portalCss.includes("Calendrier Club mobile : filtres et compétitions en lecture dense"));
@@ -1247,7 +1250,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260818-open-water-library-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260819-club-calendar-filters-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260818-open-water-library-1"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));

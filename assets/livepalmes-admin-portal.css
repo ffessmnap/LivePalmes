@@ -17406,3 +17406,50 @@
   font-weight: 650;
   line-height: 1.35;
 }
+
+/* Espace Club : les quatre filtres du calendrier restent visibles sur une ligne compacte. */
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+  padding-block: 6px;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.8fr) minmax(0, 1.35fr) minmax(0, 0.9fr);
+  flex: 1 1 100%;
+  gap: 6px;
+  min-width: 0;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+  min-width: 0;
+  max-width: none;
+  gap: 3px;
+  font-size: 0.68rem;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 6px;
+  font-size: 0.75rem;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+    gap: 4px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+    font-size: 0.62rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary select {
+    padding-inline: 3px;
+    font-size: 0.68rem;
+  }
+}
