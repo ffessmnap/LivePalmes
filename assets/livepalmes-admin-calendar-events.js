@@ -145,7 +145,7 @@
       const result = await call("updateEngagementCalendarEvent", { calendarEventId: current.id, ...payloadFromForm(form) });
       render(result.event);
       ensureDialog().querySelector("[data-calendar-event-message]").textContent = "Événement enregistré.";
-      global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed"));
+      global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: result.event } }));
     } catch (error) { message.textContent = `Enregistrement impossible : ${error?.message || error}`; }
   }
 
@@ -166,7 +166,7 @@
       form.reset();
       ensureDialog().querySelector("[data-calendar-document-list]").innerHTML = renderDocuments(current.clubDocuments);
       message.textContent = "Document public mis en ligne.";
-      global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed"));
+      global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: { ...current, documentCount: current.clubDocuments.length } } }));
     } catch (error) { message.textContent = `Mise en ligne impossible : ${error?.message || error}`; }
   }
 
@@ -175,14 +175,15 @@
     const result = await call("deleteEngagementCompetitionDocument", { calendarEventId: current.id, documentId });
     current.clubDocuments = result.documents || [];
     ensureDialog().querySelector("[data-calendar-document-list]").innerHTML = renderDocuments(current.clubDocuments);
-    global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed"));
+    global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: { ...current, documentCount: current.clubDocuments.length } } }));
   }
 
   async function deleteEvent() {
     if (!global.confirm(`Supprimer définitivement « ${current.name} » ?`)) return;
-    await call("deleteEngagementCalendarEvent", { calendarEventId: current.id });
+    const calendarEventId = current.id;
+    await call("deleteEngagementCalendarEvent", { calendarEventId });
     ensureDialog().close();
-    global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed"));
+    global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "delete", calendarEventId } }));
   }
 
   async function open(calendarEventId) {

@@ -3422,6 +3422,30 @@
     engagementCompetitionsCachedAt = entry.cachedAt;
   }
 
+  function upsertEngagementCalendarItemFromServer(item = {}, sourceType = "competition") {
+    if (!item?.id) return;
+    const cachedItem = engagementCalendarCacheCompetition({ ...item, sourceType });
+    const index = engagementCompetitions.findIndex((competition) => (
+      competition.id === cachedItem.id
+      && (competition.sourceType || "competition") === cachedItem.sourceType
+    ));
+    if (index >= 0) engagementCompetitions[index] = { ...engagementCompetitions[index], ...cachedItem };
+    else engagementCompetitions.push(cachedItem);
+    persistActiveEngagementCalendarCache();
+    renderEngagementCompetitions();
+  }
+
+  function removeEngagementCalendarItemFromCache(itemId, sourceType = "calendarEvent") {
+    const cleanId = String(itemId || "");
+    if (!cleanId) return;
+    engagementCompetitions = engagementCompetitions.filter((competition) => !(
+      competition.id === cleanId
+      && (competition.sourceType || "competition") === sourceType
+    ));
+    persistActiveEngagementCalendarCache();
+    renderEngagementCompetitions();
+  }
+
   function invalidateEngagementCalendarCaches() {
     engagementCalendarCacheRevision += 1;
     engagementCompetitionCalendarMemoryCache.clear();
@@ -14453,6 +14477,10 @@
       elements.engagementsCreateDialog?.close();
       setEngagementsTab("calendar");
       await loadEngagementCompetitions({ force: true });
+      upsertEngagementCalendarItemFromServer(
+        genericEvent ? result.event : result.competition,
+        genericEvent ? "calendarEvent" : "competition"
+      );
       newlyCreatedEngagementCompetitionId = genericEvent ? "" : result.competition?.id || "";
       if (elements.engagementsCreateMessage) {
         elements.engagementsCreateMessage.textContent = `Événement créé : ${result.event?.name || result.competition?.name || "calendrier"}.`;
@@ -14522,6 +14550,7 @@
       selectedEngagementCompetition = result.competition || null;
       invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
+      upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition");
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty("general");
       if (sendOpeningMail && selectedEngagementCompetition?.id) {
@@ -14629,6 +14658,7 @@
       };
       invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
+      upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition");
       activeEngagementProgramSessionId = "";
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       if (options.continueEditing === true) setEngagementEditMode(true);
@@ -17029,9 +17059,16 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushPendingEngagementClubWrites();
     });
-    global.addEventListener("livepalmes:calendar-events-changed", () => {
+    global.addEventListener("livepalmes:calendar-events-changed", async (event) => {
       invalidateEngagementCalendarCaches();
-      if (isEngagementAdminMode()) loadEngagementCompetitions({ force: true });
+      if (!isEngagementAdminMode()) return;
+      await loadEngagementCompetitions({ force: true });
+      const detail = event.detail || {};
+      if (detail.action === "delete") {
+        removeEngagementCalendarItemFromCache(detail.calendarEventId, "calendarEvent");
+      } else if (detail.event) {
+        upsertEngagementCalendarItemFromServer(detail.event, "calendarEvent");
+      }
     });
     global.addEventListener("beforeunload", (event) => {
       if (!engagementClubHasPendingWrites()) return;
