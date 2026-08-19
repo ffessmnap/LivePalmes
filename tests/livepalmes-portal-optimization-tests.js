@@ -1213,7 +1213,7 @@ assert.ok(portal.includes("Chargement de vos engagements enregistrés..."));
 assert.ok(portal.includes("admin-engagements-calendar-loading"));
 assert.ok(portalCss.includes("#adminEngagementsDetail[data-club-entry-loading]"));
 assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
-assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v1."'));
+assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v2."'));
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
