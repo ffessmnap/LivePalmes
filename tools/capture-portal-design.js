@@ -609,8 +609,31 @@ function presentationScript(view) {
         });
         const status = document.querySelector("#adminEngagementsNationalAuditStatus");
         const list = document.querySelector("#adminEngagementsNationalAuditList");
-        if (status) status.textContent = "2 actions affichées.";
-        if (list) list.innerHTML = '<div class="admin-engagements-national-table-wrap"><table class="admin-engagements-national-table admin-engagements-national-audit-table"><thead><tr><th>Date</th><th>Action</th><th>Acteur</th><th>Objet</th><th>Détails</th></tr></thead><tbody><tr><td>06/08/2026 14:30</td><td><strong>Correction de nageur validée</strong></td><td>Vous</td><td>MARTIN Camille</td><td><details class="admin-national-audit-details"><summary>Voir</summary><code>engagementClubSwimmer.changeApproved</code></details></td></tr><tr><td>06/08/2026 13:05</td><td><strong>Compte modifié</strong></td><td>Administrateur LivePalmes</td><td>Club Démonstration</td><td><details class="admin-national-audit-details"><summary>Voir</summary><code>accessUser.updated</code></details></td></tr></tbody></table></div>';
+        const refresh = document.querySelector("#adminEngagementsNationalAuditRefresh");
+        const actorSearch = document.querySelector("#adminEngagementsNationalAuditActorSearch");
+        const actorSelected = document.querySelector("#adminEngagementsNationalAuditActorSelected");
+        if (refresh) refresh.hidden = false;
+        if (actorSearch) {
+          actorSearch.value = "Camille MARTIN — camille@example.fr";
+          actorSearch.dataset.selected = "true";
+        }
+        if (actorSelected) actorSelected.hidden = false;
+        if (status) status.textContent = "2 lignes affichées · 3 traces chargées depuis le 12/08/2026.";
+        if (list) list.innerHTML = '<div class="admin-national-audit-list"><details class="admin-national-audit-entry" data-audit-category="competitions"><summary><time datetime="2026-08-19T14:30:00.000Z">19/08/2026 16:30</time><span class="admin-national-audit-entry-main"><strong>Engagements mis à jour</strong><small>Championnat Démonstration</small></span><span class="admin-national-audit-actor">Camille MARTIN</span><span class="admin-national-audit-club">Club Démonstration</span><span class="admin-national-audit-count">2 actions</span><span class="admin-national-audit-chevron" aria-hidden="true">⌄</span></summary><div class="admin-national-audit-entry-details"><ol class="admin-national-audit-grouped-actions"><li><time>19/08/2026 16:30</time><strong>Sélection des nageurs enregistrée</strong><dl><div><dt>Modifications appliquées</dt><dd>4</dd></div></dl></li><li><time>19/08/2026 16:27</time><strong>Courses individuelles enregistrées</strong><dl><div><dt>Courses individuelles</dt><dd>12</dd></div></dl></li></ol></div></details><details class="admin-national-audit-entry" data-audit-category="access"><summary><time datetime="2026-08-19T13:05:00.000Z">19/08/2026 15:05</time><span class="admin-national-audit-entry-main"><strong>Compte et habilitations modifiés</strong><small>gestion@example.fr</small></span><span class="admin-national-audit-actor">Alex DURAND</span><span class="admin-national-audit-chevron" aria-hidden="true">⌄</span></summary><div class="admin-national-audit-entry-details"><dl class="admin-national-audit-detail-grid"><div><dt>Habilitations</dt><dd>admin.full</dd></div><div><dt>Code technique</dt><dd><code>accessUser.updated</code></dd></div></dl></div></details></div>';
+        const groupedExample = list?.querySelectorAll(".admin-national-audit-entry")[0];
+        const groupedDetails = groupedExample?.querySelector(".admin-national-audit-entry-details");
+        const groupedCount = groupedExample?.querySelector(".admin-national-audit-count");
+        if (groupedExample) groupedExample.open = false;
+        if (groupedCount) groupedCount.textContent = "26 actions";
+        if (groupedDetails) groupedDetails.innerHTML = '<p class="admin-national-audit-summary-sentence">Camille MARTIN a modifié les engagements de Club Démonstration pour Championnat Démonstration.</p><ul class="admin-national-audit-action-summary"><li><div><strong>Courses individuelles enregistrées</strong><span>26 mises à jour regroupées · de 16:21 à 16:30</span></div><small>Dernier état enregistré</small><dl><div><dt>Nageurs modifiés</dt><dd>1</dd></div><div><dt>Courses individuelles</dt><dd>4</dd></div></dl></li></ul><details class="admin-national-audit-technical-disclosure"><summary>Détails complémentaires</summary><dl><div><dt>Compétition concernée</dt><dd>Championnat Démonstration</dd></div><div><dt>Type d’action</dt><dd>Courses individuelles enregistrées</dd></div></dl></details>';
+        const detailExample = list?.querySelectorAll(".admin-national-audit-entry")[1];
+        const detailMain = detailExample?.querySelector(".admin-national-audit-entry-main");
+        const detailActor = detailExample?.querySelector(".admin-national-audit-actor");
+        const detailBody = detailExample?.querySelector(".admin-national-audit-entry-details");
+        if (detailExample) detailExample.open = true;
+        if (detailMain) detailMain.innerHTML = '<strong>Officiel enregistré</strong><small>Maxime BERGERON</small>';
+        if (detailActor) detailActor.textContent = "Basile GRAMMATICOS";
+        if (detailBody) detailBody.innerHTML = '<dl class="admin-national-audit-detail-grid"><div><dt>Prénom</dt><dd>Maxime</dd></div><div><dt>Nom</dt><dd>BERGERON</dd></div><div><dt>Numéro de licence</dt><dd>A-18-806788</dd></div><div><dt>Rôles</dt><dd>Nageur, Officiel</dd></div></dl><details class="admin-national-audit-technical-disclosure" open><summary>Détails complémentaires</summary><dl><div><dt>Personne concernée</dt><dd>Maxime BERGERON</dd></div><div><dt>Club concerné</dt><dd>USP — Union Sportive Palaiseau</dd></div><div><dt>Type d’action</dt><dd>Officiel enregistré</dd></div><div><dt>Action réalisée par</dt><dd>Basile GRAMMATICOS</dd></div></dl></details>';
       }
       if (${view.peopleFixture ? "true" : "false"}) {
         const engagementsView = document.querySelector("#adminEngagementsView");
@@ -945,9 +968,9 @@ async function captureView(client, baseUrl, viewport, view) {
   await sleep(100);
   const audit = await evaluate(client, `
     const root = document.documentElement;
-    const emptyButtons = [...document.querySelectorAll("button")].filter((button) => !button.textContent.trim() && !button.getAttribute("aria-label") && !button.getAttribute("title"));
-    const unlabeledControls = [...document.querySelectorAll('input:not([type="hidden"]),select,textarea')].filter((control) => !(control.labels && control.labels.length) && !control.getAttribute("aria-label") && !control.getAttribute("aria-labelledby"));
     const isVisible = (element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
+    const emptyButtons = [...document.querySelectorAll("button")].filter((button) => isVisible(button) && !button.textContent.trim() && !button.getAttribute("aria-label") && !button.getAttribute("title"));
+    const unlabeledControls = [...document.querySelectorAll('input:not([type="hidden"]),select,textarea')].filter((control) => isVisible(control) && !(control.labels && control.labels.length) && !control.getAttribute("aria-label") && !control.getAttribute("aria-labelledby"));
     const overweightTableText = [...document.querySelectorAll("table th,table td,table th *,table td *")].filter((element) => isVisible(element) && element.textContent.trim() && Number.parseInt(getComputedStyle(element).fontWeight, 10) > 500);
     const overweightSelectedTabs = [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].filter((element) => isVisible(element) && Number.parseInt(getComputedStyle(element).fontWeight, 10) > 500);
     return {
@@ -1042,9 +1065,15 @@ async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   const { server, baseUrl } = await startStaticServer();
   const browser = await launchBrowser();
+  const requestedView = String(process.env.LIVEPALMES_CAPTURE_VIEW || "").trim();
+  const requestedViewport = String(process.env.LIVEPALMES_CAPTURE_VIEWPORT || "").trim();
+  const selectedViews = requestedView ? views.filter((view) => view.name === requestedView) : views;
+  const selectedViewports = requestedViewport ? viewports.filter((viewport) => viewport.name === requestedViewport) : viewports;
   try {
-    for (const viewport of viewports) {
-      for (const view of views) {
+    if (!selectedViews.length) throw new Error(`Vue de capture inconnue : ${requestedView}`);
+    if (!selectedViewports.length) throw new Error(`Format de capture inconnu : ${requestedViewport}`);
+    for (const viewport of selectedViewports) {
+      for (const view of selectedViews) {
         await captureView(browser.client, baseUrl, viewport, view);
       }
     }

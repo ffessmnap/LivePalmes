@@ -11,7 +11,9 @@ Le parcours quotidien d'un club repose sur des documents agrégés et des appels
 | Action | Lectures Firestore attendues |
 | --- | ---: |
 | Connexion et profil | 1, sans doublon concurrent |
-| Calendrier d'une saison, agrégat prêt | 2 maximum, profil compris |
+| Calendrier Club d'une saison, agrégats prêts | 3 : contrôle du profil, calendrier, index « Mes engagements » ; 4 en août avec l'aperçu de septembre |
+| Calendrier Organisation d'une saison, agrégat prêt | 2 : contrôle du profil et calendrier ; 3 en août avec l'aperçu de septembre |
+| Retour sur un calendrier en cache pendant 5 minutes | 0, avec affichage immédiat |
 | Filtre région, niveau, statut ou « mes compétitions » | 0 |
 | Ouverture initiale d'une compétition club | 4 : profil, compétition, engagement, agrégat officiels |
 | Réouverture pendant 30 secondes | 0 |
@@ -21,6 +23,8 @@ Le parcours quotidien d'un club repose sur des documents agrégés et des appels
 | Aperçu des temps de plusieurs nageurs | 3 lectures fixes, puis une entrée de cache par nageur en régime normal |
 | Vue DTN, cache prêt | 2 |
 | Vue DTN, cache absent ou périmé | 2 dans la requête interactive ; calcul lourd unique en arrière-plan |
+| Journal d’activité, page de 50 traces | 52 lectures fixes au plus pour le profil et la page, plus jusqu’à 25 acteurs, 25 compétitions et 25 personnes historiques à résoudre en lots ; maximum absolu 127, puis les références connues sont réutilisées |
+| Recherche, catégorie ou origine dans le journal déjà chargé | 0 |
 
 Les replis de reconstruction des effectifs restent bornés pour compatibilité. Ils ne doivent plus être atteints après la préparation des agrégats.
 Un cache de temps absent peut encore nécessiter la reconstruction de l'historique du nageur. Le chemin privilégié lit l'index et ses pages ; le repli historique est désormais explicitement borné à 500 documents par requête.
@@ -29,6 +33,8 @@ Un cache de temps absent peut encore nécessiter la reconstruction de l'historiq
 
 - déduplication de la lecture du profil pendant la connexion ;
 - filtrage du calendrier côté navigateur hors changement de saison ;
+- caches de session séparés pour les calendriers Club et Organisation, avec préchargement du seul calendrier Club et actualisation silencieuse après cinq minutes ;
+- lecture groupée du calendrier saisonnier et de l'index « Mes engagements » après le contrôle d'accès Club ;
 - cache mémoire de 30 secondes pour la fiche d'engagement ;
 - chargement groupé de la compétition, de l'engagement et des officiels ;
 - sauvegarde par lot des sélections et aperçu par lot des temps ;

@@ -4,6 +4,8 @@
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";
   const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";
+  const ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v1.";
+  const ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000;
   const ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE = 48;
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";
   const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
@@ -249,7 +251,7 @@
     "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
     "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
     "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
-    "#administration-historique": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "audit" }
+    "#administration-historique": { entry: "adminAudit", tab: "deletionRequests", nationalTab: "audit" }
   });
   const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
     deletions: "#administration-suppressions",
@@ -566,10 +568,18 @@
     engagementsNationalAccountsList: document.querySelector("#adminEngagementsNationalAccountsList"),
     engagementsNationalAuditRefresh: document.querySelector("#adminEngagementsNationalAuditRefresh"),
     engagementsNationalAuditSearch: document.querySelector("#adminEngagementsNationalAuditSearch"),
+    engagementsNationalAuditPeriod: document.querySelector("#adminEngagementsNationalAuditPeriod"),
+    engagementsNationalAuditClub: document.querySelector("#adminEngagementsNationalAuditClub"),
+    engagementsNationalAuditActor: document.querySelector("#adminEngagementsNationalAuditActor"),
+    engagementsNationalAuditActorSearch: document.querySelector("#adminEngagementsNationalAuditActorSearch"),
+    engagementsNationalAuditActorSelected: document.querySelector("#adminEngagementsNationalAuditActorSelected"),
+    engagementsNationalAuditActorOptions: document.querySelector("#adminEngagementsNationalAuditActorOptions"),
     engagementsNationalAuditType: document.querySelector("#adminEngagementsNationalAuditType"),
+    engagementsNationalAuditOrigin: document.querySelector("#adminEngagementsNationalAuditOrigin"),
     engagementsNationalAuditReset: document.querySelector("#adminEngagementsNationalAuditReset"),
     engagementsNationalAuditStatus: document.querySelector("#adminEngagementsNationalAuditStatus"),
     engagementsNationalAuditList: document.querySelector("#adminEngagementsNationalAuditList"),
+    engagementsNationalAuditLoadMore: document.querySelector("#adminEngagementsNationalAuditLoadMore"),
     engagementsDetail: document.querySelector("#adminEngagementsDetail"),
     engagementsDetailEyebrow: document.querySelector("#adminEngagementsDetailEyebrow"),
     engagementsDetailTitle: document.querySelector("#adminEngagementsDetailTitle"),
@@ -887,8 +897,12 @@
   let currentUserLoading = false;
   let engagementCompetitions = [];
   let engagementCompetitionsLoaded = false;
-  let engagementCompetitionsLoading = false;
   let engagementCompetitionsLoadedRange = "";
+  let engagementCompetitionsLoadedCacheKey = "";
+  let engagementCompetitionsCachedAt = 0;
+  let engagementCalendarCacheRevision = 0;
+  const engagementCompetitionCalendarMemoryCache = new Map();
+  const engagementCompetitionCalendarRequests = new Map();
   let engagementCompetitionsVisibleLimit = 24;
   let newlyCreatedEngagementCompetitionId = "";
   let engagementOpenWaterCourses = ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES.map((course) => ({ ...course }));
@@ -932,6 +946,17 @@
   let engagementNationalAuditLogs = [];
   let engagementNationalAuditLogsLoaded = false;
   let engagementNationalAuditLogsLoading = false;
+  let engagementNationalAuditNextCursor = null;
+  let engagementNationalAuditHasMore = false;
+  let engagementNationalAuditVisibleFrom = "";
+  let engagementNationalAuditAppliedActorUid = "";
+  let engagementNationalAuditActorSearchTimer = 0;
+  let engagementNationalAuditActorSearchSequence = 0;
+  let engagementNationalAuditActorSuggestions = [];
+  const engagementNationalAuditActors = new Map();
+  const engagementNationalAuditClubs = new Map();
+  const engagementNationalAuditCompetitions = new Map();
+  const engagementNationalAuditPeople = new Map();
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
   let engagementClubPeopleLoading = false;
@@ -1316,6 +1341,14 @@
       canUse("engagements.national.manage");
   }
 
+  function canViewActivityLog() {
+    return canUse("admin.full");
+  }
+
+  function canAccessEngagementsView() {
+    return canManageEngagements() || canViewActivityLog();
+  }
+
   function canCreateEngagementCompetition() {
     return canUse("engagements.region.manage") || canUse("engagements.national.manage");
   }
@@ -1339,6 +1372,7 @@
       return canUse("engagements.club.manage");
     }
     if (entry === "adminDeletionRequests") return canDeleteEngagementCompetitionDirectly();
+    if (entry === "adminAudit") return canViewActivityLog();
     if (entry === "adminAccessRequests") return canReviewEngagementAccessRequests();
     if (entry === "adminCalendar" || entry === "adminCreate") return canCreateEngagementCompetition();
     return false;
@@ -1347,6 +1381,7 @@
   function preferredEngagementRouteHash() {
     if (canUse("engagements.club.manage")) return "#club-competitions";
     if (canCreateEngagementCompetition()) return "#competitions-calendrier";
+    if (canViewActivityLog()) return "#administration-historique";
     return "#accueil";
   }
 
@@ -1506,7 +1541,7 @@
   }
 
   function setNationalMenuOpen(open) {
-    const expanded = Boolean(open) && canDeleteEngagementCompetitionDirectly();
+    const expanded = Boolean(open) && (canDeleteEngagementCompetitionDirectly() || canViewActivityLog());
     elements.nationalToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (elements.nationalSubmenu) elements.nationalSubmenu.hidden = !expanded;
   }
@@ -1618,6 +1653,9 @@
       elements.engagementsCalendarActions.hidden = !adminCalendarMode || elements.engagementsCalendarCard?.dataset.detailOpen === "true";
     }
     if (elements.engagementsClubPeopleActions) elements.engagementsClubPeopleActions.hidden = !peopleMode;
+    if (elements.engagementsNationalAuditRefresh) {
+      elements.engagementsNationalAuditRefresh.hidden = !nationalMode || activeEngagementNationalTab !== "audit";
+    }
     if (elements.engagementsDetailEyebrow) elements.engagementsDetailEyebrow.hidden = true;
     if (elements.engagementsMineFilterLabel) elements.engagementsMineFilterLabel.hidden = true;
     if (elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
@@ -1634,6 +1672,8 @@
       engagementCompetitions = [];
       engagementCompetitionsLoaded = false;
       engagementCompetitionsLoadedRange = "";
+      engagementCompetitionsLoadedCacheKey = "";
+      engagementCompetitionsCachedAt = 0;
     }
     syncEngagementStatusSegments();
     updateEngagementDetailStepLabels();
@@ -1653,6 +1693,10 @@
   }
 
   function loadActiveEngagementNationalTab() {
+    if (activeEngagementNationalTab === "audit") {
+      if (canViewActivityLog()) loadEngagementNationalAuditLogs();
+      return;
+    }
     if (!canDeleteEngagementCompetitionDirectly()) return;
     if (activeEngagementNationalTab === "clubs") {
       loadEngagementNationalClubs();
@@ -1660,8 +1704,6 @@
       loadEngagementNationalSwimmers();
     } else if (activeEngagementNationalTab === "people") {
       loadEngagementNationalPeople();
-    } else if (activeEngagementNationalTab === "audit") {
-      loadEngagementNationalAuditLogs();
     } else {
       loadEngagementDeletionRequests();
       loadEngagementSwimmerChangeRequests();
@@ -1671,7 +1713,10 @@
 
   function setEngagementNationalTab(tab = "deletions") {
     const allowedTabs = new Set(["deletions", "clubs", "swimmers", "people", "audit"]);
-    const nextTab = allowedTabs.has(tab) ? tab : "deletions";
+    const requestedTab = allowedTabs.has(tab) ? tab : "deletions";
+    const nextTab = requestedTab === "audit"
+      ? (canViewActivityLog() ? "audit" : "deletions")
+      : (canDeleteEngagementCompetitionDirectly() ? requestedTab : "audit");
     activeEngagementNationalTab = nextTab;
     elements.engagementsNationalTabButtons?.forEach((button) => {
       const selected = button.dataset.engagementsNationalTabButton === nextTab;
@@ -2074,11 +2119,12 @@
   function setEngagementsTab(tab) {
     const canCreate = canCreateEngagementCompetition();
     const canNationalRequests = canDeleteEngagementCompetitionDirectly();
+    const canAudit = canViewActivityLog();
     const canAccessRequests = canReviewEngagementAccessRequests();
     const canClubPeople = canUse("engagements.club.manage");
     const canClubSwimmers = canUse("engagements.club.manage");
     const allowedTabs = new Set(["calendar"]);
-    if (canNationalRequests) allowedTabs.add("deletionRequests");
+    if (canNationalRequests || canAudit) allowedTabs.add("deletionRequests");
     if (canAccessRequests) allowedTabs.add("accessRequests");
     if (canClubPeople) allowedTabs.add("clubPeople");
     if (canClubSwimmers) allowedTabs.add("clubSwimmers");
@@ -2087,12 +2133,12 @@
     if (nextTab === "accessRequests") {
       activeEngagementsNavEntry = "adminAccessRequests";
     } else if (nextTab === "deletionRequests") {
-      activeEngagementsNavEntry = "adminDeletionRequests";
+      activeEngagementsNavEntry = activeEngagementsNavEntry === "adminAudit" ? "adminAudit" : "adminDeletionRequests";
     } else if (nextTab === "clubPeople") {
       activeEngagementsNavEntry = "clubPeople";
     } else if (nextTab === "clubSwimmers") {
       activeEngagementsNavEntry = "clubSwimmers";
-    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminAccessRequests" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
+    } else if (activeEngagementsNavEntry === "adminCreate" || activeEngagementsNavEntry === "adminAccessRequests" || activeEngagementsNavEntry === "adminDeletionRequests" || activeEngagementsNavEntry === "adminAudit" || activeEngagementsNavEntry === "clubPeople" || activeEngagementsNavEntry === "clubSwimmers") {
       activeEngagementsNavEntry = canCreate ? "adminCalendar" : "club";
     }
     elements.engagementsTabButtons?.forEach((button) => {
@@ -2101,7 +2147,7 @@
       const accessRequestsOnly = buttonTab === "accessRequests";
       const clubOnly = buttonTab === "clubPeople";
       const clubSwimmersOnly = buttonTab === "clubSwimmers";
-      button.hidden = buttonTab === "create" || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      button.hidden = buttonTab === "create" || (nationalOnly && !canNationalRequests && !canAudit) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
       const selected = buttonTab === nextTab;
       button.setAttribute("aria-selected", selected ? "true" : "false");
       button.tabIndex = selected ? 0 : -1;
@@ -2112,7 +2158,7 @@
       const accessRequestsOnly = panelTab === "accessRequests";
       const clubOnly = panelTab === "clubPeople";
       const clubSwimmersOnly = panelTab === "clubSwimmers";
-      panel.hidden = panelTab === "create" || panelTab !== nextTab || (nationalOnly && !canNationalRequests) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
+      panel.hidden = panelTab === "create" || panelTab !== nextTab || (nationalOnly && !canNationalRequests && !canAudit) || (accessRequestsOnly && !canAccessRequests) || (clubOnly && !canClubPeople) || (clubSwimmersOnly && !canClubSwimmers);
     });
     if (nextTab === "deletionRequests") setEngagementNationalTab(activeEngagementNationalTab);
   }
@@ -2258,7 +2304,7 @@
       item.hidden = !canUse(item.dataset.capabilityNav);
     });
     document.querySelectorAll("[data-engagements-nav], [data-engagements-panel]").forEach((item) => {
-      item.hidden = !canManageEngagements();
+      item.hidden = !canAccessEngagementsView();
     });
     document.querySelectorAll("[data-engagements-admin-nav]").forEach((item) => {
       item.hidden = !canCreateEngagementCompetition();
@@ -2275,8 +2321,14 @@
     document.querySelectorAll("[data-engagements-national-nav]").forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
     });
-    document.querySelectorAll("[data-engagements-national-home]").forEach((item) => {
+    document.querySelectorAll('[data-engagements-national-target]:not([data-engagements-national-target="audit"])').forEach((item) => {
       item.hidden = !canDeleteEngagementCompetitionDirectly();
+    });
+    document.querySelectorAll('[data-engagements-national-target="audit"]').forEach((item) => {
+      item.hidden = !canViewActivityLog();
+    });
+    document.querySelectorAll("[data-engagements-national-home]").forEach((item) => {
+      item.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     });
     document.querySelectorAll("[data-overview-club]").forEach((item) => {
       item.hidden = !canUse("engagements.club.manage");
@@ -2288,7 +2340,7 @@
       item.hidden = !canManagePerformances();
     });
     document.querySelectorAll("[data-overview-national]").forEach((item) => {
-      item.hidden = !canDeleteEngagementCompetitionDirectly();
+      item.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     });
     document.querySelectorAll("[data-engagements-admin-request-nav]").forEach((item) => {
       item.hidden = !canReviewEngagementAccessRequests();
@@ -2297,7 +2349,7 @@
       item.hidden = !canManageAccessDirectory();
     });
     if (elements.clubMenu) elements.clubMenu.hidden = !canUse("engagements.club.manage");
-    if (elements.nationalMenu) elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly();
+    if (elements.nationalMenu) elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
     if (elements.accessAdd) elements.accessAdd.hidden = !canUse("admin.full");
     if (elements.accessPanel && !canUse("admin.full")) elements.accessPanel.hidden = true;
     if (elements.accessDeletionRequestsPanel) elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
@@ -2305,6 +2357,9 @@
       renderPendingBadgeCollection(elements.nationalPendingBadges, 0);
       renderEngagementNationalOverview();
     }
+    document.querySelectorAll(".admin-national-home-group").forEach((group) => {
+      group.hidden = !Array.from(group.querySelectorAll("a")).some((link) => !link.hidden);
+    });
     if (!canReviewEngagementAccessRequests()) renderPendingBadgeCollection(elements.accessPendingBadges, 0);
     setEngagementsTab(activeEngagementsTab);
     if (elements.performanceMenu) elements.performanceMenu.hidden = !canManagePerformances();
@@ -2377,8 +2432,8 @@
     const clubHomeDenied = requestedView === "clubHome" && !canUse("engagements.club.manage");
     const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
     const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
-    const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly();
-    const engagementsDenied = requestedView === "engagements" && !canManageEngagements();
+    const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
+    const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
     const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || engagementsDenied
       ? "dashboard"
       : requestedView;
@@ -2405,9 +2460,9 @@
     const performanceSpaceActive = ["performanceHome", "records", "import", "correction"].includes(activeView);
     const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
     const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(activeEngagementsNavEntry));
-    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && activeEngagementsNavEntry === "adminDeletionRequests");
+    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const accessSpaceActive = activeView === "accessHome" || activeView === "access" || (activeView === "engagements" && activeEngagementsNavEntry === "adminAccessRequests");
-    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests"].includes(activeEngagementsNavEntry));
+    const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : accessSpaceActive ? "access" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
     setExclusivePortalMenu(activeMenu, Boolean(activeMenu));
     [
@@ -2516,7 +2571,7 @@
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
         ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
-        ["performances/public/store.js?v=20260817-records-source-1", "adminRecordStoreScript"]
+        ["performances/public/store.js?v=20260819-activity-log-1", "adminRecordStoreScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
       await loadScriptOnce("performances/public/admin-records.js?v=20260817-records-source-1", "adminRecordModuleScript");
@@ -3247,6 +3302,110 @@
       .join("|");
   }
 
+  function engagementCalendarScopeKey(mode = engagementNavigationMode()) {
+    if (mode === "admin") {
+      return canUse("engagements.national.manage")
+        ? "national"
+        : `region:${engagementRegionScope(currentAccessProfile || {}) || "none"}`;
+    }
+    const profile = activeEngagementClubProfile(currentAccessProfile || {});
+    return `club:${engagementClubScope(profile) || "none"}`;
+  }
+
+  function engagementCalendarCacheKey(mode, requestedRange) {
+    const uid = currentAccessProfile?.uid || activeAuthUid || global.firebase?.auth?.().currentUser?.uid || "anonymous";
+    return [uid, mode, engagementCalendarScopeKey(mode), requestedRange]
+      .map((part) => encodeURIComponent(String(part || "")))
+      .join(".");
+  }
+
+  function engagementCalendarCacheCompetition(competition = {}) {
+    return {
+      id: String(competition.id || ""),
+      name: String(competition.name || ""),
+      date: String(competition.date || ""),
+      endDate: String(competition.endDate || competition.date || ""),
+      location: String(competition.location || ""),
+      regionId: String(competition.regionId || ""),
+      invitedRegionIds: Array.isArray(competition.invitedRegionIds) ? competition.invitedRegionIds.map(String) : [],
+      level: String(competition.level || ""),
+      competitionType: engagementCompetitionType(competition),
+      waterBodyType: String(competition.waterBodyType || ""),
+      entryDeadlineAt: String(competition.entryDeadlineAt || ""),
+      entryStatus: String(competition.entryStatus || "upcoming"),
+      clubEntryExists: competition.clubEntryExists === true,
+      updatedAt: String(competition.updatedAt || "")
+    };
+  }
+
+  function readEngagementCalendarCache(cacheKey) {
+    const memoryEntry = engagementCompetitionCalendarMemoryCache.get(cacheKey);
+    if (memoryEntry) return memoryEntry;
+    try {
+      const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
+      if (!stored || stored.version !== 1 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
+      const entry = {
+        competitions: stored.competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
+        cachedAt: Number(stored.cachedAt)
+      };
+      engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
+      return entry;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeEngagementCalendarCache(cacheKey, competitions = [], cachedAt = Date.now()) {
+    const entry = {
+      competitions: competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
+      cachedAt
+    };
+    engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
+    try {
+      global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
+        version: 1,
+        cachedAt,
+        competitions: entry.competitions
+      }));
+    } catch (_) {
+      // Le cache reste facultatif si le stockage de session est indisponible.
+    }
+    return entry;
+  }
+
+  function activateEngagementCalendarCache(cacheKey, requestedRange, entry) {
+    engagementCompetitions = entry.competitions.map((competition) => ({ ...competition }));
+    engagementCompetitionsLoaded = true;
+    engagementCompetitionsLoadedRange = requestedRange;
+    engagementCompetitionsLoadedCacheKey = cacheKey;
+    engagementCompetitionsCachedAt = entry.cachedAt;
+    renderEngagementCompetitions();
+  }
+
+  function persistActiveEngagementCalendarCache() {
+    if (!engagementCompetitionsLoadedCacheKey || !engagementCompetitionsLoadedRange) return;
+    const entry = writeEngagementCalendarCache(engagementCompetitionsLoadedCacheKey, engagementCompetitions);
+    engagementCompetitionsCachedAt = entry.cachedAt;
+  }
+
+  function invalidateEngagementCalendarCaches() {
+    engagementCalendarCacheRevision += 1;
+    engagementCompetitionCalendarMemoryCache.clear();
+    engagementCompetitionCalendarRequests.clear();
+    try {
+      const keys = [];
+      for (let index = 0; index < (global.sessionStorage?.length || 0); index += 1) {
+        const key = global.sessionStorage?.key(index) || "";
+        if (key.startsWith(ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX)) keys.push(key);
+      }
+      keys.forEach((key) => global.sessionStorage?.removeItem(key));
+    } catch (_) {}
+    engagementCompetitionsLoaded = false;
+    engagementCompetitionsLoadedRange = "";
+    engagementCompetitionsLoadedCacheKey = "";
+    engagementCompetitionsCachedAt = 0;
+  }
+
   function engagementCompetitionIsInSeptemberPreview(competition = {}, filters = {}, date = new Date()) {
     const preview = engagementCalendarSeptemberPreview(filters, date);
     return Boolean(competition.date && preview && competition.date >= preview.startDate && competition.date <= preview.endDate);
@@ -3326,6 +3485,9 @@
     initializeEngagementCalendarFilters(user);
     updateEngagementCreateFormAccess(user);
     void loadPortalPendingOverview();
+    if (canUse("engagements.club.manage")) {
+      void loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
+    }
   }
 
   function renderPortalScopeContext(user = {}) {
@@ -3861,6 +4023,7 @@
     engagementCompetitions = engagementCompetitions.map((competition) => competition.id === selectedEngagementCompetitionId
       ? { ...competition, clubEntryExists: nextValue }
       : competition);
+    persistActiveEngagementCalendarCache();
   }
 
   function engagementPoolLengthLabel(value) {
@@ -10622,9 +10785,12 @@
       });
       deletionCompleted = true;
       if (directDelete) {
-        engagementCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);
-        engagementCompetitionsLoaded = true;
-        renderEngagementCompetitions();
+        const remainingCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);
+        invalidateEngagementCalendarCaches();
+        const filters = engagementCalendarFiltersPayload();
+        const requestedRange = engagementCalendarRequestedRange(filters);
+        const cacheKey = engagementCalendarCacheKey("admin", requestedRange);
+        activateEngagementCalendarCache(cacheKey, requestedRange, writeEngagementCalendarCache(cacheKey, remainingCompetitions));
         clearEngagementDetailTabDirty();
         closeEngagementCompetitionDetail();
         if (elements.engagementsStatus) {
@@ -11093,10 +11259,10 @@
       });
       portalPendingOverviewLoaded = false;
       engagementDeletionRequestsLoaded = false;
-      engagementCompetitionsLoaded = false;
       await loadEngagementDeletionRequests({ force: true });
       await loadPortalPendingOverview({ force: true });
       if (approve && !swimmerRequest) {
+        invalidateEngagementCalendarCaches();
         closeEngagementCompetitionDetail();
         await loadEngagementCompetitions({ force: true });
       }
@@ -12652,173 +12818,712 @@
     }
   }
 
-  function auditTargetSummary(target = {}) {
-    if (!target || typeof target !== "object") return "Élément concerné";
-    const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
-      .filter(Boolean).join(" ");
-    if (target.email || target.targetEmail) return target.email || target.targetEmail;
-    if (target.competitionName) return target.competitionName;
-    if (personName) return personName;
-    if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
-    if (target.clubName) return target.clubName;
-    if (target.competitionId) return `Compétition ${String(target.competitionId).slice(0, 8)}`;
-    if (target.clubId || target.sourceClubId) return clubDisplayLabel({ clubId: target.clubId || target.sourceClubId });
-    if (target.requestId) return `Demande ${String(target.requestId).slice(0, 8)}`;
-    if (target.swimmerId || target.sourceSwimmerId) return `Nageur ${String(target.swimmerId || target.sourceSwimmerId).slice(0, 8)}`;
-    if (target.personId || target.sourcePersonId) return `Personne ${String(target.personId || target.sourcePersonId).slice(0, 8)}`;
-    return "Élément concerné";
-  }
+  const AUDIT_ACTION_METADATA = Object.freeze({
+    "accessUser.created": ["Compte créé", "access"],
+    "accessUser.updated": ["Compte et habilitations modifiés", "access"],
+    "accessUser.activated": ["Compte activé", "access"],
+    "accessUser.deactivated": ["Compte désactivé", "access"],
+    "accessUser.deleted": ["Compte supprimé", "access"],
+    "accessUser.emailUpdated": ["Adresse du compte modifiée", "access"],
+    "accessUser.competitionEmailPreferenceUpdated": ["Préférence de notification modifiée", "access"],
+    "accessUser.deletionRequested": ["Suppression de compte demandée", "requests"],
+    "accessUser.deletionRequestResolved": ["Demande de suppression de compte traitée", "requests"],
+    "engagementAccessRequest.submitted": ["Demande d'accès déposée", "requests"],
+    "engagementAccessRequest.resolved": ["Demande d'accès traitée", "requests"],
+    "engagementAccessRequest.redirectedExistingAccount": ["Demande rattachée à un compte existant", "requests"],
+    "engagementClub.createdFromAccessRequest": ["Club créé depuis une demande d'accès", "clubs"],
+    "engagementClub.created": ["Club créé", "clubs"],
+    "engagementClub.updated": ["Club modifié", "clubs"],
+    "engagementClub.deleted": ["Club supprimé", "clubs"],
+    "engagementClubSwimmer.created": ["Nageur créé", "people"],
+    "engagementClubSwimmer.recovered": ["Nageur restauré", "people"],
+    "engagementClubSwimmer.statusChanged": ["Statut d'un nageur modifié", "people"],
+    "engagementClubSwimmer.activityStatusUpdated": ["Activité d'un nageur mise à jour", "people"],
+    "engagementClubSwimmer.changeRequested": ["Correction de nageur demandée", "requests"],
+    "engagementClubSwimmer.changeApproved": ["Correction de nageur validée", "requests"],
+    "engagementClubSwimmer.changeRejected": ["Correction de nageur refusée", "requests"],
+    "engagementClubSwimmer.identityCorrected": ["Identité de nageur corrigée", "people"],
+    "engagementClubSwimmer.nationalMerged": ["Fiches nageur fusionnées", "people"],
+    "engagementClubSwimmer.mergePublicationRepaired": ["Publication d'une fusion nageur réparée", "technical"],
+    "engagementClubSwimmer.deleted": ["Nageur supprimé", "people"],
+    "engagementClubSwimmer.deletionRequested": ["Suppression de nageur demandée", "requests"],
+    "engagementClubSwimmer.deletionRequestResolved": ["Demande de suppression de nageur traitée", "requests"],
+    "engagementClubPerson.saved": ["Officiel enregistré", "people"],
+    "engagementClubPerson.statusChanged": ["Statut d'un officiel modifié", "people"],
+    "engagementClubPerson.nationalStatusChanged": ["Statut national d'un officiel modifié", "people"],
+    "engagementClubPerson.nationalMerged": ["Fiches officiel fusionnées", "people"],
+    "engagementClubPerson.nationalDeleted": ["Officiel supprimé", "people"],
+    "engagementCompetition.created": ["Compétition créée", "competitions"],
+    "engagementCompetition.updated": ["Compétition modifiée", "competitions"],
+    "engagementCompetition.deleted": ["Compétition supprimée", "competitions"],
+    "engagementCompetition.deletionRequested": ["Suppression de compétition demandée", "requests"],
+    "engagementCompetition.deletionRequestResolved": ["Demande de suppression de compétition traitée", "requests"],
+    "engagementCompetition.closedAutomatically": ["Engagements fermés automatiquement", "technical"],
+    "engagementCompetition.automaticClosureFailed": ["Fermeture automatique en échec", "technical"],
+    "engagementCompetition.automaticClosureSweep": ["Contrôle des fermetures automatiques", "technical"],
+    "engagementCompetition.documentUploaded": ["Document de compétition ajouté", "competitions"],
+    "engagementCompetition.documentReplaced": ["Document de compétition remplacé", "competitions"],
+    "engagementCompetition.documentUpdated": ["Document de compétition modifié", "competitions"],
+    "engagementCompetition.documentDeleted": ["Document de compétition supprimé", "competitions"],
+    "engagementCompetition.documentsNotified": ["Nouveaux documents notifiés", "competitions"],
+    "engagementCompetition.openingEmailsPrepared": ["Courriels d'ouverture préparés", "technical"],
+    "engagementCompetition.clubRecapEmailsPrepared": ["Courriels récapitulatifs préparés", "technical"],
+    "engagementCompetition.preparedEmailsSent": ["Courriels préparés envoyés", "technical"],
+    "engagementCompetition.clubRecapPdfGeneratedByAdmin": ["Récapitulatif club généré", "technical"],
+    "engagementCompetition.clubRecapPdfsGenerated": ["Récapitulatifs clubs générés", "technical"],
+    "engagementCompetition.txtExportGenerated": ["Export WinPalme généré", "technical"],
+    "engagementClubEntry.teamLeaderSaved": ["Chef d'équipe enregistré", "competitions"],
+    "engagementClubEntry.teamLeaderRemoved": ["Chef d'équipe retiré", "competitions"],
+    "engagementClubEntry.officialsSaved": ["Officiels de la compétition enregistrés", "competitions"],
+    "engagementClubEntry.swimmerAdded": ["Nageur ajouté aux engagements", "competitions"],
+    "engagementClubEntry.swimmerRemoved": ["Nageur retiré des engagements", "competitions"],
+    "engagementClubEntry.swimmerSelectionsSaved": ["Sélection des nageurs enregistrée", "competitions"],
+    "engagementClubEntry.swimmersSaved": ["Nageurs engagés enregistrés", "competitions"],
+    "engagementClubEntry.individualEntriesSaved": ["Courses individuelles enregistrées", "competitions"],
+    "engagementClubEntry.relaysSaved": ["Relais enregistrés", "competitions"],
+    "engagementClubEntry.recapPdfGenerated": ["Récapitulatif d'engagement généré", "technical"],
+    "engagementClubAggregates.rebuilt": ["Agrégats du club reconstruits", "technical"],
+    "engagementOpenWaterCourse.created": ["Course d'eau libre créée", "competitions"],
+    "engagementOpenWaterCourse.statusChanged": ["Statut d'une course d'eau libre modifié", "competitions"],
+    "performanceImport.created": ["Résultats importés", "performances"],
+    "performanceImport.deleted": ["Import de résultats annulé", "performances"],
+    "performanceImport.publicationResumed": ["Publication d'un import reprise", "performances"],
+    "performanceImport.recordAlertDecision": ["Alerte Record/MPF traitée", "performances"],
+    "performancePublicData.published": ["Performances publiques publiées", "performances"],
+    "recordsMpf.published": ["Records et MPF publiés", "performances"],
+    "performanceCorrection.updated": ["Performance corrigée", "performances"],
+    "performanceCorrection.hidden": ["Performance masquée", "performances"]
+  });
+
+  const AUDIT_DETAIL_LABELS = Object.freeze({
+    active: "Statut", capabilities: "Habilitations", changedCount: "Modifications appliquées",
+    changedSwimmerCount: "Nageurs modifiés", chrono: "Chronométrage", clubCode: "Sigle du club",
+    clubId: "Identifiant du club", clubName: "Club", competitionId: "Identifiant de la compétition",
+    competitionName: "Compétition", date: "Date", decision: "Décision", email: "Adresse électronique",
+    entryStatus: "État des engagements", eventCode: "Épreuve", federalNumber: "Numéro fédéral",
+    fileName: "Fichier", hidden: "Masquée", importedPerformances: "Performances importées",
+    firstName: "Prénom", individualEntryCount: "Courses individuelles", lastName: "Nom", level: "Niveau", licenseNumber: "Numéro de licence", name: "Nom",
+    performanceCount: "Performances", personId: "Identifiant de la personne", reason: "Motif",
+    changeCount: "Lignes modifiées", publishedAt: "Date de publication", sourceDate: "Date source", version: "Version publique",
+    relayCount: "Relais", requestedChangeCount: "Modifications demandées", requestId: "Identifiant de la demande", roles: "Rôles",
+    sourceClubId: "Club d'origine", status: "Statut", swimmerCount: "Nageurs engagés",
+    swimmerId: "Identifiant du nageur", swimmerIndexId: "Identifiant du nageur", timingType: "Type de chronométrage",
+    uid: "Identifiant utilisateur"
+  });
 
   function auditActionLabel(action = "") {
-    return {
-      "accessUser.created": "Compte créé",
-      "accessUser.updated": "Compte modifie",
-      "accessUser.deleted": "Compte supprimé",
-      "accessUser.deletionRequested": "Suppression du compte demandée",
-      "accessUser.deletionRequestResolved": "Demande de compte traitée",
-      "engagementClubSwimmer.changeRequested": "Correction de nageur demandée",
-      "engagementClubSwimmer.changeApproved": "Correction de nageur validée",
-      "engagementClubSwimmer.changeRejected": "Correction de nageur refusée",
-      "engagementClubSwimmer.identityCorrected": "Identité de nageur corrigée",
-      "engagementClubSwimmer.nationalMerged": "Fusion nageur",
-      "engagementClubPerson.nationalMerged": "Fusion officiel",
-      "engagementClubPerson.saved": "Officiel enregistré",
-      "engagementClubSwimmer.deleted": "Nageur supprimé",
-      "engagementClubPerson.nationalDeleted": "Officiel supprimé",
-      "engagementCompetition.updated": "Compétition modifiée",
-      "engagementCompetition.deleted": "Compétition supprimée",
-      "engagementCompetition.deletionRequestResolved": "Demande de compétition traitée",
-      "engagementClubEntry.teamLeaderSaved": "Chef d'équipe enregistré",
-      "engagementClubEntry.swimmerAdded": "Nageur ajouté à un engagement",
-      "engagementClubEntry.swimmerRemoved": "Nageur retiré d'un engagement",
-      "engagementClubEntry.individualEntriesSaved": "Engagements individuels enregistrés",
-      "engagementClubEntry.relaysSaved": "Relais enregistrés",
-      "engagementClubEntry.recapPdfGenerated": "Récapitulatif PDF généré",
-      "engagementClub.created": "Club créé",
-      "engagementClub.updated": "Club modifié"
-    }[action] || action || "-";
+    return AUDIT_ACTION_METADATA[action]?.[0] || String(action || "Action non reconnue").replaceAll(".", " · ");
   }
 
   function auditActionCategory(action = "") {
+    if (AUDIT_ACTION_METADATA[action]?.[1]) return AUDIT_ACTION_METADATA[action][1];
     const value = String(action || "");
-    if (/request|deletion|changeRequested|changeApproved|changeRejected/i.test(value)) return "requests";
-    if (value.startsWith("accessUser.")) return "access";
-    if (/^engagementClub\.(created|updated)$/.test(value)) return "clubs";
+    if (/request|deletion/i.test(value)) return "requests";
+    if (/performance|record|mpf/i.test(value)) return "performances";
     if (/ClubSwimmer|ClubPerson/i.test(value)) return "people";
     if (/Competition|ClubEntry/i.test(value)) return "competitions";
-    return "";
+    return "technical";
+  }
+
+  function auditActorOrigin(log = {}) {
+    const uid = String(log.actorUid || "");
+    return !uid || uid.startsWith("system:") || uid === "public-login-page" ? "system" : "human";
   }
 
   function auditActorLabel(log = {}) {
     const actorUid = String(log.actorUid || "");
-    if (actorUid && actorUid === String(currentAccessProfile?.uid || "")) return "Vous";
-    return actorUid ? "Administrateur LivePalmes" : "Système LivePalmes";
+    if (!actorUid || actorUid.startsWith("system:")) return "Système LivePalmes";
+    if (actorUid === "public-login-page") return "Demande publique";
+    const actor = engagementNationalAuditActors.get(actorUid) || {};
+    const currentUserName = [currentAccessProfile?.firstName, currentAccessProfile?.lastName].filter(Boolean).join(" ");
+    const isCurrentUser = actorUid === String(currentAccessProfile?.uid || "");
+    const label = (isCurrentUser ? currentUserName || currentAccessProfile?.displayName || currentAccessProfile?.email : "")
+      || actor.name || actor.email || "Utilisateur non identifié";
+    return label;
+  }
+
+  function auditActorOptionLabel(actor = {}, uid = "") {
+    const name = actor.name || [actor.firstName, actor.lastName].filter(Boolean).join(" ");
+    const email = String(actor.email || "").trim();
+    if (name && email) return `${name} — ${email}`;
+    return name || email || "Utilisateur non identifié";
+  }
+
+  function renderEngagementNationalAuditActorSuggestions(users = []) {
+    const choices = [];
+    const labels = new Set();
+    users.forEach((user) => {
+      const uid = String(user.uid || "");
+      if (!uid) return;
+      const actor = {
+        uid,
+        name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" "),
+        email: user.email || ""
+      };
+      engagementNationalAuditActors.set(uid, actor);
+      const label = auditActorOptionLabel(actor, uid);
+      if (labels.has(label)) return;
+      labels.add(label);
+      choices.push({ uid, label });
+    });
+    engagementNationalAuditActorSuggestions = choices.sort((left, right) => left.label.localeCompare(right.label, "fr"));
+    if (elements.engagementsNationalAuditActorOptions) {
+      elements.engagementsNationalAuditActorOptions.innerHTML = engagementNationalAuditActorSuggestions
+        .map((choice) => `<option value="${escapeHtml(choice.label)}"></option>`)
+        .join("");
+    }
+  }
+
+  function setEngagementNationalAuditActorSelection(choice = null) {
+    const uid = String(choice?.uid || "");
+    if (elements.engagementsNationalAuditActor) elements.engagementsNationalAuditActor.value = uid;
+    if (elements.engagementsNationalAuditActorSearch) {
+      elements.engagementsNationalAuditActorSearch.dataset.selected = uid ? "true" : "false";
+      elements.engagementsNationalAuditActorSearch.title = uid ? "Utilisateur sélectionné" : "";
+    }
+    if (elements.engagementsNationalAuditActorSelected) elements.engagementsNationalAuditActorSelected.hidden = !uid;
+  }
+
+  async function searchEngagementNationalAuditActors(query = "", sequence = 0) {
+    if (query.length < 2) return;
+    if (elements.engagementsNationalAuditActorSearch) elements.engagementsNationalAuditActorSearch.setAttribute("aria-busy", "true");
+    try {
+      const result = await callFunction("listAccessUsers", { pageSize: 25, search: query });
+      if (sequence !== engagementNationalAuditActorSearchSequence) return;
+      renderEngagementNationalAuditActorSuggestions(Array.isArray(result.users) ? result.users : []);
+    } catch {
+      if (sequence === engagementNationalAuditActorSearchSequence) renderEngagementNationalAuditActorSuggestions([]);
+    } finally {
+      if (sequence === engagementNationalAuditActorSearchSequence && elements.engagementsNationalAuditActorSearch) {
+        elements.engagementsNationalAuditActorSearch.removeAttribute("aria-busy");
+      }
+    }
+  }
+
+  function handleEngagementNationalAuditActorSearch() {
+    const searchInput = elements.engagementsNationalAuditActorSearch;
+    const actorInput = elements.engagementsNationalAuditActor;
+    if (!searchInput || !actorInput) return;
+    const value = searchInput.value.trim();
+    const selected = engagementNationalAuditActorSuggestions.find((choice) => choice.label === value);
+    engagementNationalAuditActorSearchSequence += 1;
+    global.clearTimeout(engagementNationalAuditActorSearchTimer);
+    if (selected) {
+      setEngagementNationalAuditActorSelection(selected);
+      if (engagementNationalAuditAppliedActorUid !== selected.uid) void loadEngagementNationalAuditLogs({ force: true });
+      return;
+    }
+    setEngagementNationalAuditActorSelection();
+    if (!value) {
+      renderEngagementNationalAuditActorSuggestions([...engagementNationalAuditActors.values()]);
+      if (engagementNationalAuditAppliedActorUid) void loadEngagementNationalAuditLogs({ force: true });
+      return;
+    }
+    if (value.length < 2) {
+      renderEngagementNationalAuditActorSuggestions([]);
+      return;
+    }
+    const sequence = engagementNationalAuditActorSearchSequence;
+    engagementNationalAuditActorSearchTimer = global.setTimeout(() => {
+      void searchEngagementNationalAuditActors(value, sequence);
+    }, 300);
+  }
+
+  function auditClubId(log = {}) {
+    return String(log.target?.clubId || log.target?.sourceClubId || "");
+  }
+
+  function auditClubLabel(log = {}) {
+    const clubId = auditClubId(log);
+    return log.target?.clubName || engagementNationalAuditClubs.get(clubId)
+      || (clubId ? clubDisplayLabel({ clubId }, { fallback: "" }) : "");
+  }
+
+  function auditCompetitionLabel(target = {}) {
+    const competitionId = String(target.competitionId || "");
+    const auditCompetition = engagementNationalAuditCompetitions.get(competitionId);
+    const cachedCompetition = engagementCompetitions.find((competition) => competition.id === competitionId);
+    return target.competitionName || target.name || auditCompetition?.name || cachedCompetition?.name || (competitionId ? "Compétition" : "");
+  }
+
+  function auditTargetSummary(target = {}, action = "") {
+    if (!target || typeof target !== "object") target = {};
+    const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
+      .filter(Boolean).join(" ");
+    const competition = auditCompetitionLabel(target);
+    if (competition) return competition;
+    if (personName) return personName;
+    if (target.personId) return auditPersonLabel(target);
+    if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
+    if (target.clubName) return target.clubName;
+    if (target.email || target.targetEmail) return target.email || target.targetEmail;
+    if (target.fileName) return target.fileName;
+    if (target.clubId || target.sourceClubId) {
+      const clubLabel = clubDisplayLabel({ clubId: target.clubId || target.sourceClubId }, { fallback: "" });
+      if (clubLabel) return clubLabel;
+    }
+    if (action === "accessUser.competitionEmailPreferenceUpdated") return "Notifications du compte";
+    if (action.startsWith("engagementAccessRequest.")) return "Demande d'accès";
+    if (action.startsWith("engagementOpenWaterCourse.")) return "Course d'eau libre";
+    if (action.startsWith("engagementClubSwimmer.")) return "Fiche nageur";
+    if (action.startsWith("engagementClubPerson.")) return "Fiche officiel";
+    if (action.startsWith("engagementClubAggregates.")) return "Données du club";
+    if (action.startsWith("performanceImport.")) return "Import de résultats";
+    if (action.startsWith("performancePublicData.")) return "Données publiques des performances";
+    if (action.startsWith("recordsMpf.")) return "Référentiels Records et MPF";
+    if (action.startsWith("performanceCorrection.")) return "Performance concernée";
+    if (action.startsWith("accessUser.")) return "Compte utilisateur";
+    return "Action LivePalmes";
+  }
+
+  function auditDateLabel(value = "") {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "Date inconnue";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+    }).format(date);
+  }
+
+  function auditDetailValue(value) {
+    if (value === true) return "Oui";
+    if (value === false) return "Non";
+    if (value === null || value === undefined || value === "") return "Non renseigné";
+    if (Array.isArray(value)) return value.map((item) => auditDetailValue(item)).join(", ");
+    if (typeof value === "object") return Object.entries(value)
+      .map(([key, item]) => `${auditDetailLabel(key)} : ${auditDetailValue(item)}`)
+      .join(" · ") || "Aucun";
+    return String(value);
+  }
+
+  const AUDIT_ROLE_LABELS = Object.freeze({
+    swimmer: "Nageur", official: "Officiel", teamLeader: "Chef d’équipe"
+  });
+
+  const AUDIT_CAPABILITY_LABELS = Object.freeze({
+    "records.manage": "Records / MPF",
+    "consoles.access": "Accès aux consoles par PIN",
+    "consoles.manage": "Gestion des consoles et des PIN",
+    "competitions.import": "Import des compétitions",
+    "dtn.view": "Espace DTN",
+    "engagements.club.manage": "Engagements club",
+    "engagements.club.switch": "Changement de club national",
+    "engagements.region.manage": "Engagements région",
+    "engagements.national.manage": "Engagements national",
+    "admin.full": "Gestion générale"
+  });
+
+  function auditEnabledLabels(value = {}, labels = {}) {
+    const entries = Array.isArray(value)
+      ? value.map((key) => [String(key), true])
+      : Object.entries(value && typeof value === "object" ? value : {});
+    const enabled = entries
+      .filter(([, active]) => active === true)
+      .map(([key]) => labels[key] || auditDetailLabel(key));
+    return enabled.join(", ") || "Aucun";
+  }
+
+  function auditPersonLabel(target = {}) {
+    const personId = String(target.personId || "");
+    const person = engagementNationalAuditPeople.get(personId) || {};
+    return [target.firstName, target.lastName].filter(Boolean).join(" ")
+      || target.personName || person.name || target.licenseNumber || person.licenseNumber || "Personne concernée";
+  }
+
+  function auditReadableValue(key = "", value, log = {}) {
+    const target = log.target && typeof log.target === "object" ? log.target : {};
+    if (key === "roles") return auditEnabledLabels(value, AUDIT_ROLE_LABELS);
+    if (key === "capabilities") return auditEnabledLabels(value, AUDIT_CAPABILITY_LABELS);
+    if (key === "active") return value === true ? "Actif" : value === false ? "Inactif" : auditDetailValue(value);
+    if (key === "hidden") return value === true ? "Masquée" : value === false ? "Visible" : auditDetailValue(value);
+    if (key === "personId") return auditPersonLabel(target);
+    if (["clubId", "sourceClubId", "targetClubId"].includes(key)) {
+      return target.clubName || engagementNationalAuditClubs.get(String(value))
+        || clubDisplayLabel({ clubId: value }, { fallback: "Club concerné" });
+    }
+    if (key === "competitionId") return auditCompetitionLabel(target) || "Compétition concernée";
+    if (["swimmerId", "swimmerIndexId"].includes(key)) return target.swimmerName || target.personName || "Nageur concerné";
+    if (key === "uid") {
+      const user = engagementNationalAuditActors.get(String(value)) || {};
+      return user.name || user.email || target.email || "Utilisateur concerné";
+    }
+    if (Array.isArray(value)) return value.map((item) => typeof item === "object" ? auditEnabledLabels(item) : String(item)).join(", ");
+    if (value && typeof value === "object") {
+      const booleanEntries = Object.values(value).every((item) => typeof item === "boolean");
+      if (booleanEntries) return auditEnabledLabels(value);
+    }
+    return auditDetailValue(value);
+  }
+
+  function auditDetailLabel(key = "") {
+    return AUDIT_DETAIL_LABELS[key]
+      || String(key).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
+  }
+
+  function auditComplementaryLabel(key = "") {
+    if (key === "personId") return "Personne concernée";
+    if (["clubId", "sourceClubId", "targetClubId"].includes(key)) return "Club concerné";
+    if (key === "competitionId") return "Compétition concernée";
+    if (["swimmerId", "swimmerIndexId"].includes(key)) return "Nageur concerné";
+    if (key === "uid") return "Utilisateur concerné";
+    return auditDetailLabel(key);
+  }
+
+  function auditValuesEqual(left, right) {
+    return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  }
+
+  function auditChangeRows(target = {}) {
+    const rows = [];
+    const consumedKeys = new Set();
+    const addChange = (key, before, after) => {
+      if (auditValuesEqual(before, after)) return;
+      const beforeValue = auditReadableValue(key, before, { target });
+      const afterValue = auditReadableValue(key, after, { target });
+      rows.push(`<div class="admin-national-audit-change"><dt>${escapeHtml(auditDetailLabel(key))}</dt><dd><span>${escapeHtml(beforeValue.length > 240 ? `${beforeValue.slice(0, 237)}…` : beforeValue)}</span><span class="admin-national-audit-change-arrow" aria-hidden="true">→</span><strong>${escapeHtml(afterValue.length > 240 ? `${afterValue.slice(0, 237)}…` : afterValue)}</strong></dd></div>`);
+    };
+    const objectPairs = [
+      ["current", "proposed"],
+      ["requestedProposed", "resolvedProposed"],
+      ["before", "after"],
+      ["previous", "next"]
+    ];
+    objectPairs.forEach(([beforeKey, afterKey]) => {
+      const before = target[beforeKey];
+      const after = target[afterKey];
+      if (!before || !after || typeof before !== "object" || typeof after !== "object" || Array.isArray(before) || Array.isArray(after)) return;
+      const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+      const comparableKeys = [...keys].filter((key) => Object.hasOwn(before, key) && Object.hasOwn(after, key));
+      const changedKeys = comparableKeys.filter((key) => !auditValuesEqual(before[key], after[key]));
+      if (!changedKeys.length) return;
+      consumedKeys.add(beforeKey);
+      consumedKeys.add(afterKey);
+      changedKeys.forEach((key) => addChange(key, before[key], after[key]));
+    });
+    Object.keys(target).forEach((key) => {
+      let afterKey = "";
+      let baseKey = "";
+      if (/^previous[A-Z]/.test(key)) {
+        baseKey = key.slice(8).replace(/^./, (letter) => letter.toLowerCase());
+        afterKey = baseKey;
+      } else if (/^old[A-Z]/.test(key)) {
+        baseKey = key.slice(3).replace(/^./, (letter) => letter.toLowerCase());
+        afterKey = `new${key.slice(3)}`;
+      } else if (/^before[A-Z]/.test(key)) {
+        baseKey = key.slice(6).replace(/^./, (letter) => letter.toLowerCase());
+        afterKey = `after${key.slice(6)}`;
+      }
+      if (!afterKey || !Object.hasOwn(target, afterKey)) return;
+      consumedKeys.add(key);
+      consumedKeys.add(afterKey);
+      addChange(baseKey, target[key], target[afterKey]);
+    });
+    return { rows, consumedKeys };
+  }
+
+  function auditDetailIsTechnicalKey(key = "") {
+    return /(?:^id$|^uid$|Id$|Ids$|Uid$|Key$|Hash$|Path$|Snapshot$)/.test(String(key));
+  }
+
+  function auditTechnicalKeyIsReadable(key = "") {
+    return [
+      "personId", "clubId", "sourceClubId", "targetClubId", "competitionId",
+      "swimmerId", "swimmerIndexId", "uid"
+    ].includes(key) || !auditDetailIsTechnicalKey(key);
+  }
+
+  function auditDetailRows(log = {}) {
+    const target = log.target && typeof log.target === "object" ? log.target : {};
+    const changes = auditChangeRows(target);
+    const preferredKeys = Object.keys(AUDIT_DETAIL_LABELS)
+      .filter((key) => Object.hasOwn(target, key) && !changes.consumedKeys.has(key) && !auditDetailIsTechnicalKey(key));
+    const rows = preferredKeys.map((key) => {
+      const rawValue = auditReadableValue(key, target[key], log);
+      const value = rawValue.length > 500 ? `${rawValue.slice(0, 497)}…` : rawValue;
+      const label = auditDetailLabel(key);
+      return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    });
+    rows.unshift(...changes.rows);
+    return rows.join("");
+  }
+
+  function auditTechnicalDetailsHtml(logs = []) {
+    const first = logs[0] || {};
+    const target = first.target && typeof first.target === "object" ? first.target : {};
+    const changes = auditChangeRows(target);
+    const technicalKeys = Object.keys(target)
+      .filter((key) => !changes.consumedKeys.has(key))
+      .filter((key) => auditDetailIsTechnicalKey(key) || !Object.hasOwn(AUDIT_DETAIL_LABELS, key))
+      .filter(auditTechnicalKeyIsReadable)
+      .filter((key) => !["fileHash", "performanceBaseSync", "clubActivityReactivation"].includes(key))
+      .slice(0, 12);
+    const rows = technicalKeys.map((key) => {
+      const rawValue = auditReadableValue(key, target[key], first);
+      const value = rawValue.length > 500 ? `${rawValue.slice(0, 497)}…` : rawValue;
+      return `<div><dt>${escapeHtml(auditComplementaryLabel(key))}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    });
+    const actionCodes = [...new Set(logs.map((log) => String(log.action || "")).filter(Boolean))];
+    if (logs.length > 1) rows.push(`<div><dt>Traces regroupées</dt><dd>${logs.length}</dd></div>`);
+    rows.push(`<div><dt>Type${actionCodes.length > 1 ? "s" : ""} d’action</dt><dd>${actionCodes.map((action) => escapeHtml(auditActionLabel(action))).join("<br>") || "-"}</dd></div>`);
+    if (first.actorUid) rows.push(`<div><dt>Action réalisée par</dt><dd>${escapeHtml(auditActorLabel(first))}</dd></div>`);
+    return `<details class="admin-national-audit-technical-disclosure"><summary>Détails complémentaires</summary><dl>${rows.join("")}</dl></details>`;
+  }
+
+  function auditActionIsCritical(action = "") {
+    return /deleted|deletion|Merged|identityCorrected|accessUser\.(created|updated|activated|deactivated)|performanceCorrection\.(hidden|updated)/i.test(action);
+  }
+
+  function auditActionIsGroupable(action = "") {
+    return [
+      "engagementClubEntry.teamLeaderSaved", "engagementClubEntry.teamLeaderRemoved",
+      "engagementClubEntry.officialsSaved", "engagementClubEntry.swimmerAdded",
+      "engagementClubEntry.swimmerRemoved", "engagementClubEntry.swimmerSelectionsSaved",
+      "engagementClubEntry.swimmersSaved", "engagementClubEntry.individualEntriesSaved",
+      "engagementClubEntry.relaysSaved"
+    ].includes(action);
   }
 
   function filteredEngagementNationalAuditLogs() {
-    const query = normalizePerformanceSearchText(elements.engagementsNationalAuditSearch?.value || "");
+    const query = normalizedEngagementClubSearch(elements.engagementsNationalAuditSearch?.value || "");
     const type = elements.engagementsNationalAuditType?.value || "";
+    const origin = elements.engagementsNationalAuditOrigin?.value || "";
     return engagementNationalAuditLogs.filter((log) => {
       if (type && auditActionCategory(log.action) !== type) return false;
+      if (origin && auditActorOrigin(log) !== origin) return false;
       if (!query) return true;
-      const haystack = normalizePerformanceSearchText([
-        auditActionLabel(log.action),
-        log.action,
-        auditActorLabel(log),
-        auditTargetSummary(log.target),
-        JSON.stringify(log.target || {})
+      const haystack = normalizedEngagementClubSearch([
+        auditActionLabel(log.action), log.action, auditActorLabel(log), auditTargetSummary(log.target, log.action),
+        auditClubLabel(log), JSON.stringify(log.target || {})
       ].join(" "));
       return haystack.includes(query);
     });
   }
 
+  function groupedEngagementNationalAuditLogs(logs = []) {
+    const groups = [];
+    const latestGroupByKey = new Map();
+    logs.forEach((log) => {
+      const groupable = auditActionIsGroupable(log.action) && !auditActionIsCritical(log.action);
+      const key = groupable
+        ? [log.actorUid || "system", auditClubId(log), log.target?.competitionId || ""].join("|")
+        : "";
+      const previous = key ? latestGroupByKey.get(key) : null;
+      const previousOldestAt = Date.parse(previous?.logs?.at(-1)?.createdAt || "");
+      const currentAt = Date.parse(log.createdAt || "");
+      const withinTenMinutes = Number.isFinite(previousOldestAt) && Number.isFinite(currentAt) && previousOldestAt - currentAt <= 10 * 60 * 1000;
+      if (key && previous?.groupKey === key && withinTenMinutes) {
+        previous.logs.push(log);
+      } else {
+        const group = { groupKey: key, logs: [log] };
+        groups.push(group);
+        if (key) latestGroupByKey.set(key, group);
+      }
+    });
+    return groups;
+  }
+
+  function auditGroupedActionsHtml(logs = []) {
+    const first = logs[0] || {};
+    const actor = auditActorLabel(first);
+    const club = auditClubLabel(first);
+    const competition = auditCompetitionLabel(first.target || {});
+    const sentence = `${actor} a modifié les engagements${club ? ` de ${club}` : ""}${competition ? ` pour ${competition}` : ""}.`;
+    const actions = new Map();
+    logs.forEach((log) => {
+      if (!actions.has(log.action)) actions.set(log.action, []);
+      actions.get(log.action).push(log);
+    });
+    const summaries = [...actions.entries()].map(([action, actionLogs]) => {
+      const newest = actionLogs[0] || {};
+      const oldest = actionLogs.at(-1) || newest;
+      const newestTime = auditDateLabel(newest.createdAt).split(" ").at(-1);
+      const oldestTime = auditDateLabel(oldest.createdAt).split(" ").at(-1);
+      const period = newestTime === oldestTime ? `à ${newestTime}` : `de ${oldestTime} à ${newestTime}`;
+      const details = auditDetailRows(newest);
+      return `<li><div><strong>${escapeHtml(auditActionLabel(action))}</strong><span>${actionLogs.length} mise${actionLogs.length > 1 ? "s" : ""} à jour regroupée${actionLogs.length > 1 ? "s" : ""} · ${escapeHtml(period)}</span></div>${details ? `<small>Dernier état enregistré</small><dl>${details}</dl>` : ""}</li>`;
+    }).join("");
+    return `<p class="admin-national-audit-summary-sentence">${escapeHtml(sentence)}</p><ul class="admin-national-audit-action-summary">${summaries}</ul>${auditTechnicalDetailsHtml(logs)}`;
+  }
+
+  function auditEntryHtml(group = {}) {
+    const logs = group.logs || [];
+    const first = logs[0] || {};
+    const grouped = logs.length > 1;
+    const actionLabel = grouped ? "Engagements mis à jour" : auditActionLabel(first.action);
+    const targetLabel = auditTargetSummary(first.target, first.action);
+    const clubLabel = auditClubLabel(first);
+    const category = auditActionCategory(first.action);
+    const humanDetails = auditDetailRows(first);
+    const detailHtml = grouped
+      ? auditGroupedActionsHtml(logs)
+      : `${humanDetails ? `<dl class="admin-national-audit-detail-grid">${humanDetails}</dl>` : ""}${auditTechnicalDetailsHtml(logs)}`;
+    return `
+      <details class="admin-national-audit-entry" data-audit-category="${escapeHtml(category)}">
+        <summary>
+          <time datetime="${escapeHtml(first.createdAt || "")}">${escapeHtml(auditDateLabel(first.createdAt))}</time>
+          <span class="admin-national-audit-entry-main"><strong>${escapeHtml(actionLabel)}</strong><small>${escapeHtml(targetLabel)}</small></span>
+          <span class="admin-national-audit-actor">${escapeHtml(auditActorLabel(first))}</span>
+          ${clubLabel ? `<span class="admin-national-audit-club">${escapeHtml(clubLabel)}</span>` : ""}
+          ${grouped ? `<span class="admin-national-audit-count">${logs.length} actions</span>` : ""}
+          <span class="admin-national-audit-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="admin-national-audit-entry-details">
+          ${detailHtml}
+        </div>
+      </details>`;
+  }
+
+  function updateEngagementNationalAuditFilterOptions() {
+    accessClubReference.forEach((club) => {
+      const clubId = String(club.clubId || "");
+      const clubLabel = clubDisplayLabel(club, { fallback: "" });
+      if (clubId && clubLabel) engagementNationalAuditClubs.set(clubId, clubLabel);
+    });
+    engagementNationalAuditLogs.forEach((log) => {
+      const clubId = String(log.target?.clubId || "");
+      if (clubId && !engagementNationalAuditClubs.has(clubId)) {
+        const clubLabel = log.target?.clubName || clubDisplayLabel({ clubId }, { fallback: "" });
+        if (clubLabel) engagementNationalAuditClubs.set(clubId, clubLabel);
+      }
+    });
+    const replaceOptions = (select, options, emptyLabel) => {
+      if (!select) return;
+      const selected = select.value;
+      select.innerHTML = `<option value="">${escapeHtml(emptyLabel)}</option>${options.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+      select.value = selected;
+    };
+    replaceOptions(elements.engagementsNationalAuditClub,
+      [...engagementNationalAuditClubs.entries()].sort((left, right) => left[1].localeCompare(right[1], "fr")),
+      "Tous les clubs");
+    if (!elements.engagementsNationalAuditActorSearch?.value.trim()) {
+      renderEngagementNationalAuditActorSuggestions([...engagementNationalAuditActors.values()]);
+    }
+  }
+
   function resetEngagementNationalAuditFilters() {
     if (elements.engagementsNationalAuditSearch) elements.engagementsNationalAuditSearch.value = "";
+    if (elements.engagementsNationalAuditPeriod) elements.engagementsNationalAuditPeriod.value = "7";
+    if (elements.engagementsNationalAuditClub) elements.engagementsNationalAuditClub.value = "";
+    setEngagementNationalAuditActorSelection();
+    if (elements.engagementsNationalAuditActorSearch) elements.engagementsNationalAuditActorSearch.value = "";
     if (elements.engagementsNationalAuditType) elements.engagementsNationalAuditType.value = "";
-    renderEngagementNationalAuditLogs();
+    if (elements.engagementsNationalAuditOrigin) elements.engagementsNationalAuditOrigin.value = "";
+    void loadEngagementNationalAuditLogs({ force: true });
+  }
+
+  function resetEngagementNationalAuditData() {
+    engagementNationalAuditLogs = [];
+    engagementNationalAuditLogsLoaded = false;
+    engagementNationalAuditLogsLoading = false;
+    engagementNationalAuditNextCursor = null;
+    engagementNationalAuditHasMore = false;
+    engagementNationalAuditVisibleFrom = "";
+    engagementNationalAuditAppliedActorUid = "";
+    engagementNationalAuditActorSearchSequence += 1;
+    global.clearTimeout(engagementNationalAuditActorSearchTimer);
+    engagementNationalAuditActorSuggestions = [];
+    setEngagementNationalAuditActorSelection();
+    engagementNationalAuditActors.clear();
+    engagementNationalAuditClubs.clear();
+    engagementNationalAuditCompetitions.clear();
+    engagementNationalAuditPeople.clear();
   }
 
   function renderEngagementNationalAuditLogs() {
     if (!elements.engagementsNationalAuditList) return;
-    if (!canDeleteEngagementCompetitionDirectly()) {
+    if (!canViewActivityLog()) {
       elements.engagementsNationalAuditList.innerHTML = "";
       return;
     }
+    updateEngagementNationalAuditFilterOptions();
+    const filteredLogs = filteredEngagementNationalAuditLogs();
+    const groups = groupedEngagementNationalAuditLogs(filteredLogs);
     if (!engagementNationalAuditLogs.length) {
-      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action recente a afficher.</p>';
-      return;
-    }
-    const logs = filteredEngagementNationalAuditLogs();
-    if (!logs.length) {
+      elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action enregistrée sur cette période.</p>';
+    } else if (!groups.length) {
       elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action ne correspond aux filtres.</p>';
-      if (elements.engagementsNationalAuditStatus) elements.engagementsNationalAuditStatus.textContent = "0 action affichée.";
-      return;
+    } else {
+      elements.engagementsNationalAuditList.innerHTML = `<div class="admin-national-audit-list">${groups.map(auditEntryHtml).join("")}</div>`;
     }
-    if (elements.engagementsNationalAuditStatus) {
-      elements.engagementsNationalAuditStatus.textContent = `${logs.length} action${logs.length > 1 ? "s" : ""} affichée${logs.length > 1 ? "s" : ""}.`;
+    if (elements.engagementsNationalAuditStatus && !engagementNationalAuditLogsLoading) {
+      const loaded = engagementNationalAuditLogs.length;
+      const groupedCount = groups.length;
+      const visibleFromLabel = engagementNationalAuditVisibleFrom ? auditDateLabel(engagementNationalAuditVisibleFrom).split(" ")[0] : "";
+      elements.engagementsNationalAuditStatus.textContent = `${groupedCount} ligne${groupedCount > 1 ? "s" : ""} affichée${groupedCount > 1 ? "s" : ""} · ${loaded} trace${loaded > 1 ? "s" : ""} chargée${loaded > 1 ? "s" : ""}${visibleFromLabel ? ` depuis le ${visibleFromLabel}` : ""}.`;
       elements.engagementsNationalAuditStatus.dataset.tone = "ok";
     }
-    elements.engagementsNationalAuditList.innerHTML = `
-      <div class="admin-engagements-national-table-wrap">
-        <table class="admin-engagements-national-table admin-engagements-national-audit-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Action</th>
-              <th>Acteur</th>
-              <th>Objet</th>
-              <th>Détails</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${logs.map((log) => `
-              <tr>
-                <td>${escapeHtml(log.createdAt ? formatDeadline(log.createdAt).replace(/^Limite /, "") : "-")}</td>
-                <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong></td>
-                <td>${escapeHtml(auditActorLabel(log))}</td>
-                <td>${escapeHtml(auditTargetSummary(log.target))}</td>
-                <td>
-                  <details class="admin-national-audit-details">
-                    <summary>Voir</summary>
-                    <code>${escapeHtml(log.action || "Action inconnue")}</code>
-                    ${log.actorUid ? `<code>Acteur : ${escapeHtml(log.actorUid)}</code>` : ""}
-                  </details>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+    if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.hidden = !engagementNationalAuditHasMore;
   }
 
-  async function loadEngagementNationalAuditLogs({ force = false, silent = false } = {}) {
-    if (!canDeleteEngagementCompetitionDirectly() || engagementNationalAuditLogsLoading) return;
-    if (engagementNationalAuditLogsLoaded && !force) return;
+  async function loadEngagementNationalAuditLogs({ force = false, silent = false, append = false } = {}) {
+    if (!canViewActivityLog() || engagementNationalAuditLogsLoading) return;
+    if (engagementNationalAuditLogsLoaded && !force && !append) return;
+    if (append && (!engagementNationalAuditHasMore || !engagementNationalAuditNextCursor)) return;
     engagementNationalAuditLogsLoading = true;
+    if (force) {
+      engagementNationalAuditLogs = [];
+      engagementNationalAuditNextCursor = null;
+      engagementNationalAuditHasMore = false;
+    }
     if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = true;
+    if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.disabled = true;
     if (elements.engagementsNationalAuditStatus && !silent) {
-      elements.engagementsNationalAuditStatus.textContent = "Chargement de l'historique...";
+      elements.engagementsNationalAuditStatus.textContent = append ? "Chargement des actions précédentes..." : "Chargement du journal...";
       elements.engagementsNationalAuditStatus.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("listEngagementNationalAuditLogs", { limit: 80 });
-      engagementNationalAuditLogs = Array.isArray(result.logs) ? result.logs : [];
+      await loadAccessClubReference();
+      const result = await callFunction("listEngagementNationalAuditLogs", {
+        limit: 50,
+        days: Number(elements.engagementsNationalAuditPeriod?.value || 7),
+        actorUid: elements.engagementsNationalAuditActor?.value || "",
+        clubId: elements.engagementsNationalAuditClub?.value || "",
+        cursor: append ? engagementNationalAuditNextCursor : null,
+        knownActorUids: [...engagementNationalAuditActors.entries()]
+          .filter(([, actor]) => actor.name || actor.email)
+          .map(([uid]) => uid)
+          .slice(0, 100),
+        knownCompetitionIds: [...engagementNationalAuditCompetitions.entries()]
+          .filter(([, competition]) => competition.name)
+          .map(([competitionId]) => competitionId)
+          .slice(0, 100),
+        knownPersonIds: [...engagementNationalAuditPeople.entries()]
+          .map(([personId]) => personId)
+          .slice(0, 100)
+      });
+      engagementNationalAuditAppliedActorUid = elements.engagementsNationalAuditActor?.value || "";
+      (Array.isArray(result.actors) ? result.actors : []).forEach((actor) => {
+        if (actor?.uid) engagementNationalAuditActors.set(actor.uid, actor);
+      });
+      (Array.isArray(result.competitions) ? result.competitions : []).forEach((competition) => {
+        if (competition?.id) engagementNationalAuditCompetitions.set(competition.id, competition);
+      });
+      (Array.isArray(result.people) ? result.people : []).forEach((person) => {
+        if (person?.id) engagementNationalAuditPeople.set(person.id, person);
+      });
+      const returnedLogs = Array.isArray(result.logs) ? result.logs : [];
+      returnedLogs.forEach((log) => {
+        const uid = String(log.actorUid || "");
+        if (uid && !uid.startsWith("system:") && uid !== "public-login-page" && !engagementNationalAuditActors.has(uid)) {
+          engagementNationalAuditActors.set(uid, { uid, name: "", email: "" });
+        }
+      });
+      const previousIds = new Set(engagementNationalAuditLogs.map((log) => log.id));
+      engagementNationalAuditLogs = append
+        ? [...engagementNationalAuditLogs, ...returnedLogs.filter((log) => !previousIds.has(log.id))]
+        : returnedLogs;
+      engagementNationalAuditNextCursor = result.nextCursor || null;
+      engagementNationalAuditHasMore = result.hasMore === true;
+      engagementNationalAuditVisibleFrom = result.visibleFrom || "";
       engagementNationalAuditLogsLoaded = true;
-      renderEngagementNationalAuditLogs();
-      if (elements.engagementsNationalAuditStatus && !silent) {
-        markLastRefresh(elements.engagementsNationalAuditStatus);
-        elements.engagementsNationalAuditStatus.textContent = `${engagementNationalAuditLogs.length} action${engagementNationalAuditLogs.length > 1 ? "s" : ""} disponible${engagementNationalAuditLogs.length > 1 ? "s" : ""}.`;
-        elements.engagementsNationalAuditStatus.dataset.tone = "ok";
-      }
     } catch (error) {
       if (elements.engagementsNationalAuditStatus && !silent) {
-        elements.engagementsNationalAuditStatus.textContent = `Lecture historique impossible : ${error?.message || error}`;
+        elements.engagementsNationalAuditStatus.textContent = `Lecture du journal impossible : ${error?.message || error}`;
         elements.engagementsNationalAuditStatus.dataset.tone = "error";
       }
     } finally {
       engagementNationalAuditLogsLoading = false;
       if (elements.engagementsNationalAuditRefresh) elements.engagementsNationalAuditRefresh.disabled = false;
+      if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.disabled = false;
       if (engagementNationalAuditLogsLoaded) renderEngagementNationalAuditLogs();
     }
   }
@@ -13067,11 +13772,25 @@
     }
   }
 
-  async function loadEngagementCompetitions({ force = false } = {}) {
-    if (!canManageEngagements() || engagementCompetitionsLoading) return;
-    if (engagementCompetitionsLoaded && !force) return;
-    engagementCompetitionsLoading = true;
-    if (!engagementCompetitions.length && elements.engagementsCalendarList) {
+  async function loadEngagementCompetitions({ force = false, mode = engagementNavigationMode(), activate = null, silent = false } = {}) {
+    const requestedMode = mode === "admin" ? "admin" : "club";
+    const allowed = requestedMode === "admin" ? canCreateEngagementCompetition() : canUse("engagements.club.manage");
+    if (!allowed) return;
+    const filters = engagementCalendarFiltersPayload();
+    const septemberPreview = engagementCalendarSeptemberPreview(filters);
+    const requestedRange = engagementCalendarRequestedRange(filters);
+    const cacheKey = engagementCalendarCacheKey(requestedMode, requestedRange);
+    const shouldActivate = activate === null ? requestedMode === engagementNavigationMode() : activate === true;
+    const cachedEntry = engagementCompetitionsLoadedCacheKey === cacheKey && engagementCompetitionsLoaded
+      ? { competitions: engagementCompetitions, cachedAt: engagementCompetitionsCachedAt }
+      : readEngagementCalendarCache(cacheKey);
+    if (cachedEntry && shouldActivate && engagementCompetitionsLoadedCacheKey !== cacheKey) {
+      activateEngagementCalendarCache(cacheKey, requestedRange, cachedEntry);
+    }
+    const cacheFresh = Boolean(cachedEntry?.cachedAt && Date.now() - cachedEntry.cachedAt < ENGAGEMENT_CALENDAR_CACHE_TTL_MS);
+    if (!force && cacheFresh) return cachedEntry;
+    const cachedListVisible = Boolean(cachedEntry?.competitions?.length && shouldActivate);
+    if (!cachedListVisible && shouldActivate && elements.engagementsCalendarList) {
       elements.engagementsCalendarList.innerHTML = `
         <div class="admin-engagements-calendar-loading" role="status">
           <strong>Chargement des compétitions...</strong>
@@ -13081,44 +13800,73 @@
         </div>
       `;
     }
-    if (elements.engagementsStatus) {
+    if (!silent && !cachedListVisible && shouldActivate && elements.engagementsStatus) {
       elements.engagementsStatus.hidden = false;
       elements.engagementsStatus.textContent = "Chargement du calendrier...";
       elements.engagementsStatus.dataset.tone = "loading";
     }
-    try {
-      const filters = engagementCalendarFiltersPayload();
-      const septemberPreview = engagementCalendarSeptemberPreview(filters);
-      const requestedRange = engagementCalendarRequestedRange(filters);
-      const ranges = [
-        { startDate: filters.startDate, endDate: filters.endDate },
-        ...(septemberPreview ? [septemberPreview] : [])
-      ];
-      const result = await callFunction("listEngagementCompetitions", {
-        ranges: ranges.map((range) => ({ fromDate: range.startDate, toDate: range.endDate })),
-        manageOnly: isEngagementAdminMode(),
-        limit: 250
+    const pendingRequest = engagementCompetitionCalendarRequests.get(cacheKey);
+    if (pendingRequest) {
+      return pendingRequest.then((entry) => {
+        const currentFilters = engagementCalendarFiltersPayload();
+        const stillActive = entry && shouldActivate && requestedMode === engagementNavigationMode() &&
+          engagementCalendarCacheKey(requestedMode, engagementCalendarRequestedRange(currentFilters)) === cacheKey;
+        if (stillActive) {
+          activateEngagementCalendarCache(cacheKey, requestedRange, entry);
+          if (elements.engagementsStatus) {
+            elements.engagementsStatus.textContent = "";
+            delete elements.engagementsStatus.dataset.tone;
+            elements.engagementsStatus.hidden = true;
+          }
+        }
+        return entry;
       });
-      engagementCompetitions = Array.isArray(result.competitions) ? result.competitions : [];
-      if (isEngagementAdminMode() && !canUse("engagements.national.manage")) {
-        engagementCompetitions = engagementCompetitions.filter((competition) => canEditEngagementCompetition(competition));
-      }
-      engagementCompetitionsLoaded = true;
-      engagementCompetitionsLoadedRange = requestedRange;
-      renderEngagementCompetitions();
-      if (elements.engagementsStatus) {
-        elements.engagementsStatus.textContent = "";
-        delete elements.engagementsStatus.dataset.tone;
-        elements.engagementsStatus.hidden = true;
-      }
-    } catch (error) {
-      if (elements.engagementsStatus) {
-        elements.engagementsStatus.textContent = `Calendrier indisponible : ${error?.message || error}`;
-        elements.engagementsStatus.dataset.tone = "error";
-      }
-    } finally {
-      engagementCompetitionsLoading = false;
     }
+    const cacheRevision = engagementCalendarCacheRevision;
+    const requestPromise = (async () => {
+      try {
+        const ranges = [
+          { startDate: filters.startDate, endDate: filters.endDate },
+          ...(septemberPreview ? [septemberPreview] : [])
+        ];
+        const result = await callFunction("listEngagementCompetitions", {
+          ranges: ranges.map((range) => ({ fromDate: range.startDate, toDate: range.endDate })),
+          manageOnly: requestedMode === "admin",
+          limit: 250
+        });
+        if (cacheRevision !== engagementCalendarCacheRevision) return null;
+        let competitions = Array.isArray(result.competitions) ? result.competitions : [];
+        if (requestedMode === "admin" && !canUse("engagements.national.manage")) {
+          competitions = competitions.filter((competition) => canEditEngagementCompetition(competition));
+        }
+        const entry = writeEngagementCalendarCache(cacheKey, competitions);
+        const currentFilters = engagementCalendarFiltersPayload();
+        const stillActive = shouldActivate && requestedMode === engagementNavigationMode() &&
+          engagementCalendarCacheKey(requestedMode, engagementCalendarRequestedRange(currentFilters)) === cacheKey;
+        if (stillActive) activateEngagementCalendarCache(cacheKey, requestedRange, entry);
+        if (stillActive && elements.engagementsStatus) {
+          elements.engagementsStatus.textContent = "";
+          delete elements.engagementsStatus.dataset.tone;
+          elements.engagementsStatus.hidden = true;
+        }
+        return entry;
+      } catch (error) {
+        if (shouldActivate && requestedMode === engagementNavigationMode() && elements.engagementsStatus) {
+          elements.engagementsStatus.hidden = false;
+          elements.engagementsStatus.textContent = cachedEntry
+            ? `Liste affichée depuis le cache ; actualisation impossible : ${error?.message || error}`
+            : `Calendrier indisponible : ${error?.message || error}`;
+          elements.engagementsStatus.dataset.tone = "error";
+        }
+        return cachedEntry || null;
+      } finally {
+        if (engagementCompetitionCalendarRequests.get(cacheKey) === requestPromise) {
+          engagementCompetitionCalendarRequests.delete(cacheKey);
+        }
+      }
+    })();
+    engagementCompetitionCalendarRequests.set(cacheKey, requestPromise);
+    return requestPromise;
   }
 
   function engagementCompetitionPayloadFromFields(fields = {}) {
@@ -13380,7 +14128,7 @@
       elements.engagementsCreateForm?.reset();
       updateEngagementMaxEventsFields("create");
       updateEngagementCreateFormAccess();
-      engagementCompetitionsLoaded = false;
+      invalidateEngagementCalendarCaches();
       elements.engagementsCreateDialog?.close();
       setEngagementsTab("calendar");
       await loadEngagementCompetitions({ force: true });
@@ -13450,7 +14198,7 @@
       }
       const result = await callFunction("updateEngagementCompetition", payload);
       selectedEngagementCompetition = result.competition || null;
-      engagementCompetitionsLoaded = false;
+      invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty("general");
@@ -13557,7 +14305,7 @@
         ...returnedCompetition,
         ...(expectedProgramItemCount && !returnedProgramItemCount ? { programSessions: payload.programSessions } : {})
       };
-      engagementCompetitionsLoaded = false;
+      invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
       activeEngagementProgramSessionId = "";
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
@@ -13660,7 +14408,7 @@
         ...returnedCompetition,
         ...(!programConfirmed ? { programSessions: payload.programSessions } : {})
       };
-      engagementCompetitionsLoaded = false;
+      invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
       activeEngagementProgramSessionId = "";
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
@@ -13699,7 +14447,7 @@
       });
       const result = await callFunction("updateEngagementCompetition", payload);
       selectedEngagementCompetition = result.competition || null;
-      engagementCompetitionsLoaded = false;
+      invalidateEngagementCalendarCaches();
       await loadEngagementCompetitions({ force: true });
       renderEngagementCompetitionDetail(selectedEngagementCompetition || {});
       clearEngagementDetailTabDirty("fees");
@@ -13743,7 +14491,11 @@
       portalPendingOverviewLoading = false;
       renderPortalPendingOverview();
       resetEngagementClubData();
+      engagementCompetitions = [];
       engagementCompetitionsLoaded = false;
+      engagementCompetitionsLoadedRange = "";
+      engagementCompetitionsLoadedCacheKey = "";
+      engagementCompetitionsCachedAt = 0;
       engagementAccessRequestsLoaded = false;
       engagementDeletionRequestsLoaded = false;
       accessUsers = [];
@@ -13753,6 +14505,7 @@
       accessPreviousCursors = [];
       accessPage = 1;
       accessDeletionRequestsLoaded = false;
+      resetEngagementNationalAuditData();
     }
     activeAuthUid = signedIn ? authUid : "";
     if (!signedIn && status.ready) {
@@ -13763,6 +14516,7 @@
       portalPendingOverviewLoading = false;
       renderPortalPendingOverview();
       resetEngagementClubData();
+      resetEngagementNationalAuditData();
     }
     document.body.dataset.adminAuth = !authReady ? "loading" : signedIn ? "unlocked" : "locked";
     document.body.setAttribute("aria-busy", authReady ? "false" : "true");
@@ -14659,8 +15413,13 @@
     });
     elements.engagementsNationalAuditRefresh?.addEventListener("click", () => loadEngagementNationalAuditLogs({ force: true }));
     elements.engagementsNationalAuditSearch?.addEventListener("input", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditPeriod?.addEventListener("change", () => loadEngagementNationalAuditLogs({ force: true }));
+    elements.engagementsNationalAuditClub?.addEventListener("change", () => loadEngagementNationalAuditLogs({ force: true }));
+    elements.engagementsNationalAuditActorSearch?.addEventListener("input", handleEngagementNationalAuditActorSearch);
     elements.engagementsNationalAuditType?.addEventListener("change", renderEngagementNationalAuditLogs);
+    elements.engagementsNationalAuditOrigin?.addEventListener("change", renderEngagementNationalAuditLogs);
     elements.engagementsNationalAuditReset?.addEventListener("click", resetEngagementNationalAuditFilters);
+    elements.engagementsNationalAuditLoadMore?.addEventListener("click", () => loadEngagementNationalAuditLogs({ append: true }));
     elements.engagementsNationalSwimmersList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-swimmer-action]");
       if (!button) return;
