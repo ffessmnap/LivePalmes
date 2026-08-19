@@ -17926,3 +17926,14 @@
     width: 100%;
   }
 }
+/* Fiche des événements publics non compétitifs. */
+.admin-calendar-event-dialog { width:min(960px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+.admin-calendar-event-dialog .admin-engagements-form { margin:0; }
+.admin-calendar-event-description { grid-column:1 / -1; }
+.admin-calendar-event-check { align-content:center; }
+.admin-calendar-program-row { display:grid; grid-template-columns:1fr 140px 105px 105px minmax(180px,2fr) auto; align-items:end; gap:10px; padding:12px 0; border-bottom:1px solid var(--admin-border, #dce7e9); }
+.admin-calendar-program-row label { display:grid; gap:5px; }
+.admin-calendar-documents { margin-top:16px; }
+.admin-calendar-document { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid var(--admin-border, #dce7e9); }
+.admin-calendar-document div:first-child { display:grid; gap:3px; }
+@media (max-width:800px) { .admin-calendar-program-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.admin-calendar-program-summary { grid-column:1/-1; }.admin-calendar-document { align-items:flex-start; flex-direction:column; } }

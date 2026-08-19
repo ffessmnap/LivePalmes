@@ -298,6 +298,16 @@ Pour chaque competition, le club voit notamment :
 
 Les engagements des autres clubs ne sont jamais visibles par un club.
 
+## Calendrier public
+
+Le calendrier public est distinct du calendrier d'engagement d'un club et reste accessible sans compte. Il réunit les compétitions piscine et eau libre ainsi que les formations, stages, réunions et autres événements. Les seuls niveaux proposés sont départemental, régional et national.
+
+Une compétition ou un événement n'apparaît publiquement qu'après une action explicite d'un administrateur régional ou national. La publication ne modifie pas le statut des engagements. L'affichage calcule, sur des journées complètes, les états `En cours`, `À venir`, `Annulée`, `Terminée — résultats en attente` et `Résultats publiés`, avec priorité aux événements en cours puis à venir. Un événement annulé reste consultable.
+
+La vue initiale présente la saison courante et les événements en cours ou futurs. Les filtres saison, région, niveau et type sont locaux. La fiche publique contient les informations pratiques sans coordonnées personnelles, le programme synthétique par réunion, le lien vers les engagements du portail et les documents officiels. Elle rappelle que les engagements sont effectués par un responsable de club.
+
+Les formations, stages, réunions et autres événements sont créés dans le calendrier par les administrateurs, jamais par les clubs. Les résultats restent réservés à une évolution ultérieure ; les champs de liaison sont néanmoins prévus.
+
 ## Parcours d'engagement club
 
 La page d'engagement d'une competition est organisee en etapes ou onglets.
@@ -539,9 +549,11 @@ Les niveaux 2 et 3 peuvent telecharger :
 
 Chaque club peut telecharger uniquement son propre PDF.
 
-Tous les clubs connectes peuvent consulter les documents d'information d'une competition, qu'ils appartiennent ou non a une region invitee. Un administrateur regional peut mettre en ligne ces documents pour une competition de sa region ; un administrateur national peut le faire pour toutes les competitions.
+Tous les documents d'information d'une compétition publiée sont publics et accessibles sans connexion, quelle que soit la région du visiteur. Un administrateur régional peut mettre en ligne ces documents pour une compétition de sa région ; un administrateur national peut le faire pour toutes les compétitions. Les exports TXT et les PDF récapitulatifs des clubs restent privés.
 
 Un depot peut contenir plusieurs fichiers. Les formats PDF, bureautiques, images et ZIP sont acceptes dans la limite de 10 Mo par fichier et de 20 documents actifs par competition. Le titre est obligatoire ; la categorie et une description facultative facilitent la consultation. L'identite de l'auteur est visible uniquement par les administrateurs regionaux et nationaux.
+
+Le remplacement du fichier d'un document conserve son chemin et son jeton de téléchargement : son URL publique reste donc stable.
 
 La GED conserve seulement la derniere version des documents. Un remplacement supprime l'ancien fichier et une suppression ne produit pas de notification.
 

@@ -71,6 +71,8 @@ Exemples :
 - `performances/mpf.html` : meilleures performances francaises ;
 - `performances/tops.html` : classements TOP ;
 - `performances/nageur.html` : fiches et historiques des nageurs.
+- `calendrier.html` : calendrier fédéral public filtrable ;
+- `competition.html?id=...` : fiche publique d'un événement.
 
 Ces pages lisent surtout des fichiers publics prepares et optimises. Elles ne doivent pas parcourir directement la grande base interne des performances.
 
@@ -181,11 +183,15 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 - `assets/pages/resultats.js` ;
 - `assets/pages/medailles.js` ;
 - `assets/pages/archives.js` ;
+- `assets/pages/calendrier.js` et `assets/pages/competition.js` ;
+- `assets/public/livepalmes-public-calendar.js` : chargement et règles d'affichage du calendrier ;
 - `assets/pages/pdf.js` ;
 - `assets/pages/resultat-pdf.js` ;
 - `assets/pages/series-pdf.js`.
 
 Ces fichiers doivent rester separes du pilotage autant que possible.
+
+Le calendrier public lit uniquement les fichiers JSON du bucket public sous `calendar/`. Firestore reste derrière les Cloud Functions du portail et les déclencheurs de publication.
 
 ### Espace performances
 

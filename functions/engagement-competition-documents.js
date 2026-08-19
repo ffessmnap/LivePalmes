@@ -95,6 +95,14 @@ function competitionDocumentDownloadUrl(bucket, storagePath, token) {
   return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(storagePath)}?alt=media&token=${encodeURIComponent(token)}`;
 }
 
+function competitionDocumentTokenFromUrl(url = "") {
+  try {
+    return cleanText(new URL(String(url || "")).searchParams.get("token")).slice(0, 120);
+  } catch (_) {
+    return "";
+  }
+}
+
 function cleanCompetitionDocument(raw = {}, { includeUploader = false } = {}) {
   const id = cleanText(raw.id).slice(0, 80);
   const storagePath = cleanText(raw.storagePath).slice(0, 320);
@@ -157,6 +165,7 @@ module.exports = {
   cleanCompetitionDocumentInput,
   cleanCompetitionDocuments,
   competitionDocumentDownloadUrl,
+  competitionDocumentTokenFromUrl,
   competitionDocumentStoragePath,
   decodeCompetitionDocumentDataUrl,
   documentExtension,

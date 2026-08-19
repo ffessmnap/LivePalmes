@@ -30,6 +30,10 @@ Le navigateur n'accède donc pas directement aux collections du portail dans Fir
 
 ## Données principales
 
+Le calendrier public complète les compétitions d'engagement avec deux collections internes agrégées par saison : `engagementCalendarEvents` pour les événements non compétitifs et `engagementCalendarEventCalendars` pour leur index. Les compétitions continuent d'utiliser `engagementCompetitions` et `engagementCompetitionCalendars`.
+
+Les déclencheurs publient ensuite des fichiers JSON statiques dans le bucket public : `calendar/manifest.json`, `calendar/seasons/{finSaison}.json` et `calendar/events/{id}.json`. Les pages `calendrier.html` et `competition.html` ne lisent pas Firestore.
+
 Les informations sont réparties par fonction :
 
 - `engagementCompetitions` : définition et état des compétitions ;
@@ -46,6 +50,8 @@ Les informations sont réparties par fonction :
 D'autres collections conservent les demandes de suppression et les traces d'administration. La structure exacte du document d'un club reste définie dans `functions/index.js`.
 
 ## Documents et courriels
+
+Les documents d'information utilisent le même stockage pour les compétitions et les autres événements. Ils sont publics ; leur remplacement réécrit le même objet avec le même jeton afin de conserver l'URL. Les exports techniques et récapitulatifs clubs ne sont pas exposés dans les fichiers publics.
 
 Les pièces générées liées aux engagements sont stockées dans Firebase Storage sous le préfixe `entry-documents`. Les documents d'information déposés par les organisateurs utilisent `competition-documents`. Leurs métadonnées sont bornées à 20 entrées dans le document `engagementCompetitions` afin que leur consultation n'ajoute aucune lecture Firestore à l'ouverture d'une fiche.
 

@@ -49,6 +49,7 @@ const {
   cleanCompetitionDocumentInput,
   cleanCompetitionDocuments,
   competitionDocumentDownloadUrl,
+  competitionDocumentTokenFromUrl,
   competitionDocumentStoragePath,
   decodeCompetitionDocumentDataUrl
 } = require("./engagement-competition-documents");
@@ -64,6 +65,16 @@ const {
   importPublicationResultStatus,
   importPublicationStatus
 } = require("./performance-import-publication");
+const {
+  PUBLIC_CALENDAR_GENERIC_EVENT_TYPES,
+  cleanPublicCalendarEventType,
+  cleanPublicCalendarLevel,
+  cleanPublicCalendarProgram,
+  cleanPublicCalendarPublicationStatus,
+  cleanPublicCalendarUrl,
+  publicCalendarDetail,
+  publicCalendarSummary
+} = require("./public-calendar");
 
 initializeApp();
 const auth = getAuth();
@@ -180,6 +191,8 @@ const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.j
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
 const PUBLIC_PERFORMANCE_FILES_PATH = "performance-public-firestore";
 const PUBLIC_COMPETITION_PDF_PREFIX = "competition-pdfs";
+const PUBLIC_CALENDAR_FILES_PATH = "calendar";
+const PUBLIC_CALENDAR_MAX_BYTES = 900000;
 const ENGAGEMENT_PDF_LOGO_PATH = path.join(__dirname, "assets", "logo-ffessm-nage-avec-palmes.png");
 const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
 const MAX_COMPETITION_IMPORT_PERFORMANCES = 5000;
@@ -195,6 +208,8 @@ const ENGAGEMENT_CLUB_ROSTERS_COLLECTION = "engagementClubRosters";
 const ENGAGEMENT_CLUBS_COLLECTION = "engagementClubs";
 const ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION = "engagementPublicDirectories";
 const ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION = "engagementCompetitionCalendars";
+const ENGAGEMENT_CALENDAR_EVENTS_COLLECTION = "engagementCalendarEvents";
+const ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION = "engagementCalendarEventCalendars";
 const ENGAGEMENT_CONFIGURATION_COLLECTION = "engagementConfigurations";
 const ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION = "engagementCompetitionEntrySummaries";
 const ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION = "engagementClubCompetitionIndexes";
@@ -4162,6 +4177,10 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     date: cleanIsoDate(data.date),
     endDate: cleanIsoDate(data.endDate) || cleanIsoDate(data.date),
     location: cleanText(data.location).slice(0, 160),
+    city: cleanText(data.city || data.location).slice(0, 120),
+    address: cleanText(data.address).slice(0, 300),
+    organizer: cleanText(data.organizer).slice(0, 160),
+    publicDescription: cleanText(data.publicDescription).slice(0, 3000),
     regionId: cleanText(data.regionId).slice(0, 80),
     invitedRegionIds: cleanEngagementRegionIds(data.invitedRegionIds, data.regionId),
     level: cleanEngagementCompetitionLevel(data.level || data.competitionLevel),
@@ -4171,6 +4190,12 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     computerEmail: normalizeEmail(data.computerEmail).slice(0, 180),
     officialsManagerEmail: normalizeEmail(data.officialsManagerEmail).slice(0, 180),
     entryStatus: cleanEngagementEntryStatus(data.entryStatus || data.status),
+    publicationStatus: cleanPublicCalendarPublicationStatus(data.publicationStatus),
+    canceled: data.canceled === true,
+    resultsPublishedAt: cleanText(data.resultsPublishedAt).slice(0, 40),
+    resultsUrl: cleanText(data.resultsUrl).slice(0, 900),
+    resultsPdfUrl: cleanText(data.resultsPdfUrl).slice(0, 900),
+    documentCount: cleanCompetitionDocuments(data.clubDocuments || []).length,
     officialsRequired: data.officialsRequired === true,
     poolLength: cleanEngagementPoolLength(data.poolLength),
     poolLaneCount: cleanEngagementPoolLaneCount(data.poolLaneCount),
@@ -4195,6 +4220,294 @@ function engagementCompetitionListItem(doc) {
 
 function engagementCompetitionCalendarRef(db, endYear) {
   return db.collection(ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION).doc(String(Math.trunc(Number(endYear) || 0)));
+}
+
+function engagementCalendarEventCalendarRef(db, endYear) {
+  return db.collection(ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION).doc(String(Math.trunc(Number(endYear) || 0)));
+}
+
+function cleanEngagementCalendarEventPayload(raw = {}, context = {}) {
+  const eventType = cleanPublicCalendarEventType(raw.eventType, "");
+  const name = cleanText(raw.name || raw.title).slice(0, 160);
+  const date = cleanIsoDate(raw.date);
+  const endDate = cleanIsoDate(raw.endDate) || date;
+  const location = cleanText(raw.location).slice(0, 160);
+  const city = cleanText(raw.city || raw.location).slice(0, 120);
+  const level = cleanPublicCalendarLevel(raw.level);
+  const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
+  const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
+  if (!context.national && !context.region) {
+    throw new HttpsError("permission-denied", "Droit de gestion du calendrier requis.");
+  }
+  if (!context.national && level === "national") {
+    throw new HttpsError("permission-denied", "Un evenement national doit etre cree par le niveau national.");
+  }
+  if (!PUBLIC_CALENDAR_GENERIC_EVENT_TYPES.has(eventType)) {
+    throw new HttpsError("invalid-argument", "Type d'evenement invalide.");
+  }
+  if (!name || !date || !location || !city) {
+    throw new HttpsError("invalid-argument", "Nom, date, ville et lieu sont obligatoires.");
+  }
+  if (endDate < date) {
+    throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
+  }
+  if (level !== "national" && !regionId) {
+    throw new HttpsError("invalid-argument", "Region obligatoire pour un evenement departemental ou regional.");
+  }
+  return {
+    eventType,
+    name,
+    date,
+    endDate,
+    city,
+    location,
+    address: cleanText(raw.address).slice(0, 300),
+    organizer: cleanText(raw.organizer).slice(0, 160),
+    publicDescription: cleanText(raw.publicDescription).slice(0, 3000),
+    entryDeadlineAt: cleanIsoDateTime(raw.entryDeadlineAt),
+    registrationUrl: cleanPublicCalendarUrl(raw.registrationUrl, 500),
+    regionId,
+    level,
+    publicationStatus: cleanPublicCalendarPublicationStatus(raw.publicationStatus),
+    canceled: raw.canceled === true,
+    programSessions: cleanPublicCalendarProgram(raw.programSessions || raw.program || [])
+  };
+}
+
+function engagementCalendarEventCalendarItem(data = {}, id = "") {
+  return {
+    id: cleanText(id || data.id).slice(0, 128),
+    sourceType: "calendarEvent",
+    eventType: cleanPublicCalendarEventType(data.eventType),
+    competitionType: cleanPublicCalendarEventType(data.eventType),
+    name: cleanText(data.name || data.title).slice(0, 160),
+    date: cleanIsoDate(data.date),
+    endDate: cleanIsoDate(data.endDate) || cleanIsoDate(data.date),
+    city: cleanText(data.city || data.location).slice(0, 120),
+    location: cleanText(data.location).slice(0, 160),
+    address: cleanText(data.address).slice(0, 300),
+    organizer: cleanText(data.organizer).slice(0, 160),
+    publicDescription: cleanText(data.publicDescription).slice(0, 3000),
+    entryDeadlineAt: cleanIsoDateTime(data.entryDeadlineAt),
+    registrationUrl: cleanPublicCalendarUrl(data.registrationUrl, 500),
+    regionId: cleanText(data.regionId).slice(0, 80),
+    level: cleanPublicCalendarLevel(data.level),
+    publicationStatus: cleanPublicCalendarPublicationStatus(data.publicationStatus),
+    canceled: data.canceled === true,
+    documentCount: cleanCompetitionDocuments(data.clubDocuments || []).length,
+    entryStatus: "",
+    updatedAt: cleanText(data.updatedAt).slice(0, 40)
+  };
+}
+
+function engagementCalendarEventDetailItem(doc, options = {}) {
+  const data = doc?.data ? doc.data() || {} : doc || {};
+  const id = cleanText(doc?.id || options.id).slice(0, 128);
+  return {
+    ...engagementCalendarEventCalendarItem(data, id),
+    programSessions: cleanPublicCalendarProgram(data.programSessions || []),
+    clubDocuments: cleanCompetitionDocuments(data.clubDocuments || [], {
+      includeUploader: options.includeDocumentUploader === true
+    }),
+    createdAt: cleanText(data.createdAt).slice(0, 40),
+    createdBy: options.includeDocumentUploader === true ? cleanText(data.createdBy).slice(0, 128) : ""
+  };
+}
+
+function engagementCalendarEventItemsFromData(data = {}) {
+  const events = data.events && typeof data.events === "object" ? data.events : {};
+  return Object.values(events)
+    .map((event) => engagementCalendarEventCalendarItem(event, event.id))
+    .filter((event) => event.id && event.date);
+}
+
+function publicCalendarFile(relativePath = "") {
+  const cleanPath = String(relativePath || "").replace(/^\/+/, "");
+  return storage.bucket(PUBLIC_PERFORMANCE_BUCKET).file(`${PUBLIC_CALENDAR_FILES_PATH}/${cleanPath}`);
+}
+
+async function readPublicCalendarJson(relativePath, fallback = {}) {
+  try {
+    const [buffer] = await publicCalendarFile(relativePath).download();
+    return JSON.parse(buffer.toString("utf8"));
+  } catch (error) {
+    if (error?.code === 404 || error?.code === 403 || /No such object|not found/i.test(error?.message || "")) return fallback;
+    throw error;
+  }
+}
+
+async function savePublicCalendarJson(relativePath, payload, cacheControl = "public, max-age=300") {
+  const json = JSON.stringify(payload);
+  if (Buffer.byteLength(json, "utf8") > PUBLIC_CALENDAR_MAX_BYTES) {
+    throw new Error(`Fichier calendrier public trop volumineux : ${relativePath}.`);
+  }
+  await publicCalendarFile(relativePath).save(json, {
+    resumable: false,
+    contentType: "application/json; charset=utf-8",
+    metadata: { cacheControl }
+  });
+  return `${PUBLIC_CALENDAR_FILES_PATH}/${relativePath}`;
+}
+
+async function savePublicCalendarSeasonSnapshot(season, payload) {
+  const relativePath = `seasons/${season.endYear}.json`;
+  const file = publicCalendarFile(relativePath);
+  const json = JSON.stringify(payload);
+  if (Buffer.byteLength(json, "utf8") > PUBLIC_CALENDAR_MAX_BYTES) {
+    throw new Error(`Calendrier public ${season.label} trop volumineux.`);
+  }
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    let current = {};
+    let generation = 0;
+    try {
+      const [[buffer], [metadata]] = await Promise.all([file.download(), file.getMetadata()]);
+      current = JSON.parse(buffer.toString("utf8"));
+      generation = Number(metadata.generation || 0);
+    } catch (error) {
+      if (!(error?.code === 404 || /No such object|not found/i.test(error?.message || ""))) throw error;
+    }
+    if (cleanText(current.sourceUpdatedAt) > cleanText(payload.sourceUpdatedAt)) return current;
+    try {
+      await file.save(json, {
+        resumable: false,
+        contentType: "application/json; charset=utf-8",
+        metadata: { cacheControl: "public, max-age=300" },
+        preconditionOpts: { ifGenerationMatch: generation }
+      });
+      return payload;
+    } catch (error) {
+      if (Number(error?.code) !== 412) throw error;
+    }
+  }
+  throw new Error(`Publication concurrente du calendrier ${season.label} impossible.`);
+}
+
+async function updatePublicCalendarManifest(season, seasonPayload) {
+  const file = publicCalendarFile("manifest.json");
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    let current = { seasons: [] };
+    let generation = 0;
+    try {
+      const [[buffer], [metadata]] = await Promise.all([file.download(), file.getMetadata()]);
+      current = JSON.parse(buffer.toString("utf8"));
+      generation = Number(metadata.generation || 0);
+    } catch (error) {
+      if (!(error?.code === 404 || /No such object|not found/i.test(error?.message || ""))) throw error;
+    }
+    const byEndYear = new Map((Array.isArray(current.seasons) ? current.seasons : []).map((item) => [Number(item.endYear), item]));
+    if (seasonPayload.events.length) {
+      byEndYear.set(season.endYear, {
+        ...season,
+        path: `${PUBLIC_CALENDAR_FILES_PATH}/seasons/${season.endYear}.json`,
+        eventCount: seasonPayload.events.length,
+        updatedAt: seasonPayload.updatedAt
+      });
+    } else {
+      byEndYear.delete(season.endYear);
+    }
+    const manifest = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      seasons: Array.from(byEndYear.values()).sort((left, right) => Number(right.endYear) - Number(left.endYear))
+    };
+    try {
+      await file.save(JSON.stringify(manifest), {
+        resumable: false,
+        contentType: "application/json; charset=utf-8",
+        metadata: { cacheControl: "no-store, max-age=0" },
+        preconditionOpts: { ifGenerationMatch: generation }
+      });
+      return manifest;
+    } catch (error) {
+      if (Number(error?.code) !== 412) throw error;
+    }
+  }
+  throw new Error("Publication concurrente du manifeste calendrier impossible.");
+}
+
+function publicCalendarCompetitionDetail(data = {}, id = "") {
+  const eventLabelByCode = Object.fromEntries(cleanEngagementCompetitionEvents(data.events || [], {
+    strict: false,
+    competitionType: cleanEngagementCompetitionType(data.competitionType)
+  }).map((event) => [event.code, event.shortLabel || event.label || event.code]));
+  return publicCalendarDetail(data, {
+    id,
+    sourceType: "competition",
+    regionLabels: CLUB_REFERENCE_REGION_LABELS,
+    eventLabelByCode
+  });
+}
+
+function publicCalendarGenericEventDetail(data = {}, id = "") {
+  return publicCalendarDetail(data, {
+    id,
+    sourceType: "calendarEvent",
+    regionLabels: CLUB_REFERENCE_REGION_LABELS
+  });
+}
+
+async function publishPublicCalendarDetail(data = {}, id = "", sourceType = "competition") {
+  const published = cleanPublicCalendarPublicationStatus(data.publicationStatus) === "published";
+  const file = publicCalendarFile(`events/${cleanText(id).slice(0, 128)}.json`);
+  if (!published) {
+    await file.delete({ ignoreNotFound: true });
+    return { published: false };
+  }
+  const detail = sourceType === "calendarEvent"
+    ? publicCalendarGenericEventDetail(data, id)
+    : publicCalendarCompetitionDetail(data, id);
+  await savePublicCalendarJson(`events/${detail.id}.json`, detail, "public, max-age=60, must-revalidate");
+  return { published: true, detail };
+}
+
+async function publishPublicCalendarSeason(endYear) {
+  const season = engagementSeasonBoundsFromEndYear(endYear);
+  const [competitionSnapshot, eventSnapshot] = await db.getAll(
+    engagementCompetitionCalendarRef(db, season.endYear),
+    engagementCalendarEventCalendarRef(db, season.endYear)
+  );
+  const competitionData = competitionSnapshot.exists ? competitionSnapshot.data() || {} : {};
+  const eventData = eventSnapshot.exists ? eventSnapshot.data() || {} : {};
+  const events = [
+    ...engagementCompetitionCalendarItemsFromData(competitionData).map((item) => publicCalendarSummary(item, {
+      id: item.id,
+      sourceType: "competition",
+      regionLabels: CLUB_REFERENCE_REGION_LABELS
+    })),
+    ...engagementCalendarEventItemsFromData(eventData).map((item) => publicCalendarSummary(item, {
+      id: item.id,
+      sourceType: "calendarEvent",
+      regionLabels: CLUB_REFERENCE_REGION_LABELS
+    }))
+  ].filter((item) => item.publicationStatus === "published")
+    .sort((left, right) => cleanText(left.date).localeCompare(cleanText(right.date)) || cleanText(left.name).localeCompare(cleanText(right.name), "fr"));
+  const sourceUpdatedAt = [competitionData.updatedAt, eventData.updatedAt].map(cleanText).sort().at(-1) || new Date().toISOString();
+  const payload = {
+    version: 1,
+    ...season,
+    updatedAt: new Date().toISOString(),
+    sourceUpdatedAt,
+    eventCount: events.length,
+    events
+  };
+  const publishedPayload = await savePublicCalendarSeasonSnapshot(season, payload);
+  await updatePublicCalendarManifest(season, publishedPayload);
+  return publishedPayload;
+}
+
+async function publishPublicCalendarChange(event = {}, sourceType = "competition") {
+  const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
+  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
+  const eventId = cleanText(event.params?.competitionId || event.params?.calendarEventId).slice(0, 128);
+  if (!eventId) return;
+  if (after) await publishPublicCalendarDetail(after, eventId, sourceType);
+  const seasons = new Set();
+  [before, after].filter(Boolean).forEach((data) => {
+    const date = cleanIsoDate(data.date);
+    if (date) seasons.add(engagementSeasonEndYearFromIsoDate(date));
+  });
+  for (const endYear of seasons) await publishPublicCalendarSeason(endYear);
+  if (!after) await publicCalendarFile(`events/${eventId}.json`).delete({ ignoreNotFound: true });
 }
 
 function engagementClubCompetitionIndexRef(db, clubId) {
@@ -4324,6 +4637,50 @@ exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
   document: "engagementCompetitions/{competitionId}"
 }, async (event) => {
   await syncEngagementCompetitionCalendarFromChange(event);
+  await publishPublicCalendarChange(event, "competition");
+});
+
+async function syncEngagementCalendarEventFromChange(event = {}) {
+  const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
+  const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
+  const calendarEventId = cleanText(event.params?.calendarEventId).slice(0, 128);
+  if (!calendarEventId) return;
+  const now = new Date().toISOString();
+  const batch = db.batch();
+  let batchSize = 0;
+  const beforeDate = before ? cleanIsoDate(before.date) : "";
+  const afterDate = after ? cleanIsoDate(after.date) : "";
+  const beforeSeason = beforeDate ? engagementSeasonEndYearFromIsoDate(beforeDate) : null;
+  const afterSeason = afterDate ? engagementSeasonEndYearFromIsoDate(afterDate) : null;
+  if (beforeSeason !== null && (!after || beforeSeason !== afterSeason)) {
+    const season = engagementSeasonBoundsFromEndYear(beforeSeason);
+    batch.set(engagementCalendarEventCalendarRef(db, beforeSeason), {
+      ...season,
+      generatedAt: now,
+      updatedAt: now,
+      events: { [calendarEventId]: FieldValue.delete() }
+    }, { merge: true });
+    batchSize += 1;
+  }
+  if (after && afterDate && afterSeason !== null) {
+    const season = engagementSeasonBoundsFromEndYear(afterSeason);
+    batch.set(engagementCalendarEventCalendarRef(db, afterSeason), {
+      ...season,
+      generatedAt: now,
+      updatedAt: now,
+      events: { [calendarEventId]: engagementCalendarEventCalendarItem(after, calendarEventId) }
+    }, { merge: true });
+    batchSize += 1;
+  }
+  if (batchSize) await batch.commit();
+}
+
+exports.syncEngagementCalendarEventToCalendar = onDocumentWritten({
+  region: REGION,
+  document: `${ENGAGEMENT_CALENDAR_EVENTS_COLLECTION}/{calendarEventId}`
+}, async (event) => {
+  await syncEngagementCalendarEventFromChange(event);
+  await publishPublicCalendarChange(event, "calendarEvent");
 });
 
 function engagementCompetitionDetailItem(doc, options = {}) {
@@ -8516,6 +8873,10 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const date = cleanIsoDate(raw.date);
   const endDate = cleanIsoDate(raw.endDate) || date;
   const location = cleanText(raw.location).slice(0, 160);
+  const city = cleanText(raw.city || raw.location).slice(0, 120);
+  const address = cleanText(raw.address).slice(0, 300);
+  const organizer = cleanText(raw.organizer).slice(0, 160);
+  const publicDescription = cleanText(raw.publicDescription).slice(0, 3000);
   const level = cleanEngagementCompetitionLevel(raw.level);
   const entryDeadlineAt = cleanEngagementDeadlineAt(raw.entryDeadlineAt);
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
@@ -8584,6 +8945,10 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     date,
     endDate,
     location,
+    city,
+    address,
+    organizer,
+    publicDescription,
     regionId,
     invitedRegionIds,
     level,
@@ -8593,6 +8958,8 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     computerEmail,
     officialsManagerEmail,
     entryStatus,
+    publicationStatus: cleanPublicCalendarPublicationStatus(raw.publicationStatus),
+    canceled: raw.canceled === true,
     officialsRequired: raw.officialsRequired === true,
     poolLength,
     poolLaneCount,
@@ -8735,6 +9102,143 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
+exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementAccessContext(request);
+  if (!context.national && (!context.region || !context.regionId)) {
+    throw new HttpsError("permission-denied", "Droit de gestion du calendrier requis.");
+  }
+  const rawRanges = Array.isArray(request.data?.ranges) && request.data.ranges.length
+    ? request.data.ranges.slice(0, 2)
+    : [{ fromDate: request.data?.fromDate, toDate: request.data?.toDate }];
+  const ranges = rawRanges.map((rawRange = {}) => {
+    const startDate = cleanIsoDate(rawRange.fromDate) || new Date().toISOString().slice(0, 10);
+    const season = engagementSeasonBoundsFromEndYear(engagementSeasonEndYearFromIsoDate(startDate));
+    return {
+      startDate,
+      endDate: cleanIsoDate(rawRange.toDate) || season.endDate,
+      season
+    };
+  });
+  const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
+  const refs = seasonEndYears.map((endYear) => engagementCalendarEventCalendarRef(db, endYear));
+  const snapshots = await db.getAll(...refs);
+  const byEndYear = new Map(snapshots.map((snapshot, index) => [seasonEndYears[index], snapshot]));
+  const events = Array.from(new Map(ranges.flatMap((range) => {
+    const snapshot = byEndYear.get(range.season.endYear);
+    const items = snapshot?.exists ? engagementCalendarEventItemsFromData(snapshot.data() || {}) : [];
+    return items
+      .filter((item) => item.date >= range.startDate && item.date <= range.endDate)
+      .map((item) => [item.id, item]);
+  })).values())
+    .filter((item) => context.national || (item.level !== "national" && item.regionId === context.regionId))
+    .sort((left, right) => cleanText(left.date).localeCompare(cleanText(right.date)) || cleanText(left.name).localeCompare(cleanText(right.name), "fr"))
+    .slice(0, 1200);
+  return {
+    ok: true,
+    events,
+    readStats: portalReadStats("listEngagementCalendarEvents", startedAt, {
+      baseDocuments: 1 + snapshots.length,
+      variableDocumentsMax: 0,
+      cacheHit: snapshots.every((snapshot) => snapshot.exists && cleanText(snapshot.data()?.generatedAt))
+    })
+  };
+});
+
+exports.getEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
+  if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  const snapshot = await db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
+  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  return {
+    ok: true,
+    event: engagementCalendarEventDetailItem(snapshot, { includeDocumentUploader: true })
+  };
+});
+
+exports.createEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
+  const now = new Date().toISOString();
+  const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc();
+  const payload = {
+    ...eventData,
+    publicationStatus: "draft",
+    clubDocuments: [],
+    createdAt: now,
+    createdBy: context.uid,
+    updatedAt: now,
+    updatedBy: context.uid
+  };
+  await ref.set(payload);
+  await writeAuditLog("engagementCalendarEvent.created", context.uid, {
+    calendarEventId: ref.id,
+    name: payload.name,
+    date: payload.date,
+    eventType: payload.eventType,
+    regionId: payload.regionId,
+    level: payload.level
+  });
+  return { ok: true, event: engagementCalendarEventDetailItem({ id: ref.id, data: () => payload }, { includeDocumentUploader: true }) };
+});
+
+exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
+  if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
+  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
+  assertCanManageEngagementCompetition(context, eventData);
+  const now = new Date().toISOString();
+  const payload = { ...eventData, updatedAt: now, updatedBy: context.uid };
+  await ref.set(payload, { merge: true });
+  await writeAuditLog("engagementCalendarEvent.updated", context.uid, {
+    calendarEventId,
+    name: payload.name,
+    date: payload.date,
+    eventType: payload.eventType,
+    publicationStatus: payload.publicationStatus,
+    canceled: payload.canceled
+  });
+  return {
+    ok: true,
+    event: engagementCalendarEventDetailItem({
+      id: calendarEventId,
+      data: () => ({ ...snapshot.data(), ...payload })
+    }, { includeDocumentUploader: true })
+  };
+});
+
+exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
+  if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
+  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  const data = snapshot.data() || {};
+  await ref.delete();
+  const documents = cleanCompetitionDocuments(data.clubDocuments || [], { includeUploader: true });
+  const deletionResults = await Promise.allSettled(documents.map((document) =>
+    storage.bucket(LIVEPALMES_STORAGE_BUCKET)
+      .file(assertEngagementCompetitionDocumentPath(document.storagePath))
+      .delete({ ignoreNotFound: true })
+  ));
+  await writeAuditLog("engagementCalendarEvent.deleted", context.uid, {
+    calendarEventId,
+    name: data.name || "",
+    documentCount: documents.length,
+    documentDeleteErrorCount: deletionResults.filter((result) => result.status === "rejected").length
+  });
+  return { ok: true, deleted: true, calendarEventId };
+});
+
 exports.listEngagementOpenWaterCourses = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   await engagementAccessContext(request);
@@ -8853,17 +9357,21 @@ function assertEngagementCompetitionDocumentPath(storagePath = "") {
 
 async function engagementCompetitionDocumentContext(request) {
   const context = await engagementAccessContext(request);
+  const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
-  if (!competitionId) throw new HttpsError("invalid-argument", "Compétition requise.");
-  const ref = db.collection("engagementCompetitions").doc(competitionId);
+  const eventId = calendarEventId || competitionId;
+  const sourceType = calendarEventId ? "calendarEvent" : "competition";
+  if (!eventId) throw new HttpsError("invalid-argument", "Compétition ou evenement requis.");
+  const collection = sourceType === "calendarEvent" ? ENGAGEMENT_CALENDAR_EVENTS_COLLECTION : "engagementCompetitions";
+  const ref = db.collection(collection).doc(eventId);
   const snapshot = await ref.get();
-  if (!snapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
+  if (!snapshot.exists) throw new HttpsError("not-found", "Compétition ou evenement introuvable.");
   assertCanManageEngagementCompetition(context, snapshot.data() || {});
-  return { context, competitionId, ref, snapshot };
+  return { context, competitionId: eventId, calendarEventId, sourceType, ref, snapshot };
 }
 
 exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, async (request) => {
-  const { context, competitionId, ref, snapshot } = await engagementCompetitionDocumentContext(request);
+  const { context, competitionId, calendarEventId, sourceType, ref, snapshot } = await engagementCompetitionDocumentContext(request);
   const requestedDocumentId = cleanText(request.data?.documentId).slice(0, 80);
   const initialDocuments = cleanCompetitionDocuments(snapshot.data()?.clubDocuments || [], { includeUploader: true });
   const existingDocument = requestedDocumentId
@@ -8884,20 +9392,20 @@ exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_
     throw new HttpsError("invalid-argument", cleanText(error?.message || error).slice(0, 220));
   }
   const documentId = existingDocument?.id || crypto.randomUUID();
-  const storagePath = competitionDocumentStoragePath({
+  const storagePath = existingDocument?.storagePath || competitionDocumentStoragePath({
     competitionId,
     documentId,
     fileName: input.fileName,
     buffer: decoded.buffer
   });
-  const token = crypto.randomUUID();
+  const token = competitionDocumentTokenFromUrl(existingDocument?.url) || crypto.randomUUID();
   const bucket = storage.bucket(LIVEPALMES_STORAGE_BUCKET);
   const file = bucket.file(storagePath);
   await file.save(decoded.buffer, {
     resumable: false,
     metadata: {
       contentType: decoded.contentType,
-      cacheControl: "public, max-age=3600",
+      cacheControl: "public, max-age=300, must-revalidate",
       metadata: { firebaseStorageDownloadTokens: token }
     }
   });
@@ -8946,8 +9454,11 @@ exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_
   if (previousStoragePath && previousStoragePath !== storagePath) {
     await bucket.file(assertEngagementCompetitionDocumentPath(previousStoragePath)).delete({ ignoreNotFound: true }).catch(() => undefined);
   }
-  await writeAuditLog(existingDocument ? "engagementCompetition.documentReplaced" : "engagementCompetition.documentUploaded", context.uid, {
+  await writeAuditLog(existingDocument
+    ? `${sourceType === "calendarEvent" ? "engagementCalendarEvent" : "engagementCompetition"}.documentReplaced`
+    : `${sourceType === "calendarEvent" ? "engagementCalendarEvent" : "engagementCompetition"}.documentUploaded`, context.uid, {
     competitionId,
+    calendarEventId,
     documentId,
     title: document.title,
     category: document.category,
@@ -8957,13 +9468,14 @@ exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_
   return {
     ok: true,
     competitionId,
+    calendarEventId,
     documentId,
     documents: updatedDocuments
   };
 });
 
 exports.updateEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
-  const { context, competitionId, ref } = await engagementCompetitionDocumentContext(request);
+  const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
   const now = new Date().toISOString();
@@ -8989,16 +9501,17 @@ exports.updateEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
       documentsUpdatedBy: context.uid
     });
   });
-  await writeAuditLog("engagementCompetition.documentUpdated", context.uid, {
+  await writeAuditLog(`${sourceType === "calendarEvent" ? "engagementCalendarEvent" : "engagementCompetition"}.documentUpdated`, context.uid, {
     competitionId,
+    calendarEventId,
     documentId,
     title: updatedDocuments.find((document) => document.id === documentId)?.title || ""
   });
-  return { ok: true, competitionId, documentId, documents: updatedDocuments };
+  return { ok: true, competitionId, calendarEventId, documentId, documents: updatedDocuments };
 });
 
 exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
-  const { context, competitionId, ref } = await engagementCompetitionDocumentContext(request);
+  const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
   const now = new Date().toISOString();
@@ -9026,14 +9539,15 @@ exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
   } catch (_) {
     storageDeleted = false;
   }
-  await writeAuditLog("engagementCompetition.documentDeleted", context.uid, {
+  await writeAuditLog(`${sourceType === "calendarEvent" ? "engagementCalendarEvent" : "engagementCompetition"}.documentDeleted`, context.uid, {
     competitionId,
+    calendarEventId,
     documentId,
     title: deletedDocument.title,
     fileName: deletedDocument.fileName,
     storageDeleted
   });
-  return { ok: true, competitionId, documentId, documents: updatedDocuments, storageDeleted };
+  return { ok: true, competitionId, calendarEventId, documentId, documents: updatedDocuments, storageDeleted };
 });
 
 exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIONS, async (request) => {

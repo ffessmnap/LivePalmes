@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260818-import-progress-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260819-club-cache-10">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260819-public-calendar-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -1031,6 +1031,12 @@
                               Lieu
                               <input id="adminEngagementsEditLocation" type="text" maxlength="160" required>
                             </label>
+                            <label>Ville publique<input id="adminEngagementsEditCity" type="text" maxlength="120" required></label>
+                            <label>Adresse publique<input id="adminEngagementsEditAddress" type="text" maxlength="300"></label>
+                            <label>Organisateur<input id="adminEngagementsEditOrganizer" type="text" maxlength="160"></label>
+                            <label>Publication publique<select id="adminEngagementsEditPublicationStatus"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label>
+                            <label class="admin-calendar-event-check"><input id="adminEngagementsEditCanceled" type="checkbox"> Compétition annulée</label>
+                            <label class="admin-calendar-event-description">Présentation publique<textarea id="adminEngagementsEditPublicDescription" maxlength="3000" rows="4"></textarea></label>
                             <label>
                               Niveau
                               <select id="adminEngagementsEditLevel">
@@ -1598,7 +1604,7 @@
                                 Fichiers
                                 <input id="adminEngagementsDocumentFiles" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.jpg,.jpeg,.png,.zip">
                               </label>
-                              <small>20 documents actifs maximum · 10 Mo par fichier · PDF, bureautique, images ou ZIP.</small>
+                              <small>Ces documents sont publics et accessibles sans connexion. 20 documents actifs maximum · 10 Mo par fichier.</small>
                             </div>
                             <div id="adminEngagementsDocumentDrafts" class="admin-engagements-document-drafts"></div>
                             <label id="adminEngagementsDocumentNotifyLabel" class="admin-engagements-document-notify">
@@ -1751,11 +1757,15 @@
                       <legend>Compétition</legend>
                       <div class="admin-engagements-form-section-grid">
                         <label>
-                          Type de compétition
+                          Type d’événement
                           <select id="adminEngagementsCompetitionType" required>
                             <option value="">À choisir</option>
                             <option value="pool">Piscine</option>
                             <option value="openWater">Eau libre</option>
+                            <option value="training">Formation</option>
+                            <option value="stage">Stage</option>
+                            <option value="meeting">Réunion</option>
+                            <option value="other">Autre</option>
                           </select>
                         </label>
                         <label>
@@ -2586,7 +2596,8 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260819-club-cache-10"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260819-public-calendar-1"></script>
+    <script src="assets/livepalmes-admin-calendar-events.js?v=20260819-public-calendar-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
 </html>
