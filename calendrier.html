@@ -8,16 +8,16 @@
     <meta name="theme-color" content="#087f8c">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="assets/public/livepalmes-public-calendar.css?v=20260820-public-calendar-1">
+    <link rel="stylesheet" href="assets/public/livepalmes-public-calendar.css?v=20260820-season-shortcut-1">
   </head>
   <body class="public-calendar-page">
     <main class="calendar-shell">
       <header class="calendar-header">
         <a class="calendar-brand" href="index.html">
           <img src="logo-livepalmes.png" alt="">
-          <span><strong>LivePalmes</strong><small>Commission Nationale Nage avec Palmes</small></span>
+          <strong>LivePalmes – Calendrier fédéral</strong>
         </a>
-        <a class="ghost-button compact calendar-home-link" href="index.html">Accueil LivePalmes</a>
+        <a class="ghost-button compact calendar-home-link" href="index.html"><span class="calendar-nav-long">Accueil LivePalmes</span><span class="calendar-nav-short">Accueil</span></a>
       </header>
       <section class="calendar-hero" aria-labelledby="calendarTitle">
         <div>
@@ -34,13 +34,18 @@
         <label>Région<select id="calendarRegion"><option value="">Toutes</option></select></label>
         <label>Niveau<select id="calendarLevel"><option value="">Tous</option><option value="departemental">Départemental</option><option value="regional">Régional</option><option value="national">National</option></select></label>
         <label>Type<select id="calendarType"><option value="">Tous</option><option value="pool">Piscine</option><option value="openWater">Eau libre</option><option value="training">Formation</option><option value="stage">Stage</option><option value="meeting">Réunion</option><option value="other">Autre</option></select></label>
-        <label>Période<select id="calendarPeriod"><option value="current">En cours et à venir</option><option value="all">Toute la saison</option><option value="past">Terminés</option></select></label>
       </form>
-      <div class="calendar-summary"><strong id="calendarCount">Chargement…</strong><span id="calendarUpdated"></span></div>
+      <div class="calendar-summary">
+        <div class="calendar-summary-main">
+          <strong id="calendarCount">Chargement…</strong>
+          <a id="calendarHistoryLink" class="ghost-button compact calendar-history-link" href="#calendarSeasonHistory" hidden>Voir les événements passés</a>
+        </div>
+        <span id="calendarUpdated"></span>
+      </div>
       <div id="calendarList" aria-live="polite"></div>
     </main>
     <footer class="public-footer">LivePalmes est un outil développé bénévolement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug à signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
     <script src="assets/public/livepalmes-public-calendar.js?v=20260820-history-1"></script>
-    <script src="assets/pages/calendrier.js?v=20260820-history-1"></script>
+    <script src="assets/pages/calendrier.js?v=20260820-season-shortcut-1"></script>
   </body>
 </html>
