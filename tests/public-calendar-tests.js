@@ -94,12 +94,36 @@ const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
 assert.equal(browserCalendar.seasonLabel(2027), "2026-2027");
-assert.ok(calendarPageSource.includes("function compareByDateDescending"));
-assert.ok(calendarPageSource.includes('nodes.period.value === "current" ? api.compare : compareByDateDescending'));
+assert.ok(!calendarPageSource.includes("function compareByDateDescending"));
+assert.ok(calendarPageSource.includes("function isCurrentOrUpcoming"));
+assert.ok(calendarPageSource.includes("calendar-past-section"));
+assert.ok(calendarPageSource.includes("Depuis le début de la saison"));
+assert.ok(calendarPageSource.includes("nodes.historyLink.hidden = !past.length"));
+assert.ok(calendarPageSource.includes('id="calendarSeasonHistory"'));
+assert.ok(!calendarPageSource.includes("<details class=\"calendar-past-section\""));
+assert.ok(calendarPageSource.includes("const sorted = chosen.sort(api.compare)"));
+assert.ok(calendarPageSource.includes("selectedSeasonEndYear !== currentSeasonEndYear"));
+assert.ok(!calendarPageSource.includes("nodes.period"));
 assert.ok(calendarPageSource.includes("function displayStatus(event)"));
 assert.ok(calendarPageSource.includes('status === "awaitingResults" ? "" : status'));
 assert.ok(competitionPageSource.includes("const timingLabels={manual:\"Manuel\",electronic:\"Électronique\"}"));
 assert.ok(competitionPageSource.includes("Lignes d’eau"));
+assert.ok(competitionPageSource.includes('<h2>Documents</h2>'));
+assert.ok(!competitionPageSource.includes("Documents officiels"));
+assert.ok(competitionPageSource.includes("calendar-results-banner"));
+assert.ok(competitionPageSource.includes("calendar-detail-hero-content"));
+assert.ok(!competitionPageSource.includes("Retrouvez les résultats de cette compétition."));
+assert.ok(!competitionPageSource.includes("Résultats disponibles"));
+assert.ok(competitionPageSource.includes("Télécharger le protocole"));
+assert.ok(competitionPageSource.includes('pool:"Compétition piscine"'));
+assert.ok(competitionPageSource.includes('openWater:"Compétition eau libre"'));
+assert.ok(competitionPageSource.includes("Niveau ${String(label).toLocaleLowerCase"));
+assert.ok(competitionPageSource.includes('month:"long"'));
+assert.ok(competitionPageSource.includes("calendar-entry-link"));
+assert.ok(competitionPageSource.includes('state==="resultsPublished"'));
+assert.ok(competitionPageSource.indexOf("resultsHtml(event.results)") < competitionPageSource.indexOf("calendar-detail-grid"));
+assert.ok(competitionPageSource.indexOf("Informations pratiques") < competitionPageSource.indexOf('<h2>Documents</h2>'));
+assert.ok(competitionPageSource.indexOf('<h2>Documents</h2>') < competitionPageSource.indexOf('<h2>Programme</h2>'));
 
 for (const file of ["calendrier.html", "competition.html"]) {
   const html = fs.readFileSync(path.join(root, file), "utf8");
@@ -108,6 +132,13 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("Une erreur ou un bug à signaler ?"));
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
+const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
+assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
+assert.ok(competitionHtml.includes('href="calendrier.html"'));
+assert.ok(!competitionHtml.includes("calendar-detail-back"));
+const calendarHtml = fs.readFileSync(path.join(root, "calendrier.html"), "utf8");
+assert.ok(calendarHtml.includes("LivePalmes – Calendrier fédéral"));
+assert.ok(!calendarHtml.includes('id="calendarPeriod"'));
 
 const portalHtml = fs.readFileSync(path.join(root, "portail.html"), "utf8");
 assert.ok(portalHtml.includes('value="training"'));
@@ -130,6 +161,10 @@ assert.ok(calendarCss.includes(".public-calendar-page .public-footer"));
 assert.ok(calendarCss.includes("text-align:center"));
 assert.ok(calendarCss.includes("grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr)"));
 assert.ok(calendarCss.includes(".calendar-entry-note"));
+assert.ok(calendarCss.includes(".calendar-documents-card"));
+assert.ok(calendarCss.includes(".calendar-results-banner"));
+assert.ok(calendarCss.includes("grid-template-columns:minmax(0,1fr) auto"));
+assert.ok(calendarCss.includes(".calendar-past-section"));
 assert.ok(competitionPageSource.indexOf("Accéder aux engagements LivePalmes") < competitionPageSource.indexOf("Les engagements sont effectués exclusivement"));
 
 console.log("Public calendar tests OK");
