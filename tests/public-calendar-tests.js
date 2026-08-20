@@ -88,6 +88,7 @@ assert.equal(competitionDetail.program[1].items[0].detail, "Femmes · Finale(s)"
 const browserSource = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.js"), "utf8");
 const competitionPageSource = fs.readFileSync(path.join(root, "assets", "pages", "competition.js"), "utf8");
 const calendarPageSource = fs.readFileSync(path.join(root, "assets", "pages", "calendrier.js"), "utf8");
+assert.ok(calendarPageSource.includes("function chronologicalCompare"));
 const browserContext = { window: {}, Date, URL, console };
 vm.runInNewContext(browserSource, browserContext);
 const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
