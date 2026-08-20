@@ -217,7 +217,7 @@ Si le lien HelloAsso n'est pas encore connu, l'interface affiche que le lien est
 
 En piscine, la bibliotheque des courses existante et les regles de temps sont conservees. En eau libre, une bibliotheque nationale de courses, commune aux regions, est chargee seulement a l'ouverture du parametrage de la competition. Une course associe une distance et une specialite (`Surface`, `Bi-palmes` ou `Support`). La bibliotheque est un tableau compact, classe par distance croissante, avec une ligne par distance et une colonne par specialite. Un bouton `+` ajoute la course au programme ; sur petit ecran, les colonnes sont abregees en `SF`, `BI` et `SP`. Un administrateur regional ou national peut ajouter une association distance-specialite depuis un formulaire aligne sur une seule ligne, qui reste disponible pour les competitions suivantes. Une course deja utilisee n'est jamais supprimee : elle peut etre desactivee pour les futurs programmes sans modifier les competitions existantes.
 
-La bibliotheque initiale propose `1000 m`, `3000 m` et `5000 m` dans les trois specialites. Le `150 m elimination` constitue une exception et n'est propose qu'en Surface et Bi-palmes. Le relais `4 x 1000 m SB mixte` impose deux femmes et deux hommes et reprend les controles du `4 x 100 m SB` piscine.
+La bibliotheque initiale propose `1000 m`, `3000 m` et `5000 m` dans les trois specialites. Le `150 m elimination` constitue une exception et n'est propose qu'en Surface et Bi-palmes. Dans le programme Eau libre, toutes les courses sont directement nagees et n'affichent donc ni libelle « Course directe » ni choix de format ; seul le `150 m elimination` peut choisir entre Course directe et Series + finale(s). Le relais `4 x 1000 m SB mixte` impose deux femmes et deux hommes et reprend les controles du `4 x 100 m SB` piscine.
 
 Lorsqu'un administrateur change d'onglet avec des modifications non enregistrees, une fenetre propose d'enregistrer et continuer, d'abandonner reellement les modifications et continuer, ou de rester sur l'onglet. Un echec de validation ou d'enregistrement interdit le changement d'onglet.
 
@@ -302,7 +302,7 @@ Les engagements des autres clubs ne sont jamais visibles par un club.
 
 ## Calendrier public
 
-Le calendrier public est distinct du calendrier d'engagement d'un club et reste accessible sans compte. Il réunit les compétitions piscine et eau libre ainsi que les formations, stages, réunions et autres événements. Les seuls niveaux proposés sont départemental, régional et national.
+Le calendrier public est distinct du calendrier d'engagement d'un club et reste accessible sans compte. Il réunit les compétitions piscine et eau libre ainsi que les formations, stages, réunions et autres événements. Les niveaux proposés sont départemental, régional, national et international. Le niveau international suit les mêmes droits et le même périmètre qu'un niveau national.
 
 Une compétition ou un événement n'apparaît publiquement qu'après une action explicite d'un administrateur régional ou national. La publication ne modifie pas le statut des engagements. L'affichage calcule, sur des journées complètes, les états `En cours`, `À venir`, `Annulée`, `Terminée — résultats en attente` et `Résultats publiés`, avec priorité aux événements en cours puis à venir. Un événement annulé reste consultable.
 

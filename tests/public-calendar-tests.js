@@ -33,6 +33,43 @@ assert.equal(detail.eventType, "stage");
 assert.equal(detail.program[0].title, "Session 1");
 assert.equal(detail.program[0].summary, "Accueil et pratique");
 assert.equal(detail.documents[0].url, "https://example.test/programme.pdf");
+const legacyDetail = calendar.publicCalendarDetail({
+  name: "Historique",
+  date: "2025-10-12",
+  city: "Cherbourg",
+  eventType: "openWater",
+  level: "regional",
+  publicationStatus: "published",
+  clubDocuments: [{ id: "nap-5760", title: "Invitation", fileName: "invitation.pdf", url: "https://nap.ffessm.fr/ged/2026/5067/invitation.pdf" }]
+}, { id: "legacy-nap-5067", sourceType: "calendarEvent" });
+assert.equal(legacyDetail.eventType, "openWater");
+assert.equal(legacyDetail.documents[0].url, "https://nap.ffessm.fr/ged/2026/5067/invitation.pdf");
+const practicalDetail = calendar.publicCalendarDetail({
+  name: "Piscine historique",
+  date: "2025-10-12",
+  city: "Tours",
+  eventType: "pool",
+  level: "regional",
+  publicationStatus: "published",
+  poolLength: "50",
+  poolLaneCount: 8,
+  timingType: "electronic"
+}, { id: "legacy-nap-pool", sourceType: "calendarEvent" });
+assert.equal(practicalDetail.poolLength, "50");
+assert.equal(practicalDetail.poolLaneCount, 8);
+assert.equal(practicalDetail.timingType, "electronic");
+const protocolDetail = calendar.publicCalendarDetail({
+  name: "Résultats historiques",
+  date: "2025-10-12",
+  city: "Cherbourg",
+  eventType: "pool",
+  level: "regional",
+  publicationStatus: "published",
+  clubDocuments: [{ id: "nap-5761", title: "Protocole complet", category: "results", fileName: "protocole.pdf", url: "https://nap.ffessm.fr/ged/2026/5067/protocole.pdf", updatedAt: "2025-10-12T20:00:00.000Z" }]
+}, { id: "legacy-nap-5067-results", sourceType: "calendarEvent" });
+assert.equal(protocolDetail.documents.length, 0);
+assert.equal(protocolDetail.results.pdfUrl, "https://nap.ffessm.fr/ged/2026/5067/protocole.pdf");
+assert.equal(calendar.publicCalendarDisplayStatus(protocolDetail, "2026-08-20"), "resultsPublished");
 assert.equal(calendar.cleanPublicCalendarUrl("javascript:alert(1)"), "");
 assert.equal(calendar.cleanPublicCalendarUrl("https://example.test/inscriptions"), "https://example.test/inscriptions");
 
@@ -50,12 +87,19 @@ assert.equal(competitionDetail.program[1].items[0].detail, "Femmes · Finale(s)"
 
 const browserSource = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.js"), "utf8");
 const competitionPageSource = fs.readFileSync(path.join(root, "assets", "pages", "competition.js"), "utf8");
+const calendarPageSource = fs.readFileSync(path.join(root, "assets", "pages", "calendrier.js"), "utf8");
 const browserContext = { window: {}, Date, URL, console };
 vm.runInNewContext(browserSource, browserContext);
 const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
 assert.equal(browserCalendar.seasonLabel(2027), "2026-2027");
+assert.ok(calendarPageSource.includes("function compareByDateDescending"));
+assert.ok(calendarPageSource.includes('nodes.period.value === "current" ? api.compare : compareByDateDescending'));
+assert.ok(calendarPageSource.includes("function displayStatus(event)"));
+assert.ok(calendarPageSource.includes('status === "awaitingResults" ? "" : status'));
+assert.ok(competitionPageSource.includes("const timingLabels={manual:\"Manuel\",electronic:\"Électronique\"}"));
+assert.ok(competitionPageSource.includes("Lignes d’eau"));
 
 for (const file of ["calendrier.html", "competition.html"]) {
   const html = fs.readFileSync(path.join(root, file), "utf8");

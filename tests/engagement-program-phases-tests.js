@@ -46,6 +46,22 @@ const slowAndFast = cleanerSandbox.clean([
 ], events);
 assert.deepEqual(Array.from(slowAndFast, (session) => session.items[0].phase), ["slowHeats", "fastHeat"]);
 
+const openWaterEvents = [
+  { code: "OW150ELIMSF", type: "individual", openWaterFormat: "elimination" },
+  { code: "OW1000SF", type: "individual", openWaterFormat: "standard" }
+];
+const openWaterHeatsAndFinal = cleanerSandbox.clean([
+  { items: [{ eventCode: "OW150ELIMSF", genderMode: "female", phase: "heats" }] },
+  { items: [{ eventCode: "OW150ELIMSF", genderMode: "female", phase: "final" }] }
+], openWaterEvents);
+assert.deepEqual(Array.from(openWaterHeatsAndFinal, (session) => session.items[0].phase), ["heats", "final"]);
+assert.throws(() => cleanerSandbox.clean([
+  { items: [{ eventCode: "OW1000SF", genderMode: "female", phase: "heats" }] }
+], openWaterEvents), /se nage directement/);
+assert.throws(() => cleanerSandbox.clean([
+  { items: [{ eventCode: "OW150ELIMSF", genderMode: "female", phase: "slowHeats" }] }
+], openWaterEvents), /Seules les series et la finale/);
+
 assert.throws(() => cleanerSandbox.clean([
   { items: [{ eventCode: "100SF", genderMode: "female", phase: "final" }] }
 ], events), /series et la finale/);
@@ -70,6 +86,8 @@ assert.ok(portalSource.includes("engagementProgramSecondPhaseForFormat"));
 assert.ok(portalSource.includes("function normalizeEngagementProgramPassageOrder"));
 assert.ok(portalSource.includes("function engagementProgramCanAddPassage"));
 assert.ok(portalSource.includes("engagementProgramNextPhase"));
+assert.ok(portalSource.includes("function engagementProgramFormatsForEvent"));
+assert.ok(portalSource.includes("ENGAGEMENT_OPEN_WATER_ELIMINATION_PROGRAM_FORMATS"));
 const entriesStart = portalSource.indexOf("function engagementClubProgramSessionsForEntries");
 const entriesEnd = portalSource.indexOf("function engagementClubProgramItemAllowsSwimmer", entriesStart);
 const entriesSource = portalSource.slice(entriesStart, entriesEnd);

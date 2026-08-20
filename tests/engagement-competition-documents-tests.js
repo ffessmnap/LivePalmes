@@ -18,6 +18,8 @@ assert.deepEqual(decodedPdf.buffer, pdf);
 assert.equal(decodedPdf.contentType, "application/pdf");
 assert.equal(canonicalDocumentContentType("circulaire.DOCX"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 assert.equal(canonicalDocumentContentType("archive.zip"), "application/zip");
+assert.equal(canonicalDocumentContentType("tableau.numbers"), "application/x-iwork-numbers-sffnumbers");
+assert.equal(canonicalDocumentContentType("affiche.webp"), "image/webp");
 assert.equal(canonicalDocumentContentType("programme.exe"), "");
 assert.throws(
   () => decodeCompetitionDocumentDataUrl("data:application/pdf;base64,SGVsbG8=", "faux.pdf"),
@@ -68,5 +70,19 @@ const documents = cleanCompetitionDocuments([{
 assert.equal(Object.hasOwn(documents[0], "uploadedBy"), false);
 const adminDocuments = cleanCompetitionDocuments([{ ...documents[0], uploadedBy: uploader }], { includeUploader: true });
 assert.deepEqual(adminDocuments[0].uploadedBy, uploader);
+
+const legacyDocuments = cleanCompetitionDocuments([{
+  id: "nap-5800",
+  title: "Protocole complet",
+  category: "information",
+  fileName: "protocole.pdf",
+  source: "legacy",
+  url: "https://nap.ffessm.fr/ged/2026/5084/protocole.pdf",
+  uploadedAt: "2025-11-23T21:00:00.000Z"
+}]);
+assert.equal(legacyDocuments.length, 1);
+assert.equal(legacyDocuments[0].storagePath, "");
+assert.equal(legacyDocuments[0].source, "legacy");
+assert.equal(cleanCompetitionDocuments([{ ...legacyDocuments[0], category: "results" }])[0].category, "results");
 
 console.log("Engagement competition documents tests OK");

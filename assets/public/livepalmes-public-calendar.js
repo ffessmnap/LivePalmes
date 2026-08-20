@@ -3,7 +3,7 @@
   const LOCAL_BASE = /^(localhost|127\.0\.0\.1)$/.test(global.location?.hostname || "") ? `${global.location.origin}/tests/fixtures/public-calendar` : "";
   const BASE = global.LIVEPALMES_PUBLIC_CALENDAR_BASE || LOCAL_BASE || "https://storage.googleapis.com/livepalmes-public-data-718081132564/calendar";
   const TYPE_LABELS = { pool: "Piscine", openWater: "Eau libre", training: "Formation", stage: "Stage", meeting: "Réunion", other: "Autre" };
-  const LEVEL_LABELS = { departemental: "Départemental", regional: "Régional", national: "National" };
+  const LEVEL_LABELS = { departemental: "Départemental", regional: "Régional", national: "National", international: "International" };
   const STATUS_LABELS = { ongoing: "En cours", upcoming: "À venir", canceled: "Annulée", awaitingResults: "Terminée — résultats en attente", resultsPublished: "Résultats publiés" };
 
   function today() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }); }
