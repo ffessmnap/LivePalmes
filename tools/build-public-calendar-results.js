@@ -6,7 +6,8 @@ const input = path.resolve(valueAfter("--input") || "outputs/performance-base-fi
 const previewPath = path.resolve(valueAfter("--calendar") || "outputs/legacy-calendar-history-corrected-preview.json");
 const output = path.resolve(valueAfter("--output") || "outputs/public-calendar-results");
 const preview = JSON.parse(fs.readFileSync(previewPath, "utf8"));
-const events = new Map((preview.competitions || []).filter((event) => event.importEligible !== false && event.eventType === "pool").map((event) => [String(event.legacyCompetitionId), event]));
+const calendarEvents = Array.isArray(preview) ? preview : (Array.isArray(preview.competitions) ? preview.competitions : (Array.isArray(preview.events) ? preview.events : []));
+const events = new Map(calendarEvents.filter((event) => event.importEligible !== false && event.eventType === "pool").map((event) => [String(event.legacyCompetitionId || String(event.id || "").replace(/^legacy-nap-/, "")), event]));
 const groupsByCompetition = new Map();
 for (const line of fs.readFileSync(input, "utf8").split(/\r?\n/)) {
   if (!line) continue;
@@ -25,10 +26,11 @@ const manifest = [];
 for (const [competitionId, groups] of groupsByCompetition) {
   const event = events.get(competitionId);
   const payload = { version: 1, competitionId, updatedAt: new Date().toISOString(), groups: [...groups.values()].map((group) => ({ ...group, performances: group.performances.sort((left, right) => left.timeValue - right.timeValue || left.swimmer.localeCompare(right.swimmer, "fr")).map(({ timeValue, date, ...performance }) => performance) })) };
-  const file = path.join(output, `legacy-nap-${competitionId}.json`);
+  const calendarId = String(event.id || `legacy-nap-${competitionId}`);
+  const file = path.join(output, `${calendarId}.json`);
   const json = `${JSON.stringify(payload)}\n`;
   fs.writeFileSync(file, json, "utf8");
-  manifest.push({ id: `legacy-nap-${competitionId}`, date: event.date, name: event.name, groups: payload.groups.length, performances: payload.groups.reduce((total, group) => total + group.performances.length, 0), bytes: Buffer.byteLength(json) });
+  manifest.push({ id: calendarId, date: event.date, name: event.name, groups: payload.groups.length, performances: payload.groups.reduce((total, group) => total + group.performances.length, 0), bytes: Buffer.byteLength(json) });
 }
 fs.writeFileSync(path.join(output, "manifest.json"), `${JSON.stringify(manifest.sort((left, right) => left.date.localeCompare(right.date)), null, 2)}\n`, "utf8");
 console.log(JSON.stringify({ output, eventCount: manifest.length, performanceCount: manifest.reduce((total, item) => total + item.performances, 0), largest: [...manifest].sort((left, right) => right.bytes - left.bytes).slice(0, 5) }, null, 2));
