@@ -125,6 +125,7 @@ assert.ok(competitionPageSource.includes("Deux temps peuvent apparaître pour un
 assert.ok(competitionPageSource.includes("séries et finale(s)"));
 assert.ok(competitionPageSource.includes("calendar-program-accordion"));
 assert.ok(competitionPageSource.includes("sessions.length===3&&index===0"));
+assert.ok(competitionPageSource.includes("resultCourseOrder"));
 assert.ok(competitionPageSource.includes("Télécharger le protocole"));
 assert.ok(competitionPageSource.includes('pool:"Compétition piscine"'));
 assert.ok(competitionPageSource.includes('openWater:"Compétition eau libre"'));
