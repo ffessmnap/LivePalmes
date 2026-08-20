@@ -9,8 +9,10 @@ const DOCUMENT_CATEGORIES = new Set([
   "rules",
   "information",
   "access",
+  "results",
   "other"
 ]);
+const EXTERNAL_DOCUMENT_SOURCES = new Set(["legacy"]);
 
 const DOCUMENT_TYPES = Object.freeze({
   pdf: "application/pdf",
@@ -23,9 +25,11 @@ const DOCUMENT_TYPES = Object.freeze({
   odt: "application/vnd.oasis.opendocument.text",
   ods: "application/vnd.oasis.opendocument.spreadsheet",
   odp: "application/vnd.oasis.opendocument.presentation",
+  numbers: "application/x-iwork-numbers-sffnumbers",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
+  webp: "image/webp",
   zip: "application/zip"
 });
 
@@ -72,6 +76,9 @@ function decodeCompetitionDocumentDataUrl(value, fileName = "") {
   if (["jpg", "jpeg"].includes(extension) && buffer.subarray(0, 3).toString("hex") !== "ffd8ff") {
     throw new Error("Le fichier transmis n'est pas une image JPEG valide.");
   }
+  if (extension === "webp" && (buffer.subarray(0, 4).toString("ascii") !== "RIFF" || buffer.subarray(8, 12).toString("ascii") !== "WEBP")) {
+    throw new Error("Le fichier transmis n'est pas une image WebP valide.");
+  }
   if (extension === "zip" && !["504b0304", "504b0506", "504b0708"].includes(buffer.subarray(0, 4).toString("hex"))) {
     throw new Error("Le fichier transmis n'est pas une archive ZIP valide.");
   }
@@ -109,7 +116,9 @@ function cleanCompetitionDocument(raw = {}, { includeUploader = false } = {}) {
   const url = cleanText(raw.url).slice(0, 900);
   const fileName = cleanText(raw.fileName).slice(0, 180);
   const contentType = canonicalDocumentContentType(fileName);
-  if (!id || !storagePath || !url || !contentType) return null;
+  const source = EXTERNAL_DOCUMENT_SOURCES.has(cleanText(raw.source)) ? cleanText(raw.source) : "";
+  const external = source === "legacy";
+  if (!id || !url || !contentType || (!storagePath && !external)) return null;
   const category = DOCUMENT_CATEGORIES.has(cleanText(raw.category)) ? cleanText(raw.category) : "other";
   const document = {
     id,
@@ -124,6 +133,7 @@ function cleanCompetitionDocument(raw = {}, { includeUploader = false } = {}) {
     uploadedAt: cleanText(raw.uploadedAt).slice(0, 40),
     updatedAt: cleanText(raw.updatedAt || raw.uploadedAt).slice(0, 40)
   };
+  if (external) document.source = source;
   if (includeUploader) {
     document.uploadedBy = {
       uid: cleanText(raw.uploadedBy?.uid).slice(0, 128),
@@ -158,6 +168,7 @@ function cleanCompetitionDocumentInput(raw = {}) {
 module.exports = {
   DOCUMENT_CATEGORIES,
   DOCUMENT_TYPES,
+  EXTERNAL_DOCUMENT_SOURCES,
   MAX_COMPETITION_DOCUMENT_BYTES,
   MAX_COMPETITION_DOCUMENTS,
   canonicalDocumentContentType,

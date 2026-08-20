@@ -232,6 +232,7 @@
     ["slowFast", "Séries lentes / série rapide"]
   ];
   const ENGAGEMENT_PROGRAM_FORMAT_LABELS = Object.fromEntries(ENGAGEMENT_PROGRAM_FORMATS);
+  const ENGAGEMENT_OPEN_WATER_ELIMINATION_PROGRAM_FORMATS = ENGAGEMENT_PROGRAM_FORMATS.filter(([format]) => format === "direct" || format === "heatsFinal");
   const LIVEPALMES_REGION_DEFINITIONS = [
     "Hauts de France",
     "Normandie",
@@ -1554,7 +1555,7 @@
     const capabilities = new Set(currentAccessProfile?.capabilities || []);
     if (capabilities.has("engagements.national.manage")) return true;
     return capabilities.has("engagements.region.manage") &&
-      competition.level !== "national" &&
+      !["national", "international"].includes(competition.level) &&
       competition.regionId === engagementRegionScope();
   }
 
@@ -3643,7 +3644,7 @@
     const isRegional = capabilities.has("engagements.region.manage");
     const regionId = engagementRegionScope(user);
     const level = levelInput?.value || "regional";
-    const nationalCompetition = level === "national";
+    const nationalCompetition = ["national", "international"].includes(level);
     if (field) {
       if (nationalCompetition) setRegionSelectValue(field, "");
       if (!isNational && isRegional && !nationalCompetition) setRegionSelectValue(field, regionId);
@@ -3668,7 +3669,7 @@
 
   function updateEngagementInvitedRegionField({ field, levelInput, primaryRegionField }) {
     if (!field) return;
-    const nationalCompetition = (levelInput?.value || "regional") === "national";
+    const nationalCompetition = ["national", "international"].includes(levelInput?.value || "regional");
     field.disabled = nationalCompetition || !canCreateEngagementCompetition();
     const primaryRegion = primaryRegionField?.value || "";
     Array.from(field.options).forEach((option) => {
@@ -3701,7 +3702,9 @@
     });
     const nationalOption = elements.engagementsLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
-    if (!isNational && elements.engagementsLevel?.value === "national") {
+    const internationalOption = elements.engagementsLevel?.querySelector("option[value='international']");
+    if (internationalOption) internationalOption.disabled = !isNational;
+    if (!isNational && ["national", "international"].includes(elements.engagementsLevel?.value)) {
       elements.engagementsLevel.value = "regional";
       updateEngagementRegionField({
         field: elements.engagementsRegionId,
@@ -3730,12 +3733,14 @@
     });
     const nationalOption = elements.engagementsEditLevel?.querySelector("option[value='national']");
     if (nationalOption) nationalOption.disabled = !isNational;
+    const internationalOption = elements.engagementsEditLevel?.querySelector("option[value='international']");
+    if (internationalOption) internationalOption.disabled = !isNational;
     const closedStatusOption = elements.engagementsEditEntryStatus?.querySelector("option[value='closed']");
     if (closedStatusOption) closedStatusOption.disabled = true;
     if (elements.engagementsEditEntryStatus) {
       elements.engagementsEditEntryStatus.disabled = !isNational && elements.engagementsEditEntryStatus.value === "closed";
     }
-    if (!isNational && elements.engagementsEditLevel?.value === "national") {
+    if (!isNational && ["national", "international"].includes(elements.engagementsEditLevel?.value)) {
       elements.engagementsEditLevel.value = "regional";
       updateEngagementRegionField({
         field: elements.engagementsEditRegionId,
@@ -3777,7 +3782,7 @@
   function setDefaultEngagementOfficialsRequired(prefix = "create") {
     const level = prefix === "edit" ? elements.engagementsEditLevel : elements.engagementsLevel;
     const officialsRequired = prefix === "edit" ? elements.engagementsEditOfficialsRequired : elements.engagementsOfficialsRequired;
-    if (level && officialsRequired) officialsRequired.value = level.value === "national" ? "false" : "true";
+    if (level && officialsRequired) officialsRequired.value = ["national", "international"].includes(level.value) ? "false" : "true";
   }
 
   function moveEngagementStatusField() {
@@ -3974,7 +3979,8 @@
     return {
       departemental: "Départemental",
       regional: "Régional",
-      national: "National"
+      national: "National",
+      international: "International"
     }[level] || "Régional";
   }
 
@@ -8834,7 +8840,7 @@
         .map((item) => ({
           eventCode: String(item.eventCode || item.code || "").trim().toUpperCase(),
           genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[item.genderMode] ? item.genderMode : "mixed",
-          phase: ENGAGEMENT_PROGRAM_PHASE_LABELS[item.phase] ? item.phase : "direct"
+          phase: engagementProgramPhaseForEvent(item.eventCode, item.phase)
         }))
         .filter((item) => allowedCodes.has(item.eventCode));
       return {
@@ -8857,7 +8863,7 @@
         return {
           eventCode,
           genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[genderMode] ? genderMode : "mixed",
-          phase: ENGAGEMENT_PROGRAM_PHASE_LABELS[phase] ? phase : "direct"
+          phase: engagementProgramPhaseForEvent(eventCode, phase)
         };
       }).filter((item) => allowedCodes.has(item.eventCode));
       return {
@@ -8918,6 +8924,21 @@
     return ENGAGEMENT_PROGRAM_PHASE_LABELS[phase] || ENGAGEMENT_PROGRAM_PHASE_LABELS.direct;
   }
 
+  function engagementProgramFormatsForEvent(eventCode = "") {
+    if (engagementCompetitionType() !== "openWater") return ENGAGEMENT_PROGRAM_FORMATS;
+    return engagementEventDefinition(eventCode)?.openWaterFormat === "elimination"
+      ? ENGAGEMENT_OPEN_WATER_ELIMINATION_PROGRAM_FORMATS
+      : [];
+  }
+
+  function engagementProgramPhaseForEvent(eventCode = "", requestedPhase = "direct") {
+    const phase = ENGAGEMENT_PROGRAM_PHASE_LABELS[requestedPhase] ? requestedPhase : "direct";
+    if (engagementCompetitionType() !== "openWater") return phase;
+    const formats = engagementProgramFormatsForEvent(eventCode);
+    if (!formats.length) return "direct";
+    return ["direct", "heats", "final"].includes(phase) ? phase : "direct";
+  }
+
   function engagementProgramSameSlot(item = {}, eventCode = "", genderMode = "") {
     return item.eventCode === eventCode && item.genderMode === genderMode;
   }
@@ -8949,6 +8970,7 @@
   function engagementProgramCanAddPassage(sessions, eventCode, genderMode, targetSessionId = "") {
     const passages = engagementProgramPassages(sessions, eventCode, genderMode);
     if (!passages.length) return true;
+    if (!engagementProgramFormatsForEvent(eventCode).length) return false;
     if (passages.length !== 1 || !["heats", "slowHeats"].includes(passages[0].item.phase)) return false;
     const targetSessionIndex = sessions.findIndex((session) => session.id === targetSessionId);
     return targetSessionIndex >= passages[0].sessionIndex;
@@ -8979,10 +9001,10 @@
     return sessions;
   }
 
-  function applyEngagementProgramFormatChange(select) {
-    const format = ENGAGEMENT_PROGRAM_FORMAT_LABELS[select?.value] ? select.value : "direct";
-    const row = select?.closest("[data-engagement-program-row]");
+  function applyEngagementProgramFormatChange(row, requestedFormat = "direct") {
     const eventCode = row?.dataset.engagementProgramEvent || "";
+    const availableFormats = engagementProgramFormatsForEvent(eventCode);
+    const format = availableFormats.some(([value]) => value === requestedFormat) ? requestedFormat : "direct";
     const genderMode = row?.dataset.engagementProgramGender || "mixed";
     const sessions = selectedEngagementProgramSessionsFromForm();
     const passages = engagementProgramPassages(sessions, eventCode, genderMode);
@@ -9073,6 +9095,7 @@
             const passageIndex = engagementProgramPassages(sessions, item.eventCode, item.genderMode)
               .findIndex((passage) => passage.sessionIndex === sessionIndex && passage.itemIndex === itemIndex);
             const format = engagementProgramFormatForPhase(item.phase);
+            const formatOptions = engagementProgramFormatsForEvent(item.eventCode);
             return `
             <div class="admin-engagements-program-row" data-engagement-program-row data-engagement-program-event="${escapeHtml(item.eventCode)}" data-engagement-program-gender="${escapeHtml(item.genderMode)}" data-engagement-program-phase="${escapeHtml(item.phase || "direct")}">
               <div class="admin-engagements-program-row-main">
@@ -9080,14 +9103,18 @@
                 <strong>${escapeHtml(eventLabelFor(item.eventCode))}</strong>
                 <i aria-hidden="true">-</i>
                 <em data-gender-mode="${escapeHtml(item.genderMode)}" data-gender-tone="${escapeHtml(engagementProgramGenderModeTone(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}" title="${escapeHtml(engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}">${escapeHtml(engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}</em>
-                ${passageIndex <= 0 ? `
-                  <label class="admin-engagements-program-format" title="${escapeHtml(ENGAGEMENT_PROGRAM_FORMAT_LABELS[format] || engagementProgramPhaseLabel(item.phase))}">
-                    <span>${escapeHtml(engagementProgramPhaseLabel(item.phase))}</span>
-                    ${canEdit ? `<i aria-hidden="true">⌄</i><select data-engagement-program-format aria-label="Format de ${escapeHtml(eventLabelFor(item.eventCode))}">
-                      ${ENGAGEMENT_PROGRAM_FORMATS.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === format ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-                    </select>` : ""}
-                  </label>
-                ` : `<b class="admin-engagements-program-phase">${escapeHtml(engagementProgramPhaseLabel(item.phase))}</b>`}
+                ${passageIndex <= 0 && formatOptions.length ? `
+                  <div class="admin-engagements-program-format" data-engagement-program-format>
+                    ${canEdit ? `
+                      <button class="admin-engagements-program-format-trigger" type="button" data-engagement-program-action="toggle-format" aria-haspopup="menu" aria-expanded="false" title="${escapeHtml(ENGAGEMENT_PROGRAM_FORMAT_LABELS[format] || engagementProgramPhaseLabel(item.phase))}">
+                        <span>${escapeHtml(engagementProgramPhaseLabel(item.phase))}</span><i aria-hidden="true">⌄</i>
+                      </button>
+                      <div class="admin-engagements-program-format-menu" role="menu" hidden>
+                        ${formatOptions.map(([value, label]) => `<button type="button" role="menuitem" data-engagement-program-action="set-format" data-engagement-program-format-value="${escapeHtml(value)}" ${value === format ? "aria-current=\"true\"" : ""}>${escapeHtml(label)}</button>`).join("")}
+                      </div>
+                    ` : `<span class="admin-engagements-program-format-read-value">${escapeHtml(engagementProgramPhaseLabel(item.phase))}</span>`}
+                  </div>
+                ` : passageIndex > 0 ? `<b class="admin-engagements-program-phase">${escapeHtml(engagementProgramPhaseLabel(item.phase))}</b>` : ""}
               </div>
               <div class="admin-engagements-program-actions">
                 <button class="ghost-button" type="button" title="Monter" aria-label="Monter" data-engagement-program-action="move-up" ${canEdit ? "" : "hidden"}>↑</button>
@@ -9157,6 +9184,23 @@
       return;
     }
     const action = button.dataset.engagementProgramAction;
+    if (action === "toggle-format") {
+      const control = button.closest("[data-engagement-program-format]");
+      const menu = control?.querySelector("[role=menu]");
+      const opening = menu?.hidden !== false;
+      elements.engagementsProgramSessions?.querySelectorAll("[data-engagement-program-format] [role=menu]").forEach((candidate) => { candidate.hidden = true; });
+      elements.engagementsProgramSessions?.querySelectorAll('[data-engagement-program-action="toggle-format"]').forEach((candidate) => { candidate.setAttribute("aria-expanded", "false"); });
+      if (menu) menu.hidden = !opening;
+      button.setAttribute("aria-expanded", opening ? "true" : "false");
+      return;
+    }
+    if (action === "set-format") {
+      const row = button.closest("[data-engagement-program-row]");
+      const nextSessions = applyEngagementProgramFormatChange(row, button.dataset.engagementProgramFormatValue || "direct");
+      markEngagementDetailTabDirty("courses");
+      renderEngagementProgramSessions(nextSessions, isEngagementAdminMode() && engagementDetailEditing && canEditEngagementCompetition());
+      return;
+    }
     const sessionElement = button.closest("[data-engagement-program-session]");
     const sessionIndex = Array.from(elements.engagementsProgramSessions?.querySelectorAll("[data-engagement-program-session]") || []).indexOf(sessionElement);
     if (action === "add-slot") {
@@ -14355,8 +14399,8 @@
       publicationStatus: fields.publicationStatus?.value || "draft",
       canceled: fields.canceled?.checked === true,
       level,
-      regionId: level === "national" ? "" : fields.regionId?.value || "",
-      invitedRegionIds: level === "national" ? [] : selectedRegionMultiSelectValues(fields.invitedRegionIds)
+      regionId: ["national", "international"].includes(level) ? "" : fields.regionId?.value || "",
+      invitedRegionIds: ["national", "international"].includes(level) ? [] : selectedRegionMultiSelectValues(fields.invitedRegionIds)
         .filter((region) => normalizedRegionKey(region) !== normalizedRegionKey(fields.regionId?.value || "")),
       entryDeadlineAt: deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? deadlineDate.toISOString() : "",
       computerEmail: fields.computerEmail?.value || "",
@@ -14448,7 +14492,7 @@
       computerEmail: "",
       officialsManagerEmail: "",
       fees: { enabled: false, swimmerFee: 0, individualEventFee: 0, relayFee: 0, helloAssoUrl: "" },
-      officialsRequired: payload.level !== "national",
+      officialsRequired: !["national", "international"].includes(payload.level),
       poolLength: "",
       poolLaneCount: "",
       timingType: "",
@@ -14481,7 +14525,7 @@
   }
 
   function engagementOpeningMailScopeLabel(payload = {}) {
-    if ((payload.level || "regional") === "national") {
+    if (["national", "international"].includes(payload.level || "regional")) {
       return "Destinataires : admins LivePalmes club, région et national, toutes régions.";
     }
     const regions = [
@@ -16260,9 +16304,8 @@
     });
     elements.engagementsProgramAddSession?.addEventListener("click", addEngagementProgramSession);
     elements.engagementsProgramSessions?.addEventListener("click", handleEngagementProgramAction);
-    elements.engagementsProgramSessions?.addEventListener("change", (event) => {
-      const formatSelect = event.target.closest?.("[data-engagement-program-format]");
-      const sessions = formatSelect ? applyEngagementProgramFormatChange(formatSelect) : selectedEngagementProgramSessionsFromForm();
+    elements.engagementsProgramSessions?.addEventListener("change", () => {
+      const sessions = selectedEngagementProgramSessionsFromForm();
       markEngagementDetailTabDirty("courses");
       renderEngagementProgramSessions(sessions, isEngagementAdminMode() && engagementDetailEditing && canEditEngagementCompetition());
     });

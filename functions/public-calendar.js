@@ -14,7 +14,7 @@ const PUBLIC_CALENDAR_GENERIC_EVENT_TYPES = new Set([
   "other"
 ]);
 
-const PUBLIC_CALENDAR_LEVELS = new Set(["departemental", "regional", "national"]);
+const PUBLIC_CALENDAR_LEVELS = new Set(["departemental", "regional", "national", "international"]);
 const PUBLIC_CALENDAR_PUBLICATION_STATUSES = new Set(["draft", "published", "unpublished"]);
 
 function cleanText(value, maxLength = 0) {
@@ -156,22 +156,29 @@ function publicCalendarDetail(data = {}, options = {}) {
   const program = isCompetition
     ? publicCalendarCompetitionProgram(data, options.eventLabelByCode || {})
     : cleanPublicCalendarProgram(data.programSessions);
+  const documents = cleanPublicCalendarDocuments(data.clubDocuments);
+  const resultDocument = documents.find((document) => document.category === "results");
+  const resultsPublishedAt = cleanText(data.resultsPublishedAt || resultDocument?.updatedAt);
   return {
     ...summary,
     location: cleanText(data.location, 160),
     address: cleanText(data.address, 300),
     organizer: cleanText(data.organizer, 160),
+    poolLength: summary.eventType === "pool" ? cleanText(data.poolLength, 2) : "",
+    poolLaneCount: summary.eventType === "pool" ? Math.max(0, Math.trunc(Number(data.poolLaneCount) || 0)) : 0,
+    timingType: summary.eventType === "pool" ? cleanText(data.timingType, 20) : "",
     description: cleanText(data.publicDescription || data.description, 3000),
     entryDeadlineAt: cleanText(data.entryDeadlineAt, 40),
     entryStatus: isCompetition ? cleanText(data.entryStatus, 20) : "",
     registrationUrl: cleanPublicCalendarUrl(data.registrationUrl, 500),
     engagementCompetitionId: isCompetition ? summary.id : "",
     program,
-    documents: cleanPublicCalendarDocuments(data.clubDocuments),
-    results: data.resultsPublishedAt ? {
-      publishedAt: cleanText(data.resultsPublishedAt, 40),
+    documents: documents.filter((document) => document.category !== "results"),
+    resultsPublishedAt,
+    results: resultsPublishedAt ? {
+      publishedAt: resultsPublishedAt,
       url: cleanText(data.resultsUrl, 900),
-      pdfUrl: cleanText(data.resultsPdfUrl, 900)
+      pdfUrl: cleanText(data.resultsPdfUrl || resultDocument?.url, 900)
     } : null
   };
 }

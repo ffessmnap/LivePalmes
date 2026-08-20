@@ -66,6 +66,7 @@ const {
   importPublicationStatus
 } = require("./performance-import-publication");
 const {
+  PUBLIC_CALENDAR_EVENT_TYPES,
   PUBLIC_CALENDAR_GENERIC_EVENT_TYPES,
   cleanPublicCalendarEventType,
   cleanPublicCalendarLevel,
@@ -108,7 +109,7 @@ const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 const FUNCTIONS_EMULATOR_ACTIVE = process.env.FUNCTIONS_EMULATOR === "true";
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
-const ENGAGEMENT_COMPETITION_LEVELS = new Set(["departemental", "regional", "national"]);
+const ENGAGEMENT_COMPETITION_LEVELS = new Set(["departemental", "regional", "national", "international"]);
 const ENGAGEMENT_ENTRY_STATUSES = new Set(["upcoming", "open", "closed"]);
 const ENGAGEMENT_COMPETITION_TYPES = new Set(["pool", "openWater"]);
 const ENGAGEMENT_WATER_BODY_TYPES = new Set(["sea", "lake", "river", "other"]);
@@ -3903,6 +3904,10 @@ function cleanEngagementCompetitionLevel(value) {
   return ENGAGEMENT_COMPETITION_LEVELS.has(level) ? level : "regional";
 }
 
+function isNationalOnlyEngagementCompetitionLevel(value) {
+  return ["national", "international"].includes(cleanEngagementCompetitionLevel(value));
+}
+
 function cleanEngagementEntryStatus(value) {
   const status = cleanText(value);
   return ENGAGEMENT_ENTRY_STATUSES.has(status) ? status : "upcoming";
@@ -4118,6 +4123,7 @@ function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], o
   if (!Array.isArray(rawSessions)) return [];
   const strict = options.strict !== false;
   const selectedCodes = new Set(selectedEvents.map((event) => cleanText(event?.code).toUpperCase()).filter(Boolean));
+  const selectedEventsByCode = new Map(selectedEvents.map((event) => [cleanText(event?.code).toUpperCase(), event]));
   const usedProgramSlots = new Map();
   function slotConflict(eventCode, genderMode, phase) {
     const usedModes = usedProgramSlots.get(`${eventCode}:${phase}`) || new Set();
@@ -4137,7 +4143,7 @@ function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], o
     if (Array.isArray(rawSession?.items)) {
       rawSession.items.slice(0, 160).forEach((rawItem) => {
         const eventCode = cleanText(rawItem?.eventCode || rawItem?.code).toUpperCase().replace(/\s+/g, "");
-        const definition = ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(eventCode);
+        const definition = selectedEventsByCode.get(eventCode) || ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(eventCode);
         if (!definition || (selectedCodes.size && !selectedCodes.has(eventCode))) {
           if (strict) throw new HttpsError("invalid-argument", `Epreuve programme inconnue ou non selectionnee : ${eventCode || "-"}.`);
           return;
@@ -4147,7 +4153,18 @@ function cleanEngagementProgramSessions(rawSessions = [], selectedEvents = [], o
           : "mixed";
         const genderMode = definition.relayMixedRule === "required" ? "mixed" : requestedGenderMode;
         const requestedPhase = cleanText(rawItem?.phase);
-        const phase = ENGAGEMENT_PROGRAM_PHASES.has(requestedPhase) ? requestedPhase : "direct";
+        let phase = ENGAGEMENT_PROGRAM_PHASES.has(requestedPhase) ? requestedPhase : "direct";
+        const isOpenWaterEvent = /^OW/.test(eventCode);
+        const isOpenWaterElimination = definition?.openWaterFormat === "elimination" || /^OW150ELIM(?:SF|BI)$/.test(eventCode);
+        const allowedPhases = isOpenWaterEvent
+          ? (isOpenWaterElimination ? new Set(["direct", "heats", "final"]) : new Set(["direct"]))
+          : ENGAGEMENT_PROGRAM_PHASES;
+        if (!allowedPhases.has(phase)) {
+          if (strict) throw new HttpsError("invalid-argument", isOpenWaterElimination
+            ? `Seules les series et la finale sont autorisees pour le 150 m elimination : ${eventCode}.`
+            : `Cette course eau libre se nage directement : ${eventCode}.`);
+          phase = "direct";
+        }
         if (slotConflict(eventCode, genderMode, phase)) {
           if (strict) throw new HttpsError("invalid-argument", `Doublon dans le programme : ${eventCode} ${genderMode} ${phase}.`);
           return;
@@ -4289,14 +4306,14 @@ function cleanEngagementCalendarEventPayload(raw = {}, context = {}) {
   const city = cleanText(raw.city || raw.location).slice(0, 120);
   const level = cleanPublicCalendarLevel(raw.level);
   const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
-  const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
+  const regionId = isNationalOnlyEngagementCompetitionLevel(level) ? "" : (context.national ? requestedRegionId : context.regionId);
   if (!context.national && !context.region) {
     throw new HttpsError("permission-denied", "Droit de gestion du calendrier requis.");
   }
-  if (!context.national && level === "national") {
+  if (!context.national && isNationalOnlyEngagementCompetitionLevel(level)) {
     throw new HttpsError("permission-denied", "Un evenement national doit etre cree par le niveau national.");
   }
-  if (!PUBLIC_CALENDAR_GENERIC_EVENT_TYPES.has(eventType)) {
+  if (!PUBLIC_CALENDAR_EVENT_TYPES.has(eventType)) {
     throw new HttpsError("invalid-argument", "Type d'evenement invalide.");
   }
   if (!name || !date || !location || !city) {
@@ -4305,7 +4322,7 @@ function cleanEngagementCalendarEventPayload(raw = {}, context = {}) {
   if (endDate < date) {
     throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
   }
-  if (level !== "national" && !regionId) {
+  if (!isNationalOnlyEngagementCompetitionLevel(level) && !regionId) {
     throw new HttpsError("invalid-argument", "Region obligatoire pour un evenement departemental ou regional.");
   }
   return {
@@ -4348,6 +4365,9 @@ function engagementCalendarEventCalendarItem(data = {}, id = "") {
     level: cleanPublicCalendarLevel(data.level),
     publicationStatus: cleanPublicCalendarPublicationStatus(data.publicationStatus),
     canceled: data.canceled === true,
+    resultsPublishedAt: cleanText(data.resultsPublishedAt).slice(0, 40),
+    resultsUrl: cleanText(data.resultsUrl).slice(0, 900),
+    resultsPdfUrl: cleanText(data.resultsPdfUrl).slice(0, 900),
     documentCount: cleanCompetitionDocuments(data.clubDocuments || []).length,
     entryStatus: "",
     updatedAt: cleanText(data.updatedAt).slice(0, 40)
@@ -8023,7 +8043,7 @@ function engagementCompetitionOpeningRecipients(recipients = [], competition = {
     engagementDedupMailRecipients([...extraRecipients, ...recipients])
   ).filter((recipient) => {
     if (engagementRecipientHasCapability(recipient, "engagements.national.manage")) return true;
-    if (level === "national") {
+    if (isNationalOnlyEngagementCompetitionLevel(level)) {
       return engagementRecipientHasCapability(recipient, "engagements.club.manage") ||
         engagementRecipientHasCapability(recipient, "engagements.region.manage");
     }
@@ -8042,7 +8062,7 @@ function engagementCompetitionDocumentRecipients(recipients = [], competition = 
   ].map(normalizedEngagementRegionKey).filter(Boolean));
   return engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(recipients)).filter((recipient) => {
     if (!recipient.clubId || !engagementRecipientHasCapability(recipient, "engagements.club.manage")) return false;
-    if (level === "national") return true;
+    if (isNationalOnlyEngagementCompetitionLevel(level)) return true;
     const recipientRegionKey = normalizedEngagementRegionKey(recipient.regionId);
     return Boolean(recipientRegionKey && regionKeys.has(recipientRegionKey));
   });
@@ -8973,13 +8993,13 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const missingEntryTimeMode = competitionType === "openWater" ? "none" : cleanEngagementMissingEntryTimeMode(raw.missingEntryTimeMode);
   const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(raw.maxEventsPerSwimmer);
   const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
-  const regionId = level === "national" ? "" : (context.national ? requestedRegionId : context.regionId);
-  const invitedRegionIds = level === "national" ? [] : cleanEngagementRegionIds(raw.invitedRegionIds, regionId);
+  const regionId = isNationalOnlyEngagementCompetitionLevel(level) ? "" : (context.national ? requestedRegionId : context.regionId);
+  const invitedRegionIds = isNationalOnlyEngagementCompetitionLevel(level) ? [] : cleanEngagementRegionIds(raw.invitedRegionIds, regionId);
 
   if (!context.national && !context.region) {
     throw new HttpsError("permission-denied", "Droit creation competition engagements requis.");
   }
-  if (!context.national && level === "national") {
+  if (!context.national && isNationalOnlyEngagementCompetitionLevel(level)) {
     throw new HttpsError("permission-denied", "Une competition nationale doit etre creee par le niveau national.");
   }
   if (!context.national && entryStatus === "closed") {
@@ -8991,7 +9011,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (endDate && endDate < date) {
     throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
   }
-  if (level !== "national" && !regionId) {
+  if (!isNationalOnlyEngagementCompetitionLevel(level) && !regionId) {
     throw new HttpsError("invalid-argument", "Region obligatoire pour une competition departementale ou regionale.");
   }
   if (qualificationTimesMode === "period" && (!qualificationStartDate || !qualificationEndDate)) {
@@ -9066,7 +9086,7 @@ function assertCanManageEngagementCompetition(context = {}, competition = {}) {
   if (!context.region || !context.regionId) {
     throw new HttpsError("permission-denied", "Droit gestion competition engagements requis.");
   }
-  if (cleanEngagementCompetitionLevel(competition.level) === "national") {
+  if (isNationalOnlyEngagementCompetitionLevel(competition.level)) {
     throw new HttpsError("permission-denied", "Competition nationale reservee au niveau national.");
   }
   if (cleanText(competition.regionId) !== context.regionId) {
@@ -9148,7 +9168,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     });
   }).map((competition) => [competition.id, competition])).values())
     .filter((competition) => !manageOnly || managementContext.national || (
-      cleanEngagementCompetitionLevel(competition.level) !== "national" &&
+      !isNationalOnlyEngagementCompetitionLevel(competition.level) &&
       cleanText(competition.regionId) === managementContext.regionId
     ))
     .slice(0, limit);
@@ -9211,7 +9231,7 @@ exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) 
       .filter((item) => item.date >= range.startDate && item.date <= range.endDate)
       .map((item) => [item.id, item]);
   })).values())
-    .filter((item) => context.national || (item.level !== "national" && item.regionId === context.regionId))
+    .filter((item) => context.national || (!isNationalOnlyEngagementCompetitionLevel(item.level) && item.regionId === context.regionId))
     .sort((left, right) => cleanText(left.date).localeCompare(cleanText(right.date)) || cleanText(left.name).localeCompare(cleanText(right.name), "fr"))
     .slice(0, 1200);
   return {
@@ -9305,7 +9325,7 @@ exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   const data = snapshot.data() || {};
   await ref.delete();
   const documents = cleanCompetitionDocuments(data.clubDocuments || [], { includeUploader: true });
-  const deletionResults = await Promise.allSettled(documents.map((document) =>
+  const deletionResults = await Promise.allSettled(documents.filter(hasManagedEngagementCompetitionDocumentStorage).map((document) =>
     storage.bucket(LIVEPALMES_STORAGE_BUCKET)
       .file(assertEngagementCompetitionDocumentPath(document.storagePath))
       .delete({ ignoreNotFound: true })
@@ -9435,6 +9455,11 @@ function assertEngagementCompetitionDocumentPath(storagePath = "") {
   return cleanPath;
 }
 
+function hasManagedEngagementCompetitionDocumentStorage(document = {}) {
+  const storagePath = cleanText(document?.storagePath);
+  return storagePath.startsWith(`${ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX}/`) && !storagePath.includes("..");
+}
+
 async function engagementCompetitionDocumentContext(request) {
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
@@ -9531,7 +9556,7 @@ exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_
     await file.delete({ ignoreNotFound: true }).catch(() => undefined);
     throw error;
   }
-  if (previousStoragePath && previousStoragePath !== storagePath) {
+  if (hasManagedEngagementCompetitionDocumentStorage({ storagePath: previousStoragePath }) && previousStoragePath !== storagePath) {
     await bucket.file(assertEngagementCompetitionDocumentPath(previousStoragePath)).delete({ ignoreNotFound: true }).catch(() => undefined);
   }
   await writeAuditLog(existingDocument
@@ -9612,12 +9637,14 @@ exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
     });
   });
   let storageDeleted = true;
-  try {
-    await storage.bucket(LIVEPALMES_STORAGE_BUCKET)
-      .file(assertEngagementCompetitionDocumentPath(deletedDocument.storagePath))
-      .delete({ ignoreNotFound: true });
-  } catch (_) {
-    storageDeleted = false;
+  if (hasManagedEngagementCompetitionDocumentStorage(deletedDocument)) {
+    try {
+      await storage.bucket(LIVEPALMES_STORAGE_BUCKET)
+        .file(assertEngagementCompetitionDocumentPath(deletedDocument.storagePath))
+        .delete({ ignoreNotFound: true });
+    } catch (_) {
+      storageDeleted = false;
+    }
   }
   await writeAuditLog(`${sourceType === "calendarEvent" ? "engagementCalendarEvent" : "engagementCompetition"}.documentDeleted`, context.uid, {
     competitionId,
@@ -15365,7 +15392,7 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   }
   await batch.commit();
   const competitionDocuments = cleanCompetitionDocuments(competition.clubDocuments || [], { includeUploader: true });
-  const documentDeletionResults = await Promise.allSettled(competitionDocuments.map((document) =>
+  const documentDeletionResults = await Promise.allSettled(competitionDocuments.filter(hasManagedEngagementCompetitionDocumentStorage).map((document) =>
     storage.bucket(LIVEPALMES_STORAGE_BUCKET)
       .file(assertEngagementCompetitionDocumentPath(document.storagePath))
       .delete({ ignoreNotFound: true })
