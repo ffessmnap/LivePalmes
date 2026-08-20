@@ -102,7 +102,7 @@ assert.ok(calendarPageSource.includes("Depuis le début de la saison"));
 assert.ok(calendarPageSource.includes("nodes.historyLink.hidden = !past.length"));
 assert.ok(calendarPageSource.includes('id="calendarSeasonHistory"'));
 assert.ok(!calendarPageSource.includes("<details class=\"calendar-past-section\""));
-assert.ok(calendarPageSource.includes("const sorted = chosen.sort(api.compare)"));
+assert.ok(calendarPageSource.includes("const sorted = chosen.sort(chronologicalCompare)"));
 assert.ok(calendarPageSource.includes("selectedSeasonEndYear !== currentSeasonEndYear"));
 assert.ok(!calendarPageSource.includes("nodes.period"));
 assert.ok(calendarPageSource.includes("function displayStatus(event)"));
