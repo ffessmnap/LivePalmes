@@ -122,6 +122,12 @@ function publicCalendarSummary(data = {}, options = {}) {
 }
 
 function publicCalendarCompetitionProgram(data = {}, eventLabelByCode = {}) {
+  const phaseLabels = {
+    heats: "Séries",
+    final: "Finale(s)",
+    slowHeats: "Séries lentes",
+    fastHeat: "Série rapide"
+  };
   const sessions = Array.isArray(data.programSessions) ? data.programSessions : [];
   return sessions.slice(0, 12).map((session, sessionIndex) => ({
     id: cleanText(session?.id, 40) || `session-${sessionIndex + 1}`,
@@ -133,11 +139,12 @@ function publicCalendarCompetitionProgram(data = {}, eventLabelByCode = {}) {
       const eventCode = cleanText(item?.eventCode || item?.code, 40);
       const gender = cleanText(item?.genderMode, 20);
       const genderLabel = gender === "female" ? "Femmes" : gender === "male" ? "Hommes" : gender === "mixed" ? "Femmes et hommes" : "";
+      const phaseLabel = phaseLabels[cleanText(item?.phase, 20)] || "";
       return {
         id: `item-${itemIndex + 1}`,
         time: "",
         label: cleanText(eventLabelByCode[eventCode] || eventCode, 180),
-        detail: genderLabel
+        detail: [genderLabel, phaseLabel].filter(Boolean).join(" · ")
       };
     }).filter((item) => item.label)
   })).filter((session) => session.items.length || session.date || session.startTime);

@@ -4,6 +4,12 @@
   const TYPES = { training: "Formation", stage: "Stage", meeting: "Réunion", other: "Autre" };
   const LEVELS = { departemental: "Départemental", regional: "Régional", national: "National" };
   const CATEGORIES = { poster: "Affiche", circular: "Circulaire", rules: "Règlement", information: "Information", access: "Plan / accès", other: "Autre" };
+
+  function programSessionLabel(label, index) {
+    const value = String(label || "").trim();
+    const legacyMatch = value.match(/^Réunion\s+(\d+)$/i);
+    return legacyMatch ? `Session ${legacyMatch[1]}` : (value || `Session ${index + 1}`);
+  }
   let current = null;
 
   function escapeHtml(value) {
@@ -65,7 +71,7 @@
   function renderProgram(program = []) {
     return program.map((session, index) => `
       <div class="admin-calendar-program-row" data-calendar-program-row>
-        <label>Réunion<input data-program-label maxlength="80" value="${escapeHtml(session.label || `Réunion ${index + 1}`)}" required></label>
+        <label>Session<input data-program-label maxlength="80" value="${escapeHtml(programSessionLabel(session.label, index))}" required></label>
         <label>Date<input data-program-date type="date" value="${escapeHtml(session.date || current?.date || "")}"></label>
         <label>Début<input data-program-start type="time" value="${escapeHtml(session.startTime || "")}"></label>
         <label>Fin<input data-program-end type="time" value="${escapeHtml(session.endTime || "")}"></label>
@@ -119,7 +125,7 @@
   function addProgramRow() {
     const list = ensureDialog().querySelector("[data-calendar-program-list]");
     const index = list.querySelectorAll("[data-calendar-program-row]").length;
-    list.insertAdjacentHTML("beforeend", renderProgram([{ label: `Réunion ${index + 1}`, date: current?.date || "" }]));
+    list.insertAdjacentHTML("beforeend", renderProgram([{ label: `Session ${index + 1}`, date: current?.date || "" }]));
   }
 
   function payloadFromForm(form) {

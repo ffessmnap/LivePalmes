@@ -26,17 +26,30 @@ const detail = calendar.publicCalendarDetail({
   eventType: "stage",
   level: "regional",
   publicationStatus: "published",
-  programSessions: [{ label: "Réunion 1", date: "2026-10-03", startTime: "09:00", endTime: "12:00", summary: "Accueil et pratique" }],
+  programSessions: [{ label: "Session 1", date: "2026-10-03", startTime: "09:00", endTime: "12:00", summary: "Accueil et pratique" }],
   clubDocuments: [{ id: "doc-1", title: "Programme", fileName: "programme.pdf", storagePath: "competition-documents/x", url: "https://example.test/programme.pdf", size: 12 }]
 }, { id: "event-1", sourceType: "calendarEvent" });
 assert.equal(detail.eventType, "stage");
-assert.equal(detail.program[0].title, "Réunion 1");
+assert.equal(detail.program[0].title, "Session 1");
 assert.equal(detail.program[0].summary, "Accueil et pratique");
 assert.equal(detail.documents[0].url, "https://example.test/programme.pdf");
 assert.equal(calendar.cleanPublicCalendarUrl("javascript:alert(1)"), "");
 assert.equal(calendar.cleanPublicCalendarUrl("https://example.test/inscriptions"), "https://example.test/inscriptions");
 
+const competitionDetail = calendar.publicCalendarDetail({
+  name: "Championnat régional",
+  date: "2026-10-03",
+  competitionType: "pool",
+  programSessions: [
+    { items: [{ eventCode: "100SF", genderMode: "female", phase: "heats" }] },
+    { items: [{ eventCode: "100SF", genderMode: "female", phase: "final" }] }
+  ]
+}, { id: "competition-1", sourceType: "competition", eventLabelByCode: { "100SF": "100 m Surface" } });
+assert.equal(competitionDetail.program[0].items[0].detail, "Femmes · Séries");
+assert.equal(competitionDetail.program[1].items[0].detail, "Femmes · Finale(s)");
+
 const browserSource = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.js"), "utf8");
+const competitionPageSource = fs.readFileSync(path.join(root, "assets", "pages", "competition.js"), "utf8");
 const browserContext = { window: {}, Date, URL, console };
 vm.runInNewContext(browserSource, browserContext);
 const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
@@ -71,5 +84,8 @@ assert.ok(functionsSource.includes("variableDocumentsMax: endYears.length * 1200
 const calendarCss = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.css"), "utf8");
 assert.ok(calendarCss.includes(".public-calendar-page .public-footer"));
 assert.ok(calendarCss.includes("text-align:center"));
+assert.ok(calendarCss.includes("grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr)"));
+assert.ok(calendarCss.includes(".calendar-entry-note"));
+assert.ok(competitionPageSource.indexOf("Accéder aux engagements LivePalmes") < competitionPageSource.indexOf("Les engagements sont effectués exclusivement"));
 
 console.log("Public calendar tests OK");
