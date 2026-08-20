@@ -10,6 +10,7 @@
   function regionFilterLabel(event) { return regionFilterValue(event) === "ile de france" ? "Île-de-France" : String(event.regionLabel || event.regionId || "").trim(); }
   function isImportedHistoricalEvent(event) { return String(event.id || "").startsWith("legacy-nap-"); }
   function displayStatus(event) { const status = api.status(event); return isImportedHistoricalEvent(event) && status === "awaitingResults" ? "" : status; }
+  function chronologicalCompare(left, right) { return String(left.date || "").localeCompare(String(right.date || "")) || String(left.name || "").localeCompare(String(right.name || ""), "fr"); }
   function isCurrentOrUpcoming(event) { const state = displayStatus(event); return ["ongoing","upcoming"].includes(state) || (state === "canceled" && (event.endDate || event.date) >= api.today()); }
   function filteredEvents() { return events.filter((event) => !nodes.region.value || regionFilterValue(event) === nodes.region.value).filter((event) => !nodes.level.value || event.level === nodes.level.value).filter((event) => !nodes.type.value || event.eventType === nodes.type.value); }
   function eventHtml(event) { const state=displayStatus(event); return `<a class="calendar-event" href="competition.html?id=${encodeURIComponent(event.id)}"><time class="calendar-event-date" datetime="${api.escapeHtml(event.date)}">${dateShort(event)}</time><div class="calendar-event-main"><strong>${api.escapeHtml(event.name)}</strong><small><span class="calendar-event-type">${api.escapeHtml(api.TYPE_LABELS[event.eventType])}</span> · ${api.escapeHtml(event.city)}</small></div><div class="calendar-event-scope">${api.escapeHtml(api.LEVEL_LABELS[event.level])}${event.regionLabel ? `<br><small>${api.escapeHtml(event.regionLabel)}</small>` : ""}</div>${state ? `<span class="calendar-status" data-status="${state}">${api.escapeHtml(api.STATUS_LABELS[state])}</span>` : ""}</a>`; }
@@ -19,13 +20,13 @@
     if (!chosen.length) { nodes.historyLink.hidden = true; nodes.count.textContent = "0 événement"; nodes.list.innerHTML = '<div class="calendar-empty">Aucun événement ne correspond à ces filtres.</div>'; return; }
     if (selectedSeasonEndYear !== currentSeasonEndYear) {
       nodes.historyLink.hidden = true;
-      const sorted = chosen.sort(api.compare);
+      const sorted = chosen.sort(chronologicalCompare);
       nodes.count.textContent = `${sorted.length} événement${sorted.length > 1 ? "s" : ""}`;
       nodes.list.innerHTML = groupedEventsHtml(sorted);
       return;
     }
     const current = chosen.filter(isCurrentOrUpcoming).sort(api.compare);
-    const past = chosen.filter((event) => !isCurrentOrUpcoming(event)).sort(api.compare);
+    const past = chosen.filter((event) => !isCurrentOrUpcoming(event)).sort(chronologicalCompare);
     nodes.historyLink.hidden = !past.length;
     nodes.count.textContent = `${current.length} en cours ou à venir · ${past.length} passé${past.length > 1 ? "s" : ""}`;
     const currentHtml = `<section class="calendar-current-section"><h2 class="calendar-section-title">En cours et à venir</h2>${current.length ? groupedEventsHtml(current, 3) : '<div class="calendar-empty calendar-empty-compact">Aucun événement à venir avec ces filtres.</div>'}</section>`;
