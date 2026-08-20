@@ -4728,11 +4728,60 @@
   color: #775711;
 }
 
+.admin-engagements-program-format {
+  position: relative;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #cddbd8;
+  border-radius: 5px;
+  padding: 2px 7px;
+  background: #ffffff;
+  color: #12312d;
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.admin-engagements-program-format i {
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.admin-engagements-program-format select[data-engagement-program-format] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-engagements-program-format:focus-within {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.16);
+  outline-offset: 1px;
+}
+
+.admin-engagements-program-phase {
+  border: 1px solid #cddbd8;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #f4f8f7;
+  color: #31524c;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
 .admin-engagements-program-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   justify-content: flex-end;
+}
+
+.admin-engagements-program-row > .admin-engagements-program-actions {
+  flex-wrap: nowrap;
 }
 
 .admin-engagements-program-actions button {
@@ -5949,11 +5998,15 @@
   }
 
   .admin-engagements-program-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .admin-engagements-program-actions {
     justify-content: flex-start;
+  }
+
+  .admin-engagements-program-row > .admin-engagements-program-actions {
+    justify-content: flex-end;
   }
 
   .admin-engagements-form {

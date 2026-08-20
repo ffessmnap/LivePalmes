@@ -219,6 +219,19 @@
     ["mixed", "F/H ensemble"]
   ];
   const ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS = Object.fromEntries(ENGAGEMENT_PROGRAM_GENDER_MODES);
+  const ENGAGEMENT_PROGRAM_PHASE_LABELS = {
+    direct: "Course directe",
+    heats: "Séries",
+    final: "Finale(s)",
+    slowHeats: "Séries lentes",
+    fastHeat: "Série rapide"
+  };
+  const ENGAGEMENT_PROGRAM_FORMATS = [
+    ["direct", "Course directe"],
+    ["heatsFinal", "Séries + finale(s)"],
+    ["slowFast", "Séries lentes / série rapide"]
+  ];
+  const ENGAGEMENT_PROGRAM_FORMAT_LABELS = Object.fromEntries(ENGAGEMENT_PROGRAM_FORMATS);
   const LIVEPALMES_REGION_DEFINITIONS = [
     "Hauts de France",
     "Normandie",
@@ -5413,10 +5426,17 @@
       label: event.shortLabel || event.label || event.code,
       type: event.type || "individual"
     }));
+    const seenSlots = new Set();
     const sessions = normalizedEngagementProgramSessions(selectedEngagementCompetition?.programSessions || [], eventOptions)
       .map((session) => ({
         ...session,
-        items: (session.items || []).filter((item) => engagementEventDefinition(item.eventCode)?.type === "individual")
+        items: (session.items || []).filter((item) => {
+          if (engagementEventDefinition(item.eventCode)?.type !== "individual" || item.phase === "final") return false;
+          const slotKey = `${item.eventCode}:${item.genderMode}`;
+          if (seenSlots.has(slotKey)) return false;
+          seenSlots.add(slotKey);
+          return true;
+        })
       }))
       .filter((session) => session.items.length);
     if (sessions.length) return sessions;
@@ -6984,10 +7004,10 @@
     const eventOptions = events.map((event) => ({ code: event.code, label: event.shortLabel || event.code }));
     const sessions = normalizedEngagementProgramSessions(selectedEngagementCompetition?.programSessions || [], eventOptions);
     let matches = sessions.filter((session) => (session.items || []).some((item) =>
-      item.eventCode === eventCode && (!genderMode || item.genderMode === genderMode)
+      item.eventCode === eventCode && item.phase !== "final" && (!genderMode || item.genderMode === genderMode)
     ));
     if (!matches.length && genderMode) {
-      matches = sessions.filter((session) => (session.items || []).some((item) => item.eventCode === eventCode));
+      matches = sessions.filter((session) => (session.items || []).some((item) => item.eventCode === eventCode && item.phase !== "final"));
     }
     return matches.map((session) => [
       session.label,
@@ -8813,7 +8833,8 @@
       const items = (Array.isArray(session.items) ? session.items : [])
         .map((item) => ({
           eventCode: String(item.eventCode || item.code || "").trim().toUpperCase(),
-          genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[item.genderMode] ? item.genderMode : "mixed"
+          genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[item.genderMode] ? item.genderMode : "mixed",
+          phase: ENGAGEMENT_PROGRAM_PHASE_LABELS[item.phase] ? item.phase : "direct"
         }))
         .filter((item) => allowedCodes.has(item.eventCode));
       return {
@@ -8832,9 +8853,11 @@
       const items = Array.from(sessionElement.querySelectorAll("[data-engagement-program-row]")).map((row) => {
         const eventCode = row.dataset.engagementProgramEvent || "";
         const genderMode = row.dataset.engagementProgramGender || "mixed";
+        const phase = row.dataset.engagementProgramPhase || "direct";
         return {
           eventCode,
-          genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[genderMode] ? genderMode : "mixed"
+          genderMode: ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[genderMode] ? genderMode : "mixed",
+          phase: ENGAGEMENT_PROGRAM_PHASE_LABELS[phase] ? phase : "direct"
         };
       }).filter((item) => allowedCodes.has(item.eventCode));
       return {
@@ -8891,22 +8914,96 @@
     return "combined";
   }
 
-  function engagementProgramSlotConflict(sessions, eventCode, genderMode) {
-    const existingModes = new Set();
-    sessions.forEach((session) => {
-      (session.items || []).forEach((item) => {
-        if (item.eventCode === eventCode) existingModes.add(item.genderMode);
+  function engagementProgramPhaseLabel(phase = "direct") {
+    return ENGAGEMENT_PROGRAM_PHASE_LABELS[phase] || ENGAGEMENT_PROGRAM_PHASE_LABELS.direct;
+  }
+
+  function engagementProgramSameSlot(item = {}, eventCode = "", genderMode = "") {
+    return item.eventCode === eventCode && item.genderMode === genderMode;
+  }
+
+  function engagementProgramPassages(sessions, eventCode, genderMode) {
+    const passages = [];
+    sessions.forEach((session, sessionIndex) => {
+      (session.items || []).forEach((item, itemIndex) => {
+        if (engagementProgramSameSlot(item, eventCode, genderMode)) passages.push({ item, sessionIndex, itemIndex });
       });
     });
-    if (genderMode === "mixed") return existingModes.size > 0;
-    return existingModes.has("mixed") || existingModes.has(genderMode);
+    return passages;
+  }
+
+  function engagementProgramFormatForPhase(phase = "direct") {
+    if (phase === "heats" || phase === "final") return "heatsFinal";
+    if (phase === "slowHeats" || phase === "fastHeat") return "slowFast";
+    return "direct";
+  }
+
+  function engagementProgramFirstPhaseForFormat(format = "direct") {
+    return format === "heatsFinal" ? "heats" : format === "slowFast" ? "slowHeats" : "direct";
+  }
+
+  function engagementProgramSecondPhaseForFormat(format = "direct") {
+    return format === "heatsFinal" ? "final" : format === "slowFast" ? "fastHeat" : "";
+  }
+
+  function engagementProgramCanAddPassage(sessions, eventCode, genderMode, targetSessionId = "") {
+    const passages = engagementProgramPassages(sessions, eventCode, genderMode);
+    if (!passages.length) return true;
+    if (passages.length !== 1 || !["heats", "slowHeats"].includes(passages[0].item.phase)) return false;
+    const targetSessionIndex = sessions.findIndex((session) => session.id === targetSessionId);
+    return targetSessionIndex >= passages[0].sessionIndex;
+  }
+
+  function engagementProgramNextPhase(sessions, eventCode, genderMode) {
+    const passages = engagementProgramPassages(sessions, eventCode, genderMode);
+    if (!passages.length) return "direct";
+    return passages[0].item.phase === "heats" ? "final" : passages[0].item.phase === "slowHeats" ? "fastHeat" : "";
+  }
+
+  function normalizeEngagementProgramPassageOrder(sessions) {
+    const slots = new Map();
+    sessions.forEach((session) => {
+      (session.items || []).forEach((item) => {
+        const key = `${item.eventCode}:${item.genderMode}`;
+        if (!slots.has(key)) slots.set(key, []);
+        slots.get(key).push(item);
+      });
+    });
+    slots.forEach((items) => {
+      const phases = new Set(items.map((item) => item.phase || "direct"));
+      if (phases.has("direct") || items.length > 2) return;
+      const format = phases.has("slowHeats") || phases.has("fastHeat") ? "slowFast" : "heatsFinal";
+      items[0].phase = engagementProgramFirstPhaseForFormat(format);
+      if (items[1]) items[1].phase = engagementProgramSecondPhaseForFormat(format);
+    });
+    return sessions;
+  }
+
+  function applyEngagementProgramFormatChange(select) {
+    const format = ENGAGEMENT_PROGRAM_FORMAT_LABELS[select?.value] ? select.value : "direct";
+    const row = select?.closest("[data-engagement-program-row]");
+    const eventCode = row?.dataset.engagementProgramEvent || "";
+    const genderMode = row?.dataset.engagementProgramGender || "mixed";
+    const sessions = selectedEngagementProgramSessionsFromForm();
+    const passages = engagementProgramPassages(sessions, eventCode, genderMode);
+    const first = passages[0]?.item;
+    if (!first) return sessions;
+    first.phase = engagementProgramFirstPhaseForFormat(format);
+    if (format === "direct") {
+      sessions.forEach((session) => {
+        session.items = (session.items || []).filter((item) => item === first || !engagementProgramSameSlot(item, eventCode, genderMode));
+      });
+    } else if (passages[1]?.item) {
+      passages[1].item.phase = engagementProgramSecondPhaseForFormat(format);
+    }
+    return sessions;
   }
 
   function renderEngagementProgramSessions(programSessions = [], canEdit = false) {
     const mount = elements.engagementsProgramSessions;
     if (!mount) return;
     const eventOptions = selectedEngagementEventOptions();
-    const sessions = normalizedEngagementProgramSessions(programSessions, eventOptions);
+    const sessions = normalizeEngagementProgramPassageOrder(normalizedEngagementProgramSessions(programSessions, eventOptions));
     if (!canEdit || !sessions.some((session) => session.id === activeEngagementProgramSessionId)) {
       activeEngagementProgramSessionId = "";
     }
@@ -8928,7 +9025,7 @@
         <strong>${escapeHtml(event.label)}</strong>
         <div>
           ${engagementProgramGenderModesForEvent(event).map(([mode, label]) => {
-            const disabled = !canEdit || !activeEngagementProgramSessionId || engagementProgramSlotConflict(sessions, event.code, mode);
+            const disabled = !canEdit || !activeEngagementProgramSessionId || !engagementProgramCanAddPassage(sessions, event.code, mode, activeEngagementProgramSessionId);
             return `<button class="ghost-button" type="button" title="${escapeHtml(label)}" aria-label="${escapeHtml(`${event.label} ${label}`)}" data-engagement-program-action="add-slot" data-engagement-program-event="${escapeHtml(event.code)}" data-engagement-program-gender="${escapeHtml(mode)}" ${disabled ? "disabled" : ""}>${escapeHtml(engagementProgramGenderModeShortLabel(mode, event.code, event))}</button>`;
           }).join("")}
         </div>
@@ -8972,13 +9069,25 @@
           </div>
         </div>
         <div class="admin-engagements-program-rows">
-          ${session.items.length ? session.items.map((item, itemIndex) => `
-            <div class="admin-engagements-program-row" data-engagement-program-row data-engagement-program-event="${escapeHtml(item.eventCode)}" data-engagement-program-gender="${escapeHtml(item.genderMode)}">
+          ${session.items.length ? session.items.map((item, itemIndex) => {
+            const passageIndex = engagementProgramPassages(sessions, item.eventCode, item.genderMode)
+              .findIndex((passage) => passage.sessionIndex === sessionIndex && passage.itemIndex === itemIndex);
+            const format = engagementProgramFormatForPhase(item.phase);
+            return `
+            <div class="admin-engagements-program-row" data-engagement-program-row data-engagement-program-event="${escapeHtml(item.eventCode)}" data-engagement-program-gender="${escapeHtml(item.genderMode)}" data-engagement-program-phase="${escapeHtml(item.phase || "direct")}">
               <div class="admin-engagements-program-row-main">
                 <span>${itemIndex + 1}.</span>
                 <strong>${escapeHtml(eventLabelFor(item.eventCode))}</strong>
                 <i aria-hidden="true">-</i>
                 <em data-gender-mode="${escapeHtml(item.genderMode)}" data-gender-tone="${escapeHtml(engagementProgramGenderModeTone(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}" title="${escapeHtml(engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}">${escapeHtml(engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}</em>
+                ${passageIndex <= 0 ? `
+                  <label class="admin-engagements-program-format" title="${escapeHtml(ENGAGEMENT_PROGRAM_FORMAT_LABELS[format] || engagementProgramPhaseLabel(item.phase))}">
+                    <span>${escapeHtml(engagementProgramPhaseLabel(item.phase))}</span>
+                    ${canEdit ? `<i aria-hidden="true">⌄</i><select data-engagement-program-format aria-label="Format de ${escapeHtml(eventLabelFor(item.eventCode))}">
+                      ${ENGAGEMENT_PROGRAM_FORMATS.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === format ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+                    </select>` : ""}
+                  </label>
+                ` : `<b class="admin-engagements-program-phase">${escapeHtml(engagementProgramPhaseLabel(item.phase))}</b>`}
               </div>
               <div class="admin-engagements-program-actions">
                 <button class="ghost-button" type="button" title="Monter" aria-label="Monter" data-engagement-program-action="move-up" ${canEdit ? "" : "hidden"}>↑</button>
@@ -8986,7 +9095,8 @@
                 <button class="ghost-button" type="button" title="Retirer" aria-label="Retirer" data-engagement-program-action="remove-row" ${canEdit ? "" : "hidden"}>&times;</button>
               </div>
             </div>
-          `).join("") : `<p class="admin-engagements-empty">Aucune ligne dans cette session.</p>`}
+          `;
+          }).join("") : `<p class="admin-engagements-empty">Aucune ligne dans cette session.</p>`}
         </div>
         </section>
       </div>
@@ -9053,8 +9163,9 @@
       const targetSession = sessions.find((session) => session.id === activeEngagementProgramSessionId);
       const eventCode = button.dataset.engagementProgramEvent || "";
       const genderMode = button.dataset.engagementProgramGender || "mixed";
-      if (targetSession && !engagementProgramSlotConflict(sessions, eventCode, genderMode)) {
-        targetSession.items.push({ eventCode, genderMode });
+      const phase = engagementProgramNextPhase(sessions, eventCode, genderMode);
+      if (targetSession && phase && engagementProgramCanAddPassage(sessions, eventCode, genderMode, activeEngagementProgramSessionId)) {
+        targetSession.items.push({ eventCode, genderMode, phase });
         markEngagementDetailTabDirty("courses");
       }
     } else if (action === "select-session" && sessions[sessionIndex]) {
@@ -9123,21 +9234,49 @@
   }
 
   function selectedEngagementProgramError() {
-    const used = new Map();
     const eventLabels = new Map(selectedEngagementEventOptions().map((event) => [event.code, event.label]));
     const sessions = selectedEngagementProgramSessionsFromForm();
-    for (const session of sessions) {
-      for (const item of session.items || []) {
-        const usedModes = used.get(item.eventCode) || new Set();
-        const duplicate = item.genderMode === "mixed"
-          ? usedModes.size > 0
-          : usedModes.has("mixed") || usedModes.has(item.genderMode);
-        if (duplicate) {
-          return `Doublon dans le programme chrono : ${eventLabels.get(item.eventCode) || item.eventCode}.`;
-        }
-        usedModes.add(item.genderMode);
-        used.set(item.eventCode, usedModes);
-      }
+    const occurrences = sessions.flatMap((session, sessionIndex) => (session.items || []).map((item, itemIndex) => ({
+      ...item,
+      position: sessionIndex * 160 + itemIndex
+    })));
+    const usedByPhase = new Map();
+    for (const item of occurrences) {
+      const phaseKey = `${item.eventCode}:${item.phase}`;
+      const usedModes = usedByPhase.get(phaseKey) || new Set();
+      const duplicate = item.genderMode === "mixed" ? usedModes.size > 0 : usedModes.has("mixed") || usedModes.has(item.genderMode);
+      if (duplicate) return `Doublon dans le programme : ${eventLabels.get(item.eventCode) || item.eventCode} · ${engagementProgramPhaseLabel(item.phase)}.`;
+      usedModes.add(item.genderMode);
+      usedByPhase.set(phaseKey, usedModes);
+    }
+    const modesByEvent = new Map();
+    occurrences.forEach((item) => {
+      if (!modesByEvent.has(item.eventCode)) modesByEvent.set(item.eventCode, new Set());
+      modesByEvent.get(item.eventCode).add(item.genderMode);
+    });
+    for (const [eventCode, modes] of modesByEvent) {
+      if (modes.has("mixed") && modes.size > 1) return `F/H ensemble ne peut pas être combiné avec Femmes ou Hommes pour ${eventLabels.get(eventCode) || eventCode}.`;
+    }
+    const groups = new Map();
+    occurrences.forEach((item) => {
+      const key = `${item.eventCode}:${item.genderMode}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    });
+    for (const items of groups.values()) {
+      const eventCode = items[0].eventCode;
+      const eventLabel = eventLabels.get(eventCode) || eventCode;
+      const phases = new Set(items.map((item) => item.phase));
+      if (phases.has("direct") && phases.size > 1) return `Course directe incompatible avec un autre passage pour ${eventLabel}.`;
+      const heats = items.find((item) => item.phase === "heats");
+      const final = items.find((item) => item.phase === "final");
+      const slowHeats = items.find((item) => item.phase === "slowHeats");
+      const fastHeat = items.find((item) => item.phase === "fastHeat");
+      if (Boolean(heats) !== Boolean(final)) return `Les séries et la finale doivent être programmées ensemble pour ${eventLabel}.`;
+      if (Boolean(slowHeats) !== Boolean(fastHeat)) return `Les séries lentes et la série rapide doivent être programmées ensemble pour ${eventLabel}.`;
+      if ((heats || final) && (slowHeats || fastHeat)) return `Deux formats de déroulement sont combinés pour ${eventLabel}.`;
+      if (heats && final && heats.position >= final.position) return `La finale doit être placée après les séries pour ${eventLabel}.`;
+      if (slowHeats && fastHeat && slowHeats.position >= fastHeat.position) return `La série rapide doit être placée après les séries lentes pour ${eventLabel}.`;
     }
     return "";
   }
@@ -16121,8 +16260,11 @@
     });
     elements.engagementsProgramAddSession?.addEventListener("click", addEngagementProgramSession);
     elements.engagementsProgramSessions?.addEventListener("click", handleEngagementProgramAction);
-    elements.engagementsProgramSessions?.addEventListener("change", () => {
-      updateEngagementEventsSectionSummaries(selectedEngagementEventsFromForm(), selectedEngagementProgramSessionsFromForm());
+    elements.engagementsProgramSessions?.addEventListener("change", (event) => {
+      const formatSelect = event.target.closest?.("[data-engagement-program-format]");
+      const sessions = formatSelect ? applyEngagementProgramFormatChange(formatSelect) : selectedEngagementProgramSessionsFromForm();
+      markEngagementDetailTabDirty("courses");
+      renderEngagementProgramSessions(sessions, isEngagementAdminMode() && engagementDetailEditing && canEditEngagementCompetition());
     });
     elements.engagementsSectionToggles?.forEach((button) => {
       button.addEventListener("click", (event) => {

@@ -223,6 +223,8 @@ Lorsqu'un administrateur change d'onglet avec des modifications non enregistrees
 
 Le parametrage des restrictions se fait par course.
 
+Une epreuve ouverte aux engagements n'existe qu'une seule fois, meme lorsqu'elle comporte plusieurs passages dans le programme. Son format propose seulement trois choix : course directe par defaut, `series + finale(s)` ou `series lentes / serie rapide`. Pour un format en deux passages, la premiere apparition est automatiquement la serie ou les series lentes ; la seconde est automatiquement la ou les finales ou la serie rapide et peut etre placee dans une session ulterieure. Une finale n'est jamais ouverte a l'engagement ; les series lentes et la serie rapide partagent le meme engagement et correspondent uniquement a une repartition ulterieure des nageurs. Les anciens programmes sans deroulement explicite sont interpretes comme des courses directes.
+
 Pour chaque course, il faut pouvoir definir :
 
 - si la course est ouverte ;
