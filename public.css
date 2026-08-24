@@ -449,7 +449,7 @@ body:not(.public-home-page) .public-footer {
   background: linear-gradient(180deg, #ffffff 0%, #f1fbfb 100%);
 }
 
-.public-home-card.archive-card {
+.public-home-card.calendar-card {
   border-color: #bdd7f0;
   border-left: 5px solid #2d7dc8;
   background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
@@ -522,7 +522,7 @@ body:not(.public-home-page) .public-footer {
   color: #0b6668;
 }
 
-.public-home-card-icon.archive-icon {
+.public-home-card-icon.calendar-icon {
   background: #e8f2ff;
   color: #246fba;
 }
@@ -572,7 +572,7 @@ body:not(.public-home-page) .public-footer {
   box-shadow: inset -3px 0 0 #c83f49;
 }
 
-.archive-card .public-home-card-actions .ghost-button {
+.calendar-card .public-home-card-actions .ghost-button {
   background: rgba(45, 125, 200, 0.11);
   color: #225f9d;
   box-shadow: inset 0 -1px 0 rgba(34, 95, 157, 0.08);
@@ -583,50 +583,6 @@ body:not(.public-home-page) .public-footer {
   transform: translateY(-1px);
   text-decoration: none;
   filter: saturate(1.1);
-}
-
-.public-archive-empty {
-  display: grid;
-  gap: 10px;
-  max-width: 680px;
-  margin: 0 auto;
-}
-
-.public-archive-empty h2 {
-  color: var(--accent-dark);
-  font-size: 1.4rem;
-}
-
-.public-archive-empty p {
-  margin: 0;
-  color: #526876;
-  font-weight: 800;
-}
-
-.public-archive-list {
-  display: grid;
-  gap: 10px;
-}
-
-.public-archive-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.public-archive-card h2 {
-  margin: 3px 0;
-  color: var(--accent-dark);
-  font-size: 1.25rem;
-}
-
-.public-archive-card p,
-.public-archive-card span {
-  display: block;
-  margin: 0;
-  color: #60717c;
-  font-weight: 850;
 }
 
 .public-results-shell {
@@ -3273,11 +3229,6 @@ body:not(.public-home-page) .public-footer {
   .public-home-card {
     min-height: 0;
     padding: 14px;
-  }
-
-  .public-archive-card {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .public-header-actions {

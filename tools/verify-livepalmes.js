@@ -65,6 +65,11 @@ function runUnitTests() {
     "engagement-swimmer-correction-tests.js",
     "engagement-swimmer-change-mail-tests.js",
     "livepalmes-officials-pdf-tests.js",
+    "performance-import-publication-tests.js",
+    "performance-correction-publication-tests.js",
+    "performance-firestore-delta-tests.js",
+    "performance-public-consistency-tests.js",
+    "performance-public-row-schema-tests.js",
     "livepalmes-portal-optimization-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);

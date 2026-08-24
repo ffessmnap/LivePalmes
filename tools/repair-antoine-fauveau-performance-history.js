@@ -36,9 +36,9 @@ function searchPrefixes(value) {
   return Array.from(prefixes).slice(0, 300);
 }
 
-function categoryForRow(row) {
+function categoryForRow(row, birthYear = 1993) {
   const seasonYear = Number(row.seasonYear || 0) || 0;
-  const age = seasonYear - 1993;
+  const age = seasonYear - birthYear;
   if (age <= 9) return "P";
   if (age <= 11) return "B";
   if (age <= 13) return "M";
@@ -62,17 +62,17 @@ function categoryMetadata(category) {
   return { category, categoryCode: display[category] || `H${category.slice(1)}`, categoryLabel: labels[category] || category };
 }
 
-function correctedRow(row, now) {
-  const category = categoryForRow(row);
+function correctedRow(row, now, identity = NEW_IDENTITY, birthDate = "1993-07-01") {
+  const category = categoryForRow(row, Number(birthDate.slice(0, 4)) || 1993);
   return {
     ...row,
     swimmerId: SWIMMER_ID,
     originalSwimmerId: SWIMMER_ID,
-    swimmerIdentityKey: NEW_IDENTITY,
+    swimmerIdentityKey: identity,
     swimmer: "Antoine FAUVEAU",
     firstName: "Antoine",
     lastName: "FAUVEAU",
-    birthDate: "1993-07-01",
+    birthDate,
     sex: "M",
     ...categoryMetadata(category),
     status: "active",
@@ -116,7 +116,7 @@ function publicSwimmerRow(row) {
 function publicTopRow(row) {
   return compactObject({
     id: cleanText(row.id), source: cleanText(row.source), importId: cleanText(row.importId), publicKey: cleanText(row.publicKey), performanceBaseId: cleanText(row.performanceBaseId),
-    swimmerId: SWIMMER_ID, swimmerIdentityKey: NEW_IDENTITY, swimmer: "Antoine FAUVEAU", firstName: "Antoine", lastName: "FAUVEAU", birthDate: "1993-07-01", sex: "M",
+    swimmerId: cleanText(row.swimmerId), swimmerIdentityKey: cleanText(row.swimmerIdentityKey), swimmer: cleanText(row.swimmer), firstName: cleanText(row.firstName), lastName: cleanText(row.lastName), birthDate: cleanText(row.birthDate), sex: cleanText(row.sex),
     club: cleanText(row.club), clubName: cleanText(row.clubName), regionId: cleanText(row.regionId), competition: cleanText(row.competition), location: cleanText(row.location),
     date: cleanText(row.date), seasonYear: Number(row.seasonYear || 0), pool: cleanText(row.pool), course: cleanText(row.course), courseShortLabel: cleanText(row.courseShortLabel),
     isIntermediate: row.isIntermediate === true, originCourse: cleanText(row.originCourse), category: cleanText(row.category), categoryCode: cleanText(row.categoryCode),
@@ -169,18 +169,19 @@ async function saveStorageJson(bucket, relativePath, payload, cacheControl = "pu
   await bucket.file(`${PUBLIC_PREFIX}/${relativePath}`).save(JSON.stringify(payload), { resumable: false, contentType: "application/json; charset=utf-8", metadata: { cacheControl } });
 }
 
-async function publishPublicFiles(admin, combinedRows, affectedRows, summary, now) {
+async function publishPublicFiles(admin, combinedRows, affectedRows, summary, now, identity = NEW_IDENTITY, birthDate = "1993-07-01") {
   const { getStorage } = require(path.join(process.cwd(), "functions", "node_modules", "firebase-admin", "lib", "storage"));
   const bucket = getStorage().bucket(PUBLIC_BUCKET);
-  const indexId = stableHash(NEW_IDENTITY).slice(0, 40);
-  const oldIndexId = stableHash(OLD_IDENTITY).slice(0, 40);
+  const otherIdentity = identity === NEW_IDENTITY ? OLD_IDENTITY : NEW_IDENTITY;
+  const indexId = stableHash(identity).slice(0, 40);
+  const oldIndexId = stableHash(otherIdentity).slice(0, 40);
   const latestWithClub = combinedRows.find((row) => row.club || row.clubName) || combinedRows[0];
-  const searchText = normalizeSearchText(["Antoine FAUVEAU", "Antoine", "FAUVEAU", "1993-07-01", "M", latestWithClub.club, latestWithClub.clubName, SWIMMER_ID].join(" "));
+  const searchText = normalizeSearchText(["Antoine FAUVEAU", "Antoine", "FAUVEAU", birthDate, "M", latestWithClub.club, latestWithClub.clubName, SWIMMER_ID].join(" "));
   const perfFile = `swimmers/${indexId.slice(0, 2)}/${indexId}.json`;
   const oldPerfFile = `swimmers/${oldIndexId.slice(0, 2)}/${oldIndexId}.json`;
   const swimmerPayload = {
-    id: SWIMMER_ID, identityKey: NEW_IDENTITY, sourceIds: [SWIMMER_ID], name: "Antoine FAUVEAU", lastName: "FAUVEAU", firstName: "Antoine",
-    birthDate: "1993-07-01", sex: "M", clubId: cleanText(latestWithClub.clubId), club: cleanText(latestWithClub.club), clubName: cleanText(latestWithClub.clubName),
+    id: SWIMMER_ID, identityKey: identity, sourceIds: [SWIMMER_ID], name: "Antoine FAUVEAU", lastName: "FAUVEAU", firstName: "Antoine",
+    birthDate, sex: "M", clubId: cleanText(latestWithClub.clubId), club: cleanText(latestWithClub.club), clubName: cleanText(latestWithClub.clubName),
     performanceCount: summary.finalRows, rowCount: combinedRows.length, rows: combinedRows.map(publicSwimmerRow)
   };
   await saveStorageJson(bucket, perfFile, swimmerPayload);
@@ -217,10 +218,90 @@ async function publishPublicFiles(admin, combinedRows, affectedRows, summary, no
   return topKeys.size;
 }
 
+async function repairRevertedIdentity(admin, db, oldSnapshot, newSnapshot, legacyRows) {
+  const apply = process.argv.includes("--apply");
+  const restore1992 = process.argv.includes("--restore-1992-identity");
+  const sourceSnapshot = restore1992 ? newSnapshot : oldSnapshot;
+  const targetSnapshot = restore1992 ? oldSnapshot : newSnapshot;
+  const targetIdentity = restore1992 ? OLD_IDENTITY : NEW_IDENTITY;
+  const otherIdentity = restore1992 ? NEW_IDENTITY : OLD_IDENTITY;
+  const targetBirthDate = restore1992 ? "1992-07-01" : "1993-07-01";
+  const confirmation = restore1992 ? "--confirm-751-identity-1992" : "--confirm-751-reverted-identity";
+  if (apply && !process.argv.includes(confirmation)) throw new Error(`Confirmation requise : ${confirmation}`);
+  const initialState = sourceSnapshot.size === 751 && targetSnapshot.size === 0;
+  const resumeState = sourceSnapshot.size === 0 && targetSnapshot.size === 751;
+  if (!initialState && !resumeState) throw new Error(`Etat inattendu : identité 1992=${oldSnapshot.size}, identité 1993=${newSnapshot.size}`);
+  const now = new Date().toISOString();
+  const sourceRows = (initialState ? sourceSnapshot : targetSnapshot).docs.map((doc) => ({ performanceBaseId: doc.id, ...(doc.data() || {}) }));
+  const combinedRows = sortRows(sourceRows.map((row) => correctedRow(row, now, targetIdentity, targetBirthDate)));
+  const finalCount = combinedRows.filter((row) => row.isIntermediate !== true).length;
+  const intermediateCount = combinedRows.filter((row) => row.isIntermediate === true).length;
+  if (combinedRows.length !== 751 || finalCount !== EXPECTED_FINAL_ROWS || intermediateCount !== EXPECTED_INTERMEDIATE_ROWS) throw new Error(`Total inattendu : lignes=${combinedRows.length}, finales=${finalCount}, intermédiaires=${intermediateCount}`);
+  const summary = { mode: apply ? `restore-identity-${targetBirthDate.slice(0, 4)}` : `dry-run-identity-${targetBirthDate.slice(0, 4)}`, state: initialState ? "initial" : "resume", reads: oldSnapshot.size + newSnapshot.size, rowsToUpdate: initialState ? combinedRows.length : 0, finalRows: finalCount, intermediateRows: intermediateCount };
+  if (!apply) {
+    console.log(JSON.stringify(summary, null, 2));
+    return;
+  }
+  if (initialState) {
+    const writer = db.bulkWriter({ throttling: { initialOpsPerSecond: 100, maxOpsPerSecond: 200 } });
+    sourceSnapshot.docs.forEach((doc) => writer.set(doc.ref, combinedRows.find((row) => row.performanceBaseId === doc.id) || correctedRow({ performanceBaseId: doc.id, ...(doc.data() || {}) }, now, targetIdentity, targetBirthDate), { merge: true }));
+    await writer.close();
+  }
+
+  const indexId = stableHash(targetIdentity).slice(0, 40);
+  const indexRef = db.collection("performanceSwimmerIndex").doc(indexId);
+  const oldIndexRef = db.collection("performanceSwimmerIndex").doc(stableHash(otherIdentity).slice(0, 40));
+  const [indexSnapshot, oldIndexSnapshot] = await Promise.all([indexRef.get(), oldIndexRef.get()]);
+  const existingIndex = indexSnapshot.data() || oldIndexSnapshot.data() || {};
+  const latestWithClub = combinedRows.find((row) => row.club || row.clubName) || combinedRows[0];
+  const searchText = normalizeSearchText(["Antoine FAUVEAU", "Antoine", "FAUVEAU", targetBirthDate, "M", latestWithClub.club, latestWithClub.clubName, SWIMMER_ID].join(" "));
+  const batch = db.batch();
+  batch.set(indexRef, {
+    ...existingIndex, indexKey: targetIdentity, id: SWIMMER_ID, aliases: [], sourceIds: [SWIMMER_ID], identityKey: targetIdentity,
+    name: "Antoine FAUVEAU", lastName: "FAUVEAU", firstName: "Antoine", birthDate: targetBirthDate, sex: "M",
+    clubId: cleanText(latestWithClub.clubId), club: cleanText(latestWithClub.club), clubName: cleanText(latestWithClub.clubName),
+    performanceCount: finalCount, rowCount: combinedRows.length, pageCount: Math.ceil(combinedRows.length / PAGE_SIZE), latestDate: combinedRows[0].date,
+    searchText, searchPrefixes: searchPrefixes(searchText), source: "performances", sourceAction: "performanceHistory.identityRestored", updatedAt: now
+  });
+  for (let pageIndex = 0; pageIndex < Math.ceil(combinedRows.length / PAGE_SIZE); pageIndex += 1) {
+    batch.set(db.collection("performanceSwimmerPages").doc(`${indexId}_${String(pageIndex).padStart(4, "0")}`), {
+      swimmerIndexId: indexId, indexKey: targetIdentity, pageIndex, rowCount: Math.min(PAGE_SIZE, combinedRows.length - pageIndex * PAGE_SIZE),
+      rows: combinedRows.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE), updatedAt: now
+    });
+  }
+  const oldPageCount = Math.max(0, Number(oldIndexSnapshot.data()?.pageCount || 0));
+  for (let pageIndex = 0; pageIndex < oldPageCount; pageIndex += 1) batch.delete(db.collection("performanceSwimmerPages").doc(`${oldIndexRef.id}_${String(pageIndex).padStart(4, "0")}`));
+  batch.delete(oldIndexRef);
+  batch.set(db.collection("performanceMigrationJobs").doc(`antoine-fauveau-identity-${targetBirthDate.slice(0, 4)}-20260821`), { ...summary, completedAt: now, swimmerId: SWIMMER_ID, identityKey: targetIdentity, confirmedByUser: true });
+  await batch.commit();
+
+  const affectedBuckets = new Map();
+  [...legacyRows, ...combinedRows].forEach((row) => {
+    if (!row.course || !row.timeValue) return;
+    topBucketVariants(row).forEach((bucket) => affectedBuckets.set(bucket.id, bucket));
+  });
+  const bucketSnapshots = await db.getAll(...Array.from(affectedBuckets.keys()).map((id) => db.collection("performanceTopViews").doc(id)));
+  const existingBuckets = bucketSnapshots.filter((snapshot) => snapshot.exists);
+  const expectedTopViews = restore1992 ? 688 : 729;
+  if (existingBuckets.length !== expectedTopViews) throw new Error(`Nombre de vues TOP inattendu : ${existingBuckets.length}/${expectedTopViews}`);
+  const topWriter = db.bulkWriter();
+  existingBuckets.forEach((snapshot) => {
+    const bucket = affectedBuckets.get(snapshot.id);
+    const existing = snapshot.data() || {};
+    const kept = (Array.isArray(existing.rows) ? existing.rows : []).filter((row) => cleanText(row.swimmerId) !== SWIMMER_ID && cleanText(row.swimmerIdentityKey) !== OLD_IDENTITY && cleanText(row.swimmerIdentityKey) !== NEW_IDENTITY);
+    const replacements = combinedRows.filter((row) => rowMatchesBucket(row, bucket));
+    const rows = bestRows([...kept, ...replacements]);
+    topWriter.set(snapshot.ref, { ...existing, rows, rowCount: rows.length, sourceRowCount: rows.length, updatedAt: now });
+  });
+  await topWriter.close();
+  const affectedPublicTopFiles = await publishPublicFiles(admin, combinedRows, [...legacyRows, ...combinedRows], summary, now, targetIdentity, targetBirthDate);
+  console.log(JSON.stringify({ ...summary, affectedTopViews: existingBuckets.length, affectedPublicTopFiles, completedAt: now }, null, 2));
+}
+
 async function main() {
   const apply = process.argv.includes("--apply");
   const resumePublication = process.argv.includes("--resume-publication");
-  if (apply && !process.argv.includes("--confirm-751-rows")) throw new Error("Confirmation requise : --confirm-751-rows");
+  if (apply && !process.argv.includes("--repair-reverted-identity") && !process.argv.includes("--restore-1992-identity") && !process.argv.includes("--confirm-751-rows")) throw new Error("Confirmation requise : --confirm-751-rows");
   if (!fs.existsSync(SOURCE_FILE)) throw new Error(`Source normalisée absente : ${SOURCE_FILE}`);
   const sourcePayload = JSON.parse(fs.readFileSync(SOURCE_FILE, "utf8"));
   const legacyRows = Array.isArray(sourcePayload[SWIMMER_ID]) ? sourcePayload[SWIMMER_ID] : [];
@@ -234,6 +315,10 @@ async function main() {
     db.collection("performances").where("swimmerIdentityKey", "==", OLD_IDENTITY).limit(1200).get(),
     db.collection("performances").where("swimmerIdentityKey", "==", NEW_IDENTITY).limit(1200).get()
   ]);
+  if (process.argv.includes("--repair-reverted-identity") || process.argv.includes("--restore-1992-identity")) {
+    await repairRevertedIdentity(admin, db, oldSnapshot, duplicateSnapshot, legacyRows);
+    return;
+  }
   if (resumePublication) {
     if (oldSnapshot.size !== 0 || duplicateSnapshot.size !== 751) {
       throw new Error(`Reprise impossible : ancienne identité=${oldSnapshot.size}, nouvelle identité=${duplicateSnapshot.size}`);

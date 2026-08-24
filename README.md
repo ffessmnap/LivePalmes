@@ -49,7 +49,7 @@ Il n'utilise pas de framework comme React, Vue ou Angular et ne possede pas de b
 - `assets/livepalmes-admin-*.js` : principaux modules du portail ;
 - `performances/` : espace public et outils de gestion des performances ;
 - `pilotage-livepalmes.html` et les pages de roles : LivePalmes Direct ;
-- `resultats.html`, `series-public.html`, `medailles.html` et `archives.html` : publications publiques du Direct ;
+- `resultats.html`, `series-public.html` et `medailles.html` : publications publiques du Direct ;
 - `functions/` : traitements Firebase executes cote serveur ;
 - `tools/` : scripts de verification, generation et maintenance ;
 - `tests/` : tests automatiques ;

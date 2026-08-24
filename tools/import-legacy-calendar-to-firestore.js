@@ -17,8 +17,18 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+function decodeLegacyHtmlEntities(value) {
+  const entities = { amp: "&", apos: "'", eacute: "é", egrave: "è", ecirc: "ê", euml: "ë", agrave: "à", acirc: "â", auml: "ä", ccedil: "ç", icirc: "î", iuml: "ï", ocirc: "ô", ouml: "ö", ugrave: "ù", ucirc: "û", uuml: "ü", nbsp: " " };
+  return String(value || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity) => {
+    const key = String(entity).toLowerCase();
+    if (key.startsWith("#x")) return String.fromCodePoint(Number.parseInt(key.slice(2), 16));
+    if (key.startsWith("#")) return String.fromCodePoint(Number.parseInt(key.slice(1), 10));
+    return entities[key] || match;
+  });
+}
+
 function cleanText(value, maxLength = 0) {
-  const text = String(value || "").trim();
+  const text = decodeLegacyHtmlEntities(value).trim();
   return maxLength ? text.slice(0, maxLength) : text;
 }
 
@@ -41,8 +51,8 @@ function extensionOf(fileName = "") {
 }
 
 function categoryForLegacyDocument(document = {}) {
-  const label = `${document.title || ""} ${document.description || ""}`.toLocaleLowerCase("fr");
-  if (/protocole/.test(label)) return "results";
+  const label = decodeLegacyHtmlEntities(`${document.title || ""} ${document.description || ""}`).toLocaleLowerCase("fr");
+  if (/protocole|r[ée]sultats?/.test(label)) return "results";
   if (/affiche/.test(label)) return "poster";
   if (/reglement|règlement/.test(label)) return "rules";
   if (/plan|acces|accès|itineraire|itinéraire/.test(label)) return "access";

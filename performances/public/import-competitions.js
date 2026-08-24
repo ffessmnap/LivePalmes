@@ -34,6 +34,8 @@
     migrationStatusButton: document.querySelector("#performanceMigrationStatusButton"),
     migrationNext: document.querySelector("#performanceMigrationNextButton"),
     migrationAll: document.querySelector("#performanceMigrationAllButton"),
+    correctionProgress: document.querySelector("#performanceCorrectionProgress"),
+    correctionRetryPublication: document.querySelector("#performanceCorrectionRetryPublication"),
     correctionSearch: document.querySelector("#performanceCorrectionSwimmer"),
     correctionSuggestions: document.querySelector("#performanceCorrectionSuggestions"),
     correctionCourse: document.querySelector("#performanceCorrectionCourse"),
@@ -67,19 +69,23 @@
   let correctionSelectedSwimmer = null;
   let correctionRows = [];
   let correctionSelectedRow = null;
+  let correctionPublicationMonitorToken = 0;
+  let correctionPublicationResumeStarted = "";
+  const CORRECTION_PUBLICATION_JOB_SESSION_KEY = "livepalmes.performanceCorrectionPublicationJob";
   let migrationAutoRunning = false;
   let importsCache = [];
   let importsLoadPromise = null;
   let spreadsheetLoadPromise = null;
   let importsVisibleCount = 5;
-  let importProgressController = null;
+  const importProgressControllers = new Map();
   let importControlsLocked = false;
   const importOperationControlStates = new Map();
   const openImportIds = new Set();
   const importsPageSize = 5;
   const isIntegratedAdminView = Boolean(document.querySelector("#adminImportView"));
   const publicPerformanceBase = isIntegratedAdminView
-    ? "/performances/public/data/performance-public"
+    ? String(global.LivePalmesAppConfig?.performanceAdditionalDataUrl || "")
+      .replace(/\/performance-public\/additional-data\.json(?:\?.*)?$/, "/performance-public-firestore") || "/performances/public/data/performance-public"
     : "public/data/performance-public";
   const publicPerformanceVersion = encodeURIComponent(global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || global.LIVEPALMES_INTRANAP_SUMMARY?.generatedAt || "performance-public");
   const publicSearchShards = new Map();
@@ -145,14 +151,15 @@
     if (!busy) updateFileMode();
   }
 
-  function ensureImportProgress() {
-    if (!importProgressController && global.LivePalmesLongOperation?.create) {
-      importProgressController = global.LivePalmesLongOperation.create({
-        element: elements.progress,
+  function ensureImportProgress(element = elements.progress) {
+    if (!element || !global.LivePalmesLongOperation?.create) return null;
+    if (!importProgressControllers.has(element)) {
+      importProgressControllers.set(element, global.LivePalmesLongOperation.create({
+        element,
         busyTargets: [elements.workbench]
-      });
+      }));
     }
-    return importProgressController;
+    return importProgressControllers.get(element);
   }
 
   function setImportOperationControlsBusy(busy) {
@@ -178,26 +185,37 @@
     importOperationControlStates.clear();
   }
 
-  function startImportProgress(title, detail, phase = "") {
+  function startImportProgress(title, detail, phase = "", progressElement = elements.progress) {
     setMessage(elements.message, "");
     setImportOperationControlsBusy(true);
-    ensureImportProgress()?.start({ title, detail });
+    ensureImportProgress(progressElement)?.start({ title, detail });
     importControlsLocked = Boolean(phase);
     if (importControlsLocked) setImportControlsBusy(true, phase);
   }
 
-  function finishImportProgress(state, title, detail) {
-    ensureImportProgress()?.finish({ state, title, detail });
+  function finishImportProgress(state, title, detail, progressElement = elements.progress) {
+    ensureImportProgress(progressElement)?.finish({ state, title, detail });
     if (importControlsLocked) setImportControlsBusy(false);
     importControlsLocked = false;
     setImportOperationControlsBusy(false);
   }
 
-  function updateImportProgress(title, detail) {
-    ensureImportProgress()?.update({ title, detail });
+  function updateImportProgress(title, detail, progressElement = elements.progress) {
+    ensureImportProgress(progressElement)?.update({ title, detail });
   }
 
   function publicPublicationStatus(result = {}) {
+    const publicationJob = result.publicationJob || {};
+    if (publicationJob.id) {
+      return {
+        ok: true,
+        pending: publicationJob.status !== "published",
+        job: publicationJob,
+        text: publicationJob.status === "published"
+          ? " Les TOP et fiches nageurs sont à jour."
+          : " La publication des TOP et fiches nageurs se poursuit automatiquement en arrière-plan."
+      };
+    }
     const filesSnapshot = result.publicFilesSnapshot || {};
     const legacySnapshot = result.publicSnapshot || {};
     if (filesSnapshot.ok) {
@@ -511,7 +529,7 @@
     if (global.location?.protocol === "file:") {
       return Promise.reject(new Error("ouvrez LivePalmes depuis son adresse web ou un serveur local"));
     }
-    const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${publicPerformanceVersion}`, { cache: "force-cache" })
+    const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${publicPerformanceVersion}&adminCache=${Date.now()}`, { cache: "no-store" })
       .then((response) => {
         if (response.status === 404) return [];
         if (!response.ok) throw new Error("Index public nageurs indisponible.");
@@ -625,7 +643,7 @@
 
       if (swimmer.perfFile) {
         try {
-          const response = await fetch(`${publicPerformanceBase}/${swimmer.perfFile}?v=${publicPerformanceVersion}`, { cache: "force-cache" });
+          const response = await fetch(`${publicPerformanceBase}/${swimmer.perfFile}?v=${publicPerformanceVersion}&adminCache=${Date.now()}`, { cache: "no-store" });
           if (response.ok) {
             const payload = await response.json();
             const baseRows = Array.isArray(payload?.rows) ? payload.rows.map((row) => ({
@@ -821,6 +839,103 @@
     });
   }
 
+  function rememberCorrectionPublicationJob(jobId = "") {
+    try {
+      if (jobId) global.sessionStorage?.setItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY, jobId);
+      else global.sessionStorage?.removeItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY);
+    } catch {
+      // Le suivi reste disponible pendant la page courante si le stockage de session est indisponible.
+    }
+  }
+
+  function storedCorrectionPublicationJob() {
+    try {
+      return String(global.sessionStorage?.getItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY) || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  function waitForCorrectionPublication(delayMs) {
+    return new Promise((resolve) => global.setTimeout(resolve, delayMs));
+  }
+
+  async function monitorCorrectionPublication(jobId, options = {}) {
+    if (!jobId) return;
+    const token = ++correctionPublicationMonitorToken;
+    rememberCorrectionPublicationJob(jobId);
+    if (elements.correctionRetryPublication) elements.correctionRetryPublication.hidden = true;
+    if (options.immediate) {
+      finishImportProgress(
+        "background",
+        "Publication publique en cours",
+        "LivePalmes reprend le suivi du travail enregistré. Vous pouvez quitter cette page.",
+        elements.correctionProgress
+      );
+    }
+    const delays = options.immediate ? [0, 3000, 7000, 12000] : [2000, 4000, 8000, 15000];
+    for (const delay of delays) {
+      if (delay) await waitForCorrectionPublication(delay);
+      if (token !== correctionPublicationMonitorToken) return;
+      let result;
+      try {
+        result = await callFunction("getPerformancePublicationJobStatus", { jobId });
+      } catch (error) {
+        finishImportProgress(
+          "background",
+          "Correction enregistrée",
+          "La publication publique continue automatiquement. Son statut n’a pas pu être relu pour le moment.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      const job = result.publicationJob || {};
+      if (job.status === "published") {
+        rememberCorrectionPublicationJob("");
+        correctionPublicationResumeStarted = "";
+        correctionOverlay = null;
+        correctionRowsCache.clear();
+        correctionSearchCache.clear();
+        publicSearchShards.clear();
+        if (correctionSelectedSwimmer?.id) {
+          await loadCorrectionOverlay();
+          await selectCorrectionSwimmer(correctionSelectedSwimmer.id);
+        }
+        finishImportProgress(
+          "success",
+          options.hidden ? "Performance supprimée et publiée" : "Correction publiée",
+          "La base officielle, les TOP et la fiche nageur sont à jour.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      if (job.status === "failed") {
+        if (elements.correctionRetryPublication) {
+          elements.correctionRetryPublication.dataset.jobId = jobId;
+          elements.correctionRetryPublication.hidden = false;
+        }
+        finishImportProgress(
+          "error",
+          "Correction enregistrée, publication interrompue",
+          job.error || "La publication publique a échoué après plusieurs tentatives. Vous pouvez la relancer.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      updateImportProgress(
+        "Correction enregistrée — publication en cours",
+        `Mise à jour automatique des fichiers publics${job.attempts ? ` (tentative ${job.attempts})` : ""}. Vous pouvez quitter cette page.`,
+        elements.correctionProgress
+      );
+    }
+    finishImportProgress(
+      "background",
+      "Correction enregistrée — publication en arrière-plan",
+      "La mise à jour publique se poursuit automatiquement. Elle sera reprise sans action de votre part en cas d’interruption.",
+      elements.correctionProgress
+    );
+  }
+
   async function savePerformanceCorrection(hidden = false) {
     if (!correctionSelectedRow) return;
     const reason = elements.correctionReason.value.trim();
@@ -831,7 +946,9 @@
     setCorrectionControlsBusy(true);
     startImportProgress(
       hidden ? "Suppression et publication en cours..." : "Correction et publication en cours...",
-      "La base officielle puis les fichiers publics concernés sont mis à jour. Cette étape peut prendre quelques instants."
+      "La base officielle puis les fichiers publics concernés sont mis à jour. Cette étape peut prendre quelques instants.",
+      "",
+      elements.correctionProgress
     );
     try {
       const result = await callFunction("savePerformanceCorrection", {
@@ -850,20 +967,28 @@
         patch: hidden ? {} : correctionPatchFromForm(),
         reason
       });
-      correctionOverlay = null;
-      correctionRowsCache.clear();
-      await loadCorrectionOverlay();
-      await selectCorrectionSwimmer(correctionSelectedSwimmer.id);
       const publication = publicPublicationStatus(result);
+      const savedKey = correctionKey(correctionSelectedRow);
+      const savedPatch = hidden ? {} : correctionPatchFromForm();
+      correctionRows = hidden
+        ? correctionRows.filter((row) => correctionKey(row) !== savedKey)
+        : correctionRows.map((row) => correctionKey(row) === savedKey ? { ...row, ...savedPatch } : row);
+      resetCorrectionEditor({ keepRows: true });
+      updateCorrectionFilters();
+      renderCorrectionRows();
       finishImportProgress(
-        publication.ok ? "success" : "error",
-        hidden ? "Performance supprimée" : "Correction enregistrée",
+        publication.pending ? "background" : publication.ok ? "success" : "error",
+        hidden ? "Suppression enregistrée" : "Correction enregistrée",
         hidden
-          ? `Performance supprimée définitivement de la base officielle.${publication.text}`
-          : `Correction enregistrée dans la base officielle.${publication.text}`
+          ? `La suppression est enregistrée dans la base officielle.${publication.text}`
+          : `Correction enregistrée dans la base officielle.${publication.text}`,
+        elements.correctionProgress
       );
+      if (publication.job?.id && publication.pending) {
+        void monitorCorrectionPublication(publication.job.id, { hidden });
+      }
     } catch (error) {
-      finishImportProgress("error", hidden ? "Suppression impossible" : "Correction impossible", error?.message || String(error));
+      finishImportProgress("error", hidden ? "Suppression impossible" : "Correction impossible", error?.message || String(error), elements.correctionProgress);
       throw error;
     } finally {
       setCorrectionControlsBusy(false);
@@ -895,6 +1020,11 @@
     const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || status.email || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
     if (signedIn && (!isIntegratedAdminView || global.location.hash === "#import-competitions")) loadImports();
+    const publicationJobId = signedIn ? storedCorrectionPublicationJob() : "";
+    if (publicationJobId && correctionPublicationResumeStarted !== publicationJobId) {
+      correctionPublicationResumeStarted = publicationJobId;
+      void monitorCorrectionPublication(publicationJobId, { immediate: true });
+    }
     if (!status.available) {
       setMessage(elements.loginMessage, "Firebase Authentication n'est pas disponible.");
     } else if (!signedIn) {
@@ -1759,6 +1889,28 @@
       savePerformanceCorrection(true).catch((error) => {
         if (!ensureImportProgress()) setMessage(elements.message, `Suppression impossible : ${error?.message || error}`);
       });
+    });
+    elements.correctionRetryPublication?.addEventListener("click", async () => {
+      const jobId = elements.correctionRetryPublication.dataset.jobId || storedCorrectionPublicationJob();
+      if (!jobId) return;
+      elements.correctionRetryPublication.disabled = true;
+      startImportProgress(
+        "Relance de la publication...",
+        "Un nouveau travail de publication fiable est créé.",
+        "",
+        elements.correctionProgress
+      );
+      try {
+        const result = await callFunction("retryPerformancePublicationJob", { jobId });
+        const nextJobId = result.publicationJob?.id || "";
+        elements.correctionRetryPublication.hidden = true;
+        correctionPublicationResumeStarted = nextJobId;
+        void monitorCorrectionPublication(nextJobId, { immediate: true });
+      } catch (error) {
+        finishImportProgress("error", "Relance impossible", error?.message || String(error), elements.correctionProgress);
+      } finally {
+        elements.correctionRetryPublication.disabled = false;
+      }
     });
     updateFileMode();
   }

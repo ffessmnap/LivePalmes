@@ -6,7 +6,6 @@ const checkedFiles = [
   "index.html",
   "pilotage-livepalmes.html",
   "public.html",
-  "archives.html",
   "live.html",
   "speaker.html",
   "ja.html",

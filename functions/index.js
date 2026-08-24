@@ -11,6 +11,13 @@ const PDFDocument = require("pdfkit");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const {
+  PERFORMANCE_PUBLICATION_LEASE_MS,
+  PERFORMANCE_PUBLICATION_MAX_ATTEMPTS,
+  canClaimPerformancePublicationJob,
+  performancePublicationFailureStatus,
+  publicPerformancePublicationJob
+} = require("./performance-publication-jobs");
 const { defineBoolean, defineSecret } = require("firebase-functions/params");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const clubReference = require("./assets/club-reference.json");
@@ -61,9 +68,14 @@ const {
 } = require("./performance-import-timing");
 const {
   canResumeImportPublication,
+  deactivatedImportPerformanceRows,
+  hydratePublicSwimmerRowsFromPayload,
   importPublicationError,
   importPublicationResultStatus,
-  importPublicationStatus
+  importPublicationStatus,
+  PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
+  publicPerformanceSwimmerStorageRow,
+  publicSwimmerPayloadSupportsTopRebuild
 } = require("./performance-import-publication");
 const {
   PUBLIC_CALENDAR_EVENT_TYPES,
@@ -172,6 +184,20 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
+const PERFORMANCE_PUBLICATION_JOB_OPTIONS = {
+  region: REGION,
+  document: "performancePublicationJobs/{jobId}",
+  retry: true,
+  timeoutSeconds: 540,
+  memory: "1GiB"
+};
+const PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS = {
+  region: REGION,
+  schedule: "*/5 * * * *",
+  timeZone: "Europe/Paris",
+  timeoutSeconds: 540,
+  memory: "1GiB"
+};
 const COMPETITION_IMPORT_CALLABLE_OPTIONS = { ...PUBLIC_PERFORMANCE_CALLABLE_OPTIONS };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
   region: REGION,
@@ -200,6 +226,7 @@ const MAX_COMPETITION_IMPORT_PERFORMANCES = 5000;
 const PERFORMANCE_BASE_COLLECTION = "performances";
 const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
 const PERFORMANCE_BASE_MIGRATION_COLLECTION = "performanceMigrationJobs";
+const PERFORMANCE_PUBLICATION_JOBS_COLLECTION = "performancePublicationJobs";
 const PERFORMANCE_SWIMMERS_COLLECTION = "performanceSwimmerIndex";
 const PERFORMANCE_SWIMMER_PAGES_COLLECTION = "performanceSwimmerPages";
 const PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION = "performanceSwimmerIndexState";
@@ -16127,7 +16154,8 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
 
   let publicFilesSnapshot = null;
   try {
-    publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(result.affectedRows || [], {
+    const deactivatedRows = deactivatedImportPerformanceRows(result.affectedRows);
+    publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(deactivatedRows, {
       now,
       reason: "performanceImport.deleted",
       importId
@@ -18065,30 +18093,7 @@ function publicPerformanceTopCandidateKey(row = {}) {
 }
 
 function publicPerformanceSwimmerRow(row = {}) {
-  const isIntermediate = row.isIntermediate === true;
-  return publicPerformanceCompactObject({
-    id: cleanText(row.id),
-    source: cleanText(row.source || "livepalmes"),
-    publicKey: cleanText(row.publicKey),
-    performanceBaseId: cleanText(row.performanceBaseId),
-    club: cleanText(row.club),
-    location: cleanText(row.location),
-    date: cleanText(row.date),
-    seasonYear: Number(row.seasonYear || 0) || 0,
-    pool: cleanText(row.pool),
-    chrono: cleanText(row.chrono),
-    course: cleanText(row.course),
-    ...(isIntermediate ? {
-      length: Number(row.length || 0) || 0,
-      isIntermediate: true,
-      originCourse: cleanText(row.originCourse),
-      originPerformanceId: cleanText(row.originPerformanceId)
-    } : {}),
-    categoryCode: cleanText(row.categoryCode || row.category),
-    timeValue: Number(row.timeValue || 0) || 0,
-    time: cleanText(row.time),
-    intermediateTimes: Array.isArray(row.intermediateTimes) ? row.intermediateTimes : []
-  });
+  return publicPerformanceSwimmerStorageRow(row);
 }
 
 function publicPerformanceTopRow(row = {}) {
@@ -18184,6 +18189,7 @@ function buildPublicSwimmerPayload(indexKey, rows = []) {
     clubId: cleanText(latestWithClub.clubId),
     club: cleanText(latestWithClub.club),
     clubName: cleanText(latestWithClub.clubName),
+    rowSchemaVersion: PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
     performanceCount: sortedRows.filter((row) => !row.isIntermediate).length,
     rowCount: sortedRows.length,
     rows: sortedRows.map(publicPerformanceSwimmerRow)
@@ -18511,8 +18517,25 @@ async function getActivePublicRowsForAffectedSwimmer(seedRows = []) {
   const swimmerKey = publicSwimmerKey(publicSeedRows[0] || {});
   if (!swimmerKey) return publicSeedRows.filter(publicPerformanceActiveRow);
   const current = await readPublicPerformanceJson(publicPerformanceSwimmerFilePath(swimmerKey), null);
+  if (current && !publicSwimmerPayloadSupportsTopRebuild(current)) {
+    throw new Error(`Fiche publique au format historique pour ${swimmerKey}. Une reconstruction globale contrôlée est requise avant la publication ciblée.`);
+  }
+  const identitySeed = publicSeedRows.find((row) => row.swimmer || row.firstName || row.lastName || row.birthDate || row.sex) || {};
+  const hydrationPayload = {
+    ...(current || {}),
+    id: cleanText(current?.id || identitySeed.swimmerId || identitySeed.originalSwimmerId),
+    identityKey: cleanText(current?.identityKey || identitySeed.swimmerIdentityKey || swimmerKey),
+    name: cleanText(current?.name || identitySeed.swimmer),
+    firstName: cleanText(current?.firstName || identitySeed.firstName),
+    lastName: cleanText(current?.lastName || identitySeed.lastName),
+    birthDate: cleanText(current?.birthDate || identitySeed.birthDate),
+    sex: cleanText(current?.sex || identitySeed.sex),
+    clubId: cleanText(current?.clubId || identitySeed.clubId),
+    club: cleanText(current?.club || identitySeed.club),
+    clubName: cleanText(current?.clubName || identitySeed.clubName)
+  };
   const affectedKeys = new Set(publicSeedRows.map(publicPerformanceRowKey).filter(Boolean));
-  const keptRows = (Array.isArray(current?.rows) ? current.rows : [])
+  const keptRows = hydratePublicSwimmerRowsFromPayload(current?.rows, hydrationPayload, swimmerKey)
     .map(publicPerformanceBaseRow)
     .filter((row) => !affectedKeys.has(publicPerformanceRowKey(row)));
   return uniquePublicPerformanceRows([
@@ -18916,6 +18939,192 @@ exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
+async function enqueuePerformancePublicationJob(correction = {}, actor = {}) {
+  const now = new Date().toISOString();
+  const jobId = stableHash(`${correction.id}|${correction.updatedAt}|${now}|${actor.uid || "system"}`).slice(0, 40);
+  const ref = db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId);
+  await ref.create(cleanFirestoreValue({
+    id: jobId,
+    type: "performanceCorrection",
+    correction,
+    status: "pending",
+    attempts: 0,
+    createdAt: now,
+    updatedAt: now,
+    requestedBy: actor.uid || "",
+    requestedByEmail: actor.email || ""
+  }));
+  return publicPerformancePublicationJob({ status: "pending", attempts: 0, createdAt: now, updatedAt: now }, jobId);
+}
+
+async function claimPerformancePublicationJob(jobRef) {
+  const nowMs = Date.now();
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(jobRef);
+    if (!snapshot.exists) return null;
+    const job = snapshot.data() || {};
+    if (!canClaimPerformancePublicationJob(job, nowMs)) return null;
+    const attempts = Math.max(0, Number(job.attempts || 0) || 0) + 1;
+    const now = new Date(nowMs).toISOString();
+    transaction.set(jobRef, {
+      status: "processing",
+      attempts,
+      startedAt: now,
+      updatedAt: now,
+      leaseUntil: new Date(nowMs + PERFORMANCE_PUBLICATION_LEASE_MS).toISOString(),
+      error: ""
+    }, { merge: true });
+    return { ...job, id: jobRef.id, attempts };
+  });
+}
+
+async function processPerformancePublicationJob(jobRef) {
+  const job = await claimPerformancePublicationJob(jobRef);
+  if (!job) return { skipped: true };
+  const correction = job.correction && typeof job.correction === "object" ? job.correction : {};
+  const correctionId = cleanText(correction.id).slice(0, 40);
+  const targetKey = cleanText(correction.targetKey).slice(0, 240);
+  if (!correctionId || !targetKey) {
+    await jobRef.set({
+      status: "failed",
+      updatedAt: new Date().toISOString(),
+      failedAt: new Date().toISOString(),
+      leaseUntil: "",
+      error: "Correction cible manquante dans le travail de publication."
+    }, { merge: true });
+    return { failed: true, retryable: false };
+  }
+
+  const now = new Date().toISOString();
+  const targetRow = correction.targetRow || {};
+  const affectedTargetRow = correction.hidden === true
+    ? { ...targetRow, active: false, status: "hidden" }
+    : targetRow;
+  const correctedBaseRow = {
+    ...targetRow,
+    ...(correction.hidden === true ? {} : correction.patch || {}),
+    publicKey: targetKey,
+    source: correction.targetSource || targetRow.source || "intranap",
+    id: correction.targetId || targetRow.id || "",
+    active: correction.hidden !== true,
+    status: correction.hidden === true ? "hidden" : "active"
+  };
+  try {
+    const performanceBaseSync = await writePerformanceBaseRows([correctedBaseRow], {
+      actorUid: job.requestedBy || "system:performancePublication",
+      actorEmail: job.requestedByEmail || "",
+      now,
+      action: correction.hidden === true ? "performanceCorrection.hidden" : "performanceCorrection.updated",
+      changeSeed: correctionId,
+      status: correction.hidden === true ? "hidden" : "active",
+      topIndexIncludeTombstones: correction.hidden === true,
+      dtnInvalidationRows: [targetRow, correctedBaseRow]
+    });
+    const publicSnapshot = await publishIncrementalPerformanceCorrection(correction);
+    if (publicSnapshot?.ok === false) throw new Error(publicSnapshot.error || "Publication de l'instantané public impossible.");
+    const publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows([affectedTargetRow, correctedBaseRow], {
+      now,
+      reason: correction.hidden === true ? "performanceCorrection.hidden" : "performanceCorrection.updated",
+      correctionId
+    });
+    if (publicFilesSnapshot?.ok === false) throw new Error(publicFilesSnapshot.error || "Publication des fichiers ciblés impossible.");
+    await invalidateEngagementEntryTimeCachesForPerformanceRows([affectedTargetRow, correctedBaseRow]);
+    const completedAt = new Date().toISOString();
+    await jobRef.set(cleanFirestoreValue({
+      status: "published",
+      updatedAt: completedAt,
+      completedAt,
+      leaseUntil: "",
+      error: "",
+      result: {
+        performanceBaseOk: performanceBaseSync?.ok !== false,
+        publicSnapshotOk: publicSnapshot?.ok !== false,
+        publicFilesOk: publicFilesSnapshot?.ok !== false,
+        writtenFiles: Number(publicFilesSnapshot?.writtenFiles || 0) || 0
+      }
+    }), { merge: true });
+    await writeAuditLog("performanceCorrection.published", job.requestedBy || "system:performancePublication", {
+      correctionId,
+      targetKey,
+      jobId: jobRef.id,
+      attempts: job.attempts
+    });
+    return { published: true };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const status = performancePublicationFailureStatus(job.attempts, PERFORMANCE_PUBLICATION_MAX_ATTEMPTS);
+    const message = cleanText(error?.message || error).slice(0, 300) || "Publication publique impossible.";
+    console.error("Publication asynchrone d'une correction impossible", {
+      jobId: jobRef.id,
+      correctionId,
+      targetKey,
+      attempts: job.attempts,
+      status,
+      message
+    });
+    await jobRef.set({
+      status,
+      updatedAt: failedAt,
+      failedAt,
+      leaseUntil: "",
+      error: message
+    }, { merge: true });
+    if (status === "failed") {
+      await writeAuditLog("performanceCorrection.publicationFailed", job.requestedBy || "system:performancePublication", {
+        correctionId,
+        targetKey,
+        jobId: jobRef.id,
+        attempts: job.attempts,
+        message
+      });
+    }
+    return { failed: true, retryable: status === "pending", error };
+  }
+}
+
+exports.publishPerformanceCorrectionJob = onDocumentCreated(PERFORMANCE_PUBLICATION_JOB_OPTIONS, async (event) => {
+  if (!event.data?.exists) return;
+  const result = await processPerformancePublicationJob(event.data.ref);
+  if (result.retryable) throw result.error;
+});
+
+exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS, async () => {
+  const [pendingSnapshot, processingSnapshot] = await Promise.all([
+    db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "pending").limit(3).get(),
+    db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "processing").limit(3).get()
+  ]);
+  const jobs = [...pendingSnapshot.docs, ...processingSnapshot.docs]
+    .filter((snapshot, index, all) => all.findIndex((item) => item.id === snapshot.id) === index)
+    .filter((snapshot) => canClaimPerformancePublicationJob(snapshot.data() || {}));
+  for (const snapshot of jobs) await processPerformancePublicationJob(snapshot.ref);
+  return null;
+});
+
+exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const jobId = cleanText(request.data?.jobId).slice(0, 80);
+  if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
+  const snapshot = await db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Travail de publication introuvable.");
+  return { ok: true, publicationJob: publicPerformancePublicationJob(snapshot.data() || {}, snapshot.id) };
+});
+
+exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request) => {
+  assertCapability(request, "competitions.import");
+  const jobId = cleanText(request.data?.jobId).slice(0, 80);
+  if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
+  const snapshot = await db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Travail de publication introuvable.");
+  const job = snapshot.data() || {};
+  if (job.status !== "failed") throw new HttpsError("failed-precondition", "Ce travail ne nécessite pas de reprise manuelle.");
+  const publicationJob = await enqueuePerformancePublicationJob(job.correction || {}, {
+    uid: request.auth.uid,
+    email: request.auth.token?.email || ""
+  });
+  await snapshot.ref.set({ replacedBy: publicationJob.id, updatedAt: new Date().toISOString() }, { merge: true });
+  return { ok: true, publicationJob };
+});
+
 exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
   const data = request.data || {};
@@ -19038,89 +19247,20 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
     reason
   });
 
-  let performanceBaseSync = null;
-  let correctedBaseRow = null;
-  try {
-    const baseRow = {
-      ...(safePayload.targetRow || {}),
-      ...(hidden ? {} : safePayload.patch || {}),
-      publicKey: targetKey,
-      source: safePayload.targetSource || safePayload.targetRow?.source || "intranap",
-      id: safePayload.targetId || safePayload.targetRow?.id || ""
-    };
-    correctedBaseRow = baseRow;
-    performanceBaseSync = await writePerformanceBaseRows([baseRow], {
-      actorUid: request.auth.uid,
-      actorEmail: request.auth.token?.email || "",
-      now,
-      action: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
-      changeSeed: correctionId,
-      status: hidden ? "hidden" : "active",
-      topIndexIncludeTombstones: hidden,
-      dtnInvalidationRows: [safePayload.targetRow || {}, baseRow]
-    });
-  } catch (error) {
-    console.error("Synchronisation performances impossible apres correction", {
-      correctionId,
-      targetKey,
-      message: error?.message || String(error)
-    });
-    performanceBaseSync = {
-      ok: false,
-      error: error?.message || "Synchronisation performances impossible."
-    };
-  }
-
-  let publicSnapshot;
-  try {
-    publicSnapshot = await publishIncrementalPerformanceCorrection({
-      id: correctionId,
-      targetKey: safePayload.targetKey,
-      targetId: safePayload.targetId,
-      targetSource: safePayload.targetSource,
-      targetRow: safePayload.targetRow || {},
-      hidden: safePayload.hidden === true,
-      patch: safePayload.patch || {},
-      updatedAt: safePayload.updatedAt,
-      updatedByName: safePayload.updatedByName || ""
-    });
-  } catch (error) {
-    console.error("Publication publique des corrections impossible", {
-      correctionId,
-      targetKey,
-      message: error?.message || String(error)
-    });
-    publicSnapshot = {
-      ok: false,
-      error: error?.message || "Publication publique impossible."
-    };
-  }
-
-  let publicFilesSnapshot = null;
-  try {
-    publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows([
-      safePayload.targetRow || {},
-      correctedBaseRow || {}
-    ], {
-      now,
-      reason: hidden ? "performanceCorrection.hidden" : "performanceCorrection.updated",
-      correctionId
-    });
-    await invalidateEngagementEntryTimeCachesForPerformanceRows([
-      safePayload.targetRow || {},
-      correctedBaseRow || {}
-    ]);
-  } catch (error) {
-    console.error("Publication publique ciblee impossible apres correction", {
-      correctionId,
-      targetKey,
-      message: error?.message || String(error)
-    });
-    publicFilesSnapshot = {
-      ok: false,
-      error: error?.message || "Publication publique ciblee impossible."
-    };
-  }
+  const publicationJob = await enqueuePerformancePublicationJob({
+    id: correctionId,
+    targetKey: safePayload.targetKey,
+    targetId: safePayload.targetId,
+    targetSource: safePayload.targetSource,
+    targetRow: safePayload.targetRow || {},
+    hidden: safePayload.hidden === true,
+    patch: safePayload.patch || {},
+    updatedAt: safePayload.updatedAt,
+    updatedByName: safePayload.updatedByName || ""
+  }, {
+    uid: request.auth.uid,
+    email: request.auth.token?.email || ""
+  });
   return {
     ok: true,
     correction: {
@@ -19130,8 +19270,6 @@ exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => 
       patch,
       updatedAt: now
     },
-    performanceBaseSync,
-    publicSnapshot,
-    publicFilesSnapshot
+    publicationJob
   };
 });

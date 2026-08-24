@@ -163,9 +163,9 @@
             });
             await updateLiveNotes?.("Compétition archivée et retirée du direct public", { publicDirectDisabled: true });
             window.alert(archive?.id
-              ? `Archive créée : ${archive.count} résultat${archive.count > 1 ? "s" : ""} archivé${archive.count > 1 ? "s" : ""}.\n\nDirect public vidé : ${cleared || 0} résultat${(cleared || 0) > 1 ? "s" : ""} retiré${(cleared || 0) > 1 ? "s" : ""}. Elle reste visible depuis la page Archives publiques.`
+              ? `Archive créée : ${archive.count} résultat${archive.count > 1 ? "s" : ""} archivé${archive.count > 1 ? "s" : ""}.\n\nDirect public vidé : ${cleared || 0} résultat${(cleared || 0) > 1 ? "s" : ""} retiré${(cleared || 0) > 1 ? "s" : ""}.`
               : "Direct public retiré. Les pages directes ne doivent plus annoncer cette compétition.");
-            if (archive?.id) window.open(`archives.html?archive=${encodeURIComponent(archive.id)}`, "_blank", "noopener");
+            if (archive?.id) window.open(`resultats?archive=${encodeURIComponent(archive.id)}`, "_blank", "noopener");
           } catch (error) {
             console.error(error);
             window.alert(`Archivage impossible : ${error?.message || error}`);

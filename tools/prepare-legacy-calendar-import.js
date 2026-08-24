@@ -30,6 +30,10 @@ const SEX_LABELS = { F: "Femmes", M: "Hommes", X: "Mixte" };
 const STYLE_LABELS = { SF: "Surface", BI: "Bipalmes", AP: "Apnée", SP: "Support" };
 const LEGACY_TIMING_TYPES = { E: "electronic", M: "manual" };
 const INTERNATIONAL_LEVEL_PATTERN = /monde|world|europe|cmas|world cup|\bwc\b|berlin|rostock|eindhoven|leipzig|ordizia|gen[eè]ve|li[eè]ge|utrecht|ravenne|hongrie|t[eé]n[eé]ro|lignano|fribourg|olsztyn/i;
+const NATIONAL_LEVEL_PATTERN = /championnats? de france|coupe de france|critérium national|criterium national|interclubs? nationaux?/i;
+const REGIONAL_LEVEL_PATTERN = /championnats? r[ée]gionaux?|championnats? de zone|r[ée]gionaux?|r[ée]gional/i;
+const CURRENT_REGION_IDS = new Set(["1", "2", "3", "6", "8", "9", "10", "11", "12", "13", "15", "16", "17", "18", "22"]);
+const INDICATIVE_DEADLINE_PATTERN = /\blimite\b/i;
 const OPEN_WATER_PATTERN = /travers[éee]|descente|ronde|boucle|baie|longue[ -]?distance|\bld\b|eau[ -]?libre/i;
 const TRAINING_PATTERN = /formation|initiateur|juge|chronom|recyclage|[ée]valuateur|sauv.?nage/i;
 const STAGE_PATTERN = /stage|d[ée]tection/i;
@@ -39,17 +43,27 @@ const POOL_LOCATION_PATTERN = /piscine|aqua(?:luna|centre|park|tic)?/i;
 const POOL_PROGRAM_PATTERN = /^\d+(?:AP|BI|SF|SP|IS)$/i;
 
 function mappedLevel(row = {}) {
+  const text = `${row.competition_nom || ""} ${row.lieu || ""}`;
+  if (INTERNATIONAL_LEVEL_PATTERN.test(text)) return "international";
+  if (NATIONAL_LEVEL_PATTERN.test(text) || String(row.comite || "") === "4") return "national";
+  if (REGIONAL_LEVEL_PATTERN.test(text)) return "regional";
   const directLevel = LEVELS[row.niveau_label] || LEGACY_LEVELS_BY_ID[Number.parseInt(row.niveau_id, 10)];
   if (directLevel) return directLevel;
-  return INTERNATIONAL_LEVEL_PATTERN.test(`${row.competition_nom || ""} ${row.lieu || ""}`) ? "international" : "regional";
+  return "regional";
+}
+
+function mappedRegionId(row = {}, level = "") {
+  if (["national", "international"].includes(level)) return "";
+  const regionId = String(row.comite || "").trim();
+  return CURRENT_REGION_IDS.has(regionId) ? regionId : "";
 }
 
 function typeFromTitle(row = {}) {
   const text = `${row.competition_nom || ""} ${row.description || ""}`;
-  if (OPEN_WATER_PATTERN.test(text)) return { eventType: "openWater", reason: "title-open-water" };
   if (TRAINING_PATTERN.test(text)) return { eventType: "training", reason: "title-training" };
   if (STAGE_PATTERN.test(text)) return { eventType: "stage", reason: "title-stage" };
   if (MEETING_PATTERN.test(text)) return { eventType: "meeting", reason: "title-meeting" };
+  if (OPEN_WATER_PATTERN.test(text)) return { eventType: "openWater", reason: "title-open-water" };
   if (POOL_TITLE_PATTERN.test(text)) return { eventType: "pool", reason: "title-pool" };
   if (POOL_LOCATION_PATTERN.test(String(row.lieu || ""))) return { eventType: "pool", reason: "location-pool" };
   return { eventType: "", reason: "" };
@@ -91,6 +105,10 @@ function publicUrl(relativePath) {
   return clean ? new URL(clean, LEGACY_BASE_URL).href : "";
 }
 
+function isResultsDocument(document = {}) {
+  return /protocole|r(?:&eacute;|é|e)sultats?/i.test(`${document.title || ""} ${document.description || ""}`);
+}
+
 function programItem(row) {
   const course = String(row.epreuve || "").trim();
   const encodedStyle = course.match(/^(\d+)(AP|BI|SF|SP)$/i);
@@ -124,8 +142,8 @@ for (const row of rows) {
   if (!byCompetition.has(id)) {
     const level = mappedLevel(row);
     const directEventType = EVENT_TYPES[row.type_label] || (String(row.type_id) === "6" ? "openWater" : "");
-    const titleType = directEventType ? { eventType: directEventType, reason: "legacy-type" } : typeFromTitle(row);
-    const eventType = titleType.eventType || "other";
+    const titleType = typeFromTitle(row);
+    const eventType = titleType.eventType === "openWater" ? "openWater" : (directEventType || titleType.eventType || "other");
     byCompetition.set(id, {
       legacyCompetitionId: id,
       name: row.competition_nom,
@@ -140,7 +158,7 @@ for (const row of rows) {
       legacyLevelLabel: row.niveau_label,
       legacyLevelId: row.niveau_id || "",
       legacyTypeId: row.type_id || "",
-      regionId: level === "national" || level === "international" ? "" : row.comite,
+      regionId: mappedRegionId(row, level),
       organizerLegacyId: row.organisateur,
       poolLength: "",
       poolLaneCount: 0,
@@ -211,10 +229,11 @@ if (programInput) {
 
 const competitions = [...byCompetition.values()].sort((left, right) => left.date.localeCompare(right.date) || left.name.localeCompare(right.name, "fr"));
 competitions.forEach((competition) => {
-  const hasResultsProtocol = competition.documents.some((document) => /protocole/i.test(`${document.title || ""} ${document.description || ""}`));
+  const hasResultsProtocol = competition.documents.some(isResultsDocument);
   competition.hasResultsProtocol = hasResultsProtocol;
-  competition.importEligible = competition.eventType !== "other" || hasResultsProtocol;
-  competition.importExclusionReason = competition.importEligible ? "" : "unclassified-without-results-protocol";
+  const isIndicativeDeadline = INDICATIVE_DEADLINE_PATTERN.test(competition.name);
+  competition.importEligible = !isIndicativeDeadline && (competition.eventType !== "other" || hasResultsProtocol);
+  competition.importExclusionReason = isIndicativeDeadline ? "indicative-deadline" : (competition.importEligible ? "" : "unclassified-without-results-protocol");
 });
 const unresolvedLevelCompetitionIds = competitions.filter((competition) => !competition.level).map((competition) => competition.legacyCompetitionId);
 const unresolvedTypeCompetitionIds = competitions.filter((competition) => competition.eventType === "other").map((competition) => competition.legacyCompetitionId);

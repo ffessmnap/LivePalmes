@@ -21,7 +21,7 @@ async function main() {
     const detail = await readJson(`calendar/events/${item.id}.json`, auth);
     const dataPath = `results/${item.id}.json`;
     await writeJson(`calendar/${dataPath}`, results, auth, "public, max-age=300");
-    await writeJson(`calendar/events/${item.id}.json`, { ...detail, results: { ...(detail.results || {}), publishedAt: detail.results?.publishedAt || detail.resultsPublishedAt || detail.date, dataPath } }, auth, "public, max-age=60, must-revalidate");
+    await writeJson(`calendar/events/${item.id}.json`, { ...detail, results: { ...(detail.results || {}), ...(item.resultsPdfUrl ? { pdfUrl: item.resultsPdfUrl } : {}), publishedAt: detail.results?.publishedAt || detail.resultsPublishedAt || detail.date, dataPath } }, auth, "public, max-age=60, must-revalidate");
     completed += 1; if (completed % 25 === 0 || completed === manifest.length) console.log(`Publication résultats : ${completed}/${manifest.length}`);
   }
   console.log(JSON.stringify({ mode: "write", eventCount: completed }, null, 2));

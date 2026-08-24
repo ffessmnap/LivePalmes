@@ -9,7 +9,7 @@
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
   const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
-  let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-current" : publicVersion);
+  let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-20260821-camille-heitz-1" : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
     ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
     : "public/data/performance-public";

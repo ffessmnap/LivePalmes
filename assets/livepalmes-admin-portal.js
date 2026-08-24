@@ -2687,7 +2687,7 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/import-competitions.js?v=20260818-import-progress-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20260821-performance-publication-jobs-2", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
@@ -11775,7 +11775,7 @@
       const merged = swimmer.status === "merged" || Boolean(swimmer.mergedIntoId);
       const name = engagementSwimmerDisplayName(swimmer, "Nageur sans nom");
       const statusLabel = merged
-        ? `Fusionne vers ${swimmer.mergedIntoName || swimmer.mergedIntoId || "une autre fiche"}`
+        ? `Fusionné vers ${swimmer.mergedIntoName || swimmer.mergedIntoId || "une autre fiche"}`
         : active ? "Actif" : "Desactive";
       const sourceId = swimmer.id || swimmer.swimmerIndexId || "";
       const sourceType = swimmer.source || "performances";
@@ -11804,7 +11804,7 @@
           <td>${escapeHtml(statusLabel)}</td>
           <td class="admin-engagements-national-table-actions">
             ${merged ? `
-              <button class="ghost-button" type="button" data-engagement-national-swimmer-action="repair-publication" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Finaliser la publication</button>
+              <button class="ghost-button" type="button" title="À utiliser seulement si la fiche publique ou les performances ne sont pas correctement synchronisées après la fusion." data-engagement-national-swimmer-action="repair-publication" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Réparer la publication publique</button>
             ` : `
               <details class="admin-national-row-menu">
                 <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
@@ -12874,7 +12874,7 @@
       (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
     ) || {};
     const name = engagementSwimmerDisplayName(swimmer, "cette fiche fusionnée");
-    if (!swimmerId || !global.confirm(`Finaliser la publication de ${name} ? L’ancienne fiche publique sera retirée et ses performances seront rattachées à la fiche conservée.`)) return;
+    if (!swimmerId || !global.confirm(`Réparer la publication publique de ${name} ? À utiliser seulement si la fiche publique ou les performances ne sont pas correctement synchronisées après la fusion. L’ancienne fiche publique sera retirée et ses performances seront rattachées à la fiche conservée.`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = "Publication de la fusion en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
