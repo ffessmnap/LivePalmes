@@ -36,7 +36,15 @@ Apres reauthentification explicite de la CLI et nouvelle validation utilisateur 
 4. executer les tests manuels avec les index actifs ;
 5. deployer Hosting en dernier, puis controler les en-tetes CSP/cache et l'absence de `performances/public/data/admin-reference.js` en ligne.
 
-Le deploiement Hosting publie le contenu du dossier, pas uniquement les fichiers stages dans Git. Si le dossier principal contient d'autres modifications, il faut faire valider l'ensemble de cette release ou preparer un checkout propre contenant exactement le perimetre autorise avant de lancer Hosting. Son hook `predeploy` lit Firestore pour synchroniser le secours Records et regenere le referentiel clubs ; cette lecture de production doit etre annoncee avant execution.
+Le deploiement Hosting publie le contenu du dossier, pas uniquement les fichiers stages dans Git. Si le dossier principal contient d'autres modifications, il faut faire valider l'ensemble de cette release ou preparer un checkout propre contenant exactement le perimetre autorise avant de lancer Hosting.
+
+Un deploiement Hosting ordinaire ne synchronise plus automatiquement les donnees et ne lit pas Firestore. Lorsqu'une publication doit aussi actualiser le secours Records / MPF ou le referentiel clubs, obtenir la validation explicite de cette lecture et de ces ecritures generees, puis executer avant les verifications et le deploiement :
+
+```powershell
+node tools/prepare-hosting-data.js --write
+```
+
+Controler ensuite le diff des fichiers generes. Ne pas utiliser cette preparation pour une simple correction HTML, CSS ou JavaScript sans changement de donnees.
 
 Sécuriser dans Git uniquement les fichiers du périmètre validé, puis pousser et déployer uniquement ce périmètre. Ne pas mélanger les changements utilisateur sans rapport. Après publication, vérifier le résultat en ligne et remettre le dossier principal sur le dernier `main` seulement si cela ne détruit aucun changement local ; nettoyer les worktrees temporaires devenus inutiles.
 

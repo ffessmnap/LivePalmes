@@ -651,11 +651,17 @@ function normalizeEmail(value) {
 }
 
 function normalizedEngagementRegionKey(value) {
-  return cleanText(value)
+  const cleanValue = cleanText(value);
+  return cleanText(CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanValue)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/gi, "")
     .toLocaleLowerCase("fr");
+}
+
+function engagementRegionsMatch(left, right) {
+  const leftKey = normalizedEngagementRegionKey(left);
+  return Boolean(leftKey && leftKey === normalizedEngagementRegionKey(right));
 }
 
 function assertEmail(email) {
@@ -9116,7 +9122,7 @@ function assertCanManageEngagementCompetition(context = {}, competition = {}) {
   if (isNationalOnlyEngagementCompetitionLevel(competition.level)) {
     throw new HttpsError("permission-denied", "Competition nationale reservee au niveau national.");
   }
-  if (cleanText(competition.regionId) !== context.regionId) {
+  if (!engagementRegionsMatch(competition.regionId, context.regionId)) {
     throw new HttpsError("permission-denied", "Competition hors perimetre regional.");
   }
 }
@@ -9196,7 +9202,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   }).map((competition) => [competition.id, competition])).values())
     .filter((competition) => !manageOnly || managementContext.national || (
       !isNationalOnlyEngagementCompetitionLevel(competition.level) &&
-      cleanText(competition.regionId) === managementContext.regionId
+      engagementRegionsMatch(competition.regionId, managementContext.regionId)
     ))
     .slice(0, limit);
   const clubEntryIndexResult = clubContext
@@ -9258,7 +9264,10 @@ exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) 
       .filter((item) => item.date >= range.startDate && item.date <= range.endDate)
       .map((item) => [item.id, item]);
   })).values())
-    .filter((item) => context.national || (!isNationalOnlyEngagementCompetitionLevel(item.level) && item.regionId === context.regionId))
+    .filter((item) => context.national || (
+      !isNationalOnlyEngagementCompetitionLevel(item.level) &&
+      engagementRegionsMatch(item.regionId, context.regionId)
+    ))
     .sort((left, right) => cleanText(left.date).localeCompare(cleanText(right.date)) || cleanText(left.name).localeCompare(cleanText(right.name), "fr"))
     .slice(0, 1200);
   return {
