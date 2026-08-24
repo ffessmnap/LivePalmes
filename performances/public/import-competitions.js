@@ -18,8 +18,10 @@
     preview: document.querySelector("#competitionImportPreview"),
     summary: document.querySelector("#competitionImportSummary"),
     warnings: document.querySelector("#competitionImportWarnings"),
+    existingImport: document.querySelector("#competitionImportExisting"),
     sample: document.querySelector("#competitionImportSample"),
     validate: document.querySelector("#competitionImportValidateButton"),
+    replace: document.querySelector("#competitionImportReplaceButton"),
     importsList: document.querySelector("#competitionImportsList"),
     importsRefresh: document.querySelector("#competitionImportsRefreshButton"),
     importsExport: document.querySelector("#competitionImportsExportButton"),
@@ -79,6 +81,7 @@
   let importsVisibleCount = 5;
   const importProgressControllers = new Map();
   let importControlsLocked = false;
+  let importReplacementMonitorToken = 0;
   const importOperationControlStates = new Map();
   const openImportIds = new Set();
   const importsPageSize = 5;
@@ -147,6 +150,10 @@
     if (elements.validate) {
       elements.validate.textContent = busy && phase === "import" ? "Import en cours..." : "Valider l'import";
       if (busy) elements.validate.disabled = true;
+    }
+    if (elements.replace) {
+      elements.replace.textContent = busy && phase === "replace" ? "Remplacement en cours..." : "Remplacer l'import existant";
+      if (busy) elements.replace.disabled = true;
     }
     if (!busy) updateFileMode();
   }
@@ -1143,6 +1150,10 @@
 
   function importStatusLabel(value, publicationStatus = "") {
     if (value === "deleted") return "Annule";
+    if (value === "replaced") return "Remplace";
+    if (value === "replacement_staged") {
+      return publicationStatus === "failed" ? "Remplacement interrompu" : "Remplacement en cours";
+    }
     if (publicationStatus === "publishing") return "Publication en cours";
     if (["pending", "failed"].includes(publicationStatus)) return "Publication a reprendre";
     if (publicationStatus === "published") return "Publie";
@@ -1236,6 +1247,20 @@
     elements.warnings.innerHTML = warnings.length || duplicateHtml || recordAlertHtml
       ? warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("") + duplicateHtml + recordAlertHtml
       : `<p class="ok">Aucune alerte detectee.</p>`;
+    const existingImport = result.existingImport || null;
+    if (elements.existingImport) {
+      elements.existingImport.hidden = !existingImport;
+      elements.existingImport.innerHTML = existingImport ? `
+        <strong>Cette compétition a déjà été importée</strong>
+        <p>${escapeHtml(existingImport.summary?.importedPerformances || 0)} performance(s), importées le ${escapeHtml(existingImport.importedAt ? new Date(existingImport.importedAt).toLocaleString("fr-FR") : "date inconnue")}.</p>
+        <small>${escapeHtml(existingImport.fileName || existingImport.importId || "")}</small>
+        ${result.identicalFile
+          ? `<p>Le fichier sélectionné est identique à celui déjà enregistré.</p>`
+          : result.canReplaceImport
+            ? `<p>Si ce nouveau fichier corrige des erreurs, vous pouvez remplacer l’ancien import. Celui-ci restera conservé dans l’historique.</p>`
+            : ""}
+      ` : "";
+    }
     const rows = Array.isArray(result.samplePerformances) ? result.samplePerformances : [];
     elements.sample.innerHTML = rows.length ? rows.map((perf) => `
       <tr>
@@ -1247,7 +1272,19 @@
         <td>${escapeHtml(perf.club || "-")}</td>
       </tr>
     `).join("") : `<tr><td colspan="6">Aucune performance a afficher.</td></tr>`;
-    elements.validate.disabled = result.alreadyImported || !summary.importedPerformances || !metadata.timingType;
+    const validationBlocked = result.alreadyImported || !summary.importedPerformances || !metadata.timingType;
+    elements.validate.disabled = validationBlocked;
+    elements.validate.title = result.alreadyImported
+      ? "Cette compétition est déjà importée."
+      : !summary.importedPerformances
+        ? "Aucune performance importable."
+        : !metadata.timingType
+          ? "Le type de chronométrage est obligatoire."
+          : "";
+    if (elements.replace) {
+      elements.replace.hidden = !result.canReplaceImport;
+      elements.replace.disabled = !result.canReplaceImport;
+    }
   }
 
   async function previewImport(event) {
@@ -1313,6 +1350,97 @@
     } catch (error) {
       finishImportProgress("error", "Import impossible", error?.message || String(error));
       elements.validate.disabled = false;
+    }
+  }
+
+  async function monitorImportReplacement(jobId) {
+    if (!jobId) return;
+    const token = ++importReplacementMonitorToken;
+    const delays = [2000, 4000, 8000, 15000];
+    for (const delay of delays) {
+      await new Promise((resolve) => global.setTimeout(resolve, delay));
+      if (token !== importReplacementMonitorToken) return;
+      try {
+        const result = await callFunction("getPerformancePublicationJobStatus", { jobId });
+        const job = result.publicationJob || {};
+        if (job.status === "published") {
+          finishImportProgress(
+            "success",
+            "Compétition remplacée",
+            "L’ancien import est conservé dans l’historique. La base officielle, les TOP et les fiches nageurs sont à jour."
+          );
+          await loadImports();
+          if (elements.replace) elements.replace.hidden = true;
+          return;
+        }
+        if (job.status === "failed") {
+          finishImportProgress(
+            "error",
+            "Remplacement enregistré, publication interrompue",
+            job.error || "Le remplacement pourra être relancé depuis l’historique."
+          );
+          await loadImports();
+          return;
+        }
+        updateImportProgress(
+          "Remplacement en cours",
+          `LivePalmes active le nouvel import et retire l’ancien${job.attempts ? ` (tentative ${job.attempts})` : ""}. Vous pouvez quitter cette page.`
+        );
+      } catch {
+        finishImportProgress(
+          "background",
+          "Remplacement enregistré",
+          "Le traitement continue automatiquement en arrière-plan. Son état reste visible dans l’historique."
+        );
+        await loadImports();
+        return;
+      }
+    }
+    finishImportProgress(
+      "background",
+      "Remplacement en arrière-plan",
+      "Le traitement est enregistré et sera repris automatiquement en cas d’interruption."
+    );
+    await loadImports();
+  }
+
+  async function replaceImport() {
+    const existingImport = currentPreview?.existingImport || null;
+    const oldCount = Number(existingImport?.summary?.importedPerformances || 0) || 0;
+    const newCount = Number(currentPreview?.summary?.importedPerformances || 0) || 0;
+    if (!currentPreview?.canReplaceImport || !existingImport?.importId || !currentPayload || !currentFile) {
+      setMessage(elements.message, "Prévisualise un fichier corrigé avant de remplacer l’import existant.");
+      return;
+    }
+    const title = currentPreview.metadata?.competitionName || "cette compétition";
+    if (!global.confirm(
+      `Remplacer l’import existant ?\n\n${title}\nAncien import : ${oldCount} performance(s)\nNouvel import : ${newCount} performance(s)\n\nL’ancien import sera désactivé mais conservé dans l’historique.`
+    )) return;
+    startImportProgress(
+      "Préparation du remplacement...",
+      "Le nouveau fichier est stocké et contrôlé avant la désactivation de l’ancien import.",
+      "replace"
+    );
+    try {
+      const result = await callFunction("createCompetitionImport", {
+        ...currentPayload,
+        fileName: currentFile.name,
+        importId: currentPreview.importId,
+        replaceImportId: existingImport.importId
+      });
+      const job = result.publicationJob || {};
+      finishImportProgress(
+        job.id ? "background" : "error",
+        job.id ? "Remplacement enregistré" : "Remplacement à vérifier",
+        job.id
+          ? "LivePalmes poursuit automatiquement l’activation du nouvel import et la republication ciblée."
+          : "Aucun travail de remplacement n’a été créé."
+      );
+      await loadImports();
+      if (job.id) void monitorImportReplacement(job.id);
+    } catch (error) {
+      finishImportProgress("error", "Remplacement impossible", error?.message || String(error));
+      if (elements.replace) elements.replace.disabled = false;
     }
   }
 
@@ -1494,6 +1622,8 @@
       const recordAlertCount = Number(item.recordAlertCount || 0) || 0;
       const importedAt = item.importedAt ? new Date(item.importedAt).toLocaleString("fr-FR") : "";
       const deleted = item.status === "deleted";
+      const replaced = item.status === "replaced";
+      const replacementStaged = item.status === "replacement_staged";
       const canResumePublication = item.canResumePublication === true;
       return `
         <details class="competition-import-row" data-import-id="${escapeHtml(item.importId || "")}" data-import-status="${escapeHtml(item.status || "stored")}"${openImportIds.has(item.importId) ? " open" : ""}>
@@ -1513,8 +1643,12 @@
             <div><span>Importe par</span><strong>${escapeHtml(item.importedByEmail || "-")}</strong></div>
           </div>
           <div class="competition-import-actions">
-            ${deleted
-              ? `<span>Import annule : ses performances ne sont plus publiees.</span>`
+            ${deleted || replaced
+              ? `<span>${replaced ? "Import remplacé : il reste conservé pour l’historique." : "Import annulé : ses performances ne sont plus publiées."}</span>`
+              : replacementStaged
+                ? `${item.publicationStatus === "failed"
+                  ? `<button type="button" class="danger-button" data-retry-import-replacement="${escapeHtml(item.replacementJobId || "")}">Relancer le remplacement</button>`
+                  : `<span>Le nouvel import est enregistré. Son activation et la republication continuent automatiquement.</span>`}`
               : `${canResumePublication
                 ? `<button type="button" class="ghost-button" data-resume-import-publication="${escapeHtml(item.importId || "")}">Reprendre la publication</button>`
                 : ""}
@@ -1640,6 +1774,34 @@
       await loadImports();
     } catch (error) {
       finishImportProgress("error", "Reprise impossible", error?.message || String(error));
+      button.disabled = false;
+      button.textContent = previousLabel;
+    }
+  }
+
+  async function retryImportReplacement(button) {
+    const jobId = button?.dataset?.retryImportReplacement || "";
+    if (!jobId) return;
+    if (!global.confirm("Relancer l’activation du nouvel import et la republication de la compétition ?")) return;
+    const previousLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "Relance en cours...";
+    startImportProgress(
+      "Relance du remplacement...",
+      "LivePalmes reprend le travail enregistré sans recréer les performances."
+    );
+    try {
+      const result = await callFunction("retryPerformancePublicationJob", { jobId });
+      const nextJobId = result.publicationJob?.id || "";
+      finishImportProgress(
+        nextJobId ? "background" : "error",
+        nextJobId ? "Remplacement relancé" : "Relance impossible",
+        nextJobId ? "Le traitement se poursuit automatiquement." : "Aucun travail de reprise n’a été créé."
+      );
+      await loadImports();
+      if (nextJobId) void monitorImportReplacement(nextJobId);
+    } catch (error) {
+      finishImportProgress("error", "Relance impossible", error?.message || String(error));
       button.disabled = false;
       button.textContent = previousLabel;
     }
@@ -1802,6 +1964,7 @@
     elements.file?.addEventListener("change", updateFileMode);
     elements.form?.addEventListener("submit", previewImport);
     elements.validate?.addEventListener("click", validateImport);
+    elements.replace?.addEventListener("click", replaceImport);
     elements.importsRefresh?.addEventListener("click", loadImports);
     global.addEventListener("hashchange", () => {
       if (global.location.hash === "#import-competitions" && ensureAdminAuth()?.isAdminAuthenticated?.()) loadImports();
@@ -1829,6 +1992,11 @@
       const resumeButton = event.target.closest("[data-resume-import-publication]");
       if (resumeButton) {
         resumeCompetitionImportPublication(resumeButton);
+        return;
+      }
+      const retryReplacementButton = event.target.closest("[data-retry-import-replacement]");
+      if (retryReplacementButton) {
+        retryImportReplacement(retryReplacementButton);
         return;
       }
       const button = event.target.closest("[data-record-alert-action]");

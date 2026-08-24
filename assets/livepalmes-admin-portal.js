@@ -2687,7 +2687,7 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/import-competitions.js?v=20260821-performance-publication-jobs-2", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20260824-import-replacement-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {

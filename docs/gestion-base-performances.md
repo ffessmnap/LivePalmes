@@ -33,6 +33,10 @@ La reprise lit un document de lot puis uniquement sa sous-collection de performa
 
 L'aperçu avant validation est essentiel : il permet de repérer un mauvais fichier ou une interprétation incorrecte avant l'écriture définitive.
 
+L'aperçu recherche aussi un import actif de la même compétition. L'identifiant externe est prioritaire ; à défaut, la comparaison utilise la date, le nom, le lieu et le bassin. Un fichier strictement identique ne peut pas être réimporté. Pour un fichier corrigé, l'action « Remplacer l'import existant » stocke d'abord le nouveau lot puis crée un travail durable. Ce travail active le nouveau lot, désactive l'ancien et republie uniquement les fiches et TOP concernés. L'ancien lot reste dans l'historique avec le statut `replaced` et un lien vers son remplaçant.
+
+La détection d'un import existant reste bornée à cinq documents par identifiant ou code de compétition, et à vingt documents pour le repli par date. Le remplacement lit un document et au maximum `N + 1` performances pour chacun des deux lots, sans parcourir la collection globale des performances.
+
 ## Corrections
 
 Une correction autorisée est enregistrée immédiatement dans `performanceCorrections`, puis un travail durable est créé dans `performancePublicationJobs`. Un worker séparé applique la correction à la base active, alimente le journal des changements et régénère uniquement les fichiers publics concernés. Le portail peut donc répondre sans charger le gros instantané public en mémoire.

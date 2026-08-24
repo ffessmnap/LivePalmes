@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes TOP</title>
     <link rel="icon" type="image/png" href="/favicon.png?v=20260819-hosting-2">
-    <link rel="stylesheet" href="public/styles.css?v=20260824-top-birth-year-1" />
+    <link rel="stylesheet" href="public/styles.css?v=20260824-top-birth-year-2" />
   </head>
   <body class="tops-page">
     <header class="topbar simple performance-public-topbar">
       <div class="topbar-title">
         <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
         <p class="eyebrow">LivePalmes &middot; Performances</p>
-        <h1>TOP</h1>
+        <h1 id="topSecretFilterTrigger" class="top-secret-filter-trigger">TOP</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
       <nav class="main-nav" aria-label="Navigation principale">
@@ -52,16 +52,13 @@
             <button type="button" class="segment" data-value="50" aria-pressed="false">50 m</button>
           </div>
         </div>
-        <div class="top-filter-birth" id="topBirthFilter">
-          <label id="topBirthYearField" hidden>
+        <div class="top-filter-birth" id="topBirthYearField" hidden>
+          <label>
             Ann&eacute;e de naissance
             <select id="topBirthYearFilter">
               <option value="">Toutes les ann&eacute;es</option>
             </select>
           </label>
-          <button type="button" class="top-advanced-filter-toggle" id="topBirthYearToggle" aria-controls="topBirthYearField" aria-expanded="false" aria-label="Afficher le filtre par ann&eacute;e de naissance" title="Filtres avanc&eacute;s">
-            <span aria-hidden="true">&middot;&middot;&middot;</span>
-          </button>
         </div>
       </section>
 
@@ -101,6 +98,6 @@
     <script src="public/data/intranap-summary.js?v=consolidated-20260603140205"></script>
     <script src="public/data/performance-public/version.js"></script>
     <script src="../assets/public/livepalmes-public-analytics.js?v=20260614-ga-public-1"></script>
-    <script src="public/tops.js?v=20260824-top-birth-year-1"></script>
+    <script src="public/tops.js?v=20260824-top-birth-year-2"></script>
   </body>
 </html>

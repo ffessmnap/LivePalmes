@@ -596,13 +596,13 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
   min-width: 0;
 }
 
+.top-filter-birth[hidden] {
+  display: none;
+}
+
 .top-filter-birth label {
   min-width: 0;
   flex: 1;
-}
-
-.top-filter-birth label[hidden] {
-  display: none;
 }
 
 .top-filter-birth select {
@@ -616,27 +616,9 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
   font: inherit;
 }
 
-.top-advanced-filter-toggle {
-  width: 34px;
-  min-width: 34px;
-  min-height: 34px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 50%;
-  color: #8a9692;
-  background: transparent;
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 1px;
-}
-
-.top-advanced-filter-toggle:hover,
-.top-advanced-filter-toggle:focus-visible,
-.top-advanced-filter-toggle[aria-expanded="true"] {
-  border-color: var(--line);
-  color: var(--accent-strong);
-  background: #f3f7f6;
-  outline: none;
+.top-secret-filter-trigger {
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .swimmer-toolbar {

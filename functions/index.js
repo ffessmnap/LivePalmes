@@ -67,6 +67,10 @@ const {
   performanceImportChrono
 } = require("./performance-import-timing");
 const {
+  competitionImportIdentity,
+  sameCompetitionImport
+} = require("./performance-import-replacement");
+const {
   canResumeImportPublication,
   deactivatedImportPerformanceRows,
   hydratePublicSwimmerRowsFromPayload,
@@ -2242,6 +2246,60 @@ function importDocumentId(metadata = {}, fileHash = "") {
     fileHash
   ].join("|");
   return stableHash(seed).slice(0, 32);
+}
+
+function activeCompetitionImportData(data = {}) {
+  return !["deleted", "replaced"].includes(cleanText(data.status));
+}
+
+function competitionImportExistingSummary(snapshot) {
+  if (!snapshot?.exists) return null;
+  const data = snapshot.data() || {};
+  return cleanFirestoreValue({
+    importId: snapshot.id,
+    status: data.status || "",
+    fileName: data.fileName || "",
+    fileHash: data.fileHash || "",
+    metadata: data.metadata || {},
+    summary: data.summary || {},
+    importedAt: data.importedAt || "",
+    importedByEmail: data.importedByEmail || "",
+    publicationStatus: importPublicationStatus(data) || "",
+    replacementJobId: data.replacementJobId || ""
+  });
+}
+
+async function findExistingCompetitionImport(metadata = {}, excludedImportId = "") {
+  const identity = competitionImportIdentity(metadata);
+  const candidateSnapshots = [];
+  const keyedSnapshot = await db.collection("performanceImports")
+    .where("competitionKey", "==", identity)
+    .limit(5)
+    .get();
+  candidateSnapshots.push(...keyedSnapshot.docs);
+
+  if (!candidateSnapshots.length && cleanText(metadata.competitionCode)) {
+    const codeSnapshot = await db.collection("performanceImports")
+      .where("metadata.competitionCode", "==", cleanText(metadata.competitionCode))
+      .limit(5)
+      .get();
+    candidateSnapshots.push(...codeSnapshot.docs);
+  }
+
+  if (!candidateSnapshots.length && !cleanText(metadata.competitionCode) && cleanText(metadata.date)) {
+    const dateSnapshot = await db.collection("performanceImports")
+      .where("metadata.date", "==", cleanText(metadata.date))
+      .limit(20)
+      .get();
+    candidateSnapshots.push(...dateSnapshot.docs);
+  }
+
+  return candidateSnapshots.find((snapshot) => {
+    const data = snapshot.data() || {};
+    return snapshot.id !== excludedImportId &&
+      activeCompetitionImportData(data) &&
+      sameCompetitionImport(data.metadata || {}, metadata);
+  }) || null;
 }
 
 function safeCompareHex(left, right) {
@@ -15603,14 +15661,22 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
   const importId = importDocumentId(parsed.metadata, fileHash);
   const existing = await db.collection("performanceImports").doc(importId).get();
   const existingData = existing.exists ? existing.data() || {} : {};
-  const publicationStatus = importPublicationStatus(existingData);
+  const matchingImport = existing.exists && activeCompetitionImportData(existingData)
+    ? existing
+    : await findExistingCompetitionImport(parsed.metadata, importId);
+  const matchingData = matchingImport?.data?.() || {};
+  const existingImport = competitionImportExistingSummary(matchingImport);
+  const publicationStatus = importPublicationStatus(matchingData);
   const recordAlerts = detectRecordAlerts(parsed.performances, await loadPerformanceRecordsData());
   return {
     ok: true,
     importId,
-    alreadyImported: existing.exists && existingData.status !== "deleted",
-    publicationStatus: publicationStatus || (existing.exists ? "published" : ""),
-    canResumePublication: existing.exists && canResumeImportPublication(existingData),
+    alreadyImported: Boolean(existingImport),
+    existingImport,
+    identicalFile: Boolean(existingImport && existingImport.fileHash === fileHash),
+    canReplaceImport: Boolean(existingImport && existingImport.status === "stored" && existingImport.importId !== importId),
+    publicationStatus: publicationStatus || (existingImport ? "published" : ""),
+    canResumePublication: Boolean(existingImport && canResumeImportPublication(matchingData)),
     fileHash,
     sourceType: parsed.sourceType,
     metadata: parsed.metadata,
@@ -15692,6 +15758,152 @@ async function publishCompetitionImportOutputs(normalizedPerformances = [], impo
   };
 }
 
+function competitionImportPerformanceId(importId, perf = {}) {
+  return stableHash([
+    importId,
+    perf.sourceLine,
+    perf.swimmerId,
+    perf.lastName,
+    perf.firstName,
+    perf.course,
+    perf.time,
+    perf.club
+  ].join("|")).slice(0, 32);
+}
+
+async function stageCompetitionImportReplacement(options = {}) {
+  const {
+    parsed,
+    importId,
+    fileName,
+    fileHash,
+    recordAlerts,
+    replacedImportId,
+    actorUid,
+    actorEmail,
+    now
+  } = options;
+  if (!replacedImportId || replacedImportId === importId) {
+    throw new HttpsError("failed-precondition", "Utilise un fichier corrige different pour remplacer cet import.");
+  }
+
+  const oldRef = db.collection("performanceImports").doc(replacedImportId);
+  const newRef = db.collection("performanceImports").doc(importId);
+  const [oldSnapshot, newSnapshot] = await Promise.all([oldRef.get(), newRef.get()]);
+  if (!oldSnapshot.exists || cleanText(oldSnapshot.data()?.status) !== "stored") {
+    throw new HttpsError("failed-precondition", "L'import a remplacer n'est plus actif.");
+  }
+  const oldData = oldSnapshot.data() || {};
+  if (!sameCompetitionImport(oldData.metadata || {}, parsed.metadata || {})) {
+    throw new HttpsError("failed-precondition", "Le nouveau fichier ne correspond pas a la competition importee.");
+  }
+  if (newSnapshot.exists && activeCompetitionImportData(newSnapshot.data() || {})) {
+    throw new HttpsError("already-exists", "Ce fichier corrige est deja enregistre.");
+  }
+
+  let batch = db.batch();
+  let batchSize = 0;
+  const commits = [];
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 450 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+
+  batch.set(newRef, {
+    importId,
+    competitionKey: competitionImportIdentity(parsed.metadata),
+    status: "replacement_staged",
+    sourceType: parsed.sourceType || "ffessm-txt",
+    fileName,
+    fileHash,
+    competitionName: parsed.metadata.competitionName,
+    timingType: parsed.metadata.timingType,
+    chrono: parsed.metadata.chrono,
+    metadata: parsed.metadata,
+    summary: parsed.summary,
+    warnings: parsed.warnings,
+    recordAlerts: recordAlerts.slice(0, 100),
+    recordAlertCount: recordAlerts.length,
+    duplicateDetails: parsed.duplicateDetails.slice(0, 50),
+    replacementOf: replacedImportId,
+    importedBy: actorUid,
+    importedByEmail: actorEmail,
+    importedAt: now,
+    updatedAt: now,
+    publicationStatus: "pending",
+    publicationUpdatedAt: now,
+    publicationError: ""
+  }, { merge: false });
+  batchSize += 1;
+
+  parsed.clubs.forEach((club) => {
+    const clubRef = newRef.collection("clubs").doc(club.code || stableHash(JSON.stringify(club)).slice(0, 20));
+    batch.set(clubRef, { ...club, importId, updatedAt: now }, { merge: false });
+    batchSize += 1;
+    commitIfNeeded();
+  });
+  parsed.performances.forEach((perf) => {
+    const performanceId = competitionImportPerformanceId(importId, perf);
+    batch.set(newRef.collection("performances").doc(performanceId), {
+      ...perf,
+      performanceId,
+      importId,
+      competitionName: parsed.metadata.competitionName,
+      metadata: parsed.metadata,
+      importedBy: actorUid,
+      importedAt: now,
+      updatedAt: now,
+      updatedBy: actorUid
+    }, { merge: false });
+    batchSize += 1;
+    commitIfNeeded();
+  });
+  commitIfNeeded(true);
+  await Promise.all(commits);
+
+  const jobId = stableHash(`performanceImportReplacement|${replacedImportId}|${importId}`).slice(0, 40);
+  const jobRef = db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId);
+  const existingJob = await jobRef.get();
+  if (!existingJob.exists) {
+    await jobRef.create(cleanFirestoreValue({
+      id: jobId,
+      type: "performanceImportReplacement",
+      oldImportId: replacedImportId,
+      newImportId: importId,
+      status: "pending",
+      attempts: 0,
+      createdAt: now,
+      updatedAt: now,
+      requestedBy: actorUid,
+      requestedByEmail: actorEmail
+    }));
+  }
+  await Promise.all([
+    oldRef.set({ replacementJobId: jobId, replacementPendingImportId: importId, updatedAt: now }, { merge: true }),
+    newRef.set({ replacementJobId: jobId, updatedAt: now }, { merge: true })
+  ]);
+  await writeAuditLog("performanceImport.replacementRequested", actorUid, {
+    oldImportId: replacedImportId,
+    newImportId: importId,
+    oldPerformanceCount: Number(oldData.summary?.importedPerformances || 0) || 0,
+    newPerformanceCount: Number(parsed.summary?.importedPerformances || 0) || 0,
+    jobId
+  });
+  const jobData = existingJob.exists ? existingJob.data() || {} : { status: "pending", attempts: 0, createdAt: now, updatedAt: now };
+  return {
+    ok: true,
+    importId,
+    replacedImportId,
+    metadata: parsed.metadata,
+    summary: parsed.summary,
+    warnings: parsed.warnings,
+    publicationJob: publicPerformancePublicationJob(jobData, jobId)
+  };
+}
+
 exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
   const fileName = cleanText(request.data?.fileName).slice(0, 180);
@@ -15720,6 +15932,20 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
   const now = new Date().toISOString();
   const actorUid = request.auth.uid;
   const actorEmail = request.auth.token?.email || "";
+  const replacedImportId = cleanText(request.data?.replaceImportId).slice(0, 160);
+  if (replacedImportId) {
+    return stageCompetitionImportReplacement({
+      parsed,
+      importId,
+      fileName,
+      fileHash,
+      recordAlerts,
+      replacedImportId,
+      actorUid,
+      actorEmail,
+      now
+    });
+  }
   const batches = [];
   let batch = db.batch();
   let batchSize = 0;
@@ -15736,6 +15962,7 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
 
   batch.set(importRef, {
     importId,
+    competitionKey: competitionImportIdentity(parsed.metadata),
     status: "stored",
     sourceType: parsed.sourceType || "ffessm-txt",
     fileName,
@@ -15771,16 +15998,7 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
   });
 
   parsed.performances.forEach((perf) => {
-    const perfId = stableHash([
-      importId,
-      perf.sourceLine,
-      perf.swimmerId,
-      perf.lastName,
-      perf.firstName,
-      perf.course,
-      perf.time,
-      perf.club
-    ].join("|")).slice(0, 32);
+    const perfId = competitionImportPerformanceId(importId, perf);
     const perfRef = importRef.collection("performances").doc(perfId);
     const storedPerf = {
       ...perf,
@@ -16001,7 +16219,10 @@ exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
         publicationStatus: importPublicationStatus(data) || (data.status === "stored" ? "published" : ""),
         publicationUpdatedAt: data.publicationUpdatedAt || "",
         publicationError: data.publicationError || "",
-        canResumePublication: canResumeImportPublication(data),
+        canResumePublication: data.status === "stored" && canResumeImportPublication(data),
+        replacementOf: data.replacementOf || "",
+        replacedBy: data.replacedBy || "",
+        replacementJobId: data.replacementJobId || "",
         importedByEmail: data.importedByEmail || "",
         importedAt: data.importedAt || ""
       };
@@ -18987,9 +19208,255 @@ async function claimPerformancePublicationJob(jobRef) {
   });
 }
 
+async function replacementImportRows(importId = "") {
+  const importRef = db.collection("performanceImports").doc(importId);
+  const importSnapshot = await importRef.get();
+  if (!importSnapshot.exists) throw new Error(`Import ${importId} introuvable.`);
+  const importData = importSnapshot.data() || {};
+  const expectedCount = Number(importData.summary?.importedPerformances || importData.performanceBaseCount || 0) || 0;
+  if (!expectedCount || expectedCount > MAX_COMPETITION_IMPORT_PERFORMANCES) {
+    throw new Error(`Volume de l'import ${importId} incompatible avec le remplacement.`);
+  }
+  const rowsSnapshot = await importRef.collection("performances").limit(expectedCount + 1).get();
+  if (rowsSnapshot.size !== expectedCount) {
+    throw new Error(`Import ${importId} incomplet : ${rowsSnapshot.size} performance(s) sur ${expectedCount}.`);
+  }
+  const rawRows = rowsSnapshot.docs.map((snapshot) => ({ id: snapshot.id, ...(snapshot.data() || {}) }));
+  const rows = normalizeLivePalmesImportPerformances(rawRows);
+  if (rows.length !== expectedCount) {
+    throw new Error(`Import ${importId} non normalisable : ${rows.length} performance(s) sur ${expectedCount}.`);
+  }
+  return { importRef, importData, rows, reads: rowsSnapshot.size + 1 };
+}
+
+async function deactivateReplacedPerformanceBaseRows(rows = [], context = {}) {
+  const now = context.now || new Date().toISOString();
+  let batch = db.batch();
+  let batchSize = 0;
+  let written = 0;
+  const commits = [];
+  function commitIfNeeded(force = false) {
+    if (batchSize >= 450 || (force && batchSize > 0)) {
+      commits.push(batch.commit());
+      batch = db.batch();
+      batchSize = 0;
+    }
+  }
+  rows.forEach((row, index) => {
+    const performanceBaseId = cleanText(row.performanceBaseId || performanceBaseDocId(row));
+    if (!performanceBaseId) return;
+    const deactivatedRow = cleanFirestoreValue({
+      ...row,
+      performanceBaseId,
+      active: false,
+      status: "replaced"
+    });
+    batch.set(db.collection(PERFORMANCE_BASE_COLLECTION).doc(performanceBaseId), {
+      active: false,
+      status: "replaced",
+      replacedByImportId: context.newImportId || "",
+      updatedAt: now,
+      updatedBy: context.actorUid || "",
+      updatedByEmail: context.actorEmail || "",
+      sourceAction: "performanceImport.replaced"
+    }, { merge: true });
+    const changeId = stableHash([
+      performanceBaseId,
+      "performanceImport.replaced",
+      context.oldImportId || "",
+      context.newImportId || "",
+      index
+    ].join("|")).slice(0, 40);
+    batch.set(db.collection(PERFORMANCE_BASE_CHANGES_COLLECTION).doc(changeId), {
+      performanceBaseId,
+      publicKey: cleanText(row.publicKey),
+      action: "performanceImport.replaced",
+      importId: context.oldImportId || row.importId || "",
+      replacementImportId: context.newImportId || "",
+      status: "replaced",
+      row: deactivatedRow,
+      actorUid: context.actorUid || "",
+      actorEmail: context.actorEmail || "",
+      createdAt: now
+    }, { merge: true });
+    batchSize += 2;
+    written += 1;
+    commitIfNeeded();
+  });
+  commitIfNeeded(true);
+  await Promise.all(commits);
+  await invalidateEngagementEntryTimeCachesForPerformanceRows(rows);
+  await touchDtnQualificationCacheState(rows, { action: "performanceImport.replaced", now });
+  return { ok: true, written };
+}
+
+async function processPerformanceImportReplacementJob(jobRef, job = {}) {
+  const oldImportId = cleanText(job.oldImportId).slice(0, 160);
+  const newImportId = cleanText(job.newImportId).slice(0, 160);
+  if (!oldImportId || !newImportId || oldImportId === newImportId) {
+    await jobRef.set({
+      status: "failed",
+      updatedAt: new Date().toISOString(),
+      failedAt: new Date().toISOString(),
+      leaseUntil: "",
+      error: "Imports de remplacement invalides."
+    }, { merge: true });
+    return { failed: true, retryable: false };
+  }
+
+  const operationAt = cleanText(job.createdAt) || new Date().toISOString();
+  const actorUid = cleanText(job.requestedBy) || "system:performanceImportReplacement";
+  const actorEmail = cleanText(job.requestedByEmail);
+  let oldImport = null;
+  let newImport = null;
+  try {
+    [oldImport, newImport] = await Promise.all([
+      replacementImportRows(oldImportId),
+      replacementImportRows(newImportId)
+    ]);
+    if (!sameCompetitionImport(oldImport.importData.metadata || {}, newImport.importData.metadata || {})) {
+      throw new Error("Les deux imports ne correspondent pas a la meme competition.");
+    }
+    await Promise.all([
+      oldImport.importRef.set({
+        replacementJobId: jobRef.id,
+        replacementPendingImportId: newImportId,
+        updatedAt: operationAt
+      }, { merge: true }),
+      newImport.importRef.set({
+        publicationStatus: "publishing",
+        publicationStartedAt: operationAt,
+        publicationUpdatedAt: new Date().toISOString(),
+        publicationError: ""
+      }, { merge: true })
+    ]);
+
+    const newBaseSync = await writePerformanceBaseRows(newImport.rows, {
+      actorUid,
+      actorEmail,
+      now: operationAt,
+      importId: newImportId,
+      action: "performanceImport.replacementActivated",
+      changeSeed: jobRef.id
+    });
+    const oldBaseSync = await deactivateReplacedPerformanceBaseRows(oldImport.rows, {
+      actorUid,
+      actorEmail,
+      now: operationAt,
+      oldImportId,
+      newImportId
+    });
+
+    const currentSnapshot = await readPublishedAdditionalPerformanceDataSnapshot();
+    if (currentSnapshot.available === false) {
+      throw new Error("Fichier public des performances indisponible pour securiser le remplacement.");
+    }
+    const currentOldRows = (currentSnapshot.performances || [])
+      .filter((row) => cleanText(row.importId) === oldImportId);
+    const currentNewRows = (currentSnapshot.performances || [])
+      .filter((row) => cleanText(row.importId) === newImportId);
+    if (currentOldRows.length < oldImport.rows.length && currentNewRows.length < newImport.rows.length) {
+      throw new Error(
+        `Instantane public incomplet : ${currentOldRows.length} ancienne(s) et ${currentNewRows.length} nouvelle(s) performance(s).`
+      );
+    }
+    const withoutOldImport = (currentSnapshot.performances || [])
+      .filter((row) => cleanText(row.importId) !== oldImportId);
+    const mergedPerformances = mergeAdditionalPerformanceRows(withoutOldImport, newImport.rows, newImportId);
+    const publicSnapshot = await saveAdditionalPerformanceDataSnapshot({
+      ...currentSnapshot,
+      performances: mergedPerformances
+    });
+    if (publicSnapshot?.ok === false) throw new Error(publicSnapshot.error || "Instantane public non publie.");
+
+    const affectedRows = [
+      ...deactivatedImportPerformanceRows(oldImport.rows),
+      ...newImport.rows
+    ];
+    const publicFilesSnapshot = await rebuildPublicPerformanceFilesForAffectedRows(affectedRows, {
+      now: operationAt,
+      reason: "performanceImport.replaced",
+      importId: newImportId
+    });
+    if (publicFilesSnapshot?.ok === false) throw new Error(publicFilesSnapshot.error || "Fichiers publics non publies.");
+
+    const completedAt = new Date().toISOString();
+    await Promise.all([
+      oldImport.importRef.set({
+        status: "replaced",
+        replacedBy: newImportId,
+        replacedAt: completedAt,
+        replacementPendingImportId: "",
+        publicationStatus: "replaced",
+        publicationUpdatedAt: completedAt,
+        updatedAt: completedAt
+      }, { merge: true }),
+      newImport.importRef.set({
+        status: "stored",
+        replacementOf: oldImportId,
+        performanceBaseSyncedAt: completedAt,
+        performanceBaseCount: newBaseSync.written,
+        publicationStatus: "published",
+        publicationCompletedAt: completedAt,
+        publicationUpdatedAt: completedAt,
+        publicationError: "",
+        updatedAt: completedAt
+      }, { merge: true }),
+      jobRef.set(cleanFirestoreValue({
+        status: "published",
+        updatedAt: completedAt,
+        completedAt,
+        leaseUntil: "",
+        error: "",
+        result: {
+          oldPerformanceCount: oldBaseSync.written,
+          newPerformanceCount: newBaseSync.written,
+          writtenFiles: Number(publicFilesSnapshot.writtenFiles || 0) || 0,
+          firestoreDocumentReads: oldImport.reads + newImport.reads
+        }
+      }), { merge: true })
+    ]);
+    await writeAuditLog("performanceImport.replaced", actorUid, {
+      oldImportId,
+      newImportId,
+      jobId: jobRef.id,
+      oldPerformanceCount: oldBaseSync.written,
+      newPerformanceCount: newBaseSync.written,
+      publicSnapshot: competitionImportPublicSnapshotSummary(publicSnapshot),
+      publicFilesSnapshot: competitionImportPublicSnapshotSummary(publicFilesSnapshot)
+    });
+    return { published: true };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const status = performancePublicationFailureStatus(job.attempts, PERFORMANCE_PUBLICATION_MAX_ATTEMPTS);
+    const message = cleanText(error?.message || error).slice(0, 300) || "Remplacement impossible.";
+    await Promise.all([
+      jobRef.set({ status, updatedAt: failedAt, failedAt, leaseUntil: "", error: message }, { merge: true }),
+      newImport?.importRef?.set?.({
+        publicationStatus: "failed",
+        publicationUpdatedAt: failedAt,
+        publicationError: message,
+        updatedAt: failedAt
+      }, { merge: true }) || Promise.resolve()
+    ]);
+    console.error("Remplacement asynchrone d'un import impossible", {
+      jobId: jobRef.id,
+      oldImportId,
+      newImportId,
+      attempts: job.attempts,
+      status,
+      message
+    });
+    return { failed: true, retryable: status === "pending", error };
+  }
+}
+
 async function processPerformancePublicationJob(jobRef) {
   const job = await claimPerformancePublicationJob(jobRef);
   if (!job) return { skipped: true };
+  if (job.type === "performanceImportReplacement") {
+    return processPerformanceImportReplacementJob(jobRef, job);
+  }
   const correction = job.correction && typeof job.correction === "object" ? job.correction : {};
   const correctionId = cleanText(correction.id).slice(0, 40);
   const targetKey = cleanText(correction.targetKey).slice(0, 240);
@@ -19126,6 +19593,33 @@ exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request
   if (!snapshot.exists) throw new HttpsError("not-found", "Travail de publication introuvable.");
   const job = snapshot.data() || {};
   if (job.status !== "failed") throw new HttpsError("failed-precondition", "Ce travail ne nécessite pas de reprise manuelle.");
+  if (job.type === "performanceImportReplacement") {
+    const now = new Date().toISOString();
+    const newJobId = stableHash(`${snapshot.id}|retry|${now}`).slice(0, 40);
+    const newJobRef = db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(newJobId);
+    await newJobRef.create(cleanFirestoreValue({
+      id: newJobId,
+      type: "performanceImportReplacement",
+      oldImportId: job.oldImportId,
+      newImportId: job.newImportId,
+      status: "pending",
+      attempts: 0,
+      createdAt: now,
+      updatedAt: now,
+      requestedBy: request.auth.uid,
+      requestedByEmail: request.auth.token?.email || "",
+      retryOf: snapshot.id
+    }));
+    await Promise.all([
+      snapshot.ref.set({ replacedBy: newJobId, updatedAt: now }, { merge: true }),
+      db.collection("performanceImports").doc(cleanText(job.oldImportId)).set({ replacementJobId: newJobId, updatedAt: now }, { merge: true }),
+      db.collection("performanceImports").doc(cleanText(job.newImportId)).set({ replacementJobId: newJobId, publicationStatus: "pending", updatedAt: now }, { merge: true })
+    ]);
+    return {
+      ok: true,
+      publicationJob: publicPerformancePublicationJob({ status: "pending", attempts: 0, createdAt: now, updatedAt: now }, newJobId)
+    };
+  }
   const publicationJob = await enqueuePerformancePublicationJob(job.correction || {}, {
     uid: request.auth.uid,
     email: request.auth.token?.email || ""

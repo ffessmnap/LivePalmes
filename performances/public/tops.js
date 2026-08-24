@@ -86,7 +86,7 @@
     pool: document.querySelector("#topPoolFilter"),
     birthYear: document.querySelector("#topBirthYearFilter"),
     birthYearField: document.querySelector("#topBirthYearField"),
-    birthYearToggle: document.querySelector("#topBirthYearToggle"),
+    birthYearTrigger: document.querySelector("#topSecretFilterTrigger"),
     title: document.querySelector("#topTitle"),
     status: document.querySelector("#topStatus"),
     swimmerHeader: document.querySelector("#topSwimmerHeader"),
@@ -145,6 +145,8 @@
   let selectedCourse = "";
   let showAllTopRows = false;
   let birthYearFilterOpen = false;
+  let secretFilterTapCount = 0;
+  let secretFilterTapTimer = null;
   let additionalRows = [];
   let performanceCorrections = [];
   let additionalLoaded = false;
@@ -785,14 +787,21 @@
       });
     });
 
-    elements.birthYearToggle?.addEventListener("click", () => {
-      const expanded = elements.birthYearToggle.getAttribute("aria-expanded") !== "true";
-      birthYearFilterOpen = expanded;
-      elements.birthYearToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-      elements.birthYearToggle.setAttribute("aria-label", `${expanded ? "Masquer" : "Afficher"} le filtre par ann\u00e9e de naissance`);
-      elements.birthYearField.hidden = !expanded;
+    elements.birthYearTrigger?.addEventListener("click", () => {
+      secretFilterTapCount += 1;
+      global.clearTimeout(secretFilterTapTimer);
+      if (secretFilterTapCount < 4) {
+        secretFilterTapTimer = global.setTimeout(() => {
+          secretFilterTapCount = 0;
+        }, 1600);
+        return;
+      }
+
+      secretFilterTapCount = 0;
+      birthYearFilterOpen = !birthYearFilterOpen;
+      elements.birthYearField.hidden = !birthYearFilterOpen;
       render();
-      if (expanded) elements.birthYear.focus();
+      if (birthYearFilterOpen) elements.birthYear.focus();
     });
 
     elements.birthYear?.addEventListener("input", () => {
