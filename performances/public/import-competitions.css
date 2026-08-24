@@ -332,6 +332,43 @@
   color: #0f5f57;
 }
 
+.competition-import-existing {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e2b96f;
+  border-left: 4px solid #c47a12;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff8e8;
+  color: #70420d;
+}
+
+.competition-import-existing[hidden] {
+  display: none;
+}
+
+.competition-import-existing strong {
+  color: #7a4305;
+  font-size: 0.95rem;
+}
+
+.competition-import-existing p,
+.competition-import-existing small {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.competition-import-existing small {
+  overflow-wrap: anywhere;
+  color: #805c2f;
+}
+
+#competitionImportValidateButton:disabled,
+#competitionImportReplaceButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .import-duplicates {
   display: grid;
   gap: 7px;

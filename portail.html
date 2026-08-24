@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="favicon.png?v=20260819-hosting-2">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
-    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260818-import-progress-1" disabled>
+    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260824-import-replacement-1" disabled>
     <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260820-international-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
@@ -2218,6 +2218,7 @@
                   </div>
                   <div id="competitionImportSummary" class="import-summary-grid"></div>
                   <div id="competitionImportWarnings" class="import-warnings"></div>
+                  <aside id="competitionImportExisting" class="competition-import-existing" hidden></aside>
                   <div class="import-table-wrap">
                     <table class="import-preview-table">
                       <thead>
@@ -2235,6 +2236,7 @@
                   </div>
                   <div class="admin-portal-actions">
                     <button id="competitionImportValidateButton" type="button">Valider l’import</button>
+                    <button id="competitionImportReplaceButton" class="danger-button" type="button" hidden>Remplacer l’import existant</button>
                   </div>
                 </section>
 
@@ -2265,6 +2267,8 @@
                       <select id="competitionImportsStatus">
                         <option value="">Tous les statuts</option>
                         <option value="stored">Stocké</option>
+                        <option value="replacement_staged">Remplacement en cours</option>
+                        <option value="replaced">Remplacé</option>
                         <option value="deleted">Annulé</option>
                       </select>
                     </label>
