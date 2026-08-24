@@ -35,9 +35,11 @@ L'aperçu avant validation est essentiel : il permet de repérer un mauvais fich
 
 ## Corrections
 
-Une correction autorisée est enregistrée dans `performanceCorrections`, appliquée à la base active et reportée dans le journal des changements.
+Une correction autorisée est enregistrée immédiatement dans `performanceCorrections`, puis un travail durable est créé dans `performancePublicationJobs`. Un worker séparé applique la correction à la base active, alimente le journal des changements et régénère uniquement les fichiers publics concernés. Le portail peut donc répondre sans charger le gros instantané public en mémoire.
 
-L'objectif est de conserver une trace claire de l'ancienne valeur, de la nouvelle valeur, de l'auteur et du moment de la correction. Les fichiers publics concernés sont ensuite régénérés de manière ciblée.
+Chaque travail passe par `pending`, `processing`, puis `published` ou `failed`. Une location temporaire empêche deux workers de traiter simultanément le même travail. Les interruptions sont reprises automatiquement toutes les cinq minutes, avec cinq tentatives au maximum ; un échec définitif peut être relancé depuis le portail. Le traitement est idempotent : une reprise réécrit les mêmes fichiers ciblés sans créer une seconde performance.
+
+L'objectif est de conserver une trace claire de l'ancienne valeur, de la nouvelle valeur, de l'auteur et du moment de la correction. Le portail retire immédiatement la ligne supprimée de sa liste locale et indique séparément l'état de la publication des TOP et fiches nageurs.
 
 Les suppressions de lots ou corrections importantes sont des opérations sensibles : elles doivent être confirmées et vérifiées avec les tests manuels adaptés.
 

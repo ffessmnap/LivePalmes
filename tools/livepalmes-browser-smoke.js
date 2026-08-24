@@ -677,11 +677,11 @@ async function testPublicHome(client, baseUrl) {
       title: document.querySelector('#publicHomeTitle')?.textContent.trim() || '',
       resultLink: document.querySelector('a[href="resultats"], a[href="resultats.html"]')?.textContent.trim() || '',
       seriesLink: document.querySelector('a[href="series"], a[href="series-public.html"]')?.textContent.trim() || '',
-      archiveLink: Boolean(document.querySelector('a[href="archives.html"]')),
+      calendarLink: document.querySelector('a[href="calendrier.html"]')?.textContent.trim() || '',
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
     };
   `);
-  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.archiveLink, "Accueil public : liens principaux absents.");
+  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.calendarLink, "Accueil public : liens principaux absents.");
   assert(!desktop.overflow, "Accueil public : debordement horizontal desktop.");
   await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await sleep(250);
@@ -693,9 +693,6 @@ async function testPublicHome(client, baseUrl) {
   `);
   assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
   await client.send("Emulation.clearDeviceMetricsOverride");
-  await client.send("Page.navigate", { url: `${baseUrl}/archives.html?smoke-archives=${Date.now()}` });
-  const archiveReady = await waitFor(client, "document.querySelector('.public-archive-empty, .public-archive-list')", 6000);
-  assert(archiveReady, "Archives publiques : page non chargee.");
   console.log("Accueil public : OK");
 }
 

@@ -95,7 +95,6 @@ Il comprend aussi les pages publiques liees au deroulement de cette competition 
 - `series-public.html` ou `/series` : series publiees ;
 - `resultats.html` ou `/resultats` : resultats publies ;
 - `medailles.html` : tableau des medailles ;
-- `archives.html` : archives.
 
 Les consoles utilisent notamment :
 
@@ -144,7 +143,7 @@ Le fait que le Direct partage Firebase et certains composants techniques avec le
 - `public.html` : copie de compatibilite de l'accueil public ;
 - `pilotage-livepalmes.html` : page de pilotage ;
 - `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : consoles dediees ;
-- `resultats.html`, `series-public.html`, `medailles.html`, `archives.html` : pages publiques ;
+- `resultats.html`, `series-public.html`, `medailles.html` : pages publiques ;
 - `pdf.html`, `resultat-pdf.html`, `series-pdf.html` : vues PDF.
 
 ### Styles
@@ -182,7 +181,6 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 - `assets/pages/series-public.js` ;
 - `assets/pages/resultats.js` ;
 - `assets/pages/medailles.js` ;
-- `assets/pages/archives.js` ;
 - `assets/pages/calendrier.js` et `assets/pages/competition.js` ;
 - `assets/public/livepalmes-public-calendar.js` : chargement et règles d'affichage du calendrier ;
 - `assets/pages/pdf.js` ;

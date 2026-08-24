@@ -27,7 +27,7 @@ Il comprend aussi la publication des series, resultats, medailles, PDF et archiv
 - `bureau-perf.html` ;
 - `secretariat.html` ;
 - `series-public.html` et `resultats.html` : affichage public ;
-- `medailles.html` et `archives.html` : medailles et archives ;
+- `medailles.html` : tableau des medailles ;
 - `pdf.html`, `series-pdf.html` et `resultat-pdf.html` : vues PDF.
 
 ## Demarrage local

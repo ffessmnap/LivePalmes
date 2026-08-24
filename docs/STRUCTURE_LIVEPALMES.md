@@ -113,7 +113,6 @@ Pages principales :
 - `resultats.html`
 - `series-public.html`
 - `medailles.html`
-- `archives.html`
 - `pdf.html`
 - `resultat-pdf.html`
 - `series-pdf.html`
@@ -133,7 +132,6 @@ Scripts principaux :
 - `assets/pages/resultats.js`
 - `assets/pages/series-public.js`
 - `assets/pages/medailles.js`
-- `assets/pages/archives.js`
 - `assets/pages/pdf.js`
 - `assets/pages/resultat-pdf.js`
 - `assets/pages/series-pdf.js`

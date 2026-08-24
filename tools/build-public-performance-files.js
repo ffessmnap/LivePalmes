@@ -2,11 +2,13 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { performanceImportChrono } = require("../functions/performance-import-timing");
+const { publicPerformanceSwimmerStorageRow } = require("../functions/performance-import-publication");
 
 const rootDir = process.cwd();
 const defaultSeed = path.join(rootDir, "outputs", "performance-base-seed.ndjson");
 const defaultOutDir = path.join(rootDir, "performances", "public", "data", "performance-public");
 const TOP_PREVIEW_LIMIT = 100;
+const PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION = 2;
 let activeOutDir = "";
 let expectedFiles = new Set();
 const writeStats = {
@@ -210,25 +212,9 @@ function topRow(row = {}) {
 }
 
 function swimmerRow(row = {}) {
-  const isIntermediate = row.isIntermediate === true;
-  return compactObject({
-    id: cleanText(row.id),
-    club: cleanText(row.club),
-    location: cleanText(row.location),
-    date: cleanText(row.date),
-    seasonYear: Number(row.seasonYear || 0) || 0,
-    pool: cleanText(row.pool),
-    chrono: cleanText(row.chrono),
-    course: cleanText(row.course),
-    ...(isIntermediate ? {
-      length: Number(row.length || 0) || 0,
-      isIntermediate: true,
-      originCourse: cleanText(row.originCourse),
-      originPerformanceId: cleanText(row.originPerformanceId)
-    } : {}),
-    categoryCode: cleanText(row.categoryCode || row.category),
-    timeValue: Number(row.timeValue || 0) || 0,
-    time: cleanText(row.time)
+  return publicPerformanceSwimmerStorageRow({
+    ...row,
+    intermediateTimes: cleanIntermediateTimes(row.intermediateTimes)
   });
 }
 
@@ -524,6 +510,7 @@ function main() {
       clubId: latestWithClub.clubId || "",
       club: latestWithClub.club || "",
       clubName: latestWithClub.clubName || "",
+      rowSchemaVersion: PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
       performanceCount: rows.filter((row) => !row.isIntermediate).length,
       rowCount: rows.length,
       rows: rows.map(swimmerRow)

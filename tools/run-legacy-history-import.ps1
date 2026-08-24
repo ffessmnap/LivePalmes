@@ -3,12 +3,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $preview = Join-Path $root "outputs\legacy-calendar-history-preview.json"
 $batches = @(
-  @{ From = "2012-09-01"; To = "2014-09-01"; Confirm = 468; Skip = 49 },
-  @{ From = "2014-09-01"; To = "2016-09-01"; Confirm = 527 },
-  @{ From = "2016-09-01"; To = "2018-09-01"; Confirm = 531 },
-  @{ From = "2018-09-01"; To = "2020-09-01"; Confirm = 387 },
-  @{ From = "2020-09-01"; To = "2022-09-01"; Confirm = 280 },
-  @{ From = "2022-09-01"; To = "2024-09-01"; Confirm = 304 },
+  @{ From = "2022-09-01"; To = "2024-09-01"; Confirm = 248; Skip = 56 },
   @{ From = "2024-09-01"; To = "2025-09-01"; Confirm = 137 }
 )
 

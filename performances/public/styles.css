@@ -46,6 +46,13 @@ body {
   min-height: 112px;
 }
 
+.performance-public-topbar {
+  width: min(1120px, calc(100% - 24px));
+  margin: 18px auto 0;
+  padding: 22px clamp(18px, 3vw, 36px);
+  border-radius: 18px;
+}
+
 .topbar-title {
   min-width: 0;
 }
@@ -253,10 +260,18 @@ main {
   padding: 22px clamp(14px, 3vw, 36px) 42px;
 }
 
+.records-page main,
+.mpf-page main,
+.tops-page main,
+.swimmer-page main {
+  width: min(1120px, calc(100% - 24px));
+  padding: 22px 0 42px;
+}
+
 .performance-public-footer {
-  width: min(1440px, 100%);
+  width: min(1120px, calc(100% - 24px));
   margin: -18px auto 26px;
-  padding: 0 clamp(14px, 3vw, 36px);
+  padding: 0;
   color: #65716e;
   font-size: 0.76rem;
   font-weight: 750;
@@ -3160,6 +3175,12 @@ td.time-placeholder,
     gap: 12px;
     min-height: 0;
     padding: 14px 12px 12px;
+  }
+
+  .performance-public-topbar {
+    width: min(1120px, calc(100% - 20px));
+    margin-top: 12px;
+    border-radius: 14px;
   }
 
   .performance-admin-topbar {

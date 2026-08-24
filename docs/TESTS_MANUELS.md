@@ -8,6 +8,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 - Lancer `node tools/verify-livepalmes.js`.
 - Avant une publication sensible, lancer aussi `node tools/verify-livepalmes.js --browser`.
+- Avant une publication globale des performances, lancer `node tools/check-public-performance-consistency.js` et vérifier qu'aucun écart n'existe entre l'export canonique, les fiches nageurs et les TOP.
 - Verifier que le controle indique aussi les tests de regression resultats, les textes HTML publics et l'architecture.
 - Ouvrir `index.html`.
 - Verifier qu'aucune erreur n'apparait dans la console navigateur.
@@ -182,7 +183,6 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier le bouton actualiser.
 - Verifier la recherche nageur.
 - Verifier qu'une fiche nageur affiche engagement, temps realise, finale, DSQ/ABD/forfait si present.
-- Verifier `archives.html` avec `public/archivesIndex`, puis son repli historique sur un environnement ou l'index est absent.
 - Verifier `performances/records.html` et `performances/mpf.html` sans connexion Firestore : les donnees statiques doivent s'afficher.
 - Publier une modification RF ou MPF depuis l'administration, puis verifier sans redeployer que `performance-public-firestore/records/manifest.json` change et que la valeur apparait sur la page publique.
 - Verifier que Records, MPF et une fiche nageur restent utilisables si le manifeste Storage est temporairement indisponible : le fichier Hosting doit servir de secours.
@@ -201,7 +201,9 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier qu'une connexion n'ouvre aucune liste d'administration tant que son ecran n'est pas visite.
 - Ouvrir successivement Records / MPF, Correction puis Import : les deux premiers ecrans ne doivent pas charger XLSX ; l'import doit accepter un fichier Excel apres son chargement a la demande.
 - Simuler un import dont `publicationStatus` vaut `failed` après l'enregistrement des performances : l'historique doit afficher « Publication a reprendre ». Cliquer sur « Reprendre la publication », vérifier que le lot passe à `published`, que le nombre de performances dans `performanceImports/{importId}/performances` et `performances` reste inchangé, puis contrôler les fiches nageurs et TOP concernés. La réponse doit annoncer une lecture du document de lot et de sa seule sous-collection, bornée à 5 000 performances plus une lecture sentinelle.
+- Après une reconstruction globale des performances, vérifier que les fiches nageurs portent `rowSchemaVersion: 2` et que leurs lignes conservent région, saison, catégorie et identifiants publics. Avec une fixture d'ancien schéma sans ce marqueur, une reconstruction ciblée doit échouer explicitement et ne modifier aucun TOP.
 - Dans un environnement de test, vérifier le bandeau d’opération longue pendant l’analyse et la validation d’un import, sa reprise ou son annulation, une correction ou suppression de performance et une republication complète. Le chronomètre doit progresser sans faux pourcentage, les contrôles concernés doivent rester verrouillés, puis le bandeau doit devenir vert ou rouge sans masquer le détail de la réponse.
+- Dans « Correction d’une performance », supprimer une performance avec un motif. La ligne doit disparaître immédiatement de la liste et le bandeau doit annoncer que la suppression est enregistrée puis que la publication continue en arrière-plan. Vérifier le passage du travail `performancePublicationJobs` de `pending` à `processing`, puis `published`, sans seconde performance créée. Fermer ou actualiser le portail pendant le traitement : le suivi doit reprendre depuis la session et le worker planifié doit reprendre un bail expiré. Provoquer cinq échecs dans un environnement de test : le statut doit devenir `failed` et « Relancer la publication publique » doit créer un nouveau travail. Contrôler enfin la fiche nageur, les TOP concernés et l’absence de la performance supprimée.
 - Dans Records / MPF, saisir au moins deux lettres d'un nageur et verifier les suggestions, la date de naissance et le club sans chargement de `admin-reference.js`.
 - Verifier la pagination et les filtres de Gestion des acces avec un profil national puis regional ; une recherche bornee doit inviter a affiner les filtres.
 - Dans un projet Firebase de test, appeler `rebuildAccessDirectoryIndexNextPage` jusqu'a `completed: true`, verifier `accessDirectoryIndexState/default.status = ready`, puis rejouer les filtres national et regional. Chaque page sans recherche doit lire au plus 26 profils plus les documents fixes d'autorisation ; relancer la fonction apres completion doit traiter zero profil.
