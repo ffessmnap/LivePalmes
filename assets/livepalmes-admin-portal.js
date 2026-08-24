@@ -1556,7 +1556,7 @@
     if (capabilities.has("engagements.national.manage")) return true;
     return capabilities.has("engagements.region.manage") &&
       !["national", "international"].includes(competition.level) &&
-      competition.regionId === engagementRegionScope();
+      sameLivePalmesRegion(competition.regionId, engagementRegionScope());
   }
 
   function setPerformanceMenuOpen(open) {
@@ -2731,9 +2731,16 @@
   }
 
   function canonicalLivePalmesRegion(value) {
-    const key = normalizedRegionKey(value);
+    const cleanValue = String(value || "").trim();
+    const referenceLabel = LIVEPALMES_REFERENCE_REGION_LABELS[cleanValue] || cleanValue;
+    const key = normalizedRegionKey(referenceLabel);
     if (!key) return "";
-    return LIVEPALMES_REGION_DEFINITIONS.find((region) => normalizedRegionKey(region) === key) || String(value || "").trim();
+    return LIVEPALMES_REGION_DEFINITIONS.find((region) => normalizedRegionKey(region) === key) || referenceLabel;
+  }
+
+  function sameLivePalmesRegion(left, right) {
+    const leftKey = normalizedRegionKey(canonicalLivePalmesRegion(left));
+    return Boolean(leftKey && leftKey === normalizedRegionKey(canonicalLivePalmesRegion(right)));
   }
 
   function regionDisplayLabel(value) {

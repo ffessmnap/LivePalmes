@@ -144,7 +144,7 @@
 
   async function saveEvent(event) {
     event.preventDefault();
-    const form = event.currentTarget;
+    const form = event.target;
     const message = form.querySelector("[data-calendar-event-message]");
     message.textContent = "Enregistrement…";
     try {
@@ -161,7 +161,7 @@
 
   async function uploadDocument(event) {
     event.preventDefault();
-    const form = event.currentTarget;
+    const form = event.target;
     const message = form.querySelector("[data-calendar-document-message]");
     const file = form.elements.file.files[0];
     if (!file || file.size > 10 * 1024 * 1024) { message.textContent = "Choisissez un fichier de 10 Mo maximum."; return; }

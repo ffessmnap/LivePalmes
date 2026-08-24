@@ -8,6 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 
 const portal = read("assets/livepalmes-admin-portal.js");
 const calendarEvents = read("assets/livepalmes-admin-calendar-events.js");
+const hostingDataPreparation = read("tools/prepare-hosting-data.js");
 const portalAuth = read("assets/livepalmes-admin-auth.js");
 const dtn = read("assets/livepalmes-dtn-qualifications.js");
 const portalCss = read("assets/livepalmes-admin-portal.css");
@@ -183,6 +184,30 @@ const competitionDetailLoad = portal.slice(competitionDetailLoadStart, competiti
 const engagementCompetitionListStart = functions.indexOf("exports.listEngagementCompetitions");
 const engagementCompetitionListEnd = functions.indexOf("exports.getEngagementCompetition", engagementCompetitionListStart);
 const engagementCompetitionListSource = functions.slice(engagementCompetitionListStart, engagementCompetitionListEnd);
+const engagementRegionLabelsSource = functions.slice(
+  functions.indexOf("const CLUB_REFERENCE_REGION_LABELS"),
+  functions.indexOf("function engagementClubRegionId")
+);
+const engagementRegionMatchSource = functions.slice(
+  functions.indexOf("function normalizedEngagementRegionKey"),
+  functions.indexOf("function assertEmail")
+);
+const engagementRegionSandbox = {};
+vm.runInNewContext(`
+  const cleanText = (value) => String(value || "").trim();
+  ${engagementRegionLabelsSource}
+  ${engagementRegionMatchSource}
+  result = {
+    legacyCode: engagementRegionsMatch("8", "Centre"),
+    accents: engagementRegionsMatch("17", "Auvergne Rhone Alpes"),
+    different: engagementRegionsMatch("8", "Normandie"),
+    empty: engagementRegionsMatch("", "Centre")
+  };
+`, engagementRegionSandbox);
+assert.equal(engagementRegionSandbox.result.legacyCode, true);
+assert.equal(engagementRegionSandbox.result.accents, true);
+assert.equal(engagementRegionSandbox.result.different, false);
+assert.equal(engagementRegionSandbox.result.empty, false);
 const engagementClubSwimmerListStart = functions.indexOf("exports.listEngagementClubSwimmers");
 const engagementClubSwimmerListEnd = functions.indexOf("exports.rebuildEngagementClubAggregates", engagementClubSwimmerListStart);
 const engagementClubSwimmerListSource = functions.slice(engagementClubSwimmerListStart, engagementClubSwimmerListEnd);
@@ -388,6 +413,10 @@ assert.equal(Object.hasOwn(sandbox.window.LIVEPALMES_CLUB_REFERENCE, "swimmers")
 assert.equal(portal.includes("LIVEPALMES_ADMIN_REFERENCE"), false);
 assert.equal(records.includes("LIVEPALMES_ADMIN_REFERENCE"), false);
 assert.ok(firebase.hosting.ignore.includes("performances/public/data/admin-reference.js"));
+assert.equal(Object.prototype.hasOwnProperty.call(firebase.hosting, "predeploy"), false);
+assert.ok(hostingDataPreparation.includes('process.argv.includes("--write")'));
+assert.ok(hostingDataPreparation.includes('run("tools/sync-records-from-firestore.js", ["--write"])'));
+assert.ok(hostingDataPreparation.includes('run("tools/build-admin-club-reference.js")'));
 assert.equal(firebase.firestore.indexes, "firestore.indexes.json");
 assert.ok(indexes.indexes.some((index) => index.collectionGroup === "users"));
 assert.equal(portal.includes("withTimeout(loadRemoteRecordsData"), false);
@@ -1214,8 +1243,8 @@ assert.ok(portal.includes("admin-engagements-calendar-loading"));
 assert.ok(portalCss.includes("#adminEngagementsDetail[data-club-entry-loading]"));
 assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v3."'));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260821-performance-publication-jobs-2'));
-assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260820-program-phases-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260824-region-compat-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260824-submit-form-1'));
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
@@ -1226,6 +1255,8 @@ assert.ok(portal.includes("function upsertEngagementCalendarItemFromServer"));
 assert.ok(portal.includes('upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition")'));
 assert.ok(calendarEvents.includes('detail: { action: "upsert", event: result.event }'));
 assert.ok(calendarEvents.includes('detail: { action: "delete", calendarEventId }'));
+assert.equal((calendarEvents.match(/const form = event\.target;/g) || []).length, 2);
+assert.equal(calendarEvents.includes("const form = event.currentTarget;"), false);
 const calendarCacheReconciliationStart = portal.indexOf("function upsertEngagementCalendarItemFromServer");
 const calendarCacheReconciliationEnd = portal.indexOf("function invalidateEngagementCalendarCaches", calendarCacheReconciliationStart);
 const calendarCacheReconciliationSandbox = {};
@@ -1379,7 +1410,7 @@ assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-t
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
 assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260820-international-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260821-performance-publication-jobs-2"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260824-region-compat-1"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1407,8 +1438,14 @@ assert.ok(portal.includes("const staleInitialCalendar = !previousMode && engagem
 assert.ok(functions.includes("const manageOnly = request.data?.manageOnly === true;"));
 assert.ok(functions.includes("const managementContext = manageOnly ? await engagementAccessContext(request) : null;"));
 assert.ok(functions.includes('entryStatus: "upcoming",\n    entryDeadlineAt: ""'));
-assert.ok(functions.includes('cleanText(competition.regionId) === managementContext.regionId'));
+assert.ok(functions.includes('engagementRegionsMatch(competition.regionId, managementContext.regionId)'));
+assert.ok(functions.includes('engagementRegionsMatch(item.regionId, context.regionId)'));
+assert.ok(functions.includes('if (!engagementRegionsMatch(competition.regionId, context.regionId))'));
+assert.ok(functions.includes('CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanValue'));
 assert.ok(functions.includes("assertCanManageEngagementCompetition(context, doc.data() || {});"));
+assert.ok(portal.includes('sameLivePalmesRegion(competition.regionId, engagementRegionScope())'));
+assert.ok(portal.includes('const referenceLabel = LIVEPALMES_REFERENCE_REGION_LABELS[cleanValue] || cleanValue;'));
+assert.ok(portalHtml.includes('id="adminEngagementsCreateOpen" type="button">Ajouter un événement</button>'));
 assert.ok(portal.includes('elements.engagementsDeleteButton.textContent = directDelete ? "Suppression en cours..." : "Envoi en cours...";'));
 assert.ok(portal.includes("const remainingCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);"));
 assert.ok(portal.includes("elements.engagementsStatus?.textContent !== successMessage"));
@@ -1521,7 +1558,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260821-performance-publication-jobs-2"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260824-region-compat-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);

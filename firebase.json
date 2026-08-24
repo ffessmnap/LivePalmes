@@ -2,10 +2,6 @@
   "hosting": {
     "site": "livepalmes",
     "public": ".",
-    "predeploy": [
-      "node tools/sync-records-from-firestore.js --write",
-      "node tools/build-admin-club-reference.js"
-    ],
     "redirects": [
       {
         "source": "/public.html",
