@@ -588,6 +588,57 @@ body.performance-admin-page[data-admin-auth="unlocked"] #adminLoginPanel {
   grid-template-columns: minmax(180px, 0.9fr) repeat(5, minmax(130px, 1fr));
 }
 
+.top-filter-birth {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.top-filter-birth label {
+  min-width: 0;
+  flex: 1;
+}
+
+.top-filter-birth label[hidden] {
+  display: none;
+}
+
+.top-filter-birth select {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  font: inherit;
+}
+
+.top-advanced-filter-toggle {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: #8a9692;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.top-advanced-filter-toggle:hover,
+.top-advanced-filter-toggle:focus-visible,
+.top-advanced-filter-toggle[aria-expanded="true"] {
+  border-color: var(--line);
+  color: var(--accent-strong);
+  background: #f3f7f6;
+  outline: none;
+}
+
 .swimmer-toolbar {
   grid-template-columns: minmax(260px, 1.35fr) minmax(118px, 0.62fr) minmax(140px, 0.72fr) minmax(132px, 0.58fr) minmax(210px, 0.95fr);
 }
@@ -3297,6 +3348,10 @@ td.time-placeholder,
 
   .tops-page .top-toolbar .top-filter-pool {
     grid-column: 1 / -1;
+  }
+
+  .tops-page .top-toolbar .top-filter-birth {
+    grid-column: span 3;
   }
 
   .tops-page .top-toolbar .top-filter-pool .segmented {
