@@ -1,0 +1,79 @@
+name: Verification et apercu LivePalmes
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verification:
+    name: Verification technique
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Recuperer la version a verifier
+        uses: actions/checkout@v7
+
+      - name: Lire la version Node.js du projet
+        id: node-version
+        shell: bash
+        run: |
+          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Installer les dependances des Functions
+        run: npm ci --prefix functions
+
+      - name: Verifier LivePalmes
+        run: node tools/verify-livepalmes.js
+
+  apercu:
+    name: Creer le lien de test
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.FIREBASE_PREVIEW_ENABLED == 'true'
+    needs: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Recuperer la version validee
+        uses: actions/checkout@v7
+
+      - name: Verifier la configuration Firebase
+        shell: bash
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        run: |
+          if [ -z "$FIREBASE_CREDENTIALS" ]; then
+            echo "Le secret FIREBASE_SERVICE_ACCOUNT_LIVEPALMES manque dans GitHub."
+            exit 1
+          fi
+
+      - name: Publier l'apercu temporaire
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          projectId: livepalmes
+          expires: 7d

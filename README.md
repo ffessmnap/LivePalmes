@@ -67,6 +67,7 @@ Certaines pages restent volontairement a la racine pour conserver des adresses w
 - `docs/droits-acces-livepalmes.md` : comptes, capacites et perimetres ;
 - `docs/LIVEPALMES_DIRECT.md` : utilisation et fonctionnement specifique du Direct ;
 - `docs/TESTS_MANUELS.md` : controles manuels sensibles ;
+- `docs/MISE_EN_LIGNE.md` : circuit GitHub de verification, apercu et publication Hosting ;
 - `docs/agents/PUBLICATION.md` : regles de publication et de deploiement.
 
 ## Verification technique

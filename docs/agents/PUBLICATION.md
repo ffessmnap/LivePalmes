@@ -26,6 +26,17 @@ Aucune demande d’analyse, de diagnostic ou de vérification n’autorise une p
 
 ## Publication
 
+### Circuit GitHub pour Firebase Hosting
+
+Les workflows `.github/workflows/livepalmes-verification-preview.yml` et `.github/workflows/livepalmes-production.yml` securisent la publication du site statique :
+
+1. chaque proposition vers `main` execute `node tools/verify-livepalmes.js` ;
+2. lorsque `FIREBASE_PREVIEW_ENABLED` vaut `true`, une URL Firebase Hosting temporaire est creee apres reussite des controles ;
+3. la production reste un lancement manuel depuis `main`, protege par l'environnement GitHub `production`, et exige le numero de la proposition validee ;
+4. le workflow recupere exactement le commit ayant produit l'apercu, controle ses checks et l'exclusion des donnees internes, puis relance la verification avant de deployer uniquement Hosting.
+
+Ces workflows n'autorisent aucun deploiement de Functions, regles, index, Storage ou donnees metier. Leur activation initiale exige un secret GitHub `FIREBASE_SERVICE_ACCOUNT_LIVEPALMES` limite a Hosting, les variables d'activation `FIREBASE_PREVIEW_ENABLED` et `FIREBASE_PRODUCTION_ENABLED`, une approbation explicite et la configuration decrite dans `docs/MISE_EN_LIGNE.md`.
+
 ### Ordre Firebase pour le portail
 
 Apres reauthentification explicite de la CLI et nouvelle validation utilisateur du deploiement :
