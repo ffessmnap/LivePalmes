@@ -197,6 +197,12 @@
   display: none;
 }
 
+.admin-portal-page[data-portal-session="pending"] #adminPortalDashboard,
+.admin-portal-page[data-portal-session="pending"] #adminPortalAccount,
+.admin-portal-page[data-portal-session="pending"] #adminPortalNavToggle {
+  visibility: hidden;
+}
+
 @keyframes admin-portal-auth-spin {
   to { transform: rotate(360deg); }
 }
@@ -291,7 +297,8 @@
   min-height: 40px;
 }
 
-.admin-portal-actions button[type="submit"] {
+.admin-portal-actions button[type="submit"],
+.admin-portal-actions .admin-primary-button {
   border: 0;
   border-radius: 8px;
   padding: 0 18px;
@@ -367,6 +374,66 @@
 
 .admin-portal-page[data-admin-auth="unlocked"] #adminPortalLoginPanel {
   display: none;
+}
+
+.admin-portal-session-dialog {
+  width: min(92vw, 480px);
+  border: 1px solid var(--portal-color-border);
+  border-radius: var(--portal-radius-large);
+  padding: 24px;
+  background: var(--portal-color-surface);
+  color: var(--portal-color-text);
+  box-shadow: 0 24px 70px rgba(4, 31, 35, 0.28);
+}
+
+.admin-portal-session-dialog::backdrop {
+  background: rgba(7, 26, 29, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+.admin-portal-session-dialog-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.admin-portal-session-dialog-heading span {
+  color: var(--portal-color-accent);
+  font-size: 0.76rem;
+  font-weight: var(--portal-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-portal-session-dialog-heading h2,
+.admin-portal-session-dialog p {
+  margin: 0;
+}
+
+.admin-portal-session-dialog > p {
+  margin-bottom: 20px;
+  color: var(--portal-color-muted);
+  line-height: 1.55;
+}
+
+.admin-portal-session-lock .admin-portal-form {
+  margin-bottom: 12px;
+}
+
+.admin-portal-session-lock .admin-portal-message:empty {
+  min-height: 0;
+}
+
+@media (max-width: 520px) {
+  .admin-portal-session-dialog {
+    width: calc(100vw - 24px);
+    padding: 20px;
+  }
+
+  .admin-portal-session-dialog .admin-portal-actions,
+  .admin-portal-session-dialog .admin-portal-actions button {
+    width: 100%;
+  }
 }
 
 .admin-portal-dashboard {
@@ -11265,14 +11332,61 @@
   font-size: 0.74rem;
 }
 
+#adminAccessView .admin-access-alphabet {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 4px 2px 7px;
+  scrollbar-width: thin;
+}
+
+#adminAccessView .admin-access-alphabet[hidden] {
+  display: none;
+}
+
+#adminAccessView .admin-access-alphabet button {
+  flex: 0 0 auto;
+  min-width: 27px;
+  min-height: 27px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: transparent;
+  color: #0b7285;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+#adminAccessView .admin-access-alphabet button:first-child {
+  min-width: 44px;
+}
+
+#adminAccessView .admin-access-alphabet button:hover:not(:disabled) {
+  border-color: #b8d7dc;
+  background: #eef7f8;
+}
+
+#adminAccessView .admin-access-alphabet button[aria-pressed="true"] {
+  border-color: #0b7285;
+  background: #0b7285;
+  color: #ffffff;
+}
+
+#adminAccessView .admin-access-alphabet button:disabled {
+  color: #aeb9bd;
+  cursor: default;
+  opacity: 0.55;
+}
+
 #adminAccessView .admin-access-table {
   display: grid;
   gap: 0;
-  max-height: 70vh;
+  max-height: none;
   min-width: 850px;
   border: 1px solid #dfe5e7;
   border-radius: 6px;
-  overflow: auto;
+  overflow: visible;
   background: #ffffff;
 }
 
@@ -11456,7 +11570,12 @@
 }
 
 #adminAccessView .admin-access-pagination {
-  padding: 0 16px 16px;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 8px 16px 16px;
+  border-top: 1px solid #e3e9eb;
+  background: #ffffff;
 }
 
 #adminAccessView .admin-access-preview-head {

@@ -48,6 +48,39 @@ service cloud.firestore {
         );
     }
 
+    function hasRegionalAccessDirectoryScope(regionId) {
+      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let profile = get(profilePath).data;
+      return request.auth != null
+        && exists(profilePath)
+        && profile.status == "active"
+        && profile.accessScopes is map
+        && profile.accessScopes.keys().hasAll(["engagements.region.manage"])
+        && profile.accessScopes["engagements.region.manage"] is map
+        && profile.accessScopes["engagements.region.manage"].scopeId == regionId;
+    }
+
+    function hasActiveAccessProfile() {
+      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return request.auth != null
+        && exists(profilePath)
+        && get(profilePath).data.status == "active";
+    }
+
+    function canReadAccessDirectorySnapshot() {
+      return isAdmin()
+        || (
+          resource.data.scopeType == "national"
+          && hasCapability("engagements.national.manage")
+          && hasActiveAccessProfile()
+        )
+        || (
+          resource.data.scopeType == "region"
+          && hasCapability("engagements.region.manage")
+          && hasRegionalAccessDirectoryScope(resource.data.scopeId)
+        );
+    }
+
     function canManageRecords() {
       return isAdmin() || hasCapability("admin.full") || hasCapability("records.manage");
     }
@@ -856,6 +889,11 @@ service cloud.firestore {
         allow delete: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
       }
+    }
+
+    match /accessDirectorySnapshots/{snapshotId} {
+      allow get: if canReadAccessDirectorySnapshot();
+      allow list, write: if false;
     }
 
     match /{document=**} {

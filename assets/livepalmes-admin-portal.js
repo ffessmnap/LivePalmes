@@ -388,6 +388,7 @@
     accessStatusFilter: document.querySelector("#adminAccessStatusFilter"),
     accessCapabilityFilter: document.querySelector("#adminAccessCapabilityFilter"),
     accessClearFilters: document.querySelector("#adminAccessClearFilters"),
+    accessAlphabet: document.querySelector("#adminAccessAlphabet"),
     accessPagination: document.querySelector("#adminAccessPagination"),
     accessPreviousPage: document.querySelector("#adminAccessPreviousPage"),
     accessNextPage: document.querySelector("#adminAccessNextPage"),
@@ -927,6 +928,11 @@
   let accessUsersLoading = false;
   let accessUsersLoaded = false;
   let accessDirectoryTruncated = false;
+  let accessDirectorySnapshotUsers = null;
+  let accessDirectorySnapshotMode = false;
+  let accessDirectorySnapshotFilteredCount = 0;
+  let accessDirectoryLetter = "";
+  let accessDirectoryFirestoreModulePromise = null;
   let accessLoadSequence = 0;
   let accessDeletionRequests = [];
   let accessDeletionRequestsLoaded = false;
@@ -3530,6 +3536,7 @@
       resetEngagementClubData();
     }
     currentAccessProfile = user;
+    preloadAccessDirectoryFirestore();
     applyPortalHomeForProfile();
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
     const accountEmail = user.email || ensureAdminAuth()?.status?.().email || "";
@@ -11494,7 +11501,7 @@
         }).catch(() => {});
       }
       engagementAccessRequestsLoaded = false;
-      if (canManageAccessDirectory()) loadAccessUsers({ reset: true });
+      if (canManageAccessDirectory()) refreshAccessUsersAfterMutation({ reset: true });
       await loadEngagementAccessRequests({ force: true });
       portalPendingOverviewLoaded = false;
       await loadPortalPendingOverview({ force: true });
@@ -15044,6 +15051,10 @@
       engagementDeletionRequestsLoaded = false;
       accessUsers = [];
       accessUsersLoaded = false;
+      accessDirectorySnapshotUsers = null;
+      accessDirectorySnapshotMode = false;
+      accessDirectorySnapshotFilteredCount = 0;
+      accessDirectoryLetter = "";
       accessCurrentCursor = null;
       accessNextCursor = null;
       accessPreviousCursors = [];
@@ -15319,8 +15330,12 @@
     const mount = elements.accessList;
     if (!mount) return;
     if (elements.accessCount) {
+      const firstVisible = accessDirectorySnapshotMode && accessUsers.length ? ((accessPage - 1) * 25) + 1 : 0;
+      const lastVisible = accessDirectorySnapshotMode ? firstVisible + accessUsers.length - 1 : 0;
       elements.accessCount.textContent = accessUsers.length
-        ? `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} affiché${accessUsers.length > 1 ? "s" : ""}${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}`
+        ? accessDirectorySnapshotMode
+          ? `${firstVisible}–${lastVisible} sur ${accessDirectorySnapshotFilteredCount} compte${accessDirectorySnapshotFilteredCount > 1 ? "s" : ""}`
+          : `${accessUsers.length} compte${accessUsers.length > 1 ? "s" : ""} affiché${accessUsers.length > 1 ? "s" : ""}${accessDirectoryTruncated ? " · recherche bornée, affinez les filtres" : ""}`
         : "Aucun compte trouvé";
     }
     if (!accessUsers.length) {
@@ -15417,7 +15432,7 @@
 
   function renderAccessPagination() {
     if (!elements.accessPagination) return;
-    const hasPrevious = accessPreviousCursors.length > 0;
+    const hasPrevious = accessDirectorySnapshotMode ? accessPage > 1 : accessPreviousCursors.length > 0;
     const hasNext = Boolean(accessNextCursor);
     elements.accessPagination.hidden = !hasPrevious && !hasNext;
     if (elements.accessPreviousPage) elements.accessPreviousPage.disabled = !hasPrevious || accessUsersLoading;
@@ -15468,9 +15483,123 @@
     });
   }
 
-  async function loadAccessUsers({ reset = false, force = false } = {}) {
+  function accessDirectorySnapshotScope() {
+    if (canUse("admin.full") || canUse("engagements.national.manage")) {
+      return { scopeType: "national", scopeId: "", documentId: "national" };
+    }
+    const regionId = engagementRegionScope(currentAccessProfile || {});
+    return {
+      scopeType: "region",
+      scopeId: regionId,
+      documentId: `region:${encodeURIComponent(regionId)}`
+    };
+  }
+
+  function loadAccessDirectoryFirestoreModule() {
+    if (global.firebase?.firestore) return Promise.resolve();
+    if (!accessDirectoryFirestoreModulePromise) {
+      accessDirectoryFirestoreModulePromise = loadScriptOnce(
+        "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
+        "adminAccessDirectoryFirestoreScript"
+      ).catch((error) => {
+        accessDirectoryFirestoreModulePromise = null;
+        throw error;
+      });
+    }
+    return accessDirectoryFirestoreModulePromise;
+  }
+
+  function preloadAccessDirectoryFirestore() {
+    if (!canManageAccessDirectory() || global.firebase?.firestore || accessDirectoryFirestoreModulePromise) return;
+    const load = () => loadAccessDirectoryFirestoreModule().catch(() => {});
+    if (typeof global.requestIdleCallback === "function") global.requestIdleCallback(load, { timeout: 2500 });
+    else global.setTimeout(load, 800);
+  }
+
+  async function loadAccessDirectorySnapshot() {
+    const scope = accessDirectorySnapshotScope();
+    if (scope.scopeType === "region" && !scope.scopeId) return null;
+    await loadAccessDirectoryFirestoreModule();
+    if (!ensureFirebaseApp() || !global.firebase?.firestore) return null;
+    const snapshot = await global.firebase.firestore()
+      .collection("accessDirectorySnapshots")
+      .doc(scope.documentId)
+      .get();
+    if (!snapshot.exists) return null;
+    const data = snapshot.data() || {};
+    if (data.status !== "ready" || Number(data.version) < 1 || data.scopeType !== scope.scopeType) return null;
+    if (scope.scopeType === "region" && data.scopeId !== scope.scopeId) return null;
+    return Object.values(data.entries && typeof data.entries === "object" ? data.entries : {})
+      .filter((user) => user && typeof user === "object" && user.uid);
+  }
+
+  function sortedAccessUsers(users = []) {
+    return [...users].sort((left, right) =>
+      String(left.lastName || "").localeCompare(String(right.lastName || ""), "fr-FR", { sensitivity: "base", numeric: true }) ||
+      String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr-FR", { sensitivity: "base", numeric: true }) ||
+      String(left.email || "").localeCompare(String(right.email || ""), "fr-FR", { sensitivity: "base", numeric: true })
+    );
+  }
+
+  function accessDirectoryUserLetter(user = {}) {
+    const normalizedName = normalizedAccessSearch(user.lastName || "").trim();
+    const letter = normalizedName.charAt(0).toLocaleUpperCase("fr-FR");
+    return /^[A-Z]$/.test(letter) ? letter : "";
+  }
+
+  function renderAccessDirectoryAlphabet(users = []) {
+    const mount = elements.accessAlphabet;
+    if (!mount) return;
+    mount.hidden = !accessDirectorySnapshotMode;
+    if (!accessDirectorySnapshotMode) {
+      mount.innerHTML = "";
+      return;
+    }
+    const counts = users.reduce((result, user) => {
+      const letter = accessDirectoryUserLetter(user);
+      if (letter) result[letter] = (result[letter] || 0) + 1;
+      return result;
+    }, {});
+    if (accessDirectoryLetter && !counts[accessDirectoryLetter]) accessDirectoryLetter = "";
+    const choices = ["", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+    mount.innerHTML = choices.map((letter) => {
+      const label = letter || "Tous";
+      const count = letter ? counts[letter] || 0 : users.length;
+      const active = accessDirectoryLetter === letter;
+      return `<button type="button" data-access-directory-letter="${letter}" aria-pressed="${active ? "true" : "false"}" aria-label="${escapeHtml(letter ? `Noms commençant par ${letter}, ${count} compte${count > 1 ? "s" : ""}` : `Tous les noms, ${count} compte${count > 1 ? "s" : ""}`)}" ${letter && !count ? "disabled" : ""}>${label}</button>`;
+    }).join("");
+  }
+
+  function renderAccessDirectorySnapshotPage({ reset = false } = {}) {
+    const usersMatchingFilters = legacyFilteredAccessUsers(
+      accessDirectorySnapshotUsers || [],
+      accessFiltersPayload()
+    );
+    renderAccessDirectoryAlphabet(usersMatchingFilters);
+    const filteredUsers = sortedAccessUsers(accessDirectoryLetter
+      ? usersMatchingFilters.filter((user) => accessDirectoryUserLetter(user) === accessDirectoryLetter)
+      : usersMatchingFilters);
+    accessDirectorySnapshotFilteredCount = filteredUsers.length;
+    const pageCount = Math.max(1, Math.ceil(filteredUsers.length / 25));
+    if (reset) accessPage = 1;
+    accessPage = Math.min(accessPage, pageCount);
+    const offset = (accessPage - 1) * 25;
+    accessUsers = filteredUsers.slice(offset, offset + 25);
+    accessCurrentCursor = { offset };
+    accessNextCursor = offset + 25 < filteredUsers.length ? { offset: offset + 25 } : null;
+    accessPreviousCursors = accessPage > 1 ? Array.from({ length: accessPage - 1 }, (_, index) => ({ offset: index * 25 })) : [];
+    accessDirectoryTruncated = false;
+    accessUsersLoaded = true;
+    renderAccessUsers();
+  }
+
+  async function loadAccessUsers({ reset = false, force = false, skipSnapshot = false } = {}) {
     if (!canManageAccessDirectory()) return;
     if (accessUsersLoading && !reset) return;
+    if (accessDirectorySnapshotMode && accessDirectorySnapshotUsers && !skipSnapshot) {
+      renderAccessDirectorySnapshotPage({ reset });
+      return;
+    }
     if (accessUsersLoaded && !reset && !force) {
       renderAccessUsers();
       return;
@@ -15486,6 +15615,22 @@
     renderAccessPagination();
     if (elements.accessCount) elements.accessCount.textContent = "Chargement…";
     try {
+      if (!skipSnapshot) {
+        try {
+          const snapshotUsers = await loadAccessDirectorySnapshot();
+          if (loadSequence !== accessLoadSequence) return;
+          if (snapshotUsers) {
+            accessDirectorySnapshotUsers = snapshotUsers;
+            accessDirectorySnapshotMode = true;
+            renderAccessDirectorySnapshotPage({ reset: true });
+            return;
+          }
+        } catch (error) {
+          console.warn("Annuaire privé direct indisponible, utilisation de la lecture paginée.", error?.code || error?.message || error);
+        }
+      }
+      accessDirectorySnapshotMode = false;
+      renderAccessDirectoryAlphabet();
       const filters = accessFiltersPayload();
       const result = await callFunction("listAccessUsers", {
         pageSize: 25,
@@ -15521,6 +15666,11 @@
 
   async function showNextAccessPage() {
     if (!accessNextCursor || accessUsersLoading) return;
+    if (accessDirectorySnapshotMode) {
+      accessPage += 1;
+      renderAccessDirectorySnapshotPage();
+      return;
+    }
     accessPreviousCursors.push(accessCurrentCursor);
     accessCurrentCursor = accessNextCursor;
     accessPage += 1;
@@ -15528,10 +15678,22 @@
   }
 
   async function showPreviousAccessPage() {
-    if (!accessPreviousCursors.length || accessUsersLoading) return;
+    if (accessUsersLoading || (accessDirectorySnapshotMode ? accessPage <= 1 : !accessPreviousCursors.length)) return;
+    if (accessDirectorySnapshotMode) {
+      accessPage = Math.max(1, accessPage - 1);
+      renderAccessDirectorySnapshotPage();
+      return;
+    }
     accessCurrentCursor = accessPreviousCursors.pop() || null;
     accessPage = Math.max(1, accessPage - 1);
     await loadAccessUsers({ force: true });
+  }
+
+  async function refreshAccessUsersAfterMutation({ reset = false } = {}) {
+    accessDirectorySnapshotUsers = null;
+    accessDirectorySnapshotMode = false;
+    accessDirectorySnapshotFilteredCount = 0;
+    await loadAccessUsers({ reset, force: true, skipSnapshot: true });
   }
 
   async function setAccessStatus(uid, status) {
@@ -15541,7 +15703,7 @@
     if (!window.confirm(`Confirmer : ${verb} ${label} ?`)) return;
     try {
       await callFunction("setAccessUserStatus", { uid, status });
-      await loadAccessUsers({ force: true });
+      await refreshAccessUsersAfterMutation();
       setAccessMessage(`Accès ${status === "active" ? "réactivé" : "désactivé"}.`, "ok");
     } catch (error) {
       setAccessMessage(`Changement de statut impossible : ${error?.message || error}`);
@@ -15644,7 +15806,7 @@
     try {
       await callFunction("deleteAccessUser", { uid, confirmPermanent: true });
       accessDeletionRequestsLoaded = false;
-      await loadAccessUsers({ reset: true });
+      await refreshAccessUsersAfterMutation({ reset: true });
       if (canDeleteAccessUserDirectly()) await loadAccessDeletionRequests({ force: true });
       setAccessMessage("Compte supprimé définitivement.", "ok");
     } catch (error) {
@@ -15680,7 +15842,7 @@
       await callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
       portalPendingOverviewLoaded = false;
       accessDeletionRequestsLoaded = false;
-      await loadAccessUsers({ reset: true });
+      await refreshAccessUsersAfterMutation({ reset: true });
       await loadAccessDeletionRequests({ force: true });
       await loadPortalPendingOverview({ force: true });
       if (statusElement) {
@@ -15713,7 +15875,7 @@
         });
       }
       resetAccessForm(true);
-      await loadAccessUsers({ reset: true });
+      await refreshAccessUsersAfterMutation({ reset: true });
       setAccessMessage(
         `${result.created ? "Compte créé" : "Compte mis à jour"} : ${result.email}. ${sendReset ? "E-mail de mot de passe envoyé." : ""}`,
         "ok"
@@ -17202,7 +17364,14 @@
     elements.accessCapabilityFilter?.addEventListener("change", () => loadAccessUsers({ reset: true }));
     elements.accessClearFilters?.addEventListener("click", () => {
       elements.accessFilters?.reset();
+      accessDirectoryLetter = "";
       loadAccessUsers({ reset: true });
+    });
+    elements.accessAlphabet?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-access-directory-letter]");
+      if (!button || button.disabled || !accessDirectorySnapshotMode) return;
+      accessDirectoryLetter = button.dataset.accessDirectoryLetter || "";
+      renderAccessDirectorySnapshotPage({ reset: true });
     });
     elements.accessPreviousPage?.addEventListener("click", showPreviousAccessPage);
     elements.accessNextPage?.addEventListener("click", showNextAccessPage);

@@ -59,6 +59,7 @@ function runUnitTests() {
     "livepalmes-public-records-data-tests.js",
     "livepalmes-public-records-store-tests.js",
     "livepalmes-console-access-tests.js",
+    "livepalmes-portal-session-tests.js",
     "livepalmes-portal-access-protection-tests.js",
     "livepalmes-portal-access-mail-tests.js",
     "livepalmes-mail-html-tests.js",
