@@ -19,12 +19,13 @@ Le lien temporaire est public pour toute personne qui le connait et il utilise l
 3. Ouvrir le lien de test ajoute a la proposition de modification.
 4. Tester les pages concernees sur ordinateur et telephone.
 5. Apres validation, integrer la modification dans `main`.
-6. Dans GitHub, ouvrir **Actions**, choisir **Mise en ligne LivePalmes**, puis **Run workflow**.
-7. Cocher la confirmation demandee et valider la mise en ligne.
-8. Approuver l'environnement `production` lorsque GitHub le demande.
-9. Controler le site public une fois l'action terminee.
+6. Relever le numero de la proposition validee, affiche par GitHub sous la forme `#123`.
+7. Dans GitHub, ouvrir **Actions**, choisir **Mise en ligne LivePalmes**, puis **Run workflow**.
+8. Saisir le numero de la proposition, cocher la confirmation demandee et valider la mise en ligne.
+9. Approuver l'environnement `production` lorsque GitHub le demande.
+10. Controler le site public une fois l'action terminee.
 
-Cette action ne publie que Firebase Hosting. Elle ne deploie ni les Functions, ni les regles ou index Firestore, ni les donnees de performances, Records, MPF, resultats ou archives.
+Cette action recupere exactement le commit ayant produit le lien de test valide. Elle refuse une proposition externe, un controle en echec ou une version qui n'exclut pas le fichier interne `admin-reference.js`. Elle ne publie que Firebase Hosting et ne deploie ni les Functions, ni les regles ou index Firestore, ni les donnees de performances, Records, MPF, resultats ou archives.
 
 ## Activation initiale par un administrateur
 
