@@ -196,6 +196,27 @@ beforeEach(async () => {
       updatedAt: "2026-07-27T09:00:00.000Z",
       source: "Tests"
     });
+    await setDoc(doc(db, "accessDirectorySnapshots", "national"), {
+      scopeType: "national", scopeId: "", status: "ready", version: 1, entries: {}
+    });
+    await setDoc(doc(db, "accessDirectorySnapshots", "region:IDF"), {
+      scopeType: "region", scopeId: "IDF", status: "ready", version: 1, entries: {}
+    });
+    await setDoc(doc(db, "accessDirectorySnapshots", "region:HDF"), {
+      scopeType: "region", scopeId: "HDF", status: "ready", version: 1, entries: {}
+    });
+    await setDoc(doc(db, "users", "region-idf"), {
+      status: "active",
+      regionId: "IDF",
+      accessScopes: { "engagements.region.manage": { scopeType: "region", scopeId: "IDF" } }
+    });
+    await setDoc(doc(db, "users", "national-manager"), {
+      status: "active"
+    });
+    await setDoc(doc(db, "users", "region-without-scope"), {
+      status: "active",
+      regionId: "IDF"
+    });
   });
 });
 
@@ -241,6 +262,39 @@ test("speaker : ajoute uniquement repechageAnnouncedAt à une finaliste déjà r
   allowed.finalists.a[1] = { ...allowed.finalists.a[1], repechageAnnouncedAt: "2026-07-27T09:10:00.000Z" };
   allowed.updatedAt = "2026-07-27T09:10:00.000Z";
   await assertSucceeds(setDoc(ref, allowed));
+});
+
+test("annuaire privé : lecture directe strictement limitée au périmètre d'habilitation", async () => {
+  const anonymous = testEnv.unauthenticatedContext().firestore();
+  await assertFails(getDoc(doc(anonymous, "accessDirectorySnapshots", "national")));
+
+  const admin = adminDb();
+  await assertSucceeds(getDoc(doc(admin, "accessDirectorySnapshots", "national")));
+  await assertSucceeds(getDoc(doc(admin, "accessDirectorySnapshots", "region:IDF")));
+  await assertFails(setDoc(doc(admin, "accessDirectorySnapshots", "national"), {
+    scopeType: "national", scopeId: "", status: "ready", version: 1, entries: {}
+  }));
+
+  const national = testEnv.authenticatedContext("national-manager", {
+    livepalmesAccess: true,
+    livepalmesCapabilities: { "engagements.national.manage": true }
+  }).firestore();
+  await assertSucceeds(getDoc(doc(national, "accessDirectorySnapshots", "national")));
+  await assertFails(getDoc(doc(national, "accessDirectorySnapshots", "region:IDF")));
+
+  const regional = testEnv.authenticatedContext("region-idf", {
+    livepalmesAccess: true,
+    livepalmesCapabilities: { "engagements.region.manage": true }
+  }).firestore();
+  await assertSucceeds(getDoc(doc(regional, "accessDirectorySnapshots", "region:IDF")));
+  await assertFails(getDoc(doc(regional, "accessDirectorySnapshots", "region:HDF")));
+  await assertFails(getDoc(doc(regional, "accessDirectorySnapshots", "national")));
+
+  const regionalWithoutScope = testEnv.authenticatedContext("region-without-scope", {
+    livepalmesAccess: true,
+    livepalmesCapabilities: { "engagements.region.manage": true }
+  }).firestore();
+  await assertFails(getDoc(doc(regionalWithoutScope, "accessDirectorySnapshots", "region:IDF")));
 });
 
 test("index public des archives : lecture publique et ecriture computer uniquement", async () => {

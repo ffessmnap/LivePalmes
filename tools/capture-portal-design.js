@@ -8,6 +8,8 @@ const rootDir = path.resolve(__dirname, "..");
 const outputDir = path.join(rootDir, "tmp", "portal-design-captures");
 const views = [
   { name: "login", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false },
+  { name: "session-warning", hash: "accueil", selector: "#adminPortalSessionWarning", authenticated: true, sessionDialog: "warning" },
+  { name: "session-lock", hash: "accueil", selector: "#adminPortalSessionLock", authenticated: true, sessionDialog: "lock" },
   { name: "overview", hash: "accueil", selector: "#adminOverviewView", authenticated: true },
   { name: "overview-expanded", hash: "accueil", selector: "#adminOverviewView", authenticated: true, overviewSpace: "national" },
   { name: "club-home", hash: "espace-club", selector: "#adminClubHomeView", authenticated: true, menu: "club", clubOnly: true },
@@ -794,6 +796,15 @@ function presentationScript(view) {
         });
       }
     }
+    const sessionDialog = ${JSON.stringify(view.sessionDialog || "")};
+    if (sessionDialog) {
+      document.body.dataset.portalSession = sessionDialog === "lock" ? "locked" : "active";
+      const dialog = document.querySelector(sessionDialog === "lock" ? "#adminPortalSessionLock" : "#adminPortalSessionWarning");
+      if (dialog && !dialog.open) {
+        if (typeof dialog.showModal === "function") dialog.showModal();
+        else dialog.setAttribute("open", "");
+      }
+    }
     const target = document.querySelector(${JSON.stringify(view.selector)});
     return Boolean(target && getComputedStyle(target).display !== "none");
   `;
@@ -989,7 +1000,7 @@ async function captureView(client, baseUrl, viewport, view) {
   if (audit.overweightTableText.length || audit.overweightSelectedTabs.length) {
     throw new Error(`${view.name}/${viewport.name} : graisse typographique excessive ${JSON.stringify(audit)}.`);
   }
-  await auditInteractions(client, viewport, view);
+  if (!view.sessionDialog) await auditInteractions(client, viewport, view);
   if (view.accessDialogFixture) {
     const dialogOpened = await evaluate(client, `
       const dialog = document.querySelector("#adminAccessPanel");

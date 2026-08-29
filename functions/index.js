@@ -258,6 +258,9 @@ const ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION = "engagementMailRecipientShar
 const ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION = "engagementMailRecipientIndexState";
 const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION = "engagementClubAdminDirectories";
 const ACCESS_DIRECTORY_INDEX_STATE_COLLECTION = "accessDirectoryIndexState";
+const ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION = "accessDirectorySnapshots";
+const ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION = "accessDirectorySnapshotState";
+const ACCESS_DIRECTORY_SNAPSHOT_VERSION = 1;
 const ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32;
 const ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT = 167;
 const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES = 800000;
@@ -749,6 +752,25 @@ function accessDirectoryFilterKey(context = {}, status = "", capability = "") {
 
 function accessDirectoryIndexStateRef() {
   return db.collection(ACCESS_DIRECTORY_INDEX_STATE_COLLECTION).doc("default");
+}
+
+function accessDirectorySnapshotStateRef() {
+  return db.collection(ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION).doc("default");
+}
+
+function accessDirectorySnapshotDocumentId(scopeType = "national", scopeId = "") {
+  return scopeType === "region"
+    ? `region:${encodeURIComponent(cleanText(scopeId).slice(0, 80))}`
+    : "national";
+}
+
+function accessDirectorySnapshotRef(scopeType = "national", scopeId = "") {
+  return db.collection(ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION)
+    .doc(accessDirectorySnapshotDocumentId(scopeType, scopeId));
+}
+
+function accessDirectorySnapshotEntryKey(uid = "") {
+  return crypto.createHash("sha256").update(cleanText(uid)).digest("hex").slice(0, 32);
 }
 
 function normalizedAccessScope(scope = {}) {
@@ -3278,10 +3300,9 @@ exports.resolveEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, a
   };
 });
 
-function accessUserListItem(doc) {
-  const data = doc.data() || {};
+function accessUserListItemFromData(uid, data = {}) {
   return {
-    uid: doc.id,
+    uid,
     email: data.email || "",
     firstName: data.firstName || "",
     lastName: data.lastName || "",
@@ -3295,6 +3316,66 @@ function accessUserListItem(doc) {
     updatedAt: data.updatedAt || "",
     lastLoginAt: data.lastLoginAt || ""
   };
+}
+
+function accessUserListItem(doc) {
+  return accessUserListItemFromData(doc.id, doc.data() || {});
+}
+
+function accessDirectorySnapshotEntry(uid, data = {}) {
+  return accessUserListItemFromData(uid, data);
+}
+
+function accessDirectorySnapshotRegionId(data = {}) {
+  const capabilities = data.capabilities || {};
+  if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return "";
+  if (capabilities["engagements.region.manage"] !== true) return "";
+  return accessUserRegionIdFromData(data);
+}
+
+function sameAccessDirectorySnapshotEntry(left, right) {
+  return JSON.stringify(left || null) === JSON.stringify(right || null);
+}
+
+function mergeAccessDirectorySnapshotEntries(batch, scopeType, scopeId, entries, now, status = "") {
+  batch.set(accessDirectorySnapshotRef(scopeType, scopeId), {
+    scopeType,
+    scopeId: scopeType === "region" ? scopeId : "",
+    version: ACCESS_DIRECTORY_SNAPSHOT_VERSION,
+    updatedAt: now,
+    ...(status ? { status } : {}),
+    entries
+  }, { merge: true });
+}
+
+async function syncAccessDirectorySnapshotFromUserChange(uid, beforeData, afterData, now) {
+  const beforeEntry = beforeData ? accessDirectorySnapshotEntry(uid, beforeData) : null;
+  const afterEntry = afterData ? accessDirectorySnapshotEntry(uid, afterData) : null;
+  if (sameAccessDirectorySnapshotEntry(beforeEntry, afterEntry)) return;
+
+  const stateSnapshot = await accessDirectorySnapshotStateRef().get();
+  const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+  if (!["building", "ready"].includes(state.status)) return;
+
+  const key = accessDirectorySnapshotEntryKey(uid);
+  const batch = db.batch();
+  mergeAccessDirectorySnapshotEntries(batch, "national", "", {
+    [key]: afterEntry || FieldValue.delete()
+  }, now);
+
+  const beforeRegionId = beforeData ? accessDirectorySnapshotRegionId(beforeData) : "";
+  const afterRegionId = afterData ? accessDirectorySnapshotRegionId(afterData) : "";
+  if (beforeRegionId && beforeRegionId !== afterRegionId) {
+    mergeAccessDirectorySnapshotEntries(batch, "region", beforeRegionId, {
+      [key]: FieldValue.delete()
+    }, now);
+  }
+  if (afterRegionId) {
+    mergeAccessDirectorySnapshotEntries(batch, "region", afterRegionId, {
+      [key]: afterEntry
+    }, now);
+  }
+  await batch.commit();
 }
 
 function accessUserDeletionRequestItem(doc) {
@@ -3429,6 +3510,103 @@ exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, async (re
   }, { merge: true });
   await batch.commit();
   return { ok: true, processed: snapshot.size, cursor: completed ? "" : nextCursor, completed };
+});
+
+exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await accessManagementContext(request);
+  if (!context.national) throw new HttpsError("permission-denied", "Reconstruction reservee au niveau national.");
+  const pageSize = Math.min(100, Math.max(20, Math.trunc(Number(request.data?.pageSize) || 100)));
+  const restart = request.data?.restart === true;
+  const stateRef = accessDirectorySnapshotStateRef();
+  const stateSnapshot = await stateRef.get();
+  const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+  if (!restart && state.status === "ready") {
+    return { ok: true, processed: 0, cursor: "", completed: true };
+  }
+  if (!restart && state.status !== "building") {
+    throw new HttpsError("failed-precondition", "Commence la reconstruction avec restart: true.");
+  }
+
+  if (restart) {
+    const existingSnapshots = await db.collection(ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION).limit(101).get();
+    if (existingSnapshots.size > 100) {
+      throw new HttpsError("failed-precondition", "Trop de fragments d'annuaire a reinitialiser.");
+    }
+    const clearBatch = db.batch();
+    existingSnapshots.docs.forEach((doc) => clearBatch.delete(doc.ref));
+    clearBatch.set(stateRef, {
+      status: "building",
+      cursor: "",
+      indexedCount: 0,
+      updatedAt: new Date().toISOString()
+    });
+    await clearBatch.commit();
+  }
+
+  const cursor = restart ? "" : cleanText(state.cursor).slice(0, 128);
+  let query = db.collection("users").orderBy(FieldPath.documentId()).limit(pageSize);
+  if (cursor) query = query.startAfter(cursor);
+  const snapshot = await query.get();
+  const now = new Date().toISOString();
+  const nationalEntries = {};
+  const regionalEntries = new Map();
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data() || {};
+    const key = accessDirectorySnapshotEntryKey(doc.id);
+    const entry = accessDirectorySnapshotEntry(doc.id, data);
+    nationalEntries[key] = entry;
+    const regionId = accessDirectorySnapshotRegionId(data);
+    if (!regionId) return;
+    if (!regionalEntries.has(regionId)) regionalEntries.set(regionId, {});
+    regionalEntries.get(regionId)[key] = entry;
+  });
+
+  const nextCursor = snapshot.docs.at(-1)?.id || cursor;
+  const completed = snapshot.size < pageSize;
+  const writeBatch = db.batch();
+  mergeAccessDirectorySnapshotEntries(writeBatch, "national", "", nationalEntries, now, "building");
+  regionalEntries.forEach((entries, regionId) => {
+    mergeAccessDirectorySnapshotEntries(writeBatch, "region", regionId, entries, now, "building");
+  });
+  writeBatch.set(stateRef, {
+    status: "building",
+    cursor: completed ? "" : nextCursor,
+    indexedCount: restart ? snapshot.size : FieldValue.increment(snapshot.size),
+    updatedAt: now
+  }, { merge: true });
+  await writeBatch.commit();
+
+  if (completed) {
+    const generatedSnapshots = await db.collection(ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION).limit(101).get();
+    if (generatedSnapshots.size > 100) {
+      throw new HttpsError("failed-precondition", "Trop de fragments d'annuaire a finaliser.");
+    }
+    const finalizeBatch = db.batch();
+    generatedSnapshots.docs.forEach((doc) => finalizeBatch.set(doc.ref, {
+      status: "ready",
+      version: ACCESS_DIRECTORY_SNAPSHOT_VERSION,
+      updatedAt: now
+    }, { merge: true }));
+    finalizeBatch.set(stateRef, {
+      status: "ready",
+      cursor: "",
+      completedAt: now,
+      updatedAt: now
+    }, { merge: true });
+    await finalizeBatch.commit();
+  }
+
+  return {
+    ok: true,
+    processed: snapshot.size,
+    cursor: completed ? "" : nextCursor,
+    completed,
+    readBudget: {
+      baseDocuments: 1,
+      userDocumentsMax: pageSize,
+      snapshotDocumentsMax: restart || completed ? 100 : 0
+    }
+  };
 });
 
 exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -7992,34 +8170,46 @@ async function engagementActiveMailRecipients(db, capabilities = ENGAGEMENT_MAIL
 
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
   region: REGION,
-  document: "users/{uid}"
+  document: "users/{uid}",
+  retry: true
 }, async (event) => {
   const uid = cleanText(event.params.uid);
   if (!uid) return;
-  const before = event.data?.before?.exists ? engagementMailRecipientFromUserDoc(event.data.before) : null;
+  const beforeData = event.data?.before?.exists ? event.data.before.data() || {} : null;
+  const before = beforeData ? engagementMailRecipientFromUserDoc(event.data.before) : null;
   const afterData = event.data?.after?.exists ? event.data.after.data() || {} : {};
   const after = event.data?.after?.exists && afterData.status === "active"
     ? engagementMailRecipientFromUserDoc(event.data.after)
     : null;
   const now = new Date().toISOString();
+  const snapshotSync = syncAccessDirectorySnapshotFromUserChange(
+    uid,
+    beforeData,
+    event.data?.after?.exists ? afterData : null,
+    now
+  ).catch((error) => {
+    console.error("Mise à jour de l'annuaire privé des accès impossible.", cleanText(error?.message || error));
+  });
   const key = engagementMailRecipientIndexKey(uid);
   const capabilities = new Set([...(before?.capabilities || []), ...(after?.capabilities || [])]);
-  if (!capabilities.size) return;
-  const batch = db.batch();
-  capabilities.forEach((capability) => {
-    const shardNumber = engagementMailRecipientShardNumber(uid);
-    const value = after?.capabilities?.includes(capability) ? after : FieldValue.delete();
-    batch.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
-      capability,
-      shardNumber,
-      recipients: { [key]: value },
-      generatedAt: now
-    }, { merge: true });
-  });
-  await batch.commit();
-  await updateEngagementClubAdminDirectory(db, before, after, now).catch((error) => {
-    console.error("Mise à jour de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
-  });
+  if (capabilities.size) {
+    const batch = db.batch();
+    capabilities.forEach((capability) => {
+      const shardNumber = engagementMailRecipientShardNumber(uid);
+      const value = after?.capabilities?.includes(capability) ? after : FieldValue.delete();
+      batch.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
+        capability,
+        shardNumber,
+        recipients: { [key]: value },
+        generatedAt: now
+      }, { merge: true });
+    });
+    await batch.commit();
+    await updateEngagementClubAdminDirectory(db, before, after, now).catch((error) => {
+      console.error("Mise à jour de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
+    });
+  }
+  await snapshotSync;
 });
 
 exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, async (request) => {

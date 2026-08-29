@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260824-import-replacement-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260820-international-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260829-session-lock-1">
   </head>
-  <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
+  <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
     <header class="admin-portal-topbar">
       <img class="admin-portal-federal-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260722-admin-portal-1" alt="FFESSM Nage avec palmes">
       <div class="admin-portal-brand">
@@ -161,6 +161,41 @@
           </form>
         </details>
       </section>
+
+      <dialog id="adminPortalSessionWarning" class="admin-portal-session-dialog" aria-labelledby="adminPortalSessionWarningTitle">
+        <div class="admin-portal-session-dialog-heading">
+          <span>Session inactive</span>
+          <h2 id="adminPortalSessionWarningTitle">Toujours présent&nbsp;?</h2>
+        </div>
+        <p>Votre portail sera verrouillé dans <strong id="adminPortalSessionCountdown">5 min</strong> si aucune activité n’est détectée.</p>
+        <div class="admin-portal-actions">
+          <button id="adminPortalSessionContinue" class="admin-primary-button" type="button">Continuer ma session</button>
+          <button id="adminPortalSessionWarningSignOut" class="ghost-button" type="button">Se déconnecter</button>
+        </div>
+      </dialog>
+
+      <dialog id="adminPortalSessionLock" class="admin-portal-session-dialog admin-portal-session-lock" aria-labelledby="adminPortalSessionLockTitle">
+        <div class="admin-portal-session-dialog-heading">
+          <span>Session verrouillée</span>
+          <h2 id="adminPortalSessionLockTitle">Reconnectez-vous</h2>
+        </div>
+        <p>Le Portail a été verrouillé après 30 minutes d’inactivité. Vos informations affichées et vos saisies sont conservées.</p>
+        <form id="adminPortalSessionUnlockForm" class="admin-portal-form">
+          <label>
+            Email
+            <input id="adminPortalSessionEmail" type="email" autocomplete="username" readonly>
+          </label>
+          <label>
+            Mot de passe
+            <input id="adminPortalSessionPassword" type="password" autocomplete="current-password" required>
+          </label>
+          <div class="admin-portal-actions">
+            <button type="submit">Déverrouiller</button>
+            <button id="adminPortalSessionLockSignOut" class="ghost-button" type="button">Se déconnecter</button>
+          </div>
+        </form>
+        <p id="adminPortalSessionMessage" class="admin-portal-message" aria-live="polite"></p>
+      </dialog>
 
       <section id="adminPortalDashboard" class="admin-portal-dashboard" hidden>
         <div class="admin-portal-layout">
@@ -2483,6 +2518,7 @@
             <button id="adminAccessClearFilters" class="ghost-button admin-access-filter-reset" type="button">Réinitialiser</button>
           </form>
           <small id="adminAccessCount" class="admin-access-count admin-access-directory-summary" aria-live="polite"></small>
+          <nav id="adminAccessAlphabet" class="admin-access-alphabet" aria-label="Filtrer les utilisateurs par initiale du nom" hidden></nav>
           <div id="adminAccessList" class="admin-access-list"></div>
           <nav id="adminAccessPagination" class="admin-access-pagination" aria-label="Pages des utilisateurs" hidden>
             <button id="adminAccessPreviousPage" class="ghost-button" type="button">Page précédente</button>
@@ -2612,7 +2648,8 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260824-region-compat-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260825-access-directory-3"></script>
+    <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20260824-submit-form-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
