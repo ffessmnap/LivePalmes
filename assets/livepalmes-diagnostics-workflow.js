@@ -384,7 +384,7 @@
     if (report.firebase.legacyPdfCount) {
       report.recommendations.push("Des PDF résultats sont encore stockés dans results : lancer le nettoyage PDF résultats.");
     }
-    if (publicIndexBytes > 750000) {
+    if (publicIndexBytes >= 650000) {
       report.recommendations.push("L'index public est lourd : surveiller le temps d'actualisation des pages publiques.");
     }
     if (liveDataBytes > 900000) {
@@ -503,8 +503,8 @@
     sessions
       .filter((session) => session.expectedResults && session.publicResults < session.expectedResults)
       .forEach((session) => recommendations.push(`Session ${session.session} : ${session.publicResults}/${session.expectedResults} resultats detailles dans l'index public.`));
-    if (byteSize(publicIndex) > 900000) recommendations.push("L'index resultats approche de la limite Firestore : surveiller avant de republier.");
-    if (byteSize(seriesIndex) > 900000) recommendations.push("L'index series approche de la limite Firestore : il faudra decouper par session si la competition grossit.");
+    if (byteSize(publicIndex) >= 650000) recommendations.push("L'index resultats approche de la limite de securite : preparer un decoupage par session avant 900 ko.");
+    if (byteSize(seriesIndex) >= 650000) recommendations.push("L'index series approche de la limite de securite : preparer un decoupage par session avant 900 ko.");
     if (!recommendations.length) recommendations.push("Publication publique stable : tailles correctes et aucun manque evident par session.");
     return {
       available: true,

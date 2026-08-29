@@ -114,9 +114,10 @@ async function init() {
   }
   const pdf = snapshot.data();
   if (pdfTitle) pdfTitle.textContent = pdf.sourceLabel || "Séries";
-  const rendered = await renderPdfInline(pdf.pdfDataUrl);
+  const pdfSource = pdf.pdfUrl || pdf.pdfDataUrl || "";
+  const rendered = await renderPdfInline(pdfSource);
   if (rendered) return;
-  const blobUrl = dataUrlToBlobUrl(pdf.pdfDataUrl);
+  const blobUrl = pdf.pdfUrl || dataUrlToBlobUrl(pdf.pdfDataUrl);
   if (!blobUrl) {
     showMessage("Le PDF n'a pas pu être chargé.");
     return;

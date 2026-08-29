@@ -1,4 +1,5 @@
 functions/node_modules/
+functions/.env.*
 tests/firestore-rules/node_modules/
 .firebase/
 firestore-debug.log

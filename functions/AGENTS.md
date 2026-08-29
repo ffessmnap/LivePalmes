@@ -6,7 +6,7 @@ Ces règles complètent le fichier racine pour toute intervention dans `function
 
 ## Principes backend
 
-- Conserver Node.js 20 et l’architecture existante des fonctions.
+- Conserver Node.js 22 et l’architecture existante des fonctions.
 - Étendre les fonctions et utilitaires présents avant de créer un nouveau service ou modèle.
 - Ne pas ajouter de dépendance sans justification et sans vérifier son impact sur le déploiement.
 - Ne jamais exposer de secret, jeton, PIN ou donnée personnelle dans le code, les logs ou les réponses.

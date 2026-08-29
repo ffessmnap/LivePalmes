@@ -48,6 +48,39 @@ service cloud.firestore {
         );
     }
 
+    function hasRegionalAccessDirectoryScope(regionId) {
+      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let profile = get(profilePath).data;
+      return request.auth != null
+        && exists(profilePath)
+        && profile.status == "active"
+        && profile.accessScopes is map
+        && profile.accessScopes.keys().hasAll(["engagements.region.manage"])
+        && profile.accessScopes["engagements.region.manage"] is map
+        && profile.accessScopes["engagements.region.manage"].scopeId == regionId;
+    }
+
+    function hasActiveAccessProfile() {
+      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return request.auth != null
+        && exists(profilePath)
+        && get(profilePath).data.status == "active";
+    }
+
+    function canReadAccessDirectorySnapshot() {
+      return isAdmin()
+        || (
+          resource.data.scopeType == "national"
+          && hasCapability("engagements.national.manage")
+          && hasActiveAccessProfile()
+        )
+        || (
+          resource.data.scopeType == "region"
+          && hasCapability("engagements.region.manage")
+          && hasRegionalAccessDirectoryScope(resource.data.scopeId)
+        );
+    }
+
     function canManageRecords() {
       return isAdmin() || hasCapability("admin.full") || hasCapability("records.manage");
     }
@@ -175,6 +208,25 @@ service cloud.firestore {
         && validOptionalText("sourceVersion", 120)
         && validOptionalText("sourceLabel", 160)
         && validOptionalText("lastUpdatedSession", 20);
+    }
+
+    function validPublicArchivesIndex(documentId) {
+      return documentId == "archivesIndex"
+        && request.resource.data.keys().hasOnly(["id", "archives", "updatedAt"])
+        && request.resource.data.id == documentId
+        && request.resource.data.archives is list
+        && request.resource.data.archives.size() <= 50
+        && validText(request.resource.data.updatedAt, 40);
+    }
+
+    function validPdfStorageFields() {
+      return validOptionalText("pdfDataUrl", 900000)
+        && validOptionalText("pdfUrl", 2000)
+        && validOptionalText("storagePath", 600)
+        && (
+          ("pdfDataUrl" in request.resource.data && request.resource.data.pdfDataUrl.size() > 0)
+          || ("pdfUrl" in request.resource.data && request.resource.data.pdfUrl.size() > 0)
+        );
     }
 
     function validResultDocument(resultId) {
@@ -407,34 +459,42 @@ service cloud.firestore {
         allow read: if isLivePalmesCompetition(competitionId);
         allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && validPublicIndex(documentId);
+          && (validPublicIndex(documentId) || validPublicArchivesIndex(documentId));
         allow update: if isLivePalmesCompetition(competitionId)
-          && validPublicIndex(documentId)
           && (
-            canWriteComputer(competitionId)
+            (
+              validPublicArchivesIndex(documentId)
+              && canWriteComputer(competitionId)
+            )
             || (
-              hasConsoleRole(competitionId, "speaker")
+              validPublicIndex(documentId)
               && (
-                (
-                  documentId == "resultsIndex"
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                    "updatedAt", "sourceVersion", "sourceLabel", "lastUpdatedSession", "publicAccess"
-                  ])
+                canWriteComputer(competitionId)
+                || (
+                  hasConsoleRole(competitionId, "speaker")
+                  && (
+                    (
+                      documentId == "resultsIndex"
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                        "updatedAt", "sourceVersion", "sourceLabel", "lastUpdatedSession", "publicAccess"
+                      ])
+                    )
+                    || (
+                      documentId == "seriesIndex"
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                        "entrants", "records", "qualifications", "updatedAt", "sourceVersion",
+                        "sourceLabel", "lastUpdatedSession", "publicAccess"
+                      ])
+                    )
+                  )
                 )
                 || (
-                  documentId == "seriesIndex"
+                  hasConsoleRole(competitionId, "referee")
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                    "entrants", "records", "qualifications", "updatedAt", "sourceVersion",
-                    "sourceLabel", "lastUpdatedSession", "publicAccess"
+                    "updatedAt", "sourceVersion", "publicAccess"
                   ])
                 )
               )
-            )
-            || (
-              hasConsoleRole(competitionId, "referee")
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                "updatedAt", "sourceVersion", "publicAccess"
-              ])
             )
           );
         allow delete: if isLivePalmesTestCompetition(competitionId)
@@ -479,7 +539,10 @@ service cloud.firestore {
             "scope",
             "session",
             "pdfName",
+            "pdfSize",
             "pdfDataUrl",
+            "pdfUrl",
+            "storagePath",
             "updatedAt",
             "sourceLabel"
           ])
@@ -488,7 +551,8 @@ service cloud.firestore {
           && validText(request.resource.data.scope, 20)
           && validOptionalText("session", 20)
           && validText(request.resource.data.pdfName, 220)
-          && validText(request.resource.data.pdfDataUrl, 900000)
+          && (!("pdfSize" in request.resource.data) || request.resource.data.pdfSize is int)
+          && validPdfStorageFields()
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceLabel", 120);
         allow delete: if isLivePalmesCompetition(competitionId)
@@ -505,7 +569,10 @@ service cloud.firestore {
             "session",
             "sessions",
             "pdfName",
+            "pdfSize",
             "pdfDataUrl",
+            "pdfUrl",
+            "storagePath",
             "updatedAt",
             "sourceLabel",
             "documentType"
@@ -516,7 +583,8 @@ service cloud.firestore {
           && validOptionalText("session", 20)
           && request.resource.data.sessions is list
           && validText(request.resource.data.pdfName, 220)
-          && validText(request.resource.data.pdfDataUrl, 900000)
+          && (!("pdfSize" in request.resource.data) || request.resource.data.pdfSize is int)
+          && validPdfStorageFields()
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceLabel", 160)
           && validOptionalText("documentType", 40);
@@ -697,6 +765,8 @@ service cloud.firestore {
               "pdfName",
               "pdfSize",
               "pdfDataUrl",
+              "pdfUrl",
+              "storagePath",
               "updatedAt",
               "eventLabel",
               "sexLabel",
@@ -706,7 +776,7 @@ service cloud.firestore {
             && validText(resultId, 180)
             && validText(request.resource.data.pdfName, 220)
             && request.resource.data.pdfSize is int
-            && validText(request.resource.data.pdfDataUrl, 900000)
+            && validPdfStorageFields()
             && validText(request.resource.data.updatedAt, 40)
             && validOptionalText("resultId", 180)
             && validOptionalText("eventLabel", 160)
@@ -726,7 +796,10 @@ service cloud.firestore {
               "session",
               "sessions",
               "pdfName",
+              "pdfSize",
               "pdfDataUrl",
+              "pdfUrl",
+              "storagePath",
               "updatedAt",
               "sourceLabel",
               "documentType"
@@ -737,7 +810,8 @@ service cloud.firestore {
             && validOptionalText("session", 20)
             && request.resource.data.sessions is list
             && validText(request.resource.data.pdfName, 220)
-            && validText(request.resource.data.pdfDataUrl, 900000)
+            && (!("pdfSize" in request.resource.data) || request.resource.data.pdfSize is int)
+            && validPdfStorageFields()
             && validText(request.resource.data.updatedAt, 40)
             && validOptionalText("sourceLabel", 180)
             && validOptionalText("documentType", 40);
@@ -756,6 +830,8 @@ service cloud.firestore {
             "pdfName",
             "pdfSize",
             "pdfDataUrl",
+            "pdfUrl",
+            "storagePath",
             "updatedAt",
             "eventLabel",
             "sexLabel",
@@ -766,7 +842,7 @@ service cloud.firestore {
           && validText(resultId, 180)
           && validText(request.resource.data.pdfName, 220)
           && request.resource.data.pdfSize is int
-          && validText(request.resource.data.pdfDataUrl, 900000)
+          && validPdfStorageFields()
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("eventLabel", 160)
           && validOptionalText("sexLabel", 40)
@@ -813,6 +889,11 @@ service cloud.firestore {
         allow delete: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId);
       }
+    }
+
+    match /accessDirectorySnapshots/{snapshotId} {
+      allow get: if canReadAccessDirectorySnapshot();
+      allow list, write: if false;
     }
 
     match /{document=**} {

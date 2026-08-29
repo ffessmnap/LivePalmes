@@ -1,11 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { performanceImportChrono } = require("../functions/performance-import-timing");
+const { publicPerformanceSwimmerStorageRow } = require("../functions/performance-import-publication");
 
 const rootDir = process.cwd();
 const defaultSeed = path.join(rootDir, "outputs", "performance-base-seed.ndjson");
 const defaultOutDir = path.join(rootDir, "performances", "public", "data", "performance-public");
 const TOP_PREVIEW_LIMIT = 100;
+const PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION = 2;
 let activeOutDir = "";
 let expectedFiles = new Set();
 const writeStats = {
@@ -103,6 +106,16 @@ function betterPerformance(candidate, current) {
     (Number(candidate.timeValue || 0) === Number(current.timeValue || 0) && cleanText(candidate.date).localeCompare(cleanText(current.date)) < 0);
 }
 
+function isElectronicFiftyMeterPerformance(row = {}) {
+  const pool = cleanText(row.pool).toUpperCase().replace(/\s+/g, "");
+  const chrono = cleanText(row.chrono)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z]/g, "")
+    .toUpperCase();
+  return (pool === "50" || pool === "50M") && (chrono === "E" || chrono === "ELECTRONIC" || chrono === "ELECTRONIQUE");
+}
+
 function sortPerformanceRows(rows = []) {
   return rows.sort((a, b) =>
     cleanText(b.date).localeCompare(cleanText(a.date)) ||
@@ -145,7 +158,7 @@ function publicRow(row = {}) {
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
     pool: cleanText(row.pool),
-    chrono: cleanText(row.chrono),
+    chrono: cleanText(performanceImportChrono(row)),
     course: cleanText(row.course),
     courseLabel: cleanText(row.courseLabel),
     courseShortLabel: cleanText(row.courseShortLabel),
@@ -183,6 +196,7 @@ function topRow(row = {}) {
     date: cleanText(row.date),
     seasonYear: Number(row.seasonYear || 0) || 0,
     pool: cleanText(row.pool),
+    chrono: cleanText(row.chrono),
     course: cleanText(row.course),
     courseShortLabel: cleanText(row.courseShortLabel),
     isIntermediate: row.isIntermediate === true,
@@ -198,24 +212,9 @@ function topRow(row = {}) {
 }
 
 function swimmerRow(row = {}) {
-  const isIntermediate = row.isIntermediate === true;
-  return compactObject({
-    id: cleanText(row.id),
-    club: cleanText(row.club),
-    location: cleanText(row.location),
-    date: cleanText(row.date),
-    seasonYear: Number(row.seasonYear || 0) || 0,
-    pool: cleanText(row.pool),
-    course: cleanText(row.course),
-    ...(isIntermediate ? {
-      length: Number(row.length || 0) || 0,
-      isIntermediate: true,
-      originCourse: cleanText(row.originCourse),
-      originPerformanceId: cleanText(row.originPerformanceId)
-    } : {}),
-    categoryCode: cleanText(row.categoryCode || row.category),
-    timeValue: Number(row.timeValue || 0) || 0,
-    time: cleanText(row.time)
+  return publicPerformanceSwimmerStorageRow({
+    ...row,
+    intermediateTimes: cleanIntermediateTimes(row.intermediateTimes)
   });
 }
 
@@ -407,6 +406,7 @@ function main() {
 
   const swimmers = new Map();
   const topBuckets = new Map();
+  const dtnListingBuckets = new Map();
   const seasons = new Set();
   const regions = new Map();
   const courses = new Set();
@@ -459,6 +459,13 @@ function main() {
       const bucket = topBuckets.get(topKey);
       if (betterPerformance(row, bucket.get(candidateKey))) bucket.set(candidateKey, topRow(row));
     }
+
+    if (!scope.enabled && row.seasonYear && isElectronicFiftyMeterPerformance(row)) {
+      if (!dtnListingBuckets.has(row.seasonYear)) dtnListingBuckets.set(row.seasonYear, new Map());
+      const candidateKey = [publicSwimmerKey(row), row.course].join("|");
+      const bucket = dtnListingBuckets.get(row.seasonYear);
+      if (betterPerformance(row, bucket.get(candidateKey))) bucket.set(candidateKey, topRow(row));
+    }
   }
 
   const swimmerIndex = [];
@@ -503,6 +510,7 @@ function main() {
       clubId: latestWithClub.clubId || "",
       club: latestWithClub.club || "",
       clubName: latestWithClub.clubName || "",
+      rowSchemaVersion: PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
       performanceCount: rows.filter((row) => !row.isIntermediate).length,
       rowCount: rows.length,
       rows: rows.map(swimmerRow)
@@ -570,6 +578,19 @@ function main() {
     writeJson(path.join(outDir, "tops-preview", course, topFileName(sex, category)), previewRows);
   });
 
+  let dtnListingFiles = 0;
+  let dtnListingCandidates = 0;
+  dtnListingBuckets.forEach((bucket, seasonYear) => {
+    const rows = Array.from(bucket.values()).sort((a, b) =>
+      cleanText(a.lastName).localeCompare(cleanText(b.lastName), "fr-FR") ||
+      cleanText(a.firstName).localeCompare(cleanText(b.firstName), "fr-FR") ||
+      cleanText(a.course).localeCompare(cleanText(b.course), "fr-FR", { numeric: true })
+    );
+    dtnListingFiles += 1;
+    dtnListingCandidates += rows.length;
+    writeJson(path.join(outDir, "dtn-listing", `${seasonYear}.json`), rows);
+  });
+
   const generatedAt = new Date().toISOString();
   const previousManifestPath = path.join(outDir, "manifest.json");
   const previousManifest = scope.enabled && fs.existsSync(previousManifestPath)
@@ -598,6 +619,8 @@ function main() {
     topPreviewFiles: topPreviewFileCount,
     topPreviewCandidates: topPreviewCandidateCount,
     topPreviewLimit: TOP_PREVIEW_LIMIT,
+    dtnListingFiles,
+    dtnListingCandidates,
     seasons: Array.from(seasons).sort((a, b) => b - a),
     regions: Array.from(regions.entries()).map(([id, label]) => ({ id, label })).sort((a, b) => String(a.label).localeCompare(String(b.label), "fr-FR")),
     courses: Array.from(courses).sort(),

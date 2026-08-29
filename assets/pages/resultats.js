@@ -1619,7 +1619,7 @@ async function loadPublicResultsIndex({ forceDirect = false, directSession = "" 
   } else {
     await loadPublicSeriesPdfs(competition);
   }
-  if (Array.isArray(index.sessionResultsPdfs) && index.sessionResultsPdfs.length) {
+  if (Array.isArray(index.sessionResultsPdfs)) {
     publicSessionResultsPdfs = index.sessionResultsPdfs
       .slice()
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
@@ -1808,14 +1808,15 @@ async function loadPublicArchiveResultsIndex(competition) {
 }
 
 function init() {
-  if (restorePublicResultsCache()) {
+  const restoredPublicResultsCache = restorePublicResultsCache();
+  if (restoredPublicResultsCache) {
     setStatus("Actualisation", "pending");
     if (ensurePublicAccess()) renderResults();
   }
   loadPublicResultsIndex().catch((error) => {
     console.warn("Lecture index public impossible", error);
-    setStatus("Erreur", "error");
-    if (list) list.innerHTML = `<p class="panel-subtitle">Impossible de charger les résultats.</p>`;
+    setStatus(restoredPublicResultsCache ? "Données en cache" : "Erreur", restoredPublicResultsCache ? "pending" : "error");
+    if (!restoredPublicResultsCache && list) list.innerHTML = `<p class="panel-subtitle">Impossible de charger les résultats.</p>`;
   });
 }
 

@@ -17,6 +17,8 @@
       pdfName: result?.pdfName || "",
       pdfSize: result?.pdfSize || 0,
       pdfDataUrl: pdfDataUrl || "",
+      pdfUrl: pdfDataUrl ? "" : (result?.pdfUrl || ""),
+      storagePath: pdfDataUrl ? "" : (result?.storagePath || ""),
       updatedAt: result?.updatedAt || "",
       eventLabel: result?.eventLabel || "",
       sexLabel: result?.sexLabel || options.sexLabel || "",
@@ -55,10 +57,11 @@
 
   async function resultPdfDataUrl(result, options = {}) {
     const pdf = await loadResultPdfData(result, options);
-    if (!pdf?.pdfDataUrl) {
+    const source = pdf?.pdfUrl || pdf?.pdfDataUrl || "";
+    if (!source) {
       throw new Error("Aucun PDF déjà publié à relire pour cette course.");
     }
-    return pdf.pdfDataUrl;
+    return source;
   }
 
   async function saveResultPdfPayload(result, pdfDataUrl, options = {}) {

@@ -1,6 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+const {
+  checkPerformancePublicConsistency,
+  sortPerformancePublicationFiles,
+} = require("./performance-public-consistency");
 
 const rootDir = process.cwd();
 const defaultSourceDir = path.join(rootDir, "performances", "public", "data", "performance-public-firestore");
@@ -10,6 +14,7 @@ const defaultPrefix = "performance-public-firestore";
 function readArgs(argv) {
   const args = {
     sourceDir: defaultSourceDir,
+    seedPath: path.join(rootDir, "outputs", "performance-base-firestore-active.ndjson"),
     bucket: defaultBucket,
     prefix: defaultPrefix,
     concurrency: 8,
@@ -18,6 +23,7 @@ function readArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--source-dir") args.sourceDir = path.resolve(argv[index += 1] || "");
+    else if (arg === "--seed") args.seedPath = path.resolve(argv[index += 1] || "");
     else if (arg === "--bucket") args.bucket = argv[index += 1] || args.bucket;
     else if (arg === "--prefix") args.prefix = String(argv[index += 1] || args.prefix).replace(/^\/+|\/+$/g, "");
     else if (arg === "--concurrency") args.concurrency = Math.max(1, Math.min(32, Number(argv[index += 1] || 8) || 8));
@@ -155,20 +161,33 @@ async function runPool(items, concurrency, worker) {
 async function main() {
   const args = readArgs(process.argv.slice(2));
   const sourceDir = ensureInsideRoot(args.sourceDir);
+  const seedPath = ensureInsideRoot(args.seedPath);
   if (!fs.existsSync(sourceDir)) throw new Error(`Dossier source introuvable : ${sourceDir}`);
+  const consistency = await checkPerformancePublicConsistency({ seedPath, outDir: sourceDir });
+  if (!consistency.ok) {
+    throw new Error(`Publication refusee : ${consistency.errors.length} incoherence(s) entre l'export, les fiches nageurs et les TOP.\n${consistency.errors.join("\n")}`);
+  }
+  console.log(JSON.stringify({ step: "consistency", ...consistency }, null, 2));
   const token = await firebaseAccessToken();
   if (args.configureCors) {
     await configureCors(args.bucket, token);
     console.log(`CORS Storage configure pour ${args.bucket}`);
   }
-  const files = walkFiles(sourceDir);
-  await runPool(files, args.concurrency, (file) => uploadFile({
+  const files = sortPerformancePublicationFiles(walkFiles(sourceDir), sourceDir);
+  const switchFiles = files.filter((file) => {
+    const relativePath = path.relative(sourceDir, file).replace(/\\/g, "/");
+    return relativePath === "version.js" || relativePath === "manifest.json";
+  });
+  const dataFiles = files.filter((file) => !switchFiles.includes(file));
+  const upload = (file) => uploadFile({
     bucket: args.bucket,
     prefix: args.prefix,
     sourceDir,
     file,
     token
-  }));
+  });
+  await runPool(dataFiles, args.concurrency, upload);
+  for (const file of switchFiles) await upload(file);
   console.log(JSON.stringify({
     ok: true,
     bucket: args.bucket,

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Réinitialiser le mot de passe | LivePalmes</title>
+    <meta name="description" content="Réinitialisation sécurisée du mot de passe LivePalmes.">
+    <meta name="theme-color" content="#0b7285">
+    <link rel="icon" type="image/png" href="favicon.png?v=20260819-hosting-2">
+    <link rel="stylesheet" href="assets/livepalmes-password-reset.css">
+  </head>
+  <body>
+    <main class="password-reset-shell">
+      <section class="password-reset-card" aria-labelledby="passwordResetTitle">
+        <a class="password-reset-brand" href="/" aria-label="Accueil LivePalmes">
+          <img src="logo-livepalmes.png?v=20260819-hosting-1" alt="">
+          <span>LivePalmes</span>
+        </a>
+        <div id="passwordResetLoading" class="password-reset-status" role="status" aria-live="polite">
+          Vérification du lien sécurisé…
+        </div>
+        <div id="passwordResetFormPanel" hidden>
+          <h1 id="passwordResetTitle">Choisir un nouveau mot de passe</h1>
+          <p class="password-reset-intro">Pour le compte <strong id="passwordResetEmail"></strong>.</p>
+          <form id="passwordResetForm">
+            <label for="passwordResetValue">Nouveau mot de passe</label>
+            <input id="passwordResetValue" type="password" autocomplete="new-password" minlength="8" required>
+            <label for="passwordResetConfirmation">Confirmer le nouveau mot de passe</label>
+            <input id="passwordResetConfirmation" type="password" autocomplete="new-password" minlength="8" required>
+            <p class="password-reset-help">Au moins 8 caractères.</p>
+            <button id="passwordResetSubmit" type="submit">Modifier le mot de passe</button>
+          </form>
+        </div>
+        <div id="passwordResetSuccessPanel" hidden>
+          <h1 id="passwordResetSuccessTitle">Mot de passe modifié</h1>
+          <p id="passwordResetSuccessText">Vous pouvez maintenant vous connecter au Portail LivePalmes avec votre nouveau mot de passe.</p>
+          <a class="password-reset-button" href="/portail.html">Accéder au Portail LivePalmes</a>
+        </div>
+        <div id="passwordResetErrorPanel" hidden>
+          <h1 id="passwordResetErrorTitle">Réinitialisation impossible</h1>
+          <p id="passwordResetErrorMessage"></p>
+          <a class="password-reset-link" href="/portail.html">Retourner au Portail LivePalmes</a>
+        </div>
+        <p id="passwordResetMessage" class="password-reset-message" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="assets/livepalmes-password-reset.js"></script>
+  </body>
+</html>

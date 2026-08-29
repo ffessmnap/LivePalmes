@@ -1,0 +1,267 @@
+(function initLivePalmesPortalUx(global) {
+  "use strict";
+
+  const HOME_LABELS = {
+    clubHome: "Espace club",
+    performanceHome: "Données sportives",
+    engagementsAdminHome: "Organisation des compétitions",
+    dtnHome: "Espace DTN",
+    nationalHome: "Administration nationale",
+    accessHome: "Gestion du portail"
+  };
+  const elements = {
+    breadcrumb: document.querySelector("#adminPortalBreadcrumb"),
+    navigation: document.querySelector("#adminPortalNavigation")
+  };
+  const longOperationControllers = new WeakMap();
+  let breadcrumbSignature = "";
+  let refreshTimer = null;
+
+  function formatLongOperationElapsed(milliseconds) {
+    const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const minutes = Math.floor(seconds / 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function createLongOperation(options = {}) {
+    const panel = typeof options.element === "string" ? document.querySelector(options.element) : options.element;
+    if (!panel) return null;
+    if (longOperationControllers.has(panel)) return longOperationControllers.get(panel);
+    panel.classList.add("admin-long-operation");
+    panel.setAttribute("role", "status");
+    panel.setAttribute("aria-live", "polite");
+    panel.setAttribute("aria-atomic", "true");
+    const icon = document.createElement("span");
+    icon.className = "admin-long-operation-icon";
+    icon.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("div");
+    copy.className = "admin-long-operation-copy";
+    const title = document.createElement("strong");
+    const detail = document.createElement("p");
+    copy.append(title, detail);
+    const elapsed = document.createElement("span");
+    elapsed.className = "admin-long-operation-elapsed";
+    elapsed.setAttribute("aria-hidden", "true");
+    const bar = document.createElement("span");
+    bar.className = "admin-long-operation-bar";
+    bar.setAttribute("aria-hidden", "true");
+    bar.append(document.createElement("span"));
+    panel.replaceChildren(icon, copy, elapsed, bar);
+    let timer = null;
+    let startedAt = 0;
+    const busyTargets = (Array.isArray(options.busyTargets) ? options.busyTargets : [options.busyTargets]).filter(Boolean);
+
+    function updateElapsed() {
+      if (!startedAt) return;
+      elapsed.textContent = `Temps écoulé ${formatLongOperationElapsed(Date.now() - startedAt)}`;
+    }
+
+    function setBusy(busy) {
+      busyTargets.forEach((target) => target.setAttribute("aria-busy", busy ? "true" : "false"));
+    }
+
+    function stopTimer() {
+      if (timer) global.clearInterval(timer);
+      timer = null;
+    }
+
+    const controller = {
+      start(content = {}) {
+        stopTimer();
+        panel.hidden = false;
+        panel.dataset.state = "loading";
+        title.textContent = content.title || "Opération en cours...";
+        detail.textContent = content.detail || "Cette opération peut prendre quelques instants.";
+        startedAt = Date.now();
+        updateElapsed();
+        timer = global.setInterval(updateElapsed, 1000);
+        setBusy(true);
+      },
+      update(content = {}) {
+        if (content.title) title.textContent = content.title;
+        if (content.detail) detail.textContent = content.detail;
+      },
+      finish(content = {}) {
+        stopTimer();
+        panel.hidden = false;
+        panel.dataset.state = content.state || "success";
+        title.textContent = content.title || (content.state === "error" ? "Opération impossible" : "Opération terminée");
+        detail.textContent = content.detail || "";
+        updateElapsed();
+        startedAt = 0;
+        setBusy(false);
+      },
+      hide() {
+        stopTimer();
+        startedAt = 0;
+        panel.hidden = true;
+        setBusy(false);
+      },
+      panel
+    };
+    longOperationControllers.set(panel, controller);
+    return controller;
+  }
+
+  function normalizedText(value = "") {
+    return String(value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function cleanLabel(element) {
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll(".admin-portal-nav-icon,.admin-portal-nav-badge,[aria-hidden='true']").forEach((item) => item.remove());
+    return clone.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  function renderBreadcrumb() {
+    const mount = elements.breadcrumb;
+    if (!mount) return;
+    const activeView = document.querySelector("[data-admin-view]:not([hidden])")?.dataset.adminView || "";
+    const clubIsHome = document.body.dataset.portalHome === "club";
+    if (!activeView || activeView === "dashboard" || (clubIsHome && activeView === "clubHome")) {
+      mount.hidden = true;
+      if (breadcrumbSignature) mount.replaceChildren();
+      breadcrumbSignature = "";
+      return;
+    }
+    const activeLink = elements.navigation?.querySelector("a.active,a[aria-current='page']");
+    const activeParent = elements.navigation?.querySelector(".admin-portal-nav-parent.active,.admin-portal-nav-parent[aria-current='page']") || activeLink?.closest(".admin-portal-nav-nested")?.querySelector(".admin-portal-nav-parent");
+    const parentLabel = activeParent ? cleanLabel(activeParent) : "";
+    const currentLabel = activeLink ? cleanLabel(activeLink) : parentLabel || HOME_LABELS[activeView] || document.querySelector(`[data-admin-view="${activeView}"] h2`)?.textContent?.trim() || "";
+    const items = [{
+      label: clubIsHome ? "Accueil club" : "Vue d’ensemble",
+      href: clubIsHome ? "#espace-club" : "#accueil"
+    }];
+    const engagementCalendar = global.location.hash === "#competitions-calendrier" && parentLabel === "Organisation des compétitions";
+    if (engagementCalendar) {
+      items.push({ label: parentLabel });
+    } else if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
+      items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
+    }
+    if (currentLabel && !engagementCalendar) items.push({ label: currentLabel });
+    const nextSignature = JSON.stringify(items);
+    if (nextSignature === breadcrumbSignature) {
+      mount.hidden = items.length < 2;
+      return;
+    }
+    breadcrumbSignature = nextSignature;
+    mount.replaceChildren();
+    items.forEach((item, index) => {
+      if (index) {
+        const separator = document.createElement("span");
+        separator.className = "admin-portal-breadcrumb-separator";
+        separator.setAttribute("aria-hidden", "true");
+        separator.textContent = "›";
+        mount.append(separator);
+      }
+      if (item.href) {
+        const link = document.createElement("a");
+        link.href = item.href;
+        link.textContent = item.label;
+        mount.append(link);
+      } else {
+        const current = document.createElement("span");
+        current.setAttribute("aria-current", "page");
+        current.textContent = item.label;
+        mount.append(current);
+      }
+    });
+    mount.hidden = items.length < 2;
+  }
+
+  function enhanceResponsiveTables() {
+    document.querySelectorAll(".admin-dtn-results-table:not(.admin-dtn-listing-table),.admin-engagements-national-table").forEach((table) => {
+      table.classList.add("admin-portal-responsive-table");
+      const labels = [...table.querySelectorAll("thead th")].map((cell) => cell.textContent.trim());
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        [...row.children].forEach((cell, index) => {
+          if (cell.tagName === "TD" && labels[index]) cell.dataset.label = labels[index];
+        });
+      });
+    });
+    document.querySelectorAll(".admin-dtn-listing-table").forEach((table) => table.classList.remove("admin-portal-responsive-table"));
+  }
+
+  function enhanceLoadingStates() {
+    document.querySelectorAll("[aria-live]").forEach((status) => {
+      const loadingSource = status.matches("#adminDtnGrid")
+        ? status.querySelector(".admin-dtn-summary-loading,.admin-record-module-status")
+        : status;
+      const text = normalizedText(loadingSource?.textContent || "");
+      status.classList.toggle("is-loading", /chargement|recherche en cours|mise a jour en cours|recalcul/.test(text));
+    });
+  }
+
+  function visibleTabs(tablist) {
+    return Array.from(tablist?.querySelectorAll?.('[role="tab"]') || []).filter((tab) => {
+      return !tab.hidden && !tab.closest("[hidden]") && tab.getAttribute("aria-disabled") !== "true";
+    });
+  }
+
+  function enhanceTabFocus() {
+    document.querySelectorAll('[role="tablist"]').forEach((tablist) => {
+      const tabs = visibleTabs(tablist);
+      if (!tabs.length) return;
+      const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+      tabs.forEach((tab) => {
+        tab.tabIndex = tab === selected ? 0 : -1;
+      });
+    });
+  }
+
+  function handleTabKeydown(event) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const current = event.target.closest?.('[role="tab"]');
+    const tablist = current?.closest?.('[role="tablist"]');
+    if (!current || !tablist) return;
+    const tabs = visibleTabs(tablist);
+    const currentIndex = tabs.indexOf(current);
+    if (currentIndex < 0 || tabs.length < 2) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : event.key === "ArrowRight"
+          ? (currentIndex + 1) % tabs.length
+          : (currentIndex - 1 + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    next.focus();
+    next.click();
+    global.requestAnimationFrame(() => {
+      const active = tablist.querySelector('[role="tab"][aria-selected="true"]');
+      if (active && !active.hidden && !active.closest("[hidden]")) active.focus();
+    });
+  }
+
+  function refreshEnhancements() {
+    global.clearTimeout(refreshTimer);
+    refreshTimer = global.setTimeout(() => {
+      renderBreadcrumb();
+      enhanceResponsiveTables();
+      enhanceLoadingStates();
+      enhanceTabFocus();
+    }, 40);
+  }
+
+  global.addEventListener("hashchange", refreshEnhancements);
+  document.addEventListener("livepalmes:portal-home-change", refreshEnhancements);
+  document.addEventListener("keydown", handleTabKeydown);
+  new MutationObserver((mutations) => {
+    const generatedOnly = mutations.every((mutation) => mutation.target.closest?.("#adminPortalBreadcrumb"));
+    if (!generatedOnly) refreshEnhancements();
+  }).observe(document.querySelector("#adminPortalDashboard") || document.body, {
+    attributes: true,
+    attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "aria-disabled", "data-tone"],
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+  global.LivePalmesLongOperation = { create: createLongOperation };
+  refreshEnhancements();
+})(window);

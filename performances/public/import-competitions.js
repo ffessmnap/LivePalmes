@@ -14,11 +14,14 @@
     encoding: document.querySelector("#competitionImportEncoding"),
     encodingLabel: document.querySelector("label:has(#competitionImportEncoding)"),
     message: document.querySelector("#competitionImportMessage"),
+    progress: document.querySelector("#competitionImportProgress"),
     preview: document.querySelector("#competitionImportPreview"),
     summary: document.querySelector("#competitionImportSummary"),
     warnings: document.querySelector("#competitionImportWarnings"),
+    existingImport: document.querySelector("#competitionImportExisting"),
     sample: document.querySelector("#competitionImportSample"),
     validate: document.querySelector("#competitionImportValidateButton"),
+    replace: document.querySelector("#competitionImportReplaceButton"),
     importsList: document.querySelector("#competitionImportsList"),
     importsRefresh: document.querySelector("#competitionImportsRefreshButton"),
     importsExport: document.querySelector("#competitionImportsExportButton"),
@@ -33,6 +36,8 @@
     migrationStatusButton: document.querySelector("#performanceMigrationStatusButton"),
     migrationNext: document.querySelector("#performanceMigrationNextButton"),
     migrationAll: document.querySelector("#performanceMigrationAllButton"),
+    correctionProgress: document.querySelector("#performanceCorrectionProgress"),
+    correctionRetryPublication: document.querySelector("#performanceCorrectionRetryPublication"),
     correctionSearch: document.querySelector("#performanceCorrectionSwimmer"),
     correctionSuggestions: document.querySelector("#performanceCorrectionSuggestions"),
     correctionCourse: document.querySelector("#performanceCorrectionCourse"),
@@ -66,14 +71,24 @@
   let correctionSelectedSwimmer = null;
   let correctionRows = [];
   let correctionSelectedRow = null;
+  let correctionPublicationMonitorToken = 0;
+  let correctionPublicationResumeStarted = "";
+  const CORRECTION_PUBLICATION_JOB_SESSION_KEY = "livepalmes.performanceCorrectionPublicationJob";
   let migrationAutoRunning = false;
   let importsCache = [];
+  let importsLoadPromise = null;
+  let spreadsheetLoadPromise = null;
   let importsVisibleCount = 5;
+  const importProgressControllers = new Map();
+  let importControlsLocked = false;
+  let importReplacementMonitorToken = 0;
+  const importOperationControlStates = new Map();
   const openImportIds = new Set();
   const importsPageSize = 5;
   const isIntegratedAdminView = Boolean(document.querySelector("#adminImportView"));
   const publicPerformanceBase = isIntegratedAdminView
-    ? "/performances/public/data/performance-public"
+    ? String(global.LivePalmesAppConfig?.performanceAdditionalDataUrl || "")
+      .replace(/\/performance-public\/additional-data\.json(?:\?.*)?$/, "/performance-public-firestore") || "/performances/public/data/performance-public"
     : "public/data/performance-public";
   const publicPerformanceVersion = encodeURIComponent(global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || global.LIVEPALMES_INTRANAP_SUMMARY?.generatedAt || "performance-public");
   const publicSearchShards = new Map();
@@ -89,6 +104,11 @@
 
   function ensureAdminAuth() {
     if (adminAuth) return adminAuth;
+    if (global.LivePalmesPortalAuth) {
+      adminAuth = global.LivePalmesPortalAuth;
+      adminAuth.onChange(updateView);
+      return adminAuth;
+    }
     if (!ensureFirebaseApp() || !global.LivePalmesAdminAuth?.init) return null;
     adminAuth = global.LivePalmesAdminAuth.init({
       firebase: global.firebase,
@@ -121,7 +141,88 @@
     target.dataset.tone = tone;
   }
 
+  function setImportControlsBusy(busy, phase = "preview") {
+    elements.form?.querySelectorAll("input, select, button").forEach((control) => {
+      control.disabled = busy;
+    });
+    const previewButton = elements.form?.querySelector('button[type="submit"]');
+    if (previewButton) previewButton.textContent = busy && phase === "preview" ? "Analyse en cours..." : "Prévisualiser";
+    if (elements.validate) {
+      elements.validate.textContent = busy && phase === "import" ? "Import en cours..." : "Valider l'import";
+      if (busy) elements.validate.disabled = true;
+    }
+    if (elements.replace) {
+      elements.replace.textContent = busy && phase === "replace" ? "Remplacement en cours..." : "Remplacer l'import existant";
+      if (busy) elements.replace.disabled = true;
+    }
+    if (!busy) updateFileMode();
+  }
+
+  function ensureImportProgress(element = elements.progress) {
+    if (!element || !global.LivePalmesLongOperation?.create) return null;
+    if (!importProgressControllers.has(element)) {
+      importProgressControllers.set(element, global.LivePalmesLongOperation.create({
+        element,
+        busyTargets: [elements.workbench]
+      }));
+    }
+    return importProgressControllers.get(element);
+  }
+
+  function setImportOperationControlsBusy(busy) {
+    const controls = [
+      elements.importsRefresh,
+      elements.importsExport,
+      elements.publishPublicData,
+      elements.migrationStatusButton,
+      elements.migrationNext,
+      elements.migrationAll,
+      ...Array.from(elements.importsList?.querySelectorAll("button") || [])
+    ].filter(Boolean);
+    if (busy) {
+      controls.forEach((control) => {
+        if (!importOperationControlStates.has(control)) importOperationControlStates.set(control, control.disabled);
+        control.disabled = true;
+      });
+      return;
+    }
+    importOperationControlStates.forEach((disabled, control) => {
+      if (control.isConnected) control.disabled = disabled;
+    });
+    importOperationControlStates.clear();
+  }
+
+  function startImportProgress(title, detail, phase = "", progressElement = elements.progress) {
+    setMessage(elements.message, "");
+    setImportOperationControlsBusy(true);
+    ensureImportProgress(progressElement)?.start({ title, detail });
+    importControlsLocked = Boolean(phase);
+    if (importControlsLocked) setImportControlsBusy(true, phase);
+  }
+
+  function finishImportProgress(state, title, detail, progressElement = elements.progress) {
+    ensureImportProgress(progressElement)?.finish({ state, title, detail });
+    if (importControlsLocked) setImportControlsBusy(false);
+    importControlsLocked = false;
+    setImportOperationControlsBusy(false);
+  }
+
+  function updateImportProgress(title, detail, progressElement = elements.progress) {
+    ensureImportProgress(progressElement)?.update({ title, detail });
+  }
+
   function publicPublicationStatus(result = {}) {
+    const publicationJob = result.publicationJob || {};
+    if (publicationJob.id) {
+      return {
+        ok: true,
+        pending: publicationJob.status !== "published",
+        job: publicationJob,
+        text: publicationJob.status === "published"
+          ? " Les TOP et fiches nageurs sont à jour."
+          : " La publication des TOP et fiches nageurs se poursuit automatiquement en arrière-plan."
+      };
+    }
     const filesSnapshot = result.publicFilesSnapshot || {};
     const legacySnapshot = result.publicSnapshot || {};
     if (filesSnapshot.ok) {
@@ -435,7 +536,7 @@
     if (global.location?.protocol === "file:") {
       return Promise.reject(new Error("ouvrez LivePalmes depuis son adresse web ou un serveur local"));
     }
-    const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${publicPerformanceVersion}`, { cache: "force-cache" })
+    const promise = fetch(`${publicPerformanceBase}/search/${encodeURIComponent(shard)}.json?v=${publicPerformanceVersion}&adminCache=${Date.now()}`, { cache: "no-store" })
       .then((response) => {
         if (response.status === 404) return [];
         if (!response.ok) throw new Error("Index public nageurs indisponible.");
@@ -549,7 +650,7 @@
 
       if (swimmer.perfFile) {
         try {
-          const response = await fetch(`${publicPerformanceBase}/${swimmer.perfFile}?v=${publicPerformanceVersion}`, { cache: "force-cache" });
+          const response = await fetch(`${publicPerformanceBase}/${swimmer.perfFile}?v=${publicPerformanceVersion}&adminCache=${Date.now()}`, { cache: "no-store" });
           if (response.ok) {
             const payload = await response.json();
             const baseRows = Array.isArray(payload?.rows) ? payload.rows.map((row) => ({
@@ -739,6 +840,109 @@
     return patch;
   }
 
+  function setCorrectionControlsBusy(busy) {
+    elements.correctionForm?.querySelectorAll("input, textarea, select, button").forEach((control) => {
+      control.disabled = busy;
+    });
+  }
+
+  function rememberCorrectionPublicationJob(jobId = "") {
+    try {
+      if (jobId) global.sessionStorage?.setItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY, jobId);
+      else global.sessionStorage?.removeItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY);
+    } catch {
+      // Le suivi reste disponible pendant la page courante si le stockage de session est indisponible.
+    }
+  }
+
+  function storedCorrectionPublicationJob() {
+    try {
+      return String(global.sessionStorage?.getItem(CORRECTION_PUBLICATION_JOB_SESSION_KEY) || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  function waitForCorrectionPublication(delayMs) {
+    return new Promise((resolve) => global.setTimeout(resolve, delayMs));
+  }
+
+  async function monitorCorrectionPublication(jobId, options = {}) {
+    if (!jobId) return;
+    const token = ++correctionPublicationMonitorToken;
+    rememberCorrectionPublicationJob(jobId);
+    if (elements.correctionRetryPublication) elements.correctionRetryPublication.hidden = true;
+    if (options.immediate) {
+      finishImportProgress(
+        "background",
+        "Publication publique en cours",
+        "LivePalmes reprend le suivi du travail enregistré. Vous pouvez quitter cette page.",
+        elements.correctionProgress
+      );
+    }
+    const delays = options.immediate ? [0, 3000, 7000, 12000] : [2000, 4000, 8000, 15000];
+    for (const delay of delays) {
+      if (delay) await waitForCorrectionPublication(delay);
+      if (token !== correctionPublicationMonitorToken) return;
+      let result;
+      try {
+        result = await callFunction("getPerformancePublicationJobStatus", { jobId });
+      } catch (error) {
+        finishImportProgress(
+          "background",
+          "Correction enregistrée",
+          "La publication publique continue automatiquement. Son statut n’a pas pu être relu pour le moment.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      const job = result.publicationJob || {};
+      if (job.status === "published") {
+        rememberCorrectionPublicationJob("");
+        correctionPublicationResumeStarted = "";
+        correctionOverlay = null;
+        correctionRowsCache.clear();
+        correctionSearchCache.clear();
+        publicSearchShards.clear();
+        if (correctionSelectedSwimmer?.id) {
+          await loadCorrectionOverlay();
+          await selectCorrectionSwimmer(correctionSelectedSwimmer.id);
+        }
+        finishImportProgress(
+          "success",
+          options.hidden ? "Performance supprimée et publiée" : "Correction publiée",
+          "La base officielle, les TOP et la fiche nageur sont à jour.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      if (job.status === "failed") {
+        if (elements.correctionRetryPublication) {
+          elements.correctionRetryPublication.dataset.jobId = jobId;
+          elements.correctionRetryPublication.hidden = false;
+        }
+        finishImportProgress(
+          "error",
+          "Correction enregistrée, publication interrompue",
+          job.error || "La publication publique a échoué après plusieurs tentatives. Vous pouvez la relancer.",
+          elements.correctionProgress
+        );
+        return;
+      }
+      updateImportProgress(
+        "Correction enregistrée — publication en cours",
+        `Mise à jour automatique des fichiers publics${job.attempts ? ` (tentative ${job.attempts})` : ""}. Vous pouvez quitter cette page.`,
+        elements.correctionProgress
+      );
+    }
+    finishImportProgress(
+      "background",
+      "Correction enregistrée — publication en arrière-plan",
+      "La mise à jour publique se poursuit automatiquement. Elle sera reprise sans action de votre part en cas d’interruption.",
+      elements.correctionProgress
+    );
+  }
+
   async function savePerformanceCorrection(hidden = false) {
     if (!correctionSelectedRow) return;
     const reason = elements.correctionReason.value.trim();
@@ -746,34 +950,56 @@
       setMessage(elements.message, "Motif obligatoire pour enregistrer une correction.");
       return;
     }
-    const result = await callFunction("savePerformanceCorrection", {
-      targetKey: correctionKey(correctionSelectedRow),
-      targetId: correctionSelectedRow.id || "",
-      targetSource: correctionSelectedRow.source || "intranap",
-      targetSummary: {
-        swimmer: correctionSelectedRow.swimmer || displayName(correctionSelectedSwimmer),
-        course: correctionSelectedRow.course || "",
-        time: correctionSelectedRow.time || "",
-        date: correctionSelectedRow.date || "",
-        competition: correctionSelectedRow.competition || correctionSelectedRow.location || ""
-      },
-      targetRow: rowSnapshot(correctionSelectedRow),
-      hidden,
-      patch: hidden ? {} : correctionPatchFromForm(),
-      reason
-    });
-    correctionOverlay = null;
-    correctionRowsCache.clear();
-    await loadCorrectionOverlay();
-    await selectCorrectionSwimmer(correctionSelectedSwimmer.id);
-    const publication = publicPublicationStatus(result);
-    setMessage(
-      elements.message,
-      hidden
-        ? `Performance supprimee definitivement de la base officielle.${publication.text}`
-        : `Correction enregistree dans la base officielle.${publication.text}`,
-      publication.ok ? "ok" : "error"
+    setCorrectionControlsBusy(true);
+    startImportProgress(
+      hidden ? "Suppression et publication en cours..." : "Correction et publication en cours...",
+      "La base officielle puis les fichiers publics concernés sont mis à jour. Cette étape peut prendre quelques instants.",
+      "",
+      elements.correctionProgress
     );
+    try {
+      const result = await callFunction("savePerformanceCorrection", {
+        targetKey: correctionKey(correctionSelectedRow),
+        targetId: correctionSelectedRow.id || "",
+        targetSource: correctionSelectedRow.source || "intranap",
+        targetSummary: {
+          swimmer: correctionSelectedRow.swimmer || displayName(correctionSelectedSwimmer),
+          course: correctionSelectedRow.course || "",
+          time: correctionSelectedRow.time || "",
+          date: correctionSelectedRow.date || "",
+          competition: correctionSelectedRow.competition || correctionSelectedRow.location || ""
+        },
+        targetRow: rowSnapshot(correctionSelectedRow),
+        hidden,
+        patch: hidden ? {} : correctionPatchFromForm(),
+        reason
+      });
+      const publication = publicPublicationStatus(result);
+      const savedKey = correctionKey(correctionSelectedRow);
+      const savedPatch = hidden ? {} : correctionPatchFromForm();
+      correctionRows = hidden
+        ? correctionRows.filter((row) => correctionKey(row) !== savedKey)
+        : correctionRows.map((row) => correctionKey(row) === savedKey ? { ...row, ...savedPatch } : row);
+      resetCorrectionEditor({ keepRows: true });
+      updateCorrectionFilters();
+      renderCorrectionRows();
+      finishImportProgress(
+        publication.pending ? "background" : publication.ok ? "success" : "error",
+        hidden ? "Suppression enregistrée" : "Correction enregistrée",
+        hidden
+          ? `La suppression est enregistrée dans la base officielle.${publication.text}`
+          : `Correction enregistrée dans la base officielle.${publication.text}`,
+        elements.correctionProgress
+      );
+      if (publication.job?.id && publication.pending) {
+        void monitorCorrectionPublication(publication.job.id, { hidden });
+      }
+    } catch (error) {
+      finishImportProgress("error", hidden ? "Suppression impossible" : "Correction impossible", error?.message || String(error), elements.correctionProgress);
+      throw error;
+    } finally {
+      setCorrectionControlsBusy(false);
+    }
   }
 
   function importTitle(item = {}) {
@@ -800,7 +1026,12 @@
     const profile = status.profile || {};
     const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || status.email || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
-    if (signedIn) loadImports();
+    if (signedIn && (!isIntegratedAdminView || global.location.hash === "#import-competitions")) loadImports();
+    const publicationJobId = signedIn ? storedCorrectionPublicationJob() : "";
+    if (publicationJobId && correctionPublicationResumeStarted !== publicationJobId) {
+      correctionPublicationResumeStarted = publicationJobId;
+      void monitorCorrectionPublication(publicationJobId, { immediate: true });
+    }
     if (!status.available) {
       setMessage(elements.loginMessage, "Firebase Authentication n'est pas disponible.");
     } else if (!signedIn) {
@@ -841,6 +1072,30 @@
     return name.endsWith(".xlsx");
   }
 
+  function ensureSpreadsheetReader() {
+    if (global.XLSX?.read) return Promise.resolve(global.XLSX);
+    if (spreadsheetLoadPromise) return spreadsheetLoadPromise;
+    const portalLoader = global.LivePalmesLoadImportSpreadsheet;
+    spreadsheetLoadPromise = (typeof portalLoader === "function"
+      ? portalLoader()
+      : new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1";
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", () => reject(new Error("Lecteur Excel indisponible.")), { once: true });
+          document.head.appendChild(script);
+        }))
+      .then(() => {
+        if (!global.XLSX?.read) throw new Error("Lecteur Excel indisponible.");
+        return global.XLSX;
+      })
+      .catch((error) => {
+        spreadsheetLoadPromise = null;
+        throw error;
+      });
+    return spreadsheetLoadPromise;
+  }
+
   function workbookSheetRows(workbook, sheetName) {
     const sheet = workbook?.Sheets?.[sheetName];
     if (!sheet) throw new Error(`Onglet ${sheetName} introuvable dans la trame Excel.`);
@@ -854,9 +1109,7 @@
   }
 
   async function readInternationalWorkbook(file) {
-    if (!global.XLSX?.read) {
-      throw new Error("Lecteur Excel indisponible. Recharge la page puis reessaie.");
-    }
+    await ensureSpreadsheetReader();
     const buffer = await file.arrayBuffer();
     const workbook = global.XLSX.read(buffer, {
       type: "array",
@@ -895,10 +1148,23 @@
     return value || "-";
   }
 
-  function importStatusLabel(value) {
+  function importStatusLabel(value, publicationStatus = "") {
     if (value === "deleted") return "Annule";
+    if (value === "replaced") return "Remplace";
+    if (value === "replacement_staged") {
+      return publicationStatus === "failed" ? "Remplacement interrompu" : "Remplacement en cours";
+    }
+    if (publicationStatus === "publishing") return "Publication en cours";
+    if (["pending", "failed"].includes(publicationStatus)) return "Publication a reprendre";
+    if (publicationStatus === "published") return "Publie";
     if (value === "stored") return "Stocke";
     return value || "Stocke";
+  }
+
+  function timingTypeLabel(value) {
+    if (value === "electronic") return "Electronique (E)";
+    if (value === "manual") return "Manuel (M)";
+    return "Non renseigne";
   }
 
   function updateFileMode() {
@@ -906,6 +1172,7 @@
     const excel = isExcelFile(file);
     if (elements.encoding) elements.encoding.disabled = excel;
     if (elements.encodingLabel) elements.encodingLabel.dataset.disabled = excel ? "true" : "false";
+    if (excel) void ensureSpreadsheetReader().catch(() => {});
   }
 
   function renderPreview(result) {
@@ -920,6 +1187,7 @@
       <div><span>Date</span><strong>${escapeHtml(formatDate(metadata.date))}</strong></div>
       <div><span>Lieu</span><strong>${escapeHtml(metadata.location || "-")}</strong></div>
       <div><span>Bassin</span><strong>${escapeHtml(metadata.poolSize || "-")} m</strong></div>
+      <div><span>Chronometrage</span><strong>${escapeHtml(timingTypeLabel(metadata.timingType))}</strong></div>
       <div><span>Performances</span><strong>${escapeHtml(summary.importedPerformances || 0)}</strong></div>
       <div><span>Avec passage</span><strong>${escapeHtml(summary.performancesWithIntermediateTimes || 0)}</strong></div>
       <div><span>Perfs avec passage</span><strong>${escapeHtml(summary.intermediatePerformances || 0)}</strong></div>
@@ -927,7 +1195,7 @@
       <div><span>Clubs</span><strong>${escapeHtml(summary.clubs || 0)}</strong></div>
       <div><span>Alertes RF/MPF</span><strong>${escapeHtml(recordAlertCount)}</strong></div>
       <div><span>Format</span><strong>${escapeHtml(sourceTypeLabel(result.sourceType))}</strong></div>
-      <div><span>Import</span><strong>${result.alreadyImported ? "Deja stocke" : "Nouveau"}</strong></div>
+      <div><span>Import</span><strong>${result.canResumePublication ? "Publication a reprendre" : result.alreadyImported ? "Deja publie" : "Nouveau"}</strong></div>
     `;
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
     const duplicateDetails = Array.isArray(result.duplicateDetails) ? result.duplicateDetails : [];
@@ -979,6 +1247,20 @@
     elements.warnings.innerHTML = warnings.length || duplicateHtml || recordAlertHtml
       ? warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("") + duplicateHtml + recordAlertHtml
       : `<p class="ok">Aucune alerte detectee.</p>`;
+    const existingImport = result.existingImport || null;
+    if (elements.existingImport) {
+      elements.existingImport.hidden = !existingImport;
+      elements.existingImport.innerHTML = existingImport ? `
+        <strong>Cette compétition a déjà été importée</strong>
+        <p>${escapeHtml(existingImport.summary?.importedPerformances || 0)} performance(s), importées le ${escapeHtml(existingImport.importedAt ? new Date(existingImport.importedAt).toLocaleString("fr-FR") : "date inconnue")}.</p>
+        <small>${escapeHtml(existingImport.fileName || existingImport.importId || "")}</small>
+        ${result.identicalFile
+          ? `<p>Le fichier sélectionné est identique à celui déjà enregistré.</p>`
+          : result.canReplaceImport
+            ? `<p>Si ce nouveau fichier corrige des erreurs, vous pouvez remplacer l’ancien import. Celui-ci restera conservé dans l’historique.</p>`
+            : ""}
+      ` : "";
+    }
     const rows = Array.isArray(result.samplePerformances) ? result.samplePerformances : [];
     elements.sample.innerHTML = rows.length ? rows.map((perf) => `
       <tr>
@@ -990,7 +1272,19 @@
         <td>${escapeHtml(perf.club || "-")}</td>
       </tr>
     `).join("") : `<tr><td colspan="6">Aucune performance a afficher.</td></tr>`;
-    elements.validate.disabled = result.alreadyImported || !summary.importedPerformances;
+    const validationBlocked = result.alreadyImported || !summary.importedPerformances || !metadata.timingType;
+    elements.validate.disabled = validationBlocked;
+    elements.validate.title = result.alreadyImported
+      ? "Cette compétition est déjà importée."
+      : !summary.importedPerformances
+        ? "Aucune performance importable."
+        : !metadata.timingType
+          ? "Le type de chronométrage est obligatoire."
+          : "";
+    if (elements.replace) {
+      elements.replace.hidden = !result.canReplaceImport;
+      elements.replace.disabled = !result.canReplaceImport;
+    }
   }
 
   async function previewImport(event) {
@@ -1001,18 +1295,26 @@
       return;
     }
     currentFile = file;
-    setMessage(elements.message, "Analyse du fichier en cours...", "ok");
+    startImportProgress(
+      "Analyse du fichier en cours...",
+      "Lecture du fichier et contrôle des performances. Cette étape peut prendre quelques instants.",
+      "preview"
+    );
     elements.preview.hidden = true;
     try {
       currentPayload = await buildPreviewPayload(file);
       currentRawText = currentPayload.rawText || "";
       const result = await callFunction("previewCompetitionImport", currentPayload);
       renderPreview(result);
-      setMessage(elements.message, `Previsualisation prete : ${result.summary?.importedPerformances || 0} performances importables.`, "ok");
+      finishImportProgress(
+        "success",
+        "Prévisualisation prête",
+        `${result.summary?.importedPerformances || 0} performances importables. Contrôlez les informations avant de valider l'import.`
+      );
     } catch (error) {
       currentPreview = null;
       currentPayload = null;
-      setMessage(elements.message, `Analyse impossible : ${error?.message || error}`);
+      finishImportProgress("error", "Analyse impossible", error?.message || String(error));
     }
   }
 
@@ -1022,8 +1324,11 @@
       return;
     }
     if (!global.confirm("Confirmer l'ajout de cette competition dans la base LivePalmes ?")) return;
-    elements.validate.disabled = true;
-    setMessage(elements.message, "Import en cours...", "ok");
+    startImportProgress(
+      "Import et publication en cours...",
+      "Enregistrement des performances puis mise à jour des fiches nageurs et des TOP. Cette étape peut durer une à deux minutes.",
+      "import"
+    );
     try {
       const result = await callFunction("createCompetitionImport", {
         ...currentPayload,
@@ -1035,16 +1340,107 @@
       const syncStatus = sync.ok
         ? ` ${sync.written || 0} performance(s) ajoutee(s) a la base officielle.`
         : " Synchronisation avec la base officielle a verifier.";
-      setMessage(
-        elements.message,
-        `Import stocke : ${result.summary?.importedPerformances || 0} performances.${syncStatus}${publication.text}`,
-        sync.ok && publication.ok ? "ok" : "error"
+      finishImportProgress(
+        sync.ok && publication.ok ? "success" : "error",
+        sync.ok && publication.ok ? "Import terminé" : "Import terminé, vérification nécessaire",
+        `Import stocke : ${result.summary?.importedPerformances || 0} performances.${syncStatus}${publication.text}`
       );
       await loadImports();
       elements.validate.disabled = true;
     } catch (error) {
+      finishImportProgress("error", "Import impossible", error?.message || String(error));
       elements.validate.disabled = false;
-      setMessage(elements.message, `Import impossible : ${error?.message || error}`);
+    }
+  }
+
+  async function monitorImportReplacement(jobId) {
+    if (!jobId) return;
+    const token = ++importReplacementMonitorToken;
+    const delays = [2000, 4000, 8000, 15000];
+    for (const delay of delays) {
+      await new Promise((resolve) => global.setTimeout(resolve, delay));
+      if (token !== importReplacementMonitorToken) return;
+      try {
+        const result = await callFunction("getPerformancePublicationJobStatus", { jobId });
+        const job = result.publicationJob || {};
+        if (job.status === "published") {
+          finishImportProgress(
+            "success",
+            "Compétition remplacée",
+            "L’ancien import est conservé dans l’historique. La base officielle, les TOP et les fiches nageurs sont à jour."
+          );
+          await loadImports();
+          if (elements.replace) elements.replace.hidden = true;
+          return;
+        }
+        if (job.status === "failed") {
+          finishImportProgress(
+            "error",
+            "Remplacement enregistré, publication interrompue",
+            job.error || "Le remplacement pourra être relancé depuis l’historique."
+          );
+          await loadImports();
+          return;
+        }
+        updateImportProgress(
+          "Remplacement en cours",
+          `LivePalmes active le nouvel import et retire l’ancien${job.attempts ? ` (tentative ${job.attempts})` : ""}. Vous pouvez quitter cette page.`
+        );
+      } catch {
+        finishImportProgress(
+          "background",
+          "Remplacement enregistré",
+          "Le traitement continue automatiquement en arrière-plan. Son état reste visible dans l’historique."
+        );
+        await loadImports();
+        return;
+      }
+    }
+    finishImportProgress(
+      "background",
+      "Remplacement en arrière-plan",
+      "Le traitement est enregistré et sera repris automatiquement en cas d’interruption."
+    );
+    await loadImports();
+  }
+
+  async function replaceImport() {
+    const existingImport = currentPreview?.existingImport || null;
+    const oldCount = Number(existingImport?.summary?.importedPerformances || 0) || 0;
+    const newCount = Number(currentPreview?.summary?.importedPerformances || 0) || 0;
+    if (!currentPreview?.canReplaceImport || !existingImport?.importId || !currentPayload || !currentFile) {
+      setMessage(elements.message, "Prévisualise un fichier corrigé avant de remplacer l’import existant.");
+      return;
+    }
+    const title = currentPreview.metadata?.competitionName || "cette compétition";
+    if (!global.confirm(
+      `Remplacer l’import existant ?\n\n${title}\nAncien import : ${oldCount} performance(s)\nNouvel import : ${newCount} performance(s)\n\nL’ancien import sera désactivé mais conservé dans l’historique.`
+    )) return;
+    startImportProgress(
+      "Préparation du remplacement...",
+      "Le nouveau fichier est stocké et contrôlé avant la désactivation de l’ancien import.",
+      "replace"
+    );
+    try {
+      const result = await callFunction("createCompetitionImport", {
+        ...currentPayload,
+        fileName: currentFile.name,
+        importId: currentPreview.importId,
+        replaceImportId: existingImport.importId
+      });
+      const job = result.publicationJob || {};
+      finishImportProgress(
+        job.id ? "background" : "error",
+        job.id ? "Remplacement enregistré" : "Remplacement à vérifier",
+        job.id
+          ? "LivePalmes poursuit automatiquement l’activation du nouvel import et la republication ciblée."
+          : "Aucun travail de remplacement n’a été créé."
+      );
+      await loadImports();
+      if (job.id) void monitorImportReplacement(job.id);
+    } catch (error) {
+      finishImportProgress("error", "Remplacement impossible", error?.message || String(error));
+      if (elements.replace) elements.replace.disabled = false;
     }
   }
 
@@ -1226,6 +1622,9 @@
       const recordAlertCount = Number(item.recordAlertCount || 0) || 0;
       const importedAt = item.importedAt ? new Date(item.importedAt).toLocaleString("fr-FR") : "";
       const deleted = item.status === "deleted";
+      const replaced = item.status === "replaced";
+      const replacementStaged = item.status === "replacement_staged";
+      const canResumePublication = item.canResumePublication === true;
       return `
         <details class="competition-import-row" data-import-id="${escapeHtml(item.importId || "")}" data-import-status="${escapeHtml(item.status || "stored")}"${openImportIds.has(item.importId) ? " open" : ""}>
           <summary>
@@ -1233,8 +1632,9 @@
             <span>${escapeHtml(summary.importedPerformances || 0)} perf. - ${escapeHtml(importedAt || "date inconnue")}</span>
           </summary>
           <div class="competition-import-details">
-            <div><span>Statut</span><strong>${escapeHtml(importStatusLabel(item.status))}</strong></div>
+            <div><span>Statut</span><strong>${escapeHtml(importStatusLabel(item.status, item.publicationStatus))}</strong></div>
             <div><span>Format</span><strong>${escapeHtml(sourceTypeLabel(item.sourceType))}</strong></div>
+            <div><span>Chronometrage</span><strong>${escapeHtml(timingTypeLabel(item.metadata?.timingType || item.timingType))}</strong></div>
             <div><span>Fichier</span><strong>${escapeHtml(item.fileName || item.importId || "-")}</strong></div>
             <div><span>Clubs</span><strong>${escapeHtml(summary.clubs || 0)}</strong></div>
             <div><span>Warnings</span><strong>${escapeHtml(warnings)}</strong></div>
@@ -1243,10 +1643,20 @@
             <div><span>Importe par</span><strong>${escapeHtml(item.importedByEmail || "-")}</strong></div>
           </div>
           <div class="competition-import-actions">
-            ${deleted
-              ? `<span>Import annule : ses performances ne sont plus publiees.</span>`
-              : `<button type="button" class="danger-button" data-delete-import="${escapeHtml(item.importId || "")}">Annuler cet import</button>`}
+            ${deleted || replaced
+              ? `<span>${replaced ? "Import remplacé : il reste conservé pour l’historique." : "Import annulé : ses performances ne sont plus publiées."}</span>`
+              : replacementStaged
+                ? `${item.publicationStatus === "failed"
+                  ? `<button type="button" class="danger-button" data-retry-import-replacement="${escapeHtml(item.replacementJobId || "")}">Relancer le remplacement</button>`
+                  : `<span>Le nouvel import est enregistré. Son activation et la republication continuent automatiquement.</span>`}`
+              : `${canResumePublication
+                ? `<button type="button" class="ghost-button" data-resume-import-publication="${escapeHtml(item.importId || "")}">Reprendre la publication</button>`
+                : ""}
+                <button type="button" class="danger-button" data-delete-import="${escapeHtml(item.importId || "")}">Annuler cet import</button>`}
           </div>
+          ${canResumePublication && item.publicationError
+            ? `<p class="competition-imports-note">Derniere erreur : ${escapeHtml(item.publicationError)}</p>`
+            : ""}
           ${renderImportRecordAlerts(item)}
         </details>
       `;
@@ -1308,32 +1718,92 @@
     const previousLabel = button.textContent;
     button.disabled = true;
     button.textContent = "Annulation...";
-    setMessage(elements.message, "Annulation de l'import et republication des donnees publiques...", "ok");
+    startImportProgress(
+      "Annulation et republication en cours...",
+      `${count} performance(s) sont retirées de la base active, puis les TOP et fiches nageurs sont mis à jour.`
+    );
     try {
       const result = await callFunction("deleteCompetitionImport", { importId });
       const publication = publicPublicationStatus(result);
-      setMessage(
-        elements.message,
-        `Import annule : ${result.performanceBaseCount || 0} performance(s) desactivee(s).${publication.text}`,
-        publication.ok ? "ok" : "error"
+      finishImportProgress(
+        publication.ok ? "success" : "error",
+        publication.ok ? "Import annulé" : "Import annulé, vérification nécessaire",
+        `${result.performanceBaseCount || 0} performance(s) désactivée(s).${publication.text}`
       );
       await loadImports();
     } catch (error) {
+      finishImportProgress("error", "Annulation impossible", error?.message || String(error));
       button.disabled = false;
       button.textContent = previousLabel;
-      setMessage(elements.message, `Annulation impossible : ${error?.message || error}`);
     }
   }
 
-  async function loadImports() {
+  function loadImports() {
     if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
+    if (importsLoadPromise) return importsLoadPromise;
+    importsLoadPromise = callFunction("listCompetitionImports", {})
+      .then((result) => renderImports(Array.isArray(result.imports) ? result.imports : []))
+      .catch((error) => {
+        if (elements.importsList) {
+          elements.importsList.innerHTML = `<p class="admin-access-empty">Lecture des imports impossible : ${escapeHtml(error?.message || error)}</p>`;
+        }
+      })
+      .finally(() => { importsLoadPromise = null; });
+    return importsLoadPromise;
+  }
+
+  async function resumeCompetitionImportPublication(button) {
+    const importId = button?.dataset?.resumeImportPublication || "";
+    if (!importId) return;
+    if (!global.confirm("Reprendre la publication publique de cet import deja enregistre ?")) return;
+    const previousLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "Publication en cours...";
+    startImportProgress(
+      "Reprise de la publication en cours...",
+      "Les performances déjà enregistrées sont réutilisées pour remettre à jour les TOP et les fiches nageurs."
+    );
     try {
-      const result = await callFunction("listCompetitionImports", {});
-      renderImports(Array.isArray(result.imports) ? result.imports : []);
+      const result = await callFunction("resumeCompetitionImportPublication", { importId });
+      const publication = publicPublicationStatus(result);
+      finishImportProgress(
+        publication.ok ? "success" : "error",
+        publication.ok ? "Publication terminée" : "Publication à vérifier",
+        `${result.performanceCount || 0} performance(s) traitée(s).${publication.text}`
+      );
+      await loadImports();
     } catch (error) {
-      if (elements.importsList) {
-        elements.importsList.innerHTML = `<p class="admin-access-empty">Lecture des imports impossible : ${escapeHtml(error?.message || error)}</p>`;
-      }
+      finishImportProgress("error", "Reprise impossible", error?.message || String(error));
+      button.disabled = false;
+      button.textContent = previousLabel;
+    }
+  }
+
+  async function retryImportReplacement(button) {
+    const jobId = button?.dataset?.retryImportReplacement || "";
+    if (!jobId) return;
+    if (!global.confirm("Relancer l’activation du nouvel import et la republication de la compétition ?")) return;
+    const previousLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "Relance en cours...";
+    startImportProgress(
+      "Relance du remplacement...",
+      "LivePalmes reprend le travail enregistré sans recréer les performances."
+    );
+    try {
+      const result = await callFunction("retryPerformancePublicationJob", { jobId });
+      const nextJobId = result.publicationJob?.id || "";
+      finishImportProgress(
+        nextJobId ? "background" : "error",
+        nextJobId ? "Remplacement relancé" : "Relance impossible",
+        nextJobId ? "Le traitement se poursuit automatiquement." : "Aucun travail de reprise n’a été créé."
+      );
+      await loadImports();
+      if (nextJobId) void monitorImportReplacement(nextJobId);
+    } catch (error) {
+      finishImportProgress("error", "Relance impossible", error?.message || String(error));
+      button.disabled = false;
+      button.textContent = previousLabel;
     }
   }
 
@@ -1369,16 +1839,19 @@
     if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
     if (elements.publishPublicData) elements.publishPublicData.disabled = true;
     correctionOverlay = null;
-    setMessage(elements.publishPublicDataMessage, "Publication des donnees publiques depuis la base unique...", "ok");
+    startImportProgress(
+      "Republication complète en cours...",
+      "La base officielle est relue pour reconstruire les TOP et les fiches nageurs. Cette opération peut durer plusieurs minutes."
+    );
     try {
       const result = await callFunction("publishPerformancePublicData", {});
-      setMessage(
-        elements.publishPublicDataMessage,
-        `${result.performanceCount || 0} performance(s) importee(s) et ${result.correctionCount || 0} correction(s) publiee(s). Les TOP et fiches nageurs peuvent etre recharges.`,
-        "ok"
+      finishImportProgress(
+        "success",
+        "Republication terminée",
+        `${result.performanceCount || 0} performance(s) et ${result.correctionCount || 0} correction(s) publiées. Les TOP et fiches nageurs peuvent être rechargés.`
       );
     } catch (error) {
-      setMessage(elements.publishPublicDataMessage, `Publication impossible : ${error?.message || error}`);
+      finishImportProgress("error", "Republication impossible", error?.message || String(error));
     } finally {
       if (elements.publishPublicData) elements.publishPublicData.disabled = false;
     }
@@ -1415,18 +1888,25 @@
     if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
     if (!global.confirm("Migrer le prochain lot historique vers la base LivePalmes officielle ?")) return;
     if (elements.migrationNext) elements.migrationNext.disabled = true;
-    setMessage(elements.publishPublicDataMessage, "Migration du prochain lot en cours...", "ok");
+    startImportProgress(
+      "Migration du prochain lot en cours...",
+      "Le lot historique est copié vers la base officielle puis son état est contrôlé."
+    );
     try {
       const result = await callFunction("migratePerformanceBaseNextChunk", {});
       if (result.done) {
-        setMessage(elements.publishPublicDataMessage, "Tous les lots historiques sont deja migres.", "ok");
+        finishImportProgress("success", "Migration déjà terminée", "Tous les lots historiques sont déjà migrés.");
       } else {
         const chunkProgress = result.totalCount ? ` (${result.migratedCount || 0} / ${result.totalCount})` : "";
-        setMessage(elements.publishPublicDataMessage, `Lot ${result.chunk} : ${result.batchCount || 0} performances migrees${chunkProgress}.`, "ok");
+        finishImportProgress(
+          "success",
+          `Lot ${result.chunk} migré`,
+          `${result.batchCount || 0} performances migrées${chunkProgress}.`
+        );
       }
       await loadPerformanceMigrationStatus();
     } catch (error) {
-      setMessage(elements.publishPublicDataMessage, `Migration impossible : ${error?.message || error}`);
+      finishImportProgress("error", "Migration impossible", error?.message || String(error));
     } finally {
       if (elements.migrationNext) elements.migrationNext.disabled = false;
     }
@@ -1438,21 +1918,24 @@
     migrationAutoRunning = true;
     if (elements.migrationAll) elements.migrationAll.disabled = true;
     if (elements.migrationNext) elements.migrationNext.disabled = true;
+    startImportProgress(
+      "Migration historique complète en cours...",
+      "Les lots sont traités successivement. Gardez cette page ouverte jusqu'à la fin."
+    );
     try {
       while (migrationAutoRunning) {
         const result = await callFunction("migratePerformanceBaseNextChunk", {});
         if (result.done) {
-          setMessage(elements.publishPublicDataMessage, "Migration historique terminee.", "ok");
+          finishImportProgress("success", "Migration historique terminée", "Tous les lots ont été migrés vers la base officielle.");
           await loadPerformanceMigrationStatus();
           break;
         }
         const total = result.totalPerformances || 0;
         const migrated = result.migratedPerformances || 0;
         const chunkProgress = result.totalCount ? `${result.migratedCount || 0} / ${result.totalCount}` : "";
-        setMessage(
-          elements.publishPublicDataMessage,
-          `Migration en cours : ${migrated} / ${total} performances. Lot ${result.chunk}${chunkProgress ? ` (${chunkProgress})` : ""}.`,
-          "ok"
+        updateImportProgress(
+          "Migration historique complète en cours...",
+          `${migrated} / ${total} performances traitées. Lot ${result.chunk}${chunkProgress ? ` (${chunkProgress})` : ""}. Gardez cette page ouverte.`
         );
         renderMigrationStatus({
           completedChunks: result.completedChunks || 0,
@@ -1464,7 +1947,7 @@
         await new Promise((resolve) => setTimeout(resolve, 400));
       }
     } catch (error) {
-      setMessage(elements.publishPublicDataMessage, `Migration automatique interrompue : ${error?.message || error}`);
+      finishImportProgress("error", "Migration automatique interrompue", error?.message || String(error));
       await loadPerformanceMigrationStatus();
     } finally {
       migrationAutoRunning = false;
@@ -1481,7 +1964,11 @@
     elements.file?.addEventListener("change", updateFileMode);
     elements.form?.addEventListener("submit", previewImport);
     elements.validate?.addEventListener("click", validateImport);
+    elements.replace?.addEventListener("click", replaceImport);
     elements.importsRefresh?.addEventListener("click", loadImports);
+    global.addEventListener("hashchange", () => {
+      if (global.location.hash === "#import-competitions" && ensureAdminAuth()?.isAdminAuthenticated?.()) loadImports();
+    });
     elements.importsExport?.addEventListener("click", exportAdditionalPerformanceData);
     const applyImportFilters = () => {
       importsVisibleCount = importsPageSize;
@@ -1500,6 +1987,16 @@
       const deleteButton = event.target.closest("[data-delete-import]");
       if (deleteButton) {
         deleteCompetitionImport(deleteButton);
+        return;
+      }
+      const resumeButton = event.target.closest("[data-resume-import-publication]");
+      if (resumeButton) {
+        resumeCompetitionImportPublication(resumeButton);
+        return;
+      }
+      const retryReplacementButton = event.target.closest("[data-retry-import-replacement]");
+      if (retryReplacementButton) {
+        retryImportReplacement(retryReplacementButton);
         return;
       }
       const button = event.target.closest("[data-record-alert-action]");
@@ -1552,14 +2049,36 @@
     elements.correctionForm?.addEventListener("submit", (event) => {
       event.preventDefault();
       savePerformanceCorrection(false).catch((error) => {
-        setMessage(elements.message, `Correction impossible : ${error?.message || error}`);
+        if (!ensureImportProgress()) setMessage(elements.message, `Correction impossible : ${error?.message || error}`);
       });
     });
     elements.correctionHide?.addEventListener("click", () => {
       if (!global.confirm("La suppression de cette performance est definitive. Confirmer la suppression ?")) return;
       savePerformanceCorrection(true).catch((error) => {
-        setMessage(elements.message, `Suppression impossible : ${error?.message || error}`);
+        if (!ensureImportProgress()) setMessage(elements.message, `Suppression impossible : ${error?.message || error}`);
       });
+    });
+    elements.correctionRetryPublication?.addEventListener("click", async () => {
+      const jobId = elements.correctionRetryPublication.dataset.jobId || storedCorrectionPublicationJob();
+      if (!jobId) return;
+      elements.correctionRetryPublication.disabled = true;
+      startImportProgress(
+        "Relance de la publication...",
+        "Un nouveau travail de publication fiable est créé.",
+        "",
+        elements.correctionProgress
+      );
+      try {
+        const result = await callFunction("retryPerformancePublicationJob", { jobId });
+        const nextJobId = result.publicationJob?.id || "";
+        elements.correctionRetryPublication.hidden = true;
+        correctionPublicationResumeStarted = nextJobId;
+        void monitorCorrectionPublication(nextJobId, { immediate: true });
+      } catch (error) {
+        finishImportProgress("error", "Relance impossible", error?.message || String(error), elements.correctionProgress);
+      } finally {
+        elements.correctionRetryPublication.disabled = false;
+      }
     });
     updateFileMode();
   }
