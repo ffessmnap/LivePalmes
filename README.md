@@ -71,6 +71,8 @@ Pour GitHub ou Firebase Hosting, publie au minimum :
 
 Firebase/GitHub ne relisent pas automatiquement les PDF ou les TXT. Il faut d'abord regenerer les donnees en local, puis publier les fichiers generes.
 
+Le parcours securise de verification, apercu et mise en ligne est explique dans `docs/MISE_EN_LIGNE.md`.
+
 ## Records et MPF
 
 Firestore est la source officielle des Records / MPF :
