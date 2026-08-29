@@ -3,6 +3,10 @@ name: Mise en ligne LivePalmes
 on:
   workflow_dispatch:
     inputs:
+      pull_request_number:
+        description: Numero de la proposition dont le lien de test a ete valide
+        required: true
+        type: string
       confirmation:
         description: J'ai valide le lien de test et je souhaite publier le site
         required: true
@@ -28,11 +32,54 @@ jobs:
       name: production
       url: https://livepalmes.web.app
     permissions:
-      checks: write
+      checks: read
       contents: read
+      pull-requests: read
     steps:
-      - name: Recuperer main
+      - name: Identifier la proposition validee
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pull_request_number }}
+        run: |
+          if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Le numero de proposition est invalide."
+            exit 1
+          fi
+
+          pr_json="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          base_branch="$(jq -r '.base.ref' <<< "$pr_json")"
+          head_repository="$(jq -r '.head.repo.full_name' <<< "$pr_json")"
+          head_sha="$(jq -r '.head.sha' <<< "$pr_json")"
+          state="$(jq -r '.state' <<< "$pr_json")"
+          merged_at="$(jq -r '.merged_at // empty' <<< "$pr_json")"
+
+          if [ "$base_branch" != "main" ] || [ "$head_repository" != "$GITHUB_REPOSITORY" ]; then
+            echo "La proposition doit provenir de ce depot et cibler main."
+            exit 1
+          fi
+          if [ "$state" != "open" ] && [ -z "$merged_at" ]; then
+            echo "La proposition est fermee sans avoir ete integree."
+            exit 1
+          fi
+
+          checks_json="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/commits/$head_sha/check-runs?per_page=100")"
+          verification_ok="$(jq '[.check_runs[] | select(.name == "Verification technique" and .conclusion == "success")] | length' <<< "$checks_json")"
+          preview_ok="$(jq '[.check_runs[] | select(.name == "Deploy Preview" and .conclusion == "success")] | length' <<< "$checks_json")"
+          if [ "$verification_ok" -lt 1 ] || [ "$preview_ok" -lt 1 ]; then
+            echo "La proposition ne possede pas de verification et de lien de test valides."
+            exit 1
+          fi
+
+          echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "Proposition #$PR_NUMBER validee au commit $head_sha."
+
+      - name: Recuperer exactement la version testee
         uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
 
       - name: Lire la version Node.js du projet
         id: node-version
@@ -53,6 +100,20 @@ jobs:
       - name: Verifier LivePalmes
         run: node tools/verify-livepalmes.js
 
+      - name: Verifier l'exclusion des donnees internes
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const config = require("./firebase.json");
+          const hosting = Array.isArray(config.hosting) ? config.hosting : [config.hosting];
+          const protectedPath = "performances/public/data/admin-reference.js";
+          if (!hosting.every((entry) => Array.isArray(entry.ignore) && entry.ignore.includes(protectedPath))) {
+            console.error(`Le fichier interne ${protectedPath} n'est pas exclu de Firebase Hosting.`);
+            process.exit(1);
+          }
+          console.log("Exclusion des donnees internes confirmee.");
+          NODE
+
       - name: Verifier la configuration Firebase
         shell: bash
         env:
@@ -64,8 +125,20 @@ jobs:
           fi
 
       - name: Publier uniquement Firebase Hosting
+        id: deploy
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
           projectId: livepalmes
           channelId: live
+
+      - name: Controler la publication
+        shell: bash
+        run: |
+          portal_status="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://livepalmes.web.app/portail.html')"
+          internal_status="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://livepalmes.web.app/performances/public/data/admin-reference.js')"
+          if [ "$portal_status" != "200" ] || [ "$internal_status" != "404" ]; then
+            echo "Controle en ligne en echec : portail=$portal_status, fichier interne=$internal_status."
+            exit 1
+          fi
+          echo "Site public controle : portail=200, fichier interne=404."
