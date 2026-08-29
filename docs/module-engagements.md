@@ -1,12 +1,14 @@
 # Module engagements LivePalmes
 
-<!-- description: Cahier des charges fonctionnel du futur module de gestion des engagements en compétition. -->
+<!-- description: Cahier des charges fonctionnel de référence du module de gestion des engagements en compétition, actuellement en finalisation et en test. -->
+
+> **Statut du document :** ce cahier des charges a guide la construction du module integre au Portail LivePalmes. Le module existe maintenant dans le code, mais le portail complet n'est pas encore considere comme operationnel : il reste en finalisation, en test et en amelioration continue. Les formulations de conception conservees plus bas servent de reference fonctionnelle et d'historique des decisions.
 
 ## Objectif
 
-Ce document cadre la premiere version du futur module d'engagements LivePalmes.
+Ce document cadre la premiere version du module d'engagements LivePalmes integre au portail.
 
-Le module doit permettre aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une gestion regionale et nationale des competitions, des acces, des documents et des exports.
+Le module permet aux clubs d'engager leurs nageurs, relais, officiels et chefs d'equipe sur des competitions, avec une gestion regionale et nationale des competitions, des acces, des documents et des exports. Son fonctionnement reste soumis aux tests et validations necessaires avant mise en service operationnelle.
 
 Les priorites restent celles du projet LivePalmes :
 
@@ -187,19 +189,24 @@ Creation :
 
 Pour un niveau 2, la region de la competition est automatiquement celle de l'administrateur regional.
 
+L'ajout initial au calendrier est volontairement rapide : type obligatoire (`pool` ou `openWater`), nom, dates de debut et de fin, lieu, niveau et region organisatrice lorsque le niveau l'exige. Aucun type n'est preselectionne et il devient definitif apres la creation. La competition est toujours creee avec le statut `upcoming` (`A venir`), sans ouverture des engagements ni envoi de courriel. Apres validation, l'administrateur choisit de completer immediatement la fiche ou de revenir au calendrier ; tous les autres parametres sont renseignes depuis la fiche d'administration. Les competitions historiques sans type sont interpretees comme des competitions piscine.
+
 ### Parametres generaux
 
-Une competition contient au minimum :
+La configuration complete d'une competition contient notamment :
 
 - nom ;
 - date ;
 - lieu ;
 - region ;
 - niveau de competition ;
-- bassin : 25 m, 33 m ou 50 m ;
+- type de competition : piscine ou eau libre ;
+- en piscine, bassin : 25 m, 33 m ou 50 m et nombre de lignes d'eau ;
+- en eau libre, type de plan d'eau facultatif : mer, lac, riviere ou autre ;
 - chronometrage : manuel ou electronique ;
 - date et heure limite des engagements ;
 - email du responsable informatique ;
+- email du responsable juge ;
 - lien HelloAsso si connu ;
 - officiels requis : oui ou non ;
 - plusieurs relais de meme categorie par club autorises : oui ou non.
@@ -208,7 +215,15 @@ Si le lien HelloAsso n'est pas encore connu, l'interface affiche que le lien est
 
 ### Courses et restrictions
 
+En piscine, la bibliotheque des courses existante et les regles de temps sont conservees. En eau libre, une bibliotheque nationale de courses, commune aux regions, est chargee seulement a l'ouverture du parametrage de la competition. Une course associe une distance et une specialite (`Surface`, `Bi-palmes` ou `Support`). La bibliotheque est un tableau compact, classe par distance croissante, avec une ligne par distance et une colonne par specialite. Un bouton `+` ajoute la course au programme ; sur petit ecran, les colonnes sont abregees en `SF`, `BI` et `SP`. Un administrateur regional ou national peut ajouter une association distance-specialite depuis un formulaire aligne sur une seule ligne, qui reste disponible pour les competitions suivantes. Une course deja utilisee n'est jamais supprimee : elle peut etre desactivee pour les futurs programmes sans modifier les competitions existantes.
+
+La bibliotheque initiale propose `1000 m`, `3000 m` et `5000 m` dans les trois specialites. Le `150 m elimination` constitue une exception et n'est propose qu'en Surface et Bi-palmes. Dans le programme Eau libre, toutes les courses sont directement nagees et n'affichent donc ni libelle « Course directe » ni choix de format ; seul le `150 m elimination` peut choisir entre Course directe et Series + finale(s). Le relais `4 x 1000 m SB mixte` impose deux femmes et deux hommes et reprend les controles du `4 x 100 m SB` piscine.
+
+Lorsqu'un administrateur change d'onglet avec des modifications non enregistrees, une fenetre propose d'enregistrer et continuer, d'abandonner reellement les modifications et continuer, ou de rester sur l'onglet. Un echec de validation ou d'enregistrement interdit le changement d'onglet.
+
 Le parametrage des restrictions se fait par course.
+
+Une epreuve ouverte aux engagements n'existe qu'une seule fois, meme lorsqu'elle comporte plusieurs passages dans le programme. Son format propose seulement trois choix : course directe par defaut, `series + finale(s)` ou `series lentes / serie rapide`. Pour un format en deux passages, la premiere apparition est automatiquement la serie ou les series lentes ; la seconde est automatiquement la ou les finales ou la serie rapide et peut etre placee dans une session ulterieure. Une finale n'est jamais ouverte a l'engagement ; les series lentes et la serie rapide partagent le meme engagement et correspondent uniquement a une repartition ulterieure des nageurs. Les anciens programmes sans deroulement explicite sont interpretes comme des courses directes.
 
 Pour chaque course, il faut pouvoir definir :
 
@@ -284,6 +299,16 @@ Pour chaque competition, le club voit notamment :
 - action pour faire les engagements si les engagements sont ouverts.
 
 Les engagements des autres clubs ne sont jamais visibles par un club.
+
+## Calendrier public
+
+Le calendrier public est distinct du calendrier d'engagement d'un club et reste accessible sans compte. Il réunit les compétitions piscine et eau libre ainsi que les formations, stages, réunions et autres événements. Les niveaux proposés sont départemental, régional, national et international. Le niveau international suit les mêmes droits et le même périmètre qu'un niveau national.
+
+Une compétition ou un événement n'apparaît publiquement qu'après une action explicite d'un administrateur régional ou national. La publication ne modifie pas le statut des engagements. L'affichage calcule, sur des journées complètes, les états `En cours`, `À venir`, `Annulée`, `Terminée — résultats en attente` et `Résultats publiés`, avec priorité aux événements en cours puis à venir. Un événement annulé reste consultable.
+
+La vue initiale présente la saison courante et les événements en cours ou futurs. Les filtres saison, région, niveau et type sont locaux. La fiche publique contient les informations pratiques sans coordonnées personnelles, le programme synthétique par réunion, le lien vers les engagements du portail et les documents officiels. Elle rappelle que les engagements sont effectués par un responsable de club.
+
+Les formations, stages, réunions et autres événements sont créés dans le calendrier par les administrateurs, jamais par les clubs. Les résultats restent réservés à une évolution ultérieure ; les champs de liaison sont néanmoins prévus.
 
 ## Parcours d'engagement club
 
@@ -401,6 +426,8 @@ Si un club retire un nageur de la competition, les courses individuelles et part
 
 ## Temps d'engagement individuels
 
+Cette section concerne uniquement les competitions piscine. Une competition eau libre enregistre les nageurs et leurs courses sans temps d'engagement, sans recherche dans les performances et sans controle Records/MPF.
+
 Les temps d'engagement viennent d'abord de la base LivePalmes.
 
 Pour chaque nageur et chaque course, le module recherche les temps compatibles avec :
@@ -435,6 +462,8 @@ Regle d'interpretation :
 - 5 a 6 chiffres : format MMSSCC.
 
 L'affichage final est toujours normalise en `MM:SS.CC`.
+
+Dans le portail, cette normalisation est appliquée dès la sortie du champ et avant toute validation : les séparateurs peuvent être omis pendant la saisie, aussi bien pour une course individuelle que pour un relais.
 
 ### Controle des temps
 
@@ -512,7 +541,8 @@ Chaque competition dispose d'une GED simple.
 Documents prevus :
 
 - export TXT global ;
-- PDF recapitulatif de chaque club.
+- PDF recapitulatif de chaque club ;
+- documents d'information mis en ligne par l'organisation : affiche, circulaire, reglement, note d'information, plan ou autre document utile.
 
 Les niveaux 2 et 3 peuvent telecharger :
 
@@ -521,7 +551,13 @@ Les niveaux 2 et 3 peuvent telecharger :
 
 Chaque club peut telecharger uniquement son propre PDF.
 
-La GED conserve seulement la derniere version des documents.
+Tous les documents d'information d'une compétition publiée sont publics et accessibles sans connexion, quelle que soit la région du visiteur. Un administrateur régional peut mettre en ligne ces documents pour une compétition de sa région ; un administrateur national peut le faire pour toutes les compétitions. Les exports TXT et les PDF récapitulatifs des clubs restent privés.
+
+Un depot peut contenir plusieurs fichiers. Les formats PDF, bureautiques, images et ZIP sont acceptes dans la limite de 10 Mo par fichier et de 20 documents actifs par competition. Le titre est obligatoire ; la categorie et une description facultative facilitent la consultation. L'identite de l'auteur est visible uniquement par les administrateurs regionaux et nationaux.
+
+Le remplacement du fichier d'un document conserve son chemin et son jeton de téléchargement : son URL publique reste donc stable.
+
+La GED conserve seulement la derniere version des documents. Un remplacement supprime l'ancien fichier et une suppression ne produit pas de notification.
 
 ## Exports et PDF
 
@@ -530,6 +566,8 @@ La GED conserve seulement la derniere version des documents.
 L'export TXT global contient les engagements de la competition.
 
 Le format exact sera fourni plus tard.
+
+L'export piscine conserve le format WinPalme existant. L'export eau libre reste indisponible tant que son exemple TXT n'a pas ete valide ; sa fermeture automatique ne doit donc ni generer ni envoyer de TXT.
 
 Il doit etre :
 
@@ -575,8 +613,18 @@ Lors de l'ouverture des engagements :
 A la fermeture :
 
 - le responsable informatique recoit l'export TXT ;
+- lorsque la declaration des officiels est requise, le responsable juge recoit un PDF unique regroupant tous les officiels, classe par club puis par nom et prenom, avec leur date de naissance et leur numero de licence ; aucun PDF ni courriel n'est prepare lorsque les officiels ne sont pas requis ;
 - chaque club engage recoit son PDF recapitulatif ;
 - le PDF est envoye a toutes les adresses mail admin du club.
+
+### Mise en ligne de documents
+
+Lors d'un ajout ou d'un remplacement, l'administrateur peut choisir d'informer les clubs. Un depot groupe produit un seul courriel recapitulatif par destinataire, sans piece jointe, avec la liste des documents et un lien vers la competition.
+
+- competition nationale : notification a tous les administrateurs actifs des clubs ;
+- competition regionale ou departementale : notification aux administrateurs actifs des clubs de la region organisatrice et des regions invitees.
+
+Les fichiers possedent une URL techniquement publique afin de preparer leur future diffusion dans le calendrier public. Tant que ce calendrier n'existe pas, leur liste est affichee uniquement dans le portail connecte.
 
 L'adresse d'expedition souhaitee est :
 
@@ -601,6 +649,7 @@ Apres nouvelle fermeture :
 
 - l'export TXT est regenere ;
 - les PDF clubs sont regeneres ;
+- le PDF consolide des officiels est regenere et renvoye au responsable juge ;
 - les mails sont renvoyes ;
 - la GED conserve seulement la derniere version.
 
@@ -665,16 +714,14 @@ Sont volontairement reportes :
 - regles avancees de derogation sportive ;
 - statistiques avancees multi-saisons.
 
-## Prochaine etape
+## Etat actuel et prochaines etapes
 
-Avant de commencer le developpement, il faudra analyser l'existant :
+Le socle decrit dans ce document est maintenant integre au Portail LivePalmes. La phase actuelle consiste a :
 
-- authentification et droits ;
-- structure des clubs et utilisateurs ;
-- base nageurs et performances ;
-- donnees records et MPF ;
-- pages admin existantes ;
-- modules JavaScript reutilisables ;
-- contraintes Firebase et Cloud Functions.
+- finaliser les parcours existants ;
+- les tester avec les differents profils et perimetres ;
+- corriger les ecarts constates ;
+- ameliorer progressivement l'ergonomie et la fiabilite ;
+- ajouter seulement les petits modules complementaires confirmes par l'usage.
 
-Cette analyse permettra ensuite de proposer un decoupage technique par lots.
+Les fonctions presentes dans le code et les tests constituent la reference technique de l'etat reel. Les elements explicitement reportes restent hors du perimetre operationnel tant qu'ils n'ont pas ete developpes et valides.

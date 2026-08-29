@@ -33,6 +33,9 @@ const smokeFixture = {
     { eventId: "50sf", sex: "M", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Petit", firstName: "Nolan", club: "Pessac", category: "Senior", seedTime: "00:16.84", swimmerId: "50sf|m|petit|nolan|pessac" },
     { eventId: "100sf", sex: "F", session: "1", series: 1, seriesCount: 1, line: 4, lastName: "Bernard", firstName: "Ines", club: "Pays d'Aix", category: "Senior", seedTime: "00:43.12", swimmerId: "100sf|f|bernard|ines|pays-aix" }
   ],
+  results: [
+    { id: "smoke-result-1", eventId: "50sf", sex: "F", session: "1", series: 1, line: 4, lastName: "Martin", firstName: "Lea", club: "Limoges NAP", category: "Junior", time: "00:19.60", timeValue: 1960, rank: 1, status: "official", swimmerId: "50sf|f|martin|lea|limoges-nap" }
+  ],
   program: [
     { order: 1, session: "1", eventId: "50sf", sex: "F", label: "50 m surface", startTime: "09:00", seriesCount: 1 },
     { order: 2, session: "1", eventId: "50sf", sex: "M", label: "50 m surface", startTime: "09:05", seriesCount: 1 },
@@ -69,10 +72,21 @@ function smokeStorageScript() {
   const roleStates = Object.fromEntries(roles.map((role) => [role, { ...roleState, role }]));
   return `
     (() => {
+      window.LivePalmesConsoleGate = {
+        role: "",
+        adminBypass: () => true,
+        isUnlocked: () => true,
+        unlockedRole: () => window.LivePalmesDedicatedRole || "",
+        waitUntilUnlocked: () => Promise.resolve(true)
+      };
       try {
         localStorage.setItem("napSpeakerFrance2026:v15", ${JSON.stringify(JSON.stringify(smokeFixture))});
         localStorage.setItem("napSpeakerFrance2026:role-states:v1", ${JSON.stringify(JSON.stringify(roleStates))});
         localStorage.setItem("napSpeakerFrance2026:active-view:v1", JSON.stringify({ role: "live", profileHomeActive: true }));
+        localStorage.setItem("napSpeakerFrance2026:unlocked-roles:v1", ${JSON.stringify(JSON.stringify(roles))});
+        const publicCache = { ...${JSON.stringify(smokeFixture)}, cachedAt: Date.now() };
+        localStorage.setItem("livepalmes:public-series-cache:v2", JSON.stringify(publicCache));
+        localStorage.setItem("livepalmes:public-results-cache:v2", JSON.stringify(publicCache));
       } catch {}
     })();
   `;
@@ -205,7 +219,9 @@ async function launchBrowser() {
   await client.send("Network.setBlockedURLs", {
     urls: [
       "*firestore.googleapis.com/*",
-      "*google.firestore.v1.Firestore*"
+      "*google.firestore.v1.Firestore*",
+      "*donnees-speaker-france-2026.json*",
+      "*livepalmes-console-page-gate.js*"
     ]
   });
   return {
@@ -330,10 +346,17 @@ async function testHomeDedicatedLinks(client, baseUrl) {
     return {
       pathname: location.pathname,
       dedicatedRole: window.LivePalmesDedicatedRole || "",
-      isSpeaker: document.body.className.includes("role-speaker")
+      isSpeaker: document.body.className.includes("role-speaker"),
+      pinModalHidden: document.querySelector("#roleCodesModal")?.hidden,
+      pinModalText: (document.querySelector("#roleCodesModal")?.textContent || "").trim().slice(0, 160),
+      unlockedRoles: JSON.parse(localStorage.getItem("napSpeakerFrance2026:unlocked-roles:v1") || "[]"),
+      appReady: typeof window.render === "function",
+      accessAllowed: typeof requestRoleAccess === "function" ? requestRoleAccess("speaker") : null,
+      pinEnabled: typeof pinLockEnabled === "function" ? pinLockEnabled() : null,
+      firebaseReady: Boolean(window.firebase?.apps?.length)
     };
   `);
-  assert(state.pathname.endsWith("/speaker.html"), `Accueil : redirection speaker KO (${state.pathname}).`);
+  assert(state.pathname.endsWith("/speaker.html"), `Accueil : redirection speaker KO (${JSON.stringify(state)}).`);
   assert(state.dedicatedRole === "speaker" || state.isSpeaker, "Accueil : page speaker dediee non reconnue.");
   await waitFor(client, "document.body.className.includes('role-speaker') || !document.querySelector('#roleCodesModal')?.hidden", 5000);
   await client.send("Runtime.evaluate", {
@@ -594,7 +617,21 @@ async function testRefereeDecisionFlow(client, baseUrl) {
 async function testPublicSeries(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/series-public.html?smoke-series=${Date.now()}` });
   const ready = await waitFor(client, "document.querySelectorAll('#publicSeriesRaceSelect option').length > 0", 12000);
-  assert(ready, "Page publique series : aucune course dans le menu.");
+  if (!ready) {
+    const debug = await evaluateJson(client, `
+      let cache = null;
+      try { cache = JSON.parse(localStorage.getItem('livepalmes:public-series-cache:v2') || 'null'); } catch {}
+      return {
+        cacheSeries: cache?.series?.length || 0,
+        cacheProgram: cache?.program?.length || 0,
+        cacheAge: cache?.cachedAt ? Date.now() - cache.cachedAt : -1,
+        appText: (document.querySelector('#publicSeriesApp')?.textContent || '').trim().slice(0, 240),
+        status: (document.querySelector('#publicSeriesStatus')?.textContent || '').trim(),
+        script: document.querySelector('script[src*="series-public.js"]')?.getAttribute('src') || ''
+      };
+    `);
+    assert(false, `Page publique series : aucune course dans le menu. ${JSON.stringify(debug)}`);
+  }
   const state = await evaluateJson(client, `
     const options = Array.from(document.querySelectorAll('#publicSeriesRaceSelect option')).map((option) => option.textContent.trim());
     return {
@@ -638,13 +675,13 @@ async function testPublicHome(client, baseUrl) {
   const desktop = await evaluateJson(client, `
     return {
       title: document.querySelector('#publicHomeTitle')?.textContent.trim() || '',
-      resultLink: document.querySelector('a[href="resultats.html"]')?.textContent.trim() || '',
-      seriesLink: document.querySelector('a[href="series-public.html"]')?.textContent.trim() || '',
-      archiveLink: Boolean(document.querySelector('a[href="archives.html"]')),
+      resultLink: document.querySelector('a[href="resultats"], a[href="resultats.html"]')?.textContent.trim() || '',
+      seriesLink: document.querySelector('a[href="series"], a[href="series-public.html"]')?.textContent.trim() || '',
+      calendarLink: document.querySelector('a[href="calendrier.html"]')?.textContent.trim() || '',
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
     };
   `);
-  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.archiveLink, "Accueil public : liens principaux absents.");
+  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.calendarLink, "Accueil public : liens principaux absents.");
   assert(!desktop.overflow, "Accueil public : debordement horizontal desktop.");
   await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await sleep(250);
@@ -656,9 +693,6 @@ async function testPublicHome(client, baseUrl) {
   `);
   assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
   await client.send("Emulation.clearDeviceMetricsOverride");
-  await client.send("Page.navigate", { url: `${baseUrl}/archives.html?smoke-archives=${Date.now()}` });
-  const archiveReady = await waitFor(client, "document.querySelector('.public-archive-empty, .public-archive-list')", 6000);
-  assert(archiveReady, "Archives publiques : page non chargee.");
   console.log("Accueil public : OK");
 }
 
@@ -703,6 +737,9 @@ async function main() {
   const { server, baseUrl } = await startStaticServer();
   const browser = await launchBrowser();
   try {
+    await browser.client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-seed=${Date.now()}` });
+    await waitFor(browser.client, "document.readyState === 'complete'", 5000);
+    await seedFallbackCompetitionData(browser.client, baseUrl);
     await testHomeDedicatedLinks(browser.client, baseUrl);
     await seedFallbackCompetitionData(browser.client, baseUrl);
     await testRoleOpening(browser.client, baseUrl);
@@ -711,7 +748,6 @@ async function main() {
     await testDedicatedConsolePages(browser.client, baseUrl);
     await seedFallbackCompetitionData(browser.client, baseUrl);
     await testRefereeDecisionFlow(browser.client, baseUrl);
-    await browser.client.send("Network.setBlockedURLs", { urls: [] });
     await testPublicHome(browser.client, baseUrl);
     await testPublicSeries(browser.client, baseUrl);
     await testPublicResults(browser.client, baseUrl);

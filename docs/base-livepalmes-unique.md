@@ -1,59 +1,72 @@
-# Base LivePalmes unique des performances
+# Base active des performances LivePalmes
 
-<!-- description: Modèle cible de la base interne unique des performances et de son journal de modifications. -->
+<!-- description: Organisation actuelle de la base interne des performances, de son journal de modifications et de ses index. -->
 
-## Cible
+## Rôle de la base
 
-La source officielle devient une base interne unique :
+LivePalmes conserve une base interne commune pour centraliser les performances individuelles. Elle rassemble les données historiques reprises des anciennes sources et les nouvelles performances ajoutées depuis le portail.
 
-- `performanceBase` : une ligne par performance officielle LivePalmes ;
-- `performanceBaseChanges` : journal technique des synchronisations, corrections, masquages et imports.
+La collection Firestore de référence s'appelle aujourd'hui `performances`. Les anciens noms `performanceBase` et `performanceBaseChanges`, présents dans de premiers documents de conception, ne correspondent plus à l'implémentation actuelle.
 
-Les pages publiques ne lisent pas directement cette base. Elles continuent de lire des fichiers publics optimises, generes depuis la base officielle.
+## Ce que contient une performance
 
-## Etat mis en place
+Chaque ligne relie notamment :
 
-Depuis cette transition :
+- une nageuse ou un nageur ;
+- une épreuve et un temps ;
+- une compétition, une date et un lieu ;
+- un club, une catégorie et les informations utiles au classement ;
+- la source permettant de retrouver l'origine de la donnée.
 
-- chaque nouvel import continue d'etre stocke dans `performanceImports` pour l'audit ;
-- chaque nouvel import est aussi synchronise dans `performanceBase` ;
-- chaque correction ou masquage est toujours stocke dans `performanceCorrections` ;
-- chaque correction ou masquage est aussi applique dans `performanceBase`.
+Le détail exact reste défini par le code d'import et les règles sportives validées. La documentation ne doit pas inventer ni modifier ces règles.
 
-Cela donne une source officielle pour les nouvelles actions, tout en conservant l'affichage public actuel.
+## Collections principales
 
-## Migration historique
+- `performances` : données actives utilisées par les outils internes ;
+- `performanceChanges` : journal des ajouts, corrections et suppressions ;
+- `performanceImports` : suivi des lots importés ;
+- `performanceCorrections` : demandes et historique des corrections ;
+- `performanceMigrationJobs` : suivi des opérations exceptionnelles de migration.
 
-La migration complete de l'historique ne doit pas etre lancee a l'aveugle : elle represente plusieurs centaines de milliers de performances.
+Le journal permet de comprendre d'où vient une modification et d'éviter qu'une correction soit perdue lors d'une publication ultérieure.
 
-Premiere etape de controle :
+## Index de consultation
 
-```bash
-node tools/build-performance-base-seed.js
-```
+La base complète n'est pas relue à chaque affichage. Des index préparés facilitent les recherches :
 
-Ce script genere :
+- `performanceSwimmerIndex` et `performanceSwimmerPages` pour retrouver les performances d'une personne ;
+- `performanceTopViews` pour les meilleures performances ;
+- `performanceSwimmerIndexState` et `performanceTopIndexState` pour suivre l'état de construction de ces index.
 
-```text
-outputs/performance-base-seed.ndjson
-```
+Cette organisation réduit les lectures, accélère le portail et limite les coûts Firebase.
 
-Chaque ligne contient une performance prete a etre inseree dans `performanceBase`.
+## Alimentation de la base
 
-Pour tester sur un petit echantillon :
+Les données peuvent venir :
 
-```bash
-node tools/build-performance-base-seed.js --limit 1000
-```
+- de la reprise historique INTRANAP ;
+- d'imports de résultats réalisés dans le portail ;
+- de corrections autorisées et tracées.
 
-Une fois le fichier controle, on pourra ajouter l'etape d'import Firestore par lots, avec reprise possible en cas d'interruption.
+La source historique reste conservée comme référence d'origine. La base active évolue ensuite grâce aux imports et corrections. Son exhaustivité historique doit être contrôlée séparément ; elle ne doit pas être supposée uniquement parce qu'une reprise a été effectuée.
 
-## Publication publique
+## Publication vers le site public
 
-La cible finale est :
+Firestore est la base de travail interne. Les pages publiques ne parcourent pas directement toute cette base : elles utilisent des fichiers optimisés, publiés dans Firebase Storage.
 
-1. Admin modifie `performanceBase`.
-2. Une publication regenere les fichiers publics TOP et fiches nageurs.
-3. Les visiteurs lisent uniquement ces fichiers publics optimises.
+Lors d'une opération courante, seules les parties touchées sont recalculées autant que possible : fiche nageur, recherche, identifiants concernés et TOP associés. Une reconstruction complète reste une opération exceptionnelle.
 
-Cela garde une base administrative simple, sans exposer les pages publiques a des lectures Firestore massives.
+Le fonctionnement détaillé est décrit dans `docs/pipeline-performances-publiques.md`.
+
+## Records et MPF
+
+Les records et les meilleures performances françaises ne sont pas stockés dans la collection `performances`. Ils restent dans leur espace dédié sous `competitions/livepalmes-active/performanceData/records`, puis sont publiés séparément pour le site public.
+
+Cette séparation évite de confondre :
+
+- la base détaillée de toutes les performances ;
+- les références officielles de records et de MPF.
+
+## État actuel
+
+La base et ses outils sont encore améliorés pendant la finalisation et les tests du portail. Toute migration, reconstruction complète, correction massive ou publication de données doit être explicitement validée avant exécution.

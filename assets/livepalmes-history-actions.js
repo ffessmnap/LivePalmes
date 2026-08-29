@@ -63,6 +63,47 @@
       return db.collection("competitions").doc(FIRESTORE_COMPETITION_ID).collection(collectionName);
     }
 
+    function publicArchiveSummary(archive = {}) {
+      return {
+        id: String(archive.id || ""),
+        createdAt: String(archive.createdAt || ""),
+        createdLabel: String(archive.createdLabel || ""),
+        publicArchive: true,
+        meet: archive.meet || {},
+        count: Number(archive.count || 0),
+        raceCount: Number(archive.raceCount || 0),
+        extras: Array.isArray(archive.extras) ? archive.extras : []
+      };
+    }
+
+    async function nextPublicArchivesIndex(collection, archive, updatedAt) {
+      const indexRef = collection?.parent?.collection("public")?.doc("archivesIndex");
+      if (!indexRef) return null;
+      const indexSnapshot = await indexRef.get().catch(() => null);
+      let archives = indexSnapshot?.exists && Array.isArray(indexSnapshot.data()?.archives)
+        ? indexSnapshot.data().archives
+        : [];
+      if (!indexSnapshot?.exists) {
+        const legacySnapshot = await collection.orderBy("createdAt", "desc").limit(50).get().catch(() => null);
+        archives = (legacySnapshot?.docs || [])
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((item) => item.publicArchive === true || item.reason === "Archive publique de la compétition")
+          .map(publicArchiveSummary);
+      }
+      const nextArchive = publicArchiveSummary(archive);
+      const nextArchives = [nextArchive, ...archives.filter((item) => item?.id !== nextArchive.id)]
+        .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))
+        .slice(0, 50);
+      return {
+        ref: indexRef,
+        payload: {
+          id: "archivesIndex",
+          archives: nextArchives,
+          updatedAt
+        }
+      };
+    }
+
     function archiveRaceKeyFromParts(eventId, sex) {
       return `${eventId || ""}|${sex || ""}`;
     }
@@ -247,8 +288,14 @@
         publicIndex: sanitizeAlertForFirestore(archiveIndex)
       };
       const archiveRef = collection.doc(archive.id);
+      const archivesIndexUpdate = archive.publicArchive
+        ? await nextPublicArchivesIndex(collection, archive, archive.createdAt)
+        : null;
       const batch = db.batch();
       batch.set(archiveRef, sanitizeAlertForFirestore(archive));
+      if (archivesIndexUpdate) {
+        batch.set(archivesIndexUpdate.ref, sanitizeAlertForFirestore(archivesIndexUpdate.payload));
+      }
       racePayloads.forEach((race) => {
         batch.set(archiveRef.collection("races").doc(race.id), sanitizeAlertForFirestore(race));
       });

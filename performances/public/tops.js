@@ -6,7 +6,7 @@
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
   const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
-  const dataVersion = encodeURIComponent(usesFirestorePublicData ? `firestore-${Date.now()}` : publicVersion);
+  let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-current" : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
     ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
     : "public/data/performance-public";
@@ -61,12 +61,15 @@
           : (currentFilters.categories || [])
       }
     };
+    if (usesFirestorePublicData && manifest.generatedAt) {
+      dataVersion = encodeURIComponent(`firestore-${manifest.generatedAt}`);
+    }
   }
 
   async function loadSelectedPublicManifest() {
     if (!usesFirestorePublicData) return;
     try {
-      const response = await fetch(`${publicPerformanceBase}/manifest.json?v=${dataVersion}`, { cache: "no-store" });
+      const response = await fetch(`${publicPerformanceBase}/manifest.json`, { cache: "no-store" });
       if (!response.ok) return;
       applyPublicManifest(await response.json());
     } catch (error) {
@@ -81,6 +84,9 @@
     sex: document.querySelector("#topSexFilter"),
     courseButtons: document.querySelector("#topCourseButtons"),
     pool: document.querySelector("#topPoolFilter"),
+    birthYear: document.querySelector("#topBirthYearFilter"),
+    birthYearField: document.querySelector("#topBirthYearField"),
+    birthYearTrigger: document.querySelector("#topSecretFilterTrigger"),
     title: document.querySelector("#topTitle"),
     status: document.querySelector("#topStatus"),
     swimmerHeader: document.querySelector("#topSwimmerHeader"),
@@ -138,6 +144,9 @@
   const initialTopLimit = 25;
   let selectedCourse = "";
   let showAllTopRows = false;
+  let birthYearFilterOpen = false;
+  let secretFilterTapCount = 0;
+  let secretFilterTapTimer = null;
   let additionalRows = [];
   let performanceCorrections = [];
   let additionalLoaded = false;
@@ -162,6 +171,11 @@
   function birthYearLabel(value) {
     const match = String(value || "").match(/^(\d{4})/);
     return match ? match[1] : "";
+  }
+
+  function selectedBirthYear() {
+    const value = String(elements.birthYear?.value || "").trim();
+    return /^\d{4}$/.test(value) ? value : "";
   }
 
   function swimmerNameHtml(row) {
@@ -422,7 +436,7 @@
 
   function topBucketsForFilters(filters) {
     if (!filters.course || !filters.sex) return [];
-    const usePreview = Number.isFinite(filters.limit) && !filters.pool && !filters.season && !filters.region;
+    const usePreview = Number.isFinite(filters.limit) && !filters.pool && !filters.season && !filters.region && !filters.birthYear && !filters.birthYearFilterOpen;
     return [filters.sex].flatMap((sex) => {
       const categories = filters.category ? [filters.category] : categoriesForSex(sex);
       return categories.map((category) => ({
@@ -472,6 +486,8 @@
       season: elements.season.value,
       region: elements.region.value,
       pool: selectedSegmentValue(elements.pool),
+      birthYear: selectedBirthYear(),
+      birthYearFilterOpen,
       sex,
       category,
       course: selectedCourse,
@@ -485,10 +501,11 @@
     const season = filters.season ? `Saison ${filters.season}` : "";
     const region = filters.region ? regionLabel(filters.region) : "";
     const pool = filters.pool ? `Bassin ${filters.pool} m` : "";
+    const birthYear = filters.birthYear ? `Naissance ${filters.birthYear}` : "";
     const categoryContext = filters.sex
       ? [sexLabels[filters.sex], category || "Toutes cat\u00e9gories"].filter(Boolean).join(" - ")
       : "";
-    const context = [course, categoryContext, pool, season, region].filter(Boolean).join(" - ");
+    const context = [course, categoryContext, birthYear, pool, season, region].filter(Boolean).join(" - ");
     elements.title.textContent = context ? `TOP ${context}` : "TOP";
   }
 
@@ -509,7 +526,7 @@
       (candidate.timeValue === current.timeValue && String(candidate.date).localeCompare(current.date) < 0);
   }
 
-  function rowsForFilters(filters, bucketFilters = filters) {
+  function matchingRowsForFilters(filters, bucketFilters = filters) {
     const intranapRows = topBucketsForFilters(bucketFilters).flatMap((bucket) => bucketRows.get(bucketKey(bucket)) || []);
     const importedRows = additionalRows.filter((row) =>
       row.course === filters.course &&
@@ -532,12 +549,32 @@
       );
     const season = filters.season ? Number(filters.season) : null;
     const selectedRegions = new Set(String(filters.region || "").split(",").filter(Boolean));
+    return rows.filter((row) => {
+      if (season && Number(row.seasonYear) !== season) return false;
+      if (selectedRegions.size && !selectedRegions.has(String(row.regionId))) return false;
+      if (filters.pool && performancePool(row) !== String(filters.pool)) return false;
+      if (filters.birthYear && birthYearLabel(row.birthDate) !== filters.birthYear) return false;
+      return true;
+    });
+  }
+
+  function updateBirthYearOptions(filters) {
+    const years = Array.from(new Set(
+      matchingRowsForFilters({ ...filters, birthYear: "" }, filters)
+        .map((row) => birthYearLabel(row.birthDate))
+        .filter(Boolean)
+    )).sort((a, b) => Number(b) - Number(a));
+    const selected = years.includes(filters.birthYear) ? filters.birthYear : "";
+    addOptions(elements.birthYear, years, "Toutes les ann\u00e9es");
+    elements.birthYear.value = selected;
+    elements.birthYear.disabled = false;
+    filters.birthYear = selected;
+  }
+
+  function rowsForFilters(filters, bucketFilters = filters) {
     const bestBySwimmer = new Map();
 
-    rows.forEach((row) => {
-      if (season && Number(row.seasonYear) !== season) return;
-      if (selectedRegions.size && !selectedRegions.has(String(row.regionId))) return;
-      if (filters.pool && performancePool(row) !== String(filters.pool)) return;
+    matchingRowsForFilters(filters, bucketFilters).forEach((row) => {
 
       const swimmerKey = rowSwimmerKey(row);
       const current = bestBySwimmer.get(swimmerKey);
@@ -627,18 +664,24 @@
     updateTitle(filters);
 
     if (!filters.sex && !filters.course) {
+      addOptions(elements.birthYear, [], "Toutes les ann\u00e9es");
+      elements.birthYear.disabled = true;
       elements.status.textContent = "Choisissez un sexe et une course";
       renderRows([], filters);
       return;
     }
 
     if (!filters.sex) {
+      addOptions(elements.birthYear, [], "Toutes les ann\u00e9es");
+      elements.birthYear.disabled = true;
       elements.status.textContent = "Choisissez un sexe";
       renderRows([], filters);
       return;
     }
 
     if (!filters.course) {
+      addOptions(elements.birthYear, [], "Toutes les ann\u00e9es");
+      elements.birthYear.disabled = true;
       elements.status.textContent = "Choisissez une course";
       renderRows([], filters);
       return;
@@ -667,14 +710,22 @@
       return;
     }
 
+    updateBirthYearOptions(filters);
+    updateTitle(filters);
     const rows = rowsForFilters(filters);
     const allRows = Number.isFinite(filters.limit)
       ? rowsForFilters({ ...filters, limit: Infinity }, filters)
       : rows;
     const limitLabel = Number.isFinite(filters.limit) ? `TOP ${filters.limit}` : "Tous";
     const poolLabel = filters.pool ? `Bassin ${filters.pool} m` : "Tous bassins";
+    const birthYearLabelText = filters.birthYear ? `Naissance ${filters.birthYear}` : "";
     const countLabel = allRows.length > rows.length ? `${rows.length} / ${allRows.length}` : `${rows.length}`;
-    elements.status.textContent = `${countLabel} ligne${allRows.length > 1 ? "s" : ""} - ${limitLabel} - ${poolLabel}`;
+    elements.status.textContent = [
+      `${countLabel} ligne${allRows.length > 1 ? "s" : ""}`,
+      limitLabel,
+      poolLabel,
+      birthYearLabelText
+    ].filter(Boolean).join(" - ");
     renderRows(rows, filters);
     updateLoadMore(rows, allRows, filters);
   }
@@ -734,6 +785,28 @@
         resetTopLimit();
         render();
       });
+    });
+
+    elements.birthYearTrigger?.addEventListener("click", () => {
+      secretFilterTapCount += 1;
+      global.clearTimeout(secretFilterTapTimer);
+      if (secretFilterTapCount < 4) {
+        secretFilterTapTimer = global.setTimeout(() => {
+          secretFilterTapCount = 0;
+        }, 1600);
+        return;
+      }
+
+      secretFilterTapCount = 0;
+      birthYearFilterOpen = !birthYearFilterOpen;
+      elements.birthYearField.hidden = !birthYearFilterOpen;
+      render();
+      if (birthYearFilterOpen) elements.birthYear.focus();
+    });
+
+    elements.birthYear?.addEventListener("input", () => {
+      resetTopLimit();
+      render();
     });
 
     elements.loadMoreButton?.addEventListener("click", () => {

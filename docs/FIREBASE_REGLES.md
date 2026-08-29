@@ -1,75 +1,69 @@
-# Regles Firebase LivePalmes
+# Règles Firebase de LivePalmes
 
-<!-- description: Périmètre des données Firestore et règles de sécurité Firebase utilisées par LivePalmes. -->
+<!-- description: Périmètre actuel des données Firestore et règles de sécurité Firebase utilisées par LivePalmes. -->
 
-Ce fichier sert a sortir du mode test Firestore.
+## À quoi servent ces règles ?
 
-## Principe
+Firestore est la base de données en ligne utilisée par LivePalmes. Le fichier `firestore.rules` joue le rôle de portier : il décide quelles données le navigateur peut lire ou modifier directement.
 
-LivePalmes utilise seulement ces zones dans Firestore :
+Le principe actuel est simple :
 
-- `competitions/livepalmes-active/alerts`
-- `competitions/livepalmes-active/liveData/current`
-- `competitions/livepalmes-active/roleLocks`
-- `competitions/livepalmes-active/historyArchives`
-- `competitions/livepalmes-active/resultArchives`
-- `competitions/livepalmes-active/resultArchives/{archiveId}/items`
-- `competitions/livepalmes-active/resultArchives/{archiveId}/resultPdfs`
-- `competitions/livepalmes-active/resultArchives/{archiveId}/sessionResultsPdfs`
-- `competitions/livepalmes-active/results`
-- `competitions/livepalmes-active/resultPdfs`
-- `competitions/livepalmes-active/sessionResultsPdfs`
-- `competitions/livepalmes-active/public/resultsIndex`
+- **LivePalmes Direct** utilise quelques zones Firestore autorisées pour faire fonctionner les consoles pendant une compétition nationale ;
+- **le portail LivePalmes** passe principalement par des fonctions sécurisées côté serveur ;
+- tout ce qui n'est pas explicitement autorisé est refusé.
 
-Les regles dans `firestore.rules` bloquent tout le reste.
+Ces règles ne décrivent donc pas toutes les données du portail. Elles encadrent surtout les accès directs depuis un navigateur.
 
-Important : comme LivePalmes n'utilise pas encore de vrais comptes Firebase Authentication, ces regles ne savent pas reconnaitre une personne. Elles limitent surtout les zones et la forme des donnees. La protection par codes reste geree par l'outil LivePalmes.
+## Deux compétitions techniques
 
-## Ce que les regles autorisent
+Les données de LivePalmes Direct sont rangées sous :
 
-- Lecture du programme, des alertes, des resultats publics et des archives de LivePalmes.
-- Publication des series et des reperes via `liveData/current`.
-- Creation et mise a jour des alertes arbitres, speaker, video, bureau des performances et secretariat.
-- Reservation d'une console par role via `roleLocks`.
-- Publication, remplacement et suppression des PDF resultats dans une collection separee pour accelerer les consoles.
-- Publication d'un index public leger pour limiter les lectures de la page resultats, avec etat public et infos de session.
-- Gestion des finalistes, forfaits, pre-forfaits et repechages dans les resultats.
-- Archivage du journal d'arbitrage avant RAZ.
-- Archivage public durable des resultats, des fiches nageurs et des PDF resultats avant nouvelle competition.
+- `competitions/livepalmes-active` pour l'environnement actif ;
+- `competitions/livepalmes-test` pour les essais prévus à cet effet.
 
-## Ce que les regles bloquent
+Ces identifiants techniques ne correspondent pas au calendrier des compétitions préparées dans le portail.
 
-- Toute autre competition que `livepalmes-active`.
-- Toute collection non prevue par LivePalmes.
-- L'ecriture directe sur le document racine `competitions/livepalmes-active`.
-- Les documents `roleLocks` avec un role inconnu.
-- Les documents `liveData` autres que `current`.
+## Accès aux consoles LivePalmes Direct
 
-## Comment publier les regles
+Pour agir depuis une console, deux contrôles se complètent :
 
-1. Ouvre la console Firebase.
-2. Va dans `Firestore Database`.
-3. Clique sur l'onglet `Regles`.
-4. Remplace tout le contenu par celui du fichier `firestore.rules`.
-5. Clique sur `Publier`.
-6. Teste ensuite dans LivePalmes :
-   - ouvrir les consoles ;
-   - charger un PDF de series depuis Informatique ;
-   - mettre a jour les reperes speaker depuis Google Sheet ;
-   - publier un PDF resultat sans finale ;
-   - publier un PDF resultat avec finale ;
-   - annoncer les finalistes cote speaker ;
-   - declarer un forfait finale cote secretariat ;
-   - verifier le repechage cote speaker ;
-   - verifier la page publique resultats ;
-   - faire une fausse decision JA ;
-   - confirmer cote video si besoin ;
-   - traiter cote bureau des performances ;
-   - exporter le journal ;
-   - faire une RAZ historique ;
-   - verifier que l'archive du journal est consultable depuis le portail ;
-   - remettre a zero les resultats publics et verifier que l'archive des resultats apparait dans le portail.
+1. l'utilisateur se connecte avec un compte Firebase autorisé ;
+2. il saisit le PIN correspondant à son rôle sur la compétition.
 
-## A retenir
+Après validation du PIN, le serveur délivre une autorisation temporaire. Les règles vérifient à la fois le compte, le rôle et cette autorisation avant d'accepter une modification. L'autorisation d'une console expire actuellement après 12 heures.
 
-Ces regles sont plus propres que le mode test, mais ce n'est pas une securite absolue. Pour une version plus verrouillee, il faudra plus tard ajouter Firebase Authentication ou une Cloud Function pour verifier les roles cote serveur.
+Les principales zones concernées sont les données du direct, les alertes, les résumés, les PDF, les résultats, les archives, les présences et les verrous de rôle. Les droits précis diffèrent selon la console : une console ne peut pas modifier librement les données des autres rôles.
+
+## Accès publics
+
+Le calendrier public n'ouvre aucune collection Firestore. Les pages lisent les instantanés JSON générés dans le bucket public sous `calendar/`; les écritures et la publication restent réservées aux Cloud Functions authentifiées du portail.
+
+Certaines données destinées à l'affichage public peuvent être lues sans compte, notamment une partie des informations de direct, des résultats publiés et des données de performances prévues à cet effet.
+
+Une lecture publique ne donne jamais automatiquement le droit de modifier ces données.
+
+## Données du portail
+
+Les comptes, droits, engagements, clubs, nageurs, officiels, imports et corrections de performances ne sont pas ouverts directement au navigateur.
+
+Le portail appelle des Cloud Functions Firebase. Ces fonctions agissent côté serveur, contrôlent l'identité, les capacités et le périmètre de l'utilisateur, puis réalisent uniquement l'opération autorisée. Le refus général placé à la fin des règles bloque tout autre accès direct.
+
+## Sources de référence
+
+- `firestore.rules` : règles réellement appliquées aux accès directs ;
+- `firestore.indexes.json` : index nécessaires aux recherches Firestore ;
+- `functions/index.js` : contrôles et opérations exécutés côté serveur ;
+- `docs/droits-acces-livepalmes.md` : modèle des comptes, capacités et périmètres ;
+- `docs/authentification-admin-et-pins.md` : connexion au portail et accès aux consoles.
+
+## Vérification et publication
+
+Les règles peuvent être testées localement avec l'émulateur Firestore :
+
+```powershell
+npm --prefix tests/firestore-rules test
+```
+
+Ce test utilise le projet fictif `demo-livepalmes` et ne doit pas écrire dans la base de production.
+
+Toute modification ou publication des règles, index ou fonctions Firebase est une opération sensible. Elle doit être validée explicitement et suivre `docs/agents/PUBLICATION.md`. Le fichier local versionné est la référence ; il ne faut pas maintenir une deuxième version copiée manuellement dans la console Firebase.

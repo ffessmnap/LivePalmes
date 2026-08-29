@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Notifications par email | LivePalmes</title>
+    <meta name="description" content="Gestion des notifications de compétition LivePalmes.">
+    <meta name="theme-color" content="#0b7285">
+    <link rel="icon" type="image/png" href="favicon.png?v=20260819-hosting-2">
+    <link rel="stylesheet" href="assets/livepalmes-password-reset.css">
+  </head>
+  <body>
+    <main class="password-reset-shell">
+      <section class="password-reset-card" aria-labelledby="notificationPreferenceTitle">
+        <a class="password-reset-brand" href="/" aria-label="Accueil LivePalmes">
+          <img src="logo-livepalmes.png?v=20260819-hosting-1" alt="">
+          <span>LivePalmes</span>
+        </a>
+        <div id="notificationPreferenceLoading" class="password-reset-status" role="status" aria-live="polite">
+          Vérification du lien sécurisé…
+        </div>
+        <div id="notificationPreferencePanel" hidden>
+          <h1 id="notificationPreferenceTitle">Notifications de compétition</h1>
+          <p>Vous ne recevrez plus les ouvertures de compétitions, les nouveaux documents ni les récapitulatifs PDF d’engagement.</p>
+          <p>Les messages indispensables concernant votre compte et sa sécurité resteront envoyés.</p>
+          <button id="notificationPreferenceDisableButton" type="button">Désactiver ces notifications</button>
+        </div>
+        <div id="notificationPreferenceSuccess" hidden>
+          <h1>Notifications désactivées</h1>
+          <p>Votre choix a bien été enregistré. Vous pourrez réactiver ces notifications depuis la rubrique « Mon compte » du portail.</p>
+          <a class="password-reset-button" href="/portail.html#mon-compte">Accéder au Portail LivePalmes</a>
+        </div>
+        <div id="notificationPreferenceError" hidden>
+          <h1>Lien invalide</h1>
+          <p id="notificationPreferenceErrorMessage">Ce lien est incomplet ou n’est plus valide.</p>
+          <a class="password-reset-link" href="/portail.html">Retourner au Portail LivePalmes</a>
+        </div>
+        <p id="notificationPreferenceMessage" class="password-reset-message" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+    <script src="assets/livepalmes-notification-preferences.js"></script>
+  </body>
+</html>

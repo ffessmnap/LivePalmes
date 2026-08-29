@@ -33,17 +33,23 @@
     }
 
     async function saveResultPdfPayload(result, pdfDataUrl) {
-      return livePalmesResults.saveResultPdfPayload(result, pdfDataUrl, {
-        collection: resultPdfsCollection(),
-        resultPdfPayload
-      });
+      const collection = resultPdfsCollection();
+      const payload = resultPdfPayload(result, pdfDataUrl);
+      if (window.LivePalmesPdfStorage?.saveDocument) {
+        return window.LivePalmesPdfStorage.saveDocument({ collection, payload, kind: "result" });
+      }
+      return livePalmesResults.saveResultPdfPayload(result, pdfDataUrl, { collection, resultPdfPayload });
     }
 
     async function deleteResultPdfPayload(resultId) {
-      return livePalmesResults.deleteResultPdfPayload(resultId, {
-        collection: resultPdfsCollection(),
-        onError: (error) => console.warn("Suppression du PDF resultat separe impossible", error)
-      });
+      const collection = resultPdfsCollection();
+      const docRef = collection?.doc(resultId);
+      if (window.LivePalmesPdfStorage?.deleteDocument && docRef) {
+        const snapshot = await docRef.get({ source: "server" }).catch(() => null);
+        return window.LivePalmesPdfStorage.deleteDocument(docRef, snapshot?.data?.() || {});
+      }
+      return livePalmesResults.deleteResultPdfPayload(resultId, { collection,
+        onError: (error) => console.warn("Suppression du PDF resultat separe impossible", error) });
     }
 
     async function migrateResultPdfsOutOfResults(rows = [], options = {}) {

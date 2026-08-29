@@ -1,96 +1,89 @@
 # LivePalmes
 
-<!-- description: Présentation générale de LivePalmes, démarrage local et principaux outils du dépôt. -->
+<!-- description: Présentation générale de l'écosystème LivePalmes, de son état actuel et des principaux repères du dépôt. -->
 
-Outil de suivi live pour la nage avec palmes : console Live, Speaker, Juge arbitre, Juge video et Informatique.
+LivePalmes est un ecosysteme numerique dedie a la nage avec palmes. Il reunit un portail metier, des espaces publics de consultation et un dispositif distinct de suivi en direct pour certaines competitions nationales.
 
-En local, double-clique sur `Demarrer la console.bat`.
+## Etat du projet
 
-Ce lanceur :
+Le Portail LivePalmes est actuellement en cours de finalisation et de test. Il continue d'etre ameliore et peut recevoir de petits modules complementaires selon les besoins valides.
 
-- regenere les donnees au demarrage ;
-- ouvre la console dans le navigateur ;
-- surveille les fichiers sources ;
-- regenere automatiquement `data.generated.js` et `donnees-speaker-france-2026.json` quand une source change ;
-- permet aussi de relancer la regeneration depuis le bouton `Regenerer les donnees`.
+Le portail n'est donc pas encore considere comme operationnel, meme si ses principaux modules sont deja presents dans le code.
 
-Garde la fenetre ouverte pendant l'utilisation locale de la console.
+## Les trois composantes
 
-## Verification avant publication
+### Portail LivePalmes
 
-Avant de mettre en ligne une mise a jour importante, lance :
+Le portail est le coeur fonctionnel actuel de l'ecosysteme. Il sert a preparer les competitions et les engagements, gerer les clubs, nageurs, officiels, comptes et droits, administrer les performances, Records et MPF, et acceder aux espaces DTN ou nationaux autorises.
+
+Page principale : `portail.html`.
+
+### Espace public LivePalmes
+
+Cet espace permet de consulter sans connexion les Records de France, les MPF, les TOP, les performances historiques et les fiches nageurs.
+
+L'accueil public de l'ecosysteme est porte par `index.html`. Les pages de performances sont regroupees dans `performances/`.
+
+### LivePalmes Direct
+
+LivePalmes Direct est un dispositif separe, utilise uniquement lors des competitions nationales qui en ont besoin. Il regroupe les consoles terrain et les pages de series, resultats, medailles et archives publiees pendant ces competitions.
+
+Son utilisation et sa maintenance sont documentees dans `docs/LIVEPALMES_DIRECT.md`.
+
+## Technologies principales
+
+LivePalmes utilise :
+
+- HTML pour structurer les pages ;
+- CSS pour leur presentation ;
+- JavaScript natif pour les actions et traitements dans le navigateur ;
+- Firebase pour les comptes, les donnees, les traitements serveur, les fichiers et l'hebergement ;
+- Node.js pour les fonctions serveur, les tests, les imports et les outils de maintenance ;
+- GitHub pour conserver le code et l'historique des modifications.
+
+Il n'utilise pas de framework comme React, Vue ou Angular et ne possede pas de bundler racine.
+
+## Organisation du depot
+
+- `portail.html` : Portail LivePalmes ;
+- `assets/livepalmes-admin-*.js` : principaux modules du portail ;
+- `performances/` : espace public et outils de gestion des performances ;
+- `pilotage-livepalmes.html` et les pages de roles : LivePalmes Direct ;
+- `resultats.html`, `series-public.html` et `medailles.html` : publications publiques du Direct ;
+- `functions/` : traitements Firebase executes cote serveur ;
+- `tools/` : scripts de verification, generation et maintenance ;
+- `tests/` : tests automatiques ;
+- `docs/` : documentation fonctionnelle et technique.
+
+Certaines pages restent volontairement a la racine pour conserver des adresses web simples et stables.
+
+## Documentation utile
+
+- `docs/ECOSYSTEME_LIVEPALMES.md` : presentation vulgarisee de l'ensemble, des outils et des comptes ;
+- `docs/ARCHITECTURE.md` : architecture generale et relations entre les composantes ;
+- `docs/STRUCTURE_LIVEPALMES.md` : carte des pages et dossiers ;
+- `docs/module-engagements.md` : reference fonctionnelle des engagements ;
+- `docs/gestion-base-performances.md` : imports, corrections et publication des performances ;
+- `docs/droits-acces-livepalmes.md` : comptes, capacites et perimetres ;
+- `docs/LIVEPALMES_DIRECT.md` : utilisation et fonctionnement specifique du Direct ;
+- `docs/TESTS_MANUELS.md` : controles manuels sensibles ;
+- `docs/MISE_EN_LIGNE.md` : circuit GitHub de verification, apercu et publication Hosting ;
+- `docs/agents/PUBLICATION.md` : regles de publication et de deploiement.
+
+## Verification technique
+
+Avant une mise en ligne importante, lancer :
 
 ```powershell
 node tools/verify-livepalmes.js
 ```
 
-Cette commande verifie la syntaxe JavaScript, lance les tests automatiques simples et controle les erreurs d'espaces Git.
+Cette commande verifie notamment la syntaxe JavaScript, les tests automatiques, les garde-fous d'architecture et la coherence des pages generees.
 
-Si la commande finit par `Verification LivePalmes OK.`, la base technique est saine. Il faut ensuite faire les tests manuels utiles de `docs/TESTS_MANUELS.md`, surtout apres une modification sur les PDF, les resultats, les finalistes ou Firebase.
-
-## Organisation du dossier
-
-Les pages accessibles en ligne restent a la racine pour garder des URL simples et stables :
-
-- `index.html`, `public.html`, `resultats.html`, `series-public.html`, `archives.html`
-- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`
-- `pdf.html`, `resultat-pdf.html`, `series-pdf.html`
-
-Les scripts applicatifs sont ranges dans `assets/`.
-
-- `assets/livepalmes-*.js` : modules des consoles et du coeur LivePalmes.
-- `assets/pages/` : scripts propres aux pages publiques autonomes.
-- `performances/` : espace public des records, MPF, TOP et fiches nageurs.
-- `functions/` : fonctions Firebase cote serveur.
-- `tools/` : scripts de verification et maintenance.
-- `tests/` : tests automatiques.
-- `docs/` : documentation technique et notes de suivi.
-
-## Utilisation simple
-
-Pour changer les series :
-
-1. Depose le nouveau PDF dans `sources/series`.
-2. Lance la console locale avec `Demarrer la console.bat`.
-3. Clique sur `Regenerer les donnees` si la console est deja ouverte.
-4. Verifie l'affichage.
-5. Publie ensuite les fichiers a jour sur GitHub/Firebase.
-
-Si plusieurs PDF sont presents dans `sources/series`, le fichier le plus recent sert de mise a jour active.
-
-## Mise en ligne
-
-Pour GitHub ou Firebase Hosting, publie au minimum :
-
-- `index.html`
-- `styles.css`
-- `app.js`
-- `assets/`
-- `data.generated.js`
-- `donnees-speaker-france-2026.json`
-
-Firebase/GitHub ne relisent pas automatiquement les PDF ou les TXT. Il faut d'abord regenerer les donnees en local, puis publier les fichiers generes.
-
-Le parcours securise de verification, apercu et mise en ligne est explique dans `docs/MISE_EN_LIGNE.md`.
-
-## Records et MPF
-
-Firestore est la source officielle des Records / MPF :
-
-- document : `competitions/livepalmes-active/performanceData/records` ;
-- fichier statique de secours : `performances/public/data/records-data.js` ;
-- pages concernees : `performances/records.html`, `performances/mpf.html`, `performances/nageur.html` et la rubrique Records / MPF du portail.
-
-Apres une modification publiee depuis la rubrique Records / MPF du portail, synchronise le fallback statique :
+Pour ajouter le smoke test navigateur :
 
 ```powershell
-node tools/sync-records-from-firestore.js --write
+node tools/verify-livepalmes.js --browser
 ```
 
-Sans `--write`, le script fait un dry-run. Avec `--write`, il sauvegarde l'ancien `records-data.js`, reecrit le fallback depuis Firestore et met a jour les versions de cache des pages qui chargent ce fichier.
-
-## Historique DSQ
-
-L'historique des disqualifications, forfaits et abandons est stocke dans le navigateur pendant l'utilisation. Le bouton `RAZ historique` est disponible sur la console Informatique.
-
-L'export PDF de l'historique est disponible sur les consoles Juge arbitre, Juge video et Informatique.
+Les tests manuels adaptes au changement restent necessaires apres la verification automatique.

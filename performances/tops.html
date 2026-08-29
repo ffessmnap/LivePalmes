@@ -4,15 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LivePalmes TOP</title>
-    <link rel="icon" type="image/png" href="/logo-livepalmes.png?v=20260529-raz-batch-1" />
-    <link rel="stylesheet" href="public/styles.css?v=20260721-performance-responsive-1" />
+    <link rel="icon" type="image/png" href="/favicon.png?v=20260819-hosting-2">
+    <link rel="stylesheet" href="public/styles.css?v=20260824-top-birth-year-2" />
   </head>
   <body class="tops-page">
-    <header class="topbar simple">
+    <header class="topbar simple performance-public-topbar">
       <div class="topbar-title">
         <a class="topbar-home-link" href="../">Accueil LivePalmes</a>
         <p class="eyebrow">LivePalmes &middot; Performances</p>
-        <h1>TOP</h1>
+        <h1 id="topSecretFilterTrigger" class="top-secret-filter-trigger">TOP</h1>
       </div>
       <img class="topbar-logo" src="public/assets/ffessm-nap-logo-quadri.png" alt="FFESSM Nage avec palmes" />
       <nav class="main-nav" aria-label="Navigation principale">
@@ -52,6 +52,14 @@
             <button type="button" class="segment" data-value="50" aria-pressed="false">50 m</button>
           </div>
         </div>
+        <div class="top-filter-birth" id="topBirthYearField" hidden>
+          <label>
+            Ann&eacute;e de naissance
+            <select id="topBirthYearFilter">
+              <option value="">Toutes les ann&eacute;es</option>
+            </select>
+          </label>
+        </div>
       </section>
 
       <section class="top-course-strip" aria-label="Choix de la course">
@@ -90,6 +98,6 @@
     <script src="public/data/intranap-summary.js?v=consolidated-20260603140205"></script>
     <script src="public/data/performance-public/version.js"></script>
     <script src="../assets/public/livepalmes-public-analytics.js?v=20260614-ga-public-1"></script>
-    <script src="public/tops.js?v=20260729-storage-public-default-1"></script>
+    <script src="public/tops.js?v=20260824-top-birth-year-2"></script>
   </body>
 </html>
