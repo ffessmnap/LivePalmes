@@ -25,6 +25,31 @@ const functionsClubReference = JSON.parse(read("functions/assets/club-reference.
 const clubReferenceGenerator = read("tools/build-admin-club-reference.js");
 const publicPerformanceGenerator = read("tools/build-public-performance-files.js");
 const clubReferenceSource = read("performances/public/data/club-reference.js");
+const calendarEventTypeSandbox = {};
+vm.runInNewContext(`${calendarEvents.slice(0, calendarEvents.indexOf("  function renderProgram"))}
+  global.result = {
+    pool: typeOptions("pool"),
+    openWater: typeOptions("openWater"),
+    unknown: typeOptions("legacy-custom"),
+    empty: typeOptions("")
+  };
+})(this);`, calendarEventTypeSandbox);
+const engagementPastPolicySandbox = {};
+const engagementPastPolicyStart = functions.indexOf("function engagementParisIsoDate");
+const engagementPastPolicyEnd = functions.indexOf("function assertCanModifyEngagementEvent", engagementPastPolicyStart);
+vm.runInNewContext(`
+  function cleanText(value) { return String(value || "").trim(); }
+  function cleanIsoDate(value) {
+    const text = cleanText(value).slice(0, 10);
+    return /^\\d{4}-\\d{2}-\\d{2}$/.test(text) ? text : "";
+  }
+  ${functions.slice(engagementPastPolicyStart, engagementPastPolicyEnd)}
+  result = {
+    beforeParisMidnight: engagementEventIsPast({ date: "2026-08-29" }, Date.parse("2026-08-29T21:30:00.000Z")),
+    afterParisMidnight: engagementEventIsPast({ date: "2026-08-29" }, Date.parse("2026-08-29T22:30:00.000Z")),
+    endDateToday: engagementEventIsPast({ date: "2026-08-28", endDate: "2026-08-30" }, Date.parse("2026-08-30T12:00:00.000Z")),
+    pastEndDate: engagementEventIsPast({ date: "2026-08-28", endDate: "2026-08-29" }, Date.parse("2026-08-30T12:00:00.000Z"))
+  };`, engagementPastPolicySandbox);
 [
   "Modifications non enregistrees",
   "Etape chef d'equipe",
@@ -274,11 +299,14 @@ const openingDeadlineErrorFunction = portal.slice(openingDeadlineErrorStart, ope
 const openingDeadlineErrorSandbox = {};
 vm.runInNewContext(`${openingDeadlineErrorFunction}
   const nowMs = Date.parse("2026-08-08T12:00:00.000Z");
+  const ready = { publicationStatus: "published", programSessions: [{ items: [{ eventCode: "50SF" }] }] };
   result = {
-    past: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs),
-    equal: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T12:00:00.000Z" }, nowMs),
-    future: engagementOpeningDeadlineError({ entryStatus: "open", entryDeadlineAt: "2026-08-08T13:00:00.000Z" }, nowMs),
-    closed: engagementOpeningDeadlineError({ entryStatus: "closed", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs)
+    draft: engagementOpeningDeadlineError({ ...ready, entryStatus: "open", publicationStatus: "draft", entryDeadlineAt: "2026-08-08T13:00:00.000Z" }, nowMs),
+    noProgram: engagementOpeningDeadlineError({ ...ready, entryStatus: "open", programSessions: [], entryDeadlineAt: "2026-08-08T13:00:00.000Z" }, nowMs),
+    past: engagementOpeningDeadlineError({ ...ready, entryStatus: "open", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs),
+    equal: engagementOpeningDeadlineError({ ...ready, entryStatus: "open", entryDeadlineAt: "2026-08-08T12:00:00.000Z" }, nowMs),
+    future: engagementOpeningDeadlineError({ ...ready, entryStatus: "open", entryDeadlineAt: "2026-08-08T13:00:00.000Z" }, nowMs),
+    closed: engagementOpeningDeadlineError({ ...ready, entryStatus: "closed", entryDeadlineAt: "2026-08-08T11:00:00.000Z" }, nowMs)
   };`, openingDeadlineErrorSandbox);
 const openingDeadlinePastStart = functions.indexOf("function isEngagementOpeningDeadlinePast");
 const openingDeadlinePastEnd = functions.indexOf("function cleanEngagementRegionIds", openingDeadlinePastStart);
@@ -403,6 +431,8 @@ assert.equal(Boolean(openingDeadlineErrorSandbox.result.past), true);
 assert.equal(Boolean(openingDeadlineErrorSandbox.result.equal), true);
 assert.equal(openingDeadlineErrorSandbox.result.future, "");
 assert.equal(openingDeadlineErrorSandbox.result.closed, "");
+assert.equal(openingDeadlineErrorSandbox.result.draft, "Publiez la compétition avant d’ouvrir les engagements.");
+assert.equal(openingDeadlineErrorSandbox.result.noProgram, "Ajoutez au moins une course au programme avant d’ouvrir les engagements.");
 assert.deepEqual(JSON.parse(JSON.stringify(openingDeadlinePastSandbox.result)), {
   past: true,
   equal: true,
@@ -524,6 +554,18 @@ assert.equal(portalHtml.includes("admin-overview-intro"), false);
 assert.equal(portalCss.includes(".admin-overview-intro"), false);
 assert.ok(portalCss.includes(".admin-portal-page .admin-portal-space-home > .admin-overview-head"));
 assert.ok(portalCss.includes("padding: 10px 14px"));
+assert.ok(portal.includes("function loadPortalClubCodeReference"));
+assert.ok(portal.includes("portalClubCodeReferenceById"));
+assert.ok(portal.includes('elements.accountClubCode.textContent = accountClubCode || (clubId ? "Club" : "Profil")'));
+assert.ok(portal.includes('"Afficher les rubriques"'));
+assert.ok(portal.includes('"Masquer les rubriques"'));
+assert.ok(portalCss.includes("Bandeau mobile du portail : navigation, marque puis compte"));
+assert.ok(portalCss.includes("#adminOverviewView > .admin-overview-head"));
+assert.ok(portalCss.includes('.admin-portal-nav-toggle[aria-expanded="true"] svg path:first-child'));
+assert.ok(portalHtml.includes('class="admin-overview-space-toggle-icon"'));
+assert.ok(portalCss.includes('.admin-overview-space-toggle[aria-expanded="true"] .admin-overview-space-toggle-icon-vertical'));
+assert.ok(portalHtml.includes('class="admin-portal-account-icon"'));
+assert.ok(portalCss.includes(".admin-portal-account-icon"));
 assert.equal(portal.includes('textContent = "Fiche chargee."'), false);
 assert.ok(portal.includes('callFunction("previewEngagementClubSwimmerEventTimesBatch"'));
 assert.ok(portal.includes("engagementClubSwimmerEventTimesCache.has(cacheKey)"));
@@ -766,6 +808,10 @@ assert.ok(functions.includes('throwEngagementClubPersonIdentityConflict'));
 assert.ok(functions.includes('Date de naissance et sexe obligatoires.'));
 assert.ok(portalHtml.includes('id="adminEngagementsDetailLevel"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsDetailClose"') < portalHtml.indexOf('id="adminEngagementsCalendarPanel"'));
+assert.ok(portalHtml.includes('class="ghost-button admin-button-compact admin-engagements-workspace-back"'));
+assert.ok(portalHtml.includes('class="admin-button-label-short"'));
+assert.ok(portalCss.includes("--admin-button-height-compact: 36px"));
+assert.ok(portalCss.includes(".admin-portal-page .admin-button-compact"));
 assert.equal(portalHtml.includes('id="adminEngagementsResultsCount"'), false);
 assert.equal(portalHtml.includes('id="adminEngagementsRefreshMeta"'), false);
 assert.ok(portalHtml.includes('id="adminEngagementsCalendarActions"'));
@@ -826,7 +872,7 @@ assert.ok(publicAccessRequestPayloadSource.includes('trim().toLocaleUpperCase("f
 assert.ok(portal.includes('elements.publicAccessRequestLastName?.addEventListener("input"'));
 const cleanAccessRequestSource = functions.slice(functions.indexOf("function cleanEngagementAccessRequestPayload"), functions.indexOf("function engagementAccessRequestItem"));
 assert.ok(cleanAccessRequestSource.includes('cleanText(raw.lastName).toLocaleUpperCase("fr-FR")'));
-assert.ok(portalHtml.includes('id="adminAccessAddButton" class="ghost-button admin-access-add-button"'));
+assert.ok(portalHtml.includes('id="adminAccessAddButton" class="ghost-button admin-button-compact admin-access-add-button"'));
 assert.ok(portalHtml.indexOf('id="adminAccessAddButton"') < portalHtml.indexOf('id="adminAccessListPanel"'));
 assert.ok(portalHtml.includes('<dialog id="adminAccessPanel"'));
 assert.ok(portalHtml.includes('id="adminAccessDialogClose"'));
@@ -864,6 +910,11 @@ assert.ok(functions.includes("swimmer: roles.swimmer === true"));
 assert.ok(functions.includes("swimmer: targetRoles.swimmer === true || sourceRoles.swimmer === true"));
 const clubGeneralRowsSource = portal.slice(portal.indexOf("const clubRows = ["), portal.indexOf("const rows = adminMode ? ["));
 assert.equal(clubGeneralRowsSource.includes('"Statut engagements"'), false);
+assert.equal(clubGeneralRowsSource.includes('["Paiement"'), false);
+assert.ok(clubGeneralRowsSource.includes('...(!nationalCompetition ? [["Région"'));
+const clubSummarySource = portal.slice(portal.indexOf("function renderEngagementClubSummary"), portal.indexOf("function renderEngagementClubRelays"));
+assert.ok(clubSummarySource.includes('["Paiement"'));
+assert.ok(clubSummarySource.includes('label: "Payer sur HelloAsso"'));
 assert.ok(portalCss.includes("#adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dd"));
 assert.ok(portalCss.includes("font-size: 0.82rem"));
 assert.equal(portalHtml.includes('id="adminEngagementsMaxEvents"'), false);
@@ -1243,8 +1294,10 @@ assert.ok(portal.includes("admin-engagements-calendar-loading"));
 assert.ok(portalCss.includes("#adminEngagementsDetail[data-club-entry-loading]"));
 assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v3."'));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260825-access-directory-3'));
-assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260824-submit-form-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260830-past-regional-lock-1'));
+assert.ok(portal.includes('city: String(competition.city || "")'));
+assert.ok(portal.includes('address: String(competition.address || "")'));
+assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260830-past-regional-lock-1'));
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
@@ -1255,6 +1308,32 @@ assert.ok(portal.includes("function upsertEngagementCalendarItemFromServer"));
 assert.ok(portal.includes('upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition")'));
 assert.ok(calendarEvents.includes('detail: { action: "upsert", event: result.event }'));
 assert.ok(calendarEvents.includes('detail: { action: "delete", calendarEventId }'));
+assert.ok(calendarEvents.includes('pool: "Compétition piscine"'));
+assert.ok(calendarEvents.includes('openWater: "Compétition eau libre"'));
+assert.ok(calendarEvents.includes('Type importé (${escapeHtml(value)})'));
+assert.ok(calendarEvents.includes('${typeOptions(event.eventType)}'));
+assert.ok(calendarEventTypeSandbox.result.pool.includes('<option value="pool" selected>Compétition piscine</option>'));
+assert.equal(calendarEventTypeSandbox.result.pool.includes('value="training" selected'), false);
+assert.ok(calendarEventTypeSandbox.result.openWater.includes('<option value="openWater" selected>Compétition eau libre</option>'));
+assert.ok(calendarEventTypeSandbox.result.unknown.startsWith('<option value="legacy-custom" selected>Type importé (legacy-custom)</option>'));
+assert.ok(calendarEventTypeSandbox.result.empty.startsWith('<option value="" selected disabled>À choisir</option>'));
+assert.equal(engagementPastPolicySandbox.result.beforeParisMidnight, false);
+assert.equal(engagementPastPolicySandbox.result.afterParisMidnight, true);
+assert.equal(engagementPastPolicySandbox.result.endDateToday, false);
+assert.equal(engagementPastPolicySandbox.result.pastEndDate, true);
+assert.ok(functions.includes("regionalPastReadOnly: !context.national && engagementEventIsPast(eventData)"));
+assert.ok(functions.includes("regionalPastReadOnly: !context.national && engagementEventIsPast(doc.data() || {})"));
+assert.ok(functions.includes("assertCanModifyEngagementEvent(context, snapshot.data() || {});"));
+assert.ok(functions.includes("assertCanDeleteEngagementDocument(context, currentSnapshot.data() || {});"));
+assert.ok(functions.includes('const sourceType = calendarEventId ? "calendarEvent" : "competition"'));
+assert.ok(functions.includes('engagementDeletionRequestId("calendarEvent", calendarEventId)'));
+assert.ok(calendarEvents.includes("Événement passé : consultation uniquement. Les documents restent modifiables."));
+assert.ok(calendarEvents.includes("renderProgram(event.programSessions || event.program || [])"));
+assert.ok(calendarEvents.includes('call("requestEngagementCompetitionDeletion", { calendarEventId })'));
+assert.ok(calendarEvents.includes('data-calendar-document-edit'));
+assert.ok(portal.includes("function canManageEngagementCompetitionScope"));
+assert.ok(portal.includes("Événement passé · consultation uniquement"));
+assert.ok(portal.includes("isRegionalPastEngagementReadOnly()"));
 assert.equal((calendarEvents.match(/const form = event\.target;/g) || []).length, 2);
 assert.equal(calendarEvents.includes("const form = event.currentTarget;"), false);
 const calendarCacheReconciliationStart = portal.indexOf("function upsertEngagementCalendarItemFromServer");
@@ -1408,9 +1487,61 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260829-session-lock-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260829-competition-layout-1"));
+assert.ok(portalCss.includes(".admin-engagements-embedded-fees .admin-engagements-fees-grid label"));
+assert.ok(portalHtml.includes("admin-engagements-compact-section--competition"));
+assert.ok(portalHtml.includes("admin-engagements-compact-check"));
+assert.ok(portalHtml.includes('id="adminEngagementsFeesBlock"'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsFeesBlock"') < portalHtml.indexOf("admin-engagements-compact-section--sports"));
+assert.equal(portalHtml.includes('id="adminEngagementsDetailFeesPanel"'), false);
+assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), false);
+assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
+assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260825-access-directory-3"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260830-past-regional-lock-1"));
+assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
+assert.ok(portalHtml.includes("Sans répéter la ville."));
+assert.equal((portalHtml.match(/data-engagements-conditional-region/g) || []).length, 2);
+assert.ok(portal.includes('container.hidden = nationalCompetition'));
+assert.ok(portalCss.includes('[data-engagements-conditional-region][hidden]'));
+assert.ok(portalHtml.indexOf('id="adminEngagementsEditOrganizer"') > portalHtml.indexOf("<legend>Contacts de la compétition</legend>"));
+assert.ok(portal.includes('? competition.location || competition.city || ""'));
+assert.ok(portal.includes(': competition.city || competition.location || ""'));
+assert.ok(portalHtml.includes("<legend>Contacts de la compétition</legend>"));
+assert.ok(portalHtml.includes('id="adminEngagementsEditOrganizerEmail"'));
+assert.ok(portal.includes('organizerEmail: fields.organizerEmail?.value || ""'));
+assert.equal((portal.match(/\["Email organisateur", engagementEmailLinkValue\(competition\.organizerEmail\)\]/g) || []).length, 2);
+assert.ok(portalCss.includes(".admin-engagements-contact-link"));
+assert.ok(functions.includes('const organizerEmail = cleanOptionalEmail(raw.organizerEmail, "Email organisateur")'));
+assert.ok(functions.includes("organizerEmail: normalizeEmail(data.organizerEmail).slice(0, 180)"));
+assert.equal(functions.includes("recipientEmail: competition.organizerEmail"), false);
+assert.ok(portalHtml.includes('Équipement / site'));
+assert.ok(portalHtml.includes('>Ville<input id="adminEngagementsEditCity"'));
+assert.ok(portalHtml.includes('id="adminEngagementsEditAddress"'));
+assert.ok(portalHtml.includes('id="adminEngagementsEditLocation" type="text" maxlength="160">'));
+assert.equal(portalHtml.includes('id="adminEngagementsEditLocation" type="text" maxlength="160" required'), false);
+assert.ok(portal.includes("Publiez la compétition avant d’ouvrir les engagements."));
+assert.ok(portal.includes("Ajoutez au moins une course au programme avant d’ouvrir les engagements."));
+assert.ok(functions.includes("entryStatus === \"open\" && publicationStatus !== \"published\""));
+assert.ok(functions.includes("entryStatus === \"open\" && !programItemCount"));
+assert.ok(functions.includes("Publiez la competition avant d'ouvrir les engagements."));
+assert.ok(functions.includes("Ajoutez au moins une course au programme avant d'ouvrir les engagements."));
+assert.equal((portal.match(/\["Lieu", engagementVenueLabel\(competition\)\]/g) || []).length, 2);
+assert.equal((portal.match(/\[openWater \? "Plan d’eau" : "Bassin", engagementFacilityLabel\(competition\)\]/g) || []).length, 2);
+assert.ok(portal.includes('const addressIncludesCity = Boolean(address && city'));
+assert.ok(portal.includes('const parts = [competition.location, address, addressIncludesCity ? "" : city]'));
+assert.ok(portal.includes('`Chronométrage ${timing.toLocaleLowerCase("fr-FR")}`'));
+assert.ok(portalHtml.includes('id="adminEngagementsPublicInfo"'));
+assert.ok(portalHtml.includes('id="adminEngagementsCancellationAlert"'));
+assert.ok(portal.includes('"Informations de l’organisateur"'));
+assert.ok(portal.includes('["Limite par nageur", engagementMaxEventsLabel(competition.maxEventsPerSwimmer)]'));
+assert.ok(portal.includes('label: "Payer sur HelloAsso"'));
+assert.ok(portal.includes('"admin-engagements-payment-link"'));
+assert.ok(portal.includes('const nationalCompetition = ["national", "international"].includes(competition.level)'));
+assert.ok(portalCss.includes(".admin-engagements-public-info"));
+assert.ok(portalCss.includes(".admin-engagements-cancellation-alert"));
+assert.ok(portalCss.includes(".admin-engagements-payment-link"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamModifyButton"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamExternalOpen"'));
 assert.ok(portalHtml.includes("Chef d&rsquo;équipe de mon club"));
@@ -1445,7 +1576,7 @@ assert.ok(functions.includes('CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanV
 assert.ok(functions.includes("assertCanManageEngagementCompetition(context, doc.data() || {});"));
 assert.ok(portal.includes('sameLivePalmesRegion(competition.regionId, engagementRegionScope())'));
 assert.ok(portal.includes('const referenceLabel = LIVEPALMES_REFERENCE_REGION_LABELS[cleanValue] || cleanValue;'));
-assert.ok(portalHtml.includes('id="adminEngagementsCreateOpen" type="button">Ajouter un événement</button>'));
+assert.ok(portalHtml.includes('id="adminEngagementsCreateOpen" class="admin-button-compact" type="button">Ajouter un événement</button>'));
 assert.ok(portal.includes('elements.engagementsDeleteButton.textContent = directDelete ? "Suppression en cours..." : "Envoi en cours...";'));
 assert.ok(portal.includes("const remainingCompetitions = engagementCompetitions.filter((item) => item.id !== competition.id);"));
 assert.ok(portal.includes("elements.engagementsStatus?.textContent !== successMessage"));
@@ -1558,7 +1689,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260825-access-directory-3"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260830-past-regional-lock-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
@@ -1673,6 +1804,25 @@ assert.equal(portalHtml.includes("Ajouter des informations complémentaires"), f
 assert.equal(portalHtml.includes("Renseignez uniquement les informations nécessaires à l’ajout au calendrier."), false);
 assert.ok(portalHtml.includes('<h2 id="adminEngagementsCreateDialogTitle">Ajout d’un événement au calendrier</h2>'));
 assert.ok(portalHtml.includes('aria-labelledby="adminEngagementsCreateDialogTitle"'));
+const createEventTypeSelect = portalHtml.slice(
+  portalHtml.indexOf('id="adminEngagementsCompetitionType"'),
+  portalHtml.indexOf("</select>", portalHtml.indexOf('id="adminEngagementsCompetitionType"'))
+);
+assert.ok(createEventTypeSelect.includes('<option value="pool">Compétition piscine</option>'));
+assert.ok(createEventTypeSelect.includes('<option value="openWater">Compétition eau libre</option>'));
+assert.ok(portalHtml.includes('Ville\n                          <input id="adminEngagementsLocation"'));
+const createCompetitionFieldsBlock = portal.slice(
+  portal.indexOf("function createCompetitionFields()"),
+  portal.indexOf("function editCompetitionFields()")
+);
+assert.ok(createCompetitionFieldsBlock.includes("city: elements.engagementsLocation"));
+assert.equal(createCompetitionFieldsBlock.includes("location: elements.engagementsLocation"), false);
+assert.ok(portal.includes("city: payload.city"));
+assert.ok(portal.includes('competition.city || competition.location || "Ville non renseignée"'));
+assert.ok(functions.includes("if (!name || !date || !city)"));
+assert.ok(functions.includes('"Nom, date et ville sont obligatoires."'));
+assert.equal(functions.includes('"Nom, date, ville et lieu sont obligatoires."'), false);
+assert.equal(functions.includes('"Nom, date et lieu sont obligatoires."'), false);
 const quickCreateActions = portalHtml.slice(
   portalHtml.indexOf('<div class="admin-portal-actions">', portalHtml.indexOf('id="adminEngagementsCreateForm"')),
   portalHtml.indexOf('</div>', portalHtml.indexOf('<div class="admin-portal-actions">', portalHtml.indexOf('id="adminEngagementsCreateForm"')))

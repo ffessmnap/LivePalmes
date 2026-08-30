@@ -118,6 +118,8 @@ Il ne peut pas :
 - gerer une autre region ;
 - consulter les alertes nationales de doublons valides.
 
+Une fois la date de fin d'une competition ou d'un evenement depassee, son administration regionale passe en consultation seule. Le niveau 2 peut encore ajouter, remplacer ou renommer les documents publics, mais il ne peut plus modifier les autres informations ni supprimer un document existant. Il peut demander la suppression de l'evenement ; cette demande doit etre validee ou refusee par le niveau national. Le niveau 3 conserve ses droits de gestion complets.
+
 ### Niveau 3 - National
 
 Un utilisateur niveau 3 a un acces global.
@@ -309,6 +311,8 @@ Une compétition ou un événement n'apparaît publiquement qu'après une action
 La vue initiale présente la saison courante et les événements en cours ou futurs. Les filtres saison, région, niveau et type sont locaux. La fiche publique contient les informations pratiques sans coordonnées personnelles, le programme synthétique par réunion, le lien vers les engagements du portail et les documents officiels. Elle rappelle que les engagements sont effectués par un responsable de club.
 
 Les formations, stages, réunions et autres événements sont créés dans le calendrier par les administrateurs, jamais par les clubs. Les résultats restent réservés à une évolution ultérieure ; les champs de liaison sont néanmoins prévus.
+
+Pour l'administration regionale, tous les types du calendrier suivent la meme regle d'archivage : le lendemain de leur date de fin, ou de leur date de debut en l'absence de date de fin, ils deviennent consultables sans etre modifiables. La GED reste ouverte a l'ajout, au remplacement et au renommage des documents ; la suppression d'un document existant est bloquee. Une demande de suppression de l'evenement peut toujours etre transmise au niveau national.
 
 ## Parcours d'engagement club
 

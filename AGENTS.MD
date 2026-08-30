@@ -6,7 +6,7 @@ LivePalmes est un écosystème web bénévole dédié à la nage avec palmes. So
 
 Priorités : fiabilité, simplicité, performance, fonctionnalités. Faire évoluer l’existant, réutiliser ses conventions et limiter les changements au nécessaire. Ne pas introduire de framework, de dépendance ou de nouvelle architecture sans justification forte.
 
-Application statique en HTML, CSS et JavaScript natif, sans bundler racine. Les pages publiques et consoles restent à la racine pour préserver leurs URL. Ne pas réintroduire le pilotage ou le portail dans l’accueil public. `app.js` étant proche de 1 000 lignes utiles, placer toute nouvelle logique métier dans un module existant ou dédié.
+Application statique en HTML, CSS et JavaScript natif, sans bundler racine. Les pages publiques et consoles restent à la racine pour préserver leurs URL. L’accueil public peut proposer un accès distinct et secondaire vers le Portail LivePalmes ; ne pas y réintroduire le pilotage. `app.js` étant proche de 1 000 lignes utiles, placer toute nouvelle logique métier dans un module existant ou dédié.
 
 ## Consignes spécialisées
 

@@ -293,14 +293,14 @@
   margin: 0 auto 26px;
   color: #657883;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 500;
   line-height: 1.35;
   text-align: center;
 }
 
 .public-footer span {
   color: #7b8b94;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .public-footer a {
@@ -385,6 +385,10 @@ body:not(.public-home-page) .public-footer {
   background: linear-gradient(180deg, #ffffff 0%, #effbfc 100%);
 }
 
+.public-home-card.live-card[hidden] {
+  display: none;
+}
+
 .public-home-card.live-card.is-inactive {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -467,7 +471,7 @@ body:not(.public-home-page) .public-footer {
   margin: 0;
   color: #526876;
   font-size: 0.92rem;
-  font-weight: 760;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -555,7 +559,7 @@ body:not(.public-home-page) .public-footer {
 .performance-card .performance-card-summary {
   color: #58717b;
   font-size: 0.84rem;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .performance-card .public-home-card-actions .performance-records-button {
@@ -583,6 +587,47 @@ body:not(.public-home-page) .public-footer {
   transform: translateY(-1px);
   text-decoration: none;
   filter: saturate(1.1);
+}
+
+.public-home-portal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid #d8e3e7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 6px 16px rgba(14, 56, 70, 0.04);
+}
+
+.public-home-portal h2 {
+  margin: 0 0 3px;
+  color: #304b57;
+  font-size: 0.98rem;
+}
+
+.public-home-portal p {
+  margin: 0;
+  color: #657883;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.public-home-portal .ghost-button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border-color: #bfd3d9;
+  background: #ffffff;
+  color: #285866;
+  text-decoration: none;
+}
+
+.public-home-portal .ghost-button:hover,
+.public-home-portal .ghost-button:focus-visible {
+  border-color: #7fb2bd;
+  color: #075f6c;
+  text-decoration: none;
 }
 
 .public-results-shell {
@@ -3229,6 +3274,18 @@ body:not(.public-home-page) .public-footer {
   .public-home-card {
     min-height: 0;
     padding: 14px;
+  }
+
+  .public-home-portal {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .public-home-portal .ghost-button {
+    justify-content: center;
+    width: 100%;
   }
 
   .public-header-actions {

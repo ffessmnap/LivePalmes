@@ -37,6 +37,11 @@ function cleanPublicCalendarUrl(value, maxLength = 900) {
   return /^https:\/\/[^\s]+$/i.test(url) ? url : "";
 }
 
+function cleanPublicCalendarEmail(value) {
+  const email = cleanText(value, 180).toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
 function cleanPublicCalendarEventType(value, fallback = "other") {
   const type = cleanText(value);
   return PUBLIC_CALENDAR_EVENT_TYPES.has(type) ? type : fallback;
@@ -164,6 +169,7 @@ function publicCalendarDetail(data = {}, options = {}) {
     location: cleanText(data.location, 160),
     address: cleanText(data.address, 300),
     organizer: cleanText(data.organizer, 160),
+    organizerEmail: cleanPublicCalendarEmail(data.organizerEmail),
     poolLength: summary.eventType === "pool" ? cleanText(data.poolLength, 2) : "",
     poolLaneCount: summary.eventType === "pool" ? Math.max(0, Math.trunc(Number(data.poolLaneCount) || 0)) : 0,
     timingType: summary.eventType === "pool" ? cleanText(data.timingType, 20) : "",
