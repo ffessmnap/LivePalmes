@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260824-import-replacement-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260829-session-lock-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260829-competition-layout-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -30,14 +30,14 @@
           </span>
         </div>
         <button id="adminPortalNavToggle" class="admin-portal-nav-toggle" type="button" aria-expanded="false" aria-controls="adminPortalNavigation" aria-label="Ouvrir le menu de navigation" title="Ouvrir le menu de navigation" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
           <span id="adminPortalNavCurrent" class="admin-portal-nav-current">Navigation</span>
         </button>
         <div id="adminPortalAccount" class="admin-portal-account-menu" hidden>
           <button id="adminPortalAccountToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="adminPortalAccountActions">
             <strong id="adminPortalSessionLabel">Profil LivePalmes</strong>
             <span id="adminPortalAccountClubCode" class="admin-portal-account-short">Profil</span>
-            <span aria-hidden="true">⌄</span>
+            <svg class="admin-portal-account-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"></circle><path d="M5.5 20c.6-4 2.8-6 6.5-6s5.9 2 6.5 6"></path></svg>
           </button>
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
             <a href="#mon-compte" role="menuitem">Mon compte</a>
@@ -318,7 +318,7 @@
                     <p>Gérer les engagements, les nageurs et les officiels de votre club.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewClubTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewClubTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewClubTools" class="admin-overview-space-tools">
                     <a href="#club-competitions" data-overview-tool data-engagements-home-entry="club" data-engagements-home-tab="calendar">Engagements en compétition <span aria-hidden="true">→</span></a>
                     <a href="#club-nageurs" data-overview-tool data-engagements-home-entry="clubSwimmers" data-engagements-home-tab="clubSwimmers">Mes nageurs <span aria-hidden="true">→</span></a>
@@ -344,7 +344,7 @@
                     <p>Maintenir les références et les performances publiées.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPerformanceTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPerformanceTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewPerformanceTools" class="admin-overview-space-tools">
                     <a href="#records-mpf" data-overview-tool data-capability-panel="records.manage">Records et MPF <span aria-hidden="true">→</span></a>
                     <a href="#import-competitions" data-overview-tool data-capability-panel="competitions.import">Import des compétitions <span aria-hidden="true">→</span></a>
@@ -360,7 +360,7 @@
                     <p>Consulter les qualifications France, Équipe de France et les mises en liste.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewDtnTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewDtnTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewDtnTools" class="admin-overview-space-tools">
                     <a href="#espace-dtn-france" data-overview-tool>Championnats de France <span aria-hidden="true">→</span></a>
                     <a href="#espace-dtn-edf" data-overview-tool>Équipe de France <span aria-hidden="true">→</span></a>
@@ -377,7 +377,7 @@
                     <p>Contrôler et maintenir les données réservées au niveau national.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewNationalTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewNationalTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewNationalTools" class="admin-overview-space-tools">
                     <a href="#administration-suppressions" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">Demandes &agrave; traiter <span aria-hidden="true">→</span></a>
                     <a href="#administration-clubs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">Clubs <span aria-hidden="true">→</span></a>
@@ -396,7 +396,7 @@
                     <p>Administrer les comptes et les habilitations du portail.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
-                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPortalTools"><span>Voir les outils</span><span aria-hidden="true">⌄</span></button>
+                  <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewPortalTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewPortalTools" class="admin-overview-space-tools">
                     <a href="#gestion-demandes-acces" data-overview-tool data-engagements-home-entry="adminAccessRequests" data-engagements-home-tab="accessRequests" data-engagements-admin-request-nav hidden>Demandes d’accès <span aria-hidden="true">→</span></a>
                     <a href="#gestion-utilisateurs" data-overview-tool>Utilisateurs et habilitations <span aria-hidden="true">→</span></a>
@@ -705,7 +705,7 @@
                 <div>
                   <h2 id="adminRecordsViewTitle">Mise à jour des records de France et MPF</h2>
                 </div>
-                <button type="button" id="recordHistoryButton" class="ghost-button">Journal des mises à jour</button>
+                <button type="button" id="recordHistoryButton" class="ghost-button admin-button-compact">Journal des mises à jour</button>
               </div>
 
               <p id="adminRecordModuleStatus" class="admin-record-module-status" aria-live="polite">Chargement du module Records / MPF…</p>
@@ -902,13 +902,13 @@
               <div class="admin-portal-workspace-head admin-tool-workspace-head">
                 <h2 id="adminEngagementsViewTitle">Organisation des comp&eacute;titions</h2>
                 <div id="adminEngagementsCalendarActions" class="admin-engagements-calendar-head-actions" hidden>
-                  <button id="adminEngagementsCreateOpen" type="button">Ajouter un événement</button>
+                <button id="adminEngagementsCreateOpen" class="admin-button-compact" type="button">Ajouter un événement</button>
                 </div>
                 <div id="adminEngagementsClubPeopleActions" class="admin-engagements-club-people-head-actions" hidden>
-                  <button id="adminEngagementsClubPeopleAddButton" type="button">Ajouter</button>
+                  <button id="adminEngagementsClubPeopleAddButton" class="admin-button-compact" type="button">Ajouter</button>
                 </div>
                 <button id="adminEngagementsNationalAuditRefresh" class="ghost-button compact admin-national-audit-head-refresh" type="button" hidden>Recharger le journal</button>
-                <button id="adminEngagementsDetailClose" class="ghost-button admin-engagements-workspace-back" type="button" hidden>&larr; Retour aux comp&eacute;titions</button>
+                <button id="adminEngagementsDetailClose" class="ghost-button admin-button-compact admin-engagements-workspace-back" type="button" aria-label="Retour aux compétitions" hidden>&larr; <span class="admin-button-label-long">Retour aux comp&eacute;titions</span><span class="admin-button-label-short" aria-hidden="true">Retour</span></button>
               </div>
 
               <aside id="adminEngagementsLongOperation" class="admin-long-operation" hidden></aside>
@@ -983,12 +983,16 @@
                         </div>
                       </div>
                       <div class="admin-engagements-detail-actions">
-                        <button id="adminEngagementsEditButton" class="ghost-button" type="button" data-engagements-create hidden>Modifier</button>
-                        <button id="adminEngagementsSaveButton" type="button" hidden>Enregistrer</button>
-                        <button id="adminEngagementsEditCancelTop" class="ghost-button" type="button" hidden>Annuler</button>
-                        <button id="adminEngagementsDeleteButton" class="ghost-button admin-engagements-danger-button" type="button" hidden>Supprimer</button>
+                        <button id="adminEngagementsEditButton" class="ghost-button admin-button-compact" type="button" data-engagements-create hidden>Modifier</button>
+                        <button id="adminEngagementsSaveButton" class="admin-button-compact" type="button" hidden>Enregistrer</button>
+                        <button id="adminEngagementsEditCancelTop" class="ghost-button admin-button-compact" type="button" hidden>Annuler</button>
+                        <button id="adminEngagementsDeleteButton" class="ghost-button admin-button-compact admin-engagements-danger-button" type="button" hidden>Supprimer</button>
                       </div>
                     </div>
+                    <p id="adminEngagementsCancellationAlert" class="admin-engagements-cancellation-alert" role="status" hidden>
+                      <strong>Compétition annulée</strong>
+                      <span>Cette compétition est indiquée comme annulée par l’organisateur.</span>
+                    </p>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
                     <nav class="admin-engagements-detail-tabs" aria-label="Parcours d'engagement">
                       <div class="admin-engagements-detail-step-bar" aria-label="Étapes">
@@ -1042,38 +1046,24 @@
                       </div>
                     </nav>
                     <div id="adminEngagementsDetailGeneralPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailGeneralTab" data-engagements-detail-tab-panel="general">
+                      <section id="adminEngagementsPublicInfo" class="admin-engagements-public-info" hidden>
+                        <strong id="adminEngagementsPublicInfoTitle">Informations de l’organisateur</strong>
+                        <p id="adminEngagementsPublicInfoText"></p>
+                      </section>
                       <dl id="adminEngagementsDetailList" class="admin-engagements-detail-list"></dl>
                       <form id="adminEngagementsEditForm" class="admin-engagements-form admin-engagements-edit-form" hidden>
-                        <fieldset class="admin-engagements-form-section">
+                        <fieldset class="admin-engagements-form-section admin-engagements-compact-section admin-engagements-compact-section--competition">
                           <legend>Compétition</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label>
+                            <label class="admin-engagements-compact-field admin-engagements-compact-field--readonly">
                               Type de compétition
                               <input id="adminEngagementsEditCompetitionType" type="text" readonly>
                             </label>
-                            <label id="adminEngagementsClubTeamLastNameLabel">
+                            <label id="adminEngagementsClubTeamLastNameLabel" class="admin-engagements-compact-field admin-engagements-compact-field--full">
                               Nom
                               <input id="adminEngagementsEditName" type="text" maxlength="160" required>
                             </label>
-                            <label>
-                              Date
-                              <input id="adminEngagementsEditDate" type="date" required>
-                            </label>
-                            <label>
-                              Date de fin
-                              <input id="adminEngagementsEditEndDate" type="date" required>
-                            </label>
-                            <label>
-                              Lieu
-                              <input id="adminEngagementsEditLocation" type="text" maxlength="160" required>
-                            </label>
-                            <label>Ville publique<input id="adminEngagementsEditCity" type="text" maxlength="120" required></label>
-                            <label>Adresse publique<input id="adminEngagementsEditAddress" type="text" maxlength="300"></label>
-                            <label>Organisateur<input id="adminEngagementsEditOrganizer" type="text" maxlength="160"></label>
-                            <label>Publication publique<select id="adminEngagementsEditPublicationStatus"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label>
-                            <label class="admin-calendar-event-check"><input id="adminEngagementsEditCanceled" type="checkbox"> Compétition annulée</label>
-                            <label class="admin-calendar-event-description">Présentation publique<textarea id="adminEngagementsEditPublicDescription" maxlength="3000" rows="4"></textarea></label>
-                            <label>
+                            <label class="admin-engagements-compact-field">
                               Niveau
                               <select id="adminEngagementsEditLevel">
                                 <option value="regional">R&eacute;gional</option>
@@ -1082,27 +1072,44 @@
                                 <option value="international">International</option>
                               </select>
                             </label>
-                            <label>
+                            <label class="admin-engagements-compact-field">Publication publique<select id="adminEngagementsEditPublicationStatus"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label>
+                            <label class="admin-engagements-compact-field">
+                              Date
+                              <input id="adminEngagementsEditDate" type="date" required>
+                            </label>
+                            <label class="admin-engagements-compact-field">
+                              Date de fin
+                              <input id="adminEngagementsEditEndDate" type="date" required>
+                            </label>
+                            <label class="admin-calendar-event-check admin-engagements-compact-field admin-engagements-compact-check"><input id="adminEngagementsEditCanceled" type="checkbox"><span>Compétition annulée</span></label>
+                            <label class="admin-engagements-compact-field">Ville<input id="adminEngagementsEditCity" type="text" maxlength="120" required></label>
+                            <label class="admin-engagements-compact-field">
+                              Adresse
+                              <input id="adminEngagementsEditAddress" type="text" maxlength="300" placeholder="40 rue du Stade">
+                              <small class="admin-engagements-field-note">Sans répéter la ville.</small>
+                            </label>
+                            <label class="admin-engagements-compact-field">
+                              Équipement / site
+                              <input id="adminEngagementsEditLocation" type="text" maxlength="160">
+                            </label>
+                            <label class="admin-engagements-compact-field" data-engagements-conditional-region>
                               R&eacute;gion
                               <select id="adminEngagementsEditRegionId"></select>
                               <small id="adminEngagementsEditRegionNote" class="admin-engagements-field-note"></small>
                             </label>
-                            <div class="admin-engagements-invited-regions-field">
+                            <div class="admin-engagements-invited-regions-field admin-engagements-compact-field--full" data-engagements-conditional-region>
                               R&eacute;gions invit&eacute;es
                               <div id="adminEngagementsEditInvitedRegionChoices" class="admin-engagements-region-choices"></div>
                               <select id="adminEngagementsEditInvitedRegionIds" multiple hidden aria-label="Régions invitées"></select>
                               <small>Pour le mail d'ouverture uniquement.</small>
                             </div>
+                            <label class="admin-calendar-event-description admin-engagements-compact-field admin-engagements-compact-field--full">Présentation publique<textarea id="adminEngagementsEditPublicDescription" maxlength="3000" rows="3"></textarea></label>
                           </div>
                         </fieldset>
-                        <fieldset class="admin-engagements-form-section">
+                        <fieldset class="admin-engagements-form-section admin-engagements-compact-section admin-engagements-compact-section--engagements">
                           <legend>Engagements</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label>
-                              Clôture des engagements
-                              <input id="adminEngagementsEditDeadline" type="datetime-local" step="3600">
-                            </label>
-                            <label class="admin-engagements-entry-status-field">
+                            <label class="admin-engagements-entry-status-field admin-engagements-compact-field">
                               Statut
                               <select id="adminEngagementsEditEntryStatus">
                                 <option value="upcoming">À venir</option>
@@ -1110,7 +1117,11 @@
                                 <option value="closed" disabled>Ferm&eacute;s (automatique)</option>
                               </select>
                             </label>
-                            <label>
+                            <label class="admin-engagements-compact-field">
+                              Clôture des engagements
+                              <input id="adminEngagementsEditDeadline" type="datetime-local" step="3600">
+                            </label>
+                            <label class="admin-engagements-compact-field">
                               Limite par nageur
                               <select id="adminEngagementsEditMaxEvents">
                                 <option value="0">Aucune limite</option>
@@ -1121,7 +1132,7 @@
                                 <option value="5">5 épreuves</option>
                               </select>
                             </label>
-                            <label>
+                            <label class="admin-engagements-compact-field">
                               Officiels requis
                               <select id="adminEngagementsEditOfficialsRequired">
                                 <option value="true">Oui</option>
@@ -1129,11 +1140,42 @@
                               </select>
                             </label>
                           </div>
+                          <div id="adminEngagementsFeesBlock" class="admin-engagements-embedded-fees admin-engagements-fees-form">
+                            <div class="admin-engagements-embedded-fees-head">
+                              <strong>Frais d'engagement</strong>
+                            </div>
+                            <label class="admin-engagements-no-fees-choice">
+                              <input id="adminEngagementsNoFees" type="checkbox">
+                              <span>Aucun frais d'engagement</span>
+                            </label>
+                            <div id="adminEngagementsFeesGrid" class="admin-engagements-fees-grid">
+                              <label>
+                                Frais par nageur
+                                <input id="adminEngagementsSwimmerFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                                <span id="adminEngagementsSwimmerFeeRead" class="admin-engagements-read-value"></span>
+                              </label>
+                              <label>
+                                Frais par course
+                                <input id="adminEngagementsIndividualEventFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                                <span id="adminEngagementsIndividualEventFeeRead" class="admin-engagements-read-value"></span>
+                              </label>
+                              <label>
+                                Frais par relais
+                                <input id="adminEngagementsRelayFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
+                                <span id="adminEngagementsRelayFeeRead" class="admin-engagements-read-value"></span>
+                              </label>
+                              <label>
+                                Lien de paiement
+                                <input id="adminEngagementsHelloAssoUrl" type="url" maxlength="300" placeholder="https://www.helloasso.com/...">
+                                <span id="adminEngagementsHelloAssoUrlRead" class="admin-engagements-read-value"></span>
+                              </label>
+                            </div>
+                          </div>
                         </fieldset>
-                        <fieldset class="admin-engagements-form-section">
+                        <fieldset class="admin-engagements-form-section admin-engagements-compact-section admin-engagements-compact-section--sports">
                           <legend>Paramètres sportifs</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label data-engagements-open-water-field hidden>
+                            <label class="admin-engagements-compact-field" data-engagements-open-water-field hidden>
                               Type de plan d’eau
                               <select id="adminEngagementsEditWaterBodyType">
                                 <option value="">Non renseigné</option>
@@ -1143,7 +1185,7 @@
                                 <option value="other">Autre</option>
                               </select>
                             </label>
-                            <label data-engagements-pool-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-field>
                               Bassin
                               <select id="adminEngagementsEditPoolLength" required>
                                 <option value="">À choisir</option>
@@ -1152,11 +1194,11 @@
                                 <option value="50">50 m</option>
                               </select>
                             </label>
-                            <label data-engagements-pool-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-field>
                               Nombre de lignes d'eau
                               <input id="adminEngagementsEditPoolLaneCount" type="number" min="4" max="10" step="1" inputmode="numeric" required>
                             </label>
-                            <label>
+                            <label class="admin-engagements-compact-field">
                               Chronom&eacute;trage
                               <select id="adminEngagementsEditTimingType" required>
                                 <option value="">À choisir</option>
@@ -1164,22 +1206,22 @@
                                 <option value="manual">Manuel</option>
                               </select>
                             </label>
-                            <label data-engagements-pool-time-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-time-field>
                               Temps d'engagement
                               <select id="adminEngagementsEditQualificationMode">
                                 <option value="all">Tous les temps connus</option>
                                 <option value="period">P&eacute;riode d&eacute;finie</option>
                               </select>
                             </label>
-                            <label data-engagements-pool-time-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-time-field>
                               D&eacute;but p&eacute;riode temps
                               <input id="adminEngagementsEditQualificationStart" type="date">
                             </label>
-                            <label data-engagements-pool-time-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-time-field>
                               Fin p&eacute;riode temps
                               <input id="adminEngagementsEditQualificationEnd" type="date">
                             </label>
-                            <label data-engagements-pool-time-field>
+                            <label class="admin-engagements-compact-field" data-engagements-pool-time-field>
                               Saisie manuelle des temps
                               <select id="adminEngagementsEditMissingEntryTimeMode">
                                 <option value="manual">Autoris&eacute;e</option>
@@ -1188,20 +1230,28 @@
                             </label>
                           </div>
                         </fieldset>
-                        <fieldset class="admin-engagements-form-section">
-                          <legend>Documents</legend>
+                        <fieldset class="admin-engagements-form-section admin-engagements-compact-section admin-engagements-compact-section--documents">
+                          <legend>Contacts de la compétition</legend>
                           <div class="admin-engagements-form-section-grid">
-                            <label>
+                            <label class="admin-engagements-compact-field">
+                              Organisateur
+                              <input id="adminEngagementsEditOrganizer" type="text" maxlength="160">
+                            </label>
+                            <label class="admin-engagements-compact-field">
+                              Email de l'organisateur
+                              <input id="adminEngagementsEditOrganizerEmail" type="email" maxlength="180" autocomplete="email">
+                            </label>
+                            <label class="admin-engagements-compact-field">
                               Email du responsable informatique de la comp&eacute;tition
                               <input id="adminEngagementsEditComputerEmail" type="email" maxlength="180" autocomplete="email">
                             </label>
-                            <label>
+                            <label class="admin-engagements-compact-field">
                               Email du responsable juge de la comp&eacute;tition
                               <input id="adminEngagementsEditOfficialsManagerEmail" type="email" maxlength="180" autocomplete="email">
                             </label>
                           </div>
                         </fieldset>
-                        <div class="admin-portal-actions admin-engagements-inline-save-actions" hidden>
+                        <div class="admin-portal-actions admin-engagements-inline-save-actions">
                           <button type="submit">Enregistrer</button>
                           <button id="adminEngagementsEditCancel" class="ghost-button" type="button">Annuler</button>
                         </div>
@@ -1278,45 +1328,6 @@
                         <p id="adminEngagementsEventsMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
                     </div>
-                    <section id="adminEngagementsDetailFeesPanel" class="admin-engagements-fees-general">
-                      <form id="adminEngagementsFeesForm" class="admin-engagements-fees-form">
-                        <div class="admin-engagements-events-head">
-                          <div>
-                            <strong>Frais d'engagement</strong>
-                            <small id="adminEngagementsFeesSummary" hidden></small>
-                          </div>
-                          <button id="adminEngagementsFeesSaveButton" type="submit">Enregistrer</button>
-                        </div>
-                        <label class="admin-engagements-no-fees-choice">
-                          <input id="adminEngagementsNoFees" type="checkbox">
-                          <span>Aucun frais d'engagement</span>
-                        </label>
-                        <div id="adminEngagementsFeesGrid" class="admin-engagements-fees-grid">
-                          <label>
-                            Forfait par nageur
-                            <input id="adminEngagementsSwimmerFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
-                            <span id="adminEngagementsSwimmerFeeRead" class="admin-engagements-read-value"></span>
-                          </label>
-                          <label>
-                            Frais par course
-                            <input id="adminEngagementsIndividualEventFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
-                            <span id="adminEngagementsIndividualEventFeeRead" class="admin-engagements-read-value"></span>
-                          </label>
-                          <label>
-                            Frais par relais
-                            <input id="adminEngagementsRelayFee" type="number" min="0" max="9999" step="0.01" inputmode="decimal">
-                            <span id="adminEngagementsRelayFeeRead" class="admin-engagements-read-value"></span>
-                          </label>
-                          <label>
-                            Lien HelloAsso
-                            <input id="adminEngagementsHelloAssoUrl" type="url" maxlength="300" placeholder="https://www.helloasso.com/...">
-                            <span id="adminEngagementsHelloAssoUrlRead" class="admin-engagements-read-value"></span>
-                          </label>
-                        </div>
-                        <p id="adminEngagementsPaymentNote" class="admin-engagements-payment-note">Paiement attendu avant la fin de la premi&egrave;re journ&eacute;e de comp&eacute;tition. Un surplus forfaitaire de 50 &euro; s'applique ensuite.</p>
-                        <p id="adminEngagementsFeesMessage" class="admin-portal-message" aria-live="polite"></p>
-                      </form>
-                    </section>
                     <div id="adminEngagementsDetailTeamPanel" class="admin-engagements-detail-panel" role="tabpanel" aria-labelledby="adminEngagementsDetailTeamTab" data-engagements-detail-tab-panel="team" hidden>
                       <form id="adminEngagementsClubTeamForm" class="admin-engagements-club-step-form">
                         <div class="admin-engagements-events-head">
@@ -1801,8 +1812,8 @@
                           Type d’événement
                           <select id="adminEngagementsCompetitionType" required>
                             <option value="">À choisir</option>
-                            <option value="pool">Piscine</option>
-                            <option value="openWater">Eau libre</option>
+                            <option value="pool">Compétition piscine</option>
+                            <option value="openWater">Compétition eau libre</option>
                             <option value="training">Formation</option>
                             <option value="stage">Stage</option>
                             <option value="meeting">Réunion</option>
@@ -1822,7 +1833,7 @@
                           <input id="adminEngagementsEndDate" type="date" required>
                         </label>
                         <label>
-                          Lieu
+                          Ville
                           <input id="adminEngagementsLocation" type="text" maxlength="160" required>
                         </label>
                         <label>
@@ -2482,7 +2493,7 @@
             <section id="adminAccessView" class="admin-portal-access-view" data-admin-view="access" data-access-management-panel aria-labelledby="adminAccessViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-tool-workspace-head admin-access-tool-head">
                 <h2 id="adminAccessViewTitle">Utilisateurs et habilitations</h2>
-                <button id="adminAccessAddButton" class="ghost-button admin-access-add-button" type="button" aria-expanded="false" aria-controls="adminAccessPanel">Ajouter</button>
+                <button id="adminAccessAddButton" class="ghost-button admin-button-compact admin-access-add-button" type="button" aria-expanded="false" aria-controls="adminAccessPanel">Ajouter</button>
               </div>
 
         <section id="adminAccessListPanel" class="admin-access-list-panel" aria-label="Accès existants">
@@ -2648,9 +2659,9 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260825-access-directory-3"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260830-past-regional-lock-1"></script>
     <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
-    <script src="assets/livepalmes-admin-calendar-events.js?v=20260824-submit-form-1"></script>
+    <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-past-regional-lock-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
 </html>

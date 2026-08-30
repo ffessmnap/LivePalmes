@@ -65,6 +65,8 @@ L'utilisateur ne peut pas modifier lui-même ces informations. Une modification 
 
 Un administrateur général ou national peut gérer les comptes dans son domaine d'autorité. Un gestionnaire régional ne peut intervenir que dans sa région et seulement sur les niveaux prévus par le portail.
 
+Dans le calendrier et le module engagements, une competition ou un evenement dont la date de fin est depassee devient consultable mais non modifiable pour le gestionnaire regional. Celui-ci conserve la gestion documentaire, sauf la suppression des documents existants, et peut transmettre une demande de suppression au niveau national. Ce verrou est controle cote serveur en plus de l'interface.
+
 Les fonctions serveur vérifient ces limites même si un utilisateur tente de contourner l'interface. Les actions importantes sont enregistrées dans `auditLogs` afin de conserver une trace.
 
 La consultation du Journal d’activité est réservée à la capacité `admin.full`. Une capacité nationale, régionale ou de gestion des performances ne donne pas accès à ce journal. Les traces antérieures à sa mise en service sont reprises sur sept jours ; les nouvelles traces restent consultables pendant une période glissante maximale d’un an.

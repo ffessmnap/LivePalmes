@@ -678,20 +678,23 @@ async function testPublicHome(client, baseUrl) {
       resultLink: document.querySelector('a[href="resultats"], a[href="resultats.html"]')?.textContent.trim() || '',
       seriesLink: document.querySelector('a[href="series"], a[href="series-public.html"]')?.textContent.trim() || '',
       calendarLink: document.querySelector('a[href="calendrier.html"]')?.textContent.trim() || '',
+      portalLink: document.querySelector('.public-home-portal a[href="portail.html"]')?.textContent.trim() || '',
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
     };
   `);
-  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.calendarLink, "Accueil public : liens principaux absents.");
+  assert(desktop.title.includes("Live") && desktop.resultLink && desktop.seriesLink && desktop.calendarLink && desktop.portalLink, "Accueil public : liens principaux absents.");
   assert(!desktop.overflow, "Accueil public : debordement horizontal desktop.");
   await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await sleep(250);
   const mobile = await evaluateJson(client, `
     return {
       cardCount: document.querySelectorAll('.public-home-card').length,
+      hasNoLive: document.querySelector('.public-home-grid')?.classList.contains('has-no-live') || false,
+      liveVisible: Boolean(document.querySelector('#publicHomeLiveCard')?.getBoundingClientRect().height),
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
     };
   `);
-  assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
+  assert(mobile.cardCount === 3 && (!mobile.hasNoLive || !mobile.liveVisible) && !mobile.overflow, "Accueil public : mise en page mobile KO.");
   await client.send("Emulation.clearDeviceMetricsOverride");
   console.log("Accueil public : OK");
 }
