@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-public.png?v=20260819-pwa-logo-1">
     <link rel="manifest" href="manifest-public.webmanifest?v=20260819-pwa-logo-1">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
-    <link rel="stylesheet" href="public.css?v=20260821-home-calendar-card-1">
+    <link rel="stylesheet" href="public.css?v=20260829-home-type-weight-1">
   </head>
   <body class="public-results-page public-home-page">
     <main class="public-home-shell">
@@ -34,7 +34,7 @@
       </section>
 
       <section class="public-home-grid" aria-label="Rubriques">
-        <article id="publicHomeLiveCard" class="public-home-card live-card">
+        <article id="publicHomeLiveCard" class="public-home-card live-card" hidden>
           <span class="public-home-card-icon live-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" focusable="false">
               <path d="M8 5v14l11-7z"></path>
@@ -78,6 +78,14 @@
           </div>
         </article>
       </section>
+
+      <aside class="public-home-portal" aria-labelledby="publicHomePortalTitle">
+        <div>
+          <h2 id="publicHomePortalTitle">Portail LivePalmes</h2>
+          <p>Vous êtes un club ou un responsable fédéral ?</p>
+        </div>
+        <a class="ghost-button compact" href="portail.html">Accéder au Portail LivePalmes</a>
+      </aside>
     </main>
 
     <footer class="public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
@@ -88,6 +96,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
     <script src="assets/livepalmes-app-config.js?v=20260602-public-admin-badge-1"></script>
     <script src="assets/public/livepalmes-public-analytics.js?v=20260614-ga-public-1"></script>
-    <script src="assets/pages/public-home.js?v=20260720-home-layout-1"></script>
+    <script src="assets/pages/public-home.js?v=20260829-home-hide-no-live-1"></script>
   </body>
 </html>

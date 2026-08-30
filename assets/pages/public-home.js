@@ -28,6 +28,7 @@ function meetLabel(meet = {}) {
 
 function setHomeMeet(label, detail = "") {
   const hasLiveMeet = Boolean(label);
+  if (liveCard) liveCard.hidden = !hasLiveMeet;
   liveCard?.classList.toggle("is-inactive", !hasLiveMeet);
   homeGrid?.classList.toggle("has-no-live", !hasLiveMeet);
   if (liveTitle) {

@@ -111,6 +111,17 @@
   font-weight: 800;
 }
 
+.admin-portal-account-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .admin-portal-account-actions {
   position: absolute;
   z-index: 20;
@@ -9857,6 +9868,91 @@
   font-weight: 500;
 }
 
+.admin-engagements-cancellation-alert {
+  display: flex;
+  gap: 6px 12px;
+  align-items: baseline;
+  margin: 0 var(--portal-panel-gutter) 10px;
+  border: 1px solid #f0b7ad;
+  border-radius: 9px;
+  padding: 9px 11px;
+  color: #7f1d1d;
+  background: #fff1ee;
+}
+
+.admin-engagements-cancellation-alert[hidden] {
+  display: none;
+}
+
+.admin-engagements-cancellation-alert strong {
+  flex: 0 0 auto;
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-engagements-cancellation-alert span {
+  font-size: 0.82rem;
+}
+
+.admin-engagements-public-info {
+  margin: 0 0 10px;
+  border: 1px solid #b9dde2;
+  border-left: 3px solid #0b8192;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #263940;
+  background: #f1fafb;
+}
+
+.admin-engagements-public-info[hidden] {
+  display: none;
+}
+
+.admin-engagements-public-info strong {
+  color: #075f6b;
+  font-size: 0.82rem;
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-engagements-public-info p {
+  margin: 5px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.admin-engagements-payment-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #75c5ba;
+  border-radius: 7px;
+  padding: 2px 10px;
+  color: #075f6b;
+  background: #eefaf7;
+  font-weight: var(--portal-font-weight-semibold);
+  text-decoration: none;
+}
+
+.admin-engagements-payment-link:hover,
+.admin-engagements-payment-link:focus-visible {
+  border-color: #0b8192;
+  background: #dff5f1;
+}
+
+.admin-engagements-contact-link {
+  color: #075f6b;
+  font-weight: var(--portal-font-weight-medium);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .admin-engagements-cancellation-alert {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 #adminEngagementsEditForm .admin-engagements-entry-status-field {
   border-left: 3px solid #0b7285;
   background: #eef8fa;
@@ -14029,15 +14125,26 @@
   cursor: pointer;
 }
 
-.admin-overview-space-toggle > span:last-child {
+.admin-overview-space-toggle-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
   color: #0b7285;
-  font-size: 1rem;
-  transition: transform 150ms ease;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
 }
 
-.admin-overview-space-card:hover .admin-overview-space-toggle > span:last-child,
-.admin-overview-space-card.is-expanded .admin-overview-space-toggle > span:last-child {
-  transform: rotate(180deg);
+.admin-overview-space-toggle-icon-vertical {
+  transform-box: view-box;
+  transform-origin: center;
+  transition: opacity 120ms ease, transform 150ms ease;
+}
+
+.admin-overview-space-toggle[aria-expanded="true"] .admin-overview-space-toggle-icon-vertical {
+  opacity: 0;
+  transform: scaleY(0);
 }
 
 .admin-overview-space-tools {
@@ -18159,3 +18266,461 @@
 .admin-calendar-document { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid var(--admin-border, #dce7e9); }
 .admin-calendar-document div:first-child { display:grid; gap:3px; }
 @media (max-width:800px) { .admin-calendar-program-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.admin-calendar-program-summary { grid-column:1/-1; }.admin-calendar-document { align-items:flex-start; flex-direction:column; } }
+
+/* Échelle commune des boutons du portail. */
+.admin-portal-page {
+  --admin-button-height-compact: 36px;
+  --admin-button-height-standard: 40px;
+  --admin-button-height-large: 44px;
+  --admin-button-padding-compact: 10px;
+  --admin-button-padding-standard: 14px;
+}
+
+.admin-portal-page .admin-button-compact,
+.admin-portal-page .admin-tool-workspace-head button,
+#adminEngagementsDetail .admin-engagements-detail-actions button,
+#adminEngagementsDetail .admin-engagements-events-head > button,
+#adminEngagementsDetail .admin-engagements-documents-head button {
+  width: auto;
+  min-height: var(--admin-button-height-compact);
+  padding-right: var(--admin-button-padding-compact);
+  padding-left: var(--admin-button-padding-compact);
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.admin-portal-page .admin-tool-workspace-head > .admin-button-compact {
+  align-self: center;
+  justify-self: start;
+}
+
+#adminRecordsView .admin-records-workspace-head .admin-button-compact {
+  width: auto;
+  min-width: 0;
+}
+
+#adminEngagementsView .admin-engagements-workspace-back {
+  column-gap: 5px;
+}
+
+.admin-button-label-short {
+  display: none;
+}
+
+/* Paramétrage général d'une compétition : grille dense et lisible. */
+#adminEngagementsEditForm {
+  gap: 10px;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-section > legend {
+  font-weight: 800;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-field--readonly input[readonly] {
+  min-height: 38px;
+  border-style: dashed;
+  background: #f2f6f6;
+  color: #40545c;
+  font-weight: 750;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check {
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-content: center;
+  align-items: center;
+  justify-content: start;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check > input {
+  grid-column: 1;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #0b7285;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check > span {
+  grid-column: 2;
+  justify-self: start;
+  text-align: left;
+}
+
+#adminEngagementsEditForm [data-engagements-conditional-region][hidden] {
+  display: none;
+}
+
+#adminEngagementsDetail .admin-engagements-inline-save-actions {
+  gap: 8px;
+  border: 1px solid rgba(216, 224, 227, 0.92);
+  border-radius: 9px;
+  margin-top: 2px;
+  padding: 8px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-no-fees-choice {
+  width: fit-content;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #dfe5e7;
+  padding: 9px 10px 10px;
+  background: #ffffff;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees-head strong {
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-no-fees-choice {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-weight: 650;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-no-fees-choice input {
+  flex: 0 0 auto;
+  min-height: 18px;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid {
+  gap: 8px 10px;
+}
+
+#adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid label {
+  gap: 5px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+#adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid input {
+  min-height: 36px;
+}
+
+@media (min-width: 701px) {
+  #adminEngagementsEditForm .admin-engagements-compact-section > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background: #e7ecee;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section--documents > .admin-engagements-form-section-grid,
+  #adminEngagementsEditForm .admin-engagements-compact-section--engagements > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-invited-regions-field {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: stretch;
+    gap: 5px;
+    min-height: 0;
+    border: 0;
+    padding: 8px 10px;
+    background: #ffffff;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field:nth-child(even) {
+    background: #ffffff;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > input:not([type="checkbox"]),
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > select,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > textarea,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-field-note {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > input:not([type="checkbox"]),
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > select {
+    min-height: 38px;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > textarea {
+    min-height: 74px;
+    resize: vertical;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-field--full {
+    grid-column: 1 / -1;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-entry-status-field {
+    border-left: 3px solid #0b7285;
+    padding-left: 8px;
+    background: #eef8fa;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-check {
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-content: center;
+    align-items: center;
+    min-height: 59px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid label {
+    padding: 9px 10px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid input {
+    min-height: 38px;
+  }
+
+  #adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid input {
+    min-height: 36px;
+  }
+}
+
+@media (min-width: 900px) {
+  #adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  #adminEngagementsEditForm .admin-engagements-compact-section--competition > .admin-engagements-form-section-grid,
+  #adminEngagementsEditForm .admin-engagements-compact-section--sports > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsEditForm .admin-engagements-compact-check {
+    grid-template-columns: 18px minmax(0, 1fr);
+    min-height: 44px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-no-fees-choice {
+    width: 100%;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-actions {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-actions button {
+    width: auto;
+    min-height: 38px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  #adminEngagementsDetail #adminEngagementsEditButton {
+    border-color: #0b7285;
+    background: #0b7285;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back {
+    align-self: start;
+    min-height: 38px;
+    padding-right: 11px;
+    padding-left: 11px;
+    font-size: 0.84rem;
+  }
+
+  .admin-portal-page .admin-tool-workspace-head > .admin-button-compact {
+    align-self: flex-start;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back .admin-button-label-long {
+    display: none;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back .admin-button-label-short {
+    display: inline;
+  }
+}
+
+/* Bandeau mobile du portail : navigation, marque puis compte. */
+@media (max-width: 680px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: 38px 38px minmax(82px, 1fr) auto;
+    gap: 7px;
+    min-height: 54px;
+    padding: 5px 8px;
+  }
+
+  .admin-portal-page .admin-portal-topbar-actions {
+    display: contents;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    grid-column: 1;
+    grid-row: 1;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border-color: transparent;
+    border-radius: 10px;
+    padding: 9px;
+    background: #e7f5f6;
+    color: var(--portal-color-accent-strong);
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle:hover,
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] {
+    border-color: transparent;
+    background: #cfe9ec;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle:focus-visible {
+    outline: 3px solid var(--portal-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle svg path {
+    transform-box: view-box;
+    transform-origin: center;
+    transition: transform 160ms ease, opacity 120ms ease;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:first-child {
+    transform: translateY(5px) rotate(45deg);
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:nth-child(2) {
+    opacity: 0;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:last-child {
+    transform: translateY(-5px) rotate(-45deg);
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    grid-column: 2;
+    grid-row: 1;
+    width: 38px;
+  }
+
+  .admin-portal-page .admin-portal-brand {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1.08rem;
+  }
+
+  .admin-portal-page .admin-portal-title-prefix {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-menu {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button {
+    min-height: 36px;
+    padding-inline: 6px;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    max-width: 72px;
+    font-size: 0.8rem;
+  }
+
+  .admin-portal-page .admin-portal-account-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  #adminOverviewView > .admin-overview-head {
+    display: none !important;
+  }
+
+  .admin-portal-page .admin-portal-overview-view {
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-overview-grid {
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-overview-space-main {
+    min-height: 50px;
+    padding-block: 5px;
+  }
+
+  .admin-portal-page .admin-overview-space-toggle {
+    min-height: 28px;
+    padding-block: 4px;
+  }
+
+  .admin-portal-page .admin-portal-shell {
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: 36px 34px minmax(72px, 1fr) auto;
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    width: 34px;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1rem;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    max-width: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-portal-page .admin-portal-nav-toggle svg path,
+  .admin-portal-page .admin-overview-space-toggle-icon-vertical {
+    transition: none;
+  }
+}

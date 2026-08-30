@@ -28,6 +28,8 @@ const views = [
   { name: "competition-calendar", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminCalendarFixture: true },
   { name: "competition-create", hash: "competitions-creation", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminCreateFixture: true },
   { name: "competition-detail", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminDetailFixture: true },
+  { name: "competition-detail-edit", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminDetailFixture: true, adminDetailEditFixture: true },
+  { name: "competition-detail-edit-fees", hash: "competitions-calendrier", selector: "#adminEngagementsView", authenticated: true, menu: "engagements", adminDetailFixture: true, adminDetailEditFixture: true, scrollTarget: "#adminEngagementsFeesBlock" },
   { name: "dtn-home", hash: "espace-dtn", selector: "#adminDtnHomeView", authenticated: true, menu: "dtn" },
   { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
   { name: "national-home", hash: "administration-nationale", selector: "#adminNationalHomeView", authenticated: true, menu: "national" },
@@ -761,8 +763,64 @@ function presentationScript(view) {
           entryStatus.textContent = "Engagements ouverts";
           entryStatus.hidden = false;
         }
+        const editButton = document.querySelector("#adminEngagementsEditButton");
+        const deleteButton = document.querySelector("#adminEngagementsDeleteButton");
+        if (!${view.adminDetailEditFixture ? "true" : "false"}) {
+          if (editButton) editButton.hidden = false;
+          if (deleteButton) deleteButton.hidden = false;
+        }
+        const publicInfo = document.querySelector("#adminEngagementsPublicInfo");
+        const publicInfoTitle = document.querySelector("#adminEngagementsPublicInfoTitle");
+        const publicInfoText = document.querySelector("#adminEngagementsPublicInfoText");
+        if (publicInfo) publicInfo.hidden = false;
+        if (publicInfoTitle) publicInfoTitle.textContent = "Présentation publique";
+        if (publicInfoText) publicInfoText.textContent = "Toutes les informations pratiques communiquées aux clubs sont regroupées ici.";
         const detailList = document.querySelector("#adminEngagementsDetailList");
-        if (detailList) detailList.innerHTML = "<div><dt>Date</dt><dd>15/08/2026 au 17/08/2026</dd></div><div><dt>Lieu</dt><dd>Houilles</dd></div><div><dt>Bassin</dt><dd>50 m · 10 lignes d'eau</dd></div><div><dt>Programme</dt><dd>14 courses individuelles, 3 relais</dd></div>";
+        if (detailList) detailList.innerHTML = "<div><dt>Date</dt><dd>15/08/2026 au 17/08/2026</dd></div><div><dt>Lieu</dt><dd>Centre aquatique · 40 rue du Stade · Houilles</dd></div><div><dt>Organisateur</dt><dd>Commission nationale</dd></div><div><dt>Email organisateur</dt><dd><a class='admin-engagements-contact-link' href='mailto:organisation@example.fr'>organisation@example.fr</a></dd></div><div><dt>Limite par nageur</dt><dd>4 épreuves</dd></div><div><dt>Bassin</dt><dd>50 m · 10 lignes d'eau · Chronométrage électronique</dd></div><div><dt>Programme</dt><dd>14 courses individuelles, 3 relais</dd></div>";
+        if (${view.adminDetailEditFixture ? "true" : "false"}) {
+          const form = document.querySelector("#adminEngagementsEditForm");
+          const saveButton = document.querySelector("#adminEngagementsSaveButton");
+          const cancelButton = document.querySelector("#adminEngagementsEditCancelTop");
+          if (form) form.hidden = false;
+          if (detailList) detailList.hidden = true;
+          if (publicInfo) publicInfo.hidden = true;
+          if (editButton) editButton.hidden = true;
+          if (saveButton) saveButton.hidden = false;
+          if (cancelButton) cancelButton.hidden = false;
+          const values = {
+            adminEngagementsEditCompetitionType: "Piscine",
+            adminEngagementsEditDate: "2026-08-15",
+            adminEngagementsEditEndDate: "2026-08-17",
+            adminEngagementsEditLocation: "Centre aquatique",
+            adminEngagementsEditCity: "Houilles",
+            adminEngagementsEditAddress: "40 rue du Stade, 78800 Houilles",
+            adminEngagementsEditOrganizer: "Commission nationale",
+            adminEngagementsEditOrganizerEmail: "organisation@example.fr",
+            adminEngagementsEditLevel: "national",
+            adminEngagementsEditPublicationStatus: "published",
+            adminEngagementsEditEntryStatus: "open",
+            adminEngagementsEditDeadline: "2026-08-10T23:00",
+            adminEngagementsEditMaxEvents: "4",
+            adminEngagementsEditOfficialsRequired: "true",
+            adminEngagementsEditPoolLength: "50",
+            adminEngagementsEditPoolLaneCount: "10",
+            adminEngagementsEditTimingType: "electronic",
+            adminEngagementsEditQualificationMode: "period",
+            adminEngagementsEditQualificationStart: "2025-09-01",
+            adminEngagementsEditQualificationEnd: "2026-07-31",
+            adminEngagementsEditMissingEntryTimeMode: "manual"
+          };
+          Object.entries(values).forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (field) field.value = value;
+          });
+          const region = document.querySelector("#adminEngagementsEditRegionId");
+          const regionNote = document.querySelector("#adminEngagementsEditRegionNote");
+          const nameField = document.querySelector("#adminEngagementsClubTeamLastNameLabel");
+          if (nameField) nameField.hidden = true;
+          if (region) region.disabled = true;
+          if (regionNote) regionNote.textContent = "Non applicable au niveau national.";
+        }
       }
       if (${JSON.stringify(view.name)} === "engagements") {
         const engagementsView = document.querySelector("#adminEngagementsView");
@@ -862,6 +920,7 @@ async function auditInteractions(client, viewport, view) {
       swimmerAccordion: null,
       peopleAccordion: null,
       accessAccordion: null,
+      feesToggle: null,
       distinctEngagementRoutes: null,
       tabKeyboard: null,
       unauthorizedGroupsVisible: null,
@@ -954,6 +1013,20 @@ async function auditInteractions(client, viewport, view) {
       toggles[1]?.click();
       result.accessAccordion = Boolean(firstOpened && toggles[0]?.getAttribute("aria-expanded") === "false" && toggles[1]?.getAttribute("aria-expanded") === "true");
     }
+    if (${JSON.stringify(view.name)} === "competition-detail-edit-fees") {
+      const noFees = document.querySelector("#adminEngagementsNoFees");
+      const feesGrid = document.querySelector("#adminEngagementsFeesGrid");
+      if (noFees && feesGrid) {
+        noFees.checked = true;
+        noFees.dispatchEvent(new Event("change", { bubbles: true }));
+        const hiddenWhenChecked = feesGrid.hidden;
+        noFees.checked = false;
+        noFees.dispatchEvent(new Event("change", { bubbles: true }));
+        result.feesToggle = hiddenWhenChecked && !feesGrid.hidden;
+      } else {
+        result.feesToggle = false;
+      }
+    }
     return result;
   `);
   const failures = [];
@@ -961,7 +1034,7 @@ async function auditInteractions(client, viewport, view) {
   if (audit.delayedTouch.length) failures.push(`actions tactiles non optimisees ${JSON.stringify(audit.delayedTouch)}`);
   if (audit.covered.length) failures.push(`actions recouvertes ${JSON.stringify(audit.covered)}`);
   if (audit.removedComponents) failures.push(`${audit.removedComponents} composant(s) supprime(s) encore present(s)`);
-  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion", "peopleAccordion", "accessAccordion", "distinctEngagementRoutes", "tabKeyboard", "accountProgressiveDisclosure"].forEach((key) => {
+  ["accountMenu", "mobileNavigation", "mobileParentNavigation", "overviewToggle", "overviewLink", "swimmerAccordion", "peopleAccordion", "accessAccordion", "feesToggle", "distinctEngagementRoutes", "tabKeyboard", "accountProgressiveDisclosure"].forEach((key) => {
     if (audit[key] === false) failures.push(`${key} KO`);
   });
   if (audit.unauthorizedGroupsVisible) failures.push("rubriques non autorisees visibles");
@@ -1065,6 +1138,10 @@ async function captureView(client, baseUrl, viewport, view) {
       return toggle?.getAttribute("aria-expanded") === "true";
     `);
     if (!opened) throw new Error(`${view.name}/${viewport.name} : ouverture visuelle de l'accordeon impossible.`);
+  }
+  if (view.scrollTarget) {
+    await evaluate(client, `document.querySelector(${JSON.stringify(view.scrollTarget)})?.scrollIntoView({ block: "center" })`);
+    await sleep(100);
   }
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", fromSurface: true });
   const fileName = `${view.name}-${viewport.name}.png`;
