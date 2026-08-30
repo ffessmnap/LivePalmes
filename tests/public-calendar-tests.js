@@ -23,6 +23,7 @@ const detail = calendar.publicCalendarDetail({
   name: "Stage régional",
   date: "2026-10-03",
   city: "Lyon",
+  organizerEmail: "ORGANISATEUR@EXAMPLE.FR",
   eventType: "stage",
   level: "regional",
   publicationStatus: "published",
@@ -33,6 +34,7 @@ assert.equal(detail.eventType, "stage");
 assert.equal(detail.program[0].title, "Session 1");
 assert.equal(detail.program[0].summary, "Accueil et pratique");
 assert.equal(detail.documents[0].url, "https://example.test/programme.pdf");
+assert.equal(detail.organizerEmail, "organisateur@example.fr");
 const legacyDetail = calendar.publicCalendarDetail({
   name: "Historique",
   date: "2025-10-12",
@@ -183,6 +185,8 @@ assert.ok(competitionPageSource.includes('openWater:"Compétition eau libre"'));
 assert.ok(competitionPageSource.includes("Niveau ${String(label).toLocaleLowerCase"));
 assert.ok(competitionPageSource.includes('month:"long"'));
 assert.ok(competitionPageSource.includes("calendar-entry-link"));
+assert.ok(competitionPageSource.includes("Email organisateur"));
+assert.ok(competitionPageSource.includes('href="mailto:${api.escapeHtml(event.organizerEmail)}"'));
 assert.ok(competitionPageSource.includes('state==="resultsPublished"'));
 assert.ok(competitionPageSource.indexOf("resultsHtml(event.results)") < competitionPageSource.indexOf("calendar-detail-grid"));
 assert.ok(competitionPageSource.indexOf("Informations pratiques") < competitionPageSource.indexOf('<h2>Documents</h2>'));
@@ -196,6 +200,7 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
+assert.ok(competitionHtml.includes("competition.js?v=20260829-organizer-contact-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
 assert.ok(competitionHtml.includes('href="calendrier.html"'));
 assert.ok(!competitionHtml.includes("calendar-detail-back"));
@@ -206,6 +211,10 @@ assert.ok(calendarHtml.includes('id="calendarResetFilters"'));
 assert.ok(calendarHtml.includes('class="calendar-type-legend"'));
 assert.ok(calendarHtml.includes("National / international"));
 assert.ok(calendarPageSource.includes("function updateResetFilters()"));
+assert.ok(calendarPageSource.includes("const selectedRegion=nodes.region.value"));
+assert.ok(calendarPageSource.includes("nodes.region.value=selectedRegion"));
+assert.ok(calendarHtml.includes('<option value="pool">Compétition piscine</option>'));
+assert.ok(calendarHtml.includes('<option value="openWater">Compétition eau libre</option>'));
 assert.ok(calendarPageSource.includes("sameMonth"));
 
 const portalHtml = fs.readFileSync(path.join(root, "portail.html"), "utf8");

@@ -4520,6 +4520,7 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     city: cleanText(data.city || data.location).slice(0, 120),
     address: cleanText(data.address).slice(0, 300),
     organizer: cleanText(data.organizer).slice(0, 160),
+    organizerEmail: normalizeEmail(data.organizerEmail).slice(0, 180),
     publicDescription: cleanText(data.publicDescription).slice(0, 3000),
     regionId: cleanText(data.regionId).slice(0, 80),
     invitedRegionIds: cleanEngagementRegionIds(data.invitedRegionIds, data.regionId),
@@ -4585,8 +4586,8 @@ function cleanEngagementCalendarEventPayload(raw = {}, context = {}) {
   if (!PUBLIC_CALENDAR_EVENT_TYPES.has(eventType)) {
     throw new HttpsError("invalid-argument", "Type d'evenement invalide.");
   }
-  if (!name || !date || !location || !city) {
-    throw new HttpsError("invalid-argument", "Nom, date, ville et lieu sont obligatoires.");
+  if (!name || !date || !city) {
+    throw new HttpsError("invalid-argument", "Nom, date et ville sont obligatoires.");
   }
   if (endDate < date) {
     throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
@@ -9257,12 +9258,14 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const city = cleanText(raw.city || raw.location).slice(0, 120);
   const address = cleanText(raw.address).slice(0, 300);
   const organizer = cleanText(raw.organizer).slice(0, 160);
+  const organizerEmail = cleanOptionalEmail(raw.organizerEmail, "Email organisateur");
   const publicDescription = cleanText(raw.publicDescription).slice(0, 3000);
   const level = cleanEngagementCompetitionLevel(raw.level);
   const entryDeadlineAt = cleanEngagementDeadlineAt(raw.entryDeadlineAt);
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
   const officialsManagerEmail = cleanOptionalEmail(raw.officialsManagerEmail, "Email du responsable juge");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
+  const publicationStatus = cleanPublicCalendarPublicationStatus(raw.publicationStatus);
   const competitionType = cleanEngagementCompetitionType(raw.competitionType);
   const waterBodyType = competitionType === "openWater" ? cleanEngagementWaterBodyType(raw.waterBodyType) : "";
   const poolLength = competitionType === "pool" ? cleanEngagementPoolLength(raw.poolLength) : "";
@@ -9276,6 +9279,14 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const requestedRegionId = cleanText(raw.regionId).slice(0, 80);
   const regionId = isNationalOnlyEngagementCompetitionLevel(level) ? "" : (context.national ? requestedRegionId : context.regionId);
   const invitedRegionIds = isNationalOnlyEngagementCompetitionLevel(level) ? [] : cleanEngagementRegionIds(raw.invitedRegionIds, regionId);
+  const events = Object.prototype.hasOwnProperty.call(raw, "events")
+    ? cleanEngagementCompetitionEvents(raw.events, { competitionType })
+    : null;
+  const programSessions = events
+    ? cleanEngagementProgramSessions(raw.programSessions || [], events)
+    : null;
+  const programItemCount = (programSessions || [])
+    .reduce((sum, session) => sum + (session.items || []).length, 0);
 
   if (!context.national && !context.region) {
     throw new HttpsError("permission-denied", "Droit creation competition engagements requis.");
@@ -9286,14 +9297,20 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (!context.national && entryStatus === "closed") {
     throw new HttpsError("permission-denied", "La fermeture des engagements est automatique apres la date de cloture.");
   }
-  if (!name || !date || !location) {
-    throw new HttpsError("invalid-argument", "Nom, date et lieu sont obligatoires.");
+  if (!name || !date || !city) {
+    throw new HttpsError("invalid-argument", "Nom, date et ville sont obligatoires.");
   }
   if (endDate && endDate < date) {
     throw new HttpsError("invalid-argument", "La date de fin doit etre egale ou posterieure a la date de debut.");
   }
   if (!isNationalOnlyEngagementCompetitionLevel(level) && !regionId) {
     throw new HttpsError("invalid-argument", "Region obligatoire pour une competition departementale ou regionale.");
+  }
+  if (entryStatus === "open" && publicationStatus !== "published") {
+    throw new HttpsError("failed-precondition", "Publiez la competition avant d'ouvrir les engagements.");
+  }
+  if (entryStatus === "open" && !programItemCount) {
+    throw new HttpsError("failed-precondition", "Ajoutez au moins une course au programme avant d'ouvrir les engagements.");
   }
   if (qualificationTimesMode === "period" && (!qualificationStartDate || !qualificationEndDate)) {
     throw new HttpsError("invalid-argument", "Periode des temps d'engagement incomplete.");
@@ -9317,10 +9334,6 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     throw new HttpsError("failed-precondition", "Renseignez le bassin et le nombre de lignes d'eau avant d'ouvrir les engagements.");
   }
 
-  const events = Object.prototype.hasOwnProperty.call(raw, "events")
-    ? cleanEngagementCompetitionEvents(raw.events, { competitionType })
-    : null;
-
   return {
     name,
     date,
@@ -9329,6 +9342,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     city,
     address,
     organizer,
+    organizerEmail,
     publicDescription,
     regionId,
     invitedRegionIds,
@@ -9339,7 +9353,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     computerEmail,
     officialsManagerEmail,
     entryStatus,
-    publicationStatus: cleanPublicCalendarPublicationStatus(raw.publicationStatus),
+    publicationStatus,
     canceled: raw.canceled === true,
     officialsRequired: raw.officialsRequired === true,
     poolLength,
@@ -9356,7 +9370,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     ...(events
       ? {
           events,
-          programSessions: cleanEngagementProgramSessions(raw.programSessions || [], events)
+          programSessions
         }
       : {})
   };
@@ -9373,6 +9387,40 @@ function assertCanManageEngagementCompetition(context = {}, competition = {}) {
   if (!engagementRegionsMatch(competition.regionId, context.regionId)) {
     throw new HttpsError("permission-denied", "Competition hors perimetre regional.");
   }
+}
+
+function engagementParisIsoDate(nowMs = Date.now()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(nowMs));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function engagementEventIsPast(event = {}, nowMs = Date.now()) {
+  const endDate = cleanIsoDate(event.endDate) || cleanIsoDate(event.date);
+  return Boolean(endDate && endDate < engagementParisIsoDate(nowMs));
+}
+
+function assertCanModifyEngagementEvent(context = {}, event = {}) {
+  assertCanManageEngagementCompetition(context, event);
+  if (!context.national && engagementEventIsPast(event)) {
+    throw new HttpsError("failed-precondition", "Cet evenement passe est consultable mais ne peut plus etre modifie par la region.");
+  }
+}
+
+function assertCanDeleteEngagementDocument(context = {}, event = {}) {
+  assertCanManageEngagementCompetition(context, event);
+  if (!context.national && engagementEventIsPast(event)) {
+    throw new HttpsError("failed-precondition", "Un document existant ne peut plus etre supprime d'un evenement passe par la region.");
+  }
+}
+
+function engagementDeletionRequestId(sourceType = "competition", eventId = "") {
+  return sourceType === "calendarEvent" ? `calendarEvent-${eventId}` : eventId;
 }
 
 function engagementClubWriteLockReason(competition = {}, nowMs = Date.now()) {
@@ -9535,10 +9583,18 @@ exports.getEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) =>
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
   const snapshot = await db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId).get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
-  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  const eventData = snapshot.data() || {};
+  assertCanManageEngagementCompetition(context, eventData);
+  const deletionRequest = await db.collection("engagementCompetitionDeletionRequests")
+    .doc(engagementDeletionRequestId("calendarEvent", calendarEventId))
+    .get();
   return {
     ok: true,
-    event: engagementCalendarEventDetailItem(snapshot, { includeDocumentUploader: true })
+    event: {
+      ...engagementCalendarEventDetailItem(snapshot, { includeDocumentUploader: true }),
+      regionalPastReadOnly: !context.national && engagementEventIsPast(eventData),
+      deletionRequestStatus: deletionRequest.exists && deletionRequest.data()?.status === "pending" ? "pending" : ""
+    }
   };
 });
 
@@ -9575,7 +9631,7 @@ exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
-  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  assertCanModifyEngagementEvent(context, snapshot.data() || {});
   const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
   assertCanManageEngagementCompetition(context, eventData);
   const now = new Date().toISOString();
@@ -9605,7 +9661,7 @@ exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
-  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  assertCanModifyEngagementEvent(context, snapshot.data() || {});
   const data = snapshot.data() || {};
   await ref.delete();
   const documents = cleanCompetitionDocuments(data.clubDocuments || [], { includeUploader: true });
@@ -9718,6 +9774,7 @@ exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
     ok: true,
     competition: {
       ...engagementCompetitionDetailItem(doc, { includeDocumentUploader: true }),
+      regionalPastReadOnly: !context.national && engagementEventIsPast(doc.data() || {}),
       deletionRequestStatus: deletionRequestData.status === "pending" ? "pending" : ""
     }
   };
@@ -9910,6 +9967,7 @@ exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
     const currentSnapshot = await transaction.get(ref);
     if (!currentSnapshot.exists) throw new HttpsError("not-found", "Compétition d'engagements introuvable.");
     assertCanManageEngagementCompetition(context, currentSnapshot.data() || {});
+    assertCanDeleteEngagementDocument(context, currentSnapshot.data() || {});
     const documents = cleanCompetitionDocuments(currentSnapshot.data()?.clubDocuments || [], { includeUploader: true });
     deletedDocument = documents.find((document) => document.id === documentId) || null;
     if (!deletedDocument) throw new HttpsError("not-found", "Document introuvable.");
@@ -15572,7 +15630,7 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   if (!snapshot.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
   }
-  assertCanManageEngagementCompetition(context, snapshot.data() || {});
+  assertCanModifyEngagementEvent(context, snapshot.data() || {});
   const competition = cleanEngagementCompetitionPayload(request.data || {}, context);
   const storedCompetitionType = cleanEngagementCompetitionType(snapshot.data()?.competitionType);
   if (competition.competitionType !== storedCompetitionType) {
@@ -15634,6 +15692,9 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   const competition = snapshot.data() || {};
   if (!context.national) {
     assertCanManageEngagementCompetition(context, competition);
+    if (engagementEventIsPast(competition)) {
+      throw new HttpsError("failed-precondition", "Une competition passee doit faire l'objet d'une demande de suppression au niveau national.");
+    }
     if (cleanEngagementEntryStatus(competition.entryStatus || competition.status) !== "upcoming") {
       throw new HttpsError("failed-precondition", "Seule une competition a venir peut etre retiree du calendrier par la region.");
     }
@@ -15700,29 +15761,36 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
 exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (context.national) {
-    throw new HttpsError("failed-precondition", "Un niveau national peut supprimer directement la competition.");
+    throw new HttpsError("failed-precondition", "Un niveau national peut supprimer directement l'evenement.");
   }
+  const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
-  if (!competitionId) {
-    throw new HttpsError("invalid-argument", "Competition requise.");
+  const eventId = calendarEventId || competitionId;
+  const sourceType = calendarEventId ? "calendarEvent" : "competition";
+  if (!eventId) {
+    throw new HttpsError("invalid-argument", "Competition ou evenement requis.");
   }
 
-  const docRef = db.collection("engagementCompetitions").doc(competitionId);
+  const collection = sourceType === "calendarEvent" ? ENGAGEMENT_CALENDAR_EVENTS_COLLECTION : "engagementCompetitions";
+  const docRef = db.collection(collection).doc(eventId);
   const snapshot = await docRef.get();
   if (!snapshot.exists) {
-    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+    throw new HttpsError("not-found", "Competition ou evenement introuvable.");
   }
 
-  const competition = snapshot.data() || {};
-  assertCanManageEngagementCompetition(context, competition);
+  const eventData = snapshot.data() || {};
+  assertCanManageEngagementCompetition(context, eventData);
 
   const now = new Date().toISOString();
   const payload = {
-    competitionId,
-    competitionName: competition.name || "",
-    competitionDate: competition.date || "",
-    competitionLevel: competition.level || "",
-    regionId: competition.regionId || "",
+    sourceType,
+    eventId,
+    competitionId: sourceType === "competition" ? eventId : "",
+    calendarEventId: sourceType === "calendarEvent" ? eventId : "",
+    competitionName: eventData.name || "",
+    competitionDate: eventData.date || "",
+    competitionLevel: eventData.level || "",
+    regionId: eventData.regionId || "",
     status: "pending",
     requestedAt: now,
     requestedBy: context.uid,
@@ -15730,9 +15798,11 @@ exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (r
     updatedAt: now,
     updatedBy: context.uid
   };
-  await db.collection("engagementCompetitionDeletionRequests").doc(competitionId).set(payload, { merge: true });
+  const requestId = engagementDeletionRequestId(sourceType, eventId);
+  await db.collection("engagementCompetitionDeletionRequests").doc(requestId).set(payload, { merge: true });
   await writeAuditLog("engagementCompetition.deletionRequested", context.uid, {
-    competitionId,
+    sourceType,
+    eventId,
     name: payload.competitionName,
     date: payload.competitionDate,
     regionId: payload.regionId,
@@ -15741,7 +15811,7 @@ exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (r
   return {
     ok: true,
     requested: true,
-    requestId: competitionId
+    requestId
   };
 });
 
@@ -15765,7 +15835,10 @@ exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, asy
       const data = doc.data() || {};
       return {
         id: doc.id,
+        sourceType: cleanText(data.sourceType) === "calendarEvent" ? "calendarEvent" : "competition",
+        eventId: cleanText(data.eventId || data.calendarEventId || data.competitionId),
         competitionId: cleanText(data.competitionId),
+        calendarEventId: cleanText(data.calendarEventId),
         competitionName: cleanText(data.competitionName),
         competitionDate: cleanText(data.competitionDate),
         competitionLevel: cleanText(data.competitionLevel),
@@ -15809,14 +15882,16 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
     throw new HttpsError("failed-precondition", "Demande deja traitee.");
   }
 
-  const competitionId = cleanText(deletionRequest.competitionId || requestId).slice(0, 128);
-  const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
-  const competitionSnapshot = await competitionRef.get();
-  const competition = competitionSnapshot.exists ? competitionSnapshot.data() || {} : {};
+  const sourceType = cleanText(deletionRequest.sourceType) === "calendarEvent" ? "calendarEvent" : "competition";
+  const eventId = cleanText(deletionRequest.eventId || deletionRequest.calendarEventId || deletionRequest.competitionId || requestId).slice(0, 128);
+  const collection = sourceType === "calendarEvent" ? ENGAGEMENT_CALENDAR_EVENTS_COLLECTION : "engagementCompetitions";
+  const eventRef = db.collection(collection).doc(eventId);
+  const eventSnapshot = await eventRef.get();
+  const eventData = eventSnapshot.exists ? eventSnapshot.data() || {} : {};
   const now = new Date().toISOString();
   const batch = db.batch();
-  if (decision === "approved" && competitionSnapshot.exists) {
-    batch.delete(competitionRef);
+  if (decision === "approved" && eventSnapshot.exists) {
+    batch.delete(eventRef);
   }
   batch.set(requestRef, {
     status: decision,
@@ -15827,20 +15902,33 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
     updatedBy: context.uid
   }, { merge: true });
   await batch.commit();
+  const documents = cleanCompetitionDocuments(eventData.clubDocuments || [], { includeUploader: true });
+  const documentDeletionResults = decision === "approved" && eventSnapshot.exists
+    ? await Promise.allSettled(documents.filter(hasManagedEngagementCompetitionDocumentStorage).map((document) =>
+        storage.bucket(LIVEPALMES_STORAGE_BUCKET)
+          .file(assertEngagementCompetitionDocumentPath(document.storagePath))
+          .delete({ ignoreNotFound: true })
+      ))
+    : [];
 
   await writeAuditLog("engagementCompetition.deletionRequestResolved", context.uid, {
     requestId,
     decision,
-    competitionId,
-    name: competition.name || deletionRequest.competitionName || "",
-    date: competition.date || deletionRequest.competitionDate || "",
-    regionId: competition.regionId || deletionRequest.regionId || "",
-    level: competition.level || deletionRequest.competitionLevel || ""
+    sourceType,
+    eventId,
+    name: eventData.name || deletionRequest.competitionName || "",
+    date: eventData.date || deletionRequest.competitionDate || "",
+    regionId: eventData.regionId || deletionRequest.regionId || "",
+    level: eventData.level || deletionRequest.competitionLevel || "",
+    documentCount: documents.length,
+    documentDeleteErrorCount: documentDeletionResults.filter((result) => result.status === "rejected").length
   });
   return {
     ok: true,
     decision,
-    competitionDeleted: decision === "approved" && competitionSnapshot.exists
+    competitionDeleted: decision === "approved" && eventSnapshot.exists,
+    sourceType,
+    eventId
   };
 });
 
