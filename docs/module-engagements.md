@@ -191,7 +191,7 @@ Creation :
 
 Pour un niveau 2, la region de la competition est automatiquement celle de l'administrateur regional.
 
-L'ajout initial au calendrier est volontairement rapide : type obligatoire (`pool` ou `openWater`), nom, dates de debut et de fin, lieu, niveau et region organisatrice lorsque le niveau l'exige. Aucun type n'est preselectionne et il devient definitif apres la creation. La competition est toujours creee avec le statut `upcoming` (`A venir`), sans ouverture des engagements ni envoi de courriel. Apres validation, l'administrateur choisit de completer immediatement la fiche ou de revenir au calendrier ; tous les autres parametres sont renseignes depuis la fiche d'administration. Les competitions historiques sans type sont interpretees comme des competitions piscine.
+L'ajout initial au calendrier est volontairement rapide : type obligatoire (`pool` ou `openWater`), nom, dates de debut et de fin, lieu, niveau et region organisatrice lorsque le niveau l'exige. Aucun type n'est preselectionne et il devient definitif apres la creation. La competition est toujours creee avec le statut `upcoming` (`A venir`) et publiee immediatement dans le calendrier public, sans ouverture des engagements ni envoi de courriel. Apres validation, l'administrateur choisit de completer immediatement la fiche ou de revenir au calendrier ; ce choix ne modifie pas sa publication et tous les autres parametres sont renseignes depuis la fiche d'administration. Les competitions historiques sans type sont interpretees comme des competitions piscine.
 
 ### Parametres generaux
 
@@ -209,6 +209,7 @@ La configuration complete d'une competition contient notamment :
 - date et heure limite des engagements ;
 - email du responsable informatique ;
 - email du responsable juge ;
+- pour une competition nationale ou internationale, lien d'invitation au groupe WhatsApp des chefs d'equipe, renseigne uniquement par un administrateur national et accessible depuis la fiche publique, les informations et le recapitulatif Club ainsi que le PDF recapitulatif ;
 - lien HelloAsso si connu ;
 - officiels requis : oui ou non ;
 - plusieurs relais de meme categorie par club autorises : oui ou non.
@@ -252,6 +253,7 @@ Le recapitulatif indique :
 - le nombre de courses individuelles ;
 - le nombre de relais ;
 - le total estimatif ;
+- pour une competition nationale ou internationale, un acces compact au groupe WhatsApp des chefs d'equipe lorsqu'il est renseigne ;
 - le lien HelloAsso ou l'attente de publication du lien ;
 - le rappel du paiement avant la fin de la premiere journee de competition ;
 - le surplus forfaitaire de 50 euros si paiement tardif.
@@ -306,9 +308,9 @@ Les engagements des autres clubs ne sont jamais visibles par un club.
 
 Le calendrier public est distinct du calendrier d'engagement d'un club et reste accessible sans compte. Il réunit les compétitions piscine et eau libre ainsi que les formations, stages, réunions et autres événements. Les niveaux proposés sont départemental, régional, national et international. Le niveau international suit les mêmes droits et le même périmètre qu'un niveau national.
 
-Une compétition ou un événement n'apparaît publiquement qu'après une action explicite d'un administrateur régional ou national. La publication ne modifie pas le statut des engagements. L'affichage calcule, sur des journées complètes, les états `En cours`, `À venir`, `Annulée`, `Terminée — résultats en attente` et `Résultats publiés`, avec priorité aux événements en cours puis à venir. Un événement annulé reste consultable.
+Toute compétition ou tout événement créé par un administrateur régional ou national est publié immédiatement dans le calendrier public, quel que soit son type : piscine, eau libre, formation, stage, réunion ou autre. Il n'existe pas de statut brouillon dans ce parcours. La publication ne modifie pas le statut des engagements. L'affichage calcule, sur des journées complètes, les états `En cours`, `À venir`, `Annulée`, `Terminée — résultats en attente` et `Résultats publiés`, avec priorité aux événements en cours puis à venir. Un événement annulé reste consultable.
 
-La vue initiale présente la saison courante et les événements en cours ou futurs. Les filtres saison, région, niveau et type sont locaux. La fiche publique contient les informations pratiques sans coordonnées personnelles, le programme synthétique par réunion, le lien vers les engagements du portail et les documents officiels. Elle rappelle que les engagements sont effectués par un responsable de club.
+La vue initiale présente la saison courante et les événements en cours ou futurs. Les filtres saison, région, niveau et type sont locaux. La fiche publique contient les informations pratiques sans coordonnées personnelles, le programme synthétique par réunion, le lien vers les engagements du portail et les documents officiels. Pour une competition nationale ou internationale uniquement, elle peut aussi proposer une action discrete « Afficher le groupe WhatsApp » lorsque l'administrateur national a renseigne une URL d'invitation `https://chat.whatsapp.com/...`. Cette action ouvre une fenetre avec un QR code genere localement et un lien direct ; l'URL complete n'est pas affichee comme libelle et n'est transmise a aucun service QR externe. Tant que sa présentation n'est pas renseignée, elle indique que les informations complémentaires seront publiées prochainement. Elle rappelle que les engagements sont effectués par un responsable de club.
 
 Les formations, stages, réunions et autres événements sont créés dans le calendrier par les administrateurs, jamais par les clubs. Les résultats restent réservés à une évolution ultérieure ; les champs de liaison sont néanmoins prévus.
 
@@ -546,7 +548,7 @@ Documents prevus :
 
 - export TXT global ;
 - PDF recapitulatif de chaque club ;
-- documents d'information mis en ligne par l'organisation : affiche, circulaire, reglement, note d'information, plan ou autre document utile.
+- documents publics mis en ligne par l'organisation : affiche, circulaire, reglement, note d'information, plan, résultats ou autre document utile.
 
 Les niveaux 2 et 3 peuvent telecharger :
 
@@ -594,6 +596,7 @@ Il contient :
 - courses individuelles ;
 - relais ;
 - frais indicatifs ;
+- pour une competition nationale ou internationale, QR code du groupe WhatsApp des chefs d'equipe et lien cliquable lorsqu'il est renseigne ;
 - lien HelloAsso ou attente de publication du lien ;
 - rappel du paiement avant la fin de la premiere journee ;
 - rappel du surplus forfaitaire de 50 euros si paiement tardif ;
@@ -628,7 +631,7 @@ Lors d'un ajout ou d'un remplacement, l'administrateur peut choisir d'informer l
 - competition nationale : notification a tous les administrateurs actifs des clubs ;
 - competition regionale ou departementale : notification aux administrateurs actifs des clubs de la region organisatrice et des regions invitees.
 
-Les fichiers possedent une URL techniquement publique afin de preparer leur future diffusion dans le calendrier public. Tant que ce calendrier n'existe pas, leur liste est affichee uniquement dans le portail connecte.
+Les fichiers possedent une URL publique et sont diffusés dans la fiche du calendrier public dès leur dépôt sur un événement.
 
 L'adresse d'expedition souhaitee est :
 

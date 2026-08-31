@@ -37,6 +37,18 @@ function cleanPublicCalendarUrl(value, maxLength = 900) {
   return /^https:\/\/[^\s]+$/i.test(url) ? url : "";
 }
 
+function cleanPublicCalendarWhatsAppUrl(value) {
+  const url = cleanPublicCalendarUrl(value, 500);
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const validPath = /^\/[A-Za-z0-9_-]{10,}\/?$/.test(parsed.pathname);
+    return parsed.hostname.toLowerCase() === "chat.whatsapp.com" && validPath ? parsed.href : "";
+  } catch (_) {
+    return "";
+  }
+}
+
 function cleanPublicCalendarEmail(value) {
   const email = cleanText(value, 180).toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
@@ -177,6 +189,9 @@ function publicCalendarDetail(data = {}, options = {}) {
     entryDeadlineAt: cleanText(data.entryDeadlineAt, 40),
     entryStatus: isCompetition ? cleanText(data.entryStatus, 20) : "",
     registrationUrl: cleanPublicCalendarUrl(data.registrationUrl, 500),
+    teamLeadersWhatsAppUrl: isCompetition && ["national", "international"].includes(summary.level)
+      ? cleanPublicCalendarWhatsAppUrl(data.teamLeadersWhatsAppUrl)
+      : "",
     engagementCompetitionId: isCompetition ? summary.id : "",
     program,
     documents: documents.filter((document) => document.category !== "results"),
@@ -220,6 +235,7 @@ module.exports = {
   cleanPublicCalendarProgram,
   cleanPublicCalendarPublicationStatus,
   cleanPublicCalendarUrl,
+  cleanPublicCalendarWhatsAppUrl,
   comparePublicCalendarEvents,
   publicCalendarDetail,
   publicCalendarDisplayStatus,

@@ -4,9 +4,9 @@
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";
   const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";
-  const ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v3.";
+  const ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4.";
   const ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000;
-  const ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v1.";
+  const ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2.";
   const ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS = 5 * 60 * 1000;
   const ENGAGEMENT_CLUB_WORKSPACE_PRELOAD_LIMIT = 4;
   const ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementSwimmers.v1.";
@@ -135,7 +135,7 @@
   }
 
   function publicCalendarPublicationLabel(value) {
-    return value === "published" ? "Publié" : "Brouillon";
+    return value === "published" ? "Publié" : "Non publié";
   }
 
   function engagementWaterBodyTypeLabel(value) {
@@ -825,8 +825,9 @@
     engagementsEditAddress: document.querySelector("#adminEngagementsEditAddress"),
     engagementsEditOrganizer: document.querySelector("#adminEngagementsEditOrganizer"),
     engagementsEditOrganizerEmail: document.querySelector("#adminEngagementsEditOrganizerEmail"),
+    engagementsEditWhatsAppLabel: document.querySelector("#adminEngagementsEditWhatsAppLabel"),
+    engagementsEditWhatsAppUrl: document.querySelector("#adminEngagementsEditWhatsAppUrl"),
     engagementsEditPublicDescription: document.querySelector("#adminEngagementsEditPublicDescription"),
-    engagementsEditPublicationStatus: document.querySelector("#adminEngagementsEditPublicationStatus"),
     engagementsEditCanceled: document.querySelector("#adminEngagementsEditCanceled"),
     engagementsEditLevel: document.querySelector("#adminEngagementsEditLevel"),
     engagementsEditRegionId: document.querySelector("#adminEngagementsEditRegionId"),
@@ -3424,6 +3425,7 @@
       city: String(competition.city || ""),
       address: String(competition.address || ""),
       organizerEmail: String(competition.organizerEmail || ""),
+      teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl),
       regionId: String(competition.regionId || ""),
       invitedRegionIds: Array.isArray(competition.invitedRegionIds) ? competition.invitedRegionIds.map(String) : [],
       level: String(competition.level || ""),
@@ -3444,7 +3446,7 @@
     if (memoryEntry) return memoryEntry;
     try {
       const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
-      if (!stored || stored.version !== 1 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
+      if (!stored || stored.version !== 2 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
       const entry = {
         competitions: stored.competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
         cachedAt: Number(stored.cachedAt)
@@ -3464,7 +3466,7 @@
     engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
     try {
       global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
-        version: 1,
+        version: 2,
         cachedAt,
         competitions: entry.competitions
       }));
@@ -3802,6 +3804,12 @@
     if (elements.engagementsEditEntryStatus) {
       elements.engagementsEditEntryStatus.disabled = !isNational && elements.engagementsEditEntryStatus.value === "closed";
     }
+    const whatsAppAllowed = isNational && ["national", "international"].includes(elements.engagementsEditLevel?.value || "");
+    if (elements.engagementsEditWhatsAppLabel) elements.engagementsEditWhatsAppLabel.hidden = !whatsAppAllowed;
+    if (elements.engagementsEditWhatsAppUrl) {
+      elements.engagementsEditWhatsAppUrl.disabled = !whatsAppAllowed;
+      if (!whatsAppAllowed) elements.engagementsEditWhatsAppUrl.value = "";
+    }
     if (!isNational && ["national", "international"].includes(elements.engagementsEditLevel?.value)) {
       elements.engagementsEditLevel.value = "regional";
       updateEngagementRegionField({
@@ -3921,8 +3929,8 @@
     if (elements.engagementsEditAddress) elements.engagementsEditAddress.value = competition.address || "";
     if (elements.engagementsEditOrganizer) elements.engagementsEditOrganizer.value = competition.organizer || "";
     if (elements.engagementsEditOrganizerEmail) elements.engagementsEditOrganizerEmail.value = competition.organizerEmail || "";
+    if (elements.engagementsEditWhatsAppUrl) elements.engagementsEditWhatsAppUrl.value = competition.teamLeadersWhatsAppUrl || "";
     if (elements.engagementsEditPublicDescription) elements.engagementsEditPublicDescription.value = competition.publicDescription || "";
-    if (elements.engagementsEditPublicationStatus) elements.engagementsEditPublicationStatus.value = competition.publicationStatus === "published" ? "published" : "draft";
     if (elements.engagementsEditCanceled) elements.engagementsEditCanceled.checked = competition.canceled === true;
     if (elements.engagementsEditLevel) elements.engagementsEditLevel.value = competition.level || "regional";
     setRegionSelectValue(elements.engagementsEditRegionId, competition.regionId || "");
@@ -4276,8 +4284,24 @@
 
   function engagementRowValueHtml(value) {
     if (!value || typeof value !== "object" || !value.href) return escapeHtml(value);
+    if (value.kind === "whatsapp") {
+      const url = engagementTeamLeadersWhatsAppUrl(value.href);
+      if (!url) return "";
+      return `<a class="whatsapp-qr-trigger" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" data-whatsapp-qr-url="${escapeHtml(url)}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 14h2v2h-2zM18 14h2v3h-2zM14 18h3v2h-3zM19 19h1v1h-1z"></path></svg><span>${escapeHtml(value.label || "Afficher le groupe WhatsApp")}</span></a>`;
+    }
     const payment = value.kind === "payment";
     return `<a class="${payment ? "admin-engagements-payment-link" : "admin-engagements-contact-link"}" href="${escapeHtml(value.href)}"${payment ? ' target="_blank" rel="noopener noreferrer"' : ""}>${escapeHtml(value.label)}</a>`;
+  }
+
+  function engagementTeamLeadersWhatsAppUrl(value) {
+    const url = String(value || "").trim();
+    return /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]{10,}\/?$/i.test(url) ? url : "";
+  }
+
+  function engagementTeamLeadersWhatsAppValue(competition = {}) {
+    if (!["national", "international"].includes(competition.level)) return null;
+    const url = engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl);
+    return url ? { href: url, label: "Afficher le groupe WhatsApp", kind: "whatsapp" } : null;
   }
 
   function engagementCompetitionProgramOverview(competition = {}) {
@@ -5664,7 +5688,7 @@
     if (memoryEntry) return memoryEntry;
     try {
       const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
-      if (!stored || stored.version !== 1 || !stored.competition || !stored.entry || !Number(stored.cachedAt)) return null;
+      if (!stored || stored.version !== 2 || !stored.competition || !stored.entry || !Number(stored.cachedAt)) return null;
       const entry = {
         competition: cloneEngagementClubEntry(stored.competition),
         entry: cloneEngagementClubEntry(stored.entry),
@@ -5691,7 +5715,7 @@
     engagementClubWorkspaceCache.set(cacheKey, entry);
     try {
       global.sessionStorage?.setItem(`${ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
-        version: 1,
+        version: 2,
         ...entry
       }));
     } catch (_) {
@@ -7780,8 +7804,10 @@
       individualCount * engagementFeeAmount(fees.individualEventFee) +
       relays.length * engagementFeeAmount(fees.relayFee);
     const helloAssoUrl = engagementExternalHttpUrl(fees.helloAssoUrl);
+    const whatsAppValue = engagementTeamLeadersWhatsAppValue(competition);
     const rows = [
       ["Chef d'équipe", engagementClubSummaryTeamLeaderLabel(entry)],
+      ...(whatsAppValue ? [["Groupe WhatsApp", whatsAppValue]] : []),
       ["Officiels", competition.officialsRequired === false ? "Non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`],
       ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`],
       ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`],
@@ -8451,6 +8477,7 @@
       rules: "Règlement",
       information: "Note d'information",
       access: "Plan / accès",
+      results: "Résultats",
       other: "Autre"
     }[String(category || "")] || "Autre";
   }
@@ -8462,6 +8489,7 @@
       rules: "Règlement",
       information: "Note d'information",
       access: "Plan / accès",
+      results: "Résultats",
       other: "Autre"
     }).map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
   }
@@ -9969,6 +9997,7 @@
     if (elements.engagementsCancellationAlert) elements.engagementsCancellationAlert.hidden = competition.canceled !== true;
     const openWater = engagementCompetitionType(competition) === "openWater";
     const nationalCompetition = ["national", "international"].includes(competition.level);
+    const clubWhatsAppValue = engagementTeamLeadersWhatsAppValue(competition);
     const publicDescription = String(competition.publicDescription || "").trim();
     if (elements.engagementsPublicInfo) elements.engagementsPublicInfo.hidden = !publicDescription;
     if (elements.engagementsPublicInfoTitle) {
@@ -10007,6 +10036,7 @@
       ["Lieu", engagementVenueLabel(competition)],
       ...(competition.organizer ? [["Organisateur", competition.organizer]] : []),
       ...(competition.organizerEmail ? [["Email organisateur", engagementEmailLinkValue(competition.organizerEmail)]] : []),
+      ...(clubWhatsAppValue ? [["Groupe WhatsApp", clubWhatsAppValue]] : []),
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
       ["Programme", engagementCompetitionProgramOverview(competition)],
       ["Limite par nageur", engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
@@ -14517,8 +14547,9 @@
       address: fields.address?.value || "",
       organizer: fields.organizer?.value || "",
       organizerEmail: fields.organizerEmail?.value || "",
+      teamLeadersWhatsAppUrl: ["national", "international"].includes(level) ? fields.teamLeadersWhatsAppUrl?.value || "" : "",
       publicDescription: fields.publicDescription?.value || "",
-      publicationStatus: fields.publicationStatus?.value || "draft",
+      publicationStatus: "published",
       canceled: fields.canceled?.checked === true,
       level,
       regionId: ["national", "international"].includes(level) ? "" : fields.regionId?.value || "",
@@ -14582,8 +14613,8 @@
       address: elements.engagementsEditAddress,
       organizer: elements.engagementsEditOrganizer,
       organizerEmail: elements.engagementsEditOrganizerEmail,
+      teamLeadersWhatsAppUrl: elements.engagementsEditWhatsAppUrl,
       publicDescription: elements.engagementsEditPublicDescription,
-      publicationStatus: elements.engagementsEditPublicationStatus,
       canceled: elements.engagementsEditCanceled,
       level: elements.engagementsEditLevel,
       regionId: elements.engagementsEditRegionId,
