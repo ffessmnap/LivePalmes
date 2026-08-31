@@ -330,7 +330,7 @@ body:not(.public-home-page) .public-footer {
 
 .public-home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) repeat(2, minmax(0, 0.91fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -345,106 +345,6 @@ body:not(.public-home-page) .public-footer {
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 14px 28px rgba(14, 56, 70, 0.07);
-}
-
-.public-home-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.public-home-status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.public-home-status.available {
-  background: #e8f7f6;
-  color: #08746f;
-}
-
-.public-home-status.live {
-  background: #d7f7fb;
-  color: #045f6c;
-}
-
-.public-home-status.development {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.public-home-card.live-card {
-  border-color: #8ed5df;
-  border-left: 5px solid #0797a8;
-  background: linear-gradient(180deg, #ffffff 0%, #effbfc 100%);
-}
-
-.public-home-card.live-card[hidden] {
-  display: none;
-}
-
-.public-home-card.live-card.is-inactive {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  align-self: start;
-  justify-self: start;
-  order: 3;
-  width: min(100%, 430px);
-  min-height: 0;
-  gap: 8px;
-  padding: 14px;
-  border-color: #dce5e9;
-  border-left-width: 1px;
-  background: #f8fafb;
-  box-shadow: 0 5px 12px rgba(14, 56, 70, 0.035);
-}
-
-.live-card.is-inactive .public-home-card-icon {
-  width: 28px;
-  height: 28px;
-  background: #e9eef1;
-  color: #7a8c96;
-}
-
-.live-card.is-inactive .public-home-card-icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.live-card.is-inactive .public-home-status.available {
-  background: #e9eef1;
-  color: #657782;
-}
-
-.live-card.is-inactive h3 {
-  grid-column: 2;
-  color: #52646e;
-  font-size: 1rem;
-}
-
-.live-card.is-inactive .public-home-live-description,
-.live-card.is-inactive .public-home-card-actions {
-  display: none;
-}
-
-.live-card.is-inactive .public-home-current-meet {
-  display: none;
-}
-
-@media (orientation: landscape) and (min-width: 640px) {
-  .public-home-grid.has-no-live {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .public-home-grid.has-no-live .live-card.is-inactive {
-    grid-column: 1 / -1;
-  }
 }
 
 .public-home-card.performance-card {
@@ -473,36 +373,6 @@ body:not(.public-home-page) .public-footer {
   font-size: 0.92rem;
   font-weight: 500;
   line-height: 1.35;
-}
-
-.public-home-current-meet {
-  display: grid;
-  gap: 3px;
-  padding: 8px 10px;
-  border: 1px solid #b9e3ea;
-  border-radius: 8px;
-  background: #f0fbfd;
-  color: #055d6a !important;
-  font-size: 0.88rem;
-}
-
-.public-home-current-meet span {
-  color: #4f7681;
-  font-size: 0.72rem;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.public-home-current-meet strong {
-  color: #045765;
-  font-size: 0.98rem;
-  line-height: 1.25;
-}
-
-.public-home-current-meet em {
-  color: #526876;
-  font-style: normal;
-  font-weight: 850;
 }
 
 .public-home-card-icon {

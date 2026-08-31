@@ -128,7 +128,6 @@ Styles principaux :
 
 Scripts principaux :
 
-- `assets/pages/public-home.js`
 - `assets/pages/resultats.js`
 - `assets/pages/series-public.js`
 - `assets/pages/medailles.js`

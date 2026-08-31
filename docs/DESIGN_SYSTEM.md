@@ -194,7 +194,7 @@ Le titre reste le point focal. Les boutons du bandeau sont translucides, bordés
 
 ### Accueil public
 
-L’accueil emploie une grande zone de marque puis une grille de cartes thématiques : direct, performances et calendrier fédéral. Chaque carte combine une icône, un titre, une description courte et un groupe d’actions. Les descriptions utilisent une graisse moyenne afin de réserver le gras soutenu aux titres et aux actions. La carte du direct est entièrement masquée lorsqu’aucune compétition n’est disponible ; aucun bloc d’état vide ne la remplace. Un bandeau secondaire placé sous cette grille oriente les clubs et responsables fédéraux vers le Portail LivePalmes sans le confondre avec les rubriques publiques. Il reste horizontal sur ordinateur et empile son texte puis son bouton pleine largeur sous `920 px`.
+L’accueil emploie une grande zone de marque puis une grille statique de deux cartes thématiques : performances et calendrier fédéral. Chaque carte combine une icône, un titre, une description courte et un groupe d’actions. Les descriptions utilisent une graisse moyenne afin de réserver le gras soutenu aux titres et aux actions. L’accueil ne recherche pas de compétition en direct et ne charge aucune donnée Firestore. Un bandeau secondaire placé sous cette grille oriente les clubs et responsables fédéraux vers le Portail LivePalmes sans le confondre avec les rubriques publiques. Il reste horizontal sur ordinateur et empile son texte puis son bouton pleine largeur sous `920 px`.
 
 ### Consoles
 

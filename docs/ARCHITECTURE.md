@@ -177,7 +177,6 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 
 ### JavaScript des pages publiques
 
-- `assets/pages/public-home.js` ;
 - `assets/pages/series-public.js` ;
 - `assets/pages/resultats.js` ;
 - `assets/pages/medailles.js` ;
