@@ -8,6 +8,7 @@ const { FieldPath, FieldValue, getFirestore, Timestamp } = require("firebase-adm
 const { getStorage } = require("firebase-admin/storage");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
+const QRCode = require("qrcode");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -89,6 +90,7 @@ const {
   cleanPublicCalendarProgram,
   cleanPublicCalendarPublicationStatus,
   cleanPublicCalendarUrl,
+  cleanPublicCalendarWhatsAppUrl,
   publicCalendarDetail,
   publicCalendarSummary
 } = require("./public-calendar");
@@ -4521,6 +4523,9 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     address: cleanText(data.address).slice(0, 300),
     organizer: cleanText(data.organizer).slice(0, 160),
     organizerEmail: normalizeEmail(data.organizerEmail).slice(0, 180),
+    teamLeadersWhatsAppUrl: isNationalOnlyEngagementCompetitionLevel(data.level)
+      ? cleanPublicCalendarWhatsAppUrl(data.teamLeadersWhatsAppUrl)
+      : "",
     publicDescription: cleanText(data.publicDescription).slice(0, 3000),
     regionId: cleanText(data.regionId).slice(0, 80),
     invitedRegionIds: cleanEngagementRegionIds(data.invitedRegionIds, data.regionId),
@@ -4609,7 +4614,7 @@ function cleanEngagementCalendarEventPayload(raw = {}, context = {}) {
     registrationUrl: cleanPublicCalendarUrl(raw.registrationUrl, 500),
     regionId,
     level,
-    publicationStatus: cleanPublicCalendarPublicationStatus(raw.publicationStatus),
+    publicationStatus: "published",
     canceled: raw.canceled === true,
     programSessions: cleanPublicCalendarProgram(raw.programSessions || raw.program || [])
   };
@@ -6566,6 +6571,7 @@ function engagementClubRecapPdfSourceHash(competition = {}, entry = {}) {
       poolLaneCount: competition.poolLaneCount,
       timingType: competition.timingType,
       entryDeadlineAt: competition.entryDeadlineAt,
+      teamLeadersWhatsAppUrl: cleanPublicCalendarWhatsAppUrl(competition.teamLeadersWhatsAppUrl),
       fees: competition.fees
     },
     entry: {
@@ -7097,6 +7103,34 @@ function engagementPdfEmptyState(doc, message, y) {
   return y + 18;
 }
 
+function engagementPdfWhatsAppBlock(doc, whatsAppUrl, qrBuffer, y) {
+  const url = cleanPublicCalendarWhatsAppUrl(whatsAppUrl);
+  if (!url) return y;
+  const left = 42;
+  const width = doc.page.width - 84;
+  const height = qrBuffer ? 102 : 68;
+  y = engagementPdfEnsureSpace(doc, y, height + 10);
+  doc.roundedRect(left, y, width, height, 4).fill("#f4faf7").strokeColor("#b8d9c5").stroke();
+  const textLeft = qrBuffer ? left + 104 : left + 12;
+  const textWidth = width - (textLeft - left) - 12;
+  if (qrBuffer) {
+    doc.image(qrBuffer, left + 10, y + 10, { width: 82, height: 82 });
+  }
+  doc.font("Helvetica-Bold").fontSize(9).fillColor("#155c34").text("Groupe WhatsApp des chefs d'équipe", textLeft, y + 16, { width: textWidth });
+  doc.font("Helvetica").fontSize(7.5).fillColor("#526d5d").text(
+    qrBuffer ? "Scannez le QR code ou utilisez le lien ci-dessous." : "Utilisez le lien ci-dessous pour rejoindre le groupe.",
+    textLeft,
+    y + 34,
+    { width: textWidth }
+  );
+  doc.font("Helvetica-Bold").fontSize(8).fillColor("#168f46").text("Rejoindre le groupe WhatsApp", textLeft, y + (qrBuffer ? 61 : 47), {
+    width: textWidth,
+    link: url,
+    underline: true
+  });
+  return y + height + 10;
+}
+
 function engagementPdfKeyValues(doc, rows, y) {
   const colWidth = (doc.page.width - 84) / 2;
   rows.forEach((row, index) => {
@@ -7243,6 +7277,26 @@ function engagementPdfTable(doc, columns, rows, y) {
 
 async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
   const generatedAt = new Date().toISOString();
+  const whatsAppUrl = ["national", "international"].includes(cleanEngagementCompetitionLevel(competition.level))
+    ? cleanPublicCalendarWhatsAppUrl(competition.teamLeadersWhatsAppUrl)
+    : "";
+  let whatsAppQrBuffer = null;
+  if (whatsAppUrl) {
+    try {
+      whatsAppQrBuffer = await QRCode.toBuffer(whatsAppUrl, {
+        type: "png",
+        width: 320,
+        margin: 2,
+        errorCorrectionLevel: "M",
+        color: { dark: "#073b44", light: "#ffffff" }
+      });
+    } catch (error) {
+      console.warn("engagement recap WhatsApp QR generation failed", {
+        competitionId: cleanText(competition.id).slice(0, 128),
+        message: cleanText(error?.message || error).slice(0, 220)
+      });
+    }
+  }
   const doc = new PDFDocument({
     size: "A4",
     layout: "portrait",
@@ -7290,6 +7344,8 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     { label: "Chef d'équipe", value: teamLeaderLabel },
     { label: "Engagements", value: `${stats.swimmerCount} nageur${stats.swimmerCount > 1 ? "s" : ""} · ${stats.individualCount} course${stats.individualCount > 1 ? "s" : ""} · ${stats.relayCount} relais` }
   ], y);
+
+  y = engagementPdfWhatsAppBlock(doc, whatsAppUrl, whatsAppQrBuffer, y);
 
   y = engagementPdfSection(doc, "Nageurs et courses individuelles", y);
   const individualMatrices = [
@@ -9261,11 +9317,15 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   const organizerEmail = cleanOptionalEmail(raw.organizerEmail, "Email organisateur");
   const publicDescription = cleanText(raw.publicDescription).slice(0, 3000);
   const level = cleanEngagementCompetitionLevel(raw.level);
+  const requestedTeamLeadersWhatsAppUrl = cleanText(raw.teamLeadersWhatsAppUrl).slice(0, 500);
+  const teamLeadersWhatsAppUrl = context.national && isNationalOnlyEngagementCompetitionLevel(level)
+    ? cleanPublicCalendarWhatsAppUrl(requestedTeamLeadersWhatsAppUrl)
+    : "";
   const entryDeadlineAt = cleanEngagementDeadlineAt(raw.entryDeadlineAt);
   const computerEmail = cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
   const officialsManagerEmail = cleanOptionalEmail(raw.officialsManagerEmail, "Email du responsable juge");
   const entryStatus = cleanEngagementEntryStatus(raw.entryStatus);
-  const publicationStatus = cleanPublicCalendarPublicationStatus(raw.publicationStatus);
+  const publicationStatus = "published";
   const competitionType = cleanEngagementCompetitionType(raw.competitionType);
   const waterBodyType = competitionType === "openWater" ? cleanEngagementWaterBodyType(raw.waterBodyType) : "";
   const poolLength = competitionType === "pool" ? cleanEngagementPoolLength(raw.poolLength) : "";
@@ -9306,6 +9366,9 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
   if (!isNationalOnlyEngagementCompetitionLevel(level) && !regionId) {
     throw new HttpsError("invalid-argument", "Region obligatoire pour une competition departementale ou regionale.");
   }
+  if (context.national && isNationalOnlyEngagementCompetitionLevel(level) && requestedTeamLeadersWhatsAppUrl && !teamLeadersWhatsAppUrl) {
+    throw new HttpsError("invalid-argument", "Le lien du groupe WhatsApp doit commencer par https://chat.whatsapp.com/.");
+  }
   if (entryStatus === "open" && publicationStatus !== "published") {
     throw new HttpsError("failed-precondition", "Publiez la competition avant d'ouvrir les engagements.");
   }
@@ -9343,6 +9406,7 @@ function cleanEngagementCompetitionPayload(raw = {}, context = {}) {
     address,
     organizer,
     organizerEmail,
+    teamLeadersWhatsAppUrl,
     publicDescription,
     regionId,
     invitedRegionIds,
@@ -9605,7 +9669,7 @@ exports.createEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc();
   const payload = {
     ...eventData,
-    publicationStatus: "draft",
+    publicationStatus: "published",
     clubDocuments: [],
     createdAt: now,
     createdBy: context.uid,
@@ -9635,7 +9699,7 @@ exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
   assertCanManageEngagementCompetition(context, eventData);
   const now = new Date().toISOString();
-  const payload = { ...eventData, updatedAt: now, updatedBy: context.uid };
+  const payload = { ...eventData, publicationStatus: "published", updatedAt: now, updatedBy: context.uid };
   await ref.set(payload, { merge: true });
   await writeAuditLog("engagementCalendarEvent.updated", context.uid, {
     calendarEventId,

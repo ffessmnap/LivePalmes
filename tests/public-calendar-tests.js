@@ -74,6 +74,34 @@ assert.equal(protocolDetail.results.pdfUrl, "https://nap.ffessm.fr/ged/2026/5067
 assert.equal(calendar.publicCalendarDisplayStatus(protocolDetail, "2026-08-20"), "resultsPublished");
 assert.equal(calendar.cleanPublicCalendarUrl("javascript:alert(1)"), "");
 assert.equal(calendar.cleanPublicCalendarUrl("https://example.test/inscriptions"), "https://example.test/inscriptions");
+const whatsAppInvitationUrl = "https://chat.whatsapp.com/AbCdEfGhIjKlMnOp123456";
+assert.equal(calendar.cleanPublicCalendarWhatsAppUrl(whatsAppInvitationUrl), whatsAppInvitationUrl);
+assert.equal(calendar.cleanPublicCalendarWhatsAppUrl("https://example.test/groupe"), "");
+assert.equal(calendar.cleanPublicCalendarWhatsAppUrl("javascript:alert(1)"), "");
+const nationalWhatsAppDetail = calendar.publicCalendarDetail({
+  name: "Championnat de France",
+  date: "2026-10-03",
+  competitionType: "pool",
+  level: "national",
+  teamLeadersWhatsAppUrl: whatsAppInvitationUrl
+}, { id: "competition-national", sourceType: "competition" });
+assert.equal(nationalWhatsAppDetail.teamLeadersWhatsAppUrl, whatsAppInvitationUrl);
+const regionalWhatsAppDetail = calendar.publicCalendarDetail({
+  name: "Championnat régional",
+  date: "2026-10-03",
+  competitionType: "pool",
+  level: "regional",
+  teamLeadersWhatsAppUrl: whatsAppInvitationUrl
+}, { id: "competition-regional", sourceType: "competition" });
+assert.equal(regionalWhatsAppDetail.teamLeadersWhatsAppUrl, "");
+const trainingWhatsAppDetail = calendar.publicCalendarDetail({
+  name: "Formation nationale",
+  date: "2026-10-03",
+  eventType: "training",
+  level: "national",
+  teamLeadersWhatsAppUrl: whatsAppInvitationUrl
+}, { id: "event-national", sourceType: "calendarEvent" });
+assert.equal(trainingWhatsAppDetail.teamLeadersWhatsAppUrl, "");
 
 const competitionDetail = calendar.publicCalendarDetail({
   name: "Championnat régional",
@@ -89,6 +117,9 @@ assert.equal(competitionDetail.program[1].items[0].detail, "Femmes · Finale(s)"
 
 const browserSource = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.js"), "utf8");
 const competitionPageSource = fs.readFileSync(path.join(root, "assets", "pages", "competition.js"), "utf8");
+const whatsAppQrSource = fs.readFileSync(path.join(root, "assets", "livepalmes-whatsapp-qr.js"), "utf8");
+const whatsAppQrCss = fs.readFileSync(path.join(root, "assets", "livepalmes-whatsapp-qr.css"), "utf8");
+const whatsAppQrVendor = fs.readFileSync(path.join(root, "assets", "vendor", "qrcode.min.js"), "utf8");
 const calendarPageSource = fs.readFileSync(path.join(root, "assets", "pages", "calendrier.js"), "utf8");
 const calendarResultsBuilderSource = fs.readFileSync(path.join(root, "tools", "build-public-calendar-results.js"), "utf8");
 assert.ok(calendarPageSource.includes("function chronologicalCompare"));
@@ -105,6 +136,27 @@ const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
 assert.equal(browserCalendar.seasonLabel(2027), "2026-2027");
+const whatsAppQrContext = {
+  window: {},
+  URL,
+  document: {
+    currentScript: { src: "https://livepalmes.web.app/assets/livepalmes-whatsapp-qr.js" },
+    addEventListener() {}
+  }
+};
+vm.runInNewContext(whatsAppQrSource, whatsAppQrContext);
+const whatsAppQr = whatsAppQrContext.window.LivePalmesWhatsAppQr;
+assert.equal(whatsAppQr.cleanUrl(whatsAppInvitationUrl), whatsAppInvitationUrl);
+assert.equal(whatsAppQr.cleanUrl("https://example.test/groupe"), "");
+assert.ok(whatsAppQr.triggerHtml(whatsAppInvitationUrl).includes("Afficher le groupe WhatsApp"));
+assert.ok(whatsAppQr.triggerHtml(whatsAppInvitationUrl).includes('aria-haspopup="dialog"'));
+assert.equal(whatsAppQr.triggerHtml("javascript:alert(1)"), "");
+assert.ok(whatsAppQrSource.includes("vendor/qrcode.min.js?v=20260831-whatsapp-qr-1"));
+assert.ok(whatsAppQrSource.includes("dialog.showModal") || whatsAppQrSource.includes("modal.showModal"));
+assert.ok(whatsAppQrSource.includes("event.target !== dialog"));
+assert.ok(whatsAppQrCss.includes(".whatsapp-qr-trigger"));
+assert.ok(whatsAppQrCss.includes(".whatsapp-qr-dialog::backdrop"));
+assert.ok(whatsAppQrVendor.startsWith("/*! qrcode 1.5.4"));
 assert.ok(!calendarPageSource.includes("function compareByDateDescending"));
 assert.ok(calendarPageSource.includes("function isCurrentOrUpcoming"));
 assert.ok(calendarPageSource.includes("calendar-past-section"));
@@ -118,6 +170,7 @@ assert.ok(!calendarPageSource.includes("nodes.period"));
 assert.ok(calendarPageSource.includes("function displayStatus(event)"));
 assert.ok(calendarPageSource.includes('status === "awaitingResults" ? "" : status'));
 assert.ok(competitionPageSource.includes("const timingLabels={manual:\"Manuel\",electronic:\"Électronique\"}"));
+assert.ok(competitionPageSource.includes('const description=event.description||"Les informations complémentaires seront publiées prochainement."'));
 assert.ok(competitionPageSource.includes("Lignes d’eau"));
 assert.ok(competitionPageSource.includes('<h2>Documents</h2>'));
 assert.ok(!competitionPageSource.includes("Documents officiels"));
@@ -185,6 +238,14 @@ assert.ok(competitionPageSource.includes('openWater:"Compétition eau libre"'));
 assert.ok(competitionPageSource.includes("Niveau ${String(label).toLocaleLowerCase"));
 assert.ok(competitionPageSource.includes('month:"long"'));
 assert.ok(competitionPageSource.includes("calendar-entry-link"));
+assert.ok(competitionPageSource.includes("function portalEntryLinkHtml"));
+assert.ok(competitionPageSource.includes("[portalEntryLinkHtml(portalUrl),teamLeadersWhatsAppHtml(event)]"));
+assert.ok(competitionPageSource.includes('class="calendar-detail-actions"'));
+assert.ok(!competitionPageSource.includes('class="ghost-button calendar-entry-link"'));
+assert.ok(competitionPageSource.includes("function teamLeadersWhatsAppHtml"));
+assert.ok(competitionPageSource.includes('label:"Afficher le groupe WhatsApp"'));
+assert.ok(competitionPageSource.includes('includes(event?.level)'));
+assert.ok(competitionPageSource.includes("teamLeadersWhatsAppHtml(event)"));
 assert.ok(competitionPageSource.includes("Email organisateur"));
 assert.ok(competitionPageSource.includes('href="mailto:${api.escapeHtml(event.organizerEmail)}"'));
 assert.ok(competitionPageSource.includes('state==="resultsPublished"'));
@@ -200,7 +261,10 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20260829-organizer-contact-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20260831-engagement-actions-1"));
+assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20260831-engagement-actions-1"));
+assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
+assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
 assert.ok(competitionHtml.includes('href="calendrier.html"'));
 assert.ok(!competitionHtml.includes("calendar-detail-back"));

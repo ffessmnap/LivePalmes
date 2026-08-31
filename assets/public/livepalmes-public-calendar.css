@@ -135,7 +135,8 @@ body.public-calendar-page::before { content:""; position:fixed; inset:0 0 auto; 
 .calendar-result-marker-pb { border-color:#9bd7dc; background:#cceff1; color:#075f67; }
 .calendar-result-marker-sb { border-color:#d5e2e7; background:#edf4f7; color:#526c78; }
 .calendar-results-official-note { margin:8px 0 0; color:var(--calendar-muted); font-size:.76rem; }
-.calendar-entry-link { margin-top:14px; }
+.calendar-detail-actions { display:flex; flex-direction:column; align-items:flex-start; gap:2px; margin-top:10px; }
+.calendar-entry-link, .calendar-whatsapp-link { margin:0; }
 .calendar-entry-note { margin:10px 0 0; color:var(--calendar-muted); font-size:.8rem; line-height:1.4; }
 .public-calendar-page .public-footer { width:min(1120px, calc(100% - 24px)); margin:0 auto 26px; color:#657883; font-size:.76rem; font-weight:800; line-height:1.35; text-align:center; }
 .public-calendar-page .public-footer span { color:#7b8b94; font-weight:750; }

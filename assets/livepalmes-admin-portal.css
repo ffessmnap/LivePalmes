@@ -7166,6 +7166,48 @@
   border-bottom: 1px solid #e7ecee;
 }
 
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-public-link {
+  flex: 0 0 auto;
+  padding: 3px 0;
+  color: #0b7285;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-public-link:hover {
+  color: #075b6a;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice {
+  margin-top: -4px;
+  border: 1px solid #cce3e6;
+  border-radius: 9px;
+  padding: 11px 13px;
+  background: #f1f8f9;
+  color: #40575d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice p {
+  margin: 0;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice a {
+  color: #0b7285;
+  font-weight: 750;
+}
+
 .admin-portal-page #adminPortalLoginPanel > div:first-child span,
 .admin-portal-page #adminPortalLoginPanel > div:first-child strong,
 .admin-portal-page #adminPortalLoginPanel > div:first-child h2 {
@@ -7222,6 +7264,12 @@
 }
 
 @media (max-width: 700px) {
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-login-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   #adminEngagementsCreatePanel .admin-engagements-card > div:first-child,
   #adminEngagementsAccessRequestsPanel .admin-engagements-card-head,
   #adminEngagementsDeletionRequestsPanel .admin-engagements-card-head,
@@ -18255,17 +18303,63 @@
     width: 100%;
   }
 }
-/* Fiche des événements publics non compétitifs. */
-.admin-calendar-event-dialog { width:min(960px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+/* Fiche des événements du calendrier public. */
+.admin-calendar-event-dialog { width:min(680px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
 .admin-calendar-event-dialog .admin-engagements-form { margin:0; }
+.admin-calendar-event-dialog > .admin-engagements-form { gap:8px; }
+.admin-calendar-event-dialog [data-calendar-event-message]:empty { display:none; }
+.admin-calendar-event-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:0 0 8px; }
+.admin-calendar-event-header > div { min-width:0; }
+.admin-calendar-event-header h2 { overflow-wrap:anywhere; }
+.admin-calendar-event-close { display:grid; flex:0 0 36px; place-items:center; width:36px; min-height:36px; padding:0; }
+.admin-calendar-event-close svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:2; }
+.admin-calendar-readonly { display:grid; gap:6px; }
+.admin-calendar-readonly h3 { margin:0; color:#173b35; font-size:.86rem; }
+.admin-calendar-readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; margin:0; overflow:hidden; border:1px solid #dce7e4; border-radius:9px; background:#dce7e4; }
+.admin-calendar-readonly-item { display:grid; align-content:start; gap:3px; min-width:0; padding:7px 9px; background:#fff; }
+.admin-calendar-readonly-item--full { grid-column:1 / -1; }
+.admin-calendar-readonly-item dt { color:#647873; font-size:.7rem; font-weight:850; letter-spacing:.02em; text-transform:uppercase; }
+.admin-calendar-readonly-item dd { margin:0; color:#173b35; font-size:.86rem; font-weight:750; line-height:1.35; overflow-wrap:anywhere; }
+.admin-calendar-readonly-item a { color:#0d6672; }
+.admin-calendar-status { display:inline-flex; align-items:center; min-height:24px; width:max-content; max-width:100%; border-radius:999px; padding:3px 8px; background:#e7f2f1; color:#174f59; font-size:.76rem; font-weight:850; }
+.admin-calendar-status[data-tone="success"] { background:#e5f3ea; color:#24613d; }
+.admin-calendar-status[data-tone="danger"] { background:#fde9e7; color:#8a2f27; }
+.admin-calendar-readonly-program { display:grid; gap:8px; }
+.admin-calendar-readonly-program > h3 { margin:0; color:#173b35; font-size:.86rem; }
+.admin-calendar-program-details { border:1px solid #dce7e4; border-radius:9px; background:#fff; }
+.admin-calendar-program-details > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; padding:9px 11px; color:#173b35; list-style-position:inside; }
+.admin-calendar-program-details > summary span { display:grid; gap:2px; }
+.admin-calendar-program-details small { color:#647873; font-size:.72rem; font-weight:750; }
+.admin-calendar-program-details > p { margin:0; padding:0 11px 10px; color:#455d58; font-size:.8rem; }
+.admin-calendar-program-details > ul { display:grid; gap:0; margin:0; padding:0 11px 10px; list-style:none; }
+.admin-calendar-program-details li { display:flex; justify-content:space-between; gap:12px; border-top:1px solid #edf2f1; padding:6px 0; color:#294b45; font-size:.78rem; }
 .admin-calendar-event-description { grid-column:1 / -1; }
 .admin-calendar-event-check { align-content:center; }
 .admin-calendar-program-row { display:grid; grid-template-columns:1fr 140px 105px 105px minmax(180px,2fr) auto; align-items:end; gap:10px; padding:12px 0; border-bottom:1px solid var(--admin-border, #dce7e9); }
 .admin-calendar-program-row label { display:grid; gap:5px; }
-.admin-calendar-documents { margin-top:16px; }
-.admin-calendar-document { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid var(--admin-border, #dce7e9); }
-.admin-calendar-document div:first-child { display:grid; gap:3px; }
-@media (max-width:800px) { .admin-calendar-program-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.admin-calendar-program-summary { grid-column:1/-1; }.admin-calendar-document { align-items:flex-start; flex-direction:column; } }
+.admin-calendar-documents { gap:10px; margin-top:8px; padding:12px; }
+.admin-calendar-documents > h3 { margin-bottom:4px; }
+.admin-calendar-documents > p { margin-top:0; color:#5f746f; font-size:.8rem; }
+.admin-calendar-document { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--admin-border, #dce7e9); }
+.admin-calendar-document div:first-child { display:grid; min-width:0; gap:3px; }
+.admin-calendar-document div:first-child strong,
+.admin-calendar-document div:first-child small { overflow-wrap:anywhere; }
+.admin-calendar-document > .admin-portal-actions { flex-wrap:nowrap; justify-content:flex-end; gap:8px; }
+.admin-calendar-document > .admin-portal-actions > a { min-width:66px; justify-content:center; }
+.admin-calendar-document > .admin-portal-actions > [data-calendar-document-edit] { min-width:136px; justify-content:center; }
+.admin-calendar-document-editor { margin-top:4px; border:1px solid #dce7e4; border-radius:9px; background:#fbfcfc; }
+.admin-calendar-document-editor > summary { cursor:pointer; padding:8px 10px; color:#174f59; font-size:.8rem; font-weight:850; }
+.admin-calendar-document-editor[open] > summary { border-bottom:1px solid #dce7e4; }
+.admin-calendar-document-editor > form { gap:8px; padding:8px; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label { display:grid; grid-template-columns:1fr; align-items:start; gap:4px; min-height:0; border:0; padding:0; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label:first-child,
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label:last-child { grid-column:1 / -1; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label > input,
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label > select { grid-column:auto; min-height:36px; padding:6px 8px; }
+.admin-calendar-document-editor .admin-portal-actions button { min-height:36px; }
+@media (max-width:800px) { .admin-calendar-program-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.admin-calendar-program-summary { grid-column:1/-1; } }
+@media (max-width:600px) { .admin-calendar-readonly-grid { grid-template-columns:1fr; }.admin-calendar-readonly-item--full { grid-column:auto; }.admin-calendar-document { grid-template-columns:1fr; align-items:start; }.admin-calendar-document > .admin-portal-actions { flex-wrap:wrap; justify-content:flex-start; }.admin-calendar-document-editor .admin-engagements-form-section-grid { grid-template-columns:1fr; }.admin-calendar-document-editor .admin-engagements-form-section-grid > label { grid-column:auto; }.admin-calendar-event-dialog { width:calc(100% - 12px); max-height:calc(100dvh - 12px); padding:12px; }.admin-calendar-event-header { gap:10px; } }
 
 /* Échelle commune des boutons du portail. */
 .admin-portal-page {

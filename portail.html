@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260824-import-replacement-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260829-competition-layout-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260831-login-notice-1">
+    <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -79,9 +80,15 @@
         <p>Chargement du portail</p>
       </section>
       <section id="adminPortalLoginPanel" class="admin-portal-login" aria-label="Connexion au portail LivePalmes">
-        <div>
-          <span>Accès protégé</span>
-          <h2>Connexion au portail</h2>
+        <div class="admin-portal-login-heading">
+          <div>
+            <span>Accès protégé</span>
+            <h2>Connexion au portail</h2>
+          </div>
+          <a class="admin-portal-public-link" href="index.html">← Retour à LivePalmes public</a>
+        </div>
+        <div class="admin-portal-experiment-notice" role="note">
+          <p>Le Portail LivePalmes est actuellement en phase d’expérimentation en région Île-de-France. Pour toutes les autres régions, IntraNAP reste opérationnel. En cas de question, écrivez à <a href="mailto:livepalmes@nap-ffessm.fr">livepalmes@nap-ffessm.fr</a>.</p>
         </div>
         <form id="adminPortalLoginForm" class="admin-portal-form">
           <label>
@@ -1072,7 +1079,6 @@
                                 <option value="international">International</option>
                               </select>
                             </label>
-                            <label class="admin-engagements-compact-field">Publication publique<select id="adminEngagementsEditPublicationStatus"><option value="draft">Brouillon</option><option value="published">Publié</option></select></label>
                             <label class="admin-engagements-compact-field">
                               Date
                               <input id="adminEngagementsEditDate" type="date" required>
@@ -1248,6 +1254,11 @@
                             <label class="admin-engagements-compact-field">
                               Email du responsable juge de la comp&eacute;tition
                               <input id="adminEngagementsEditOfficialsManagerEmail" type="email" maxlength="180" autocomplete="email">
+                            </label>
+                            <label id="adminEngagementsEditWhatsAppLabel" class="admin-engagements-compact-field admin-engagements-compact-field--full" hidden>
+                              Groupe WhatsApp des chefs d'équipe
+                              <input id="adminEngagementsEditWhatsAppUrl" type="url" maxlength="500" inputmode="url" placeholder="https://chat.whatsapp.com/..." pattern="https://chat\.whatsapp\.com/[A-Za-z0-9_-]+/?">
+                              <small class="admin-engagements-field-note">Ce lien d'invitation sera accessible publiquement depuis la fiche de la compétition.</small>
                             </label>
                           </div>
                         </fieldset>
@@ -2659,9 +2670,10 @@
 <script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260830-past-regional-lock-1"></script>
+    <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260831-whatsapp-qr-3"></script>
     <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
-    <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-past-regional-lock-1"></script>
+    <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
   </body>
 </html>
