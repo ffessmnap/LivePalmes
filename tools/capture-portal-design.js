@@ -8,6 +8,8 @@ const rootDir = path.resolve(__dirname, "..");
 const outputDir = path.join(rootDir, "tmp", "portal-design-captures");
 const views = [
   { name: "login", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false },
+  { name: "login-loading", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false, loginPending: true },
+  { name: "access-request-loading", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false, accessRequestPending: true, scrollTarget: "#adminPublicAccessRequestMessage" },
   { name: "session-warning", hash: "accueil", selector: "#adminPortalSessionWarning", authenticated: true, sessionDialog: "warning" },
   { name: "session-lock", hash: "accueil", selector: "#adminPortalSessionLock", authenticated: true, sessionDialog: "lock" },
   { name: "overview", hash: "accueil", selector: "#adminOverviewView", authenticated: true },
@@ -41,6 +43,7 @@ const views = [
   { name: "national-audit", hash: "administration-historique", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalAuditFixture: true },
   { name: "access-home", hash: "gestion-acces", selector: "#adminAccessHomeView", authenticated: true, menu: "access" },
   { name: "access-requests", hash: "gestion-demandes-acces", selector: "#adminEngagementsView", authenticated: true, menu: "access", accessRequestsFixture: true },
+  { name: "access-request-review", hash: "gestion-demandes-acces", selector: "#adminEngagementsView", authenticated: true, menu: "access", accessRequestsFixture: true, accessRequestReviewFixture: true },
   { name: "access-users", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true },
   { name: "access-users-expanded", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true, accessUsersExpandedFixture: true },
   { name: "access-user-add", hash: "gestion-utilisateurs", selector: "#adminAccessView", authenticated: true, menu: "access", accessUsersFixture: true, accessDialogFixture: "add" },
@@ -257,6 +260,24 @@ function clubPeopleFixtureHtml() {
     </div>`;
 }
 
+function accessRequestsFixtureHtml() {
+  return `
+    <article class="admin-engagements-request-card" data-engagement-access-request-id="fixture-existing">
+      <div class="admin-engagements-request-main"><strong>MARTIN Camille</strong><small>camille.martin@example.fr · Licence A-00-000001</small></div>
+      <div class="admin-engagements-request-scope"><strong>CNHC — Club Nautique de Houilles Carrières</strong><small>Île-de-France · 31/08/2026</small></div>
+      <div class="admin-engagements-request-badges"></div>
+      <div class="admin-engagements-request-actions"><button class="ghost-button" type="button">Examiner</button><button class="ghost-button" type="button">Refuser</button></div>
+      <details class="admin-engagements-request-details"><summary>Voir les informations complémentaires</summary><p>Je suis responsable des engagements de mon club.</p></details>
+    </article>
+    <article class="admin-engagements-request-card" data-engagement-access-request-id="fixture-new-club">
+      <div class="admin-engagements-request-main"><strong>ROBERT Alex</strong><small>alex.robert@example.fr · Licence A-00-000002</small></div>
+      <div class="admin-engagements-request-scope"><strong>APNEE 95 — Apnée Démonstration</strong><small>Île-de-France · 30/08/2026</small></div>
+      <div class="admin-engagements-request-badges"><span class="admin-access-request-badge">Nouveau club</span></div>
+      <div class="admin-engagements-request-actions"><button class="ghost-button" type="button">Examiner</button><button class="ghost-button" type="button">Refuser</button></div>
+      <details class="admin-engagements-request-details"><summary>Voir les informations complémentaires</summary><p>N° fédéral 07-95-0001 · 95000 Cergy</p></details>
+    </article>`;
+}
+
 function clubCoursesFixtureHtml() {
   const groups = [
     { sex: "F", label: "Femmes", count: "2 nageuses", courses: [["50 m SF", "F"], ["100 m Bi", "F/H"]], swimmers: [["MARTIN", "Camille", "12/03/2008", "J", true], ["DURAND", "Louise", "24/07/2009", "J", false]] },
@@ -365,6 +386,40 @@ function presentationScript(view) {
     if (dashboard) dashboard.hidden = !authenticated;
     if (account) account.hidden = !authenticated;
     if (navToggle) navToggle.hidden = !authenticated;
+    if (${view.loginPending ? "true" : "false"}) {
+      const loginForm = document.querySelector("#adminPortalLoginForm");
+      const loginButton = loginForm?.querySelector("button[type='submit']");
+      const loginMessage = document.querySelector("#adminPortalMessage");
+      loginForm?.setAttribute("aria-busy", "true");
+      if (loginButton) {
+        loginButton.textContent = "Connexion en cours…";
+        loginButton.disabled = true;
+        loginButton.classList.add("admin-portal-submit-pending");
+        loginButton.setAttribute("aria-busy", "true");
+      }
+      if (loginMessage) {
+        loginMessage.textContent = "Connexion en cours...";
+        loginMessage.dataset.tone = "loading";
+      }
+    }
+    if (${view.accessRequestPending ? "true" : "false"}) {
+      const accessDetails = document.querySelector(".admin-portal-login-access");
+      const accessForm = document.querySelector("#adminPublicAccessRequestForm");
+      const accessButton = accessForm?.querySelector("button[type='submit']");
+      const accessMessage = document.querySelector("#adminPublicAccessRequestMessage");
+      if (accessDetails) accessDetails.open = true;
+      accessForm?.setAttribute("aria-busy", "true");
+      if (accessButton) {
+        accessButton.textContent = "Envoi en cours…";
+        accessButton.disabled = true;
+        accessButton.classList.add("admin-portal-submit-pending");
+        accessButton.setAttribute("aria-busy", "true");
+      }
+      if (accessMessage) {
+        accessMessage.textContent = "Envoi de la demande...";
+        accessMessage.dataset.tone = "loading";
+      }
+    }
     document.body.dataset.portalHome = ${view.clubOnly ? '"club"' : '"overview"'};
     const homeLink = document.querySelector("#adminPortalHomeLink");
     const homeLabel = document.querySelector("#adminPortalHomeLabel");
@@ -674,7 +729,14 @@ function presentationScript(view) {
       }
       if (${view.accessRequestsFixture ? "true" : "false"}) {
         const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        const status = document.querySelector("#adminEngagementsAccessRequestsStatus");
+        const mount = document.querySelector("#adminEngagementsAccessRequestsList");
         if (viewTitle) viewTitle.textContent = "Demandes d'accès";
+        if (status) {
+          status.textContent = "2 demandes en attente.";
+          status.dataset.tone = "ok";
+        }
+        if (mount) mount.innerHTML = ${JSON.stringify(accessRequestsFixtureHtml())};
         document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
           panel.hidden = panel.dataset.engagementsTabPanel !== "accessRequests";
         });
@@ -1098,6 +1160,28 @@ async function captureView(client, baseUrl, viewport, view) {
       return dialog.open;
     `);
     if (!dialogOpened) throw new Error(`${view.name}/${viewport.name} : ouverture de la fenêtre utilisateur impossible.`);
+    await sleep(100);
+  }
+  if (view.accessRequestReviewFixture) {
+    const dialogOpened = await evaluate(client, `
+      const dialog = document.querySelector("#adminEngagementsAccessRequestEditDialog");
+      const title = document.querySelector("#adminEngagementsAccessRequestEditTitle");
+      if (!dialog) return false;
+      if (title) title.textContent = "Vérifier · MARTIN Camille";
+      const values = {
+        adminEngagementsAccessRequestEditLastName: "MARTIN",
+        adminEngagementsAccessRequestEditFirstName: "Camille",
+        adminEngagementsAccessRequestEditEmail: "camille.martin@example.fr",
+        adminEngagementsAccessRequestEditLicenseNumber: "A-00-000001"
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+      });
+      dialog.showModal();
+      return dialog.open;
+    `);
+    if (!dialogOpened) throw new Error(`${view.name}/${viewport.name} : ouverture de la vérification de demande impossible.`);
     await sleep(100);
   }
   if (view.swimmerCorrectionDialogFixture) {

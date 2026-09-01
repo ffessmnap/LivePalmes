@@ -9,6 +9,10 @@
     correctionWorkbench: document.querySelector("#correctionWorkbench"),
     sessionLabel: document.querySelector("#importSessionLabel"),
     signOut: document.querySelector("#importSignOutButton"),
+    dialog: document.querySelector("#competitionImportDialog"),
+    dialogOpen: document.querySelector("#competitionImportOpenButton"),
+    dialogClose: document.querySelector("#competitionImportDialogClose"),
+    dialogCancel: document.querySelector("#competitionImportDialogCancel"),
     form: document.querySelector("#competitionImportForm"),
     file: document.querySelector("#competitionImportFile"),
     encoding: document.querySelector("#competitionImportEncoding"),
@@ -20,6 +24,13 @@
     warnings: document.querySelector("#competitionImportWarnings"),
     existingImport: document.querySelector("#competitionImportExisting"),
     sample: document.querySelector("#competitionImportSample"),
+    previewFilter: document.querySelector("#competitionImportPreviewFilter"),
+    previewSearch: document.querySelector("#competitionImportPreviewSearch"),
+    previewCount: document.querySelector("#competitionImportPreviewCount"),
+    previewPagination: document.querySelector("#competitionImportPreviewPagination"),
+    previewPrevious: document.querySelector("#competitionImportPreviewPrevious"),
+    previewNext: document.querySelector("#competitionImportPreviewNext"),
+    previewPage: document.querySelector("#competitionImportPreviewPage"),
     validate: document.querySelector("#competitionImportValidateButton"),
     replace: document.querySelector("#competitionImportReplaceButton"),
     importsList: document.querySelector("#competitionImportsList"),
@@ -63,6 +74,7 @@
   let currentRawText = "";
   let currentPayload = null;
   let currentPreview = null;
+  let currentPreviewPage = 1;
   let correctionOverlay = null;
   let correctionRowsCache = new Map();
   let correctionSearchCache = new Map();
@@ -85,6 +97,7 @@
   const importOperationControlStates = new Map();
   const openImportIds = new Set();
   const importsPageSize = 5;
+  const previewPageSize = 100;
   const isIntegratedAdminView = Boolean(document.querySelector("#adminImportView"));
   const publicPerformanceBase = isIntegratedAdminView
     ? String(global.LivePalmesAppConfig?.performanceAdditionalDataUrl || "")
@@ -155,6 +168,8 @@
       elements.replace.textContent = busy && phase === "replace" ? "Remplacement en cours..." : "Remplacer l'import existant";
       if (busy) elements.replace.disabled = true;
     }
+    if (elements.dialogClose) elements.dialogClose.disabled = busy;
+    if (elements.dialogCancel) elements.dialogCancel.disabled = busy;
     if (!busy) updateFileMode();
   }
 
@@ -1175,10 +1190,127 @@
     if (excel) void ensureSpreadsheetReader().catch(() => {});
   }
 
+  function resetImportDialog() {
+    currentFile = null;
+    currentRawText = "";
+    currentPayload = null;
+    currentPreview = null;
+    currentPreviewPage = 1;
+    elements.form?.reset();
+    if (elements.preview) elements.preview.hidden = true;
+    if (elements.progress) elements.progress.hidden = true;
+    if (elements.existingImport) elements.existingImport.hidden = true;
+    if (elements.sample) elements.sample.innerHTML = "";
+    if (elements.previewCount) elements.previewCount.textContent = "";
+    setMessage(elements.message, "");
+    updateFileMode();
+  }
+
+  function openImportDialog() {
+    if (!elements.dialog?.showModal) return;
+    resetImportDialog();
+    elements.dialog.showModal();
+    global.requestAnimationFrame(() => elements.file?.focus());
+  }
+
+  function closeImportDialog() {
+    if (importControlsLocked || !elements.dialog?.open) return;
+    elements.dialog.close();
+  }
+
+  function previewPerformances(result = currentPreview) {
+    if (Array.isArray(result?.previewPerformances)) return result.previewPerformances;
+    return Array.isArray(result?.samplePerformances) ? result.samplePerformances : [];
+  }
+
+  function previewPerformanceSearchText(perf = {}) {
+    const match = perf.swimmerMatch || {};
+    return normalizeSearchToken([
+      perf.firstName,
+      perf.lastName,
+      perf.birthDate,
+      perf.sex,
+      perf.course,
+      perf.round,
+      perf.club,
+      perf.clubName,
+      perf.time,
+      match.name,
+      match.swimmerId
+    ].filter(Boolean).join(" "));
+  }
+
+  function filteredPreviewPerformances() {
+    const filter = elements.previewFilter?.value || "all";
+    const query = normalizeSearchToken(elements.previewSearch?.value);
+    return previewPerformances().filter((perf) => {
+      const matched = perf.swimmerMatch?.status === "matched";
+      if (filter === "ready" && !matched) return false;
+      if (filter === "verify" && matched) return false;
+      if (filter === "duplicates" && perf.duplicateInFile !== true) return false;
+      return !query || previewPerformanceSearchText(perf).includes(query);
+    });
+  }
+
+  function renderPreviewPerformances() {
+    const allRows = previewPerformances();
+    const rows = filteredPreviewPerformances();
+    const pageCount = Math.max(1, Math.ceil(rows.length / previewPageSize));
+    currentPreviewPage = Math.min(Math.max(1, currentPreviewPage), pageCount);
+    const start = (currentPreviewPage - 1) * previewPageSize;
+    const visibleRows = rows.slice(start, start + previewPageSize);
+
+    if (elements.previewCount) {
+      const visibleStart = rows.length ? start + 1 : 0;
+      const visibleEnd = Math.min(start + visibleRows.length, rows.length);
+      elements.previewCount.textContent = rows.length === allRows.length
+        ? `${allRows.length} performance(s) consultable(s) · lignes ${visibleStart} à ${visibleEnd}`
+        : `${rows.length} sur ${allRows.length} performance(s) · lignes ${visibleStart} à ${visibleEnd}`;
+    }
+
+    elements.sample.innerHTML = visibleRows.length ? visibleRows.map((perf) => {
+      const match = perf.swimmerMatch || {};
+      const matched = match.status === "matched";
+      const matchMethod = match.method === "id" ? "identifiant fédéral" : "identité exacte";
+      const phase = perf.isIntermediate
+        ? `Passage${perf.originCourse ? ` depuis ${perf.originCourse}` : ""}`
+        : perf.round || "-";
+      const rowFlags = [
+        perf.duplicateInFile ? '<span class="import-preview-badge warning">Doublon possible</span>' : "",
+        perf.isIntermediate ? '<span class="import-preview-badge neutral">Passage</span>' : ""
+      ].filter(Boolean).join(" ");
+      return `
+        <tr class="${matched ? "" : "needs-verification"}">
+          <td>${escapeHtml(perf.sourceLine || "-")}${rowFlags ? `<small>${rowFlags}</small>` : ""}</td>
+          <td>${escapeHtml([perf.firstName, perf.lastName].filter(Boolean).join(" "))}<small>${escapeHtml([formatDate(perf.birthDate), perf.sex].filter(Boolean).join(" · "))}</small></td>
+          <td>
+            <span class="import-preview-match ${matched ? "ready" : "verify"}">${matched ? "Rattaché" : "À vérifier"}</span>
+            <strong>${escapeHtml(matched ? match.name || "-" : "Aucun nageur reconnu")}</strong>
+            <small>${escapeHtml(matched ? [match.swimmerId, matchMethod].filter(Boolean).join(" · ") : "Corriger le fichier avant validation si nécessaire")}</small>
+          </td>
+          <td>${escapeHtml(perf.course || "-")}</td>
+          <td>${escapeHtml(phase)}</td>
+          <td class="time">${escapeHtml(perf.time || "-")}</td>
+          <td>${escapeHtml((perf.intermediateTimes || []).map((split) => `${split.code} ${split.time}`).join(" · ") || "-")}</td>
+          <td>${escapeHtml(perf.categoryCode || "-")}</td>
+          <td>${escapeHtml(perf.club || perf.clubName || "-")}<small>${escapeHtml(perf.club && perf.clubName ? perf.clubName : "")}</small></td>
+        </tr>
+      `;
+    }).join("") : `<tr><td colspan="9">Aucune performance ne correspond aux filtres.</td></tr>`;
+
+    if (elements.previewPagination) elements.previewPagination.hidden = pageCount <= 1;
+    if (elements.previewPrevious) elements.previewPrevious.disabled = currentPreviewPage <= 1;
+    if (elements.previewNext) elements.previewNext.disabled = currentPreviewPage >= pageCount;
+    if (elements.previewPage) elements.previewPage.textContent = `Page ${currentPreviewPage} sur ${pageCount}`;
+  }
+
   function renderPreview(result) {
     currentPreview = result;
+    currentPreviewPage = 1;
     const metadata = result.metadata || {};
     const summary = result.summary || {};
+    const previewRows = previewPerformances(result);
+    const unmatchedCount = previewRows.filter((perf) => perf.swimmerMatch?.status !== "matched").length;
     const recordAlerts = Array.isArray(result.recordAlerts) ? result.recordAlerts.filter(shouldDisplayRecordAlert) : [];
     const recordAlertCount = recordAlerts.length;
     elements.preview.hidden = false;
@@ -1194,6 +1326,7 @@
       <div><span>Lignes ignorees</span><strong>${escapeHtml(summary.ignoredRows || 0)}</strong></div>
       <div><span>Clubs</span><strong>${escapeHtml(summary.clubs || 0)}</strong></div>
       <div><span>Alertes RF/MPF</span><strong>${escapeHtml(recordAlertCount)}</strong></div>
+      <div><span>À vérifier</span><strong>${escapeHtml(unmatchedCount)}</strong></div>
       <div><span>Format</span><strong>${escapeHtml(sourceTypeLabel(result.sourceType))}</strong></div>
       <div><span>Import</span><strong>${result.canResumePublication ? "Publication a reprendre" : result.alreadyImported ? "Deja publie" : "Nouveau"}</strong></div>
     `;
@@ -1261,17 +1394,9 @@
             : ""}
       ` : "";
     }
-    const rows = Array.isArray(result.samplePerformances) ? result.samplePerformances : [];
-    elements.sample.innerHTML = rows.length ? rows.map((perf) => `
-      <tr>
-        <td>${escapeHtml([perf.firstName, perf.lastName].filter(Boolean).join(" "))}<small>${escapeHtml(perf.swimmerId || "")}</small></td>
-        <td>${escapeHtml(perf.course || "-")}</td>
-        <td class="time">${escapeHtml(perf.time || "-")}</td>
-        <td>${escapeHtml((perf.intermediateTimes || []).map((split) => `${split.code} ${split.time}`).join(" · ") || "-")}</td>
-        <td>${escapeHtml(perf.categoryCode || "-")}</td>
-        <td>${escapeHtml(perf.club || "-")}</td>
-      </tr>
-    `).join("") : `<tr><td colspan="6">Aucune performance a afficher.</td></tr>`;
+    if (elements.previewFilter) elements.previewFilter.value = "all";
+    if (elements.previewSearch) elements.previewSearch.value = "";
+    renderPreviewPerformances();
     const validationBlocked = result.alreadyImported || !summary.importedPerformances || !metadata.timingType;
     elements.validate.disabled = validationBlocked;
     elements.validate.title = result.alreadyImported
@@ -1962,9 +2087,37 @@
     elements.loginForm?.addEventListener("submit", signIn);
     elements.signOut?.addEventListener("click", signOut);
     elements.file?.addEventListener("change", updateFileMode);
+    elements.dialogOpen?.addEventListener("click", openImportDialog);
+    elements.dialogClose?.addEventListener("click", closeImportDialog);
+    elements.dialogCancel?.addEventListener("click", closeImportDialog);
+    elements.dialog?.addEventListener("cancel", (event) => {
+      if (importControlsLocked) event.preventDefault();
+    });
+    elements.dialog?.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeImportDialog();
+    });
+    elements.dialog?.addEventListener("click", (event) => {
+      if (event.target === elements.dialog) closeImportDialog();
+    });
     elements.form?.addEventListener("submit", previewImport);
     elements.validate?.addEventListener("click", validateImport);
     elements.replace?.addEventListener("click", replaceImport);
+    const applyPreviewFilters = () => {
+      currentPreviewPage = 1;
+      renderPreviewPerformances();
+    };
+    elements.previewFilter?.addEventListener("input", applyPreviewFilters);
+    elements.previewSearch?.addEventListener("input", applyPreviewFilters);
+    elements.previewPrevious?.addEventListener("click", () => {
+      currentPreviewPage = Math.max(1, currentPreviewPage - 1);
+      renderPreviewPerformances();
+    });
+    elements.previewNext?.addEventListener("click", () => {
+      currentPreviewPage += 1;
+      renderPreviewPerformances();
+    });
     elements.importsRefresh?.addEventListener("click", loadImports);
     global.addEventListener("hashchange", () => {
       if (global.location.hash === "#import-competitions" && ensureAdminAuth()?.isAdminAuthenticated?.()) loadImports();

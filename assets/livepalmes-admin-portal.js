@@ -491,10 +491,11 @@
     engagementsDeletionRequestsNav: document.querySelector("#adminEngagementsDeletionRequestsNav"),
     engagementsDeletionRequestsBadge: document.querySelector("#adminEngagementsDeletionRequestsBadge"),
     engagementsAccessRequestsBadge: document.querySelector("#adminEngagementsAccessRequestsBadge"),
-    engagementsAccessRequestsRefresh: document.querySelector("#adminEngagementsAccessRequestsRefresh"),
     engagementsAccessRequestsStatus: document.querySelector("#adminEngagementsAccessRequestsStatus"),
     engagementsAccessRequestsList: document.querySelector("#adminEngagementsAccessRequestsList"),
+    engagementsAccessRequestEditDialog: document.querySelector("#adminEngagementsAccessRequestEditDialog"),
     engagementsAccessRequestEditForm: document.querySelector("#adminEngagementsAccessRequestEditForm"),
+    engagementsAccessRequestEditTitle: document.querySelector("#adminEngagementsAccessRequestEditTitle"),
     engagementsAccessRequestEditId: document.querySelector("#adminEngagementsAccessRequestEditId"),
     engagementsAccessRequestEditFirstName: document.querySelector("#adminEngagementsAccessRequestEditFirstName"),
     engagementsAccessRequestEditLastName: document.querySelector("#adminEngagementsAccessRequestEditLastName"),
@@ -1294,6 +1295,25 @@
     if (!elements.publicAccessRequestMessage) return;
     elements.publicAccessRequestMessage.textContent = message || "";
     elements.publicAccessRequestMessage.dataset.tone = tone;
+  }
+
+  function setFormPending(form, pending, pendingLabel = "Traitement en cours…") {
+    const button = form?.querySelector("button[type='submit']");
+    if (!button) return;
+    if (pending) {
+      if (!button.dataset.idleLabel) button.dataset.idleLabel = button.textContent.trim();
+      button.textContent = pendingLabel;
+      button.disabled = true;
+      button.classList.add("admin-portal-submit-pending");
+      button.setAttribute("aria-busy", "true");
+      form.setAttribute("aria-busy", "true");
+      return;
+    }
+    button.textContent = button.dataset.idleLabel || button.textContent;
+    button.disabled = false;
+    button.classList.remove("admin-portal-submit-pending");
+    button.removeAttribute("aria-busy");
+    form.removeAttribute("aria-busy");
   }
 
   function setAccountMessage(element, message, tone = "error") {
@@ -2731,7 +2751,7 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/import-competitions.js?v=20260824-import-replacement-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20260831-import-dialog-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
@@ -3538,9 +3558,9 @@
     return Boolean(competition.date && preview && competition.date >= preview.startDate && competition.date <= preview.endDate);
   }
 
-  function filteredEngagementCompetitions() {
+  function filteredEngagementCompetitions(date = new Date()) {
     const filters = engagementCalendarFiltersPayload();
-    const septemberPreview = engagementCalendarSeptemberPreview(filters);
+    const septemberPreview = engagementCalendarSeptemberPreview(filters, date);
     return engagementCompetitions
       .filter((competition) => !competition.date ||
         (competition.date >= filters.startDate && competition.date <= filters.endDate) ||
@@ -3551,8 +3571,8 @@
       .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
       .filter((competition) => !filters.mineOnly || canEditEngagementCompetition(competition))
       .sort((left, right) => {
-        const previewDifference = Number(engagementCompetitionIsInSeptemberPreview(left, filters)) -
-          Number(engagementCompetitionIsInSeptemberPreview(right, filters));
+        const previewDifference = Number(engagementCompetitionIsInSeptemberPreview(left, filters, date)) -
+          Number(engagementCompetitionIsInSeptemberPreview(right, filters, date));
         if (previewDifference) return previewDifference;
         const statusRank = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : competition.entryStatus === "closed" ? 2 : 1;
         const rankDifference = statusRank(left) - statusRank(right);
@@ -11481,23 +11501,33 @@
       const newClubRequested = request.newClubRequested === true;
       const newClub = request.newClub || {};
       const nationalOnly = newClubRequested && !canUse("engagements.national.manage");
+      const clubLabel = newClubRequested
+        ? `${newClub.clubCode || "Nouveau club"} — ${newClub.clubName || "Nom non renseigné"}`
+        : clubDisplayLabel(request, { fallback: "Club non renseigné" });
+      const requestDetails = [
+        newClubRequested
+          ? `N° fédéral ${newClub.federalNumber || "-"} · ${[newClub.postalCode, newClub.city].filter(Boolean).join(" ") || "Localité non renseignée"}${nationalOnly ? " · Traitement national requis" : ""}`
+          : "",
+        request.message || ""
+      ].filter(Boolean);
       return `
         <article class="admin-engagements-request-card" data-engagement-access-request-id="${escapeHtml(request.id || "")}">
           <div class="admin-engagements-request-main">
             <strong>${escapeHtml(name)}</strong>
-            <small>${escapeHtml([request.email, request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" - "))}</small>
+            <small>${escapeHtml([request.email, request.licenseNumber ? `Licence ${request.licenseNumber}` : ""].filter(Boolean).join(" · "))}</small>
           </div>
-          <div class="admin-engagements-request-meta">
-            <span>${escapeHtml(newClubRequested ? `${newClub.clubCode || "Nouveau club"} — ${newClub.clubName || "Nom non renseigné"}` : clubDisplayLabel(request, { fallback: "Club non renseigné" }))}</span>
-            <span>${escapeHtml(regionDisplayLabel(request.regionId) || "Région non renseignée")}</span>
-            <span>${escapeHtml(request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : "-")}</span>
+          <div class="admin-engagements-request-scope">
+            <strong>${escapeHtml(clubLabel)}</strong>
+            <small>${escapeHtml([regionDisplayLabel(request.regionId) || "Région non renseignée", request.requestedAt ? formatDeadline(request.requestedAt).replace(/^Limite /, "") : ""].filter(Boolean).join(" · "))}</small>
+          </div>
+          <div class="admin-engagements-request-badges">
+            ${newClubRequested ? '<span class="admin-access-request-badge">Nouveau club</span>' : ""}
           </div>
           <div class="admin-engagements-request-actions">
-            <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${escapeHtml(request.id || "")}" ${nationalOnly ? "disabled title=\"Traitement réservé au niveau national\"" : ""}>${newClubRequested ? "Créer le club / valider" : "Modifier / valider"}</button>
+            <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${escapeHtml(request.id || "")}" ${nationalOnly ? "disabled title=\"Traitement réservé au niveau national\"" : ""}>${nationalOnly ? "Traitement national" : "Examiner"}</button>
             <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${escapeHtml(request.id || "")}">Refuser</button>
           </div>
-          ${newClubRequested ? `<p class="admin-engagements-request-note">Nouveau club demandé · N° fédéral ${escapeHtml(newClub.federalNumber || "-")} · ${escapeHtml([newClub.postalCode, newClub.city].filter(Boolean).join(" ") || "Localité non renseignée")}${nationalOnly ? " · Traitement national requis" : ""}</p>` : ""}
-          ${request.message ? `<p class="admin-engagements-request-note">${escapeHtml(request.message)}</p>` : ""}
+          ${requestDetails.length ? `<details class="admin-engagements-request-details"><summary>Voir les informations complémentaires</summary>${requestDetails.map((detail) => `<p>${escapeHtml(detail)}</p>`).join("")}</details>` : ""}
         </article>
       `;
     }).join("");
@@ -11507,7 +11537,6 @@
     if (!canReviewEngagementAccessRequests() || engagementAccessRequestsLoading) return;
     if (engagementAccessRequestsLoaded && !force) return;
     engagementAccessRequestsLoading = true;
-    if (elements.engagementsAccessRequestsRefresh) elements.engagementsAccessRequestsRefresh.disabled = true;
     if (elements.engagementsAccessRequestsStatus && !silent) {
       elements.engagementsAccessRequestsStatus.textContent = "Chargement des demandes...";
       elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
@@ -11530,7 +11559,6 @@
       }
     } finally {
       engagementAccessRequestsLoading = false;
-      if (elements.engagementsAccessRequestsRefresh) elements.engagementsAccessRequestsRefresh.disabled = false;
     }
   }
 
@@ -11542,7 +11570,7 @@
 
   function closeEngagementAccessRequestEditForm() {
     elements.engagementsAccessRequestEditForm?.reset();
-    if (elements.engagementsAccessRequestEditForm) elements.engagementsAccessRequestEditForm.hidden = true;
+    if (elements.engagementsAccessRequestEditDialog?.open) elements.engagementsAccessRequestEditDialog.close();
     if (elements.engagementsAccessRequestEditNewClubFields) elements.engagementsAccessRequestEditNewClubFields.hidden = true;
     setEngagementAccessRequestEditMessage("");
   }
@@ -11550,6 +11578,8 @@
   function openEngagementAccessRequestEditForm(requestId) {
     const request = engagementAccessRequests.find((item) => item.id === requestId);
     if (!request || !elements.engagementsAccessRequestEditForm) return;
+    const requestName = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "la demande";
+    if (elements.engagementsAccessRequestEditTitle) elements.engagementsAccessRequestEditTitle.textContent = `Vérifier · ${requestName}`;
     if (elements.engagementsAccessRequestEditId) elements.engagementsAccessRequestEditId.value = request.id || "";
     if (elements.engagementsAccessRequestEditFirstName) elements.engagementsAccessRequestEditFirstName.value = request.firstName || "";
     if (elements.engagementsAccessRequestEditLastName) elements.engagementsAccessRequestEditLastName.value = request.lastName || "";
@@ -11578,9 +11608,10 @@
       field.value = value || "";
       field.required = newClubRequested;
     });
-    elements.engagementsAccessRequestEditForm.hidden = false;
     setEngagementAccessRequestEditMessage("Vérifiez les informations avant validation.", "loading");
-    elements.engagementsAccessRequestEditForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (elements.engagementsAccessRequestEditDialog?.showModal && !elements.engagementsAccessRequestEditDialog.open) {
+      elements.engagementsAccessRequestEditDialog.showModal();
+    }
   }
 
   function correctedEngagementAccessRequestFromEditForm() {
@@ -11702,11 +11733,11 @@
 
   async function submitPublicEngagementAccessRequest(event) {
     event?.preventDefault?.();
-    const button = elements.publicAccessRequestForm?.querySelector("button[type='submit']");
-    if (button) button.disabled = true;
+    setFormPending(elements.publicAccessRequestForm, true, "Envoi en cours…");
     setPublicAccessRequestMessage("Envoi de la demande...", "loading");
     try {
       await matchPublicAccessRequestClubByFederalNumber();
+      setPublicAccessRequestMessage("Envoi de la demande...", "loading");
       const result = await callFunction("submitEngagementAccessRequest", publicAccessRequestPayloadFromForm());
       elements.publicAccessRequestForm?.reset();
       populatePublicAccessRequestClubSelect();
@@ -11721,7 +11752,7 @@
     } catch (error) {
       setPublicAccessRequestMessage(`Demande impossible : ${error?.message || error}`);
     } finally {
-      if (button) button.disabled = false;
+      setFormPending(elements.publicAccessRequestForm, false);
     }
   }
 
@@ -15253,11 +15284,14 @@
       setMessage("Connexion Firebase indisponible.");
       return;
     }
-    setMessage("");
+    setFormPending(elements.form, true, "Connexion en cours…");
+    setMessage("Connexion en cours...", "loading");
     try {
       await auth.signIn(elements.email?.value, elements.password?.value);
     } catch (error) {
       setMessage(`Connexion impossible : ${error?.message || error}`);
+    } finally {
+      setFormPending(elements.form, false);
     }
   }
 
@@ -15516,7 +15550,7 @@
       }
       if (canDeleteAccessUserDirectly()) {
         actions.push(`<button class="ghost-button danger-button admin-access-action-button" type="button" data-access-delete="${user.uid}" ${isCurrentUser ? "disabled" : ""}>${accessActionIcon("delete")}<span>Supprimer</span></button>`);
-      } else if (canUse("engagements.region.manage")) {
+      } else if (canUse("engagements.region.manage") && (user.capabilities || []).includes("engagements.region.manage")) {
         actions.push(`<button class="ghost-button danger-button admin-access-action-button" type="button" data-access-delete-request="${user.uid}" ${isCurrentUser ? "disabled" : ""}>${accessActionIcon("delete")}<span>Demander la suppression</span></button>`);
       }
       return `
@@ -15636,7 +15670,7 @@
     if (canUse("admin.full") || canUse("engagements.national.manage")) {
       return { scopeType: "national", scopeId: "", documentId: "national" };
     }
-    const regionId = engagementRegionScope(currentAccessProfile || {});
+    const regionId = canonicalLivePalmesRegion(engagementRegionScope(currentAccessProfile || {}));
     return {
       scopeType: "region",
       scopeId: regionId,
@@ -15676,7 +15710,7 @@
       .get();
     if (!snapshot.exists) return null;
     const data = snapshot.data() || {};
-    if (data.status !== "ready" || Number(data.version) < 1 || data.scopeType !== scope.scopeType) return null;
+    if (data.status !== "ready" || Number(data.version) < 3 || data.scopeType !== scope.scopeType) return null;
     if (scope.scopeType === "region" && data.scopeId !== scope.scopeId) return null;
     return Object.values(data.entries && typeof data.entries === "object" ? data.entries : {})
       .filter((user) => user && typeof user === "object" && user.uid);
@@ -16081,7 +16115,6 @@
       void matchPublicAccessRequestClubByFederalNumber();
     });
     elements.signOut?.addEventListener("click", signOut);
-    elements.engagementsAccessRequestsRefresh?.addEventListener("click", () => loadEngagementAccessRequests({ force: true }));
     elements.engagementsMailJobsList?.addEventListener("click", (event) => {
       if (event.target.closest("[data-engagement-mail-jobs-more]")) void loadEngagementMailJobs({ append: true });
     });
@@ -16217,6 +16250,10 @@
     });
     elements.engagementsAccessRequestEditForm?.addEventListener("submit", submitEngagementAccessRequestEdit);
     elements.engagementsAccessRequestEditCancel?.addEventListener("click", closeEngagementAccessRequestEditForm);
+    elements.engagementsAccessRequestEditDialog?.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeEngagementAccessRequestEditForm();
+    });
     elements.engagementsAccessRequestEditRegionId?.addEventListener("change", () => populateEngagementAccessRequestEditClubSelect());
     elements.engagementsAccessRequestEditClubSelect?.addEventListener("change", syncEngagementAccessRequestEditClubFieldsFromSelect);
     elements.engagementsAccessRequestRejectForm?.addEventListener("submit", submitEngagementAccessRequestRejection);
