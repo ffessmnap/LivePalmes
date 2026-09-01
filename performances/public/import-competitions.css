@@ -3,6 +3,115 @@
   gap: 18px;
 }
 
+.import-launch-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.import-launch-card > button {
+  min-height: 46px;
+  padding-inline: 20px;
+  white-space: nowrap;
+}
+
+.competition-import-dialog {
+  width: min(1480px, calc(100vw - 28px));
+  max-width: none;
+  height: min(920px, calc(100dvh - 28px));
+  max-height: none;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  padding: 0;
+  background: #edf4f2;
+  color: #12312d;
+  box-shadow: 0 24px 70px rgba(12, 35, 32, 0.3);
+  overflow: hidden;
+}
+
+.competition-import-dialog:not([open]) {
+  display: none;
+}
+
+.competition-import-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.competition-import-dialog-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.competition-import-dialog-head {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  border-bottom: 1px solid #d4e2df;
+  padding: 18px 22px;
+  background: #ffffff;
+}
+
+.competition-import-dialog-head span {
+  color: #0f5f57;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.competition-import-dialog-head h3,
+.competition-import-dialog-head p {
+  margin: 0;
+}
+
+.competition-import-dialog-head h3 {
+  margin-top: 4px;
+  font-size: 1.22rem;
+}
+
+.competition-import-dialog-head p {
+  margin-top: 4px;
+  color: #5f746f;
+  font-size: 0.88rem;
+}
+
+.competition-import-dialog-close {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.competition-import-dialog-body {
+  display: grid;
+  min-height: 0;
+  gap: 16px;
+  padding: 18px;
+  overflow: auto;
+}
+
+.competition-import-dialog-body > .import-card {
+  box-shadow: none;
+}
+
+.competition-import-dialog-actions {
+  position: sticky;
+  bottom: -18px;
+  z-index: 2;
+  border-top: 1px solid #dce7e4;
+  margin: 0 -18px -18px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+}
+
 .import-admin-page #importLoginPanel[hidden],
 .import-admin-page #importWorkbench[hidden],
 .import-admin-page #correctionWorkbench[hidden],
@@ -470,6 +579,41 @@
   color: #9f2f21 !important;
 }
 
+.competition-import-preview-tools {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.45fr) minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.competition-import-preview-tools label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.competition-import-preview-tools input,
+.competition-import-preview-tools select {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #cbd9d6;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.competition-import-preview-count {
+  margin: 0 0 10px;
+  color: #5f746f;
+  font-size: 0.82rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
 .import-table-wrap {
   overflow-x: auto;
   border: 1px solid #dce7e4;
@@ -478,7 +622,7 @@
 
 .import-preview-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 1260px;
   border-collapse: collapse;
 }
 
@@ -506,6 +650,66 @@
   margin-top: 2px;
   color: #5f746f;
   font-size: 0.72rem;
+}
+
+.import-preview-table tr.needs-verification td {
+  background: #fffaf1;
+}
+
+.import-preview-table td strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.import-preview-match,
+.import-preview-badge {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.import-preview-match.ready {
+  background: #dff1ed;
+  color: #0f5f57;
+}
+
+.import-preview-match.verify,
+.import-preview-badge.warning {
+  background: #fff0d8;
+  color: #8a4b0c;
+}
+
+.import-preview-badge.neutral {
+  background: #eaf0f4;
+  color: #405761;
+}
+
+.import-preview-table td small:has(.import-preview-badge) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.competition-import-preview-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.competition-import-preview-pagination[hidden] {
+  display: none;
+}
+
+.competition-import-preview-pagination span {
+  color: #455d58;
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .competition-imports-list {
@@ -807,6 +1011,37 @@
 }
 
 @media (max-width: 760px) {
+  .import-launch-card {
+    grid-template-columns: 1fr;
+  }
+
+  .import-launch-card > button {
+    width: 100%;
+  }
+
+  .competition-import-dialog {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  .competition-import-dialog-head {
+    padding: 14px;
+  }
+
+  .competition-import-dialog-body {
+    padding: 10px;
+  }
+
+  .competition-import-dialog-actions {
+    bottom: -10px;
+    margin: 0 -18px -18px;
+  }
+
+  .competition-import-dialog-actions button {
+    width: 100%;
+  }
+
   .competition-import-form,
   .competition-import-history-filters,
   .performance-correction-search,
@@ -816,6 +1051,7 @@
   .competition-import-row summary,
   .competition-import-details,
   .performance-migration-status,
+  .competition-import-preview-tools,
   .import-duplicates article,
   .import-record-alerts article,
   .competition-import-alert {

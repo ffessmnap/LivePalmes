@@ -260,9 +260,10 @@ const ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION = "engagementMailRecipientShar
 const ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION = "engagementMailRecipientIndexState";
 const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION = "engagementClubAdminDirectories";
 const ACCESS_DIRECTORY_INDEX_STATE_COLLECTION = "accessDirectoryIndexState";
+const ACCESS_DIRECTORY_INDEX_VERSION = 3;
 const ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION = "accessDirectorySnapshots";
 const ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION = "accessDirectorySnapshotState";
-const ACCESS_DIRECTORY_SNAPSHOT_VERSION = 1;
+const ACCESS_DIRECTORY_SNAPSHOT_VERSION = 3;
 const ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT = 32;
 const ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT = 167;
 const ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES = 800000;
@@ -673,6 +674,16 @@ function engagementRegionsMatch(left, right) {
   return Boolean(leftKey && leftKey === normalizedEngagementRegionKey(right));
 }
 
+function canonicalAccessDirectoryRegionId(value) {
+  const cleanValue = cleanText(value).slice(0, 80);
+  if (!cleanValue) return "";
+  if (CLUB_REFERENCE_REGION_LABELS[cleanValue]) return CLUB_REFERENCE_REGION_LABELS[cleanValue];
+  const normalizedValue = normalizedEngagementRegionKey(cleanValue);
+  const knownRegion = Object.values(CLUB_REFERENCE_REGION_LABELS)
+    .find((label) => normalizedEngagementRegionKey(label) === normalizedValue);
+  return knownRegion || cleanValue;
+}
+
 function assertEmail(email) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     throw new HttpsError("invalid-argument", "Email invalide.");
@@ -687,7 +698,7 @@ function cleanAccessProfile(raw = {}) {
   const lastName = cleanText(raw.lastName).slice(0, 80);
   const clubId = cleanText(raw.clubId).slice(0, 40);
   const clubName = cleanText(raw.clubName).slice(0, 140);
-  const regionId = cleanText(raw.regionId).slice(0, 80);
+  const regionId = canonicalAccessDirectoryRegionId(raw.regionId);
   const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
   const capabilities = Array.isArray(raw.capabilities)
     ? raw.capabilities.map(cleanText).filter((item) => ACCESS_CAPABILITY_SET.has(item))
@@ -727,13 +738,17 @@ function accessDirectoryKeys(profile = {}, status = profile.status || "active") 
   const capabilities = Array.isArray(profile.capabilities)
     ? profile.capabilities
     : activeCapabilitiesFromMap(profile.capabilities || {});
-  const regionId = cleanText(profile.regionId).slice(0, 80);
+  const regionId = accessUserRegionIdFromData({
+    ...profile,
+    capabilities: capabilitiesMap(capabilities)
+  });
+  const nationalAccount = capabilities.includes("admin.full") || capabilities.includes("engagements.national.manage");
   const keys = new Set(["all", `status:${cleanStatus}`]);
   capabilities.forEach((capability) => {
     keys.add(`capability:${capability}`);
     keys.add(`status:${cleanStatus}|capability:${capability}`);
   });
-  if (regionId && capabilities.includes("engagements.region.manage")) {
+  if (regionId && !nationalAccount) {
     keys.add(`region:${regionId}`);
     keys.add(`region:${regionId}|status:${cleanStatus}`);
     capabilities.forEach((capability) => {
@@ -878,7 +893,7 @@ async function accessManagementContext(request) {
     adminFull: false,
     national,
     region,
-    regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80)
+    regionId: canonicalAccessDirectoryRegionId(regionScope.scopeId || data.regionId)
   };
 }
 
@@ -901,7 +916,18 @@ async function auditManagementContext(request) {
 
 function accessUserRegionIdFromData(data = {}) {
   const regionScope = normalizedAccessScope(data.accessScopes?.["engagements.region.manage"]);
-  return regionScope.scopeId || cleanText(data.regionId).slice(0, 80);
+  const directRegionId = regionScope.scopeId || cleanText(data.regionId).slice(0, 80);
+  if (directRegionId) return canonicalAccessDirectoryRegionId(directRegionId);
+  const clubScope = normalizedAccessScope(data.accessScopes?.["engagements.club.manage"]);
+  const clubId = clubScope.scopeId || cleanText(data.clubId).slice(0, 40);
+  return canonicalAccessDirectoryRegionId(CLUB_REFERENCE_BY_ID.get(clubId)?.regionId);
+}
+
+function accessUserVisibleToRegional(context, data = {}) {
+  if (!context?.region || !context.regionId) return false;
+  const capabilities = data.capabilities || {};
+  if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return false;
+  return accessUserRegionIdFromData(data) === context.regionId;
 }
 
 function accessUserCanBeManagedByRegional(context, data = {}) {
@@ -914,7 +940,7 @@ function accessUserCanBeManagedByRegional(context, data = {}) {
 
 function accessUserVisibleForAccessDirectory(context, doc) {
   if (context?.national) return true;
-  return accessUserCanBeManagedByRegional(context, doc.data() || {});
+  return accessUserVisibleToRegional(context, doc.data() || {});
 }
 
 function assertRegionalAccessUserDeletionRequestAllowed(context, targetData = {}) {
@@ -1564,14 +1590,60 @@ function buildIntranapSwimmerReference() {
 const intranapSwimmerLookup = buildIntranapSwimmerReference();
 
 function resolveIntranapSwimmer(perf, sex) {
+  const expectedSex = normalizeCategoryCode(sex || perf.sex);
+  const isCompatible = (swimmer) => {
+    if (!swimmer) return false;
+    const swimmerSex = normalizeCategoryCode(swimmer.sex);
+    return !expectedSex || swimmerSex === expectedSex;
+  };
   const rawId = cleanText(perf.swimmerId);
-  const byIdMatch = rawId ? intranapSwimmerLookup.byId.get(rawId) : null;
-  if (byIdMatch) return { swimmer: byIdMatch, method: "id" };
+  const allowSourceIdMatch = cleanText(perf.sourceFormat) !== "international-xlsx";
+  const byIdMatch = allowSourceIdMatch && rawId ? intranapSwimmerLookup.byId.get(rawId) : null;
+  if (isCompatible(byIdMatch)) return { swimmer: byIdMatch, method: "id" };
 
   const key = swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
   if (!key) return { swimmer: null, method: "none" };
   const identityMatch = intranapSwimmerLookup.byIdentity.get(key) || null;
-  return identityMatch ? { swimmer: identityMatch, method: "identity" } : { swimmer: null, method: "none" };
+  return isCompatible(identityMatch)
+    ? { swimmer: identityMatch, method: "identity" }
+    : { swimmer: null, method: "none" };
+}
+
+function competitionImportPreviewPerformance(perf = {}) {
+  const swimmerMatch = resolveIntranapSwimmer(perf, perf.sex);
+  const swimmer = swimmerMatch.swimmer;
+  return cleanFirestoreValue({
+    sourceLine: Number(perf.sourceLine || perf.originSourceLine || 0) || null,
+    firstName: cleanText(perf.firstName),
+    lastName: cleanText(perf.lastName),
+    birthDate: cleanText(perf.birthDate),
+    sex: normalizeCategoryCode(perf.sex),
+    swimmerId: cleanText(perf.swimmerId),
+    course: cleanText(perf.course),
+    time: cleanText(perf.time),
+    intermediateTimes: Array.isArray(perf.intermediateTimes)
+      ? perf.intermediateTimes.map((split) => ({ code: cleanText(split.code), time: cleanText(split.time) }))
+      : [],
+    categoryCode: cleanText(perf.categoryCode),
+    club: cleanText(perf.club),
+    clubName: cleanText(perf.clubName),
+    date: cleanText(perf.date),
+    round: cleanText(perf.round),
+    isIntermediate: perf.isIntermediate === true,
+    originCourse: cleanText(perf.originCourse),
+    duplicateInFile: perf.duplicateInFile === true,
+    swimmerMatch: swimmer ? {
+      status: "matched",
+      method: swimmerMatch.method,
+      swimmerId: cleanText(swimmer.id),
+      name: cleanText(swimmer.name) || [cleanText(swimmer.firstName), cleanText(swimmer.lastName)].filter(Boolean).join(" "),
+      birthDate: cleanText(swimmer.birthDate),
+      sex: normalizeCategoryCode(swimmer.sex)
+    } : {
+      status: "unmatched",
+      method: "none"
+    }
+  });
 }
 
 function categoryCodeFromCategory(category, sex) {
@@ -3331,7 +3403,6 @@ function accessDirectorySnapshotEntry(uid, data = {}) {
 function accessDirectorySnapshotRegionId(data = {}) {
   const capabilities = data.capabilities || {};
   if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return "";
-  if (capabilities["engagements.region.manage"] !== true) return "";
   return accessUserRegionIdFromData(data);
 }
 
@@ -3485,7 +3556,7 @@ exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, async (re
   const restart = request.data?.restart === true;
   const stateRef = accessDirectoryIndexStateRef();
   const stateSnapshot = requestedCursor ? null : await stateRef.get();
-  if (!requestedCursor && !restart && stateSnapshot?.data()?.status === "ready") {
+  if (!requestedCursor && !restart && stateSnapshot?.data()?.status === "ready" && Number(stateSnapshot.data()?.version) >= ACCESS_DIRECTORY_INDEX_VERSION) {
     return { ok: true, processed: 0, cursor: "", completed: true };
   }
   const cursor = requestedCursor || (restart ? "" : cleanText(stateSnapshot?.data()?.cursor).slice(0, 128));
@@ -3505,6 +3576,7 @@ exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, async (re
   const completed = snapshot.size < pageSize;
   batch.set(stateRef, {
     status: completed ? "ready" : "building",
+    version: ACCESS_DIRECTORY_INDEX_VERSION,
     cursor: completed ? "" : nextCursor,
     indexedCount: restart ? snapshot.size : FieldValue.increment(snapshot.size),
     updatedAt: now,
@@ -3522,7 +3594,7 @@ exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, async 
   const stateRef = accessDirectorySnapshotStateRef();
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
-  if (!restart && state.status === "ready") {
+  if (!restart && state.status === "ready" && Number(state.version) >= ACCESS_DIRECTORY_SNAPSHOT_VERSION) {
     return { ok: true, processed: 0, cursor: "", completed: true };
   }
   if (!restart && state.status !== "building") {
@@ -3538,6 +3610,7 @@ exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, async 
     existingSnapshots.docs.forEach((doc) => clearBatch.delete(doc.ref));
     clearBatch.set(stateRef, {
       status: "building",
+      version: ACCESS_DIRECTORY_SNAPSHOT_VERSION,
       cursor: "",
       indexedCount: 0,
       updatedAt: new Date().toISOString()
@@ -3572,6 +3645,7 @@ exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, async 
   });
   writeBatch.set(stateRef, {
     status: "building",
+    version: ACCESS_DIRECTORY_SNAPSHOT_VERSION,
     cursor: completed ? "" : nextCursor,
     indexedCount: restart ? snapshot.size : FieldValue.increment(snapshot.size),
     updatedAt: now
@@ -3591,6 +3665,7 @@ exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, async 
     }, { merge: true }));
     finalizeBatch.set(stateRef, {
       status: "ready",
+      version: ACCESS_DIRECTORY_SNAPSHOT_VERSION,
       cursor: "",
       completedAt: now,
       updatedAt: now
@@ -3641,7 +3716,7 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, async (request) => {
   }
 
   const indexState = await accessDirectoryIndexStateRef().get();
-  if (indexState.data()?.status === "ready") {
+  if (indexState.data()?.status === "ready" && Number(indexState.data()?.version) >= ACCESS_DIRECTORY_INDEX_VERSION) {
     const documentId = FieldPath.documentId();
     let query = db.collection("users")
       .where("accessDirectoryKeys", "array-contains", accessDirectoryFilterKey(context, status, capability))
@@ -16027,7 +16102,8 @@ exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
     recordAlerts: recordAlerts.slice(0, 100),
     recordAlertCount: recordAlerts.length,
     duplicateDetails: parsed.duplicateDetails.slice(0, 50),
-    samplePerformances: parsed.performances.slice(0, 20)
+    samplePerformances: parsed.performances.slice(0, 20),
+    previewPerformances: parsed.performances.map(competitionImportPreviewPerformance)
   };
 });
 

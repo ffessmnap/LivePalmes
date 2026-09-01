@@ -65,6 +65,8 @@ L'utilisateur ne peut pas modifier lui-même ces informations. Une modification 
 
 Un administrateur général ou national peut gérer les comptes dans son domaine d'autorité. Un gestionnaire régional ne peut intervenir que dans sa région et seulement sur les niveaux prévus par le portail.
 
+Dans l'annuaire « Utilisateurs et habilitations », un gestionnaire régional voit les comptes régionaux et les comptes administrateurs des clubs rattachés à sa région. Les comptes `admin.full`, les comptes nationaux et ceux des autres régions restent exclus. La région est déterminée par le périmètre explicite du compte, puis par son club de rattachement lorsque ce périmètre manque. Les anciens codes numériques et les libellés régionaux équivalents sont normalisés vers le même périmètre. Cette visibilité n'accorde pas à elle seule le droit de modifier les habilitations ou de supprimer le compte.
+
 Dans le calendrier et le module engagements, une competition ou un evenement dont la date de fin est depassee devient consultable mais non modifiable pour le gestionnaire regional. Celui-ci conserve la gestion documentaire, sauf la suppression des documents existants, et peut transmettre une demande de suppression au niveau national. Ce verrou est controle cote serveur en plus de l'interface.
 
 Les fonctions serveur vérifient ces limites même si un utilisateur tente de contourner l'interface. Les actions importantes sont enregistrées dans `auditLogs` afin de conserver une trace.

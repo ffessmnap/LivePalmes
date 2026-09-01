@@ -180,7 +180,7 @@ vm.runInNewContext(`
   const canEditEngagementCompetition = () => true;
   ${filteredEngagementCompetitionsFunction}
   result = {
-    competitions: filteredEngagementCompetitions().map((competition) => competition.id),
+    competitions: filteredEngagementCompetitions(new Date("2026-08-11T12:00:00")).map((competition) => competition.id),
     augustPreview: engagementCalendarSeptemberPreview(engagementCalendarFiltersPayload(), new Date("2026-08-11T12:00:00")),
     julyPreview: engagementCalendarSeptemberPreview(engagementCalendarFiltersPayload(), new Date("2026-07-11T12:00:00")),
     otherSeasonPreview: engagementCalendarSeptemberPreview({ ...engagementCalendarFiltersPayload(), startYear: 2024 }, new Date("2026-08-11T12:00:00"))
@@ -1300,7 +1300,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260831-whatsapp-qr-3'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260831-import-dialog-access-directory-2'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1'));
@@ -1499,13 +1499,22 @@ assert.ok(portalCss.includes(".admin-portal-space-home .admin-overview-card"));
 assert.ok(portalCss.includes(".admin-national-home .admin-overview-card"));
 assert.ok(portalCss.includes("#adminAccessView .admin-access-filters"));
 assert.ok(portalCss.includes(".admin-national-directory-toolbar > .admin-national-merge-mode-button"));
-assert.match(portalHtml, /id="adminEngagementsAccessRequestsRefresh"[^>]*hidden/);
+assert.equal(portalHtml.includes('id="adminEngagementsAccessRequestsRefresh"'), false);
+assert.ok(portalHtml.includes('id="adminEngagementsAccessRequestEditDialog"'));
+assert.ok(portal.includes("admin-engagements-request-details"));
+assert.ok(portal.includes('nationalOnly ? "Traitement national" : "Examiner"'));
+assert.ok(portalCss.includes(".admin-access-request-review-dialog"));
+assert.ok(portalCss.includes(".admin-access-request-badge"));
 assert.ok(portalCss.includes("white-space: nowrap"));
 assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260831-login-notice-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260831-access-requests-1"));
+assert.ok(portal.includes('setFormPending(elements.form, true, "Connexion en cours…")'));
+assert.ok(portal.includes('setFormPending(elements.publicAccessRequestForm, true, "Envoi en cours…")'));
+assert.ok(portal.includes('form.setAttribute("aria-busy", "true")'));
+assert.ok(portalCss.includes(".admin-portal-submit-pending::before"));
 assert.ok(portalHtml.includes('class="admin-portal-public-link" href="index.html"'));
 assert.ok(portalHtml.includes("Retour à LivePalmes public"));
 assert.ok(portalHtml.includes("phase d’expérimentation en région Île-de-France"));
@@ -1525,7 +1534,7 @@ assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), f
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260831-whatsapp-qr-3"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260831-import-dialog-access-directory-2"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
 assert.ok(portalHtml.includes("Sans répéter la ville."));
@@ -1750,7 +1759,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260831-whatsapp-qr-3"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260831-import-dialog-access-directory-2"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
@@ -1956,12 +1965,23 @@ assert.ok(functions.includes("ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION
 assert.ok(functions.includes("decodeEngagementCompetitionStatisticsCache"));
 assert.ok(functions.includes('status: payloadGzip ? "ready" : "too_large"'));
 assert.ok(functions.includes("exports.rebuildAccessDirectoryIndexNextPage"));
+assert.ok(functions.includes("const ACCESS_DIRECTORY_INDEX_VERSION = 3"));
+assert.ok(functions.includes("const ACCESS_DIRECTORY_SNAPSHOT_VERSION = 3"));
+assert.ok(functions.includes("function canonicalAccessDirectoryRegionId(value)"));
+assert.ok(functions.includes("return CLUB_REFERENCE_REGION_LABELS[cleanValue]"));
+assert.ok(functions.includes("const regionId = canonicalAccessDirectoryRegionId(raw.regionId)"));
+assert.ok(functions.includes("regionId: canonicalAccessDirectoryRegionId(regionScope.scopeId || data.regionId)"));
+assert.ok(functions.includes("function accessUserVisibleToRegional"));
+assert.ok(functions.includes("CLUB_REFERENCE_BY_ID.get(clubId)?.regionId"));
+assert.ok(functions.includes("if (regionId && !nationalAccount)"));
 assert.ok(functions.includes('where("accessDirectoryKeys", "array-contains"'));
 assert.ok(functions.includes("searchAccessUserDocuments(search, context, maxScanned = 90)"));
 assert.ok(functions.includes("exports.rebuildAccessDirectorySnapshotNextPage"));
 assert.ok(functions.includes("syncAccessDirectorySnapshotFromUserChange"));
 assert.ok(functions.includes('document: "users/{uid}",\n  retry: true'));
 assert.ok(portal.includes('.collection("accessDirectorySnapshots")'));
+assert.ok(portal.includes("Number(data.version) < 3"));
+assert.ok(portal.includes("canonicalLivePalmesRegion(engagementRegionScope(currentAccessProfile || {}))"));
 assert.ok(portal.includes("renderAccessDirectorySnapshotPage"));
 assert.ok(portal.includes("renderAccessDirectoryAlphabet"));
 assert.ok(portal.includes("preloadAccessDirectoryFirestore"));

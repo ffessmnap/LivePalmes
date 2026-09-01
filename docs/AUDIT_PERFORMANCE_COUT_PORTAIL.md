@@ -28,6 +28,7 @@ Le parcours quotidien d'un club repose sur des documents agrégés et des appels
 | Vue DTN, cache absent ou périmé | 2 dans la requête interactive ; calcul lourd unique en arrière-plan |
 | Journal d’activité, page de 50 traces | 52 lectures fixes au plus pour le profil et la page, plus jusqu’à 25 acteurs, 25 compétitions et 25 personnes historiques à résoudre en lots ; maximum absolu 127, puis les références connues sont réutilisées |
 | Recherche, catégorie ou origine dans le journal déjà chargé | 0 |
+| Annuaire des utilisateurs, cache privé prêt | 1 document d’annuaire, plus au maximum 1 profil pour le contrôle régional ; filtres et pagination locale ensuite |
 
 Les replis de reconstruction des effectifs restent bornés pour compatibilité. Ils ne doivent plus être atteints après la préparation des agrégats.
 Un cache de temps absent peut encore nécessiter la reconstruction de l'historique du nageur. Le chemin privilégié lit l'index et ses pages ; le repli historique est désormais explicitement borné à 500 documents par requête.
