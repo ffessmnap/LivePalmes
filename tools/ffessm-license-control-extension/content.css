@@ -1,0 +1,294 @@
+#livepalmes-license-control-launcher,
+#livepalmes-license-control-panel {
+  font-family: Arial, sans-serif;
+}
+
+#livepalmes-license-control-launcher {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #1559a6;
+  color: #fff;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#livepalmes-license-control-launcher:hover,
+#livepalmes-license-control-launcher:focus-visible {
+  background: #0d467f;
+}
+
+#livepalmes-license-control-panel {
+  position: fixed;
+  inset: 18px 18px 18px auto;
+  z-index: 2147483647;
+  display: flex;
+  width: min(760px, calc(100vw - 36px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.34);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#livepalmes-license-control-panel[hidden] {
+  display: none;
+}
+
+#livepalmes-license-control-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #123b67;
+  color: #fff;
+}
+
+#livepalmes-license-control-panel > header div,
+.livepalmes-license-control-summary,
+.livepalmes-license-control-results td {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#livepalmes-license-control-panel > header strong {
+  font-size: 17px;
+}
+
+#livepalmes-license-control-panel > header span,
+.livepalmes-license-control-results small {
+  font-size: 12px;
+}
+
+#livepalmes-license-control-close {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.livepalmes-license-control-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 11px;
+  overflow: auto;
+  padding: 14px 16px;
+}
+
+.livepalmes-license-control-help,
+.livepalmes-license-control-privacy,
+.livepalmes-license-control-status,
+.livepalmes-license-control-empty {
+  margin: 0;
+}
+
+.livepalmes-license-control-help,
+.livepalmes-license-control-privacy {
+  color: #475569;
+  font-size: 12px;
+}
+
+.livepalmes-license-control-file,
+.livepalmes-license-control-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#livepalmes-license-control-file,
+#livepalmes-license-control-input,
+#livepalmes-license-control-delay {
+  box-sizing: border-box;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+}
+
+#livepalmes-license-control-file {
+  padding: 7px;
+}
+
+#livepalmes-license-control-input {
+  width: 100%;
+  min-height: 104px;
+  resize: vertical;
+  padding: 9px;
+  font: 12px/1.4 Consolas, monospace;
+}
+
+.livepalmes-license-control-summary {
+  min-height: 20px;
+  padding: 9px 10px;
+  border-left: 3px solid #1559a6;
+  background: #eef4fb;
+}
+
+.livepalmes-license-control-summary:empty {
+  display: none;
+}
+
+.livepalmes-license-control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.livepalmes-license-control-actions button {
+  border: 1px solid #1559a6;
+  border-radius: 6px;
+  padding: 8px 11px;
+  background: #1559a6;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.livepalmes-license-control-actions button.secondary {
+  background: #fff;
+  color: #1559a6;
+}
+
+.livepalmes-license-control-actions button.danger {
+  border-color: #b42318;
+  background: #fff;
+  color: #b42318;
+}
+
+.livepalmes-license-control-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.livepalmes-license-control-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: #475569;
+  font-size: 12px;
+}
+
+#livepalmes-license-control-delay {
+  width: 76px;
+  padding: 6px;
+}
+
+.livepalmes-license-control-status {
+  min-height: 20px;
+  color: #334155;
+  font-weight: 700;
+}
+
+.livepalmes-license-control-status[data-tone="loading"]::before {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 7px;
+  border: 2px solid #bfdbfe;
+  border-top-color: #1559a6;
+  border-radius: 50%;
+  content: "";
+  vertical-align: -2px;
+  animation: livepalmes-license-control-spin 0.8s linear infinite;
+}
+
+.livepalmes-license-control-status[data-tone="ok"] { color: #147d3f; }
+.livepalmes-license-control-status[data-tone="warning"] { color: #a15c00; }
+.livepalmes-license-control-status[data-tone="error"] { color: #b42318; }
+
+.livepalmes-license-control-results {
+  min-height: 150px;
+  overflow: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 6px;
+}
+
+.livepalmes-license-control-results table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.livepalmes-license-control-results th,
+.livepalmes-license-control-results td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.livepalmes-license-control-results th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef4fb;
+  color: #20344d;
+}
+
+.livepalmes-license-status {
+  font-weight: 700;
+}
+
+.livepalmes-license-status.is-validable { color: #147d3f; }
+.livepalmes-license-status.is-licence_expiree,
+.livepalmes-license-status.is-anomalie_licence,
+.livepalmes-license-status.is-anomalie_identite,
+.livepalmes-license-status.is-ambigu,
+.livepalmes-license-status.is-introuvable,
+.livepalmes-license-status.is-timeout { color: #a15c00; }
+.livepalmes-license-status.is-erreur { color: #b42318; }
+
+.livepalmes-license-control-empty {
+  padding: 14px;
+  color: #64748b;
+}
+
+.livepalmes-license-control-privacy {
+  padding: 8px 10px;
+  border-left: 3px solid #d97706;
+  background: #fffbeb;
+  color: #713f12;
+}
+
+@keyframes livepalmes-license-control-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+  #livepalmes-license-control-panel {
+    inset: 8px;
+    width: auto;
+  }
+
+  .livepalmes-license-control-actions label {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livepalmes-license-control-status[data-tone="loading"]::before {
+    animation-duration: 1.8s;
+  }
+}

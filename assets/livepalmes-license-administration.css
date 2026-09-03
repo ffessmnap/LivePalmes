@@ -1,0 +1,567 @@
+.admin-license-admin {
+  display: grid;
+  gap: 16px;
+  color: #172033;
+}
+
+.admin-license-admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 18px;
+  border: 1px solid #cfe4e8;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f1fbfc 0%, #fff 72%);
+}
+
+.admin-license-admin-intro {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.admin-license-admin-intro > div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-license-admin-intro strong {
+  font-size: 1rem;
+}
+
+.admin-license-admin-intro p,
+.admin-license-admin-step-title small,
+.admin-license-admin-method small,
+.admin-license-admin-validation-bar small {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.79rem;
+  line-height: 1.4;
+}
+
+.admin-license-admin-icon,
+.admin-license-admin-method-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #dff4f6;
+  color: #087b87;
+}
+
+.admin-license-admin-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.admin-license-admin-icon svg,
+.admin-license-admin-method-icon svg {
+  width: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.admin-license-admin-season {
+  display: grid;
+  grid-template-columns: auto minmax(130px, auto);
+  align-items: center;
+  gap: 4px 10px;
+  flex: 0 0 auto;
+  color: #334155;
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.admin-license-admin-season select {
+  min-width: 148px;
+  padding: 8px 34px 8px 10px;
+  border: 1px solid #b8ccd1;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #172033;
+  font-weight: 700;
+}
+
+.admin-license-admin-season small {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.admin-license-admin-season small strong {
+  color: #087b87;
+}
+
+.admin-license-admin-flow {
+  display: grid;
+  grid-template-columns: auto minmax(28px, 1fr) auto minmax(28px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+}
+
+.admin-license-admin-flow > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-license-admin-flow b,
+.admin-license-admin-step-number {
+  display: grid;
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b8793;
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.admin-license-admin-flow > span > span {
+  display: grid;
+}
+
+.admin-license-admin-flow strong {
+  font-size: 0.79rem;
+}
+
+.admin-license-admin-flow small {
+  color: #7c8a9d;
+  font-size: 0.68rem;
+}
+
+.admin-license-admin-flow i {
+  height: 1px;
+  background: #d5e2e5;
+}
+
+.admin-license-admin-status {
+  min-height: 0;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.admin-license-admin-step {
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(31, 65, 81, 0.045);
+}
+
+.admin-license-admin-step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-license-admin-step-title > div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-license-admin-step-title > div > strong {
+  font-size: 0.94rem;
+}
+
+.admin-license-admin-limit {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-license-admin-competitions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.admin-license-admin-competition {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 10px;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #dbe4ea;
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.admin-license-admin-competition:hover,
+.admin-license-admin-competition:has(input:focus-visible) {
+  border-color: #9bc9cf;
+  box-shadow: 0 3px 10px rgba(11, 135, 147, 0.08);
+}
+
+.admin-license-admin-competition:has(input:checked) {
+  border-color: #6eb7bf;
+  background: #f2fbfc;
+}
+
+.admin-license-admin-competition input {
+  grid-row: 1 / span 2;
+  width: 17px;
+  height: 17px;
+  accent-color: #0b8793;
+}
+
+.admin-license-admin-competition strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-license-admin-competition small {
+  grid-column: 2 / -1;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.admin-license-admin-competition-state {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #526174;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.admin-license-admin-actions,
+.admin-license-admin-method-actions,
+.admin-license-admin-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.admin-license-admin-source-actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.admin-license-admin-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-license-admin-method {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid #dbe4ea;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.admin-license-admin-method > div:not(.admin-license-admin-method-actions) {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-license-admin-method-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.admin-license-admin-method-icon svg {
+  width: 18px;
+}
+
+.admin-license-admin-method-actions,
+.admin-license-admin-method > button {
+  grid-column: 1 / -1;
+}
+
+.admin-license-admin-import {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 7px 11px;
+  border: 1px solid #0b8793;
+  border-radius: 7px;
+  background: #0b8793;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-license-admin-import:hover,
+.admin-license-admin-import:focus-within {
+  background: #076f79;
+}
+
+.admin-license-admin-import input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-license-admin-results {
+  max-height: min(48vh, 520px);
+  overflow: auto;
+  border: 1px solid #dbe4ea;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.admin-license-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.admin-license-admin-table th,
+.admin-license-admin-table td {
+  padding: 8px 9px;
+  border-bottom: 1px solid #e7edf1;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-license-admin-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #edf5f7;
+  color: #34475c;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.admin-license-admin-table tbody tr:hover {
+  background: #f8fbfc;
+}
+
+.admin-license-admin-table strong,
+.admin-license-admin-table button,
+.admin-license-admin-table .admin-license-admin-state {
+  font-weight: 500;
+}
+
+.admin-license-admin-table td:first-child {
+  width: 34px;
+  text-align: center;
+}
+
+.admin-license-admin-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0b8793;
+}
+
+.admin-license-admin-table input[type="text"] {
+  width: 126px;
+  box-sizing: border-box;
+  padding: 6px 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.admin-license-admin-table input[type="text"]:focus {
+  border-color: #0b8793;
+  outline: 2px solid rgba(11, 135, 147, 0.12);
+}
+
+.admin-license-admin-person,
+.admin-license-admin-source {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-license-admin-person small,
+.admin-license-admin-source small,
+.admin-license-admin-table td > small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.admin-license-admin-state {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #fff4e8;
+  color: #9a4a08;
+  font-size: 0.69rem;
+  white-space: nowrap;
+}
+
+.admin-license-admin-state[data-state="valid"],
+.admin-license-admin-state[data-state="validable"] {
+  background: #eaf8ef;
+  color: #147d3f;
+}
+
+.admin-license-admin-state[data-state="to_check"] {
+  background: #f1f5f9;
+  color: #526174;
+}
+
+.admin-license-admin-row-actions {
+  flex-wrap: nowrap;
+}
+
+.admin-license-admin-row-actions button {
+  padding: 5px 7px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.admin-license-admin-validation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 13px;
+  border: 1px solid #bfe0e4;
+  border-radius: 9px;
+  background: #f1fbfc;
+}
+
+.admin-license-admin-validation-bar > div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-license-admin-validation-bar > button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .admin-license-admin-methods {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-license-admin {
+    gap: 12px;
+  }
+
+  .admin-license-admin-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .admin-license-admin-season {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-license-admin-season select {
+    width: 100%;
+  }
+
+  .admin-license-admin-season small {
+    grid-column: auto;
+    text-align: left;
+  }
+
+  .admin-license-admin-flow {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 0;
+  }
+
+  .admin-license-admin-flow > span {
+    align-items: flex-start;
+  }
+
+  .admin-license-admin-flow > span > span small,
+  .admin-license-admin-flow i {
+    display: none;
+  }
+
+  .admin-license-admin-flow strong {
+    font-size: 0.72rem;
+  }
+
+  .admin-license-admin-step {
+    padding: 13px;
+  }
+
+  .admin-license-admin-step-title {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-license-admin-limit {
+    width: fit-content;
+    margin-left: 35px;
+  }
+
+  .admin-license-admin-competitions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-license-admin-source-actions,
+  .admin-license-admin-method-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-license-admin-source-actions button,
+  .admin-license-admin-method-actions button,
+  .admin-license-admin-import,
+  .admin-license-admin-method > button,
+  .admin-license-admin-validation-bar > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-license-admin-results {
+    max-height: 480px;
+  }
+
+  .admin-license-admin-validation-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-license-admin-competition {
+    transition: none;
+  }
+}

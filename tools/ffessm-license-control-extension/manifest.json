@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "LivePalmes — Contrôle des licences FFESSM",
+  "version": "1.0.0",
+  "description": "Contrôle local des licences et de leur validité sportive depuis une session Ma Commission déjà connectée.",
+  "content_scripts": [
+    {
+      "matches": ["https://macommission.ffessm.fr/*"],
+      "css": ["content.css"],
+      "js": ["core.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

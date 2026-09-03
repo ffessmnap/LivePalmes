@@ -6148,6 +6148,17 @@ function engagementClubRosterSwimmerItem(swimmer = {}) {
   const source = cleanText(swimmer.source || "performances").slice(0, 40) || "performances";
   const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80);
   const licenseSeason = engagementLicenseSeasonState(swimmer);
+  const licenseSeasons = Object.fromEntries(Object.entries(swimmer.licenseSeasons && typeof swimmer.licenseSeasons === "object" ? swimmer.licenseSeasons : {})
+    .filter(([label]) => /^\d{4}-\d{4}$/.test(label))
+    .slice(-10)
+    .map(([label, record]) => [label, {
+      status: cleanEngagementLicenseSeasonStatus(record?.status, "to_check"),
+      updatedAt: cleanText(record?.updatedAt).slice(0, 40),
+      validatedAt: cleanText(record?.validatedAt).slice(0, 40),
+      updatedBy: cleanText(record?.updatedBy).slice(0, 128),
+      source: cleanText(record?.source).slice(0, 40),
+      federalValidityEndDate: cleanIsoDate(record?.federalValidityEndDate)
+    }]));
   return cleanFirestoreValue({
     id: swimmerIndexId,
     swimmerIndexId,
@@ -6167,6 +6178,7 @@ function engagementClubRosterSwimmerItem(swimmer = {}) {
     licenseVerificationStatus: cleanEngagementLicenseVerificationStatus(swimmer.licenseVerificationStatus || swimmer.verificationStatus, "pending"),
     licenseSeasonLabel: licenseSeason.label,
     licenseSeasonStatus: licenseSeason.status,
+    licenseSeasons,
     latestDate: cleanIsoDate(swimmer.latestDate),
     performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0)),
     active: swimmer.active !== false,
@@ -12381,6 +12393,249 @@ exports.searchEngagementNationalSwimmers = onCall(CALLABLE_OPTIONS, async (reque
     query,
     swimmers
   };
+});
+
+function engagementLicenseControlSeason(value = "") {
+  const match = cleanText(value).match(/^(\d{4})-(\d{4})$/);
+  if (!match || Number(match[2]) !== Number(match[1]) + 1) {
+    throw new HttpsError("invalid-argument", "Saison invalide. Format attendu : 2026-2027.");
+  }
+  const startYear = Number(match[1]);
+  if (startYear < 2020 || startYear > 2199) {
+    throw new HttpsError("invalid-argument", "Saison hors plage autorisee.");
+  }
+  return {
+    label: `${startYear}-${startYear + 1}`,
+    startYear,
+    endYear: startYear + 1,
+    startDate: `${startYear}-09-01`,
+    endDate: `${startYear + 1}-08-31`,
+    requiredValidityDate: `${startYear + 1}-12-31`
+  };
+}
+
+function engagementLicenseControlPerson(swimmer = {}, entry = {}, competitions = []) {
+  const swimmerIndexId = cleanText(swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId).slice(0, 80);
+  const firstName = cleanText(swimmer.firstName).slice(0, 80);
+  const lastName = cleanText(swimmer.lastName || swimmer.name).slice(0, 80);
+  return {
+    livePalmesId: swimmerIndexId,
+    swimmerIndexId,
+    swimmerId: cleanText(swimmer.swimmerId).slice(0, 80),
+    source: cleanText(swimmer.source || "performances").slice(0, 40) || "performances",
+    identityKey: cleanText(swimmer.identityKey).slice(0, 180),
+    firstName,
+    lastName,
+    name: cleanText(swimmer.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" "),
+    birthDate: cleanIsoDate(swimmer.birthDate),
+    sex: cleanText(swimmer.sex).toUpperCase().slice(0, 1),
+    clubId: cleanText(entry.clubId || swimmer.clubId).slice(0, 40),
+    clubName: cleanText(entry.clubName || swimmer.clubName).slice(0, 140),
+    licenseNumber: cleanText(swimmer.licenseNumber).toUpperCase().slice(0, 60),
+    competitionIds: competitions.map((competition) => competition.id),
+    competitions: competitions.map((competition) => cleanText(competition.name || competition.title || competition.id).slice(0, 160))
+  };
+}
+
+exports.prepareEngagementLicenseControlBatch = onCall(CALLABLE_OPTIONS, async (request) => {
+  const startedAt = Date.now();
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
+  const season = engagementLicenseControlSeason(request.data?.season);
+  const competitionIds = Array.from(new Set((Array.isArray(request.data?.competitionIds) ? request.data.competitionIds : [])
+    .map((id) => cleanText(id).slice(0, 128))
+    .filter(Boolean))).slice(0, 5);
+  if (!competitionIds.length) throw new HttpsError("invalid-argument", "Selectionnez au moins une competition.");
+
+  const competitionSnapshots = await db.getAll(...competitionIds.map((id) => db.collection("engagementCompetitions").doc(id)));
+  const competitions = competitionSnapshots.map((snapshot) => {
+    if (!snapshot.exists) throw new HttpsError("not-found", "Une competition selectionnee est introuvable.");
+    const item = engagementCompetitionDetailItem(snapshot);
+    if (!item.date || item.date < season.startDate || item.date > season.endDate) {
+      throw new HttpsError("failed-precondition", `La competition ${item.name || item.id} n'appartient pas a la saison ${season.label}.`);
+    }
+    return item;
+  });
+
+  const entrySnapshots = await Promise.all(competitionIds.map(async (competitionId) => {
+    const snapshot = await db.collection("engagementClubEntries")
+      .where("competitionId", "==", competitionId)
+      .limit(501)
+      .get();
+    if (snapshot.size > 500) throw new HttpsError("resource-exhausted", "Trop de clubs engages pour preparer ce lot en une fois.");
+    return snapshot;
+  }));
+  const competitionById = new Map(competitions.map((competition) => [competition.id, competition]));
+  const peopleById = new Map();
+  entrySnapshots.forEach((snapshot) => snapshot.docs.forEach((doc) => {
+    const entry = engagementClubEntryItem(doc);
+    if (entry.status === "deleted") return;
+    const competition = competitionById.get(entry.competitionId);
+    (entry.swimmers || []).forEach((swimmer) => {
+      const person = engagementLicenseControlPerson(swimmer, entry, competition ? [competition] : []);
+      if (!person.livePalmesId || !person.firstName || !person.lastName || !person.birthDate) return;
+      const existing = peopleById.get(person.livePalmesId);
+      if (!existing) {
+        peopleById.set(person.livePalmesId, person);
+        return;
+      }
+      const sources = new Map(existing.competitionIds.map((id, index) => [id, existing.competitions[index] || id]));
+      person.competitionIds.forEach((id, index) => sources.set(id, person.competitions[index] || id));
+      existing.competitionIds = Array.from(sources.keys());
+      existing.competitions = Array.from(sources.values());
+      if (!existing.licenseNumber && person.licenseNumber) existing.licenseNumber = person.licenseNumber;
+    });
+  }));
+  if (peopleById.size > 800) throw new HttpsError("resource-exhausted", "Le lot depasse 800 nageurs. Selectionnez moins de competitions.");
+
+  const people = Array.from(peopleById.values());
+  const licenseSnapshots = people.length
+    ? await db.getAll(...people.map((person) => db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId({ swimmerIndexId: person.swimmerIndexId }))))
+    : [];
+  const licenseBySwimmerId = new Map(licenseSnapshots.filter((snapshot) => snapshot.exists)
+    .map((snapshot) => {
+      const license = engagementSwimmerLicenseItem(snapshot);
+      return [license.swimmerIndexId, license];
+    }));
+  people.forEach((person) => {
+    const license = licenseBySwimmerId.get(person.swimmerIndexId);
+    const seasonRecord = license?.licenseSeasons?.[season.label] || {};
+    person.licenseNumber = cleanText(license?.licenseNumber || person.licenseNumber).toUpperCase().slice(0, 60);
+    person.seasonStatus = cleanEngagementLicenseSeasonStatus(seasonRecord.status, "to_check");
+    person.validatedAt = cleanText(seasonRecord.validatedAt || seasonRecord.updatedAt).slice(0, 40);
+    person.validationSource = cleanText(seasonRecord.source).slice(0, 40);
+    person.federalValidityEndDate = cleanIsoDate(seasonRecord.federalValidityEndDate);
+  });
+  people.sort((left, right) => left.lastName.localeCompare(right.lastName, "fr") || left.firstName.localeCompare(right.firstName, "fr"));
+  const batchId = `licences-${season.label}-${stableHash(`${Date.now()}|${competitionIds.join("|")}`).slice(0, 10)}`;
+  return {
+    ok: true,
+    batchId,
+    season,
+    competitions: competitions.map((competition) => ({ id: competition.id, name: competition.name, date: competition.date })),
+    people,
+    readStats: portalReadStats("prepareEngagementLicenseControlBatch", startedAt, {
+      baseDocuments: competitionIds.length,
+      variableDocumentsMax: competitionIds.length * 501 + people.length,
+      cacheHit: false
+    })
+  };
+});
+
+exports.validateEngagementSwimmerLicenses = onCall(CALLABLE_OPTIONS, async (request) => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError("permission-denied", "Validation des licences reservee au niveau national.");
+  const season = engagementLicenseControlSeason(request.data?.season);
+  const source = cleanText(request.data?.source) === "admin_import" ? "admin_import" : "national_manual";
+  const rawItems = Array.isArray(request.data?.items) ? request.data.items.slice(0, 100) : [];
+  if (!rawItems.length) throw new HttpsError("invalid-argument", "Aucune licence a valider.");
+  const ids = new Set();
+  const items = rawItems.map((raw) => {
+    const swimmerIndexId = cleanText(raw?.swimmerIndexId || raw?.livePalmesId).slice(0, 80);
+    const licenseNumber = cleanText(raw?.licenseNumber).toUpperCase().slice(0, 60);
+    if (!swimmerIndexId || ids.has(swimmerIndexId)) throw new HttpsError("invalid-argument", "Nageur absent ou duplique dans la selection.");
+    if (!ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) throw new HttpsError("invalid-argument", "Chaque licence doit respecter le format A-12-34567.");
+    ids.add(swimmerIndexId);
+    const federalValidityEndDate = cleanIsoDate(raw?.federalValidityEndDate);
+    if (source === "admin_import" && (!federalValidityEndDate || federalValidityEndDate < season.requiredValidityDate)) {
+      throw new HttpsError("failed-precondition", "Une licence importee ne couvre pas la saison demandee.");
+    }
+    return {
+      swimmerIndexId,
+      swimmerId: cleanText(raw?.swimmerId).slice(0, 80),
+      identityKey: cleanText(raw?.identityKey).slice(0, 180),
+      source: cleanText(raw?.source || "performances").slice(0, 40),
+      firstName: cleanText(raw?.firstName).slice(0, 80),
+      lastName: cleanText(raw?.lastName).slice(0, 80),
+      name: cleanText(raw?.name).slice(0, 160),
+      birthDate: cleanIsoDate(raw?.birthDate),
+      sex: cleanText(raw?.sex).toUpperCase().slice(0, 1),
+      clubId: cleanText(raw?.clubId).slice(0, 40),
+      clubName: cleanText(raw?.clubName).slice(0, 140),
+      licenseNumber,
+      federalValidityEndDate
+    };
+  });
+  const now = new Date().toISOString();
+  await db.runTransaction(async (transaction) => {
+    const licenseRefs = items.map((item) => db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId({ swimmerIndexId: item.swimmerIndexId })));
+    const numberRefs = items.map((item) => db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(engagementSwimmerLicenseNumberId(item.licenseNumber)));
+    const rosterClubIds = Array.from(new Set(items.map((item) => item.clubId).filter(Boolean)));
+    const rosterRefs = rosterClubIds.map((clubId) => engagementClubRosterRef(db, clubId));
+    const readSnapshots = await transaction.getAll(...licenseRefs, ...numberRefs, ...rosterRefs);
+    const licenseSnapshots = readSnapshots.slice(0, licenseRefs.length);
+    const numberSnapshots = readSnapshots.slice(licenseRefs.length, licenseRefs.length + numberRefs.length);
+    const rosterOffset = licenseRefs.length + numberRefs.length;
+    const rosterDataByClub = new Map(rosterClubIds.map((clubId, index) => [clubId, readSnapshots[rosterOffset + index]?.data() || {}]));
+    numberSnapshots.forEach((snapshot, index) => {
+      const ownerId = cleanText(snapshot.data()?.swimmerIndexId).slice(0, 80);
+      if (snapshot.exists && ownerId && ownerId !== items[index].swimmerIndexId) {
+        throw new HttpsError("already-exists", `La licence ${items[index].licenseNumber} appartient deja a une autre fiche.`);
+      }
+    });
+    const rosterUpdates = new Map();
+    items.forEach((item, index) => {
+      const seasonRecord = {
+        status: "valid",
+        validatedAt: now,
+        updatedAt: now,
+        updatedBy: context.uid,
+        source,
+        ...(item.federalValidityEndDate ? { federalValidityEndDate: item.federalValidityEndDate } : {})
+      };
+      const payload = cleanFirestoreValue({
+        ...item,
+        verificationStatus: "verified",
+        verificationSource: source,
+        licenseSeasonLabel: season.label,
+        licenseSeasonStatus: "valid",
+        licenseSeasons: { [season.label]: seasonRecord },
+        updatedAt: now,
+        updatedBy: context.uid
+      });
+      const previousLicenseNumber = cleanText(licenseSnapshots[index]?.data()?.licenseNumber).toUpperCase().slice(0, 60);
+      if (previousLicenseNumber && previousLicenseNumber !== item.licenseNumber) {
+        transaction.delete(db.collection(ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION).doc(engagementSwimmerLicenseNumberId(previousLicenseNumber)));
+      }
+      transaction.set(licenseRefs[index], payload, { merge: true });
+      transaction.set(numberRefs[index], {
+        ...payload,
+        licenseKey: engagementSwimmerLicenseNumberKey(item.licenseNumber)
+      }, { merge: true });
+      if (item.clubId) {
+        if (!rosterUpdates.has(item.clubId)) rosterUpdates.set(item.clubId, {});
+        const rosterKey = engagementClubRosterSwimmerKey(item);
+        const storedRosterItem = rosterDataByClub.get(item.clubId)?.swimmers?.[rosterKey] || {};
+        const rosterItem = engagementClubRosterSwimmerItem({
+          ...storedRosterItem,
+          ...item,
+          id: item.swimmerIndexId,
+          licenseVerificationStatus: "verified",
+          licenseSeasonLabel: season.label,
+          licenseSeasonStatus: "valid",
+          licenseSeasons: {
+            ...(storedRosterItem.licenseSeasons && typeof storedRosterItem.licenseSeasons === "object" ? storedRosterItem.licenseSeasons : {}),
+            [season.label]: seasonRecord
+          },
+          updatedAt: now,
+          active: true
+        });
+        rosterUpdates.get(item.clubId)[rosterKey] = rosterItem;
+      }
+    });
+    rosterUpdates.forEach((swimmers, clubId) => transaction.set(engagementClubRosterRef(db, clubId), {
+      clubId,
+      updatedAt: now,
+      swimmers
+    }, { merge: true }));
+  });
+  await writeAuditLog("engagementSwimmerLicenses.validated", context.uid, {
+    season: season.label,
+    source,
+    count: items.length,
+    swimmerIds: items.map((item) => item.swimmerIndexId)
+  });
+  return { ok: true, season: season.label, source, validatedCount: items.length, validatedAt: now };
 });
 
 function engagementSwimmerIdentitySnapshot(swimmer = {}, source = swimmer.source || "") {

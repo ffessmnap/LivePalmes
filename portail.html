@@ -11,6 +11,7 @@
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
     <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260831-access-requests-1">
+    <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
@@ -285,6 +286,7 @@
                   <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
                     <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes &agrave; traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                     <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
+                    <a href="#administration-licences" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="licenses" data-engagements-national-nav hidden>V&eacute;rification des licences</a>
                     <a href="#administration-doublons-nageurs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Nageurs</a>
                     <a href="#administration-officiels" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
                     <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminAudit" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" hidden>Journal d&rsquo;activit&eacute;</a>
@@ -388,6 +390,7 @@
                   <div id="adminOverviewNationalTools" class="admin-overview-space-tools">
                     <a href="#administration-suppressions" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">Demandes &agrave; traiter <span aria-hidden="true">→</span></a>
                     <a href="#administration-clubs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">Clubs <span aria-hidden="true">→</span></a>
+                    <a href="#administration-licences" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="licenses">V&eacute;rification des licences <span aria-hidden="true">→</span></a>
                     <a href="#administration-doublons-nageurs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="swimmers">Nageurs <span aria-hidden="true">→</span></a>
                     <a href="#administration-officiels" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="people">Officiels <span aria-hidden="true">→</span></a>
                     <a href="#administration-historique" data-overview-tool data-engagements-home-entry="adminAudit" data-engagements-home-tab="deletionRequests" data-engagements-national-target="audit">Journal d&rsquo;activit&eacute; <span aria-hidden="true">→</span></a>
@@ -558,6 +561,13 @@
                     <span>Rechercher, corriger et rapprocher les fiches</span>
                   </div>
                   <div class="admin-overview-grid admin-national-reference-grid">
+                    <a class="admin-overview-card" href="#administration-licences" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="licenses">
+                      <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"></path><path d="M4 4h16v16H4z"></path></svg></span>
+                      <span class="admin-overview-card-label">Saison sportive</span>
+                      <strong>V&eacute;rification des licences</strong>
+                      <p>Pr&eacute;parer un lot depuis les engagements, importer le contr&ocirc;le f&eacute;d&eacute;ral ou valider manuellement.</p>
+                      <span class="admin-overview-card-arrow" aria-hidden="true">&rarr;</span>
+                    </a>
                     <a class="admin-overview-card" href="#administration-clubs" data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">
                       <span class="admin-overview-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M8 21v-6h8v6M8 10h1M15 10h1"></path></svg></span>
                       <span class="admin-overview-card-label">Base nationale</span>
@@ -2054,6 +2064,58 @@
                   </dialog>
                 </section>
 
+                <section class="admin-engagements-card admin-national-page-card admin-license-admin" aria-labelledby="adminLicenseControlTitle" data-engagements-national-panel="licenses" hidden>
+                  <div class="admin-license-admin-head">
+                    <div class="admin-license-admin-intro">
+                      <span class="admin-license-admin-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+                      <div>
+                        <strong id="adminLicenseControlTitle">Contr&ocirc;le saisonnier des nageurs</strong>
+                        <p>Pr&eacute;parez une seule fois les licences engag&eacute;es, puis conservez leur validation pour toute la saison.</p>
+                      </div>
+                    </div>
+                    <label class="admin-license-admin-season"><span>Saison sportive</span><select id="adminLicenseControlSeason"></select><small>Validit&eacute; minimale&nbsp;: <strong id="adminLicenseControlRequiredDate">—</strong></small></label>
+                  </div>
+                  <div class="admin-license-admin-flow" aria-label="Parcours de vérification">
+                    <span><b>1</b><span><strong>S&eacute;lection</strong><small>Comp&eacute;titions sources</small></span></span>
+                    <i aria-hidden="true"></i>
+                    <span><b>2</b><span><strong>Contr&ocirc;le</strong><small>Module ou v&eacute;rification manuelle</small></span></span>
+                    <i aria-hidden="true"></i>
+                    <span><b>3</b><span><strong>Validation</strong><small>Enregistrement pour la saison</small></span></span>
+                  </div>
+                  <p id="adminLicenseControlStatus" class="admin-portal-message admin-national-page-status admin-license-admin-status" aria-live="polite">Choisissez une saison pour charger les comp&eacute;titions.</p>
+                  <div class="admin-license-admin-step">
+                    <div class="admin-license-admin-step-title"><span class="admin-license-admin-step-number">1</span><div><strong>Choisir les comp&eacute;titions sources</strong><small>Les nageurs engag&eacute;s seront regroup&eacute;s et d&eacute;doublonn&eacute;s.</small></div><span class="admin-license-admin-limit">5 maximum par lot</span></div>
+                    <div id="adminLicenseControlCompetitions" class="admin-license-admin-competitions" aria-live="polite"></div>
+                    <div class="admin-license-admin-actions admin-license-admin-source-actions">
+                      <button id="adminLicenseControlReloadCompetitions" class="ghost-button" type="button">Actualiser les comp&eacute;titions</button>
+                      <button id="adminLicenseControlPrepare" type="button" disabled>Cr&eacute;er le lot de contr&ocirc;le <span aria-hidden="true">&rarr;</span></button>
+                    </div>
+                  </div>
+                  <div id="adminLicenseControlWorkspace" class="admin-license-admin-step" hidden>
+                    <div class="admin-license-admin-step-title"><span class="admin-license-admin-step-number">2</span><div><strong>Contr&ocirc;ler le lot</strong><small id="adminLicenseControlSummary"></small></div></div>
+                    <div class="admin-license-admin-methods">
+                      <div class="admin-license-admin-method">
+                        <span class="admin-license-admin-method-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg></span>
+                        <div><strong>Contr&ocirc;le avec Ma Commission</strong><small>Exportez le lot, traitez-le avec le module Chrome puis importez le r&eacute;sultat.</small></div>
+                        <div class="admin-license-admin-method-actions">
+                          <button id="adminLicenseControlExport" class="ghost-button" type="button">T&eacute;l&eacute;charger le lot CSV</button>
+                          <label class="admin-license-admin-import"><span>Importer le r&eacute;sultat CSV</span><input id="adminLicenseControlImport" type="file" accept=".csv,text/csv"></label>
+                        </div>
+                      </div>
+                      <div class="admin-license-admin-method admin-license-admin-method-manual">
+                        <span class="admin-license-admin-method-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16v4Z"></path><path d="m13 7 4 4"></path></svg></span>
+                        <div><strong>Contr&ocirc;le manuel</strong><small>Cochez les licences v&eacute;rifi&eacute;es. Le num&eacute;ro peut &ecirc;tre corrig&eacute; directement dans le tableau.</small></div>
+                        <button id="adminLicenseControlSelectPending" class="ghost-button" type="button">S&eacute;lectionner les licences &agrave; contr&ocirc;ler</button>
+                      </div>
+                    </div>
+                    <div id="adminLicenseControlResults" class="admin-license-admin-results"></div>
+                    <div class="admin-license-admin-validation-bar">
+                      <div><strong>Validation nationale</strong><small>Seules les lignes coch&eacute;es seront enregistr&eacute;es pour la saison.</small></div>
+                      <button id="adminLicenseControlValidate" type="button" disabled>Valider la s&eacute;lection</button>
+                    </div>
+                  </div>
+                </section>
+
                 <section class="admin-engagements-card admin-national-page-card" aria-label="Nageurs" data-engagements-national-panel="swimmers" hidden>
                   <div class="admin-engagements-national-filters admin-national-directory-toolbar" aria-label="Recherche et filtres des nageurs">
                     <label>
@@ -2207,13 +2269,13 @@
                     </label>
                     <label class="admin-engagements-swimmer-correction-license">
                       <span>Num&eacute;ro de licence</span>
-                      <input id="adminEngagementsSwimmerCorrectionLicense" type="text" maxlength="60" placeholder="A-12-34567">
+                      <input id="adminEngagementsSwimmerCorrectionLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres. Les tirets sont ajout&eacute;s automatiquement.">
                     </label>
                   </div>
                 </fieldset>
                 <label class="admin-engagements-swimmer-correction-reason">
-                  <span id="adminEngagementsSwimmerCorrectionReasonLabel">Motif de la demande</span>
-                  <textarea id="adminEngagementsSwimmerCorrectionReason" rows="3" maxlength="500" required placeholder="Expliquez bri&egrave;vement l&rsquo;erreur constat&eacute;e."></textarea>
+                  <span id="adminEngagementsSwimmerCorrectionReasonLabel">Motif de la demande (facultatif)</span>
+                  <textarea id="adminEngagementsSwimmerCorrectionReason" rows="3" maxlength="500" placeholder="Expliquez bri&egrave;vement l&rsquo;erreur constat&eacute;e."></textarea>
                 </label>
                 <p class="admin-engagements-swimmer-correction-warning">Une modification du nom, du pr&eacute;nom ou de la date de naissance peut changer le rattachement des performances. Les doublons sont contr&ocirc;l&eacute;s avant validation.</p>
                 <p id="adminEngagementsSwimmerCorrectionMessage" class="admin-portal-message" aria-live="polite"></p>
@@ -2725,6 +2787,7 @@
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <script src="assets/livepalmes-admin-portal.js?v=20260831-import-dialog-access-directory-2"></script>
+    <script src="assets/livepalmes-license-administration.js?v=20260902-license-control-1"></script>
     <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"></script>
