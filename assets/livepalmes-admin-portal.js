@@ -279,6 +279,7 @@
     "#gestion-demandes-acces": { entry: "adminAccessRequests", tab: "accessRequests" },
     "#administration-suppressions": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
     "#administration-clubs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "clubs" },
+    "#administration-licences": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "licenses" },
     "#administration-doublons-nageurs": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "swimmers" },
     "#administration-officiels": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "people" },
     "#administration-comptes": { entry: "adminDeletionRequests", tab: "deletionRequests", nationalTab: "deletions" },
@@ -287,6 +288,7 @@
   const ENGAGEMENT_NATIONAL_HASH_BY_TAB = Object.freeze({
     deletions: "#administration-suppressions",
     clubs: "#administration-clubs",
+    licenses: "#administration-licences",
     swimmers: "#administration-doublons-nageurs",
     people: "#administration-officiels",
     audit: "#administration-historique"
@@ -1687,6 +1689,7 @@
   function engagementNationalPageTitle(tab = activeEngagementNationalTab) {
     return {
       deletions: "Demandes à traiter",
+      licenses: "Vérification des licences",
       swimmers: "Nageurs",
       people: "Officiels",
       audit: "Journal d'activité"
@@ -1784,6 +1787,8 @@
     if (!canDeleteEngagementCompetitionDirectly()) return;
     if (activeEngagementNationalTab === "clubs") {
       loadEngagementNationalClubs();
+    } else if (activeEngagementNationalTab === "licenses") {
+      document.dispatchEvent(new CustomEvent("livepalmes:license-admin-open"));
     } else if (activeEngagementNationalTab === "swimmers") {
       loadEngagementNationalSwimmers();
     } else if (activeEngagementNationalTab === "people") {
@@ -1796,7 +1801,7 @@
   }
 
   function setEngagementNationalTab(tab = "deletions") {
-    const allowedTabs = new Set(["deletions", "clubs", "swimmers", "people", "audit"]);
+    const allowedTabs = new Set(["deletions", "clubs", "licenses", "swimmers", "people", "audit"]);
     const requestedTab = allowedTabs.has(tab) ? tab : "deletions";
     const nextTab = requestedTab === "audit"
       ? (canViewActivityLog() ? "audit" : "deletions")
@@ -2358,6 +2363,12 @@
     }
     return Boolean(auth?.hasCapability?.("admin.full") || auth?.hasCapability?.(capability));
   }
+
+  global.LivePalmesLicenseAdministration = Object.freeze({
+    callFunction,
+    canManage: () => canDeleteEngagementCompetitionDirectly(),
+    openSwimmer: (swimmer, opener = null) => openEngagementSwimmerCorrectionDialog(swimmer, "direct", opener)
+  });
 
   function isClubOnlyPortalProfile() {
     if (!canUse("engagements.club.manage")) return false;
@@ -6308,6 +6319,7 @@
       const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
       const publicProfileUrl = engagementPublicSwimmerProfileUrl(swimmer, name);
       const changePending = swimmer.changeRequestStatus === "pending";
+      const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer);
       const profileButton = `
         <button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${escapeHtml(name)}" aria-label="Voir la fiche publique de ${escapeHtml(name)}" data-engagement-club-swimmer-public-profile="${escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${escapeHtml(name)}">
           <strong>${escapeHtml(name)}</strong>
@@ -6345,8 +6357,8 @@
             <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
             <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
             <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
-            <span role="cell">${swimmer.licenseNumber
-              ? escapeHtml(swimmer.licenseNumber)
+            <span class="admin-engagements-club-swimmer-license-cell" role="cell">${swimmer.licenseNumber
+              ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>`
               : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
             <span role="cell" class="admin-engagements-club-swimmers-directory-actions">
               ${activityAction}${correctionAction}${deletionAction}
@@ -12299,12 +12311,13 @@
 
   function resetEngagementSwimmerCorrectionDialog() {
     elements.engagementsSwimmerCorrectionForm?.reset();
-    if (elements.engagementsSwimmerCorrectionReason) elements.engagementsSwimmerCorrectionReason.required = true;
+    setFormPending(elements.engagementsSwimmerCorrectionForm, false);
+    if (elements.engagementsSwimmerCorrectionReason) elements.engagementsSwimmerCorrectionReason.required = false;
     if (elements.engagementsSwimmerCorrectionMessage) {
       elements.engagementsSwimmerCorrectionMessage.textContent = "";
       elements.engagementsSwimmerCorrectionMessage.dataset.tone = "neutral";
+      elements.engagementsSwimmerCorrectionMessage.classList.remove("is-loading");
     }
-    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = false;
   }
 
   function openEngagementSwimmerCorrectionDialog(swimmer = {}, mode = "request", opener = null, options = {}) {
@@ -12330,12 +12343,15 @@
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.licenseNumber || "";
     if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
     if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
-    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : "Motif de la demande";
+    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : "Motif de la demande (facultatif)";
     if (elements.engagementsSwimmerCorrectionReason) {
-      elements.engagementsSwimmerCorrectionReason.required = !review;
+      elements.engagementsSwimmerCorrectionReason.required = direct;
       elements.engagementsSwimmerCorrectionReason.value = review ? String(options.resolutionNote || "") : "";
     }
-    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.textContent = review ? "Valider la demande" : direct ? "Enregistrer la correction" : "Envoyer la demande";
+    if (elements.engagementsSwimmerCorrectionSubmit) {
+      elements.engagementsSwimmerCorrectionSubmit.textContent = review ? "Valider la demande" : direct ? "Enregistrer la correction" : "Envoyer la demande";
+      delete elements.engagementsSwimmerCorrectionSubmit.dataset.idleLabel;
+    }
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
     elements.engagementsSwimmerCorrectionLastName?.focus();
@@ -12357,14 +12373,19 @@
         firstName: elements.engagementsSwimmerCorrectionFirstName?.value || "",
         birthDate: elements.engagementsSwimmerCorrectionBirthDate?.value || "",
         sex: elements.engagementsSwimmerCorrectionSex?.value || "",
-        licenseNumber: elements.engagementsSwimmerCorrectionLicense?.value || ""
+        licenseNumber: formatEngagementSwimmerLicense(elements.engagementsSwimmerCorrectionLicense?.value || "")
       },
       reason: elements.engagementsSwimmerCorrectionReason?.value || ""
     };
-    if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = true;
+    setFormPending(
+      elements.engagementsSwimmerCorrectionForm,
+      true,
+      review ? "Validation en cours…" : direct ? "Enregistrement en cours…" : "Envoi en cours…"
+    );
     if (elements.engagementsSwimmerCorrectionMessage) {
       elements.engagementsSwimmerCorrectionMessage.textContent = review ? "Validation de la demande..." : direct ? "Enregistrement de la correction..." : "Envoi de la demande...";
       elements.engagementsSwimmerCorrectionMessage.dataset.tone = "loading";
+      elements.engagementsSwimmerCorrectionMessage.classList.add("is-loading");
     }
     try {
       const result = review
@@ -12407,10 +12428,11 @@
         }
       }
     } catch (error) {
-      if (elements.engagementsSwimmerCorrectionSubmit) elements.engagementsSwimmerCorrectionSubmit.disabled = false;
+      setFormPending(elements.engagementsSwimmerCorrectionForm, false);
       if (elements.engagementsSwimmerCorrectionMessage) {
         elements.engagementsSwimmerCorrectionMessage.textContent = `Correction impossible : ${error?.message || error}`;
         elements.engagementsSwimmerCorrectionMessage.dataset.tone = "error";
+        elements.engagementsSwimmerCorrectionMessage.classList.remove("is-loading");
       }
     }
   }
@@ -16553,6 +16575,9 @@
       const end = event.target.selectionEnd;
       event.target.value = event.target.value.toUpperCase();
       if (Number.isInteger(start) && Number.isInteger(end)) event.target.setSelectionRange(start, end);
+    });
+    elements.engagementsSwimmerCorrectionLicense?.addEventListener("input", (event) => {
+      event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
     });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
     elements.engagementsClubPersonSwimmerSearch?.addEventListener("input", () => {

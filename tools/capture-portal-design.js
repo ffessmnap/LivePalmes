@@ -36,6 +36,7 @@ const views = [
   { name: "dtn", hash: "espace-dtn-france", selector: "#adminDtnView", authenticated: true, menu: "dtn" },
   { name: "national-home", hash: "administration-nationale", selector: "#adminNationalHomeView", authenticated: true, menu: "national" },
   { name: "national-requests", hash: "administration-suppressions", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalRequestsFixture: true },
+  { name: "national-licenses", hash: "administration-licences", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalLicensesFixture: true },
   { name: "national-swimmers", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true },
   { name: "national-swimmers-merge", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true, nationalSwimmersMergeFixture: true },
   { name: "national-swimmer-edit", hash: "administration-doublons-nageurs", selector: "#adminEngagementsView", authenticated: true, menu: "national", nationalSwimmersFixture: true, swimmerCorrectionDialogFixture: "direct" },
@@ -204,8 +205,8 @@ async function waitFor(client, expression, timeoutMs = 8000) {
 
 function clubSwimmersFixtureHtml() {
   const swimmers = [
-    ["DEMO Nageuse", "12/03/2008", "F", "S", "A-00-000001", "Femme", "pending"],
-    ["DEMO Nageur", "04/09/2011", "M", "C", "A-00-000002", "Homme"],
+    ["DEMO Nageuse", "12/03/2008", "F", "S", "A-00-000001", "Femme", "pending", "!", "Licence vérifiée · Saison à contrôler"],
+    ["DEMO Nageur", "04/09/2011", "M", "C", "A-00-000002", "Homme", "", "✓", "Licence et saison vérifiées"],
     ["IDENTITE Volontairement longue pour tester la reduction", "18/05/2014", "F", "M", "", "Femme"]
   ];
   return `
@@ -219,6 +220,9 @@ function clubSwimmersFixtureHtml() {
         const correctionAction = row[6] === "pending"
           ? '<span class="admin-engagements-club-swimmers-directory-change-pending" aria-label="Correction en attente"><span class="admin-engagements-club-swimmers-directory-change-pending-long">Correction en attente</span><span class="admin-engagements-club-swimmers-directory-change-pending-short" aria-hidden="true">En attente</span></span>'
           : '<button class="admin-engagements-club-swimmers-directory-edit-button" type="button" aria-label="Demander une correction"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button>';
+        const licenseCell = row[4]
+          ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${row[4]}</span><span class="admin-engagements-club-swimmer-license-status" title="${row[8]}" aria-label="${row[8]}">${row[7]}</span></span>`
+          : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>';
         return `
         <div class="admin-engagements-club-swimmers-directory-row" role="row" data-sex="${row[2]}" data-expanded="false">
           <div class="admin-engagements-club-swimmers-directory-toggle">
@@ -226,7 +230,7 @@ function clubSwimmersFixtureHtml() {
             <span class="admin-engagements-club-swimmers-directory-toggle-meta"><span class="admin-engagements-club-swimmers-directory-sex-category" aria-label="${row[5]}, catégorie ${row[3]}"><span class="admin-engagements-club-swimmers-directory-sex">${sexDisplay}</span><span aria-hidden="true">·</span><span class="admin-engagements-club-swimmers-directory-category">${row[3]}</span></span><span class="admin-engagements-club-swimmers-directory-mobile-actions">${correctionAction}</span><button class="admin-engagements-club-swimmers-directory-details-button" type="button" aria-expanded="false" aria-controls="adminEngagementsClubSwimmerFixtureDetails${index}" aria-label="Afficher le détail de ${row[0]}" data-engagement-club-swimmer-directory-toggle><span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span></button></span>
           </div>
           <div id="adminEngagementsClubSwimmerFixtureDetails${index}" class="admin-engagements-club-swimmers-directory-details">
-            <span role="cell">${profileButton}</span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span role="cell">${row[4] || '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span><span role="cell" class="admin-engagements-club-swimmers-directory-actions">${correctionAction}</span>
+            <span role="cell">${profileButton}</span><span role="cell">${row[1]}</span><span role="cell">${row[2]}</span><span role="cell">${row[3]}</span><span class="admin-engagements-club-swimmer-license-cell" role="cell">${licenseCell}</span><span role="cell" class="admin-engagements-club-swimmers-directory-actions">${correctionAction}</span>
           </div>
         </div>
       `;
@@ -602,6 +606,31 @@ function presentationScript(view) {
         }
         if (requestCount) requestCount.textContent = "1 en attente";
         if (requestList) requestList.innerHTML = '<article class="admin-engagements-swimmer-change-request"><div class="admin-engagements-swimmer-change-request-head"><div><strong>MARTIN Camille</strong><span>Club Démonstration · 06/08/2026 14:30</span></div><span class="admin-engagements-request-status" data-status="pending">En attente</span></div><div class="admin-engagements-swimmer-change-diff"><div><span>Nom</span><del>MARTNI</del><strong>MARTIN</strong></div><div><span>Naissance</span><del>12/03/2008</del><strong>13/03/2008</strong></div></div><p class="admin-engagements-request-note"><strong>Motif du club :</strong> Faute constatée sur la licence fédérale.</p><label class="admin-engagements-swimmer-change-resolution-note"><span>Commentaire national <small>(facultatif)</small></span><input type="text" placeholder="Précision pour le club"></label><div class="admin-engagements-request-actions"><button class="ghost-button" type="button">Refuser</button><button type="button">Valider la correction</button></div></article>';
+      }
+      if (${view.nationalLicensesFixture ? "true" : "false"}) {
+        const engagementsView = document.querySelector("#adminEngagementsView");
+        const viewTitle = document.querySelector("#adminEngagementsViewTitle");
+        if (engagementsView) {
+          engagementsView.dataset.engagementsMode = "admin";
+          engagementsView.dataset.engagementsTab = "deletionRequests";
+        }
+        if (viewTitle) viewTitle.textContent = "Vérification des licences";
+        document.querySelectorAll("#adminEngagementsView [data-engagements-tab-panel]").forEach((panel) => {
+          panel.hidden = panel.id !== "adminEngagementsDeletionRequestsPanel";
+        });
+        document.querySelectorAll("[data-engagements-national-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.engagementsNationalPanel !== "licenses";
+        });
+        const competitions = document.querySelector("#adminLicenseControlCompetitions");
+        const workspace = document.querySelector("#adminLicenseControlWorkspace");
+        const summary = document.querySelector("#adminLicenseControlSummary");
+        const results = document.querySelector("#adminLicenseControlResults");
+        const status = document.querySelector("#adminLicenseControlStatus");
+        if (competitions) competitions.innerHTML = '<label class="admin-license-admin-competition"><input type="checkbox" checked><strong>Championnat national</strong><small>15/09/2026 · Piscine fédérale</small></label><label class="admin-license-admin-competition"><input type="checkbox"><strong>Meeting national</strong><small>18/10/2026 · Lyon</small></label>';
+        if (workspace) workspace.hidden = false;
+        if (summary) summary.textContent = "3 nageurs · 1 déjà validé · validité requise 31/12/2027";
+        if (results) results.innerHTML = '<table class="admin-license-admin-table"><thead><tr><th></th><th>Nageur</th><th>Licence</th><th>Compétitions</th><th>Contrôle</th><th>Actions</th></tr></thead><tbody><tr><td><input type="checkbox" aria-label="Sélectionner Martin Camille" checked></td><td><span class="admin-license-admin-person"><strong>MARTIN Camille</strong><small>13/03/2008 · Club Démonstration</small></span></td><td><input type="text" aria-label="Licence de Camille Martin" value="A-00-000001"></td><td>Championnat national</td><td><span class="admin-license-admin-state" data-state="validable">Validable</span><small> jusqu’au 31/12/2027</small></td><td><span class="admin-license-admin-row-actions"><button class="ghost-button">Modifier la fiche</button><button>Valider</button></span></td></tr><tr><td><input type="checkbox" aria-label="Sélectionner Durand Lina"></td><td><span class="admin-license-admin-person"><strong>DURAND Lina</strong><small>24/07/2009 · Palmes Atlantique</small></span></td><td><input type="text" aria-label="Licence de Lina Durand" value="A-00-000002"></td><td>Championnat national</td><td><span class="admin-license-admin-state" data-state="anomalie_identite">Identité à vérifier</span></td><td><span class="admin-license-admin-row-actions"><button class="ghost-button">Modifier la fiche</button><button>Valider</button></span></td></tr></tbody></table>';
+        if (status) { status.textContent = "Retour importé : 1 licence validable, les anomalies restent non cochées."; status.dataset.tone = "ok"; }
       }
       if (${view.nationalSwimmersFixture ? "true" : "false"}) {
         const engagementsView = document.querySelector("#adminEngagementsView");

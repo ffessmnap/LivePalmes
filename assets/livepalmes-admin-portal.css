@@ -8075,6 +8075,13 @@
   display: contents;
 }
 
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-license-content {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+}
+
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-toggle {
   display: none;
 }
