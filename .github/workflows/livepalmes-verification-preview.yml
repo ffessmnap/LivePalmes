@@ -35,10 +35,18 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: npm
-          cache-dependency-path: functions/package-lock.json
+          cache-dependency-path: |
+            functions/package-lock.json
+            tests/firestore-rules/package-lock.json
 
       - name: Installer les dependances des Functions
         run: npm ci --prefix functions
+
+      - name: Installer les dependances des tests Firestore
+        run: npm ci --prefix tests/firestore-rules
+
+      - name: Tester les regles Firestore
+        run: npm --prefix tests/firestore-rules test
 
       - name: Verifier LivePalmes
         run: node tools/verify-livepalmes.js
@@ -48,7 +56,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      vars.FIREBASE_PREVIEW_ENABLED == 'true'
+      vars.FIREBASE_TEST_ENABLED == 'true'
     needs: verification
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -60,20 +68,24 @@ jobs:
       - name: Recuperer la version validee
         uses: actions/checkout@v7
 
-      - name: Verifier la configuration Firebase
+      - name: Verifier la disponibilite du deploiement TEST
+        id: firebase-test
         shell: bash
         env:
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          FIREBASE_TEST_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
         run: |
-          if [ -z "$FIREBASE_CREDENTIALS" ]; then
-            echo "Le secret FIREBASE_SERVICE_ACCOUNT_LIVEPALMES manque dans GitHub."
-            exit 1
+          if [ -z "$FIREBASE_TEST_CREDENTIALS" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Le secret FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST est absent : deploiement TEST ignore."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publier l'apercu temporaire
+      - name: Publier la version TEST stable
+        if: steps.firebase-test.outputs.enabled == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
-          projectId: livepalmes
-          expires: 7d
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
+          projectId: livepalmes-test
+          channelId: live

@@ -8,14 +8,14 @@
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
-  const publicStoragePerformanceBase = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
+  const publicStoragePerformanceBase = window.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore");
   let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-20260821-camille-heitz-1" : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
     ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
     : "public/data/performance-public";
   const usesConsolidatedData = usesLegacyPublicData;
   const publicAdditionalDataUrl = global.LivePalmesAppConfig?.performanceAdditionalDataUrl ||
-    "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
+    window.LivePalmesEnvironment.publicStorageUrl("performance-public/additional-data.json");
 
   function categoryMetaFromManifest(value) {
     const [sex, code] = String(value || "").split("|");

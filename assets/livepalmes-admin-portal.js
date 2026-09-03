@@ -13,7 +13,7 @@
   const ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS = 5 * 60 * 1000;
   const ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE = 48;
   const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";
-  const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
+  const PERFORMANCE_PUBLIC_SEARCH_BASE = global.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore");
   const publicPerformanceSwimmerSearchShards = new Map();
   const ENGAGEMENT_EVENT_DEFINITIONS = [
     ["50SF", "individual", "50 m Surface", "50 SF", "SF", 50],
@@ -11674,7 +11674,7 @@
       });
       if (approve && result.access?.email) {
         await global.firebase?.auth?.().sendPasswordResetEmail(result.access.email, {
-          url: "https://livepalmes.firebaseapp.com/portail.html",
+          url: `${global.LivePalmesEnvironment.authOrigin}/portail.html`,
           handleCodeInApp: false
         }).catch(() => {});
       }
@@ -16075,7 +16075,7 @@
       const sendReset = elements.accessForm.querySelector("#adminAccessSendReset")?.checked;
       if (sendReset) {
         await global.firebase.auth().sendPasswordResetEmail(result.email || payload.email, {
-          url: "https://livepalmes.firebaseapp.com/portail.html",
+          url: `${global.LivePalmesEnvironment.authOrigin}/portail.html`,
           handleCodeInApp: false
         });
       }

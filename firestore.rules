@@ -43,7 +43,10 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null
         && (
-          request.auth.uid in ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]
+          (
+            request.auth.token.aud == "livepalmes"
+            && request.auth.uid in ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]
+          )
           || hasCapability("admin.full")
         );
     }
