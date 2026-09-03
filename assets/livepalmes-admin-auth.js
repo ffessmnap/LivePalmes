@@ -237,7 +237,7 @@
         throw createAuthError("Cet email n'est pas autorise comme admin LivePalmes.");
       }
       await service.sendPasswordResetEmail(cleanEmail, {
-        url: "https://livepalmes.firebaseapp.com/portail.html",
+        url: `${window.LivePalmesEnvironment.authOrigin}/portail.html`,
         handleCodeInApp: false
       });
     }

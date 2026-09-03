@@ -1,4 +1,7 @@
 (function () {
+const ENVIRONMENT = window.LivePalmesEnvironment;
+if (!ENVIRONMENT) throw new Error("Configuration d'environnement LivePalmes absente.");
+ENVIRONMENT.assertSafe();
 const STORAGE_KEY = "napSpeakerFrance2026:v15";
 const ALERTS_KEY = "napSpeakerFrance2026:alerts:v1";
 const LIVE_DISMISSED_ALERTS_KEY = "napSpeakerFrance2026:live-dismissed-alerts:v1";
@@ -12,7 +15,7 @@ const SPEAKER_SHEET_ID = "1osoRYSAw15iwfFnpUuR4_nNl_kUui7vQGBJFyyhmmdA";
 const ADMIN_PIN = "";
 const ROLE_PINS = {};
 const ADMIN_AUTH = {
-  adminUids: ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"],
+  adminUids: ENVIRONMENT.legacyAdminUids,
   adminEmails: [],
   legacyAdminPinFallback: false
 };
@@ -37,15 +40,8 @@ const SPEAKER_INFO_SHEETS = {
   competitionStats: "stat compet",
   swimmerInfos: "infos nageurs"
 };
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
-  authDomain: "livepalmes.firebaseapp.com",
-  projectId: "livepalmes",
-  storageBucket: "livepalmes.firebasestorage.app",
-  messagingSenderId: "718081132564",
-  appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
-};
-const FIREBASE_FUNCTIONS_REGION = "europe-west1";
+const FIREBASE_CONFIG = ENVIRONMENT.firebaseConfig;
+const FIREBASE_FUNCTIONS_REGION = ENVIRONMENT.functionsRegion;
 // Cle publique reCAPTCHA Enterprise App Check. Elle doit etre renseignee apres
 // l'enregistrement de l'application web dans Firebase Console > App Check.
 // Laisser vide conserve le comportement actuel et permet un deploiement progressif.
@@ -59,7 +55,7 @@ const LOCAL_FUNCTIONS_EMULATOR = (() => {
     port: Number(params.get("functionsPort") || 5001) || 5001
   };
 })();
-const PERFORMANCE_ADDITIONAL_DATA_URL = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public/additional-data.json";
+const PERFORMANCE_ADDITIONAL_DATA_URL = ENVIRONMENT.publicStorageUrl("performance-public/additional-data.json");
 const fallbackData = {
   meet: {
     name: "Championnat de France 2026",

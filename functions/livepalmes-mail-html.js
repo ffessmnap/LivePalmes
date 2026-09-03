@@ -20,7 +20,7 @@ function livePalmesMailLinkLabel(url = "", context = "") {
   if (cleanUrl.includes("notifications.html")) return "Gérer mes notifications";
   if (cleanUrl.includes("helloasso") || cleanContext.includes("paiement")) return "Accéder au paiement HelloAsso";
   if (cleanUrl.includes("firebasestorage.googleapis.com")) return "Ouvrir le document";
-  if (cleanUrl.includes("livepalmes.web.app/portail")) {
+  if (/https:\/\/[^/]+\/portail(?:\.html)?/.test(cleanUrl)) {
     if (cleanContext.includes("traiter") || cleanContext.includes("examiner")) {
       return "Traiter la demande dans le portail LivePalmes";
     }
