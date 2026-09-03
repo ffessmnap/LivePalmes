@@ -39,6 +39,12 @@ jobs:
             functions/package-lock.json
             tests/firestore-rules/package-lock.json
 
+      - name: Installer Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Installer les dependances des Functions
         run: npm ci --prefix functions
 
