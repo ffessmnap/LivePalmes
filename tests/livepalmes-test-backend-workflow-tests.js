@@ -35,6 +35,7 @@ const testsPosition = workflow.indexOf("Vérifier LivePalmes et la classificatio
 const firstDeployPosition = workflow.indexOf("Déployer les index puis règles Firestore TEST");
 assert.ok(testsPosition > 0 && testsPosition < firstDeployPosition);
 assert.match(workflow, /--dry-run --non-interactive/g);
+assert.equal((workflow.match(/--non-interactive --force/g) || []).length, 2);
 assert.match(workflow, /prepare-firebase-test-functions\.js "\$SELECTED_LOT"/);
 
 assert.deepEqual(ALL_SAFE_LOTS, ["access", "engagement-core", "performance", "publications"]);
