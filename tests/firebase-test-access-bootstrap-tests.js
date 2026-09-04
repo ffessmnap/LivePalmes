@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
   CAPABILITIES, CONFIRMATION, PROJECT_ID, accessDirectoryKeys, accessScopes,
-  assertTestTarget, capabilitiesMap, parseArgs, validateProfileArgs
+  assertTestTarget, capabilitiesMap, loadFirebaseAdmin, parseArgs, validateProfileArgs
 } = require("../tools/bootstrap-firebase-test-access-user");
 
 assert.equal(PROJECT_ID, "livepalmes-test");
@@ -30,8 +30,16 @@ assert.doesNotThrow(() => assertTestTarget(
   { TARGET_FIREBASE_PROJECT: PROJECT_ID, GCLOUD_PROJECT: PROJECT_ID }
 ));
 
+const firebaseAdmin = loadFirebaseAdmin();
+assert.equal(typeof firebaseAdmin.initializeApp, "function");
+assert.equal(typeof firebaseAdmin.applicationDefault, "function");
+assert.equal(typeof firebaseAdmin.getAuth, "function");
+assert.equal(typeof firebaseAdmin.getFirestore, "function");
+
 const source = fs.readFileSync(path.join(__dirname, "..", "tools", "bootstrap-firebase-test-access-user.js"), "utf8");
 assert.doesNotMatch(source, /nodemailer|SMTP|onSchedule|firebase deploy/);
+assert.doesNotMatch(source, /functions\/node_modules\/firebase-admin/);
+assert.match(source, /createRequire/);
 assert.match(source, /credentials\.project_id !== PROJECT_ID/);
 assert.match(source, /await auth\.setCustomUserClaims/);
 assert.match(source, /batch\.set\(db\.collection\("users"\)/);
