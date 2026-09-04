@@ -10,18 +10,27 @@ const {
 const APPLY_CONFIRMATION = "copy-livepalmes-readonly-to-livepalmes-test";
 const AUTOMATION_CONFIRMATION = "email-and-schedulers-disabled-in-livepalmes-test";
 const BATCH_SIZE = 200;
+const FLAT_ROOT_COLLECTIONS = new Set(["performances"]);
 
 function parseArgs(argv) {
-  const out = { apply: false, includeStorage: false, pageSize: BATCH_SIZE, checkpoint: ".firebase-test-data-sync-checkpoint.json" };
+  const out = {
+    apply: false,
+    includeStorage: false,
+    inventoryOnly: false,
+    pageSize: BATCH_SIZE,
+    checkpoint: ".firebase-test-data-sync-checkpoint.json"
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const key = argv[i];
     if (key === "--apply") out.apply = true;
     else if (key === "--include-storage") out.includeStorage = true;
+    else if (key === "--inventory-only") out.inventoryOnly = true;
     else if (["--source-credential", "--destination-credential", "--confirmation", "--automation-confirmation", "--checkpoint", "--page-size"].includes(key)) out[key.slice(2)] = argv[++i] || "";
     else throw new Error(`Argument inconnu : ${key}`);
   }
   out.pageSize = Number(out["page-size"] || out.pageSize);
   if (!Number.isInteger(out.pageSize) || out.pageSize < 1 || out.pageSize > 400) throw new Error("--page-size doit être compris entre 1 et 400.");
+  if (out.apply && out.inventoryOnly) throw new Error("--inventory-only est incompatible avec --apply.");
   return out;
 }
 
@@ -72,6 +81,26 @@ function saveCheckpoint(file, checkpoint) {
   fs.writeFileSync(file, `${JSON.stringify(checkpoint, null, 2)}\n`, { mode: 0o600 });
 }
 
+function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "--";
+  const seconds = Math.round(ms / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return [hours, minutes, remainingSeconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function shouldScanSubcollections(sourceCollection) {
+  return !FLAT_ROOT_COLLECTIONS.has(sourceCollection.path);
+}
+
+function progressText(pathName, processed, total, startedAt) {
+  const elapsed = Date.now() - startedAt;
+  const percent = total ? Math.min(100, (processed / total) * 100) : 100;
+  const remaining = processed > 0 && processed < total ? elapsed * ((total - processed) / processed) : 0;
+  return `${pathName}: ${processed}/${total} (${percent.toFixed(1)} %) | écoulé ${formatDuration(elapsed)} | restant estimé ${processed ? formatDuration(remaining) : "--"}`;
+}
+
 async function copyCollection(sourceCollection, destinationCollection, context) {
   const collectionName = sourceCollection.id;
   if (EXCLUDE.includes(collectionName)) {
@@ -85,24 +114,33 @@ async function copyCollection(sourceCollection, destinationCollection, context) 
   const sourceTotal = sourceAggregate.data().count;
   const destinationBefore = destinationAggregate.data().count;
   let processed = 0;
+  const collectionStartedAt = Date.now();
   console.log(`[INVENTAIRE] ${sourceCollection.path}: source=${sourceTotal}; destination=${destinationBefore}`);
+
+  if (context.inventoryOnly) {
+    context.counts[sourceCollection.path] = { source: sourceTotal, destinationBefore, processed: 0, inventoryOnly: true };
+    return;
+  }
+
   do {
     let query = sourceCollection.orderBy("__name__").limit(context.pageSize);
     if (cursor) query = query.startAfter(cursor);
     const snapshot = await query.get();
     if (snapshot.empty) break;
     processed += snapshot.size;
-    console.log(`[${context.apply ? "COPIER" : "DRY-RUN"}] ${sourceCollection.path}: +${snapshot.size} (traités ${processed}/${sourceTotal})`);
+    console.log(`[${context.apply ? "COPIER" : "DRY-RUN"}] ${progressText(sourceCollection.path, processed, sourceTotal, collectionStartedAt)}`);
     if (context.apply) {
       const batch = context.destinationDb.batch();
       for (const doc of snapshot.docs) batch.set(destinationCollection.doc(doc.id), transformValue(doc.data(), context.destinationDb), { merge: false });
       await batch.commit();
     }
-    for (const doc of snapshot.docs) {
-      const children = await doc.ref.listCollections();
-      for (const child of children) {
-        if (EXCLUDE.includes(child.id) || !COPY_SUBCOLLECTIONS.includes(child.id)) console.log(`[EXCLURE] ${child.path}`);
-        else await copyCollection(child, destinationCollection.doc(doc.id).collection(child.id), context);
+    if (shouldScanSubcollections(sourceCollection)) {
+      for (const doc of snapshot.docs) {
+        const children = await doc.ref.listCollections();
+        for (const child of children) {
+          if (EXCLUDE.includes(child.id) || !COPY_SUBCOLLECTIONS.includes(child.id)) console.log(`[EXCLURE] ${child.path}`);
+          else await copyCollection(child, destinationCollection.doc(doc.id).collection(child.id), context);
+        }
       }
     }
     cursor = snapshot.docs.at(-1).id;
@@ -110,7 +148,12 @@ async function copyCollection(sourceCollection, destinationCollection, context) 
     if (context.apply) saveCheckpoint(context.checkpointFile, context.checkpoint);
     if (snapshot.size < context.pageSize) break;
   } while (true);
-  context.counts[sourceCollection.path] = { source: sourceTotal, destinationBefore, processed };
+  context.counts[sourceCollection.path] = {
+    source: sourceTotal,
+    destinationBefore,
+    processed,
+    duration: formatDuration(Date.now() - collectionStartedAt)
+  };
 }
 
 async function copyStorage(sourceStorage, destinationStorage, context) {
@@ -120,10 +163,11 @@ async function copyStorage(sourceStorage, destinationStorage, context) {
     for (const prefix of spec.prefixes) {
       let pageToken;
       let count = 0;
+      const storageStartedAt = Date.now();
       do {
         const [files, , response] = await sourceBucket.getFiles({ prefix, maxResults: context.pageSize, pageToken, autoPaginate: false });
         count += files.length;
-        console.log(`[${context.apply ? "COPIER STORAGE" : "DRY-RUN STORAGE"}] ${spec.sourceBucket}/${prefix}: +${files.length} (total ${count})`);
+        console.log(`[${context.apply ? "COPIER STORAGE" : "DRY-RUN STORAGE"}] ${spec.sourceBucket}/${prefix}: ${count} objets | écoulé ${formatDuration(Date.now() - storageStartedAt)}`);
         if (context.apply) {
           for (const file of files) {
             const [buffer] = await file.download();
@@ -145,6 +189,7 @@ async function copyStorage(sourceStorage, destinationStorage, context) {
 }
 
 async function main(argv = process.argv.slice(2)) {
+  const totalStartedAt = Date.now();
   const args = parseArgs(argv);
   const sourceCredential = readCredential(args["source-credential"], SOURCE_PROJECT);
   const destinationCredential = readCredential(args["destination-credential"], DESTINATION_PROJECT);
@@ -153,8 +198,12 @@ async function main(argv = process.argv.slice(2)) {
   const sourceApp = initializeApp({ credential: cert(sourceCredential), projectId: SOURCE_PROJECT }, "prod-read-only-source");
   const destinationApp = initializeApp({ credential: cert(destinationCredential), projectId: DESTINATION_PROJECT }, "test-write-destination");
   const context = {
-    apply: args.apply, pageSize: args.pageSize, checkpointFile: path.resolve(args.checkpoint),
-    checkpoint: args.apply ? loadCheckpoint(path.resolve(args.checkpoint)) : {}, counts: {},
+    apply: args.apply,
+    inventoryOnly: args.inventoryOnly,
+    pageSize: args.pageSize,
+    checkpointFile: path.resolve(args.checkpoint),
+    checkpoint: args.apply ? loadCheckpoint(path.resolve(args.checkpoint)) : {},
+    counts: {},
     destinationDb: getFirestore(destinationApp)
   };
   const sourceDb = getFirestore(sourceApp);
@@ -162,11 +211,17 @@ async function main(argv = process.argv.slice(2)) {
   const protectedAdminUids = adminSnapshot.docs.filter((doc) => doc.data().status === "active").map((doc) => doc.id);
   console.log(`Super-admins TEST protégés: ${protectedAdminUids.join(", ") || "AUCUN"}`);
   if (args.apply && !protectedAdminUids.length) throw new Error("Aucun super-admin TEST actif : synchronisation refusée.");
-  console.log(`Mode=${args.apply ? "APPLY" : "DRY-RUN"}; source=${SOURCE_PROJECT} (lecture seule); destination=${DESTINATION_PROJECT}`);
+  const mode = args.inventoryOnly ? "INVENTAIRE" : args.apply ? "APPLY" : "DRY-RUN";
+  console.log(`Mode=${mode}; source=${SOURCE_PROJECT} (lecture seule); destination=${DESTINATION_PROJECT}`);
   for (const name of COPY) await copyCollection(sourceDb.collection(name), context.destinationDb.collection(name), context);
-  if (args.includeStorage) await copyStorage(getStorage(sourceApp), getStorage(destinationApp), context);
-  console.log(JSON.stringify({ mode: args.apply ? "apply" : "dry-run", counts: context.counts }, null, 2));
+  if (args.includeStorage && !args.inventoryOnly) await copyStorage(getStorage(sourceApp), getStorage(destinationApp), context);
+  const totalDuration = formatDuration(Date.now() - totalStartedAt);
+  console.log(JSON.stringify({ mode: mode.toLowerCase(), totalDuration, counts: context.counts }, null, 2));
+  console.log(`Durée totale : ${totalDuration}`);
 }
 
-module.exports = { APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, loadFirebaseAdmin, parseArgs, transformValue };
+module.exports = {
+  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, loadFirebaseAdmin,
+  parseArgs, progressText, shouldScanSubcollections, transformValue
+};
 if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
