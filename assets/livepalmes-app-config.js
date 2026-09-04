@@ -17,6 +17,7 @@ const ROLE_PINS = {};
 const ADMIN_AUTH = {
   adminUids: ENVIRONMENT.legacyAdminUids,
   adminEmails: [],
+  serverProfileAuthentication: ENVIRONMENT.isTest,
   legacyAdminPinFallback: false
 };
 const LOCK_DURATION_MS = 180000;

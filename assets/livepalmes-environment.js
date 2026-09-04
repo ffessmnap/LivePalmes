@@ -82,13 +82,14 @@
       "reinitialiser-mot-de-passe.html"
     ]);
     const page = String(global.location?.pathname || "").split("/").pop() || "index.html";
-    if (!sensitivePages.has(page) && !document.body?.classList.contains("admin-portal-page")) return;
+    const sensitive = sensitivePages.has(page) || document.body?.classList.contains("admin-portal-page");
     const banner = document.createElement("div");
     banner.dataset.livepalmesTestBanner = "true";
+    banner.dataset.variant = sensitive ? "sensitive" : "public";
     banner.setAttribute("role", "status");
     banner.textContent = "ENVIRONNEMENT TEST";
     const style = document.createElement("style");
-    style.textContent = "[data-livepalmes-test-banner]{position:sticky;top:0;z-index:100000;padding:10px 16px;background:#b91c1c;color:#fff;font:800 14px/1.2 system-ui,sans-serif;letter-spacing:.12em;text-align:center;box-shadow:0 2px 8px #0005}";
+    style.textContent = "[data-livepalmes-test-banner]{position:sticky;top:0;z-index:100000;padding:7px 16px;background:#7f1d1d;color:#fff;font:700 12px/1.2 system-ui,sans-serif;letter-spacing:.1em;text-align:center;box-shadow:0 2px 6px #0004}[data-livepalmes-test-banner][data-variant=sensitive]{padding:10px 16px;background:#b91c1c;font-size:14px;font-weight:800;letter-spacing:.12em;box-shadow:0 2px 8px #0005}";
     document.head.appendChild(style);
     document.body.prepend(banner);
   }

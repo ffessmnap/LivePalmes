@@ -15,6 +15,7 @@
     const requiredCapability = String(options.requiredCapability || "").trim();
     const allowedUids = new Set((authConfig.adminUids || []).map((uid) => String(uid || "").trim()).filter(Boolean));
     const allowedEmails = new Set((authConfig.adminEmails || []).map(normalizeEmail).filter(Boolean));
+    const serverProfileAuthentication = authConfig.serverProfileAuthentication === true;
     const legacyFallback = authConfig.legacyAdminPinFallback !== false;
     let currentUser = null;
     let currentClaims = {};
@@ -60,22 +61,33 @@
     }
 
     async function refreshAccessFromServer() {
-      if (!currentUser) return;
+      if (!currentUser) return false;
       const refreshUid = String(currentUser.uid || "");
-      if (currentProfile && accessRefreshCompletedUid === refreshUid && Date.now() - accessRefreshCompletedAt < 5000) return;
+      if (currentProfile && accessRefreshCompletedUid === refreshUid && Date.now() - accessRefreshCompletedAt < 5000) return true;
       if (accessRefreshPromise && accessRefreshUid === refreshUid) return accessRefreshPromise;
       const functions = functionsService();
-      if (!functions?.httpsCallable) return;
+      if (!functions?.httpsCallable) {
+        if (serverProfileAuthentication) {
+          currentProfile = null;
+          currentClaims = {};
+        }
+        return false;
+      }
       accessRefreshUid = refreshUid;
       accessRefreshPromise = (async () => {
         try {
           const result = await functions.httpsCallable("getCurrentAccessUser")({});
           if (String(currentUser?.uid || "") !== refreshUid) return;
           const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
-          currentProfile = result.data || null;
+          const activeProfile = result.data?.status === "active";
+          const serverAccessAllowed = activeProfile && (!serverProfileAuthentication || capabilities.includes("admin.full"));
+          currentProfile = serverAccessAllowed ? result.data : null;
           accessRefreshCompletedUid = refreshUid;
           accessRefreshCompletedAt = Date.now();
-          if (!capabilities.length) return;
+          if (!serverAccessAllowed || !capabilities.length) {
+            if (serverProfileAuthentication) currentClaims = {};
+            return false;
+          }
           currentClaims = {
             ...currentClaims,
             livepalmesAccess: true,
@@ -84,9 +96,14 @@
               return acc;
             }, {})
           };
+          return true;
         } catch {
-          if (String(currentUser?.uid || "") === refreshUid) currentProfile = null;
-          // No server-side access found; keep the local auth status unchanged.
+          if (String(currentUser?.uid || "") === refreshUid) {
+            currentProfile = null;
+            if (serverProfileAuthentication) currentClaims = {};
+          }
+          // En production, conserver les droits locaux existants ; en TEST, refuser par defaut.
+          return false;
         } finally {
           if (accessRefreshUid === refreshUid) {
             accessRefreshPromise = null;
@@ -107,7 +124,7 @@
     }
 
     function isConfigured() {
-      return allowedUids.size > 0 || allowedEmails.size > 0;
+      return allowedUids.size > 0 || allowedEmails.size > 0 || serverProfileAuthentication;
     }
 
     function hasLivePalmesCapability(claims = currentClaims) {
@@ -135,6 +152,9 @@
 
     function isAllowedUser(user = currentUser) {
       if (!user) return false;
+      if (serverProfileAuthentication) {
+        return currentProfile?.status === "active" && currentClaims?.livepalmesCapabilities?.["admin.full"] === true;
+      }
       if (!isConfigured()) return hasLivePalmesCapability();
       return allowedUids.has(user.uid) || allowedEmails.has(normalizeEmail(user.email)) || hasLivePalmesCapability();
     }
