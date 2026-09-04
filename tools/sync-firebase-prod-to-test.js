@@ -10,7 +10,7 @@ const {
 const APPLY_CONFIRMATION = "copy-livepalmes-readonly-to-livepalmes-test";
 const AUTOMATION_CONFIRMATION = "email-and-schedulers-disabled-in-livepalmes-test";
 const BATCH_SIZE = 200;
-const FLAT_ROOT_COLLECTIONS = new Set(["performances"]);
+const ROOTS_WITH_SUBCOLLECTIONS = new Set(["competitions", "performanceImports"]);
 
 function parseArgs(argv) {
   const out = {
@@ -100,7 +100,7 @@ function formatDuration(ms) {
 }
 
 function shouldScanSubcollections(sourceCollection) {
-  return !FLAT_ROOT_COLLECTIONS.has(sourceCollection.path);
+  return ROOTS_WITH_SUBCOLLECTIONS.has(sourceCollection.path);
 }
 
 function progressText(pathName, processed, total, startedAt) {
