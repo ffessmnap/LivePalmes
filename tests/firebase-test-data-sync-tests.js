@@ -5,8 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const manifest = require("../tools/firebase-test-data-sync-manifest");
 const {
-  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, loadFirebaseAdmin,
-  parseArgs, transformValue
+  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, loadFirebaseAdmin,
+  parseArgs, shouldScanSubcollections, transformValue
 } = require("../tools/sync-firebase-prod-to-test");
 const { loadFirebaseAdmin: loadVerifierFirebaseAdmin } = require("../tools/verify-firebase-test-data-sync");
 
@@ -26,6 +26,15 @@ for (const name of ["results", "liveData", "history", "performanceData", "clubs"
 
 const dryRun = parseArgs([]);
 assert.equal(dryRun.apply, false);
+assert.equal(dryRun.inventoryOnly, false);
+const inventory = parseArgs(["--inventory-only"]);
+assert.equal(inventory.apply, false);
+assert.equal(inventory.inventoryOnly, true);
+assert.throws(() => parseArgs(["--inventory-only", "--apply"]), /incompatible/);
+assert.equal(shouldScanSubcollections({ path: "performances" }), false);
+assert.equal(shouldScanSubcollections({ path: "performanceImports/import-1/performances" }), true);
+assert.equal(formatDuration(3723000), "01:02:03");
+
 assert.throws(() => assertSafety(
   { apply: true }, { project_id: manifest.SOURCE_PROJECT }, { project_id: manifest.DESTINATION_PROJECT }
 ), /Confirmation requise/);
@@ -69,6 +78,9 @@ assert.doesNotMatch(syncSource, /functions\/node_modules\/firebase-admin/);
 assert.doesNotMatch(verifySource, /functions\/node_modules\/firebase-admin/);
 assert.match(syncSource, /if \(args\.apply && !protectedAdminUids\.length\)/);
 assert.match(syncSource, /if \(context\.apply\)/);
+assert.match(syncSource, /FLAT_ROOT_COLLECTIONS/);
+assert.match(syncSource, /--inventory-only/);
+assert.match(syncSource, /Durée totale/);
 assert.match(syncSource, /createRequire/);
 assert.match(verifySource, /createRequire/);
 
