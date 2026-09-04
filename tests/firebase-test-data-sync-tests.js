@@ -5,10 +5,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 const manifest = require("../tools/firebase-test-data-sync-manifest");
 const {
-  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, loadFirebaseAdmin,
-  parseArgs, shouldScanSubcollections, transformValue
+  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, isProtectedAdminProfile,
+  loadFirebaseAdmin, parseArgs, shouldScanSubcollections, transformValue
 } = require("../tools/sync-firebase-prod-to-test");
-const { loadFirebaseAdmin: loadVerifierFirebaseAdmin } = require("../tools/verify-firebase-test-data-sync");
+const {
+  isProtectedAdminProfile: isVerifierProtectedAdminProfile,
+  loadFirebaseAdmin: loadVerifierFirebaseAdmin
+} = require("../tools/verify-firebase-test-data-sync");
 
 assert.equal(manifest.SOURCE_PROJECT, "livepalmes");
 assert.equal(manifest.DESTINATION_PROJECT, "livepalmes-test");
@@ -34,6 +37,12 @@ assert.throws(() => parseArgs(["--inventory-only", "--apply"]), /incompatible/);
 assert.equal(shouldScanSubcollections({ path: "performances" }), false);
 assert.equal(shouldScanSubcollections({ path: "performanceImports/import-1/performances" }), true);
 assert.equal(formatDuration(3723000), "01:02:03");
+
+const literalAdmin = { status: "active", capabilities: { "admin.full": true } };
+assert.equal(isProtectedAdminProfile(literalAdmin), true);
+assert.equal(isVerifierProtectedAdminProfile(literalAdmin), true);
+assert.equal(isProtectedAdminProfile({ status: "active", capabilities: { admin: { full: true } } }), false);
+assert.equal(isProtectedAdminProfile({ status: "disabled", capabilities: { "admin.full": true } }), false);
 
 assert.throws(() => assertSafety(
   { apply: true }, { project_id: manifest.SOURCE_PROJECT }, { project_id: manifest.DESTINATION_PROJECT }
@@ -76,6 +85,10 @@ assert.doesNotMatch(syncSource, /deleteUser|createUser|updateUser|setCustomUserC
 assert.doesNotMatch(syncSource, /sourceDb\.(batch|doc|collection)\([^\n]+\)\.(set|create|update|delete)/);
 assert.doesNotMatch(syncSource, /functions\/node_modules\/firebase-admin/);
 assert.doesNotMatch(verifySource, /functions\/node_modules\/firebase-admin/);
+assert.doesNotMatch(syncSource, /where\("capabilities\.admin\.full"/);
+assert.doesNotMatch(verifySource, /where\("capabilities\.admin\.full"/);
+assert.match(syncSource, /capabilities\?\.\["admin\.full"\]/);
+assert.match(verifySource, /capabilities\?\.\["admin\.full"\]/);
 assert.match(syncSource, /if \(args\.apply && !protectedAdminUids\.length\)/);
 assert.match(syncSource, /if \(context\.apply\)/);
 assert.match(syncSource, /FLAT_ROOT_COLLECTIONS/);
