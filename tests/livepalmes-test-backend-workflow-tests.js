@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
@@ -47,7 +48,8 @@ for (const lot of ["access", "engagement-core", "performance"]) {
 }
 
 assert.match(staging, /relative !== "index\.js"/);
-assert.match(staging, /backend-index\.js/);
+assert.match(staging, /usesEmailSecrets/);
+assert.match(staging, /const defineSecret = \(name\) => name/);
 assert.match(staging, /exports\[name\] = backend\[name\]/);
 assert.match(staging, /environment\.name !== "test"/);
 assert.match(staging, /environment\.projectId !==/);
@@ -56,5 +58,33 @@ assert.match(bootstrap, /exports\.getCurrentAccessUser = onCall/);
 assert.match(bootstrap, /ENVIRONMENT\.name !== "test"/);
 assert.match(bootstrap, /ENVIRONMENT\.projectId !== "livepalmes-test"/);
 assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SMTP_/);
+
+const stagedRoot = path.join(rootDir, ".firebase-test-functions");
+const manifestPath = path.join(stagedRoot, "access-manifest.json");
+try {
+  childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), "access"], {
+    cwd: rootDir,
+    env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test" },
+    stdio: "pipe"
+  });
+  childProcess.execFileSync(path.join(rootDir, "functions", "node_modules", ".bin", "firebase-functions"), [], {
+    cwd: path.join(stagedRoot, "functions"),
+    env: {
+      ...process.env,
+      FUNCTIONS_MANIFEST_OUTPUT_PATH: manifestPath,
+      GCLOUD_PROJECT: "livepalmes-test",
+      GOOGLE_CLOUD_PROJECT: "livepalmes-test",
+      NODE_PATH: path.join(rootDir, "functions", "node_modules")
+    },
+    stdio: "pipe"
+  });
+  const manifest = fs.readFileSync(manifestPath, "utf8");
+  assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...LOTS.access].sort());
+  for (const secret of METADATA.email.secrets) {
+    assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste access expose encore ${secret}.`);
+  }
+} finally {
+  fs.rmSync(stagedRoot, { recursive: true, force: true });
+}
 
 console.log("Workflow backend Firebase TEST par lots : OK");
