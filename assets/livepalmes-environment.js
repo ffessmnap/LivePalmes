@@ -25,7 +25,7 @@
       name: "test",
       isTest: true,
       firebaseConfig: {
-        apiKey: "AIzaSyAzsfje_AT4ilwBf71mwmcmLaF5T_Ik5ts",
+        apiKey: "AIzaSyAFOL4tPzNm3NwDaEJ-tdNoBOer69TrrkY",
         authDomain: "livepalmes-test.firebaseapp.com",
         projectId: TEST_PROJECT_ID,
         storageBucket: "livepalmes-test.firebasestorage.app",
