@@ -2,6 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { createRequire } = require("node:module");
 
 const PROJECT_ID = "livepalmes-test";
 const CONFIRMATION = "livepalmes-test-access-bootstrap";
@@ -68,6 +69,14 @@ function validateProfileArgs(args) {
   }
 }
 
+function loadFirebaseAdmin() {
+  const functionsRequire = createRequire(path.join(__dirname, "..", "functions", "package.json"));
+  const { applicationDefault, initializeApp } = functionsRequire("firebase-admin/app");
+  const { getAuth } = functionsRequire("firebase-admin/auth");
+  const { getFirestore } = functionsRequire("firebase-admin/firestore");
+  return { applicationDefault, initializeApp, getAuth, getFirestore };
+}
+
 async function run(argv = process.argv.slice(2), env = process.env) {
   const args = parseArgs(argv);
   assertTestTarget(args, env);
@@ -75,9 +84,7 @@ async function run(argv = process.argv.slice(2), env = process.env) {
   const keyFile = credentialPath(args, env);
   process.env.GOOGLE_APPLICATION_CREDENTIALS = keyFile;
 
-  const { applicationDefault, initializeApp } = require("../functions/node_modules/firebase-admin/app");
-  const { getAuth } = require("../functions/node_modules/firebase-admin/auth");
-  const { getFirestore } = require("../functions/node_modules/firebase-admin/firestore");
+  const { applicationDefault, initializeApp, getAuth, getFirestore } = loadFirebaseAdmin();
   const app = initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -143,7 +150,7 @@ async function run(argv = process.argv.slice(2), env = process.env) {
   console.log(JSON.stringify({ ok: true, projectId: PROJECT_ID, uid: user.uid, capabilities: CAPABILITIES }, null, 2));
 }
 
-module.exports = { CAPABILITIES, CONFIRMATION, PROJECT_ID, accessDirectoryKeys, accessScopes, assertTestTarget, capabilitiesMap, parseArgs, validateProfileArgs };
+module.exports = { CAPABILITIES, CONFIRMATION, PROJECT_ID, accessDirectoryKeys, accessScopes, assertTestTarget, capabilitiesMap, loadFirebaseAdmin, parseArgs, validateProfileArgs };
 
 if (require.main === module) run().catch((error) => {
   console.error(error.message);
