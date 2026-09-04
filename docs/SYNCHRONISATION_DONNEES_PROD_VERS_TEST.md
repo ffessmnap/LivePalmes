@@ -2,21 +2,21 @@
 
 ## Frontière de sécurité
 
-La source identifiée dans `.firebaserc` et `functions/livepalmes-environment.js` est `livepalmes`. Elle est ouverte par l'outil uniquement sous l'identité nommée `prod-read-only-source`; le code source n'utilise sur cette instance que les lectures Firestore et Storage. La destination est codée en dur sur `livepalmes-test` et utilise une application Admin distincte.
+La source identifiée dans `.firebaserc` et `functions/livepalmes-environment.js` est `livepalmes`. Elle est ouverte par l'outil uniquement sous l'identité nommée `prod-read-only-source`; le code source n'utilise sur cette instance que des lectures Firestore et Storage. La destination est codée en dur sur `livepalmes-test` et utilise une application Admin distincte.
 
 Le dry-run est le mode par défaut. Une écriture exige simultanément `--apply`, la confirmation `copy-livepalmes-readonly-to-livepalmes-test`, l'attestation `email-and-schedulers-disabled-in-livepalmes-test`, un credential source dont `project_id=livepalmes` et un credential destination dont `project_id=livepalmes-test`. Les credentials doivent être distincts et le compte source doit recevoir uniquement des rôles de lecture.
 
-Firebase Authentication n'est jamais lu ni copié depuis PROD. Avant une application, l'outil recherche les profils TEST actifs portant `admin.full`, affiche uniquement leurs UID et refuse de continuer s'il n'en trouve aucun. Aucune suppression n'est effectuée : les comptes et données administratives TEST sont donc conservés.
+Firebase Authentication n'est jamais lu ni copié depuis PROD. Avant une application, l'outil lit les profils `users` TEST, retient uniquement ceux dont `status=active` et dont la clé littérale `capabilities["admin.full"]` vaut `true`, affiche uniquement leurs UID et refuse de continuer s'il n'en trouve aucun. Aucune suppression n'est effectuée : les comptes et données administratives TEST sont donc conservés.
 
 ## Manifeste Firestore exact
 
 | Décision | Collections ou ressources | Raison |
 |---|---|---|
-| **COPIER PROD → TEST** | `competitions` et ses sous-collections autorisées `results`, `liveData`, `history`, `performanceData` | Compétitions Direct, résultats, historique et records sportifs sources. Les sous-collections `secrets`, `security`, `consoleGrants`, `pinAttempts` et `public` sont exclues récursivement. |
+| **COPIER PROD → TEST** | `competitions` et ses sous-collections autorisées `results`, `liveData`, `history`, `performanceData`, `extras`, `races`, `summaries`, `resultArchives`, `historyArchives`, `resultPdfs`, `seriesPdfs`, `sessionResultsPdfs` | Compétitions Direct, résultats, historique, documents et records sportifs sources. |
 | **COPIER** | `engagementClubs`, `engagementConfigurations` | Référentiel et configuration métier des clubs/courses. |
 | **COPIER** | `engagementCalendarEvents`, `engagementCompetitions`, `engagementClubEntries` | Calendrier source, compétitions et engagements. |
 | **COPIER** | `engagementClubPeople`, `engagementClubSwimmers`, `engagementSwimmerLicenses`, `engagementSwimmerLicenseNumbers`, `engagementSwimmerAlerts` | Personnes, officiels, nageurs et contrôles de licence nécessaires à la recette sportive. |
-| **COPIER** | `performanceImports`, `performances`, `performanceChanges`, `performanceCorrections` | Sources et historique métier de la base de performances. Les jobs de publication ne sont pas copiés. |
+| **COPIER** | `performanceImports` et ses sous-collections `clubs`, `performances`; racines `performances`, `performanceChanges`, `performanceCorrections` | Sources et historique métier de la base de performances. Les jobs de publication ne sont pas copiés. |
 | **RECONSTRUIRE DANS TEST** | `engagementClubRosters`, `engagementClubPeopleRosters`, `engagementPublicDirectories` | Index dérivés des clubs, nageurs et personnes. |
 | **RECONSTRUIRE** | `engagementCompetitionCalendars`, `engagementCalendarEventCalendars` | Calendriers dérivés; utiliser `rebuildEngagementCompetitionCalendars` après copie. |
 | **RECONSTRUIRE** | `engagementCompetitionEntrySummaries`, `engagementClubCompetitionIndexes`, `engagementCompetitionStatisticsCache`, `engagementEntryTimeCaches` | Résumés, index et caches dérivés des engagements. |
@@ -33,9 +33,20 @@ Firebase Authentication n'est jamais lu ni copié depuis PROD. Avant une applica
 | **EXCLURE** | `engagementMailJobs`, `engagementMailRecipientShards`, `engagementMailRecipientIndexState` | Emails préparés, files et index de destinataires. |
 | **EXCLURE** | `engagementClosureQueue`, `performancePublicationJobs`, `performanceMigrationJobs`, `dtnQualificationJobs` | Queues et jobs susceptibles d'être repris par un trigger ou scheduler. |
 | **EXCLURE** | `engagementCompetitionDeletionRequests`, `engagementSwimmerChangeRequests`, `engagementSwimmerDeletionRequests` | Demandes opérationnelles en attente, à ne pas rejouer dans TEST. |
-| **EXCLURE PAR DÉFAUT** | Toute collection découverte mais absente de `COPY` | Une nouvelle collection doit faire l'objet d'une validation humaine et d'une modification versionnée du manifeste. |
+| **EXCLURE PAR DÉFAUT** | Toute ressource absente du manifeste explicite | Une nouvelle ressource doit faire l'objet d'une validation humaine et d'une modification versionnée du manifeste. |
 
-Les seules sous-collections autorisées sont versionnées séparément : `results`, `liveData`, `history`, `performanceData`, `extras`, `races`, `summaries`, `resultArchives`, `historyArchives`, `resultPdfs`, `seriesPdfs`, `sessionResultsPdfs`, ainsi que `clubs` et `performances` sous les imports. Toute autre sous-collection découverte est journalisée puis exclue.
+### Sous-collections et documents parents absents
+
+Firestore autorise l'existence d'une sous-collection même si le document parent n'existe pas. C'est notamment compatible avec une arborescence telle que `competitions/livepalmes-active/performanceData/records` alors que la collection racine `competitions` ne contient aucun document visible.
+
+L'outil ne dépend donc pas de `listCollections()` sur les documents parents :
+
+- pour `performanceImports`, les 29 documents d'import racine sont parcourus et les sous-collections directes `clubs` et `performances` sont copiées explicitement ;
+- pour `competitions`, chaque nom de sous-collection autorisé est parcouru par requête `collectionGroup`; seuls les documents dont le chemin correspond exactement à `competitions/{competitionId}/{sousCollection}/{documentId}` sont retenus ;
+- une sous-collection de compétition est ainsi copiée même si `competitions/{competitionId}` n'existe pas comme document ;
+- les autres chemins portant le même nom de collection ailleurs dans la base ne sont pas copiés.
+
+Cette stratégie évite aussi l'ancien coût de `listCollections()` document par document sur les centaines de milliers de performances.
 
 `importHistoricalPerformanceRows` et `migratePerformanceBaseNextChunk` ne sont pas nécessaires lorsque `performances` est copiée intégralement. Ils restent utiles uniquement pour reconstruire la base depuis les fichiers historiques à la place d'une copie Firestore. `publishPerformancePublicData` et `syncPublicRecordsData` ne sont exécutées qu'à l'étape de publication contrôlée.
 
@@ -70,14 +81,26 @@ Chaque valeur Firestore et chaque métadonnée Storage copiée remplace les quat
 
 1. Vérifier dans Cloud Functions et Cloud Scheduler TEST que les lots `email` et `schedulers` sont absents ou désactivés. Une écriture Firestore peut réveiller les triggers TEST déjà déployés; l'outil exige donc une attestation explicite, mais ne modifie lui-même aucune Function ni aucun scheduler.
 2. Créer manuellement deux identités : source avec `roles/datastore.viewer` et `roles/storage.objectViewer` limités aux buckets utiles; destination avec `roles/datastore.user` et `roles/storage.objectAdmin` limités aux deux buckets TEST. Ne créer aucune clé automatiquement.
-3. Vérifier que le super-admin TEST apparaît dans Firebase Auth et `users/{uid}` avec `status=active` et `capabilities.admin.full=true`.
-4. Exécuter le dry-run Firestore, puis le dry-run avec Storage, et conserver les compteurs.
-5. Faire valider humainement le manifeste, les volumes et les préfixes Storage.
-6. Exécuter l'application. L'outil fait des upserts idempotents par ID; il ne vide aucune collection TEST et ne supprime pas « RECETTE TEST - NE PAS UTILISER ».
-7. Reconstruire dans TEST, dans cet ordre : agrégats/rosters engagements, calendriers, index nageurs, TOP, DTN, puis publications publiques TEST.
-8. Exécuter la vérification post-sync et la recette manuelle. Renouveler les index/caches jusqu'à ce que chaque Function paginée indique sa fin.
+3. Vérifier que le super-admin TEST apparaît dans `users/{uid}` avec `status=active` et `capabilities["admin.full"]=true`.
+4. Exécuter `--inventory-only` pour les volumes racine et sous-collections connues.
+5. Exécuter le dry-run Firestore, puis le dry-run avec Storage, et conserver les compteurs.
+6. Faire valider humainement le manifeste, les volumes et les préfixes Storage.
+7. Exécuter l'application. L'outil fait des upserts idempotents par ID; il ne vide aucune collection TEST et ne supprime pas « RECETTE TEST - NE PAS UTILISER ».
+8. Reconstruire dans TEST, dans cet ordre : agrégats/rosters engagements, calendriers, index nageurs, TOP, DTN, puis publications publiques TEST.
+9. Exécuter la vérification post-sync et la recette manuelle. Renouveler les index/caches jusqu'à ce que chaque Function paginée indique sa fin.
 
 ## Commandes
+
+Inventaire rapide, sans lecture de chaque document et sans écriture :
+
+```bash
+node tools/sync-firebase-prod-to-test.js \
+  --source-credential /chemin/prod-readonly.json \
+  --destination-credential /chemin/test-writer.json \
+  --inventory-only
+```
+
+Pour les racines, l'inventaire utilise les agrégats `count()`. Pour les sous-collections d'import, il donne un compteur par import. Pour les sous-collections de compétition, il affiche le volume du `collectionGroup`; le dry-run détaillé filtre ensuite les chemins exacts `competitions/{id}/...`.
 
 Dry-run Firestore par défaut :
 
@@ -101,7 +124,7 @@ node tools/sync-firebase-prod-to-test.js \
   --automation-confirmation email-and-schedulers-disabled-in-livepalmes-test
 ```
 
-Le checkpoint `.firebase-test-data-sync-checkpoint.json` est mis à jour après chaque page appliquée. Relancer la même commande reprend les collections paginées. Pour un nouvel instantané complet, archiver ou supprimer manuellement ce checkpoint local; cela ne supprime aucune donnée Firebase.
+Le checkpoint `.firebase-test-data-sync-checkpoint.json` est mis à jour après chaque page appliquée, y compris pour les groupes de sous-collections de compétition. Relancer la même commande reprend les collections paginées. Pour un nouvel instantané complet, archiver ou supprimer manuellement ce checkpoint local; cela ne supprime aucune donnée Firebase.
 
 Vérification en lecture seule :
 
@@ -115,6 +138,6 @@ Le rapport donne les nombres PROD/TEST et l'écart pour clubs, nageurs, performa
 
 ## Effet exact sur TEST
 
-L'application remplace par upsert les documents portant le même chemin dans les 15 collections `COPY` et leurs sous-collections non exclues. Elle ajoute les documents absents. Elle ne supprime aucun document TEST, aucun compte Auth, aucun profil `users`, aucun grant, aucun audit et aucun job. Les objets des trois préfixes Storage sont remplacés lorsqu'ils portent le même nom, sans suppression des objets TEST supplémentaires.
+L'application remplace par upsert les documents portant le même chemin dans les 15 collections `COPY` et dans les sous-collections explicitement autorisées. Elle ajoute les documents absents, y compris sous un chemin de compétition dont le document parent n'existe pas. Elle ne supprime aucun document TEST, aucun compte Auth, aucun profil `users`, aucun grant, aucun audit et aucun job. Les objets des trois préfixes Storage sont remplacés lorsqu'ils portent le même nom, sans suppression des objets TEST supplémentaires.
 
-Les volumes ne peuvent pas être estimés statiquement depuis le dépôt. Le dry-run parcourt les collections et affiche un compteur par page et par chemin; il constitue l'estimation obligatoire avant toute application.
+Les volumes ne peuvent pas être estimés statiquement depuis le dépôt. `--inventory-only` donne les agrégats rapidement; le dry-run détaillé parcourt les ressources autorisées et affiche progression, temps écoulé et estimation restante avant toute application.

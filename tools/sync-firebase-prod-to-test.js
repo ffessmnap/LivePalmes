@@ -4,13 +4,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 const {
-  COPY, COPY_SUBCOLLECTIONS, DESTINATION_PROJECT, EXCLUDE, REFERENCE_REPLACEMENTS, SOURCE_PROJECT, STORAGE
+  COPY, COPY_SUBCOLLECTIONS_BY_ROOT, DESTINATION_PROJECT, EXCLUDE,
+  REFERENCE_REPLACEMENTS, SOURCE_PROJECT, STORAGE
 } = require("./firebase-test-data-sync-manifest");
 
 const APPLY_CONFIRMATION = "copy-livepalmes-readonly-to-livepalmes-test";
 const AUTOMATION_CONFIRMATION = "email-and-schedulers-disabled-in-livepalmes-test";
 const BATCH_SIZE = 200;
-const ROOTS_WITH_SUBCOLLECTIONS = new Set(["competitions", "performanceImports"]);
 
 function parseArgs(argv) {
   const out = {
@@ -51,9 +51,9 @@ function assertSafety(args, sourceCredential, destinationCredential) {
 function loadFirebaseAdmin() {
   const functionsRequire = createRequire(path.join(__dirname, "..", "functions", "package.json"));
   const { cert, initializeApp } = functionsRequire("firebase-admin/app");
-  const { getFirestore } = functionsRequire("firebase-admin/firestore");
+  const { FieldPath, getFirestore } = functionsRequire("firebase-admin/firestore");
   const { getStorage } = functionsRequire("firebase-admin/storage");
-  return { cert, initializeApp, getFirestore, getStorage };
+  return { cert, initializeApp, FieldPath, getFirestore, getStorage };
 }
 
 function isProtectedAdminProfile(data = {}) {
@@ -99,15 +99,16 @@ function formatDuration(ms) {
   return [hours, minutes, remainingSeconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
-function shouldScanSubcollections(sourceCollection) {
-  return ROOTS_WITH_SUBCOLLECTIONS.has(sourceCollection.path);
-}
-
 function progressText(pathName, processed, total, startedAt) {
   const elapsed = Date.now() - startedAt;
   const percent = total ? Math.min(100, (processed / total) * 100) : 100;
   const remaining = processed > 0 && processed < total ? elapsed * ((total - processed) / processed) : 0;
   return `${pathName}: ${processed}/${total} (${percent.toFixed(1)} %) | écoulé ${formatDuration(elapsed)} | restant estimé ${processed ? formatDuration(remaining) : "--"}`;
+}
+
+function isDirectCompetitionSubcollectionPath(documentPath, collectionName) {
+  const parts = String(documentPath || "").split("/").filter(Boolean);
+  return parts.length === 4 && parts[0] === "competitions" && parts[2] === collectionName;
 }
 
 async function copyCollection(sourceCollection, destinationCollection, context) {
@@ -143,15 +144,6 @@ async function copyCollection(sourceCollection, destinationCollection, context) 
       for (const doc of snapshot.docs) batch.set(destinationCollection.doc(doc.id), transformValue(doc.data(), context.destinationDb), { merge: false });
       await batch.commit();
     }
-    if (shouldScanSubcollections(sourceCollection)) {
-      for (const doc of snapshot.docs) {
-        const children = await doc.ref.listCollections();
-        for (const child of children) {
-          if (EXCLUDE.includes(child.id) || !COPY_SUBCOLLECTIONS.includes(child.id)) console.log(`[EXCLURE] ${child.path}`);
-          else await copyCollection(child, destinationCollection.doc(doc.id).collection(child.id), context);
-        }
-      }
-    }
     cursor = snapshot.docs.at(-1).id;
     context.checkpoint[sourceCollection.path] = cursor;
     if (context.apply) saveCheckpoint(context.checkpointFile, context.checkpoint);
@@ -163,6 +155,80 @@ async function copyCollection(sourceCollection, destinationCollection, context) 
     processed,
     duration: formatDuration(Date.now() - collectionStartedAt)
   };
+}
+
+async function copyPerformanceImportSubcollections(sourceDb, destinationDb, context) {
+  const imports = await sourceDb.collection("performanceImports").orderBy("__name__").get();
+  for (const importDoc of imports.docs) {
+    for (const collectionName of COPY_SUBCOLLECTIONS_BY_ROOT.performanceImports) {
+      await copyCollection(
+        importDoc.ref.collection(collectionName),
+        destinationDb.collection("performanceImports").doc(importDoc.id).collection(collectionName),
+        context
+      );
+    }
+  }
+}
+
+async function copyCompetitionSubcollectionGroup(sourceDb, destinationDb, collectionName, FieldPath, context) {
+  const checkpointKey = `collectionGroup:competitions:${collectionName}`;
+  let cursorPath = context.checkpoint[checkpointKey] || "";
+  const sourceGroup = sourceDb.collectionGroup(collectionName);
+  const destinationGroup = destinationDb.collectionGroup(collectionName);
+  const [sourceAggregate, destinationAggregate] = await Promise.all([
+    sourceGroup.count().get(), destinationGroup.count().get()
+  ]);
+  const sourceGroupTotal = sourceAggregate.data().count;
+  const destinationGroupBefore = destinationAggregate.data().count;
+  const startedAt = Date.now();
+  let scanned = 0;
+  let processed = 0;
+  console.log(`[INVENTAIRE] competitions/*/${collectionName}: groupe source=${sourceGroupTotal}; groupe destination=${destinationGroupBefore}`);
+
+  if (context.inventoryOnly) {
+    context.counts[`competitions/*/${collectionName}`] = {
+      sourceGroup: sourceGroupTotal,
+      destinationGroupBefore,
+      processed: 0,
+      inventoryOnly: true
+    };
+    return;
+  }
+
+  do {
+    let query = sourceGroup.orderBy(FieldPath.documentId()).limit(context.pageSize);
+    if (cursorPath) query = query.startAfter(sourceDb.doc(cursorPath));
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+    scanned += snapshot.size;
+    const accepted = snapshot.docs.filter((doc) => isDirectCompetitionSubcollectionPath(doc.ref.path, collectionName));
+    processed += accepted.length;
+    console.log(`[${context.apply ? "COPIER" : "DRY-RUN"}] competitions/*/${collectionName}: scannés ${scanned}/${sourceGroupTotal}; retenus ${processed} | écoulé ${formatDuration(Date.now() - startedAt)}`);
+    if (context.apply && accepted.length) {
+      const batch = destinationDb.batch();
+      for (const doc of accepted) batch.set(destinationDb.doc(doc.ref.path), transformValue(doc.data(), destinationDb), { merge: false });
+      await batch.commit();
+    }
+    cursorPath = snapshot.docs.at(-1).ref.path;
+    context.checkpoint[checkpointKey] = cursorPath;
+    if (context.apply) saveCheckpoint(context.checkpointFile, context.checkpoint);
+    if (snapshot.size < context.pageSize) break;
+  } while (true);
+
+  context.counts[`competitions/*/${collectionName}`] = {
+    sourceGroup: sourceGroupTotal,
+    destinationGroupBefore,
+    scanned,
+    processed,
+    duration: formatDuration(Date.now() - startedAt)
+  };
+}
+
+async function copyKnownSubcollections(sourceDb, destinationDb, FieldPath, context) {
+  await copyPerformanceImportSubcollections(sourceDb, destinationDb, context);
+  for (const collectionName of COPY_SUBCOLLECTIONS_BY_ROOT.competitions) {
+    await copyCompetitionSubcollectionGroup(sourceDb, destinationDb, collectionName, FieldPath, context);
+  }
 }
 
 async function copyStorage(sourceStorage, destinationStorage, context) {
@@ -203,7 +269,7 @@ async function main(argv = process.argv.slice(2)) {
   const sourceCredential = readCredential(args["source-credential"], SOURCE_PROJECT);
   const destinationCredential = readCredential(args["destination-credential"], DESTINATION_PROJECT);
   assertSafety(args, sourceCredential, destinationCredential);
-  const { cert, initializeApp, getFirestore, getStorage } = loadFirebaseAdmin();
+  const { cert, initializeApp, FieldPath, getFirestore, getStorage } = loadFirebaseAdmin();
   const sourceApp = initializeApp({ credential: cert(sourceCredential), projectId: SOURCE_PROJECT }, "prod-read-only-source");
   const destinationApp = initializeApp({ credential: cert(destinationCredential), projectId: DESTINATION_PROJECT }, "test-write-destination");
   const context = {
@@ -222,6 +288,7 @@ async function main(argv = process.argv.slice(2)) {
   const mode = args.inventoryOnly ? "INVENTAIRE" : args.apply ? "APPLY" : "DRY-RUN";
   console.log(`Mode=${mode}; source=${SOURCE_PROJECT} (lecture seule); destination=${DESTINATION_PROJECT}`);
   for (const name of COPY) await copyCollection(sourceDb.collection(name), context.destinationDb.collection(name), context);
+  await copyKnownSubcollections(sourceDb, context.destinationDb, FieldPath, context);
   if (args.includeStorage && !args.inventoryOnly) await copyStorage(getStorage(sourceApp), getStorage(destinationApp), context);
   const totalDuration = formatDuration(Date.now() - totalStartedAt);
   console.log(JSON.stringify({ mode: mode.toLowerCase(), totalDuration, counts: context.counts }, null, 2));
@@ -230,6 +297,7 @@ async function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, findProtectedAdminUids, formatDuration,
-  isProtectedAdminProfile, loadFirebaseAdmin, parseArgs, progressText, shouldScanSubcollections, transformValue
+  isDirectCompetitionSubcollectionPath, isProtectedAdminProfile, loadFirebaseAdmin, parseArgs,
+  progressText, transformValue
 };
 if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
