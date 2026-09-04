@@ -53,6 +53,7 @@ function runUnitTests() {
     "livepalmes-environment-tests.js",
     "livepalmes-result-regression-tests.js",
     "livepalmes-test-backend-workflow-tests.js",
+    "firebase-test-access-bootstrap-tests.js",
     "livepalmes-public-results-index-tests.js",
     "livepalmes-publication-tests.js",
     "livepalmes-public-pdf-storage-tests.js",
