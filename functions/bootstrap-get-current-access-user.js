@@ -13,7 +13,7 @@ const projectHint = String(
   ""
 ).trim();
 const ENVIRONMENT = livePalmesEnvironment(projectHint ? { GCLOUD_PROJECT: projectHint } : process.env);
-if (!ENVIRONMENT.isTest || ENVIRONMENT.projectId !== "livepalmes-test") {
+if (ENVIRONMENT.name !== "test" || ENVIRONMENT.projectId !== "livepalmes-test") {
   throw new Error("Le bootstrap getCurrentAccessUser est reserve au projet livepalmes-test.");
 }
 
