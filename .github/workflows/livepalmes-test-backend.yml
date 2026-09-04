@@ -1,11 +1,32 @@
-name: Deploiement backend Firebase TEST
+name: Deploiement backend Firebase TEST par lots
 
 on:
   workflow_dispatch:
     inputs:
-      confirmation:
-        description: Saisir exactement livepalmes-test pour autoriser le deploiement
+      lot:
+        description: Lot backend TEST à déployer
         required: true
+        type: choice
+        options:
+          - bootstrap
+          - access
+          - engagement-core
+          - performance
+          - publications
+          - email
+          - schedulers
+          - all-safe
+      confirmation:
+        description: Saisir exactement livepalmes-test
+        required: true
+        type: string
+      expected_commit:
+        description: SHA complet du commit main à déployer
+        required: true
+        type: string
+      scheduler_confirmation:
+        description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
+        required: false
         type: string
 
 permissions:
@@ -15,40 +36,61 @@ concurrency:
   group: livepalmes-test-backend
   cancel-in-progress: false
 
+env:
+  TARGET_FIREBASE_PROJECT: livepalmes-test
+  GCLOUD_PROJECT: livepalmes-test
+  GOOGLE_CLOUD_PROJECT: livepalmes-test
+  FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
+
 jobs:
   deployer-backend-test:
-    name: Verifier puis deployer le backend TEST
+    name: Vérifier puis déployer le lot ${{ inputs.lot }} en TEST
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      TARGET_FIREBASE_PROJECT: livepalmes-test
+    timeout-minutes: 60
+    environment: firebase-test
     steps:
-      - name: Verifier la confirmation et la cible
+      - name: Vérifier les confirmations, la branche et le commit
         shell: bash
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          SELECTED_LOT: ${{ inputs.lot }}
+          SCHEDULER_CONFIRMATION: ${{ inputs.scheduler_confirmation }}
         run: |
-          if [ "$CONFIRMATION" != "livepalmes-test" ]; then
-            echo "Confirmation invalide : aucun deploiement autorise."
-            exit 1
+          set -euo pipefail
+          test "$CONFIRMATION" = "livepalmes-test"
+          test "$TARGET_FIREBASE_PROJECT" = "livepalmes-test"
+          test "$GCLOUD_PROJECT" = "livepalmes-test"
+          test "$GOOGLE_CLOUD_PROJECT" = "livepalmes-test"
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = "refs/heads/main"
+          case "$SELECTED_LOT" in
+            bootstrap|access|engagement-core|performance|publications|email|schedulers|all-safe) ;;
+            *) echo "Lot interdit."; exit 1 ;;
+          esac
+          if [ "$SELECTED_LOT" = "schedulers" ]; then
+            test "$SCHEDULER_CONFIRMATION" = "livepalmes-test-schedulers-empty"
           fi
-          if [ "$TARGET_FIREBASE_PROJECT" != "livepalmes-test" ]; then
-            echo "Projet Firebase interdit : $TARGET_FIREBASE_PROJECT"
-            exit 1
-          fi
-          echo "Cible Firebase TEST confirmee : $TARGET_FIREBASE_PROJECT"
 
-      - name: Recuperer la version a deployer
+      - name: Récupérer exactement la version confirmée
         uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.expected_commit }}
           persist-credentials: false
+
+      - name: Contrôler le checkout
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
 
       - name: Lire la version Node.js du projet
         id: node-version
         shell: bash
-        run: |
-          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+        run: node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
 
       - name: Installer Node.js
         uses: actions/setup-node@v7
@@ -65,122 +107,164 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Installer les dependances
+      - name: Installer Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Installer les dépendances verrouillées
         run: |
           npm ci --prefix functions
           npm ci --prefix tests/firestore-rules
 
-      - name: Tester les regles Firestore
+      # Tous les tests précèdent strictement le premier déploiement réel.
+      - name: Tester les règles Firestore
         run: npm --prefix tests/firestore-rules test
 
-      - name: Verifier LivePalmes
-        run: node tools/verify-livepalmes.js
+      - name: Vérifier LivePalmes et la classification des Functions
+        run: |
+          node tools/verify-livepalmes.js
+          node tools/check-firebase-test-backend-lots.js
+          node tests/livepalmes-test-backend-workflow-tests.js
 
-      - name: Verifier le secret backend TEST
+      - name: Vérifier le secret GitHub backend TEST
         shell: bash
         env:
           FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         run: |
-          if [ -z "$FIREBASE_TEST_BACKEND_CREDENTIALS" ]; then
-            echo "Le secret FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND est absent : aucun deploiement effectue."
-            exit 1
-          fi
+          set -euo pipefail
+          test -n "$FIREBASE_TEST_BACKEND_CREDENTIALS"
 
-      - name: Preparer les credentials Firebase TEST
+      - name: Préparer et vérifier les credentials Firebase TEST
         shell: bash
         env:
           FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         run: |
+          set -euo pipefail
           umask 077
           printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$RUNNER_TEMP/livepalmes-test-backend.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/livepalmes-test-backend.json" >> "$GITHUB_ENV"
-
-      - name: Verifier la configuration Functions TEST
-        shell: bash
-        run: |
           node - <<'NODE'
           const fs = require("node:fs");
-          const { livePalmesEnvironment } = require("./functions/livepalmes-environment");
-          const expectedProject = process.env.TARGET_FIREBASE_PROJECT;
-          const environment = livePalmesEnvironment({ GCLOUD_PROJECT: expectedProject });
-          const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
-          if (expectedProject !== "livepalmes-test" || environment.projectId !== expectedProject || environment.name !== "test") {
-            throw new Error("La configuration Functions ne cible pas exclusivement Firebase TEST.");
+          const credentials = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/livepalmes-test-backend.json", "utf8"));
+          if (credentials.project_id !== "livepalmes-test") throw new Error("Le compte de service n'appartient pas à livepalmes-test.");
+          for (const value of [credentials.project_id, process.env.TARGET_FIREBASE_PROJECT, process.env.GCLOUD_PROJECT, process.env.GOOGLE_CLOUD_PROJECT]) {
+            if (value !== "livepalmes-test") throw new Error("Une cible différente de TEST a été détectée.");
           }
-          if (credentials.project_id !== expectedProject) {
-            throw new Error("Le compte de service backend n'appartient pas au projet Firebase TEST.");
-          }
-          console.log(`Configuration Functions confirmee pour ${environment.projectId}.`);
           NODE
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project=livepalmes-test >/dev/null
+          test "$(gcloud config get-value project 2>/dev/null)" = "livepalmes-test"
 
-      - name: Preparer le bootstrap Functions TEST isole
+      - name: Vérifier les API requises par le lot
+        shell: bash
+        env:
+          SELECTED_LOT: ${{ inputs.lot }}
+        run: |
+          set -euo pipefail
+          node - <<'NODE' > "$RUNNER_TEMP/required-apis.txt"
+          const { ALL_SAFE_LOTS, METADATA } = require("./tools/firebase-test-backend-lots");
+          const lot = process.env.SELECTED_LOT;
+          const lots = lot === "all-safe" ? ["bootstrap", ...ALL_SAFE_LOTS] : [lot];
+          console.log([...new Set(lots.flatMap(name => METADATA[name].apis))].join("\n"));
+          NODE
+          gcloud services list --project=livepalmes-test --enabled --format='value(config.name)' > "$RUNNER_TEMP/enabled-apis.txt"
+          while IFS= read -r api; do
+            grep -Fxq "$api" "$RUNNER_TEMP/enabled-apis.txt" || { echo "API TEST manquante: $api"; exit 1; }
+          done < "$RUNNER_TEMP/required-apis.txt"
+
+      - name: Vérifier les secrets TEST sans lire leurs valeurs
+        if: inputs.lot == 'email' || inputs.lot == 'schedulers'
         shell: bash
         run: |
+          set -euo pipefail
+          node -e 'require("./tools/firebase-test-backend-lots").METADATA.email.secrets.forEach(value => console.log(value))' |
+          while IFS= read -r secret; do
+            gcloud secrets describe "$secret" --project=livepalmes-test --format='value(name)' >/dev/null
+          done
+
+      - name: Vérifier que les files des schedulers TEST sont vides
+        if: inputs.lot == 'schedulers'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const { initializeApp } = require("./functions/node_modules/firebase-admin/app");
+          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+          initializeApp({ projectId: "livepalmes-test" });
+          const db = getFirestore();
+          Promise.all([
+            db.collection("engagementClosureQueue").limit(1).get(),
+            db.collection("performancePublicationJobs").where("status", "in", ["pending", "processing"]).limit(1).get()
+          ]).then(([closures, publications]) => {
+            if (!closures.empty || !publications.empty) throw new Error("Files TEST non vides : activation des schedulers refusée.");
+            console.log("Files TEST vérifiées vides.");
+          });
+          NODE
+
+      - name: Préparer le bootstrap Functions TEST isolé
+        if: inputs.lot == 'bootstrap'
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -rf .firebase-bootstrap
           mkdir -p .firebase-bootstrap/functions
-          cp functions/package.json .firebase-bootstrap/functions/package.json
-          cp functions/package-lock.json .firebase-bootstrap/functions/package-lock.json
+          cp functions/package.json functions/package-lock.json .firebase-bootstrap/functions/
           cp functions/bootstrap-get-current-access-user.js .firebase-bootstrap/functions/index.js
-          cp functions/livepalmes-environment.js .firebase-bootstrap/functions/livepalmes-environment.js
+          cp functions/livepalmes-environment.js .firebase-bootstrap/functions/
           npm ci --prefix .firebase-bootstrap/functions
-          cat > .firebase-bootstrap/firebase.json <<'JSON'
-          {
-            "functions": {
-              "source": "functions"
-            }
-          }
-          JSON
+          printf '%s\n' '{"functions":{"source":"functions","codebase":"default"}}' > .firebase-bootstrap/firebase.json
 
-      - name: Dry-run des index Firestore TEST
+      - name: Préparer le codebase Functions strictement limité au lot
+        if: inputs.lot != 'bootstrap'
+        shell: bash
+        env:
+          SELECTED_LOT: ${{ inputs.lot }}
+        run: |
+          set -euo pipefail
+          node tools/prepare-firebase-test-functions.js "$SELECTED_LOT" > "$RUNNER_TEMP/function-selector.txt"
+          npm ci --prefix .firebase-test-functions/functions
+
+      - name: Dry-run des index et règles bootstrap
+        if: inputs.lot == 'bootstrap' || inputs.lot == 'all-safe'
+        run: |
+          "$FIREBASE_CLI" deploy --project livepalmes-test --only firestore:indexes --dry-run --non-interactive
+          "$FIREBASE_CLI" deploy --project livepalmes-test --only firestore:rules --dry-run --non-interactive
+
+      - name: Dry-run du bootstrap minimal
+        if: inputs.lot == 'bootstrap'
         run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only firestore:indexes
-          --dry-run
-          --non-interactive
+          "$FIREBASE_CLI" deploy --config .firebase-bootstrap/firebase.json --project livepalmes-test
+          --only functions:getCurrentAccessUser --dry-run --non-interactive
 
-      - name: Dry-run des regles Firestore TEST
+      - name: Dry-run du lot Functions isolé
+        if: inputs.lot != 'bootstrap'
+        shell: bash
+        run: |
+          set -euo pipefail
+          selector="$(sed 's/[^,]*/functions:&/g' "$RUNNER_TEMP/function-selector.txt")"
+          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --dry-run --non-interactive
+
+      - name: Déployer les index puis règles Firestore TEST
+        if: inputs.lot == 'bootstrap' || inputs.lot == 'all-safe'
+        run: |
+          "$FIREBASE_CLI" deploy --project livepalmes-test --only firestore:indexes --non-interactive
+          "$FIREBASE_CLI" deploy --project livepalmes-test --only firestore:rules --non-interactive
+
+      - name: Déployer le bootstrap minimal TEST
+        if: inputs.lot == 'bootstrap'
         run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only firestore:rules
-          --dry-run
-          --non-interactive
+          "$FIREBASE_CLI" deploy --config .firebase-bootstrap/firebase.json --project livepalmes-test
+          --only functions:getCurrentAccessUser --non-interactive
 
-      - name: Dry-run de getCurrentAccessUser TEST
-        run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --config .firebase-bootstrap/firebase.json
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only functions:getCurrentAccessUser
-          --dry-run
-          --non-interactive
+      - name: Déployer uniquement les Functions du lot TEST
+        if: inputs.lot != 'bootstrap'
+        shell: bash
+        run: |
+          set -euo pipefail
+          selector="$(sed 's/[^,]*/functions:&/g' "$RUNNER_TEMP/function-selector.txt")"
+          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --non-interactive
 
-      - name: Deployer les index Firestore TEST
-        run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only firestore:indexes
-          --non-interactive
-
-      - name: Deployer les regles Firestore TEST
-        run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only firestore:rules
-          --non-interactive
-
-      - name: Deployer getCurrentAccessUser TEST
-        run: >-
-          ./tests/firestore-rules/node_modules/.bin/firebase deploy
-          --config .firebase-bootstrap/firebase.json
-          --project "$TARGET_FIREBASE_PROJECT"
-          --only functions:getCurrentAccessUser
-          --non-interactive
-
-      - name: Supprimer les credentials et fichiers temporaires
+      - name: Supprimer credentials et fichiers temporaires
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/livepalmes-test-backend.json"
-          rm -rf .firebase-bootstrap
+          rm -f "$RUNNER_TEMP/livepalmes-test-backend.json" "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/required-apis.txt" "$RUNNER_TEMP/enabled-apis.txt"
+          rm -rf .firebase-bootstrap .firebase-test-functions
