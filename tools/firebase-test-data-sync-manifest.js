@@ -11,10 +11,17 @@ const COPY = Object.freeze([
   "performanceCorrections"
 ]);
 
+const COPY_SUBCOLLECTIONS_BY_ROOT = Object.freeze({
+  competitions: Object.freeze([
+    "results", "liveData", "history", "performanceData", "extras", "races", "summaries",
+    "resultArchives", "historyArchives", "resultPdfs", "seriesPdfs", "sessionResultsPdfs"
+  ]),
+  performanceImports: Object.freeze(["clubs", "performances"])
+});
+
 const COPY_SUBCOLLECTIONS = Object.freeze([
-  "results", "liveData", "history", "performanceData", "extras", "races", "summaries",
-  "resultArchives", "historyArchives", "resultPdfs", "seriesPdfs", "sessionResultsPdfs",
-  "clubs", "performances"
+  ...COPY_SUBCOLLECTIONS_BY_ROOT.competitions,
+  ...COPY_SUBCOLLECTIONS_BY_ROOT.performanceImports
 ]);
 
 const REBUILD = Object.freeze([
@@ -63,6 +70,6 @@ const REFERENCE_REPLACEMENTS = Object.freeze([
 ]);
 
 module.exports = {
-  COPY, COPY_SUBCOLLECTIONS, DESTINATION_PROJECT, EXCLUDE, PRESERVE_TEST, REBUILD,
-  REFERENCE_REPLACEMENTS, SOURCE_PROJECT, STORAGE
+  COPY, COPY_SUBCOLLECTIONS, COPY_SUBCOLLECTIONS_BY_ROOT, DESTINATION_PROJECT, EXCLUDE,
+  PRESERVE_TEST, REBUILD, REFERENCE_REPLACEMENTS, SOURCE_PROJECT, STORAGE
 };
