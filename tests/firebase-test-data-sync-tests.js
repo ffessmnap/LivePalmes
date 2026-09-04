@@ -5,8 +5,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const manifest = require("../tools/firebase-test-data-sync-manifest");
 const {
-  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, isProtectedAdminProfile,
-  loadFirebaseAdmin, parseArgs, shouldScanSubcollections, transformValue
+  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration,
+  isDirectCompetitionSubcollectionPath, isProtectedAdminProfile,
+  loadFirebaseAdmin, parseArgs, transformValue
 } = require("../tools/sync-firebase-prod-to-test");
 const {
   isProtectedAdminProfile: isVerifierProtectedAdminProfile,
@@ -26,6 +27,9 @@ assert.ok(!manifest.COPY.some((name) => manifest.EXCLUDE.includes(name)));
 for (const name of ["results", "liveData", "history", "performanceData", "clubs", "performances"]) {
   assert.ok(manifest.COPY_SUBCOLLECTIONS.includes(name));
 }
+assert.deepEqual(manifest.COPY_SUBCOLLECTIONS_BY_ROOT.performanceImports, ["clubs", "performances"]);
+assert.ok(manifest.COPY_SUBCOLLECTIONS_BY_ROOT.competitions.includes("results"));
+assert.ok(manifest.COPY_SUBCOLLECTIONS_BY_ROOT.competitions.includes("performanceData"));
 
 const dryRun = parseArgs([]);
 assert.equal(dryRun.apply, false);
@@ -34,12 +38,13 @@ const inventory = parseArgs(["--inventory-only"]);
 assert.equal(inventory.apply, false);
 assert.equal(inventory.inventoryOnly, true);
 assert.throws(() => parseArgs(["--inventory-only", "--apply"]), /incompatible/);
-assert.equal(shouldScanSubcollections({ path: "competitions" }), true);
-assert.equal(shouldScanSubcollections({ path: "performanceImports" }), true);
-assert.equal(shouldScanSubcollections({ path: "performances" }), false);
-assert.equal(shouldScanSubcollections({ path: "engagementSwimmerLicenses" }), false);
-assert.equal(shouldScanSubcollections({ path: "performanceImports/import-1/performances" }), false);
 assert.equal(formatDuration(3723000), "01:02:03");
+
+assert.equal(isDirectCompetitionSubcollectionPath("competitions/livepalmes-active/performanceData/records", "performanceData"), true);
+assert.equal(isDirectCompetitionSubcollectionPath("competitions/c1/results/r1", "results"), true);
+assert.equal(isDirectCompetitionSubcollectionPath("other/c1/results/r1", "results"), false);
+assert.equal(isDirectCompetitionSubcollectionPath("competitions/c1/results/r1/history/h1", "results"), false);
+assert.equal(isDirectCompetitionSubcollectionPath("competitions/c1/results/r1", "history"), false);
 
 const literalAdmin = { status: "active", capabilities: { "admin.full": true } };
 assert.equal(isProtectedAdminProfile(literalAdmin), true);
@@ -77,6 +82,7 @@ const syncAdmin = loadFirebaseAdmin();
 assert.equal(typeof syncAdmin.initializeApp, "function");
 assert.equal(typeof syncAdmin.getFirestore, "function");
 assert.equal(typeof syncAdmin.getStorage, "function");
+assert.equal(typeof syncAdmin.FieldPath.documentId, "function");
 const verifierAdmin = loadVerifierFirebaseAdmin();
 assert.equal(typeof verifierAdmin.initializeApp, "function");
 assert.equal(typeof verifierAdmin.getFirestore, "function");
@@ -90,11 +96,14 @@ assert.doesNotMatch(syncSource, /functions\/node_modules\/firebase-admin/);
 assert.doesNotMatch(verifySource, /functions\/node_modules\/firebase-admin/);
 assert.doesNotMatch(syncSource, /where\("capabilities\.admin\.full"/);
 assert.doesNotMatch(verifySource, /where\("capabilities\.admin\.full"/);
+assert.doesNotMatch(syncSource, /\.listCollections\(/);
 assert.match(syncSource, /capabilities\?\.\["admin\.full"\]/);
 assert.match(verifySource, /capabilities\?\.\["admin\.full"\]/);
+assert.match(syncSource, /COPY_SUBCOLLECTIONS_BY_ROOT/);
+assert.match(syncSource, /collectionGroup\(collectionName\)/);
+assert.match(syncSource, /destinationDb\.doc\(doc\.ref\.path\)/);
 assert.match(syncSource, /if \(args\.apply && !protectedAdminUids\.length\)/);
 assert.match(syncSource, /if \(context\.apply\)/);
-assert.match(syncSource, /ROOTS_WITH_SUBCOLLECTIONS/);
 assert.match(syncSource, /--inventory-only/);
 assert.match(syncSource, /Durée totale/);
 assert.match(syncSource, /createRequire/);
