@@ -10,7 +10,7 @@ const {
 const APPLY_CONFIRMATION = "copy-livepalmes-readonly-to-livepalmes-test";
 const AUTOMATION_CONFIRMATION = "email-and-schedulers-disabled-in-livepalmes-test";
 const BATCH_SIZE = 200;
-const FLAT_ROOT_COLLECTIONS = new Set(["performances"]);
+const ROOTS_WITH_SUBCOLLECTIONS = new Set(["competitions", "performanceImports"]);
 
 function parseArgs(argv) {
   const out = {
@@ -56,6 +56,15 @@ function loadFirebaseAdmin() {
   return { cert, initializeApp, getFirestore, getStorage };
 }
 
+function isProtectedAdminProfile(data = {}) {
+  return data.status === "active" && data.capabilities?.["admin.full"] === true;
+}
+
+async function findProtectedAdminUids(db) {
+  const snapshot = await db.collection("users").get();
+  return snapshot.docs.filter((doc) => isProtectedAdminProfile(doc.data())).map((doc) => doc.id);
+}
+
 function transformValue(value, destinationDb) {
   if (typeof value === "string") {
     return REFERENCE_REPLACEMENTS.reduce((result, [from, to]) => result.split(from).join(to), value);
@@ -91,7 +100,7 @@ function formatDuration(ms) {
 }
 
 function shouldScanSubcollections(sourceCollection) {
-  return !FLAT_ROOT_COLLECTIONS.has(sourceCollection.path);
+  return ROOTS_WITH_SUBCOLLECTIONS.has(sourceCollection.path);
 }
 
 function progressText(pathName, processed, total, startedAt) {
@@ -207,8 +216,7 @@ async function main(argv = process.argv.slice(2)) {
     destinationDb: getFirestore(destinationApp)
   };
   const sourceDb = getFirestore(sourceApp);
-  const adminSnapshot = await context.destinationDb.collection("users").where("capabilities.admin.full", "==", true).get();
-  const protectedAdminUids = adminSnapshot.docs.filter((doc) => doc.data().status === "active").map((doc) => doc.id);
+  const protectedAdminUids = await findProtectedAdminUids(context.destinationDb);
   console.log(`Super-admins TEST protégés: ${protectedAdminUids.join(", ") || "AUCUN"}`);
   if (args.apply && !protectedAdminUids.length) throw new Error("Aucun super-admin TEST actif : synchronisation refusée.");
   const mode = args.inventoryOnly ? "INVENTAIRE" : args.apply ? "APPLY" : "DRY-RUN";
@@ -221,7 +229,7 @@ async function main(argv = process.argv.slice(2)) {
 }
 
 module.exports = {
-  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, formatDuration, loadFirebaseAdmin,
-  parseArgs, progressText, shouldScanSubcollections, transformValue
+  APPLY_CONFIRMATION, AUTOMATION_CONFIRMATION, assertSafety, findProtectedAdminUids, formatDuration,
+  isProtectedAdminProfile, loadFirebaseAdmin, parseArgs, progressText, shouldScanSubcollections, transformValue
 };
 if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
