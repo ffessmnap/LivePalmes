@@ -5,7 +5,14 @@ const { getFirestore } = require("firebase-admin/firestore");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { livePalmesEnvironment } = require("./livepalmes-environment");
 
-const ENVIRONMENT = livePalmesEnvironment();
+const projectHint = String(
+  process.env.GCLOUD_PROJECT ||
+  process.env.GCP_PROJECT ||
+  process.env.GOOGLE_CLOUD_PROJECT ||
+  process.env.TARGET_FIREBASE_PROJECT ||
+  ""
+).trim();
+const ENVIRONMENT = livePalmesEnvironment(projectHint ? { GCLOUD_PROJECT: projectHint } : process.env);
 if (!ENVIRONMENT.isTest || ENVIRONMENT.projectId !== "livepalmes-test") {
   throw new Error("Le bootstrap getCurrentAccessUser est reserve au projet livepalmes-test.");
 }
