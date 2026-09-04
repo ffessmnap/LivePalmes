@@ -255,7 +255,7 @@ jobs:
         if: inputs.lot == 'bootstrap'
         run: >-
           "$FIREBASE_CLI" deploy --config .firebase-bootstrap/firebase.json --project livepalmes-test
-          --only functions:getCurrentAccessUser --non-interactive
+          --only functions:getCurrentAccessUser --non-interactive --force
 
       - name: Déployer uniquement les Functions du lot TEST
         if: inputs.lot != 'bootstrap'
@@ -263,7 +263,7 @@ jobs:
         run: |
           set -euo pipefail
           selector="$(sed 's/[^,]*/functions:&/g' "$RUNNER_TEMP/function-selector.txt")"
-          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --non-interactive
+          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --non-interactive --force
 
       - name: Supprimer credentials et fichiers temporaires
         if: always()
