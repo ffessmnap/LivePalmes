@@ -140,17 +140,19 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$RUNNER_TEMP/livepalmes-test-backend.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/livepalmes-test-backend.json" >> "$GITHUB_ENV"
+          credentials_file="$RUNNER_TEMP/livepalmes-test-backend.json"
+          printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$credentials_file"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
           node - <<'NODE'
           const fs = require("node:fs");
-          const credentials = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/livepalmes-test-backend.json", "utf8"));
+          const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
           if (credentials.project_id !== "livepalmes-test") throw new Error("Le compte de service n'appartient pas à livepalmes-test.");
           for (const value of [credentials.project_id, process.env.TARGET_FIREBASE_PROJECT, process.env.GCLOUD_PROJECT, process.env.GOOGLE_CLOUD_PROJECT]) {
             if (value !== "livepalmes-test") throw new Error("Une cible différente de TEST a été détectée.");
           }
           NODE
-          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project=livepalmes-test >/dev/null
+          gcloud auth activate-service-account --key-file="$credentials_file" --project=livepalmes-test >/dev/null
           test "$(gcloud config get-value project 2>/dev/null)" = "livepalmes-test"
 
       - name: Vérifier les API requises par le lot
