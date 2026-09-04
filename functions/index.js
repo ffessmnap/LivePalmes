@@ -36,6 +36,7 @@ const {
   shouldPublishRecordsManifest
 } = require("./public-records-data");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
+const { livePalmesEnvironment } = require("./livepalmes-environment");
 const {
   engagementAccessAcknowledgement,
   engagementAccessRejection,
@@ -96,6 +97,7 @@ const {
 } = require("./public-calendar");
 
 initializeApp();
+const ENVIRONMENT = livePalmesEnvironment();
 const auth = getAuth();
 const db = getFirestore();
 const storage = getStorage();
@@ -123,7 +125,7 @@ const ENGAGEMENT_NOTIFICATION_MAIL_SECRETS = [
   LIVEPALMES_NOTIFICATION_LINK_SECRET
 ];
 const COMPETITION_IDS = new Set(["livepalmes-active", "livepalmes-test"]);
-const ADMIN_UIDS = new Set(["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
+const ADMIN_UIDS = new Set(ENVIRONMENT.legacyAdminUids);
 const FUNCTIONS_EMULATOR_ACTIVE = process.env.FUNCTIONS_EMULATOR === "true";
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const ROLE_SET = new Set(ROLES);
@@ -217,8 +219,8 @@ const AUDIT_PAGE_LIMIT = 50;
 const AUDIT_ACTOR_RESOLUTION_LIMIT = 25;
 const AUDIT_COMPETITION_RESOLUTION_LIMIT = 25;
 const AUDIT_PERSON_RESOLUTION_LIMIT = 25;
-const PUBLIC_PERFORMANCE_BUCKET = "livepalmes-public-data-718081132564";
-const LIVEPALMES_STORAGE_BUCKET = "livepalmes.firebasestorage.app";
+const PUBLIC_PERFORMANCE_BUCKET = ENVIRONMENT.publicBucket;
+const LIVEPALMES_STORAGE_BUCKET = ENVIRONMENT.firebaseStorageBucket;
 const ENGAGEMENT_CLOSURE_BATCH_LIMIT = 5;
 const PUBLIC_ADDITIONAL_PERFORMANCE_PATH = "performance-public/additional-data.json";
 const PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN = "4a78ebdf-07b8-4f05-8d8c-0c6231a7ad5d";
@@ -307,7 +309,7 @@ const PERFORMANCE_SWIMMER_PAGE_SIZE = 500;
 const ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS = 5000;
 const ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE = 250;
 const ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT = 3;
-const PERFORMANCE_PUBLIC_DATA_URL = "https://livepalmes.web.app/performances/public/data";
+const PERFORMANCE_PUBLIC_DATA_URL = `${ENVIRONMENT.hostingOrigin}/performances/public/data`;
 const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
 const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
 
@@ -489,7 +491,7 @@ function validCompetitionNotificationPreferenceToken(uid = "", token = "") {
 function competitionNotificationPreferenceUrl(uid = "") {
   const token = competitionNotificationPreferenceToken(uid);
   if (!token) return "";
-  return `https://livepalmes.web.app/notifications.html?uid=${encodeURIComponent(cleanText(uid))}&token=${encodeURIComponent(token)}`;
+  return `${ENVIRONMENT.hostingOrigin}/notifications.html?uid=${encodeURIComponent(cleanText(uid))}&token=${encodeURIComponent(token)}`;
 }
 
 const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubReference.clubs : [])
@@ -8515,7 +8517,7 @@ function engagementCompetitionDocumentMailText(competition = {}, documents = [])
     "",
     "Consultez les documents depuis la fiche de la compétition dans le portail LivePalmes :",
     "",
-    "https://livepalmes.web.app/portail.html#club-competitions",
+    `${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions`,
     "",
     "Sportivement,",
     "Commission Nationale Nage avec Palmes - FFESSM"
@@ -8536,7 +8538,7 @@ function engagementCompetitionDocumentMailHtml(competition = {}, documents = [])
     `<strong>Date :</strong> ${escapeMailHtml(date)}<br>`,
     `<strong>Lieu :</strong> ${escapeMailHtml(competition.location || "-")}</p>`,
     `<ul>${documentItems}</ul>`,
-    '<p><a href="https://livepalmes.web.app/portail.html#club-competitions">Accéder à la compétition dans le portail LivePalmes</a></p>',
+    `<p><a href="${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions">Accéder à la compétition dans le portail LivePalmes</a></p>`,
     "<p>Sportivement,<br>Commission Nationale Nage avec Palmes - FFESSM</p>"
   ].join("");
 }
@@ -8567,7 +8569,7 @@ function engagementOpeningMailText(competition = {}) {
     "",
     "Pour saisir et suivre les engagements de votre club, connectez-vous au portail LivePalmes :",
     "",
-    "https://livepalmes.web.app/portail.html#club-competitions",
+    `${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions`,
     "",
     `Merci de finaliser et de vérifier les engagements de votre club au plus tard le ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
     "",
@@ -8731,13 +8733,13 @@ function engagementMailWithNotificationPreferenceFooter(text = "", html = "", ui
     "Vous pouvez gérer ou désactiver les notifications email LivePalmes en utilisant ce lien :",
     preferenceUrl,
     "ou depuis la rubrique Mon compte du portail LivePalmes :",
-    "https://livepalmes.web.app/portail.html#mon-compte"
+    `${ENVIRONMENT.hostingOrigin}/portail.html#mon-compte`
   ].join("\n");
   const htmlBody = html || livePalmesMailHtml(text);
   const footerHtml = [
     '<hr style="margin:24px 0;border:0;border-top:1px solid #d8e0e5">',
     '<p style="color:#66717a;font-family:Arial,sans-serif;font-size:13px;line-height:1.5">',
-    `Vous pouvez gérer ou désactiver les notifications email LivePalmes en cliquant sur <a href="${escapeMailHtml(preferenceUrl)}">ce lien</a>, ou depuis la rubrique <a href="https://livepalmes.web.app/portail.html#mon-compte">« Mon compte »</a> du portail LivePalmes.</p>`
+    `Vous pouvez gérer ou désactiver les notifications email LivePalmes en cliquant sur <a href="${escapeMailHtml(preferenceUrl)}">ce lien</a>, ou depuis la rubrique <a href="${ENVIRONMENT.hostingOrigin}/portail.html#mon-compte">« Mon compte »</a> du portail LivePalmes.</p>`
   ].join("");
   return { text: `${text}${footerText}`, html: `${htmlBody}${footerHtml}` };
 }

@@ -2,7 +2,7 @@
   const COMPETITION_ID = "livepalmes-active";
   const COLLECTION = "performanceData";
   const DOCUMENT = "records";
-  const PUBLIC_PERFORMANCE_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";
+  const PUBLIC_PERFORMANCE_BASE = window.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore");
 
   function ensureFirebase() {
     const firebase = global.firebase;

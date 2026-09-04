@@ -1,14 +1,7 @@
 (function () {
   "use strict";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
-    authDomain: "livepalmes.firebaseapp.com",
-    projectId: "livepalmes",
-    storageBucket: "livepalmes.firebasestorage.app",
-    messagingSenderId: "718081132564",
-    appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
-  };
+  const firebaseConfig = window.LivePalmesEnvironment.firebaseConfig;
   const elements = {
     loading: document.querySelector("#passwordResetLoading"),
     formPanel: document.querySelector("#passwordResetFormPanel"),

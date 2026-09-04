@@ -623,8 +623,11 @@ test("admin.full et UID historique : opérations administratives autorisées san
   }));
   await assertSucceeds(setDoc(competitionDoc(adminDb(), "secrets", "test-secret"), { enabled: true }));
 
-  const legacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2").firestore();
-  await assertSucceeds(setDoc(competitionDoc(legacy, "secrets", "legacy-secret"), { enabled: true }));
+  const productionLegacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2", { aud: "livepalmes" }).firestore();
+  await assertSucceeds(setDoc(competitionDoc(productionLegacy, "secrets", "legacy-secret"), { enabled: true }));
+
+  const testLegacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2", { aud: "livepalmes-test" }).firestore();
+  await assertFails(setDoc(competitionDoc(testLegacy, "secrets", "test-legacy-secret"), { enabled: true }));
 });
 
 test("garde-fou statique : les doubles allow permissifs audités ne réapparaissent pas", () => {

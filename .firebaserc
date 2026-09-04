@@ -1,5 +1,23 @@
 {
   "projects": {
-    "default": "livepalmes"
+    "default": "livepalmes",
+    "production": "livepalmes",
+    "test": "livepalmes-test"
+  },
+  "targets": {
+    "livepalmes": {
+      "hosting": {
+        "app": [
+          "livepalmes"
+        ]
+      }
+    },
+    "livepalmes-test": {
+      "hosting": {
+        "app": [
+          "livepalmes-test"
+        ]
+      }
+    }
   }
 }
