@@ -113,6 +113,24 @@ jobs:
           console.log(`Configuration Functions confirmee pour ${environment.projectId}.`);
           NODE
 
+      - name: Preparer le bootstrap Functions TEST isole
+        shell: bash
+        run: |
+          rm -rf .firebase-bootstrap
+          mkdir -p .firebase-bootstrap/functions
+          cp functions/package.json .firebase-bootstrap/functions/package.json
+          cp functions/package-lock.json .firebase-bootstrap/functions/package-lock.json
+          cp functions/bootstrap-get-current-access-user.js .firebase-bootstrap/functions/index.js
+          cp functions/livepalmes-environment.js .firebase-bootstrap/functions/livepalmes-environment.js
+          npm ci --prefix .firebase-bootstrap/functions
+          cat > .firebase-bootstrap/firebase.json <<'JSON'
+          {
+            "functions": {
+              "source": "functions"
+            }
+          }
+          JSON
+
       - name: Dry-run des index Firestore TEST
         run: >-
           ./tests/firestore-rules/node_modules/.bin/firebase deploy
@@ -132,6 +150,7 @@ jobs:
       - name: Dry-run de getCurrentAccessUser TEST
         run: >-
           ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --config .firebase-bootstrap/firebase.json
           --project "$TARGET_FIREBASE_PROJECT"
           --only functions:getCurrentAccessUser
           --dry-run
@@ -154,11 +173,14 @@ jobs:
       - name: Deployer getCurrentAccessUser TEST
         run: >-
           ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --config .firebase-bootstrap/firebase.json
           --project "$TARGET_FIREBASE_PROJECT"
           --only functions:getCurrentAccessUser
           --non-interactive
 
-      - name: Supprimer les credentials temporaires
+      - name: Supprimer les credentials et fichiers temporaires
         if: always()
         shell: bash
-        run: rm -f "$RUNNER_TEMP/livepalmes-test-backend.json"
+        run: |
+          rm -f "$RUNNER_TEMP/livepalmes-test-backend.json"
+          rm -rf .firebase-bootstrap
