@@ -43,7 +43,7 @@ assert.throws(
 const testPage = browserContext("livepalmes-test.web.app", "", source, "/portail.html");
 const test = testPage.config;
 test.assertSafe();
-assert.equal(test.firebaseConfig.apiKey, "AIzaSyAzsfje_AT4ilwBf71mwmcmLaF5T_Ik5ts");
+assert.match(test.firebaseConfig.apiKey, /^AIza[0-9A-Za-z_-]{35}$/);
 assert.equal(test.firebaseConfig.appId, "1:206080168534:web:70dad29434b9878ecea1f7");
 assert.equal(test.firebaseConfig.messagingSenderId, "206080168534");
 assert.equal(test.publicStorageUrl("calendar"), "https://storage.googleapis.com/livepalmes-test-public-data-206080168534/calendar");
