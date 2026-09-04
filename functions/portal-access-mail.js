@@ -3,6 +3,8 @@ function cleanMailText(value) {
 }
 
 const MAIL_SIGNATURE = "Commission Nationale Nage avec Palmes - FFESSM";
+const { livePalmesEnvironment } = require("./livepalmes-environment");
+const PORTAL_ORIGIN = livePalmesEnvironment().hostingOrigin;
 
 function mailSignatureLines() {
   return ["Sportivement,", MAIL_SIGNATURE];
@@ -73,7 +75,7 @@ function engagementExistingAccountNotice(profile = {}) {
     ]
     : [
       "Si vous avez oublié votre mot de passe, utilisez le lien « Mot de passe oublié » depuis la page de connexion :",
-      "https://livepalmes.web.app/portail.html",
+      `${PORTAL_ORIGIN}/portail.html`,
       "",
       "Si vous avez changé de club ou si ces informations sont incorrectes, écrivez à livepalmes@nap-ffessm.fr en précisant vos nom, prénom, numéro de licence et nouveau club."
     ];
@@ -130,7 +132,7 @@ function engagementAccessAdminNotification(payload = {}) {
       ] : []),
       "",
       "Vous pouvez consulter et traiter cette demande depuis le portail LivePalmes :",
-      "https://livepalmes.web.app/portail.html#gestion-demandes-acces",
+      `${PORTAL_ORIGIN}/portail.html#gestion-demandes-acces`,
       "",
       ...mailSignatureLines()
     ].join("\n")

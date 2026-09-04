@@ -1,12 +1,5 @@
 const FIRESTORE_COMPETITION_ID = "livepalmes-active";
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
-  authDomain: "livepalmes.firebaseapp.com",
-  projectId: "livepalmes",
-  storageBucket: "livepalmes.firebasestorage.app",
-  messagingSenderId: "718081132564",
-  appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
-};
+const FIREBASE_CONFIG = window.LivePalmesEnvironment.firebaseConfig;
 
 const PDFJS_WORKER_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 

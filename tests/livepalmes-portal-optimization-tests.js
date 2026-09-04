@@ -331,6 +331,7 @@ const openingMailEnd = functions.indexOf("function engagementMailJobItemFromData
 const openingMailFunctions = functions.slice(openingMailStart, openingMailEnd);
 const openingMailSandbox = {};
 vm.runInNewContext(`
+  const ENVIRONMENT = { hostingOrigin: "https://livepalmes.web.app" };
   const engagementPdfMoney = (value) => value + " €";
   const engagementPdfFeeTotal = () => 12;
   const engagementPdfFormatDate = (value) => value;
@@ -639,7 +640,7 @@ assert.ok(functions.includes('const source = id.startsWith("import:") ? "livepal
 assert.ok(functions.includes("return hydratePerformanceBaseRows(pageRows);"));
 assert.ok(functions.includes("return hydratePerformanceBaseRows(publicRows);"));
 assert.ok(portal.includes("Number(existing.performanceCount || 0) > Number(swimmer.performanceCount || 0)"));
-assert.ok(portal.includes('const PERFORMANCE_PUBLIC_SEARCH_BASE = "https://storage.googleapis.com/livepalmes-public-data-718081132564/performance-public-firestore";'));
+assert.ok(portal.includes('global.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore")'));
 assert.ok(portal.includes('const ENGAGEMENT_ADMIN_PUBLIC_SWIMMER_SEARCH_VERSION = "20260812-national-swimmers-firestore-2";'));
 assert.ok(functions.includes('.slice(0, Math.max(1, Math.min(10, Number(limit || 10))))'));
 assert.ok(functions.includes("exports.saveEngagementClubIndividualEntries"));
@@ -2026,7 +2027,7 @@ assert.ok(functions.includes("cancelled_notifications_disabled"));
 assert.ok(functions.includes("batch.set(userRef, preferencePatch, { merge: true })"));
 assert.ok(functions.includes("recipients: { [recipientKey]: value }"));
 assert.ok(functions.includes("gérer ou désactiver les notifications email LivePalmes en cliquant sur"));
-assert.ok(functions.includes('href="https://livepalmes.web.app/portail.html#mon-compte"'));
+assert.ok(functions.includes('${ENVIRONMENT.hostingOrigin}/portail.html#mon-compte'));
 assert.equal(functions.includes("Les messages indispensables concernant votre compte et sa sécurité resteront envoyés.</p>"), false);
 assert.ok(portalHtml.includes('id="adminAccountCompetitionNotifications"'));
 assert.ok(portalHtml.includes('role="switch" aria-checked="true"'));
