@@ -49,6 +49,14 @@ function capabilitiesMap() {
   return Object.fromEntries(CAPABILITIES.map((capability) => [capability, true]));
 }
 
+function capabilityMapsEqual(actual, expected = capabilitiesMap()) {
+  if (!actual || typeof actual !== "object" || Array.isArray(actual)) return false;
+  const actualKeys = Object.keys(actual).sort();
+  const expectedKeys = Object.keys(expected).sort();
+  return actualKeys.length === expectedKeys.length &&
+    actualKeys.every((key, index) => key === expectedKeys[index] && actual[key] === expected[key]);
+}
+
 function accessScopes(args) {
   return Object.fromEntries(CAPABILITIES.map((capability) => {
     if (capability === "engagements.club.manage") return [capability, { scopeType: "club", scopeId: args["club-id"] }];
@@ -143,14 +151,14 @@ async function run(argv = process.argv.slice(2), env = process.env) {
   }
 
   const [savedUser, savedProfile] = await Promise.all([auth.getUser(user.uid), db.collection("users").doc(user.uid).get()]);
-  if (!savedProfile.exists || JSON.stringify(savedProfile.data().capabilities) !== JSON.stringify(capabilitiesMap()) ||
-      JSON.stringify(savedUser.customClaims?.livepalmesCapabilities) !== JSON.stringify(capabilitiesMap())) {
+  if (!savedProfile.exists || !capabilityMapsEqual(savedProfile.data().capabilities) ||
+      !capabilityMapsEqual(savedUser.customClaims?.livepalmesCapabilities)) {
     throw new Error("Vérification finale de cohérence refusée.");
   }
   console.log(JSON.stringify({ ok: true, projectId: PROJECT_ID, uid: user.uid, capabilities: CAPABILITIES }, null, 2));
 }
 
-module.exports = { CAPABILITIES, CONFIRMATION, PROJECT_ID, accessDirectoryKeys, accessScopes, assertTestTarget, capabilitiesMap, loadFirebaseAdmin, parseArgs, validateProfileArgs };
+module.exports = { CAPABILITIES, CONFIRMATION, PROJECT_ID, accessDirectoryKeys, accessScopes, assertTestTarget, capabilitiesMap, capabilityMapsEqual, loadFirebaseAdmin, parseArgs, validateProfileArgs };
 
 if (require.main === module) run().catch((error) => {
   console.error(error.message);
