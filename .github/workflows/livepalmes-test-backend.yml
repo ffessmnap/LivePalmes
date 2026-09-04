@@ -1,0 +1,164 @@
+name: Deploiement backend Firebase TEST
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Saisir exactement livepalmes-test pour autoriser le deploiement
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+
+jobs:
+  deployer-backend-test:
+    name: Verifier puis deployer le backend TEST
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+    steps:
+      - name: Verifier la confirmation et la cible
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "livepalmes-test" ]; then
+            echo "Confirmation invalide : aucun deploiement autorise."
+            exit 1
+          fi
+          if [ "$TARGET_FIREBASE_PROJECT" != "livepalmes-test" ]; then
+            echo "Projet Firebase interdit : $TARGET_FIREBASE_PROJECT"
+            exit 1
+          fi
+          echo "Cible Firebase TEST confirmee : $TARGET_FIREBASE_PROJECT"
+
+      - name: Recuperer la version a deployer
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Lire la version Node.js du projet
+        id: node-version
+        shell: bash
+        run: |
+          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: npm
+          cache-dependency-path: |
+            functions/package-lock.json
+            tests/firestore-rules/package-lock.json
+
+      - name: Installer Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Installer les dependances
+        run: |
+          npm ci --prefix functions
+          npm ci --prefix tests/firestore-rules
+
+      - name: Tester les regles Firestore
+        run: npm --prefix tests/firestore-rules test
+
+      - name: Verifier LivePalmes
+        run: node tools/verify-livepalmes.js
+
+      - name: Verifier le secret backend TEST
+        shell: bash
+        env:
+          FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        run: |
+          if [ -z "$FIREBASE_TEST_BACKEND_CREDENTIALS" ]; then
+            echo "Le secret FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND est absent : aucun deploiement effectue."
+            exit 1
+          fi
+
+      - name: Preparer les credentials Firebase TEST
+        shell: bash
+        env:
+          FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        run: |
+          umask 077
+          printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$RUNNER_TEMP/livepalmes-test-backend.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/livepalmes-test-backend.json" >> "$GITHUB_ENV"
+
+      - name: Verifier la configuration Functions TEST
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const { livePalmesEnvironment } = require("./functions/livepalmes-environment");
+          const expectedProject = process.env.TARGET_FIREBASE_PROJECT;
+          const environment = livePalmesEnvironment({ GCLOUD_PROJECT: expectedProject });
+          const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
+          if (expectedProject !== "livepalmes-test" || environment.projectId !== expectedProject || environment.name !== "test") {
+            throw new Error("La configuration Functions ne cible pas exclusivement Firebase TEST.");
+          }
+          if (credentials.project_id !== expectedProject) {
+            throw new Error("Le compte de service backend n'appartient pas au projet Firebase TEST.");
+          }
+          console.log(`Configuration Functions confirmee pour ${environment.projectId}.`);
+          NODE
+
+      - name: Dry-run des index Firestore TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only firestore:indexes
+          --dry-run
+          --non-interactive
+
+      - name: Dry-run des regles Firestore TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only firestore:rules
+          --dry-run
+          --non-interactive
+
+      - name: Dry-run de getCurrentAccessUser TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only functions:getCurrentAccessUser
+          --dry-run
+          --non-interactive
+
+      - name: Deployer les index Firestore TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only firestore:indexes
+          --non-interactive
+
+      - name: Deployer les regles Firestore TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only firestore:rules
+          --non-interactive
+
+      - name: Deployer getCurrentAccessUser TEST
+        run: >-
+          ./tests/firestore-rules/node_modules/.bin/firebase deploy
+          --project "$TARGET_FIREBASE_PROJECT"
+          --only functions:getCurrentAccessUser
+          --non-interactive
+
+      - name: Supprimer les credentials temporaires
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/livepalmes-test-backend.json"
