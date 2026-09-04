@@ -46,6 +46,7 @@ if (!usesEmailSecrets) {
 }
 
 fs.writeFileSync(path.join(destination, "backend-index.js"), backendSource);
+fs.writeFileSync(path.join(destination, ".env.livepalmes-test"), "LIVEPALMES_ENFORCE_APP_CHECK=false\n");
 fs.writeFileSync(path.join(destination, "index.js"), `"use strict";\n\n` +
   `const { livePalmesEnvironment } = require("./livepalmes-environment");\n` +
   `const environment = livePalmesEnvironment(process.env);\n` +
