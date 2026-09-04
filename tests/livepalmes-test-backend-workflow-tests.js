@@ -2,8 +2,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const workflowPath = path.join(__dirname, "..", ".github", "workflows", "livepalmes-test-backend.yml");
+const rootDir = path.join(__dirname, "..");
+const workflowPath = path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml");
+const bootstrapPath = path.join(rootDir, "functions", "bootstrap-get-current-access-user.js");
 const workflow = fs.readFileSync(workflowPath, "utf8");
+const bootstrap = fs.readFileSync(bootstrapPath, "utf8");
 
 assert.match(workflow, /^on:\n  workflow_dispatch:/m);
 assert.doesNotMatch(workflow, /^  (push|pull_request|schedule):/m);
@@ -16,6 +19,9 @@ assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_LIVEPALMES(?:[^_A-Z]|$)/
 assert.match(workflow, /uses: actions\/setup-java@v5\n        with:\n          distribution: temurin\n          java-version: '21'/);
 assert.match(workflow, /npm --prefix tests\/firestore-rules test/);
 assert.match(workflow, /node tools\/verify-livepalmes\.js/);
+assert.match(workflow, /Preparer le bootstrap Functions TEST isole/);
+assert.match(workflow, /cp functions\/bootstrap-get-current-access-user\.js \.firebase-bootstrap\/functions\/index\.js/);
+assert.equal((workflow.match(/--config \.firebase-bootstrap\/firebase\.json/g) || []).length, 2);
 
 const allowedTargets = ["firestore:indexes", "firestore:rules", "functions:getCurrentAccessUser"];
 const deployTargets = [...workflow.matchAll(/--only ([^\s]+)\n/g)].map((match) => match[1]);
@@ -30,5 +36,12 @@ assert.equal(workflow.indexOf("Verifier le secret backend TEST") < workflow.inde
 assert.equal(workflow.indexOf("Deployer les index Firestore TEST") < workflow.indexOf("Deployer les regles Firestore TEST"), true);
 assert.equal(workflow.indexOf("Deployer les regles Firestore TEST") < workflow.indexOf("Deployer getCurrentAccessUser TEST"), true);
 assert.doesNotMatch(workflow, /--only (?!firestore:indexes|firestore:rules|functions:getCurrentAccessUser)/);
+
+assert.match(bootstrap, /exports\.getCurrentAccessUser = onCall/);
+assert.match(bootstrap, /ENVIRONMENT\.isTest/);
+assert.match(bootstrap, /ENVIRONMENT\.projectId !== "livepalmes-test"/);
+assert.match(bootstrap, /data\.status !== "active"/);
+assert.match(bootstrap, /"admin\.full"/);
+assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SMTP_/);
 
 console.log("Workflow backend Firebase TEST : OK");
