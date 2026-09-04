@@ -51,6 +51,7 @@ for (const lot of ["access", "engagement-core", "performance"]) {
 assert.match(staging, /relative !== "index\.js"/);
 assert.match(staging, /usesEmailSecrets/);
 assert.match(staging, /const defineSecret = \(name\) => name/);
+assert.match(staging, /\.env\.livepalmes-test/);
 assert.match(staging, /exports\[name\] = backend\[name\]/);
 assert.match(staging, /environment\.name !== "test"/);
 assert.match(staging, /environment\.projectId !==/);
@@ -68,6 +69,10 @@ try {
     env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test" },
     stdio: "pipe"
   });
+  assert.equal(
+    fs.readFileSync(path.join(stagedRoot, "functions", ".env.livepalmes-test"), "utf8"),
+    "LIVEPALMES_ENFORCE_APP_CHECK=false\n"
+  );
   childProcess.execFileSync(path.join(rootDir, "functions", "node_modules", ".bin", "firebase-functions"), [], {
     cwd: path.join(stagedRoot, "functions"),
     env: {
