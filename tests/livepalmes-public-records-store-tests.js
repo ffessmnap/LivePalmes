@@ -2,6 +2,9 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 
 global.window = global;
+global.LivePalmesEnvironment = {
+  publicStorageUrl: (value) => `https://storage.googleapis.com/livepalmes-public-data-718081132564/${value}`
+};
 global.LIVEPALMES_RECORDS = {
   records: [{ key: "fallback-mpf" }],
   franceRecords: [{ key: "fallback-rf", birthDate: "2000-01-01" }],

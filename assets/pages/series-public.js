@@ -1,13 +1,6 @@
 ﻿const FIRESTORE_COMPETITION_ID = "livepalmes-active";
 const PUBLIC_PROGRESS_MAX_AGE_MS = 30 * 60 * 1000;
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
-  authDomain: "livepalmes.firebaseapp.com",
-  projectId: "livepalmes",
-  storageBucket: "livepalmes.firebasestorage.app",
-  messagingSenderId: "718081132564",
-  appId: "1:718081132564:web:618d1e95b6d6aefa4ebf01"
-};
+const FIREBASE_CONFIG = window.LivePalmesEnvironment.firebaseConfig;
 const PUBLIC_SERIES_CACHE_KEY = "livepalmes:public-series-cache:v2";
 const PUBLIC_SERIES_SESSION_KEY = "livepalmes:public-series-session:v1";
 const PUBLIC_CACHE_MAX_AGE_MS = 15 * 60 * 1000;

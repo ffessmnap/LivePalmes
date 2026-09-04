@@ -130,9 +130,19 @@ assert.equal(levelFilterContext.matchesLevel("national", "national"), true);
 assert.equal(levelFilterContext.matchesLevel("international", "national"), true);
 assert.equal(levelFilterContext.matchesLevel("regional", "national"), false);
 assert.equal(levelFilterContext.matchesLevel("international", "regional"), false);
-const browserContext = { window: {}, Date, URL, console };
+const browserContext = {
+  window: {
+    LivePalmesEnvironment: {
+      publicStorageUrl: (path) => `https://storage.googleapis.com/test-public-bucket/${path}`
+    }
+  },
+  Date,
+  URL,
+  console
+};
 vm.runInNewContext(browserSource, browserContext);
 const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
+assert.equal(browserCalendar.BASE, "https://storage.googleapis.com/test-public-bucket/calendar");
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
 assert.equal(browserCalendar.seasonLabel(2027), "2026-2027");
