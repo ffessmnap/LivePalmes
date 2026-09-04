@@ -39,10 +39,11 @@ assert.doesNotMatch(workflow, /--only (?!firestore:indexes|firestore:rules|funct
 
 assert.match(bootstrap, /exports\.getCurrentAccessUser = onCall/);
 assert.match(bootstrap, /process\.env\.TARGET_FIREBASE_PROJECT/);
-assert.match(bootstrap, /ENVIRONMENT\.isTest/);
+assert.match(bootstrap, /ENVIRONMENT\.name !== "test"/);
 assert.match(bootstrap, /ENVIRONMENT\.projectId !== "livepalmes-test"/);
 assert.match(bootstrap, /data\.status !== "active"/);
 assert.match(bootstrap, /"admin\.full"/);
+assert.doesNotMatch(bootstrap, /ENVIRONMENT\.isTest/);
 assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SMTP_/);
 
 console.log("Workflow backend Firebase TEST : OK");
