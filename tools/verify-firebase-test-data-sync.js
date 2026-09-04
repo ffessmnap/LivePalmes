@@ -42,6 +42,15 @@ function loadFirebaseAdmin() {
   return { cert, initializeApp, FieldPath, getFirestore };
 }
 
+function isProtectedAdminProfile(data = {}) {
+  return data.status === "active" && data.capabilities?.["admin.full"] === true;
+}
+
+async function findProtectedAdminUids(db) {
+  const snapshot = await db.collection("users").get();
+  return snapshot.docs.filter((doc) => isProtectedAdminProfile(doc.data())).map((doc) => doc.id);
+}
+
 async function metricCount(db, spec) {
   if (spec.root) return (await db.collection(spec.root).count().get()).data().count;
   if (spec.group) return (await db.collectionGroup(spec.group).count().get()).data().count;
@@ -88,8 +97,7 @@ async function main(argv = process.argv.slice(2)) {
     counts[name] = { source, destination, difference: destination - source };
   }
   const residualReferences = await findForbiddenReferences(destinationDb, args.pageSize, FieldPath);
-  const adminSnapshot = await destinationDb.collection("users").where("capabilities.admin.full", "==", true).get();
-  const protectedAdminUids = adminSnapshot.docs.filter((doc) => doc.data().status === "active").map((doc) => doc.id);
+  const protectedAdminUids = await findProtectedAdminUids(destinationDb);
   console.log(JSON.stringify({
     projects: { source: SOURCE_PROJECT, destination: DESTINATION_PROJECT }, counts,
     intentionallyDifferent: { excluded: EXCLUDE, preservedInTest: PRESERVE_TEST, rebuiltInTest: REBUILD },
@@ -98,5 +106,5 @@ async function main(argv = process.argv.slice(2)) {
   if (residualReferences.length) process.exitCode = 2;
 }
 
-module.exports = { METRICS, findForbiddenReferences, loadFirebaseAdmin, parseArgs };
+module.exports = { METRICS, findForbiddenReferences, findProtectedAdminUids, isProtectedAdminProfile, loadFirebaseAdmin, parseArgs };
 if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
