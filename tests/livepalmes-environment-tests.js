@@ -50,6 +50,11 @@ assert.equal(test.publicStorageUrl("calendar"), "https://storage.googleapis.com/
 assert.equal(test.hostingOrigin, "https://livepalmes-test.web.app");
 testPage.listeners.get("DOMContentLoaded")();
 assert.ok(testPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.textContent === "ENVIRONNEMENT TEST"));
+assert.ok(testPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.dataset.variant === "sensitive"));
+
+const publicTestPage = browserContext("livepalmes-test.web.app", "", source, "/resultats.html");
+publicTestPage.listeners.get("DOMContentLoaded")();
+assert.ok(publicTestPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.dataset.variant === "public"));
 
 assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes" }).legacyAdminUids.length, 1);
 assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes-test" }).legacyAdminUids.length, 0);

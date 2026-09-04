@@ -49,6 +49,7 @@ function runUnitTests() {
   printStep("Tests automatiques");
   [
     "livepalmes-basic-tests.js",
+    "livepalmes-admin-auth-tests.js",
     "livepalmes-environment-tests.js",
     "livepalmes-result-regression-tests.js",
     "livepalmes-public-results-index-tests.js",
