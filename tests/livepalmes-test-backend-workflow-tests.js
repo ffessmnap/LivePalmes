@@ -19,6 +19,7 @@ assert.match(workflow, /credentials\.project_id !== "livepalmes-test"/);
 assert.match(workflow, /credentials_file="\$RUNNER_TEMP\/livepalmes-test-backend\.json"/);
 assert.match(workflow, /export GOOGLE_APPLICATION_CREDENTIALS="\$credentials_file"/);
 assert.match(workflow, /--key-file="\$credentials_file"/);
+assert.match(workflow, /LIVEPALMES_ENFORCE_APP_CHECK: 'false'/);
 assert.doesNotMatch(workflow, /--project ["']?livepalmes(?:["'\s]|$)/);
 assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_LIVEPALMES(?:[^_A-Z]|$)/);
 
@@ -74,6 +75,7 @@ try {
       FUNCTIONS_MANIFEST_OUTPUT_PATH: manifestPath,
       GCLOUD_PROJECT: "livepalmes-test",
       GOOGLE_CLOUD_PROJECT: "livepalmes-test",
+      LIVEPALMES_ENFORCE_APP_CHECK: "false",
       NODE_PATH: path.join(rootDir, "functions", "node_modules")
     },
     stdio: "pipe"

@@ -40,6 +40,7 @@ env:
   TARGET_FIREBASE_PROJECT: livepalmes-test
   GCLOUD_PROJECT: livepalmes-test
   GOOGLE_CLOUD_PROJECT: livepalmes-test
+  LIVEPALMES_ENFORCE_APP_CHECK: 'false'
   FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
 
 jobs:
