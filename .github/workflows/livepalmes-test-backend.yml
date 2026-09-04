@@ -243,7 +243,7 @@ jobs:
         run: |
           set -euo pipefail
           selector="$(sed 's/[^,]*/functions:&/g' "$RUNNER_TEMP/function-selector.txt")"
-          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --dry-run --non-interactive
+          "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --force --dry-run --non-interactive
 
       - name: Déployer les index puis règles Firestore TEST
         if: inputs.lot == 'bootstrap' || inputs.lot == 'all-safe'
