@@ -20,7 +20,7 @@ git checkout -- functions/index.js
 node tools/patch-firebase-test-large-club-rebuild.js
 
 echo
-echo "Préparation d'un codebase TEST isolé, sans secrets email/scheduler."
+echo "Préparation d'un codebase TEST isolé, sans SecretParam."
 TARGET_FIREBASE_PROJECT=livepalmes-test \
   node tools/prepare-firebase-test-functions.js engagement-core >/tmp/livepalmes-test-function-selector.txt
 npm ci --prefix .firebase-test-functions/functions >/dev/null
