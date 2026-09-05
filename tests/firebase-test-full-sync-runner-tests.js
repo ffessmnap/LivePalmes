@@ -11,11 +11,13 @@ const resumePath = path.join(root, "tools", "resume-firebase-test-full-sync.sh")
 const resilientPath = path.join(root, "tools", "run-firebase-test-postsync-resilient.sh");
 const runnerPath = path.join(root, "tools", "firebase-test-postsync-runner.js");
 const patcherPath = path.join(root, "tools", "patch-firebase-test-large-club-rebuild.js");
+const workflowPath = path.join(root, ".github", "workflows", "livepalmes-test-postsync.yml");
 const shell = fs.readFileSync(shellPath, "utf8");
 const resume = fs.readFileSync(resumePath, "utf8");
 const resilient = fs.readFileSync(resilientPath, "utf8");
 const runner = fs.readFileSync(runnerPath, "utf8");
 const patcher = fs.readFileSync(patcherPath, "utf8");
+const workflow = fs.readFileSync(workflowPath, "utf8");
 
 for (const scriptPath of [shellPath, resumePath, resilientPath]) {
   const bashCheck = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
@@ -80,5 +82,18 @@ assert.match(runner, /first \? \{ reset: true \}/);
 assert.match(runner, /LIVEPALMES_POSTSYNC_SKIP_INITIAL_PHASES/);
 assert.doesNotMatch(runner, /projectId:\s*["']livepalmes["']/);
 assert.doesNotMatch(runner, /sendMail|nodemailer|smtp/i);
+
+assert.match(workflow, /workflow_dispatch:/);
+assert.match(workflow, /resume-livepalmes-test-postsync/);
+assert.match(workflow, /environment:\s*\n\s+name: firebase-test/);
+assert.match(workflow, /deployment: false/);
+assert.match(workflow, /FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND/);
+assert.match(workflow, /LIVEPALMES_POSTSYNC_REMOTE_RESUME: 'true'/);
+assert.match(workflow, /LIVEPALMES_POSTSYNC_SKIP_INITIAL_PHASES: 'true'/);
+assert.match(workflow, /node tools\/firebase-test-postsync-runner\.js/);
+assert.match(workflow, /project_id !== "livepalmes-test"/);
+assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_LIVEPALMES(?:[^_A-Z]|$)/);
+assert.doesNotMatch(workflow, /--project\s+livepalmes(?:\s|$)/);
+assert.doesNotMatch(workflow, /sendMail|nodemailer|smtp|scheduler/i);
 
 console.log("Runner complet de synchronisation Firebase TEST : OK");
