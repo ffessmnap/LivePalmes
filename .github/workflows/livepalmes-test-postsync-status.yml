@@ -61,11 +61,12 @@ jobs:
 
       - name: Afficher le compteur exact
         shell: bash
+        working-directory: functions
         run: |
           set -euo pipefail
           node <<'NODE'
-          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
-          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+          const { initializeApp, applicationDefault } = require("firebase-admin/app");
+          const { getFirestore } = require("firebase-admin/firestore");
 
           initializeApp({
             credential: applicationDefault(),
