@@ -11,6 +11,13 @@ const API_KEY = "AIzaSyAFOL4tPzNm3NwDaEJ-tdNoBOer69TrrkY";
 const ROOT = path.resolve(__dirname, "..");
 const KEY = process.env.LIVEPALMES_TEST_SYNC_CREDENTIAL || path.join(process.env.HOME || "", "lp-test-sync-wr-key.json");
 const STATE_FILE = process.env.LIVEPALMES_TEST_POSTSYNC_STATE || path.join(process.env.HOME || "", "livepalmes-postsync-state.json");
+const REMOTE_RESUME = process.env.LIVEPALMES_POSTSYNC_REMOTE_RESUME === "true";
+const SKIP_INITIAL_PHASES = process.env.LIVEPALMES_POSTSYNC_SKIP_INITIAL_PHASES === "true";
+const PAGE_SIZE = 500;
+const REMOTE_PAGED_STATE = {
+  swimmerIndex: { collection: "performanceSwimmerIndexState", document: "default" },
+  topIndex: { collection: "performanceTopIndexState", document: "default" }
+};
 
 const functionsRequire = createRequire(path.join(ROOT, "functions", "package.json"));
 const { cert, initializeApp } = functionsRequire("firebase-admin/app");
@@ -35,6 +42,7 @@ const state = readState();
 let adminProfile = null;
 let firebaseIdToken = "";
 let firebaseTokenExpiresAt = 0;
+let remoteResumeBaselineStartedAt = "";
 
 async function findAdmin() {
   const snapshot = await db.collection("users").get();
@@ -116,12 +124,78 @@ async function rebuildCalendars() {
   writeState(state);
 }
 
+async function readRemotePagedState(stateKey) {
+  const target = REMOTE_PAGED_STATE[stateKey];
+  if (!target) throw new Error(`État Firestore distant inconnu : ${stateKey}`);
+  const snapshot = await db.collection(target.collection).doc(target.document).get();
+  return { exists: snapshot.exists, ...(snapshot.exists ? snapshot.data() || {} : {}) };
+}
+
+async function prepareRemoteResume() {
+  const swimmerState = await readRemotePagedState("swimmerIndex");
+  const startedAt = String(swimmerState.startedAt || "").trim();
+  const indexedPerformanceCount = Number(swimmerState.indexedPerformanceCount || 0) || 0;
+  if (!swimmerState.exists || !startedAt || indexedPerformanceCount <= 0) {
+    throw new Error("Reprise Firestore refusée : aucun index nageurs TEST déjà démarré n'a été détecté.");
+  }
+  remoteResumeBaselineStartedAt = startedAt;
+  console.log(`Reprise Firestore TEST détectée : ${indexedPerformanceCount} performances déjà indexées (démarrée ${startedAt}).`);
+}
+
+function remoteStateIsCurrent(stateKey, remote) {
+  if (!remote?.exists) return false;
+  const startedAt = String(remote.startedAt || "").trim();
+  if (!startedAt) return false;
+  if (stateKey === "swimmerIndex") return startedAt === remoteResumeBaselineStartedAt;
+  return startedAt >= remoteResumeBaselineStartedAt;
+}
+
+async function rebuildPagedRemote(functionName, stateKey, label) {
+  const remote = await readRemotePagedState(stateKey);
+  const current = remoteStateIsCurrent(stateKey, remote);
+  const info = {
+    started: current,
+    pages: current ? Math.ceil((Number(remote.indexedPerformanceCount || 0) || 0) / PAGE_SIZE) : 0,
+    done: current && remote.done === true,
+    indexedPerformanceCount: current ? Number(remote.indexedPerformanceCount || 0) || 0 : 0
+  };
+  state[stateKey] = info;
+  writeState(state);
+
+  if (info.done) {
+    console.log(`${label} déjà terminé dans Firestore TEST — ${info.indexedPerformanceCount} performances.`);
+    return;
+  }
+
+  if (current) {
+    console.log(`${label} : reprise depuis Firestore à ${info.indexedPerformanceCount} performances.`);
+  } else {
+    console.log(`${label} : aucun état de la reconstruction courante, remise à zéro contrôlée.`);
+  }
+
+  let first = !current;
+  while (!info.done) {
+    const result = await callFunction(functionName, { pageSize: PAGE_SIZE, ...(first ? { reset: true } : {}) });
+    info.started = true;
+    info.pages = Math.max(info.pages + 1, Math.ceil((Number(result.indexedPerformanceCount || 0) || 0) / PAGE_SIZE));
+    info.done = result.done === true;
+    info.indexedPerformanceCount = Number(result.indexedPerformanceCount || 0);
+    state[stateKey] = info;
+    writeState(state);
+    if (info.pages === 1 || info.pages % 25 === 0 || info.done) {
+      console.log(`${label} : page ${info.pages} — ${info.indexedPerformanceCount} performances — done=${info.done}`);
+    }
+    first = false;
+  }
+}
+
 async function rebuildPaged(functionName, stateKey, label) {
+  if (REMOTE_RESUME) return rebuildPagedRemote(functionName, stateKey, label);
   if (state[stateKey]?.done) return console.log(`${label} déjà terminé.`);
   const info = state[stateKey] || { started: false, pages: 0, done: false };
   let first = !info.started;
   while (!info.done) {
-    const result = await callFunction(functionName, { pageSize: 500, ...(first ? { reset: true } : {}) });
+    const result = await callFunction(functionName, { pageSize: PAGE_SIZE, ...(first ? { reset: true } : {}) });
     info.started = true;
     info.pages += 1;
     info.done = result.done === true;
@@ -232,8 +306,16 @@ async function main() {
   adminProfile = await findAdmin();
   console.log(`Super-admin utilisé pour les callables : ${adminProfile.uid}`);
   await renewFirebaseToken();
-  await rebuildClubAggregates();
-  await rebuildCalendars();
+  if (REMOTE_RESUME) await prepareRemoteResume();
+  if (SKIP_INITIAL_PHASES) {
+    console.log("Agrégats clubs et calendriers : déjà terminés avant la reprise GitHub, étapes ignorées.");
+    state.clubAggregatesDone = true;
+    state.calendarsDone = true;
+    writeState(state);
+  } else {
+    await rebuildClubAggregates();
+    await rebuildCalendars();
+  }
   await rebuildPaged("rebuildPerformanceSwimmerIndexNextPage", "swimmerIndex", "Index nageurs");
   await sleep(30000);
   await rebuildPaged("rebuildPerformanceTopIndexNextPage", "topIndex", "TOP");
