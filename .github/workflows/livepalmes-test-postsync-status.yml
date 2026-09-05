@@ -1,0 +1,125 @@
+name: Etat reconstruction Firebase TEST
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TARGET_FIREBASE_PROJECT: livepalmes-test
+  GCLOUD_PROJECT: livepalmes-test
+  GOOGLE_CLOUD_PROJECT: livepalmes-test
+
+jobs:
+  etat-postsync-test:
+    name: Lire l'avancement de la reconstruction TEST
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: firebase-test
+      deployment: false
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v7
+
+      - name: Lire la version Node.js du projet
+        id: node-version
+        shell: bash
+        run: node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Installer les dependances Functions
+        run: npm ci --prefix functions
+
+      - name: Preparer les credentials TEST en lecture seule applicative
+        shell: bash
+        env:
+          FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_TEST_BACKEND_CREDENTIALS"
+          umask 077
+          credentials_file="$RUNNER_TEMP/livepalmes-test-status.json"
+          printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$credentials_file"
+          node - "$credentials_file" <<'NODE'
+          const fs = require("node:fs");
+          const file = process.argv[2];
+          const credentials = JSON.parse(fs.readFileSync(file, "utf8"));
+          if (credentials.project_id !== "livepalmes-test") {
+            throw new Error("Le compte de service n'appartient pas a livepalmes-test.");
+          }
+          NODE
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
+
+      - name: Afficher le compteur exact
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
+          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+
+          initializeApp({
+            credential: applicationDefault(),
+            projectId: "livepalmes-test"
+          });
+          const db = getFirestore();
+
+          function pct(value, total) {
+            if (!total) return "0,0";
+            return (value * 100 / total).toFixed(1).replace(".", ",");
+          }
+
+          function fmt(value) {
+            return new Intl.NumberFormat("fr-FR").format(Number(value || 0));
+          }
+
+          (async () => {
+            const [swimmerSnap, topSnap, totalSnap] = await Promise.all([
+              db.collection("performanceSwimmerIndexState").doc("default").get(),
+              db.collection("performanceTopIndexState").doc("default").get(),
+              db.collection("performances").count().get()
+            ]);
+
+            const swimmer = swimmerSnap.exists ? swimmerSnap.data() || {} : {};
+            const top = topSnap.exists ? topSnap.data() || {} : {};
+            const total = Number(totalSnap.data().count || 0);
+            const swimmerCount = Number(swimmer.indexedPerformanceCount || 0);
+            const topCount = Number(top.indexedPerformanceCount || 0);
+
+            const lines = [
+              "# Etat reconstruction Firebase TEST",
+              "",
+              `**Performances source : ${fmt(total)}**`,
+              "",
+              "| Etape | Avancement | Pourcentage | Terminee | Derniere mise a jour |",
+              "|---|---:|---:|:---:|---|",
+              `| Index nageurs | ${fmt(swimmerCount)} / ${fmt(total)} | ${pct(swimmerCount, total)} % | ${swimmer.done === true ? "oui" : "non"} | ${swimmer.updatedAt || "-"} |`,
+              `| TOP | ${fmt(topCount)} / ${fmt(total)} | ${pct(topCount, total)} % | ${top.done === true ? "oui" : "non"} | ${top.updatedAt || "-"} |`,
+              "",
+              `Curseur index nageurs : \`${swimmer.cursor || "-"}\``,
+              "",
+              `Curseur TOP : \`${top.cursor || "-"}\``
+            ];
+
+            const output = lines.join("\n");
+            console.log(output);
+            require("node:fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, output + "\n");
+          })().catch((error) => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Supprimer les credentials temporaires
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/livepalmes-test-status.json"
