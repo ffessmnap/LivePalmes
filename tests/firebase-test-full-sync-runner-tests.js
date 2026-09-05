@@ -41,6 +41,9 @@ assert.doesNotMatch(shell, /gcloud storage rm/i);
 
 assert.match(resume, /--project livepalmes-test/);
 assert.match(resume, /--only functions:rebuildEngagementClubAggregates/);
+assert.match(resume, /--config \.firebase-test-functions\/firebase\.json/);
+assert.match(resume, /prepare-firebase-test-functions\.js engagement-core/);
+assert.match(resume, /TARGET_FIREBASE_PROJECT=livepalmes-test/);
 assert.match(resume, /patch-firebase-test-large-club-rebuild\.js/);
 assert.match(resume, /run-firebase-test-full-sync\.sh/);
 assert.doesNotMatch(resume, /--project livepalmes(?:\s|\\|$)/);
