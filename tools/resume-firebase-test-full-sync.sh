@@ -4,10 +4,11 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
-restore_index() {
+cleanup() {
   git checkout -- functions/index.js >/dev/null 2>&1 || true
+  rm -rf .firebase-test-functions >/dev/null 2>&1 || true
 }
-trap restore_index EXIT
+trap cleanup EXIT
 
 command -v firebase >/dev/null || {
   echo "Firebase CLI introuvable."
@@ -19,14 +20,24 @@ git checkout -- functions/index.js
 node tools/patch-firebase-test-large-club-rebuild.js
 
 echo
+echo "Préparation d'un codebase TEST isolé, sans secrets email/scheduler."
+TARGET_FIREBASE_PROJECT=livepalmes-test \
+  node tools/prepare-firebase-test-functions.js engagement-core >/tmp/livepalmes-test-function-selector.txt
+npm ci --prefix .firebase-test-functions/functions >/dev/null
+
+echo
 echo "Déploiement TEST ciblé : rebuildEngagementClubAggregates uniquement."
 firebase deploy \
+  --config .firebase-test-functions/firebase.json \
   --project livepalmes-test \
   --only functions:rebuildEngagementClubAggregates \
+  --non-interactive \
   --force
 
-# Le patch était uniquement destiné au déploiement TEST ciblé : ne pas le laisser dans l'arbre de travail.
+# Le patch et le codebase isolé étaient uniquement destinés au déploiement TEST ciblé.
 git checkout -- functions/index.js
+rm -rf .firebase-test-functions
+rm -f /tmp/livepalmes-test-function-selector.txt
 trap - EXIT
 
 echo
