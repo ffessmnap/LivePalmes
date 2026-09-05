@@ -27,7 +27,7 @@ jobs:
     name: Reprendre index, TOP, DTN et publications TEST
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 720
     environment:
       name: firebase-test
       deployment: false
