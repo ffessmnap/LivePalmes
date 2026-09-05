@@ -8,14 +8,16 @@ const { spawnSync } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const shellPath = path.join(root, "tools", "run-firebase-test-full-sync.sh");
 const resumePath = path.join(root, "tools", "resume-firebase-test-full-sync.sh");
+const resilientPath = path.join(root, "tools", "run-firebase-test-postsync-resilient.sh");
 const runnerPath = path.join(root, "tools", "firebase-test-postsync-runner.js");
 const patcherPath = path.join(root, "tools", "patch-firebase-test-large-club-rebuild.js");
 const shell = fs.readFileSync(shellPath, "utf8");
 const resume = fs.readFileSync(resumePath, "utf8");
+const resilient = fs.readFileSync(resilientPath, "utf8");
 const runner = fs.readFileSync(runnerPath, "utf8");
 const patcher = fs.readFileSync(patcherPath, "utf8");
 
-for (const scriptPath of [shellPath, resumePath]) {
+for (const scriptPath of [shellPath, resumePath, resilientPath]) {
   const bashCheck = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
   assert.equal(bashCheck.status, 0, bashCheck.stderr || bashCheck.stdout);
 }
@@ -49,6 +51,11 @@ assert.match(resume, /run-firebase-test-full-sync\.sh/);
 assert.doesNotMatch(resume, /--project livepalmes(?:\s|\\|$)/);
 assert.doesNotMatch(resume, /sendMail|nodemailer|smtp|scheduler/i);
 
+assert.match(resilient, /firebase-test-postsync-runner\.js/);
+assert.match(resilient, /STALL_SECONDS/);
+assert.match(resilient, /redémarrage automatique du runner/);
+assert.doesNotMatch(resilient, /livepalmes\.web\.app|sendMail|nodemailer|smtp|scheduler/i);
+
 assert.match(patcher, /engagementLegacySwimmerLicensesByClub/);
 assert.match(patcher, /\.limit\(10001\)/);
 assert.match(patcher, /snapshot\.size > 10000/);
@@ -64,6 +71,14 @@ assert.match(runner, /refreshDtnQualificationCache/);
 assert.match(runner, /refreshDtnListingCache/);
 assert.match(runner, /publishPerformancePublicData/);
 assert.match(runner, /"allDone": true|state\.allDone = true/);
+assert.match(runner, /LIVEPALMES_POSTSYNC_REMOTE_RESUME/);
+assert.match(runner, /performanceSwimmerIndexState/);
+assert.match(runner, /performanceTopIndexState/);
+assert.match(runner, /Reprise Firestore TEST détectée/);
+assert.match(runner, /remoteResumeBaselineStartedAt/);
+assert.match(runner, /first \? \{ reset: true \}/);
+assert.match(runner, /LIVEPALMES_POSTSYNC_SKIP_INITIAL_PHASES/);
+assert.doesNotMatch(runner, /projectId:\s*["']livepalmes["']/);
 assert.doesNotMatch(runner, /sendMail|nodemailer|smtp/i);
 
 console.log("Runner complet de synchronisation Firebase TEST : OK");
