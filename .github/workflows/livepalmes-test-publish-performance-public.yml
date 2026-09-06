@@ -18,6 +18,7 @@ env:
   TARGET_FIREBASE_PROJECT: livepalmes-test
   TARGET_PUBLIC_BUCKET: livepalmes-test-public-data-206080168534
   PUBLIC_PREFIX: performance-public-firestore
+  PUBLIC_OUT_DIR: outputs/performance-public-firestore-test
 
 jobs:
   publier-performances-test:
@@ -101,7 +102,8 @@ jobs:
               if (snap.empty) break;
               for (const doc of snap.docs) {
                 read += 1;
-                const row = { ...doc.data(), performanceBaseId: String(doc.data().performanceBaseId || doc.id), source: String(doc.data().source || 'livepalmes') };
+                const data = doc.data();
+                const row = { ...data, performanceBaseId: String(data.performanceBaseId || doc.id), source: String(data.source || 'livepalmes') };
                 const status = String(row.status || 'active').trim();
                 const sex = String(row.sex || '').trim();
                 const category = String(row.category || '').trim();
@@ -127,11 +129,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf "$RUNNER_TEMP/performance-public-firestore"
-          mkdir -p "$RUNNER_TEMP/performance-public-firestore"
+          rm -rf "$PUBLIC_OUT_DIR"
+          mkdir -p "$PUBLIC_OUT_DIR"
           node tools/build-public-performance-files.js \
             --seed outputs/performance-base-firestore-active.ndjson \
-            --out-dir "$RUNNER_TEMP/performance-public-firestore"
+            --out-dir "$PUBLIC_OUT_DIR"
 
       - name: Contrôler la cohérence avant publication
         shell: bash
@@ -139,7 +141,7 @@ jobs:
           set -euo pipefail
           node tools/check-public-performance-consistency.js \
             --seed outputs/performance-base-firestore-active.ndjson \
-            --out-dir "$RUNNER_TEMP/performance-public-firestore"
+            --out-dir "$PUBLIC_OUT_DIR"
 
       - name: Publier dans le bucket public TEST
         shell: bash
@@ -153,7 +155,7 @@ jobs:
           const credentials = JSON.parse(fs.readFileSync(process.env.TEST_CREDENTIAL_FILE, 'utf8'));
           const app = initializeApp({ credential: cert(credentials), projectId: 'livepalmes-test', storageBucket: process.env.TARGET_PUBLIC_BUCKET }, 'test-publication-upload');
           const bucket = getStorage(app).bucket(process.env.TARGET_PUBLIC_BUCKET);
-          const sourceDir = path.join(process.env.RUNNER_TEMP, 'performance-public-firestore');
+          const sourceDir = path.resolve(process.env.PUBLIC_OUT_DIR);
           const files = [];
           const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
             const full = path.join(dir, entry.name);
