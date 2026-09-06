@@ -7,10 +7,6 @@ on:
         description: Saisir exactement copy-derived-indexes-prod-to-test
         required: true
         type: string
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/livepalmes-test-postsync.yml'
 
 permissions:
   contents: read
@@ -37,15 +33,12 @@ jobs:
         shell: bash
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
-          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           test "$SOURCE_FIREBASE_PROJECT" = "livepalmes"
           test "$TARGET_FIREBASE_PROJECT" = "livepalmes-test"
           test "$GITHUB_REF" = "refs/heads/main"
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            test "$CONFIRMATION" = "copy-derived-indexes-prod-to-test"
-          fi
+          test "$CONFIRMATION" = "copy-derived-indexes-prod-to-test"
 
       - name: Récupérer le dépôt
         uses: actions/checkout@v7
@@ -88,7 +81,6 @@ jobs:
           if (prod.project_id !== 'livepalmes') throw new Error('Credential source non PROD.');
           if (test.project_id !== 'livepalmes-test') throw new Error('Credential destination non TEST.');
           if (prod.client_email && test.client_email && prod.client_email === test.client_email) throw new Error('Les identités PROD et TEST doivent être distinctes.');
-          console.log(`Compte de service PROD utilisé : ${prod.client_email || 'client_email absent'}`);
           NODE
           echo "PROD_CREDENTIAL_FILE=$prod_file" >> "$GITHUB_ENV"
           echo "TEST_CREDENTIAL_FILE=$test_file" >> "$GITHUB_ENV"
