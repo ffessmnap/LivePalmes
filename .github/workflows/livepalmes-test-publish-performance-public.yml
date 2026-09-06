@@ -141,7 +141,7 @@ jobs:
           set -euo pipefail
           node tools/check-public-performance-consistency.js \
             --seed outputs/performance-base-firestore-active.ndjson \
-            --out-dir "$PUBLIC_OUT_DIR"
+            --public-dir "$PUBLIC_OUT_DIR"
 
       - name: Publier dans le bucket public TEST
         shell: bash
