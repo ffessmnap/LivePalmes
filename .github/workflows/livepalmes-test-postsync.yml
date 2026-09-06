@@ -1,58 +1,56 @@
-name: Reprise reconstruction Firebase TEST
+name: Copier index PROD vers TEST
 
 on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Saisir exactement resume-livepalmes-test-postsync
+        description: Saisir exactement copy-derived-indexes-prod-to-test
         required: true
         type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/livepalmes-test-postsync.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: livepalmes-test-postsync
+  group: livepalmes-test-index-copy
   cancel-in-progress: false
 
 env:
+  SOURCE_FIREBASE_PROJECT: livepalmes
   TARGET_FIREBASE_PROJECT: livepalmes-test
-  GCLOUD_PROJECT: livepalmes-test
-  GOOGLE_CLOUD_PROJECT: livepalmes-test
-  LIVEPALMES_POSTSYNC_REMOTE_RESUME: 'true'
-  LIVEPALMES_POSTSYNC_SKIP_INITIAL_PHASES: 'true'
 
 jobs:
-  reprendre-postsync-test:
-    name: Reprendre index, TOP, DTN et publications TEST
+  copier-index-prod-vers-test:
+    name: Copier les index et caches dérivés vers TEST
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 720
+    timeout-minutes: 180
     environment:
       name: firebase-test
       deployment: false
     steps:
-      - name: Vérifier la confirmation et la cible TEST
+      - name: Vérifier la cible et la confirmation manuelle
         shell: bash
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          test "$CONFIRMATION" = "resume-livepalmes-test-postsync"
+          test "$SOURCE_FIREBASE_PROJECT" = "livepalmes"
           test "$TARGET_FIREBASE_PROJECT" = "livepalmes-test"
-          test "$GCLOUD_PROJECT" = "livepalmes-test"
-          test "$GOOGLE_CLOUD_PROJECT" = "livepalmes-test"
           test "$GITHUB_REF" = "refs/heads/main"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            test "$CONFIRMATION" = "copy-derived-indexes-prod-to-test"
+          fi
 
-      - name: Récupérer la version post-sync validée
+      - name: Récupérer le dépôt
         uses: actions/checkout@v7
         with:
-          ref: 2d75ebf10cb65f1e2a46a175da756720e3168b3f
           persist-credentials: false
-
-      - name: Contrôler la version exécutée
-        shell: bash
-        run: test "$(git rev-parse HEAD)" = "2d75ebf10cb65f1e2a46a175da756720e3168b3f"
 
       - name: Lire la version Node.js du projet
         id: node-version
@@ -69,58 +67,160 @@ jobs:
       - name: Installer les dépendances Functions
         run: npm ci --prefix functions
 
-      - name: Vérifier le runner avant exécution
-        run: |
-          node --check tools/firebase-test-postsync-runner.js
-          node tests/firebase-test-full-sync-runner-tests.js
-
-      - name: Préparer et verrouiller les credentials TEST
+      - name: Préparer et verrouiller les credentials
         shell: bash
         env:
-          FIREBASE_TEST_BACKEND_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          PROD_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_PROD_READONLY || secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          TEST_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         run: |
           set -euo pipefail
-          test -n "$FIREBASE_TEST_BACKEND_CREDENTIALS"
+          test -n "$PROD_CREDENTIALS"
+          test -n "$TEST_CREDENTIALS"
           umask 077
-          credentials_file="$RUNNER_TEMP/livepalmes-test-postsync.json"
-          printf '%s' "$FIREBASE_TEST_BACKEND_CREDENTIALS" > "$credentials_file"
-          node - "$credentials_file" <<'NODE'
-          const fs = require("node:fs");
-          const file = process.argv[2];
-          const credentials = JSON.parse(fs.readFileSync(file, "utf8"));
-          if (credentials.project_id !== "livepalmes-test") {
-            throw new Error("Le compte de service post-sync n'appartient pas à livepalmes-test.");
-          }
+          prod_file="$RUNNER_TEMP/livepalmes-prod-readonly.json"
+          test_file="$RUNNER_TEMP/livepalmes-test-writer.json"
+          printf '%s' "$PROD_CREDENTIALS" > "$prod_file"
+          printf '%s' "$TEST_CREDENTIALS" > "$test_file"
+          node - "$prod_file" "$test_file" <<'NODE'
+          const fs = require('node:fs');
+          const prod = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const test = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          if (prod.project_id !== 'livepalmes') throw new Error('Credential source non PROD.');
+          if (test.project_id !== 'livepalmes-test') throw new Error('Credential destination non TEST.');
+          if (prod.client_email && test.client_email && prod.client_email === test.client_email) throw new Error('Les identités PROD et TEST doivent être distinctes.');
           NODE
-          echo "LIVEPALMES_TEST_SYNC_CREDENTIAL=$credentials_file" >> "$GITHUB_ENV"
-          echo "LIVEPALMES_TEST_POSTSYNC_STATE=$RUNNER_TEMP/livepalmes-postsync-state.json" >> "$GITHUB_ENV"
+          echo "PROD_CREDENTIAL_FILE=$prod_file" >> "$GITHUB_ENV"
+          echo "TEST_CREDENTIAL_FILE=$test_file" >> "$GITHUB_ENV"
 
-      - name: Reprendre la reconstruction depuis Firestore TEST
+      - name: Copier exactement les index et caches PROD vers TEST
         shell: bash
+        working-directory: functions
         run: |
           set -euo pipefail
-          node tools/firebase-test-postsync-runner.js
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { cert, initializeApp } = require('firebase-admin/app');
+          const { getFirestore } = require('firebase-admin/firestore');
 
-      - name: Afficher l'état final du runner
-        if: always()
-        shell: bash
-        run: |
-          if [ -f "$RUNNER_TEMP/livepalmes-postsync-state.json" ]; then
-            node - <<'NODE'
-            const fs = require("node:fs");
-            const path = process.env.RUNNER_TEMP + "/livepalmes-postsync-state.json";
-            const state = JSON.parse(fs.readFileSync(path, "utf8"));
-            console.log(JSON.stringify({
-              swimmerIndex: state.swimmerIndex || null,
-              topIndex: state.topIndex || null,
-              dtnDone: state.dtnDone === true,
-              publicationsDone: state.publicationsDone === true,
-              allDone: state.allDone === true
-            }, null, 2));
-            NODE
-          fi
+          const prodCredential = JSON.parse(fs.readFileSync(process.env.PROD_CREDENTIAL_FILE, 'utf8'));
+          const testCredential = JSON.parse(fs.readFileSync(process.env.TEST_CREDENTIAL_FILE, 'utf8'));
+          const prodApp = initializeApp({ credential: cert(prodCredential), projectId: 'livepalmes' }, 'prod-read-only-index-source');
+          const testApp = initializeApp({ credential: cert(testCredential), projectId: 'livepalmes-test' }, 'test-index-destination');
+          const prodDb = getFirestore(prodApp);
+          const testDb = getFirestore(testApp);
+          const pageSize = 400;
+          const collections = [
+            'engagementClubRosters',
+            'engagementClubPeopleRosters',
+            'engagementPublicDirectories',
+            'engagementCompetitionCalendars',
+            'engagementCalendarEventCalendars',
+            'engagementCompetitionEntrySummaries',
+            'engagementClubCompetitionIndexes',
+            'engagementCompetitionStatisticsCache',
+            'engagementEntryTimeCaches',
+            'performanceSwimmerIndex',
+            'performanceSwimmerPages',
+            'performanceSwimmerIndexState',
+            'performanceTopViews',
+            'performanceTopIndexState',
+            'dtnQualificationViews',
+            'dtnQualificationViewState'
+          ];
+
+          function transform(value) {
+            if (typeof value === 'string') {
+              return value
+                .split('livepalmes.firebasestorage.app').join('livepalmes-test.firebasestorage.app')
+                .split('livepalmes-public-data-718081132564').join('livepalmes-test-public-data-206080168534')
+                .split('https://livepalmes.web.app').join('https://livepalmes-test.web.app')
+                .split('projects/livepalmes/').join('projects/livepalmes-test/');
+            }
+            if (Array.isArray(value)) return value.map(transform);
+            if (value && typeof value === 'object') {
+              if (Buffer.isBuffer(value) || value instanceof Date) return value;
+              if (value.constructor?.name === 'DocumentReference') return testDb.doc(value.path);
+              if (typeof value.toDate === 'function' || value.latitude !== undefined) return value;
+              return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, transform(v)]));
+            }
+            return value;
+          }
+
+          async function verifyAdminProtection() {
+            const snap = await testDb.collection('users').get();
+            const admins = snap.docs.filter((doc) => {
+              const data = doc.data() || {};
+              return data.status === 'active' && data.capabilities?.['admin.full'] === true;
+            });
+            if (!admins.length) throw new Error('Aucun super-admin TEST actif : copie refusée.');
+            console.log(`Comptes TEST préservés : ${admins.length} super-admin(s) détecté(s).`);
+          }
+
+          async function copyCollection(name) {
+            const source = prodDb.collection(name);
+            const destination = testDb.collection(name);
+            const sourceIds = new Set();
+            const sourceCount = Number((await source.count().get()).data().count || 0);
+            let cursor = null;
+            let copied = 0;
+
+            console.log(`[DEBUT] ${name}: ${sourceCount} document(s) PROD`);
+            while (true) {
+              let query = source.orderBy('__name__').limit(pageSize);
+              if (cursor) query = query.startAfter(cursor);
+              const snap = await query.get();
+              if (snap.empty) break;
+              const batch = testDb.batch();
+              for (const doc of snap.docs) {
+                sourceIds.add(doc.id);
+                batch.set(destination.doc(doc.id), transform(doc.data()), { merge: false });
+              }
+              await batch.commit();
+              copied += snap.size;
+              cursor = snap.docs.at(-1).id;
+              console.log(`[COPIE] ${name}: ${copied}/${sourceCount}`);
+              if (snap.size < pageSize) break;
+            }
+
+            let deleted = 0;
+            let deleteBatch = testDb.batch();
+            let pending = 0;
+            const destinationSnap = await destination.get();
+            for (const doc of destinationSnap.docs) {
+              if (!sourceIds.has(doc.id)) {
+                deleteBatch.delete(doc.ref);
+                pending += 1;
+                deleted += 1;
+                if (pending === pageSize) {
+                  await deleteBatch.commit();
+                  deleteBatch = testDb.batch();
+                  pending = 0;
+                }
+              }
+            }
+            if (pending) await deleteBatch.commit();
+
+            const finalCount = Number((await destination.count().get()).data().count || 0);
+            if (finalCount !== sourceCount) throw new Error(`${name}: compte final TEST=${finalCount}, PROD=${sourceCount}.`);
+            console.log(`[FIN] ${name}: ${finalCount} document(s), ${deleted} surplus TEST supprimé(s).`);
+            return { name, sourceCount, finalCount, copied, deleted };
+          }
+
+          (async () => {
+            await verifyAdminProtection();
+            console.log('PROD est utilisé uniquement en lecture. users/Auth/accessGrants ne sont jamais écrits.');
+            const results = [];
+            for (const name of collections) results.push(await copyCollection(name));
+            const summary = ['# Copie index PROD vers TEST', '', '| Collection | PROD | TEST | Surplus TEST supprimés |', '|---|---:|---:|---:|'];
+            for (const r of results) summary.push(`| ${r.name} | ${r.sourceCount} | ${r.finalCount} | ${r.deleted} |`);
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n');
+          })().catch((error) => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
 
       - name: Supprimer les credentials temporaires
         if: always()
         shell: bash
-        run: rm -f "$RUNNER_TEMP/livepalmes-test-postsync.json" "$RUNNER_TEMP/livepalmes-postsync-state.json"
+        run: rm -f "$RUNNER_TEMP/livepalmes-prod-readonly.json" "$RUNNER_TEMP/livepalmes-test-writer.json"
