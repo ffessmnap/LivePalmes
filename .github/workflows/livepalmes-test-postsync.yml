@@ -88,6 +88,7 @@ jobs:
           if (prod.project_id !== 'livepalmes') throw new Error('Credential source non PROD.');
           if (test.project_id !== 'livepalmes-test') throw new Error('Credential destination non TEST.');
           if (prod.client_email && test.client_email && prod.client_email === test.client_email) throw new Error('Les identités PROD et TEST doivent être distinctes.');
+          console.log(`Compte de service PROD utilisé : ${prod.client_email || 'client_email absent'}`);
           NODE
           echo "PROD_CREDENTIAL_FILE=$prod_file" >> "$GITHUB_ENV"
           echo "TEST_CREDENTIAL_FILE=$test_file" >> "$GITHUB_ENV"
