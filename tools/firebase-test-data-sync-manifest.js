@@ -8,7 +8,14 @@ const COPY = Object.freeze([
   "engagementCompetitions", "engagementClubEntries", "engagementClubPeople",
   "engagementClubSwimmers", "engagementSwimmerLicenses", "engagementSwimmerLicenseNumbers",
   "engagementSwimmerAlerts", "performanceImports", "performances", "performanceChanges",
-  "performanceCorrections"
+  "performanceCorrections",
+  "engagementClubRosters", "engagementClubPeopleRosters", "engagementPublicDirectories",
+  "engagementCompetitionCalendars", "engagementCalendarEventCalendars",
+  "engagementCompetitionEntrySummaries", "engagementClubCompetitionIndexes",
+  "engagementCompetitionStatisticsCache", "engagementEntryTimeCaches",
+  "performanceSwimmerIndex", "performanceSwimmerPages", "performanceSwimmerIndexState",
+  "performanceTopViews", "performanceTopIndexState", "dtnQualificationViews",
+  "dtnQualificationViewState"
 ]);
 
 const COPY_SUBCOLLECTIONS_BY_ROOT = Object.freeze({
@@ -24,15 +31,7 @@ const COPY_SUBCOLLECTIONS = Object.freeze([
   ...COPY_SUBCOLLECTIONS_BY_ROOT.performanceImports
 ]);
 
-const REBUILD = Object.freeze([
-  "engagementClubRosters", "engagementClubPeopleRosters", "engagementPublicDirectories",
-  "engagementCompetitionCalendars", "engagementCalendarEventCalendars",
-  "engagementCompetitionEntrySummaries", "engagementClubCompetitionIndexes",
-  "engagementCompetitionStatisticsCache", "engagementEntryTimeCaches",
-  "performanceSwimmerIndex", "performanceSwimmerPages", "performanceSwimmerIndexState",
-  "performanceTopViews", "performanceTopIndexState", "dtnQualificationViews",
-  "dtnQualificationViewState"
-]);
+const REBUILD = Object.freeze([]);
 
 const EXCLUDE = Object.freeze([
   "users", "accessGrants", "accessDirectoryIndexState", "accessDirectorySnapshots",
