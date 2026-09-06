@@ -1,0 +1,200 @@
+name: Publier performances publiques Firebase TEST
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/livepalmes-test-publish-performance-public.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-test-performance-publication
+  cancel-in-progress: false
+
+env:
+  TARGET_FIREBASE_PROJECT: livepalmes-test
+  TARGET_PUBLIC_BUCKET: livepalmes-test-public-data-206080168534
+  PUBLIC_PREFIX: performance-public-firestore
+
+jobs:
+  publier-performances-test:
+    name: Générer et publier TOP et fiches nageurs TEST
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment:
+      name: firebase-test
+      deployment: false
+    steps:
+      - name: Vérifier la cible TEST
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$TARGET_FIREBASE_PROJECT" = "livepalmes-test"
+          test "$TARGET_PUBLIC_BUCKET" = "livepalmes-test-public-data-206080168534"
+          test "$PUBLIC_PREFIX" = "performance-public-firestore"
+          test "$GITHUB_REF" = "refs/heads/main"
+
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Lire la version Node.js du projet
+        id: node-version
+        shell: bash
+        run: node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Installer les dépendances Functions
+        run: npm ci --prefix functions
+
+      - name: Préparer et verrouiller le credential TEST
+        shell: bash
+        env:
+          TEST_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        run: |
+          set -euo pipefail
+          test -n "$TEST_CREDENTIALS"
+          umask 077
+          test_file="$RUNNER_TEMP/livepalmes-test-publication.json"
+          printf '%s' "$TEST_CREDENTIALS" > "$test_file"
+          node - "$test_file" <<'NODE'
+          const fs = require('node:fs');
+          const credentials = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (credentials.project_id !== 'livepalmes-test') throw new Error('Credential non TEST.');
+          NODE
+          echo "TEST_CREDENTIAL_FILE=$test_file" >> "$GITHUB_ENV"
+
+      - name: Exporter les performances Firestore TEST
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p outputs
+          NODE_PATH=functions/node_modules node <<'NODE'
+          const fs = require('node:fs');
+          const { cert, initializeApp } = require('firebase-admin/app');
+          const { getFirestore } = require('firebase-admin/firestore');
+          const credentials = JSON.parse(fs.readFileSync(process.env.TEST_CREDENTIAL_FILE, 'utf8'));
+          const app = initializeApp({ credential: cert(credentials), projectId: 'livepalmes-test' }, 'test-publication-export');
+          const db = getFirestore(app);
+          const out = fs.createWriteStream('outputs/performance-base-firestore-active.ndjson', { encoding: 'utf8' });
+          const courses = new Set(['50SF','100SF','200SF','400SF','800SF','1500SF','50AP','100IS','200IS','400IS','50BI','100BI','200BI','400BI']);
+          let cursor = null;
+          let read = 0;
+          let written = 0;
+          let skipped = 0;
+          (async () => {
+            while (true) {
+              let query = db.collection('performances').orderBy('__name__').limit(1000);
+              if (cursor) query = query.startAfter(cursor);
+              const snap = await query.get();
+              if (snap.empty) break;
+              for (const doc of snap.docs) {
+                read += 1;
+                const row = { ...doc.data(), performanceBaseId: String(doc.data().performanceBaseId || doc.id), source: String(doc.data().source || 'livepalmes') };
+                const status = String(row.status || 'active').trim();
+                const sex = String(row.sex || '').trim();
+                const category = String(row.category || '').trim();
+                const course = String(row.course || '').trim();
+                if (row.active === false || (status && status !== 'active') || !courses.has(course) || !['F','M'].includes(sex) || !category || Number(row.timeValue || 0) <= 0) {
+                  skipped += 1;
+                  continue;
+                }
+                out.write(JSON.stringify(row) + '\n');
+                written += 1;
+              }
+              cursor = snap.docs.at(-1).id;
+              console.log(`Export TEST : ${read} lues, ${written} publiables`);
+              if (snap.size < 1000) break;
+            }
+            await new Promise((resolve, reject) => { out.end(resolve); out.on('error', reject); });
+            console.log(JSON.stringify({ read, written, skipped }, null, 2));
+            if (!written) throw new Error('Aucune performance publiable exportée depuis TEST.');
+          })().catch((error) => { console.error(error.stack || error); process.exit(1); });
+          NODE
+
+      - name: Générer les fichiers publics TOP et nageurs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/performance-public-firestore"
+          mkdir -p "$RUNNER_TEMP/performance-public-firestore"
+          node tools/build-public-performance-files.js \
+            --seed outputs/performance-base-firestore-active.ndjson \
+            --out-dir "$RUNNER_TEMP/performance-public-firestore"
+
+      - name: Contrôler la cohérence avant publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/check-public-performance-consistency.js \
+            --seed outputs/performance-base-firestore-active.ndjson \
+            --out-dir "$RUNNER_TEMP/performance-public-firestore"
+
+      - name: Publier dans le bucket public TEST
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_PATH=functions/node_modules node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { cert, initializeApp } = require('firebase-admin/app');
+          const { getStorage } = require('firebase-admin/storage');
+          const credentials = JSON.parse(fs.readFileSync(process.env.TEST_CREDENTIAL_FILE, 'utf8'));
+          const app = initializeApp({ credential: cert(credentials), projectId: 'livepalmes-test', storageBucket: process.env.TARGET_PUBLIC_BUCKET }, 'test-publication-upload');
+          const bucket = getStorage(app).bucket(process.env.TARGET_PUBLIC_BUCKET);
+          const sourceDir = path.join(process.env.RUNNER_TEMP, 'performance-public-firestore');
+          const files = [];
+          const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) walk(full); else files.push(full);
+          });
+          walk(sourceDir);
+          const switchFiles = new Set(['manifest.json', 'version.js']);
+          const ordered = files.sort((a, b) => {
+            const ar = path.relative(sourceDir, a).replace(/\\/g, '/');
+            const br = path.relative(sourceDir, b).replace(/\\/g, '/');
+            return Number(switchFiles.has(ar)) - Number(switchFiles.has(br));
+          });
+          function contentType(file) {
+            if (file.endsWith('.json')) return 'application/json; charset=utf-8';
+            if (file.endsWith('.js')) return 'application/javascript; charset=utf-8';
+            return 'application/octet-stream';
+          }
+          (async () => {
+            let done = 0;
+            for (const file of ordered) {
+              const relative = path.relative(sourceDir, file).replace(/\\/g, '/');
+              const destination = `${process.env.PUBLIC_PREFIX}/${relative}`;
+              await bucket.upload(file, {
+                destination,
+                resumable: false,
+                metadata: {
+                  contentType: contentType(file),
+                  cacheControl: switchFiles.has(relative) ? 'public, max-age=300' : 'public, max-age=31536000, immutable'
+                }
+              });
+              done += 1;
+              if (done % 250 === 0 || done === ordered.length) console.log(`Upload TEST : ${done}/${ordered.length}`);
+            }
+            const [manifestExists] = await bucket.file(`${process.env.PUBLIC_PREFIX}/manifest.json`).exists();
+            const [versionExists] = await bucket.file(`${process.env.PUBLIC_PREFIX}/version.js`).exists();
+            if (!manifestExists || !versionExists) throw new Error('Manifest/version publics TEST absents après upload.');
+            console.log(JSON.stringify({ ok: true, bucket: process.env.TARGET_PUBLIC_BUCKET, prefix: process.env.PUBLIC_PREFIX, files: ordered.length }, null, 2));
+          })().catch((error) => { console.error(error.stack || error); process.exit(1); });
+          NODE
+
+      - name: Supprimer le credential temporaire
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/livepalmes-test-publication.json"
