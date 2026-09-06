@@ -109,7 +109,7 @@ jobs:
           const testApp = initializeApp({ credential: cert(testCredential), projectId: 'livepalmes-test' }, 'test-index-destination');
           const prodDb = getFirestore(prodApp);
           const testDb = getFirestore(testApp);
-          const pageSize = 400;
+          const pageSize = 25;
           const collections = [
             'engagementClubRosters',
             'engagementClubPeopleRosters',
