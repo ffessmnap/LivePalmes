@@ -1,4 +1,6 @@
 const crypto = require("node:crypto");
+const qualificationEngine = require("./engagement-qualification");
+const { createQualificationService } = require("./engagement-qualification-service");
 const fs = require("node:fs");
 const path = require("node:path");
 const zlib = require("node:zlib");
@@ -254,7 +256,7 @@ const ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = "engagementClubPeopleRosters";
 const ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION = "engagementSwimmerLicenseNumbers";
 const ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION = "engagementSwimmerChangeRequests";
 const ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION = "engagementEntryTimeCaches";
-const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3;
+const ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 4;
 const ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX = "entry-documents";
 const ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX = "competition-documents";
 const ENGAGEMENT_MAIL_JOBS_COLLECTION = "engagementMailJobs";
@@ -5146,6 +5148,9 @@ function engagementCompetitionDetailItem(doc, options = {}) {
     : {};
   return {
     ...engagementCompetitionListItem(doc),
+    qualifications: data.qualifications || { enabled: false },
+    qualificationVersion: Number(data.qualificationVersion || 0),
+    qualificationJobId: cleanText(data.qualificationJobId),
     events,
     programSessions: cleanEngagementProgramSessions(data.programSessions || [], events, { strict: false }),
     fees: cleanEngagementFees(data.fees || {}, { strict: false }),
@@ -5361,6 +5366,7 @@ function cleanEngagementEntryIndividualEntries(rawEntries = [], allowedCodes = n
     seen.add(eventCode);
     return {
       eventCode,
+      ...(rawEntry?.qualification ? { qualification: rawEntry.qualification } : {}),
       status: cleanText(rawEntry?.status || "selected").slice(0, 40) || "selected",
       manualEntryTime: cleanText(rawEntry?.manualEntryTime || rawEntry?.entryTimeManual).slice(0, 20),
       entryTime: cleanText(rawEntry?.entryTime).slice(0, 20),
@@ -5550,6 +5556,35 @@ function cleanEngagementEntryRelays(rawRelays = [], competition = {}, swimmers =
   }).filter(Boolean);
 }
 
+function qualificationRelaysAfterIndividualChange(relays = [], swimmers = [], competition = {}) {
+  if (!competition.qualifications?.enabled) return relays;
+  const evaluations = Object.fromEntries(swimmers.map((swimmer) => [swimmer.swimmerIndexId, {
+    courses: Object.fromEntries((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry.qualification || {}]))
+  }]));
+  return relays.filter((relay) => qualificationEngine.relayEligible(relay, swimmers, evaluations));
+}
+
+function qualificationEvents(competition = {}) {
+  return cleanEngagementCompetitionEvents(competition.events || [], { strict: false, competitionType: competition.competitionType })
+    .map((event) => ({ ...event, categories: event.categoryRestrictions?.length ? event.categoryRestrictions : engagementCategoryCodesForEvent(event.code)
+      .filter((category) => !(ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[event.code] || new Set()).has(category)) }));
+}
+
+const qualificationService = createQualificationService({ db, HttpsError, categoryFor: ageCategoryFromDates,
+  eventsFor: qualificationEvents, rowsFor: getEngagementQualificationRows, cacheIdFor: engagementEntryTimeCacheId,
+  access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
+  assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
+
+exports.listEngagementQualificationSources = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listSources(request));
+exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => qualificationService.process(request));
+exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, (request) => qualificationService.requestDerogation(request));
+exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listRequests(request));
+exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, (request) => qualificationService.resolveRequest(request));
+exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
+  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => qualificationService.syncTargets(event));
+exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
+  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => qualificationService.revalidateCache(event));
+
 function engagementQualificationRowAllowed(row = {}, competition = {}) {
   if (row.active === false || row.status === "hidden") return false;
   if (!Number(row.timeValue || 0)) return false;
@@ -5603,6 +5638,11 @@ function engagementEntryTimeCacheRef(db, swimmer = {}) {
 
 function engagementEntryTimeCacheRow(row = {}) {
   return cleanFirestoreValue({
+    competitionId: cleanText(row.competitionId || String(row.id || "").match(/^import:([^:]+):/)?.[1]).slice(0, 160),
+    qualificationCompetitionId: cleanText(row.qualificationCompetitionId).slice(0, 160),
+    category: cleanText(row.category),
+    active: row.active !== false,
+    status: cleanText(row.status || "active"),
     publicKey: cleanText(row.publicKey || row.performanceBaseId || row.id).slice(0, 160),
     performanceBaseId: cleanText(row.performanceBaseId).slice(0, 160),
     date: cleanIsoDate(row.date),
@@ -5626,6 +5666,7 @@ function engagementEntryTimeCacheRowsFromData(data = {}) {
 
 function engagementEntryTimeRowsToEvents(rows = []) {
   const events = {};
+  let bytes = 0;
   rows
     .map(engagementEntryTimeCacheRow)
     .filter((row) => row.course && row.date && row.timeValue)
@@ -5636,6 +5677,9 @@ function engagementEntryTimeRowsToEvents(rows = []) {
     )
     .slice(0, 1500)
     .forEach((row) => {
+      const size = Buffer.byteLength(JSON.stringify(row), "utf8");
+      if (bytes + size > 700000) return;
+      bytes += size;
       if (!events[row.course]) events[row.course] = [];
       events[row.course].push(row);
     });
@@ -5660,7 +5704,7 @@ async function readEngagementEntryTimeSourceRows(swimmer = {}) {
     if (!payload || !Array.isArray(payload.rows)) continue;
     return {
       sourceKey,
-      rows: payload.rows.map(publicPerformanceBaseRow)
+      rows: hydratePublicSwimmerRowsFromPayload(payload.rows, payload, sourceKey).map(publicPerformanceBaseRow)
     };
   }
   return null;
@@ -5695,13 +5739,14 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
     sourceKey: cleanText(indexedSource.sourceKey).slice(0, 180),
     generatedAt: now,
     updatedAt: now,
+    truncated: activeRows.length > Object.values(events).reduce((sum, eventRows) => sum + eventRows.length, 0),
     rowCount: Object.values(events).reduce((sum, eventRows) => sum + eventRows.length, 0),
     events
   }, { merge: false });
-  return engagementEntryTimeCacheRowsFromData({ events });
+  return { cachedRows: engagementEntryTimeCacheRowsFromData({ events }), completeRows: activeRows };
 }
 
-async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}) {
+async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}, { requireComplete = false } = {}) {
   if (cleanText(swimmer.source) === "engagement") return [];
   const cacheId = engagementEntryTimeCacheId(swimmer);
   const cacheSnapshot = await engagementEntryTimeCacheRef(db, swimmer).get();
@@ -5710,17 +5755,56 @@ async function getEngagementEntryTimeRowsForSwimmer(swimmer = {}) {
     cleanText(cacheSnapshot.data()?.generatedAt);
   if (cacheReady) {
     console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: true });
+    if (requireComplete && cacheSnapshot.data().truncated) {
+      const source = await readEngagementEntryTimeSourceRows(swimmer);
+      if (!source) throw new HttpsError("unavailable", "Historique momentanément indisponible. Réessayez avant de vous engager.");
+      return source.rows;
+    }
     return engagementEntryTimeCacheRowsFromData(cacheSnapshot.data() || {});
   }
   if (engagementEntryTimeCacheBuilds.has(cacheId)) {
     console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: false, sharedBuild: true });
-    return engagementEntryTimeCacheBuilds.get(cacheId);
+    const shared = await engagementEntryTimeCacheBuilds.get(cacheId);
+    return requireComplete ? shared.completeRows : shared.cachedRows;
   }
   console.info("livepalmes.engagement.times.cache", { cacheId, cacheHit: false, sharedBuild: false });
   const build = rebuildEngagementEntryTimeCache(db, swimmer)
     .finally(() => engagementEntryTimeCacheBuilds.delete(cacheId));
   engagementEntryTimeCacheBuilds.set(cacheId, build);
-  return build;
+  const result = await build;
+  return requireComplete ? result.completeRows : result.cachedRows;
+}
+
+async function getEngagementQualificationRows(swimmer = {}, competition = {}) {
+  let rows = await getEngagementEntryTimeRowsForSwimmer(swimmer, { requireComplete: true });
+  const group = competition.qualifications?.groups?.find((item) => item.categories.includes(ageCategoryFromDates(competition.date, swimmer.birthDate)));
+  if (group?.competitionMode !== "selected" || !rows.some((row) => !row.competitionId && row.date >= group.startDate && row.date <= group.endDate)) return rows;
+  // Older compact Storage files omit competition ids. Reuse existing swimmer
+  // pages (500 results/document) instead of reading each performance separately.
+  const identity = cleanText(swimmer.identityKey || swimmer.swimmerIdentityKey);
+  const indexId = identity ? stableHash(identity).slice(0, 40) : cleanText(swimmer.swimmerIndexId || swimmer.id);
+  const index = await db.collection(PERFORMANCE_SWIMMERS_COLLECTION).doc(indexId).get();
+  const count = Number(index.data()?.pageCount || 0);
+  if (!count || count > 20) throw new HttpsError("failed-precondition", "L'index des compétitions de ce nageur doit être actualisé par le National avant contrôle. Aucun engagement n'a été supprimé.");
+  const pages = await db.getAll(...Array.from({ length: count }, (_, page) => db.collection(PERFORMANCE_SWIMMER_PAGES_COLLECTION).doc(performanceSwimmerPageId(indexId, page))));
+  if (pages.some((page) => !page.exists)) throw new HttpsError("unavailable", "Index des performances incomplet. Réessayez après son actualisation.");
+  const byId = new Map(pages.flatMap((page) => page.data().rows || []).flatMap((row) => [row.publicKey, row.performanceBaseId, row.id].map(cleanText).filter(Boolean).map((id) => [id, row])));
+  const signature = (items) => stableHash(JSON.stringify(items.map(engagementEntryTimeCacheRow).sort((a, b) => a.publicKey.localeCompare(b.publicKey))));
+  const sourceSignature = signature(rows);
+  rows = rows.map((row) => {
+    const full = byId.get(cleanText(row.publicKey || row.performanceBaseId || row.id));
+    return { ...row, competitionId: row.competitionId || cleanText(full?.competitionId), qualificationCompetitionId: row.qualificationCompetitionId || cleanText(full?.qualificationCompetitionId) };
+  });
+  if (rows.some((row) => !row.competitionId && row.date >= group.startDate && row.date <= group.endDate)) throw new HttpsError("failed-precondition", "Certaines performances n'ont pas de compétition identifiée. Le National doit actualiser leur index avant contrôle.");
+  const events = engagementEntryTimeRowsToEvents(rows);
+  await db.runTransaction(async (tx) => {
+    const ref = engagementEntryTimeCacheRef(db, swimmer);
+    const current = await tx.get(ref);
+    if (current.exists && signature(engagementEntryTimeCacheRowsFromData(current.data())) === sourceSignature) {
+      tx.set(ref, { events, truncated: rows.length > Object.values(events).flat().length }, { merge: true });
+    }
+  });
+  return rows;
 }
 
 function deleteEngagementEntryTimeCache(batch, db, swimmer = {}) {
@@ -5731,11 +5815,11 @@ function deleteEngagementEntryTimeCache(batch, db, swimmer = {}) {
 
 async function invalidateEngagementEntryTimeCachesForPerformanceRows(rows = []) {
   const cacheIds = Array.from(new Set(rows
-    .map((row) => engagementEntryTimeCacheId({
-      source: "performances",
+    .flatMap((row) => ["performances", "reference"].map((source) => engagementEntryTimeCacheId({
+      source,
       identityKey: performanceSwimmerIndexKey(row),
       swimmerId: row.swimmerId
-    }))
+    })))
     .filter(Boolean)));
   let batch = db.batch();
   let batchSize = 0;
@@ -5866,8 +5950,12 @@ function validateEngagementRelayEntryTimes(relays = [], competition = {}, record
 
 async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entries = [], competition = {}) {
   if (!entries.length) return [];
-  const rows = await getEngagementEntryTimeRowsForSwimmer(swimmer);
-  return entries.map((entry) => {
+  const rows = competition.qualifications?.enabled ? await getEngagementQualificationRows(swimmer, competition) : await getEngagementEntryTimeRowsForSwimmer(swimmer);
+  const evaluation = competition.qualifications?.enabled ? await qualificationService.evaluate(swimmer, competition, rows) : { enabled: false };
+  if (!competition.qualificationPreview && qualificationEngine.reconcile(entries, evaluation).removed.length) {
+    throw new HttpsError("failed-precondition", "Engagement non conforme aux qualifications. Sélectionnez une course qualifiée et vérifiez les conditions des courses supplémentaires.");
+  }
+  const resolved = entries.map((entry) => {
     const eventCode = cleanText(entry.eventCode).toUpperCase().replace(/\s+/g, "");
     const manualMode = cleanText(entry.entryTimeMode) === "manual";
     const manualRaw = manualMode
@@ -5906,6 +5994,7 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
       entryTimeValue: 359999
     }])[0];
   }).filter(Boolean);
+  return resolved.map((entry) => ({ ...entry, ...(evaluation.enabled ? { qualification: { ...evaluation.courses[entry.eventCode], mode: evaluation.mode } } : {}) }));
 }
 
 function engagementSwimmerIdentityKey(firstName, lastName, birthDate) {
@@ -6455,6 +6544,7 @@ function engagementClubEntryItem(doc, fallback = {}) {
     clubName: engagementClubName(data.clubId, data.clubName).slice(0, 140),
     regionId: cleanText(data.regionId).slice(0, 80),
     status: cleanText(data.status || "active"),
+    qualificationAlert: data.qualificationAlert || null,
     teamLeader: {
       mode: cleanText(teamLeader.mode),
       personId: cleanText(teamLeader.personId).slice(0, 80),
@@ -7583,6 +7673,7 @@ async function saveEngagementClubRecapPdfDocument(competition = {}, entry = {}, 
 
 async function getOrCreateEngagementClubRecapPdf(competitionSnapshot, entrySnapshot, options = {}) {
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  if (competition.qualificationJobId) throw new HttpsError("failed-precondition", "Attendez la fin du contrôle des qualifications avant de générer les documents.");
   const entry = engagementClubEntryItem(entrySnapshot);
   if (!engagementClubEntryHasParticipants(entry)) {
     throw new HttpsError("failed-precondition", "Aucun nageur, officiel ou relais engage pour ce club.");
@@ -7903,6 +7994,7 @@ async function readStoredEngagementTxt(document = {}) {
 
 async function getOrCreateEngagementCompetitionTxt(competitionSnapshot, entrySnapshots = [], options = {}) {
   const competition = engagementCompetitionDetailItem(competitionSnapshot);
+  if (competition.qualificationJobId) throw new HttpsError("failed-precondition", "Attendez la fin du contrôle des qualifications avant de générer les documents.");
   const rawCompetition = competitionSnapshot.data() || {};
   const entries = entrySnapshots
     .map((entryDoc) => engagementClubEntryItem(entryDoc))
@@ -9577,6 +9669,7 @@ function engagementDeletionRequestId(sourceType = "competition", eventId = "") {
 }
 
 function engagementClubWriteLockReason(competition = {}, nowMs = Date.now()) {
+  if (competition.qualificationJobId) return "Contrôle des qualifications en cours. Réessayez après sa validation par le National.";
   const entryStatus = cleanEngagementEntryStatus(competition.entryStatus || competition.status);
   if (entryStatus === "closed") return "Les engagements sont fermes.";
   if (entryStatus !== "open") return "Les engagements ne sont pas ouverts.";
@@ -11321,6 +11414,7 @@ async function reserveEngagementCompetitionClosure(db, competitionRef, now) {
       return { reserved: false, reason: "not-found" };
     }
     const data = snapshot.data() || {};
+    if (data.qualificationJobId) return { reserved: false, reason: "qualification-control" };
     const entryStatus = cleanEngagementEntryStatus(data.entryStatus || data.status);
     const deadline = cleanIsoDateTime(data.entryDeadlineAt);
     if (entryStatus !== "open") {
@@ -15087,12 +15181,18 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
 });
 
 async function buildEngagementClubSwimmersFromRequest(requestData = {}, context = {}, competitionData = {}) {
+  const competitionId = cleanText(requestData.competitionId || competitionData.id);
   const openWater = cleanEngagementCompetitionType(competitionData.competitionType) === "openWater";
   const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], {
     strict: false,
     competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
   });
   const competitionTimeRules = {
+    id: competitionId,
+    hasQualificationGrants: competitionData.hasQualificationGrants === true,
+    qualificationPreview: competitionData.qualificationPreview === true,
+    qualifications: competitionData.qualifications,
+    events: competitionData.events,
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
     timingType: cleanEngagementTimingType(competitionData.timingType),
@@ -15277,7 +15377,7 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
   }
-  const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, competition.data() || {});
+  const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, { ...competition.data(), qualificationPreview: true });
   return {
     ok: true,
     swimmers,
@@ -15302,7 +15402,7 @@ exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (requ
   if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
   }
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   if (cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode) !== "manual") {
     throw new HttpsError("failed-precondition", "La modification des temps d'engagement n'est pas autorisee.");
   }
@@ -15389,8 +15489,13 @@ exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async 
     throw new HttpsError("permission-denied", "Nageur hors perimetre club.");
   }
 
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   const competitionTimeRules = {
+    id: competitionId,
+    hasQualificationGrants: competitionData.hasQualificationGrants === true,
+    qualificationPreview: true,
+    qualifications: competitionData.qualifications,
+    events: competitionData.events,
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
     timingType: cleanEngagementTimingType(competitionData.timingType),
@@ -15438,7 +15543,7 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
     .map(cleanEngagementEntrySwimmer)
     .filter((swimmer) => swimmer.swimmerIndexId)
     .map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   if (cleanEngagementCompetitionType(competitionData.competitionType) === "openWater") {
     return {
       ok: true,
@@ -15451,6 +15556,11 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
     };
   }
   const competitionTimeRules = {
+    id: competitionId,
+    hasQualificationGrants: competitionData.hasQualificationGrants === true,
+    qualificationPreview: true,
+    qualifications: competitionData.qualifications,
+    events: competitionData.events,
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
     timingType: cleanEngagementTimingType(competitionData.timingType),
@@ -15500,7 +15610,7 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
   }
 
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   const openWater = cleanEngagementCompetitionType(competitionData.competitionType) === "openWater";
   const competitionEvents = cleanEngagementCompetitionEvents(competitionData.events || [], {
     strict: false,
@@ -15511,6 +15621,11 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
   );
   const maxEventsPerSwimmer = cleanEngagementMaxEventsPerSwimmer(competitionData.maxEventsPerSwimmer);
   const competitionTimeRules = {
+    id: competitionId,
+    hasQualificationGrants: competitionData.hasQualificationGrants === true,
+    qualificationPreview: competitionData.qualificationPreview === true,
+    qualifications: competitionData.qualifications,
+    events: competitionData.events,
     date: cleanIsoDate(competitionData.date),
     poolLength: cleanEngagementPoolLength(competitionData.poolLength),
     timingType: cleanEngagementTimingType(competitionData.timingType),
@@ -15570,6 +15685,9 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
   if (changedSwimmers.length) {
     await db.runTransaction(async (transaction) => {
       const latestEntry = await transaction.get(entryRef);
+      const latestCompetition = await transaction.get(competitionRef);
+      assertEngagementClubWriteOpen(latestCompetition.data() || {});
+      if (latestCompetition.updateTime.toMillis() !== competition.updateTime.toMillis()) throw new HttpsError("aborted", "Les règles ont changé. Rechargez la compétition.");
       if (!latestEntry.exists || !engagementTeamLeaderComplete(latestEntry.data()?.teamLeader || {})) {
         throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
       }
@@ -15582,14 +15700,17 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
         throw new HttpsError("failed-precondition", "Un nageur modifie n'est plus selectionne dans cette competition. Rechargez la fiche.");
       }
       const swimmers = latestSwimmers.map((swimmer) => changedById.get(swimmer.swimmerIndexId) || swimmer);
+      const relays = qualificationRelaysAfterIndividualChange(latestEntry.data()?.relays || [], swimmers, competitionData);
       updatedEntryData = {
         ...(latestEntry.data() || {}),
         swimmers,
+        relays,
         updatedAt: now,
         updatedBy: context.uid
       };
       transaction.set(entryRef, {
         swimmers,
+        relays,
         updatedAt: now,
         updatedBy: context.uid
       }, { merge: true });
@@ -15634,7 +15755,7 @@ exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (req
 
   let validatedSwimmer = null;
   if (selected) {
-    const swimmers = await buildEngagementClubSwimmersFromRequest({ swimmers: [request.data?.swimmer || {}] }, context, competition.data() || {});
+    const swimmers = await buildEngagementClubSwimmersFromRequest({ swimmers: [request.data?.swimmer || {}] }, context, { ...competition.data(), id: competition.id });
     validatedSwimmer = swimmers[0] || null;
     if (!validatedSwimmer || validatedSwimmer.swimmerIndexId !== swimmerIndexId) {
       throw new HttpsError("invalid-argument", "Nageur invalide.");
@@ -15646,6 +15767,9 @@ exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (req
   let updatedEntryData = null;
   await db.runTransaction(async (transaction) => {
     const entry = await transaction.get(entryRef);
+    const currentCompetition = await transaction.get(competitionRef);
+    assertEngagementClubWriteOpen(currentCompetition.data() || {});
+    if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis()) throw new HttpsError("aborted", "La compétition a changé. Rechargez la fiche.");
     if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
       throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
     }
@@ -15657,16 +15781,19 @@ exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (req
     const swimmers = selected
       ? (alreadySelected ? savedSwimmers : [...savedSwimmers, validatedSwimmer])
       : savedSwimmers.filter((swimmer) => swimmer.swimmerIndexId !== swimmerIndexId);
+    const relays = qualificationRelaysAfterIndividualChange(entry.data()?.relays || [], swimmers, competition.data() || {});
     changed = selected !== alreadySelected;
     updatedEntryData = {
       ...(entry.data() || {}),
       swimmers,
+      relays,
       updatedAt: changed ? now : cleanText(entry.data()?.updatedAt),
       updatedBy: changed ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changed) return;
     transaction.set(entryRef, {
       swimmers,
+      relays,
       updatedAt: now,
       updatedBy: context.uid
     }, { merge: true });
@@ -15750,7 +15877,7 @@ exports.saveEngagementClubSwimmerSelections = onCall(CALLABLE_OPTIONS, async (re
 
   const selectedChanges = changes.filter((change) => change.selected);
   const validatedSwimmers = selectedChanges.length
-    ? await buildEngagementClubSwimmersFromRequest({ swimmers: selectedChanges.map((change) => change.swimmer) }, context, competition.data() || {})
+    ? await buildEngagementClubSwimmersFromRequest({ swimmers: selectedChanges.map((change) => change.swimmer) }, context, { ...competition.data(), id: competition.id })
     : [];
   const validatedById = new Map(validatedSwimmers.map((swimmer) => [swimmer.swimmerIndexId, swimmer]));
   selectedChanges.forEach((change) => {
@@ -15762,6 +15889,9 @@ exports.saveEngagementClubSwimmerSelections = onCall(CALLABLE_OPTIONS, async (re
   let updatedEntryData = null;
   await db.runTransaction(async (transaction) => {
     const entry = await transaction.get(entryRef);
+    const currentCompetition = await transaction.get(competitionRef);
+    assertEngagementClubWriteOpen(currentCompetition.data() || {});
+    if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis()) throw new HttpsError("aborted", "La compétition a changé. Rechargez la fiche.");
     if (!entry.exists || !engagementTeamLeaderComplete(entry.data()?.teamLeader || {})) {
       throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
     }
@@ -15783,14 +15913,16 @@ exports.saveEngagementClubSwimmerSelections = onCall(CALLABLE_OPTIONS, async (re
       }
     });
     const swimmers = Array.from(swimmersById.values());
+    const relays = qualificationRelaysAfterIndividualChange(entry.data()?.relays || [], swimmers, competition.data() || {});
     updatedEntryData = {
       ...(entry.data() || {}),
       swimmers,
+      relays,
       updatedAt: changedCount ? now : cleanText(entry.data()?.updatedAt),
       updatedBy: changedCount ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changedCount) return;
-    transaction.set(entryRef, { swimmers, updatedAt: now, updatedBy: context.uid }, { merge: true });
+    transaction.set(entryRef, { swimmers, relays, updatedAt: now, updatedBy: context.uid }, { merge: true });
     validatedSwimmers.forEach((swimmer) => {
       if (!swimmer.licenseNumber || swimmer.licenseLocked) return;
       if (swimmer.source !== "reference") {
@@ -15857,14 +15989,20 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les nageurs.");
   }
 
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   const swimmers = await buildEngagementClubSwimmersFromRequest(request.data || {}, context, competitionData);
   assertEngagementSwimmerRoleCompatibility(entry.data() || {}, swimmers);
 
   const now = new Date().toISOString();
-  const batch = db.batch();
+  const relays = qualificationRelaysAfterIndividualChange(entry.data()?.relays || [], swimmers, competitionData);
+  await db.runTransaction(async (batch) => {
+  const currentCompetition = await batch.get(competition.ref);
+  const currentEntry = await batch.get(entryRef);
+  assertEngagementClubWriteOpen(currentCompetition.data() || {});
+  if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || currentEntry.updateTime.toMillis() !== entry.updateTime.toMillis()) throw new HttpsError("aborted", "La fiche a changé. Rechargez-la.");
   batch.set(entryRef, {
     swimmers,
+    relays,
     updatedAt: now,
     updatedBy: context.uid
   }, { merge: true });
@@ -15900,7 +16038,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
     }
     upsertEngagementClubRosterSwimmer(batch, db, swimmer, now);
   });
-  await batch.commit();
+  });
   await writeAuditLog("engagementClubEntry.swimmersSaved", context.uid, {
     competitionId,
     clubId: context.clubId,
@@ -15909,6 +16047,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const updatedEntryData = {
     ...(entry.data() || {}),
     swimmers,
+    relays,
     updatedAt: now,
     updatedBy: context.uid
   };
@@ -15942,7 +16081,7 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
   const swimmers = (Array.isArray(entryData.swimmers) ? entryData.swimmers : [])
     .map(cleanEngagementEntrySwimmer)
     .filter((swimmer) => swimmer.swimmerIndexId);
-  const competitionData = competition.data() || {};
+  const competitionData = { ...competition.data(), id: competition.id };
   const events = cleanEngagementCompetitionEvents(competitionData.events || [], {
     strict: false,
     competitionType: cleanEngagementCompetitionType(competitionData.competitionType)
@@ -15960,12 +16099,24 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
       timingType: cleanEngagementTimingType(competitionData.timingType)
     }, recordsData);
   }
+  if (competitionData.qualifications?.enabled) {
+    const evaluations = {};
+    const memberIds = new Set(relays.flatMap((relay) => relay.memberIds || []));
+    for (const swimmer of swimmers.filter((item) => memberIds.has(item.swimmerIndexId) && item.individualEntries?.length)) {
+      evaluations[swimmer.swimmerIndexId] = await qualificationService.evaluate(swimmer, { ...competitionData, id: competitionId });
+    }
+    if (relays.some((relay) => !qualificationEngine.relayEligible(relay, swimmers, evaluations))) {
+      throw new HttpsError("failed-precondition", "Chaque relais composé doit comprendre un nageur qualifié et engagé sur une course individuelle qualifiée. Une composition vide peut être renseignée lors de la compétition.");
+    }
+  }
   const now = new Date().toISOString();
-  await entryRef.set({
-    relays,
-    updatedAt: now,
-    updatedBy: context.uid
-  }, { merge: true });
+  await db.runTransaction(async (transaction) => {
+    const currentCompetition = await transaction.get(competition.ref);
+    const currentEntry = await transaction.get(entryRef);
+    assertEngagementClubWriteOpen(currentCompetition.data() || {});
+    if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || currentEntry.updateTime.toMillis() !== entry.updateTime.toMillis()) throw new HttpsError("aborted", "Les engagements ont changé. Rechargez la fiche.");
+    transaction.set(entryRef, { relays, updatedAt: now, updatedBy: context.uid }, { merge: true });
+  });
   await writeAuditLog("engagementClubEntry.relaysSaved", context.uid, {
     competitionId,
     clubId: context.clubId,
@@ -15988,6 +16139,13 @@ exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     entryStatus: "upcoming",
     entryDeadlineAt: ""
   }, context);
+  if (request.data?.qualifications !== undefined) {
+    if (!context.national) throw new HttpsError("permission-denied", "Seul le National peut configurer les qualifications.");
+    try { competition.qualifications = qualificationEngine.validateRules(request.data.qualifications, qualificationEvents(competition)); }
+    catch (error) { throw new HttpsError("invalid-argument", error.message); }
+    if (competition.qualifications.enabled && competition.competitionType !== "pool") throw new HttpsError("invalid-argument", "Qualifications réservées aux compétitions piscine.");
+    competition.qualificationVersion = 1;
+  }
   const now = new Date().toISOString();
   const docRef = db.collection("engagementCompetitions").doc();
   const payload = {
@@ -16050,13 +16208,31 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     }
   }
   assertCanManageEngagementCompetition(context, competition);
+  if (snapshot.data()?.qualificationJobId) throw new HttpsError("failed-precondition", "Un contrôle de qualification est déjà en cours.");
+  const incoming = request.data?.qualifications;
+  if (incoming !== undefined && !context.national && JSON.stringify(incoming) !== JSON.stringify(snapshot.data()?.qualifications || { enabled: false })) {
+    throw new HttpsError("permission-denied", "Seul le National peut modifier les qualifications.");
+  }
+  let qualifications;
+  try {
+    qualifications = qualificationEngine.validateRules(incoming === undefined ? snapshot.data()?.qualifications : incoming,
+      qualificationEvents({ ...snapshot.data(), ...competition }), competition.entryStatus === "open");
+  } catch (error) { throw new HttpsError("invalid-argument", error.message); }
+  if (qualifications.enabled && competition.competitionType !== "pool") throw new HttpsError("invalid-argument", "Qualifications réservées aux compétitions piscine.");
   const now = new Date().toISOString();
-  const payload = {
-    ...competition,
-    updatedAt: now,
-    updatedBy: context.uid
-  };
-  await docRef.set(payload, { merge: true });
+  const payload = { ...competition, qualifications, updatedAt: now, updatedBy: context.uid };
+  const affectsQualifications = JSON.stringify(qualifications) !== JSON.stringify(snapshot.data()?.qualifications || { enabled: false, groups: [], standards: {} }) ||
+    (qualifications.enabled && (competition.date !== snapshot.data()?.date || JSON.stringify(competition.events || snapshot.data()?.events) !== JSON.stringify(snapshot.data()?.events)));
+  if (affectsQualifications) {
+    payload.qualificationVersion = Number(snapshot.data()?.qualificationVersion || 0) + 1;
+    if (!context.national) throw new HttpsError("permission-denied", "Cette modification affecte les qualifications : intervention nationale requise.");
+    return qualificationService.begin(request, docRef, payload, snapshot.updateTime.toMillis());
+  }
+  await db.runTransaction(async (tx) => {
+    const latest = await tx.get(docRef);
+    if (latest.updateTime.toMillis() !== snapshot.updateTime.toMillis() || latest.data()?.qualificationJobId) throw new HttpsError("aborted", "La compétition a changé. Rechargez sa fiche.");
+    tx.set(docRef, payload, { merge: true });
+  });
   await writeAuditLog("engagementCompetition.updated", context.uid, {
     competitionId,
     name: payload.name,
@@ -16469,6 +16645,7 @@ async function stageCompetitionImportReplacement(options = {}) {
     throw new HttpsError("failed-precondition", "L'import a remplacer n'est plus actif.");
   }
   const oldData = oldSnapshot.data() || {};
+  parsed.metadata = { ...parsed.metadata, qualificationCompetitionId: oldData.metadata?.qualificationCompetitionId || replacedImportId };
   if (!sameCompetitionImport(oldData.metadata || {}, parsed.metadata || {})) {
     throw new HttpsError("failed-precondition", "Le nouveau fichier ne correspond pas a la competition importee.");
   }
@@ -17236,6 +17413,7 @@ function normalizeLivePalmesImportPerformances(rawPerformances = []) {
         regionId: cleanText(perf.regionId),
         regionLabel: cleanText(perf.regionId),
         competitionId: perf.importId,
+        qualificationCompetitionId: cleanText(perf.metadata?.qualificationCompetitionId),
         competition: perf.competitionName || perf.metadata?.competitionName || "",
         location: perf.location || perf.metadata?.location || "",
         date,
@@ -17382,7 +17560,8 @@ function publicPerformanceBaseRow(row = {}) {
     clubName: cleanText(row.clubName),
     regionId: cleanText(row.regionId),
     regionLabel: cleanText(row.regionLabel),
-    competitionId: cleanText(row.competitionId),
+    competitionId: cleanText(row.competitionId || String(row.id || "").match(/^import:([^:]+):/)?.[1]),
+    qualificationCompetitionId: cleanText(row.qualificationCompetitionId),
     competition: cleanText(row.competition),
     location: cleanText(row.location),
     date,

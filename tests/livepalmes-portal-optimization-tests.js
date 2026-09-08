@@ -623,7 +623,7 @@ assert.ok(functions.includes("invalidateEngagementEntryTimeCachesForPerformanceR
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimes"));
 assert.ok(functions.includes("exports.previewEngagementClubSwimmerEventTimesBatch"));
 assert.ok(functions.includes("exports.getEngagementClubEntryTimeHistory"));
-assert.ok(functions.includes("ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 3"));
+assert.ok(functions.includes("ENGAGEMENT_ENTRY_TIME_CACHE_VERSION = 4"));
 const engagementQualificationSource = functions.slice(functions.indexOf("function engagementQualificationRowAllowed"), functions.indexOf("function bestEngagementKnownTime"));
 assert.equal(engagementQualificationSource.includes("isIntermediate"), false);
 assert.ok(functions.includes("function engagementKnownTimeHistory"));
