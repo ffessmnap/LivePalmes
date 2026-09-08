@@ -1,0 +1,16 @@
+.qualification-group { margin: 12px 0; padding: 12px; border: 1px solid #cbd5e1; }
+.qualification-categories, .qualification-fields { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; }
+.qualification-fields > label { flex: 1 1 180px; }
+.qualification-table-shell { overflow-x: auto; margin: 8px 0; }
+.qualification-table-shell table { width: 100%; border-collapse: collapse; }
+.qualification-table-shell th, .qualification-table-shell td { border: 1px solid #cbd5e1; padding: 6px; text-align: left; }
+.qualification-table-shell input { width: 110px; min-width: 0; }
+.qualification-table-shell select { width: auto; }
+[data-q-source-label] { display: block; margin: 6px 0; }
+[data-q-source-label][hidden] { display: none; }
+[data-q-source-list] { max-height: 300px; overflow: auto; border: 1px solid #cbd5e1; padding: 8px; }
+[data-q-error] { color: #a32626; }
+.qualification-request { padding: 8px 0; border-bottom: 1px solid #cbd5e1; }
+.qualification-request textarea { width: 100%; }
+
+.qualification-dialog { width: min(760px, 95vw); max-height: 85vh; overflow: auto; }

@@ -14,14 +14,7 @@ const sourceCompetitionIdsByTarget = new Map();
 const resultsPdfUrlsByTarget = new Map();
 const personalBests = new Map();
 const seasonBests = new Map();
-const laRocheSurYonProtocolUrl = "https://nap.ffessm.fr/ged/2026/5132/CNNP_P_06062026_La%20roche-sur-yon_CNNP202606065132.pdf";
-const manualResultAssociations = new Map([
-  ["e40fe3129ffd5d76286774193a2855ed", [{ calendarCompetitionId: "4980" }]],
-  ["d18c4f3dc04b5cc5402f340fe2af1ca5", [
-    { calendarCompetitionId: "4981", categoryKind: "master", resultsPdfUrl: laRocheSurYonProtocolUrl },
-    { calendarCompetitionId: "5132", categoryKind: "minime" }
-  ]]
-]);
+const manualResultAssociations = new Map(Object.entries(require("../functions/config/calendar-result-associations.json")));
 function updateBest(map, key, timeValue) { if (key && timeValue > 0 && (!map.has(key) || timeValue < map.get(key))) map.set(key, timeValue); }
 function matchesAssociation(rule, performance) {
   const category = String(performance.category || "").toUpperCase();

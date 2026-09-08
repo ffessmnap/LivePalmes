@@ -60,6 +60,8 @@ function runUnitTests() {
     "livepalmes-public-pdf-storage-tests.js",
     "engagement-competition-documents-tests.js",
     "engagement-program-phases-tests.js",
+    "engagement-qualification-tests.js",
+    "engagement-qualification-service-tests.js",
     "public-calendar-tests.js",
     "livepalmes-public-records-data-tests.js",
     "livepalmes-public-records-store-tests.js",
