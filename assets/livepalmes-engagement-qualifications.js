@@ -132,7 +132,7 @@
           </fieldset>`).join("")}
           <button class="qualification-button qualification-button--add" type="button" data-q-add>+ Ajouter un groupe de catégories</button>
           <section class="qualification-standards">
-            ${national ? `<div class="qualification-import-actions"><a class="qualification-button" href="docs/Trame_minima_LivePalmes.xlsx" download>Télécharger la trame Excel</a><button class="qualification-button" type="button" data-q-import>Importer les minima</button><input data-q-file type="file" accept=".xlsx" hidden></div>` : ""}
+            ${national ? `<div class="qualification-import-actions"><a class="qualification-button" href="assets/Trame_minima_LivePalmes.xlsx" download>Télécharger la trame Excel</a><button class="qualification-button" type="button" data-q-import>Importer les minima</button><input data-q-file type="file" accept=".xlsx" hidden></div>` : ""}
             <p ${selectedCategories.length ? "hidden" : ""}>Pour saisir les temps, ajoutez un groupe puis sélectionnez ses catégories ci-dessus. Chaque catégorie fera apparaître une colonne de saisie.</p>
             <div ${selectedCategories.length ? "" : "hidden"}>
             <div class="qualification-standards-head"><div><h3>Minima par course</h3><p>Saisissez 12345 pour obtenir 01:23.45. « Libre » signifie sans minimum.</p></div><button class="qualification-button" type="button" data-q-copy-sex>Copier Femmes vers Hommes</button></div>
