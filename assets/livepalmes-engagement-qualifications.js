@@ -32,7 +32,7 @@
       const standards = { ...draft.standards };
       for (const cell of mount.querySelectorAll("[data-q-standard]")) {
         const id = cell.dataset.qStandard;
-        const value = cell.querySelector("select").value === "none" ? null : parse(cell.querySelector("input").value);
+        const value = cell.dataset.qNone === "true" ? null : parse(cell.querySelector("input").value);
         if (value === undefined) delete standards[id]; else standards[id] = value;
       }
       draft.standards = standards;
@@ -41,33 +41,41 @@
     function render() {
       const selectedCategories = [...new Set(draft.groups.flatMap((group) => group.categories))];
       mount.innerHTML = `<legend>Qualifications</legend>
-        <label><input type="checkbox" data-q-enabled ${draft.enabled ? "checked" : ""}> Appliquer une grille de qualification</label>
+        <label class="qualification-enable">
+          <span><strong>Grille de qualification</strong><small>Contrôler automatiquement les engagements individuels</small></span>
+          <input type="checkbox" data-q-enabled ${draft.enabled ? "checked" : ""} aria-label="Appliquer une grille de qualification">
+        </label>
         <div data-q-content ${draft.enabled ? "" : "hidden"}>
-          <p>Une même grille pour les bassins de 25 et 50 m. Les catégories sont celles de la saison de cette compétition.</p>
-          ${draft.groups.map((group, index) => `<fieldset data-q-group class="qualification-group"><legend>Groupe ${index + 1}</legend>
-            <div class="qualification-categories">${categories.map((category) => `<label><input type="checkbox" data-q-category value="${category}" ${group.categories.includes(category) ? "checked" : ""}> ${category}</label>`).join("")}</div>
+          <p class="qualification-intro">Les catégories sont celles de la saison de la compétition. Les minima sont communs aux bassins sélectionnés.</p>
+          ${draft.groups.map((group, index) => `<fieldset data-q-group class="qualification-group"><legend>Règles du groupe ${index + 1}</legend>
+            <div class="qualification-categories" aria-label="Catégories du groupe">${categories.map((category) => `<label><input type="checkbox" data-q-category value="${category}" ${group.categories.includes(category) ? "checked" : ""}><span>${category}</span></label>`).join("")}</div>
             <div class="qualification-fields">
               <label>Mode<select data-q-mode><option value="each" ${group.mode === "each" ? "selected" : ""}>Minimum sur chaque course</option><option value="one" ${group.mode === "one" ? "selected" : ""}>Au moins une course qualifiée et engagée</option></select></label>
               <label>Début de période<input type="date" data-q-start value="${escape(group.startDate)}"></label>
               <label>Fin de période<input type="date" data-q-end value="${escape(group.endDate)}"></label>
             </div>
-            <div class="qualification-categories">Bassins ${["25", "50"].map((pool) => `<label><input type="checkbox" data-q-pool value="${pool}" ${group.pools.includes(pool) ? "checked" : ""}> ${pool} m</label>`).join("")}</div>
-            <label><input type="checkbox" data-q-electronic ${group.electronicOnly !== false ? "checked" : ""}> Chronométrage électronique uniquement</label>
-            <label>Compétitions qualificatives<select data-q-source-mode><option value="all" ${group.competitionMode === "all" ? "selected" : ""}>Toutes les compétitions de la période</option><option value="selected" ${group.competitionMode === "selected" ? "selected" : ""}>Sélection de compétitions</option></select></label>
+            <div class="qualification-options">
+              <span>Bassins</span>${["25", "50"].map((pool) => `<label><input type="checkbox" data-q-pool value="${pool}" ${group.pools.includes(pool) ? "checked" : ""}><span>${pool} m</span></label>`).join("")}
+              <label><input type="checkbox" data-q-electronic ${group.electronicOnly !== false ? "checked" : ""}><span>Chronométrage électronique uniquement</span></label>
+              <label><input type="checkbox" data-q-bonus ${group.bonusRequiresSelectedCompetition ? "checked" : ""}><span>Course bonus nagée dans une compétition qualificative</span></label>
+            </div>
+            <label class="qualification-source-mode">Compétitions qualificatives<select data-q-source-mode><option value="all" ${group.competitionMode === "all" ? "selected" : ""}>Toutes les compétitions de la période</option><option value="selected" ${group.competitionMode === "selected" ? "selected" : ""}>Sélection de compétitions</option></select></label>
             <div data-q-source-list ${group.competitionMode === "selected" ? "" : "hidden"}>
               <input type="search" data-q-search aria-label="Rechercher dans les compétitions chargées" placeholder="Rechercher une compétition chargée">
               ${[...new Set([...(group.competitionIds || []), ...sources.map((source) => source.id)])].map((id) => { const source = sources.find((item) => item.id === id); return `<label data-q-source-label><input type="checkbox" data-q-source value="${escape(id)}" ${(group.competitionIds || []).includes(id) ? "checked" : ""}> ${escape(source ? `${source.date || ""} · ${source.name}` : `Compétition sélectionnée (${id})`)}</label>`; }).join("")}
-              <button type="button" data-q-load ${sourcesStarted && !sourceCursor ? "disabled" : ""}>${sourcesStarted ? "Charger la suite" : "Charger les compétitions"}</button>
+              <button class="qualification-button" type="button" data-q-load ${sourcesStarted && !sourceCursor ? "disabled" : ""}>${sourcesStarted ? "Charger la suite" : "Charger les compétitions"}</button>
             </div>
-            <label><input type="checkbox" data-q-bonus ${group.bonusRequiresSelectedCompetition ? "checked" : ""}> Exiger aussi une compétition qualificative pour les courses bonus</label>
-            <button class="ghost-button" type="button" data-q-remove="${index}">Retirer ce groupe</button>
+            <div class="qualification-group-actions"><button class="qualification-button qualification-button--danger" type="button" data-q-remove="${index}">Retirer ce groupe</button></div>
           </fieldset>`).join("")}
-          <button class="ghost-button" type="button" data-q-add>Ajouter un groupe de catégories</button>
-          <p>Renseignez chaque case ou choisissez explicitement « Sans minimum ». Une case vide empêchera l’ouverture des engagements.</p>
-          ${selectedCategories.map((category) => `<details open><summary>${escape(category)}</summary><div class="qualification-table-shell"><table><thead><tr><th>Course</th><th>Femmes</th><th>Hommes</th></tr></thead><tbody>${events.filter((event) => event.type === "individual" && event.categories.includes(category)).map((event) => `<tr><th>${escape(event.shortLabel || event.code)}</th>${["F", "M"].map((sex) => {
-            const id = [category, sex, event.code].join("|"); const value = draft.standards[id];
-            return `<td data-q-standard="${escape(id)}"><select aria-label="Règle ${escape(id)}"><option value="time">Minimum</option><option value="none" ${value === null ? "selected" : ""}>Sans minimum</option></select><input inputmode="decimal" aria-label="Temps ${escape(id)}" placeholder="MM:SS.CC" value="${display(value)}" ${value === null ? "disabled" : ""}></td>`;
-          }).join("")}</tr>`).join("")}</tbody></table></div></details>`).join("")}
+          <button class="qualification-button qualification-button--add" type="button" data-q-add>+ Ajouter un groupe de catégories</button>
+          <section class="qualification-standards">
+            <div class="qualification-standards-head"><div><h3>Minima par course</h3><p>Saisissez 12345 pour obtenir 01:23.45. « Libre » signifie sans minimum.</p></div><button class="qualification-button" type="button" data-q-copy-sex>Copier Femmes vers Hommes</button></div>
+            ${["F", "M"].map((sex) => `<div class="qualification-grid-block"><h4>${sex === "F" ? "Femmes" : "Hommes"}</h4><div class="qualification-table-shell"><table class="qualification-grid"><thead><tr><th>Course</th>${selectedCategories.map((category) => `<th>${escape(category)}</th>`).join("")}</tr></thead><tbody>${events.filter((event) => event.type === "individual").map((event) => `<tr><th title="${escape(event.label || event.code)}">${escape(event.shortLabel || event.code)}</th>${selectedCategories.map((category) => {
+              if (!event.categories.includes(category)) return `<td class="qualification-cell-blocked" aria-label="${escape(category)} non autorisée">—</td>`;
+              const id = [category, sex, event.code].join("|"); const value = draft.standards[id]; const none = value === null;
+              return `<td data-q-standard="${escape(id)}" data-q-none="${none}"><input inputmode="decimal" autocomplete="off" aria-label="Minimum ${escape(event.shortLabel || event.code)} ${escape(category)} ${sex}" placeholder="MM:SS.CC" value="${display(value)}" ${none ? "disabled" : ""}><button type="button" data-q-none title="${none ? "Saisir un minimum" : "Définir sans minimum"}" aria-label="${none ? "Saisir un minimum" : "Sans minimum"}">${none ? "Libre" : "×"}</button></td>`;
+            }).join("")}</tr>`).join("")}</tbody></table></div></div>`).join("")}
+          </section>
         </div><p data-q-error role="status"></p>`;
       if (!national) mount.querySelectorAll("input,select,button").forEach((input) => { input.disabled = true; });
     }
@@ -76,7 +84,7 @@
       if (!national) return;
       try {
         const cell = event.target.closest("[data-q-standard]");
-        if (cell) cell.querySelector("input").disabled = cell.querySelector("select").value === "none";
+        if (cell && event.target.matches("input") && event.target.value.trim()) event.target.value = display(parse(event.target.value));
         capture(); onDirty();
         if (event.target.matches("[data-q-start],[data-q-end]")) { sources = []; sourceCursor = ""; sourcesStarted = false; render(); }
         if (event.target.matches("[data-q-enabled],[data-q-category],[data-q-source-mode]")) render();
@@ -99,6 +107,21 @@
           draft.groups.push({ categories: categories.filter((category) => !used.has(category)), mode: "each", startDate: `${year - 1}-09-01`, endDate: competitionDate, pools: ["25", "50"], electronicOnly: true, competitionMode: "all", competitionIds: [], bonusRequiresSelectedCompetition: true });
         }
         if (button.matches("[data-q-remove]")) draft.groups.splice(Number(button.dataset.qRemove), 1);
+        if (button.matches("[data-q-none]")) {
+          const cell = button.closest("[data-q-standard]");
+          cell.dataset.qNone = cell.dataset.qNone === "true" ? "false" : "true";
+          if (cell.dataset.qNone === "true") cell.querySelector("input").value = "";
+          capture(); onDirty(); render(); return;
+        }
+        if (button.matches("[data-q-copy-sex]")) {
+          const selectedCategories = [...new Set(draft.groups.flatMap((group) => group.categories))];
+          for (const category of selectedCategories) for (const event of events.filter((item) => item.type === "individual" && item.categories.includes(category))) {
+            const source = draft.standards[[category, "F", event.code].join("|")];
+            if (source === undefined) delete draft.standards[[category, "M", event.code].join("|")];
+            else draft.standards[[category, "M", event.code].join("|")] = source;
+          }
+          onDirty(); render(); return;
+        }
         if (button.matches("[data-q-load]")) {
           button.disabled = true;
           const result = await loadSources(sourceCursor, { startDate: draft.groups.map((group) => group.startDate).sort()[0], endDate: draft.groups.map((group) => group.endDate).sort().at(-1) });
