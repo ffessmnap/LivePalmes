@@ -26,7 +26,7 @@ assert.equal(api.sourceState({ pool: "25", chrono: "E" }, group), "excluded");
 assert.equal(api.sourceState({ pool: "50", chrono: "manual" }, group), "excluded");
 assert.equal(api.sourceState({ pool: "50", chrono: "E" }, group), "compatible");
 assert.equal(api.sourceState({ pool: "50" }, group), "unknown");
-const template = XLSX.read(fs.readFileSync(path.join(__dirname, "../docs/Trame_minima_LivePalmes.xlsx"))), sheet = template.Sheets.Minima;
+const template = XLSX.read(fs.readFileSync(path.join(__dirname, "../assets/Trame_minima_LivePalmes.xlsx"))), sheet = template.Sheets.Minima;
 assert.deepEqual(template.SheetNames, ["Minima"]);
 const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null });
 grid[10][2] = "01:23.45"; // C, 100 SF, Femmes
