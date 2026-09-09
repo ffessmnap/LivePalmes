@@ -26,7 +26,7 @@ function validateRules(raw, events = [], requireComplete = false) {
     if (competitionIds.length > 200 || competitionIds.some((id) => id.length > 160) || (group.competitionMode === "selected" && !competitionIds.length)) throw new Error("Sélectionnez les compétitions qualificatives.");
     return { id: String(index + 1), label: text(group.label).slice(0, 80) || categories.join(", "), categories, mode: group.mode,
       startDate: group.startDate, endDate: group.endDate, electronicOnly: group.electronicOnly !== false, pools, competitionMode: group.competitionMode,
-      competitionIds: group.competitionMode === "selected" ? competitionIds : [], bonusRequiresSelectedCompetition: group.bonusRequiresSelectedCompetition === true };
+      competitionIds: group.competitionMode === "selected" ? competitionIds : [], bonusRequiresSelectedCompetition: group.mode === "one" && group.bonusRequiresSelectedCompetition === true };
   });
   const standards = {};
   for (const [id, value] of Object.entries(raw.standards || {})) {
@@ -80,7 +80,7 @@ function evaluate({ rules, category, sex, events, rows = [], approvals = [] }) {
     const candidates = open ? (byCourse.get(course) || []).filter((row) => admissible(row, group)) : [];
     const best = candidates.reduce((result, row) => !result || row.timeValue < result.timeValue ? row : result, null);
     const qualified = Boolean(open && Number.isInteger(minimum) && best && best.timeValue <= minimum);
-    const bonus = Boolean(open && minimum !== undefined && (byCourse.get(course) || []).some((row) => admissible(row, group, group.bonusRequiresSelectedCompetition)));
+    const bonus = Boolean(open && minimum !== undefined && (byCourse.get(course) || []).some((row) => admissible(row, group, group.mode === "each" || group.bonusRequiresSelectedCompetition)));
     const approved = open && approvals.some((approval) => approval.eventCode === course && approval.status === "accepted");
     courses[course] = { qualified, bonus, approved: Boolean(approved), minimum: minimum === undefined ? "missing" : minimum,
       allowed: Boolean(open && (approved || qualified || (minimum === null && bonus) || (group.mode === "one" && bonus))),

@@ -7,6 +7,7 @@ const standards = {};
 for (const category of ["C", "J"]) for (const sex of ["F", "M"]) for (const event of events) standards[`${category}|${sex}|${event.code}`] = event.code === "200SF" ? null : 6000;
 const raw = { enabled: true, groups: [group, { ...group, categories: ["J"], mode: "each", pools: ["50"], competitionMode: "selected", competitionIds: ["national"] }], standards };
 const rules = validateRules(raw, events, true);
+assert.equal(rules.groups[1].bonusRequiresSelectedCompetition, false, "L'option bonus est neutralisée en mode chaque course.");
 const performance = { course: "100SF", date: "2026-01-01", pool: "50", chrono: "E", timeValue: 6000, competitionId: "national", publicKey: "proof" };
 const run = (options = {}) => evaluate({ rules, category: "C", sex: "F", events, rows: [performance, { ...performance, course: "50SF", timeValue: 6500 }, { ...performance, course: "200SF", timeValue: 8000 }], ...options });
 const codes = (rows) => rows.map((eventCode) => ({ eventCode }));
@@ -19,6 +20,7 @@ assert.equal(reconcile(codes(["100SF", "50SF", "200SF"]), run()).removed.length,
 assert.equal(reconcile(codes(["50SF", "200SF"]), run()).entries.length, 0, "Sans course qualifiée engagée, aucun bonus.");
 assert.equal(reconcile(codes(["50SF"]), run({ category: "J" })).entries.length, 0, "Mode chaque course.");
 assert.equal(reconcile(codes(["200SF"]), run({ category: "J" })).entries.length, 1, "Sans minimum reste accessible en mode chaque course.");
+assert.equal(reconcile(codes(["200SF"]), run({ category: "J", rows: [{ course: "200SF", date: "2026-01-01", pool: "50", chrono: "E", timeValue: 8000, competitionId: "regional" }] })).entries.length, 0, "Sans minimum respecte les compétitions sélectionnées en mode chaque course.");
 assert.equal(reconcile(codes(["100SF"]), { enabled: false }).entries.length, 1);
 
 for (const invalid of [{ pool: "33" }, { chrono: "M" }, { date: "2025-08-31" }, { date: "2026-09-01" }, { date: "2026-02-30" }, { active: false }, { status: "hidden" }, { timeValue: 359999 }, { timeValue: 0 }]) {
