@@ -59,7 +59,7 @@
             <div class="qualification-options">
               <span>Bassins</span>${["25", "50"].map((pool) => `<label><input type="checkbox" data-q-pool value="${pool}" ${group.pools.includes(pool) ? "checked" : ""}><span>${pool} m</span></label>`).join("")}
               <label><input type="checkbox" data-q-electronic ${group.electronicOnly !== false ? "checked" : ""}><span>Chronométrage électronique uniquement</span></label>
-              <label><input type="checkbox" data-q-bonus ${group.mode === "one" && group.bonusRequiresSelectedCompetition ? "checked" : ""} ${group.mode !== "one" ? "disabled" : ""}><span>Course bonus nagée dans une compétition qualificative${group.mode !== "one" ? " — uniquement en mode au moins une course" : ""}</span></label>
+              <label data-q-bonus-option ${group.mode !== "one" ? "hidden" : ""}><input type="checkbox" data-q-bonus ${group.mode === "one" && group.bonusRequiresSelectedCompetition ? "checked" : ""} ${group.mode !== "one" ? "disabled" : ""}><span>Course bonus nagée dans une compétition qualificative</span></label>
             </div>
             <label class="qualification-source-mode">Compétitions qualificatives<select data-q-source-mode><option value="all" ${group.competitionMode === "all" ? "selected" : ""}>Toutes les compétitions de la période</option><option value="selected" ${group.competitionMode === "selected" ? "selected" : ""}>Sélection de compétitions</option></select></label>
             <div data-q-source-list ${group.competitionMode === "selected" ? "" : "hidden"}>
