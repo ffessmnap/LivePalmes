@@ -1010,6 +1010,7 @@
                       <strong>Compétition annulée</strong>
                       <span>Cette compétition est indiquée comme annulée par l’organisateur.</span>
                     </p>
+                    <div id="adminQualificationJobActions" class="qualification-job-actions" role="status" hidden></div>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
                     <nav class="admin-engagements-detail-tabs" aria-label="Parcours d'engagement">
                       <div class="admin-engagements-detail-step-bar" aria-label="Étapes">
@@ -1238,11 +1239,12 @@
                               <input id="adminEngagementsEditQualificationEnd" type="date">
                             </label>
                             <label class="admin-engagements-compact-field" data-engagements-pool-time-field>
-                              Saisie manuelle des temps
+                              Saisie manuelle des temps individuels
                               <select id="adminEngagementsEditMissingEntryTimeMode">
                                 <option value="manual">Autoris&eacute;e</option>
                                 <option value="default595999">Non autoris&eacute;e</option>
                               </select>
+                              <small id="adminQualificationManualTimeHint" hidden>Une grille de qualification impose les temps automatiques en individuel. Les temps des relais restent saisissables.</small>
                             </label>
                           </div>
                         </fieldset>
@@ -1881,7 +1883,7 @@
                   <dialog id="adminEngagementsCreateChecklist" class="admin-engagements-create-checklist" aria-labelledby="adminEngagementsCreateChecklistTitle">
                     <form method="dialog">
                       <h3 id="adminEngagementsCreateChecklistTitle">Compétition ajoutée au calendrier</h3>
-                      <p>Souhaitez-vous compléter et administrer cette compétition maintenant&nbsp;?</p>
+                      <p>Souhaitez-vous compléter et administrer cette compétition maintenant&nbsp;? Les administrateurs nationaux peuvent y configurer la grille de qualification des compétitions piscine.</p>
                       <div class="admin-portal-actions">
                         <button class="ghost-button" value="later" type="submit">Plus tard</button>
                         <button id="adminEngagementsCreateCompleteNow" value="complete" type="button">Compléter maintenant</button>
@@ -2787,7 +2789,9 @@
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
 <script src="assets/livepalmes-admin-auth.js?v=20260806-performance-audit-1"></script>
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260903-license-control-route-1"></script>
+    <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
+    <script src="assets/livepalmes-engagement-qualifications.js"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260909-exception-removal-alert"></script>
     <script src="assets/livepalmes-license-administration.js?v=20260902-license-control-1"></script>
     <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1"></script>
