@@ -4018,6 +4018,7 @@
         : { startDate: "0001-01-01", endDate: "9999-12-31" },
       events: (competition.events || []).map((item) => ({ ...item, categories: item.categoryRestrictions?.length ? item.categoryRestrictions : engagementAllowedCategoryCodes(item.code) })),
       onDirty: () => markEngagementDetailTabDirty("general"),
+      loadSpreadsheet: loadImportSpreadsheet,
       loadSources: (cursor, period) => callFunction("listEngagementQualificationSources", { cursor, ...period })
     });
     if (competition.qualificationJobId && canUse("engagements.national.manage")) {

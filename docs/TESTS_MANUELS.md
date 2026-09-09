@@ -192,6 +192,11 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ### Grilles de qualification piscine (recette sur TEST)
 
+- Dans Paramètres sportifs, vérifier que les colonnes restent dans l'ordre P, B, M, C, J, S, puis masters, même si les groupes sont créés dans un autre ordre.
+- Télécharger la trame à un onglet Minima. Renseigner des temps dans Femmes et Hommes et LIBRE, puis importer : comparer la prévisualisation aux valeurs existantes. Annuler doit tout conserver ; appliquer ne doit modifier que les cases remplies. Enregistrer la compétition reste nécessaire et doit déclencher le contrôle habituel des engagements.
+- Importer un temps invalide, une formule, une catégorie en double et un fichier sans les deux sections : aucune application ne doit être possible. Les cases hors programme doivent être listées comme ignorées.
+- Charger les compétitions, puis changer bassin et chronométrage : aucune nouvelle requête ne doit partir. Les incompatibles non sélectionnées disparaissent ; les inconnues sont signalées ; les incompatibles déjà sélectionnées restent visibles avec avertissement.
+
 - Avec un compte National, créer une compétition piscine, puis utiliser « Compléter maintenant ». Définir le programme puis deux groupes : cadets en 25/50 m, toutes compétitions ; juniors/seniors en 50 m, compétitions sélectionnées. Vérifier que les minima restent identiques pour les deux bassins. Refaire le formulaire en 390 px et au clavier.
 - Avec un compte Région puis Club, vérifier l'absence de modification possible de la grille et le refus d'un appel direct de configuration ou de décision de dérogation. Vérifier également que le Club A ne peut ni consulter ni modifier les demandes du Club B.
 - Tester chaque mode, chaque sexe, une égalité au minimum, un centième au-dessus, les bornes de dates, le chronométrage manuel interdit puis autorisé. Une case de minimum vide doit empêcher l'ouverture ; « Sans minimum » ne doit jamais servir de qualification individuelle.
