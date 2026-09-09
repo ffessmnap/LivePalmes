@@ -12,6 +12,23 @@ const staging = fs.readFileSync(path.join(rootDir, "tools", "prepare-firebase-te
 assert.match(workflow, /^on:\n  workflow_dispatch:/m);
 assert.doesNotMatch(workflow, /^  (push|pull_request|schedule):/m);
 assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+assert.ok(workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
+const branchGuard = workflow.slice(workflow.indexOf('          case "$GITHUB_REF" in'), workflow.indexOf('          case "$SELECTED_LOT" in', workflow.indexOf('Branche non autorisée en TEST.')));
+assert.ok(branchGuard.includes('engagement-core|publications)'));
+for (const [branch, lot, allowed] of [
+  ['main', 'access', true],
+  ['feature/qualification-engagements', 'engagement-core', true],
+  ['feature/qualification-engagements', 'publications', true],
+  ['feature/qualification-engagements', 'email', false],
+  ['feature/qualification-engagements', 'schedulers', false],
+  ['feature/qualification-engagements', 'all-safe', false],
+  ['feature/unapproved', 'engagement-core', false]
+]) {
+  const result = childProcess.spawnSync('bash', ['-c', branchGuard], {
+    env: { ...process.env, GITHUB_REF: `refs/heads/${branch}`, SELECTED_LOT: lot }
+  });
+  assert.equal(result.status === 0, allowed, `${branch} / ${lot}`);
+}
 assert.match(workflow, /test "\$CONFIRMATION" = "livepalmes-test"/);
 assert.match(workflow, /test "\$EXPECTED_COMMIT" = "\$GITHUB_SHA"/);
 assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_COMMIT"/);

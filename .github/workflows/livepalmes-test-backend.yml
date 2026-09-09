@@ -21,7 +21,7 @@ on:
         required: true
         type: string
       expected_commit:
-        description: SHA complet du commit main à déployer
+        description: SHA complet du commit de la branche choisie à déployer
         required: true
         type: string
       scheduler_confirmation:
@@ -46,7 +46,7 @@ env:
 jobs:
   deployer-backend-test:
     name: Vérifier puis déployer le lot ${{ inputs.lot }} en TEST
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/qualification-engagements'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: firebase-test
@@ -65,7 +65,16 @@ jobs:
           test "$GCLOUD_PROJECT" = "livepalmes-test"
           test "$GOOGLE_CLOUD_PROJECT" = "livepalmes-test"
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-          test "$GITHUB_REF" = "refs/heads/main"
+          case "$GITHUB_REF" in
+            refs/heads/main) ;;
+            refs/heads/feature/qualification-engagements)
+              case "$SELECTED_LOT" in
+                engagement-core|publications) ;;
+                *) echo "Branche qualifications : seuls engagement-core et publications sont autorisés en TEST."; exit 1 ;;
+              esac
+              ;;
+            *) echo "Branche non autorisée en TEST."; exit 1 ;;
+          esac
           case "$SELECTED_LOT" in
             bootstrap|access|engagement-core|performance|publications|email|schedulers|all-safe) ;;
             *) echo "Lot interdit."; exit 1 ;;
