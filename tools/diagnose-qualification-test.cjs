@@ -42,7 +42,7 @@ async function inspectIndex() {
   const job = competition.qualificationJobId ? await read(`/engagementQualificationJobs/${encodeURIComponent(competition.qualificationJobId)}`) : null;
   console.log(JSON.stringify({ diagnostic: "lock", present: !!competition.qualificationJobId, state: job ? data(job).state : null, applyStarted: job ? data(job).applyStarted === true : false }));
   const clubs = await query("engagementClubEntries", "competitionId", competition.id, 5);
-  const swimmers = clubs.flatMap((club) => club.swimmers || []).filter((swimmer) => swimmer.individualEntries?.length).slice(0, 30);
+  const swimmers = clubs.flatMap((club) => club.swimmers || []).slice(0, 50);
   const hash = (value) => require("node:crypto").createHash("sha256").update(value).digest("hex").slice(0, 40);
   for (const swimmer of swimmers) {
     const identity = swimmer.identityKey || swimmer.swimmerIdentityKey;
@@ -50,7 +50,7 @@ async function inspectIndex() {
     if (!indexId) continue;
     const cacheId = hash([swimmer.source || "performances", identity || swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId].filter(Boolean).join("|"));
     if (cacheId === "1ad97ad49cf06fbd9c84a44531cff5c3af41efe8") {
-      console.log(JSON.stringify({ diagnostic: "incident-swimmer", indexId, source: ["reference", "performances", "engagement"].includes(swimmer.source) ? swimmer.source : "unspecified", hasIdentity: !!identity, hasSwimmerId: !!swimmer.swimmerId }));
+      console.log(JSON.stringify({ diagnostic: "incident-swimmer", indexId, individualEntryCount: swimmer.individualEntries?.length || 0, source: ["reference", "performances", "engagement"].includes(swimmer.source) ? swimmer.source : "unspecified", hasIdentity: !!identity, hasSwimmerId: !!swimmer.swimmerId }));
       const sourceKeys = [...new Set([swimmer.identityKey, swimmer.swimmerIdentityKey, swimmer.swimmerId, ...(swimmer.sourceIds || [])].filter(Boolean))].slice(0, 5);
       for (const sourceKey of sourceKeys) {
         const key = hash(sourceKey);
@@ -59,6 +59,7 @@ async function inspectIndex() {
         console.log(JSON.stringify({ diagnostic: "incident-storage", key, status: response.status }));
       }
     }
+    if (!swimmer.individualEntries?.length) continue;
     const doc = await read(`/performanceSwimmerIndex/${encodeURIComponent(indexId)}`);
     const index = doc ? data(doc) : {};
     const count = Number(index.pageCount);

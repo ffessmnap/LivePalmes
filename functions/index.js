@@ -5707,7 +5707,9 @@ async function readEngagementEntryTimeSourceRows(swimmer = {}) {
       rows: hydratePublicSwimmerRowsFromPayload(payload.rows, payload, sourceKey).map(publicPerformanceBaseRow)
     };
   }
-  return null;
+  const identity = cleanText(swimmer.identityKey || swimmer.swimmerIdentityKey);
+  const indexId = identity ? stableHash(identity).slice(0, 40) : cleanText(swimmer.swimmerIndexId || swimmer.id);
+  return require("./engagement-performance-history").readIndexedHistory({ db, indexId, HttpsError });
 }
 
 async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
@@ -5735,7 +5737,7 @@ async function rebuildEngagementEntryTimeCache(db, swimmer = {}) {
     swimmerIndexId: cleanText(swimmer.swimmerIndexId || swimmer.id).slice(0, 80),
     swimmerId: cleanText(swimmer.swimmerId).slice(0, 80),
     identityKey: cleanText(swimmer.identityKey).slice(0, 180),
-    sourceDataset: source === "engagement" ? "engagement" : "public-performance-file",
+    sourceDataset: source === "engagement" ? "engagement" : indexedSource.sourceDataset || "public-performance-file",
     sourceKey: cleanText(indexedSource.sourceKey).slice(0, 180),
     generatedAt: now,
     updatedAt: now,

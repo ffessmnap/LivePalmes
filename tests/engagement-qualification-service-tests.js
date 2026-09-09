@@ -50,13 +50,13 @@ function database() {
 }
 
 async function main() {
-  const db = database(); let historyReads = 0;
+  const db = database(); let historyReads = 0, historyError = false;
   const rules = { enabled: true, groups: [{ categories: ["C"], mode: "one", startDate: "2025-09-01", endDate: "2026-08-31", pools: ["50"], competitionMode: "all", competitionIds: [], bonusRequiresSelectedCompetition: true }], standards: { "C|F|100SF": 6000, "C|F|50SF": 6000 } };
   const competition = { id: "meet", date: "2026-05-01", qualifications: rules, events: ["100SF", "50SF"].map((code) => ({ code, categories: ["C"], type: "individual" })) };
   const history = [{ course: "100SF", date: "2026-01-01", pool: "50", chrono: "E", timeValue: 6000, publicKey: "p" }, { course: "50SF", date: "2026-01-01", pool: "50", chrono: "E", timeValue: 6500 }];
   const swimmer = { swimmerIndexId: "athlete", clubId: "club", sex: "F", birthDate: "2011-01-01", individualEntries: [{ eventCode: "100SF" }, { eventCode: "50SF" }] };
   const service = createQualificationService({ db, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code; } },
-    categoryFor: () => "C", eventsFor: (item) => item.events, rowsFor: async () => { historyReads++; return structuredClone(history); }, cacheIdFor: (item) => item.swimmerIndexId,
+    categoryFor: () => "C", eventsFor: (item) => item.events, rowsFor: async () => { historyReads++; if (historyError) throw new Error("Historique indisponible"); return structuredClone(history); }, cacheIdFor: (item) => item.swimmerIndexId,
     access: async (request) => ({ uid: "admin", national: request.national !== false }), clubAccess: async () => ({ uid: "club-admin", clubId: "club" }),
     entryIdFor: () => "entry", assertOpen: () => {}, audit: async () => {} });
   const compRef = db.collection("engagementCompetitions").doc("meet");
@@ -67,6 +67,26 @@ async function main() {
   assert.equal(evaluation.courses["100SF"].qualified, true);
   assert.equal(historyReads, 1, "Une seule lecture d'historique pour toutes les courses.");
   assert.equal(db.reads.count, 0, "Sans dérogation, aucune lecture de demande ou d'accord.");
+
+  historyError = true;
+  const failedJob = await service.begin({}, compRef, competition);
+  await assert.rejects(service.process({ data: { jobId: failedJob.qualificationJobId } }), /Historique indisponible.*contrôle a été annulé/);
+  assert.equal((await compRef.get()).data().qualificationJobId, "", "Un aperçu échoué libère son verrou.");
+  assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 2, "Un historique inconnu ne supprime rien.");
+  assert.equal((await service.process({ data: { jobId: failedJob.qualificationJobId } })).state, "cancelled");
+  const beforeEmpty = historyReads;
+  await service.reconcile({ swimmers: [{ ...swimmer, individualEntries: [] }], relays: [{ relayId: "empty", memberIds: [] }] }, competition);
+  assert.equal(historyReads, beforeEmpty, "Un nageur sans engagement individuel ne nécessite pas d'historique.");
+  historyError = false;
+  const applyJob = await service.begin({}, compRef, competition);
+  await service.process({ data: { jobId: applyJob.qualificationJobId } });
+  await service.process({ data: { jobId: applyJob.qualificationJobId, action: "confirm" } });
+  historyError = true;
+  await assert.rejects(service.process({ data: { jobId: applyJob.qualificationJobId } }), /Historique indisponible/);
+  assert.equal((await compRef.get()).data().qualificationJobId, applyJob.qualificationJobId, "Après confirmation, le traitement reste reprenable.");
+  await assert.rejects(service.process({ data: { jobId: applyJob.qualificationJobId, action: "cancel" } }), /commencée/);
+  historyError = false;
+  await service.process({ data: { jobId: applyJob.qualificationJobId } });
 
   const stricter = structuredClone(competition); stricter.qualifications.standards["C|F|100SF"] = 5900;
   await assert.rejects(service.begin({ national: false }, compRef, stricter), /national/);

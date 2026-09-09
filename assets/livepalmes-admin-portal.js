@@ -4036,7 +4036,12 @@
   async function finishQualificationJob(jobId) {
     let result = { state: "preview" }; const removed = [];
     while (["preview", "apply"].includes(result.state)) {
-      result = await callFunction("processEngagementQualificationJob", { jobId });
+      try {
+        result = await callFunction("processEngagementQualificationJob", { jobId });
+      } catch (error) {
+        if (error.details?.qualificationJobCancelled && selectedEngagementCompetition?.qualificationJobId === jobId) selectedEngagementCompetition.qualificationJobId = "";
+        throw error;
+      }
       removed.push(...(result.removed || []));
       if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = `${result.state === "apply" ? "Application" : "Contrôle"} des qualifications : ${result.count || 0} engagement(s) concerné(s).`;
       if (result.state === "ready") {

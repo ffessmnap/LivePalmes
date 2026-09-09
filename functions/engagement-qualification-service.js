@@ -36,7 +36,8 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
     const sourceSwimmers = data.swimmers || [];
     for (let offset = 0; offset < sourceSwimmers.length; offset += 10) {
       const results = await Promise.all(sourceSwimmers.slice(offset, offset + 10).map(async (swimmer) => {
-        const evaluation = !competition.qualifications?.enabled ? { enabled: false } : affectedCacheId && cacheIdFor(swimmer) !== affectedCacheId
+        const evaluation = !competition.qualifications?.enabled ? { enabled: false } : !(swimmer.individualEntries || []).length
+          ? { enabled: true, courses: {}, mode: "each" } : affectedCacheId && cacheIdFor(swimmer) !== affectedCacheId
           ? { enabled: true, mode: competition.qualifications.groups.find((group) => group.categories.includes(categoryFor(competition.date, swimmer.birthDate)))?.mode || "each", courses: Object.fromEntries((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry.qualification || {}])) }
           : await evaluate(swimmer, competition, undefined, excludedGrant);
         return { swimmer, evaluation, result: engine.reconcile(swimmer.individualEntries || [], evaluation) };
@@ -117,7 +118,23 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
     for (const document of page.docs) {
       const planRef = jobRef.collection("entries").doc(document.id);
       if (data.state === "preview") {
-        const result = await reconcile(document.data(), competition);
+        let result;
+        try {
+          result = await reconcile(document.data(), competition);
+        } catch (error) {
+          // A failed preview has changed no engagements. Release only this job's
+          // lock, and never cancel a job whose application has already started.
+          const cancelled = await db.runTransaction(async (tx) => {
+            const latest = await tx.get(jobRef);
+            const current = await tx.get(competitionRef);
+            if (latest.data()?.state !== "preview" || latest.data()?.applyStarted || current.data()?.qualificationJobId !== jobRef.id) return false;
+            tx.update(jobRef, { state: "cancelled", updatedAt: now() });
+            tx.update(competitionRef, { qualificationJobId: "" });
+            return true;
+          });
+          if (cancelled) throw new HttpsError(error.code === "unavailable" ? "unavailable" : "failed-precondition", `${error.message} Le contrôle a été annulé ; vous pouvez réessayer l'enregistrement.`, { qualificationJobCancelled: true });
+          throw error;
+        }
         removed.push(...result.removed.map((item) => ({ ...item, club: document.data().clubName || document.data().clubId })));
         await planRef.set({ sourceHash: sportingHash(document.data()), removed: result.removed.map((item) => ({ ...item, club: document.data().clubName || document.data().clubId })), swimmers: result.swimmers, relays: result.relays });
       } else {
