@@ -4001,6 +4001,44 @@
   }
 
   let qualificationEditor = null;
+  function renderQualificationJobActions(competition = selectedEngagementCompetition || {}) {
+    const mount = document.querySelector("#adminQualificationJobActions");
+    if (!mount) return;
+    mount.replaceChildren();
+    mount.hidden = !competition.qualificationJobId || !canUse("engagements.national.manage");
+    if (mount.hidden) return;
+    const jobId = competition.qualificationJobId;
+    const message = document.createElement("p");
+    message.textContent = "Un contrôle de qualification est en attente. Reprendre utilise la grille du contrôle précédent. Annuler le contrôle permet d’enregistrer votre saisie actuelle, si son application n’a pas commencé.";
+    const resume = document.createElement("button");
+    resume.type = "button"; resume.className = "admin-button-compact"; resume.textContent = "Reprendre le contrôle des qualifications";
+    const cancel = document.createElement("button");
+    cancel.type = "button"; cancel.className = "ghost-button admin-button-compact"; cancel.textContent = "Annuler le contrôle";
+    const status = document.createElement("p"); status.setAttribute("aria-live", "polite");
+    async function act(action) {
+      if (action === "cancel" && !global.confirm("Annuler le contrôle précédent ? Les engagements seront conservés. Votre saisie actuelle restera dans le formulaire et pourra être enregistrée ensuite.")) return;
+      resume.disabled = cancel.disabled = true;
+      status.textContent = action === "cancel" ? "Annulation du contrôle…" : "Reprise du contrôle…";
+      try {
+        if (action === "cancel") {
+          await callFunction("processEngagementQualificationJob", { jobId, action: "cancel" });
+          if (selectedEngagementCompetition?.id === competition.id) selectedEngagementCompetition.qualificationJobId = "";
+          renderQualificationJobActions();
+          elements.engagementsDetailStatus.textContent = "Contrôle annulé. Vous pouvez maintenant enregistrer votre saisie.";
+        } else {
+          const result = await finishQualificationJob(jobId);
+          selectedEngagementCompetition = result.competition;
+          renderEngagementCompetitionDetail(result.competition);
+        }
+      } catch (error) {
+        status.textContent = error.message;
+        elements.engagementsDetailStatus.textContent = error.message;
+      } finally { resume.disabled = cancel.disabled = false; }
+    }
+    resume.onclick = () => act("resume"); cancel.onclick = () => act("cancel");
+    mount.append(message, resume, cancel, status);
+  }
+
   function renderQualificationEditor() {
     let mount = document.querySelector("#adminQualificationEditor");
     if (!mount) {
@@ -4021,16 +4059,7 @@
       loadSpreadsheet: loadImportSpreadsheet,
       loadSources: (cursor, period) => callFunction("listEngagementQualificationSources", { cursor, ...period })
     });
-    if (competition.qualificationJobId && canUse("engagements.national.manage")) {
-      const resume = document.createElement("button"); resume.type = "button"; resume.textContent = "Reprendre le contrôle des qualifications";
-      resume.onclick = async () => {
-        resume.disabled = true;
-        try { const result = await finishQualificationJob(competition.qualificationJobId); selectedEngagementCompetition = result.competition; renderEngagementCompetitionDetail(result.competition); }
-        catch (error) { elements.engagementsDetailStatus.textContent = error.message; }
-        finally { resume.disabled = false; }
-      };
-      mount.prepend(resume);
-    }
+    renderQualificationJobActions(competition);
   }
 
   async function finishQualificationJob(jobId) {
@@ -4040,6 +4069,7 @@
         result = await callFunction("processEngagementQualificationJob", { jobId });
       } catch (error) {
         if (error.details?.qualificationJobCancelled && selectedEngagementCompetition?.qualificationJobId === jobId) selectedEngagementCompetition.qualificationJobId = "";
+        renderQualificationJobActions();
         throw error;
       }
       removed.push(...(result.removed || []));
@@ -4056,6 +4086,7 @@
           if (result.applyStarted) throw new Error("Application partiellement effectuée. Reprenez le contrôle pour confirmer les changements restants.");
           await callFunction("processEngagementQualificationJob", { jobId, action: "cancel" });
           selectedEngagementCompetition.qualificationJobId = "";
+          renderQualificationJobActions();
           throw new Error("Modification des qualifications annulée.");
         }
         result = await callFunction("processEngagementQualificationJob", { jobId, action: "confirm" });
@@ -4067,10 +4098,33 @@
   }
 
   async function updateCompetitionWithQualifications(payload) {
+    const pendingMessage = "Utilisez Reprendre le contrôle ou Annuler le contrôle dans le bandeau en haut de la fiche avant d’enregistrer.";
+    if (selectedEngagementCompetition?.qualificationJobId) {
+      renderQualificationJobActions();
+      document.querySelector("#adminQualificationJobActions")?.scrollIntoView({ block: "center", behavior: "smooth" });
+      throw new Error(pendingMessage);
+    }
     if (canUse("engagements.national.manage") && qualificationEditor && engagementCompetitionType(selectedEngagementCompetition) === "pool") payload.qualifications = qualificationEditor.read();
-    const result = await callFunction("updateEngagementCompetition", payload);
+    let result;
+    try {
+      result = await callFunction("updateEngagementCompetition", payload);
+    } catch (error) {
+      // Refresh only after a lock conflict: no extra reads on normal saves, and
+      // no form re-render that would discard the user's current draft.
+      if (/contrôle.*(?:déjà|en cours)/i.test(error.message || "")) {
+        const latest = await callFunction("getEngagementCompetition", { competitionId: payload.competitionId || selectedEngagementCompetition.id });
+        selectedEngagementCompetition.qualificationJobId = latest.competition?.qualificationJobId || "";
+        renderQualificationJobActions();
+        if (selectedEngagementCompetition.qualificationJobId) {
+          document.querySelector("#adminQualificationJobActions")?.scrollIntoView({ block: "center", behavior: "smooth" });
+          throw new Error(pendingMessage);
+        }
+      }
+      throw error;
+    }
     if (!result.qualificationJobId) return result;
     selectedEngagementCompetition.qualificationJobId = result.qualificationJobId;
+    renderQualificationJobActions();
     return finishQualificationJob(result.qualificationJobId);
   }
 
@@ -10142,6 +10196,7 @@
   }
 
   function renderEngagementCompetitionDetail(competition = {}) {
+    renderQualificationJobActions(competition);
     let qualificationRequestsButton = document.querySelector("#adminQualificationRequestsButton");
     if (!qualificationRequestsButton) {
       qualificationRequestsButton = document.createElement("button"); qualificationRequestsButton.id = "adminQualificationRequestsButton"; qualificationRequestsButton.type = "button"; qualificationRequestsButton.className = "ghost-button"; qualificationRequestsButton.textContent = "Demandes de dérogation";
