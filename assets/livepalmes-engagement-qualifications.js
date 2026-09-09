@@ -14,7 +14,63 @@
     return time;
   }
 
-  function editor(mount, { rules = {}, events = [], national = false, competitionDate = "", getPeriod, onDirty = () => {}, loadSources }) {
+  function importRows(rows, events, selectedCategories) {
+    const values = {}, errors = [], ignored = [];
+    let sex = "", headers = [], seenSections = new Set(), seenRows = new Set();
+    rows.forEach((row, index) => {
+      const first = String(row[0] ?? "").trim();
+      if (["Femmes", "Hommes"].includes(first)) {
+        sex = first === "Femmes" ? "F" : "M";
+        if (seenSections.has(sex)) errors.push(`Ligne ${index + 1} : section ${first} en double.`);
+        seenSections.add(sex); headers = []; return;
+      }
+      if (first === "Catégorie") {
+        if (!sex || headers.length) errors.push(`Ligne ${index + 1} : en-tête inattendu.`);
+        headers = row.slice(1).map((value) => String(value ?? "").replace(/\s/g, "").toUpperCase());
+        if (new Set(headers).size !== headers.length) errors.push(`Ligne ${index + 1} : courses en double.`);
+        return;
+      }
+      if (!headers.length || !first) return;
+      if (!categories.includes(first)) {
+        if (row.slice(1).some((value) => value !== null && value !== undefined && value !== "")) errors.push(`Ligne ${index + 1} : catégorie inconnue ${first}.`);
+        return;
+      }
+      const rowKey = `${sex}|${first}`;
+      if (seenRows.has(rowKey)) errors.push(`Ligne ${index + 1} : catégorie en double.`);
+      seenRows.add(rowKey);
+      row.slice(1).forEach((raw, col) => {
+        if (raw === null || raw === undefined || String(raw).trim() === "") return;
+        const code = headers[col], label = `${first} ${sex} ${code || `colonne ${col + 2}`}`;
+        try {
+          let time;
+          if (String(raw).trim().toUpperCase() === "LIBRE") time = null;
+          else if (typeof raw === "number" && raw > 0 && raw < 1) {
+            time = Math.round(raw * 8640000); parse(display(time));
+          } else time = parse(raw);
+          if (!code || !/^\d+(SF|AP|IS|BI)$/.test(code)) throw new Error("Course inconnue ou relais non autorisé.");
+          const event = events.find((item) => item.type === "individual" && item.code === code);
+          if (!selectedCategories.includes(first) || !event?.categories.includes(first)) { ignored.push(label); return; }
+          values[`${first}|${sex}|${code}`] = time;
+        } catch (caught) { errors.push(`${label} : ${caught.message}`); }
+      });
+    });
+    if (seenSections.size !== 2) errors.push("Les sections Femmes et Hommes sont requises dans l’onglet Minima.");
+    if (!Object.keys(values).length) errors.push("Aucun minimum applicable à importer. Vérifiez les groupes et le programme.");
+    return { values, errors, ignored };
+  }
+
+  function sourceState(source, group) {
+    if (!source) return "unknown";
+    const pool = String(source.pool || "").replace(/\s*m$/i, "");
+    const chrono = String(source.chrono || "").toLowerCase();
+    const knownPool = ["25", "50"].includes(pool);
+    const electronic = ["e", "electronic", "electronique", "électronique"].includes(chrono);
+    const manual = ["m", "manual", "manuel"].includes(chrono);
+    if ((knownPool && !group.pools.includes(pool)) || (group.electronicOnly && manual)) return "excluded";
+    return !knownPool || (group.electronicOnly && !electronic && !manual) ? "unknown" : "compatible";
+  }
+
+  function editor(mount, { rules = {}, events = [], national = false, competitionDate = "", getPeriod, onDirty = () => {}, loadSources, loadSpreadsheet }) {
     let draft = structuredClone({ enabled: false, groups: [], standards: {}, ...rules });
     let sources = [], sourceCursor = "", sourcesStarted = false;
     function capture() {
@@ -39,7 +95,7 @@
       return draft;
     }
     function render() {
-      const selectedCategories = [...new Set(draft.groups.flatMap((group) => group.categories))];
+      const selectedCategories = categories.filter((category) => draft.groups.some((group) => group.categories.includes(category)));
       mount.innerHTML = `<legend>Qualifications</legend>
         <label class="qualification-enable">
           <span><strong>Grille de qualification</strong><small>Contrôler automatiquement les engagements individuels</small></span>
@@ -64,13 +120,19 @@
             <label class="qualification-source-mode">Compétitions qualificatives<select data-q-source-mode><option value="all" ${group.competitionMode === "all" ? "selected" : ""}>Toutes les compétitions de la période</option><option value="selected" ${group.competitionMode === "selected" ? "selected" : ""}>Sélection de compétitions</option></select></label>
             <div data-q-source-list ${group.competitionMode === "selected" ? "" : "hidden"}>
               <input type="search" data-q-search aria-label="Rechercher dans les compétitions chargées" placeholder="Rechercher une compétition chargée">
-              ${[...new Set([...(group.competitionIds || []), ...sources.map((source) => source.id)])].map((id) => { const source = sources.find((item) => item.id === id); return `<label data-q-source-label><input type="checkbox" data-q-source value="${escape(id)}" ${(group.competitionIds || []).includes(id) ? "checked" : ""}> ${escape(source ? `${source.date || ""} · ${source.name}` : `Compétition sélectionnée (${id})`)}</label>`; }).join("")}
+              <p>Liste filtrée sur les informations connues. Les informations inconnues restent à vérifier ; les performances sont toujours contrôlées.</p>
+              ${[...new Set([...(group.competitionIds || []), ...sources.map((source) => source.id)])].map((id) => {
+                const source = sources.find((item) => item.id === id), selected = (group.competitionIds || []).includes(id), state = sourceState(source, group);
+                if (state === "excluded" && !selected) return "";
+                return `<label data-q-source-label><input type="checkbox" data-q-source value="${escape(id)}" ${selected ? "checked" : ""}> ${escape(source ? `${source.date || ""} · ${source.name}` : `Compétition sélectionnée (${id})`)} ${state === "unknown" ? "— bassin ou chronométrage à vérifier" : state === "excluded" ? "— hors critères (sélection conservée)" : ""}</label>`;
+              }).join("")}
               <button class="qualification-button" type="button" data-q-load ${sourcesStarted && !sourceCursor ? "disabled" : ""}>${sourcesStarted ? "Charger la suite" : "Charger les compétitions"}</button>
             </div>
             <div class="qualification-group-actions"><button class="qualification-button qualification-button--danger" type="button" data-q-remove="${index}">Retirer ce groupe</button></div>
           </fieldset>`).join("")}
           <button class="qualification-button qualification-button--add" type="button" data-q-add>+ Ajouter un groupe de catégories</button>
           <section class="qualification-standards">
+            ${national ? `<div class="qualification-import-actions"><a class="qualification-button" href="docs/Trame_minima_LivePalmes.xlsx" download>Télécharger la trame Excel</a><button class="qualification-button" type="button" data-q-import>Importer les minima</button><input data-q-file type="file" accept=".xlsx" hidden></div>` : ""}
             <p ${selectedCategories.length ? "hidden" : ""}>Pour saisir les temps, ajoutez un groupe puis sélectionnez ses catégories ci-dessus. Chaque catégorie fera apparaître une colonne de saisie.</p>
             <div ${selectedCategories.length ? "" : "hidden"}>
             <div class="qualification-standards-head"><div><h3>Minima par course</h3><p>Saisissez 12345 pour obtenir 01:23.45. « Libre » signifie sans minimum.</p></div><button class="qualification-button" type="button" data-q-copy-sex>Copier Femmes vers Hommes</button></div>
@@ -85,14 +147,34 @@
       if (!national) mount.querySelectorAll("input,select,button").forEach((input) => { input.disabled = true; });
     }
     function error(caught) { mount.querySelector("[data-q-error]").textContent = caught.message || String(caught); }
-    mount.onchange = (event) => {
+    mount.onchange = async (event) => {
       if (!national) return;
       try {
+        if (event.target.matches("[data-q-file]")) {
+          const file = event.target.files?.[0]; if (!file) return;
+          if (!/\.xlsx$/i.test(file.name) || file.size > 2 * 1024 * 1024) throw new Error("Choisissez un fichier .xlsx de 2 Mo maximum.");
+          await loadSpreadsheet();
+          const workbook = global.XLSX.read(await file.arrayBuffer(), { type: "array", sheetRows: 201 });
+          if (workbook.SheetNames.length !== 1 || workbook.SheetNames[0] !== "Minima") throw new Error("Utilisez la trame à un seul onglet nommé Minima.");
+          const sheet = workbook.Sheets.Minima;
+          if (Object.entries(sheet).some(([key, cell]) => !key.startsWith("!") && cell.f)) throw new Error("Les formules ne sont pas acceptées. Collez les valeurs des temps.");
+          const rows = global.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null });
+          if (rows.length > 200 || rows.some((row) => row.length > 30)) throw new Error("La grille dépasse les dimensions autorisées.");
+          capture();
+          const result = importRows(rows, events, categories.filter((category) => draft.groups.some((group) => group.categories.includes(category))));
+          const dialog = document.createElement("dialog"); dialog.className = "qualification-dialog";
+          dialog.innerHTML = `<h3>Prévisualisation de l’import</h3><p>Les cases vides conservent les minima existants. Rien n’est enregistré avant la sauvegarde de la compétition.</p>${result.errors.map((message) => `<p>${escape(message)}</p>`).join("")}<p>${result.ignored.length} case(s) hors programme ou groupes ignorée(s).</p><details><summary>Voir les cases ignorées</summary>${result.ignored.map(escape).join("<br>")}</details><table><thead><tr><th>Catégorie / Sexe / Course</th><th>Actuel</th><th>Importé</th></tr></thead><tbody>${Object.entries(result.values).map(([id, value]) => `<tr><td>${escape(id)}</td><td>${draft.standards[id] === null ? "Libre" : display(draft.standards[id]) || "Vide"}</td><td>${value === null ? "Libre" : display(value)}</td></tr>`).join("")}</tbody></table><button type="button" data-confirm ${result.errors.length ? "disabled" : ""}>Appliquer à la grille</button><button type="button" data-cancel>Annuler</button>`;
+          document.body.append(dialog);
+          dialog.querySelector("[data-confirm]").onclick = () => { draft.standards = { ...draft.standards, ...result.values }; onDirty(); render(); dialog.close(); };
+          dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
+          dialog.addEventListener("close", () => dialog.remove(), { once: true }); dialog.showModal();
+          event.target.value = ""; return;
+        }
         const cell = event.target.closest("[data-q-standard]");
         if (cell && event.target.matches("input") && event.target.value.trim()) event.target.value = display(parse(event.target.value));
         capture(); onDirty();
         if (event.target.matches("[data-q-start],[data-q-end]")) { sources = []; sourceCursor = ""; sourcesStarted = false; render(); }
-        if (event.target.matches("[data-q-enabled],[data-q-category],[data-q-source-mode],[data-q-mode]")) render();
+        if (event.target.matches("[data-q-enabled],[data-q-category],[data-q-source-mode],[data-q-mode],[data-q-pool],[data-q-electronic]")) render();
       } catch (caught) { error(caught); }
     };
     mount.oninput = (event) => {
@@ -106,6 +188,7 @@
       const button = event.target.closest("button"); if (!button) return;
       try {
         capture();
+        if (button.matches("[data-q-import]")) { mount.querySelector("[data-q-file]").click(); return; }
         if (button.matches("[data-q-add]")) {
           const year = Number(competitionDate.slice(0, 4)) || new Date().getFullYear();
           const used = new Set(draft.groups.flatMap((group) => group.categories));
@@ -138,5 +221,5 @@
     render();
     return { read: () => national ? structuredClone(capture()) : structuredClone(rules), refreshPeriod: () => { capture(); sources = []; sourceCursor = ""; sourcesStarted = false; render(); } };
   }
-  global.LivePalmesEngagementQualifications = { editor, display, parse };
+  global.LivePalmesEngagementQualifications = { editor, display, parse, importRows, sourceState };
 })(window);

@@ -188,10 +188,10 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
       const item = doc.data();
       if (phase === "legacy") {
         if (item.eventType !== "pool" || !item.legacyImport?.legacyCompetitionId) return [];
-        return [{ id: String(item.legacyImport.legacyCompetitionId), name: item.name || doc.id, date: item.date || "" }];
+        return [{ id: String(item.legacyImport.legacyCompetitionId), name: item.name || doc.id, date: item.date || "", pool: item.poolLength || "", chrono: item.timingType || "" }];
       }
       if (item.status === "deleted") return [];
-      return [{ id: item.metadata?.qualificationCompetitionId || doc.id, name: item.metadata?.competitionName || item.metadata?.competition || item.metadata?.name || item.fileName || doc.id, date: item.metadata?.date || "" }];
+      return [{ id: item.metadata?.qualificationCompetitionId || doc.id, name: item.metadata?.competitionName || item.metadata?.competition || item.metadata?.name || item.fileName || doc.id, date: item.metadata?.date || "", pool: item.metadata?.poolSize || "", chrono: item.metadata?.timingType || item.metadata?.chrono || "" }];
     });
     const last = page.docs.at(-1);
     return { sources, cursor: page.size === 50 ? JSON.stringify({ phase, id: last.id, date: phase === "legacy" ? last.data().date : last.data().metadata.date }) : phase === "legacy" ? JSON.stringify({ phase: "imports" }) : "" };

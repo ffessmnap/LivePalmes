@@ -61,6 +61,7 @@ function runUnitTests() {
     "engagement-competition-documents-tests.js",
     "engagement-program-phases-tests.js",
     "engagement-qualification-tests.js",
+    "engagement-qualification-import-tests.js",
     "engagement-qualification-service-tests.js",
     "public-calendar-tests.js",
     "livepalmes-public-records-data-tests.js",
