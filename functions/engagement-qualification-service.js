@@ -4,7 +4,7 @@ const crypto = require("node:crypto");
 const engine = require("./engagement-qualification");
 const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
-function createQualificationService({ db, HttpsError, categoryFor, eventsFor, rowsFor, cacheIdFor, access, clubAccess, entryIdFor, assertOpen, audit }) {
+function createQualificationService({ db, HttpsError, categoryFor, eventsFor, rowsFor, automaticEntryFor = (entry) => entry, cacheIdFor, access, clubAccess, entryIdFor, assertOpen, audit }) {
   const competitions = db.collection("engagementCompetitions");
   const entries = db.collection("engagementClubEntries");
   const requests = db.collection("engagementQualificationRequests");
@@ -36,11 +36,15 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
     const sourceSwimmers = data.swimmers || [];
     for (let offset = 0; offset < sourceSwimmers.length; offset += 10) {
       const results = await Promise.all(sourceSwimmers.slice(offset, offset + 10).map(async (swimmer) => {
+        const checkHistory = competition.qualifications?.enabled && (swimmer.individualEntries || []).length && (!affectedCacheId || cacheIdFor(swimmer) === affectedCacheId);
+        const rows = checkHistory ? await rowsFor(swimmer, competition) : undefined;
         const evaluation = !competition.qualifications?.enabled ? { enabled: false } : !(swimmer.individualEntries || []).length
           ? { enabled: true, courses: {}, mode: "each" } : affectedCacheId && cacheIdFor(swimmer) !== affectedCacheId
           ? { enabled: true, mode: competition.qualifications.groups.find((group) => group.categories.includes(categoryFor(competition.date, swimmer.birthDate)))?.mode || "each", courses: Object.fromEntries((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry.qualification || {}])) }
-          : await evaluate(swimmer, competition, undefined, excludedGrant);
-        return { swimmer, evaluation, result: engine.reconcile(swimmer.individualEntries || [], evaluation) };
+          : await evaluate(swimmer, competition, rows, excludedGrant);
+        const result = engine.reconcile(swimmer.individualEntries || [], evaluation);
+        if (checkHistory) result.entries = result.entries.map((entry) => automaticEntryFor(entry, rows, competition));
+        return { swimmer, evaluation, result };
       }));
       for (const { swimmer, evaluation, result } of results) {
         evaluations[swimmer.swimmerIndexId] = evaluation;
@@ -177,7 +181,7 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
       const latest = await tx.get(jobRef);
       if (latest.data()?.cursor !== data.cursor || latest.data()?.state !== data.state) fail("Traitement concurrent : rechargez le contrôle.");
       tx.update(jobRef, { cursor: page.docs.at(-1)?.id || data.cursor, state, count, updatedAt: now() });
-      if (state === "done") tx.update(competitionRef, { ...data.payload, qualificationJobId: "", updatedAt: now(), updatedBy: context.uid });
+      if (state === "done") tx.update(competitionRef, { ...data.payload, ...(competition.qualifications?.enabled ? { missingEntryTimeMode: "default595999" } : {}), qualificationJobId: "", updatedAt: now(), updatedBy: context.uid });
     });
     if (state === "done") await audit("engagementQualifications.applied", context.uid, { competitionId: data.competitionId, jobId: jobRef.id, removedCount: count });
     return { state, count, removed, applyStarted: data.applyStarted === true };

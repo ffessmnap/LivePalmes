@@ -4001,6 +4001,20 @@
   }
 
   let qualificationEditor = null;
+  function engagementManualIndividualTimesAllowed(competition = selectedEngagementCompetition || {}) {
+    return !competition.qualifications?.enabled && competition.missingEntryTimeMode === "manual";
+  }
+
+  function updateEngagementManualEntryTimeField() {
+    const field = elements.engagementsEditMissingEntryTimeMode;
+    if (!field) return;
+    const enabled = document.querySelector("#adminQualificationEditor [data-q-enabled]")?.checked === true;
+    if (enabled) field.value = "default595999";
+    field.disabled = enabled || !canEditEngagementCompetition();
+    const hint = document.querySelector("#adminQualificationManualTimeHint");
+    if (hint) hint.hidden = !enabled;
+  }
+
   function renderQualificationJobActions(competition = selectedEngagementCompetition || {}) {
     const mount = document.querySelector("#adminQualificationJobActions");
     if (!mount) return;
@@ -4055,11 +4069,12 @@
         ? { startDate: elements.engagementsEditQualificationStart?.value || "", endDate: elements.engagementsEditQualificationEnd?.value || "" }
         : { startDate: "0001-01-01", endDate: "9999-12-31" },
       events: (competition.events || []).map((item) => ({ ...item, categories: item.categoryRestrictions?.length ? item.categoryRestrictions : engagementAllowedCategoryCodes(item.code) })),
-      onDirty: () => markEngagementDetailTabDirty("general"),
+      onDirty: () => { markEngagementDetailTabDirty("general"); updateEngagementManualEntryTimeField(); },
       loadSpreadsheet: loadImportSpreadsheet,
       loadSources: (cursor, period) => callFunction("listEngagementQualificationSources", { cursor, ...period })
     });
     renderQualificationJobActions(competition);
+    updateEngagementManualEntryTimeField();
   }
 
   async function finishQualificationJob(jobId) {
@@ -4082,7 +4097,7 @@
           removed.push(...(page.removed || [])); cursor = page.cursor || "";
         } while (cursor);
         const details = removed.map((item) => `${item.club || ""} · ${item.name || item.swimmerIndexId || "Relais"} · ${item.eventCode}`).join("\n");
-        if (!global.confirm(`Enregistrer les règles de qualification ?\n${result.count || 0} engagement(s) seront supprimés. Les performances historiques seront conservées.\n\n${details}`)) {
+        if (!global.confirm(`Enregistrer les règles de qualification ?\n${result.count || 0} engagement(s) seront supprimés. Avec une grille active, les temps individuels seront recalculés automatiquement. Les performances historiques seront conservées.\n\n${details}`)) {
           if (result.applyStarted) throw new Error("Application partiellement effectuée. Reprenez le contrôle pour confirmer les changements restants.");
           await callFunction("processEngagementQualificationJob", { jobId, action: "cancel" });
           selectedEngagementCompetition.qualificationJobId = "";
@@ -4470,7 +4485,7 @@
   }
 
   function engagementEntryTimeRulesLabel(competition = {}) {
-    const manualLabel = competition.missingEntryTimeMode === "manual"
+    const manualLabel = engagementManualIndividualTimesAllowed(competition)
       ? "saisie manuelle autorisée"
       : "saisie manuelle non autorisée";
     return `${engagementQualificationPeriodLabel(competition)} · ${manualLabel}`;
@@ -5675,7 +5690,7 @@
       updatedSwimmer = {
         ...swimmer,
         individualEntries: (swimmer.individualEntries || []).map((entry) => {
-          if (entry.entryTimeMode === "manual" && entry.manualEntryTime) return entry;
+          if (engagementManualIndividualTimesAllowed() && entry.entryTimeMode === "manual" && entry.manualEntryTime) return entry;
           const preview = previewByCode.get(entry.eventCode);
           return preview ? { ...entry, ...preview, manualEntryTime: "" } : entry;
         })
@@ -5699,7 +5714,7 @@
       if (!entry || !timeValue) return;
       timeValue.textContent = engagementEntryTimeDisplayLabel(entry);
       timeValue.dataset.entryTimeMode = entry.entryTimeMode || "pending";
-      timeValue.title = engagementEntryTimeHelpLabel(entry, selectedEngagementCompetition?.missingEntryTimeMode === "manual");
+      timeValue.title = engagementEntryTimeHelpLabel(entry, engagementManualIndividualTimesAllowed());
       if (editButton) editButton.dataset.engagementClubTimeAuto = entry.entryTime || "59:59.99";
     });
     updateEngagementClubEntriesSummary();
@@ -6964,7 +6979,7 @@
                           ${allowed ? `
                             <label data-event-selected title="${escapeHtml(itemLabel.full)} pour ${escapeHtml(`${lastName} ${firstName}`.trim())}">
                               <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(item.eventCode)}" ${selectedEngagementCompetition?.qualifications?.enabled ? "disabled" : ""} ${checked ? "checked" : ""} aria-label="${escapeHtml(itemLabel.full)}">
-                              ${openWater ? "" : `<small data-engagement-club-entry-cell-time data-entry-time-mode="${escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${escapeHtml(engagementEntryTimeHelpLabel(entry, selectedEngagementCompetition?.missingEntryTimeMode === "manual"))}">${escapeHtml(timeLabel)}</small>`}
+                              ${openWater ? "" : `<small data-engagement-club-entry-cell-time data-entry-time-mode="${escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${escapeHtml(engagementEntryTimeHelpLabel(entry, engagementManualIndividualTimesAllowed()))}">${escapeHtml(timeLabel)}</small>`}
                             </label>
                             ${openWater ? "" : `<input type="hidden" data-engagement-club-swimmer-event-time="${escapeHtml(item.eventCode)}" value="${escapeHtml(manualValue)}" ${manualValue ? "" : "disabled"}>`}
                           ` : '<span aria-label="Course non ouverte pour ce nageur">—</span>'}
@@ -7154,7 +7169,7 @@
   async function loadEngagementClubEntryTimeHistory(swimmer = {}) {
     const eventCodes = engagementClubTimesDialogEventCodes(swimmer);
     const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
-    if (!cacheKey || !eventCodes.length || selectedEngagementCompetition?.missingEntryTimeMode !== "manual") return;
+    if (!cacheKey || !eventCodes.length || !engagementManualIndividualTimesAllowed()) return;
     if (engagementClubEntryTimeHistoryCache.has(cacheKey)) {
       populateEngagementClubEntryTimeHistory(swimmer);
       return;
@@ -7224,7 +7239,7 @@
     const entryByCode = new Map((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry]));
     const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
     const previewByCode = new Map((engagementClubSwimmerEventTimesCache.get(cacheKey) || []).map((entry) => [entry.eventCode, entry]));
-    const manualAllowed = selectedEngagementCompetition?.missingEntryTimeMode === "manual";
+    const manualAllowed = engagementManualIndividualTimesAllowed();
     mount.innerHTML = eventCodes.map((eventCode) => {
       const event = engagementEventDefinition(eventCode) || { code: eventCode, shortLabel: eventCode, label: eventCode };
       const entry = entryByCode.get(eventCode) || {};
