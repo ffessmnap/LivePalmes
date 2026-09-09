@@ -82,7 +82,7 @@ function evaluate({ rules, category, sex, events, rows = [], approvals = [] }) {
     const qualified = Boolean(open && Number.isInteger(minimum) && best && best.timeValue <= minimum);
     const bonus = Boolean(open && minimum !== undefined && (byCourse.get(course) || []).some((row) => admissible(row, group, group.mode === "each" || group.bonusRequiresSelectedCompetition)));
     const approved = open && approvals.some((approval) => approval.eventCode === course && approval.status === "accepted");
-    courses[course] = { qualified, bonus, approved: Boolean(approved), minimum: minimum === undefined ? "missing" : minimum,
+    courses[course] = { qualified, bonus, approved: Boolean(approved), exceptionEligible: Boolean(open), minimum: minimum === undefined ? "missing" : minimum,
       allowed: Boolean(open && (approved || qualified || (minimum === null && bonus) || (group.mode === "one" && bonus))),
       reason: !open ? "Catégorie non ouverte ou règles absentes." : minimum === undefined ? "Minimum non renseigné." : !best ? "Aucune performance admissible." : !qualified ? "Minimum non réalisé." : "Minimum réalisé.",
       proof: best ? { id: text(best.publicKey || best.performanceBaseId || best.id), competitionId: text(best.competitionId), date: best.date, timeValue: best.timeValue, location: text(best.location) } : null };

@@ -10,6 +10,7 @@ const LOTS = Object.freeze({
     "rebuildAccessDirectoryIndexNextPage", "rebuildAccessDirectorySnapshotNextPage"
   ],
   "engagement-core": [
+    "grantEngagementQualificationException",
     "listEngagementQualificationSources", "processEngagementQualificationJob", "requestEngagementQualificationDerogation", "listEngagementQualificationRequests", "resolveEngagementQualificationRequest", "revalidateEngagementQualificationCache", "syncEngagementQualificationTargets",
     "listEngagementAccessRequests",
     "syncEngagementClubEntryToCompetitionSummary", "syncEngagementMailRecipientIndex",

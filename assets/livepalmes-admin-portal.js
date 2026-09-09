@@ -1516,6 +1516,7 @@
   }
 
   function clearActiveEngagementClub() {
+    qualificationExceptionScope = "";
     activeEngagementClubId = "";
     try {
       global.sessionStorage?.removeItem(PORTAL_ACTIVE_CLUB_SESSION_KEY);
@@ -1523,6 +1524,7 @@
   }
 
   function setActiveEngagementClub(clubId = "") {
+    qualificationExceptionScope = "";
     const nextClubId = String(clubId || "").trim();
     const homeClubId = currentAccessProfile?.accessScopes?.["engagements.club.manage"]?.scopeId || currentAccessProfile?.clubId || "";
     if (!nextClubId || nextClubId === homeClubId) {
@@ -2209,6 +2211,7 @@
   }
 
   function setEngagementsTab(tab) {
+    qualificationExceptionScope = "";
     const canCreate = canCreateEngagementCompetition();
     const canNationalRequests = canDeleteEngagementCompetitionDirectly();
     const canAudit = canViewActivityLog();
@@ -3942,65 +3945,59 @@
     renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
   }
 
-  async function openQualificationRequests(swimmerId = "") {
-    const competitionId = selectedEngagementCompetitionId || selectedEngagementCompetition?.id;
-    if (!competitionId) return;
-    const national = !swimmerId && canUse("engagements.national.manage");
-    const dialog = document.createElement("dialog");
-    dialog.className = "qualification-dialog";
-    const swimmer = selectedEngagementClubSwimmerRows().find((item) => item.swimmerIndexId === swimmerId);
-    const courses = engagementClubIndividualEvents();
-    dialog.innerHTML = `<h2>Dérogations de qualification</h2>
-      ${swimmerId ? `<p>${escapeHtml(`${swimmer?.lastName || ""} ${swimmer?.firstName || ""}`)}</p><form data-q-request-form><label>Course<select name="eventCode">${courses.map((course) => `<option value="${escapeHtml(course.code)}">${escapeHtml(course.shortLabel || course.code)}</option>`).join("")}</select></label><label>Motif<textarea name="reason" required maxlength="2000"></textarea></label><p>Vous devez également envoyer un courriel à <a href="mailto:secretaire@nap-ffessm.fr">secretaire@nap-ffessm.fr</a> pour appuyer votre demande. Ce dépôt ne remplace pas l’envoi du courriel.</p><button type="submit">Demander une dérogation</button></form>` : ""}
-      <p data-q-request-status role="status"></p><div data-q-requests></div><button type="button" data-q-more>Charger les demandes</button><button type="button" data-q-close>Fermer</button>`;
-    document.body.append(dialog); dialog.showModal();
-    dialog.addEventListener("close", () => dialog.remove());
-    dialog.querySelector("[data-q-close]").onclick = () => dialog.close();
-    let cursor = "";
-    const status = dialog.querySelector("[data-q-request-status]");
-    async function load() {
-      const button = dialog.querySelector("[data-q-more]"); button.disabled = true;
-      try {
-        const result = await callFunction("listEngagementQualificationRequests", { competitionId, cursor });
-        for (const request of result.requests || []) {
-          if (swimmerId && request.swimmerIndexId !== swimmerId) continue;
-          const row = document.createElement("div"); row.className = "qualification-request";
-          row.innerHTML = `<strong>${escapeHtml(request.clubId)} · ${escapeHtml(request.swimmerName || request.swimmerIndexId)} · ${escapeHtml(request.eventCode)}</strong><p>${escapeHtml(request.reason)}</p><p>${escapeHtml({ pending: "En attente", accepted: "Acceptée", refused: "Refusée", revoked: "Retirée" }[request.status] || request.status)}</p>${request.decision ? `<p>${escapeHtml(request.decision)}</p>` : ""}${national && request.status === "pending" ? '<label>Motif de décision<textarea maxlength="2000"></textarea></label><button type="button" data-q-accept>Accepter</button><button type="button" data-q-refuse>Refuser</button>' : national && request.status === "accepted" ? '<label>Motif du retrait<textarea maxlength="2000"></textarea></label><button type="button" data-q-revoke>Retirer la dérogation</button>' : ""}`;
-          for (const [selector, decision] of [["[data-q-accept]", "accepted"], ["[data-q-refuse]", "refused"], ["[data-q-revoke]", "revoked"]]) {
-            const action = row.querySelector(selector); if (!action) continue;
-            action.onclick = async () => {
-              if (decision === "revoked" && !global.confirm("Retirer cette dérogation ? Les engagements qui ne respectent plus les qualifications seront automatiquement supprimés, avec une alerte pour le club.")) return;
-              row.querySelectorAll("button").forEach((control) => { control.disabled = true; });
-              try {
-                await callFunction("resolveEngagementQualificationRequest", { requestId: request.id, status: decision, decision: row.querySelector("textarea").value });
-                row.replaceChildren(document.createTextNode(`${request.eventCode} : ${decision === "accepted" ? "dérogation acceptée" : decision === "revoked" ? "dérogation retirée" : "dérogation refusée"}`));
-              } catch (error) { status.textContent = error.message; row.querySelectorAll("button").forEach((control) => { control.disabled = false; }); }
-            };
-          }
-          dialog.querySelector("[data-q-requests]").append(row);
-        }
-        cursor = result.cursor || ""; button.hidden = !cursor; button.textContent = "Charger la suite";
-      } catch (error) { status.textContent = error.message; }
-      finally { button.disabled = false; }
-    }
-    dialog.querySelector("[data-q-more]").onclick = load;
-    dialog.querySelector("[data-q-request-form]")?.addEventListener("submit", async (event) => {
-      event.preventDefault(); const button = event.target.querySelector("button"); button.disabled = true;
-      try {
-        const fields = new FormData(event.target);
-        const result = await callFunction("requestEngagementQualificationDerogation", { competitionId, swimmerIndexId: swimmerId, eventCode: fields.get("eventCode"), reason: fields.get("reason") });
-        status.textContent = result.message;
-      } catch (error) { status.textContent = error.message; }
-      finally { button.disabled = false; }
-    });
-    await load();
-    if (swimmer) {
-      engagementClubSwimmerEventTimesCache.delete(engagementClubSwimmerEventTimesCacheKey(swimmer));
-      await ensureEngagementClubSwimmerEventTimes(swimmer);
-    }
-  }
 
   let qualificationEditor = null;
+  let qualificationExceptionScope = "";
+  function qualificationExceptionContext() {
+    const club = activeEngagementClubProfile(currentAccessProfile || {});
+    return [selectedEngagementCompetitionId, club?.clubId || activeEngagementClubIdForProfile(currentAccessProfile), currentAccessProfile?.uid || currentAccessProfile?.id || ""].join("|");
+  }
+  function qualificationExceptionsEnabled() {
+    if (!canUse("engagements.national.manage") || !selectedEngagementCompetition?.qualifications?.enabled || qualificationExceptionScope !== qualificationExceptionContext()) {
+      qualificationExceptionScope = "";
+      return false;
+    }
+    return Boolean(qualificationExceptionScope);
+  }
+  function renderQualificationExceptionToggle(mount) {
+    if (!selectedEngagementCompetition?.qualifications?.enabled || !canUse("engagements.national.manage")) return;
+    const active = qualificationExceptionsEnabled();
+    const toolbar = document.createElement("div"); toolbar.className = "qualification-exception-toggle";
+    const button = document.createElement("button"); button.type = "button"; button.className = "ghost-button admin-button-compact";
+    button.textContent = active ? "Désactiver les exceptions" : "Activer les exceptions";
+    button.setAttribute("aria-pressed", String(active));
+    button.onclick = () => { qualificationExceptionScope = qualificationExceptionsEnabled() ? "" : qualificationExceptionContext(); renderEngagementClubEntries(); };
+    toolbar.append(button);
+    if (active) { const note = document.createElement("small"); note.textContent = "Mode National : chaque exception doit être confirmée. Les temps individuels restent automatiques."; toolbar.append(note); }
+    mount.prepend(toolbar);
+  }
+  async function confirmQualificationException(box, row) {
+    if (!qualificationExceptionsEnabled()) return false;
+    const scope = qualificationExceptionContext();
+    const competitionId = selectedEngagementCompetitionId;
+    const swimmerId = row.dataset.engagementClubEntrySwimmerId;
+    const eventCode = box.dataset.engagementClubSwimmerEvent;
+    if (!global.confirm(`Confirmer l’exception pour ${eventCode} ?\n${box.title}\n\nCette autorisation du National concerne uniquement cette course. Elle ne qualifie pas le nageur pour des bonus ou un relais.`)) return false;
+    box.disabled = true;
+    try {
+      await engagementClubEntryMutationQueue;
+      if (scope !== qualificationExceptionContext() || !qualificationExceptionsEnabled()) return false;
+      const result = await callFunction("grantEngagementQualificationException", { competitionId, swimmerIndexId: swimmerId, eventCode, confirmed: true });
+      if (scope !== qualificationExceptionContext() || !qualificationExceptionsEnabled()) return false;
+      selectedEngagementCompetition.hasQualificationGrants = true;
+      const swimmer = selectedEngagementClubSwimmerRows().find((item) => item.swimmerIndexId === swimmerId);
+      const key = engagementClubSwimmerEventTimesCacheKey(swimmer || { swimmerIndexId: swimmerId });
+      const previews = engagementClubSwimmerEventTimesCache.get(key) || [];
+      const previous = previews.find((item) => item.eventCode === eventCode) || { eventCode };
+      engagementClubSwimmerEventTimesCache.set(key, [...previews.filter((item) => item.eventCode !== eventCode), { ...previous, qualification: result.qualification }]);
+      box.dataset.qualificationApproved = "true";
+      box.dataset.qualificationExceptionRequired = "false";
+      return true;
+    } catch (error) {
+      if (scope === qualificationExceptionContext() && elements.engagementsClubEntriesMessage) elements.engagementsClubEntriesMessage.textContent = error.message;
+      return false;
+    } finally { box.disabled = false; }
+  }
   function engagementManualIndividualTimesAllowed(competition = selectedEngagementCompetition || {}) {
     return !competition.qualifications?.enabled && competition.missingEntryTimeMode === "manual";
   }
@@ -4156,10 +4153,14 @@
       box.dataset.qualificationAnchor = result?.qualified ? "true" : "false";
       box.dataset.qualificationMode = result?.mode || "";
       box.dataset.qualificationApproved = result?.approved ? "true" : "false";
-      box.disabled = !result || !result.allowed || (result.mode === "one" && !anchor && !result.qualified && !result.approved);
+      const blocked = !result || !result.allowed || (result.mode === "one" && !anchor && !result.qualified && !result.approved);
+      const override = qualificationExceptionsEnabled() && result?.exceptionEligible;
+      box.dataset.qualificationExceptionRequired = blocked && override ? "true" : "false";
+      box.hidden = blocked && !override && !box.checked;
+      box.disabled = !result || (blocked && !override && !box.checked);
       const minimum = result?.minimum === null ? "Sans minimum" : Number.isInteger(result?.minimum) ? `Minimum : ${global.LivePalmesEngagementQualifications.display(result.minimum)}` : "";
       const proof = result?.proof ? `${global.LivePalmesEngagementQualifications.display(result.proof.timeValue)} · ${result.proof.date} · ${result.proof.location}` : "";
-      box.title = result ? [minimum, proof, box.disabled && result.allowed ? "Cochez d’abord une course qualifiée." : result.reason].filter(Boolean).join(" · ") : "Vérification des qualifications…";
+      box.title = result ? [result.approved ? "Exception nationale enregistrée" : "", minimum, proof, blocked && result.allowed ? "Cochez d’abord une course qualifiée." : result.reason].filter(Boolean).join(" · ") : "Vérification des qualifications…";
       box.closest("label")?.setAttribute("title", box.title);
     });
   }
@@ -6978,7 +6979,7 @@
                         <td class="admin-engagements-club-entry-course${item.sessionStart ? " is-session-start" : ""}${allowed ? "" : " is-unavailable"}">
                           ${allowed ? `
                             <label data-event-selected title="${escapeHtml(itemLabel.full)} pour ${escapeHtml(`${lastName} ${firstName}`.trim())}">
-                              <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(item.eventCode)}" ${selectedEngagementCompetition?.qualifications?.enabled ? "disabled" : ""} ${checked ? "checked" : ""} aria-label="${escapeHtml(itemLabel.full)}">
+                              <input type="checkbox" data-engagement-club-swimmer-event="${escapeHtml(item.eventCode)}" ${selectedEngagementCompetition?.qualifications?.enabled && !checked ? "disabled hidden" : ""} ${checked ? "checked" : ""} aria-label="${escapeHtml(itemLabel.full)}">
                               ${openWater ? "" : `<small data-engagement-club-entry-cell-time data-entry-time-mode="${escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${escapeHtml(engagementEntryTimeHelpLabel(entry, engagementManualIndividualTimesAllowed()))}">${escapeHtml(timeLabel)}</small>`}
                             </label>
                             ${openWater ? "" : `<input type="hidden" data-engagement-club-swimmer-event-time="${escapeHtml(item.eventCode)}" value="${escapeHtml(manualValue)}" ${manualValue ? "" : "disabled"}>`}
@@ -6987,7 +6988,6 @@
                       `;
                     }).join("")}
                     <td class="admin-engagements-club-entry-action">
-                      ${selectedEngagementCompetition?.qualifications?.enabled ? `<button type="button" class="ghost-button compact" data-q-derogation="${escapeHtml(selected.swimmerIndexId)}">Dérogation</button>` : ""}
                       ${openWater
                         ? `<span class="admin-engagements-club-entry-count" aria-label="${selectedCount} course${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}">${escapeHtml(countLabel)}</span>`
                         : `<button class="ghost-button compact admin-engagements-club-times-open" type="button" data-engagement-club-times-open="${escapeHtml(selected.swimmerIndexId)}" aria-label="Voir ou modifier les temps d'engagement, ${selectedCount} course${selectedCount > 1 ? "s" : ""}"><span>${escapeHtml(countLabel)}</span><b aria-hidden="true">✎</b></button>`}
@@ -7089,6 +7089,8 @@
     mount.innerHTML = groups
       .map((group) => renderEngagementClubEntriesTable({ ...group, swimmersById, sessions }))
       .join("");
+    renderQualificationExceptionToggle(mount);
+    mount.querySelectorAll("[data-engagement-club-entry-row]").forEach((row) => updateQualificationCheckboxes(row));
     if (selectedEngagementClubEntry?.qualificationAlert) {
       const warning = document.createElement("p"); warning.setAttribute("role", "status"); warning.textContent = `Attention : ${selectedEngagementClubEntry.qualificationAlert.reason}. Engagements supprimés : ${(selectedEngagementClubEntry.qualificationAlert.removed || []).map((item) => `${item.name || ""} ${item.eventCode}`).join(", ")}`; mount.prepend(warning);
     }
@@ -10186,6 +10188,7 @@
   }
 
   function setEngagementCompetitionDetailVisible(visible) {
+    if (!visible) qualificationExceptionScope = "";
     if (elements.engagementsCalendarPanel) elements.engagementsCalendarPanel.dataset.detailOpen = visible ? "true" : "false";
     if (elements.engagementsCalendarCard) elements.engagementsCalendarCard.dataset.detailOpen = visible ? "true" : "false";
     if (elements.engagementsCalendarFilters) elements.engagementsCalendarFilters.hidden = visible;
@@ -10212,13 +10215,6 @@
 
   function renderEngagementCompetitionDetail(competition = {}) {
     renderQualificationJobActions(competition);
-    let qualificationRequestsButton = document.querySelector("#adminQualificationRequestsButton");
-    if (!qualificationRequestsButton) {
-      qualificationRequestsButton = document.createElement("button"); qualificationRequestsButton.id = "adminQualificationRequestsButton"; qualificationRequestsButton.type = "button"; qualificationRequestsButton.className = "ghost-button"; qualificationRequestsButton.textContent = "Demandes de dérogation";
-      qualificationRequestsButton.onclick = () => void openQualificationRequests();
-      elements.engagementsDetailList?.parentElement?.prepend(qualificationRequestsButton);
-    }
-    qualificationRequestsButton.hidden = !competition.qualifications?.enabled || !canUse("engagements.national.manage");
     setEngagementCompetitionDetailVisible(true);
     engagementDetailEditing = false;
     setEngagementsDetailTab(activeEngagementsDetailTab);
@@ -10457,6 +10453,7 @@
     const cachedWorkspace = clubMode ? readEngagementClubWorkspaceCache(cleanId) : null;
     const cachedWorkspaceFresh = Boolean(cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
     clearEngagementDetailTabDirty();
+    if (selectedEngagementCompetitionId !== cleanId) qualificationExceptionScope = "";
     selectedEngagementCompetitionId = cleanId;
     engagementClubEntryMutationRevision += 1;
     engagementClubLastPersistedEntry = null;
@@ -17345,9 +17342,18 @@
         elements.engagementsClubSwimmersMessage.dataset.tone = "";
       }
     });
-    elements.engagementsClubEntriesList?.addEventListener("change", (event) => {
+    elements.engagementsClubEntriesList?.addEventListener("change", async (event) => {
       const row = event.target.closest("[data-engagement-club-entry-row]");
       let courseSelectionChanged = event.target.matches("[data-engagement-club-swimmer-event]");
+      if (courseSelectionChanged && event.target.checked && event.target.dataset.qualificationExceptionRequired === "true") {
+        const max = Number(selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
+        if (max && row.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length > max) {
+          event.target.checked = false;
+          elements.engagementsClubEntriesMessage.textContent = `Maximum ${max} courses individuelles par nageur.`;
+          return;
+        }
+        if (!await confirmQualificationException(event.target, row)) { event.target.checked = false; updateQualificationCheckboxes(row); return; }
+      }
       if (courseSelectionChanged && selectedEngagementCompetition?.qualifications?.enabled && !event.target.checked && event.target.dataset.qualificationAnchor === "true") {
         const checked = [...row.querySelectorAll("[data-engagement-club-swimmer-event]:checked")];
         if (!checked.some((box) => box.dataset.qualificationAnchor === "true")) {
@@ -17408,8 +17414,6 @@
       }
     });
     elements.engagementsClubEntriesList?.addEventListener("click", (event) => {
-      const derogation = event.target.closest("[data-q-derogation]");
-      if (derogation) { void openQualificationRequests(derogation.dataset.qDerogation); return; }
       const button = event.target.closest("[data-engagement-club-times-open]");
       if (!button) return;
       void openEngagementClubTimesDialog(button.dataset.engagementClubTimesOpen || "", button);
