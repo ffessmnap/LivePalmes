@@ -2,6 +2,9 @@
 [data-q-bonus-option][hidden] { display: none !important; }
 [data-q-file][hidden] { display: none !important; }
 .qualification-import-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+[data-engagement-club-swimmer-event][hidden] { display: none !important; }
+.qualification-exception-toggle { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.qualification-exception-toggle small { color: #79570b; }
 .qualification-job-actions { background: #fff8e5; border: 1px solid #d8be77; border-radius: 8px; margin: 12px 0; padding: 12px 14px; }
 .qualification-job-actions[hidden] { display: none; }
 .qualification-job-actions p { margin: 0 0 10px; }

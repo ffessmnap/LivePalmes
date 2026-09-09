@@ -7,7 +7,6 @@ const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)
 function createQualificationService({ db, HttpsError, categoryFor, eventsFor, rowsFor, automaticEntryFor = (entry) => entry, cacheIdFor, access, clubAccess, entryIdFor, assertOpen, audit }) {
   const competitions = db.collection("engagementCompetitions");
   const entries = db.collection("engagementClubEntries");
-  const requests = db.collection("engagementQualificationRequests");
   const jobs = db.collection("engagementQualificationJobs");
   const grants = db.collection("engagementQualificationGrants");
   const targets = db.collection("engagementQualificationTargets");
@@ -17,18 +16,18 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
   const auditRemovals = (items = []) => items.map((item) => ({ eventCode: item.eventCode, ...(item.swimmerIndexId ? { swimmerIndexId: item.swimmerIndexId } : {}), ...(item.relayId ? { relayId: item.relayId } : {}) }));
   const grantId = (competitionId, swimmerId) => hash([competitionId, swimmerId]);
 
-  async function evaluate(swimmer, competition, rows, excludedGrant = "") {
+  async function evaluate(swimmer, competition, rows) {
     const input = { rules: competition.qualifications, category: categoryFor(competition.date, swimmer.birthDate), sex: swimmer.sex,
       events: eventsFor(competition), rows: rows || await rowsFor(swimmer, competition) };
     let result = engine.evaluate(input);
     if (competition.hasQualificationGrants && result.enabled && Object.values(result.courses).some((course) => !course.qualified)) {
       const approved = await grants.doc(grantId(competition.id, swimmer.swimmerIndexId || swimmer.id)).get();
-      if (approved.exists && approved.data().clubId === swimmer.clubId) result = engine.evaluate({ ...input, approvals: Object.values(approved.data().courses || {}).filter((item) => item.eventCode !== excludedGrant) });
+      if (approved.exists && approved.data().clubId === swimmer.clubId) result = engine.evaluate({ ...input, approvals: Object.values(approved.data().courses || {}) });
     }
     return result;
   }
 
-  async function reconcile(data, competition, affectedCacheId = "", excludedGrant = "") {
+  async function reconcile(data, competition, affectedCacheId = "") {
     const evaluations = {};
     const removed = [];
     const swimmers = [];
@@ -41,7 +40,7 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
         const evaluation = !competition.qualifications?.enabled ? { enabled: false } : !(swimmer.individualEntries || []).length
           ? { enabled: true, courses: {}, mode: "each" } : affectedCacheId && cacheIdFor(swimmer) !== affectedCacheId
           ? { enabled: true, mode: competition.qualifications.groups.find((group) => group.categories.includes(categoryFor(competition.date, swimmer.birthDate)))?.mode || "each", courses: Object.fromEntries((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry.qualification || {}])) }
-          : await evaluate(swimmer, competition, rows, excludedGrant);
+          : await evaluate(swimmer, competition, rows);
         const result = engine.reconcile(swimmer.individualEntries || [], evaluation);
         if (checkHistory) result.entries = result.entries.map((entry) => automaticEntryFor(entry, rows, competition));
         return { swimmer, evaluation, result };
@@ -218,80 +217,50 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
     return { sources, cursor: page.size === 50 ? JSON.stringify({ phase, id: last.id, date: phase === "legacy" ? last.data().date : last.data().metadata.date }) : phase === "legacy" ? JSON.stringify({ phase: "imports" }) : "" };
   }
 
-  async function requestDerogation(request) {
+  async function grantException(request) {
+    const actor = await national(request);
     const context = await clubAccess(request);
     const competitionId = String(request.data?.competitionId || "");
     const swimmerId = String(request.data?.swimmerIndexId || "");
     const eventCode = String(request.data?.eventCode || "");
-    const reason = String(request.data?.reason || "").trim().slice(0, 2000);
-    if (!competitionId || !swimmerId || !eventCode || !reason) fail("Nageur, course et motif requis.", "invalid-argument");
-    const [competition, entry] = await db.getAll(competitions.doc(competitionId), entries.doc(entryIdFor(competitionId, context.clubId)));
-    if (!competition.exists || !competition.data()?.qualifications?.enabled) fail("Cette compétition n'applique pas de grille.");
-    assertOpen(competition.data());
+    if (request.data?.confirmed !== true || !competitionId || !swimmerId || !/^[A-Z0-9]+$/.test(eventCode) ||
+        [competitionId, swimmerId].some((id) => id.includes("/") || id.length > 128)) fail("Confirmation, nageur et course requis.", "invalid-argument");
+    const competitionRef = competitions.doc(competitionId);
+    const entryRef = entries.doc(entryIdFor(competitionId, context.clubId));
+    const [competition, entry] = await db.getAll(competitionRef, entryRef);
+    const value = { ...competition.data(), id: competitionId };
+    if (!competition.exists || !value.qualifications?.enabled) fail("Cette compétition n'applique pas de grille.");
+    if (value.qualificationJobId) fail("Un contrôle des qualifications est en cours.");
+    assertOpen(value);
     const swimmer = (entry.data()?.swimmers || []).find((item) => item.swimmerIndexId === swimmerId);
-    if (!swimmer) fail("Nageur absent des engagements du club.", "permission-denied");
-    if (!eventsFor(competition.data()).some((event) => event.code === eventCode && event.type === "individual")) fail("Course non ouverte.");
-    const ref = requests.doc(hash([competitionId, context.clubId, swimmerId, eventCode]));
-    await db.runTransaction(async (tx) => {
-      const existing = await tx.get(ref);
-      if (["pending", "accepted"].includes(existing.data()?.status)) fail("Une demande existe déjà pour cette course.");
-      tx.set(ref, { competitionId, clubId: context.clubId, swimmerIndexId: swimmerId, swimmerName: `${swimmer.lastName || ""} ${swimmer.firstName || ""}`.trim(), eventCode, reason, status: "pending", requestedAt: now(), requestedBy: context.uid });
+    if (!swimmer || entry.data()?.clubId !== context.clubId) fail("Nageur absent des engagements du club sélectionné.", "permission-denied");
+    const category = categoryFor(value.date, swimmer.birthDate);
+    const event = eventsFor(value).find((item) => item.code === eventCode && item.type === "individual" && item.categories.includes(category));
+    if (!event || !value.qualifications.groups.some((group) => group.categories.includes(category)) || !["F", "M"].includes(swimmer.sex)) fail("Course non ouverte pour ce nageur.");
+    const rows = await rowsFor(swimmer, value);
+    const input = { rules: value.qualifications, category, sex: swimmer.sex, events: eventsFor(value), rows };
+    const evaluation = engine.evaluate(input);
+    const ref = grants.doc(grantId(competitionId, swimmerId));
+    const reason = evaluation.mode === "one" && !(swimmer.individualEntries || []).some((item) => evaluation.courses[item.eventCode]?.qualified)
+      ? "Aucune course qualifiée engagée. " + evaluation.courses[eventCode].reason : evaluation.courses[eventCode].reason;
+    const decision = await db.runTransaction(async (tx) => {
+      const latestCompetition = await tx.get(competitionRef);
+      const latestEntry = await tx.get(entryRef);
+      const previous = await tx.get(ref);
+      if (latestCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || sportingHash(latestEntry.data()) !== sportingHash(entry.data())) fail("Les engagements ou les règles ont changé. Rechargez avant de confirmer.");
+      if (latestCompetition.data()?.qualificationJobId) fail("Un contrôle des qualifications est en cours.");
+      assertOpen(latestCompetition.data());
+      if (previous.exists && previous.data().clubId !== context.clubId) fail("Autorisation rattachée à un autre club.", "permission-denied");
+      const courses = previous.data()?.courses || {};
+      const accepted = courses[eventCode]?.status === "accepted" ? courses[eventCode]
+        : { eventCode, status: "accepted", source: "national-exception", approvedBy: actor.uid, approvedAt: now(), reason };
+      tx.set(ref, { clubId: context.clubId, competitionId, swimmerIndexId: swimmerId, courses: { [eventCode]: accepted } }, { merge: true });
+      tx.update(competitionRef, { hasQualificationGrants: true, updatedAt: now() });
+      return { accepted, approvals: Object.values({ ...courses, [eventCode]: accepted }) };
     });
-    return { ok: true, message: "Envoyez également un courriel à secretaire@nap-ffessm.fr pour appuyer votre demande." };
-  }
-
-  async function listRequests(request) {
-    const context = await access(request);
-    const club = context.national ? null : await clubAccess(request);
-    let query = requests.where("competitionId", "==", String(request.data?.competitionId || ""));
-    if (club) query = query.where("clubId", "==", club.clubId);
-    query = query.orderBy("__name__").limit(50);
-    if (request.data?.cursor) query = query.startAfter(String(request.data.cursor));
-    const page = await query.get();
-    return { requests: page.docs.map((doc) => ({ id: doc.id, ...doc.data() })), cursor: page.size === 50 ? page.docs.at(-1).id : "" };
-  }
-
-  async function resolveRequest(request) {
-    const context = await national(request);
-    const status = request.data?.status;
-    if (!["accepted", "refused", "revoked"].includes(status)) fail("Décision invalide.");
-    const ref = requests.doc(String(request.data?.requestId || "invalid"));
-    if (status === "revoked") {
-      const current = await ref.get();
-      if (current.data()?.status !== "accepted") fail("Seule une dérogation acceptée peut être retirée.");
-      const value = current.data();
-      const competitionRef = competitions.doc(value.competitionId);
-      const entryRef = entries.doc(entryIdFor(value.competitionId, value.clubId));
-      const [competition, entry] = await db.getAll(competitionRef, entryRef);
-      if (competition.data()?.qualificationJobId) fail("Un contrôle des règles est en cours.");
-      const swimmer = (entry.data()?.swimmers || []).find((item) => item.swimmerIndexId === value.swimmerIndexId);
-      const result = swimmer ? await reconcile(entry.data(), { ...competition.data(), id: competition.id }, cacheIdFor(swimmer), value.eventCode) : null;
-      await db.runTransaction(async (tx) => {
-        const latest = await tx.get(ref);
-        const latestCompetition = await tx.get(competitionRef);
-        const latestEntry = await tx.get(entryRef);
-        if (latest.data()?.status !== "accepted" || latestCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || hash(latestEntry.data()) !== hash(entry.data())) fail("Les données ont changé. Rechargez avant de retirer la dérogation.");
-        tx.update(ref, { status, decidedBy: context.uid, decidedAt: now(), decision: String(request.data?.decision || "").slice(0, 2000) });
-        tx.set(grants.doc(grantId(value.competitionId, value.swimmerIndexId)), { courses: { [value.eventCode]: { eventCode: value.eventCode, status, requestId: ref.id } } }, { merge: true });
-        tx.update(competitionRef, { updatedAt: now() });
-        if (result) tx.update(entryRef, { swimmers: result.swimmers, relays: result.relays, updatedAt: now(), "documents.clubRecapPdf": {},
-          ...(result.removed.length ? { qualificationAlert: { at: now(), reason: "Dérogation retirée par le National", removed: result.removed } } : {}) });
-      });
-      await audit("engagementQualificationRequest.revoked", context.uid, { requestId: ref.id, removed: auditRemovals(result?.removed) });
-      return { ok: true, removed: result?.removed || [] };
-    }
-    await db.runTransaction(async (tx) => {
-      const current = await tx.get(ref);
-      if (current.data()?.status !== "pending") fail("Cette demande n'est plus en attente.");
-      const value = current.data();
-      const competition = await tx.get(competitions.doc(value.competitionId));
-      if (competition.data()?.qualificationJobId) fail("Un contrôle des règles est en cours.");
-      tx.update(ref, { status, decidedBy: context.uid, decidedAt: now(), decision: String(request.data?.decision || "").slice(0, 2000) });
-      if (status === "accepted") tx.update(competitions.doc(value.competitionId), { hasQualificationGrants: true, updatedAt: now() });
-      if (status === "accepted") tx.set(grants.doc(grantId(value.competitionId, value.swimmerIndexId)), { clubId: value.clubId, courses: { [value.eventCode]: { eventCode: value.eventCode, status, requestId: ref.id } } }, { merge: true });
-    });
-    await audit("engagementQualificationRequest.resolved", context.uid, { requestId: ref.id, status });
-    return { ok: true };
+    await audit("engagementQualificationException.granted", actor.uid, { competitionId, clubId: context.clubId, swimmerIndexId: swimmerId, eventCode });
+    const result = engine.evaluate({ ...input, approvals: decision.approvals });
+    return { ok: true, qualification: { ...result.courses[eventCode], mode: result.mode }, exception: decision.accepted };
   }
 
   async function syncTargets(event) {
@@ -348,7 +317,7 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
       cursor = page.size === 25 ? page.docs.at(-1).id : "";
     } while (cursor);
   }
-  return { evaluate, reconcile, begin, process, listSources, requestDerogation, listRequests, resolveRequest, syncTargets, revalidateCache };
+  return { evaluate, reconcile, begin, process, listSources, grantException, syncTargets, revalidateCache };
 }
 
 module.exports = { createQualificationService };

@@ -119,23 +119,30 @@ async function main() {
   assert.equal((await compRef.get()).data().qualificationJobId, "");
   assert.equal((await service.process({ data: { jobId: job.qualificationJobId } })).state, "done", "Reprise idempotente.");
 
-  await service.requestDerogation({ data: { competitionId: "meet", swimmerIndexId: "athlete", eventCode: "50SF", reason: "Performance étrangère non importée" } });
-  let list = await service.listRequests({ data: { competitionId: "meet" } });
-  assert.equal(list.requests[0].status, "pending");
-  assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 0, "Une demande ne crée pas d'engagement.");
-  await assert.rejects(service.resolveRequest({ national: false, data: { requestId: list.requests[0].id, status: "accepted" } }), /national/);
-  await service.resolveRequest({ data: { requestId: list.requests[0].id, status: "accepted" } });
-  const approved = await service.evaluate(swimmer, { ...(await compRef.get()).data(), id: "meet" });
+  const exceptionRequest = { competitionId: "meet", swimmerIndexId: "athlete", eventCode: "50SF", confirmed: true };
+  await assert.rejects(service.grantException({ national: false, data: exceptionRequest }), /national/);
+  await assert.rejects(service.grantException({ data: { ...exceptionRequest, confirmed: false } }), /Confirmation/);
+  await assert.rejects(service.grantException({ data: { ...exceptionRequest, swimmerIndexId: "other-club" } }), /club/);
+  await assert.rejects(service.grantException({ data: { ...exceptionRequest, eventCode: "800SF" } }), /non ouverte/);
+  await compRef.update({ qualificationJobId: "locked" });
+  await assert.rejects(service.grantException({ data: exceptionRequest }), /contrôle/);
+  await compRef.update({ qualificationJobId: "" });
+  const granted = await service.grantException({ data: exceptionRequest });
+  assert.equal(granted.qualification.approved, true);
+  assert.equal(granted.qualification.qualified, false);
+  assert.equal(granted.exception.approvedBy, "admin");
+  assert.ok(granted.exception.approvedAt);
+  assert.equal(granted.exception.source, "national-exception");
+  const duplicate = await service.grantException({ data: exceptionRequest });
+  assert.equal(duplicate.exception.approvedAt, granted.exception.approvedAt, "Une répétition conserve l'auteur et la date initiaux.");
+  const approvedCompetition = { ...(await compRef.get()).data(), id: "meet" };
+  const approved = await service.evaluate(swimmer, approvedCompetition);
   assert.equal(approved.courses["50SF"].approved, true);
   assert.equal(approved.courses["50SF"].qualified, false);
-  assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 0, "L'accord autorise, sans cocher à la place du club.");
-  await assert.rejects(service.resolveRequest({ data: { requestId: list.requests[0].id, status: "refused" } }), /plus en attente/);
-  await entryRef.update({ swimmers: [{ ...swimmer, individualEntries: [{ eventCode: "50SF", qualification: { ...approved.courses["50SF"], mode: approved.mode } }] }] });
-  const revoked = await service.resolveRequest({ data: { requestId: list.requests[0].id, status: "revoked", decision: "Justificatif non valide" } });
-  assert.equal(revoked.removed.length, 1);
-  assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 0);
-  assert.equal((await entryRef.get()).data().qualificationAlert.reason, "Dérogation retirée par le National");
-  assert.equal((await service.evaluate(swimmer, { ...(await compRef.get()).data(), id: "meet" })).courses["50SF"].approved, false);
+  const exceptionOnly = await service.reconcile({ swimmers: [{ ...swimmer, individualEntries: [{ eventCode: "50SF" }, { eventCode: "100SF" }] }], relays: [{ relayId: "composed", memberIds: ["athlete"] }, { relayId: "empty", memberIds: [] }] }, approvedCompetition);
+  assert.deepEqual(exceptionOnly.swimmers[0].individualEntries.map((item) => item.eventCode), ["50SF"], "L'exception ne débloque pas les bonus.");
+  assert.deepEqual(exceptionOnly.relays.map((item) => item.relayId), ["empty"], "L'exception ne qualifie pas un relais composé.");
+  assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 0, "La confirmation autorise la sélection, qui reste enregistrée par la sauvegarde normale.");
 
   // Revalidation is targeted, preserves an alternative proof and only deletes
   // the anchor/bonuses once every qualifying proof has disappeared.

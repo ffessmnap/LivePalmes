@@ -5578,9 +5578,13 @@ const qualificationService = createQualificationService({ db, HttpsError, catego
 
 exports.listEngagementQualificationSources = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listSources(request));
 exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => qualificationService.process(request));
-exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, (request) => qualificationService.requestDerogation(request));
-exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listRequests(request));
-exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, (request) => qualificationService.resolveRequest(request));
+exports.grantEngagementQualificationException = onCall(CALLABLE_OPTIONS, (request) => qualificationService.grantException(request));
+// Retired endpoints remain deny-only so previously deployed clients cannot use
+// the removed request workflow. Historical documents are not migrated or erased.
+const retiredQualificationRequest = () => { throw new HttpsError("failed-precondition", "Les demandes de dérogation sont supprimées. Une exception peut être accordée directement par le National."); };
+exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
+exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
+exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
   document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => qualificationService.syncTargets(event));
 exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
