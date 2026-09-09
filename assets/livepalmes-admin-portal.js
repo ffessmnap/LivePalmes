@@ -3980,10 +3980,13 @@
     if (!global.confirm(`Confirmer l’exception pour ${eventCode} ?\n${box.title}\n\nCette autorisation du National concerne uniquement cette course. Elle ne qualifie pas le nageur pour des bonus ou un relais.`)) return false;
     box.disabled = true;
     try {
+      await flushEngagementClubIndividualEntriesAutosave();
       await engagementClubEntryMutationQueue;
       if (scope !== qualificationExceptionContext() || !qualificationExceptionsEnabled()) return false;
+      if (row.isConnected === false) return false;
       const result = await callFunction("grantEngagementQualificationException", { competitionId, swimmerIndexId: swimmerId, eventCode, confirmed: true });
       if (scope !== qualificationExceptionContext() || !qualificationExceptionsEnabled()) return false;
+      if (row.isConnected === false) return false;
       selectedEngagementCompetition.hasQualificationGrants = true;
       const swimmer = selectedEngagementClubSwimmerRows().find((item) => item.swimmerIndexId === swimmerId);
       const key = engagementClubSwimmerEventTimesCacheKey(swimmer || { swimmerIndexId: swimmerId });
@@ -4000,6 +4003,51 @@
   }
   function engagementManualIndividualTimesAllowed(competition = selectedEngagementCompetition || {}) {
     return !competition.qualifications?.enabled && competition.missingEntryTimeMode === "manual";
+  }
+
+  function clearUncheckedQualificationException(box, row) {
+    if (box.checked || box.dataset.qualificationApproved !== "true") return false;
+    const swimmerId = row.dataset.engagementClubEntrySwimmerId;
+    const swimmer = selectedEngagementClubSwimmerRows().find((item) => item.swimmerIndexId === swimmerId);
+    const key = engagementClubSwimmerEventTimesCacheKey(swimmer || { swimmerIndexId: swimmerId });
+    const previews = engagementClubSwimmerEventTimesCache.get(key) || [];
+    engagementClubSwimmerEventTimesCache.set(key, previews.map((entry) => {
+      if (entry.eventCode !== box.dataset.engagementClubSwimmerEvent || !entry.qualification) return entry;
+      const result = entry.qualification;
+      return { ...entry, qualification: { ...result, approved: false,
+        allowed: Boolean(result.exceptionEligible && (result.qualified || (result.bonus && (result.minimum === null || result.mode === "one")))) } };
+    }));
+    box.dataset.qualificationApproved = "false";
+    return true;
+  }
+
+  function renderQualificationAlert(mount) {
+    const alert = selectedEngagementClubEntry?.qualificationAlert;
+    if (!alert) return;
+    const scope = qualificationExceptionContext();
+    const competitionId = selectedEngagementCompetitionId;
+    const warning = document.createElement("div"); warning.setAttribute("role", "status");
+    const text = document.createElement("p");
+    text.textContent = `Attention : ${alert.reason}. Engagements supprimés : ${(alert.removed || []).map((item) => `${item.name || ""} ${item.eventCode}`).join(", ")}`;
+    const button = document.createElement("button"); button.type = "button"; button.className = "ghost-button admin-button-compact";
+    button.textContent = "J’ai pris connaissance";
+    const errorText = document.createElement("small");
+    button.onclick = async () => {
+      button.disabled = true; errorText.textContent = "";
+      try {
+        await flushEngagementClubIndividualEntriesAutosave();
+        await engagementClubEntryMutationQueue;
+        if (scope !== qualificationExceptionContext()) return;
+        await callFunction("acknowledgeEngagementQualificationAlert", { competitionId, alertAt: alert.at });
+        if (scope !== qualificationExceptionContext()) return;
+        if (selectedEngagementClubEntry?.qualificationAlert?.at === alert.at) selectedEngagementClubEntry.qualificationAlert = null;
+        if (engagementClubLastPersistedEntry?.qualificationAlert?.at === alert.at) engagementClubLastPersistedEntry.qualificationAlert = null;
+        warning.remove();
+        renderEngagementClubEntries();
+      } catch (error) { errorText.textContent = error.message || "Impossible de fermer l’alerte."; }
+      finally { button.disabled = false; }
+    };
+    warning.append(text, button, errorText); mount.prepend(warning);
   }
 
   function updateEngagementManualEntryTimeField() {
@@ -4149,7 +4197,9 @@
     const boxes = [...row.querySelectorAll("[data-engagement-club-swimmer-event]")];
     const anchor = boxes.some((box) => box.checked && results.get(box.dataset.engagementClubSwimmerEvent)?.qualified);
     boxes.forEach((box) => {
-      const result = results.get(box.dataset.engagementClubSwimmerEvent);
+      const cachedResult = results.get(box.dataset.engagementClubSwimmerEvent);
+      const result = cachedResult?.approved && !box.checked ? { ...cachedResult, approved: false,
+        allowed: Boolean(cachedResult.exceptionEligible && (cachedResult.qualified || (cachedResult.bonus && (cachedResult.minimum === null || cachedResult.mode === "one")))) } : cachedResult;
       box.dataset.qualificationAnchor = result?.qualified ? "true" : "false";
       box.dataset.qualificationMode = result?.mode || "";
       box.dataset.qualificationApproved = result?.approved ? "true" : "false";
@@ -7091,9 +7141,7 @@
       .join("");
     renderQualificationExceptionToggle(mount);
     mount.querySelectorAll("[data-engagement-club-entry-row]").forEach((row) => updateQualificationCheckboxes(row));
-    if (selectedEngagementClubEntry?.qualificationAlert) {
-      const warning = document.createElement("p"); warning.setAttribute("role", "status"); warning.textContent = `Attention : ${selectedEngagementClubEntry.qualificationAlert.reason}. Engagements supprimés : ${(selectedEngagementClubEntry.qualificationAlert.removed || []).map((item) => `${item.name || ""} ${item.eventCode}`).join(", ")}`; mount.prepend(warning);
-    }
+    renderQualificationAlert(mount);
     global.requestAnimationFrame?.(initializeEngagementCourseScrollHints);
     if (selectedEngagementCompetition?.qualifications?.enabled) sortedSelectedRows.forEach((swimmer) => { void ensureEngagementClubSwimmerEventTimes(swimmer); });
     updateEngagementClubEntriesSummary();
@@ -17345,6 +17393,7 @@
     elements.engagementsClubEntriesList?.addEventListener("change", async (event) => {
       const row = event.target.closest("[data-engagement-club-entry-row]");
       let courseSelectionChanged = event.target.matches("[data-engagement-club-swimmer-event]");
+      let exceptionChanged = false;
       if (courseSelectionChanged && event.target.checked && event.target.dataset.qualificationExceptionRequired === "true") {
         const max = Number(selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
         if (max && row.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length > max) {
@@ -17353,6 +17402,7 @@
           return;
         }
         if (!await confirmQualificationException(event.target, row)) { event.target.checked = false; updateQualificationCheckboxes(row); return; }
+        exceptionChanged = true;
       }
       if (courseSelectionChanged && selectedEngagementCompetition?.qualifications?.enabled && !event.target.checked && event.target.dataset.qualificationAnchor === "true") {
         const checked = [...row.querySelectorAll("[data-engagement-club-swimmer-event]:checked")];
@@ -17399,6 +17449,7 @@
         updateEngagementClubEntryRowCount(row);
       }
       if (courseSelectionChanged) {
+        exceptionChanged = clearUncheckedQualificationException(event.target, row) || exceptionChanged;
         updateQualificationCheckboxes(row);
         const swimmerIndexId = row?.dataset.engagementClubEntrySwimmerId || "";
         const swimmers = selectedEngagementClubSwimmerRows();
@@ -17406,6 +17457,7 @@
         selectedEngagementClubEntry = { ...(selectedEngagementClubEntry || {}), swimmers };
         if (swimmer) {
           void persistEngagementClubIndividualEntries(swimmer);
+          if (exceptionChanged) void flushEngagementClubIndividualEntriesAutosave();
         }
       }
       updateEngagementClubEntriesSummary();

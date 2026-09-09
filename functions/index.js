@@ -5579,6 +5579,7 @@ const qualificationService = createQualificationService({ db, HttpsError, catego
 exports.listEngagementQualificationSources = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listSources(request));
 exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => qualificationService.process(request));
 exports.grantEngagementQualificationException = onCall(CALLABLE_OPTIONS, (request) => qualificationService.grantException(request));
+exports.acknowledgeEngagementQualificationAlert = onCall(CALLABLE_OPTIONS, (request) => qualificationService.acknowledgeAlert(request));
 // Retired endpoints remain deny-only so previously deployed clients cannot use
 // the removed request workflow. Historical documents are not migrated or erased.
 const retiredQualificationRequest = () => { throw new HttpsError("failed-precondition", "Les demandes de dérogation sont supprimées. Une exception peut être accordée directement par le National."); };
@@ -15712,6 +15713,10 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
         throw new HttpsError("failed-precondition", "Un nageur modifie n'est plus selectionne dans cette competition. Rechargez la fiche.");
       }
       const swimmers = latestSwimmers.map((swimmer) => changedById.get(swimmer.swimmerIndexId) || swimmer);
+      if (competitionData.qualifications?.enabled && latestSwimmers.some((swimmer) => changedById.has(swimmer.swimmerIndexId) && JSON.stringify(swimmer) !== JSON.stringify(savedSwimmersById.get(swimmer.swimmerIndexId)))) {
+        throw new HttpsError("aborted", "Les engagements ont changé. Rechargez avant de recommencer.");
+      }
+      qualificationService.revokeRemovedExceptions(transaction, competitionId, latestSwimmers, swimmers, context.uid);
       const relays = qualificationRelaysAfterIndividualChange(latestEntry.data()?.relays || [], swimmers, competitionData);
       updatedEntryData = {
         ...(latestEntry.data() || {}),
@@ -15803,6 +15808,7 @@ exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (req
       updatedBy: changed ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changed) return;
+    qualificationService.revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
     transaction.set(entryRef, {
       swimmers,
       relays,
@@ -15934,6 +15940,7 @@ exports.saveEngagementClubSwimmerSelections = onCall(CALLABLE_OPTIONS, async (re
       updatedBy: changedCount ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changedCount) return;
+    qualificationService.revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
     transaction.set(entryRef, { swimmers, relays, updatedAt: now, updatedBy: context.uid }, { merge: true });
     validatedSwimmers.forEach((swimmer) => {
       if (!swimmer.licenseNumber || swimmer.licenseLocked) return;
@@ -16012,6 +16019,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const currentEntry = await batch.get(entryRef);
   assertEngagementClubWriteOpen(currentCompetition.data() || {});
   if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || currentEntry.updateTime.toMillis() !== entry.updateTime.toMillis()) throw new HttpsError("aborted", "La fiche a changé. Rechargez-la.");
+  qualificationService.revokeRemovedExceptions(batch, competitionId, currentEntry.data()?.swimmers || [], swimmers, context.uid);
   batch.set(entryRef, {
     swimmers,
     relays,

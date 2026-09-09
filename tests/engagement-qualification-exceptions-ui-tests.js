@@ -14,6 +14,7 @@ async function main() {
     selectedEngagementClubSwimmerRows: () => [{ swimmerIndexId: "swimmer" }],
     engagementClubSwimmerEventTimesCache: cache, engagementClubSwimmerEventTimesCacheKey: () => "swimmer",
     engagementClubEntryMutationQueue: Promise.resolve(), elements: { engagementsClubEntriesMessage: {} },
+    flushEngagementClubIndividualEntriesAutosave: async () => {},
     global: { confirm: () => confirm, LivePalmesEngagementQualifications: { display: String } },
     callFunction: async (name, data) => { calls.push({ name, data }); if (fails) throw new Error("Refus serveur"); return { qualification: { mode: "one", allowed: true, qualified: false, approved: true, exceptionEligible: true } }; }
   };
@@ -50,6 +51,9 @@ async function main() {
   boxes[2].checked = true;
   vm.runInContext('qualificationExceptionScope = ""', context);
   update(); assert.equal(boxes[2].hidden, false); assert.equal(boxes[1].hidden, true, "Une exception ne débloque pas les bonus.");
+  boxes[2].checked = false; update();
+  assert.equal(boxes[2].hidden, true, "Une ancienne autorisation ne permet pas de recocher hors mode National.");
+  assert.equal(boxes[2].dataset.qualificationApproved, "false");
   const count = calls.length;
   vm.runInContext("qualificationExceptionScope = qualificationExceptionContext()", context);
   club = "b"; assert.equal(context.qualificationExceptionsEnabled(), false);
@@ -60,6 +64,24 @@ async function main() {
   national = false; update(); assert.equal(boxes[1].hidden, true);
   assert.equal(await context.confirmQualificationException(boxes[1], row), false);
   assert.equal(calls.length, count, "Affichage et changements de contexte sans lectures supplémentaires.");
+  vm.runInContext(section("  function clearUncheckedQualificationException(", "  function updateEngagementManualEntryTimeField("), context);
+  const element = () => ({ children: [], append(...items) { this.children.push(...items); }, prepend(item) { this.children.unshift(item); }, setAttribute() {}, remove() { this.removed = true; } });
+  context.document = { createElement: element };
+  context.renderEngagementClubEntries = () => {};
+  context.selectedEngagementClubEntry = { qualificationAlert: { at: "one", reason: "Suppression", removed: [] } };
+  context.engagementClubLastPersistedEntry = { qualificationAlert: { at: "one" } };
+  const mount = element();
+  const beforeAlert = calls.length;
+  context.renderQualificationAlert(mount);
+  assert.equal(calls.length, beforeAlert, "Afficher une alerte n'ajoute aucune lecture.");
+  const warning = mount.children[0], button = warning.children[1];
+  fails = true; await button.onclick();
+  assert.equal(warning.removed, undefined); assert.ok(context.selectedEngagementClubEntry.qualificationAlert);
+  fails = false; await button.onclick();
+  assert.equal(warning.removed, true); assert.equal(context.selectedEngagementClubEntry.qualificationAlert, null);
+  assert.equal(context.engagementClubLastPersistedEntry.qualificationAlert, null);
+  assert.equal(calls.at(-1).name, "acknowledgeEngagementQualificationAlert");
+  assert.equal(calls.at(-1).data.alertAt, "one");
   console.log("Exceptions nationales : masquage, confirmation, permissions, bonus et isolation du contexte OK.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

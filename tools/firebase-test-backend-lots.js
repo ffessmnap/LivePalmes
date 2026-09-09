@@ -11,6 +11,7 @@ const LOTS = Object.freeze({
   ],
   "engagement-core": [
     "grantEngagementQualificationException",
+    "acknowledgeEngagementQualificationAlert",
     "listEngagementQualificationSources", "processEngagementQualificationJob", "requestEngagementQualificationDerogation", "listEngagementQualificationRequests", "resolveEngagementQualificationRequest", "revalidateEngagementQualificationCache", "syncEngagementQualificationTargets",
     "listEngagementAccessRequests",
     "syncEngagementClubEntryToCompetitionSummary", "syncEngagementMailRecipientIndex",
