@@ -48,6 +48,17 @@ async function inspectIndex() {
     const identity = swimmer.identityKey || swimmer.swimmerIdentityKey;
     const indexId = identity ? hash(identity) : swimmer.swimmerIndexId || swimmer.id;
     if (!indexId) continue;
+    const cacheId = hash([swimmer.source || "performances", identity || swimmer.swimmerIndexId || swimmer.id || swimmer.swimmerId].filter(Boolean).join("|"));
+    if (cacheId === "1ad97ad49cf06fbd9c84a44531cff5c3af41efe8") {
+      console.log(JSON.stringify({ diagnostic: "incident-swimmer", indexId, source: ["reference", "performances", "engagement"].includes(swimmer.source) ? swimmer.source : "unspecified", hasIdentity: !!identity, hasSwimmerId: !!swimmer.swimmerId }));
+      const sourceKeys = [...new Set([swimmer.identityKey, swimmer.swimmerIdentityKey, swimmer.swimmerId, ...(swimmer.sourceIds || [])].filter(Boolean))].slice(0, 5);
+      for (const sourceKey of sourceKeys) {
+        const key = hash(sourceKey);
+        const object = `performance-public-firestore/swimmers/${key.slice(0, 2)}/${key}.json`;
+        const response = await fetch(`https://storage.googleapis.com/storage/v1/b/livepalmes-test-public-data-206080168534/o/${encodeURIComponent(object)}`, { headers: { Authorization: `Bearer ${token}` } });
+        console.log(JSON.stringify({ diagnostic: "incident-storage", key, status: response.status }));
+      }
+    }
     const doc = await read(`/performanceSwimmerIndex/${encodeURIComponent(indexId)}`);
     const index = doc ? data(doc) : {};
     const count = Number(index.pageCount);
