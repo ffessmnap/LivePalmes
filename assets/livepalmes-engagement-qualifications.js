@@ -27,7 +27,7 @@
         electronicOnly: row.querySelector("[data-q-electronic]").checked,
         competitionMode: row.querySelector("[data-q-source-mode]").value,
         competitionIds: [...row.querySelectorAll("[data-q-source]:checked")].map((input) => input.value),
-        bonusRequiresSelectedCompetition: row.querySelector("[data-q-bonus]").checked
+        bonusRequiresSelectedCompetition: row.querySelector("[data-q-mode]").value === "one" && row.querySelector("[data-q-bonus]").checked
       }));
       const standards = { ...draft.standards };
       for (const cell of mount.querySelectorAll("[data-q-standard]")) {
@@ -48,7 +48,10 @@
         <div data-q-content ${draft.enabled ? "" : "hidden"}>
           <p class="qualification-intro">Les catégories sont celles de la saison de la compétition. Les minima sont communs aux bassins sélectionnés.</p>
           ${draft.groups.map((group, index) => `<fieldset data-q-group class="qualification-group"><legend>Règles du groupe ${index + 1}</legend>
-            <div class="qualification-categories" aria-label="Catégories du groupe">${categories.map((category) => `<label><input type="checkbox" data-q-category value="${category}" ${group.categories.includes(category) ? "checked" : ""}><span>${category}</span></label>`).join("")}</div>
+            <div class="qualification-categories" aria-label="Catégories du groupe">${categories.map((category) => {
+              const unavailable = !group.categories.includes(category) && draft.groups.some((other, otherIndex) => otherIndex !== index && other.categories.includes(category));
+              return `<label title="${unavailable ? "Catégorie déjà affectée à un autre groupe" : ""}"><input type="checkbox" data-q-category value="${category}" ${group.categories.includes(category) ? "checked" : ""} ${unavailable ? "disabled" : ""}><span>${category}</span></label>`;
+            }).join("")}</div>
             <div class="qualification-fields">
               <label>Mode<select data-q-mode><option value="each" ${group.mode === "each" ? "selected" : ""}>Minimum sur chaque course</option><option value="one" ${group.mode === "one" ? "selected" : ""}>Au moins une course qualifiée et engagée</option></select></label>
               <label>Début de période<input type="date" data-q-start value="${escape(group.startDate)}"></label>
@@ -57,7 +60,7 @@
             <div class="qualification-options">
               <span>Bassins</span>${["25", "50"].map((pool) => `<label><input type="checkbox" data-q-pool value="${pool}" ${group.pools.includes(pool) ? "checked" : ""}><span>${pool} m</span></label>`).join("")}
               <label><input type="checkbox" data-q-electronic ${group.electronicOnly !== false ? "checked" : ""}><span>Chronométrage électronique uniquement</span></label>
-              <label><input type="checkbox" data-q-bonus ${group.bonusRequiresSelectedCompetition ? "checked" : ""}><span>Course bonus nagée dans une compétition qualificative</span></label>
+              <label><input type="checkbox" data-q-bonus ${group.mode === "one" && group.bonusRequiresSelectedCompetition ? "checked" : ""} ${group.mode !== "one" ? "disabled" : ""}><span>Course bonus nagée dans une compétition qualificative${group.mode !== "one" ? " — uniquement en mode au moins une course" : ""}</span></label>
             </div>
             <label class="qualification-source-mode">Compétitions qualificatives<select data-q-source-mode><option value="all" ${group.competitionMode === "all" ? "selected" : ""}>Toutes les compétitions de la période</option><option value="selected" ${group.competitionMode === "selected" ? "selected" : ""}>Sélection de compétitions</option></select></label>
             <div data-q-source-list ${group.competitionMode === "selected" ? "" : "hidden"}>
@@ -69,12 +72,15 @@
           </fieldset>`).join("")}
           <button class="qualification-button qualification-button--add" type="button" data-q-add>+ Ajouter un groupe de catégories</button>
           <section class="qualification-standards">
+            <p ${selectedCategories.length ? "hidden" : ""}>Pour saisir les temps, ajoutez un groupe puis sélectionnez ses catégories ci-dessus. Chaque catégorie fera apparaître une colonne de saisie.</p>
+            <div ${selectedCategories.length ? "" : "hidden"}>
             <div class="qualification-standards-head"><div><h3>Minima par course</h3><p>Saisissez 12345 pour obtenir 01:23.45. « Libre » signifie sans minimum.</p></div><button class="qualification-button" type="button" data-q-copy-sex>Copier Femmes vers Hommes</button></div>
             ${["F", "M"].map((sex) => `<div class="qualification-grid-block"><h4>${sex === "F" ? "Femmes" : "Hommes"}</h4><div class="qualification-table-shell"><table class="qualification-grid"><thead><tr><th>Course</th>${selectedCategories.map((category) => `<th>${escape(category)}</th>`).join("")}</tr></thead><tbody>${events.filter((event) => event.type === "individual").map((event) => `<tr><th title="${escape(event.label || event.code)}">${escape(event.shortLabel || event.code)}</th>${selectedCategories.map((category) => {
               if (!event.categories.includes(category)) return `<td class="qualification-cell-blocked" aria-label="${escape(category)} non autorisée">—</td>`;
               const id = [category, sex, event.code].join("|"); const value = draft.standards[id]; const none = value === null;
               return `<td data-q-standard="${escape(id)}" data-q-none="${none}"><input inputmode="decimal" autocomplete="off" aria-label="Minimum ${escape(event.shortLabel || event.code)} ${escape(category)} ${sex}" placeholder="MM:SS.CC" value="${display(value)}" ${none ? "disabled" : ""}><button type="button" data-q-none title="${none ? "Saisir un minimum" : "Définir sans minimum"}" aria-label="${none ? "Saisir un minimum" : "Sans minimum"}">${none ? "Libre" : "×"}</button></td>`;
             }).join("")}</tr>`).join("")}</tbody></table></div></div>`).join("")}
+            </div>
           </section>
         </div><p data-q-error role="status"></p>`;
       if (!national) mount.querySelectorAll("input,select,button").forEach((input) => { input.disabled = true; });
@@ -87,7 +93,7 @@
         if (cell && event.target.matches("input") && event.target.value.trim()) event.target.value = display(parse(event.target.value));
         capture(); onDirty();
         if (event.target.matches("[data-q-start],[data-q-end]")) { sources = []; sourceCursor = ""; sourcesStarted = false; render(); }
-        if (event.target.matches("[data-q-enabled],[data-q-category],[data-q-source-mode]")) render();
+        if (event.target.matches("[data-q-enabled],[data-q-category],[data-q-source-mode],[data-q-mode]")) render();
       } catch (caught) { error(caught); }
     };
     mount.oninput = (event) => {
