@@ -144,6 +144,26 @@ async function main() {
   assert.deepEqual(exceptionOnly.relays.map((item) => item.relayId), ["empty"], "L'exception ne qualifie pas un relais composé.");
   assert.equal((await entryRef.get()).data().swimmers[0].individualEntries.length, 0, "La confirmation autorise la sélection, qui reste enregistrée par la sauvegarde normale.");
 
+  const readsBeforeRevocation = db.reads.count;
+  await db.runTransaction(async (tx) => service.revokeRemovedExceptions(tx, "meet", exceptionOnly.swimmers, [], "club-admin"));
+  assert.equal(db.reads.count, readsBeforeRevocation, "La révocation réutilise les engagements déjà lus.");
+  assert.equal((await service.evaluate(swimmer, approvedCompetition)).courses["50SF"].approved, false, "Décocher retire l'autorisation côté serveur.");
+  const grantedAgain = await service.grantException({ data: exceptionRequest });
+  assert.equal(grantedAgain.qualification.approved, true, "Une nouvelle confirmation nationale est possible.");
+  await db.runTransaction(async (tx) => service.revokeRemovedExceptions(tx, "meet", exceptionOnly.swimmers, exceptionOnly.swimmers, "club-admin"));
+  assert.equal((await service.evaluate(swimmer, approvedCompetition)).courses["50SF"].approved, true, "Une course conservée garde son exception.");
+
+  await entryRef.update({ qualificationAlert: { at: "alert-1", reason: "Suppression", removed: [] } });
+  await assert.rejects(service.acknowledgeAlert({ data: { competitionId: "meet", alertAt: "older" } }), /nouvelle alerte/);
+  const readsBeforeAck = db.reads.count;
+  await service.acknowledgeAlert({ data: { competitionId: "meet", alertAt: "alert-1" } });
+  assert.equal(db.reads.count - readsBeforeAck, 1, "Acquittement : une seule lecture ciblée.");
+  assert.equal((await entryRef.get()).data().qualificationAlert, null);
+  await service.acknowledgeAlert({ data: { competitionId: "meet", alertAt: "alert-1" } });
+  await entryRef.update({ qualificationAlert: { at: "alert-2", reason: "Nouvelle suppression", removed: [] } });
+  await assert.rejects(service.acknowledgeAlert({ data: { competitionId: "meet", alertAt: "alert-1" } }), /nouvelle alerte/);
+  assert.equal((await entryRef.get()).data().qualificationAlert.at, "alert-2", "Une ancienne confirmation ne masque pas une nouvelle alerte.");
+
   // Revalidation is targeted, preserves an alternative proof and only deletes
   // the anchor/bonuses once every qualifying proof has disappeared.
   await compRef.set(competition);

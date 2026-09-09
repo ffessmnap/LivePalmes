@@ -16,6 +16,38 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
   const auditRemovals = (items = []) => items.map((item) => ({ eventCode: item.eventCode, ...(item.swimmerIndexId ? { swimmerIndexId: item.swimmerIndexId } : {}), ...(item.relayId ? { relayId: item.relayId } : {}) }));
   const grantId = (competitionId, swimmerId) => hash([competitionId, swimmerId]);
 
+  // Called inside the entry transaction, using already-read authoritative entries.
+  // No additional reads; one merged write per swimmer losing an exception.
+  function revokeRemovedExceptions(tx, competitionId, before = [], after = [], uid = "") {
+    const remaining = new Map(after.map((swimmer) => [swimmer.swimmerIndexId, new Set((swimmer.individualEntries || []).map((entry) => entry.eventCode))]));
+    for (const swimmer of before) {
+      const courses = {};
+      for (const entry of swimmer.individualEntries || []) {
+        if (entry.qualification?.approved && !remaining.get(swimmer.swimmerIndexId)?.has(entry.eventCode)) {
+          courses[entry.eventCode] = { eventCode: entry.eventCode, status: "revoked", revokedBy: uid, revokedAt: now() };
+        }
+      }
+      if (Object.keys(courses).length) tx.set(grants.doc(grantId(competitionId, swimmer.swimmerIndexId)), { courses }, { merge: true });
+    }
+  }
+
+  async function acknowledgeAlert(request) {
+    const context = await clubAccess(request);
+    const competitionId = String(request.data?.competitionId || "");
+    const alertAt = String(request.data?.alertAt || "");
+    if (!competitionId || competitionId.includes("/") || competitionId.length > 128 || !alertAt) fail("Compétition et alerte requises.", "invalid-argument");
+    const ref = entries.doc(entryIdFor(competitionId, context.clubId));
+    await db.runTransaction(async (tx) => {
+      const entry = await tx.get(ref);
+      if (!entry.exists || entry.data().clubId !== context.clubId) fail("Engagements du club introuvables.", "permission-denied");
+      const alert = entry.data().qualificationAlert;
+      if (!alert) return;
+      if (alert.at !== alertAt) fail("Une nouvelle alerte est disponible. Rechargez la compétition avant de la confirmer.");
+      tx.update(ref, { qualificationAlert: null, qualificationAlertAcknowledged: { at: now(), by: context.uid, alertAt } });
+    });
+    return { ok: true };
+  }
+
   async function evaluate(swimmer, competition, rows) {
     const input = { rules: competition.qualifications, category: categoryFor(competition.date, swimmer.birthDate), sex: swimmer.sex,
       events: eventsFor(competition), rows: rows || await rowsFor(swimmer, competition) };
@@ -317,7 +349,7 @@ function createQualificationService({ db, HttpsError, categoryFor, eventsFor, ro
       cursor = page.size === 25 ? page.docs.at(-1).id : "";
     } while (cursor);
   }
-  return { evaluate, reconcile, begin, process, listSources, grantException, syncTargets, revalidateCache };
+  return { evaluate, reconcile, begin, process, listSources, grantException, revokeRemovedExceptions, acknowledgeAlert, syncTargets, revalidateCache };
 }
 
 module.exports = { createQualificationService };
