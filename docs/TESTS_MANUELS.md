@@ -192,6 +192,8 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ### Grilles de qualification piscine (recette sur TEST)
 
+- Si le fichier d'historique manque mais que l'index paginé est complet, enregistrer la grille et vérifier le recours au cache après la première lecture bornée. Si une page manque ou appartient à une autre version, vérifier qu'aucun engagement n'est supprimé, que l'aperçu est annulé et qu'un nouvel enregistrement est possible. Après le début d'application, une erreur doit conserver le traitement reprenable et son verrou.
+
 - Dans Paramètres sportifs, vérifier que les colonnes restent dans l'ordre P, B, M, C, J, S, puis masters, même si les groupes sont créés dans un autre ordre.
 - Télécharger la trame à un onglet Minima. Renseigner des temps dans Femmes et Hommes et LIBRE, puis importer : comparer la prévisualisation aux valeurs existantes. Annuler doit tout conserver ; appliquer ne doit modifier que les cases remplies. Enregistrer la compétition reste nécessaire et doit déclencher le contrôle habituel des engagements.
 - Importer un temps invalide, une formule, une catégorie en double et un fichier sans les deux sections : aucune application ne doit être possible. Les cases hors programme doivent être listées comme ignorées.
