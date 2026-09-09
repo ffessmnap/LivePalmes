@@ -14,10 +14,11 @@ assert.doesNotMatch(workflow, /^  (push|pull_request|schedule):/m);
 assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
 assert.ok(workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
 const branchGuard = workflow.slice(workflow.indexOf('          case "$GITHUB_REF" in'), workflow.indexOf('          case "$SELECTED_LOT" in', workflow.indexOf('Branche non autorisée en TEST.')));
-assert.ok(branchGuard.includes('engagement-core|publications)'));
+assert.ok(branchGuard.includes('bootstrap|engagement-core|publications)'));
 for (const [branch, lot, allowed] of [
   ['main', 'access', true],
   ['feature/qualification-engagements', 'engagement-core', true],
+  ['feature/qualification-engagements', 'bootstrap', true],
   ['feature/qualification-engagements', 'publications', true],
   ['feature/qualification-engagements', 'email', false],
   ['feature/qualification-engagements', 'schedulers', false],

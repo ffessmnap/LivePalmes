@@ -69,8 +69,8 @@ jobs:
             refs/heads/main) ;;
             refs/heads/feature/qualification-engagements)
               case "$SELECTED_LOT" in
-                engagement-core|publications) ;;
-                *) echo "Branche qualifications : seuls engagement-core et publications sont autorisés en TEST."; exit 1 ;;
+                bootstrap|engagement-core|publications) ;;
+                *) echo "Branche qualifications : seuls bootstrap, engagement-core et publications sont autorisés en TEST."; exit 1 ;;
               esac
               ;;
             *) echo "Branche non autorisée en TEST."; exit 1 ;;
