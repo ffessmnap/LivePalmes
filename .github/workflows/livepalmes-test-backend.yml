@@ -28,6 +28,25 @@ on:
         description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
         required: false
         type: string
+  workflow_call:
+    inputs:
+      lot:
+        description: Lot backend TEST à déployer
+        required: true
+        type: string
+      confirmation:
+        description: Confirmation explicite de la cible TEST
+        required: true
+        type: string
+      expected_commit:
+        description: SHA complet du commit à déployer
+        required: true
+        type: string
+      scheduler_confirmation:
+        description: Confirmation supplémentaire réservée aux schedulers
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
