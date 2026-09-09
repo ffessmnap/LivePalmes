@@ -192,6 +192,8 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ### Grilles de qualification piscine (recette sur TEST)
 
+- Activer une grille : la saisie manuelle individuelle doit passer à « Non autorisée » et être verrouillée. Le club ne peut plus saisir de temps libre, même sur une ancienne compétition configurée « Autorisée ». Au contrôle, les anciens temps manuels sont recalculés depuis l'historique déjà lu ; sans temps connu, la valeur habituelle 59:59.99 est utilisée pour une course autorisée. Les temps manuels des relais restent saisissables. Désactiver la grille permet de rechoisir la saisie manuelle.
+
 - Si le fichier d'historique manque mais que l'index paginé est complet, enregistrer la grille et vérifier le recours au cache après la première lecture bornée. Si une page manque ou appartient à une autre version, vérifier qu'aucun engagement n'est supprimé, que l'aperçu est annulé et qu'un nouvel enregistrement est possible. Après le début d'application, une erreur doit conserver le traitement reprenable et son verrou.
 
 - Dans Paramètres sportifs, vérifier que les colonnes restent dans l'ordre P, B, M, C, J, S, puis masters, même si les groupes sont créés dans un autre ordre.

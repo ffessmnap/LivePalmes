@@ -57,6 +57,7 @@ async function main() {
   const swimmer = { swimmerIndexId: "athlete", clubId: "club", sex: "F", birthDate: "2011-01-01", individualEntries: [{ eventCode: "100SF" }, { eventCode: "50SF" }] };
   const service = createQualificationService({ db, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code; } },
     categoryFor: () => "C", eventsFor: (item) => item.events, rowsFor: async () => { historyReads++; if (historyError) throw new Error("Historique indisponible"); return structuredClone(history); }, cacheIdFor: (item) => item.swimmerIndexId,
+    automaticEntryFor: (entry, rows) => entry.entryTimeMode === "manual" ? { ...entry, entryTimeMode: "known", manualEntryTime: "", entryTimeValue: rows.find((row) => row.course === entry.eventCode).timeValue } : entry,
     access: async (request) => ({ uid: "admin", national: request.national !== false }), clubAccess: async () => ({ uid: "club-admin", clubId: "club" }),
     entryIdFor: () => "entry", assertOpen: () => {}, audit: async () => {} });
   const compRef = db.collection("engagementCompetitions").doc("meet");
@@ -67,6 +68,14 @@ async function main() {
   assert.equal(evaluation.courses["100SF"].qualified, true);
   assert.equal(historyReads, 1, "Une seule lecture d'historique pour toutes les courses.");
   assert.equal(db.reads.count, 0, "Sans dérogation, aucune lecture de demande ou d'accord.");
+
+  const beforeAutomatic = historyReads;
+  const automatic = await service.reconcile({ swimmers: [{ ...swimmer, individualEntries: [{ eventCode: "100SF", entryTimeMode: "manual", manualEntryTime: "00:45.00" }] }], relays: [{ relayId: "empty", memberIds: [], manualEntryTime: "04:00.00" }] }, competition);
+  assert.equal(automatic.swimmers[0].individualEntries[0].entryTimeMode, "known");
+  assert.equal(automatic.swimmers[0].individualEntries[0].entryTimeValue, 6000);
+  assert.equal(automatic.swimmers[0].individualEntries[0].manualEntryTime, "");
+  assert.equal(automatic.relays[0].manualEntryTime, "04:00.00");
+  assert.equal(historyReads - beforeAutomatic, 1, "Le recalcul des temps réutilise les performances de qualification.");
 
   historyError = true;
   const failedJob = await service.begin({}, compRef, competition);

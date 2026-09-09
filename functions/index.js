@@ -4628,7 +4628,7 @@ function engagementCompetitionCalendarItem(data = {}, id = "") {
     qualificationTimesMode: cleanEngagementQualificationTimesMode(data.qualificationTimesMode),
     qualificationStartDate: cleanIsoDate(data.qualificationStartDate),
     qualificationEndDate: cleanIsoDate(data.qualificationEndDate),
-    missingEntryTimeMode: cleanEngagementMissingEntryTimeMode(data.missingEntryTimeMode),
+    missingEntryTimeMode: data.qualifications?.enabled ? "default595999" : cleanEngagementMissingEntryTimeMode(data.missingEntryTimeMode),
     maxEventsPerSwimmer: cleanEngagementMaxEventsPerSwimmer(data.maxEventsPerSwimmer),
     eventCount: events.length,
     individualEventCount: events.filter((event) => event.type === "individual").length,
@@ -5572,6 +5572,7 @@ function qualificationEvents(competition = {}) {
 
 const qualificationService = createQualificationService({ db, HttpsError, categoryFor: ageCategoryFromDates,
   eventsFor: qualificationEvents, rowsFor: getEngagementQualificationRows, cacheIdFor: engagementEntryTimeCacheId,
+  automaticEntryFor: automaticEngagementIndividualEntry,
   access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
   assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
 
@@ -5963,7 +5964,7 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
     const manualRaw = manualMode
       ? cleanText(entry.manualEntryTime || entry.entryTime)
       : cleanText(entry.manualEntryTime);
-    const manualAllowed = competition.missingEntryTimeMode === "manual";
+    const manualAllowed = !competition.qualifications?.enabled && competition.missingEntryTimeMode === "manual";
     if (manualAllowed && manualRaw) {
       const manual = parseEngagementEntryTime(manualRaw);
       if (!manual) {
@@ -5977,26 +5978,31 @@ async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entrie
         entryTimeValue: manual.value
       }])[0];
     }
-    const known = bestEngagementKnownTime(rows, eventCode, competition);
-    if (known) {
-      return cleanEngagementEntryIndividualEntries([{
-        eventCode,
-        entryTimeMode: "known",
-        entryTime: formatTimeValue(known.timeValue) || known.time,
-        entryTimeValue: Number(known.timeValue || 0) || 0,
-        sourcePerformanceId: known.publicKey || known.performanceBaseId || known.id || "",
-        date: known.date,
-        location: known.location
-      }])[0];
-    }
-    return cleanEngagementEntryIndividualEntries([{
-      eventCode,
-      entryTimeMode: "default595999",
-      entryTime: "59:59.99",
-      entryTimeValue: 359999
-    }])[0];
+    return automaticEngagementIndividualEntry({ eventCode }, rows, competition);
   }).filter(Boolean);
   return resolved.map((entry) => ({ ...entry, ...(evaluation.enabled ? { qualification: { ...evaluation.courses[entry.eventCode], mode: evaluation.mode } } : {}) }));
+}
+
+function automaticEngagementIndividualEntry(entry, rows, competition) {
+  const eventCode = cleanText(entry.eventCode).toUpperCase().replace(/\s+/g, "");
+  const known = bestEngagementKnownTime(rows, eventCode, competition);
+  if (known) {
+    return cleanEngagementEntryIndividualEntries([{
+      eventCode,
+      entryTimeMode: "known",
+      entryTime: formatTimeValue(known.timeValue) || known.time,
+      entryTimeValue: Number(known.timeValue || 0) || 0,
+      sourcePerformanceId: known.publicKey || known.performanceBaseId || known.id || "",
+      date: known.date,
+      location: known.location
+    }])[0];
+  }
+  return cleanEngagementEntryIndividualEntries([{
+    eventCode,
+    entryTimeMode: "default595999",
+    entryTime: "59:59.99",
+    entryTimeValue: 359999
+  }])[0];
 }
 
 function engagementSwimmerIdentityKey(firstName, lastName, birthDate) {
@@ -15405,7 +15411,7 @@ exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (requ
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les courses.");
   }
   const competitionData = { ...competition.data(), id: competition.id };
-  if (cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode) !== "manual") {
+  if (competitionData.qualifications?.enabled || cleanEngagementMissingEntryTimeMode(competitionData.missingEntryTimeMode) !== "manual") {
     throw new HttpsError("failed-precondition", "La modification des temps d'engagement n'est pas autorisee.");
   }
   const swimmer = (Array.isArray(entry.data()?.swimmers) ? entry.data().swimmers : [])
@@ -16146,6 +16152,7 @@ exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
     try { competition.qualifications = qualificationEngine.validateRules(request.data.qualifications, qualificationEvents(competition)); }
     catch (error) { throw new HttpsError("invalid-argument", error.message); }
     if (competition.qualifications.enabled && competition.competitionType !== "pool") throw new HttpsError("invalid-argument", "Qualifications réservées aux compétitions piscine.");
+    if (competition.qualifications.enabled) competition.missingEntryTimeMode = "default595999";
     competition.qualificationVersion = 1;
   }
   const now = new Date().toISOString();
@@ -16222,9 +16229,9 @@ exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   } catch (error) { throw new HttpsError("invalid-argument", error.message); }
   if (qualifications.enabled && competition.competitionType !== "pool") throw new HttpsError("invalid-argument", "Qualifications réservées aux compétitions piscine.");
   const now = new Date().toISOString();
-  const payload = { ...competition, qualifications, updatedAt: now, updatedBy: context.uid };
+  const payload = { ...competition, qualifications, ...(qualifications.enabled ? { missingEntryTimeMode: "default595999" } : {}), updatedAt: now, updatedBy: context.uid };
   const affectsQualifications = JSON.stringify(qualifications) !== JSON.stringify(snapshot.data()?.qualifications || { enabled: false, groups: [], standards: {} }) ||
-    (qualifications.enabled && (competition.date !== snapshot.data()?.date || JSON.stringify(competition.events || snapshot.data()?.events) !== JSON.stringify(snapshot.data()?.events)));
+    (qualifications.enabled && (snapshot.data()?.missingEntryTimeMode !== "default595999" || competition.date !== snapshot.data()?.date || JSON.stringify(competition.events || snapshot.data()?.events) !== JSON.stringify(snapshot.data()?.events)));
   if (affectsQualifications) {
     payload.qualificationVersion = Number(snapshot.data()?.qualificationVersion || 0) + 1;
     if (!context.national) throw new HttpsError("permission-denied", "Cette modification affecte les qualifications : intervention nationale requise.");
