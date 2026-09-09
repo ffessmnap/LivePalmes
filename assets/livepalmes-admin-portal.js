@@ -4005,14 +4005,17 @@
     let mount = document.querySelector("#adminQualificationEditor");
     if (!mount) {
       mount = document.createElement("fieldset"); mount.id = "adminQualificationEditor";
-      mount.className = "admin-engagements-form-section";
-      elements.engagementsEditForm?.append(mount);
+      mount.className = "qualification-editor";
+      elements.engagementsEditForm?.querySelector(".admin-engagements-compact-section--sports")?.append(mount);
     }
     const competition = selectedEngagementCompetition || {};
     mount.hidden = engagementCompetitionType(competition) !== "pool";
     qualificationEditor = global.LivePalmesEngagementQualifications.editor(mount, {
       rules: competition.qualifications || { enabled: false }, national: canUse("engagements.national.manage"),
       competitionDate: competition.date || "",
+      getPeriod: () => elements.engagementsEditQualificationMode?.value === "period"
+        ? { startDate: elements.engagementsEditQualificationStart?.value || "", endDate: elements.engagementsEditQualificationEnd?.value || "" }
+        : { startDate: "0001-01-01", endDate: "9999-12-31" },
       events: (competition.events || []).map((item) => ({ ...item, categories: item.categoryRestrictions?.length ? item.categoryRestrictions : engagementAllowedCategoryCodes(item.code) })),
       onDirty: () => markEngagementDetailTabDirty("general"),
       loadSources: (cursor, period) => callFunction("listEngagementQualificationSources", { cursor, ...period })
@@ -17593,7 +17596,8 @@
       updateEngagementEditFormAccess();
     });
     elements.engagementsEditRegionId?.addEventListener("change", () => updateEngagementEditFormAccess());
-    elements.engagementsEditQualificationMode?.addEventListener("change", () => updateEngagementQualificationFields("edit"));
+    elements.engagementsEditQualificationMode?.addEventListener("change", () => { updateEngagementQualificationFields("edit"); qualificationEditor?.refreshPeriod(); });
+    [elements.engagementsEditQualificationStart, elements.engagementsEditQualificationEnd].forEach((field) => field?.addEventListener("change", () => qualificationEditor?.refreshPeriod()));
     elements.engagementsEditMaxEventsUnlimited?.addEventListener("change", () => updateEngagementMaxEventsFields("edit"));
     elements.engagementsEditInvitedRegionChoices?.addEventListener("change", (event) => syncInvitedRegionChoice(event, elements.engagementsEditInvitedRegionIds));
     prepareCreateCompetitionDialog();

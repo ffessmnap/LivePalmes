@@ -14,7 +14,7 @@
     return time;
   }
 
-  function editor(mount, { rules = {}, events = [], national = false, competitionDate = "", onDirty = () => {}, loadSources }) {
+  function editor(mount, { rules = {}, events = [], national = false, competitionDate = "", getPeriod, onDirty = () => {}, loadSources }) {
     let draft = structuredClone({ enabled: false, groups: [], standards: {}, ...rules });
     let sources = [], sourceCursor = "", sourcesStarted = false;
     function capture() {
@@ -22,7 +22,7 @@
       draft.groups = [...mount.querySelectorAll("[data-q-group]")].map((row) => ({
         categories: [...row.querySelectorAll("[data-q-category]:checked")].map((input) => input.value),
         mode: row.querySelector("[data-q-mode]").value,
-        startDate: row.querySelector("[data-q-start]").value, endDate: row.querySelector("[data-q-end]").value,
+        ...(getPeriod ? getPeriod() : { startDate: row.querySelector("[data-q-start]").value, endDate: row.querySelector("[data-q-end]").value }),
         pools: [...row.querySelectorAll("[data-q-pool]:checked")].map((input) => input.value),
         electronicOnly: row.querySelector("[data-q-electronic]").checked,
         competitionMode: row.querySelector("[data-q-source-mode]").value,
@@ -54,8 +54,7 @@
             }).join("")}</div>
             <div class="qualification-fields">
               <label>Mode<select data-q-mode><option value="each" ${group.mode === "each" ? "selected" : ""}>Minimum sur chaque course</option><option value="one" ${group.mode === "one" ? "selected" : ""}>Au moins une course qualifiée et engagée</option></select></label>
-              <label>Début de période<input type="date" data-q-start value="${escape(group.startDate)}"></label>
-              <label>Fin de période<input type="date" data-q-end value="${escape(group.endDate)}"></label>
+              ${getPeriod ? "<p>La période est celle des temps d’engagement définie ci-dessus, commune à tous les groupes.</p>" : `<label>Début de période<input type="date" data-q-start value="${escape(group.startDate)}"></label><label>Fin de période<input type="date" data-q-end value="${escape(group.endDate)}"></label>`}
             </div>
             <div class="qualification-options">
               <span>Bassins</span>${["25", "50"].map((pool) => `<label><input type="checkbox" data-q-pool value="${pool}" ${group.pools.includes(pool) ? "checked" : ""}><span>${pool} m</span></label>`).join("")}
@@ -137,7 +136,7 @@
       } catch (caught) { error(caught); button.disabled = false; }
     };
     render();
-    return { read: () => national ? structuredClone(capture()) : structuredClone(rules) };
+    return { read: () => national ? structuredClone(capture()) : structuredClone(rules), refreshPeriod: () => { capture(); sources = []; sourceCursor = ""; sourcesStarted = false; render(); } };
   }
   global.LivePalmesEngagementQualifications = { editor, display, parse };
 })(window);

@@ -1,4 +1,8 @@
 [data-q-content][hidden], [data-q-source-list][hidden] { display: none !important; }
+#adminQualificationEditor { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; margin: 12px 0 0; padding: 12px; border: 0; border-top: 1px solid #d6e0e3; }
+#adminQualificationEditor [data-q-content], #adminQualificationEditor .qualification-group, #adminQualificationEditor .qualification-standards, #adminQualificationEditor .qualification-grid-block { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#adminQualificationEditor .qualification-enable { display: flex; }
+#adminQualificationEditor .qualification-fields { grid-template-columns: minmax(0, 1fr); }
 .qualification-enable { align-items: center; background: #f5f9fa; border: 1px solid #cbdde1; border-radius: 10px; cursor: pointer; display: flex; gap: 20px; justify-content: space-between; margin: 4px 0 12px; padding: 12px 14px; }
 .qualification-enable span { display: grid; gap: 2px; }
 .qualification-enable strong { color: #073b4c; font-size: 15px; }
@@ -41,7 +45,7 @@
 .qualification-grid-block { margin: 0 0 18px; }
 .qualification-grid-block h4 { background: #087f8c; border-radius: 7px 7px 0 0; color: #fff; font-size: 13px; margin: 0; padding: 8px 11px; }
 .qualification-table-shell { border: 1px solid #cbd8dc; border-radius: 0 0 7px 7px; margin: 0; max-width: 100%; overflow: auto; }
-.qualification-grid { border-collapse: separate; border-spacing: 0; min-width: max-content; table-layout: fixed; width: 100%; }
+.qualification-grid { border-collapse: separate; border-spacing: 0; min-width: 100%; table-layout: auto; width: max-content; }
 .qualification-grid th, .qualification-grid td { border-bottom: 1px solid #dce5e7; border-right: 1px solid #dce5e7; box-sizing: border-box; height: 44px; padding: 5px; text-align: center; }
 .qualification-grid tr:last-child > * { border-bottom: 0; }
 .qualification-grid tr > *:last-child { border-right: 0; }
@@ -51,7 +55,7 @@
 .qualification-grid tbody th { background: #f8fafb; color: #30474f; font-size: 12px; padding-left: 10px; }
 .qualification-grid td[data-q-standard] { background: #fff; min-width: 116px; white-space: nowrap; }
 #adminQualificationEditor .qualification-grid input { border: 1px solid #becdd1; border-radius: 5px; box-sizing: border-box; display: inline-block; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; height: 30px !important; margin: 0 3px 0 0 !important; min-height: 30px !important; padding: 4px 6px !important; text-align: center; width: 78px !important; }
-#adminQualificationEditor .qualification-grid [data-q-none] { background: transparent; border: 0; border-radius: 4px; color: #7b898e; font-size: 16px; height: 28px; line-height: 1; margin: 0; min-height: 28px !important; padding: 3px !important; width: 24px !important; }
+#adminQualificationEditor .qualification-grid button[data-q-none] { background: transparent; border: 0; border-radius: 4px; color: #7b898e; font-size: 16px; height: 28px; line-height: 1; margin: 0; min-height: 28px !important; padding: 3px !important; width: 24px !important; }
 .qualification-grid td[data-q-none="true"] { background: #f4f7f8; }
 .qualification-grid td[data-q-none="true"] input { display: none; }
 #adminQualificationEditor .qualification-grid td[data-q-none="true"] [data-q-none] { color: #087f8c; font-size: 11px; font-weight: 700; width: 62px !important; }
