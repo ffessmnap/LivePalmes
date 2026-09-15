@@ -19,6 +19,16 @@ const bad = structuredClone(rows); bad[2][1] = "01:99.00";
 assert.ok(api.importRows(bad, events, ["C"]).errors.length);
 const numeric = structuredClone(rows); numeric[2][1] = 83.45 / 86400;
 assert.equal(api.importRows(numeric, events, ["C"]).values["C|F|100SF"], 8345);
+for (const [input, expected] of [["23.75", 2375], ["23,75", 2375], [23.75, 2375], ["52.50", 5250], [52.5, 5250], [" 9,5 ", 950], ["00:23.75", 2375], ["1:57.00", 11700], ["12345", 8345]]) {
+  const secondsRows = structuredClone(rows); secondsRows[2][1] = input;
+  const imported = api.importRows(secondsRows, events, ["C"]);
+  assert.equal(imported.errors.length, 0, String(input));
+  assert.equal(imported.values["C|F|100SF"], expected, String(input));
+}
+for (const invalid of ["60.00", "23.750", "-23.75", "00.00", "23 secondes", "1:99.00"]) {
+  const invalidRows = structuredClone(rows); invalidRows[2][1] = invalid;
+  assert.ok(api.importRows(invalidRows, events, ["C"]).errors.length, invalid);
+}
 assert.ok(api.importRows([...rows, ["C", "12345"]], events, ["C"]).errors.length);
 assert.equal(api.importRows(rows, events, []).ignored.length, 2);
 const group = { pools: ["50"], electronicOnly: true };

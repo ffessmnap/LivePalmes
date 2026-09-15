@@ -46,7 +46,12 @@
           if (String(raw).trim().toUpperCase() === "LIBRE") time = null;
           else if (typeof raw === "number" && raw > 0 && raw < 1) {
             time = Math.round(raw * 8640000); parse(display(time));
-          } else time = parse(raw);
+          } else {
+            // Decimal seconds from pasted text or numeric Excel cells.
+            // Keep compact digits and native Excel durations compatible.
+            const seconds = String(raw).trim().match(/^(\d{1,2})[.,](\d{1,2})$/);
+            time = parse(seconds ? `00:${seconds[1].padStart(2, "0")}.${seconds[2].padEnd(2, "0")}` : raw);
+          }
           if (!code || !/^\d+(SF|AP|IS|BI)$/.test(code)) throw new Error("Course inconnue ou relais non autorisé.");
           const event = events.find((item) => item.type === "individual" && item.code === code);
           if (!selectedCategories.includes(first) || !event?.categories.includes(first)) { ignored.push(label); return; }
