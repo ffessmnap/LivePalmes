@@ -5557,6 +5557,11 @@ function cleanEngagementEntryRelays(rawRelays = [], competition = {}, swimmers =
 }
 
 function qualificationRelaysAfterIndividualChange(relays = [], swimmers = [], competition = {}) {
+  const selectedIds = new Set(swimmers.map((swimmer) => swimmer.swimmerIndexId));
+  relays = relays.map((relay) => ({ ...relay,
+    memberIds: (relay.memberIds || []).filter((id) => selectedIds.has(id)),
+    members: (relay.members || []).filter((member) => selectedIds.has(member.swimmerIndexId))
+  }));
   if (!competition.qualifications?.enabled) return relays;
   const evaluations = Object.fromEntries(swimmers.map((swimmer) => [swimmer.swimmerIndexId, {
     courses: Object.fromEntries((swimmer.individualEntries || []).map((entry) => [entry.eventCode, entry.qualification || {}]))
@@ -16098,6 +16103,24 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
     throw new HttpsError("failed-precondition", "Chef d'equipe ou renonciation obligatoire avant les relais.");
   }
   const entryData = entry.data() || {};
+  const removeRelayId = cleanText(request.data?.removeRelayId).slice(0, 128);
+  if (removeRelayId) {
+    // A deletion must not validate unrelated, possibly incomplete compositions.
+    const now = new Date().toISOString();
+    let updatedData;
+    await db.runTransaction(async (transaction) => {
+      const currentCompetition = await transaction.get(competition.ref);
+      const currentEntry = await transaction.get(entryRef);
+      assertEngagementClubWriteOpen(currentCompetition.data() || {});
+      if (!currentEntry.exists) throw new HttpsError("not-found", "Engagements introuvables.");
+      const data = currentEntry.data();
+      const relays = (data.relays || []).filter((relay) => relay.relayId !== removeRelayId);
+      updatedData = { ...data, relays, updatedAt: now, updatedBy: context.uid };
+      transaction.set(entryRef, { relays, updatedAt: now, updatedBy: context.uid }, { merge: true });
+    });
+    await writeAuditLog("engagementClubEntry.relayDeleted", context.uid, { competitionId, clubId: context.clubId, relayId: removeRelayId });
+    return { ok: true, entry: engagementClubEntryItem({ id: entryRef.id, exists: true, data: () => updatedData }) };
+  }
   const swimmers = (Array.isArray(entryData.swimmers) ? entryData.swimmers : [])
     .map(cleanEngagementEntrySwimmer)
     .filter((swimmer) => swimmer.swimmerIndexId);

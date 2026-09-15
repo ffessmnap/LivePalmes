@@ -67,6 +67,7 @@ function runUnitTests() {
     "engagement-automatic-times-tests.js",
     "engagement-qualification-recovery-ui-tests.js",
     "engagement-qualification-exceptions-ui-tests.js",
+    "engagement-relay-removal-tests.js",
     "public-calendar-tests.js",
     "livepalmes-public-records-data-tests.js",
     "livepalmes-public-records-store-tests.js",

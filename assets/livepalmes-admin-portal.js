@@ -10993,7 +10993,7 @@
     }
   }
 
-  async function saveEngagementClubRelays(event, messageElement = elements.engagementsClubRelaysMessage, relayRowsOverride = null) {
+  async function saveEngagementClubRelays(event, messageElement = elements.engagementsClubRelaysMessage, relayRowsOverride = null, removeRelayId = "") {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
     if (showEngagementClubWriteLock(messageElement)) return false;
@@ -11007,7 +11007,7 @@
     engagementClubRelaysDraft = Array.isArray(relayRowsOverride)
       ? relayRowsOverride
       : selectedEngagementClubRelayRowsFromDom();
-    const validationIssues = engagementClubRelayValidationIssues(engagementClubRelaysDraft);
+    const validationIssues = removeRelayId ? [] : engagementClubRelayValidationIssues(engagementClubRelaysDraft);
     if (validationIssues.length) {
       if (messageElement) {
         messageElement.textContent = validationIssues[0];
@@ -11027,6 +11027,7 @@
     try {
       const result = await callFunction("saveEngagementClubRelays", {
         competitionId: selectedEngagementCompetitionId,
+        ...(removeRelayId ? { removeRelayId } : {}),
         relays: engagementClubRelaysDraft.map((relay) => ({
           relayId: relay.relayId || "",
           eventCode: relay.eventCode || "",
@@ -11041,7 +11042,7 @@
       selectedEngagementClubEntry = result.entry || selectedEngagementClubEntry || {};
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubRelaysMessage) {
-        elements.engagementsClubRelaysMessage.textContent = "Relais enregistré.";
+        elements.engagementsClubRelaysMessage.textContent = removeRelayId ? "Relais supprimé." : "Relais enregistré.";
         elements.engagementsClubRelaysMessage.dataset.tone = "ok";
       }
       setEngagementSaveState("saved");
@@ -17692,21 +17693,21 @@
       const currentRows = selectedEngagementClubRelayRowsFromDom();
       const relay = currentRows.find((candidate) => candidate.relayId === relayId);
       if (!relay) return;
-      if (relay.persisted && currentRows.some((candidate) => candidate.relayId !== relayId && candidate.draftPending)) {
-        if (elements.engagementsClubRelaysMessage) {
-          elements.engagementsClubRelaysMessage.textContent = "Validez ou supprimez d'abord le relais en cours de modification.";
-          elements.engagementsClubRelaysMessage.dataset.tone = "error";
-        }
-        return;
-      }
       if (relay.persisted && !global.confirm("Supprimer définitivement ce relais enregistré ?")) return;
       engagementClubRelaysDraft = currentRows.filter((candidate) => candidate.relayId !== relayId);
       renderEngagementClubRelays();
       if (relay.persisted) {
-        const saved = await saveEngagementClubRelays();
+        const saved = await saveEngagementClubRelays(null, elements.engagementsClubRelaysMessage, engagementClubRelaysDraft, relayId);
         if (!saved) {
           engagementClubRelaysDraft = currentRows;
           renderEngagementClubRelays();
+        } else {
+          const drafts = currentRows.filter((candidate) => candidate.relayId !== relayId && candidate.draftPending);
+          if (drafts.length) {
+            const ids = new Set(drafts.map((candidate) => candidate.relayId));
+            engagementClubRelaysDraft = [...(selectedEngagementClubEntry?.relays || []).filter((candidate) => !ids.has(candidate.relayId)), ...drafts];
+            renderEngagementClubRelays();
+          }
         }
         return;
       }
