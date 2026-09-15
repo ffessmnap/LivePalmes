@@ -24,6 +24,8 @@ const output = path.join(temp, "public");
 const row = {
   id: "import:test:perf-1",
   source: "livepalmes-import",
+  competitionId: "replacement",
+  qualificationCompetitionId: "original",
   publicKey: "livepalmes-import|import:test:perf-1",
   performanceBaseId: "base-1",
   swimmerId: "swimmer-1",
@@ -62,6 +64,8 @@ assert.equal(payload.rowSchemaVersion, 2);
 assert.deepStrictEqual(payload.rows[0], {
   id: row.id,
   source: row.source,
+  competitionId: row.competitionId,
+  qualificationCompetitionId: row.qualificationCompetitionId,
   publicKey: row.publicKey,
   performanceBaseId: row.performanceBaseId,
   club: row.club,

@@ -1,0 +1,43 @@
+name: Qualifications - déploiement automatique Firebase TEST
+
+on:
+  push:
+    branches:
+      - feature/qualification-engagements
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-qualification-test-auto
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    name: Index et règles Firestore TEST
+    uses: ./.github/workflows/livepalmes-test-backend.yml
+    with:
+      lot: bootstrap
+      confirmation: livepalmes-test
+      expected_commit: ${{ github.sha }}
+    secrets: inherit
+
+  engagement-core:
+    name: Fonctions engagements TEST
+    needs: bootstrap
+    uses: ./.github/workflows/livepalmes-test-backend.yml
+    with:
+      lot: engagement-core
+      confirmation: livepalmes-test
+      expected_commit: ${{ github.sha }}
+    secrets: inherit
+
+  publications:
+    name: Fonctions publications TEST
+    needs: engagement-core
+    uses: ./.github/workflows/livepalmes-test-backend.yml
+    with:
+      lot: publications
+      confirmation: livepalmes-test
+      expected_commit: ${{ github.sha }}
+    secrets: inherit

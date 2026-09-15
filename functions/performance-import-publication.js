@@ -72,6 +72,8 @@ function publicPerformanceSwimmerStorageRow(row = {}) {
     source: text(row.source || "livepalmes"),
     publicKey: text(row.publicKey),
     performanceBaseId: text(row.performanceBaseId),
+    competitionId: text(row.competitionId),
+    qualificationCompetitionId: text(row.qualificationCompetitionId),
     club: text(row.club),
     regionId: text(row.regionId),
     location: text(row.location),

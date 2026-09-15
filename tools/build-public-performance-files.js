@@ -153,6 +153,7 @@ function publicRow(row = {}) {
     regionId: cleanText(row.regionId),
     regionLabel: cleanText(row.regionLabel),
     competitionId: cleanText(row.competitionId),
+    qualificationCompetitionId: cleanText(row.qualificationCompetitionId),
     competition: cleanText(row.competition),
     location: cleanText(row.location),
     date: cleanText(row.date),
