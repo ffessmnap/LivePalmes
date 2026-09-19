@@ -572,7 +572,7 @@
 .admin-portal-nav a[aria-current="page"] {
   background: #dff1ed;
   color: #0f5f57;
-  box-shadow: inset 3px 0 #0b7285;
+  box-shadow: none;
 }
 
 .admin-portal-nav-club-link {
@@ -6256,7 +6256,7 @@
 
   .admin-portal-nav a.active,
   .admin-portal-nav a[aria-current="page"] {
-    box-shadow: inset 3px 0 #0b7285;
+    box-shadow: none;
   }
 
   .admin-records-workspace-head {
@@ -6538,14 +6538,32 @@
 
 .admin-portal-page .admin-portal-sidebar {
   top: 62px;
-  padding: 11px;
-  border-color: #dfe5e7;
-  border-radius: 10px;
+  padding: 12px 10px;
+  border: 0;
+  border-right: 1px solid var(--portal-color-border);
+  border-radius: 0;
   box-shadow: none;
 }
 
-.admin-portal-page .admin-portal-nav {
-  gap: 3px;
+.admin-portal-page .admin-portal-nav,
+.admin-portal-page .admin-portal-sidebar.is-open .admin-portal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-portal-page .admin-portal-nav-group {
+  flex: 0 0 auto;
+}
+
+.admin-portal-page .admin-portal-nav-group[hidden] {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-nav-group.admin-portal-nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--portal-color-border);
 }
 
 .admin-portal-page .admin-portal-nav-title {
@@ -6558,23 +6576,26 @@
   padding-block: 6px;
 }
 
-.admin-portal-page .admin-portal-nav-group + .admin-portal-nav-group {
-  border-color: #edf0f1;
+.admin-portal-page .admin-portal-nav-group + .admin-portal-nav-group:not(.admin-portal-nav-footer) {
+  border-top: 0;
 }
 
 .admin-portal-page .admin-portal-nav-group h2 {
   padding: 5px 10px 3px;
-  color: #7a888d;
+  color: #687b84;
   font-size: 0.67rem;
   letter-spacing: 0.07em;
 }
 
 .admin-portal-page .admin-portal-nav a,
 .admin-portal-page .admin-portal-nav-parent {
-  min-height: 40px;
+  box-sizing: border-box;
+  min-height: 44px;
   border-radius: 7px;
-  padding: 8px 10px;
+  padding: 10px;
   color: #4f6067;
+  font-size: 0.86rem;
+  letter-spacing: normal;
 }
 
 .admin-portal-page .admin-portal-nav a:has(.admin-portal-nav-icon),
@@ -6593,34 +6614,33 @@
 .admin-portal-page .admin-portal-nav a[aria-current="page"] {
   color: #075866;
   background: #e8f4f5;
-  box-shadow: inset 3px 0 #0b7285;
+  box-shadow: none;
 }
 
 .admin-portal-page .admin-portal-nav-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  color: #52727a;
-  background: #f0f5f6;
+  width: 20px;
+  height: 20px;
+  color: #607780;
+  background: transparent;
 }
 
 .admin-portal-page .admin-portal-nav-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .admin-portal-page .admin-portal-nav a.active .admin-portal-nav-icon,
 .admin-portal-page .admin-portal-nav a[aria-current="page"] .admin-portal-nav-icon {
-  color: #ffffff;
-  background: #0b7285;
+  color: var(--portal-color-accent);
+  background: transparent;
 }
 
 .admin-portal-page .admin-portal-nav-parent > span:last-child {
@@ -6643,19 +6663,19 @@
 .admin-portal-page .admin-portal-nav-parent[aria-current="page"] {
   color: var(--portal-color-accent-strong);
   background: #e8f4f5;
-  box-shadow: inset 3px 0 var(--portal-color-accent);
+  box-shadow: none;
 }
 
 .admin-portal-page .admin-portal-nav-parent.active .admin-portal-nav-icon,
 .admin-portal-page .admin-portal-nav-parent[aria-current="page"] .admin-portal-nav-icon {
-  color: #ffffff;
-  background: var(--portal-color-accent);
+  color: var(--portal-color-accent);
+  background: transparent;
 }
 
 .admin-portal-page .admin-portal-nav-submenu {
-  margin-left: 23px;
-  padding-left: 13px;
-  border-left-color: #dce6e8;
+  margin-left: 20px;
+  padding-left: 14px;
+  border-left: 1px solid #dce6e8;
 }
 
 .admin-portal-page .admin-portal-nav-submenu > a {
@@ -6664,161 +6684,22 @@
   color: #607077;
 }
 
-@media (min-width: 1081px) and (max-width: 1439px) {
+/* Navigation persistante sur ordinateur, défilante sur les petits écrans. */
+@media (min-width: 1081px) {
   .admin-portal-page .admin-portal-layout {
-    grid-template-columns: 64px minmax(0, 1fr);
-  }
-
-  .admin-portal-page .admin-portal-layout:has(.admin-portal-sidebar.is-pinned) {
-    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-columns: 256px minmax(0, 1fr);
   }
 
   .admin-portal-page .admin-portal-sidebar {
-    z-index: 35;
     box-sizing: border-box;
-    width: 64px;
-    max-height: calc(100vh - 96px);
-    padding: 7px;
-    overflow: hidden;
-    transition: width 180ms ease, box-shadow 180ms ease;
-  }
-
-  .admin-portal-page .admin-portal-sidebar:not(.is-collapsed-after-navigation):is(:hover, :focus-within, .is-pinned) {
-    width: 248px;
-    box-shadow: 0 16px 34px rgba(25, 52, 61, 0.14);
-  }
-
-  .admin-portal-page .admin-portal-nav {
-    width: 232px;
-    max-height: calc(100vh - 112px);
-    padding-right: 2px;
-    overflow-x: hidden;
+    height: calc(100dvh - 62px);
+    max-height: calc(100dvh - 62px);
     overflow-y: auto;
     scrollbar-width: thin;
   }
 
-  .admin-portal-page .admin-portal-nav-head {
-    min-height: 32px;
-  }
-
-  .admin-portal-page .admin-portal-nav-pin {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 0;
-    border-radius: 7px;
-    padding: 0;
-    opacity: 0;
-    color: #66777e;
-    background: transparent;
-    pointer-events: none;
-    cursor: pointer;
-    transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
-  }
-
-  .admin-portal-page .admin-portal-nav-pin svg {
-    width: 17px;
-    height: 17px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .admin-portal-page .admin-portal-sidebar:not(.is-collapsed-after-navigation):is(:hover, :focus-within, .is-pinned) .admin-portal-nav-pin {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .admin-portal-page .admin-portal-nav-pin:hover,
-  .admin-portal-page .admin-portal-nav-pin:focus-visible,
-  .admin-portal-page .admin-portal-nav-pin[aria-pressed="true"] {
-    color: var(--portal-color-accent-strong);
-    background: #e8f4f5;
-  }
-
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-title,
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-group h2,
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav a > span:not(.admin-portal-nav-icon),
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-parent > span:not(.admin-portal-nav-icon),
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-title,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-group h2,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav a > span:not(.admin-portal-nav-icon),
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-parent > span:not(.admin-portal-nav-icon) {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-title,
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-group h2,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-title,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-group h2 {
-    max-height: 0;
-    padding-block: 0;
-    overflow: hidden;
-  }
-
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-submenu,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-submenu {
-    display: none;
-  }
-
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav a,
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-parent,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav a,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-parent {
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-  }
-
-  .admin-portal-page .admin-portal-sidebar.is-collapsed-after-navigation .admin-portal-nav-parent > .admin-pending-badge-nav,
-  .admin-portal-page .admin-portal-sidebar:not(:hover):not(:focus-within):not(.is-pinned) .admin-portal-nav-parent > .admin-pending-badge-nav {
-    position: absolute;
-    top: 3px;
-    left: 29px;
-    min-width: 16px;
-    height: 16px;
-    padding-inline: 4px;
-    opacity: 1 !important;
-    visibility: visible !important;
-    font-size: 0.58rem;
-  }
-}
-
-
-@media (min-width: 1440px) {
-  .admin-portal-page .admin-portal-layout,
-  .admin-portal-page .admin-portal-layout:has(.admin-portal-sidebar.is-pinned) {
-    grid-template-columns: 248px minmax(0, 1fr);
-  }
-
-  .admin-portal-page .admin-portal-sidebar {
-    z-index: 35;
-    box-sizing: border-box;
-    width: 248px;
-    max-height: calc(100vh - 96px);
-    padding: 7px;
-    overflow: hidden;
-  }
-
   .admin-portal-page .admin-portal-nav {
-    width: 232px;
-    max-height: calc(100vh - 112px);
-    padding-right: 2px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: thin;
-  }
-
-  .admin-portal-page .admin-portal-nav-head {
-    min-height: 32px;
-  }
-
-  .admin-portal-page .admin-portal-nav-pin {
-    display: none;
+    min-height: 100%;
   }
 }
 
@@ -19024,5 +18905,211 @@
   .admin-portal-page .admin-portal-nav-toggle svg path,
   .admin-portal-page .admin-overview-space-toggle-icon-vertical {
     transition: none;
+  }
+}
+
+/* Accueil du portail : une grille calme et régulière, adaptée au profil. */
+.admin-portal-page #adminOverviewView {
+  max-width: 1280px;
+  gap: 24px;
+}
+
+.admin-portal-page #adminOverviewView > .admin-overview-head {
+  display: block !important;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#adminOverviewView .admin-overview-head h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  line-height: 1.2;
+}
+
+#adminOverviewView .admin-overview-head p {
+  display: block;
+  margin: 0;
+  color: #607580;
+  font-size: 0.94rem;
+}
+
+#adminOverviewView .admin-overview-spaces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+#adminOverviewView .admin-overview-space-card {
+  border-radius: 12px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#adminOverviewView .admin-overview-space-card:is(:hover, :focus-within, .is-expanded) {
+  transform: none;
+  border-color: #8cbcc4;
+  box-shadow: 0 4px 16px rgb(24 64 73 / 6%);
+}
+
+#adminOverviewView .admin-overview-space-main {
+  box-sizing: border-box;
+  min-height: 164px;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  grid-template-rows: minmax(40px, auto) 1fr;
+  gap: 12px;
+  padding: 22px 22px 18px;
+}
+
+#adminOverviewView .admin-overview-card-icon {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #0b7285;
+  background: #edf6f7;
+}
+
+#adminOverviewView .admin-overview-space-main > strong {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+}
+
+#adminOverviewView .admin-overview-space-main > p {
+  display: block;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #607580;
+}
+
+#adminOverviewView .admin-overview-card-arrow {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  color: #0b7285;
+  font-size: 1.15rem;
+}
+
+#adminOverviewView .admin-pending-badge-card {
+  top: 12px;
+  right: auto;
+  left: 50px;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  padding: 12px 22px;
+  border: 0;
+  border-top: 1px solid #e8eef0;
+  color: #46616d;
+  background: #fbfcfd;
+  font-size: 0.82rem;
+  font-weight: var(--portal-font-weight-medium);
+  text-decoration: none;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link):hover {
+  color: #075866;
+  background: #edf6f7;
+}
+
+/* Les rubriques s'ouvrent sur demande, sans déplacement au simple survol. */
+#adminOverviewView .admin-overview-space-card:not(.is-expanded) .admin-overview-space-tools {
+  visibility: hidden;
+  max-height: 0;
+  padding-block: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#adminOverviewView .admin-overview-space-card.is-expanded .admin-overview-space-tools {
+  max-height: none;
+  padding: 10px 14px 14px;
+}
+
+#adminOverviewView .admin-overview-space-tools a {
+  box-sizing: border-box;
+  min-height: 44px;
+  background: transparent;
+}
+
+#adminOverviewView .admin-overview-space-tools a:hover {
+  background: #edf6f7;
+}
+
+@media (min-width: 1440px) {
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-portal-page #adminOverviewView {
+    gap: 16px;
+  }
+
+  #adminOverviewView .admin-overview-head p {
+    font-size: 0.85rem;
+  }
+
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  #adminOverviewView .admin-overview-space-main {
+    min-height: 0;
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    grid-template-rows: auto auto;
+    gap: 6px 12px;
+    padding: 16px;
+  }
+
+  #adminOverviewView .admin-overview-card-icon {
+    grid-row: 1 / 3;
+    width: 36px;
+    height: 36px;
+  }
+
+  #adminOverviewView .admin-overview-space-main > strong {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.98rem;
+  }
+
+  #adminOverviewView .admin-overview-space-main > p {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    font-size: 0.82rem;
+  }
+
+  #adminOverviewView .admin-overview-card-arrow {
+    grid-column: 3;
+  }
+
+  #adminOverviewView .admin-pending-badge-card {
+    top: 9px;
+    right: auto;
+    left: 40px;
+  }
+
+  #adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+    padding-inline: 16px;
   }
 }
