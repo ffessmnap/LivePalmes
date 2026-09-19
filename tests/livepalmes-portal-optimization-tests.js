@@ -1523,7 +1523,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260919-overview-2"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260919-overview-3"));
 assert.ok(portal.includes('setFormPending(elements.form, true, "Connexion en cours…")'));
 assert.ok(portal.includes('setFormPending(elements.publicAccessRequestForm, true, "Envoi en cours…")'));
 assert.ok(portal.includes('form.setAttribute("aria-busy", "true")'));
