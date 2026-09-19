@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260919-sidebar-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260919-overview-2">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
   </head>
@@ -296,16 +296,14 @@
             <nav id="adminPortalBreadcrumb" class="admin-portal-breadcrumb" aria-label="Fil d’Ariane" hidden></nav>
             <section id="adminOverviewView" class="admin-portal-overview-view" data-admin-view="dashboard" aria-labelledby="adminOverviewViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-overview-head">
-                <span>Portail LivePalmes</span>
                 <h2 id="adminOverviewViewTitle">Vue d’ensemble</h2>
-                <p>Retrouvez les outils disponibles pour votre profil.</p>
+                <p>Accédez à vos espaces de travail et aux outils de gestion.</p>
               </div>
 
               <div class="admin-overview-grid admin-overview-spaces" aria-label="Espaces disponibles">
                 <article class="admin-overview-space-card" data-overview-space data-overview-club hidden>
                   <a class="admin-overview-space-main" href="#espace-club">
                     <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path></svg></span>
-                    <span class="admin-overview-card-label">Club</span>
                     <strong>Espace club</strong>
                     <p>Gérer les engagements, les nageurs et les officiels de votre club.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
@@ -321,17 +319,16 @@
                 <article class="admin-overview-space-card" data-overview-space data-overview-competition hidden>
                   <a class="admin-overview-space-main" href="#competitions-calendrier">
                     <span class="admin-overview-card-icon tone-engagements" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></span>
-                    <span class="admin-overview-card-label">Compétitions</span>
-                    <strong>Organisation des compétitions</strong>
+                    <strong>Compétitions</strong>
                     <p>Créer et administrer les compétitions de votre périmètre.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
                   </a>
+                  <a class="admin-overview-direct-link" href="#competitions-calendrier">Voir le calendrier <span aria-hidden="true">→</span></a>
                 </article>
 
                 <article class="admin-overview-space-card" data-overview-space data-overview-performance hidden>
                   <a class="admin-overview-space-main" href="#gestion-performances">
                     <span class="admin-overview-card-icon tone-performance" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM10 16h4M12 12v4M8 20h8M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4"></path></svg></span>
-                    <span class="admin-overview-card-label">Données sportives</span>
                     <strong>Données sportives</strong>
                     <p>Maintenir les références et les performances publiées.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
@@ -347,7 +344,6 @@
                 <article class="admin-overview-space-card" data-overview-space data-capability-panel="dtn.view">
                   <a class="admin-overview-space-main" href="#espace-dtn">
                     <span class="admin-overview-card-icon tone-dtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-                    <span class="admin-overview-card-label">Suivi DTN</span>
                     <strong>Espace DTN</strong>
                     <p>Consulter les qualifications France, Équipe de France et les mises en liste.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>
@@ -363,7 +359,6 @@
                 <article class="admin-overview-space-card" data-overview-space data-overview-national hidden>
                   <a class="admin-overview-space-main" href="#administration-nationale">
                     <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
-                    <span class="admin-overview-card-label">National</span>
                     <strong>Administration nationale</strong>
                     <span id="adminOverviewNationalPendingBadge" class="admin-pending-badge admin-pending-badge-card" hidden>0</span>
                     <p>Contrôler et maintenir les données réservées au niveau national.</p>
@@ -383,8 +378,7 @@
                 <article class="admin-overview-space-card" data-overview-space data-access-management-panel hidden>
                   <a class="admin-overview-space-main" href="#gestion-acces">
                     <span class="admin-overview-card-icon tone-access" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
-                    <span class="admin-overview-card-label">Portail</span>
-                    <strong>Gestion du portail</strong>
+                    <strong>Gestion des accès</strong>
                     <span id="adminOverviewAccessPendingBadge" class="admin-pending-badge admin-pending-badge-card" hidden>0</span>
                     <p>Administrer les comptes et les habilitations du portail.</p>
                     <span class="admin-overview-card-arrow" aria-hidden="true">→</span>

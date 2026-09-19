@@ -18907,3 +18907,207 @@
     transition: none;
   }
 }
+
+/* Accueil du portail : une grille calme et régulière, adaptée au profil. */
+.admin-portal-page #adminOverviewView {
+  max-width: 1280px;
+  gap: 24px;
+}
+
+.admin-portal-page #adminOverviewView > .admin-overview-head {
+  display: block !important;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#adminOverviewView .admin-overview-head h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  line-height: 1.2;
+}
+
+#adminOverviewView .admin-overview-head p {
+  display: block;
+  margin: 0;
+  color: #607580;
+  font-size: 0.94rem;
+}
+
+#adminOverviewView .admin-overview-spaces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+#adminOverviewView .admin-overview-space-card {
+  border-radius: 12px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#adminOverviewView .admin-overview-space-card:is(:hover, :focus-within, .is-expanded) {
+  transform: none;
+  border-color: #8cbcc4;
+  box-shadow: 0 4px 16px rgb(24 64 73 / 6%);
+}
+
+#adminOverviewView .admin-overview-space-main {
+  box-sizing: border-box;
+  min-height: 190px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 40px auto 1fr;
+  gap: 12px;
+  padding: 22px 22px 18px;
+}
+
+#adminOverviewView .admin-overview-card-icon {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #0b7285;
+  background: #edf6f7;
+}
+
+#adminOverviewView .admin-overview-space-main > strong {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  padding: 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+}
+
+#adminOverviewView .admin-overview-space-main > p {
+  display: block;
+  grid-column: 1 / -1;
+  grid-row: 3;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #607580;
+}
+
+#adminOverviewView .admin-overview-card-arrow {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  color: #0b7285;
+  font-size: 1.15rem;
+}
+
+#adminOverviewView .admin-pending-badge-card {
+  top: 30px;
+  right: 50px;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  padding: 12px 22px;
+  border: 0;
+  border-top: 1px solid #e8eef0;
+  color: #46616d;
+  background: #fbfcfd;
+  font-size: 0.82rem;
+  font-weight: var(--portal-font-weight-medium);
+  text-decoration: none;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link):hover {
+  color: #075866;
+  background: #edf6f7;
+}
+
+/* Les rubriques s'ouvrent sur demande, sans déplacement au simple survol. */
+#adminOverviewView .admin-overview-space-card:not(.is-expanded) .admin-overview-space-tools {
+  visibility: hidden;
+  max-height: 0;
+  padding-block: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#adminOverviewView .admin-overview-space-card.is-expanded .admin-overview-space-tools {
+  max-height: none;
+  padding: 10px 14px 14px;
+}
+
+#adminOverviewView .admin-overview-space-tools a {
+  box-sizing: border-box;
+  min-height: 44px;
+  background: transparent;
+}
+
+#adminOverviewView .admin-overview-space-tools a:hover {
+  background: #edf6f7;
+}
+
+@media (min-width: 1440px) {
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-portal-page #adminOverviewView {
+    gap: 16px;
+  }
+
+  #adminOverviewView .admin-overview-head p {
+    font-size: 0.85rem;
+  }
+
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  #adminOverviewView .admin-overview-space-main {
+    min-height: 0;
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    grid-template-rows: auto auto;
+    gap: 6px 12px;
+    padding: 16px;
+  }
+
+  #adminOverviewView .admin-overview-card-icon {
+    grid-row: 1 / 3;
+    width: 36px;
+    height: 36px;
+  }
+
+  #adminOverviewView .admin-overview-space-main > strong {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.98rem;
+  }
+
+  #adminOverviewView .admin-overview-space-main > p {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    font-size: 0.82rem;
+  }
+
+  #adminOverviewView .admin-overview-card-arrow {
+    grid-column: 3;
+  }
+
+  #adminOverviewView .admin-pending-badge-card {
+    top: 9px;
+    right: auto;
+    left: 40px;
+  }
+
+  #adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+    padding-inline: 16px;
+  }
+}
