@@ -1401,13 +1401,6 @@
     const mobileNavigation = global.matchMedia?.("(max-width: 1080px)")?.matches;
     if (mobileNavigation) {
       setMobilePortalNavigationOpen(false);
-      return;
-    }
-    const compactDesktop = global.matchMedia?.("(min-width: 1081px) and (max-width: 1439px)")?.matches;
-    if (!compactDesktop || elements.sidebar?.classList.contains("is-pinned")) return;
-    elements.sidebar?.classList.add("is-collapsed-after-navigation");
-    if (document.activeElement instanceof HTMLElement && elements.navigation?.contains(document.activeElement)) {
-      document.activeElement.blur();
     }
   }
 
