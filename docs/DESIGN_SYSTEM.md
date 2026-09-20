@@ -566,5 +566,5 @@ L’entrée Compétitions mène directement à la liste, sans sous-menu Calendri
 - Compétitions reprend le bandeau des accueils de modules : surtitre, titre identique au menu, description et action à droite, repli vertical sous 760 px. Gestion des accès conserve le même nom dans le menu et le titre.
 - Le fil d’Ariane exclut les compteurs et éléments masqués ; les fiches compétition côté club affichent leur nom et un retour à la liste.
 - Les fiches affichent le statut effectif des engagements et la date limite, avec le même calcul de délai que la liste.
-- Mes nageurs utilise des lignes neutres, une indication textuelle du sexe, des états de licence explicites et un filtre local Licences à contrôler.
+- Mes nageurs conserve les lignes colorées selon le sexe et les indicateurs compacts de licence (! / ✓) ; pas de filtre de licence supplémentaire (préférence Antoine du 20 septembre 2026).
 - Les vues DTN calculées affichent saison et date réelle du calcul ; une date absente est annoncée sans actualisation automatique.
