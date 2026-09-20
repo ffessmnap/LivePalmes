@@ -964,10 +964,10 @@ assert.ok(portalCss.includes("min-height: 36px"));
 assert.ok(portalCss.includes("min-height: 40px"));
 assert.ok(portalCss.includes(".admin-engagements-club-swimmer-license-cell {\n  display: flex"));
 assert.ok(portal.includes("function engagementSwimmerLicenseStatusIndicator"));
-assert.ok(portal.includes("const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer, true)"));
+assert.ok(portal.includes("const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer)"));
 assert.ok(portal.includes('class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>'));
 assert.ok(portalCss.includes(".admin-engagements-club-swimmers-directory-license-content {"));
-assert.ok(portal.includes('>${explicit ? escapeHtml(label) : requiresAttention ? "!" : "✓"}</span>'));
+assert.ok(portal.includes('>${requiresAttention ? "!" : "✓"}</span>'));
 assert.ok(portal.includes("Nageurs engagés"));
 assert.ok(portal.includes("data-engagement-club-swimmer-details-toggle"));
 assert.ok(portal.includes("setEngagementClubSwimmerRowExpanded"));
@@ -1313,7 +1313,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260920-ux-consistency-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20260920-swimmers-restore-1'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1'));
@@ -1547,7 +1547,7 @@ assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), f
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260920-ux-consistency-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260920-swimmers-restore-1"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
 assert.ok(portalHtml.includes("Sans répéter la ville."));
@@ -1772,7 +1772,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260920-ux-consistency-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260920-swimmers-restore-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
@@ -2053,7 +2053,7 @@ const uxState = {
   elements: { engagementsDetailEntryStatus: { dataset: {}, setAttribute() {} }, engagementsDetailDeadline: {} }
 };
 vm.createContext(uxState);
-for (const name of ["formatDeadline", "engagementStatusLabel", "engagementDeadlineTone", "renderEngagementDetailStatus", "engagementSwimmerLicenseNeedsAttention"])
+for (const name of ["formatDeadline", "engagementStatusLabel", "engagementDeadlineTone", "renderEngagementDetailStatus"])
   vm.runInContext(uxFunction(portal, name), uxState);
 for (const [competition, expected] of [
   [{ entryStatus: "open", entryDeadlineAt: "2000-01-01T00:00:00Z" }, "Date limite dépassée"],
@@ -2064,9 +2064,6 @@ for (const [competition, expected] of [
   uxState.renderEngagementDetailStatus(competition);
   assert.equal(uxState.elements.engagementsDetailEntryStatus.textContent, expected);
 }
-assert.equal(uxState.engagementSwimmerLicenseNeedsAttention({}), true);
-assert.equal(uxState.engagementSwimmerLicenseNeedsAttention({ licenseNumber: "A-00-123", licenseVerificationStatus: "verified", licenseSeasonStatus: "valid" }), false);
-assert.equal(uxState.engagementSwimmerLicenseNeedsAttention({ licenseNumber: "A-00-123", licenseVerificationStatus: "verified", licenseSeasonStatus: "to_check" }), true);
 vm.runInContext(uxFunction(dtn, "dtnFreshnessHtml"), uxState);
 assert.match(uxState.dtnFreshnessHtml([{cache:{generatedAt:"2026-09-19T10:30:00Z"}}], {label:"2025–2026"}), /Saison 2025–2026.*19\/09\/2026/);
 assert.match(uxState.dtnFreshnessHtml([{}], {label:"2025–2026"}), /date non disponible/);

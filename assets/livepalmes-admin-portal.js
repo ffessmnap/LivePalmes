@@ -437,7 +437,6 @@
     engagementsViewEyebrow: document.querySelector("#adminEngagementsViewEyebrow"),
     engagementsViewDescription: document.querySelector("#adminEngagementsViewDescription"),
     engagementsDetailDeadline: document.querySelector("#adminEngagementsDetailDeadline"),
-    engagementsClubSwimmersLicenseFilter: document.querySelector("#adminEngagementsClubSwimmersLicenseFilter"),
     engagementsClubContext: document.querySelector("#adminEngagementsClubContext"),
     engagementsClubContextName: document.querySelector("#adminEngagementsClubContextName"),
     engagementsTabButtons: document.querySelectorAll("[data-engagements-tab-button]"),
@@ -6499,11 +6498,7 @@
     return [verificationLabel, seasonLabel].filter(Boolean).join(" · ");
   }
 
-  function engagementSwimmerLicenseNeedsAttention(swimmer = {}) {
-    return !swimmer.licenseNumber || swimmer.licenseVerificationStatus !== "verified" || swimmer.licenseSeasonStatus !== "valid";
-  }
-
-  function engagementSwimmerLicenseStatusIndicator(swimmer = {}, selected = {}, explicit = false) {
+  function engagementSwimmerLicenseStatusIndicator(swimmer = {}, selected = {}) {
     const licenseNumber = selected.licenseNumber || swimmer.licenseNumber || "";
     if (!licenseNumber) return "";
     const verificationStatus = swimmer.licenseVerificationStatus || selected.licenseVerificationStatus || "";
@@ -6511,9 +6506,8 @@
     const requiresAttention = ["pending", "rejected", "conflict"].includes(verificationStatus) || ["to_check", "invalid"].includes(seasonStatus);
     const label = requiresAttention
       ? engagementSwimmerLicenseStatusLabel(swimmer, selected)
-      : explicit && engagementSwimmerLicenseNeedsAttention({ ...selected, ...swimmer, licenseNumber }) ? "Statut à vérifier"
       : "Licence et saison vérifiées";
-    return `<span class="admin-engagements-club-swimmer-license-status" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${explicit ? escapeHtml(label) : requiresAttention ? "!" : "✓"}</span>`;
+    return `<span class="admin-engagements-club-swimmer-license-status" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${requiresAttention ? "!" : "✓"}</span>`;
   }
 
   function setEngagementClubSwimmerRowExpanded(row, expanded) {
@@ -6586,8 +6580,7 @@
     const swimmers = engagementClubSwimmers
       .filter((swimmer) =>
         (!query || engagementClubSwimmerSearchText(swimmer).includes(query)) &&
-        (engagementClubSwimmersDirectorySexFilter === "all" || String(swimmer.sex || "").trim().toUpperCase() === engagementClubSwimmersDirectorySexFilter) &&
-        (!elements.engagementsClubSwimmersLicenseFilter?.checked || engagementSwimmerLicenseNeedsAttention(swimmer))
+        (engagementClubSwimmersDirectorySexFilter === "all" || String(swimmer.sex || "").trim().toUpperCase() === engagementClubSwimmersDirectorySexFilter)
       )
       .sort((left, right) =>
         Number(engagementClubSwimmerIsActive(right)) - Number(engagementClubSwimmerIsActive(left)) ||
@@ -6627,7 +6620,7 @@
       const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
       const publicProfileUrl = engagementPublicSwimmerProfileUrl(swimmer, name);
       const changePending = swimmer.changeRequestStatus === "pending";
-      const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer, true);
+      const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer);
       const profileButton = `
         <button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${escapeHtml(name)}" aria-label="Voir la fiche publique de ${escapeHtml(name)}" data-engagement-club-swimmer-public-profile="${escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${escapeHtml(name)}">
           <strong>${escapeHtml(name)}</strong>
@@ -6663,7 +6656,7 @@
           <div id="${detailsId}" class="admin-engagements-club-swimmers-directory-details">
             <span role="cell">${profileButton}</span>
             <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
-            <span role="cell" class="admin-club-swimmer-sex" aria-label="${escapeHtml(sexLabel)}">${escapeHtml(sexDisplay)}</span>
+            <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
             <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
             <span class="admin-engagements-club-swimmer-license-cell" role="cell">${swimmer.licenseNumber
               ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>`
@@ -16785,7 +16778,6 @@
       setEngagementNationalPeopleMergeMode(!engagementNationalPeopleMergeMode);
     });
     elements.engagementsNationalPeopleBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalPeople);
-    elements.engagementsClubSwimmersLicenseFilter?.addEventListener("change", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectorySearchClear?.addEventListener("click", () => {
       if (!elements.engagementsClubSwimmersDirectorySearch) return;
