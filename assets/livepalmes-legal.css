@@ -175,17 +175,6 @@
   background: var(--legal-soft);
 }
 
-.legal-status {
-  display: inline-flex;
-  align-items: center;
-  margin: 8px 0 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #fff1f0;
-  color: #8b2f2b;
-  font-size: .82rem;
-  font-weight: 800;
-}
 
 .legal-page .public-footer {
   margin-top: 24px;
