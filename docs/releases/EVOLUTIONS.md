@@ -39,4 +39,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 
 - Retour Antoine : bandeaux illisibles sur les pages d’accueil des espaces, notamment Administration nationale et la carte Demandes à traiter. La recette précédente ne couvrait pas ces dégradés ; la couleur de fond sombre était masquée par une image de fond claire.
 - Correction : remplacer le fond complet des bandeaux et de la carte prioritaire, adapter les surtitres et libellés, conserver la variante mobile transparente. Périmètre CSS portail, aucun accès Firebase ajouté.
-- État : en cours, déploiement TEST demandé ; validation utilisateur attendue. Aucun déploiement PROD.
+- État : déployé sur TEST ; validation utilisateur attendue. Aucun déploiement PROD.
+- [PR #60](https://github.com/ffessmnap/LivePalmes/pull/60), commit applicatif `3afe370948ddaf08230fa23883e5e1accc99684c`, [run TEST 35530032111](https://github.com/ffessmnap/LivePalmes/actions/runs/35530032111) réussi.
+- Recette connectée ordinateur : espaces Club, Compétitions (calendrier), Données sportives, DTN, Administration nationale et Gestion des accès parcourus après publication. Bandeaux affichés : fond sombre `rgb(25,38,48)`, image de fond `none`, titres clairs. Aucun dégradé résiduel sur les éléments rendus de ces six vues. Captures vérifiées pour Club, Données sportives, DTN et Administration nationale ; carte Demandes à traiter lisible sur surface sombre secondaire.
+- Tests de préférence et vérification globale locale/GitHub réussis. Le contrôle mobile reste à réaliser dans un navigateur de cette taille ; les règles compactes sont préservées dans le CSS. Pas de validation utilisateur du nouveau rendu à ce stade.
+- Comparaison finale Administration nationale : le mode clair conserve ses deux dégradés et ses textes foncés ; retour au mode sombre effectué après vérification.
+
