@@ -1523,7 +1523,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260919-overview-3"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20260920-sidebar-footer-1"));
 assert.ok(portal.includes('setFormPending(elements.form, true, "Connexion en cours…")'));
 assert.ok(portal.includes('setFormPending(elements.publicAccessRequestForm, true, "Envoi en cours…")'));
 assert.ok(portal.includes('form.setAttribute("aria-busy", "true")'));
@@ -1546,7 +1546,7 @@ assert.equal(portalHtml.includes('id="adminEngagementsDetailFeesPanel"'), false)
 assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), false);
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
-assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260818-long-operations-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260920-sidebar-footer-1"));
 assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260919-sidebar-1"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
