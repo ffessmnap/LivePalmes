@@ -301,6 +301,7 @@ def main():
     elif mode == 'stage':
         stage(*args)
     elif mode == 'batches':
+        require(args[-1] in {'dry-run', 'deploy'}, 'Mode de deploiement inconnu')
         deploy_batches(*args[:-1], dry_run=args[-1] == 'dry-run')
     else:
         raise ValueError('Mode inconnu')

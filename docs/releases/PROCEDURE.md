@@ -57,3 +57,7 @@ Conservation : 14 jours pour les artefacts. Conserver la clé d’origine du com
 ## Vérification du circuit
 
 `python tests/release-cycle-tests.py`, tests de sauvegarde, tests d’état et vérification globale. Les scénarios locaux simulent les API : ils ne prétendent pas être un déploiement réel. La première utilisation sur une prochaine évolution validera les accès et la publication TEST de bout en bout. Ne pas publier en PROD pour tester l’automatisation.
+
+## Isolation des identifiants de publication
+
+Les credentials des actions Google sont créés à la racine du workspace GitHub, hors du checkout `candidate` publié. Avant chaque publication Hosting, `check-hosting-payload.js` calcule la liste exacte de fichiers avec la même fonction que Firebase CLI et refuse les fichiers non suivis, les chemins de credentials et les liens sortant du checkout. Les fichiers temporaires ne doivent jamais être copiés dans le contenu Hosting. Les tests utilisent uniquement des valeurs synthétiques.
