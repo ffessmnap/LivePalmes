@@ -32,12 +32,14 @@ jobs:
     environment: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PLAN: ${{ runner.temp }}/release-plan
       TARGET_FIREBASE_PROJECT: livepalmes
       CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
-      RELEASE_SELECTION: ${{ runner.temp }}/release-plan/selection.json
-      RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/prod-backup
     steps:
+    - name: Initialiser les chemins temporaires
+      run: |
+        echo "PLAN=$RUNNER_TEMP/release-plan" >> "$GITHUB_ENV"
+        echo "RELEASE_SELECTION=$RUNNER_TEMP/release-plan/selection.json" >> "$GITHUB_ENV"
+        echo "RELEASE_BACKUP_DIRECTORY=$RUNNER_TEMP/prod-backup" >> "$GITHUB_ENV"
     - uses: actions/checkout@v7
       with:
         path: tooling
