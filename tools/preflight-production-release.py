@@ -1,4 +1,5 @@
 """Read deployment metadata and source archives. Never invoke business functions."""
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
 import json
@@ -83,8 +84,9 @@ def main():
                 raise ValueError("Source de repli absente")
             key = json.dumps(source, sort_keys=True)
             sources.setdefault(key, []).append(f)
-            report["functions"].append({"name": f["name"], "revision": f.get("serviceConfig", {}).get("revision"), "source": source})
-        for key, group in sources.items():
+            report["functions"].append({"name": f["name"], "revision": f.get("serviceConfig", {}).get("revision"), "source": source, "environmentKeys": sorted(f.get("serviceConfig", {}).get("environmentVariables", {})), "secretCount": len(f.get("serviceConfig", {}).get("secretEnvironmentVariables", []))})
+        def inspect_source(item):
+            key, group = item
             f = group[0]
             try:
                 signed = request("https://cloudfunctions.googleapis.com/v2/" + f["name"] + ":generateDownloadUrl", {})["downloadUrl"]
@@ -94,11 +96,18 @@ def main():
                 with urllib.request.urlopen(signed, timeout=60) as response:
                     archive = response.read(64 * 1024 * 1024 + 1)
                 manifest = archive_manifest(archive)
-                report["sources"].append({"source": json.loads(key), "functions": [x["name"].split("/")[-1] for x in group], "sha256": hashlib.sha256(archive).hexdigest(), "files": manifest})
+                return {"source": json.loads(key), "functions": [x["name"].split("/")[-1] for x in group], "sha256": hashlib.sha256(archive).hexdigest(), "files": manifest}, None
             except urllib.error.HTTPError as error:
-                report["errors"].append(f"Source {f['name'].split('/')[-1]}: HTTP {error.code}")
+                return None, f"Source {f['name'].split('/')[-1]}: HTTP {error.code}"
             except Exception:
-                report["errors"].append(f"Source {f['name'].split('/')[-1]}: lecture indisponible")
+                return None, f"Source {f['name'].split('/')[-1]}: lecture indisponible"
+        # Bounded parallel reads; only the main thread updates the report.
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            for source_report, error in executor.map(inspect_source, sources.items()):
+                if error:
+                    report["errors"].append(error)
+                else:
+                    report["sources"].append(source_report)
         if not report["newHttpsPermission"]:
             report["errors"].append("Permission CLI manquante: cloudfunctions.functions.setIamPolicy")
     except urllib.error.HTTPError as error:
@@ -110,6 +119,9 @@ def main():
         summary.write("## Preparation PROD sans deploiement\n\n")
         summary.write(f"- Commit candidat : {report['candidate']}\n- Sources lisibles : {len(report['sources'])}\n- Functions existantes selectionnees : {len(report['functions'])}\n")
         summary.write(f"- Hosting de repli : {report.get('hostingRollback')}\n- App Check conserve : {report.get('appCheck')}\n")
+        environment_keys = sorted({key for function in report["functions"] for key in function.get("environmentKeys", [])})
+        summary.write(f"- Noms des variables runtime (aucune valeur) : {environment_keys}\n")
+        summary.write(f"- Functions selectionnees avec secrets : {sum(bool(f.get('secretCount')) for f in report['functions'])}\n")
         for error in report["errors"]:
             summary.write(f"- BLOCAGE : {error}\n")
         summary.write("\nAucune donnee metier lue ou modifiee. Les archives ont ete lues pour verifier leur disponibilite, pas conservees en sauvegarde.\n")

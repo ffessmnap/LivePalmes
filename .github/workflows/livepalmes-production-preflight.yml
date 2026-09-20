@@ -79,7 +79,7 @@ jobs:
         continue-on-error: true
         run: |
           selector="$(cat "$RUNNER_TEMP/production-functions/selector.txt")"
-          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --dry-run --non-interactive
+          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --dry-run --non-interactive --force
       - name: Conserver uniquement le rapport de metadonnees
         if: always()
         uses: actions/upload-artifact@v4
