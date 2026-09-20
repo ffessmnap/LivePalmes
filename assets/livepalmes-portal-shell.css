@@ -1,0 +1,32 @@
+/* Continuous desktop navigation. Mobile retains the existing compact header. */
+@media (min-width:1081px) {
+  .admin-portal-page.portal-unified-shell > .admin-portal-topbar { display:none; }
+  .admin-portal-page.portal-unified-shell .admin-portal-shell {
+    width:100%; max-width:none; margin:0; padding:0;
+  }
+  .admin-portal-page.portal-unified-shell .admin-portal-layout {
+    grid-template-columns:256px minmax(0,1fr); gap:0; align-items:start;
+  }
+  .admin-portal-page.portal-unified-shell .admin-portal-sidebar {
+    top:0; display:flex; flex-direction:column; gap:16px;
+    height:calc(100dvh - var(--portal-sidebar-top,0px));
+    max-height:calc(100dvh - var(--portal-sidebar-top,0px));
+    padding:22px 12px 12px; background:var(--portal-color-surface);
+  }
+  .portal-unified-shell .admin-portal-sidebar-brand:not([hidden]) {
+    display:grid; grid-template-columns:44px minmax(0,1fr); gap:14px 10px; align-items:center;
+    padding:0 8px 18px; border-bottom:1px solid var(--portal-color-border-soft); flex:0 0 auto;
+  }
+  .portal-unified-shell .admin-portal-sidebar-brand .admin-portal-federal-logo { width:44px; height:auto; max-height:44px; margin:0; }
+  .portal-unified-shell .admin-portal-sidebar-brand .admin-portal-brand { grid-column:2; min-width:0; padding:0; }
+  .portal-unified-shell .admin-portal-sidebar-brand .admin-portal-brand h1 { font-size:1.05rem; margin:0; white-space:nowrap; }
+  .portal-unified-shell .admin-portal-title-prefix { display:none; }
+  .portal-unified-shell .admin-portal-sidebar-brand .admin-portal-scope-context { grid-column:1/-1; justify-content:flex-start; flex-wrap:wrap; max-width:100%; }
+  .admin-portal-page.portal-unified-shell .admin-portal-nav { flex:1 1 0; min-height:0; height:auto; }
+  .portal-unified-shell .admin-portal-layout > :not(.admin-portal-sidebar) { min-width:0; padding:28px 32px; }
+  .admin-portal-page.portal-unified-shell .admin-portal-nav-footer { background:var(--portal-color-surface); }
+  .portal-unified-shell .admin-portal-nav-footer .admin-portal-account-menu { position:relative; width:100%; margin-top:6px; }
+  .portal-unified-shell .admin-portal-nav-footer #adminPortalAccountToggle { width:100%; justify-content:space-between; min-height:42px; padding:10px; font-size:.82rem; }
+  .portal-unified-shell .admin-portal-nav-footer #adminPortalSessionLabel { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .portal-unified-shell .admin-portal-nav-footer .admin-portal-account-actions { top:auto; bottom:calc(100% + 8px); left:0; right:0; min-width:0; width:100%; max-height:50dvh; overflow-y:auto; z-index:30; }
+}

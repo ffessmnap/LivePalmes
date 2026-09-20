@@ -542,3 +542,7 @@ Le formulaire compact place Nom puis Prénom sur une première ligne, Date de na
 ### Filtres du calendrier Club
 
 La règle actuelle remplace l’ancienne présentation segmentée du statut et le repli des filtres avancés : les boutons Toutes, Ouvertes, À venir et Fermées ne sont plus affichés dans le calendrier Club. Saison, Type, Région et Niveau restent toujours visibles dans quatre colonnes compactes sur une seule ligne, y compris sur mobile. Le calendrier organisateur conserve son sélecteur de statut et son comportement propre.
+
+## Colonne continue du portail — essai TEST du 20 septembre 2026
+
+Sur ordinateur (à partir de 1081 px), le portail connecté réunit le logo, le nom LivePalmes et le sélecteur de périmètre en haut de la navigation. Le menu central défile indépendamment ; Mon compte, Aide et le menu du profil restent en bas. Le menu du profil s’ouvre vers le haut et conserve la déconnexion et le changement de club. Le contenu commence directement à droite, sans bandeau supérieur. Les contrôles existants sont déplacés, sans duplication ni changement des droits. Sur mobile ou hors connexion, ils reprennent leur position initiale dans le bandeau compact. Les couleurs suivent les jetons du thème du portail.
