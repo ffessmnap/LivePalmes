@@ -64,7 +64,7 @@ html[data-portal-theme="dark"] .admin-portal-page :is(
   .admin-dtn-grid,.admin-dtn-qualifiers,
   [role="table"],
   [role="row"],
-  .admin-access-table,
+  .admin-access-table,.admin-access-row,
   .admin-access-row-summary,
   .admin-engagements-competition,
   .admin-engagements-club-swimmers-directory-table
@@ -194,6 +194,15 @@ html[data-portal-theme="dark"] .admin-portal-page :is(
   .admin-engagements-entry-status[data-entry-status="open"]
 ) { background:#203e33 !important; color:#98dfbb !important; border-color:currentColor !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="success"],[data-tone="ok"],.admin-engagements-entry-status[data-entry-status="open"]) :is(strong,small,p) { color:inherit !important; }
+
+/* Details confirmed in the connected calendar and club directory. */
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-engagements-competition-scope > span,.admin-engagements-competitions-table-head) { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-portal-scope-context span,.admin-engagements-club-swimmers-directory-activity-separator span) { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmer-license-value { color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-engagements-competition-date,.admin-engagements-club-swimmer-license-status) { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmer-license-status:is([aria-label*="contrôler" i],[aria-label*="vérifier" i],[aria-label*="Rejetée" i],[aria-label*="Conflit" i],[aria-label*="invalide" i]) { color:#f5d58c !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-engagements-competition-group > h4,.admin-engagements-form-section-grid > label) { border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmers-directory-name-button { background:transparent !important; }
 
 @media print {
   html[data-portal-theme="dark"] { color-scheme:light; }
