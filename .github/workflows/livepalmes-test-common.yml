@@ -26,6 +26,7 @@ jobs:
       with:
         fetch-depth: 0
         persist-credentials: false
+        path: candidate
     - uses: actions/setup-node@v7
       with:
         node-version: '22'
@@ -33,26 +34,41 @@ jobs:
       id: scope
       env:
         BASE_SHA: ${{ inputs.production_commit }}
-      run: |-
-        [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
         test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
-        python - <<'PYCODE'
+
+        python - <<''PYCODE''
+
         import importlib.util, os, json, subprocess
+
         from pathlib import Path
-        spec=importlib.util.spec_from_file_location('cycle','tools/release-cycle.py'); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-        subprocess.run(['git','merge-base','--is-ancestor',os.environ['BASE_SHA'],'HEAD'],check=True)
-        paths=subprocess.check_output(['git','diff','--name-only','--no-renames',os.environ['BASE_SHA'],'HEAD'],text=True).splitlines()
+
+        spec=importlib.util.spec_from_file_location(''cycle'',''tools/release-cycle.py''); m=importlib.util.module_from_spec(spec);
+        spec.loader.exec_module(m)
+
+        subprocess.run([''git'',''merge-base'',''--is-ancestor'',os.environ[''BASE_SHA''],''HEAD''],check=True)
+
+        paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
+
         _, backend=m.classify(paths)
-        Path(os.environ['RUNNER_TEMP']+'/test-selection.json').write_text(json.dumps(m.safe_functions('.') if backend else []))
+
+        Path(os.environ[''RUNNER_TEMP'']+''/test-selection.json'').write_text(json.dumps(m.safe_functions(''.'') if backend
+        else []))
+
         m.output(backend=str(backend).lower())
-        PYCODE
+
+        PYCODE'
     - name: Installer et verifier
-      run: |-
-        npm ci --prefix functions
+      run: 'npm ci --prefix functions
+
         npm ci --prefix tests/firestore-rules
+
         node tools/verify-livepalmes.js
-        python tests/release-cycle-tests.py
+
+        python tests/release-cycle-tests.py'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
@@ -60,9 +76,9 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v3
     - name: Preparer le backend TEST
       if: steps.scope.outputs.backend == 'true'
-      run: |-
-        python tools/release-cycle.py stage . livepalmes-test .firebase-test-functions "$CANDIDATE_SHA"
-        npm ci --prefix .firebase-test-functions/functions
+      run: 'python tools/release-cycle.py stage . livepalmes-test .firebase-test-functions "$CANDIDATE_SHA"
+
+        npm ci --prefix .firebase-test-functions/functions'
     - name: Simuler les Functions TEST
       if: steps.scope.outputs.backend == 'true'
       run: python tools/release-cycle.py batches livepalmes-test . .firebase-test-functions "$RUNNER_TEMP/test-selection.json"
@@ -76,9 +92,12 @@ jobs:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
         project_id: livepalmes-test
     - name: Verifier main puis publier TEST commun
-      run: |-
+      run: 'node tools/check-hosting-payload.js .
+
         test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
-        tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"
+
+        tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive
+        --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
@@ -91,3 +110,6 @@ jobs:
         path: ${{ runner.temp }}/test-proof/test-proof.json
         if-no-files-found: error
         retention-days: 14
+    defaults:
+      run:
+        working-directory: candidate

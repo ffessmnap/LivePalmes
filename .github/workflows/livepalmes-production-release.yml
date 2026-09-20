@@ -50,10 +50,11 @@ jobs:
         RESUME: ${{ inputs.resume_run }}
       run: python tooling/tools/release-cycle.py fetch-plan "$PREPARATION" "$RESUME" "$PLAN"
     - name: Fixer le commit et la cible
-      run: |-
-        echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
+      run: 'echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
+
         version="$(jq -r .productionHosting "$PLAN/request.json")"
-        echo "EXPECTED_HOSTING_VERSION=$version" >> "$GITHUB_ENV"
+
+        echo "EXPECTED_HOSTING_VERSION=$version" >> "$GITHUB_ENV"'
     - uses: actions/checkout@v7
       with:
         ref: ${{ steps.plan.outputs.candidate }}
@@ -63,18 +64,23 @@ jobs:
       with:
         node-version: '22'
     - name: Verifier le candidat exact
-      run: |-
-        npm ci --prefix candidate/functions
+      run: 'npm ci --prefix candidate/functions
+
         npm ci --prefix candidate/tests/firestore-rules
+
         cd candidate
+
         test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+
         test -z "$(git status --porcelain)"
-        node tools/verify-livepalmes.js
+
+        node tools/verify-livepalmes.js'
     - name: Verifier le circuit de publication
-      run: |-
-        python tooling/tests/release-cycle-tests.py
+      run: 'python tooling/tests/release-cycle-tests.py
+
         python tooling/tests/production-release-state-tests.py
-        node tooling/tests/production-backup-crypto-tests.js
+
+        node tooling/tests/production-backup-crypto-tests.js'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
@@ -89,26 +95,33 @@ jobs:
       run: python tooling/tools/preflight-production-release.py
     - name: Chiffrer puis tester la sauvegarde
       if: inputs.resume_run == '0'
-      run: |-
-        node tooling/tools/production-backup-crypto.js seal "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/prod-backup.enc"
+      run: 'node tooling/tools/production-backup-crypto.js seal "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/prod-backup.enc"
+
         node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/backup-verification"
-        diff -qr "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-verification"
+
+        diff -qr "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-verification"'
     - name: Ouvrir la sauvegarde initiale pour une reprise
       if: inputs.resume_run != '0'
-      run: |-
-        cp "$PLAN/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup.enc"
+      run: 'cp "$PLAN/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup.enc"
+
         node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
-        python tooling/tools/release-cycle.py verify-resume "$PLAN" "$RUNNER_TEMP/prod-backup"
+
+        python tooling/tools/release-cycle.py verify-resume "$PLAN" "$RUNNER_TEMP/prod-backup"'
       id: resume
     - name: Associer les controles au commit
-      run: |-
-        python - <<'PYCODE'
+      run: 'python - <<''PYCODE''
+
         import json, os
+
         from pathlib import Path
-        p=Path(os.environ['RUNNER_TEMP'])/'prod-backup/report.json'
-        r=json.loads(p.read_text()); r['commitLabel']=True; p.write_text(json.dumps(r))
-        with open(os.environ['GITHUB_ENV'],'a') as out: out.write('APP_CHECK='+r['appCheck']+'\n')
-        PYCODE
+
+        p=Path(os.environ[''RUNNER_TEMP''])/''prod-backup/report.json''
+
+        r=json.loads(p.read_text()); r[''commitLabel'']=True; p.write_text(json.dumps(r))
+
+        with open(os.environ[''GITHUB_ENV''],''a'') as out: out.write(''APP_CHECK=''+r[''appCheck'']+''\n'')
+
+        PYCODE'
     - uses: actions/upload-artifact@v4
       with:
         name: release-plan
@@ -123,9 +136,9 @@ jobs:
         retention-days: 14
     - name: Preparer les Functions selectionnees
       if: steps.plan.outputs.backend == 'true'
-      run: |-
-        python tooling/tools/release-cycle.py stage candidate livepalmes "$RUNNER_TEMP/production-functions" "$CANDIDATE_SHA"
-        npm ci --prefix "$RUNNER_TEMP/production-functions/functions"
+      run: 'python tooling/tools/release-cycle.py stage candidate livepalmes "$RUNNER_TEMP/production-functions" "$CANDIDATE_SHA"
+
+        npm ci --prefix "$RUNNER_TEMP/production-functions/functions"'
     - name: Simuler les Functions par petits lots
       if: steps.plan.outputs.backend == 'true'
       run: python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION"
@@ -159,9 +172,12 @@ jobs:
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
-      run: |-
+      run: 'node tooling/tools/check-hosting-payload.js candidate
+
         cd candidate
-        tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --only hosting --non-interactive --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"
+
+        tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --only hosting --non-interactive --message
+        "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
     - name: Controler les pages publiees
       if: steps.hosting.outcome == 'success'
       run: python tooling/tools/check-production-hosting.py candidate
@@ -180,7 +196,8 @@ jobs:
         STATE: ${{ steps.state.outcome }}
         HOSTING: ${{ steps.hosting.outcome }}
       if: always()
-      run: |-
-        test "$STATE" = success
+      run: 'test "$STATE" = success
+
         test "$HOSTING" = success
-        echo "Publication du commit $CANDIDATE_SHA terminee, code uniquement." >> "$GITHUB_STEP_SUMMARY"
+
+        echo "Publication du commit $CANDIDATE_SHA terminee, code uniquement." >> "$GITHUB_STEP_SUMMARY"'
