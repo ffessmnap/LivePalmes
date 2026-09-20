@@ -6,8 +6,7 @@ const root = path.resolve(__dirname, "..");
 const legalPages = [
   ["mentions-legales.html", "Mentions légales"],
   ["conditions-utilisation.html", "Conditions d’utilisation"],
-  ["confidentialite.html", "Politique de confidentialité"],
-  ["accessibilite.html", "Déclaration d’accessibilité"]
+  ["confidentialite.html", "Politique de confidentialité"]
 ];
 
 for (const [fileName, heading] of legalPages) {
@@ -57,4 +56,5 @@ for (const file of htmlFiles(root)) {
 }
 
 assert.equal(fs.existsSync(path.join(root, "assets", "public", "livepalmes-public-analytics.js")), false);
+assert.equal(fs.existsSync(path.join(root, "accessibilite.html")), false);
 console.log("Pages d’information LivePalmes : OK");
