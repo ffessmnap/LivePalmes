@@ -20,3 +20,7 @@ Le premier essai du circuit TEST a inclus des fichiers temporaires de credential
 - Validation utilisateur : essai TEST demandé ; rendu final non encore validé.
 - Preuve TEST : [run 35526684868](https://github.com/ffessmnap/LivePalmes/actions/runs/35526684868), réussi ; artefact `test-proof`. Aucun changement backend. Aucune publication PROD demandée.
 - Vérifications : vérification globale locale et GitHub réussies ; chargement du portail hors connexion contrôlé. Rendu connecté ordinateur/mobile non contrôlé faute de session authentifiée dans le navigateur de vérification.
+
+### Correction du pied de navigation — 20 septembre 2026
+
+Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause confirmée dans la session TEST connectée : une ancienne grille répartissait les trois éléments sur trois colonnes (35 px pour chaque lien). Correction : pile verticale explicite, chaque accès sur toute la largeur. Recette de la colonne continue non validée ; correction en cours de publication TEST.
