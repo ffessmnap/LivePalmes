@@ -1,0 +1,90 @@
+name: Bilan Firebase TEST et PROD (lecture seule)
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: SHA complet de la version TEST candidate (aucun deploiement)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-release-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: livepalmes
+            environment: production
+            backend_secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND
+            hosting_secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES
+          - project: livepalmes-test
+            environment: firebase-test
+            backend_secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND
+            hosting_secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST
+    env:
+      AUDIT_PROJECT: ${{ matrix.project }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verifier la reference candidate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          resolved="$(gh api "repos/$GITHUB_REPOSITORY/commits/$CANDIDATE_SHA" --jq '.sha')"
+          test "$resolved" = "$CANDIDATE_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Tester le lecteur de metadonnees sans acces Firebase
+        run: node tests/livepalmes-release-audit-tests.js
+
+      - name: Verifier la presence d'un compte existant
+        env:
+          AUDIT_CREDENTIALS: ${{ secrets[matrix.backend_secret] || secrets[matrix.hosting_secret] }}
+        run: |
+          if [ -z "$AUDIT_CREDENTIALS" ]; then
+            echo "Aucun secret Firebase disponible pour $AUDIT_PROJECT." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets[matrix.backend_secret] || secrets[matrix.hosting_secret] }}
+          project_id: ${{ matrix.project }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Lire uniquement les metadonnees Hosting et Functions
+        env:
+          AUDIT_CREDENTIAL_KIND: ${{ secrets[matrix.backend_secret] != '' && 'backend' || 'hosting' }}
+        run: node tools/audit-firebase-release.js
+
+      - name: Conserver le bilan sans secrets ni donnees metier
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-release-audit-${{ matrix.project }}
+          path: ${{ runner.temp }}/firebase-release-audit/*.json
+          if-no-files-found: warn
+          retention-days: 7
