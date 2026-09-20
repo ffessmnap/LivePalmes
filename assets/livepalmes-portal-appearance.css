@@ -204,6 +204,22 @@ html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimme
 html[data-portal-theme="dark"] .admin-portal-page :is(.admin-engagements-competition-group > h4,.admin-engagements-form-section-grid > label) { border-color:var(--portal-color-border) !important; }
 html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmers-directory-name-button { background:transparent !important; }
 
+/* Background images paint above background-color: replace the complete light
+   gradient on space headers and the national priority card in dark mode. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-overview-head,.admin-tool-workspace-head,
+  .admin-records-workspace-head,.admin-module-workspace-head
+) { background:var(--portal-color-surface) !important; border-color:var(--portal-color-border-soft) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-national-home-card-primary { background:var(--portal-color-surface-raised) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-overview-head > span { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-overview-card-label,.admin-national-home-group-head > span) { color:var(--portal-color-muted) !important; }
+@media (max-width:760px) {
+  html[data-portal-theme="dark"] .admin-portal-page :is(
+    .admin-overview-head,.admin-tool-workspace-head,
+    .admin-records-workspace-head,.admin-module-workspace-head
+  ) { background:transparent !important; }
+}
+
 @media print {
   html[data-portal-theme="dark"] { color-scheme:light; }
   html[data-portal-theme="dark"] .admin-portal-page,

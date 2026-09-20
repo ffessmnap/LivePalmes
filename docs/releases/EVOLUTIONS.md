@@ -34,3 +34,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Version finale : [PR #58](https://github.com/ffessmnap/LivePalmes/pull/58), commit applicatif `61c12aeddac1b789ad4636fb3208e5dc72b33b85`, [run TEST 35529133654](https://github.com/ffessmnap/LivePalmes/actions/runs/35529133654) réussi avec preuve conservée ; étapes backend ignorées.
 - Vérifications finales : version CSS `appearance-3` chargée ; compte dans les deux modes, accueil sombre, calendrier et formulaire ouvert puis annulé, annuaire et habilitations dans la session connectée sur ordinateur. Plus de surface blanche visible dans ces vues sombres, hors logo fédéral volontairement conservé sur blanc. Dates, licences et avertissements lisibles ; séparateurs du formulaire atténués. Contrastes de la palette de texte principale/secondaire et des statuts mesurés entre 6,67:1 et 12,73:1. Vérification globale locale et GitHub réussie ; tests de préférence et isolation publique réussis.
 - Limites : contrôle visuel réalisé sur ordinateur ; pas de recette mobile ni de contrôle exhaustif de chaque sous-écran métier. Aucune donnée enregistrée pendant la recette. Aucune validation utilisateur du rendu final encore reçue.
+
+### Bandeaux des espaces en thème sombre — 20 septembre 2026
+
+- Retour Antoine : bandeaux illisibles sur les pages d’accueil des espaces, notamment Administration nationale et la carte Demandes à traiter. La recette précédente ne couvrait pas ces dégradés ; la couleur de fond sombre était masquée par une image de fond claire.
+- Correction : remplacer le fond complet des bandeaux et de la carte prioritaire, adapter les surtitres et libellés, conserver la variante mobile transparente. Périmètre CSS portail, aucun accès Firebase ajouté.
+- État : en cours, déploiement TEST demandé ; validation utilisateur attendue. Aucun déploiement PROD.
