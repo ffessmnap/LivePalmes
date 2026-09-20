@@ -40,7 +40,7 @@ jobs:
         run: |
           [[ "$RELEASE_RUN" =~ ^[0-9]+$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN" > "$RUNNER_TEMP/release-run.json"
-          jq -e '.path == ".github/workflows/livepalmes-production-release.yml" and .status == "completed" and .head_branch == "main"' "$RUNNER_TEMP/release-run.json"
+          jq -e '(.path == ".github/workflows/livepalmes-production-release.yml" or .path == ".github/workflows/livepalmes-production-resume.yml") and .status == "completed" and .head_branch == "main"' "$RUNNER_TEMP/release-run.json"
       - uses: actions/download-artifact@v4
         with:
           name: production-code-backup
