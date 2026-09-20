@@ -1,0 +1,64 @@
+/* This stylesheet is loaded only by portail.html. */
+.admin-appearance-options { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.admin-appearance-options button { background:transparent; color:var(--portal-color-text); border:1px solid var(--portal-color-border); border-radius:8px; min-height:42px; padding:8px 18px; font:inherit; cursor:pointer; }
+.admin-appearance-options button[aria-pressed="true"] { color:var(--portal-color-accent-strong); border-color:var(--portal-color-accent); background:var(--portal-color-field-background); box-shadow:inset 0 0 0 1px var(--portal-color-accent); }
+.admin-appearance-options button:focus-visible { outline:2px solid var(--portal-color-accent); outline-offset:3px; }
+.admin-appearance-card p { color:var(--portal-color-muted); font-size:.85rem; }
+.admin-portal-page .admin-portal-nav-parent > span:last-child { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex:0 0 18px; }
+.admin-portal-chevron { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+#adminAccountView .admin-account-edit-card > summary::after { content:""; width:16px; height:16px; background:currentColor; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+#adminAccountView .admin-account-edit-card[open] > summary::after { transform:rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .admin-portal-page .admin-portal-nav-parent > span:last-child, #adminAccountView .admin-account-edit-card > summary::after { transition:none; } }
+
+html[data-portal-theme="dark"] { color-scheme:dark; background:#101a22; }
+html[data-portal-theme="dark"] .admin-portal-page {
+  --portal-color-background:#101a22;
+  --portal-color-surface:#192630;
+  --portal-color-text:#e1ebef;
+  --portal-color-brand:#edf5f7;
+  --portal-color-heading:#edf5f7;
+  --portal-color-muted:#a8bbc5;
+  --portal-color-accent:#65cbd9;
+  --portal-color-accent-strong:#8bdeea;
+  --portal-color-border:#3b515f;
+  --portal-color-header-border:#304551;
+  --portal-color-border-soft:#304551;
+  --portal-color-field-border:#48616f;
+  --portal-color-hover-border:#65cbd9;
+  --portal-color-field-background:#13212b;
+  --portal-focus-ring:rgba(101,203,217,.3);
+  --ink:#e1ebef; --muted:#a8bbc5; --line:#3b515f;
+  background:var(--portal-color-background) !important;
+  color:var(--portal-color-text) !important;
+}
+/* Shared surfaces, including modules opened within the portal. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-topbar,.admin-portal-sidebar,dialog,
+  [class$="-card"],[class*="-card "],[class$="-panel"],[class*="-panel "],
+  [class$="-popover"],[class$="-menu"],[class$="-dialog"],
+  .admin-portal-overview-card,.admin-portal-workspace-head,
+  .admin-portal-nav-submenu,.admin-account-identity,
+  table,thead,tbody,tfoot,tr,th,td,fieldset
+) { background-color:var(--portal-color-surface) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-border-soft) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(h1,h2,h3,h4,strong,label,legend,summary) { color:var(--portal-color-heading) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(p,small,[class$="-description"],[class$="-subtitle"],[class$="-meta"],[class$="-hint"]) { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(a,.admin-portal-nav-icon) { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(input,select,textarea,button,.ghost-button) { background:var(--portal-color-field-background) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-field-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(input,textarea)::placeholder { color:#91a8b5; opacity:1; }
+html[data-portal-theme="dark"] .admin-portal-page :is(button[type="submit"],.admin-primary-button) { background:#126f80 !important; color:#fff !important; border-color:#42a9bb !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(button,a):hover { border-color:var(--portal-color-hover-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([aria-current="page"],[aria-pressed="true"],.admin-portal-nav a.active) { background:#203e4a !important; color:#9ae5ee !important; border-color:#65cbd9 !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(th,.admin-portal-overview-card-footer,.admin-overview-direct-link,.admin-overview-space-tools,[class$="-table-head"]) { background:#20323e !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([class$="-icon"],[class$="-badge"]) { background:#263e4b !important; color:#9edbe5 !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="error"],[data-tone="danger"],.error) { color:#ffb4b4 !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="warning"],.warning) { color:#f5d58c !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="success"],[data-tone="ok"],.success) { color:#98dfbb !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(input,select,textarea,button,a):focus-visible { outline:2px solid #65cbd9; outline-offset:2px; }
+html[data-portal-theme="dark"] .admin-portal-page :disabled { opacity:.55; }
+html[data-portal-theme="dark"] .admin-portal-page dialog::backdrop { background:rgba(0,0,0,.65); }
+html[data-portal-theme="dark"] .admin-portal-federal-logo { background:#fff; border-radius:6px; padding:4px; }
+@media print {
+  html[data-portal-theme="dark"] { color-scheme:light; }
+  html[data-portal-theme="dark"] .admin-portal-page,
+  html[data-portal-theme="dark"] .admin-portal-page * { background:white !important; color:black !important; box-shadow:none !important; }
+}

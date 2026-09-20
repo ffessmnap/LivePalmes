@@ -1,6 +1,15 @@
 {
   "indexes": [
     {
+      "collectionGroup": "engagementQualificationRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "competitionId", "order": "ASCENDING" },
+        { "fieldPath": "clubId", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "auditLogs",
       "queryScope": "COLLECTION",
       "fields": [
