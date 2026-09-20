@@ -779,6 +779,8 @@
   }
 
   function renderGrid() {
+    const title = document.querySelector("#adminDtnViewTitle");
+    if (title) title.textContent = { france: "Championnats de France", edf: "Équipe de France", listing: "Mise en liste" }[state.grid] || "Espace DTN";
     const season = selectedSeason();
     if (elements.toolbar && elements.refreshBox?.parentElement !== elements.toolbar) elements.toolbar.append(elements.refreshBox);
     if (elements.grid && elements.definitions?.nextElementSibling !== elements.grid) elements.grid.before(elements.definitions);
