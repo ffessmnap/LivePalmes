@@ -6,12 +6,39 @@ const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS } = require(
 
 const rootDir = path.join(__dirname, "..");
 const workflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml"), "utf8");
+const qualificationAutoWorkflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-qualification-test-auto.yml"), "utf8");
 const bootstrap = fs.readFileSync(path.join(rootDir, "functions", "bootstrap-get-current-access-user.js"), "utf8");
 const staging = fs.readFileSync(path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), "utf8");
 
 assert.match(workflow, /^on:\n  workflow_dispatch:/m);
 assert.doesNotMatch(workflow, /^  (push|pull_request|schedule):/m);
+assert.match(workflow, /^  workflow_call:/m);
+assert.match(qualificationAutoWorkflow, /^  push:\n    branches:\n      - feature\/qualification-engagements/m);
+assert.match(qualificationAutoWorkflow, /lot: bootstrap[\s\S]+needs: bootstrap[\s\S]+lot: engagement-core[\s\S]+needs: engagement-core[\s\S]+lot: publications/);
+assert.equal((qualificationAutoWorkflow.match(/confirmation: livepalmes-test/g) || []).length, 3);
+assert.equal((qualificationAutoWorkflow.match(/expected_commit: \$\{\{ github\.sha \}\}/g) || []).length, 3);
+assert.equal((qualificationAutoWorkflow.match(/secrets: inherit/g) || []).length, 3);
+assert.doesNotMatch(qualificationAutoWorkflow, /lot: (email|schedulers|all-safe)/);
+assert.doesNotMatch(qualificationAutoWorkflow, /livepalmes-production|project: livepalmes(?:\s|$)/);
 assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+assert.ok(workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
+const branchGuard = workflow.slice(workflow.indexOf('          case "$GITHUB_REF" in'), workflow.indexOf('          case "$SELECTED_LOT" in', workflow.indexOf('Branche non autorisée en TEST.')));
+assert.ok(branchGuard.includes('bootstrap|engagement-core|publications)'));
+for (const [branch, lot, allowed] of [
+  ['main', 'access', true],
+  ['feature/qualification-engagements', 'engagement-core', true],
+  ['feature/qualification-engagements', 'bootstrap', true],
+  ['feature/qualification-engagements', 'publications', true],
+  ['feature/qualification-engagements', 'email', false],
+  ['feature/qualification-engagements', 'schedulers', false],
+  ['feature/qualification-engagements', 'all-safe', false],
+  ['feature/unapproved', 'engagement-core', false]
+]) {
+  const result = childProcess.spawnSync('bash', ['-c', branchGuard], {
+    env: { ...process.env, GITHUB_REF: `refs/heads/${branch}`, SELECTED_LOT: lot }
+  });
+  assert.equal(result.status === 0, allowed, `${branch} / ${lot}`);
+}
 assert.match(workflow, /test "\$CONFIRMATION" = "livepalmes-test"/);
 assert.match(workflow, /test "\$EXPECTED_COMMIT" = "\$GITHUB_SHA"/);
 assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_COMMIT"/);

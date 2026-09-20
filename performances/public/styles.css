@@ -5643,3 +5643,38 @@ td.time-placeholder,
     overflow-x: visible;
   }
 }
+
+/* Bandeau public : toute la largeur disponible, navigation sous le titre. */
+.topbar.performance-public-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 20px 24px;
+  width: calc(100% - 48px);
+  min-height: 0;
+  padding: 22px clamp(18px, 3vw, 36px);
+}
+
+.performance-public-topbar .topbar-logo {
+  position: static;
+  justify-self: end;
+}
+
+.performance-public-topbar .main-nav {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.performance-public-topbar .main-nav a {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .topbar.performance-public-topbar {
+    width: calc(100% - 20px);
+    gap: 14px 12px;
+    padding: 14px 12px 12px;
+  }
+}

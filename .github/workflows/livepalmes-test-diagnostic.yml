@@ -1,0 +1,37 @@
+name: Diagnostic qualifications TEST (lecture seule)
+
+on:
+  push:
+    branches: [feature/qualification-engagements]
+    paths:
+      - .github/workflows/livepalmes-test-diagnostic.yml
+      - tools/diagnose-qualification-test.cjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    if: github.ref == 'refs/heads/feature/qualification-engagements'
+    runs-on: ubuntu-latest
+    environment: firebase-test
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Authentifier le compte TEST existant
+        env:
+          TEST_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const fs=require("fs"); const c=JSON.parse(process.env.TEST_CREDENTIALS||"{}"); if(c.project_id!=="livepalmes-test") throw new Error("Compte TEST absent ou incorrect"); fs.writeFileSync(process.env.RUNNER_TEMP+"/qualification-diagnostic-key.json",JSON.stringify(c),{mode:0o600});'
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/qualification-diagnostic-key.json" --project=livepalmes-test --quiet >/dev/null
+      - name: Lire les journaux TEST ciblés
+        run: node tools/diagnose-qualification-test.cjs
+      - name: Supprimer le fichier temporaire de connexion
+        if: always()
+        run: node -e 'require("fs").rmSync(process.env.RUNNER_TEMP+"/qualification-diagnostic-key.json",{force:true})'
