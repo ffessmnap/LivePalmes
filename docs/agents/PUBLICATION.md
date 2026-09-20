@@ -8,6 +8,10 @@ Une demande de développement autorise par défaut le travail et sa mise à disp
 
 Toutes les évolutions sont réunies sur `main`. Le site TEST commun reçoit seulement un commit exact intégré sur `main`, par le workflow `livepalmes-test-common.yml`. Les PR utilisent des canaux d’aperçu distincts ; elles ne remplacent jamais le site TEST commun.
 
+Regrouper les retouches d'un même besoin dans la PR tant qu'elle est ouverte. Ne pas créer une PR par petite retouche ni une PR documentaire après chaque contrôle : inclure le suivi dans la PR ouverte lorsque possible, ou regrouper les mises à jour documentaires ultérieures sans perdre les références de version et les validations réelles. Une PR déjà fusionnée n'est pas réutilisée.
+
+Les PR exclusivement documentaires conservent les contrôles techniques mais ne créent pas d'aperçu Firebase. Les aperçus applicatifs ne publient plus de commentaire automatique ; leur lien reste dans les résultats GitHub Actions. Les notifications personnelles et les alertes d'échec ne sont pas désactivées.
+
 Le registre `docs/releases/EVOLUTIONS.md` est tenu par l’assistant. Une validation utilisateur est associée à une version testée et un retour daté. Un changement de code nécessite de revérifier les parcours affectés. Aucun bot ne peut déduire un accord d’un simple test automatique réussi.
 
 La publication PROD est regroupée dans la conversation Infra. Présenter le bilan, les travaux inachevés, la version exacte et le retour arrière avant l’accord. Exécuter ensuite uniquement cette version, même si TEST évolue. Voir `docs/releases/PROCEDURE.md` pour les workflows réutilisables.
