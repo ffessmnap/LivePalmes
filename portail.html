@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20260920-shell-2">
-    <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260920-workspaces-1">
+    <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260920-ux-consistency-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -906,7 +906,9 @@
 
             <section id="adminEngagementsView" class="admin-portal-engagements-view" data-admin-view="engagements" data-engagements-panel aria-labelledby="adminEngagementsViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-tool-workspace-head">
-                <h2 id="adminEngagementsViewTitle">Organisation des comp&eacute;titions</h2>
+                <span id="adminEngagementsViewEyebrow" hidden>Organisation des compétitions</span>
+                <h2 id="adminEngagementsViewTitle">Compétitions</h2>
+                <p id="adminEngagementsViewDescription" hidden>Retrouvez les compétitions de votre périmètre et gérez leur organisation.</p>
                 <div id="adminEngagementsCalendarActions" class="admin-engagements-calendar-head-actions" hidden>
                 <button id="adminEngagementsCreateOpen" class="admin-button-compact" type="button">Ajouter un événement</button>
                 </div>
@@ -985,6 +987,7 @@
                         <div class="admin-engagements-detail-state-row">
                           <span id="adminEngagementsDetailLevel" class="admin-engagements-level-badge" hidden></span>
                           <span id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" hidden>Statut des engagements</span>
+                          <span id="adminEngagementsDetailDeadline" class="admin-engagements-detail-deadline" hidden></span>
                           <span id="adminEngagementsSaveState" class="admin-engagements-save-state" aria-live="polite" hidden></span>
                         </div>
                       </div>
@@ -1806,6 +1809,7 @@
                       <button type="button" data-engagement-club-swimmer-sex-filter="M" aria-pressed="false">Hommes</button>
                     </div>
                   </form>
+                  <label class="admin-club-license-filter"><input id="adminEngagementsClubSwimmersLicenseFilter" type="checkbox"> Licences à contrôler</label>
                   <p id="adminEngagementsClubSwimmersDirectoryStatus" class="admin-portal-message" aria-live="polite">Les nageurs seront charg&eacute;s &agrave; l&rsquo;ouverture.</p>
                   <div id="adminEngagementsClubSwimmersDirectoryList" class="admin-engagements-club-swimmers-directory-list" aria-live="polite"></div>
                 </section>
@@ -2584,7 +2588,7 @@
             <section id="adminAccessHomeView" class="admin-portal-space-home" data-admin-view="accessHome" data-access-management-panel aria-labelledby="adminAccessHomeTitle" hidden>
               <div class="admin-portal-workspace-head admin-overview-head">
                 <span>Administration du portail</span>
-                <h2 id="adminAccessHomeTitle">Gestion du portail</h2>
+                <h2 id="adminAccessHomeTitle">Gestion des accès</h2>
                 <p>Examinez les demandes, puis consultez les comptes et leurs habilitations.</p>
               </div>
 
@@ -2780,11 +2784,11 @@
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
-    <script src="assets/livepalmes-admin-portal.js?v=20260920-competition-nav-1"></script>
+    <script src="assets/livepalmes-admin-portal.js?v=20260920-ux-consistency-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20260902-license-control-1"></script>
     <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1"></script>
-    <script src="assets/livepalmes-portal-ux.js?v=20260920-competition-nav-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/livepalmes-portal-shell.js?v=20260920-shell-1"></script>
   </body>

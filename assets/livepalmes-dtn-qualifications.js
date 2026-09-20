@@ -596,6 +596,16 @@
     }
   }
 
+  function dtnFreshnessHtml(overviews, season) {
+    const dates = overviews.map((overview) => new Date(overview?.cache?.generatedAt || ""));
+    const known = dates.length && dates.every((date) => !Number.isNaN(date.getTime()));
+    const dateLabel = known
+      ? new Date(Math.min(...dates.map((date) => date.getTime()))).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+      : "date non disponible";
+    const label = overviews.length > 1 ? "Calcul le plus ancien" : "Dernier calcul";
+    return `<p class="admin-dtn-freshness">Saison ${escapeHtml(season.label)} · ${label} : ${escapeHtml(dateLabel)}</p>`;
+  }
+
   function renderEdf(season) {
     const summaryActive = state.edfTab === "summary";
     elements.sexSegment.hidden = summaryActive;
@@ -617,8 +627,8 @@
     const renderKey = `${state.edfTab}|${state.sex}|${season.id}`;
     const content = elements.grid.querySelector("#adminDtnEdfContent");
     const promise = summaryActive
-      ? Promise.all([loadEdfOverview(season, "F"), loadEdfOverview(season, "M")]).then(([F, M]) => edfSummaryHtml({ F, M }))
-      : loadEdfOverview(season, state.sex).then((overview) => edfStandardTableHtml(season, overview));
+      ? Promise.all([loadEdfOverview(season, "F"), loadEdfOverview(season, "M")]).then(([F, M]) => dtnFreshnessHtml([F, M], season) + edfSummaryHtml({ F, M }))
+      : loadEdfOverview(season, state.sex).then((overview) => dtnFreshnessHtml([overview], season) + edfStandardTableHtml(season, overview));
     promise.then((html) => {
       if (`${state.edfTab}|${state.sex}|${selectedSeason().id}` !== renderKey || !content?.isConnected) return;
       content.innerHTML = html;
@@ -694,6 +704,7 @@
         ? (overview.cache.stale ? "Dernière vue disponible. Utilisez Recalculer pour l’actualiser." : "Mise en liste non calculée. Utilisez Recalculer pour la préparer.")
         : "";
     content.innerHTML = `
+      ${dtnFreshnessHtml([overview], selectedSeason())}
       ${cacheMessage ? `<p class="admin-record-module-status">${escapeHtml(cacheMessage)}</p>` : ""}
       <div class="admin-dtn-listing-filters" data-listing-tab="${escapeHtml(state.listingTab)}" aria-label="Filtres de la mise en liste">
         ${state.listingTab === "espoir" ? `<label>Performance<select data-dtn-listing-filter="performance">

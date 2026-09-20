@@ -7,7 +7,7 @@
     engagementsAdminHome: "Organisation des compétitions",
     dtnHome: "Espace DTN",
     nationalHome: "Administration nationale",
-    accessHome: "Gestion du portail"
+    accessHome: "Gestion des accès"
   };
   const elements = {
     breadcrumb: document.querySelector("#adminPortalBreadcrumb"),
@@ -114,7 +114,7 @@
 
   function cleanLabel(element) {
     const clone = element.cloneNode(true);
-    clone.querySelectorAll(".admin-portal-nav-icon,.admin-portal-nav-badge,[aria-hidden='true']").forEach((item) => item.remove());
+    clone.querySelectorAll(".admin-portal-nav-icon,.admin-portal-nav-badge,.admin-pending-badge,[hidden],[aria-hidden='true']").forEach((item) => item.remove());
     return clone.textContent.replace(/\s+/g, " ").trim();
   }
 
@@ -138,11 +138,13 @@
       href: clubIsHome ? "#espace-club" : "#accueil"
     }];
     const engagementView = document.querySelector("#adminEngagementsView");
-    const competitionList = activeView === "engagements" && engagementView?.dataset.engagementsMode === "admin" && engagementView?.dataset.engagementsTab === "calendar";
+    const competitionList = activeView === "engagements" && engagementView?.dataset.engagementsTab === "calendar";
     if (competitionList) {
       const detail = document.querySelector("#adminEngagementsDetail");
       const detailOpen = detail && !detail.hidden;
-      items.push({ label: "Compétitions", ...(detailOpen ? { href: "#competitions-calendrier", competitionReturn: true } : {}) });
+      const clubMode = engagementView.dataset.engagementsMode === "club";
+      if (clubMode && !clubIsHome) items.push({ label: "Espace club", href: "#espace-club" });
+      items.push({ label: clubMode ? "Engagements en compétition" : "Compétitions", ...(detailOpen ? { href: clubMode ? "#club-competitions" : "#competitions-calendrier", competitionReturn: true } : {}) });
       if (detailOpen) items.push({ label: document.querySelector("#adminEngagementsDetailTitle")?.textContent?.trim() || "Compétition" });
     } else {
       if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
