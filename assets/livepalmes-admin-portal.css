@@ -6692,14 +6692,28 @@
 
   .admin-portal-page .admin-portal-sidebar {
     box-sizing: border-box;
-    height: calc(100dvh - 62px);
-    max-height: calc(100dvh - 62px);
-    overflow-y: auto;
-    scrollbar-width: thin;
+    height: calc(100dvh - var(--portal-sidebar-top, 160px) - 12px);
+    max-height: calc(100dvh - var(--portal-sidebar-top, 160px) - 12px);
+    overflow: hidden;
   }
 
   .admin-portal-page .admin-portal-nav {
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .admin-portal-page .admin-portal-nav-scroll {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior-y: contain;
+  }
+
+  .admin-portal-page .admin-portal-nav-group.admin-portal-nav-footer {
+    flex: 0 0 auto;
+    margin-top: 0;
+    background: #fff;
   }
 }
 
@@ -19112,4 +19126,10 @@
   #adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
     padding-inline: 16px;
   }
+}
+
+.admin-portal-nav-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
