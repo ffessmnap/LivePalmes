@@ -17805,6 +17805,13 @@
       }
       if (global.location.hash === link.hash) updateNavigationView();
     }));
+    document.querySelector("#adminPortalBreadcrumb")?.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-competition-list-return]");
+      if (!link) return;
+      event.preventDefault();
+      if (!closeEngagementCompetitionDetail()) return;
+      updateNavigationView();
+    });
     elements.navigation?.addEventListener("click", (event) => {
       const link = event.target.closest("a");
       if (!link) return;

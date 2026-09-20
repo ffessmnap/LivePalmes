@@ -54,3 +54,8 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - [PR #63](https://github.com/ffessmnap/LivePalmes/pull/63), commit applicatif `696709c20789205b6665a324b6893eff698a011a`, [run TEST 35531191790](https://github.com/ffessmnap/LivePalmes/actions/runs/35531191790) réussi.
 - Recette connectée ordinateur : captures Clubs et Championnats de France dans les deux thèmes ; titres des trois rubriques DTN vérifiés ; temps activé par Entrée avec sélection et résultats visibles ; filtre CNHC puis réinitialisation (48 lignes et recherche vide) ; filtres d’habilitation inspectés. Aucun enregistrement métier.
 - Tests : préférence/isolation publique et vérification globale locale/GitHub réussis. Contrôle mobile à réaliser ; dispositions flexibles et règles sous 760 px prévues. L’annuaire des administrateurs de clubs affiche « temporairement indisponible » dans TEST, hors correction de présentation. Aucune publication PROD.
+
+### Navigation Compétitions — 20 septembre 2026
+
+- Accord Antoine : supprimer le niveau artificiel Calendrier et afficher la compétition ouverte dans le fil d’Ariane. Accès direct dans le menu, lien de retour utilisant la fermeture existante de fiche. Aucun droit ni accès aux données modifié.
+- État : en cours, TEST autorisé ; validation utilisateur du rendu final attendue.
