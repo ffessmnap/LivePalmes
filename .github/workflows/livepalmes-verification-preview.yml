@@ -57,8 +57,15 @@ jobs:
       - name: Verifier LivePalmes
         run: node tools/verify-livepalmes.js
 
+      - name: Tester le circuit de publication sans acces Firebase
+        run: |
+          python tests/release-cycle-tests.py
+          python tests/production-release-state-tests.py
+          python tests/production-release-source-tests.py
+          node tests/production-backup-crypto-tests.js
+
   apercu:
-    name: Creer le lien de test
+    name: Creer un apercu isole
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -87,11 +94,11 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publier la version TEST stable
+      - name: Publier un apercu de la PR
         if: steps.firebase-test.outputs.enabled == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
           projectId: livepalmes-test
-          channelId: live
+          channelId: pr-${{ github.event.pull_request.number }}

@@ -1,0 +1,93 @@
+name: Publier la version commune sur TEST
+'on':
+  workflow_dispatch:
+    inputs:
+      production_commit:
+        description: SHA applicatif actuellement en PROD pour detecter les changements backend
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  test:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: firebase-test
+    env:
+      CANDIDATE_SHA: ${{ github.sha }}
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+    - name: Verifier le commit main et classer les changements
+      id: scope
+      env:
+        BASE_SHA: ${{ inputs.production_commit }}
+      run: |-
+        [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+        python - <<'PYCODE'
+        import importlib.util, os, json, subprocess
+        from pathlib import Path
+        spec=importlib.util.spec_from_file_location('cycle','tools/release-cycle.py'); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+        subprocess.run(['git','merge-base','--is-ancestor',os.environ['BASE_SHA'],'HEAD'],check=True)
+        paths=subprocess.check_output(['git','diff','--name-only','--no-renames',os.environ['BASE_SHA'],'HEAD'],text=True).splitlines()
+        _, backend=m.classify(paths)
+        Path(os.environ['RUNNER_TEMP']+'/test-selection.json').write_text(json.dumps(m.safe_functions('.') if backend else []))
+        m.output(backend=str(backend).lower())
+        PYCODE
+    - name: Installer et verifier
+      run: |-
+        npm ci --prefix functions
+        npm ci --prefix tests/firestore-rules
+        node tools/verify-livepalmes.js
+        python tests/release-cycle-tests.py
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        project_id: livepalmes-test
+    - uses: google-github-actions/setup-gcloud@v3
+    - name: Preparer le backend TEST
+      if: steps.scope.outputs.backend == 'true'
+      run: |-
+        python tools/release-cycle.py stage . livepalmes-test .firebase-test-functions "$CANDIDATE_SHA"
+        npm ci --prefix .firebase-test-functions/functions
+    - name: Simuler les Functions TEST
+      if: steps.scope.outputs.backend == 'true'
+      run: python tools/release-cycle.py batches livepalmes-test . .firebase-test-functions "$RUNNER_TEMP/test-selection.json"
+        dry-run
+    - name: Publier et controler les Functions TEST
+      if: steps.scope.outputs.backend == 'true'
+      run: python tools/release-cycle.py batches livepalmes-test . .firebase-test-functions "$RUNNER_TEMP/test-selection.json"
+        deploy
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
+        project_id: livepalmes-test
+    - name: Verifier main puis publier TEST commun
+      run: |-
+        test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+        tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        project_id: livepalmes-test
+    - name: Conserver la preuve de la version TEST
+      run: python tools/release-cycle.py proof "$RUNNER_TEMP/test-proof"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: test-proof
+        path: ${{ runner.temp }}/test-proof/test-proof.json
+        if-no-files-found: error
+        retention-days: 14

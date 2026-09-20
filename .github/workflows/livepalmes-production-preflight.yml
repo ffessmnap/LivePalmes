@@ -1,99 +1,80 @@
-name: Preparer la publication PROD sans deployer
-
-on:
+name: Preparer le bilan PROD sans deployer
+'on':
   workflow_dispatch:
     inputs:
-      candidate_sha:
-        description: Commit TEST valide
+      request_file:
+        description: Fichier .github/releases/*.json contenant le bilan valide
         required: true
         type: string
-        default: '995ec7025e31cd147444e38a99afba69808a1406'
-
 permissions:
   contents: read
-
+  actions: read
 concurrency:
   group: livepalmes-production
   cancel-in-progress: false
-
 jobs:
-  preflight:
-    if: github.ref == 'refs/heads/main'
+  release:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
     env:
-      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-      CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
-      TARGET_FIREBASE_PROJECT: livepalmes
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PLAN: ${{ runner.temp }}/release-plan
     steps:
-      - name: Verifier la version autorisee
-        run: test "$CANDIDATE_SHA" = '995ec7025e31cd147444e38a99afba69808a1406'
-      - uses: actions/checkout@v7
-        with:
-          path: tooling
-          persist-credentials: false
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.candidate_sha }}
-          path: candidate
-          persist-credentials: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-      - name: Installer les dependances verrouillees
-        run: |
-          npm ci --prefix candidate/functions
-          npm ci --prefix candidate/tests/firestore-rules
-      - name: Verifier exactement la version candidate
-        working-directory: candidate
-        run: |
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          test -z "$(git status --porcelain)"
-          node tools/verify-livepalmes.js
-      - name: Tester les outils de preparation
-        run: |
-          node tooling/tests/production-release-preflight-tests.js
-          python tooling/tests/production-release-source-tests.py
-      - uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
-          project_id: livepalmes
-          create_credentials_file: true
-          export_environment_variables: true
-      - uses: google-github-actions/setup-gcloud@v3
-      - name: Verifier les sources PROD et le repli Hosting sans modification
-        id: sources
-        continue-on-error: true
-        run: python tooling/tools/preflight-production-release.py
-      - name: Preparer les seuls exports selectionnes et conserver App Check
-        if: steps.sources.outputs.app_check != ''
-        env:
-          APP_CHECK: ${{ steps.sources.outputs.app_check }}
-        run: |
-          node tooling/tools/prepare-production-functions.js "$CANDIDATE_DIRECTORY" "$RUNNER_TEMP/production-functions" "$APP_CHECK"
-          npm ci --prefix "$RUNNER_TEMP/production-functions/functions"
-      - name: Simuler les Functions uniquement
-        id: simulation
-        if: steps.sources.outputs.app_check != ''
-        continue-on-error: true
-        run: |
-          selector="$(cat "$RUNNER_TEMP/production-functions/selector.txt")"
-          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --dry-run --non-interactive --force
-      - name: Conserver uniquement le rapport de metadonnees
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-preflight
-          path: ${{ runner.temp }}/production-preflight/report.json
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Conclure le controle sans deployer
-        if: always()
-        env:
-          SOURCE_OUTCOME: ${{ steps.sources.outcome }}
-          SIMULATION_OUTCOME: ${{ steps.simulation.outcome }}
-        run: |
-          echo "Sources: $SOURCE_OUTCOME. Simulation: $SIMULATION_OUTCOME. Aucun deploiement." >> "$GITHUB_STEP_SUMMARY"
-          test "$SOURCE_OUTCOME" = success
-          test "$SIMULATION_OUTCOME" = success
+    - uses: actions/checkout@v7
+      with:
+        path: tooling
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Lire le bilan de publication
+      id: request
+      env:
+        REQUEST_FILE: ${{ inputs.request_file }}
+      run: |-
+        [[ "$REQUEST_FILE" =~ ^\.github/releases/[A-Za-z0-9_-]+\.json$ ]]
+        python tooling/tools/release-cycle.py request "tooling/$REQUEST_FILE" "$PLAN"
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ steps.request.outputs.candidate }}
+        path: candidate
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+    - name: Verifier le candidat exact
+      run: |-
+        npm ci --prefix candidate/functions
+        npm ci --prefix candidate/tests/firestore-rules
+        cd candidate
+        test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+        test -z "$(git status --porcelain)"
+        node tools/verify-livepalmes.js
+      env:
+        CANDIDATE_SHA: ${{ steps.request.outputs.candidate }}
+    - name: Verifier le circuit de publication
+      run: |-
+        python tooling/tests/release-cycle-tests.py
+        python tooling/tests/production-release-state-tests.py
+        node tooling/tests/production-backup-crypto-tests.js
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        project_id: livepalmes-test
+    - uses: google-github-actions/setup-gcloud@v3
+    - name: Verifier la version TEST reellement deployee
+      run: |-
+        python tooling/tools/release-cycle.py verify-test "$PLAN"
+        python tooling/tools/release-cycle.py selection "$PLAN" candidate
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Figer le bilan et les revisions PROD
+      run: python tooling/tools/release-cycle.py freeze "$PLAN"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: release-plan
+        path: ${{ runner.temp }}/release-plan/*.json
+        if-no-files-found: error
+        retention-days: 14
