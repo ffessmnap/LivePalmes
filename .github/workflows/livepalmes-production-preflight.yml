@@ -20,8 +20,10 @@ jobs:
     environment: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PLAN: ${{ runner.temp }}/release-plan
     steps:
+    - name: Initialiser les chemins temporaires
+      run: |
+        echo "PLAN=$RUNNER_TEMP/release-plan" >> "$GITHUB_ENV"
     - uses: actions/checkout@v7
       with:
         path: tooling
