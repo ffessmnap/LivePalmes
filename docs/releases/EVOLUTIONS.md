@@ -30,3 +30,4 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Besoin : supprimer les surfaces blanches résiduelles du compte, du contexte club, des filtres et des tableaux ; préserver les couleurs utiles et le mode clair.
 - État : en cours, essai TEST demandé par Antoine ; validation utilisateur attendue.
 - Périmètre : CSS du portail et version de chargement uniquement, aucune lecture/écriture Firebase ajoutée. Aucun déploiement PROD demandé.
+- Première version : [PR #57](https://github.com/ffessmnap/LivePalmes/pull/57), TEST au commit `a72ca5f1682fa5ef381e8223b90b8ce38afdb7a9`, [run 35528729097](https://github.com/ffessmnap/LivePalmes/actions/runs/35528729097) réussi. Compte contrôlé dans les deux modes ; accueil, calendrier, formulaire et annuaire contrôlés en mode sombre. Ces contrôles ont identifié des détails à compléter : badge de niveau, dates, licences et séparateurs. Correction complémentaire en cours.
