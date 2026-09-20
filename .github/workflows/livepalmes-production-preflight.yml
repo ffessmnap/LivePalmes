@@ -1,0 +1,99 @@
+name: Preparer la publication PROD sans deployer
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Commit TEST valide
+        required: true
+        type: string
+        default: '995ec7025e31cd147444e38a99afba69808a1406'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
+      TARGET_FIREBASE_PROJECT: livepalmes
+    steps:
+      - name: Verifier la version autorisee
+        run: test "$CANDIDATE_SHA" = '995ec7025e31cd147444e38a99afba69808a1406'
+      - uses: actions/checkout@v7
+        with:
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Installer les dependances verrouillees
+        run: |
+          npm ci --prefix candidate/functions
+          npm ci --prefix candidate/tests/firestore-rules
+      - name: Verifier exactement la version candidate
+        working-directory: candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          node tools/verify-livepalmes.js
+      - name: Tester les outils de preparation
+        run: |
+          node tooling/tests/production-release-preflight-tests.js
+          python tooling/tests/production-release-source-tests.py
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+          create_credentials_file: true
+          export_environment_variables: true
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Verifier les sources PROD et le repli Hosting sans modification
+        id: sources
+        continue-on-error: true
+        run: python tooling/tools/preflight-production-release.py
+      - name: Preparer les seuls exports selectionnes et conserver App Check
+        if: steps.sources.outputs.app_check != ''
+        env:
+          APP_CHECK: ${{ steps.sources.outputs.app_check }}
+        run: |
+          node tooling/tools/prepare-production-functions.js "$CANDIDATE_DIRECTORY" "$RUNNER_TEMP/production-functions" "$APP_CHECK"
+          npm ci --prefix "$RUNNER_TEMP/production-functions/functions"
+      - name: Simuler les Functions uniquement
+        id: simulation
+        if: steps.sources.outputs.app_check != ''
+        continue-on-error: true
+        run: |
+          selector="$(cat "$RUNNER_TEMP/production-functions/selector.txt")"
+          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --dry-run --non-interactive
+      - name: Conserver uniquement le rapport de metadonnees
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-preflight
+          path: ${{ runner.temp }}/production-preflight/report.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Conclure le controle sans deployer
+        if: always()
+        env:
+          SOURCE_OUTCOME: ${{ steps.sources.outcome }}
+          SIMULATION_OUTCOME: ${{ steps.simulation.outcome }}
+        run: |
+          echo "Sources: $SOURCE_OUTCOME. Simulation: $SIMULATION_OUTCOME. Aucun deploiement." >> "$GITHUB_STEP_SUMMARY"
+          test "$SOURCE_OUTCOME" = success
+          test "$SIMULATION_OUTCOME" = success
