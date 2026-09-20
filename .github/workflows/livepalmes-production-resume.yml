@@ -62,20 +62,21 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
       - uses: google-github-actions/setup-gcloud@v3
-      - uses: actions/download-artifact@v4
-        with:
-          artifact-ids: '10607652063'
-          path: ${{ runner.temp }}/encrypted
-          merge-multiple: true
-          run-id: 35517868576
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@v4
-        with:
-          artifact-ids: '10607847033'
-          path: ${{ runner.temp }}/previous
-          merge-multiple: true
-          run-id: 35517868576
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Recuperer les artefacts exacts de la tentative precedente
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/encrypted" "$RUNNER_TEMP/previous"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10607652063" > "$RUNNER_TEMP/backup-metadata.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10607847033" > "$RUNNER_TEMP/after-metadata.json"
+          jq -e '.name == "production-code-backup" and .workflow_run.id == 35517868576 and .expired == false and .digest == "sha256:354b866a9db54ba241354e7209e16c778812f104f64869a4a5dd3dcca2b74346"' "$RUNNER_TEMP/backup-metadata.json"
+          jq -e '.name == "production-after" and .workflow_run.id == 35517868576 and .expired == false and .digest == "sha256:c20da204c3ebd6e64bde6b7ce53fc958bcd60fa0b11e1a7bd340ef83e32833ae"' "$RUNNER_TEMP/after-metadata.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10607652063/zip" > "$RUNNER_TEMP/backup.zip"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10607847033/zip" > "$RUNNER_TEMP/after.zip"
+          echo "354b866a9db54ba241354e7209e16c778812f104f64869a4a5dd3dcca2b74346  $RUNNER_TEMP/backup.zip" | sha256sum --check
+          echo "c20da204c3ebd6e64bde6b7ce53fc958bcd60fa0b11e1a7bd340ef83e32833ae  $RUNNER_TEMP/after.zip" | sha256sum --check
+          unzip -p "$RUNNER_TEMP/backup.zip" prod-backup.enc > "$RUNNER_TEMP/encrypted/prod-backup.enc"
+          unzip -p "$RUNNER_TEMP/after.zip" production-after.json > "$RUNNER_TEMP/previous/production-after.json"
       - name: Verifier la sauvegarde initiale et les revisions actuelles
         env:
           CONFIRM_CODE_ROLLBACK: livepalmes
