@@ -58,4 +58,7 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 ### Navigation Compétitions — 20 septembre 2026
 
 - Accord Antoine : supprimer le niveau artificiel Calendrier et afficher la compétition ouverte dans le fil d’Ariane. Accès direct dans le menu, lien de retour utilisant la fermeture existante de fiche. Aucun droit ni accès aux données modifié.
-- État : en cours, TEST autorisé ; validation utilisateur du rendu final attendue.
+- État : déployé sur TEST ; validation utilisateur du rendu final attendue.
+- [PR #65](https://github.com/ffessmnap/LivePalmes/pull/65), commit applicatif `04e33bfb3d97563c9a9d2443dbf00802563e6aeb`, [run TEST 35532089990](https://github.com/ffessmnap/LivePalmes/actions/runs/35532089990) réussi, preuve de version conservée ; étapes backend ignorées. Aucune publication PROD.
+- Recette connectée ordinateur : accès direct depuis Espace club ; liste avec deux niveaux ; ouverture de Championnat de France Elite (TEST) avec son nom dans le fil ; retour à la liste par le fil et par le menu latéral. Capture sombre contrôlée, sans sous-menu Calendrier ; fil de l’espace club conservé. Aucun enregistrement métier.
+- Vérification globale locale et GitHub réussie. Le retour réutilise la fermeture de fiche existante avec contrôle des modifications non enregistrées ; ce scénario de saisie n’a pas été déclenché en ligne. Contrôle mobile non réalisé.
