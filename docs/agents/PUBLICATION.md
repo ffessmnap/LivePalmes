@@ -2,18 +2,17 @@
 
 <!-- description: Procédure et autorisations requises pour Git, GitHub, Firebase, Storage, migrations et mise en ligne. -->
 
-## Principe
+## Principe commun aux conversations
 
-Pendant la mise au point, travailler directement dans le dossier principal partagé et laisser les changements en local pour que l’utilisateur puisse les tester. Ne pas créer de worktree sauf nécessité technique ou risque particulier expliqué préalablement.
+Une demande de développement autorise par défaut le travail et sa mise à disposition sur TEST, avec commit/PR et intégration après contrôles. Antoine n’a pas à répéter « sur TEST ». Une demande d’analyse ne vaut pas demande de développement. Les validations sensibles restent applicables : une demande explicite précise peut déjà constituer cette validation ; ne pas la redemander inutilement.
 
-Aucune demande d’analyse, de diagnostic ou de vérification n’autorise une publication. Une demande explicite est obligatoire avant chacune des opérations suivantes :
+Toutes les évolutions sont réunies sur `main`. Le site TEST commun reçoit seulement un commit exact intégré sur `main`, par le workflow `livepalmes-test-common.yml`. Les PR utilisent des canaux d’aperçu distincts ; elles ne remplacent jamais le site TEST commun.
 
-- création de commit, push ou pull request ;
-- déploiement Firebase ;
-- publication vers Firebase Storage ;
-- migration ou correction des données officielles ;
-- génération suivie de publication des performances, Records ou MPF ;
-- publication des archives ou résultats.
+Le registre `docs/releases/EVOLUTIONS.md` est tenu par l’assistant. Une validation utilisateur est associée à une version testée et un retour daté. Un changement de code nécessite de revérifier les parcours affectés. Aucun bot ne peut déduire un accord d’un simple test automatique réussi.
+
+La publication PROD est regroupée dans la conversation Infra. Présenter le bilan, les travaux inachevés, la version exacte et le retour arrière avant l’accord. Exécuter ensuite uniquement cette version, même si TEST évolue. Voir `docs/releases/PROCEDURE.md` pour les workflows réutilisables.
+
+Une opération sur les données, une migration, un envoi réel, les règles ou les index exigent un périmètre et une autorisation spécifiques ; ils sont exclus du circuit ordinaire.
 
 ## Avant publication
 
@@ -26,23 +25,22 @@ Aucune demande d’analyse, de diagnostic ou de vérification n’autorise une p
 
 ## Publication
 
-### Circuit GitHub pour Firebase Hosting
+### Circuit réutilisable
 
-Les workflows `.github/workflows/livepalmes-verification-preview.yml` et `.github/workflows/livepalmes-production.yml` securisent la publication du site statique :
+- PR : vérification technique et aperçu isolé `pr-N` sur Firebase TEST.
+- `livepalmes-test-common.yml` : publication du commit main regroupé sur TEST, traitements nécessaires puis Hosting, preuve de version conservée.
+- `livepalmes-production-preflight.yml` : bilan en lecture seule du candidat validé et des versions réellement observées.
+- `livepalmes-production-release.yml` : publication du bilan approuvé, sauvegarde vérifiée, lots bornés, contrôles puis Hosting ; `resume_run` conserve la sauvegarde initiale si une reprise est nécessaire.
+- `livepalmes-production-rollback.yml` : restauration explicite du code sauvegardé et de la release Hosting précédente.
 
-1. chaque proposition vers `main` execute `node tools/verify-livepalmes.js` ;
-2. lorsque `FIREBASE_PREVIEW_ENABLED` vaut `true`, une URL Firebase Hosting temporaire est creee apres reussite des controles ;
-3. la production reste un lancement manuel depuis `main`, protege par l'environnement GitHub `production`, et exige le numero de la proposition validee ;
-4. le workflow recupere exactement le commit ayant produit l'apercu, controle ses checks et l'exclusion des donnees internes, puis relance la verification avant de deployer uniquement Hosting.
-
-Ces workflows n'autorisent aucun deploiement de Functions, regles, index, Storage ou donnees metier. Leur activation initiale exige un secret GitHub `FIREBASE_SERVICE_ACCOUNT_LIVEPALMES` limite a Hosting, les variables d'activation `FIREBASE_PREVIEW_ENABLED` et `FIREBASE_PRODUCTION_ENABLED`, une approbation explicite et la configuration decrite dans `docs/MISE_EN_LIGNE.md`.
+Les anciens workflows `livepalmes-production.yml` et `livepalmes-production-resume.yml` sont archivés et ne publient plus. Les consignes et champs exacts sont dans `docs/releases/PROCEDURE.md`.
 
 ### Ordre Firebase pour le portail
 
 Apres reauthentification explicite de la CLI et nouvelle validation utilisateur du deploiement :
 
 1. executer le dry-run des index et Functions ;
-2. deployer les index Firestore et attendre leur etat pret ;
+2. si des index sont nécessaires, arrêter le circuit ordinaire et préparer leur déploiement séparé explicitement autorisé ;
 3. deployer uniquement les Functions portail modifiees ;
 4. executer les tests manuels avec les index actifs ;
 5. deployer Hosting en dernier, puis controler les en-tetes CSP/cache et l'absence de `performances/public/data/admin-reference.js` en ligne.

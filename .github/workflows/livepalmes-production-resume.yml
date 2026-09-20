@@ -1,4 +1,4 @@
-name: Terminer la publication PROD 995ec702
+name: Archive - Terminer la publication PROD 995ec702
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    # Archive : reprise generique via resume_run dans production-release.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: production

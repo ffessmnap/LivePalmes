@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   bootstrap:
+    # Ancien circuit de branche : ne plus remplacer TEST commun.
+    if: ${{ false }}
     name: Index et règles Firestore TEST
     uses: ./.github/workflows/livepalmes-test-backend.yml
     with:

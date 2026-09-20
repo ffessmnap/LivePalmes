@@ -27,7 +27,7 @@ Identifier avant toute lecture si la demande concerne le portail, l’espace pub
 
 Analyser le code existant avant modification, préserver la compatibilité et les changements utilisateur, éviter les refactorings massifs et conserver l’UTF-8. Agir directement pour une modification simple et localisée. Pour une intervention importante ou sensible : analyser, présenter l’approche et attendre la validation.
 
-Travailler dans le dossier principal partagé. Ne pas créer de worktree sauf nécessité expliquée. Laisser les changements en local : aucune PR, migration, publication, poussée ou déploiement sans demande explicite. Prévenir avant tout test susceptible d’utiliser Firebase de production ou d’écrire des données réelles.
+Travailler dans le dossier principal partagé. Ne pas créer de worktree sauf nécessité expliquée. Pour une demande de développement LivePalmes, la destination par défaut autorisée est TEST : préparation, commit, PR, intégration après contrôles et déploiement TEST du périmètre demandé sont inclus, sans demander de répéter « sur TEST ». Une demande d’analyse seule ne déclenche aucun développement. La PROD exige une demande explicite et un bilan approuvé dans la discussion Infra. Les opérations sur les données, migrations et envois réels restent soumis à un accord spécifique. Prévenir avant tout test susceptible d’utiliser Firebase de production ou d’écrire des données réelles.
 
 Validation explicite obligatoire avant toute modification concernant :
 
@@ -61,3 +61,13 @@ Concevoir mobile first sans rendre une action essentielle inaccessible. Les acti
 Smoke test navigateur : `node tools/verify-livepalmes.js --browser`.
 
 Après chaque modification, indiquer les fichiers touchés, le résumé des changements, les vérifications effectuées et celles restant à faire. Répondre en français, directement et pédagogiquement ; expliquer les choix non évidents, incertitudes et risques.
+
+## Circuit commun aux conversations
+
+- Lire `docs/agents/PUBLICATION.md` avant toute intégration ou publication et récupérer les dernières consignes de `main`. Une ancienne copie locale ne fait pas autorité.
+- Travailler par PR courte depuis le dernier `main`, préserver les autres évolutions, ne jamais remplacer TEST par une branche isolée.
+- TEST commun = commit intégré sur `main`, publié par `livepalmes-test-common.yml`. Les aperçus de PR sont séparés et ne constituent pas une validation de la version regroupée.
+- Tenir `docs/releases/EVOLUTIONS.md` à jour : besoin, PR/commit, état, preuve du déploiement TEST, retour utilisateur. « Déployé sur TEST » ne signifie pas « validé ». Ne jamais inventer une validation utilisateur.
+- Une modification ultérieure du code invalide la validation des parcours concernés ; faire vérifier la version regroupée avant PROD.
+- Pour « publier tout ce qui est validé », préparer un bilan complet. Toute évolution incluse mais non validée bloque la publication : la terminer ou préparer une autre version commune, sans sélection silencieuse de fichiers.
+- Aucune copie TEST vers PROD. Ne pas déployer les règles/index, migrations, fonctions email ou schedulers via le circuit ordinaire.

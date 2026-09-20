@@ -1,5 +1,73 @@
 name: Retour arriere code PROD
-on:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  rollback:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: production
+    env:
+      CONFIRM_CODE_ROLLBACK: livepalmes
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - name: Verifier le run source
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_RUN: ${{ inputs.release_run }}
+      run: |
+        [[ "$RELEASE_RUN" =~ ^[0-9]+$ ]]
+        gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN" > "$RUNNER_TEMP/release-run.json"
+        jq -e '(.path == ".github/workflows/livepalmes-production-release.yml" or .path == ".github/workflows/livepalmes-production-resume.yml") and .status == "completed" and .head_branch == "main"' "$RUNNER_TEMP/release-run.json"
+    - name: Recuperer et verifier production-code-backup
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_RUN: ${{ inputs.release_run }}
+      run: python tools/release-cycle.py artifact "$RELEASE_RUN" production-code-backup "$RUNNER_TEMP/encrypted"
+    - name: Recuperer et verifier production-after
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_RUN: ${{ inputs.release_run }}
+      run: python tools/release-cycle.py artifact "$RELEASE_RUN" production-after "$RUNNER_TEMP/after"
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - uses: google-github-actions/setup-gcloud@v3
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+    - name: Ouvrir et verifier la sauvegarde
+      run: |
+        node tools/production-backup-crypto.js open "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
+        python tools/production-release-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
+    - name: Recuperer et verifier production-hosting-after
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_RUN: ${{ inputs.release_run }}
+      run: python tools/release-cycle.py artifact "$RELEASE_RUN" production-hosting-after "$RUNNER_TEMP/hosting-after"
+      if: inputs.restore_hosting
+    - uses: google-github-actions/auth@v3
+      if: inputs.restore_hosting
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Retablir Hosting
+      if: inputs.restore_hosting
+      run: python tools/production-release-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Retablir les Functions depuis les archives sauvegardees
+      run: python tools/production-release-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
+'on':
   workflow_dispatch:
     inputs:
       release_run:
@@ -15,74 +83,3 @@ on:
         description: Restaurer le code sauvegarde sans operation sur les donnees
         required: true
         type: boolean
-permissions:
-  contents: read
-  actions: read
-concurrency:
-  group: livepalmes-production
-  cancel-in-progress: false
-jobs:
-  rollback:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    environment: production
-    env:
-      CONFIRM_CODE_ROLLBACK: livepalmes
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Verifier le run source
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_RUN: ${{ inputs.release_run }}
-        run: |
-          [[ "$RELEASE_RUN" =~ ^[0-9]+$ ]]
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN" > "$RUNNER_TEMP/release-run.json"
-          jq -e '(.path == ".github/workflows/livepalmes-production-release.yml" or .path == ".github/workflows/livepalmes-production-resume.yml") and .status == "completed" and .head_branch == "main"' "$RUNNER_TEMP/release-run.json"
-      - uses: actions/download-artifact@v4
-        with:
-          name: production-code-backup
-          path: ${{ runner.temp }}/encrypted
-          run-id: ${{ inputs.release_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: production-after
-          path: ${{ runner.temp }}/after
-          run-id: ${{ inputs.release_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
-          project_id: livepalmes
-      - uses: google-github-actions/setup-gcloud@v3
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-      - name: Ouvrir et verifier la sauvegarde
-        run: |
-          node tools/production-backup-crypto.js open "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
-          python tools/production-release-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
-      - uses: actions/download-artifact@v4
-        if: inputs.restore_hosting
-        with:
-          name: production-hosting-after
-          path: ${{ runner.temp }}/hosting-after
-          run-id: ${{ inputs.release_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: google-github-actions/auth@v3
-        if: inputs.restore_hosting
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
-          project_id: livepalmes
-      - name: Retablir Hosting
-        if: inputs.restore_hosting
-        run: python tools/production-release-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
-      - uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
-          project_id: livepalmes
-      - name: Retablir les Functions depuis les archives sauvegardees
-        run: python tools/production-release-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
