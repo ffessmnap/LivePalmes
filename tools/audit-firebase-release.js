@@ -23,14 +23,43 @@ function functionMetadata(fn) {
     name: fn.name, environment: fn.environment, state: fn.state || fn.status,
     updateTime: fn.updateTime, versionId: fn.versionId,
     runtime: build.runtime || fn.runtime, entryPoint: build.entryPoint || fn.entryPoint,
+    runtimeServiceAccount: fn.serviceConfig?.serviceAccountEmail || fn.serviceAccountEmail,
+    buildServiceAccount: build.serviceAccount,
     revision: fn.serviceConfig?.revision, build: build.build || fn.buildId,
     source: storage && { bucket: storage.bucket, object: storage.object, generation: storage.generation },
     sourceArchiveUrl: fn.sourceArchiveUrl,
     eventType: fn.eventTrigger?.eventType,
     // Ne jamais conserver les variables d'environnement, secrets, URLs signees,
-    // comptes, configurations completes ou messages d'erreur des API.
+    // configurations completes ou messages d'erreur des API.
     firebaseFunctionsHash: fn.labels?.["firebase-functions-hash"]
   };
+}
+
+function reportSummary(report) {
+  const cell = value => String(value ?? "—").replace(/[|\r\n<>]/g, " ");
+  const lines = [`## Inventaire ${cell(report.project)}`, `Commit candidat : ${cell(report.candidateCommit)}`, ""];
+  for (const name of ["hosting", "functionsV1", "functionsV2"]) {
+    const result = report[name];
+    lines.push(`- ${name}: ${result.status === "ok" ? `${result.items.length} entrees` : cell(result.reason)}`);
+  }
+  const releases = [...(report.hosting.items || [])].sort((a, b) => (b.releaseTime || "").localeCompare(a.releaseTime || ""));
+  lines.push("", "### Dernieres releases Hosting", "", "| Release | Version | Date | Type |", "| --- | --- | --- | --- |");
+  for (const release of releases.slice(0, 3)) {
+    lines.push(`| ${cell(release.name)} | ${cell(release.version?.name)} | ${cell(release.releaseTime)} | ${cell(release.type)} |`);
+  }
+  const functions = [...(report.functionsV1.items || []), ...(report.functionsV2.items || [])];
+  lines.push("", "### Comptes techniques utilises", "");
+  for (const field of ["runtimeServiceAccount", "buildServiceAccount"]) {
+    for (const account of [...new Set(functions.map(fn => fn[field]).filter(Boolean))].sort()) {
+      lines.push(`- ${field}: ${cell(account)}`);
+    }
+  }
+  lines.push("", "### Versions Functions", "", "| Function | Mise a jour | Revision | Empreinte Firebase |", "| --- | --- | --- | --- |");
+  for (const fn of functions.sort((a, b) => a.name.localeCompare(b.name))) {
+    lines.push(`| ${cell(fn.name)} | ${cell(fn.updateTime)} | ${cell(fn.revision)} | ${cell(fn.firebaseFunctionsHash)} |`);
+  }
+  lines.push("", report.limitation, "Aucune donnee metier lue ou modifiee. Aucun deploiement.", "");
+  return lines.join("\n");
 }
 
 async function listPages(endpoint, key, token, request = fetch) {
@@ -90,17 +119,11 @@ async function main() {
   const directory = path.join(process.env.RUNNER_TEMP, "firebase-release-audit");
   fs.mkdirSync(directory, { recursive: true });
   fs.writeFileSync(path.join(directory, `${project}.json`), JSON.stringify(report, null, 2) + "\n");
-  const lines = [`## Inventaire ${project}`, `Commit candidat : ${report.candidateCommit}`, ""];
-  for (const [name] of checks) {
-    const result = report[name];
-    lines.push(`- ${name}: ${result.status === "ok" ? `${result.items.length} entrees` : result.reason}`);
-  }
-  lines.push("", report.limitation, "Aucune donnee metier lue ou modifiee. Aucun deploiement.", "");
-  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n"));
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, reportSummary(report));
   if (checks.some(([name]) => report[name].status !== "ok")) process.exitCode = 1;
 }
 
-module.exports = { releaseMetadata, functionMetadata, listPages };
+module.exports = { releaseMetadata, functionMetadata, listPages, reportSummary };
 if (require.main === module) main().catch(() => {
   console.error("Audit bloque: verifier le secret du projet et l'authentification. Aucune modification Firebase.");
   process.exitCode = 1;
