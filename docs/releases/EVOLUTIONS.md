@@ -50,4 +50,7 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 
 - Antoine approuve les cinq points : titres précis, filtres et actions, lisibilité des tableaux, couleurs sémantiques, détails du thème sombre.
 - Correction des titres Clubs/DTN, des barres de filtres des annuaires, des boutons de temps DTN, du compteur de clubs et des contrastes clubs/DTN. Aucune lecture/écriture Firebase ajoutée, aucune règle métier modifiée.
-- État : en cours ; essai TEST autorisé, validation du rendu final attendue.
+- État : déployé sur TEST ; validation du rendu final attendue.
+- [PR #63](https://github.com/ffessmnap/LivePalmes/pull/63), commit applicatif `696709c20789205b6665a324b6893eff698a011a`, [run TEST 35531191790](https://github.com/ffessmnap/LivePalmes/actions/runs/35531191790) réussi.
+- Recette connectée ordinateur : captures Clubs et Championnats de France dans les deux thèmes ; titres des trois rubriques DTN vérifiés ; temps activé par Entrée avec sélection et résultats visibles ; filtre CNHC puis réinitialisation (48 lignes et recherche vide) ; filtres d’habilitation inspectés. Aucun enregistrement métier.
+- Tests : préférence/isolation publique et vérification globale locale/GitHub réussis. Contrôle mobile à réaliser ; dispositions flexibles et règles sous 760 px prévues. L’annuaire des administrateurs de clubs affiche « temporairement indisponible » dans TEST, hors correction de présentation. Aucune publication PROD.
