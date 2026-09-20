@@ -12,11 +12,11 @@
   width:100%; min-height:38px; font-size:.82rem;
 }
 .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) > button { min-height:38px; flex:0 0 auto; }
-.admin-portal-page :is(.admin-national-reset-button,.admin-access-filter-reset) {
+html .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(.admin-national-reset-button,.admin-access-filter-reset) {
   width:auto; justify-self:start; background:transparent !important; border-color:transparent !important;
   color:var(--portal-color-muted) !important; box-shadow:none; font-size:.8rem; text-decoration:underline; text-underline-offset:3px;
 }
-.admin-portal-page :is(.admin-national-reset-button,.admin-access-filter-reset):hover { color:var(--portal-color-accent) !important; }
+html .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(.admin-national-reset-button,.admin-access-filter-reset):hover { color:var(--portal-color-accent) !important; }
 .admin-portal-page #adminEngagementsNationalClubsCreate { order:2; margin-left:auto; border-radius:7px; padding:8px 12px; background:#0b7285 !important; color:white !important; }
 .admin-portal-page .admin-national-page-status[data-tone="info"] { background:transparent !important; color:var(--portal-color-muted) !important; font-size:.8rem; padding:5px 0; }
 .admin-portal-page .admin-national-club-card :is(span,small) { font-size:.8rem; line-height:1.4; }
