@@ -45,6 +45,10 @@ def main():
     root = Path(os.environ["CANDIDATE_DIRECTORY"])
     output = Path(os.environ["RUNNER_TEMP"]) / "production-preflight"
     output.mkdir()
+    backup = Path(os.environ["RELEASE_BACKUP_DIRECTORY"]) if os.environ.get("RELEASE_BACKUP_DIRECTORY") else None
+    if backup:
+        backup.mkdir()
+        (backup / "sources").mkdir()
     report = {"candidate": os.environ["CANDIDATE_SHA"], "functions": [], "sources": [], "errors": []}
     try:
         permissions = request("https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:testIamPermissions", {"permissions": ["cloudfunctions.functions.setIamPolicy"]})
@@ -54,6 +58,11 @@ def main():
         report["hostingRollback"] = {"version": version, "status": hosting.get("status")}
         if hosting.get("status") != "FINALIZED":
             report["errors"].append("Version Hosting de repli indisponible")
+        if backup:
+            releases = request("https://firebasehosting.googleapis.com/v1beta1/sites/livepalmes/releases?pageSize=1").get("releases", [])
+            if not releases or releases[0].get("version", {}).get("name") != version:
+                raise ValueError("Version Hosting active differente du bilan")
+            (backup / "hosting.json").write_text(json.dumps(releases[0]))
         functions = []
         page = ""
         seen = set()
@@ -77,6 +86,15 @@ def main():
             raise ValueError("App Check heterogene ou invalide")
         report["appCheck"] = next(iter(app_checks))
         report["newFunctions"] = sorted(set(selected) - {f["name"].split("/")[-1] for f in selected_functions})
+        if backup:
+            allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
+            for f in selected_functions:
+                service = f.get("serviceConfig", {})
+                if set(service.get("environmentVariables", {})) - allowed_keys or service.get("secretEnvironmentVariables") or service.get("secretVolumes"):
+                    raise ValueError("Configuration runtime inattendue")
+                if f.get("environment") != "GEN_2" or f.get("buildConfig", {}).get("runtime") != "nodejs22" or f.get("state") != "ACTIVE":
+                    raise ValueError("Function PROD incompatible")
+            (backup / "functions.json").write_text(json.dumps(functions))
         sources = {}
         for f in selected_functions:
             source = f.get("buildConfig", {}).get("source", {}).get("storageSource")
@@ -96,6 +114,8 @@ def main():
                 with urllib.request.urlopen(signed, timeout=60) as response:
                     archive = response.read(64 * 1024 * 1024 + 1)
                 manifest = archive_manifest(archive)
+                if backup:
+                    (backup / "sources" / (f["name"].split("/")[-1] + ".zip")).write_bytes(archive)
                 return {"source": json.loads(key), "functions": [x["name"].split("/")[-1] for x in group], "sha256": hashlib.sha256(archive).hexdigest(), "files": manifest}, None
             except urllib.error.HTTPError as error:
                 return None, f"Source {f['name'].split('/')[-1]}: HTTP {error.code}"
@@ -115,6 +135,8 @@ def main():
     except Exception:
         report["errors"].append("Verification incomplete, aucun deploiement")
     (output / "report.json").write_text(json.dumps(report, indent=2))
+    if backup:
+        (backup / "report.json").write_text(json.dumps(report, indent=2))
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
         summary.write("## Preparation PROD sans deploiement\n\n")
         summary.write(f"- Commit candidat : {report['candidate']}\n- Sources lisibles : {len(report['sources'])}\n- Functions existantes selectionnees : {len(report['functions'])}\n")
@@ -124,7 +146,8 @@ def main():
         summary.write(f"- Functions selectionnees avec secrets : {sum(bool(f.get('secretCount')) for f in report['functions'])}\n")
         for error in report["errors"]:
             summary.write(f"- BLOCAGE : {error}\n")
-        summary.write("\nAucune donnee metier lue ou modifiee. Les archives ont ete lues pour verifier leur disponibilite, pas conservees en sauvegarde.\n")
+        summary.write("\nAucune donnee metier lue ou modifiee.\n")
+        summary.write("Sources conservees temporairement pour chiffrement avant publication.\n" if backup else "Archives controlees, pas conservees en sauvegarde.\n")
     if report.get("appCheck"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as output_file:
             output_file.write("app_check=" + report["appCheck"] + "\n")
