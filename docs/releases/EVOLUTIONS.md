@@ -72,3 +72,8 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - [PR #67](https://github.com/ffessmnap/LivePalmes/pull/67), commit applicatif `9160e7f8c0fe07cd6a81e585dac6b3efa2449dd1`, [run TEST 35533405303](https://github.com/ffessmnap/LivePalmes/actions/runs/35533405303) réussi ; preuve conservée et étapes backend ignorées.
 - Recette connectée ordinateur : bandeau Compétitions et tableau Mes nageurs capturés dans les deux thèmes ; fiche club affichant Date limite dépassée et date ; retour par le fil d’Ariane vers la liste ; filtre Licences à contrôler combiné avec Femmes (175 actives), puis réinitialisé ; titres et fils nationaux/access sans compteur parasite ; dates DTN contrôlées pour Mise en liste et Équipe de France. Aucune donnée métier enregistrée, aucun recalcul déclenché.
 - Vérification globale locale/GitHub réussie ; tests ciblés des statuts ouverts/fermés/expirés/annulés, licences à contrôler et dates de calcul présentes/absentes. Règle compacte sous 760 px ajoutée ; recette mobile non réalisée dans le navigateur disponible.
+
+### Retour à la présentation des nageurs — 20 septembre 2026
+
+- Antoine demande de revenir sur les points 3 et 4 : retrait du filtre Licences à contrôler, retour aux indicateurs compacts et aux lignes colorées selon le sexe. Les autres améliorations UX et le bandeau Compétitions sont conservés.
+- Périmètre interface uniquement ; aucun accès aux données ajouté. TEST autorisé ; publication en cours, validation finale attendue.
