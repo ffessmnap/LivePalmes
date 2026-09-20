@@ -1,0 +1,31 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { execFileSync } = require("node:child_process");
+const { prepare } = require("../tools/prepare-production-functions");
+const { LOTS } = require("../tools/firebase-test-backend-lots");
+const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "production-staging-test-"));
+try {
+  const root = path.join(temporary, "repo");
+  fs.mkdirSync(path.join(root, "functions"), { recursive: true });
+  execFileSync("git", ["init", "--quiet", root]);
+  fs.writeFileSync(path.join(root, "functions", "index.js"), 'const { defineBoolean, defineSecret } = require("firebase-functions/params");');
+  fs.writeFileSync(path.join(root, "functions", "module.js"), "module.exports = {};");
+  execFileSync("git", ["add", "functions"], { cwd: root });
+  fs.writeFileSync(path.join(root, "functions", "credentials.json"), "private-untracked-value");
+  process.env.TARGET_FIREBASE_PROJECT = "livepalmes-test";
+  assert.throws(() => prepare(root, path.join(temporary, "invalid"), "false"), /PROD/);
+  process.env.TARGET_FIREBASE_PROJECT = "livepalmes";
+  assert.throws(() => prepare(root, path.join(temporary, "invalid"), ""), /App Check/);
+  const destination = path.join(temporary, "stage");
+  const names = prepare(root, destination, "true");
+  assert(names.includes("revalidateEngagementQualificationCache"));
+  assert([...LOTS.email, ...LOTS.schedulers].every(name => !names.includes(name)));
+  assert(!fs.existsSync(path.join(destination, "functions", "credentials.json")));
+  assert.equal(fs.readFileSync(path.join(destination, "functions", ".env.livepalmes"), "utf8"), "LIVEPALMES_ENFORCE_APP_CHECK=true\n");
+  assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(path.join(destination, "firebase.json")))), ["functions"]);
+  assert.throws(() => prepare(root, destination, "false"), /deja presente/);
+  console.log("Preparation PROD: cible, exclusion mails/schedulers, fichiers suivis et App Check verifies.");
+} finally { fs.rmSync(temporary, { recursive: true, force: true }); }
