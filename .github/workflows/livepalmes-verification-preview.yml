@@ -63,6 +63,7 @@ jobs:
           python tests/production-release-state-tests.py
           python tests/production-release-source-tests.py
           node tests/production-backup-crypto-tests.js
+          node tests/hosting-payload-tests.js
 
   apercu:
     name: Creer un apercu isole
