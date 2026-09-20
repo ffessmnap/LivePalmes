@@ -14,6 +14,14 @@ class StateTests(unittest.TestCase):
         result = module.rollback_patch(fn, {"bucket": "code", "object": "old.zip"})
         self.assertEqual(result["serviceConfig"], {"timeoutSeconds": 60, "environmentVariables": {"LIVEPALMES_ENFORCE_APP_CHECK": "false"}})
         self.assertEqual(result["labels"], {"original": "yes"})
+    def test_rollback_restores_event_and_build_configuration(self):
+        fn = {"name": module.PREFIX + "example", "buildConfig": {"runtime": "nodejs22", "entryPoint": "example", "environmentVariables": {"BUILD_OPTION": "old"}, "build": "output-only"}, "serviceConfig": {}, "eventTrigger": {"eventType": "google.cloud.firestore.document.v1.written", "retryPolicy": "RETRY_POLICY_RETRY", "trigger": "output-only"}}
+        result = module.rollback_patch(fn, {"bucket": "code", "object": "old.zip"})
+        self.assertEqual(result["buildConfig"]["environmentVariables"], {"BUILD_OPTION": "old"})
+        self.assertNotIn("build", result["buildConfig"])
+        self.assertEqual(result["eventTrigger"]["retryPolicy"], "RETRY_POLICY_RETRY")
+        self.assertNotIn("trigger", result["eventTrigger"])
+
     def test_identity_detects_revision_and_timestamp_changes(self):
         fn = {"name": "example", "state": "ACTIVE", "updateTime": "a", "serviceConfig": {"revision": "one"}}
         before = module.identity(fn)

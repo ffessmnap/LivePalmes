@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "candidate": "REMPLACER_PAR_SHA_COMPLET_TEST",
+  "productionCommit": "REMPLACER_PAR_SHA_COMPLET_PROD",
+  "productionHosting": "sites/livepalmes/versions/REMPLACER",
+  "testRun": 0,
+  "changes": [
+    {
+      "title": "Exemple : boutons du portail",
+      "paths": ["portail.html"],
+      "status": "in-progress",
+      "validation": ""
+    }
+  ],
+  "excludedBackendReview": ""
+}

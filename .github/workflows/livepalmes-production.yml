@@ -1,4 +1,4 @@
-name: Mise en ligne LivePalmes
+name: Archive - Mise en ligne LivePalmes
 
 on:
   workflow_dispatch:
@@ -22,10 +22,8 @@ concurrency:
 jobs:
   publier:
     name: Verifier puis publier le site
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      inputs.confirmation &&
-      vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    # Archive : utiliser le bilan puis livepalmes-production-release.yml.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

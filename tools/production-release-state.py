@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -56,7 +57,9 @@ def check_after(backup, destination, require_success):
             errors.append("Function non active: " + name.split("/")[-1])
         elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != report["appCheck"]:
             errors.append("App Check different: " + name.split("/")[-1])
-        elif name in before and f.get("updateTime") == before[name].get("updateTime"):
+        elif report.get("commitLabel") and f.get("labels", {}).get("livepalmes-commit") != report["candidate"]:
+            errors.append("Commit Function different: " + name.split("/")[-1])
+        elif not report.get("commitLabel") and name in before and f.get("updateTime") == before[name].get("updateTime"):
             errors.append("Function non actualisee: " + name.split("/")[-1])
     if set(after) != set(before) | selected:
         errors.append("Inventaire inattendu")
@@ -83,7 +86,13 @@ def wait_operation(operation):
 def rollback_patch(function, source):
     # Only writable ServiceConfig fields. No business calls or triggers invoked.
     writable = {"timeoutSeconds", "availableMemory", "availableCpu", "maxInstanceCount", "minInstanceCount", "maxInstanceRequestConcurrency", "ingressSettings", "serviceAccountEmail", "environmentVariables", "allTrafficOnLatestRevision", "vpcConnector", "vpcConnectorEgressSettings", "secretEnvironmentVariables", "secretVolumes", "securityLevel", "binaryAuthorizationPolicy", "directVpcNetworkInterface", "directVpcEgress"}
-    return {"name": function["name"], "buildConfig": {"source": {"storageSource": source}, "runtime": function["buildConfig"]["runtime"], "entryPoint": function["buildConfig"]["entryPoint"]}, "serviceConfig": {k: v for k, v in function["serviceConfig"].items() if k in writable}, "labels": function.get("labels", {})}
+    build_fields = {"runtime", "entryPoint", "environmentVariables", "workerPool", "dockerRepository", "serviceAccount"}
+    result = {"name": function["name"], "buildConfig": {k: v for k, v in function["buildConfig"].items() if k in build_fields}, "serviceConfig": {k: v for k, v in function["serviceConfig"].items() if k in writable}, "labels": function.get("labels", {})}
+    result["buildConfig"]["source"] = {"storageSource": source}
+    if function.get("eventTrigger"):
+        event_fields = {"triggerRegion", "eventType", "eventFilters", "pubsubTopic", "serviceAccountEmail", "retryPolicy", "channel"}
+        result["eventTrigger"] = {k: v for k, v in function["eventTrigger"].items() if k in event_fields}
+    return result
 
 
 def rollback(backup, after_path, apply=True):
@@ -100,7 +109,7 @@ def rollback(backup, after_path, apply=True):
     for name in selected:
         if not name.startswith(PREFIX):
             raise ValueError("Function hors perimetre PROD")
-        if name in current and (name not in expected or identity(current[name]) != expected[name]):
+        if (name in current) != (name in expected) or (name in current and identity(current[name]) != expected[name]):
             raise ValueError("Production modifiee depuis la publication, retour arriere bloque")
     archives = {}
     for source in report["sources"]:
@@ -126,7 +135,9 @@ def rollback(backup, after_path, apply=True):
         req = urllib.request.Request(upload["uploadUrl"], method="PUT", data=archives[name].read_bytes(), headers={"Content-Type": "application/zip"})
         with urllib.request.urlopen(req, timeout=120):
             pass
-        mask = "build_config.source,build_config.runtime,build_config.entry_point,service_config,labels"
+        mask = "build_config.source,build_config.runtime,build_config.entry_point,build_config.environment_variables,build_config.worker_pool,build_config.docker_repository,build_config.service_account,service_config,labels"
+        if before[name].get("eventTrigger"):
+            mask += ",event_trigger"
         wait_operation(request(API + name + "?updateMask=" + mask, "PATCH", rollback_patch(before[name], upload["storageSource"])))
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(restore, sorted(selected)))
@@ -144,7 +155,7 @@ def hosting(backup, after_path, restore=False):
     if current["name"] != expected["name"]:
         raise ValueError("Hosting modifie depuis la publication")
     previous = json.loads((backup / "hosting.json").read_text())["version"]["name"]
-    if previous != "sites/livepalmes/versions/31e2e5f26481316a":
+    if not re.fullmatch(r"sites/livepalmes/versions/[A-Za-z0-9_-]+", previous):
         raise ValueError("Version Hosting de repli inattendue")
     if current["version"]["name"] != previous:
         request(url + "?versionName=" + urllib.parse.quote(previous, safe=""), "POST", {"message": "Retour arriere code LivePalmes"})
