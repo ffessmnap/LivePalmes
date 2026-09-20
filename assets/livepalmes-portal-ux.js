@@ -239,9 +239,37 @@
     });
   }
 
+  // Fit the sidebar below its actual top edge, including the TEST banner.
+  function fitSidebarToViewport() {
+    const sidebar = document.querySelector(".admin-portal-sidebar");
+    if (!sidebar || !sidebar.getClientRects().length) return;
+    const top = `${Math.max(0, Math.ceil(sidebar.getBoundingClientRect().top))}px`;
+    if (sidebar.style.getPropertyValue("--portal-sidebar-top") !== top) {
+      sidebar.style.setProperty("--portal-sidebar-top", top);
+    }
+  }
+
+  let sidebarFrame = 0;
+  function scheduleSidebarFit() {
+    if (sidebarFrame) return;
+    sidebarFrame = global.requestAnimationFrame(() => {
+      sidebarFrame = 0;
+      fitSidebarToViewport();
+    });
+  }
+
+  global.addEventListener("resize", scheduleSidebarFit);
+  global.addEventListener("scroll", scheduleSidebarFit, { passive: true });
+  if (global.ResizeObserver) {
+    const sidebarObserver = new global.ResizeObserver(scheduleSidebarFit);
+    const topbar = document.querySelector(".admin-portal-topbar");
+    if (topbar) sidebarObserver.observe(topbar);
+  }
+
   function refreshEnhancements() {
     global.clearTimeout(refreshTimer);
     refreshTimer = global.setTimeout(() => {
+      fitSidebarToViewport();
       renderBreadcrumb();
       enhanceResponsiveTables();
       enhanceLoadingStates();

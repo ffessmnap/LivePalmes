@@ -1,0 +1,18 @@
+{
+  "e40fe3129ffd5d76286774193a2855ed": [
+    {
+      "calendarCompetitionId": "4980"
+    }
+  ],
+  "d18c4f3dc04b5cc5402f340fe2af1ca5": [
+    {
+      "calendarCompetitionId": "4981",
+      "categoryKind": "master",
+      "resultsPdfUrl": "https://nap.ffessm.fr/ged/2026/5132/CNNP_P_06062026_La%20roche-sur-yon_CNNP202606065132.pdf"
+    },
+    {
+      "calendarCompetitionId": "5132",
+      "categoryKind": "minime"
+    }
+  ]
+}
