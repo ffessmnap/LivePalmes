@@ -233,9 +233,11 @@ assert.ok(calendarResultsBuilderSource.includes("const personalBests = new Map()
 assert.ok(calendarResultsBuilderSource.includes("const seasonBests = new Map()"));
 assert.ok(calendarResultsBuilderSource.includes("personalBest:"));
 assert.ok(calendarResultsBuilderSource.includes("seasonBest:"));
-assert.ok(calendarResultsBuilderSource.includes('"e40fe3129ffd5d76286774193a2855ed", [{ calendarCompetitionId: "4980" }]'));
-assert.ok(calendarResultsBuilderSource.includes('{ calendarCompetitionId: "4981", categoryKind: "master"'));
-assert.ok(calendarResultsBuilderSource.includes('{ calendarCompetitionId: "5132", categoryKind: "minime" }'));
+const sharedAssociations = require("../functions/config/calendar-result-associations.json");
+assert.ok(calendarResultsBuilderSource.includes('require("../functions/config/calendar-result-associations.json")'));
+assert.deepEqual(sharedAssociations.e40fe3129ffd5d76286774193a2855ed, [{ calendarCompetitionId: "4980" }]);
+assert.ok(sharedAssociations.d18c4f3dc04b5cc5402f340fe2af1ca5.some((rule) => rule.calendarCompetitionId === "4981" && rule.categoryKind === "master"));
+assert.ok(sharedAssociations.d18c4f3dc04b5cc5402f340fe2af1ca5.some((rule) => rule.calendarCompetitionId === "5132" && rule.categoryKind === "minime"));
 assert.ok(calendarResultsBuilderSource.includes('if (rule.categoryKind === "master") return /^M\\d+\\+$/.test(category)'));
 assert.ok(calendarResultsBuilderSource.includes('if (rule.categoryKind === "minime") return category === "M"'));
 assert.ok(calendarResultsBuilderSource.includes("associations.length !== 1"));
