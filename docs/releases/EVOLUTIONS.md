@@ -45,3 +45,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Tests de préférence et vérification globale locale/GitHub réussis. Le contrôle mobile reste à réaliser dans un navigateur de cette taille ; les règles compactes sont préservées dans le CSS. Pas de validation utilisateur du nouveau rendu à ce stade.
 - Comparaison finale Administration nationale : le mode clair conserve ses deux dégradés et ses textes foncés ; retour au mode sombre effectué après vérification.
 
+
+### Harmonisation des écrans de travail — 20 septembre 2026
+
+- Antoine approuve les cinq points : titres précis, filtres et actions, lisibilité des tableaux, couleurs sémantiques, détails du thème sombre.
+- Correction des titres Clubs/DTN, des barres de filtres des annuaires, des boutons de temps DTN, du compteur de clubs et des contrastes clubs/DTN. Aucune lecture/écriture Firebase ajoutée, aucune règle métier modifiée.
+- État : en cours ; essai TEST autorisé, validation du rendu final attendue.
