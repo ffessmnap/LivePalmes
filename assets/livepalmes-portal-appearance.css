@@ -14,6 +14,7 @@ html[data-portal-theme="dark"] { color-scheme:dark; background:#101a22; }
 html[data-portal-theme="dark"] .admin-portal-page {
   --portal-color-background:#101a22;
   --portal-color-surface:#192630;
+  --portal-color-surface-raised:#20323e;
   --portal-color-text:#e1ebef;
   --portal-color-brand:#edf5f7;
   --portal-color-heading:#edf5f7;
@@ -49,7 +50,6 @@ html[data-portal-theme="dark"] .admin-portal-page :is(button[type="submit"],.adm
 html[data-portal-theme="dark"] .admin-portal-page :is(button,a):hover { border-color:var(--portal-color-hover-border) !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([aria-current="page"],[aria-pressed="true"],.admin-portal-nav a.active) { background:#203e4a !important; color:#9ae5ee !important; border-color:#65cbd9 !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is(th,.admin-portal-overview-card-footer,.admin-overview-direct-link,.admin-overview-space-tools,[class$="-table-head"]) { background:#20323e !important; }
-html[data-portal-theme="dark"] .admin-portal-page :is([class$="-icon"],[class$="-badge"]) { background:#263e4b !important; color:#9edbe5 !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="error"],[data-tone="danger"],.error) { color:#ffb4b4 !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="warning"],.warning) { color:#f5d58c !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="success"],[data-tone="ok"],.success) { color:#98dfbb !important; }
@@ -57,6 +57,144 @@ html[data-portal-theme="dark"] .admin-portal-page :is(input,select,textarea,butt
 html[data-portal-theme="dark"] .admin-portal-page :disabled { opacity:.55; }
 html[data-portal-theme="dark"] .admin-portal-page dialog::backdrop { background:rgba(0,0,0,.65); }
 html[data-portal-theme="dark"] .admin-portal-federal-logo { background:#fff; border-radius:6px; padding:4px; }
+
+/* Component surfaces: keep the light palette out of portal modules. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-engagements-view,.admin-portal-access-view,.admin-portal-dtn-view,
+  .admin-dtn-grid,.admin-dtn-qualifiers,
+  [role="table"],
+  [role="row"],
+  .admin-access-table,
+  .admin-access-row-summary,
+  .admin-engagements-competition,
+  .admin-engagements-club-swimmers-directory-table
+) { background:var(--portal-color-surface) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-border-soft) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-scope-context,
+  .admin-account-scope-sentence,
+  .admin-account-notification-setting,
+  .admin-account-scope-list > div,
+  .admin-account-capabilities span,.admin-engagements-competition-entry-badge,
+  .admin-access-status.inactive,
+  .admin-engagements-calendar-filters,
+  .admin-engagements-national-filters,
+  .admin-engagements-calendar-loading,
+  .admin-engagements-empty,
+  .admin-engagements-open-water-empty,
+  .admin-engagements-club-swimmers-directory-sex-filter,
+  .admin-engagements-club-swimmers-sex-filter,
+  .admin-engagements-club-swimmers-section-empty,
+  .admin-engagements-club-swimmer-events-empty,
+  .admin-engagements-create-header,
+  .admin-engagements-invited-regions-summary,
+  .admin-dtn-toolbar,
+  .admin-dtn-inline-loading,
+  .admin-dtn-summary-loading,
+  .admin-dtn-summary-empty,
+  .admin-dtn-empty,
+  .admin-record-module-status,
+  .admin-access-filters,
+  .admin-access-empty,
+  .admin-access-row-expanded,
+  .admin-national-audit-filters,
+  .admin-national-requests-empty
+) { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-engagements-club-swimmers-directory-head,
+  .admin-engagements-club-swimmers-directory-activity-separator,
+  .admin-engagements-event-row-head,
+  .admin-engagements-club-recap-row-head,
+  .admin-engagements-mail-jobs-row-head,
+  .admin-engagements-statistics-gender-heading,
+  .admin-engagements-statistics-row-head,
+  [role="columnheader"]
+) { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-heading) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-account-capabilities-details,
+  .admin-account-notification-setting,
+  .admin-access-row,
+  .admin-engagements-competition
+) { border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-simple-card-head > div > span,
+  .admin-access-row-expanded-data span,
+  .admin-engagements-club-swimmers-directory-row > span
+) { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-scope-context button { background:transparent !important; color:inherit !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-account-scope-sentence { border-left-color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-nav button,
+  .admin-portal-nav-icon,
+  .admin-portal-chevron
+) { background:transparent !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-nav a:hover,
+  .admin-portal-nav button:hover,
+  .admin-access-row-summary:hover,
+  .admin-engagements-competition:hover
+) { background:var(--portal-color-surface-raised) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-nav :is(a.active,[aria-current="page"]) { background:#203e4a !important; color:#9ae5ee !important; }
+
+/* Tint icon containers, never the SVG itself. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-simple-card-icon,
+  .admin-overview-card-icon
+) { background:#203e4a !important; color:#9edbe5 !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-simple-card-icon.tone-email,
+  .admin-overview-card-icon.tone-dtn
+) { background:#20364e !important; color:#a5ceff !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-simple-card-icon.tone-security,
+  .admin-overview-card-icon.tone-access
+) { background:#342c49 !important; color:#d0bdff !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-simple-card-icon.tone-request,
+  .admin-overview-card-icon.tone-engagements
+) { background:#263d37 !important; color:#a9dfc9 !important; }
+
+/* Preserve the gender cues in data tables with subdued dark backgrounds. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-engagements-club-swimmers-directory-row[data-sex="F"],
+  .admin-engagements-statistics-individual-row[data-sex="F"],
+  .admin-engagements-club-entry-row[data-sex="F"],
+  .admin-engagements-club-swimmer-row[data-sex="F"],
+  .admin-dtn-listing-table tbody tr[data-sex="F"] > td
+) { background:#322938 !important; color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-engagements-club-swimmers-directory-row[data-sex="M"],
+  .admin-engagements-statistics-individual-row[data-sex="M"],
+  .admin-engagements-club-entry-row[data-sex="M"],
+  .admin-engagements-club-swimmer-row[data-sex="M"],
+  .admin-dtn-listing-table tbody tr[data-sex="M"] > td
+) { background:#203347 !important; color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-engagements-club-entry-last-name,
+  .admin-engagements-club-entry-actions
+) { background:inherit !important; color:inherit !important; }
+
+/* Semantic states remain distinguishable in both themes. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  [data-tone="error"],
+  [data-tone="danger"],
+  .danger-button,
+  .admin-engagements-entry-status[data-entry-status="closed"]
+) { background:#432a31 !important; color:#ffb4b4 !important; border-color:currentColor !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="error"],[data-tone="danger"],.danger-button,.admin-engagements-entry-status[data-entry-status="closed"]) :is(strong,small,p) { color:inherit !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  [data-tone="warning"],
+  .admin-engagements-edit-state[data-state="dirty"],
+  .admin-engagements-edit-state[data-state="deletion-pending"]
+) { background:#403723 !important; color:#f5d58c !important; border-color:currentColor !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="warning"],.admin-engagements-edit-state[data-state="dirty"],.admin-engagements-edit-state[data-state="deletion-pending"]) :is(strong,small,p) { color:inherit !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-access-status.active,
+  [data-tone="success"],
+  [data-tone="ok"],
+  .admin-engagements-entry-status[data-entry-status="open"]
+) { background:#203e33 !important; color:#98dfbb !important; border-color:currentColor !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is([data-tone="success"],[data-tone="ok"],.admin-engagements-entry-status[data-entry-status="open"]) :is(strong,small,p) { color:inherit !important; }
+
 @media print {
   html[data-portal-theme="dark"] { color-scheme:light; }
   html[data-portal-theme="dark"] .admin-portal-page,
