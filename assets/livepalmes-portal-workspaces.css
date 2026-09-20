@@ -1,0 +1,47 @@
+/* Portal workspace controls, shared by light and dark themes. */
+.admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) {
+  display:flex; flex-wrap:wrap; align-items:end; gap:10px; padding:12px;
+}
+.admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) > label {
+  flex:1 1 140px; min-width:0; margin:0;
+}
+.admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) > label:first-child {
+  flex:3 1 260px;
+}
+.admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(input,select) {
+  width:100%; min-height:38px; font-size:.82rem;
+}
+.admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) > button { min-height:38px; flex:0 0 auto; }
+html .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(.admin-national-reset-button,.admin-access-filter-reset) {
+  width:auto; justify-self:start; background:transparent !important; border-color:transparent !important;
+  color:var(--portal-color-muted) !important; box-shadow:none; font-size:.8rem; text-decoration:underline; text-underline-offset:3px;
+}
+html .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(.admin-national-reset-button,.admin-access-filter-reset):hover { color:var(--portal-color-accent) !important; }
+.admin-portal-page #adminEngagementsNationalClubsCreate { order:2; margin-left:auto; border-radius:7px; padding:8px 12px; background:#0b7285 !important; color:white !important; }
+.admin-portal-page .admin-national-page-status[data-tone="info"] { background:transparent !important; color:var(--portal-color-muted) !important; font-size:.8rem; padding:5px 0; }
+.admin-portal-page .admin-national-club-card :is(span,small) { font-size:.8rem; line-height:1.4; }
+.admin-portal-page #adminDtnView .admin-dtn-time {
+  background:transparent !important; border-color:transparent !important; box-shadow:none;
+  color:var(--portal-color-accent-strong) !important; font-variant-numeric:tabular-nums; font-size:.85rem;
+  text-decoration:underline; text-decoration-color:var(--portal-color-border); text-underline-offset:4px;
+}
+.admin-portal-page #adminDtnView .admin-dtn-time:is(:hover,:focus-visible,.active) {
+  background:var(--portal-color-field-background) !important; border-color:var(--portal-color-accent) !important; text-decoration:none;
+}
+.admin-portal-page #adminDtnView .admin-dtn-time:focus-visible { outline:2px solid var(--portal-color-accent); outline-offset:2px; }
+.admin-portal-page #adminDtnView .admin-dtn-time.active { box-shadow:inset 0 0 0 1px var(--portal-color-accent); }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-dtn-competition-scope,.admin-dtn-summary-list,.admin-dtn-summary-group-head) {
+  background:var(--portal-color-surface-raised) !important; color:var(--portal-color-muted) !important; border-color:var(--portal-color-border-soft) !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-national-club-card-main > span,.admin-national-club-card-reference > span,.admin-national-club-card-administrators > span,.admin-dtn-grid-head > div > span) { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-national-club-status { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-national-club-status[data-active="true"] { background:#203e33 !important; color:#98dfbb !important; }
+html[data-portal-theme="dark"] .admin-portal-page #adminDtnView :is(.admin-dtn-grid-head,.admin-dtn-grid-header) { border-color:var(--portal-color-border) !important; }
+@media(max-width:760px) {
+  .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) { gap:8px; padding:8px; }
+  .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) > label:first-child { flex-basis:100%; }
+  .admin-portal-page :is(.admin-national-directory-toolbar,.admin-access-filters) :is(input,select,button) { min-height:40px; }
+}
+@media print {
+  html[data-portal-theme="dark"] .admin-portal-page :is(.admin-dtn-competition-scope,.admin-dtn-summary-list,.admin-dtn-summary-group-head,.admin-national-club-status) { background:white !important; color:black !important; }
+}
