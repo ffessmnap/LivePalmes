@@ -137,13 +137,19 @@
       label: clubIsHome ? "Accueil club" : "Vue d’ensemble",
       href: clubIsHome ? "#espace-club" : "#accueil"
     }];
-    const engagementCalendar = global.location.hash === "#competitions-calendrier" && parentLabel === "Organisation des compétitions";
-    if (engagementCalendar) {
-      items.push({ label: parentLabel });
-    } else if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
-      items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
+    const engagementView = document.querySelector("#adminEngagementsView");
+    const competitionList = activeView === "engagements" && engagementView?.dataset.engagementsMode === "admin" && engagementView?.dataset.engagementsTab === "calendar";
+    if (competitionList) {
+      const detail = document.querySelector("#adminEngagementsDetail");
+      const detailOpen = detail && !detail.hidden;
+      items.push({ label: "Compétitions", ...(detailOpen ? { href: "#competitions-calendrier", competitionReturn: true } : {}) });
+      if (detailOpen) items.push({ label: document.querySelector("#adminEngagementsDetailTitle")?.textContent?.trim() || "Compétition" });
+    } else {
+      if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
+        items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
+      }
+      if (currentLabel) items.push({ label: currentLabel });
     }
-    if (currentLabel && !engagementCalendar) items.push({ label: currentLabel });
     const nextSignature = JSON.stringify(items);
     if (nextSignature === breadcrumbSignature) {
       mount.hidden = items.length < 2;
@@ -162,6 +168,7 @@
       if (item.href) {
         const link = document.createElement("a");
         link.href = item.href;
+        if (item.competitionReturn) link.dataset.competitionListReturn = "true";
         link.textContent = item.label;
         mount.append(link);
       } else {
@@ -285,7 +292,7 @@
     if (!generatedOnly) refreshEnhancements();
   }).observe(document.querySelector("#adminPortalDashboard") || document.body, {
     attributes: true,
-    attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "aria-disabled", "data-tone"],
+    attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "aria-disabled", "data-tone", "data-detail-open"],
     childList: true,
     subtree: true,
     characterData: true
