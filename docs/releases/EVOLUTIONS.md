@@ -24,3 +24,9 @@ Le premier essai du circuit TEST a inclus des fichiers temporaires de credential
 ### Correction du pied de navigation — 20 septembre 2026
 
 Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause confirmée dans la session TEST connectée : une ancienne grille répartissait les trois éléments sur trois colonnes (35 px pour chaque lien). Correction : pile verticale explicite, chaque accès sur toute la largeur. [PR #55](https://github.com/ffessmnap/LivePalmes/pull/55), déployée sur TEST au commit `f6872a01826740fe4af8f6bd91852132dbd9c03c`, [run réussi 35527165965](https://github.com/ffessmnap/LivePalmes/actions/runs/35527165965). Contrôle dans la session connectée à 1363 px : chaque lien mesure 231 px, tient sur une ligne et reste visible ; menu du profil ouvert entièrement visible, Déconnexion présente (sans la déclencher). Vérification globale locale et GitHub réussie. Validation utilisateur encore attendue.
+
+### Harmonisation du thème sombre du portail — 20 septembre 2026
+
+- Besoin : supprimer les surfaces blanches résiduelles du compte, du contexte club, des filtres et des tableaux ; préserver les couleurs utiles et le mode clair.
+- État : en cours, essai TEST demandé par Antoine ; validation utilisateur attendue.
+- Périmètre : CSS du portail et version de chargement uniquement, aucune lecture/écriture Firebase ajoutée. Aucun déploiement PROD demandé.
