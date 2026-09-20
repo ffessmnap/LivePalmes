@@ -546,3 +546,5 @@ La règle actuelle remplace l’ancienne présentation segmentée du statut et l
 ## Colonne continue du portail — essai TEST du 20 septembre 2026
 
 Sur ordinateur (à partir de 1081 px), le portail connecté réunit le logo, le nom LivePalmes et le sélecteur de périmètre en haut de la navigation. Le menu central défile indépendamment ; Mon compte, Aide et le menu du profil restent en bas. Le menu du profil s’ouvre vers le haut et conserve la déconnexion et le changement de club. Le contenu commence directement à droite, sans bandeau supérieur. Les contrôles existants sont déplacés, sans duplication ni changement des droits. Sur mobile ou hors connexion, ils reprennent leur position initiale dans le bandeau compact. Les couleurs suivent les jetons du thème du portail.
+
+Le pied de navigation est une pile verticale explicite : chaque accès utilise toute la largeur de la colonne, sans partage horizontal avec le profil.

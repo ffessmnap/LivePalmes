@@ -24,7 +24,9 @@
   .portal-unified-shell .admin-portal-sidebar-brand .admin-portal-scope-context { grid-column:1/-1; justify-content:flex-start; flex-wrap:wrap; max-width:100%; }
   .admin-portal-page.portal-unified-shell .admin-portal-nav { flex:1 1 0; min-height:0; height:auto; }
   .portal-unified-shell .admin-portal-layout > :not(.admin-portal-sidebar) { min-width:0; padding:28px 32px; }
-  .admin-portal-page.portal-unified-shell .admin-portal-nav-footer { background:var(--portal-color-surface); }
+  .admin-portal-page.portal-unified-shell .admin-portal-nav-footer { display:flex; flex-direction:column; align-items:stretch; gap:4px; background:var(--portal-color-surface); }
+  .portal-unified-shell .admin-portal-nav-footer > a { width:100%; box-sizing:border-box; min-width:0; white-space:nowrap; }
+  .portal-unified-shell .admin-portal-nav-footer > * { flex:0 0 auto; }
   .portal-unified-shell .admin-portal-nav-footer .admin-portal-account-menu { position:relative; width:100%; margin-top:6px; }
   .portal-unified-shell .admin-portal-nav-footer #adminPortalAccountToggle { width:100%; justify-content:space-between; min-height:42px; padding:10px; font-size:.82rem; }
   .portal-unified-shell .admin-portal-nav-footer #adminPortalSessionLabel { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
