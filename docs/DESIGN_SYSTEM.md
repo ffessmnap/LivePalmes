@@ -560,3 +560,11 @@ Les bandeaux d’accueil des espaces remplacent intégralement leur dégradé cl
 Les titres nomment la page active (Clubs, Championnats de France, Équipe de France, Mise en liste). Les barres de recherche des annuaires partagent des champs alignés, une recherche extensible, une remise à zéro secondaire soulignée et une action principale distincte. Elles se replient sur petit écran. Les compteurs de résultats restent neutres, les succès et statuts conservent leur sémantique. Les temps DTN sont des boutons numériques soulignés sans cadre permanent, avec survol, focus clavier et sélection visibles. Les badges des clubs et la portée des compétitions DTN adaptent leur surface au thème sombre.
 
 L’entrée Compétitions mène directement à la liste, sans sous-menu Calendrier. Le fil d’Ariane affiche « Vue d’ensemble › Compétitions », puis le nom de la compétition lorsqu’une fiche est ouverte. Le retour par le fil réutilise la fermeture de fiche et sa protection des modifications non enregistrées.
+
+### Repères des espaces et états — septembre 2026
+
+- Compétitions reprend le bandeau des accueils de modules : surtitre, titre identique au menu, description et action à droite, repli vertical sous 760 px. Gestion des accès conserve le même nom dans le menu et le titre.
+- Le fil d’Ariane exclut les compteurs et éléments masqués ; les fiches compétition côté club affichent leur nom et un retour à la liste.
+- Les fiches affichent le statut effectif des engagements et la date limite, avec le même calcul de délai que la liste.
+- Mes nageurs utilise des lignes neutres, une indication textuelle du sexe, des états de licence explicites et un filtre local Licences à contrôler.
+- Les vues DTN calculées affichent saison et date réelle du calcul ; une date absente est annoncée sans actualisation automatique.

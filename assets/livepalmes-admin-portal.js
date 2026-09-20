@@ -434,6 +434,10 @@
     correctionWorkbench: document.querySelector("#correctionWorkbench"),
     engagementsView: document.querySelector("#adminEngagementsView"),
     engagementsViewTitle: document.querySelector("#adminEngagementsViewTitle"),
+    engagementsViewEyebrow: document.querySelector("#adminEngagementsViewEyebrow"),
+    engagementsViewDescription: document.querySelector("#adminEngagementsViewDescription"),
+    engagementsDetailDeadline: document.querySelector("#adminEngagementsDetailDeadline"),
+    engagementsClubSwimmersLicenseFilter: document.querySelector("#adminEngagementsClubSwimmersLicenseFilter"),
     engagementsClubContext: document.querySelector("#adminEngagementsClubContext"),
     engagementsClubContextName: document.querySelector("#adminEngagementsClubContextName"),
     engagementsTabButtons: document.querySelectorAll("[data-engagements-tab-button]"),
@@ -1721,7 +1725,7 @@
       elements.engagementsViewTitle.textContent = accessRequestsMode
         ? "Demandes d'accès"
         : adminCalendarMode
-          ? "Comp\u00e9titions \u00e0 administrer"
+          ? "Compétitions"
           : createMode
             ? "Cr\u00e9er une comp\u00e9tition"
             : nationalMode
@@ -1732,6 +1736,12 @@
                   ? "Mes nageurs"
                   : "Engagements en comp\u00e9tition";
     }
+    const workspaceHead = elements.engagementsViewTitle?.closest(".admin-portal-workspace-head");
+    workspaceHead?.classList.toggle("admin-overview-head", adminCalendarMode);
+    workspaceHead?.classList.toggle("admin-competition-workspace-head", adminCalendarMode);
+    workspaceHead?.classList.toggle("admin-tool-workspace-head", !adminCalendarMode);
+    if (elements.engagementsViewEyebrow) elements.engagementsViewEyebrow.hidden = !adminCalendarMode;
+    if (elements.engagementsViewDescription) elements.engagementsViewDescription.hidden = !adminCalendarMode;
     if (elements.engagementsCalendarActions) {
       elements.engagementsCalendarActions.hidden = !adminCalendarMode || elements.engagementsCalendarCard?.dataset.detailOpen === "true";
     }
@@ -2659,7 +2669,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260920-workspaces-1",
+      "assets/livepalmes-dtn-qualifications.js?v=20260920-ux-consistency-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -4357,14 +4367,14 @@
     const deadline = new Date(competition.entryDeadlineAt);
     if (Number.isNaN(deadline.getTime())) return status;
     const remainingMs = deadline.getTime() - Date.now();
-    if (remainingMs < 0) return "deadline-passed";
+    if (remainingMs <= 0) return "deadline-passed";
     if (remainingMs <= 72 * 60 * 60 * 1000) return "closing-soon";
     return status;
   }
 
   function engagementOperationalStatusLabel(competition = {}) {
     const tone = engagementDeadlineTone(competition);
-    if (tone === "deadline-passed") return "Limite depassee";
+    if (tone === "deadline-passed") return "Date limite dépassée";
     if (tone === "closing-soon") return "Fermeture proche";
     return engagementStatusLabel(competition.entryStatus);
   }
@@ -4396,7 +4406,27 @@
     return `Ferme dans ${parts.join(" ")}`;
   }
 
+  function renderEngagementDetailStatus(competition) {
+    const badge = elements.engagementsDetailEntryStatus;
+    if (!badge) return;
+    const tone = engagementDeadlineTone(competition);
+    const label = competition.canceled ? "Compétition annulée"
+      : tone === "deadline-passed" ? "Date limite dépassée"
+      : tone === "closing-soon" ? "Engagements ouverts — fermeture proche"
+      : `Engagements ${engagementStatusLabel(competition.entryStatus).toLocaleLowerCase("fr-FR")}`;
+    badge.textContent = label;
+    badge.dataset.entryStatus = competition.canceled ? "closed" : tone;
+    badge.hidden = false;
+    badge.setAttribute("aria-label", `Statut : ${label}`);
+    if (elements.engagementsDetailDeadline) {
+      const validDeadline = competition.entryDeadlineAt && !Number.isNaN(new Date(competition.entryDeadlineAt).getTime());
+      elements.engagementsDetailDeadline.hidden = !validDeadline;
+      elements.engagementsDetailDeadline.textContent = validDeadline ? `Date limite : ${formatDeadline(competition.entryDeadlineAt).replace(/^Limite /, "")}` : "";
+    }
+  }
+
   function refreshEngagementDeadlineCountdowns() {
+    if (selectedEngagementCompetition && elements.engagementsDetail && !elements.engagementsDetail.hidden) renderEngagementDetailStatus(selectedEngagementCompetition);
     document.querySelectorAll("[data-engagement-deadline-competition-id]").forEach((node) => {
       const competition = engagementCompetitions.find((item) => item.id === node.dataset.engagementDeadlineCompetitionId);
       if (!competition) return;
@@ -6469,7 +6499,11 @@
     return [verificationLabel, seasonLabel].filter(Boolean).join(" · ");
   }
 
-  function engagementSwimmerLicenseStatusIndicator(swimmer = {}, selected = {}) {
+  function engagementSwimmerLicenseNeedsAttention(swimmer = {}) {
+    return !swimmer.licenseNumber || swimmer.licenseVerificationStatus !== "verified" || swimmer.licenseSeasonStatus !== "valid";
+  }
+
+  function engagementSwimmerLicenseStatusIndicator(swimmer = {}, selected = {}, explicit = false) {
     const licenseNumber = selected.licenseNumber || swimmer.licenseNumber || "";
     if (!licenseNumber) return "";
     const verificationStatus = swimmer.licenseVerificationStatus || selected.licenseVerificationStatus || "";
@@ -6477,8 +6511,9 @@
     const requiresAttention = ["pending", "rejected", "conflict"].includes(verificationStatus) || ["to_check", "invalid"].includes(seasonStatus);
     const label = requiresAttention
       ? engagementSwimmerLicenseStatusLabel(swimmer, selected)
+      : explicit && engagementSwimmerLicenseNeedsAttention({ ...selected, ...swimmer, licenseNumber }) ? "Statut à vérifier"
       : "Licence et saison vérifiées";
-    return `<span class="admin-engagements-club-swimmer-license-status" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${requiresAttention ? "!" : "✓"}</span>`;
+    return `<span class="admin-engagements-club-swimmer-license-status" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${explicit ? escapeHtml(label) : requiresAttention ? "!" : "✓"}</span>`;
   }
 
   function setEngagementClubSwimmerRowExpanded(row, expanded) {
@@ -6551,7 +6586,8 @@
     const swimmers = engagementClubSwimmers
       .filter((swimmer) =>
         (!query || engagementClubSwimmerSearchText(swimmer).includes(query)) &&
-        (engagementClubSwimmersDirectorySexFilter === "all" || String(swimmer.sex || "").trim().toUpperCase() === engagementClubSwimmersDirectorySexFilter)
+        (engagementClubSwimmersDirectorySexFilter === "all" || String(swimmer.sex || "").trim().toUpperCase() === engagementClubSwimmersDirectorySexFilter) &&
+        (!elements.engagementsClubSwimmersLicenseFilter?.checked || engagementSwimmerLicenseNeedsAttention(swimmer))
       )
       .sort((left, right) =>
         Number(engagementClubSwimmerIsActive(right)) - Number(engagementClubSwimmerIsActive(left)) ||
@@ -6591,7 +6627,7 @@
       const detailsId = `adminEngagementsClubSwimmerDirectoryDetails${index}`;
       const publicProfileUrl = engagementPublicSwimmerProfileUrl(swimmer, name);
       const changePending = swimmer.changeRequestStatus === "pending";
-      const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer);
+      const licenseStatusIndicator = engagementSwimmerLicenseStatusIndicator(swimmer, swimmer, true);
       const profileButton = `
         <button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${escapeHtml(name)}" aria-label="Voir la fiche publique de ${escapeHtml(name)}" data-engagement-club-swimmer-public-profile="${escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${escapeHtml(name)}">
           <strong>${escapeHtml(name)}</strong>
@@ -6627,7 +6663,7 @@
           <div id="${detailsId}" class="admin-engagements-club-swimmers-directory-details">
             <span role="cell">${profileButton}</span>
             <span role="cell">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
-            <span role="cell">${escapeHtml(swimmer.sex || "-")}</span>
+            <span role="cell" class="admin-club-swimmer-sex" aria-label="${escapeHtml(sexLabel)}">${escapeHtml(sexDisplay)}</span>
             <span role="cell" title="${escapeHtml(engagementCategoryLabel(category) || "-")}">${escapeHtml(category || "-")}</span>
             <span class="admin-engagements-club-swimmer-license-cell" role="cell">${swimmer.licenseNumber
               ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>`
@@ -10298,11 +10334,7 @@
       elements.engagementsDetailLevel.hidden = false;
     }
     if (elements.engagementsDetailEntryStatus) {
-      const statusLabel = engagementStatusLabel(competition.entryStatus).toLocaleLowerCase("fr-FR");
-      elements.engagementsDetailEntryStatus.textContent = `Engagements ${statusLabel}`;
-      elements.engagementsDetailEntryStatus.dataset.entryStatus = competition.entryStatus || "upcoming";
-      elements.engagementsDetailEntryStatus.hidden = false;
-      elements.engagementsDetailEntryStatus.setAttribute("aria-label", `Statut : engagements ${statusLabel}`);
+      renderEngagementDetailStatus(competition);
     }
     if (elements.engagementsCancellationAlert) elements.engagementsCancellationAlert.hidden = competition.canceled !== true;
     const openWater = engagementCompetitionType(competition) === "openWater";
@@ -10326,7 +10358,7 @@
         ["Régions invitées", (competition.invitedRegionIds || []).map(regionDisplayLabel).filter((region) => region && region !== "-").join(", ") || "-"]
       ] : []),
       ["Niveau", engagementLevelLabel(competition.level)],
-      ["Statut engagements", engagementStatusLabel(competition.entryStatus)],
+      ["Statut engagements", competition.canceled ? "Compétition annulée" : engagementOperationalStatusLabel(competition)],
       ["Limite engagements", formatDeadline(competition.entryDeadlineAt)],
       [openWater ? "Plan d’eau" : "Bassin", engagementFacilityLabel(competition)],
       ...(!openWater ? [
@@ -16753,6 +16785,7 @@
       setEngagementNationalPeopleMergeMode(!engagementNationalPeopleMergeMode);
     });
     elements.engagementsNationalPeopleBulkMerge?.addEventListener("click", mergeSelectedEngagementNationalPeople);
+    elements.engagementsClubSwimmersLicenseFilter?.addEventListener("change", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectorySearch?.addEventListener("input", renderEngagementClubSwimmersDirectory);
     elements.engagementsClubSwimmersDirectorySearchClear?.addEventListener("click", () => {
       if (!elements.engagementsClubSwimmersDirectorySearch) return;
