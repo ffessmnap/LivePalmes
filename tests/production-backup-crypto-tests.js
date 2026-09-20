@@ -1,0 +1,11 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { seal, open } = require("../tools/production-backup-crypto");
+const original = Buffer.from("code et configuration sans donnees metier");
+const encrypted = seal(original, "test-key-not-a-real-credential");
+assert(!encrypted.includes(original));
+assert.deepEqual(open(encrypted, "test-key-not-a-real-credential"), original);
+assert.throws(() => open(encrypted, "wrong-key"));
+const damaged = Buffer.from(encrypted); damaged[damaged.length - 1] ^= 1;
+assert.throws(() => open(damaged, "test-key-not-a-real-credential"));
+console.log("Sauvegarde: chiffrement, restauration, mauvaise cle et alteration verifies.");
