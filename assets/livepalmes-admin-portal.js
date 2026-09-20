@@ -1684,6 +1684,7 @@
   function engagementNationalPageTitle(tab = activeEngagementNationalTab) {
     return {
       deletions: "Demandes à traiter",
+      clubs: "Clubs",
       licenses: "Vérification des licences",
       swimmers: "Nageurs",
       people: "Officiels",
@@ -2658,7 +2659,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260818-long-operations-1",
+      "assets/livepalmes-dtn-qualifications.js?v=20260920-workspaces-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -12849,7 +12850,7 @@
     const renderedClubs = clubs.slice(0, engagementNationalClubsVisibleLimit);
     if (elements.engagementsNationalClubsStatus) {
       elements.engagementsNationalClubsStatus.textContent = `${renderedClubs.length} club${renderedClubs.length > 1 ? "s" : ""} affiché${renderedClubs.length > 1 ? "s" : ""} sur ${clubs.length} correspondant${clubs.length > 1 ? "s" : ""} (${engagementNationalClubs.length} au total).`;
-      elements.engagementsNationalClubsStatus.dataset.tone = "ok";
+      elements.engagementsNationalClubsStatus.dataset.tone = "info";
     }
     elements.engagementsNationalClubsList.innerHTML = clubs.length
       ? renderedClubs.map((club) => `<article class="admin-national-club-card" data-national-club-id="${escapeHtml(club.clubId)}">
