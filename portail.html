@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20260920-shell-2">
-    <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260920-swimmers-restore-1">
+    <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260920-visual-consistency-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -615,7 +615,10 @@
                 </section>
 
                 <section class="admin-account-card admin-appearance-card" aria-labelledby="adminAppearanceTitle">
-                  <h3 id="adminAppearanceTitle">Apparence</h3>
+                  <div class="admin-simple-card-head">
+                    <span class="admin-simple-card-icon tone-profile" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M12 3a9 9 0 0 1 0 18" fill="currentColor" stroke="none"></path></svg></span>
+                    <div><span>Préférences</span><h3 id="adminAppearanceTitle">Apparence</h3></div>
+                  </div>
                   <p>Choisissez le thème du portail. Les pages publiques conservent leur apparence.</p>
                   <div class="admin-appearance-options" role="group" aria-label="Thème du portail">
                     <button type="button" data-portal-appearance="light" aria-pressed="true">Clair</button>
@@ -625,15 +628,15 @@
                   <p id="adminAppearanceMessage" aria-live="polite">Choix mémorisé dans ce navigateur.</p>
                 </section>
 
-                <details id="adminAccountNotificationsDetails" class="admin-account-card admin-account-edit-card" aria-labelledby="adminAccountNotificationsTitle">
-                  <summary class="admin-simple-card-head">
+                <section id="adminAccountNotificationsDetails" class="admin-account-card admin-account-preferences-card" aria-labelledby="adminAccountNotificationsTitle">
+                  <div class="admin-simple-card-head">
                     <span class="admin-simple-card-icon tone-email" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></span>
                     <div>
                       <span>Préférences</span>
                       <h3 id="adminAccountNotificationsTitle">Notifications par email</h3>
                       <p id="adminAccountNotificationsSummary">Gérer les informations reçues pour les compétitions.</p>
                     </div>
-                  </summary>
+                  </div>
                   <div id="adminAccountNotificationsForm" class="admin-account-form">
                     <div class="admin-account-notification-setting">
                       <div>
@@ -648,7 +651,7 @@
                     <p>Les messages indispensables concernant votre compte et sa sécurité restent toujours envoyés.</p>
                     <p id="adminAccountNotificationsMessage" class="admin-portal-message" aria-live="polite"></p>
                   </div>
-                </details>
+                </section>
 
                 <details id="adminAccountEmailDetails" class="admin-account-card admin-account-edit-card" aria-labelledby="adminAccountEmailTitle">
                   <summary class="admin-simple-card-head">
