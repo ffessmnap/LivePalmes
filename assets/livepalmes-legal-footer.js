@@ -4,8 +4,7 @@
   const LINKS = [
     ["/mentions-legales.html", "Mentions légales"],
     ["/conditions-utilisation.html", "Conditions d’utilisation"],
-    ["/confidentialite.html", "Confidentialité"],
-    ["/accessibilite.html", "Accessibilité"]
+    ["/confidentialite.html", "Confidentialité"]
   ];
 
   function ensureStyles() {
