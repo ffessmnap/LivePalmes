@@ -15,7 +15,8 @@ Le premier essai du circuit TEST a inclus des fichiers temporaires de credential
 ### Colonne continue du portail — 20 septembre 2026
 
 - Besoin : réunir le bandeau et la navigation sur ordinateur, conserver le bandeau compact sur mobile.
-- Branche : `ui/portal-shell-test-20260920`. État : en cours, recette utilisateur attendue.
+- [PR #53](https://github.com/ffessmnap/LivePalmes/pull/53), commit intégré `bbd2383aca7c84176e293a790ad68cdae40b2bdd`. État : déployé sur TEST, recette utilisateur attendue.
 - Périmètre : présentation du portail uniquement ; aucune lecture/écriture Firebase ajoutée, aucun changement de droits.
 - Validation utilisateur : essai TEST demandé ; rendu final non encore validé.
-- Preuve TEST : à renseigner après publication du commit intégré. Aucune publication PROD demandée.
+- Preuve TEST : [run 35526684868](https://github.com/ffessmnap/LivePalmes/actions/runs/35526684868), réussi ; artefact `test-proof`. Aucun changement backend. Aucune publication PROD demandée.
+- Vérifications : vérification globale locale et GitHub réussies ; chargement du portail hors connexion contrôlé. Rendu connecté ordinateur/mobile non contrôlé faute de session authentifiée dans le navigateur de vérification.
