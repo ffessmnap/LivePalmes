@@ -1,0 +1,187 @@
+name: Terminer la publication PROD 995ec702
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Reprendre les 17 Functions restantes puis Hosting sans operation sur les donnees
+        required: true
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production
+    env:
+      CANDIDATE_SHA: 995ec7025e31cd147444e38a99afba69808a1406
+      CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
+      TARGET_FIREBASE_PROJECT: livepalmes
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: 995ec7025e31cd147444e38a99afba69808a1406
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Installer et verifier la version exacte
+        run: |
+          npm ci --prefix candidate/functions
+          npm ci --prefix candidate/tests/firestore-rules
+          cd candidate
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          node tools/verify-livepalmes.js
+      - name: Verifier l'exclusion des fichiers internes
+        working-directory: candidate
+        run: |
+          node - <<'NODE'
+          const config = require('./firebase.json');
+          const entries = Array.isArray(config.hosting) ? config.hosting : [config.hosting];
+          if (!entries.every(item => item.ignore.includes('performances/public/data/admin-reference.js'))) throw new Error('Fichier interne non exclu');
+          NODE
+      - name: Verifier les outils de publication
+        run: |
+          node tooling/tests/production-release-preflight-tests.js
+          node tooling/tests/production-backup-crypto-tests.js
+          python tooling/tests/production-release-source-tests.py
+          python tooling/tests/production-release-state-tests.py
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '10607652063'
+          path: ${{ runner.temp }}/encrypted
+          merge-multiple: true
+          run-id: 35517868576
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '10607847033'
+          path: ${{ runner.temp }}/previous
+          merge-multiple: true
+          run-id: 35517868576
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verifier la sauvegarde initiale et les revisions actuelles
+        env:
+          CONFIRM_CODE_ROLLBACK: livepalmes
+        run: |
+          node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
+          python tooling/tools/production-release-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/previous/production-after.json"
+          python tooling/tools/production-release-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/current.json" failure
+          python tooling/tools/production-release-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-before.json"
+          python - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          previous = json.loads((root / 'previous/production-after.json').read_text())
+          current = json.loads((root / 'current.json').read_text())
+          report = json.loads((root / 'prod-backup/report.json').read_text())
+          expected = {
+              'rebuildPerformanceTopIndexNextPage', 'repairEngagementNationalSwimmerMergePublication',
+              'migratePerformanceBaseNextChunk', 'resumeCompetitionImportPublication',
+              'publishPerformanceCorrectionJob', 'requestEngagementClubSwimmerChange',
+              'buildDtnQualificationView', 'publishPerformancePublicData',
+              'rebuildEngagementClubAggregates', 'createCompetitionImport',
+              'rebuildEngagementCompetitionCalendars', 'deleteCompetitionImport',
+              'mergeEngagementNationalClubSwimmer', 'updateEngagementNationalSwimmerIdentity',
+              'rebuildPerformanceSwimmerIndexNextPage', 'getPerformanceBaseMigrationStatus',
+              'importHistoricalPerformanceRows'
+          }
+          errors = {'Function non actualisee: ' + name for name in expected}
+          assert current['candidate'] == previous['candidate'] == report['candidate'] == os.environ['CANDIDATE_SHA']
+          assert set(current['errors']) == set(previous['errors']) == errors
+          assert len(current['functions']) == 146
+          assert all(fn['state'] == 'ACTIVE' for fn in current['functions'])
+          assert report['appCheck'] == 'false'
+          assert json.loads((root / 'hosting-before.json').read_text())['version'] == 'sites/livepalmes/versions/31e2e5f26481316a'
+          (root / 'resume-selector.txt').write_text(','.join('functions:' + name for name in sorted(expected)))
+          print('Reprise bornee aux 17 Functions non actualisees ; sauvegarde initiale conservee.')
+          PYCODE
+      - name: Conserver la sauvegarde initiale pour le retour arriere
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-code-backup
+          path: ${{ runner.temp }}/encrypted/prod-backup.enc
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preparer les 134 exports valides
+        env:
+          APP_CHECK: 'false'
+        run: |
+          node tooling/tools/prepare-production-functions.js "$CANDIDATE_DIRECTORY" "$RUNNER_TEMP/production-functions" "$APP_CHECK"
+          npm ci --prefix "$RUNNER_TEMP/production-functions/functions"
+      - name: Simuler avant de publier
+        run: |
+          selector="$(cat "$RUNNER_TEMP/resume-selector.txt")"
+          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --dry-run --non-interactive --force
+      - name: Publier les 17 Functions restantes
+        id: functions
+        continue-on-error: true
+        run: |
+          selector="$(cat "$RUNNER_TEMP/resume-selector.txt")"
+          candidate/tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --config "$RUNNER_TEMP/production-functions/firebase.json" --only "$selector" --non-interactive --force
+      - name: Controler les Functions et les exclusions
+        id: state
+        if: always() && (steps.functions.outcome == 'success' || steps.functions.outcome == 'failure')
+        env:
+          DEPLOY_OUTCOME: ${{ steps.functions.outcome }}
+        run: python tooling/tools/production-release-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json" "$DEPLOY_OUTCOME"
+      - name: Conserver les revisions observees apres tentative
+        if: always() && (steps.functions.outcome == 'success' || steps.functions.outcome == 'failure')
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-after
+          path: ${{ runner.temp }}/production-after.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Authentifier le compte Hosting
+        if: steps.functions.outcome == 'success' && steps.state.outcome == 'success'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - name: Publier Hosting en dernier
+        id: hosting
+        if: steps.functions.outcome == 'success' && steps.state.outcome == 'success'
+        working-directory: candidate
+        run: tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --only hosting --non-interactive --message "LivePalmes 995ec702 run $GITHUB_RUN_ID"
+      - name: Controler le site public
+        if: steps.hosting.outcome == 'success'
+        run: python tooling/tools/check-production-hosting.py candidate
+      - name: Relever la version Hosting active
+        if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
+        run: python tooling/tools/production-release-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+      - name: Conserver la reference Hosting
+        if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-hosting-after
+          path: ${{ runner.temp }}/production-hosting-after.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Conclure la publication
+        if: always()
+        env:
+          FUNCTIONS_OUTCOME: ${{ steps.functions.outcome }}
+          STATE_OUTCOME: ${{ steps.state.outcome }}
+          HOSTING_OUTCOME: ${{ steps.hosting.outcome }}
+        run: |
+          echo "Functions: $FUNCTIONS_OUTCOME. Controle: $STATE_OUTCOME. Hosting: $HOSTING_OUTCOME. Aucune operation sur les donnees." >> "$GITHUB_STEP_SUMMARY"
+          test "$FUNCTIONS_OUTCOME" = success
+          test "$STATE_OUTCOME" = success
+          test "$HOSTING_OUTCOME" = success
