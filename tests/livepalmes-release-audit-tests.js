@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { functionMetadata, releaseMetadata, listPages, reportSummary } = require("../tools/audit-firebase-release");
+const { functionMetadata, releaseMetadata, listPages, reportSummary, testPermissions } = require("../tools/audit-firebase-release");
 
 async function main() {
   const sanitized = functionMetadata({ name: "function", environmentVariables: { PASSWORD: "secret-value" },
@@ -21,6 +21,14 @@ async function main() {
   assert(summary.includes("HTTP 403"));
   assert(summary.includes("runtime@example.test"));
   assert(!JSON.stringify(releaseMetadata({ version: { name: "version", config: { secret: "secret-value" } }, releaseUser: { email: "secret-value" } })).includes("secret-value"));
+  const permissions = await testPermissions('https://iam.googleapis.com/v1/projects/livepalmes/serviceAccounts/runtime:testIamPermissions', ['iam.serviceAccounts.actAs', 'unavailable'], 'token', async (url, options) => {
+    assert.equal(options.method, 'POST');
+    assert.deepEqual(JSON.parse(options.body).permissions, ['iam.serviceAccounts.actAs', 'unavailable']);
+    return { ok: true, json: async () => ({ permissions: ['iam.serviceAccounts.actAs', 'unrequested'] }) };
+  });
+  assert.deepEqual(permissions, { granted: ['iam.serviceAccounts.actAs'], missing: ['unavailable'] });
+  await assert.rejects(testPermissions('https://iam.googleapis.com/v1/resource:setIamPolicy', [], 'token'), /interdit/);
+  await assert.rejects(testPermissions('https://example.test/v1/resource:testIamPermissions', [], 'token'), /interdit/);
   let calls = 0;
   const rows = await listPages("https://example.test/list", "functions", "token", async (url, options) => {
     assert.equal(options.method, "GET");

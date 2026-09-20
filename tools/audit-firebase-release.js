@@ -1,6 +1,6 @@
 "use strict";
 
-// Lecture des metadonnees de deploiement uniquement. Aucun SDK Firestore,
+// Lecture des metadonnees et verification des permissions uniquement. Aucun SDK Firestore,
 // appel de Function, acces aux objets Storage ou commande de deploiement.
 const fs = require("node:fs");
 const path = require("node:path");
@@ -58,6 +58,11 @@ function reportSummary(report) {
   for (const fn of functions.sort((a, b) => a.name.localeCompare(b.name))) {
     lines.push(`| ${cell(fn.name)} | ${cell(fn.updateTime)} | ${cell(fn.revision)} | ${cell(fn.firebaseFunctionsHash)} |`);
   }
+  lines.push('', '### Permissions de deploiement (verification sans modification)', '');
+  for (const result of report.permissions || []) {
+    lines.push(`- ${cell(result.resource)}: ${result.error ? cell(result.error) : result.missing.length ? 'MANQUANT: ' + result.missing.map(cell).join(', ') : 'permissions controlees presentes'}`);
+    if (result.granted?.length) lines.push(`  - Accorde: ${result.granted.map(cell).join(', ')}`);
+  }
   lines.push("", report.limitation, "Aucune donnee metier lue ou modifiee. Aucun deploiement.", "");
   return lines.join("\n");
 }
@@ -85,6 +90,44 @@ async function listPages(endpoint, key, token, request = fetch) {
     seen.add(pageToken);
   }
   throw new Error("Inventaire incomplet: limite de pagination atteinte");
+}
+
+async function testPermissions(endpoint, permissions, token, request = fetch) {
+  // testIamPermissions est une verification sans modification des droits.
+  const url = new URL(endpoint);
+  if (!['iam.googleapis.com', 'cloudresourcemanager.googleapis.com'].includes(url.hostname) ||
+      url.protocol !== 'https:' || !url.pathname.endsWith(':testIamPermissions')) {
+    throw new Error('Endpoint de verification interdit');
+  }
+  const response = await request(url, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ permissions }), redirect: 'error', signal: AbortSignal.timeout(30000)
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const granted = (await response.json()).permissions || [];
+  return { granted: permissions.filter(p => granted.includes(p)), missing: permissions.filter(p => !granted.includes(p)) };
+}
+
+async function deploymentPermissions(project, functions, token) {
+  const results = [];
+  const projectPermissions = [
+    'cloudfunctions.functions.create', 'cloudfunctions.functions.update', 'cloudfunctions.functions.sourceCodeGet',
+    'run.services.getIamPolicy', 'run.services.setIamPolicy',
+    'eventarc.triggers.create', 'eventarc.triggers.update', 'eventarc.triggers.get',
+    'serviceusage.services.use', 'serviceusage.services.get', 'firebase.projects.get',
+    'resourcemanager.projects.get', 'cloudbuild.builds.get', 'artifactregistry.repositories.get'
+  ];
+  const checks = [{ resource: project, endpoint: `https://cloudresourcemanager.googleapis.com/v1/projects/${project}:testIamPermissions`, permissions: projectPermissions }];
+  const accounts = new Set(functions.flatMap(fn => [fn.runtimeServiceAccount, fn.buildServiceAccount]).filter(Boolean).map(s => s.split('/').pop()));
+  for (const account of accounts) {
+    if (!/^[a-zA-Z0-9_.@-]+$/.test(account)) throw new Error('Compte technique invalide');
+    checks.push({ resource: account, endpoint: `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${account}:testIamPermissions`, permissions: ['iam.serviceAccounts.actAs'] });
+  }
+  for (const check of checks) {
+    try { results.push({ resource: check.resource, ...await testPermissions(check.endpoint, check.permissions, token) }); }
+    catch (error) { results.push({ resource: check.resource, error: /^HTTP \d{3}$/.test(error.message) ? error.message : 'Controle indisponible' }); }
+  }
+  return results;
 }
 
 async function main() {
@@ -116,6 +159,7 @@ async function main() {
       report[name] = { status: "blocked", reason };
     }
   }
+  report.permissions = await deploymentPermissions(project, [...(report.functionsV1.items || []), ...(report.functionsV2.items || [])], token);
   const directory = path.join(process.env.RUNNER_TEMP, "firebase-release-audit");
   fs.mkdirSync(directory, { recursive: true });
   fs.writeFileSync(path.join(directory, `${project}.json`), JSON.stringify(report, null, 2) + "\n");
@@ -123,7 +167,7 @@ async function main() {
   if (checks.some(([name]) => report[name].status !== "ok")) process.exitCode = 1;
 }
 
-module.exports = { releaseMetadata, functionMetadata, listPages, reportSummary };
+module.exports = { releaseMetadata, functionMetadata, listPages, reportSummary, testPermissions };
 if (require.main === module) main().catch(() => {
   console.error("Audit bloque: verifier le secret du projet et l'authentification. Aucune modification Firebase.");
   process.exitCode = 1;
