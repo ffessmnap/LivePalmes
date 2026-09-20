@@ -53,7 +53,12 @@ def main():
     try:
         permissions = request("https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:testIamPermissions", {"permissions": ["cloudfunctions.functions.setIamPolicy"]})
         report["newHttpsPermission"] = "cloudfunctions.functions.setIamPolicy" in permissions.get("permissions", [])
-        version = "sites/livepalmes/versions/31e2e5f26481316a"
+        releases = request("https://firebasehosting.googleapis.com/v1beta1/sites/livepalmes/releases?pageSize=1").get("releases", [])
+        if not releases:
+            raise ValueError("Release Hosting absente")
+        version = releases[0]["version"]["name"]
+        if os.environ.get("EXPECTED_HOSTING_VERSION") and version != os.environ["EXPECTED_HOSTING_VERSION"]:
+            raise ValueError("Hosting a change depuis le bilan")
         hosting = request("https://firebasehosting.googleapis.com/v1beta1/" + version)
         report["hostingRollback"] = {"version": version, "status": hosting.get("status")}
         if hosting.get("status") != "FINALIZED":
@@ -80,11 +85,16 @@ def main():
         else:
             raise ValueError("Inventaire incomplet")
         selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,LOTS}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x])))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
+        if os.environ.get("RELEASE_SELECTION"):
+            requested = json.loads(Path(os.environ["RELEASE_SELECTION"]).read_text())
+            if not isinstance(requested, list) or len(requested) != len(set(requested)) or not set(requested).issubset(selected):
+                raise ValueError("Selection hors perimetre")
+            selected = requested
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions)
-        if len(app_checks) != 1 or not app_checks.issubset({"true", "false"}):
+        if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
-        report["appCheck"] = next(iter(app_checks))
+        report["appCheck"] = next(iter(app_checks), "false")
         report["newFunctions"] = sorted(set(selected) - {f["name"].split("/")[-1] for f in selected_functions})
         if backup:
             allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
