@@ -568,3 +568,11 @@ L’entrée Compétitions mène directement à la liste, sans sous-menu Calendri
 - Les fiches affichent le statut effectif des engagements et la date limite, avec le même calcul de délai que la liste.
 - Mes nageurs conserve les lignes colorées selon le sexe et les indicateurs compacts de licence (! / ✓) ; pas de filtre de licence supplémentaire (préférence Antoine du 20 septembre 2026).
 - Les vues DTN calculées affichent saison et date réelle du calcul ; une date absente est annoncée sans actualisation automatique.
+
+## Harmonisation des cartes du portail — septembre 2026
+
+- Les cartes d’accès aux espaces placent une icône de 40 px, le titre et la flèche sur la première ligne, puis la description. Les compteurs nationaux restent visibles sur une ligne dédiée. La hauteur minimale est réduite, sans imposer de hauteur fixe au contenu.
+- Mon compte présente le profil en pleine largeur, puis Apparence et Notifications par email toujours déployées, puis les cartes de connexion repliables. Les deux préférences utilisent le même en-tête avec icône ; la grille passe à une colonne sur petit écran.
+- Les actions principales des espaces partagent une hauteur minimale de 38 px et un rayon de 8 px. Les commandes compactes des lignes et les sélecteurs segmentés conservent leur format.
+- Les en-têtes de tableaux Records, DTN et officiels utilisent les surfaces, textes secondaires et bordures sémantiques du thème. Les couleurs des lignes de nageurs et les indicateurs de licence restent inchangés.
+- Les surfaces des historiques d’import, filtres DTN et en-têtes Records sont explicitement adaptées au sombre, y compris après chargement différé des styles. Ces règles sont limitées au portail.

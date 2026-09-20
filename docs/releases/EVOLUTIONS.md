@@ -76,4 +76,13 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 ### Retour à la présentation des nageurs — 20 septembre 2026
 
 - Antoine demande de revenir sur les points 3 et 4 : retrait du filtre Licences à contrôler, retour aux indicateurs compacts et aux lignes colorées selon le sexe. Les autres améliorations UX et le bandeau Compétitions sont conservés.
-- Périmètre interface uniquement ; aucun accès aux données ajouté. TEST autorisé ; publication en cours, validation finale attendue.
+- Périmètre interface uniquement ; aucun accès aux données ajouté. Déployé sur TEST, validation finale attendue.
+- [PR #70](https://github.com/ffessmnap/LivePalmes/pull/70), commit applicatif `6c704b83dffceca4081187bee17cef7af28efa20`, [run TEST 35534631647](https://github.com/ffessmnap/LivePalmes/actions/runs/35534631647) réussi avec preuve conservée ; backend ignoré. Aucun déploiement PROD.
+- Vérification globale locale/GitHub réussie. Recette connectée ordinateur : capture de Mes nageurs en sombre, lignes colorées rétablies, indicateurs ! visibles et filtre de licences absent. Autres modifications UX conservées par retour ciblé. Pas de nouvelle recette mobile.
+- Suivi documentaire après publication conservé pour regroupement avec la prochaine mise à jour, conformément à la consigne de ne pas ouvrir de PR documentaire à chaque contrôle.
+
+### Cohérence visuelle et Mon compte — 20 septembre 2026
+
+- Antoine approuve les cinq points de la revue design : contrastes sombres résiduels, cartes, boutons, densité et tableaux. Demande complémentaire : icône Apparence, préférences d’apparence et de notifications toujours déployées, réorganisation de Mon compte.
+- Changements HTML/CSS limités au portail ; aucune logique métier ni lecture/écriture de données ajoutée. Lignes colorées et indicateurs de licence conservés ; pages publiques inchangées.
+- État : préparation de la PR et vérification avant déploiement TEST. Références et recette finale à compléter après publication ; aucune validation utilisateur du rendu final à ce stade.
