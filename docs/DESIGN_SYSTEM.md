@@ -558,3 +558,5 @@ Les bandeaux d’accueil des espaces remplacent intégralement leur dégradé cl
 ### Écrans de travail du portail
 
 Les titres nomment la page active (Clubs, Championnats de France, Équipe de France, Mise en liste). Les barres de recherche des annuaires partagent des champs alignés, une recherche extensible, une remise à zéro secondaire soulignée et une action principale distincte. Elles se replient sur petit écran. Les compteurs de résultats restent neutres, les succès et statuts conservent leur sémantique. Les temps DTN sont des boutons numériques soulignés sans cadre permanent, avec survol, focus clavier et sélection visibles. Les badges des clubs et la portée des compétitions DTN adaptent leur surface au thème sombre.
+
+L’entrée Compétitions mène directement à la liste, sans sous-menu Calendrier. Le fil d’Ariane affiche « Vue d’ensemble › Compétitions », puis le nom de la compétition lorsqu’une fiche est ouverte. Le retour par le fil réutilise la fermeture de fiche et sa protection des modifications non enregistrées.
