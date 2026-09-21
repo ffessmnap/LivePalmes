@@ -576,3 +576,7 @@ L’entrée Compétitions mène directement à la liste, sans sous-menu Calendri
 - Les actions principales des espaces partagent une hauteur minimale de 38 px et un rayon de 8 px. Les commandes compactes des lignes et les sélecteurs segmentés conservent leur format.
 - Les en-têtes de tableaux Records, DTN et officiels utilisent les surfaces, textes secondaires et bordures sémantiques du thème. Les couleurs des lignes de nageurs et les indicateurs de licence restent inchangés.
 - Les surfaces des historiques d’import, filtres DTN et en-têtes Records sont explicitement adaptées au sombre, y compris après chargement différé des styles. Ces règles sont limitées au portail.
+
+### Graisse des boutons du portail — 21 septembre 2026
+
+Tous les boutons et onglets du portail, y compris ceux des formulaires, fenêtres, tableaux et modules chargés à la demande, utilisent la graisse medium 500. Les libellés imbriqués héritent de cette graisse. Les liens présentés comme des boutons suivent cette règle. L’action principale se distingue par son fond, les actions secondaires par leur contour et la sélection par sa couleur, sans renforcer la graisse. Les titres et libellés de formulaires conservent leur hiérarchie ; aucune règle publique n’est modifiée.
