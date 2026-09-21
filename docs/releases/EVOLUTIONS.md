@@ -88,3 +88,11 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Première publication : [PR #71](https://github.com/ffessmnap/LivePalmes/pull/71), commit `bbd21c6d17a36d3535b508f815e070f6d709fe09`, [run TEST 35535689635](https://github.com/ffessmnap/LivePalmes/actions/runs/35535689635) réussi, backend ignoré.
 - Recette connectée : Mon compte dans les deux thèmes ; cartes Données sportives et Administration nationale, historique imports, Records, DTN Mise en liste et Mes officiels en sombre. Les surfaces principales sont corrigées, préférences déployées et icône Apparence visible.
 - Finitions issues de cette recette : contraste du descriptif des notifications et des petites flèches/étiquettes, alignement des deux cartes de préférences, colonnes du tableau officiels et actions de l’historique imports. Nouvelle vérification avant publication de ces finitions ; pas de validation utilisateur finale ni de recette mobile.
+- Finitions publiées le 21 septembre 2026 : [PR #72](https://github.com/ffessmnap/LivePalmes/pull/72), commit `a35be412f34b8e19ed643ee41e292b0178f0b8fd`, [run TEST 35575511239](https://github.com/ffessmnap/LivePalmes/actions/runs/35575511239) réussi ; backend ignoré, preuve de version conservée. Vérifications locales et GitHub réussies.
+- Limite finale : la session authentifiée du navigateur a expiré entre la recette initiale et cette publication ; le rendu connecté de ces dernières finitions et le mobile restent à confirmer. Aucun changement de préférence de notifications ni de donnée métier effectué. Pas de validation utilisateur finale. Suivi regroupé avec la prochaine PR applicative selon la consigne commune.
+
+### Graisse commune des boutons — 21 septembre 2026
+
+- Antoine valide la proposition issue de l’inventaire : tous les textes de boutons du portail en graisse 500, en clair et sombre, y compris fenêtres de saisie et onglets.
+- Règle CSS limitée au portail avec héritage des libellés imbriqués ; titres et libellés de formulaires conservés. Aucun changement métier, données ou pages publiques.
+- État : vérification et publication TEST en préparation. Validation utilisateur du rendu final attendue.
