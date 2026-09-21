@@ -156,3 +156,13 @@ html[data-portal-theme="dark"] .admin-portal-page #adminImportView :is(.competit
 }
 html[data-portal-theme="dark"] .admin-portal-page .admin-overview-space-toggle-icon { color:var(--portal-color-accent) !important; }
 html[data-portal-theme="dark"] .admin-portal-page .admin-overview-direct-link { border-color:var(--portal-color-border) !important; }
+
+/* One weight for all portal controls, including module/dialog overrides.
+   Important is intentional: legacy ID selectors and lazy-loaded module styles
+   must not reintroduce heavy button labels. Titles and form labels stay intact. */
+.admin-portal-page :is(button,[role="button"],[role="tab"],input[type="submit"],input[type="button"],input[type="reset"],a.ghost-button,a.primary-button,a.admin-primary-button,a.file-button,.admin-overview-direct-link) {
+  font-weight:var(--portal-font-weight-medium,500) !important;
+}
+.admin-portal-page :is(button,[role="button"],[role="tab"],a.ghost-button,a.primary-button,a.admin-primary-button,a.file-button,.admin-overview-direct-link) :is(span,strong,b,small,em) {
+  font-weight:inherit !important;
+}
