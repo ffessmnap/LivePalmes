@@ -133,3 +133,26 @@ html[data-portal-theme="dark"] .admin-portal-page :is(#adminRecordsView .admin-r
   .admin-portal-page :is(.admin-portal-space-home,.admin-national-home) .admin-overview-card:not([hidden]) { min-height:0; padding:14px; }
   .admin-portal-page #adminOverviewView .admin-overview-space-main { min-height:0; padding:14px; }
 }
+
+/* Final connected review: aligned preferences and legible secondary details. */
+.admin-portal-page #adminAccountView :is(.admin-appearance-card,.admin-account-preferences-card) { align-self:stretch; }
+.admin-portal-page #adminImportView .competition-import-row > summary { grid-template-columns:minmax(0,1fr) auto 24px; }
+.admin-portal-page #adminImportView .import-card-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.admin-portal-page #adminImportView .import-card-actions > button { width:auto; min-height:38px; border-radius:8px; padding:8px 14px; font-size:.82rem; }
+html[data-portal-theme="dark"] .admin-portal-page #adminAccountView .admin-account-notification-setting > div > span { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-overview-card-arrow,#adminImportView .import-card-head > div > span,#adminRecordsView .table-head .admin-label) { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(#adminRecordsView .segmented,#adminDtnView .admin-dtn-segment) { border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page #adminRecordsView .admin-records-section-icon,
+html[data-portal-theme="dark"] .admin-portal-page #adminImportView :is(.competition-import-row > summary,.advanced-tools-summary)::after { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-accent) !important; }
+@media(min-width:701px) {
+  .admin-portal-page #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row { grid-template-columns:minmax(210px,1.25fr) minmax(125px,.65fr) minmax(150px,.85fr) 78px 164px; }
+  .admin-portal-page #adminEngagementsClubPeoplePanel .admin-engagements-club-person-head > span:last-child { text-align:right; }
+}
+@media(max-width:760px) {
+  .admin-portal-page #adminImportView .competition-import-row > summary { grid-template-columns:minmax(0,1fr) 24px; }
+  .admin-portal-page #adminImportView .competition-import-row > summary > span { grid-column:1; grid-row:2; }
+  .admin-portal-page #adminImportView .competition-import-row > summary::after { grid-column:2; grid-row:1 / 3; }
+  .admin-portal-page #adminImportView .import-card-actions { justify-content:flex-start; }
+}
+html[data-portal-theme="dark"] .admin-portal-page .admin-overview-space-toggle-icon { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-overview-direct-link { border-color:var(--portal-color-border) !important; }
