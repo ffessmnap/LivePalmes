@@ -80,6 +80,7 @@ function runUnitTests() {
     "engagement-swimmer-correction-tests.js",
     "engagement-swimmer-change-mail-tests.js",
     "livepalmes-officials-pdf-tests.js",
+    "engagement-club-recap-pdf-tests.js",
     "performance-import-publication-tests.js",
     "performance-import-replacement-tests.js",
     "performance-correction-publication-tests.js",

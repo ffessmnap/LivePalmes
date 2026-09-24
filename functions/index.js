@@ -6756,6 +6756,7 @@ function engagementClubRecapPdfStoragePath(competitionId, clubId) {
 function engagementClubRecapPdfSourceHash(competition = {}, entry = {}) {
   return stableHash(JSON.stringify({
     relayCategoryLabelVersion: 2,
+    registeredSwimmersLayoutVersion: 1,
     competition: {
       id: competition.id,
       name: competition.name,
@@ -7125,6 +7126,26 @@ function engagementPdfIndividualMatrix(entry = {}, competition = {}, sex = "", t
   const columns = engagementPdfIndividualProgramColumns(competition, sex);
   const fallbackColumns = Array.from(selectedCodes).map((eventCode) => ({ eventCode, label: engagementPdfEventLabel(eventCode), sessionLabel: "" }));
   return { title, rows, columns: columns.length ? columns : fallbackColumns };
+}
+
+function engagementPdfSwimmersWithoutIndividualRows(entry = {}, competition = {}) {
+  const relayMemberIds = new Set((Array.isArray(entry.relays) ? entry.relays : []).flatMap((relay) => [
+    ...(Array.isArray(relay.memberIds) ? relay.memberIds : []),
+    ...(Array.isArray(relay.members) ? relay.members : []).map((member) => member.swimmerIndexId)
+  ]).map(cleanText).filter(Boolean));
+  // The registered roster is authoritative: relay members must not add participants or fees.
+  return (Array.isArray(entry.swimmers) ? entry.swimmers : [])
+    .filter((swimmer) => !Array.isArray(swimmer.individualEntries) || !swimmer.individualEntries.length)
+    .map((swimmer) => ({
+      swimmer: engagementPdfSwimmerName(swimmer),
+      license: swimmer.licenseNumber || "-",
+      sex: normalizeCategoryCode(swimmer.sex) || "-",
+      category: ageCategoryFromDates(competition.date, swimmer.birthDate) || "-",
+      entries: relayMemberIds.has(cleanText(swimmer.swimmerIndexId))
+        ? "Relais uniquement"
+        : "Aucune course engagée"
+    }))
+    .sort((left, right) => left.swimmer.localeCompare(right.swimmer, "fr"));
 }
 
 function engagementPdfCompactSummary(doc, items = [], y) {
@@ -7570,6 +7591,18 @@ async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
     }
   } else {
     y = engagementPdfEmptyState(doc, "Aucun engagement individuel.", y);
+  }
+
+  const swimmersWithoutIndividualRows = engagementPdfSwimmersWithoutIndividualRows(entry, competition);
+  if (swimmersWithoutIndividualRows.length) {
+    y = engagementPdfSection(doc, "Nageurs sans course individuelle", y);
+    y = engagementPdfTable(doc, [
+      { key: "swimmer", label: "Nageur", width: 165 },
+      { key: "license", label: "Licence", width: 90 },
+      { key: "sex", label: "Sexe", width: 36 },
+      { key: "category", label: "Cat.", width: 40 },
+      { key: "entries", label: "Engagements", width: 180 }
+    ], swimmersWithoutIndividualRows, y);
   }
 
   y = engagementPdfSection(doc, "Relais", y);

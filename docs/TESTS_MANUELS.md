@@ -191,6 +191,12 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ## Portail LivePalmes
 
+### PDF club : inscrits sans course
+
+- Sur TEST uniquement, télécharger le récapitulatif d'un club comprenant des inscrits avec courses individuelles, sans aucune course, et uniquement en relais. Tous les inscrits doivent apparaître ; « Aucune course engagée » doit être affiché pour ceux sans course ni relais, sans statut de remplaçant.
+- Comparer les totaux au récapitulatif financier : une entrée par inscrit, aucune course individuelle ajoutée pour les nageurs sans course, un forfait par équipe de relais. Un nageur participant aussi à un relais ne doit pas ajouter une seconde entrée. Vérifier également un club sans aucune course et une compétition sans frais.
+- Télécharger un PDF déjà généré avant la correction : le nouveau modèle doit être produit au premier téléchargement puis réutilisé sans changement des engagements. Vérifier les sauts de page avec une longue liste.
+
 ### Grilles de qualification piscine (recette sur TEST)
 
 - Activer une grille : la saisie manuelle individuelle doit passer à « Non autorisée » et être verrouillée. Le club ne peut plus saisir de temps libre, même sur une ancienne compétition configurée « Autorisée ». Au contrôle, les anciens temps manuels sont recalculés depuis l'historique déjà lu ; sans temps connu, la valeur habituelle 59:59.99 est utilisée pour une course autorisée. Les temps manuels des relais restent saisissables. Désactiver la grille permet de rechoisir la saisie manuelle.
