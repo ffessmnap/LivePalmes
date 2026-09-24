@@ -583,6 +583,8 @@ Il doit etre :
 
 ### PDF club
 
+Tous les nageurs inscrits figurent dans le PDF, même sans course individuelle ni relais. Les nageurs sans course individuelle sont présentés dans un tableau complémentaire : « Aucune course engagée » ou « Relais uniquement » selon leur participation déclarée, sans attribution automatique d'un statut de remplaçant. Le forfait nageur est compté une seule fois par inscrit ; seules les courses individuelles et les équipes de relais effectivement engagées produisent les frais correspondants.
+
 Le PDF club est genere :
 
 - a la demande ;

@@ -10,6 +10,14 @@ La version applicative `995ec7025e31cd147444e38a99afba69808a1406` est publiée e
 
 États : en cours → intégré → déployé sur TEST → validé par Antoine → publié en PROD. Une ligne n’est validée que sur la base d’un retour réel. Conserver l’historique, ne pas effacer les travaux inachevés pour faire passer une publication.
 
+### PDF club : tous les nageurs inscrits — 24 septembre 2026
+
+- Besoin : afficher les inscrits sans course individuelle ni relais, avec « Aucune course engagée », sans statut de remplaçant automatique.
+- Branche `fix/club-recap-all-swimmers`. État : en cours ; intégration et déploiement TEST à confirmer. Aucune publication PROD demandée ; recette utilisateur attendue.
+- Correction dans `functions/index.js` : tableau complémentaire des nageurs sans course individuelle, distinction « Relais uniquement », invalidation du cache des anciens PDF. Les effectifs et frais existants comptent déjà tous les inscrits : leurs calculs sont conservés.
+- Budget : aucune lecture Firestore supplémentaire, à l'ouverture, au téléchargement ou au rafraîchissement. Les données du document club déjà chargé suffisent ; aucune requête par nageur. Un ancien PDF est régénéré à la demande, sans migration ni reconstruction massive.
+- Vérification : `tests/engagement-club-recap-pdf-tests.js` couvre les effectifs, frais, relais, absence de courses, pagination et cache. Exemple fictif reproductible : `node tests/engagement-club-recap-pdf-tests.js /tmp/Exemple_recap_engagements_TEST.pdf` (6 nageurs, 3 courses, 1 relais, 77 EUR avec les tarifs d'exemple).
+
 Le premier essai du circuit TEST a inclus des fichiers temporaires de credentials. Publication retirée puis isolation corrigée par la PR #51. Antoine a confirmé la suppression des deux anciennes clés et l’enregistrement des deux remplaçantes dans les secrets GitHub le 20 septembre 2026. Le nouvel essai 35525725737 authentifie les deux comptes avec succès, contrôle les fichiers publiés, publie Hosting et conserve la preuve de version. Les étapes de déploiement Functions sont ignorées car aucun code backend n’a changé ; cet essai ne valide donc pas un déploiement Functions réel. La preuve de l’ancien essai 35523482002 ne doit pas être réutilisée. La suppression des anciennes clés est confirmée par Antoine, sans contrôle IAM indépendant. Aucun audit d’utilisation des anciennes clés n’a été réalisé dans cet essai. Aucun workflow PROD déclenché dans cette évolution.
 
 ### Colonne continue du portail — 20 septembre 2026
