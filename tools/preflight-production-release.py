@@ -85,13 +85,23 @@ def main():
         else:
             raise ValueError("Inventaire incomplet")
         selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,LOTS}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x])))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
+        extra = []
+        if os.environ.get('PLAN'):
+            plan = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
+            extra = plan.get('additionalPdfFunctions', [])
+            if extra and (set(extra) != {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'} or not plan.get('additionalPdfApproval')):
+                raise ValueError('Extension PDF non autorisee')
+        selected += extra
         if os.environ.get("RELEASE_SELECTION"):
             requested = json.loads(Path(os.environ["RELEASE_SELECTION"]).read_text())
             if not isinstance(requested, list) or len(requested) != len(set(requested)) or not set(requested).issubset(selected):
                 raise ValueError("Selection hors perimetre")
             selected = requested
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
-        app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions)
+        if not set(extra).issubset({f['name'].split('/')[-1] for f in selected_functions}):
+            raise ValueError('Traitement PDF existant absent')
+        report['additionalPdfFunctions'] = extra
+        app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in extra)
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
         report["appCheck"] = next(iter(app_checks), "false")
@@ -100,7 +110,7 @@ def main():
             allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
             for f in selected_functions:
                 service = f.get("serviceConfig", {})
-                if set(service.get("environmentVariables", {})) - allowed_keys or service.get("secretEnvironmentVariables") or service.get("secretVolumes"):
+                if f['name'].split('/')[-1] not in extra and (set(service.get("environmentVariables", {})) - allowed_keys or service.get("secretEnvironmentVariables") or service.get("secretVolumes")):
                     raise ValueError("Configuration runtime inattendue")
                 if f.get("environment") != "GEN_2" or f.get("buildConfig", {}).get("runtime") != "nodejs22" or f.get("state") != "ACTIVE":
                     raise ValueError("Function PROD incompatible")
