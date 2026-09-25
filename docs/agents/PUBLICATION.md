@@ -20,6 +20,8 @@ Une opération sur les données, une migration, un envoi réel, les règles ou l
 
 ## Avant publication
 
+Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Les approbations techniques GitHub encore configurées restent obligatoires.
+
 1. Confirmer précisément le périmètre validé par l’utilisateur.
 2. Préserver et distinguer les autres changements déjà présents dans le dossier partagé.
 3. Exécuter `node tools/verify-livepalmes.js` et les tests ciblés nécessaires.
@@ -41,11 +43,11 @@ Les anciens workflows `livepalmes-production.yml` et `livepalmes-production-resu
 
 ### Ordre Firebase pour le portail
 
-Apres reauthentification explicite de la CLI et nouvelle validation utilisateur du deploiement :
+Dans le workflow authentifié, pour la version et le périmètre déjà autorisés, sans nouvelle authentification manuelle ni nouvelle autorisation de principe à chaque étape :
 
-1. executer le dry-run des index et Functions ;
+1. simuler les Functions sélectionnées seulement si le backend change ; aucune simulation d'index dans le circuit ordinaire ;
 2. si des index sont nécessaires, arrêter le circuit ordinaire et préparer leur déploiement séparé explicitement autorisé ;
-3. deployer uniquement les Functions portail modifiees ;
+3. déployer la sélection du bilan ; le circuit actuel sélectionne encore tous les lots ordinaires si le backend partagé change. Ne réduire cette sélection qu'après adaptation et validation du mécanisme de dépendances décrit dans `docs/releases/PROCEDURE.md` ;
 4. executer les tests manuels avec les index actifs ;
 5. deployer Hosting en dernier, puis controler les en-tetes CSP/cache et l'absence de `performances/public/data/admin-reference.js` en ligne.
 
