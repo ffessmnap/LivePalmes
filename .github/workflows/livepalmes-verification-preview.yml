@@ -71,6 +71,7 @@ jobs:
 
       - name: Tester le circuit de publication sans acces Firebase
         run: |
+          node tests/release-function-fingerprints-tests.js
           python tests/release-cycle-tests.py
           python tests/production-release-state-tests.py
           python tests/production-release-source-tests.py

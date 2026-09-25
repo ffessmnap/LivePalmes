@@ -17,7 +17,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -56,25 +55,18 @@ jobs:
         CANDIDATE_SHA: ${{ steps.request.outputs.candidate }}
     - name: Verifier le circuit de publication
       run: |-
+        npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
+        node tooling/tests/release-function-fingerprints-tests.js
         python tooling/tests/release-cycle-tests.py
         python tooling/tests/production-pdf-functions-tests.py
         python tooling/tests/production-release-state-tests.py
         node tooling/tests/production-backup-crypto-tests.js
-    - uses: google-github-actions/auth@v3
-      with:
-        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
-        project_id: livepalmes-test
-    - uses: google-github-actions/setup-gcloud@v3
-    - name: Verifier la version TEST reellement deployee
+    - name: Verifier la preuve de publication TEST
       run: |-
-        python tooling/tools/release-cycle.py verify-test "$PLAN"
+        python tooling/tools/release-cycle.py verify-test-evidence "$PLAN"
         python tooling/tools/release-cycle.py selection "$PLAN" candidate
-    - uses: google-github-actions/auth@v3
-      with:
-        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
-        project_id: livepalmes
-    - name: Figer le bilan et les revisions PROD
-      run: python tooling/tools/release-cycle.py freeze "$PLAN"
+    - name: Figer le bilan depuis les preuves PROD
+      run: python tooling/tools/release-cycle.py freeze-evidence "$PLAN"
     - uses: actions/upload-artifact@v4
       with:
         name: release-plan
