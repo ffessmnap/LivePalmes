@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "candidate": "4b1c6937c01dd71822d46d9a8ff23508d43d2309",
+  "productionCommit": "995ec7025e31cd147444e38a99afba69808a1406",
+  "productionHosting": "sites/livepalmes/versions/61bbdb3230029827",
+  "testRun": 36105695980,
+  "changes": [
+    {
+      "title": "Portail, lisibilite, navigation et qualifications",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-dtn-qualifications.js",
+        "assets/livepalmes-portal-appearance.css",
+        "assets/livepalmes-portal-shell.css",
+        "assets/livepalmes-portal-shell.js",
+        "assets/livepalmes-portal-ux.js",
+        "assets/livepalmes-portal-workspaces.css",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine autorise la publication de toutes les modifications TEST dans la conversation Infra du 25 septembre 2026, sous reserve des controles automatiques. Aucune recette manuelle supplementaire pretendue."
+    },
+    {
+      "title": "PDF club : tous les nageurs inscrits, pagination et cache",
+      "paths": [
+        "functions/index.js"
+      ],
+      "status": "validated",
+      "validation": "Accord de publication TEST vers PROD du 25 septembre 2026 ; tests PDF hors ligne reussis. Aucun appel metier PROD de generation ou envoi."
+    }
+  ],
+  "excludedBackendReview": "Le generateur PDF partage est aussi utilise par prepareEngagementClubRecapEmails et closeDueEngagementCompetitions : inclus uniquement sur accord specifique, mise a jour de source en conservant parametres, secrets et programmation. Les dix autres fonctions exclues restent inchangees. Aucune invocation de traitement, copie de donnees ou changement de regles/index.",
+  "additionalPdfFunctions": [
+    "prepareEngagementClubRecapEmails",
+    "closeDueEngagementCompetitions"
+  ],
+  "additionalPdfApproval": "Accord explicite oui d Antoine le 25 septembre 2026 dans LivePalmes Infra pour ces deux traitements uniquement ; sans declenchement manuel ni modification des secrets ou de la programmation."
+}

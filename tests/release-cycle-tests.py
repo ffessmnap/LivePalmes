@@ -10,6 +10,11 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_pdf_extension_needs_specific_approval_and_exact_pair(self):
+        for names, approval in [(['sendEmails'], 'accord'), (['closeDueEngagementCompetitions'], 'accord'), (list(m.PDF_FUNCTIONS), '')]:
+            with self.assertRaises(ValueError):
+                m.approved_pdf_functions({'additionalPdfFunctions': names, 'additionalPdfApproval': approval})
+        self.assertEqual(set(m.approved_pdf_functions({'additionalPdfFunctions': list(m.PDF_FUNCTIONS), 'additionalPdfApproval': 'Antoine, Infra 25 septembre'})), m.PDF_FUNCTIONS)
     def test_test_staging_respects_external_destination(self):
         with tempfile.TemporaryDirectory() as d:
             candidate=Path(d)/'candidate'; candidate.mkdir()
