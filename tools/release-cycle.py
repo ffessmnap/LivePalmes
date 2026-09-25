@@ -1,5 +1,6 @@
 """Reusable code releases. No Firestore, business Function or data migration calls."""
 import hashlib
+from functools import lru_cache
 import importlib.util
 import io
 import json
@@ -56,6 +57,70 @@ def output(**values):
 
 def safe_functions(root):
     return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,LOTS}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js')]))
+
+
+@lru_cache(maxsize=64)
+def backend_fingerprints(sha):
+    require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend absent')
+    return json.loads(run(['node', str(ROOT / 'tools/release-function-fingerprints.js'), str(ROOT), sha]))['functions']
+
+
+def needs_function(function, name, candidate):
+    if not function or function.get('state') != 'ACTIVE':
+        return True
+    old = function.get('commit')
+    if not old or not SHA.fullmatch(old):
+        return True
+    try:
+        previous = backend_fingerprints(old)
+    except (ValueError, subprocess.CalledProcessError):
+        return True  # Unknown provenance: republish; never guess equivalence.
+    desired = backend_fingerprints(candidate)
+    require(name in desired, 'Export candidat absent: ' + name)
+    return previous.get(name) != desired[name]
+
+
+def latest_run(workflow, skip=0):
+    runs = gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/workflows/{workflow}/runs?branch=main&event=workflow_dispatch&per_page=20')['workflow_runs']
+    runs = [r for r in runs if r['id'] != int(skip)]
+    if workflow == 'livepalmes-test-common.yml':
+        runs = [r for r in runs if r.get('display_title') != 'Verification TEST sans deploiement']
+    require(runs, 'Aucune publication de reference')
+    current = runs[0]
+    require(current['status'] == 'completed' and current['conclusion'] == 'success', 'Derniere publication non terminee ou en echec : examen requis')
+    return current['id']
+
+
+def test_selection(directory, candidate):
+    root = Path(directory)
+    sha = os.environ['CANDIDATE_SHA']
+    before = snapshot('livepalmes-test')
+    trusted = False
+    try:
+        previous = latest_run('livepalmes-test-common.yml', os.environ['GITHUB_RUN_ID'])
+        artifact(previous, 'test-proof', root / 'previous-test', '.github/workflows/livepalmes-test-common.yml')
+        trusted = read(root / 'previous-test/test-proof.json')['state'] == before
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError):
+        pass  # No valid matching proof: use the full safe selection.
+    safe = safe_functions(candidate)
+    names = {f['name'].split('/')[-1]: f for f in before['functions']}
+    selected = [n for n in safe if not trusted or needs_function(names.get(n), n, sha)]
+    write(root / 'test-before.json', before)
+    write(root / 'test-selection.json', selected)
+    output(backend=str(bool(selected)).lower())
+    print(f'Functions TEST a publier : {len(selected)} / {len(safe)} ; preuve anterieure concordante : {trusted}.')
+
+
+def check_test(directory, candidate):
+    root = Path(directory)
+    before = {f['name']: f for f in read(root / 'test-before.json')['functions']}
+    after = {f['name']: f for f in snapshot('livepalmes-test')['functions']}
+    selected = set(read(root / 'test-selection.json'))
+    full_selected = {'projects/livepalmes-test/locations/europe-west1/functions/' + n for n in selected}
+    require(set(after) == set(before) | full_selected, 'Inventaire TEST inattendu')
+    require(all(after.get(n) == f for n, f in before.items() if n not in full_selected), 'Function TEST non selectionnee modifiee')
+    names = {n.split('/')[-1]: f for n, f in after.items()}
+    require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA']) for n in safe_functions(candidate)), 'Backend TEST incomplet')
 
 
 def classify(paths):
@@ -178,13 +243,14 @@ def proof(directory):
     write(root / 'test-proof.json', {'candidate': candidate, 'state': state})
 
 
-def verify_test(directory):
+def verify_test(directory, live=True):
     root = Path(directory)
     request = read(root / 'request.json')
     info = artifact(request['testRun'], 'test-proof', root / 'test', '.github/workflows/livepalmes-test-common.yml')
     evidence = read(root / 'test/test-proof.json')
     require(evidence['candidate'] == request['candidate'] == info['head_sha'], 'Version TEST differente du candidat')
-    require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
+    if live:
+        require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
     write(root / 'test-proof.json', evidence)
 
 
@@ -196,26 +262,57 @@ def prepare_selection(directory, candidate):
     if backend:
         state = read(directory / 'test-proof.json')['state']
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
-        require(all(n in names and names[n]['state'] == 'ACTIVE' and names[n]['commit'] == request['candidate'] for n in selected), 'Backend TEST incomplet ou pas au commit valide')
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         selected += approved_pdf_functions(request)
     write(directory / 'selection.json', selected)
 
 
-def freeze_plan(directory):
+def production_evidence(directory):
+    root = Path(directory)
+    run_id = latest_run('livepalmes-production-release.yml')
+    path = '.github/workflows/livepalmes-production-release.yml'
+    artifact(run_id, 'release-plan', root / 'production-plan', path)
+    artifact(run_id, 'production-after', root / 'production-state', path)
+    artifact(run_id, 'production-hosting-after', root / 'production-hosting', path)
+    plan = read(root / 'production-plan/request.json')
+    old = read(root / 'production-plan/prod-before.json')
+    selected = set(read(root / 'production-plan/selection.json'))
+    after = read(root / 'production-state/production-after.json')
+    hosting = read(root / 'production-hosting/production-hosting-after.json')
+    require(after['candidate'] == plan['candidate'] and not after['errors'], 'Publication de reference incoherente')
+    previous = {f['name']: f for f in old['functions']}
+    functions = []
+    for f in after['functions']:
+        name = f['name'].split('/')[-1]
+        commit = plan['candidate'] if name in selected else previous.get(f['name'], {}).get('commit')
+        functions.append({**f, 'commit': commit})
+    state = {'hosting': {**hosting, 'message': f'LivePalmes {plan["candidate"]} run {run_id}'},
+             'functions': sorted(functions, key=lambda f: f['name'])}
+    write(root / 'baseline.json', {'productionRun': run_id, 'productionCommit': plan['candidate'], 'source': 'verified-publication-artifacts'})
+    return state
+
+
+def freeze_plan(directory, evidence=False):
     root = Path(directory)
     request = read(root / 'request.json')
-    state = snapshot('livepalmes')
+    state = production_evidence(root) if evidence else snapshot('livepalmes')
     require(state['hosting']['version'] == request['productionHosting'], 'PROD differente du bilan')
     # Initial release recorded before reusable cycle. Subsequent Hosting releases carry the SHA.
     initial = request['productionCommit'] == '995ec7025e31cd147444e38a99afba69808a1406' and request['productionHosting'] == 'sites/livepalmes/versions/61bbdb3230029827'
     require(initial or state['hosting']['message'].startswith('LivePalmes ' + request['productionCommit'] + ' run '), 'Commit PROD non prouve par la release')
     write(root / 'prod-before.json', state)
+    names = {f['name'].split('/')[-1]: f for f in state['functions']}
+    selected = read(root / 'selection.json')
+    selected = [n for n in selected if n in approved_pdf_functions(request) or needs_function(names.get(n), n, request['candidate'])]
+    write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
         summary.write('\n## Bilan avant publication\n\n')
         summary.write(f"Version TEST : `{request['candidate']}`. Base PROD : `{request['productionCommit']}`.\n\n")
         for item in request['changes']:
             summary.write('- ' + item['title'].replace('\n', ' ') + ' — ' + item['validation'].replace('\n', ' ') + '\n')
         summary.write(f"\nFunctions selectionnees : {len(read(root / 'selection.json'))}. Regles/index/donnees exclus.\n")
+        if evidence:
+            summary.write('\nBilan fonde sur les preuves de publication, sans acces Google. Firebase sera relu apres votre unique approbation et avant toute ecriture ; toute derive bloquera.\n')
 
 
 def compare_prod(directory):
@@ -272,6 +369,7 @@ def fetch_plan(preparation, resume, directory):
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
+    require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower())
 
@@ -305,6 +403,14 @@ def main():
         proof(*args)
     elif mode == 'verify-test':
         verify_test(*args)
+    elif mode == 'verify-test-evidence':
+        verify_test(*args, live=False)
+    elif mode == 'freeze-evidence':
+        freeze_plan(*args, evidence=True)
+    elif mode == 'test-selection':
+        test_selection(*args)
+    elif mode == 'check-test':
+        check_test(*args)
     elif mode == 'selection':
         prepare_selection(*args)
     elif mode == 'freeze':

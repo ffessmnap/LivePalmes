@@ -10,6 +10,76 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_workflow_keeps_only_writer_behind_approval(self):
+        workflows=Path(__file__).parents[1]/'.github/workflows'
+        preflight=(workflows/'livepalmes-production-preflight.yml').read_text()
+        release=(workflows/'livepalmes-production-release.yml').read_text()
+        self.assertNotIn('environment: production',preflight)
+        self.assertNotIn('FIREBASE_SERVICE_ACCOUNT',preflight)
+        self.assertNotIn('google-github-actions',preflight)
+        self.assertIn('environment: production',release)
+        self.assertLess(release.index('Relire TEST avant toute ecriture PROD'),release.index('Sauvegarder le code PROD'))
+        self.assertLess(release.index('Verifier que PROD correspond encore au bilan'),release.index('Publier les Functions'))
+
+    def test_production_evidence_preserves_unselected_commit(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            before=[{'name':'functions/one','commit':'b'*40},{'name':'functions/two','commit':'c'*40}]
+            m.write(root/'production-plan/request.json',{'candidate':'a'*40})
+            m.write(root/'production-plan/prod-before.json',{'functions':before})
+            m.write(root/'production-plan/selection.json',['one'])
+            m.write(root/'production-state/production-after.json',{'candidate':'a'*40,'errors':[], 'functions':[{'name':f['name'],'state':'ACTIVE','revision':'r','updateTime':'now'} for f in before]})
+            m.write(root/'production-hosting/production-hosting-after.json',{'name':'release','version':'version'})
+            with patch.object(m,'latest_run',return_value=12),patch.object(m,'artifact'),patch.object(m,'snapshot') as google:
+                result=m.production_evidence(root);google.assert_not_called()
+            self.assertEqual([f['commit'] for f in result['functions']],['a'*40,'c'*40])
+            self.assertEqual(result['hosting']['message'],'LivePalmes '+'a'*40+' run 12')
+
+    def test_freeze_reduces_only_functions_with_equal_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);r=self.request();m.write(root/'request.json',r);m.write(root/'selection.json',['one','two'])
+            state={'hosting':{'version':r['productionHosting'],'message':'LivePalmes '+r['productionCommit']+' run 12'},'functions':[{'name':'functions/one'},{'name':'functions/two'}]}
+            with patch.object(m,'production_evidence',return_value=state),patch.object(m,'needs_function',side_effect=[False,True]),patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary')}):
+                m.freeze_plan(root,evidence=True)
+            self.assertEqual(m.read(root/'selection.json'),['two'])
+
+    def test_unchanged_backend_can_keep_older_commit(self):
+        fn={'state':'ACTIVE','commit':'b'*40}
+        with patch.object(m,'backend_fingerprints',return_value={'one':'same'}):
+            self.assertFalse(m.needs_function(fn,'one','a'*40))
+        with patch.object(m,'backend_fingerprints',side_effect=[{'one':'old'},{'one':'new'}]):
+            self.assertTrue(m.needs_function(fn,'one','a'*40))
+        self.assertTrue(m.needs_function({'state':'FAILED'},'one','a'*40))
+        self.assertTrue(m.needs_function({'state':'ACTIVE','commit':None},'one','a'*40))
+
+    def test_readonly_plan_never_calls_google(self):
+        with tempfile.TemporaryDirectory() as d:
+            r=self.request();m.write(Path(d)/'request.json',r)
+            m.write(Path(d)/'test/test-proof.json',{'candidate':r['candidate'],'state':{'revision':'published'}})
+            with patch.object(m,'artifact',return_value={'head_sha':r['candidate']}),patch.object(m,'snapshot') as google:
+                m.verify_test(d,live=False);google.assert_not_called()
+
+    def test_verification_only_plan_cannot_publish(self):
+        with tempfile.TemporaryDirectory() as d:
+            r=self.request();r['verificationOnly']=True;m.write(Path(d)/'request.json',r)
+            with patch.object(m,'artifact'),self.assertRaisesRegex(ValueError,'publication interdite'):
+                m.fetch_plan('12','0',d)
+
+    def test_latest_failed_production_does_not_use_older_success(self):
+        with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m,'gh',return_value={'workflow_runs':[{'id':2,'status':'completed','conclusion':'failure'},{'id':1,'status':'completed','conclusion':'success'}]}),self.assertRaises(ValueError):
+            m.latest_run('livepalmes-production-release.yml')
+
+    def test_test_diagnostic_does_not_replace_deployment_proof(self):
+        with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m,'gh',return_value={'workflow_runs':[{'id':2,'display_title':'Verification TEST sans deploiement','status':'completed','conclusion':'success'},{'id':1,'status':'completed','conclusion':'success'}]}):
+            self.assertEqual(m.latest_run('livepalmes-test-common.yml'),1)
+
+    def test_unselected_test_change_blocks_hosting(self):
+        with tempfile.TemporaryDirectory() as d:
+            f={'name':'projects/livepalmes-test/locations/europe-west1/functions/one','revision':'old'}
+            m.write(Path(d)/'test-before.json',{'functions':[f]});m.write(Path(d)/'test-selection.json',[])
+            with patch.object(m,'snapshot',return_value={'functions':[{**f,'revision':'unexpected'}]}),self.assertRaisesRegex(ValueError,'non selectionnee'):
+                m.check_test(d,'.')
+
     def test_pdf_extension_needs_specific_approval_and_exact_pair(self):
         for names, approval in [(['sendEmails'], 'accord'), (['closeDueEngagementCompetitions'], 'accord'), (list(m.PDF_FUNCTIONS), '')]:
             with self.assertRaises(ValueError):

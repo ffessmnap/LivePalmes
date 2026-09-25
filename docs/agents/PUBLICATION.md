@@ -35,7 +35,7 @@ Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé
 
 - PR : vérification technique et aperçu isolé `pr-N` sur Firebase TEST.
 - `livepalmes-test-common.yml` : publication du commit main regroupé sur TEST, traitements nécessaires puis Hosting, preuve de version conservée.
-- `livepalmes-production-preflight.yml` : bilan en lecture seule du candidat validé et des versions réellement observées.
+- `livepalmes-production-preflight.yml` : bilan sans accès Google, fondé sur les preuves vérifiées des versions publiées ; relecture Firebase après l’approbation PROD.
 - `livepalmes-production-release.yml` : publication du bilan approuvé, sauvegarde vérifiée, lots bornés, contrôles puis Hosting ; `resume_run` conserve la sauvegarde initiale si une reprise est nécessaire.
 - `livepalmes-production-rollback.yml` : restauration explicite du code sauvegardé et de la release Hosting précédente.
 
@@ -47,7 +47,7 @@ Dans le workflow authentifié, pour la version et le périmètre déjà autoris�
 
 1. simuler les Functions sélectionnées seulement si le backend change ; aucune simulation d'index dans le circuit ordinaire ;
 2. si des index sont nécessaires, arrêter le circuit ordinaire et préparer leur déploiement séparé explicitement autorisé ;
-3. déployer la sélection du bilan ; le circuit actuel sélectionne encore tous les lots ordinaires si le backend partagé change. Ne réduire cette sélection qu'après adaptation et validation du mécanisme de dépendances décrit dans `docs/releases/PROCEDURE.md` ;
+3. déployer la sélection du bilan ; les empreintes réduisent le périmètre pour une correction isolée ; un changement partagé ou une analyse incertaine conserve le périmètre large, selon `docs/releases/PROCEDURE.md` ;
 4. executer les tests manuels avec les index actifs ;
 5. deployer Hosting en dernier, puis controler les en-tetes CSP/cache et l'absence de `performances/public/data/admin-reference.js` en ligne.
 
