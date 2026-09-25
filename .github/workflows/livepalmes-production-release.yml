@@ -78,13 +78,27 @@ jobs:
 
         node tools/verify-livepalmes.js'
     - name: Verifier le circuit de publication
-      run: 'python tooling/tests/release-cycle-tests.py
+      run: 'npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
+
+        node tooling/tests/release-function-fingerprints-tests.js
+
+        python tooling/tests/release-cycle-tests.py
 
         python tooling/tests/production-pdf-functions-tests.py
 
         python tooling/tests/production-release-state-tests.py
 
         node tooling/tests/production-backup-crypto-tests.js'
+    - uses: google-github-actions/auth@v3
+      if: inputs.resume_run == '0'
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        project_id: livepalmes-test
+    - uses: google-github-actions/setup-gcloud@v3
+      if: inputs.resume_run == '0'
+    - name: Relire TEST avant toute ecriture PROD
+      if: inputs.resume_run == '0'
+      run: python tooling/tools/release-cycle.py verify-test "$PLAN"
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
