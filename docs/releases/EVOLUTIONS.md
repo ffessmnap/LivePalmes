@@ -10,6 +10,13 @@ La version applicative `995ec7025e31cd147444e38a99afba69808a1406` est publiée e
 
 États : en cours → intégré → déployé sur TEST → validé par Antoine → publié en PROD. Une ligne n’est validée que sur la base d’un retour réel. Conserver l’historique, ne pas effacer les travaux inachevés pour faire passer une publication.
 
+### Reprise de publication — 25 septembre 2026
+
+- Antoine autorise dans Infra la publication de toutes les évolutions présentes sur TEST, puis la correction ciblée du blocage TEST et la reprise PROD si les contrôles réussissent. Aucune copie ni modification des données n'est autorisée. Cet accord ne constitue pas une déclaration de recette manuelle exhaustive.
+- Le run TEST 35995042484 a publié et contrôlé les 134 Functions ordinaires du commit `1554db370fd303a9973bd422e8305355d1987027`, puis bloqué Hosting avant publication. La préparation backend créait des fichiers non suivis sous `.firebase-test-functions` dans le dossier du site ; le contrôle de sécurité les a refusés. La dernière publication complète précédente est le run 35580349213, commit `5edd066bff228df734a1bfc0db28537210c82422`.
+- Correction limitée à la préparation : dossier Functions temporaire placé hors du checkout publié, sous RUNNER_TEMP ; contrôle Hosting conservé. Reproduction locale du défaut (33 fichiers non suivis), puis contrôle Hosting réussi avec staging externe et test de non-régression ajouté. Aucun changement applicatif, règle, index ou configuration Firebase.
+- État : correction en préparation ; nouvelle preuve TEST et bilan PROD à obtenir avant toute publication. La PR #37 de synchronisation des données reste exclue.
+
 ### PDF club : tous les nageurs inscrits — 24 septembre 2026
 
 - Besoin : afficher les inscrits sans course individuelle ni relais, avec « Aucune course engagée », sans statut de remplaçant automatique.

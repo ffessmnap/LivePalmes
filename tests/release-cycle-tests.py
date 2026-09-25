@@ -10,6 +10,17 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_test_staging_respects_external_destination(self):
+        with tempfile.TemporaryDirectory() as d:
+            candidate=Path(d)/'candidate'; candidate.mkdir()
+            destination=Path(d)/'.firebase-test-functions'
+            (destination/'functions').mkdir(parents=True)
+            (destination/'functions/index.js').write_text('exports.example = {};')
+            with patch.object(m.subprocess,'run') as command:
+                m.stage(str(candidate),'livepalmes-test',str(destination),'a'*40)
+            self.assertEqual(command.call_args.args[0][-1],str(destination))
+            self.assertFalse((candidate/'.firebase-test-functions').exists())
+            self.assertIn('livepalmes-commit',(destination/'functions/index.js').read_text())
     def request(self):
         return {'schema':1,'candidate':'a'*40,'productionCommit':'b'*40,'productionHosting':'sites/livepalmes/versions/example','testRun':12,'changes':[{'title':'Affichage','status':'validated','validation':'Antoine, retour sur le commit teste','paths':['portail.html']}]}
     def test_ui_does_not_select_backend(self):
