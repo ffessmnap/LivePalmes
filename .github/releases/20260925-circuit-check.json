@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "verificationOnly": true,
+  "candidate": "4b1c6937c01dd71822d46d9a8ff23508d43d2309",
+  "productionCommit": "4b1c6937c01dd71822d46d9a8ff23508d43d2309",
+  "productionHosting": "sites/livepalmes/versions/e3186cfe0bdb29e8",
+  "testRun": 36105695980,
+  "changes": [
+    {
+      "title": "Verification du circuit simplifie, sans publication",
+      "paths": [],
+      "status": "validated",
+      "validation": "Antoine autorise le 25 septembre 2026 la simplification du circuit et ses verifications ; aucune publication PROD de ce bilan."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-La version applicative `995ec7025e31cd147444e38a99afba69808a1406` est publiée en PROD depuis le 20 septembre 2026, run [35519443050](https://github.com/ffessmnap/LivePalmes/actions/runs/35519443050). Les commits d’infrastructure ultérieurs ne sont pas des évolutions applicatives déjà publiées.
+La version applicative `4b1c6937c01dd71822d46d9a8ff23508d43d2309` est publiée en PROD depuis le 25 septembre 2026, run [36108577649](https://github.com/ffessmnap/LivePalmes/actions/runs/36108577649), Hosting `e3186cfe0bdb29e8`. Les commits d’infrastructure ultérieurs ne sont pas des évolutions applicatives déjà publiées.
 
 | Besoin | PR / commit | État | Preuve TEST | Validation utilisateur | Publication PROD |
 | --- | --- | --- | --- | --- | --- |
@@ -118,3 +118,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Antoine valide la proposition issue de l’inventaire : tous les textes de boutons du portail en graisse 500, en clair et sombre, y compris fenêtres de saisie et onglets.
 - Règle CSS limitée au portail avec héritage des libellés imbriqués ; titres et libellés de formulaires conservés. Aucun changement métier, données ou pages publiques.
 - État : vérification et publication TEST en préparation. Validation utilisateur du rendu final attendue.
+
+### Simplification technique du circuit — 25 septembre 2026
+
+- Antoine demande l’application de la procédure simplifiée : bilan sans première approbation, réutilisation TEST et réduction des Functions lorsque possible.
+- Bilan sans secret ni accès Google, fondé sur les artefacts vérifiés de publication ; relecture TEST/PROD après l’unique approbation de publication. Empreintes syntaxiques des exports, repli conservateur pour dépendances partagées et code dynamique, contrôle des fonctions conservées.
+- Tests hors ligne : correction isolée, changement partagé, identité ancienne mais équivalente, dérive TEST/PROD, tentative précédente échouée, artefact altéré, bilan de diagnostic interdit en publication. Contrôles GitHub et diagnostics en lecture seule à exécuter après intégration ; aucun déploiement PROD demandé pour tester le circuit.
