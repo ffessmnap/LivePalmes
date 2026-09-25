@@ -16,7 +16,26 @@ Tenir `EVOLUTIONS.md` à jour. Une validation concerne un commit et les parcours
 
 Les conversations n’échangent pas automatiquement leurs messages : le dépôt et ce registre sont la référence commune. Une session avec un checkout ancien doit récupérer les consignes de main avant d’agir.
 
+## Simplification approuvée le 25 septembre 2026
+
+Objectif utilisateur : tester sur TEST, demander la publication dans Infra, recevoir un bilan court, confirmer une seule fois dans GitHub, puis recevoir le résultat. L'assistant gère les références techniques. Les accords explicites restent valables pour leur périmètre ; tout écart ou nouveau risque doit être expliqué.
+
+État : orientation approuvée, adaptation des automatismes restant à réaliser. Ce document ne désactive aucune protection et ne change pas la sélection des Functions. Le bilan et la publication actuels utilisent tous deux l'environnement protégé `production` : deux approbations peuvent encore être nécessaires.
+
+Travaux techniques à réaliser dans cet ordre :
+
+1. Préparer le bilan sans approbation de déploiement, avec une identité dédiée limitée à la lecture des métadonnées nécessaires. Adapter l'authentification de `livepalmes-production-preflight.yml` et ses accès GitHub. Ne pas déplacer les identifiants de publication PROD vers un environnement non protégé. Conserver une approbation humaine sur le job qui peut modifier PROD, sans approbation automatique ni contournement.
+2. Réutiliser la preuve TEST valide. Pour une nouvelle évolution TEST, distinguer les changements depuis le dernier TEST réussi des changements restant à publier depuis PROD. Vérifier le code backend et ses révisions sans imposer une reconstruction pour un simple changement de commit documentaire. Un changement uniquement documentaire ne remplace pas automatiquement le candidat applicatif validé.
+3. Réduire la sélection Functions avec une analyse des dépendances partagées, une sélection vérifiable et un repli vers le périmètre large en cas d'incertitude. Adapter ensemble preuve TEST, sélection PROD, contrôle des fonctions inchangées, sauvegarde et retour arrière. Les seuls noms d'exports modifiés ne suffisent pas : le correctif PDF partagé affectait aussi deux traitements exclus du circuit ordinaire.
+4. Conserver les contrôles rapides : candidat exact, absence de travaux incomplets et de dérive PROD, protection du contenu Hosting, sauvegarde vérifiée, état des fonctions et contrôles après publication. Supprimer un doublon seulement si une preuve équivalente porte sur le même code et reste valide.
+
+Critères avant de déclarer la simplification opérationnelle : bilan réellement en lecture seule sans accès d'écriture ; une seule approbation pour publier ; une évolution d'interface ne publie aucune Function ; les dépendances backend sont couvertes et les fonctions exclues conservées ; preuve périmée ou dérive PROD bloquantes ; sauvegarde et retour arrière couvrant toute la sélection. Vérifier ces cas sans données réelles, puis sur TEST. Ne pas publier PROD uniquement pour tester l'automatisation.
+
+Constat du 25 septembre : TEST environ 23 minutes, bilan automatique moins d'une minute, PROD environ 25 minutes dont 21 minutes de publication Functions ; vérification générale PROD environ 27 secondes. Priorités : nombre d'approbations et périmètre reconstruit. Aucune durée fixe n'est garantie.
+
 ## 1. Publier TEST commun
+
+Pour préparer PROD, réutiliser la publication TEST existante si sa preuve est valide et correspond au candidat et à l'état réellement observé. Ne relancer TEST que si nécessaire : nouvelle version, publication incomplète, preuve périmée ou état modifié.
 
 L’assistant lance `livepalmes-test-common.yml` depuis main, avec `production_commit` égal au SHA applicatif actuellement publié. Vérification du SHA main avant publication ; si main a évolué, recommencer sur la version réunie. Workflow sérialisé avec le backend TEST ; aucune annulation forcée d’un déploiement en cours.
 
@@ -56,7 +75,9 @@ Conservation : 14 jours pour les artefacts. Conserver la clé d’origine du com
 
 ## Vérification du circuit
 
-`python tests/release-cycle-tests.py`, tests de sauvegarde, tests d’état et vérification globale. Les scénarios locaux simulent les API : ils ne prétendent pas être un déploiement réel. La première utilisation sur une prochaine évolution validera les accès et la publication TEST de bout en bout. Ne pas publier en PROD pour tester l’automatisation.
+Le circuit actuel a réussi de bout en bout le 25 septembre 2026 : TEST 36105695980, bilan 36107672710, PROD 36108577649. Les adaptations futures restent à tester séparément.
+
+`python tests/release-cycle-tests.py`, tests de sauvegarde, tests d’état et vérification globale. Les scénarios locaux simulent les API : ils ne prétendent pas être un déploiement réel. Ne pas publier en PROD pour tester l’automatisation.
 
 ## Isolation des identifiants de publication
 
