@@ -15,6 +15,14 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 PROJECTS = {'livepalmes', 'livepalmes-test'}
+PDF_FUNCTIONS = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'}
+
+
+def approved_pdf_functions(value):
+    names = value.get('additionalPdfFunctions', [])
+    require(isinstance(names, list) and len(names) == len(set(names)) and set(names).issubset(PDF_FUNCTIONS), 'Extension PDF interdite')
+    require(not names or (set(names) == PDF_FUNCTIONS and value.get('additionalPdfApproval')), 'Accord specifique des deux traitements PDF requis')
+    return names
 
 
 def require(value, message):
@@ -64,6 +72,8 @@ def validate_request(value, paths):
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
     application, backend = classify(paths)
+    extra = approved_pdf_functions(value)
+    require(not extra or backend, 'Extension PDF sans changement backend')
     covered = set()
     require(isinstance(value.get('changes'), list) and value['changes'], 'Bilan des evolutions requis')
     for change in value['changes']:
@@ -187,6 +197,7 @@ def prepare_selection(directory, candidate):
         state = read(directory / 'test-proof.json')['state']
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(n in names and names[n]['state'] == 'ACTIVE' and names[n]['commit'] == request['candidate'] for n in selected), 'Backend TEST incomplet ou pas au commit valide')
+        selected += approved_pdf_functions(request)
     write(directory / 'selection.json', selected)
 
 
@@ -225,7 +236,9 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     require(project in PROJECTS, 'Projet interdit')
     require(read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == project, 'Compte incorrect')
     selected = read(selection_path)
-    require(len(selected) == len(set(selected)) and set(selected).issubset(safe_functions(candidate)), 'Selection interdite')
+    extra = approved_pdf_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
+    require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate)) | set(extra)), 'Selection interdite')
+    selected = [name for name in selected if name not in extra]
     cli = str(Path(candidate).resolve() / 'tests/firestore-rules/node_modules/.bin/firebase')
     sha = os.environ['CANDIDATE_SHA']
     last_start = 0

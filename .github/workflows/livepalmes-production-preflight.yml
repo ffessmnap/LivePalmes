@@ -57,6 +57,7 @@ jobs:
     - name: Verifier le circuit de publication
       run: |-
         python tooling/tests/release-cycle-tests.py
+        python tooling/tests/production-pdf-functions-tests.py
         python tooling/tests/production-release-state-tests.py
         node tooling/tests/production-backup-crypto-tests.js
     - uses: google-github-actions/auth@v3
