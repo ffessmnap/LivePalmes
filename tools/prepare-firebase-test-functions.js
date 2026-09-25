@@ -6,7 +6,11 @@ const { ALL_SAFE_LOTS, LOTS, PROJECT_ID } = require("./firebase-test-backend-lot
 
 const root = path.join(__dirname, "..");
 const source = path.join(root, "functions");
-const destination = path.join(root, ".firebase-test-functions", "functions");
+const stagingRoot = path.resolve(process.argv[3] || path.join(root, ".firebase-test-functions"));
+if (path.basename(stagingRoot) !== ".firebase-test-functions") {
+  throw new Error("Dossier temporaire Functions TEST invalide.");
+}
+const destination = path.join(stagingRoot, "functions");
 const lot = process.argv[2];
 
 if (!lot || (!LOTS[lot] && lot !== "all-safe")) {
@@ -59,7 +63,7 @@ fs.writeFileSync(path.join(destination, "index.js"), `"use strict";\n\n` +
   `  if (!backend[name]) throw new Error(\`Function exportée introuvable : \${name}\`);\n` +
   `  exports[name] = backend[name];\n` +
   `}\n`);
-fs.writeFileSync(path.join(root, ".firebase-test-functions", "firebase.json"), JSON.stringify({
+fs.writeFileSync(path.join(stagingRoot, "firebase.json"), JSON.stringify({
   functions: { source: "functions", codebase: "default" }
 }, null, 2) + "\n");
 

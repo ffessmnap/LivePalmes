@@ -76,16 +76,16 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v3
     - name: Preparer le backend TEST
       if: steps.scope.outputs.backend == 'true'
-      run: 'python tools/release-cycle.py stage . livepalmes-test .firebase-test-functions "$CANDIDATE_SHA"
+      run: 'python tools/release-cycle.py stage . livepalmes-test "$RUNNER_TEMP/.firebase-test-functions" "$CANDIDATE_SHA"
 
-        npm ci --prefix .firebase-test-functions/functions'
+        npm ci --prefix "$RUNNER_TEMP/.firebase-test-functions/functions"'
     - name: Simuler les Functions TEST
       if: steps.scope.outputs.backend == 'true'
-      run: python tools/release-cycle.py batches livepalmes-test . .firebase-test-functions "$RUNNER_TEMP/test-selection.json"
+      run: python tools/release-cycle.py batches livepalmes-test . "$RUNNER_TEMP/.firebase-test-functions" "$RUNNER_TEMP/test-selection.json"
         dry-run
     - name: Publier et controler les Functions TEST
       if: steps.scope.outputs.backend == 'true'
-      run: python tools/release-cycle.py batches livepalmes-test . .firebase-test-functions "$RUNNER_TEMP/test-selection.json"
+      run: python tools/release-cycle.py batches livepalmes-test . "$RUNNER_TEMP/.firebase-test-functions" "$RUNNER_TEMP/test-selection.json"
         deploy
     - uses: google-github-actions/auth@v3
       with:
