@@ -80,6 +80,8 @@ jobs:
     - name: Verifier le circuit de publication
       run: 'python tooling/tests/release-cycle-tests.py
 
+        python tooling/tests/production-pdf-functions-tests.py
+
         python tooling/tests/production-release-state-tests.py
 
         node tooling/tests/production-backup-crypto-tests.js'
@@ -149,8 +151,9 @@ jobs:
       id: functions
       if: steps.plan.outputs.backend == 'true'
       continue-on-error: true
-      run: python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION"
-        deploy
+      run: |
+        python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION" deploy
+        python tooling/tools/publish-approved-pdf-functions.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
     - name: Controler toutes les Functions et les exclusions
       id: state
       env:
