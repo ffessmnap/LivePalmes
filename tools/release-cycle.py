@@ -109,6 +109,7 @@ def test_selection(directory, candidate):
     write(root / 'test-selection.json', selected)
     output(backend=str(bool(selected)).lower())
     print(f'Functions TEST a publier : {len(selected)} / {len(safe)} ; preuve anterieure concordante : {trusted}.')
+    print('Selection : ' + (', '.join(selected) or 'aucune'))
 
 
 def check_test(directory, candidate):
@@ -240,7 +241,17 @@ def proof(directory):
     candidate = os.environ['CANDIDATE_SHA']
     state = snapshot('livepalmes-test')
     require(state['hosting']['message'] == f'LivePalmes {candidate} run {os.environ["GITHUB_RUN_ID"]}', 'Release TEST non confirmee')
-    write(root / 'test-proof.json', {'candidate': candidate, 'state': state})
+    evidence = {'candidate': candidate, 'state': state}
+    if os.environ.get('APPLICATION_CHECKS') == 'success':
+        evidence['verification'] = {'schema': 1, 'candidate': candidate, 'suite': 'verify-livepalmes', 'result': 'success'}
+    write(root / 'test-proof.json', evidence)
+
+
+def reusable_verification(evidence, candidate):
+    # Only use inside an integrity-checked successful TEST/plan artifact, never
+    # from a user-supplied request flag. Older proofs simply rerun the fast suite.
+    return evidence.get('candidate') == candidate and evidence.get('verification') == {
+        'schema': 1, 'candidate': candidate, 'suite': 'verify-livepalmes', 'result': 'success'}
 
 
 def verify_test(directory, live=True):
@@ -311,6 +322,7 @@ def freeze_plan(directory, evidence=False):
         for item in request['changes']:
             summary.write('- ' + item['title'].replace('\n', ' ') + ' — ' + item['validation'].replace('\n', ' ') + '\n')
         summary.write(f"\nFunctions selectionnees : {len(read(root / 'selection.json'))}. Regles/index/donnees exclus.\n")
+        summary.write('\nTraitements : ' + (', '.join(selected) or 'aucun') + '.\n')
         if evidence:
             summary.write('\nBilan fonde sur les preuves de publication, sans acces Google. Firebase sera relu apres votre unique approbation et avant toute ecriture ; toute derive bloquera.\n')
 
@@ -371,7 +383,9 @@ def fetch_plan(preparation, resume, directory):
     value = read(root / 'request.json')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
-    output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower())
+    evidence_path = root / 'test-proof.json'
+    verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
+    output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower())
 
 
 def verify_resume(directory, backup):
