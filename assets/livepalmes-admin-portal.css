@@ -19155,4 +19155,7 @@
 }
 #adminDtnView .admin-dtn-near-controls input[type="checkbox"] { width: 18px; height: 18px; }
 #adminDtnView .admin-dtn-near-results { margin-top: 20px; }
+#adminDtnView .admin-dtn-near-results .admin-dtn-edf-standard-head span {
+  color: var(--portal-color-muted, #526970);
+}
 #adminDtnView .admin-dtn-near-table { min-width: 850px; }
