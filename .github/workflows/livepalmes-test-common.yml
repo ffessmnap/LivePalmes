@@ -37,6 +37,10 @@ jobs:
     - uses: actions/setup-node@v7
       with:
         node-version: '22'
+        cache: npm
+        cache-dependency-path: |
+          candidate/functions/package-lock.json
+          candidate/tests/firestore-rules/package-lock.json
     - name: Verifier le commit main et classer les changements
       id: scope
       env:
@@ -64,6 +68,7 @@ jobs:
 
         PYCODE'
     - name: Installer et verifier
+      id: application-checks
       run: 'npm ci --prefix functions
 
         npm ci --prefix tests/firestore-rules
@@ -115,6 +120,8 @@ jobs:
         project_id: livepalmes-test
     - name: Conserver la preuve de la version TEST
       if: '!inputs.verification_only'
+      env:
+        APPLICATION_CHECKS: ${{ steps.application-checks.outcome }}
       run: python tools/release-cycle.py proof "$RUNNER_TEMP/test-proof"
     - uses: actions/upload-artifact@v4
       if: '!inputs.verification_only'

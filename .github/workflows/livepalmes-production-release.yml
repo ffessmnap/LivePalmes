@@ -65,18 +65,25 @@ jobs:
     - uses: actions/setup-node@v7
       with:
         node-version: '22'
+        cache: npm
+        cache-dependency-path: |
+          candidate/functions/package-lock.json
+          candidate/tests/firestore-rules/package-lock.json
+          tooling/tests/firestore-rules/package-lock.json
     - name: Verifier le candidat exact
-      run: 'npm ci --prefix candidate/functions
-
+      env:
+        TEST_VERIFIED: ${{ steps.plan.outputs.verified }}
+      run: |
         npm ci --prefix candidate/tests/firestore-rules
-
         cd candidate
-
         test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-
         test -z "$(git status --porcelain)"
-
-        node tools/verify-livepalmes.js'
+        if [ "$TEST_VERIFIED" = true ]; then
+          echo "Verification applicative reutilisee depuis la preuve TEST du commit exact." >> "$GITHUB_STEP_SUMMARY"
+        else
+          npm ci --prefix functions
+          node tools/verify-livepalmes.js
+        fi
     - name: Verifier le circuit de publication
       run: 'npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
 
