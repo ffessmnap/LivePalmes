@@ -140,3 +140,11 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - L’analyse statique suit les dépendances auxiliaires directes/indirectes dans le fichier serveur commun, sans exécuter le métier ; effets globaux et cas incertains restent conservateurs. Les nouvelles preuves TEST permettent la réutilisation des tests applicatifs en PROD. Cache npm activé pour les deux circuits.
 - Comparaison hors ligne sur les changements réels : DTN = 2 traitements au lieu de 134 ; PDF = 5 dont les deux automatismes indirectement concernés ; interface = aucun. Ces simulations ne constituent pas une mesure du temps de publication Firebase.
 - État : vérification technique et intégration en préparation. Les résultats GitHub et le diagnostic en lecture seule seront consignés dans la PR, sans PR documentaire supplémentaire. Aucun changement métier, de droits, de données, de règles/index ou de configuration Firebase.
+
+### Publication DTN demandée — 29 septembre 2026
+
+- Antoine confirme dans Infra le 29 septembre à 18:30 (Paris) avoir validé l’évolution DTN sur TEST et demande sa publication PROD.
+- TEST réussi : run [36593067041](https://github.com/ffessmnap/LivePalmes/actions/runs/36593067041), commit exact `84d36c31ffad84bbefc515aff08935062f9c52a1`, preuve `test-proof` 11046062119. Publication terminée en 22 min 22 avec l’ancien périmètre large.
+- Optimisation du circuit intégrée par PR #80, commit `bf07a3bc59d151ddd91680509877c81a800947b3`. CI 36597052840 et diagnostic sans publication 36597395817 réussis ; la version applicative TEST est conservée.
+- Bilan `.github/releases/20260929-dtn.json` : seulement `buildDtnQualificationView` et `getDtnQualificationOverview`, puis Hosting du candidat TEST. Ancienne base PROD : `4b1c6937c01dd71822d46d9a8ff23508d43d2309`, Hosting `e3186cfe0bdb29e8`. Relecture Firebase, sauvegarde et retour arrière par le circuit protégé ; aucune donnée TEST copiée, migration, règle/index ou invocation métier.
+- État : préparation et publication PROD autorisées, résultats à consigner dans la PR de bilan. Les anciens caches DTN nécessitent le recalcul volontaire existant ; aucun recalcul lancé par le déploiement.
