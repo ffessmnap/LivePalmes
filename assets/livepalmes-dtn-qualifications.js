@@ -478,7 +478,7 @@
     if (loading) return '<p role="status">Chargement des temps proches du minimum…</p>';
     const courses = edfStandardFromOverview(overview, state.edfTab).courses;
     if (!courses.length || courses.some((course) => !Array.isArray(course.nearMinimum))) {
-      return '<p role="status">Temps proches du minimum indisponibles. Utilisez « Recalculer les qualifications », puis rouvrez cet onglet une fois le calcul terminé.</p>';
+      return '<p role="status">Temps proches du minimum indisponibles. Utilisez « Recalculer les qualifications », puis rechargez la page après la fin du calcul.</p>';
     }
     const rows = nearMinimumRows(overview, state.edfTab, state.nearMinimumPercent);
     const pageSize = 50;
