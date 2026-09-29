@@ -10,6 +10,43 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_reuse_only_successful_verification_of_exact_candidate(self):
+        candidate='a'*40
+        evidence={'candidate':candidate,'verification':{'schema':1,'candidate':candidate,'suite':'verify-livepalmes','result':'success'}}
+        self.assertTrue(m.reusable_verification(evidence,candidate))
+        self.assertFalse(m.reusable_verification(evidence,'b'*40))
+        self.assertFalse(m.reusable_verification({'candidate':candidate},candidate))
+        for key,value in [('schema',2),('candidate','b'*40),('suite','partial'),('result','failure')]:
+            altered={**evidence,'verification':{**evidence['verification'],key:value}}
+            self.assertFalse(m.reusable_verification(altered,candidate))
+
+    def test_reuse_flag_comes_from_verified_plan_not_request(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);request=self.request();request['verified']=True
+            m.write(root/'request.json',request);m.write(root/'selection.json',[])
+            with patch.object(m,'artifact') as verified_artifact,patch.object(m,'output') as out:
+                m.fetch_plan('12','0',d)
+            verified_artifact.assert_called_once_with('12','release-plan',root,'.github/workflows/livepalmes-production-preflight.yml')
+            self.assertEqual(out.call_args.kwargs['verified'],'false')
+            m.write(root/'test-proof.json',{'candidate':request['candidate'],'verification':{'schema':1,'candidate':request['candidate'],'suite':'verify-livepalmes','result':'success'}})
+            with patch.object(m,'artifact'),patch.object(m,'output') as out:
+                m.fetch_plan('12','0',d)
+            self.assertEqual(out.call_args.kwargs['verified'],'true')
+
+    def test_test_selection_reuses_unchanged_functions_and_checks_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            state={'functions':[{'name':'functions/one','state':'ACTIVE','commit':'b'*40},{'name':'functions/two','state':'ACTIVE','commit':'c'*40}]}
+            m.write(root/'previous-test/test-proof.json',{'state':state})
+            with patch.dict(os.environ,{'CANDIDATE_SHA':'a'*40,'GITHUB_RUN_ID':'13'}),patch.object(m,'snapshot',return_value=state),patch.object(m,'latest_run',return_value=12),patch.object(m,'artifact'),patch.object(m,'safe_functions',return_value=['one','two']),patch.object(m,'needs_function',side_effect=[True,False]),patch.object(m,'output'):
+                m.test_selection(d,'.')
+            self.assertEqual(m.read(root/'test-selection.json'),['one'])
+            m.write(root/'previous-test/test-proof.json',{'state':{'functions':[]}})
+            with patch.dict(os.environ,{'CANDIDATE_SHA':'a'*40,'GITHUB_RUN_ID':'13'}),patch.object(m,'snapshot',return_value=state),patch.object(m,'latest_run',return_value=12),patch.object(m,'artifact'),patch.object(m,'safe_functions',return_value=['one','two']),patch.object(m,'needs_function') as comparisons,patch.object(m,'output'):
+                m.test_selection(d,'.')
+            self.assertEqual(m.read(root/'test-selection.json'),['one','two'])
+            comparisons.assert_not_called()
+
     def test_workflow_keeps_only_writer_behind_approval(self):
         workflows=Path(__file__).parents[1]/'.github/workflows'
         preflight=(workflows/'livepalmes-production-preflight.yml').read_text()

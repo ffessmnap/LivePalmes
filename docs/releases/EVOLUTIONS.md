@@ -133,3 +133,10 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Backend partagé : helpers DTN et version de cache seulement ; aucun appel de ces helpers depuis les fonctions email/schedulers exclues. Le circuit de publication peut sélectionner largement les fonctions ordinaires à cause de l'empreinte partagée ; droits, règles, index et données officielles inchangés.
 - Vérifications : `node tools/verify-livepalmes.js` et tests ciblés réussis ; navigateur hors ligne à 390 et 1280 px avec données fictives : activation, filtre, absence d'appels supplémentaires, saisie invalide, désactivation et défilement horizontal contrôlés. Thème sombre contrôlé hors ligne aux mêmes largeurs ; contraste de la légende adapté aux couleurs du portail. Recette connectée et validation Antoine attendues.
 - Preuve TEST : aucune à ce stade. Le connecteur GitHub disponible ne propose pas de déclenchement `workflow_dispatch` ; publication commune restant à lancer par une voie autorisée après intégration.
+
+### Publication ciblée pour tous les modules — 29 septembre 2026
+
+- Antoine autorise dans Infra l’optimisation générale TEST/PROD : sélectionner les traitements concernés, éviter les vérifications répétées du même commit et conserver la protection des données. Aucune publication applicative PROD demandée.
+- L’analyse statique suit les dépendances auxiliaires directes/indirectes dans le fichier serveur commun, sans exécuter le métier ; effets globaux et cas incertains restent conservateurs. Les nouvelles preuves TEST permettent la réutilisation des tests applicatifs en PROD. Cache npm activé pour les deux circuits.
+- Comparaison hors ligne sur les changements réels : DTN = 2 traitements au lieu de 134 ; PDF = 5 dont les deux automatismes indirectement concernés ; interface = aucun. Ces simulations ne constituent pas une mesure du temps de publication Firebase.
+- État : vérification technique et intégration en préparation. Les résultats GitHub et le diagnostic en lecture seule seront consignés dans la PR, sans PR documentaire supplémentaire. Aucun changement métier, de droits, de données, de règles/index ou de configuration Firebase.
