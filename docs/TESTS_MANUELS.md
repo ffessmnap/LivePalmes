@@ -297,3 +297,7 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier qu'il n'y a pas de vieux PDF resultats a nettoyer.
 - Verifier que les index publics restent sous 650 ko ; entre 650 et 900 ko, planifier leur decoupage par session.
 - Ne lancer une RAZ que si la competition est terminee ou si c'est un vrai test.
+
+### DTN : temps proches des minima TSP/TRP
+
+Sur TEST uniquement, ouvrir TSP puis TRP, femmes et hommes : case désactivée et seuil initial 2 %. Activer, modifier à 1 et 3 %, désactiver. Les résultats sont séparés des qualifiés, triés par écart, une meilleure performance par nageur/course ; compteurs, synthèse et export de qualifications inchangés. Un nageur ayant atteint le minimum dans une compétition admissible ne doit pas apparaître dans les proches de cette même course. Vérifier âge TRP, saison, compétitions autorisées, minimum absent, égalité au minimum et égalité stricte à la borne (exclues). Cache ancien : message de recalcul, jamais un faux résultat vide ; aucun recalcul automatique. Vérifier clavier, saisie vide/hors limites, pagination, mobile 390 px, desktop, thème sombre ; changer le pourcentage ne doit provoquer aucun appel réseau après chargement.
