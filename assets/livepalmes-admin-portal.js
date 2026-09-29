@@ -2668,7 +2668,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260920-ux-consistency-1",
+      "assets/livepalmes-dtn-qualifications.js?v=20260929-near-minima-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;

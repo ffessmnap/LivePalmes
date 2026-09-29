@@ -19133,3 +19133,26 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* Optional DTN proximity filter, distinct from achieved minima. */
+#adminDtnView .admin-dtn-near-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 12px 0;
+}
+#adminDtnView .admin-dtn-near-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+#adminDtnView .admin-dtn-near-controls [hidden] { display: none; }
+#adminDtnView .admin-dtn-near-controls input[type="number"] {
+  width: 76px;
+  min-height: 40px;
+}
+#adminDtnView .admin-dtn-near-controls input[type="checkbox"] { width: 18px; height: 18px; }
+#adminDtnView .admin-dtn-near-results { margin-top: 20px; }
+#adminDtnView .admin-dtn-near-table { min-width: 850px; }

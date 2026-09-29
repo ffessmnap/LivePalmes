@@ -580,3 +580,7 @@ L’entrée Compétitions mène directement à la liste, sans sous-menu Calendri
 ### Graisse des boutons du portail — 21 septembre 2026
 
 Tous les boutons et onglets du portail, y compris ceux des formulaires, fenêtres, tableaux et modules chargés à la demande, utilisent la graisse medium 500. Les libellés imbriqués héritent de cette graisse. Les liens présentés comme des boutons suivent cette règle. L’action principale se distingue par son fond, les actions secondaires par leur contour et la sélection par sa couleur, sans renforcer la graisse. Les titres et libellés de formulaires conservent leur hiérarchie ; aucune règle publique n’est modifiée.
+
+### Filtre DTN de proximité des minima
+
+Dans TSP et TRP, une case facultative active une marge de 0,1 à 5 %, réglée à 2 % initialement. Les contrôles reviennent à la ligne sur mobile. Les performances proches apparaissent dans un tableau distinct, trié par écart, défilable horizontalement et paginé par 50 lignes. Ce tableau ne modifie ni les effectifs qualifiés ni les exports existants. Les libellés et états vides distinguent les minima non réalisés des données encore indisponibles.
