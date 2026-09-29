@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "candidate": "84d36c31ffad84bbefc515aff08935062f9c52a1",
+  "productionCommit": "4b1c6937c01dd71822d46d9a8ff23508d43d2309",
+  "productionHosting": "sites/livepalmes/versions/e3186cfe0bdb29e8",
+  "testRun": 36593067041,
+  "changes": [
+    {
+      "title": "DTN : nageurs proches des minima TSP/TRP",
+      "paths": [
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-dtn-qualifications.js",
+        "functions/index.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, Infra, 29 septembre 2026 à 18:30 Paris : demande de publier en PROD l’évolution DTN qu’il a validée sur TEST."
+    }
+  ],
+  "excludedBackendReview": "Comparaison statique et revue du diff depuis 4b1c693 : helpers de proximité DTN et cache DTN uniquement. Dépendances concernées : buildDtnQualificationView et getDtnQualificationOverview. Aucun export email/scheduler modifié ou utilisateur de ces helpers. Aucun changement de règle, index, variable, secret, service ou configuration Firebase. Aucun recalcul volontaire ni donnée copiée."
+}
