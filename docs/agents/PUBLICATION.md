@@ -20,7 +20,7 @@ Une opération sur les données, une migration, un envoi réel, les règles ou l
 
 ## Avant publication
 
-Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Les approbations techniques GitHub encore configurées restent obligatoires.
+Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Après activation du réglage du 29 septembre décrit dans `docs/releases/PROCEDURE.md`, cet accord dans Infra suffit : l'assistant lance la publication sans second clic d'Antoine sur GitHub. Consigner l'accord réel et le périmètre dans la PR de publication. Ne jamais déduire cet accord d'un test réussi ni d'une simple demande de développement. Toute approbation technique encore configurée reste obligatoire ; ne pas la contourner.
 
 1. Confirmer précisément le périmètre validé par l’utilisateur.
 2. Préserver et distinguer les autres changements déjà présents dans le dossier partagé.

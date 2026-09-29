@@ -18,9 +18,9 @@ Les conversations n’échangent pas automatiquement leurs messages : le dépôt
 
 ## Simplification approuvée le 25 septembre 2026
 
-Objectif utilisateur : tester sur TEST, demander la publication dans Infra, recevoir un bilan court, confirmer une seule fois dans GitHub, puis recevoir le résultat. L'assistant gère les références techniques. Les accords explicites restent valables pour leur périmètre ; tout écart ou nouveau risque doit être expliqué.
+Objectif initial du 25 septembre : tester sur TEST, demander la publication dans Infra, recevoir un bilan court, confirmer une seule fois dans GitHub, puis recevoir le résultat. Cet objectif est remplacé par la décision du 29 septembre ci-dessous après activation du réglage. L'assistant gère les références techniques. Les accords explicites restent valables pour leur périmètre ; tout écart ou nouveau risque doit être expliqué.
 
-Le bilan utilise désormais uniquement les preuves GitHub des dernières publications réussies : aucun secret Google, aucune approbation d'environnement et aucun accès Firebase. Il présente des états enregistrés, pas une observation Firebase en temps réel. Après l'unique approbation `production`, le job de publication relit TEST et PROD avant toute écriture. Toute différence bloque la publication ; les contrôles et sauvegardes restent obligatoires. Aucun identifiant de publication n'est déplacé hors de sa protection.
+Le bilan utilise désormais uniquement les preuves GitHub des dernières publications réussies : aucun secret Google, aucune approbation d'environnement et aucun accès Firebase. Il présente des états enregistrés, pas une observation Firebase en temps réel. Après l'accord explicite dans Infra et les éventuelles protections GitHub encore actives, le job de publication relit TEST et PROD avant toute écriture. Toute différence bloque la publication ; les contrôles et sauvegardes restent obligatoires. Aucun identifiant de publication n'est déplacé hors de sa protection.
 
 Depuis le 29 septembre, la sélection commune TEST/PROD suit les dépendances directes et indirectes de chaque export Firebase dans `functions/index.js` : fonctions auxiliaires, callbacks, alias et constantes sans effet à l'initialisation. Une modification auxiliaire DTN ne sélectionne plus par principe tous les traitements. Un helper réellement partagé sélectionne tous ses utilisateurs. L'analyse ne lance jamais le code applicatif et n'ajoute aucune dépendance.
 
@@ -39,6 +39,16 @@ Vérification sans déploiement : `verification_only=true` dans TEST contrôle l
 Limite conservée : les artefacts expirent après 14 jours. Si une preuve manque ou expire, arrêter et rétablir une référence vérifiée ; ne pas inventer un état ni utiliser une ancienne publication après une tentative PROD échouée. Une reprise PROD autorisée conserve sa sauvegarde d'origine et son contrôle des révisions ; ne pas lui appliquer une sélection recalculée qui perdrait l'état partiel.
 
 Constat du 25 septembre : TEST environ 23 minutes, bilan automatique moins d'une minute, PROD environ 25 minutes dont 21 minutes de publication Functions ; vérification générale PROD environ 27 secondes. Priorités : nombre d'approbations et périmètre reconstruit. Aucune durée fixe n'est garantie.
+
+## Accord unique dans Infra — décision du 29 septembre 2026
+
+Antoine demande que son accord explicite dans la conversation Infra suffise pour les prochaines publications. Une demande claire telle que « publie en PROD l'évolution validée sur TEST » autorise ce périmètre ; préparer et présenter le bilan puis poursuivre sans demander un second accord si aucun écart n'est découvert. Une simple validation TEST n'autorise pas PROD. Consigner dans la PR de publication la demande réelle, sa date et la version concernée. Toute évolution supplémentaire ou blocage impose un nouvel examen.
+
+Activation technique : dans Settings → Environments → production, désactiver uniquement `Required reviewers`, puis enregistrer les règles. Conserver l'environnement `production`, sa restriction à la branche `main`, les secrets et les déclenchements manuels existants. Aucun déploiement sur push ne doit être ajouté. Cette modification concerne également le workflow de retour arrière utilisant le même environnement ; il exige toujours une demande explicite, et non la seule autorisation de publication.
+
+Activation effectuée le 29 septembre 2026 après confirmation explicite d'Antoine à 18:50 Paris : `Required reviewers` désactivé, enregistrement confirmé par GitHub, restriction à `main` conservée. La PR #82 consigne cette activation. La publication DTN 36599153947, approuvée manuellement par Antoine avant ce changement, a réussi sans relance. Si GitHub réclame encore une approbation, signaler le réglage restant ; ne pas contourner le blocage ni retirer `environment: production` du workflow.
+
+Cette suppression retire une barrière humaine : GitHub ne lit pas la conversation et ne peut pas vérifier lui-même l'accord donné à l'assistant. Une personne disposant déjà du droit de lancer le workflow peut donc le démarrer sans relecture manuelle supplémentaire. Les contrôles de version, de périmètre, de dérive Firebase, les sauvegardes et les vérifications après publication restent inchangés.
 
 ## 1. Publier TEST commun
 
@@ -64,7 +74,7 @@ Le bilan est l’artefact `release-plan`, identifié par son run, son ID et son 
 
 ## 3. Publier PROD après accord
 
-Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0`, confirmation cochée. La protection de l’environnement GitHub production reste active. Le workflow relit le plan immuable, vérifie le checkout exact, relit TEST puis compare toutes les révisions PROD au bilan avant sauvegarde et publication. Toute dérive bloque. Un bilan `verificationOnly` est refusé avant toute authentification Firebase.
+Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0`, confirmation cochée. L'environnement GitHub `production` reste utilisé et limité à `main`. Après activation du réglage ci-dessus, aucune approbation manuelle GitHub supplémentaire n'est attendue ; l'accord dans Infra reste obligatoire. Le workflow relit le plan immuable, vérifie le checkout exact, relit TEST puis compare toutes les révisions PROD au bilan avant sauvegarde et publication. Toute dérive bloque. Un bilan `verificationOnly` est refusé avant toute authentification Firebase.
 
 Il sauvegarde le code et les configurations Functions concernés et la référence Hosting active, chiffre puis rouvre la sauvegarde et compare les fichiers. L’artefact doit être conservé avant toute publication. Il prépare les Functions sans secrets email, conserve App Check, simule puis publie par lots de 10. Hosting est publié en dernier, après contrôle des Functions concernées et des exclusions. Cinq fichiers du site sont comparés au commit, les en-têtes et les fichiers interdits sont contrôlés.
 
