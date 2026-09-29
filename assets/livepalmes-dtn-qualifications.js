@@ -86,6 +86,9 @@
     grid: "france",
     sex: "F",
     edfTab: "TSP",
+    nearMinimumEnabled: false,
+    nearMinimumPercent: 2,
+    nearMinimumPage: 0,
     listingTab: "releve",
     listingFilters: { performance: "all", sex: "all", club: "all", course: "all" },
     seasonId: SEASONS[0].id,
@@ -448,6 +451,57 @@
     </details>`;
   }
 
+  function nearMinimumRows(overview, standardId, percent) {
+    if (!["TSP", "TRP"].includes(standardId) || !Number.isFinite(percent) || percent <= 0 || percent > 5) return [];
+    return edfStandardFromOverview(overview, standardId).courses.flatMap((result) => {
+      const threshold = Number(result.threshold);
+      if (!(threshold > 0)) return [];
+      return (result.nearMinimum || []).filter((row) =>
+        row.timeValue > threshold && (row.timeValue - threshold) * 100 < threshold * percent
+      ).map((row) => ({ ...row, course: result.course, threshold,
+        gap: row.timeValue - threshold, gapPercent: (row.timeValue - threshold) * 100 / threshold }));
+    }).sort((a, b) => a.gapPercent - b.gapPercent || a.gap - b.gap || String(a.swimmer).localeCompare(String(b.swimmer), "fr-FR"));
+  }
+
+  function nearMinimumControlsHtml() {
+    if (!["TSP", "TRP"].includes(state.edfTab)) return "";
+    return `<div class="admin-dtn-near-controls">
+      <label><input type="checkbox" data-dtn-near-enabled ${state.nearMinimumEnabled ? "checked" : ""}> Voir les nageurs proches du minimum</label>
+      <label ${state.nearMinimumEnabled ? "" : "hidden"}>Écart inférieur à
+        <input type="number" data-dtn-near-percent required min="0.1" max="5" step="0.1" value="${state.nearMinimumPercent}" aria-label="Écart inférieur à, en pourcentage"> %
+      </label>
+    </div>`;
+  }
+
+  function nearMinimumHtml(overview, loading = false) {
+    if (!state.nearMinimumEnabled || !["TSP", "TRP"].includes(state.edfTab)) return "";
+    if (loading) return '<p role="status">Chargement des temps proches du minimum…</p>';
+    const courses = edfStandardFromOverview(overview, state.edfTab).courses;
+    if (!courses.length || courses.some((course) => !Array.isArray(course.nearMinimum))) {
+      return '<p role="status">Temps proches du minimum indisponibles. Utilisez « Recalculer les qualifications », puis rechargez la page après la fin du calcul.</p>';
+    }
+    const rows = nearMinimumRows(overview, state.edfTab, state.nearMinimumPercent);
+    const pageSize = 50;
+    const lastPage = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
+    state.nearMinimumPage = Math.min(state.nearMinimumPage, lastPage);
+    const visibleRows = rows.slice(state.nearMinimumPage * pageSize, (state.nearMinimumPage + 1) * pageSize);
+    const number = (value) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `<section class="admin-dtn-near-results" aria-label="Nageurs proches du minimum">
+      <div class="admin-dtn-edf-standard-head"><div><strong>Proches du minimum · ${escapeHtml(state.edfTab)}</strong><span>${rows.length} performance${rows.length > 1 ? "s" : ""} à moins de ${number(state.nearMinimumPercent)} % · minima non réalisés sur ces courses</span></div></div>
+      <div class="admin-dtn-results-wrap"><table class="admin-dtn-results-table admin-dtn-near-table">
+        <thead><tr><th>Nageur</th><th>Club</th><th>Course</th><th>Temps</th><th>Minimum</th><th>Écart</th><th>Compétition</th><th>Date</th></tr></thead>
+        <tbody>${visibleRows.length ? visibleRows.map((row) => `<tr>
+          <td data-label="Nageur">${escapeHtml(row.swimmer || [row.firstName, row.lastName].filter(Boolean).join(" ") || "-")}</td>
+          <td data-label="Club">${escapeHtml(row.club || "-")}</td><td data-label="Course">${escapeHtml(COURSE_LABELS[row.course])}</td>
+          <td data-label="Temps">${escapeHtml(row.time)}</td><td data-label="Minimum">${escapeHtml(displayTimeValue(row.threshold))}</td>
+          <td data-label="Écart">+${number(row.gap / 100)} s / +${number(row.gapPercent)} %</td>
+          <td data-label="Compétition">${escapeHtml(row.competition || "-")}</td><td data-label="Date">${escapeHtml(formatDate(row.date))}</td>
+        </tr>`).join("") : '<tr><td colspan="8" class="admin-dtn-empty">Aucun nageur dans cette marge.</td></tr>'}</tbody>
+      </table></div>
+      ${lastPage ? `<div class="admin-dtn-near-controls"><button type="button" class="ghost-button" data-dtn-near-page="-1" ${state.nearMinimumPage === 0 ? "disabled" : ""}>Précédent</button><span>Page ${state.nearMinimumPage + 1} / ${lastPage + 1}</span><button type="button" class="ghost-button" data-dtn-near-page="1" ${state.nearMinimumPage === lastPage ? "disabled" : ""}>Suivant</button></div>` : ""}
+    </section>`;
+  }
+
   function edfStandardTableHtml(season, overview, loading = false) {
     const standard = EDF_STANDARDS.find((item) => item.id === state.edfTab) || EDF_STANDARDS[0];
     const standardIndex = TIME_GRID_IDS.indexOf(standard.id);
@@ -617,7 +671,8 @@
         <div class="admin-dtn-grid-actions"></div>
       </div>
       ${edfTabsHtml()}
-      <div id="adminDtnEdfContent">${summaryActive ? edfSummaryHtml({}, true) : edfStandardTableHtml(season, {}, true)}</div>
+      ${nearMinimumControlsHtml()}
+      <div id="adminDtnEdfContent">${summaryActive ? edfSummaryHtml({}, true) : edfStandardTableHtml(season, {}, true) + nearMinimumHtml({}, true)}</div>
       ${edfExportHtml()}`;
 
     const gridActions = elements.grid.querySelector(".admin-dtn-grid-actions");
@@ -628,7 +683,7 @@
     const content = elements.grid.querySelector("#adminDtnEdfContent");
     const promise = summaryActive
       ? Promise.all([loadEdfOverview(season, "F"), loadEdfOverview(season, "M")]).then(([F, M]) => dtnFreshnessHtml([F, M], season) + edfSummaryHtml({ F, M }))
-      : loadEdfOverview(season, state.sex).then((overview) => dtnFreshnessHtml([overview], season) + edfStandardTableHtml(season, overview));
+      : loadEdfOverview(season, state.sex).then((overview) => dtnFreshnessHtml([overview], season) + edfStandardTableHtml(season, overview) + nearMinimumHtml(overview));
     promise.then((html) => {
       if (`${state.edfTab}|${state.sex}|${selectedSeason().id}` !== renderKey || !content?.isConnected) return;
       content.innerHTML = html;
@@ -984,6 +1039,12 @@
     elements.refresh?.addEventListener("click", refreshCurrentQualifications);
     elements.sexButtons.forEach((button) => button.addEventListener("click", () => { state.sex = button.dataset.dtnSex; renderGrid(); }));
     elements.grid.addEventListener("click", (event) => {
+      const nearPage = event.target.closest("[data-dtn-near-page]");
+      if (nearPage) {
+        state.nearMinimumPage = Math.max(0, state.nearMinimumPage + Number(nearPage.dataset.dtnNearPage));
+        renderGrid();
+        return;
+      }
       const listingExport = event.target.closest("[data-dtn-listing-export]");
       if (listingExport) {
         exportListingQualifications(listingExport);
@@ -1033,6 +1094,16 @@
       if (button) showQualifiers(button);
     });
     elements.grid.addEventListener("change", (event) => {
+      if (event.target.matches("[data-dtn-near-enabled], [data-dtn-near-percent]")) {
+        if (event.target.matches("[data-dtn-near-enabled]")) state.nearMinimumEnabled = event.target.checked;
+        else {
+          if (!event.target.reportValidity()) return;
+          state.nearMinimumPercent = Number(event.target.value);
+        }
+        state.nearMinimumPage = 0;
+        renderGrid();
+        return;
+      }
       const filter = event.target.closest("[data-dtn-listing-filter]");
       if (!filter || !currentListingOverview) return;
       state.listingFilters[filter.dataset.dtnListingFilter] = filter.value;

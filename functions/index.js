@@ -292,7 +292,8 @@ const PERFORMANCE_TOP_INDEX_LIMIT = 500;
 const DTN_QUALIFICATION_CACHE_COLLECTION = "dtnQualificationViews";
 const DTN_QUALIFICATION_CACHE_STATE_COLLECTION = "dtnQualificationViewState";
 const DTN_QUALIFICATION_JOBS_COLLECTION = "dtnQualificationJobs";
-const DTN_QUALIFICATION_CACHE_VERSION = 4;
+const DTN_QUALIFICATION_CACHE_VERSION = 5;
+const DTN_NEAR_MINIMUM_MAX_PERCENT = 5;
 const DTN_LISTING_CACHE_VERSION = 3;
 const DTN_QUALIFICATION_MAX_ROWS_PER_COURSE = 5000;
 const DTN_QUALIFICATION_JOB_OPTIONS = {
@@ -17924,6 +17925,14 @@ function bestDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
     .map(dtnQualificationRow);
 }
 
+function nearDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
+  if (!threshold || !["TSP", "TRP"].includes(standard.id)) return [];
+  // Select the best admissible swim BEFORE excluding achieved minima.
+  return bestDtnQualificationRows(rows, standard, threshold * (1 + DTN_NEAR_MINIMUM_MAX_PERCENT / 100))
+    .filter((row) => row.timeValue > threshold &&
+      (row.timeValue - threshold) * 100 < threshold * DTN_NEAR_MINIMUM_MAX_PERCENT);
+}
+
 function dtnQualificationCacheStateRef(seasonYear) {
   return db.collection(DTN_QUALIFICATION_CACHE_STATE_COLLECTION).doc(String(seasonYear));
 }
@@ -18046,7 +18055,9 @@ async function buildDtnQualificationPayload({ seasonYear, sex, standards, compet
         const threshold = Number(standard.thresholds[course] || 0);
         const eligibleRows = dtnQualificationRowsForStandard(rows, standard.id, competitionIds);
         const qualifiers = threshold ? bestDtnQualificationRows(eligibleRows, standard, threshold) : [];
-        return { course, threshold, qualifiers, count: qualifiers.length };
+        const nearMinimum = nearDtnQualificationRows(eligibleRows, standard, threshold);
+        return { course, threshold, qualifiers, count: qualifiers.length,
+          ...(["TSP", "TRP"].includes(standard.id) ? { nearMinimum, nearMinimumMaxPercent: DTN_NEAR_MINIMUM_MAX_PERCENT } : {}) };
       })
     })),
     competitionIds,

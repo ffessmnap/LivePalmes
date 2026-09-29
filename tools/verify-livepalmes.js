@@ -87,7 +87,8 @@ function runUnitTests() {
     "performance-firestore-delta-tests.js",
     "performance-public-consistency-tests.js",
     "performance-public-row-schema-tests.js",
-    "livepalmes-portal-optimization-tests.js"
+    "livepalmes-portal-optimization-tests.js",
+    "dtn-near-minima-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
   });
