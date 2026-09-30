@@ -122,6 +122,17 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 m.approved_pdf_functions({'additionalPdfFunctions': names, 'additionalPdfApproval': approval})
         self.assertEqual(set(m.approved_pdf_functions({'additionalPdfFunctions': list(m.PDF_FUNCTIONS), 'additionalPdfApproval': 'Antoine, Infra 25 septembre'})), m.PDF_FUNCTIONS)
+    def test_dtn_extension_requires_exact_pair_and_approval(self):
+        names = sorted(m.DTN_FUNCTIONS)
+        for value in [{'additionalDtnFunctions': names},
+                      {'additionalDtnFunctions': names[:1], 'additionalDtnApproval': 'accord'},
+                      {'additionalDtnFunctions': names + names, 'additionalDtnApproval': 'accord'},
+                      {'additionalDtnFunctions': ['sendEmails'], 'additionalDtnApproval': 'accord'}]:
+            with self.assertRaises(ValueError):
+                m.approved_extra_functions(value)
+        self.assertEqual(m.approved_extra_functions({'additionalDtnFunctions': names, 'additionalDtnApproval': 'Antoine 30 septembre 22:55'}), names)
+        self.assertEqual(m.approved_extra_functions({}), [])
+
     def test_test_staging_respects_external_destination(self):
         with tempfile.TemporaryDirectory() as d:
             candidate=Path(d)/'candidate'; candidate.mkdir()

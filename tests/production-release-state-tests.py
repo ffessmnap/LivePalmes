@@ -28,6 +28,24 @@ class StateTests(unittest.TestCase):
                     module.check_after(root, root / 'after.json', True)
                 self.assertIn('Configuration PDF modifiee', (root / 'after.json').read_text())
 
+    def test_dtn_runtime_drift_blocks_hosting(self):
+        name = 'resumePerformancePublicationJobs'
+        fn = {'name': module.PREFIX + name, 'state': 'ACTIVE',
+              'labels': {'livepalmes-commit': 'test'},
+              'buildConfig': {'runtime': 'nodejs22', 'entryPoint': name},
+              'serviceConfig': {'timeoutSeconds': 60, 'environmentVariables': {'LIVEPALMES_ENFORCE_APP_CHECK': 'true'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'functions.json').write_text(json.dumps([fn]))
+            (root / 'report.json').write_text(json.dumps({'candidate': 'test', 'commitLabel': True,
+                'functions': [{'name': fn['name']}], 'newFunctions': [], 'appCheck': 'false',
+                'additionalDtnFunctions': [name]}))
+            with patch.object(module, 'inventory', return_value=[fn]), patch.dict(os.environ, {'GITHUB_STEP_SUMMARY': str(root / 'summary')}):
+                module.check_after(root, root / 'after.json', True)
+                fn['serviceConfig']['timeoutSeconds'] = 120
+                with self.assertRaisesRegex(ValueError, 'Controle'):
+                    module.check_after(root, root / 'after.json', True)
+
     def test_rollback_removes_output_only_fields(self):
         fn = {"name": module.PREFIX + "example", "buildConfig": {"runtime": "nodejs22", "entryPoint": "example"}, "serviceConfig": {"uri": "https://invalid", "revision": "old", "service": "managed", "timeoutSeconds": 60, "environmentVariables": {"LIVEPALMES_ENFORCE_APP_CHECK": "false"}}, "labels": {"original": "yes"}}
         result = module.rollback_patch(fn, {"bucket": "code", "object": "old.zip"})

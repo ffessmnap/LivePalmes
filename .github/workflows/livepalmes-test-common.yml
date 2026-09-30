@@ -7,6 +7,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         description: SHA applicatif actuellement en PROD pour detecter les changements backend
         required: true
         type: string
+      dtn_extension:
+        description: Accord specifique pour actualiser les deux traitements partages DTN
+        required: true
+        type: boolean
+        default: false
       verification_only:
         description: Verifier la reutilisation du backend sans aucun deploiement
         required: true
@@ -75,6 +80,10 @@ jobs:
 
         node tools/verify-livepalmes.js
 
+        python tests/production-pdf-functions-tests.py
+
+        python tests/production-release-state-tests.py
+
         python tests/release-cycle-tests.py
 
         node tests/release-function-fingerprints-tests.js'
@@ -101,6 +110,11 @@ jobs:
         deploy
     - name: Controler le backend TEST et les Functions conservees
       run: python tools/release-cycle.py check-test "$RUNNER_TEMP" .
+    - name: Actualiser les deux traitements DTN explicitement autorises
+      if: inputs.dtn_extension && !inputs.verification_only
+      env:
+        DTN_EXTENSION_APPROVED: 'true'
+      run: python tools/publish-approved-pdf-functions.py test-dtn . "$RUNNER_TEMP/dtn-extension"
     - uses: google-github-actions/auth@v3
       if: '!inputs.verification_only'
       with:

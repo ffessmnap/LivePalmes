@@ -197,3 +197,11 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Antoine demande à 22:44 Paris de corriger le surlignage de Paramètres DTN puis de publier en PROD toutes les évolutions de l’espace DTN développées dans cette discussion. Cet accord couvre les saisons, paramètres, règles configurables et les retouches d’affichage jusqu’à cette correction ; aucun autre domaine, copie de données ou recalcul n’est demandé.
 - Correction ciblée : le lien Paramètres DTN possède maintenant son identifiant de sous-page, comme les trois autres liens. Seule la page réellement consultée doit être active. Aucun calcul ni droit modifié ; zéro lecture/écriture Firebase supplémentaire.
 - Branche `fix/dtn-settings-active` ; vérification des quatre liens et publication TEST avant préparation du bilan PROD. Preuves exactes et bilan de publication dans les PR associées.
+
+### Extension de publication DTN — 30 septembre 2026
+
+- Antoine autorise à 22:55 Paris les deux dépendances partagées et l’adaptation du circuit, après l’accord PROD de 22:44.
+- Extension nominative : `resumePerformancePublicationJobs` et `resolveEngagementSwimmerChangeRequest`, nécessaires à l’invalidation des caches par saison. Les groupes ordinaires ne sont pas élargis.
+- Publication de source seulement, sans invocation, modification de secrets, programmation ou IAM. Contrôle des configurations conservées, sauvegarde PROD et retour arrière existants ; preuve TEST obligatoire pour les deux fonctions.
+- Correction du menu PR #90 intégrée dans `a380d7f8dd118a0d8363a68e1c207c05f6920ed1`, TEST `36775250093` réussi ; les quatre liens ont été vérifiés avec un seul onglet actif.
+- Branche `release/dtn-season-production` : validation de l’extension et préparation de la promotion complète ; preuves finales consignées dans la PR.
