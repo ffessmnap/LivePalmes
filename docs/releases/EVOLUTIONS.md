@@ -185,3 +185,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Budget avant/après identique : zéro lecture/écriture Firebase ajoutée à l’ouverture, recherche, filtres, pagination ou export. Calculs, règles sportives, données et taille des détails de mise en liste inchangés.
 - Recette fictive réussie à 390 et 1440 px, clair/sombre : recherche accents/casse/nom/prénom, zéro résultat, réinitialisation, compteurs, détails, absence de débordement de page ; parcours saison/France/EDF/proximité/listes et cache absent vérifiés. Contrôle global et preuve TEST à consigner dans la PR associée.
 - TEST uniquement ; validation utilisateur de cette nouvelle version attendue. Aucun accord PROD.
+
+### Filtres de mise en liste fluides — 30 septembre 2026
+
+- Retour utilisateur après PR #88 : Tous/Femmes/Hommes tronqués par les colonnes fixes après ajout de la recherche.
+- Branche `fix/dtn-fluid-filters` : barre flexible avec retour à la ligne, groupe sexe non comprimé et champs extensibles ; uniquement CSS et cache. Aucun changement métier ni lecture Firebase supplémentaire.
+- Vérifications ciblées Relève/Espoir sur mobile, largeur intermédiaire et ordinateur : boutons entièrement visibles, sans chevauchement ; filtres et recherche conservés. Preuve de publication TEST à consigner dans la PR ; validation utilisateur attendue, aucune autorisation PROD.
