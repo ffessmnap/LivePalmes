@@ -24,8 +24,9 @@ Le parcours quotidien d'un club repose sur des documents agrégés et des appels
 | Effectif officiels, agrégat prêt | 2 |
 | Sélections rapprochées de nageurs | un coût fixe par lot, puis lectures de validation bornées aux nageurs ajoutés |
 | Aperçu des temps de plusieurs nageurs | 3 lectures fixes, puis une entrée de cache par nageur en régime normal |
-| Vue DTN, cache prêt | 2 |
-| Vue DTN, cache absent ou périmé | 2 dans la requête interactive ; calcul lourd unique en arrière-plan |
+| Catalogue des saisons DTN | 2 à 4 documents ; réutilisé pendant la session |
+| Vue DTN saisonnière, cache prêt | 4 ; filtres et retour sur un onglet déjà chargé : 0 |
+| Vue DTN saisonnière, cache absent ou périmé | 5 ; aucun calcul automatique |
 | Journal d’activité, page de 50 traces | 52 lectures fixes au plus pour le profil et la page, plus jusqu’à 25 acteurs, 25 compétitions et 25 personnes historiques à résoudre en lots ; maximum absolu 127, puis les références connues sont réutilisées |
 | Recherche, catégorie ou origine dans le journal déjà chargé | 0 |
 | Annuaire des utilisateurs, cache privé prêt | 1 document d’annuaire, plus au maximum 1 profil pour le contrôle régional ; filtres et pagination locale ensuite |
@@ -62,5 +63,5 @@ Un cache de temps absent peut encore nécessiter la reconstruction de l'historiq
 - Aucun scan complet non borné n'a été ajouté.
 - Les lots de sélection et d'aperçu sont limités respectivement à 50 nageurs.
 - Une reconstruction administrative accepte au plus 10 clubs.
-- Un calcul DTN est identifié par saison, sexe et empreinte : plusieurs ouvertures simultanées ne créent pas plusieurs scans.
-- Le cache périmé DTN reste visible pendant le recalcul.
+- Un recalcul DTN volontaire traite les trois dispositifs de la saison en un seul travail verrouillé, par pages de 500 performances : échec au-delà de 100 000 lignes ou 450 secondes, sans publication partielle.
+- Un cache DTN périmé n’est pas présenté comme un résultat actuel. Les résultats de la saison précédente restent figés et datés.

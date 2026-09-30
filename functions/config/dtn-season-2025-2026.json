@@ -1,0 +1,1456 @@
+{
+  "id": "2025-2026",
+  "year": 2026,
+  "label": "2025–2026",
+  "revision": 1,
+  "france": [
+    {
+      "id": "C",
+      "label": "Cadets",
+      "enabled": false,
+      "minAge": 14,
+      "maxAge": 15,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {},
+      "legacyFranceNames": true
+    },
+    {
+      "id": "J",
+      "label": "Juniors",
+      "enabled": true,
+      "minAge": 16,
+      "maxAge": 17,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 2375,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 5250,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 11700,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 25400,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 53400,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 111000,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 2275,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 5200,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 11500,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 29000,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2700,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5800,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 13200,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 29000,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 2175,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 4700,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 10700,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 23400,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 48400,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 105000,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 2075,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 4650,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 10500,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 27500,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2350,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 5200,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 11600,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 26000,
+          "top": null
+        }
+      },
+      "legacyFranceNames": true
+    },
+    {
+      "id": "S",
+      "label": "Seniors",
+      "enabled": true,
+      "minAge": 18,
+      "maxAge": 120,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 2175,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 4890,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 11000,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 24200,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 51300,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 108000,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 2075,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 4840,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 10900,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 28000,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2550,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5580,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 12300,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 27000,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1925,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 4260,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 10000,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 21700,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 46700,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 102000,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1825,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 4210,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 9900,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 25500,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2220,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 5000,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 11100,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 24000,
+          "top": null
+        }
+      },
+      "legacyFranceNames": true
+    }
+  ],
+  "edf": [
+    {
+      "id": "TSP",
+      "label": "Temps senior",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 120,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        },
+        {
+          "id": "e40fe3129ffd5d76286774193a2855ed",
+          "name": "France Élite · Limoges"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 1809,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 3999,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 9169,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 20249,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 42999,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 83399,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 1669,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 3779,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 8599,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 18999,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2219,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 4899,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 10739,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 23099,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1589,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 3589,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 8239,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 18299,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 39399,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 76799,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1459,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 3359,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 7699,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 17299,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 1909,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4239,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 9629,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 21139,
+          "top": null
+        }
+      }
+    },
+    {
+      "id": "TRP",
+      "label": "Temps relève",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 21,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        },
+        {
+          "id": "e40fe3129ffd5d76286774193a2855ed",
+          "name": "France Élite · Limoges"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|100SF": {
+          "time": 4109,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 9399,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 20599,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 1699,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2269,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 4969,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 10799,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 23599,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 3729,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 8489,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 18699,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1499,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 1949,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4309,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 9819,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 21499,
+          "top": null
+        }
+      }
+    },
+    {
+      "id": "TJP",
+      "label": "Temps junior",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 17,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 1919,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 4249,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 9599,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 21179,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 43999,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 84899,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 1759,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 4039,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 8999,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 20079,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2329,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5059,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 11159,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 24029,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1739,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 3889,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 8819,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 19479,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 41499,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 79899,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1569,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 3689,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 8399,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 18449,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2039,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4499,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 10099,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 21999,
+          "top": null
+        }
+      }
+    },
+    {
+      "id": "TEP",
+      "label": "Temps espoir",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 16,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "selected",
+      "competitions": [
+        {
+          "id": "4978",
+          "name": "France des clubs · Dijon"
+        },
+        {
+          "id": "5039",
+          "name": "Meeting national de Rennes"
+        },
+        {
+          "id": "4979",
+          "name": "World Cup · Aix-en-Provence"
+        }
+      ],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 1949,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 4319,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 9749,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 21399,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 44699,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 85999,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 1789,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 4159,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 9349,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 20619,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2359,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5139,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 11279,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 24399,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1789,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 3999,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 9089,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 19879,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 42199,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 81199,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1619,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 3849,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 8649,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 19019,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2059,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4539,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 10299,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 22399,
+          "top": null
+        }
+      }
+    },
+    {
+      "id": "TU16C2",
+      "label": "TU16 C2",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 15,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "all",
+      "competitions": [],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 2069,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 4599,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 10399,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 22399,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 46999,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 1929,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 4399,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 9899,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2439,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5349,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 11799,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 25199,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1889,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 4199,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 9399,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 20599,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 43799,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1719,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 3999,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 9199,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2209,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4849,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 10799,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 23599,
+          "top": null
+        }
+      }
+    },
+    {
+      "id": "TU16C1",
+      "label": "TU16 C1",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 14,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [],
+      "legacyUnrestricted": true,
+      "electronicOnly": false,
+      "allowIntermediate": true,
+      "competitionMode": "all",
+      "competitions": [],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {
+        "F|50SF": {
+          "time": 2169,
+          "top": null
+        },
+        "F|100SF": {
+          "time": 4799,
+          "top": null
+        },
+        "F|200SF": {
+          "time": 10699,
+          "top": null
+        },
+        "F|400SF": {
+          "time": 23199,
+          "top": null
+        },
+        "F|800SF": {
+          "time": 48299,
+          "top": null
+        },
+        "F|1500SF": {
+          "time": 92500,
+          "top": null
+        },
+        "F|50AP": {
+          "time": 2009,
+          "top": null
+        },
+        "F|100IS": {
+          "time": 4599,
+          "top": null
+        },
+        "F|200IS": {
+          "time": 10199,
+          "top": null
+        },
+        "F|400IS": {
+          "time": 22200,
+          "top": null
+        },
+        "F|50BI": {
+          "time": 2509,
+          "top": null
+        },
+        "F|100BI": {
+          "time": 5549,
+          "top": null
+        },
+        "F|200BI": {
+          "time": 12199,
+          "top": null
+        },
+        "F|400BI": {
+          "time": 26199,
+          "top": null
+        },
+        "M|50SF": {
+          "time": 1949,
+          "top": null
+        },
+        "M|100SF": {
+          "time": 4299,
+          "top": null
+        },
+        "M|200SF": {
+          "time": 9749,
+          "top": null
+        },
+        "M|400SF": {
+          "time": 21699,
+          "top": null
+        },
+        "M|800SF": {
+          "time": 45599,
+          "top": null
+        },
+        "M|1500SF": {
+          "time": 87699,
+          "top": null
+        },
+        "M|50AP": {
+          "time": 1799,
+          "top": null
+        },
+        "M|100IS": {
+          "time": 4249,
+          "top": null
+        },
+        "M|200IS": {
+          "time": 9699,
+          "top": null
+        },
+        "M|400IS": {
+          "time": 21199,
+          "top": null
+        },
+        "M|50BI": {
+          "time": 2279,
+          "top": null
+        },
+        "M|100BI": {
+          "time": 4999,
+          "top": null
+        },
+        "M|200BI": {
+          "time": 11099,
+          "top": null
+        },
+        "M|400BI": {
+          "time": 24399,
+          "top": null
+        }
+      }
+    }
+  ],
+  "listing": [
+    {
+      "id": "RELEVE",
+      "label": "Relève",
+      "enabled": true,
+      "minAge": 0,
+      "maxAge": 21,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [
+        "50"
+      ],
+      "electronicOnly": true,
+      "allowIntermediate": true,
+      "competitionMode": "all",
+      "competitions": [],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [],
+      "grid": {},
+      "sourceId": "TRP"
+    },
+    {
+      "id": "TEC1",
+      "label": "Espoir 14–15 ans",
+      "enabled": true,
+      "minAge": 14,
+      "maxAge": 15,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [
+        "50"
+      ],
+      "electronicOnly": true,
+      "allowIntermediate": true,
+      "competitionMode": "all",
+      "competitions": [],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [
+        "RELEVE"
+      ],
+      "grid": {},
+      "sourceId": "TU16C1"
+    },
+    {
+      "id": "TEP",
+      "label": "Espoir 16–18 ans",
+      "enabled": true,
+      "minAge": 16,
+      "maxAge": 18,
+      "startDate": "2025-09-01",
+      "endDate": "2026-08-31",
+      "pools": [
+        "50"
+      ],
+      "electronicOnly": true,
+      "allowIntermediate": true,
+      "competitionMode": "all",
+      "competitions": [],
+      "requirements": {
+        "mode": "any",
+        "groups": [
+          {
+            "count": 1,
+            "courses": [
+              "50SF",
+              "100SF",
+              "200SF",
+              "400SF",
+              "800SF",
+              "1500SF",
+              "50AP",
+              "100IS",
+              "200IS",
+              "400IS",
+              "50BI",
+              "100BI",
+              "200BI",
+              "400BI"
+            ]
+          }
+        ]
+      },
+      "excludeIf": [
+        "RELEVE"
+      ],
+      "grid": {},
+      "sourceId": "TEP"
+    }
+  ]
+}
