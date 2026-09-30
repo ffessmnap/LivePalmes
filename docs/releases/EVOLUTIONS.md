@@ -163,3 +163,11 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Branche `fix/dtn-compact-interface` ; CSS limitée au DTN, version du cache actualisée. Aucune modification des règles sportives ni des données ; coût Firebase supplémentaire nul.
 - Vérifications : rendu ordinateur/mobile et thèmes clair/sombre, interactions existantes et contrôle portail ciblé. Résultats et preuve TEST consignés dans la PR associée après exécution.
 - État : en préparation pour TEST ; recette visuelle utilisateur attendue. Aucune publication PROD autorisée.
+
+### Présentation historique des résultats DTN — 30 septembre 2026
+
+- Retour d’Antoine : conserver la lisibilité des trois onglets PROD avec la configuration saisonnière. La retouche des paramètres (PR #85, `1217d128`) est sur TEST, run 36739087586 ; recette utilisateur non acquise.
+- Branche `fix/dtn-restore-results-layout` : matrice France avec catégories actives et minima/Top, onglets EDF et sélection F/H, tableau de mise en liste avec filtres, compteurs et détails repliables. Réutilisation des composants visuels existants ; paramètres et résultats proviennent de la saison sélectionnée.
+- Budget : zéro lecture/écriture Firebase supplémentaire ; filtres, onglets, détails, compteurs et pagination utilisent la vue déjà chargée. Aucun moteur de calcul, périmètre sportif ou donnée modifié.
+- Vérifications ciblées : affichage cadets activés/désactivés selon la saison, minimum/Top, détails, filtres EDF et proximité, regroupement des sportifs, filtres de mise en liste, état périmé et responsive clair/sombre. Preuve finale et PR à consigner dans la PR associée.
+- État : en préparation TEST uniquement ; retour visuel utilisateur attendu. Pas d’accord PROD.
