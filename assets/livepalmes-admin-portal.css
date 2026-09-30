@@ -19164,7 +19164,7 @@
 .admin-dtn-controls label, .admin-dtn-condition > label { display: flex; flex-direction: column; gap: .35rem; }
 .admin-dtn-controls label:has(input[type="checkbox"]) { flex-direction: row; align-items: center; }
 .admin-dtn-controls input[type="number"] { max-width: 7rem; }
-.admin-dtn-controls input, .admin-dtn-controls select, .admin-dtn-edit-grid input, .admin-dtn-edit-grid select, .admin-dtn-condition input[type="number"] { font: inherit; min-height: 2.5rem; }
+.admin-dtn-controls input:not([type="checkbox"]), .admin-dtn-controls select, .admin-dtn-edit-grid input:not([type="checkbox"]), .admin-dtn-edit-grid select, .admin-dtn-condition input[type="number"] { font: inherit; min-height: 2.5rem; }
 .admin-dtn-edit-grid input:not([type="checkbox"]) { width: 7rem; }
 .admin-dtn-edit-grid { min-width: 620px; }
 .admin-portal-dtn-view fieldset { min-width: 0; border: 1px solid var(--portal-color-border, #cbd5e1); border-radius: .75rem; padding: 1rem; }
@@ -19180,4 +19180,65 @@
 .admin-dtn-dialog td, .admin-dtn-dialog th { padding: .6rem; text-align: left; border-bottom: 1px solid var(--portal-color-border, #cbd5e1); }
 
 .admin-dtn-dialog { color: var(--portal-color-text); background: var(--portal-color-surface); }
-.admin-dtn-dialog input, .admin-dtn-dialog select, .admin-dtn-edit-grid input, .admin-dtn-edit-grid select { color: var(--portal-color-text); background: var(--portal-color-field-background); border: 1px solid var(--portal-color-field-border); border-radius: .4rem; padding: .4rem; }
+.admin-dtn-dialog input:not([type="checkbox"]), .admin-dtn-dialog select, .admin-dtn-edit-grid input:not([type="checkbox"]), .admin-dtn-edit-grid select { color: var(--portal-color-text); background: var(--portal-color-field-background); border: 1px solid var(--portal-color-field-border); border-radius: .4rem; padding: .4rem; }
+
+/* DTN : contrôles denses, cases natives indépendantes des champs de saisie. */
+#adminDtnView { --dtn-control-gap: 8px 12px; }
+#adminDtnView .admin-dtn-controls { margin: 6px 0; }
+#adminDtnView .admin-dtn-controls label { gap: 3px; font-size: .78rem; font-weight: 500; }
+#adminDtnView .admin-dtn-controls label:has(input[type="checkbox"]) {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 100%;
+}
+#adminDtnView input[type="checkbox"], .admin-dtn-dialog input[type="checkbox"] {
+  box-sizing: border-box;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  max-width: 16px;
+  max-height: 16px;
+  padding: 0;
+  margin: 0;
+  vertical-align: middle;
+}
+#adminDtnView .admin-dtn-controls :is(input:not([type="checkbox"]), select, button),
+#adminDtnView .admin-dtn-edit-grid :is(input:not([type="checkbox"]), select),
+#adminDtnView [data-settings-form] > fieldset > details button {
+  box-sizing: border-box;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  font-size: .8rem;
+  line-height: 1.25;
+  font-weight: 400;
+}
+#adminDtnView [data-settings-form] fieldset { padding: 8px 12px; border-radius: 8px; }
+#adminDtnView [data-settings-form] legend { padding: 0 4px; font-size: .85rem; }
+#adminDtnView [data-settings-form] :is(p, summary),
+#adminDtnView #adminDtnGrid:has([data-settings-form]) > p { font-size: .78rem; line-height: 1.4; }
+#adminDtnView [data-settings-form] p,
+#adminDtnView #adminDtnGrid:has([data-settings-form]) > p { margin: 6px 0; color: var(--portal-color-muted); }
+#adminDtnView [data-settings-form] details { margin: 4px 0; }
+#adminDtnView [data-settings-form] summary { padding: 6px 0; font-weight: 600; }
+#adminDtnView .admin-dtn-edit-grid :is(th, td) { padding: 3px 8px; }
+#adminDtnView .admin-dtn-edit-grid input:not([type="checkbox"]) { width: 96px; }
+#adminDtnView .admin-dtn-edit-grid td:has(input[type="checkbox"]) { width: 72px; text-align: center; }
+#adminDtnView .admin-dtn-edit-grid input[type="checkbox"] { margin: 4px; }
+#adminDtnView .admin-dtn-course-choices label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+#adminDtnView .admin-dtn-toolbar:has(> #adminDtnRefreshStatus) { position: static; padding: 0; border: 0; box-shadow: none; background: transparent; }
+#adminDtnView .admin-dtn-toolbar:has(> #adminDtnRefreshStatus:empty) { display: none; }
+#adminDtnView #adminDtnRefreshStatus { margin: 0; padding: 6px 10px; font-size: .78rem; }
+@media (max-width: 760px), (pointer: coarse) {
+  #adminDtnView .admin-dtn-controls :is(input:not([type="checkbox"]), select, button),
+  #adminDtnView .admin-dtn-edit-grid :is(input:not([type="checkbox"]), select),
+  #adminDtnView [data-settings-form] > fieldset > details button { min-height: 40px; height: auto; }
+  #adminDtnView .admin-dtn-controls label:has(input[type="checkbox"]),
+  #adminDtnView .admin-dtn-course-choices label { min-height: 40px; }
+  #adminDtnView .admin-dtn-edit-grid input[type="checkbox"] { margin: 12px; }
+}

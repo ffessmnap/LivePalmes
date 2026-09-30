@@ -588,3 +588,5 @@ Dans TSP et TRP, une case facultative active une marge de 0,1 à 5 %, réglée �
 ### Paramètres DTN par saison
 
 Le sélecteur reste commun aux trois dispositifs et aux paramètres. Les statuts En cours, Précédente et Brouillon sont écrits en toutes lettres. Les règles sont regroupées dans des détails natifs (conditions, grille, minima multiples, priorités). La grille femmes/hommes défile horizontalement sur mobile. Les imports utilisent une fenêtre avec filtres Ajouts, Modifications, Suppressions, Identiques et Erreurs ; aucune application avec des erreurs. Les résultats périmés ne sont pas affichés comme actuels ; le recalcul est explicite. Les contrôles et fenêtres utilisent les couleurs du portail, y compris en mode sombre.
+
+Les paramètres DTN utilisent des cases natives de 16 px, sans hériter de la hauteur des champs. Les contrôles mesurent 32 px sur ordinateur, 40 px sur écran tactile ou étroit ; les libellés des cases restent cliquables. Les lignes de grille sont resserrées et conservent le défilement horizontal. Le statut reste dans le flux, sans carte supplémentaire ; une barre vide est masquée.
