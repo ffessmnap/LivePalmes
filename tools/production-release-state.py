@@ -55,13 +55,13 @@ def check_after(backup, destination, require_success):
         f = after.get(name)
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
-        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in report.get('additionalPdfFunctions', []) else report["appCheck"]):
+        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', [])) else report["appCheck"]):
             errors.append("App Check different: " + name.split("/")[-1])
         elif report.get("commitLabel") and f.get("labels", {}).get("livepalmes-commit") != report["candidate"]:
             errors.append("Commit Function different: " + name.split("/")[-1])
         elif not report.get("commitLabel") and name in before and f.get("updateTime") == before[name].get("updateTime"):
             errors.append("Function non actualisee: " + name.split("/")[-1])
-        if f and name.split('/')[-1] in report.get('additionalPdfFunctions', []):
+        if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', [])):
             old = rollback_patch(before[name], {})
             new = rollback_patch(f, {})
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):

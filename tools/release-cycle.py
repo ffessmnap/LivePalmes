@@ -26,6 +26,20 @@ def approved_pdf_functions(value):
     return names
 
 
+DTN_FUNCTIONS = {'resumePerformancePublicationJobs', 'resolveEngagementSwimmerChangeRequest'}
+
+
+def approved_dtn_functions(value):
+    names = value.get('additionalDtnFunctions', [])
+    require(isinstance(names, list) and all(isinstance(n, str) for n in names) and len(names) == len(set(names)) and set(names).issubset(DTN_FUNCTIONS), 'Extension DTN interdite')
+    require(not names or (set(names) == DTN_FUNCTIONS and value.get('additionalDtnApproval')), 'Accord specifique des deux traitements DTN requis')
+    return names
+
+
+def approved_extra_functions(value):
+    return approved_pdf_functions(value) + approved_dtn_functions(value)
+
+
 def require(value, message):
     if not value:
         raise ValueError(message)
@@ -138,7 +152,7 @@ def validate_request(value, paths):
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
     application, backend = classify(paths)
-    extra = approved_pdf_functions(value)
+    extra = approved_extra_functions(value)
     require(not extra or backend, 'Extension PDF sans changement backend')
     covered = set()
     require(isinstance(value.get('changes'), list) and value['changes'], 'Bilan des evolutions requis')
@@ -274,7 +288,9 @@ def prepare_selection(directory, candidate):
         state = read(directory / 'test-proof.json')['state']
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
-        selected += approved_pdf_functions(request)
+        extra = approved_extra_functions(request)
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in approved_dtn_functions(request)), 'Extension DTN non validee sur TEST')
+        selected += extra
     write(directory / 'selection.json', selected)
 
 
@@ -314,7 +330,7 @@ def freeze_plan(directory, evidence=False):
     write(root / 'prod-before.json', state)
     names = {f['name'].split('/')[-1]: f for f in state['functions']}
     selected = read(root / 'selection.json')
-    selected = [n for n in selected if n in approved_pdf_functions(request) or needs_function(names.get(n), n, request['candidate'])]
+    selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
         summary.write('\n## Bilan avant publication\n\n')
@@ -345,7 +361,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     require(project in PROJECTS, 'Projet interdit')
     require(read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == project, 'Compte incorrect')
     selected = read(selection_path)
-    extra = approved_pdf_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
+    extra = approved_extra_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
     require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate)) | set(extra)), 'Selection interdite')
     selected = [name for name in selected if name not in extra]
     cli = str(Path(candidate).resolve() / 'tests/firestore-rules/node_modules/.bin/firebase')
