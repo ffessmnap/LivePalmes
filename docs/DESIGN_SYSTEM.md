@@ -584,3 +584,7 @@ Tous les boutons et onglets du portail, y compris ceux des formulaires, fenêtre
 ### Filtre DTN de proximité des minima
 
 Dans TSP et TRP, une case facultative active une marge de 0,1 à 5 %, réglée à 2 % initialement. Les contrôles reviennent à la ligne sur mobile. Les performances proches apparaissent dans un tableau distinct, trié par écart, défilable horizontalement et paginé par 50 lignes. Ce tableau ne modifie ni les effectifs qualifiés ni les exports existants. Les libellés et états vides distinguent les minima non réalisés des données encore indisponibles.
+
+### Paramètres DTN par saison
+
+Le sélecteur reste commun aux trois dispositifs et aux paramètres. Les statuts En cours, Précédente et Brouillon sont écrits en toutes lettres. Les règles sont regroupées dans des détails natifs (conditions, grille, minima multiples, priorités). La grille femmes/hommes défile horizontalement sur mobile. Les imports utilisent une fenêtre avec filtres Ajouts, Modifications, Suppressions, Identiques et Erreurs ; aucune application avec des erreurs. Les résultats périmés ne sont pas affichés comme actuels ; le recalcul est explicite. Les contrôles et fenêtres utilisent les couleurs du portail, y compris en mode sombre.

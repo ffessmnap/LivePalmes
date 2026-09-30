@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const qualificationEngine = require("./engagement-qualification");
+const { createDtnSeasonService } = require("./dtn-season-service");
 const { createQualificationService } = require("./engagement-qualification-service");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -150,6 +151,7 @@ const ACCESS_CAPABILITIES = [
   "consoles.access",
   "competitions.import",
   "dtn.view",
+  "dtn.manage",
   "engagements.club.manage",
   "engagements.club.switch",
   "engagements.region.manage",
@@ -713,6 +715,9 @@ function cleanAccessProfile(raw = {}) {
   }
   if (!capabilities.length) {
     throw new HttpsError("invalid-argument", "Selectionne au moins un droit.");
+  }
+  if (capabilities.includes("dtn.manage") && !capabilities.includes("dtn.view")) {
+    throw new HttpsError("invalid-argument", "La gestion des paramètres DTN requiert l’accès à l’espace DTN.");
   }
   if (capabilities.includes("engagements.club.manage") && !clubId) {
     throw new HttpsError("invalid-argument", "Numero de club obligatoire pour un acces engagements club.");
@@ -17890,6 +17895,25 @@ async function performanceTopRowsFromIndex(filters = {}) {
   };
 }
 
+function dtnSeasonService() {
+  return createDtnSeasonService({
+    db, fieldPath: FieldPath,
+    fail: (message, code = "failed-precondition") => { throw new HttpsError(code, message); },
+    authorize: async (request) => {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Connexion requise.");
+      await assertLivePalmesAccess(request);
+      assertCapability(request, "dtn.view");
+    },
+    canManage: (request) => ADMIN_UIDS.has(request.auth?.uid) || request.auth?.token?.livepalmesCapabilities?.["admin.full"] === true || request.auth?.token?.livepalmesCapabilities?.["dtn.manage"] === true,
+    normalizeRow: publicPerformanceBaseRow
+  });
+}
+
+exports.getDtnSeasons = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().list(request));
+exports.updateDtnSeason = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().update(request));
+exports.getDtnSeasonOverview = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().overview(request));
+exports.listDtnSeasonSources = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().sources(request));
+
 function dtnQualificationRow(row = {}) {
   return cleanFirestoreValue({
     swimmerId: cleanText(row.swimmerId),
@@ -17950,7 +17974,7 @@ function dtnQualificationSeasonsForRows(rows = []) {
   rows.forEach((inputRow) => {
     const row = inputRow && typeof inputRow === "object" ? inputRow : {};
     const seasonYear = Number(row.seasonYear || 0) || importSeasonYear(cleanText(row.date));
-    if (seasonYear && (DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear] || DTN_LISTING_SEASON_YEARS.has(seasonYear))) seasons.add(seasonYear);
+    if (Number.isInteger(seasonYear) && seasonYear >= 2001 && seasonYear <= 2100) seasons.add(seasonYear);
   });
   return Array.from(seasons);
 }
@@ -18192,6 +18216,8 @@ exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTI
   const snapshot = event.data;
   if (!snapshot?.exists) return;
   const job = snapshot.data() || {};
+  if (job.view === "season") return dtnSeasonService().build(snapshot);
+  if (snapshot.id.startsWith("season-lock-")) return;
   const listingView = cleanText(job.view) === "listing";
   const seasonYear = Number(job.seasonYear || 0);
   const sex = normalizeCategoryCode(job.sex);
