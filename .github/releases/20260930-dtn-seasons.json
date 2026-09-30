@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "candidate": "642e5b1788aba59abf99a4a75c4bdcec8f02421d",
+  "candidate": "83cf30ba0bba90eb35492cb41a67034334e7d57b",
   "productionCommit": "84d36c31ffad84bbefc515aff08935062f9c52a1",
   "productionHosting": "sites/livepalmes/versions/ea2eb49197c34796",
-  "testRun": 36776745747,
+  "testRun": 36777816211,
   "changes": [
     {
       "title": "Espace DTN configurable par saison, grilles et règles, affichages compacts, synthèse, recherche et filtres, navigation corrigée",
@@ -27,5 +27,5 @@
     "resumePerformancePublicationJobs"
   ],
   "additionalDtnApproval": "Antoine, 30 septembre 2026 à 22:55 Paris : J’autorise, en réponse à la proposition des deux traitements nommés et de l’adaptation du circuit.",
-  "excludedBackendReview": "resumePerformancePublicationJobs et resolveEngagementSwimmerChangeRequest appellent indirectement touchDtnQualificationCacheState et doivent invalider toutes les saisons : extension nominative autorisée. Les autres fonctions email/schedulers restent inchangées ; resolveEngagementAccessRequest utilise cleanAccessProfile avec engagements.club.manage uniquement, sans effet du nouveau dtn.manage. Aucun autre changement de logique identifié pour les exclus. Quatre nouveaux callables DTN prévus par le dispositif saisonnier : getDtnSeasons, updateDtnSeason, getDtnSeasonOverview, listDtnSeasonSources. Aucun nouveau secret, variable runtime, index ou migration. Configurations et données propres à PROD conservées, pas de copie depuis TEST."
+  "excludedBackendReview": "resumePerformancePublicationJobs et resolveEngagementSwimmerChangeRequest appellent indirectement touchDtnQualificationCacheState et doivent invalider toutes les saisons : extension nominative autorisée. Les autres fonctions email/schedulers restent inchangées ; resolveEngagementAccessRequest utilise cleanAccessProfile avec engagements.club.manage uniquement, sans effet du nouveau dtn.manage. Aucun autre changement de logique identifié pour les exclus. Quatre nouveaux callables DTN prévus par le dispositif saisonnier : getDtnSeasons, updateDtnSeason, getDtnSeasonOverview, listDtnSeasonSources. Aucun nouveau secret, variable runtime, index ou migration. Configurations et données propres à PROD conservées, pas de copie depuis TEST. Les deux fonctions étant absentes de TEST, leurs chaînes de dépendance et les écritures saisonnières modifiées sont vérifiées hors ligne avec une base simulée, dans une attestation liée au commit exact ; aucun test d’intégration réel de ces deux déclencheurs. Le backend DTN ordinaire est publié et vérifié sur TEST."
 }
