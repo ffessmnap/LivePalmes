@@ -12417,29 +12417,27 @@
   background: #f8fafb;
 }
 
-#adminDtnView .admin-dtn-listing-filters {
-  display: grid;
-  justify-content: start;
+#adminDtnView .admin-dtn-listing-filters[data-listing-tab] {
+  display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   align-items: end;
-  padding: 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e3e9eb;
   background: #f8fafb;
 }
 
-#adminDtnView .admin-dtn-listing-filters[data-listing-tab="espoir"] {
-  grid-template-columns: minmax(110px, 120px) auto minmax(105px, 130px) minmax(115px, 145px) auto;
-}
-
-#adminDtnView .admin-dtn-listing-filters[data-listing-tab="releve"] {
-  grid-template-columns: auto minmax(105px, 130px) minmax(115px, 145px) auto;
-}
-
+#adminDtnView .admin-dtn-listing-filters > label { flex: 1 1 130px; min-width: 0; }
+#adminDtnView .admin-dtn-listing-filters > .admin-dtn-athlete-search { flex-basis: 180px; }
+#adminDtnView .admin-dtn-listing-filters > .admin-dtn-athlete-search input { width: 100%; }
+#adminDtnView .admin-dtn-listing-filters > button { flex: 0 0 auto; }
 #adminDtnView .admin-dtn-listing-sex {
+  flex: 0 0 auto;
+  max-width: 100%;
   margin-left: 0;
 }
-
 #adminDtnView .admin-dtn-listing-sex button {
+  flex: 1 0 auto;
   min-width: 92px;
   white-space: nowrap;
 }
@@ -12586,7 +12584,7 @@
   }
 
   #adminDtnView .admin-dtn-listing-filters[data-listing-tab] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
   }
 }
 
@@ -12641,8 +12639,10 @@
     width: 100%;
   }
 
-  #adminDtnView .admin-dtn-listing-filters[data-listing-tab] {
-    grid-template-columns: minmax(0, 1fr);
+  #adminDtnView .admin-dtn-listing-filters > label,
+  #adminDtnView .admin-dtn-listing-filters > .admin-dtn-athlete-search,
+  #adminDtnView .admin-dtn-listing-filters > .admin-dtn-listing-sex {
+    flex-basis: 100%;
   }
 
   #adminDtnView .admin-dtn-listing-sex button {
