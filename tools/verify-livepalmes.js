@@ -88,7 +88,9 @@ function runUnitTests() {
     "performance-public-consistency-tests.js",
     "performance-public-row-schema-tests.js",
     "livepalmes-portal-optimization-tests.js",
-    "dtn-near-minima-tests.js"
+    "dtn-near-minima-tests.js",
+    "dtn-season-engine-tests.js",
+    "dtn-season-service-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
   });

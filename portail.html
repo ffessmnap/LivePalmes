@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260929-dtn-near-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20260930-dtn-seasons-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
@@ -255,6 +255,7 @@
                     <a href="#espace-dtn-france" data-admin-view-link="dtn" data-dtn-grid-link="france" data-capability-nav="dtn.view">Championnats de France</a>
                     <a href="#espace-dtn-edf" data-admin-view-link="dtn" data-dtn-grid-link="edf" data-capability-nav="dtn.view">Équipe de France</a>
                     <a href="#espace-dtn-listes" data-admin-view-link="dtn" data-dtn-grid-link="listes" data-capability-nav="dtn.view">Mise en liste</a>
+                    <a href="#espace-dtn-parametres" data-admin-view-link="dtn" data-capability-nav="dtn.view">Paramètres DTN</a>
                   </div>
                 </div>
               </section>
@@ -2642,6 +2643,7 @@
                 <option value="consoles.manage">Consoles compétition</option>
                 <option value="competitions.import">Import des compétitions</option>
                 <option value="dtn.view">Espace DTN</option>
+                <option value="dtn.manage">Gérer les paramètres DTN</option>
                 <option value="engagements.club.manage">Engagements club</option>
                 <option value="engagements.region.manage">Engagements région</option>
                 <option value="engagements.national.manage">Engagements national</option>
@@ -2735,6 +2737,10 @@
               <label>
                 <input type="checkbox" name="capability" value="dtn.view">
                 <span>Espace DTN</span>
+              </label>
+              <label>
+                <input type="checkbox" name="capability" value="dtn.manage">
+                <span>Gérer les paramètres DTN (avec l’accès à l’espace DTN)</span>
               </label>
               <label>
                 <input type="checkbox" name="capability" value="engagements.club.manage">

@@ -2521,7 +2521,7 @@
     if (global.location.hash === "#administration-nationale") return "nationalHome";
     if (global.location.hash === "#engagements" || ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
     if (global.location.hash === "#espace-dtn") return "dtnHome";
-    if (["#espace-dtn-france", "#espace-dtn-edf", "#espace-dtn-listes"].includes(global.location.hash)) return "dtn";
+    if (["#espace-dtn-france", "#espace-dtn-edf", "#espace-dtn-listes", "#espace-dtn-parametres"].includes(global.location.hash)) return "dtn";
     return "dashboard";
   }
 
@@ -2668,7 +2668,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-qualifications.js?v=20260929-near-minima-1",
+      "assets/livepalmes-dtn-seasons.js?v=20260930-seasons-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -2796,6 +2796,7 @@
       "consoles.manage": "Consoles compétition",
       "competitions.import": "Import des compétitions",
       "dtn.view": "Espace DTN",
+      "dtn.manage": "Gérer les paramètres DTN",
       "engagements.club.manage": "Engagements club",
       "engagements.club.switch": "Changement de club national",
       "engagements.region.manage": "Engagements région",
@@ -14090,6 +14091,7 @@
     "consoles.manage": "Gestion des consoles et des PIN",
     "competitions.import": "Import des compétitions",
     "dtn.view": "Espace DTN",
+      "dtn.manage": "Gérer les paramètres DTN",
     "engagements.club.manage": "Engagements club",
     "engagements.club.switch": "Changement de club national",
     "engagements.region.manage": "Engagements région",

@@ -1,0 +1,71 @@
+"use strict";
+const assert = require("node:assert/strict");
+const engine = require("../functions/dtn-season-engine");
+const seed = require("../functions/config/dtn-season-2025-2026.json");
+const importer = require("../assets/livepalmes-dtn-import");
+const clone = (v) => structuredClone(v);
+function setup() {
+  const s = clone(seed);
+  for (const device of engine.DEVICES) for (const p of s[device]) {
+    p.enabled = true; p.grid = { "F|100SF": { time: 6000, top: null } }; p.pools = ["50"]; p.electronicOnly = true; p.competitionMode = "all";
+    p.competitions = []; delete p.legacyUnrestricted; delete p.legacyFranceNames; p.requirements = { mode: "any", groups: [{ count: 1, courses: ["100SF", "200SF"] }] };
+  }
+  return s;
+}
+function row(id, time, extra = {}) { return { swimmerIdentityKey: id, swimmer: id, birthDate: "2011-01-01", sex: "F", course: "100SF", timeValue: time, date: "2026-03-01", pool: "50", chrono: "E", competitionId: "allowed", ...extra }; }
+function compute(s, rows, device = "france") { const a = engine.createAccumulator(s, device); rows.forEach((r) => engine.consume(a, s, r)); return engine.finish(a, s, device); }
+assert.equal(engine.validateSeason(seed).edf.length, 6);
+const s = setup(), p = s.france[0];
+p.competitionMode = "selected"; p.competitions = [{ id: "allowed", name: "Meeting" }];
+p.grid["F|100SF"] = { time: 7000, top: 8 };
+const rows = Array.from({ length: 10 }, (_, i) => row(`a${i}`, 6000 + Math.min(i, 7) * 10));
+rows.push(row("outside-top-minimum", 6500), row("a0", 6100), row("outside-top-minimum", 5500, { competitionId: "excluded" }), row("regional", 5000, { competitionId: "regional" }));
+const result = compute(s, rows)[0].courses[0];
+assert.equal(result.qualifiers.length, 11);
+assert.equal(result.qualifiers.filter((r) => r.top).length, 10, "All athletes tied at rank 8 qualify");
+assert.equal(result.qualifiers.find((r) => r.swimmer === "outside-top-minimum").timeValue, 6500, "Admissibility precedes best selection");
+assert.equal(result.qualifiers.find((r) => r.swimmer === "outside-top-minimum").top, false);
+p.grid["F|100SF"].time = null;
+assert.equal(compute(s, rows)[0].courses[0].qualifiers.length, 10, "Top only");
+p.grid["F|100SF"].top = 16;
+const top16 = Array.from({ length: 17 }, (_, i) => row(`b${i}`, 6000 + Math.min(i, 15)));
+assert.equal(compute(s, top16)[0].courses[0].qualifiers.length, 17);
+p.grid["F|100SF"] = { time: 6000, top: null };
+assert.equal(compute(s, [row("equal", 6000), row("too-slow", 6001)])[0].courses[0].qualifiers.length, 1);
+assert.equal(compute(s, [row("foreign", 5900, { nationality: "ITA" })])[0].courses[0].qualifiers.length, 1);
+assert.equal(compute(s, [row("inter", 5900, { isIntermediate: true })])[0].courses[0].qualifiers.length, 1);
+p.allowIntermediate = false;
+assert.equal(compute(s, [row("inter", 5900, { isIntermediate: true })])[0].courses[0].qualifiers.length, 0);
+for (const extra of [{ pool: "25" }, { pool: "" }, { chrono: "M" }, { chrono: "" }, { date: "2025-08-31" }, { date: "2026-09-01" }, { active: false }, { status: "hidden" }, { status: "deleted" }, { birthDate: "2010-12-31" }, { birthDate: "2013-01-01" }]) assert.equal(compute(s, [row("excluded", 5900, extra)])[0].courses[0].qualifiers.length, 0, JSON.stringify(extra));
+for (const extra of [{ date: "2025-09-01" }, { date: "2026-08-31" }, { birthDate: "2012-12-31" }, { chrono: "électronique", pool: "50 m" }]) assert.equal(compute(s, [row("accepted", 5900, extra)])[0].courses[0].qualifiers.length, 1);
+assert.equal(compute(s, [row("master", 5900, { birthDate: "1970-01-01" })])[2].courses[0].qualifiers.length, 1);
+const edf = compute(s, [row("near", 6119), row("exact2", 6120), row("exact5", 6300), row("already", 6050), row("already", 5999)], "edf")[0].courses[0];
+assert.deepEqual(edf.nearMinimum.map((r) => r.swimmer), ["near", "exact2"]);
+assert.deepEqual(edf.nearMinimum.filter((r) => (r.timeValue - 6000) * 100 < 6000 * 2).map((r) => r.swimmer), ["near"]);
+const multiple = s.edf[0]; multiple.grid["F|200SF"] = { time: 12000, top: null }; multiple.requirements.groups[0].count = 2;
+assert.equal(compute(s, [row("a", 5900), row("a", 5800)], "edf")[0].athletes.length, 0);
+assert.equal(compute(s, [row("a", 5900), row("a", 11000, { course: "200SF" })], "edf")[0].athletes.length, 1);
+multiple.requirements = { mode: "all", groups: [{ count: 1, courses: ["100SF"] }, { count: 1, courses: ["200SF"] }] };
+assert.equal(compute(s, [row("a", 5900)], "edf")[0].athletes.length, 0);
+multiple.requirements.mode = "any";
+assert.equal(compute(s, [row("a", 5900)], "edf")[0].athletes.length, 1);
+const listing = compute(s, [row("both", 5900)], "listing");
+assert.equal(listing[0].athletes.length, 1); assert.equal(listing[1].athletes.length, 0);
+const second = clone(s); second.edf.find((p) => p.id === "TRP").grid["F|100SF"].time = 5800;
+assert.equal(compute(second, [row("both", 5900)], "listing")[0].athletes.length, 0);
+assert.equal(compute(s, [row("both", 5900)], "listing")[0].athletes.length, 1, "Season copies independent");
+const cycle = setup(); cycle.listing[0].excludeIf = ["TEC1"]; assert.throws(() => engine.validateSeason(cycle), /circulaires/);
+const period = setup(); period.edf[0].startDate = "2024-09-01"; assert.throws(() => engine.validateSeason(period), /période/);
+const headers = ["Catégorie", "Sexe", "Course", "Temps minimum", "Top", "Action"];
+const preview = importer.preview(s.france, [headers, ["C", "F", "100SF", "01:01.00", 8, ""], ["C", "H", "100SF", "", 16, ""]], "france", false);
+assert.equal(preview.errors.length, 0); assert.equal(preview.next[0].grid["F|100SF"].time, 6100); assert.equal(preview.next[0].grid["M|100SF"].top, 16);
+assert.equal(s.france[0].grid["F|100SF"].time, 6000, "Import preview does not mutate current settings");
+assert.ok(importer.preview(s.france, [headers, ["C", "F", "100SF", "00:59.00", 12, ""]], "france", false).errors.length);
+assert.ok(importer.preview(s.france, [headers, ["C", "F", "100SF", "00:59.00", "", ""], ["C", "F", "100SF", "00:59.00", "", ""]], "france", false).errors.length);
+const replaced = importer.preview(s.france, [headers, ["C", "F", "100SF", "00:59.00", "", ""]], "france", true);
+assert.ok(replaced.changes.some((c) => c.type === "Suppressions"));
+const removed = importer.preview(s.france, [headers, ["C", "F", "100SF", "", "", "Supprimer"]], "france", false);
+assert.equal(removed.next[0].grid["F|100SF"], undefined);
+assert.equal(importer.parse(83.45 / 86400), 8345); assert.equal(importer.parse("23,45"), 2345);
+assert.throws(() => importer.parse("00:65.00"));
+console.log("DTN seasons: admissibility, ties, OR, ages, distinct minima, priorities, season isolation and imports OK.");

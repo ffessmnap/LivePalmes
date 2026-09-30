@@ -19159,3 +19159,25 @@
   color: var(--portal-color-muted, #526970);
 }
 #adminDtnView .admin-dtn-near-table { min-width: 850px; }
+:root { --dtn-control-gap: .8rem; }
+.admin-dtn-controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--dtn-control-gap); margin: .8rem 0; }
+.admin-dtn-controls label, .admin-dtn-condition > label { display: flex; flex-direction: column; gap: .35rem; }
+.admin-dtn-controls label:has(input[type="checkbox"]) { flex-direction: row; align-items: center; }
+.admin-dtn-controls input[type="number"] { max-width: 7rem; }
+.admin-dtn-controls input, .admin-dtn-controls select, .admin-dtn-edit-grid input, .admin-dtn-edit-grid select, .admin-dtn-condition input[type="number"] { font: inherit; min-height: 2.5rem; }
+.admin-dtn-edit-grid input:not([type="checkbox"]) { width: 7rem; }
+.admin-dtn-edit-grid { min-width: 620px; }
+.admin-portal-dtn-view fieldset { min-width: 0; border: 1px solid var(--portal-color-border, #cbd5e1); border-radius: .75rem; padding: 1rem; }
+.admin-portal-dtn-view details { margin: .5rem 0; }
+.admin-portal-dtn-view summary { cursor: pointer; padding: .5rem 0; }
+.admin-dtn-condition { padding: .8rem 0; border-bottom: 1px solid var(--portal-color-border, #cbd5e1); }
+.admin-dtn-course-choices { display: flex; flex-wrap: wrap; gap: .7rem; margin: .7rem 0; }
+.admin-dtn-dialog { max-width: min(1000px, calc(100vw - 2rem)); width: 900px; max-height: 85vh; overflow: auto; border: 1px solid var(--portal-color-border, #cbd5e1); border-radius: 1rem; padding: 1.25rem; }
+.admin-dtn-dialog::backdrop { background: rgb(0 0 0 / .45); }
+.admin-dtn-source { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; }
+.admin-dtn-dialog .admin-dtn-table-wrap { max-height: 50vh; overflow: auto; }
+.admin-dtn-dialog table { border-collapse: collapse; width: 100%; }
+.admin-dtn-dialog td, .admin-dtn-dialog th { padding: .6rem; text-align: left; border-bottom: 1px solid var(--portal-color-border, #cbd5e1); }
+
+.admin-dtn-dialog { color: var(--portal-color-text); background: var(--portal-color-surface); }
+.admin-dtn-dialog input, .admin-dtn-dialog select, .admin-dtn-edit-grid input, .admin-dtn-edit-grid select { color: var(--portal-color-text); background: var(--portal-color-field-background); border: 1px solid var(--portal-color-field-border); border-radius: .4rem; padding: .4rem; }
