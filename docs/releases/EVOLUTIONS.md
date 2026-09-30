@@ -171,3 +171,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Budget : zéro lecture/écriture Firebase supplémentaire ; filtres, onglets, détails, compteurs et pagination utilisent la vue déjà chargée. Aucun moteur de calcul, périmètre sportif ou donnée modifié.
 - Vérifications ciblées : affichage cadets activés/désactivés selon la saison, minimum/Top, détails, filtres EDF et proximité, regroupement des sportifs, filtres de mise en liste, état périmé et responsive clair/sombre. Preuve finale et PR à consigner dans la PR associée.
 - État : en préparation TEST uniquement ; retour visuel utilisateur attendu. Pas d’accord PROD.
+
+### Synthèse EDF en blocs — 30 septembre 2026
+
+- Demande finale : modifier uniquement la présentation de la synthèse des sportifs comme en PROD ; conserver les temps proches et la meilleure performance par course.
+- Branche `fix/dtn-summary-groups` : blocs repliables par référentiel actif, effectifs F/H, tableau Sportif/Sexe/Club/Temps réalisés, détails au clic et export repliable. Aucune modification du calcul ni du backend ; zéro lecture/écriture Firebase supplémentaire.
+- Contrôles ciblés ordinateur/mobile, effectifs, ouverture des blocs et détails, saison et état périmé ; preuve finale dans la PR associée. TEST uniquement, recette utilisateur attendue ; aucune autorisation PROD.
