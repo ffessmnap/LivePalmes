@@ -177,3 +177,11 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Demande finale : modifier uniquement la présentation de la synthèse des sportifs comme en PROD ; conserver les temps proches et la meilleure performance par course.
 - Branche `fix/dtn-summary-groups` : blocs repliables par référentiel actif, effectifs F/H, tableau Sportif/Sexe/Club/Temps réalisés, détails au clic et export repliable. Aucune modification du calcul ni du backend ; zéro lecture/écriture Firebase supplémentaire.
 - Contrôles ciblés ordinateur/mobile, effectifs, ouverture des blocs et détails, saison et état périmé ; preuve finale dans la PR associée. TEST uniquement, recette utilisateur attendue ; aucune autorisation PROD.
+
+### Lisibilité et recherche DTN — 30 septembre 2026
+
+- Antoine autorise les suggestions de l’audit visuel, sauf l’agrandissement des informations compétition/date en mise en liste.
+- Branche `fix/dtn-reading-search` : en-têtes compacts, recherche locale nom/prénom dans la synthèse et les listes, titres de synthèse à gauche, matrice France resserrée avec catégories explicites, tiret sans qualifié EDF et ligne de fraîcheur allégée. Le libellé « par sportif et par course » est déjà présent dans le module saisonnier et conservé.
+- Budget avant/après identique : zéro lecture/écriture Firebase ajoutée à l’ouverture, recherche, filtres, pagination ou export. Calculs, règles sportives, données et taille des détails de mise en liste inchangés.
+- Recette fictive réussie à 390 et 1440 px, clair/sombre : recherche accents/casse/nom/prénom, zéro résultat, réinitialisation, compteurs, détails, absence de débordement de page ; parcours saison/France/EDF/proximité/listes et cache absent vérifiés. Contrôle global et preuve TEST à consigner dans la PR associée.
+- TEST uniquement ; validation utilisateur de cette nouvelle version attendue. Aucun accord PROD.
