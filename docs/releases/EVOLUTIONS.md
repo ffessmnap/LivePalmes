@@ -205,3 +205,5 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Publication de source seulement, sans invocation, modification de secrets, programmation ou IAM. Contrôle des configurations conservées, sauvegarde PROD et retour arrière existants ; preuve TEST obligatoire pour les deux fonctions.
 - Correction du menu PR #90 intégrée dans `a380d7f8dd118a0d8363a68e1c207c05f6920ed1`, TEST `36775250093` réussi ; les quatre liens ont été vérifiés avec un seul onglet actif.
 - Branche `release/dtn-season-production` : validation de l’extension et préparation de la promotion complète ; preuves finales consignées dans la PR.
+
+- TEST `36776745747` bloqué avant toute mutation : les deux fonctions n’existent pas dans TEST. Adaptation du contrôle à cet environnement : exécution des helpers modifiés avec une base simulée et vérification des chaînes d’appel, preuve dédiée au commit exact. Aucune activation d’automatisme TEST ; cette limite d’intégration est explicitement conservée dans le bilan.

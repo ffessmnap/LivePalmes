@@ -8,7 +8,7 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: string
       dtn_extension:
-        description: Accord specifique pour actualiser les deux traitements partages DTN
+        description: Valider hors ligne les deux dependances DTN autorisees (sans automatisme TEST)
         required: true
         type: boolean
         default: false
@@ -110,11 +110,10 @@ jobs:
         deploy
     - name: Controler le backend TEST et les Functions conservees
       run: python tools/release-cycle.py check-test "$RUNNER_TEMP" .
-    - name: Actualiser les deux traitements DTN explicitement autorises
+    - name: Verifier les dependances DTN sans invocation ni deploiement
       if: inputs.dtn_extension && !inputs.verification_only
-      env:
-        DTN_EXTENSION_APPROVED: 'true'
-      run: python tools/publish-approved-pdf-functions.py test-dtn . "$RUNNER_TEMP/dtn-extension"
+      id: dtn-checks
+      run: node tests/dtn-shared-invalidation-tests.js
     - uses: google-github-actions/auth@v3
       if: '!inputs.verification_only'
       with:
@@ -136,6 +135,7 @@ jobs:
       if: '!inputs.verification_only'
       env:
         APPLICATION_CHECKS: ${{ steps.application-checks.outcome }}
+        DTN_EXTENSION_CHECKS: ${{ steps.dtn-checks.outcome }}
       run: python tools/release-cycle.py proof "$RUNNER_TEMP/test-proof"
     - uses: actions/upload-artifact@v4
       if: '!inputs.verification_only'
