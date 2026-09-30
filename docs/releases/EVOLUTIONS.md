@@ -191,3 +191,9 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Retour utilisateur après PR #88 : Tous/Femmes/Hommes tronqués par les colonnes fixes après ajout de la recherche.
 - Branche `fix/dtn-fluid-filters` : barre flexible avec retour à la ligne, groupe sexe non comprimé et champs extensibles ; uniquement CSS et cache. Aucun changement métier ni lecture Firebase supplémentaire.
 - Vérifications ciblées Relève/Espoir sur mobile, largeur intermédiaire et ordinateur : boutons entièrement visibles, sans chevauchement ; filtres et recherche conservés. Preuve de publication TEST à consigner dans la PR ; validation utilisateur attendue, aucune autorisation PROD.
+
+### Navigation DTN et accord de publication — 30 septembre 2026
+
+- Antoine demande à 22:44 Paris de corriger le surlignage de Paramètres DTN puis de publier en PROD toutes les évolutions de l’espace DTN développées dans cette discussion. Cet accord couvre les saisons, paramètres, règles configurables et les retouches d’affichage jusqu’à cette correction ; aucun autre domaine, copie de données ou recalcul n’est demandé.
+- Correction ciblée : le lien Paramètres DTN possède maintenant son identifiant de sous-page, comme les trois autres liens. Seule la page réellement consultée doit être active. Aucun calcul ni droit modifié ; zéro lecture/écriture Firebase supplémentaire.
+- Branche `fix/dtn-settings-active` ; vérification des quatre liens et publication TEST avant préparation du bilan PROD. Preuves exactes et bilan de publication dans les PR associées.
