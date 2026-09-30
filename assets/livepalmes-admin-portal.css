@@ -19242,3 +19242,40 @@
   #adminDtnView .admin-dtn-course-choices label { min-height: 40px; }
   #adminDtnView .admin-dtn-edit-grid input[type="checkbox"] { margin: 12px; }
 }
+
+/* Les vues saisonnières réutilisent les matrices et tableaux DTN historiques. */
+#adminDtnView .admin-dtn-season-detail { margin: 12px 0 0; border: 1px solid var(--portal-color-border); border-radius: 8px; overflow: hidden; }
+#adminDtnView .admin-dtn-season-detail .admin-dtn-table-wrap { border-radius: 0; }
+#adminDtnView .admin-dtn-time[aria-pressed="true"] { outline: 2px solid var(--portal-color-primary, #087e91); outline-offset: -2px; border-radius: 5px; }
+#adminDtnView .admin-dtn-time { white-space: normal; }
+#adminDtnView .admin-dtn-near-controls { padding: 8px 12px; margin: 0; gap: 8px 16px; font-size: .78rem; }
+#adminDtnView .admin-dtn-near-controls input[type="number"] { min-height: 32px; }
+#adminDtnView .admin-dtn-near-controls select { min-height: 32px; padding: 4px 8px; }
+#adminDtnView .admin-dtn-freshness { margin: 8px 12px; font-size: .75rem; color: var(--portal-color-muted); }
+#adminDtnView .admin-dtn-near-results > :is(h3, p) { margin: 8px 12px; }
+#adminDtnView .admin-dtn-listing-badge + .admin-dtn-listing-badge { margin-left: 4px; }
+#adminDtnView .admin-dtn-listing-tabs { overflow-x: auto; }
+#adminDtnView .admin-dtn-listing-tabs button { flex: 1 0 auto; }
+#adminDtnView #adminDtnSeasonResults { min-width: 0; }
+#adminDtnView .admin-dtn-season-detail .admin-dtn-results-table { min-width: 850px; }
+@media (max-width: 760px), (pointer: coarse) {
+  #adminDtnView .admin-dtn-near-controls :is(select, input[type="number"]) { min-height: 40px; }
+  #adminDtnView .admin-dtn-near-controls label { min-height: 40px; }
+}
+
+#adminDtnView .admin-dtn-definitions .admin-dtn-season-scope { display: block; min-width: 0; overflow-wrap: anywhere; }
+#adminDtnView .admin-dtn-season-scope > strong { margin-right: 6px; }
+#adminDtnView .admin-dtn-season-scope > span { display: inline; padding: 0; border: 0; background: transparent; white-space: normal; }
+
+#adminDtnView .admin-dtn-listing-details { margin: 0; }
+#adminDtnView .admin-dtn-listing-details > summary { padding: 3px 0; }
+#adminDtnView .admin-dtn-detail-button { min-height: 28px; padding: 4px 8px; font-size: .72rem; }
+@media (max-width: 760px), (pointer: coarse) {
+  #adminDtnView .admin-dtn-detail-button { min-height: 40px; }
+  #adminDtnView .admin-dtn-listing-details > summary { min-height: 40px; display: list-item; align-content: center; }
+}
+
+#adminDtnView .admin-dtn-season-scope > span { color: var(--portal-color-muted); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course { background: var(--portal-color-surface-raised); color: var(--portal-color-text); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course strong { color: var(--portal-color-text); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course small { color: var(--portal-color-muted); }
