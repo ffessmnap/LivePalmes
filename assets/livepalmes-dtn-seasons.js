@@ -155,6 +155,14 @@
         return `<tr><th>${courseLabel(course)}</th><td class="admin-dtn-edf-threshold${cell ? "" : " is-unavailable"}">${esc(criteria(cell))}</td><td class="admin-dtn-edf-count${cell ? "" : " is-unavailable"}">${cell ? view.hit ? c?.qualifiers.length || 0 : "…" : "—"}</td><td>${cell ? button("show-course", "Voir les sportifs", `data-profile="${esc(p.id)}" data-sex="${state.sex}" data-course="${course}" ${view.hit ? "" : "disabled"}`, "ghost-button admin-dtn-detail-button") : ""}</td></tr>`;
       }).join("")}</tbody></table></div>${courseDetail(view)}`;
   }
+  function summaryResults(view) {
+    return `<div class="admin-dtn-summary-list">${season().edf.filter((p) => p.enabled).map((p) => {
+      const result = view.profiles.find((item) => item.id === p.id);
+      const rows = [...(result?.athletes || [])].sort((a, b) => athleteLabel(a).localeCompare(athleteLabel(b), "fr"));
+      return `<details class="admin-dtn-summary-group"><summary class="admin-dtn-summary-group-head"><div><strong>${esc(p.label)}</strong><span>${esc(p.id)} · ${p.minAge}–${p.maxAge} ans au 31 décembre ${season().year}</span></div><b>${rows.length} sportif${rows.length > 1 ? "s" : ""}</b></summary>
+        ${rows.length ? `<div class="admin-dtn-results-wrap"><table class="admin-dtn-summary-table"><thead><tr><th>Sportif</th><th>Sexe</th><th>Club</th><th>Temps réalisés</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(athleteLabel(r))}</td><td>${r.sex === "F" ? "F" : "H"}</td><td>${esc(r.club || "—")}</td><td><div class="admin-dtn-qualified-courses">${[...r.qualifications].sort((a, b) => model.COURSES.indexOf(a.course) - model.COURSES.indexOf(b.course)).map((q) => `<button type="button" class="admin-dtn-qualified-course" data-action="qualification-meta" aria-expanded="false"><span><strong>${esc(courseLabel(q.course))}</strong>${esc(q.time || shortTime(q.timeValue))}</span><small>Minimum ${shortTime(q.threshold)} · ${esc(q.date || "—")} · ${esc(q.competition || q.location || "—")}</small></button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>` : '<p class="admin-dtn-summary-empty">Aucun sportif qualifié.</p>'}</details>`;
+    }).join("")}</div>`;
+  }
   function results(view) {
     const options = resultOptions();
     if (!options.some((p) => p.id === state.profile)) state.profile = options[0]?.id || "";
@@ -162,18 +170,20 @@
     const profiles = view.hit ? resultProfiles(view) : [];
     const athletes = athleteRows(profiles);
     const clubs = [...new Set(athletes.map((r) => r.club).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-    const isList = state.device === "listing" || state.profile === "summary";
+    const isSummary = state.device === "edf" && state.profile === "summary";
+    const isList = state.device === "listing";
+    if (isSummary) { state.sex = ""; state.club = ""; state.course = ""; }
     const nearAvailable = state.device === "edf" && ["TSP", "TRP"].includes(state.profile);
     const nearClubs = [...new Set(profiles.flatMap((p) => p.courses.flatMap((c) => c.nearMinimum.map((r) => r.club))).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
     const freshness = view.hit ? `Saison ${season().label} · Dernier calcul : ${new Date(view.generatedAt).toLocaleString("fr-FR")} · paramètres version ${view.revision}` : view.pending ? "Calcul en cours. Actualisez l’affichage dans quelques instants." : view.error || "Résultats absents ou périmés. Recalculez pour utiliser les paramètres actuels.";
-    el.grid.innerHTML = `<div class="admin-dtn-grid-head"><div><span>${LABELS[state.device]}</span><strong>${state.device === "france" ? "Épreuves individuelles" : isList ? "Sportifs éligibles" : "Temps piscine"}</strong></div><div class="admin-dtn-grid-actions">
-      ${state.device === "edf" && !isList ? sexButtons([]) : ""}
+    el.grid.innerHTML = `<div class="admin-dtn-grid-head"><div><span>${LABELS[state.device]}</span><strong>${state.device === "france" ? "Épreuves individuelles" : isSummary ? "Synthèse des sportifs" : isList ? "Sportifs éligibles" : "Temps piscine"}</strong></div><div class="admin-dtn-grid-actions">
+      ${state.device === "edf" && !isSummary ? sexButtons([]) : ""}
       ${state.id !== state.catalog.previous ? button("rebuild", "Recalculer", 'title="Recalculer les trois dispositifs de cette saison"') : ""}${button("reload", "Actualiser l’affichage")}
     </div></div>
     ${state.device === "france" ? "" : resultTabs(options, view)}
     <p class="admin-dtn-freshness" role="status">${esc(freshness)}</p>
     ${nearAvailable ? `<div class="admin-dtn-near-controls"><label><input type="checkbox" data-near ${checked(state.near)}> Voir les nageurs proches du minimum</label>${state.near ? `<label>Écart inférieur à <input type="number" data-percent min="0.1" max="5" step="0.1" required value="${state.percent}"> %</label><label>Club<select data-result="club">${option("", "Tous", state.club)}${nearClubs.map((c) => option(c, c, state.club)).join("")}</select></label><label>Épreuve<select data-result="course">${option("", "Toutes", state.course)}${model.COURSES.map((c) => option(c, courseLabel(c), state.course)).join("")}</select></label>` : ""}</div>` : ""}
-    <div id="adminDtnSeasonResults" data-results>${state.device === "france" ? franceResults(view) : isList ? view.hit ? resultFilters(athletes, clubs) + paged(filtered(athletes).sort((a, b) => (a.lastName || athleteLabel(a)).localeCompare(b.lastName || athleteLabel(b), "fr")), (slice) => athleteTable(slice)) : "" : edfResults(view, profiles)}</div>
+    <div id="adminDtnSeasonResults" data-results>${state.device === "france" ? franceResults(view) : isSummary ? view.hit ? summaryResults(view) : "" : isList ? view.hit ? resultFilters(athletes, clubs) + paged(filtered(athletes).sort((a, b) => (a.lastName || athleteLabel(a)).localeCompare(b.lastName || athleteLabel(b), "fr")), (slice) => athleteTable(slice)) : "" : edfResults(view, profiles)}</div>
     ${view.hit && !isList ? `<details class="admin-dtn-export"><summary>Exporter Excel</summary><div class="admin-dtn-export-content">${button("export-results", "Choisir les référentiels à exporter")}</div></details>` : ""}`;
     const configs = season()[state.device].filter((p) => p.enabled && (state.device === "france" || state.profile === "summary" || state.profile === "espoir" && ["TEC1", "TEP"].includes(p.id) || p.id === state.profile));
     scope(configs);
@@ -379,6 +389,7 @@
       if (name === "result-sex") { state.sex = b.dataset.value; state.selectedCourse = null; state.page = 0; await render(); }
       if (name === "show-course") { state.selectedCourse = { profile: b.dataset.profile, sex: b.dataset.sex, course: b.dataset.course }; state.page = 0; state.near = false; await render(); el.grid.querySelector(".admin-dtn-season-detail")?.scrollIntoView({ block: "nearest" }); }
       if (name === "close-course") { state.selectedCourse = null; state.page = 0; await render(); }
+      if (name === "qualification-meta") b.setAttribute("aria-expanded", String(b.getAttribute("aria-expanded") !== "true"));
       if (name === "save") await save();
       if (name === "create") await create();
       if (name === "activate") await activate();
