@@ -2,7 +2,7 @@
   "use strict";
   const LABELS = { france: "Championnats de France", edf: "Équipes de France", listing: "Mise en liste", settings: "Paramètres DTN" };
   const HASHES = { "#espace-dtn-france": "france", "#espace-dtn-edf": "edf", "#espace-dtn-listes": "listing", "#espace-dtn-parametres": "settings" };
-  const state = { ready: false, id: "", device: "france", profile: "", sex: "F", club: "", course: "", page: 0, near: false, percent: 2, selectedCourse: null, performance: "", preferences: {}, editorDevice: "france", editorProfile: "C", dirty: false, views: new Map(), sources: new Map(), token: 0 };
+  const state = { ready: false, id: "", device: "france", profile: "", sex: "F", club: "", course: "", page: 0, near: false, percent: 2, selectedCourse: null, performance: "", search: "", preferences: {}, editorDevice: "france", editorProfile: "C", dirty: false, views: new Map(), sources: new Map(), token: 0 };
   let el, model, booting, service, uid = "";
   const clone = (v) => JSON.parse(JSON.stringify(v));
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -68,7 +68,13 @@
   }
   function courseLabel(code) { return code.replace(/(SF|IS|AP|BI)$/, " $1"); }
   function athleteLabel(row) { return row.swimmer || `${row.firstName || ""} ${row.lastName || ""}`.trim(); }
-  function filtered(rows) { return rows.filter((r) => (!state.sex || r.sex === state.sex) && (!state.club || r.club === state.club) && (!state.course || r.course === state.course || r.qualifications?.some((q) => q.course === state.course))); }
+  const normalizeName = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+  function matchesSearch(row) {
+    const name = normalizeName(`${row.firstName || ""} ${row.lastName || ""} ${row.swimmer || ""}`);
+    return normalizeName(state.search).trim().split(/\s+/).every((word) => name.includes(word));
+  }
+  function searchField() { return `<label class="admin-dtn-athlete-search">Sportif<input type="search" data-athlete-search aria-label="Rechercher un sportif" placeholder="Nom ou prénom" value="${esc(state.search)}"></label>`; }
+  function filtered(rows) { return rows.filter((r) => (state.device !== "listing" || matchesSearch(r)) && (!state.sex || r.sex === state.sex) && (!state.club || r.club === state.club) && (!state.course || r.course === state.course || r.qualifications?.some((q) => q.course === state.course))); }
   function resultProfiles(view, id = state.profile) {
     const profiles = view.profiles || [];
     if (id === "summary" || id === "all") return profiles;
@@ -112,10 +118,10 @@
     }).join("")}</div>`;
   }
   function resultFilters(athletes, clubs) {
-    const beforeSex = athletes.filter((r) => (!state.club || r.club === state.club) && (!state.course || r.qualifications.some((q) => q.course === state.course)));
+    const beforeSex = athletes.filter((r) => matchesSearch(r) && (!state.club || r.club === state.club) && (!state.course || r.qualifications.some((q) => q.course === state.course)));
     return `<div class="admin-dtn-listing-filters" data-listing-tab="${state.device === "listing" && state.profile === "espoir" ? "espoir" : "releve"}" aria-label="Filtres des sportifs">
       ${state.device === "listing" && state.profile === "espoir" ? `<label>Performance<select data-result="performance">${option("", "Tous", state.performance)}${season().listing.filter((p) => p.enabled && ["TEC1", "TEP"].includes(p.id)).map((p) => option(p.id, p.id, state.performance)).join("")}</select></label>` : ""}
-      ${sexButtons(beforeSex, true)}
+      ${searchField()}${sexButtons(beforeSex, true)}
       <label>Club<select data-result="club">${option("", "Tous", state.club)}${clubs.map((c) => option(c, c, state.club)).join("")}</select></label>
       <label>Épreuve<select data-result="course">${option("", "Toutes", state.course)}${model.COURSES.map((c) => option(c, courseLabel(c), state.course)).join("")}</select></label>
       ${button("export-results", "Exporter Excel")}
@@ -139,8 +145,7 @@
   }
   function franceResults(view) {
     const profiles = season().france.filter((p) => p.enabled).sort((a, b) => ["S", "J", "C"].indexOf(a.id) - ["S", "J", "C"].indexOf(b.id));
-    const codes = { S: "SE", J: "JU", C: "CA" };
-    return `<div class="admin-dtn-table-wrap"><table class="admin-dtn-standards-table"><thead><tr><th>Catégorie</th>${model.COURSES.map((c) => `<th>${courseLabel(c)}</th>`).join("")}</tr></thead><tbody>${profiles.flatMap((p) => ["F", "M"].map((sex) => `<tr class="sex-${sex.toLowerCase()}"><th title="${sex === "F" ? "Femmes" : "Hommes"} ${esc(p.label)}"><span class="admin-dtn-category-code">${sex === "F" ? "F" : "H"}${codes[p.id] || esc(p.label)}</span></th>${model.COURSES.map((course) => {
+    return `<div class="admin-dtn-table-wrap"><table class="admin-dtn-standards-table admin-dtn-france-table"><thead><tr><th>Catégorie</th>${model.COURSES.map((c) => `<th>${courseLabel(c)}</th>`).join("")}</tr></thead><tbody>${profiles.flatMap((p) => ["F", "M"].map((sex) => `<tr class="sex-${sex.toLowerCase()}"><th title="${sex === "F" ? "Femmes" : "Hommes"} ${esc(p.label)}"><span class="admin-dtn-category-code">${esc(p.label)} · ${sex === "F" ? "F" : "H"}</span></th>${model.COURSES.map((course) => {
       const cell = profileGrid(p)[`${sex}|${course}`], selected = state.selectedCourse;
       return `<td>${cell && (cell.time || cell.top) ? `<button type="button" class="admin-dtn-time" data-action="show-course" data-profile="${esc(p.id)}" data-sex="${sex}" data-course="${course}" aria-label="${sex === "F" ? "Femmes" : "Hommes"} ${esc(p.label)} ${courseLabel(course)} : ${criteria(cell)}" aria-pressed="${selected?.profile === p.id && selected?.sex === sex && selected?.course === course}" ${view.hit ? "" : "disabled"}>${esc(criteria(cell))}</button>` : '<span class="admin-dtn-no-time">—</span>'}</td>`;
     }).join("")}</tr>`)).join("") || '<tr><td colspan="15" class="admin-dtn-empty">Aucune catégorie activée pour cette saison.</td></tr>'}</tbody></table></div>${courseDetail(view)}`;
@@ -152,15 +157,15 @@
     return `<div class="admin-dtn-edf-standard-head"><div><strong>${esc(p.label)}</strong><span>${p.minAge}–${p.maxAge} ans au 31 décembre ${season().year}</span></div><small>Une seule performance, la meilleure admissible, par sportif et par course.</small></div>
       <div class="admin-dtn-table-wrap"><table class="admin-dtn-standards-table admin-dtn-edf-table"><thead><tr><th>Course</th><th>Temps</th><th>Qualifiés</th><th>Détail</th></tr></thead><tbody>${model.COURSES.map((course) => {
         const cell = grid[`${state.sex}|${course}`], c = courses.find((item) => item.sex === state.sex && item.course === course);
-        return `<tr><th>${courseLabel(course)}</th><td class="admin-dtn-edf-threshold${cell ? "" : " is-unavailable"}">${esc(criteria(cell))}</td><td class="admin-dtn-edf-count${cell ? "" : " is-unavailable"}">${cell ? view.hit ? c?.qualifiers.length || 0 : "…" : "—"}</td><td>${cell ? button("show-course", "Voir les sportifs", `data-profile="${esc(p.id)}" data-sex="${state.sex}" data-course="${course}" ${view.hit ? "" : "disabled"}`, "ghost-button admin-dtn-detail-button") : ""}</td></tr>`;
+        return `<tr><th>${courseLabel(course)}</th><td class="admin-dtn-edf-threshold${cell ? "" : " is-unavailable"}">${esc(criteria(cell))}</td><td class="admin-dtn-edf-count${cell ? "" : " is-unavailable"}">${cell ? view.hit ? c?.qualifiers.length || 0 : "…" : "—"}</td><td>${cell && (!view.hit || c?.qualifiers.length) ? button("show-course", "Voir les sportifs", `data-profile="${esc(p.id)}" data-sex="${state.sex}" data-course="${course}" ${view.hit ? "" : "disabled"}`, "ghost-button admin-dtn-detail-button") : "—"}</td></tr>`;
       }).join("")}</tbody></table></div>${courseDetail(view)}`;
   }
   function summaryResults(view) {
-    return `<div class="admin-dtn-summary-list">${season().edf.filter((p) => p.enabled).map((p) => {
+    return `<div class="admin-dtn-summary-search">${searchField()}</div><div class="admin-dtn-summary-list">${season().edf.filter((p) => p.enabled).map((p) => {
       const result = view.profiles.find((item) => item.id === p.id);
-      const rows = [...(result?.athletes || [])].sort((a, b) => athleteLabel(a).localeCompare(athleteLabel(b), "fr"));
-      return `<details class="admin-dtn-summary-group"><summary class="admin-dtn-summary-group-head"><div><strong>${esc(p.label)}</strong><span>${esc(p.id)} · ${p.minAge}–${p.maxAge} ans au 31 décembre ${season().year}</span></div><b>${rows.length} sportif${rows.length > 1 ? "s" : ""}</b></summary>
-        ${rows.length ? `<div class="admin-dtn-results-wrap"><table class="admin-dtn-summary-table"><thead><tr><th>Sportif</th><th>Sexe</th><th>Club</th><th>Temps réalisés</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(athleteLabel(r))}</td><td>${r.sex === "F" ? "F" : "H"}</td><td>${esc(r.club || "—")}</td><td><div class="admin-dtn-qualified-courses">${[...r.qualifications].sort((a, b) => model.COURSES.indexOf(a.course) - model.COURSES.indexOf(b.course)).map((q) => `<button type="button" class="admin-dtn-qualified-course" data-action="qualification-meta" aria-expanded="false"><span><strong>${esc(courseLabel(q.course))}</strong>${esc(q.time || shortTime(q.timeValue))}</span><small>Minimum ${shortTime(q.threshold)} · ${esc(q.date || "—")} · ${esc(q.competition || q.location || "—")}</small></button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>` : '<p class="admin-dtn-summary-empty">Aucun sportif qualifié.</p>'}</details>`;
+      const rows = [...(result?.athletes || [])].filter(matchesSearch).sort((a, b) => athleteLabel(a).localeCompare(athleteLabel(b), "fr"));
+      return `<details class="admin-dtn-summary-group" data-summary-profile="${esc(p.id)}" ${state.search.trim() && rows.length ? "open" : ""}><summary class="admin-dtn-summary-group-head"><div><strong>${esc(p.label)}</strong><span>${esc(p.id)} · ${p.minAge}–${p.maxAge} ans au 31 décembre ${season().year}</span></div><b>${rows.length} sportif${rows.length > 1 ? "s" : ""}</b></summary>
+        ${rows.length ? `<div class="admin-dtn-results-wrap"><table class="admin-dtn-summary-table"><thead><tr><th>Sportif</th><th>Sexe</th><th>Club</th><th>Temps réalisés</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(athleteLabel(r))}</td><td>${r.sex === "F" ? "F" : "H"}</td><td>${esc(r.club || "—")}</td><td><div class="admin-dtn-qualified-courses">${[...r.qualifications].sort((a, b) => model.COURSES.indexOf(a.course) - model.COURSES.indexOf(b.course)).map((q) => `<button type="button" class="admin-dtn-qualified-course" data-action="qualification-meta" aria-expanded="false"><span><strong>${esc(courseLabel(q.course))}</strong>${esc(q.time || shortTime(q.timeValue))}</span><small>Minimum ${shortTime(q.threshold)} · ${esc(q.date || "—")} · ${esc(q.competition || q.location || "—")}</small></button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>` : `<p class="admin-dtn-summary-empty">${state.search.trim() ? 'Aucun sportif ne correspond à la recherche.' : 'Aucun sportif qualifié.'}</p>`}</details>`;
     }).join("")}</div>`;
   }
   function results(view) {
@@ -175,7 +180,8 @@
     if (isSummary) { state.sex = ""; state.club = ""; state.course = ""; }
     const nearAvailable = state.device === "edf" && ["TSP", "TRP"].includes(state.profile);
     const nearClubs = [...new Set(profiles.flatMap((p) => p.courses.flatMap((c) => c.nearMinimum.map((r) => r.club))).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
-    const freshness = view.hit ? `Saison ${season().label} · Dernier calcul : ${new Date(view.generatedAt).toLocaleString("fr-FR")} · paramètres version ${view.revision}` : view.pending ? "Calcul en cours. Actualisez l’affichage dans quelques instants." : view.error || "Résultats absents ou périmés. Recalculez pour utiliser les paramètres actuels.";
+    const freshness = view.hit ? `Saison ${season().label} · Dernier calcul : ${new Date(view.generatedAt).toLocaleString("fr-FR")}` : view.pending ? "Calcul en cours. Actualisez l’affichage dans quelques instants." : view.error || "Résultats absents ou périmés. Recalculez pour utiliser les paramètres actuels.";
+    el.grid.dataset.dtnResults = "true";
     el.grid.innerHTML = `<div class="admin-dtn-grid-head"><div><span>${LABELS[state.device]}</span><strong>${state.device === "france" ? "Épreuves individuelles" : isSummary ? "Synthèse des sportifs" : isList ? "Sportifs éligibles" : "Temps piscine"}</strong></div><div class="admin-dtn-grid-actions">
       ${state.device === "edf" && !isSummary ? sexButtons([]) : ""}
       ${state.id !== state.catalog.previous ? button("rebuild", "Recalculer", 'title="Recalculer les trois dispositifs de cette saison"') : ""}${button("reload", "Actualiser l’affichage")}
@@ -205,6 +211,7 @@
   }
   function field(name, label, value, type = "text", extra = "") { return `<label>${label}<input data-field="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`; }
   function settings() {
+    delete el.grid.dataset.dtnResults;
     const profile = activeProfile(); state.editorProfile = profile.id;
     const disabled = editable() ? "" : "disabled";
     const grid = profile.sourceId ? state.editor.edf.find((p) => p.id === profile.sourceId)?.grid || {} : profile.grid;
@@ -355,6 +362,7 @@
   function change(event) {
     const target = event.target;
     try {
+      if (target.matches("[data-athlete-search]")) return;
       if (target.dataset.result) { state[target.dataset.result] = target.value; state.selectedCourse = null; state.page = 0; render(); return; }
       if (target.matches("[data-near]")) { state.near = target.checked; state.selectedCourse = null; state.page = 0; render(); return; }
       if (target.matches("[data-percent]")) { if (!target.reportValidity()) return; state.percent = Number(target.value); state.page = 0; render(); return; }
@@ -385,7 +393,7 @@
     const name = b.dataset.action;
     b.disabled = true;
     try {
-      if (name === "result-profile") { state.profile = b.dataset.value; state.performance = ""; state.club = ""; state.course = ""; state.selectedCourse = null; state.page = 0; await render(); el.grid.querySelector(`[data-action="result-profile"][data-value="${b.dataset.value}"]`)?.focus(); }
+      if (name === "result-profile") { state.profile = b.dataset.value; state.search = ""; state.performance = ""; state.club = ""; state.course = ""; state.selectedCourse = null; state.page = 0; await render(); el.grid.querySelector(`[data-action="result-profile"][data-value="${b.dataset.value}"]`)?.focus(); }
       if (name === "result-sex") { state.sex = b.dataset.value; state.selectedCourse = null; state.page = 0; await render(); }
       if (name === "show-course") { state.selectedCourse = { profile: b.dataset.profile, sex: b.dataset.sex, course: b.dataset.course }; state.page = 0; state.near = false; await render(); el.grid.querySelector(".admin-dtn-season-detail")?.scrollIntoView({ block: "nearest" }); }
       if (name === "close-course") { state.selectedCourse = null; state.page = 0; await render(); }
@@ -423,11 +431,23 @@
       // Keep the shared status visible even when the former refresh box is hidden.
       el.toolbar.append(el.status); state.device = HASHES[global.location.hash] || "france"; if (state.device === "listing") state.sex = ""; state.ready = true;
       el.grid.addEventListener("click", action); el.grid.addEventListener("change", change);
-      el.grid.addEventListener("input", (event) => event.target.setCustomValidity?.(""));
+      el.grid.addEventListener("input", (event) => {
+        const target = event.target;
+        target.setCustomValidity?.("");
+        if (!target.matches("[data-athlete-search]")) return;
+        const view = state.views.get(viewKey());
+        if (!view?.hit) return;
+        const start = target.selectionStart, end = target.selectionEnd;
+        state.search = target.value; state.page = 0;
+        results(view);
+        const input = el.grid.querySelector("[data-athlete-search]");
+        input?.focus({ preventScroll: true });
+        input?.setSelectionRange(start, end);
+      });
       el.grid.addEventListener("toggle", (event) => { if (event.target.matches(".admin-dtn-listing-details[open]")) el.grid.querySelectorAll(".admin-dtn-listing-details[open]").forEach((detail) => { if (detail !== event.target) detail.open = false; }); }, true);
       el.grid.addEventListener("submit", (event) => event.preventDefault());
-      el.season.onchange = () => { if (!discard()) { el.season.value = state.id; return; } state.id = el.season.value; state.selectedCourse = null; state.performance = ""; state.course = ""; state.profile = ""; state.club = ""; state.page = 0; resetEditor(); message(""); render(); };
-      global.addEventListener("hashchange", () => { const next = HASHES[global.location.hash]; if (!next) return; state.preferences[state.device] = { profile: state.profile, sex: state.sex }; state.device = next; Object.assign(state, state.preferences[next] || { profile: "", sex: next === "listing" ? "" : "F" }); state.selectedCourse = null; state.performance = ""; state.course = ""; state.club = ""; state.page = 0; render(); });
+      el.season.onchange = () => { if (!discard()) { el.season.value = state.id; return; } state.id = el.season.value; state.search = ""; state.selectedCourse = null; state.performance = ""; state.course = ""; state.profile = ""; state.club = ""; state.page = 0; resetEditor(); message(""); render(); };
+      global.addEventListener("hashchange", () => { const next = HASHES[global.location.hash]; if (!next) return; state.preferences[state.device] = { profile: state.profile, sex: state.sex }; state.device = next; state.search = ""; Object.assign(state, state.preferences[next] || { profile: "", sex: next === "listing" ? "" : "F" }); state.selectedCourse = null; state.performance = ""; state.course = ""; state.club = ""; state.page = 0; render(); });
       global.addEventListener("beforeunload", (event) => { if (state.dirty) { event.preventDefault(); event.returnValue = ""; } });
       await render();
     })().catch((error) => { booting = null; if (el?.grid) { el.grid.textContent = error.message; const retry = document.createElement("button"); retry.textContent = "Réessayer"; retry.onclick = init; el.grid.append(retry); } });
