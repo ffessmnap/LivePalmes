@@ -19279,3 +19279,19 @@
 html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course { background: var(--portal-color-surface-raised); color: var(--portal-color-text); }
 html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course strong { color: var(--portal-color-text); }
 html[data-portal-theme="dark"] #adminDtnView .admin-dtn-listing-details .admin-dtn-qualified-course small { color: var(--portal-color-muted); }
+
+/* Synthèse EDF : groupes repliables et performances consultables au toucher. */
+#adminDtnView .admin-dtn-summary-group { margin: 0; }
+#adminDtnView .admin-dtn-summary-group-head { padding: 10px 12px; }
+#adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course { font: inherit; font-weight: 400; }
+#adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course[aria-expanded="true"] small { max-height: none; white-space: normal; }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-table th { background: var(--portal-color-surface-raised); color: var(--portal-color-muted); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-table :is(th, td) { border-color: var(--portal-color-border); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course strong { color: var(--portal-color-text); }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course small { color: var(--portal-color-muted); }
+#adminDtnView .admin-dtn-summary-group-head span,
+#adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course small { color: var(--portal-color-muted); }
+#adminDtnView .admin-dtn-summary-table .admin-dtn-qualified-course small { transition: none; }
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-group,
+html[data-portal-theme="dark"] #adminDtnView .admin-dtn-summary-group-head { border-color: var(--portal-color-border); }
+html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.admin-dtn-edf-tabs, .admin-dtn-export) { background: var(--portal-color-surface-raised); }
