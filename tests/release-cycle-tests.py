@@ -133,6 +133,26 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(m.approved_extra_functions({'additionalDtnFunctions': names, 'additionalDtnApproval': 'Antoine 30 septembre 22:55'}), names)
         self.assertEqual(m.approved_extra_functions({}), [])
 
+    def test_dtn_offline_proof_must_match_exact_candidate_and_suite(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            request = self.request()
+            request.update(additionalDtnFunctions=sorted(m.DTN_FUNCTIONS), additionalDtnApproval='Antoine 30 septembre')
+            m.write(root/'request.json', request)
+            m.write(root/'paths.json', ['functions/index.js'])
+            proof = {'state': {'functions': []}, 'dtnExtensionVerification': {
+                'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation',
+                'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(m.DTN_FUNCTIONS)}}
+            with patch.object(m, 'validate_request', return_value=True), patch.object(m, 'safe_functions', return_value=[]):
+                m.write(root/'test-proof.json', proof)
+                m.prepare_selection(root, '.')
+                self.assertEqual(m.read(root/'selection.json'), sorted(m.DTN_FUNCTIONS))
+                for key, value in [('candidate', 'c'*40), ('result', 'failure'), ('suite', 'other')]:
+                    altered = {**proof, 'dtnExtensionVerification': {**proof['dtnExtensionVerification'], key: value}}
+                    m.write(root/'test-proof.json', altered)
+                    with self.assertRaisesRegex(ValueError, 'Preuve'):
+                        m.prepare_selection(root, '.')
+
     def test_test_staging_respects_external_destination(self):
         with tempfile.TemporaryDirectory() as d:
             candidate=Path(d)/'candidate'; candidate.mkdir()
