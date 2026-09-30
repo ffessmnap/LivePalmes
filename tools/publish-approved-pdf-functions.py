@@ -1,4 +1,4 @@
-"""Update only the source of two explicitly approved existing PDF treatments.
+"""Update only the source of explicitly approved existing PDF/DTN treatments.
 
 No invocation, IAM change, Scheduler API, secret access or business data call.
 The ordinary deployment path continues to exclude email and scheduled functions.
@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 
-ALLOWED = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'}
+ALLOWED = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions', 'resumePerformancePublicationJobs', 'resolveEngagementSwimmerChangeRequest'}
 
 
 def source_patch(before, source, sha):
@@ -45,23 +45,28 @@ def archive(candidate, sha):
     return data.getvalue()
 
 
-def main(candidate, plan, backup):
+def main(candidate, plan, backup, project="livepalmes"):
+    if project not in {"livepalmes", "livepalmes-test"}:
+        raise ValueError("Projet interdit")
     request = json.loads((plan / 'request.json').read_text())
-    names = request.get('additionalPdfFunctions', [])
+    spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
+    cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    names = cycle.approved_extra_functions(request)
     if not names:
         print('Aucun traitement PDF supplementaire demande.')
         return
-    if set(names) != ALLOWED or len(names) != 2 or not request.get('additionalPdfApproval'):
-        raise ValueError('Accord PDF specifique absent')
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
-    if credentials.get('project_id') != 'livepalmes':
+    if credentials.get('project_id') != project:
         raise ValueError('Compte PROD requis')
     report = json.loads((backup / 'report.json').read_text())
-    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', [])) != ALLOWED:
+    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', [])) != set(names):
         raise ValueError('Sauvegarde hors bilan')
     spec = importlib.util.spec_from_file_location('release_state', Path(__file__).with_name('production-release-state.py'))
     state = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state)
+    state.PREFIX = 'projects/' + project + '/locations/europe-west1/functions/'
+    if project == 'livepalmes-test':
+        state.inventory = lambda: test_inventory(cycle, project)
     before = {f['name']: f for f in json.loads((backup / 'functions.json').read_text())}
     current = {f['name']: f for f in state.inventory()}
     for name in names:
@@ -72,7 +77,7 @@ def main(candidate, plan, backup):
         if state.identity(current[full]) != state.identity(before[full]):
             raise ValueError('Traitement PDF modifie depuis la sauvegarde')
     data = archive(candidate, request['candidate'])
-    upload = state.request(state.API + 'projects/livepalmes/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
+    upload = state.request(state.API + 'projects/' + project + '/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
     url = urllib.parse.urlsplit(upload['uploadUrl'])
     if url.scheme != 'https' or not (url.hostname == 'storage.googleapis.com' or url.hostname.endswith('.storage.googleapis.com')):
         raise ValueError('Destination source interdite')
@@ -83,8 +88,45 @@ def main(candidate, plan, backup):
         full = state.PREFIX + name
         body = source_patch(before[full], upload['storageSource'], request['candidate'])
         state.wait_operation(state.request(state.API + full + '?updateMask=build_config.source,labels', 'PATCH', body))
-        print('Source PDF actualisee : ' + name, flush=True)
+        print('Source autorisee actualisee : ' + name, flush=True)
+    state.check_after(backup, backup / 'after.json', True)
+
+
+def test_inventory(cycle, project):
+    from urllib.parse import quote
+    result, page = [], ''
+    for _ in range(50):
+        data = cycle.api(project, 'functions' + ('&pageToken=' + quote(page, safe='') if page else ''))
+        if data.get('unreachable'):
+            raise ValueError('Inventaire TEST incomplet')
+        result.extend(data.get('functions', []))
+        page = data.get('nextPageToken')
+        if not page:
+            return result
+    raise ValueError('Pagination TEST incomplete')
+
+
+def test_dtn(candidate, directory):
+    if os.environ.get('DTN_EXTENSION_APPROVED') != 'true':
+        raise ValueError('Extension TEST non autorisee')
+    spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
+    cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    sha = os.environ['CANDIDATE_SHA']
+    names = sorted(cycle.DTN_FUNCTIONS)
+    before = test_inventory(cycle, 'livepalmes-test')
+    directory.mkdir(parents=True, exist_ok=False)
+    value = {'candidate': sha, 'additionalDtnFunctions': names,
+             'additionalDtnApproval': 'Antoine, 30 septembre 2026 22:55 Paris; workflow TEST explicite'}
+    (directory / 'request.json').write_text(json.dumps(value))
+    (directory / 'functions.json').write_text(json.dumps(before))
+    (directory / 'report.json').write_text(json.dumps({**value, 'commitLabel': True,
+        'functions': [{'name': f['name']} for f in before if f['name'].split('/')[-1] in names],
+        'newFunctions': [], 'appCheck': 'false'}))
+    main(candidate, directory, directory, 'livepalmes-test')
 
 
 if __name__ == '__main__':
-    main(*(Path(arg).resolve() for arg in sys.argv[1:]))
+    if sys.argv[1] == 'test-dtn':
+        test_dtn(*(Path(arg).resolve() for arg in sys.argv[2:]))
+    else:
+        main(*(Path(arg).resolve() for arg in sys.argv[1:]))

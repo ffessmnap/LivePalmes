@@ -99,3 +99,9 @@ Le circuit actuel a réussi de bout en bout le 25 septembre 2026 : TEST 36105695
 ## Isolation des identifiants de publication
 
 Les credentials des actions Google sont créés à la racine du workspace GitHub, hors du checkout `candidate` publié. Avant chaque publication Hosting, `check-hosting-payload.js` calcule la liste exacte de fichiers avec la même fonction que Firebase CLI et refuse les fichiers non suivis, les chemins de credentials et les liens sortant du checkout. Les fichiers temporaires ne doivent jamais être copiés dans le contenu Hosting. Les tests utilisent uniquement des valeurs synthétiques.
+
+## Extension DTN autorisée le 30 septembre 2026
+
+Antoine a explicitement autorisé à 22:55 Paris la mise à jour de `resumePerformancePublicationJobs` et `resolveEngagementSwimmerChangeRequest`, dépendances de l’invalidation des caches saisonniers. Le bilan renseigne `additionalDtnFunctions` avec exactement ces deux noms et `additionalDtnApproval` avec l’accord réel. Cette extension ne change pas les lots ordinaires ni l’autorisation PDF existante.
+
+TEST : cocher `dtn_extension` dans le workflow commun pour actualiser uniquement la source de ces fonctions existantes après contrôle du backend ordinaire. Leurs configurations et les fonctions exclues sont contrôlées avant Hosting et la preuve TEST. Le bilan PROD exige ensuite une preuve de code compatible pour ces deux fonctions. PROD conserve les configurations, secrets, App Check et programmation en place ; seule la source et son étiquette de commit sont actualisées. Aucune invocation métier ou action sur les données n’est ajoutée. La sauvegarde vérifiée et le retour arrière couvrent les deux fonctions.

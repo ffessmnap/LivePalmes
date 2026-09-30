@@ -1,6 +1,7 @@
 """Read deployment metadata and source archives. Never invoke business functions."""
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -88,9 +89,9 @@ def main():
         extra = []
         if os.environ.get('PLAN'):
             plan = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-            extra = plan.get('additionalPdfFunctions', [])
-            if extra and (set(extra) != {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'} or not plan.get('additionalPdfApproval')):
-                raise ValueError('Extension PDF non autorisee')
+            spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
+            cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+            extra = cycle.approved_extra_functions(plan)
         selected += extra
         if os.environ.get("RELEASE_SELECTION"):
             requested = json.loads(Path(os.environ["RELEASE_SELECTION"]).read_text())
@@ -100,7 +101,8 @@ def main():
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
         if not set(extra).issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
-        report['additionalPdfFunctions'] = extra
+        report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
+        report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in extra)
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
