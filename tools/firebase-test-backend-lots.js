@@ -50,6 +50,7 @@ const LOTS = Object.freeze({
     "listEngagementCompetitionDeletionRequests", "resolveEngagementCompetitionDeletionRequest"
   ],
   performance: [
+    "getDtnSeasons", "updateDtnSeason", "getDtnSeasonOverview", "listDtnSeasonSources",
     "previewCompetitionImport", "listCompetitionImports", "updateCompetitionImportRecordAlertDecision",
     "buildDtnQualificationView", "refreshDtnQualificationCache", "getDtnQualificationOverview",
     "refreshDtnListingCache", "getDtnListingOverview", "rebuildPerformanceSwimmerIndexNextPage",

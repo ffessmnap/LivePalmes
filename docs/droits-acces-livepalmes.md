@@ -32,6 +32,7 @@ Le profil conserve aussi la préférence `emailPreferences.competitionNotificati
 | `consoles.access` | Possibilité d'ouvrir une console autorisée |
 | `competitions.import` | Import de données de compétition |
 | `dtn.view` | Consultation des espaces réservés à la DTN |
+| `dtn.manage` | Préparation, modification et activation des saisons DTN ; nécessite aussi `dtn.view` |
 | `engagements.club.manage` | Gestion des engagements de son club |
 | `engagements.club.switch` | Changement temporaire vers un autre club autorisé |
 | `engagements.region.manage` | Gestion des clubs de sa région |
@@ -97,3 +98,5 @@ Le code conserve encore une liste technique d'identifiants administrateurs histo
 - `docs/FIREBASE_REGLES.md` : séparation entre portail, direct et accès public.
 
 Toute modification des capacités, PIN, profils, délégations ou règles d'accès nécessite une validation explicite et des tests ciblés avant publication.
+
+Les gestionnaires DTN peuvent modifier les paramètres de la saison active et du brouillon suivant. Les lecteurs ne voient que les saisons active et précédente. La précédente est verrouillée. Un administrateur général disposant de l’accès DTN conserve la gestion générale. Aucun compte existant ne reçoit automatiquement `dtn.manage`.
