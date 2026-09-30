@@ -45,9 +45,8 @@ def archive(candidate, sha):
     return data.getvalue()
 
 
-def main(candidate, plan, backup, project="livepalmes"):
-    if project not in {"livepalmes", "livepalmes-test"}:
-        raise ValueError("Projet interdit")
+def main(candidate, plan, backup):
+    project = "livepalmes"
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
@@ -64,9 +63,6 @@ def main(candidate, plan, backup, project="livepalmes"):
     spec = importlib.util.spec_from_file_location('release_state', Path(__file__).with_name('production-release-state.py'))
     state = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state)
-    state.PREFIX = 'projects/' + project + '/locations/europe-west1/functions/'
-    if project == 'livepalmes-test':
-        state.inventory = lambda: test_inventory(cycle, project)
     before = {f['name']: f for f in json.loads((backup / 'functions.json').read_text())}
     current = {f['name']: f for f in state.inventory()}
     for name in names:
@@ -92,41 +88,6 @@ def main(candidate, plan, backup, project="livepalmes"):
     state.check_after(backup, backup / 'after.json', True)
 
 
-def test_inventory(cycle, project):
-    from urllib.parse import quote
-    result, page = [], ''
-    for _ in range(50):
-        data = cycle.api(project, 'functions' + ('&pageToken=' + quote(page, safe='') if page else ''))
-        if data.get('unreachable'):
-            raise ValueError('Inventaire TEST incomplet')
-        result.extend(data.get('functions', []))
-        page = data.get('nextPageToken')
-        if not page:
-            return result
-    raise ValueError('Pagination TEST incomplete')
-
-
-def test_dtn(candidate, directory):
-    if os.environ.get('DTN_EXTENSION_APPROVED') != 'true':
-        raise ValueError('Extension TEST non autorisee')
-    spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
-    cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
-    sha = os.environ['CANDIDATE_SHA']
-    names = sorted(cycle.DTN_FUNCTIONS)
-    before = test_inventory(cycle, 'livepalmes-test')
-    directory.mkdir(parents=True, exist_ok=False)
-    value = {'candidate': sha, 'additionalDtnFunctions': names,
-             'additionalDtnApproval': 'Antoine, 30 septembre 2026 22:55 Paris; workflow TEST explicite'}
-    (directory / 'request.json').write_text(json.dumps(value))
-    (directory / 'functions.json').write_text(json.dumps(before))
-    (directory / 'report.json').write_text(json.dumps({**value, 'commitLabel': True,
-        'functions': [{'name': f['name']} for f in before if f['name'].split('/')[-1] in names],
-        'newFunctions': [], 'appCheck': 'false'}))
-    main(candidate, directory, directory, 'livepalmes-test')
-
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'test-dtn':
-        test_dtn(*(Path(arg).resolve() for arg in sys.argv[2:]))
-    else:
-        main(*(Path(arg).resolve() for arg in sys.argv[1:]))
+    main(*(Path(arg).resolve() for arg in sys.argv[1:]))

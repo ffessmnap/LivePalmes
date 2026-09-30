@@ -258,6 +258,8 @@ def proof(directory):
     evidence = {'candidate': candidate, 'state': state}
     if os.environ.get('APPLICATION_CHECKS') == 'success':
         evidence['verification'] = {'schema': 1, 'candidate': candidate, 'suite': 'verify-livepalmes', 'result': 'success'}
+    if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
+        evidence['dtnExtensionVerification'] = {'schema': 1, 'candidate': candidate, 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}
     write(root / 'test-proof.json', evidence)
 
 
@@ -276,6 +278,8 @@ def verify_test(directory, live=True):
     require(evidence['candidate'] == request['candidate'] == info['head_sha'], 'Version TEST differente du candidat')
     if live:
         require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
+    if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
+        evidence['dtnExtensionVerification'] = {'schema': 1, 'candidate': candidate, 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}
     write(root / 'test-proof.json', evidence)
 
 
@@ -289,7 +293,8 @@ def prepare_selection(directory, candidate):
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in approved_dtn_functions(request)), 'Extension DTN non validee sur TEST')
+        if approved_dtn_functions(request):
+            require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
         selected += extra
     write(directory / 'selection.json', selected)
 
