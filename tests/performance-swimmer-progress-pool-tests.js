@@ -96,7 +96,7 @@ assert.equal(progress.innerHTML, "");
 const source = fs.readFileSync(path.join(root, "performances/public/swimmer.js"), "utf8");
 assert.match(
   source,
-  /elements\.pool\.querySelectorAll\("\\.segment"\)[\s\S]*?setSegmentValue\(elements\.pool, button\.dataset\.value\);[\s\S]*?render\(\);/,
+  /elements\.pool\.querySelectorAll\("\.segment"\)[\s\S]*?setSegmentValue\(elements\.pool, button\.dataset\.value\);[\s\S]*?render\(\);/,
   "Le clic sur le filtre bassin doit continuer à relancer immédiatement le rendu"
 );
 
