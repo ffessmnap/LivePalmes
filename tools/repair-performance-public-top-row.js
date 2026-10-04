@@ -1,3 +1,5 @@
+// Archived incident repair: existing TOP rows are not a complete source of truth.
+if (require.main === module) throw new Error("Outil incident archivé : reconstruire les TOP depuis performances avec le pipeline courant (bassin inclus).");
 const crypto = require("crypto");
 const path = require("path");
 
