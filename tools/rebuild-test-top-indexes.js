@@ -53,6 +53,16 @@ function validatePublic(source, readTop, readPreview) {
   }
   return report;
 }
+function viewBatches(operations) {
+  const batches=[]; let batch=[], bytes=0;
+  for(const op of operations) {
+    const size=Buffer.byteLength(JSON.stringify(op));
+    if(batch.length && (batch.length>=100 || bytes+size>6000000)) {batches.push(batch);batch=[];bytes=0;}
+    batch.push(op); bytes+=size;
+  }
+  if(batch.length)batches.push(batch);
+  return batches;
+}
 async function main() {
   const mode=process.argv[2];
   assert.ok(['plan','apply','verify'].includes(mode));
@@ -128,8 +138,8 @@ async function main() {
     for(const f of json(path.join(work,'backup-public.json')))assert.equal(digest(fs.readFileSync(path.join(work,'backup-public',f.relative))),f.hash);
     const ids=new Set(plan.views.map(v=>v.id));
     const operations=[...plan.views.map(v=>({id:v.id,data:v.data})),...previous.filter(v=>!ids.has(v.id)).map(v=>({id:v.id}))];
-    for(let i=0;i<operations.length;i+=100) {
-      const batch=db.batch();for(const op of operations.slice(i,i+100)) {const ref=db.collection(collection).doc(op.id);if(op.data)batch.set(ref,op.data);else batch.delete(ref);}await batch.commit();
+    for(const operationsBatch of viewBatches(operations)) {
+      const batch=db.batch();for(const op of operationsBatch) {const ref=db.collection(collection).doc(op.id);if(op.data)batch.set(ref,op.data);else batch.delete(ref);}await batch.commit();
     }
     // Version/manifest are published last. Other public files are untouched.
     for(const f of plan.files)await bucket.upload(path.join(out,f.relative),{destination:`${prefix}/${f.relative}`,resumable:false,metadata:{contentType:f.relative.endsWith('.js')?'application/javascript; charset=utf-8':'application/json; charset=utf-8',cacheControl:['manifest.json','version.js'].includes(f.relative)?'public, max-age=300':'public, max-age=31536000, immutable'}});
@@ -145,4 +155,4 @@ async function main() {
   console.log(JSON.stringify({ok:true,mode,project,views:actual.size,files:plan.files.length,report},null,2));
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
-module.exports={validatePublic};
+module.exports={validatePublic,viewBatches};
