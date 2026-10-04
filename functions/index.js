@@ -17829,6 +17829,22 @@ function bestTopRows(rows = []) {
     });
 }
 
+function encodePerformanceTopIndexRows(rows) {
+  const serialized = JSON.stringify(rows);
+  if (Buffer.byteLength(serialized) <= 850000) return { rows };
+  const rowsGzip = require("node:zlib").gzipSync(serialized).toString("base64");
+  if (Buffer.byteLength(rowsGzip) > 850000) throw new Error("Bucket TOP trop volumineux après compression.");
+  return { rowsEncoding: "gzip-base64-v1", rowsGzip };
+}
+
+function readPerformanceTopIndexRows(view = {}) {
+  if (view.rowsEncoding) {
+    if (view.rowsEncoding !== "gzip-base64-v1") throw new Error("Encodage TOP inconnu.");
+    return JSON.parse(require("node:zlib").gunzipSync(Buffer.from(view.rowsGzip, "base64")).toString("utf8"));
+  }
+  return Array.isArray(view.rows) ? view.rows : [];
+}
+
 async function writePerformanceTopIndexRows(rows = [], context = {}) {
   const byBucket = new Map();
   rows.forEach((rawRow) => {
@@ -17861,9 +17877,8 @@ async function writePerformanceTopIndexRows(rows = [], context = {}) {
 
   bucketEntries.forEach((bucket, index) => {
     const existing = snapshots[index].exists ? snapshots[index].data() || {} : {};
-    const existingRows = Array.isArray(existing.rows) ? existing.rows : [];
+    const existingRows = readPerformanceTopIndexRows(existing);
     const topRows = bestTopRows([...existingRows, ...bucket.rows]);
-    if (Buffer.byteLength(JSON.stringify(topRows)) > 850000) throw new Error("Bucket TOP trop volumineux : reconstruction interrompue.");
     batch.set(refs[index], {
       bucketId: bucket.id,
       bucketKey: bucket.key,
@@ -17872,7 +17887,7 @@ async function writePerformanceTopIndexRows(rows = [], context = {}) {
       category: bucket.category,
       seasonYear: bucket.seasonYear,
       regionId: bucket.regionId,
-      rows: topRows,
+      ...encodePerformanceTopIndexRows(topRows),
       rowCount: topRows.length,
       sourceRowCount: Number(existing.sourceRowCount || 0) + bucket.rows.length,
       updatedAt: now
@@ -17899,7 +17914,7 @@ async function performanceTopRowsFromIndex(filters = {}) {
   const snapshot = await db.collection(PERFORMANCE_TOP_BUCKETS_COLLECTION).doc(bucketId).get();
   if (!snapshot.exists) return null;
   const view = snapshot.data() || {};
-  const rows = Array.isArray(view.rows) ? view.rows : [];
+  const rows = readPerformanceTopIndexRows(view);
   return {
     ok: true,
     bucketId,

@@ -138,6 +138,22 @@ function topRows(rows = []) {
   )));
 }
 
+function encodePerformanceTopIndexRows(rows) {
+  const serialized = JSON.stringify(rows);
+  if (Buffer.byteLength(serialized) <= 850000) return { rows };
+  const rowsGzip = require("node:zlib").gzipSync(serialized).toString("base64");
+  if (Buffer.byteLength(rowsGzip) > 850000) throw new Error("Bucket TOP trop volumineux après compression.");
+  return { rowsEncoding: "gzip-base64-v1", rowsGzip };
+}
+
+function readPerformanceTopIndexRows(view = {}) {
+  if (view.rowsEncoding) {
+    if (view.rowsEncoding !== "gzip-base64-v1") throw new Error("Encodage TOP inconnu.");
+    return JSON.parse(require("node:zlib").gunzipSync(Buffer.from(view.rowsGzip, "base64")).toString("utf8"));
+  }
+  return Array.isArray(view.rows) ? view.rows : [];
+}
+
 function publicRow(row = {}) {
   return {
     id: cleanText(row.id),
@@ -435,7 +451,7 @@ async function main() {
       category: bucket.category,
       seasonYear: bucket.seasonYear,
       regionId: bucket.regionId,
-      rows: topRows(Array.from(bucket.bestBySwimmer.values())),
+      ...encodePerformanceTopIndexRows(topRows(Array.from(bucket.bestBySwimmer.values()))),
       rowCount: topRows(Array.from(bucket.bestBySwimmer.values())).length,
       sourceRowCount: bucket.bestBySwimmer.size,
       updatedAt: new Date().toISOString()
@@ -507,7 +523,7 @@ async function main() {
   console.log("Import Firestore termine.");
 }
 
-module.exports = { buildIndexes, topRows, publicRow };
+module.exports = { buildIndexes, topRows, publicRow, encodePerformanceTopIndexRows, readPerformanceTopIndexRows };
 
 if (require.main === module) main().catch((error) => {
   console.error(error);

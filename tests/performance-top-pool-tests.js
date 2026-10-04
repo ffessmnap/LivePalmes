@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
-const { buildIndexes, topRows } = require('../tools/import-performance-seed-to-firestore');
+const { buildIndexes, topRows, encodePerformanceTopIndexRows, readPerformanceTopIndexRows } = require('../tools/import-performance-seed-to-firestore');
 const { checkPerformancePublicConsistency } = require('../tools/performance-public-consistency');
 const { validatePublic, viewBatches } = require('../tools/rebuild-test-top-indexes');
 const { distinctTopPreview } = require('../tools/performance-top-preview');
@@ -21,8 +21,8 @@ function extract(file, names, context = {}) {
 }
 const key = r => r.swimmerIdentityKey || r.swimmerId;
 const cleanText = v => String(v || '').trim();
-const backend = extract('functions/index.js', ['publicTopIndexRow','bestTopRows','publicPerformanceTopCandidateKey','mergePublicTopRows','sortPublicTopRows','distinctPublicTopPreview'], {
-  cleanText, publicSwimmerKey:key, normalizeCategoryCode:cleanText, performanceCategoryFromRow:r=>r.category, cleanFirestoreValue:r=>r, categoryCodeFromCategory:c=>c, CATEGORY_LABELS:{}, publicPerformanceTopRow:r=>r,
+const backend = extract('functions/index.js', ['encodePerformanceTopIndexRows','readPerformanceTopIndexRows','publicTopIndexRow','bestTopRows','publicPerformanceTopCandidateKey','mergePublicTopRows','sortPublicTopRows','distinctPublicTopPreview'], {
+  require, Buffer, cleanText, publicSwimmerKey:key, normalizeCategoryCode:cleanText, performanceCategoryFromRow:r=>r.category, cleanFirestoreValue:r=>r, categoryCodeFromCategory:c=>c, CATEGORY_LABELS:{}, publicPerformanceTopRow:r=>r,
   performancePublicKey:r=>r.id, PERFORMANCE_TOP_INDEX_LIMIT:500,
   publicBetterPerformance:(a,b)=>!b || a.timeValue < b.timeValue || (a.timeValue === b.timeValue && a.date < b.date)
 });
@@ -48,6 +48,17 @@ function checkFilters(candidates) {
  assert.equal(ui.rowsForFilters({course:'200BI',sex:'M',category:'S',region:'OTHER'}).length,0);
 }
 checkFilters(backend.bestTopRows(rows));
+const largeRows=rows.map(r=>({...r,competition:'A'.repeat(240000)}));
+for(const encode of [encodePerformanceTopIndexRows,backend.encodePerformanceTopIndexRows]) {
+ const packed=encode(largeRows);
+ assert.equal(packed.rowsEncoding,'gzip-base64-v1');
+ assert.deepEqual(JSON.parse(JSON.stringify(readPerformanceTopIndexRows(packed))),largeRows);
+ assert.deepEqual(JSON.parse(JSON.stringify(backend.readPerformanceTopIndexRows(packed))),largeRows);
+ checkFilters(backend.bestTopRows(backend.readPerformanceTopIndexRows(packed)));
+}
+assert.deepEqual(readPerformanceTopIndexRows({rows}),rows);
+assert.throws(()=>readPerformanceTopIndexRows({rowsEncoding:'unknown'}));
+
 const depth=Array.from({length:501},(_,i)=>[...rows.slice(0,2)].map(r=>({...r, id:`${r.id}-depth-${i}`, publicKey:`${r.id}-depth-${i}`, swimmerIdentityKey:`depth-${i}`, timeValue:r.timeValue+i}))).flat();
 for(const result of [backend.bestTopRows(depth),topRows(depth)]) {
  assert.equal(result.filter(r=>r.pool==='25').length,500);
