@@ -1,0 +1,112 @@
+name: Reconstruire les TOP PROD autorises
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production_tops:
+        description: Reconstruire les seuls TOP PROD valides, sources PROD en lecture seule
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirm_production_tops
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: production
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes
+      TARGET_PUBLIC_BUCKET: livepalmes-public-data-718081132564
+      PUBLIC_PREFIX: performance-public-firestore
+      PUBLIC_OUT_DIR: outputs/performance-public-production-tops
+      CONFIRM_PRODUCTION_TOPS: 'true'
+      CANDIDATE_SHA: 58df08dd27a05880585ba68ce78f65a8c2ca47da
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_PATH: functions/node_modules
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - name: Verifier le code publie et le generateur valide
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$CANDIDATE_SHA" HEAD
+          git diff --exit-code "$CANDIDATE_SHA" HEAD -- functions tools/build-public-performance-files.js tools/import-performance-seed-to-firestore.js tools/performance-top-preview.js tools/performance-public-consistency.js tools/rebuild-test-top-indexes.js
+          python - <<'PY'
+          import importlib.util, os
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('cycle','tools/release-cycle.py')
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          p=Path(os.environ['RUNNER_TEMP'])/'top-production-evidence';p.mkdir()
+          state=m.production_evidence(p)
+          assert m.read(p/'baseline.json')['productionCommit']==os.environ['CANDIDATE_SHA'], 'Publier le code valide avant les TOP'
+          m.write(p/'expected-hosting.json',state['hosting'])
+          PY
+          npm ci --prefix functions
+          node tests/performance-top-pool-tests.js
+          node tests/production-top-rebuild-tests.js
+          node --check tools/rebuild-production-top-indexes.js
+          node --check tools/export-production-top-source.js
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Verifier la cible et la version Hosting PROD reelle
+        run: |
+          echo "PROD_CREDENTIAL_FILE=$GOOGLE_APPLICATION_CREDENTIALS" >> "$GITHUB_ENV"
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from pathlib import Path
+          token=subprocess.check_output(['gcloud','auth','print-access-token'],text=True).strip()
+          req=urllib.request.Request('https://firebasehosting.googleapis.com/v1beta1/sites/livepalmes/releases?pageSize=1',headers={'Authorization':'Bearer '+token})
+          with urllib.request.urlopen(req) as r: actual=json.load(r)['releases'][0]
+          expected=json.loads((Path(os.environ['RUNNER_TEMP'])/'top-production-evidence/expected-hosting.json').read_text())
+          assert actual['version']['name']==expected['version'], 'Hosting PROD modifie depuis la publication'
+          PY
+      - name: Exporter les sources PROD en lecture seule
+        run: |
+          mkdir -p outputs
+          node tools/export-production-top-source.js
+      - name: Generer et verifier les TOP avec le generateur valide sur TEST
+        run: |
+          node tools/build-public-performance-files.js --seed outputs/performance-base-firestore-active.ndjson --out-dir "$PUBLIC_OUT_DIR"
+          node tools/check-public-performance-consistency.js --seed outputs/performance-base-firestore-active.ndjson --public-dir "$PUBLIC_OUT_DIR"
+          node tools/rebuild-production-top-indexes.js plan
+      - name: Chiffrer et rouvrir la sauvegarde avant toute ecriture
+        run: |
+          node tools/production-backup-crypto.js seal outputs/production-top-rebuild "$RUNNER_TEMP/production-top-backup.enc"
+          node tools/production-backup-crypto.js open "$RUNNER_TEMP/production-top-backup.enc" "$RUNNER_TEMP/top-backup-reopened"
+          diff -qr outputs/production-top-rebuild "$RUNNER_TEMP/top-backup-reopened"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-top-backup
+          path: ${{ runner.temp }}/production-top-backup.enc
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verifier que les sources n'ont pas change pendant la preparation
+        run: node tools/export-production-top-source.js verify
+      - name: Reconstruire uniquement les vues et fichiers TOP puis les relire
+        run: node tools/rebuild-production-top-indexes.js apply
+      - name: Confirmer les sources inchangees
+        run: node tools/export-production-top-source.js verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-top-verification
+          path: |
+            outputs/production-top-rebuild/verification.json
+            outputs/production-source-fingerprint.json
+          if-no-files-found: warn
+          retention-days: 14
