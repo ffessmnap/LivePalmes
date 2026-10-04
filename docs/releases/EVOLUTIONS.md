@@ -217,3 +217,10 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 
 - PR #94 intégrée dans `6299520cecb387553fbeda245624f05ebfef1e95`. Déploiement du code TEST réussi : run `37220457816`, 8 fonctions sur 138 sélectionnées et Hosting contrôlé. La première reconstruction `37220710124` s'est arrêtée AVANT écriture : bucket 200BI Hommes toutes catégories/saisons trop volumineux avec les deux bassins. Les anciens index/fichiers sont restés en place.
 - Complément : compression sans perte des seules grandes vues Firestore, décodage compatible dans tous les lecteurs/writers actifs, contrôle croisé des codecs et conservation des 500 candidats par bassin. Nouvelle reconstruction TEST à confirmer ; aucun changement des sources ni de PROD.
+
+### TOP et progression par bassin — préparation PROD du 4 octobre 2026
+
+- PR #94, #95 et #96, candidat `58df08dd27a05880585ba68ce78f65a8c2ca47da`. TOP reconstruits sur TEST avec succès : run `37221659232` (1 h 18 min 32 s). Graphiques publiés par TEST `37229607916` et contrôlés sur Clément BECQ (Tous bassins/25/50, cas une saison sans courbe).
+- Validation et demande PROD explicites d’Antoine : « ok j’ai testé en test tout est bon. Peux tu pousser en prod toutes les modif qu’on a fait? sur les top reconstruit, sur les graphe mis à jour en fonction d ubassin ».
+- Bilan `.github/releases/20261004-top-pools.json`; preuve complémentaire TEST `37230870893` sur le même candidat pour les deux dépendances partagées. Publication de dix fonctions modifiées et Hosting prévue. Paramètres, secrets et calendriers conservés; aucune invocation métier manuelle.
+- Reconstruction TOP PROD séparée à préparer avec sauvegarde préalable, depuis les seules sources PROD en lecture seule. Aucune copie TEST→PROD, aucune règle/index Firestore. Résultats PROD encore à confirmer.
