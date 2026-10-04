@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const readline = require('node:readline');
 const { buildIndexes, topRows } = require('./import-performance-seed-to-firestore');
 const project = 'livepalmes-test';
 const bucketName = 'livepalmes-test-public-data-206080168534';
@@ -24,7 +25,11 @@ function validatePublic(source, readTop, readPreview) {
   const dual = [...groups.values()].filter(rows => rows.some(r=>r.pool==='25') && rows.some(r=>r.pool==='50'));
   const becq = dual.find(rows => rows[0].course==='200BI' && rows[0].category==='S' && rows[0].sex==='M' && Number(rows[0].seasonYear)===2017 && /BECQ/i.test(rows[0].lastName || rows[0].swimmer) && /CL[EÉ]MENT/i.test(rows[0].firstName || rows[0].swimmer));
   assert.ok(becq, 'Cas Clément BECQ 200BI M Senior 2017 absent des sources TEST');
-  const selected = [becq, ...dual.filter(rows=>identity(rows[0])!==identity(becq[0])).filter((rows,i,all)=>all.findIndex(other=>identity(other[0])===identity(rows[0]))===i).slice(0,3)];
+  const selected=[becq], seen=new Set([identity(becq[0])]);
+  for(const rows of dual) {
+    if(!seen.has(identity(rows[0]))) {selected.push(rows);seen.add(identity(rows[0]));}
+    if(selected.length===4)break;
+  }
   const report = [];
   for (const rows of selected) {
     const r = rows[0];
@@ -66,6 +71,10 @@ function viewBatches(operations) {
 async function eachConcurrent(items, action) {
   for(let i=0;i<items.length;i+=8)await Promise.all(items.slice(i,i+8).map(action));
 }
+async function* readLines(file) {
+  for await(const line of readline.createInterface({input:fs.createReadStream(file),crlfDelay:Infinity}))if(line.trim())yield JSON.parse(line);
+}
+const canonicalHash = value => digest(JSON.stringify(value, (key,item) => item && typeof item==='object' && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map(k=>[k,item[k]])) : item));
 async function main() {
   const mode=process.argv[2];
   assert.ok(['plan','apply','verify'].includes(mode));
@@ -81,24 +90,30 @@ async function main() {
   const db=getFirestore(app), bucket=getStorage(app).bucket(bucketName);
   const out=path.resolve(process.env.PUBLIC_OUT_DIR);
   const source=fs.readFileSync('outputs/performance-base-firestore-active.ndjson','utf8').trim().split('\n').map(JSON.parse);
-  const readViews=async()=>{
-    const result=[]; let cursor;
+  const readViews=async(action)=>{
+    let count=0, cursor;
     for(;;) {
       let q=db.collection(collection).orderBy('__name__').limit(200);
       if(cursor)q=q.startAfter(cursor);
       const snap=await q.get(); if(snap.empty)break;
-      result.push(...snap.docs.map(d=>({id:d.id,data:d.data()}))); cursor=snap.docs.at(-1).id;
+      for(const d of snap.docs)await action({id:d.id,data:d.data()});
+      count+=snap.size; cursor=snap.docs.at(-1).id;
     }
-    return result;
+    return count;
   };
   if(mode==='plan') {
     const now=new Date().toISOString();
-    const views=[...buildIndexes(source).topBuckets.values()].map(b=>{
+    fs.mkdirSync(work,{recursive:true});
+    const plannedFile=path.join(work,'planned-views.ndjson');
+    fs.writeFileSync(plannedFile,'');
+    let viewCount=0;
+    for(const b of buildIndexes(source).topBuckets.values()) {
       const rows=topRows([...b.bestBySwimmer.values()]);
       const data={bucketId:b.id,bucketKey:b.key,course:b.course,sex:b.sex,category:b.category,seasonYear:b.seasonYear,regionId:b.regionId,rows,rowCount:rows.length,updatedAt:now};
       assert.ok(Buffer.byteLength(JSON.stringify(data))<850000,`Bucket trop volumineux ${b.key}`);
-      return {id:b.id,data};
-    });
+      fs.appendFileSync(plannedFile,JSON.stringify({id:b.id,data})+'\n');
+      viewCount+=1;
+    }
     const report=validatePublic(source,r=>json(path.join(out,'tops',r)),r=>json(path.join(out,'tops-preview',r)));
     const [oldManifest]=await bucket.file(`${prefix}/manifest.json`).download();
     const generated=json(path.join(out,'manifest.json'));
@@ -125,10 +140,12 @@ async function main() {
       const dest=path.join(work,'backup-public',relative);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,data);
       backupFiles.push({relative,hash:digest(data),contentType:metadata.contentType,cacheControl:metadata.cacheControl});
     });
-    write(path.join(work,'backup-views.json'),await readViews());
+    const backupViews=path.join(work,'backup-views.ndjson');
+    fs.writeFileSync(backupViews,'');
+    await readViews(v=>fs.appendFileSync(backupViews,JSON.stringify(v)+'\n'));
     write(path.join(work,'backup-public.json'),backupFiles);
-    write(path.join(work,'plan.json'),{project,bucketName,sourceHash:digest(fs.readFileSync('outputs/performance-base-firestore-active.ndjson')),views,files:files.map(relative=>({relative,hash:digest(fs.readFileSync(path.join(out,relative)))})),stale:[...oldNames].filter(r=>!files.includes(r)),report});
-    console.log(JSON.stringify({mode,views:views.length,files:files.length,report},null,2));
+    write(path.join(work,'plan.json'),{project,bucketName,sourceHash:digest(fs.readFileSync('outputs/performance-base-firestore-active.ndjson')),viewCount,files:files.map(relative=>({relative,hash:digest(fs.readFileSync(path.join(out,relative)))})),stale:[...oldNames].filter(r=>!files.includes(r)),report});
+    console.log(JSON.stringify({mode,views:viewCount,files:files.length,report},null,2));
     return;
   }
   const plan=json(path.join(work,'plan.json'));
@@ -137,27 +154,39 @@ async function main() {
   if(mode==='apply') {
     for(const f of plan.files)assert.equal(digest(fs.readFileSync(path.join(out,f.relative))),f.hash);
     // Check the backups can be read before replacing anything.
-    const previous=json(path.join(work,'backup-views.json'));
     for(const f of json(path.join(work,'backup-public.json')))assert.equal(digest(fs.readFileSync(path.join(work,'backup-public',f.relative))),f.hash);
-    const ids=new Set(plan.views.map(v=>v.id));
-    const operations=[...plan.views.map(v=>({id:v.id,data:v.data})),...previous.filter(v=>!ids.has(v.id)).map(v=>({id:v.id}))];
-    for(const operationsBatch of viewBatches(operations)) {
-      const batch=db.batch();for(const op of operationsBatch) {const ref=db.collection(collection).doc(op.id);if(op.data)batch.set(ref,op.data);else batch.delete(ref);}await batch.commit();
+    const ids=new Set();
+    let pending=[];
+    const commitPending=async()=>{
+      for(const part of viewBatches(pending)) {
+        const batch=db.batch();
+        for(const op of part) {const ref=db.collection(collection).doc(op.id);if(op.data)batch.set(ref,op.data);else batch.delete(ref);}
+        await batch.commit();
+      }
+      pending=[];
+    };
+    for await(const v of readLines(path.join(work,'planned-views.ndjson'))) {
+      ids.add(v.id); pending.push(v); if(pending.length>=100)await commitPending();
     }
+    for await(const v of readLines(path.join(work,'backup-views.ndjson'))) {
+      if(!ids.has(v.id))pending.push({id:v.id}); if(pending.length>=100)await commitPending();
+    }
+    await commitPending();
     // Version/manifest are published last. Other public files are untouched.
     const upload = f => bucket.upload(path.join(out,f.relative),{destination:`${prefix}/${f.relative}`,resumable:false,metadata:{contentType:f.relative.endsWith('.js')?'application/javascript; charset=utf-8':'application/json; charset=utf-8',cacheControl:['manifest.json','version.js'].includes(f.relative)?'public, max-age=300':'public, max-age=31536000, immutable'}});
     await eachConcurrent(plan.files.filter(f=>!['manifest.json','version.js'].includes(f.relative)),upload);
     for(const f of plan.files.filter(f=>['manifest.json','version.js'].includes(f.relative)))await upload(f);
     for(const relative of plan.stale)await bucket.file(`${prefix}/${relative}`).delete({ignoreNotFound:true});
   }
-  const actual=new Map((await readViews()).map(v=>[v.id,v.data]));
-  assert.equal(actual.size,plan.views.length);
-  for(const v of plan.views)assert.deepEqual(actual.get(v.id),v.data);
+  const expected=new Map();
+  for await(const v of readLines(path.join(work,'planned-views.ndjson')))expected.set(v.id,canonicalHash(v.data));
+  const actualCount=await readViews(v=>assert.equal(canonicalHash(v.data),expected.get(v.id),`Vue divergente ${v.id}`));
+  assert.equal(actualCount,plan.viewCount);
   const downloaded=new Map();
   await eachConcurrent(plan.files, async (f) => {const [data]=await bucket.file(`${prefix}/${f.relative}`).download();assert.equal(digest(data),f.hash);if(f.relative.endsWith('.json'))downloaded.set(f.relative,JSON.parse(data));});
   const report=validatePublic(source,r=>downloaded.get(`tops/${r}`),r=>downloaded.get(`tops-preview/${r}`));
-  write(path.join(work,'verification.json'),{ok:true,project,views:actual.size,files:plan.files.length,report});
-  console.log(JSON.stringify({ok:true,mode,project,views:actual.size,files:plan.files.length,report},null,2));
+  write(path.join(work,'verification.json'),{ok:true,project,views:actualCount,files:plan.files.length,report});
+  console.log(JSON.stringify({ok:true,mode,project,views:actualCount,files:plan.files.length,report},null,2));
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
 module.exports={validatePublic,viewBatches};
