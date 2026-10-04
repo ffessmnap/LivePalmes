@@ -26,7 +26,7 @@ let skipped = 0;
     for (const doc of snap.docs) {
       read += 1;
       if(read > 1000000) throw new Error('Budget de lecture dépassé');
-      hash.update(JSON.stringify([doc.id,doc.updateTime.toJSON()])+'\n');
+      hash.update(JSON.stringify([doc.id,doc.updateTime.seconds,doc.updateTime.nanoseconds])+'\n');
       const data = doc.data();
       const row = { ...data, performanceBaseId: String(data.performanceBaseId || doc.id), source: String(data.source || 'livepalmes') };
       const status = String(row.status || 'active').trim();
