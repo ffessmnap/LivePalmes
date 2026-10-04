@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { distinctTopPreview } = require("./performance-top-preview");
 const path = require("path");
 const crypto = require("crypto");
 const { performanceImportChrono } = require("../functions/performance-import-timing");
@@ -455,7 +456,8 @@ function main() {
       const candidateKey = [
         publicSwimmerKey(row),
         row.seasonYear || 0,
-        row.regionId || ""
+        row.regionId || "",
+        cleanText(row.pool)
       ].join("|");
       const bucket = topBuckets.get(topKey);
       if (betterPerformance(row, bucket.get(candidateKey))) bucket.set(candidateKey, topRow(row));
@@ -570,7 +572,7 @@ function main() {
     const [course, sex, category] = key.split("|");
     const rows = Array.from(bucket.values())
       .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.date).localeCompare(cleanText(b.date)));
-    const previewRows = rows.slice(0, TOP_PREVIEW_LIMIT);
+    const previewRows = distinctTopPreview(rows, TOP_PREVIEW_LIMIT, publicSwimmerKey);
     topCandidateCount += rows.length;
     topPreviewCandidateCount += previewRows.length;
     topFileCount += 1;

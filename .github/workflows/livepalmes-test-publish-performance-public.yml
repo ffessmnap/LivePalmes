@@ -2,6 +2,11 @@ name: Publier performances publiques Firebase TEST
 
 on:
   workflow_dispatch:
+    inputs:
+      rebuild_tops_only:
+        description: Reconstruire seulement les index et fichiers TOP depuis performances TEST
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -139,7 +144,34 @@ jobs:
             --seed outputs/performance-base-firestore-active.ndjson \
             --public-dir "$PUBLIC_OUT_DIR"
 
+      - name: Préparer la reconstruction TOP TEST et sa sauvegarde
+        if: inputs.rebuild_tops_only
+        run: NODE_PATH=functions/node_modules node tools/rebuild-test-top-indexes.js plan
+
+      - name: Conserver la sauvegarde TOP TEST avant écriture
+        if: inputs.rebuild_tops_only
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-top-backup
+          path: outputs/test-top-rebuild/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Reconstruire et contrôler les index et fichiers TOP TEST
+        if: inputs.rebuild_tops_only
+        run: NODE_PATH=functions/node_modules node tools/rebuild-test-top-indexes.js apply
+
+      - name: Conserver le contrôle TOP TEST
+        if: inputs.rebuild_tops_only && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-top-verification
+          path: outputs/test-top-rebuild/verification.json
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Publier dans le bucket public TEST
+        if: ${{ !inputs.rebuild_tops_only }}
         shell: bash
         run: |
           set -euo pipefail
