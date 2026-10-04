@@ -86,6 +86,7 @@ function runUnitTests() {
     "performance-correction-publication-tests.js",
     "performance-firestore-delta-tests.js",
     "performance-public-consistency-tests.js",
+    "performance-top-pool-tests.js",
     "performance-public-row-schema-tests.js",
     "livepalmes-portal-optimization-tests.js",
     "dtn-near-minima-tests.js",

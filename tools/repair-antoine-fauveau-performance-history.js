@@ -1,4 +1,7 @@
+// Archived incident repair: use the current source-based TOP reconstruction pipeline.
+if (require.main === module) throw new Error("Outil incident archivé : reconstruction TOP depuis performances requise.");
 const fs = require("fs");
+const { distinctTopPreview } = require("./performance-top-preview");
 const path = require("path");
 const crypto = require("crypto");
 
@@ -129,7 +132,7 @@ function sortRows(rows) {
 }
 
 function candidateKey(row) {
-  return [cleanText(row.swimmerIdentityKey), Number(row.seasonYear || 0), cleanText(row.regionId)].join("|");
+  return [cleanText(row.swimmerIdentityKey), Number(row.seasonYear || 0), cleanText(row.regionId), cleanText(row.pool)].join("|");
 }
 
 function topBucketVariants(row) {
@@ -210,7 +213,7 @@ async function publishPublicFiles(admin, combinedRows, affectedRows, summary, no
     const replacements = combinedRows.filter((row) => row.course === course && row.category === category);
     const rows = bestRows([...kept, ...replacements]);
     await saveStorageJson(bucket, fullPath, rows);
-    await saveStorageJson(bucket, previewPath, rows.slice(0, 100));
+    await saveStorageJson(bucket, previewPath, distinctTopPreview(rows, 100, (row) => row.swimmerIdentityKey || row.swimmerId));
   }
   const manifest = await readStorageJson(bucket, "manifest.json", {});
   await saveStorageJson(bucket, "manifest.json", { ...manifest, generatedAt: now, lastTargetedRebuild: { generatedAt: now, reason: "antoine-fauveau-history-restored", affectedRows: combinedRows.length, affectedSwimmers: 1, affectedTopBuckets: topKeys.size } }, "public, max-age=300");

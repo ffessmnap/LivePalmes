@@ -30,7 +30,8 @@ function topCandidateKey(row = {}) {
     topBucketKey(row),
     swimmerKey(row),
     Number(row.seasonYear || 0) || 0,
-    cleanText(row.regionId)
+    cleanText(row.regionId),
+    cleanText(row.pool)
   ].join("|");
 }
 
