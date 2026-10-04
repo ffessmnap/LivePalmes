@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "candidate": "58df08dd27a05880585ba68ce78f65a8c2ca47da",
+  "productionCommit": "83cf30ba0bba90eb35492cb41a67034334e7d57b",
+  "productionHosting": "sites/livepalmes/versions/3777afb4e36bd654",
+  "testRun": 37230870893,
+  "changes": [
+    {
+      "title": "TOP par bassin et compression sans perte des grandes vues; progression nageur filtrée par bassin (PR94,95,96)",
+      "paths": [
+        "functions/index.js",
+        "performances/public/swimmer.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 04/10/2026 : « ok j’ai testé en test tout est bon. Peux tu pousser en prod toutes les modif qu’on a fait? sur les top reconstruit, sur les graphe mis à jour en fonction d ubassin ». Autorisation de publier les corrections TOP/bassins et leurs dépendances backend nécessaires, paramètres existants conservés, sans invocation métier manuelle."
+    }
+  ],
+  "additionalDtnFunctions": [
+    "resolveEngagementSwimmerChangeRequest",
+    "resumePerformancePublicationJobs"
+  ],
+  "additionalDtnApproval": "Antoine, 04/10/2026 : « ok j’ai testé en test tout est bon. Peux tu pousser en prod toutes les modif qu’on a fait? sur les top reconstruit, sur les graphe mis à jour en fonction d ubassin ». Autorisation de publier les corrections TOP/bassins et leurs dépendances backend nécessaires, paramètres existants conservés, sans invocation métier manuelle. Ces deux traitements partagés utilisent les helpers TOP modifiés; leur source doit rester cohérente avec les huit fonctions ordinaires. Preuve hors ligne au même candidat, aucune activation sur TEST.",
+  "excludedBackendReview": "Comparaison sémantique PROD→candidat : huit fonctions ordinaires et les deux dépendances déclarées uniquement. Les autres emails/schedulers sont inchangés. Conserver toute configuration, secret et calendrier existants; ne pas appeler les fonctions pour la recette. Cette publication ne reconstruit aucune donnée : la reconstruction des seuls TOP PROD autorisée sera une opération séparée, avec sources PROD en lecture seule et sauvegarde avant écriture. Aucun déploiement de règles ou index Firestore, aucune copie TEST→PROD."
+}
