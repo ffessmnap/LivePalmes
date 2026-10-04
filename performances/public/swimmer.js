@@ -1131,8 +1131,8 @@
     }
 
     const seasonBest = new Map();
-    selectedPerfs.forEach((perf) => {
-      if (perf.course !== filters.course) return;
+    const progressPerfs = filteredPerfs(selectedPerfs, { ...filters, season: "" });
+    progressPerfs.forEach((perf) => {
       const current = seasonBest.get(perf.seasonYear);
       if (!current || perf.timeValue < current.timeValue) seasonBest.set(perf.seasonYear, perf);
     });
@@ -1159,11 +1159,16 @@
     const best = coords.find((point) => point.timeValue === min);
     const diff = first.timeValue - best.timeValue;
     const trend = diff > 0 ? `Progression ${formatTimeDelta(diff)}` : "Meilleur niveau d&egrave;s la premi&egrave;re saison";
+    const poolContext = filters.pool === "25"
+      ? "Bassin 25 m"
+      : filters.pool === "50"
+        ? "Bassin 50 m"
+        : "Tous bassins";
 
     elements.progress.classList.add("active");
     elements.progress.innerHTML = `
       <div class="progress-head">
-        <div><h2>Progression ${escapeHtml(courseShortLabel(filters.course))}</h2><span>Meilleure performance par saison</span></div>
+        <div><h2>Progression ${escapeHtml(courseShortLabel(filters.course))}</h2><span>Meilleure performance par saison · ${escapeHtml(poolContext)}</span></div>
         <div class="progress-actions">
           <span>${trend}</span>
           <button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button>
