@@ -5,7 +5,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const readline = require('node:readline');
-const { buildIndexes, topRows } = require('./import-performance-seed-to-firestore');
+const { buildIndexes, topRows, encodePerformanceTopIndexRows } = require('./import-performance-seed-to-firestore');
 const project = 'livepalmes-test';
 const bucketName = 'livepalmes-test-public-data-206080168534';
 const prefix = 'performance-public-firestore';
@@ -106,13 +106,13 @@ async function main() {
     fs.mkdirSync(work,{recursive:true});
     const plannedFile=path.join(work,'planned-views.ndjson');
     fs.writeFileSync(plannedFile,'');
-    let viewCount=0;
+    let viewCount=0, compressedViews=0;
     for(const b of buildIndexes(source).topBuckets.values()) {
       const rows=topRows([...b.bestBySwimmer.values()]);
-      const data={bucketId:b.id,bucketKey:b.key,course:b.course,sex:b.sex,category:b.category,seasonYear:b.seasonYear,regionId:b.regionId,rows,rowCount:rows.length,updatedAt:now};
+      const data={bucketId:b.id,bucketKey:b.key,course:b.course,sex:b.sex,category:b.category,seasonYear:b.seasonYear,regionId:b.regionId,...encodePerformanceTopIndexRows(rows),rowCount:rows.length,updatedAt:now};
       assert.ok(Buffer.byteLength(JSON.stringify(data))<850000,`Bucket trop volumineux ${b.key}`);
       fs.appendFileSync(plannedFile,JSON.stringify({id:b.id,data})+'\n');
-      viewCount+=1;
+      viewCount+=1; if(data.rowsEncoding)compressedViews+=1;
     }
     const report=validatePublic(source,r=>json(path.join(out,'tops',r)),r=>json(path.join(out,'tops-preview',r)));
     const [oldManifest]=await bucket.file(`${prefix}/manifest.json`).download();
@@ -144,8 +144,8 @@ async function main() {
     fs.writeFileSync(backupViews,'');
     await readViews(v=>fs.appendFileSync(backupViews,JSON.stringify(v)+'\n'));
     write(path.join(work,'backup-public.json'),backupFiles);
-    write(path.join(work,'plan.json'),{project,bucketName,sourceHash:digest(fs.readFileSync('outputs/performance-base-firestore-active.ndjson')),viewCount,files:files.map(relative=>({relative,hash:digest(fs.readFileSync(path.join(out,relative)))})),stale:[...oldNames].filter(r=>!files.includes(r)),report});
-    console.log(JSON.stringify({mode,views:viewCount,files:files.length,report},null,2));
+    write(path.join(work,'plan.json'),{project,bucketName,sourceHash:digest(fs.readFileSync('outputs/performance-base-firestore-active.ndjson')),viewCount,compressedViews,files:files.map(relative=>({relative,hash:digest(fs.readFileSync(path.join(out,relative)))})),stale:[...oldNames].filter(r=>!files.includes(r)),report});
+    console.log(JSON.stringify({mode,views:viewCount,compressedViews,files:files.length,report},null,2));
     return;
   }
   const plan=json(path.join(work,'plan.json'));
@@ -185,8 +185,8 @@ async function main() {
   const downloaded=new Map();
   await eachConcurrent(plan.files, async (f) => {const [data]=await bucket.file(`${prefix}/${f.relative}`).download();assert.equal(digest(data),f.hash);if(f.relative.endsWith('.json'))downloaded.set(f.relative,JSON.parse(data));});
   const report=validatePublic(source,r=>downloaded.get(`tops/${r}`),r=>downloaded.get(`tops-preview/${r}`));
-  write(path.join(work,'verification.json'),{ok:true,project,views:actualCount,files:plan.files.length,report});
-  console.log(JSON.stringify({ok:true,mode,project,views:actualCount,files:plan.files.length,report},null,2));
+  write(path.join(work,'verification.json'),{ok:true,project,views:actualCount,compressedViews:plan.compressedViews,files:plan.files.length,report});
+  console.log(JSON.stringify({ok:true,mode,project,views:actualCount,compressedViews:plan.compressedViews,files:plan.files.length,report},null,2));
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
 module.exports={validatePublic,viewBatches};
