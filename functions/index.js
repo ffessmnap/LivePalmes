@@ -17706,7 +17706,7 @@ function publicTopIndexRow(row = {}) {
   const sex = normalizeCategoryCode(row.sex);
   const date = cleanText(row.date);
   const category = performanceCategoryFromRow(row, date);
-  return cleanFirestoreValue({
+  const result = cleanFirestoreValue({
     id: cleanText(row.id),
     source: cleanText(row.source || "livepalmes"),
     importId: cleanText(row.importId),
@@ -17753,6 +17753,11 @@ function publicTopIndexRow(row = {}) {
       })).filter((split) => split.time)
       : []
   });
+  // Omit empty optional fields: two pools must still fit in one Firestore document.
+  Object.keys(result).forEach((key) => {
+    if (result[key] === "" || (Array.isArray(result[key]) && !result[key].length)) delete result[key];
+  });
+  return result;
 }
 
 function performanceTopBucketKey(filters = {}) {

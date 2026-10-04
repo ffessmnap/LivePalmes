@@ -133,7 +133,9 @@ function topRows(rows = []) {
       poolCounts.set(pool, count + 1);
       return count < TOP_LIMIT;
     });
-  return best;
+  return best.map((row) => Object.fromEntries(Object.entries(publicRow(row)).filter(([, value]) =>
+    value !== "" && !(Array.isArray(value) && !value.length)
+  )));
 }
 
 function publicRow(row = {}) {
