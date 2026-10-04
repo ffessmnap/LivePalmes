@@ -17728,6 +17728,7 @@ function publicTopIndexRow(row = {}) {
     competition: cleanText(row.competition),
     location: cleanText(row.location),
     date,
+    pool: cleanText(row.pool),
     seasonYear: Number(row.seasonYear || 0) || 0,
     course: cleanText(row.course),
     courseShortLabel: cleanText(row.courseShortLabel),
@@ -17807,13 +17808,20 @@ function bestTopRows(rows = []) {
     if (rawRow.active === false || rawRow.status === "hidden") return;
     const row = publicTopIndexRow(rawRow);
     if (!row.timeValue) return;
-    const swimmerKey = publicSwimmerKey(row);
-    if (!swimmerKey) return;
+    const identity = publicSwimmerKey(row);
+    if (!identity) return;
+    const swimmerKey = [identity, cleanText(row.pool)].join("|");
     if (publicBetterPerformance(row, bestBySwimmer.get(swimmerKey))) bestBySwimmer.set(swimmerKey, row);
   });
+  const poolCounts = new Map();
   return Array.from(bestBySwimmer.values())
     .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.date).localeCompare(cleanText(b.date)))
-    .slice(0, PERFORMANCE_TOP_INDEX_LIMIT);
+    .filter((row) => {
+      const pool = cleanText(row.pool);
+      const count = poolCounts.get(pool) || 0;
+      poolCounts.set(pool, count + 1);
+      return count < PERFORMANCE_TOP_INDEX_LIMIT;
+    });
 }
 
 async function writePerformanceTopIndexRows(rows = [], context = {}) {
@@ -17850,6 +17858,7 @@ async function writePerformanceTopIndexRows(rows = [], context = {}) {
     const existing = snapshots[index].exists ? snapshots[index].data() || {} : {};
     const existingRows = Array.isArray(existing.rows) ? existing.rows : [];
     const topRows = bestTopRows([...existingRows, ...bucket.rows]);
+    if (Buffer.byteLength(JSON.stringify(topRows)) > 850000) throw new Error("Bucket TOP trop volumineux : reconstruction interrompue.");
     batch.set(refs[index], {
       bucketId: bucket.id,
       bucketKey: bucket.key,
@@ -19286,7 +19295,8 @@ function publicPerformanceTopCandidateKey(row = {}) {
   return [
     publicSwimmerKey(row),
     Number(row.seasonYear || 0) || 0,
-    cleanText(row.regionId)
+    cleanText(row.regionId),
+    cleanText(row.pool)
   ].join("|");
 }
 
@@ -19493,6 +19503,16 @@ async function publishPublicSearchIndexes(swimmerPayload, perfFile) {
   return written;
 }
 
+function distinctPublicTopPreview(rows, limit, swimmerKey) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = swimmerKey(row);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, limit);
+}
+
 async function publishPublicTopFiles(topKey, incomingRows = []) {
   const [course, sex, category] = topKey.split("|");
   if (!course || !sex || !category) return [];
@@ -19501,7 +19521,7 @@ async function publishPublicTopFiles(topKey, incomingRows = []) {
   const previewPath = `tops-preview/${course}/${fileName}`;
   const existingRows = await readPublicPerformanceJson(fullPath, []);
   const mergedRows = mergePublicTopRows(existingRows, incomingRows);
-  const previewRows = mergedRows.slice(0, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT);
+  const previewRows = distinctPublicTopPreview(mergedRows, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT, publicSwimmerKey);
   return [
     await savePublicPerformanceJson(fullPath, mergedRows, "public, max-age=31536000, immutable"),
     await savePublicPerformanceJson(previewPath, previewRows, "public, max-age=31536000, immutable")
@@ -19812,7 +19832,7 @@ async function rebuildPublicTopFilesForAffectedRows(affectedRows = [], activeRow
     const replacementRows = activeRows.filter((row) => publicPerformanceMatchesTopKey(row, topKey));
     const mergedRows = mergePublicTopRows(keptRows, replacementRows);
     await savePublicPerformanceJson(fullPath, mergedRows, "public, max-age=31536000, immutable");
-    await savePublicPerformanceJson(previewPath, mergedRows.slice(0, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT), "public, max-age=31536000, immutable");
+    await savePublicPerformanceJson(previewPath, distinctPublicTopPreview(mergedRows, PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT, publicSwimmerKey), "public, max-age=31536000, immutable");
     writtenFiles.add(publicPerformanceFilePath(fullPath));
     writtenFiles.add(publicPerformanceFilePath(previewPath));
   }

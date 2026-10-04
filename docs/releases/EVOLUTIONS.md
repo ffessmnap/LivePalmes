@@ -207,3 +207,10 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Branche `release/dtn-season-production` : validation de l’extension et préparation de la promotion complète ; preuves finales consignées dans la PR.
 
 - TEST `36776745747` bloqué avant toute mutation : les deux fonctions n’existent pas dans TEST. Adaptation du contrôle à cet environnement : exécution des helpers modifiés avec une base simulée et vérification des chaînes d’appel, preuve dédiée au commit exact. Aucune activation d’automatisme TEST ; cette limite d’intégration est explicitement conservée dans le bilan.
+
+### TOP : conserver les meilleurs temps par bassin — 4 octobre 2026
+
+- Demande explicite d'Antoine : correction structurelle, reconstruction des seuls index/fichiers dérivés sur TEST, contrôle Clément BECQ 200 BI Senior Hommes 2017 ; aucune modification des performances sources ni publication PROD.
+- Clés de candidats complétées par le bassin, champ conservé dans les vues Firestore, previews limités à 100 nageurs distincts. Page TOP conservée : filtrage avant sélection par nageur.
+- Constructeurs historiques recensés et scripts de réparation depuis des données tronquées archivés. Workflow TEST existant complété d'un mode TOP seuls avec sauvegarde préalable et contrôle après écriture.
+- Tests automatiques : générateur, contrôle de cohérence, index, mise à jour progressive, filtre 25/50/tous, saison/région/catégorie et TOP 25 distinct. Vérification globale locale réussie ; contrôles GitHub et reconstruction réelle TEST en attente. Recette utilisateur non acquise. Preuves à consigner dans la PR et les runs associés.

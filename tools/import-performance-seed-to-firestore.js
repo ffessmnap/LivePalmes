@@ -124,9 +124,15 @@ function sortPerformanceRows(rows = []) {
 }
 
 function topRows(rows = []) {
+  const poolCounts = new Map();
   const best = Array.from(rows)
     .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || cleanText(a.date).localeCompare(cleanText(b.date)))
-    .slice(0, TOP_LIMIT);
+    .filter((row) => {
+      const pool = cleanText(row.pool);
+      const count = poolCounts.get(pool) || 0;
+      poolCounts.set(pool, count + 1);
+      return count < TOP_LIMIT;
+    });
   return best;
 }
 
@@ -355,8 +361,9 @@ function buildIndexes(rows) {
     topBucketVariants(row).forEach((bucket) => {
       if (!topBuckets.has(bucket.id)) topBuckets.set(bucket.id, { ...bucket, bestBySwimmer: new Map() });
       const current = topBuckets.get(bucket.id);
-      const key = publicSwimmerKey(row);
-      if (!key) return;
+      const identity = publicSwimmerKey(row);
+      if (!identity) return;
+      const key = [identity, cleanText(row.pool)].join("|");
       if (betterPerformance(row, current.bestBySwimmer.get(key))) current.bestBySwimmer.set(key, row);
     });
   });
@@ -427,7 +434,7 @@ async function main() {
       seasonYear: bucket.seasonYear,
       regionId: bucket.regionId,
       rows: topRows(Array.from(bucket.bestBySwimmer.values())),
-      rowCount: Math.min(TOP_LIMIT, bucket.bestBySwimmer.size),
+      rowCount: topRows(Array.from(bucket.bestBySwimmer.values())).length,
       sourceRowCount: bucket.bestBySwimmer.size,
       updatedAt: new Date().toISOString()
     }
@@ -498,7 +505,9 @@ async function main() {
   console.log("Import Firestore termine.");
 }
 
-main().catch((error) => {
+module.exports = { buildIndexes, topRows, publicRow };
+
+if (require.main === module) main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
