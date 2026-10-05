@@ -21,20 +21,21 @@ L'ecran et la fonction `getNapSwimmerPerformances` sont reserves a TEST. La fonc
 - Identite d'execution : lecture du seul secret de mot de passe.
 - Verifier depuis Firebase le reseau et le chiffrement TLS. DBeaver ne prouve pas la connectivite Firebase.
 
-Pilote `mysql2`, versions verrouillees, serveur MySQL 5.7 et execution Node.js 22. Le secret de mot de passe a ete cree par Antoine ; son acces depuis Firebase reste a verifier.
+Pilote `mysql2`, versions verrouillees, serveur MySQL 5.7 et execution Node.js 22. Le secret de mot de passe a ete cree par Antoine ; son acces depuis Firebase est verifie par une lecture reelle admin sur TEST.
 
 ## Publication
 
 Lot specialise `nap`, exclu de `all-safe` et de la publication ordinaire PROD. Le workflow backend TEST peut selectionner ce seul lot et verifier l'existence des secrets sans lire leurs valeurs. Ne pas lancer avant disponibilite des secrets.
 
-L'export conditionnel TEST et la dependance partagee peuvent entrainer une selection conservative du backend dans le circuit commun. Examiner le bilan avant integration. Activation TEST autorisee par Antoine le 5 octobre. Avant integration, confirmer le plan SQL et les controles du commit regroupe ; deployer le lot NAP explicitement puis publier Hosting par le circuit commun. Aucun passage PROD autorise. La PR reste en brouillon pendant ces preconditions. Aucune validation utilisateur du fonctionnement n'est acquise.
+L'export conditionnel TEST et la dependance partagee peuvent entrainer une selection conservative du backend dans le circuit commun. Examiner le bilan avant integration. Activation TEST autorisee par Antoine le 5 octobre. Avant integration, confirmer le plan SQL et les controles du commit regroupe ; deployer le lot NAP explicitement puis publier Hosting par le circuit commun. Aucun passage PROD autorise. Les PR #102, #103 et #104 sont integrees. Aucune validation utilisateur du fonctionnement n'est acquise.
 
 ## Etat de preparation du 5 octobre
 
 - Version 1 du secret LIVEPALMES_NAP_PASSWORD active, verifiee dans la console sans lecture de sa valeur.
 - Code adapte au TLS sans verification du certificat ; verification technique GitHub reussie au commit 9c295ba7, run 37361351227.
-- Branche synchronisee avec main ; aucun acces SQL reel ni deploiement NAP effectue.
-- EXPLAIN fourni par Antoine : nageur 12 utilise perf (ref, 1 ligne estimee) ; nageur 7322 utilise nageur (ref, 1269 lignes estimees, 1509 performances comptees). Tri filesort limite aux performances du nageur ; aucun index ajoute. Activation TEST autorisee, connexion reelle encore a verifier.
+- Backend NAP TEST deploye : run 37367287408. Publication commune : run 37376750137, commit 78a16278e894b6c142ea94444845302c7feb27a0, Hosting f396f85fa6b769fd. Preuve GitHub test-proof conservee.
+- Recette navigateur reelle avec la session administrateur TEST d'Antoine : nageur 7322, premiere page de 50 performances (identifiants 87799 a 128079), deuxieme page de 50 (128080 a 146247). Message Donnees lues directement dans NAP confirme. Aucune ecriture SQL.
+- EXPLAIN fourni par Antoine : nageur 12 utilise perf (ref, 1 ligne estimee) ; nageur 7322 utilise nageur (ref, 1269 lignes estimees, 1509 performances comptees). Tri filesort limite aux performances du nageur ; aucun index ajoute. Activation TEST autorisee ; connexion et pagination reelles verifiees.
 
 ## Budget
 
