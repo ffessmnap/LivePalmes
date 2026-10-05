@@ -33,8 +33,8 @@ Le schema signale un index sur `perfs.nageur` et la cle primaire `perfs.id`. Con
 
 ## Recette
 
-1. Tests hors reseau : validation des entrees, requete preparee, pagination, TLS obligatoire ; classification des Functions ; verification complete Linux/Node.js 22 sur GitHub Actions.
-2. Controle mobile/ordinateur. En PROD : refus ; sans session TEST : invitation a se connecter ; sans `admin.full` : refus du client et du serveur.
+1. Tests hors reseau reussis : validation des entrees, requete preparee, pagination, TLS obligatoire ; classification des Functions ; verification complete Linux/Node.js 22 sur GitHub Actions (run 37349975542, code be930d56).
+2. Controle mobile/ordinateur realise localement avec Firebase/NAP simules : refus PROD, invitation sans session, refus du compte non administrateur, pagination et affichage texte. Le refus serveur en conditions reelles reste a tester.
 3. Configurer les secrets puis publier le seul lot NAP TEST apres controles. Ouvrir `/nap-test.html` avec une session administrateur TEST.
 4. Comparer un nageur connu avec DBeaver ; tester absence de performances et plusieurs pages sans doublons. Confirmer le plan SQL.
 5. Mauvais certificat : connexion refusee sans divulgation de l'erreur serveur. Aucune ecriture necessaire a cette recette.
