@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - run: npm ci --prefix functions --ignore-scripts
       - name: Verifier la provenance de la sauvegarde
         env:
           GH_TOKEN: ${{ github.token }}
@@ -33,7 +34,9 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
-      - name: Ouvrir et analyser uniquement la sauvegarde locale
+      - name: Analyser la sauvegarde et lire le statut des sources concernees
+        env:
+          NODE_PATH: functions/node_modules
         run: |
           node tools/production-backup-crypto.js open "$RUNNER_TEMP/top-backup/production-top-backup.enc" "$RUNNER_TEMP/top-backup-open"
-          node tools/diagnose-production-top-backup.js "$RUNNER_TEMP/top-backup-open"
+          node tools/diagnose-production-top-backup.js "$RUNNER_TEMP/top-backup-open" --read-source-status
