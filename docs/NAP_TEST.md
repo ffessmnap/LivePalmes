@@ -34,7 +34,7 @@ L'export conditionnel TEST et la dependance partagee peuvent entrainer une selec
 - Version 1 du secret LIVEPALMES_NAP_PASSWORD active, verifiee dans la console sans lecture de sa valeur.
 - Code adapte au TLS sans verification du certificat ; verification technique GitHub reussie au commit 9c295ba7, run 37361351227.
 - Branche synchronisee avec main ; aucun acces SQL reel ni deploiement NAP effectue.
-- EXPLAIN demande dans DBeaver pour confirmer l'index de recherche avant activation.
+- EXPLAIN fourni par Antoine : nageur 12 utilise perf (ref, 1 ligne estimee) ; nageur 7322 utilise nageur (ref, 1269 lignes estimees, 1509 performances comptees). Tri filesort limite aux performances du nageur ; aucun index ajoute. Activation TEST autorisee, connexion reelle encore a verifier.
 
 ## Budget
 
