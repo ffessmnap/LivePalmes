@@ -55,11 +55,17 @@ jobs:
         run: node tools/export-nap-public-source.js outputs/nap-public-source
       - name: Construire et verifier les fichiers des pages existantes
         run: node tools/build-nap-public-files.js outputs/nap-public-source outputs/nap-public-candidate
+      - name: Capturer la publication TEST actuelle en lecture seule
+        run: node tools/capture-test-public-performance-reference.js outputs/nap-transition-reference
+      - name: Comparer les historiques et les liens avant toute bascule
+        run: node tools/audit-nap-public-transition.js outputs/nap-transition-reference outputs/nap-public-candidate/public outputs/nap-transition-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: nap-public-source-proof
           path: |
             outputs/nap-public-source/export-proof.json
             outputs/nap-public-candidate/public/manifest.json
+            outputs/nap-transition-report.json
+            outputs/nap-transition-reference/reference-proof.json
           if-no-files-found: error
           retention-days: 14
