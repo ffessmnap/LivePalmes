@@ -224,3 +224,16 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Validation et demande PROD explicites d’Antoine : « ok j’ai testé en test tout est bon. Peux tu pousser en prod toutes les modif qu’on a fait? sur les top reconstruit, sur les graphe mis à jour en fonction d ubassin ».
 - Bilan `.github/releases/20261004-top-pools.json`; preuve complémentaire TEST `37230870893` sur le même candidat pour les deux dépendances partagées. Publication de dix fonctions modifiées et Hosting prévue. Paramètres, secrets et calendriers conservés; aucune invocation métier manuelle.
 - Reconstruction TOP PROD séparée à préparer avec sauvegarde préalable, depuis les seules sources PROD en lecture seule. Aucune copie TEST→PROD, aucune règle/index Firestore. Résultats PROD encore à confirmer.
+
+### Résultat PROD — 4 octobre 2026
+
+- Code publié avec succès : run PROD #29 `37231461002`, durée 5 min 56 s, candidat applicatif `58df08dd27a05880585ba68ce78f65a8c2ca47da`, Hosting `sites/livepalmes/versions/7c39e53924a27a15`. Bilan #31 `37231214819`, TEST complémentaire #33 `37230870893`. Dix fonctions sélectionnées; sauvegarde chiffrée `production-code-backup` 11313882217 conservée jusqu’au 18 octobre. Contrôles fonctions/exclusions et Hosting réussis.
+- Vérification navigateur PROD : Clément BECQ id 8712, 200 BI Tous/25/50; courbes et sous-titres mis à jour immédiatement (3 saisons en 25 m, 5 en 50 m); listes Meilleures et Toutes les perfs fonctionnelles. 50 BI en 25 m : une seule saison 2015, courbe absente; retour Tous : courbe rétablie.
+- TOP PROD NON reconstruits : workflow dédié #1 `37231762915`, échec avant toute écriture à la première requête Firestore sources : `7 PERMISSION_DENIED: Missing or insufficient permissions`. Compte `github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com`. Aucun droit élargi, aucune identité alternative utilisée. PR #98 fournit l’outil borné/sauvegardé, mais l’accès de maintenance doit être autorisé avant reprise.
+- Aucun changement des sources, aucune copie TEST→PROD, aucun déploiement de règles/index Firestore. Les TOP existants sont restés en place. Ne pas déclarer la demande terminée tant que la reconstruction n’a pas réussi.
+
+### Reprise TOP PROD — 5 octobre 2026
+
+- Après ajout manuel des droits par Antoine, run #2 `37276414186` : lecture autorisée, 469 364 sources lues dont 469 219 publiables, cohérence validée, sauvegarde chiffrée rouverte et enregistrée, empreinte sources inchangée.
+- Arrêt avant toute écriture par la garde anti-suppression : des vues existantes sont absentes du nouveau plan. Aucun TOP ni fichier public modifié par ce run.
+- Diagnostic dédié de la seule sauvegarde du run #2, sans connexion aux données Firebase et sans nouvelle lecture des performances : comparaison des identifiants et métadonnées des vues, sans journaliser les lignes nageurs. La garde anti-suppression reste inchangée.
