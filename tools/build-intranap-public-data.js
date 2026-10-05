@@ -3,7 +3,14 @@ const path = require("path");
 
 const DEFAULT_INTRANAP_DIR = path.resolve(process.cwd(), "..", "..", "BDD INTRANAP");
 const INTRANAP_DIR = process.env.INTRANAP_DIR || DEFAULT_INTRANAP_DIR;
-const OUT_DIR = path.resolve(process.cwd(), "performances", "public", "data");
+const IS_NAP_SOURCE = process.env.LIVEPALMES_NAP_SOURCE === "true";
+const OUT_DIR = IS_NAP_SOURCE
+  ? path.resolve(process.env.LIVEPALMES_NAP_OUT_DIR || "outputs/nap-public-build/historical")
+  : path.resolve(process.cwd(), "performances", "public", "data");
+if (IS_NAP_SOURCE) {
+  const relative = path.relative(path.resolve(process.cwd(), "outputs"), OUT_DIR);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("Sortie NAP de travail requise sous outputs.");
+}
 const SWIMMER_PERFS_DIR = path.join(OUT_DIR, "intranap-swimmer-perfs");
 const TOP_SOURCE_DIR = path.join(OUT_DIR, "intranap-top-source");
 const COMPETITION_OVERRIDES_FILE = path.resolve(__dirname, "intranap-competition-overrides.json");
@@ -445,7 +452,8 @@ function build() {
   const clubsRows = readCsv(sourceFiles.clubs);
   const competitionsRows = readCsv(sourceFiles.competitions);
   const perfsRows = readCsv(sourceFiles.perfs);
-  const competitionOverrides = loadCompetitionOverrides();
+  // NAP is authoritative: never fill its missing metadata with historic overrides.
+  const competitionOverrides = IS_NAP_SOURCE ? { overrides: {} } : loadCompetitionOverrides();
   let appliedCompetitionOverrides = 0;
 
   const rawSwimmers = new Map(swimmersRows.map((row) => [row.id, {
@@ -513,7 +521,8 @@ function build() {
       location: cleanText(row.lieu),
       date: row.date,
       endDate: row.enddate,
-      pool,
+      pool: IS_NAP_SOURCE && !SUPPORTED_POOLS.includes(pool) ? "" : pool,
+      isOpenWater: String(row.ld) === "1",
       chrono,
       type: cleanText(row.type),
       wid: cleanText(row.wid)
@@ -575,7 +584,8 @@ function build() {
       stats.ignoredUnknownCompetition += 1;
       continue;
     }
-    if (!keptPools.has(competition.pool)) {
+    // Retain pool performances with unknown length; never invent 25/50 metres.
+    if (IS_NAP_SOURCE ? competition.isOpenWater : !keptPools.has(competition.pool)) {
       stats.ignoredNonPool += 1;
       continue;
     }
