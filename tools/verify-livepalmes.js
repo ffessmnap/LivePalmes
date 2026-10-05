@@ -51,6 +51,7 @@ function runUnitTests() {
     "nap-mysql-tests.js",
     "nap-public-export-tests.js",
     "nap-public-pipeline-tests.js",
+    "nap-public-transition-tests.js",
     "livepalmes-basic-tests.js",
     "livepalmes-admin-auth-tests.js",
     "livepalmes-environment-tests.js",
@@ -184,6 +185,7 @@ function findGitCommand() {
 
 try {
   checkSyntax();
+  run(process.execPath, [path.join(rootDir, "tools", "check-firebase-test-backend-lots.js")]);
   runUnitTests();
   runTextChecks();
   runArchitectureChecks();

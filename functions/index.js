@@ -177,7 +177,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
   // Export reserve au compte de publication TEST, jamais accessible au public.
-  const { inspectExportSources, readExportPage } = require("./nap-public-export");
+  const { inspectExportSources, readExportPage, readSourceSchema } = require("./nap-public-export");
   exports.exportNapPublicPage = onRequest({
     region: REGION,
     invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com",
@@ -187,9 +187,9 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = request.query.action === "inspect"
-        ? await inspectExportSources(napPool)
-        : await readExportPage(napPool, request.query);
+      const data = request.query.action === "schema" ? await readSourceSchema(napPool)
+        : request.query.action === "inspect" ? await inspectExportSources(napPool)
+          : await readExportPage(napPool, request.query);
       response.json(data);
     } catch (error) {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: "Export NAP indisponible." });

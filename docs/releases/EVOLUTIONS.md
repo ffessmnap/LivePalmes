@@ -254,3 +254,7 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 
 - Diagnostics #1 `37278081091` et #2 `37278820281` réussis. Sept vues historiques absentes du plan : cinq vides, deux caches 800SF dont les sources actives ont changé de catégorie (2010 région 2 : J→S ; 2008 région 22 : C→J). Aucune source modifiée par le diagnostic.
 - Reconstructeur complété pour conserver les cinq documents vides et recalculer à vide les deux caches obsolètes, sans supprimer de document. Sept clés nominatives seulement ; sources et nouvelle catégorie contrôlées, tout cas inconnu bloque. Sauvegarde, empreintes, protection des écritures concurrentes et relecture intégrale maintenues. Tests ciblés de conservation/refus réussis ; nouveau run PROD à confirmer.
+
+### Migration NAP des pages publiques — 6 octobre 2026
+
+PR #105 integree pour preparer l'export prive et les fichiers compatibles. Backend 37382627387 arrete avant activation : declaration indentee absente du classement statique. Correctif et comparaison des historiques/liens en cours ; aucune page habituelle basculee. Lecture NAP sur la page de verification validee par Antoine, validation des pages publiques encore a faire. Hors PROD.
