@@ -71,6 +71,9 @@ async function main() {
     if (!response.ok) throw new Error(`Export NAP refuse (${response.status}).`);
     return response.json();
   };
+  // Structure only: no rows, credentials or contact values in these diagnostics.
+  const schema = await request({ action: "schema" });
+  console.log(JSON.stringify({ sourceSchema: schema }));
   const metadata = await request({ action: "inspect" });
   if (metadata.source !== "nap" || metadata.pageSize !== 2000 ||
       !Object.keys(SOURCES).every(table => metadata.bounds[table] === null ||

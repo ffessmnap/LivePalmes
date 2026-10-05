@@ -1,0 +1,23 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { compare } = require("../tools/audit-nap-public-transition");
+const row = { id: "p1", date: "2020-01-01", course: "100SF", timeValue: 50000, pool: "25", chrono: "M" };
+function source(rows, id = "12", extra = {}) {
+  const person = { id, lastName: "Durand", firstName: "Anne", birthDate: "2000-01-01", sex: "F", rows, ...extra };
+  return { swimmers: [person], ids: new Map([[id, person]]) };
+}
+assert.equal(compare(source([row]), source([row])).ready, true);
+assert.equal(compare(source([row, row]), source([row])).counts.missingRows, 1);
+assert.equal(compare(source([row]), source([{ ...row, timeValue: 51000 }])).counts.missingRows, 1);
+assert.equal(compare(source([row]), source([{ ...row, pool: "50" }])).counts.metadataChangedRows, 1);
+assert.equal(compare(source([row]), source([{ ...row, isIntermediate: true, originCourse: "200SF" }])).counts.missingRows, 1);
+assert.equal(compare(source([row]), source([row], "12", { sex: "M" })).counts.conflictingLinks, 1);
+assert.equal(compare(source([row]), source([row], "12", { birthDate: "2001-01-01" })).counts.missingIdentities, 1);
+const alias = compare(source([row], "old"), source([row], "12"));
+assert.equal(alias.counts.recoverableLinks, 1);
+assert.equal(alias.aliases[0].targetId, "12");
+assert.equal(alias.ready, false);
+const priority = compare(source([{ ...row, pool: "50" }, row]), source([row]));
+assert.equal(priority.counts.metadataChangedRows, 0);
+assert.equal(priority.counts.missingRows, 1);
+console.log("NAP transition: preservation, duplicates, metadata and links verified.");

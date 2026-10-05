@@ -16,7 +16,7 @@ L'export fixe les bornes superieures, lit chaque table dans l'ordre de sa cle pr
 
 ## Budget de lectures
 
-Ce traitement est reserve a la preparation en arriere-plan ; aucune reconstruction dans une recherche ou ouverture de fiche. Inspection : deux requetes de structure sur quatre tables et quatre MAX utilisant leur index primaire. Chaque page : une requete preparee, au plus 2001 lignes retournees, 2000 conservees, dix secondes maximum. Plafond : 500 pages par table et par passe. Deux connexions par instance et deux instances maximum, file bornee a huit requetes.
+Ce traitement est reserve a la preparation en arriere-plan ; aucune reconstruction dans une recherche ou ouverture de fiche. Inspection : deux requetes de diagnostic puis deux requetes de validation de structure sur quatre tables et quatre MAX utilisant leur index primaire. Chaque page : une requete preparee, au plus 2001 lignes retournees, 2000 conservees, dix secondes maximum. Plafond : 500 pages par table et par passe. Deux connexions par instance et deux instances maximum, file bornee a huit requetes.
 
 Pour environ 522000 performances, les deux passes representent environ 524 requetes de pages et 1,044 million de lignes, plus les referentiels. Il s'agit d'une preparation controlee, pas du cout d'une visite. Les CSV restent dans le dossier ephemere de travail ; les artefacts GitHub ne contiennent que les empreintes et compteurs.
 
@@ -35,3 +35,7 @@ Le mode NAP travaille exclusivement dans un dossier neuf sous `outputs`. Aucun f
 3. Publier une version NAP immuable sur le seul bucket TEST, puis connecter les pages existantes a cette version. Ne pas masquer une panne NAP par un retour silencieux aux donnees Firestore.
 4. Controler recherche, fiches, filtres, progression, liens et mobile avec les memes parcours utilisateur. La validation de `nap-test.html` ne vaut pas validation de ces pages.
 5. Poursuivre les autres consommateurs, Records/MPF, portail et Direct selon leurs contrats existants et les referentiels NAP verifies.
+
+## Suivi du 6 octobre
+
+PR #105 integree : export prive et construction compatibles. Le run backend 37382627387 a ete arrete avant deploiement par le classement statique des exports indentes. Le correctif ajoute ce controle aux verifications de PR. La comparaison automatique conserve les doublons, signale les changements de metadonnees et les anciens liens a reprendre. Les fichiers TEST actuels sont captures avec leurs generations Storage ; aucune bascule ni ecriture NAP dans ce workflow.
