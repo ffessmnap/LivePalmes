@@ -138,6 +138,21 @@ def check_test(directory, candidate):
     require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA']) for n in safe_functions(candidate)), 'Backend TEST incomplet')
 
 
+TEST_TOP_FILES = {
+    'performances/public/data/performance-public/tops/200BI/M-S.json': '200020e546ec3a58310073c559c7977b82460a8f',
+    'performances/public/data/performance-public/tops-preview/200BI/M-S.json': '1cc085edcfc90a6e83e814be05cf300aa8217cdd',
+}
+
+
+def classify_test(paths, approved_top_files=False):
+    # Exact files authorized by Antoine on TEST, 5 October 2026.
+    # Ordinary and production classification remain unchanged.
+    allowed = set(TEST_TOP_FILES).intersection(paths) if approved_top_files else set()
+    for path in sorted(allowed):
+        require(git('rev-parse', 'HEAD:' + path) == TEST_TOP_FILES[path], 'Fichier TOP different de la version autorisee: ' + path)
+    return classify([path for path in paths if path not in allowed])
+
+
 def classify(paths):
     blocked = [p for p in paths if p in {'firebase.json', '.firebaserc', 'firestore.rules', 'firestore.indexes.json', 'storage.rules'} or p.startswith(('performances/public/data/', 'archives/', 'sources/', 'sauvegardes/')) or p.endswith('.rules')]
     require(not blocked, 'Perimetre specifique requis (configuration/regles/index/donnees): ' + ', '.join(blocked))
