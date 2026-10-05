@@ -176,6 +176,16 @@ class ReleaseTests(unittest.TestCase):
     def test_rules_indexes_and_data_need_separate_authorization(self):
         for path in ['firestore.rules','firestore.indexes.json','firebase.json','performances/public/data/records-data.js','archives/result.json']:
             with self.subTest(path=path),self.assertRaises(ValueError):m.classify([path])
+    def test_test_top_exception_is_explicit_exact_and_test_only(self):
+        paths=list(m.TEST_TOP_FILES)
+        with self.assertRaises(ValueError):m.classify_test(paths)
+        with patch.object(m,'git',side_effect=lambda *args:m.TEST_TOP_FILES[args[1][5:]]):
+            self.assertEqual(m.classify_test(paths,True),([],False))
+            with self.assertRaises(ValueError):m.classify_test(paths+['firebase.json'],True)
+        with patch.object(m,'git',return_value='changed'),self.assertRaises(ValueError):
+            m.classify_test(paths,True)
+        with self.assertRaises(ValueError):m.classify(paths)
+
     def test_backend_requires_review_of_excluded_functions(self):
         value=self.request();value['changes'][0]['paths']=['functions/index.js']
         with self.assertRaises(ValueError):m.validate_request(value,['functions/index.js'])
