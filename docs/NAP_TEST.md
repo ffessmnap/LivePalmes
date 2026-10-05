@@ -2,6 +2,10 @@
 
 <!-- description: Preparation de la connexion NAP en lecture dans LivePalmes TEST, secrets requis, budget et recette avant activation. -->
 
+## Objectif final
+
+NAP sera la source unique des donnees metier du public, du portail et du Direct, en lecture et en ecriture. Firestore sera retire progressivement du stockage metier. Firebase pourra conserver l'hebergement et l'authentification ; les caches/fichiers publics seront alimentes uniquement depuis NAP.
+
 ## Perimetre
 
 `nap-test.html` consulte `perfs` pour un identifiant `nageurs.id` NAP, distinct d'un identifiant Firestore. Colonnes et temps sont affiches tels qu'enregistres, sans conversion ni calcul sportif. Les autres ecrans restent sur leur fonctionnement actuel. Cette etape n'est pas la migration complete.
@@ -23,7 +27,14 @@ Pilote `mysql2`, versions verrouillees, serveur MySQL 5.7 et execution Node.js 2
 
 Lot specialise `nap`, exclu de `all-safe` et de la publication ordinaire PROD. Le workflow backend TEST peut selectionner ce seul lot et verifier l'existence des secrets sans lire leurs valeurs. Ne pas lancer avant disponibilite des secrets.
 
-L'export conditionnel TEST et la dependance partagee peuvent entrainer une selection conservative du backend dans le circuit commun. Examiner le bilan avant integration. Conserver la PR en brouillon : aucune integration automatique ni preuve TEST ne doit etre annoncee a ce stade. Aucune validation utilisateur du fonctionnement n'est acquise.
+L'export conditionnel TEST et la dependance partagee peuvent entrainer une selection conservative du backend dans le circuit commun. Examiner le bilan avant integration. Activation TEST autorisee par Antoine le 5 octobre. Avant integration, confirmer le plan SQL et les controles du commit regroupe ; deployer le lot NAP explicitement puis publier Hosting par le circuit commun. Aucun passage PROD autorise. La PR reste en brouillon pendant ces preconditions. Aucune validation utilisateur du fonctionnement n'est acquise.
+
+## Etat de preparation du 5 octobre
+
+- Version 1 du secret LIVEPALMES_NAP_PASSWORD active, verifiee dans la console sans lecture de sa valeur.
+- Code adapte au TLS sans verification du certificat ; verification technique GitHub reussie au commit 9c295ba7, run 37361351227.
+- Branche synchronisee avec main ; aucun acces SQL reel ni deploiement NAP effectue.
+- EXPLAIN demande dans DBeaver pour confirmer l'index de recherche avant activation.
 
 ## Budget
 
