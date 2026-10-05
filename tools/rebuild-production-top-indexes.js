@@ -75,6 +75,37 @@ async function* readLines(file) {
   for await(const line of readline.createInterface({input:fs.createReadStream(file),crlfDelay:Infinity}))if(line.trim())yield JSON.parse(line);
 }
 const canonicalHash = value => digest(JSON.stringify(value, (key,item) => item && typeof item==='object' && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map(k=>[k,item[k]])) : item));
+// Seven historical buckets identified in backup run 37276414186. Keep every
+// document; only empty the two caches whose source categories already changed.
+function completeHistoricalView(view, source, plannedIds, now) {
+  const cases=new Map([
+    ['100IS|M|M|2006|3',null],['50AP|M|M|2006|',null],
+    ['50AP|M|M|0|3',null],['50AP|M|M|2006|3',null],['400IS|M|M|2006|3',null],
+    ['800SF|M|J|2010|2',{id:'f976b045bba52843402682c20e1c3ee6662638c4',category:'S'}],
+    ['800SF|M|C|2008|22',{id:'b1bc95086d071390937ce3f7cf27a7feb3c17577',category:'J'}]
+  ]);
+  const d=view.data;
+  assert.ok(cases.has(d.bucketKey),`Vue historique inattendue ${view.id}`);
+  assert.equal(view.id,digest(d.bucketKey).slice(0,40));
+  assert.equal(d.bucketId,view.id);
+  assert.equal([d.course,d.sex,d.category,Number(d.seasonYear)||0,d.regionId||''].join('|'),d.bucketKey);
+  assert.ok(Array.isArray(d.rows)&&!d.rowsEncoding&&!d.rowsGzip,'Format historique inattendu');
+  assert.ok(!source.some(r=>r.course===d.course&&r.sex===d.sex&&r.category===d.category&&(!d.seasonYear||Number(r.seasonYear)===d.seasonYear)&&(!d.regionId||r.regionId===d.regionId)),'Le bucket historique contient encore une source active');
+  const correction=cases.get(d.bucketKey);
+  if(!correction) {
+    assert.equal(d.rowCount,0);assert.equal(d.rows.length,0);
+    return view;
+  }
+  assert.equal(d.rowCount,1);assert.equal(d.rows.length,1);
+  assert.equal(d.rows[0].performanceBaseId,correction.id);
+  const current=source.find(r=>r.performanceBaseId===correction.id);
+  assert.ok(current,'Source historique attendue absente');
+  assert.equal(current.category,correction.category);
+  for(const key of ['course','sex','seasonYear','regionId'])assert.equal(current[key],d[key]);
+  const currentKey=[current.course,current.sex,current.category,current.seasonYear,current.regionId||''].join('|');
+  assert.ok(plannedIds.has(digest(currentKey).slice(0,40)),'Nouvelle categorie absente du plan');
+  return {id:view.id,data:{...d,rows:[],rowCount:0,sourceRowCount:0,updatedAt:now}};
+}
 async function main() {
   const mode=process.argv[2];
   assert.ok(['plan','apply','verify'].includes(mode));
@@ -110,11 +141,13 @@ async function main() {
     const plannedFile=path.join(work,'planned-views.ndjson');
     fs.writeFileSync(plannedFile,'');
     let viewCount=0, compressedViews=0;
+    const plannedIds=new Set();
     for(const b of buildIndexes(source).topBuckets.values()) {
       const rows=topRows([...b.bestBySwimmer.values()]);
       const data={bucketId:b.id,bucketKey:b.key,course:b.course,sex:b.sex,category:b.category,seasonYear:b.seasonYear,regionId:b.regionId,...encodePerformanceTopIndexRows(rows),rowCount:rows.length,updatedAt:now};
       assert.ok(Buffer.byteLength(JSON.stringify(data))<850000,`Bucket trop volumineux ${b.key}`);
       fs.appendFileSync(plannedFile,JSON.stringify({id:b.id,data})+'\n');
+      plannedIds.add(b.id);
       viewCount+=1; if(data.rowsEncoding)compressedViews+=1;
     }
     const report=validatePublic(source,r=>json(path.join(out,'tops',r)),r=>json(path.join(out,'tops-preview',r)));
@@ -146,11 +179,18 @@ async function main() {
     const backupViews=path.join(work,'backup-views.ndjson');
     fs.writeFileSync(backupViews,'');
     await readViews(v=>fs.appendFileSync(backupViews,JSON.stringify(v)+'\n'));
+    const historical=[];
+    for await(const v of readLines(backupViews))if(!plannedIds.has(v.id)) {
+      const completed=completeHistoricalView(v,source,plannedIds,now);
+      fs.appendFileSync(plannedFile,JSON.stringify(completed)+'\n');
+      plannedIds.add(v.id);viewCount++;
+      historical.push({id:v.id,bucketKey:v.data.bucketKey,previousRows:v.data.rowCount,rows:completed.data.rowCount});
+    }
     write(path.join(work,'backup-public.json'),backupFiles);
     assert.equal([...oldNames].filter(r=>!files.includes(r)).length,0,'Suppression de fichiers hors périmètre : arrêt avant écriture');
     write(path.join(work,'backup-integrity.json'),{views:digest(fs.readFileSync(backupViews)),planned:digest(fs.readFileSync(plannedFile)),public:digest(fs.readFileSync(path.join(work,'backup-public.json')))});
     write(path.join(work,'plan.json'),{project,bucketName,sourceHash:digest(fs.readFileSync('outputs/performance-base-firestore-active.ndjson')),viewCount,compressedViews,files:files.map(relative=>({relative,hash:digest(fs.readFileSync(path.join(out,relative)))})),stale:[...oldNames].filter(r=>!files.includes(r)),report});
-    console.log(JSON.stringify({mode,views:viewCount,compressedViews,files:files.length,report},null,2));
+    console.log(JSON.stringify({mode,views:viewCount,compressedViews,files:files.length,historical,report},null,2));
     return;
   }
   const plan=json(path.join(work,'plan.json'));
@@ -175,7 +215,7 @@ async function main() {
       assert.equal(metadata.generation,f.generation,'Publication concurrente détectée avant écriture');
     }
     const ids=new Set();
-    let pending=[];
+    let pending=[], committed=0;
     const commitPending=async()=>{
       for(const part of viewBatches(pending)) {
         await db.runTransaction(async transaction => {
@@ -188,6 +228,8 @@ async function main() {
           }
           part.forEach((op,i)=>transaction.set(refs[i],op.data));
         });
+        committed+=part.length;
+        if(committed%1000===0)console.log(`Vues TOP ecrites : ${committed}/${plan.viewCount}`);
       }
       pending=[];
     };
@@ -215,4 +257,4 @@ async function main() {
   console.log(JSON.stringify({ok:true,mode,project,views:actualCount,compressedViews:plan.compressedViews,files:plan.files.length,report},null,2));
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
-module.exports={validatePublic,viewBatches};
+module.exports={validatePublic,viewBatches,completeHistoricalView};
