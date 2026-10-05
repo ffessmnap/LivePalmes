@@ -16,7 +16,7 @@
   const auth = firebase.auth();
   const read = firebase.app().functions(environment.functionsRegion).httpsCallable("getNapSwimmerPerformances");
   let swimmerId = null;
-  let afterId = 0;
+  let afterId = null;
   let busy = false;
   let sessionRevision = 0;
   auth.onAuthStateChanged(async (user) => {
@@ -47,7 +47,7 @@
     if (reset) {
       if (!input.reportValidity()) return;
       swimmerId = Number(input.value);
-      afterId = 0;
+      afterId = null;
     }
     const revision = sessionRevision;
     busy = true;
