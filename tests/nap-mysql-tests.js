@@ -26,6 +26,15 @@ async function main() {
   const empty = await readSwimmerPerformances({ execute: async () => [[]] }, { swimmerId: 12 });
   assert.equal(empty.nextAfterId, null);
   assert.equal(empty.hasMore, false);
+  const firstPage = await readSwimmerPerformances({ execute: async (query, values) => {
+    assert.deepEqual(values, [12, -1]);
+    return [[{ id: 0, tps: "004686" }]];
+  } }, { swimmerId: 12, afterId: null });
+  assert.equal(firstPage.items[0].id, 0, "La performance NAP d'identifiant zero doit etre conservee.");
+  await readSwimmerPerformances({ execute: async (query, values) => {
+    assert.deepEqual(values, [12, 0]);
+    return [[]];
+  } }, { swimmerId: 12, afterId: 0 });
   console.log("NAP : validation, chiffrement obligatoire, lecture bornee et pagination verifies sans connexion reseau.");
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

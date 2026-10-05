@@ -40,3 +40,11 @@ Le schema signale un index sur `perfs.nageur` et la cle primaire `perfs.id`. Con
 5. Mauvais certificat : connexion refusee sans divulgation de l'erreur serveur. Aucune ecriture necessaire a cette recette.
 
 Restent ensuite : recherche par nom, TOP, correspondances de clubs, ecritures, reprise Firestore et promotion PROD.
+
+## Echantillons fournis le 5 octobre
+
+L'export de comptage contient 521 908 performances et 103 valeurs de course, dont une vide ; 486 582 lignes utilisent les 14 codes individuels bassin deja definis dans LivePalmes. Le referentiel course_dispo contient 275 entrees dont pauses/sessions et variantes ; 84 valeurs presentes dans perfs, representant 18 401 lignes, n'ont pas de correspondance exacte dans ce referentiel. Aucun rapprochement automatique LD ni correction de metadonnees n'est valide.
+
+Les 30 premieres performances fournies contiennent des temps numeriques a six chiffres compatibles avec le parseCompactTime existant : 004686 = 46,86 secondes, 011138 = 1 minute 11,38 secondes. Cet echantillon ne valide pas les formats LD, les statuts ou les relais. Les 30 lignes ont relais=0 et passage=0.
+
+Une performance porte id=0. Le curseur initial est donc null, traduit en borne SQL -1 ; un curseur explicite 0 demeure la borne de la page suivante. Test de regression hors reseau ajoute. Les correspondances de categories HEP/HMI/HCA/HME/FMI/FCA restent a verifier dans le referentiel categories, sans deduire les ages de leurs abreviations.
