@@ -1,0 +1,39 @@
+name: Diagnostiquer la sauvegarde TOP PROD sans ecriture
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verifier la provenance de la sauvegarde
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run view 37276414186 --repo "$GITHUB_REPOSITORY" --json headSha,conclusion,workflowName > "$RUNNER_TEMP/backup-run.json"
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/backup-run.json"); const a=require("node:assert/strict"); a.equal(r.headSha,"20c352b7e130f91567ab386347452e0be28f82d3"); a.equal(r.conclusion,"failure"); a.equal(r.workflowName,"Reconstruire les TOP PROD autorises");'
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-top-backup
+          run-id: 37276414186
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/top-backup
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Ouvrir et analyser uniquement la sauvegarde locale
+        run: |
+          node tools/production-backup-crypto.js open "$RUNNER_TEMP/top-backup/production-top-backup.enc" "$RUNNER_TEMP/top-backup-open"
+          node tools/diagnose-production-top-backup.js "$RUNNER_TEMP/top-backup-open"
