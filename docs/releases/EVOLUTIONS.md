@@ -2,13 +2,19 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Pages publiques alimentees par NAP — preparation du 6 octobre 2026
+
+- Besoin autorise : conserver les pages, liens, presentation et fonctionnalites ; changer uniquement la source de donnees, progressivement sur TEST.
+- Preparation : export interne des champs publics de quatre tables NAP, pagination par index primaire, double lecture identique, construction via les generateurs existants. Aucun mot de passe transmis au compte de publication, aucune ecriture SQL, aucune publication de fichiers dans cette premiere phase.
+- Budget et circuit : `docs/NAP_PUBLIC_MIGRATION.md`. Export et generation reelle, comparaison de contenu et de liens, puis bascule des pages encore a realiser. Ne pas annoncer les pages connectees avant ces controles.
+
 ### Consultation NAP dans TEST — preparation du 5 octobre 2026
 
 - Besoin : MySQL NAP comme base unique a terme ; coexistence avec l'ancien site pendant les essais, Firebase conserve pour l'hebergement. Antoine autorise les essais d'ecriture dans NAP ; cette premiere livraison reste en lecture.
 - Perimetre : connexion MySQL TLS obligatoire sans verification du certificat (choix explicite d'Antoine le 5 octobre), consultation administrateur TEST paginee de `perfs`, ecran `/nap-test.html`, lot specialise `nap` hors `all-safe`, tests hors reseau. Voir `docs/NAP_TEST.md`.
-- Activation : PR #102 et #103 integrees ; backend TEST 37367287408 reussi, fonction NAP creee. Droits Lecteur pour le compte GitHub et Accesseur pour le compte d'execution limites au secret NAP, confirmes par Antoine. Lecture reelle encore a verifier.
-- Publication commune : Antoine autorise le 5 octobre l'inclusion sur TEST des deux fichiers TOP 200BI M-S deja modifies dans main. Exception explicite limitee a leurs empreintes Git exactes ; aucune exception PROD, regles, index ou autre fichier genere. Publication et recette en attente.
-- Validation : activation TEST explicitement autorisee le 5 octobre ; EXPLAIN du nageur 7322 confirme l'index nageur (1269 lignes estimees pour 1509 performances). Aucun retour de recette NAP depuis Firebase. Les autres modules restent sur Firestore. Hors bilan PROD.
+- Activation : PR #102 et #103 integrees ; backend TEST 37367287408 reussi, fonction NAP creee. Droits Lecteur pour le compte GitHub et Accesseur pour le compte d'execution limites au secret NAP, confirmes par Antoine. Lecture reelle depuis Firebase verifiee dans le navigateur avec la session administrateur TEST d'Antoine : nageur 7322, 50 lignes (87799 a 128079), puis 50 lignes (128080 a 146247), aucune ecriture NAP.
+- Publication commune : Antoine autorise le 5 octobre l'inclusion sur TEST des deux fichiers TOP 200BI M-S deja modifies dans main. Exception explicite limitee a leurs empreintes Git exactes ; aucune exception PROD, regles, index ou autre fichier genere. PR #104 integree ; publication TEST commune reussie au commit 78a16278e894b6c142ea94444845302c7feb27a0, run 37376750137, Hosting f396f85fa6b769fd. Les 138 fonctions ordinaires ont ete republiees apres divergence de l'inventaire precedent ; NAP conserve.
+- Validation : activation TEST explicitement autorisee le 5 octobre ; EXPLAIN du nageur 7322 confirme l'index nageur (1269 lignes estimees pour 1509 performances). Recette technique de lecture et pagination reussie ; validation utilisateur recue le 6 octobre : Antoine confirme le fonctionnement avec d'autres nageurs. Les autres modules restent sur Firestore. Hors bilan PROD.
 
 La version applicative `4b1c6937c01dd71822d46d9a8ff23508d43d2309` est publiée en PROD depuis le 25 septembre 2026, run [36108577649](https://github.com/ffessmnap/LivePalmes/actions/runs/36108577649), Hosting `e3186cfe0bdb29e8`. Les commits d’infrastructure ultérieurs ne sont pas des évolutions applicatives déjà publiées.
 

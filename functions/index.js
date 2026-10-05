@@ -12,7 +12,7 @@ const { getStorage } = require("firebase-admin/storage");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const QRCode = require("qrcode");
-const { HttpsError, onCall } = require("firebase-functions/v2/https");
+const { HttpsError, onCall, onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
@@ -176,6 +176,25 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 if (ENVIRONMENT.projectId === "livepalmes-test") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
+  // Export reserve au compte de publication TEST, jamais accessible au public.
+  const { inspectExportSources, readExportPage } = require("./nap-public-export");
+  exports.exportNapPublicPage = onRequest({
+    region: REGION,
+    invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com",
+    secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 60
+  }, async (request, response) => {
+    response.set("Cache-Control", "no-store");
+    if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
+    try {
+      if (!napPool) napPool = createNapPool(napPassword.value());
+      const data = request.query.action === "inspect"
+        ? await inspectExportSources(napPool)
+        : await readExportPage(napPool, request.query);
+      response.json(data);
+    } catch (error) {
+      response.status(error instanceof TypeError ? 400 : 503).json({ error: "Export NAP indisponible." });
+    }
+  });
 exports.getNapSwimmerPerformances = onCall({
     ...CALLABLE_OPTIONS, secrets: [napPassword],
     maxInstances: 2, concurrency: 4, timeoutSeconds: 30
