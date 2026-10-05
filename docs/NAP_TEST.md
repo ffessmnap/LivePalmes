@@ -13,11 +13,11 @@ L'ecran et la fonction `getNapSwimmerPerformances` sont reserves a TEST. La fonc
 - Serveur `nap.ffessm.fr`, port `3372`, base et compte `nage-palmes`.
 - Projet Firebase exclusivement `livepalmes-test`.
 - Secret `LIVEPALMES_NAP_PASSWORD` : mot de passe MySQL, saisi dans Secret Manager, jamais dans Git ni dans le chat.
-- Secret `LIVEPALMES_NAP_CA` : certificat CA PEM confirme par l'administrateur NAP. Verification TLS obligatoire, sans repli non chiffre ou sans verification.
-- Identite d'execution : lecture de ces deux secrets seulement.
-- Verifier depuis Firebase le reseau, la chaine de confiance et le nom du serveur. DBeaver ne prouve pas la connectivite Firebase.
+- TLS obligatoire sans verification du certificat serveur, selon le choix explicite d'Antoine le 5 octobre 2026. Aucun certificat CA requis ; aucun repli en connexion non chiffree. Le chiffrement ne garantit pas l'identite du serveur.
+- Identite d'execution : lecture du seul secret de mot de passe.
+- Verifier depuis Firebase le reseau et le chiffrement TLS. DBeaver ne prouve pas la connectivite Firebase.
 
-Pilote `mysql2`, versions verrouillees, serveur MySQL 5.7 et execution Node.js 22. Le mot de passe et le certificat ne sont pas encore configures.
+Pilote `mysql2`, versions verrouillees, serveur MySQL 5.7 et execution Node.js 22. Le secret de mot de passe a ete cree par Antoine ; son acces depuis Firebase reste a verifier.
 
 ## Publication
 
@@ -37,7 +37,7 @@ Le schema signale un index sur `perfs.nageur` et la cle primaire `perfs.id`. Con
 2. Controle mobile/ordinateur realise localement avec Firebase/NAP simules : refus PROD, invitation sans session, refus du compte non administrateur, pagination et affichage texte. Le refus serveur en conditions reelles reste a tester.
 3. Configurer les secrets puis publier le seul lot NAP TEST apres controles. Ouvrir `/nap-test.html` avec une session administrateur TEST.
 4. Comparer un nageur connu avec DBeaver ; tester absence de performances et plusieurs pages sans doublons. Confirmer le plan SQL.
-5. Mauvais certificat : connexion refusee sans divulgation de l'erreur serveur. Aucune ecriture necessaire a cette recette.
+5. Serveur sans TLS ou mauvais mot de passe : connexion refusee sans divulgation de l'erreur serveur. Verifier que la session MySQL a un Ssl_cipher non vide. Aucune ecriture necessaire a cette recette.
 
 Restent ensuite : recherche par nom, TOP, correspondances de clubs, ecritures, reprise Firestore et promotion PROD.
 

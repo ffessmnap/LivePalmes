@@ -1,12 +1,13 @@
 const mysql = require("mysql2/promise");
 
-function napPoolOptions(password, ca) {
-  if (!password || !ca || !ca.includes("-----BEGIN CERTIFICATE-----")) {
-    throw new Error("Configuration NAP incomplete : mot de passe et certificat CA requis.");
+function napPoolOptions(password) {
+  if (!password) {
+    throw new Error("Configuration NAP incomplete : mot de passe requis.");
   }
   return {
     host: "nap.ffessm.fr", port: 3372, user: "nage-palmes", database: "nage-palmes",
-    password, ssl: { ca, rejectUnauthorized: true },
+    // TLS obligatoire ; verification du certificat desactivee selon le choix valide.
+    password, ssl: { rejectUnauthorized: false },
     connectionLimit: 2, waitForConnections: true, queueLimit: 8,
     connectTimeout: 10000, dateStrings: true, supportBigNumbers: true,
     bigNumberStrings: true, multipleStatements: false, enableKeepAlive: true
@@ -34,8 +35,8 @@ async function readSwimmerPerformances(pool, input) {
   return { source: "nap", items, hasMore, nextAfterId: hasMore ? items[items.length - 1].id : null };
 }
 
-function createNapPool(password, ca) {
-  return mysql.createPool(napPoolOptions(password, ca));
+function createNapPool(password) {
+  return mysql.createPool(napPoolOptions(password));
 }
 
 module.exports = { napPoolOptions, performanceRequest, readSwimmerPerformances, createNapPool };

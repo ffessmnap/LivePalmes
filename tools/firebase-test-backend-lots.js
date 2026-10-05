@@ -81,10 +81,10 @@ const LOTS = Object.freeze({
 
 const METADATA = Object.freeze({
   nap: {
-    secrets: ["LIVEPALMES_NAP_PASSWORD", "LIVEPALMES_NAP_CA"],
+    secrets: ["LIVEPALMES_NAP_PASSWORD"],
     apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "secretmanager.googleapis.com"],
     iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "runtime: roles/secretmanager.secretAccessor limite aux secrets NAP TEST"],
-    dependencies: ["MySQL NAP : SELECT borne sur perfs", "Auth : admin.full", "TLS : certificat CA requis", "Lot specialise exclu de all-safe"]
+    dependencies: ["MySQL NAP : SELECT borne sur perfs", "Auth : admin.full", "TLS obligatoire sans verification du certificat", "Lot specialise exclu de all-safe"]
   },
   bootstrap: {
     secrets: [],

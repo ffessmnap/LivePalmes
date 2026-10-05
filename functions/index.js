@@ -175,10 +175,9 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 // Preparation NAP exclusive a TEST : aucune activation implicite en production.
 if (ENVIRONMENT.projectId === "livepalmes-test") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
-  const napCa = defineSecret("LIVEPALMES_NAP_CA");
   let napPool;
 exports.getNapSwimmerPerformances = onCall({
-    ...CALLABLE_OPTIONS, secrets: [napPassword, napCa],
+    ...CALLABLE_OPTIONS, secrets: [napPassword],
     maxInstances: 2, concurrency: 4, timeoutSeconds: 30
   }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -187,7 +186,7 @@ exports.getNapSwimmerPerformances = onCall({
     try { input = performanceRequest(request.data); }
     catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
     try {
-      if (!napPool) napPool = createNapPool(napPassword.value(), napCa.value());
+      if (!napPool) napPool = createNapPool(napPassword.value());
       return await readSwimmerPerformances(napPool, input);
     } catch {
       // Ne pas exposer les erreurs du pilote, les secrets ou les donnees.

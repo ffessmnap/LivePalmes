@@ -2,9 +2,10 @@ const assert = require("node:assert/strict");
 const { napPoolOptions, performanceRequest, readSwimmerPerformances } = require("../functions/nap-mysql");
 
 async function main() {
-  assert.throws(() => napPoolOptions("password", ""));
-  const options = napPoolOptions("dummy", "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----");
-  assert.equal(options.ssl.rejectUnauthorized, true);
+  assert.throws(() => napPoolOptions(""));
+  const options = napPoolOptions("dummy");
+  assert.deepEqual(options.ssl, { rejectUnauthorized: false });
+  assert.equal(options.password, "dummy");
   assert.equal(options.multipleStatements, false);
   for (const input of [{}, { swimmerId: "1 OR 1=1" }, { swimmerId: -1 }, { swimmerId: 1, afterId: -1 }, { swimmerId: 1, afterId: "0" }]) {
     assert.throws(() => performanceRequest(input));
