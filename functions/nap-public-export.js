@@ -36,7 +36,7 @@ async function readExportPage(pool, input) {
   return { source: "nap", table, items, hasMore, next, through };
 }
 
-async function inspectExportSources(pool) {
+async function readSourceSchema(pool) {
   const [columns] = await pool.execute({
     sql: "SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('nageurs', 'clubs', 'competitions', 'perfs') ORDER BY TABLE_NAME, ORDINAL_POSITION",
     timeout: 10000
@@ -45,6 +45,11 @@ async function inspectExportSources(pool) {
     sql: "SELECT TABLE_NAME, COLUMN_NAME, SEQ_IN_INDEX FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('nageurs', 'clubs', 'competitions', 'perfs') AND INDEX_NAME = 'PRIMARY' ORDER BY TABLE_NAME, SEQ_IN_INDEX",
     timeout: 10000
   });
+  return { columns, indexes };
+}
+
+async function inspectExportSources(pool) {
+  const { columns, indexes } = await readSourceSchema(pool);
   for (const [table, spec] of Object.entries(SOURCES)) {
     const actual = columns.filter(c => c.TABLE_NAME === table);
     if (!spec.columns.every(name => actual.some(c => c.COLUMN_NAME === name))) {
@@ -67,4 +72,4 @@ async function inspectExportSources(pool) {
   return { source: "nap", bounds, pageSize: PAGE_SIZE };
 }
 
-module.exports = { SOURCES, PAGE_SIZE, exportRequest, readExportPage, inspectExportSources };
+module.exports = { SOURCES, PAGE_SIZE, exportRequest, readExportPage, inspectExportSources, readSourceSchema };
