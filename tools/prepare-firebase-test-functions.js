@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { ALL_SAFE_LOTS, LOTS, PROJECT_ID } = require("./firebase-test-backend-lots");
+const { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID } = require("./firebase-test-backend-lots");
 
 const root = path.join(__dirname, "..");
 const source = path.join(root, "functions");
@@ -23,7 +23,7 @@ if ((process.env.TARGET_FIREBASE_PROJECT || "") !== PROJECT_ID) {
 const selectedLots = lot === "all-safe" ? ALL_SAFE_LOTS : [lot];
 const selected = selectedLots.flatMap((name) => LOTS[name]);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
-const usesEmailSecrets = selectedLots.some((name) => name === "email" || name === "schedulers" || name === "nap");
+const selectedSecrets = [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets))];
 
 fs.rmSync(path.dirname(destination), { recursive: true, force: true });
 fs.cpSync(source, destination, {
@@ -36,12 +36,13 @@ fs.cpSync(source, destination, {
 const backendSourcePath = path.join(source, "index.js");
 let backendSource = fs.readFileSync(backendSourcePath, "utf8");
 
-if (!usesEmailSecrets) {
+{
   const paramsImport = 'const { defineBoolean, defineSecret } = require("firebase-functions/params");';
   const safeParamsImport =
-    'const { defineBoolean } = require("firebase-functions/params");\n' +
-    '// Le staging sans email conserve les options internes, sans enregistrer de SecretParam.\n' +
-    'const defineSecret = (name) => name;';
+    'const { defineBoolean, defineSecret: registerSecret } = require("firebase-functions/params");\n' +
+    '// Enregistrer uniquement les secrets du lot deploye, meme si le backend declare les autres.\n' +
+    `const deployedSecretNames = ${JSON.stringify(selectedSecrets)};\n` +
+    'const defineSecret = (name) => deployedSecretNames.includes(name) ? registerSecret(name) : name;';
   const occurrences = backendSource.split(paramsImport).length - 1;
   if (occurrences !== 1) {
     throw new Error(`Import defineSecret inattendu dans functions/index.js (${occurrences} occurrence(s)).`);

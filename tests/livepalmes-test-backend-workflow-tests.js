@@ -77,8 +77,8 @@ for (const lot of ["access", "engagement-core", "performance"]) {
 }
 
 assert.match(staging, /relative !== "index\.js"/);
-assert.match(staging, /usesEmailSecrets/);
-assert.match(staging, /const defineSecret = \(name\) => name/);
+assert.match(staging, /selectedSecrets/);
+assert.match(staging, /deployedSecretNames\.includes\(name\) \? registerSecret\(name\) : name/);
 assert.match(staging, /\.env\.livepalmes-test/);
 assert.match(staging, /exports\[name\] = backend\[name\]/);
 assert.match(staging, /environment\.name !== "test"/);
@@ -92,7 +92,8 @@ assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SM
 const stagedRoot = path.join(rootDir, ".firebase-test-functions");
 const manifestPath = path.join(stagedRoot, "access-manifest.json");
 try {
-  childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), "access"], {
+  for (const selectedLot of ["access", "nap"]) {
+  childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), selectedLot], {
     cwd: rootDir,
     env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test" },
     stdio: "pipe"
@@ -114,9 +115,12 @@ try {
     stdio: "pipe"
   });
   const manifest = fs.readFileSync(manifestPath, "utf8");
-  assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...LOTS.access].sort());
+  assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...LOTS[selectedLot]].sort());
+  const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
+  assert.deepEqual(declaredSecrets, [...METADATA[selectedLot].secrets].sort());
   for (const secret of METADATA.email.secrets) {
     assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste access expose encore ${secret}.`);
+  }
   }
 } finally {
   fs.rmSync(stagedRoot, { recursive: true, force: true });
