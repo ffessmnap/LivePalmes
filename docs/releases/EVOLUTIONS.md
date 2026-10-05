@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Consultation NAP dans TEST — preparation du 5 octobre 2026
+
+- Besoin : MySQL NAP comme base unique a terme ; coexistence avec l'ancien site pendant les essais, Firebase conserve pour l'hebergement. Antoine autorise les essais d'ecriture dans NAP ; cette premiere livraison reste en lecture.
+- Perimetre : connexion MySQL TLS verifiee, consultation administrateur TEST paginee de `perfs`, ecran `/nap-test.html`, lot specialise `nap` hors `all-safe`, tests hors reseau. Voir `docs/NAP_TEST.md`.
+- Etat : preparation en brouillon ; secrets non configures, connexion reelle et recette visuelle non realisees. PR/commit et preuve TEST a renseigner apres creation. Aucune integration, publication ou modification NAP.
+- Validation : accord de developpement uniquement ; aucun retour de recette NAP. Les autres modules restent sur Firestore. Hors bilan PROD.
+
 La version applicative `4b1c6937c01dd71822d46d9a8ff23508d43d2309` est publiée en PROD depuis le 25 septembre 2026, run [36108577649](https://github.com/ffessmnap/LivePalmes/actions/runs/36108577649), Hosting `e3186cfe0bdb29e8`. Les commits d’infrastructure ultérieurs ne sont pas des évolutions applicatives déjà publiées.
 
 | Besoin | PR / commit | État | Preuve TEST | Validation utilisateur | Publication PROD |

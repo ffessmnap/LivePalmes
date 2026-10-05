@@ -48,6 +48,7 @@ function checkSyntax() {
 function runUnitTests() {
   printStep("Tests automatiques");
   [
+    "nap-mysql-tests.js",
     "livepalmes-basic-tests.js",
     "livepalmes-admin-auth-tests.js",
     "livepalmes-environment-tests.js",
