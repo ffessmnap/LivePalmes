@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Consultation NAP — LivePalmes TEST</title>
+  <link rel="stylesheet" href="assets/livepalmes-nap-test.css">
+</head>
+<body>
+  <main>
+    <a href="portail.html">Retour au portail</a>
+    <h1>Consultation des performances NAP</h1>
+    <p>Première étape de connexion à NAP. Cet écran consulte les données sans les modifier.</p>
+    <p id="nap-status" role="status" aria-live="polite">Vérification de votre session…</p>
+    <form id="nap-form" hidden>
+      <label for="nap-swimmer">Identifiant du nageur dans NAP</label>
+      <input id="nap-swimmer" type="number" min="1" max="2147483647" step="1" required>
+      <button id="nap-load" type="submit">Consulter les performances</button>
+    </form>
+    <p id="nap-count"></p>
+    <div class="nap-table-wrap" tabindex="0" aria-label="Performances NAP">
+      <table hidden id="nap-table">
+        <caption>Performances enregistrées dans NAP — temps affichés tels qu’enregistrés</caption>
+        <thead><tr><th>Identifiant</th><th>Compétition</th><th>Épreuve</th><th>Catégorie</th><th>Temps NAP</th><th>Club</th><th>Classement</th></tr></thead>
+        <tbody id="nap-rows"></tbody>
+      </table>
+    </div>
+    <button id="nap-next" type="button" hidden>Page suivante</button>
+  </main>
+  <script src="assets/livepalmes-environment.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+  <script src="assets/livepalmes-nap-test.js"></script>
+</body>
+</html>

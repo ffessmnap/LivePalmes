@@ -4,6 +4,8 @@
 
 ## Objet du document
 
+L'ecran NAP TEST (`nap-test.html`) utilise un formulaire avec champs et boutons d'au moins 44 px, un statut accessible et un tableau a defilement horizontal sur mobile. Il affiche les temps NAP bruts, avec des styles isoles dans `assets/livepalmes-nap-test.css`.
+
 Ce document décrit le design system **tel qu’il existe dans l’application au 29 août 2026**. Il ne crée pas de nouvelle architecture CSS et ne remplace pas les feuilles de styles : celles-ci restent la source de vérité technique.
 
 L’objectif est de faciliter les évolutions cohérentes de l’interface en donnant une lecture commune des couleurs, de la typographie, des composants, des états et du comportement responsive déjà utilisés.

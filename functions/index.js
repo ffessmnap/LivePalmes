@@ -23,6 +23,7 @@ const {
   publicPerformancePublicationJob
 } = require("./performance-publication-jobs");
 const { defineBoolean, defineSecret } = require("firebase-functions/params");
+const { createNapPool, readSwimmerPerformances, performanceRequest } = require("./nap-mysql");
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const clubReference = require("./assets/club-reference.json");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
@@ -171,6 +172,29 @@ const OPTIONAL_COMPETITION_MAIL_TYPES = new Set([
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
+// Preparation NAP exclusive a TEST : aucune activation implicite en production.
+if (ENVIRONMENT.projectId === "livepalmes-test") {
+  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
+  const napCa = defineSecret("LIVEPALMES_NAP_CA");
+  let napPool;
+exports.getNapSwimmerPerformances = onCall({
+    ...CALLABLE_OPTIONS, secrets: [napPassword, napCa],
+    maxInstances: 2, concurrency: 4, timeoutSeconds: 30
+  }, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+    assertAdmin(request);
+    let input;
+    try { input = performanceRequest(request.data); }
+    catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
+    try {
+      if (!napPool) napPool = createNapPool(napPassword.value(), napCa.value());
+      return await readSwimmerPerformances(napPool, input);
+    } catch {
+      // Ne pas exposer les erreurs du pilote, les secrets ou les donnees.
+      throw new HttpsError("unavailable", "Consultation NAP indisponible. Verifier la configuration serveur.");
+    }
+  });
+}
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS, timeoutSeconds: 300 };
 const NOTIFICATION_PREFERENCE_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: [LIVEPALMES_NOTIFICATION_LINK_SECRET] };
 const ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 120, memory: "512MiB" };

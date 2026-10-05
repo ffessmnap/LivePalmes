@@ -3,6 +3,7 @@
 const PROJECT_ID = "livepalmes-test";
 
 const LOTS = Object.freeze({
+  nap: ["getNapSwimmerPerformances"],
   access: [
     "getCurrentAccessUser", "createOrUpdateAccessUser", "listAccessUsers", "setAccessUserStatus",
     "deleteAccessUser", "requestAccessUserDeletion", "listAccessUserDeletionRequests",
@@ -79,6 +80,12 @@ const LOTS = Object.freeze({
 });
 
 const METADATA = Object.freeze({
+  nap: {
+    secrets: ["LIVEPALMES_NAP_PASSWORD", "LIVEPALMES_NAP_CA"],
+    apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "secretmanager.googleapis.com"],
+    iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "runtime: roles/secretmanager.secretAccessor limite aux secrets NAP TEST"],
+    dependencies: ["MySQL NAP : SELECT borne sur perfs", "Auth : admin.full", "TLS : certificat CA requis", "Lot specialise exclu de all-safe"]
+  },
   bootstrap: {
     secrets: [],
     apis: ["firestore.googleapis.com", "firebaserules.googleapis.com", "cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com"],
