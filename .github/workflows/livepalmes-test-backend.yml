@@ -12,6 +12,7 @@ on:
           - access
           - engagement-core
           - performance
+          - nap
           - publications
           - email
           - schedulers
@@ -95,7 +96,7 @@ jobs:
             *) echo "Branche non autorisée en TEST."; exit 1 ;;
           esac
           case "$SELECTED_LOT" in
-            bootstrap|access|engagement-core|performance|publications|email|schedulers|all-safe) ;;
+            bootstrap|access|engagement-core|performance|nap|publications|email|schedulers|all-safe) ;;
             *) echo "Lot interdit."; exit 1 ;;
           esac
           if [ "$SELECTED_LOT" = "schedulers" ]; then
@@ -202,11 +203,13 @@ jobs:
           done < "$RUNNER_TEMP/required-apis.txt"
 
       - name: Vérifier les secrets TEST sans lire leurs valeurs
-        if: inputs.lot == 'email' || inputs.lot == 'schedulers'
+        if: inputs.lot == 'email' || inputs.lot == 'schedulers' || inputs.lot == 'nap'
         shell: bash
+        env:
+          SELECTED_LOT: ${{ inputs.lot }}
         run: |
           set -euo pipefail
-          node -e 'require("./tools/firebase-test-backend-lots").METADATA.email.secrets.forEach(value => console.log(value))' |
+          node -e 'const metadata = require("./tools/firebase-test-backend-lots").METADATA; metadata[process.env.SELECTED_LOT].secrets.forEach(value => console.log(value))' |
           while IFS= read -r secret; do
             gcloud secrets describe "$secret" --project=livepalmes-test --format='value(name)' >/dev/null
           done

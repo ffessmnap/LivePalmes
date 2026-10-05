@@ -23,7 +23,7 @@ if ((process.env.TARGET_FIREBASE_PROJECT || "") !== PROJECT_ID) {
 const selectedLots = lot === "all-safe" ? ALL_SAFE_LOTS : [lot];
 const selected = selectedLots.flatMap((name) => LOTS[name]);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
-const usesEmailSecrets = selectedLots.some((name) => name === "email" || name === "schedulers");
+const usesEmailSecrets = selectedLots.some((name) => name === "email" || name === "schedulers" || name === "nap");
 
 fs.rmSync(path.dirname(destination), { recursive: true, force: true });
 fs.cpSync(source, destination, {
