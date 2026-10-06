@@ -1056,6 +1056,7 @@
   let dirtyEngagementDetailTabs = new Set();
   let engagementUnsavedDecisionResolver = null;
   let engagementDetailEditing = false;
+  let nativeCompetitionEditBaseline = null;
   let selectedEngagementCompetitionId = "";
   let selectedEngagementCompetition = null;
   let selectedEngagementClubEntry = null;
@@ -1598,7 +1599,7 @@
   }
 
   function canEditEngagementCompetition(competition = selectedEngagementCompetition || {}) {
-    return competition.nativeReadOnly !== true && canManageEngagementCompetitionScope(competition) && !isRegionalPastEngagementReadOnly(competition);
+    return (competition.nativeReadOnly !== true || competition.nativeCompetitionEditable === true) && canManageEngagementCompetitionScope(competition) && !isRegionalPastEngagementReadOnly(competition);
   }
 
   function setPerformanceMenuOpen(open) {
@@ -4269,6 +4270,17 @@
     updateEngagementQualificationFields("edit");
     updateEngagementMaxEventsFields("edit");
     renderQualificationEditor();
+    if (competition.napSource === true) {
+      const fields = editCompetitionFields();
+      for (const key of ["level", "regionId", "invitedRegionIds", "qualificationMode", "qualificationStart", "qualificationEnd", "missingEntryTimeMode"]) if (fields[key]) fields[key].disabled = true;
+      if (fields.deadline) { fields.deadline.step = "1"; fields.deadline.value = (competition.nativeEntryDeadline || "").replace(" ", "T"); }
+      const closed = fields.entryStatus?.querySelector("option[value='closed']");
+      if (closed) closed.disabled = false;
+      if (fields.entryStatus) fields.entryStatus.disabled = false;
+      const qualificationMount = document.querySelector("#adminQualificationEditor");
+      if (qualificationMount) qualificationMount.disabled = true;
+      nativeCompetitionEditBaseline = nativeCompetitionFormValues();
+    } else nativeCompetitionEditBaseline = null;
   }
 
   function setEngagementEditMode(editing) {
@@ -4325,6 +4337,7 @@
 
   function normalizeEngagementDeadlineField(field) {
     if (!field?.value) return "";
+    if (selectedEngagementCompetition?.napSource === true && field === elements.engagementsEditDeadline) return field.value;
     const date = new Date(field.value);
     if (Number.isNaN(date.getTime())) return field.value;
     date.setMinutes(0, 0, 0);
@@ -4552,6 +4565,7 @@
   }
 
   function engagementQualificationPeriodLabel(competition = {}) {
+    if (competition.napSource === true && !competition.qualificationTimesMode) return "Période NAP non renseignée";
     if (competition.qualificationTimesMode !== "period") return "Meilleur temps parmi tous les temps connus";
     const start = formatShortDate(competition.qualificationStartDate);
     const end = formatShortDate(competition.qualificationEndDate);
@@ -4567,6 +4581,7 @@
   }
 
   function engagementEntryTimeRulesLabel(competition = {}) {
+    if (competition.napSource === true && !competition.missingEntryTimeMode) return `${engagementQualificationPeriodLabel(competition)} · paramètres natifs conservés`;
     const manualLabel = engagementManualIndividualTimesAllowed(competition)
       ? "saisie manuelle autorisée"
       : "saisie manuelle non autorisée";
@@ -10144,7 +10159,7 @@
     const events = Array.isArray(competition.events) ? competition.events : [];
     const selectedCodes = new Map(events.map((event) => [event.code, event]).filter(([code]) => Boolean(code)));
     const adminMode = isEngagementAdminMode();
-    const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition);
+    const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition) && competition.napSource !== true;
     const clubProgramView = !adminMode;
     const openWater = engagementCompetitionType(competition) === "openWater";
     if (elements.engagementsOpenWaterLibrary) elements.engagementsOpenWaterLibrary.hidden = !openWater || !adminMode;
@@ -10303,7 +10318,7 @@
     if (elements.engagementsSaveButton) elements.engagementsSaveButton.hidden = true;
     if (elements.engagementsEditCancelTop) elements.engagementsEditCancelTop.hidden = true;
     if (elements.engagementsDeleteButton) {
-      const canRequestOrDelete = isEngagementAdminMode() && canManageEngagementCompetitionScope(competition);
+      const canRequestOrDelete = competition.napSource !== true && isEngagementAdminMode() && canManageEngagementCompetitionScope(competition);
       const deletionPending = isEngagementAdminMode() && competition.deletionRequestStatus === "pending";
       const directDelete = canDeleteEngagementCompetitionImmediately(competition);
       elements.engagementsDeleteButton.hidden = !canRequestOrDelete;
@@ -10328,7 +10343,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(competition.nativeReadOnly ? "Consultation du dossier NAP. L'enregistrement depuis LivePalmes est en cours de raccordement." : "")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(competition.nativeCompetitionEditable ? "Paramètres généraux et frais enregistrés dans NAP. Le programme et la saisie des engagements sont encore en cours de raccordement." : "Consultation du dossier NAP. L'enregistrement depuis LivePalmes est en cours de raccordement.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -10367,7 +10382,7 @@
       [openWater ? "Plan d’eau" : "Bassin", engagementFacilityLabel(competition)],
       ...(!openWater ? [
         ["Temps engagements", engagementQualificationPeriodLabel(competition)],
-        ["Sans temps connu", engagementMissingEntryTimeModeLabel(competition.missingEntryTimeMode)]
+        ["Sans temps connu", competition.napSource === true && !competition.missingEntryTimeMode ? "Paramètres natifs conservés" : engagementMissingEntryTimeModeLabel(competition.missingEntryTimeMode)]
       ] : []),
       ["Max épreuves nageur", engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
       ["Officiels", competition.officialsRequired ? "Requis" : "Non requis"],
@@ -15049,6 +15064,54 @@
     return engagementCompetitionPayloadFromFields(editCompetitionFields());
   }
 
+  function nativeCompetitionFormValues() {
+    const fields = editCompetitionFields();
+    const values = {};
+    for (const key of ["name", "date", "endDate", "location", "city", "address", "organizer", "organizerEmail", "teamLeadersWhatsAppUrl", "publicDescription", "waterBodyType", "computerEmail", "officialsManagerEmail", "poolLength", "timingType", "entryStatus"]) values[key] = fields[key]?.value || "";
+    values.canceled = fields.canceled?.checked === true;
+    values.officialsRequired = fields.officialsRequired?.value === "true";
+    values.poolLaneCount = Number(fields.poolLaneCount?.value || 0);
+    values.maxEventsPerSwimmer = Number(fields.maxEvents?.value || 0);
+    const deadline = fields.deadline?.value || "";
+    values.entryDeadlineLocal = deadline ? `${deadline.replace("T", " ")}${deadline.length === 16 ? ":00" : ""}` : "";
+    values.fees = selectedEngagementFeesFromForm();
+    return values;
+  }
+
+  function nativeCompetitionPatchFromForm() {
+    if (!nativeCompetitionEditBaseline) throw new Error("Rechargez la fiche avant de la modifier.");
+    return Object.fromEntries(Object.entries(nativeCompetitionFormValues()).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(nativeCompetitionEditBaseline[key])));
+  }
+
+  async function saveNativeCompetitionDetail(options = {}) {
+    const button = elements.engagementsSaveButton;
+    try {
+      const patch = nativeCompetitionPatchFromForm();
+      if (!Object.keys(patch).length) {
+        if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Aucune modification à enregistrer.";
+        return false;
+      }
+      if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
+      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? L’envoi des courriels est encore en cours de raccordement : cette ouverture n’enverra pas de courriel aux clubs.")) return false;
+      if (button) button.disabled = true;
+      if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
+      const result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch });
+      selectedEngagementCompetition = result.competition;
+      nativeCompetitionEditBaseline = null;
+      invalidateEngagementCalendarCaches();
+      await loadEngagementCompetitions({ force:true });
+      upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition");
+      renderEngagementCompetitionDetail(selectedEngagementCompetition);
+      clearEngagementDetailTabDirty();
+      if (options.continueEditing === true) setEngagementEditMode(true);
+      if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Modifications enregistrées dans NAP."; elements.engagementsDetailStatus.dataset.tone = "ok"; }
+      return true;
+    } catch (error) {
+      if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = `Enregistrement impossible : ${error?.message || error}`; elements.engagementsDetailStatus.dataset.tone = "error"; }
+      return false;
+    } finally { if (button) button.disabled = false; }
+  }
+
   function engagementOpeningDeadlineError(payload = {}, nowMs = Date.now()) {
     if (payload.entryStatus !== "open") return "";
     if (payload.publicationStatus !== "published") {
@@ -15317,6 +15380,7 @@
   async function saveEngagementCompetitionDetail(event, options = {}) {
     event?.preventDefault?.();
     if (!engagementDetailEditing || !selectedEngagementCompetition?.id || !canEditEngagementCompetition()) return false;
+    if (selectedEngagementCompetition.napSource === true) return saveNativeCompetitionDetail(options);
     if (elements.engagementsEditForm && !elements.engagementsEditForm.checkValidity()) {
       setEngagementsDetailTab("general");
       elements.engagementsEditForm.reportValidity();

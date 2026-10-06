@@ -233,6 +233,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : request.query.action === "engagement-contract" ? await require("./nap-engagement-contract").inspectEngagementContract(napPool)
         : request.query.action === "portal-competition-contract" ? await require("./nap-portal-competitions").inspectNativeCompetitions(napPool)
         : request.query.action === "portal-entry-contract" ? await require("./nap-portal-entries").inspectNativeClubEntry(napPool)
+        : request.query.action === "portal-competition-write-plans" ? await require("./nap-competition-write-plans").inspectCompetitionWritePlans(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
         : request.query.action === "source-inventory" ? await require("./nap-source-inventory").inspectSourceInventory(napPool)
         : request.query.action === "schema" ? await readSourceSchema(napPool)
@@ -16505,11 +16506,30 @@ exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
   };
 });
 
-exports.updateEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const nativeChange = require("./nap-portal-competition-change");
+    const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const authorize = event => assertCanModifyEngagementEvent(context,event);
+    try {
+      const result = await nativeChange.applyCompetitionChange(pool, {
+        competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch:request.data?.patch
+      }, {
+        read:async operation => { const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
+        prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target) => writeAuditLogOnce("nap.competition.changed",context.uid,target,operation)
+      },authorize);
+      const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
+      return {...result,competition:{...competition,regionalPastReadOnly:!context.national && engagementEventIsPast(competition)}};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
+    }
   }
   const docRef = db.collection("engagementCompetitions").doc(competitionId);
   const snapshot = await docRef.get();
