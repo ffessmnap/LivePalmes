@@ -261,6 +261,6 @@ PR #105 integree pour preparer l'export prive et les fichiers compatibles. Backe
 
 - Suite migration NAP : PR #106 integree au commit cb17adbc6cf0edafca09bbb71799a63986f4d7f8 ; backend TEST 37386048548 reussi. Export prive refuse sans authentification (HTTP 403). Audit 37420371570 reussi techniquement, mais comparaison non prete pour bascule : 3290 lignes sans correspondance exacte, 32286 avec metadonnees differentes, quelques anciens liens a reprendre. Diagnostic approfondi en cours ; aucune page habituelle basculee et aucune ecriture NAP.
 
-### Bascule TOP et fiches nageurs sur NAP TEST — 6 octobre 2026
+### Correction de la cible NAP directe — 6 octobre 2026
 
-Antoine confirme que NAP seule fait foi, abandon de la comparaison et des anciennes performances LivePalmes. Licences differees explicitement : 7931 associations locales trouvees, non publiees. Branchement des deux pages existantes sur une version immuable NAP TEST en cours. Publication des fichiers puis Hosting, verification reelle avant de declarer les pages operationnelles. Aucun changement PROD ni ecriture MySQL. Les autres modules restent a migrer.
+Antoine precise une lecture directe NAP, sans export a relancer. Run de publication statique 37429288547 annule ; aucun Hosting TEST active sur cette source. Retrait du branchement statique de la PR #108 et preparation d'une API de lecture directe, paginee/indexee. Les pages habituelles restent sur la publication TEST precedente en attendant ce branchement. Licences differees ; PROD inchangee.
