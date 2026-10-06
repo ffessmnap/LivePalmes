@@ -26,15 +26,20 @@ function validate(metadata) {
   })) throw new TypeError("Index incompatibles.");
   return true;
 }
+async function inspectPeopleSchema(connection) {
+  const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
+  const metadata={
+    tables:await query("SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 2",[table]),
+    columns:await query("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION LIMIT 12",[table]),
+    indexes:await query("SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,NON_UNIQUE,SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 6",[table])
+  };
+  validate(metadata);return metadata;
+}
 async function approvedPeopleSchema(pool,input) {
   if(input?.confirmation!=="nap-create-club-people-options" || !["prepare","apply"].includes(input.phase)) throw new TypeError("Confirmation invalide.");
   const connection=await pool.getConnection(); let locked=false;
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
-  const inspect=async()=>({
-    tables:await query("SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 2",[table]),
-    columns:await query("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION LIMIT 12",[table]),
-    indexes:await query("SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,NON_UNIQUE,SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 6",[table])
-  });
+  const inspect=()=>inspectPeopleSchema(connection);
   try {
     if(input.phase==="apply") {
       if(input.planHash!==planHash) throw new TypeError("Plan non confirme.");
@@ -56,4 +61,4 @@ async function approvedPeopleSchema(pool,input) {
     finally {connection.release();}
   }
 }
-module.exports={table,columns,sql,planHash,validate,approvedPeopleSchema};
+module.exports={table,columns,sql,planHash,validate,inspectPeopleSchema,approvedPeopleSchema};
