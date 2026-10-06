@@ -85,6 +85,11 @@ const effects = {"functions/settings.js": {source: 'configure(); module.exports=
 const effectBefore = fingerprints(effectSource, "deps", effects);
 const effectAfter = fingerprints(effectSource, "deps", {"functions/settings.js": {source: 'configure(2); module.exports={};'}});
 assert.deepEqual(Object.keys(effectBefore.functions).filter(n=>effectBefore.functions[n]!==effectAfter.functions[n]).sort(), ["one","three","two"]);
+for (const initialization of ['function Set(){configure();} const values=new Set([]);', 'const values=new Set(externalIterable);']) {
+  const before = fingerprints(effectSource, 'deps', {'functions/settings.js': {source: initialization+' module.exports={};'}});
+  const after = fingerprints(effectSource, 'deps', {'functions/settings.js': {source: initialization+' module.exports={}; // changed'}});
+  assert.deepEqual(Object.keys(before.functions).filter(n=>before.functions[n]!==after.functions[n]).sort(), ['one','three','two']);
+}
 assert.throws(()=>fingerprints(conditional, "deps", {"functions/nap-reader.js":modules["functions/nap-reader.js"]}), /non resolu/);
 const unrelatedCondition = conditional.replace('ENVIRONMENT.projectId === "livepalmes-test"', 'isTest()');
 assert.equal(fingerprints(unrelatedCondition, "deps", modules).mode, "whole-backend");
