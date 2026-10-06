@@ -8,7 +8,7 @@ const pool = {};
 const event = { id: "legacy-nap-5140", date: "2026-10-11", competitionType: "pool", level: "regional", regionId: "PACA", nationalManagementOnly: false };
 let management = { national: true, uid: "admin" };
 let past=false;
-const context = { clubId: "00123", clubName: "Club" };
+const context = { uid: "club-admin", clubId: "00123", clubName: "Club" };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
   onCall: (_, callback) => callback, HttpsError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
@@ -23,6 +23,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   engagementEventIsPast: () => past, ageCategoryFromDates: () => "M30+", portalReadStats: () => ({}),
   assertCanModifyEngagementEvent:(actor,item)=>{sandbox.assertCanManageEngagementCompetition(actor,item);if(past && !actor.national) throw new HttpsError("failed-precondition","Past event");},
   writeAuditLogOnce:async()=>calls.push("audit-complete"),
+  assertEngagementClubWriteOpen:()=>calls.push("open-check"),
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup")})}; } },
   require: name => {
     if (name === "./nap-portal-swimmers") return { portalPool: () => pool };
@@ -32,7 +33,8 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
     };
     if (name === "./nap-portal-workspaces") return { listItem: item => ({ ...item, napSource: true }), competitionItem: pack => ({ ...pack.event, napSource: true }),
       readDocuments: async () => { calls.push("documents"); return []; }, entryItem: pack => ({ source: "nap", clubId: pack.clubId }) };
-    if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return input; } };
+    if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return {...input,leaders:[{id:51}]}; } };
+    if (name === "./nap-team-leader-change") return {editNativeTeamLeader:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(event);await audit.prepare("operation",{});calls.push("leader-edit");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-portal-competition-change") return {applyCompetitionChange:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("write");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-course-removal") return {removeNativeCourse:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("course-removal");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     throw new Error(`Unexpected module ${name}`);
@@ -40,7 +42,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
 vm.createContext(sandbox);
 const helperStart = source.indexOf("async function nativePortalCalendarItems(");
 vm.runInContext(source.slice(helperStart, source.indexOf("exports.listEngagementCompetitions", helperStart)), sandbox);
-for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents", "getEngagementCompetition", "getEngagementCalendarEvent", "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "createEngagementCompetition", "createEngagementCalendarEvent", "updateEngagementCompetition"]) {
+for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents", "getEngagementCompetition", "getEngagementCalendarEvent", "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "createEngagementCompetition", "createEngagementCalendarEvent", "updateEngagementCompetition", "saveEngagementClubTeamLeader"]) {
   const start = source.indexOf(`exports.${name} =`);
   const end = source.indexOf("\nexports.", start + 1);
   vm.runInContext(source.slice(start, end), sandbox);
@@ -59,6 +61,10 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   const entry = await sandbox.exports.getEngagementClubEntry({ data: { competitionId: event.id, clubId: "999" } });
   assert.equal(entry.entry.clubId, "00123", "Caller cannot choose another club dossier");
   assert.equal(entry.sqlBudget.queriesMax, 23);
+  calls.length=0;
+  const leader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,clubId:"999",actorUid:"spoof",leaderId:51,patch:{firstName:"Chef",lastName:"Native",birthDate:"1980-01-02"}}});
+  assert.equal(leader.competition.nativeTeamLeaderEditable,true);
+  assert.deepEqual(calls,["open-check","audit-backup","leader-edit","audit-complete","detail","documents","entry"]);
   const preload = await sandbox.exports.preloadEngagementClubWorkspaces({ data: { competitionIds: [event.id] } });
   assert.equal(preload.workspaces.length, 0);
   for (const name of ["createEngagementCompetition", "createEngagementCalendarEvent"]) await assert.rejects(sandbox.exports[name]({ data: {} }), error => error.code === "failed-precondition");

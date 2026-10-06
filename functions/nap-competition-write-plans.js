@@ -4,6 +4,7 @@ const native=require("./nap-portal-competitions");
 const {SPECS,buildStatement}=require("./nap-portal-competition-change");
 const schema=require("./nap-approved-portal-schema");
 const {buildRemovalStatement}=require("./nap-course-removal");
+const {buildLeaderUpdate,COLUMNS:LEADER_COLUMNS}=require("./nap-team-leader-change");
 function indexedPlanRow(row,item,index) {
   // INSERT destination metadata is not a read of the destination table.
   if(index===0 && !item.before && row.table===item.table && row.selectType==="INSERT" && row.type==="ALL" && !row.key && (row.rows===null || row.rows===0)) return true;
@@ -32,10 +33,15 @@ async function inspectCompetitionWritePlans(pool) {
       const before={id:row.id,compet:5140,pos:row.pos,id_course:row.id_course,opencourse:row.opencourse,cost:row.cost,limitnageur:row.limitnageur};
       for(const national of [false,true]) examples.push({table:"compet_courses",before,removal:true,national});
     }
+    const leaderSql=`SELECT ${LEADER_COLUMNS.map(key=>`\`${key}\``).join(",")} FROM chefsdequipe FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 1`;
+    const [leaderPlan]=await connection.execute({sql:`EXPLAIN ${leaderSql}`,timeout:10000},[5140]);
+    if(!leaderPlan.length || leaderPlan.some(row=>row.type==="ALL" || !row.key)) throw new TypeError("Lecture chef d'equipe non indexee.");
+    const [leaders]=await connection.execute({sql:leaderSql,timeout:10000},[5140]);
+    if(leaders.length) examples.push({table:"chefsdequipe",before:leaders[0],after:{...leaders[0],nom:"EXPLAIN only"},leader:true});
     const plans=[],errors=[];
     for(const item of examples) {
       try {
-        const statement=item.removal ? buildRemovalStatement(item.before,authority,item.national) : buildStatement(item,authority);
+        const statement=item.leader ? buildLeaderUpdate(item,authority,"2099-10-07T19:59:00.000Z") : item.removal ? buildRemovalStatement(item.before,authority,item.national) : buildStatement(item,authority);
         const [rows]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
         if(!rows.length || rows.length>20) throw new RangeError("Plan de controle invalide.");
         const plan=rows.map(row=>({table:row.table ?? null,selectType:row.select_type ?? null,type:row.type ?? null,key:row.key ?? null,rows:row.rows==null ? null : Number(row.rows),extra:row.Extra || ""}));

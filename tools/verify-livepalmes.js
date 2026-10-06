@@ -61,6 +61,8 @@ function runUnitTests() {
     "nap-portal-competitions-tests.js",
     "nap-portal-competition-change-tests.js",
     "nap-course-removal-tests.js",
+    "nap-team-leader-change-tests.js",
+    "nap-team-leader-ui-tests.js",
     "nap-portal-competition-edit-ui-tests.js",
     "nap-program-validation-tests.js",
     "nap-course-document-contract-tests.js",

@@ -10574,7 +10574,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1 }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
   }
@@ -11853,11 +11853,30 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
   return null;
 });
 
-exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const result = await require("./nap-team-leader-change").editNativeTeamLeader(pool, {
+        competitionId, clubId: String(context.clubId), actorUid: context.uid,
+        leaderId: request.data?.leaderId, expectedFingerprint: request.data?.expectedFingerprint, patch: request.data?.patch
+      }, {
+        read: async operation => { const snapshot = await db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
+        prepare: (operation, target) => db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).create({ action: "nap.teamLeader.change.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
+        complete: (operation, target) => writeAuditLogOnce("engagementClubEntry.teamLeaderSaved", context.uid, target, operation)
+      }, event => assertEngagementClubWriteOpen(event));
+      const competition = await nativePortalCompetition(competitionId, () => {});
+      const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, () => {});
+      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1 }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)) };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Modification NAP a verifier. Reprenez la meme correction ; la sauvegarde est conservee.");
+    }
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
@@ -11960,6 +11979,7 @@ exports.saveEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) 
 
 exports.removeEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Le retrait du chef d'equipe NAP est encore en cours de raccordement. Aucun ancien dossier LivePalmes ne sera supprime.");
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");

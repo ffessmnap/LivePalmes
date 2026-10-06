@@ -99,14 +99,16 @@ function fixture(settings={}) {
     let explains=0,released=0;
     native.readNativeCompetition=async()=>pack;
     const plans=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async({sql},values)=>{
+      if(sql.startsWith("EXPLAIN SELECT")) return [[{table:"chefsdequipe",type:"ref",key:"livepalmes_compet_id",rows:1}]];
+      if(sql.startsWith("SELECT")) return [[{id:51,compet:5140,nom:"Chef",prenom:"Native",date:"1980-01-02",club:"123",pourclub:"0"}]];
       assert.ok(sql.startsWith("EXPLAIN UPDATE") || sql.startsWith("EXPLAIN INSERT") || sql.startsWith("EXPLAIN DELETE"));
       assert.equal((sql.match(/\?/g)||[]).length,values.length);
       explains++;return [[{table:"scope_c",type:"const",key:"PRIMARY",rows:1,Extra:""}]];
     }})});
-    assert.equal(explains,8);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
+    assert.equal(explains,9);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
     assert.ok(!JSON.stringify(plans).includes("Antibes"));
-    const rejected=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async()=>[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})});
-    assert.equal(rejected.complete,false);assert.equal(rejected.errors.length,8);assert.equal(rejected.plans.length,8);assert.ok(rejected.errors.every(error=>error.reason==="non-indexed"));
+    const rejected=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async({sql})=>sql.startsWith("EXPLAIN SELECT")?[[{table:"chefsdequipe",type:"ref",key:"livepalmes_compet_id",rows:1}]]:sql.startsWith("SELECT")?[[{id:51,compet:5140,nom:"Chef",prenom:"Native",date:"1980-01-02",club:"123",pourclub:"0"}]]:[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})});
+    assert.equal(rejected.complete,false);assert.equal(rejected.errors.length,9);assert.equal(rejected.plans.length,9);assert.ok(rejected.errors.every(error=>error.reason==="non-indexed"));
     native.readNativeCompetition=async()=>{throw Object.assign(new Error("Do not expose private SQL values"),{code:"ER_BAD_FIELD_ERROR"});};
     const readerFailure=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++})});
     assert.equal(readerFailure.errors[0].reason,"column");assert.equal(readerFailure.complete,false);assert.ok(!JSON.stringify(readerFailure).includes("private SQL"));
