@@ -1,0 +1,64 @@
+name: Corriger le nom NAP 912 explicitement autorise
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      confirmation:
+        description: nap-correct-swimmer-912-fauvau, apres accord specifique
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: nap-authorized-swimmer-correction
+  cancel-in-progress: false
+jobs:
+  correct:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      NAP_CORRECTION_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verifier le commit et l'accord limite
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$NAP_CORRECTION_CONFIRMATION" = "nap-correct-swimmer-912-fauvau"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Sauvegarder avant toute correction
+        run: node tools/correct-nap-swimmer-912.js
+        env:
+          NAP_CORRECTION_PHASE: prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nap-swimmer-912-before
+          path: outputs/nap-swimmer-912-before.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Corriger uniquement le nom et verifier
+        run: node tools/correct-nap-swimmer-912.js
+        env:
+          NAP_CORRECTION_PHASE: apply
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nap-swimmer-912-proof
+          path: outputs/nap-swimmer-912-result.json
+          if-no-files-found: ignore
+          retention-days: 90
