@@ -10,6 +10,17 @@ const sandbox={nativeCompetitionEditBaseline:null,selectedEngagementCompetition:
 vm.createContext(sandbox);
 const start=source.indexOf("  function nativeCompetitionFormValues("),end=source.indexOf("\n  function ",source.indexOf("  async function saveNativeCompetitionDetail(",start)+10);
 vm.runInContext(source.slice(start,end),sandbox);
+const genderSandbox={selectedEngagementCompetition:{napSource:true,events:[{code:"50BI",type:"individual",nativeCourses:[{sexe:"F"}]}]},engagementEventDefinition:()=>({}),ENGAGEMENT_PROGRAM_GENDER_MODES:[["female","Femmes"],["male","Hommes"],["mixed","Ensemble"]],engagementProgramGenderModeDisplayLabel:mode=>mode};
+vm.createContext(genderSandbox);
+const genderStart=source.indexOf("  function engagementProgramGenderModesForEvent("),genderEnd=source.indexOf("  function engagementProgramGenderModeShortLabel(",genderStart);
+vm.runInContext(source.slice(genderStart,genderEnd),genderSandbox);
+assert.deepEqual(Array.from(genderSandbox.engagementProgramGenderModesForEvent("50BI"),row=>row[0]),["female"]);
+genderSandbox.selectedEngagementCompetition.events[0].nativeCourses.push({sexe:"M"});
+assert.deepEqual(Array.from(genderSandbox.engagementProgramGenderModesForEvent("50BI"),row=>row[0]),["female","male","mixed"]);
+genderSandbox.selectedEngagementCompetition.events=[{code:"4X100BI",type:"relay",nativeCourses:[{sexe:"0"}]}];
+assert.deepEqual(Array.from(genderSandbox.engagementProgramGenderModesForEvent("4X100BI"),row=>row[0]),["mixed"]);
+genderSandbox.selectedEngagementCompetition.napSource=false;
+assert.equal(genderSandbox.engagementProgramGenderModesForEvent("50BI").length,3);
 (async()=>{
   sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();
   assert.equal(sandbox.nativeCompetitionEditBaseline.entryDeadlineLocal,"2026-10-07 21:59:17");
