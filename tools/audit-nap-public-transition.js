@@ -31,8 +31,10 @@ function profiles(directory) {
 function compare(previous, candidate) {
   const nextIdentities = new Map(candidate.swimmers.map(person => [identity(person), person]));
   const nextRows = new Map();
+  const nextIds = new Set();
   for (const person of candidate.swimmers) {
     for (const row of person.rows) {
+      nextIds.add(String(row.id));
       const key = core(row, person);
       if (!nextRows.has(key)) nextRows.set(key, new Map());
       const metas = nextRows.get(key);
@@ -44,6 +46,8 @@ function compare(previous, candidate) {
     previousRows: 0, napRows: candidate.swimmers.reduce((sum, p) => sum + p.rows.length, 0), missingRows: 0, metadataChangedRows: 0,
     missingIdentities: 0, missingLinks: 0, conflictingLinks: 0, recoverableLinks: 0 };
   const samples = [];
+  const diagnostics = { missingByReason: {}, missingByYear: {}, missingBySource: {}, missingByCompetition: {}, metadataByField: {}, metadataTransitions: {}, links: [] };
+  const increment = (group, key) => { group[key] = (group[key] || 0) + 1; };
   const deferred = [];
   const remaining = new Map([...nextRows].map(([key, metas]) => [key, new Map(metas)]));
   for (const person of previous.swimmers) {
@@ -60,24 +64,46 @@ function compare(previous, candidate) {
   for (const { person, row } of deferred) {
       const metas = remaining.get(core(row, person));
       const other = metas && [...metas].find(([, count]) => count > 0);
-      if (other) { counts.metadataChangedRows++; metas.set(other[0], other[1] - 1); }
-      else counts.missingRows++;
-      if (samples.length < 30) samples.push({ kind: other ? "metadata-changed" : "missing", swimmerId: String(person.id),
-        performanceId: String(row.id), date: row.date, course: row.course, time: row.time, pool: row.pool });
+      const differences = {};
+      if (other) {
+        counts.metadataChangedRows++; metas.set(other[0], other[1] - 1);
+        const before = JSON.parse(metadata(row));
+        const after = JSON.parse(other[0]);
+        META.forEach((field, index) => {
+          if (before[index] === after[index]) return;
+          increment(diagnostics.metadataByField, field);
+          differences[field] = { before: before[index], after: after[index] };
+          if (["pool", "chrono", "categoryCode"].includes(field)) increment(diagnostics.metadataTransitions, `${field}:${before[index]}=>${after[index]}`);
+        });
+      } else {
+        counts.missingRows++;
+        const reason = !nextIdentities.has(identity(person)) ? "identity-absent" : nextIds.has(String(row.id)) ? "same-id-present" : "id-absent";
+        increment(diagnostics.missingByReason, reason);
+        increment(diagnostics.missingByYear, String(row.date || "unknown").slice(0, 4));
+        increment(diagnostics.missingBySource, String(row.source || "unknown"));
+        increment(diagnostics.missingByCompetition, String(row.competitionId || "unknown"));
+      }
+      const kind = other ? "metadata-changed" : "missing";
+      if (samples.filter(sample => sample.kind === kind).length < 30) samples.push({ kind, swimmerId: String(person.id),
+        performanceId: String(row.id), competitionId: String(row.competitionId || ""), date: row.date, course: row.course, time: row.time, pool: row.pool,
+        ...(other ? { differences } : {}) });
   }
   const aliases = [];
   for (const [id, previousPerson] of previous.ids) {
     const next = candidate.ids.get(id);
     const key = identity(previousPerson);
-    if (next && identity(next) !== key) counts.conflictingLinks++;
+    if (next && identity(next) !== key) {
+      counts.conflictingLinks++;
+      diagnostics.links.push({ kind: "conflict", oldId: id, targetId: String(next.id) });
+    }
     else if (!next) {
       const target = nextIdentities.get(key);
       if (target) { counts.recoverableLinks++; aliases.push({ oldId: id, targetId: String(target.id), identityKey: target.identityKey, sex: target.sex }); }
-      else counts.missingLinks++;
+      else { counts.missingLinks++; diagnostics.links.push({ kind: "missing", oldId: id }); }
     }
   }
   return { source: "nap", project: "livepalmes-test", ready: !counts.missingRows && !counts.metadataChangedRows &&
-    !counts.missingIdentities && !counts.missingLinks && !counts.conflictingLinks && !counts.recoverableLinks, counts, samples, aliases };
+    !counts.missingIdentities && !counts.missingLinks && !counts.conflictingLinks && !counts.recoverableLinks, counts, samples, diagnostics, aliases };
 }
 
 function main() {
