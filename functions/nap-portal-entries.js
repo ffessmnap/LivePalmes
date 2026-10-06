@@ -51,7 +51,8 @@ async function inspectNativeClubEntry(connection) {
     const [plan] = await connection.execute({sql:`EXPLAIN ${query.sql}`,timeout:10000}, values);
     const safe = plan.map(({table,type,key,rows,Extra}) => ({table,type,key,rows,Extra}));
     plans.push(safe);
-    if (!plan.length || plan.some(row => !String(row.table).startsWith("<") && !["system","const"].includes(row.type) && !(row.rows != null && Number(row.rows) === 0) && (row.type === "ALL" || !row.key))) throw Object.assign(new Error("non-indexed-native-entry"),{code:"NAP_NON_INDEXED"});
+    const provenEmpty = row => row.table == null && row.type == null && /^(?:Impossible WHERE(?: noticed after reading const tables)?|no matching row in const table)$/i.test(String(row.Extra || ""));
+    if (!plan.length || plan.some(row => !provenEmpty(row) && !String(row.table).startsWith("<") && !["system","const"].includes(row.type) && !(row.rows != null && Number(row.rows) === 0) && (row.type === "ALL" || !row.key))) throw Object.assign(new Error("non-indexed-native-entry"),{code:"NAP_NON_INDEXED"});
     return connection.execute(query, values);
   } };
   try {
