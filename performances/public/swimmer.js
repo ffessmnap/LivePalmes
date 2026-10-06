@@ -7,6 +7,7 @@
   const params = new URLSearchParams(global.location.search);
   const usesNapDirectData = global.LivePalmesEnvironment.isTest === true;
   const napReaderUrl = "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer";
+  let napSearchTimer;
   async function readNap(parameters) {
     const url = new URL(napReaderUrl);
     Object.entries(parameters).forEach(([key, value]) => url.searchParams.set(key, String(value)));
@@ -809,6 +810,7 @@
   }
 
   function clearSwimmerSearch() {
+    clearTimeout(napSearchTimer);
     swimmerSearchRequestId += 1;
     swimmerSearchMatches = [];
     selectedSwimmer = null;
@@ -1273,6 +1275,7 @@
 
     const related = relatedSwimmers(swimmer);
     const basePerfs = await loadPerformanceBaseRowsForSwimmer(swimmer, related);
+    if (selectedSwimmer !== swimmer) return;
     selectedPerfs = uniquePerformanceRows(basePerfs)
       .sort((a, b) => String(b.date).localeCompare(a.date) || compareCourse(a, b));
     updateFilters(selectedPerfs);
@@ -1300,7 +1303,13 @@
         resetFilters();
         render();
       }
-      searchSwimmers();
+      if (usesNapDirectData) {
+        clearTimeout(napSearchTimer);
+        swimmerSearchRequestId += 1;
+        swimmerSearchMatches = [];
+        elements.suggestions.innerHTML = "";
+        if (normalize(elements.search.value).length >= 2) napSearchTimer = setTimeout(searchSwimmers, 250);
+      } else searchSwimmers();
     });
 
     elements.clearSearch?.addEventListener("click", clearSwimmerSearch);
