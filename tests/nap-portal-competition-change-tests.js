@@ -84,7 +84,14 @@ function fixture(settings={}) {
     state.failInsert=false; await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.equal(state.completed,1);assert.equal(state.writes.length,2);
     assert.equal(state.tables.get("competitions").libelle,pack.nativeSnapshot.competition.libelle);
     assert.equal(state.tables.get("compet_parametres").saisie,0);
-    const {inspectCompetitionWritePlans}=require("../functions/nap-competition-write-plans");
+    const {inspectCompetitionWritePlans,indexedPlanRow}=require("../functions/nap-competition-write-plans");
+    const destination={table:"livepalmes_competition_options",selectType:"INSERT",type:"ALL",key:null,rows:0};
+    const insert={table:destination.table,before:null};
+    assert.equal(indexedPlanRow(destination,insert,0),true);
+    assert.equal(indexedPlanRow({...destination,rows:null},insert,0),true);
+    for(const row of [{...destination,table:"scope_c"},{...destination,rows:1},{...destination,selectType:"SIMPLE"}]) assert.equal(indexedPlanRow(row,insert,0),false);
+    assert.equal(indexedPlanRow(destination,{...insert,before:{}},0),false);
+    assert.equal(indexedPlanRow(destination,insert,1),false);
     let explains=0,released=0;
     native.readNativeCompetition=async()=>pack;
     const plans=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async({sql},values)=>{

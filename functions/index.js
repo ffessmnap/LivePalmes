@@ -234,6 +234,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : request.query.action === "portal-competition-contract" ? await require("./nap-portal-competitions").inspectNativeCompetitions(napPool)
         : request.query.action === "portal-entry-contract" ? await require("./nap-portal-entries").inspectNativeClubEntry(napPool)
         : request.query.action === "portal-competition-write-plans" ? await require("./nap-competition-write-plans").inspectCompetitionWritePlans(napPool)
+        : request.query.action === "portal-course-document-contract" ? await require("./nap-course-document-contract").inspectCourseDocumentContract(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
         : request.query.action === "source-inventory" ? await require("./nap-source-inventory").inspectSourceInventory(napPool)
         : request.query.action === "schema" ? await readSourceSchema(napPool)
