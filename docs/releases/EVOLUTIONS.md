@@ -260,3 +260,7 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 PR #105 integree pour preparer l'export prive et les fichiers compatibles. Backend 37382627387 arrete avant activation : declaration indentee absente du classement statique. Correctif et comparaison des historiques/liens en cours ; aucune page habituelle basculee. Lecture NAP sur la page de verification validee par Antoine, validation des pages publiques encore a faire. Hors PROD.
 
 - Suite migration NAP : PR #106 integree au commit cb17adbc6cf0edafca09bbb71799a63986f4d7f8 ; backend TEST 37386048548 reussi. Export prive refuse sans authentification (HTTP 403). Audit 37420371570 reussi techniquement, mais comparaison non prete pour bascule : 3290 lignes sans correspondance exacte, 32286 avec metadonnees differentes, quelques anciens liens a reprendre. Diagnostic approfondi en cours ; aucune page habituelle basculee et aucune ecriture NAP.
+
+### Bascule TOP et fiches nageurs sur NAP TEST — 6 octobre 2026
+
+Antoine confirme que NAP seule fait foi, abandon de la comparaison et des anciennes performances LivePalmes. Licences differees explicitement : 7931 associations locales trouvees, non publiees. Branchement des deux pages existantes sur une version immuable NAP TEST en cours. Publication des fichiers puis Hosting, verification reelle avant de declarer les pages operationnelles. Aucun changement PROD ni ecriture MySQL. Les autres modules restent a migrer.

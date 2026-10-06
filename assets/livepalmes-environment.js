@@ -19,6 +19,7 @@
       hostingOrigin: "https://livepalmes.web.app",
       authOrigin: "https://livepalmes.firebaseapp.com",
       publicBucket: "livepalmes-public-data-718081132564",
+      performancePublicPath: "performance-public-firestore",
       legacyAdminUids: ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]
     },
     test: {
@@ -36,6 +37,7 @@
       hostingOrigin: "https://livepalmes-test.web.app",
       authOrigin: "https://livepalmes-test.firebaseapp.com",
       publicBucket: "livepalmes-test-public-data-206080168534",
+      performancePublicPath: "performance-public-nap/versions/20261006-v1",
       legacyAdminUids: []
     }
   };

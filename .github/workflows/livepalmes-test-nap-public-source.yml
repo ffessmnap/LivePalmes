@@ -1,5 +1,5 @@
 name: Preparer la source publique NAP sur TEST
-run-name: Audit source NAP TEST sans publication
+run-name: ${{ inputs.publish && 'Publier les fichiers NAP TEST' || 'Verifier la source NAP TEST' }}
 'on':
   workflow_dispatch:
     inputs:
@@ -8,9 +8,13 @@ run-name: Audit source NAP TEST sans publication
         required: true
         type: string
       confirmation:
-        description: Saisir livepalmes-test-nap-readonly
+        description: Saisir livepalmes-test-nap-publish pour publier, sinon livepalmes-test-nap-readonly
         required: true
         type: string
+      publish:
+        description: Publier la version NAP immuable sur TEST apres construction verifiee
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -33,8 +37,9 @@ jobs:
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
           CONFIRMATION: ${{ inputs.confirmation }}
+          PUBLISH: ${{ inputs.publish }}
         run: |
-          test "$CONFIRMATION" = livepalmes-test-nap-readonly
+          if test "$PUBLISH" = true; then test "$CONFIRMATION" = livepalmes-test-nap-publish; else test "$CONFIRMATION" = livepalmes-test-nap-readonly; fi
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
       - uses: actions/setup-node@v7
         with:
@@ -46,6 +51,7 @@ jobs:
         run: |
           node tests/nap-public-export-tests.js
           node tests/nap-public-pipeline-tests.js
+          node tests/nap-public-publication-tests.js
       - uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
@@ -55,17 +61,17 @@ jobs:
         run: node tools/export-nap-public-source.js outputs/nap-public-source
       - name: Construire et verifier les fichiers des pages existantes
         run: node tools/build-nap-public-files.js outputs/nap-public-source outputs/nap-public-candidate
-      - name: Capturer la publication TEST actuelle en lecture seule
-        run: node tools/capture-test-public-performance-reference.js outputs/nap-transition-reference
-      - name: Comparer les historiques et les liens avant toute bascule
-        run: node tools/audit-nap-public-transition.js outputs/nap-transition-reference outputs/nap-public-candidate/public outputs/nap-transition-report.json
+      - name: Publier la version NAP sur le seul bucket TEST
+        if: inputs.publish
+        env:
+          NAP_PUBLICATION_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node tools/publish-nap-public-test.js outputs/nap-public-candidate/public
       - uses: actions/upload-artifact@v4
         with:
           name: nap-public-source-proof
           path: |
             outputs/nap-public-source/export-proof.json
             outputs/nap-public-candidate/public/manifest.json
-            outputs/nap-transition-report.json
-            outputs/nap-transition-reference/reference-proof.json
+            outputs/nap-publication-proof.json
           if-no-files-found: error
           retention-days: 14

@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { exportSource, csvLine } = require("../tools/export-nap-public-source");
 const { buildNapPublicFiles } = require("../tools/build-nap-public-files");
+const { publicationPlan } = require("../tools/publish-nap-public-test");
 
 (async () => {
   const parent = path.resolve(__dirname, "../outputs");
@@ -36,6 +37,10 @@ const { buildNapPublicFiles } = require("../tools/build-nap-public-files");
     assert.equal(rows.some(row => String(row.id) === "2"), false);
     const manifest = JSON.parse(fs.readFileSync(path.join(built.publicDirectory, "manifest.json"), "utf8"));
     assert.equal(manifest.source, "nap");
+    assert.equal(publicationPlan(built.publicDirectory).prefix, "performance-public-nap/versions/20261006-v1");
+    fs.writeFileSync(path.join(built.publicDirectory, "licences.csv"), "private");
+    assert.throws(() => publicationPlan(built.publicDirectory), /hors publication/);
+    fs.unlinkSync(path.join(built.publicDirectory, "licences.csv"));
     const swimmerIndex = JSON.parse(fs.readFileSync(path.join(built.publicDirectory, "ids/01.json"), "utf8"));
     assert.equal(swimmerIndex["1"].firstName, "Paul");
     fs.appendFileSync(path.join(source, "source/perfs_nap.csv"), "modified");
