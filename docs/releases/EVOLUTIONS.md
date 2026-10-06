@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Portail NAP : preparation de la lecture/ecriture — 6 octobre 2026
+
+- Antoine confirme la cible de modification directe de NAP et autorise de commencer. Diagnostic prive des droits effectifs, champs obligatoires, index, moteurs et declencheurs sur huit tables fixes ; aucune donnee sportive lue ou modifiee, aucun droit ajoute. Budget de cinq requetes et plafonds documentes. Tests hors ligne passes ; diagnostic reel a effectuer apres deploiement TEST.
+- Calendrier #122 : publication commune 37457199663 reussie sur ebcc955c (Hosting e860fd25f81ffb30), lecteur NAP 37457195054 reussi. Recette commune des saisons, formations, fiche 2652 et resultats. Retour d'Antoine : « la ca semble bien fonctionner ». Le portail n'est pas encore migre et aucune ecriture metier NAP n'est activee.
+
 ### Publication TEST : sélection par fonction et dépendances NAP — 6 octobre 2026
 
 - Antoine autorise la correction du circuit après analyse des republications de 138 fonctions. Preuves vérifiées par révision, réutilisation des artefacts des lots ciblés sur main, étiquette de commit ajoutée à ces lots et raisons de sélection affichées. Une différence Hosting ou une fonction NAP extérieure au lot ordinaire ne force plus les 138 fonctions.
