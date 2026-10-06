@@ -15,6 +15,8 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.throws(() => top.filters({ ...input, course: "100SF' OR 1=1" }), TypeError);
   assert.throws(() => top.filters({ ...input, region: "1);DROP" }), TypeError);
   assert.throws(() => top.filters({ ...input, limit: 2001 }), TypeError);
+  assert.equal(top.filters({ ...input, season: "207" }).season, "207");
+  assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
   let records = [raw(1, 168, "14200"), raw(2, 168, "014200", "2019-01-01"), raw(3, 169, "10000"), raw(4, 170, "11000")];
   let reads = 0;
   const pool = { execute: async query => { reads++; return query.sql.startsWith("SELECT COUNT") ? [[{ rowCount: 100 }]] : [records]; } };
@@ -26,6 +28,14 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.equal(all.rows[2].id, "2");
   assert.equal(all.rows[2].time, "1:42.00");
   assert.equal(all.rows[2].category, "S");
+  const facetCalls = [];
+  const withFacet = await top.readDirectTop({ execute: async query => {
+    facetCalls.push(query.sql);
+    return [query.sql.startsWith("SELECT COUNT") ? [{ rowCount: 100 }] : query.sql.startsWith("SELECT YEAR") ? [{ birthYear: 1990 }, { birthYear: 0 }] : records];
+  } }, { ...input, years: "1" });
+  assert.equal(facetCalls.length, 3);
+  assert.equal(facetCalls.filter(sql => sql.startsWith("SELECT COUNT")).length, 1);
+  assert.deepEqual(withFacet.years, ["1990", "0000"]);
   records = [raw(1, 168, "14300")];
   assert.equal((await top.readDirectTop(pool, input)).rows[0].time, "1:43.00");
   await assert.rejects(top.readDirectTop({ execute: async () => [[{ rowCount: 150001 }]] }, input), RangeError);
