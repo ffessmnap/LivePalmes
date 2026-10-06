@@ -187,7 +187,8 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = request.query.action === "schema" ? await readSourceSchema(napPool)
+      const data = request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
+        : request.query.action === "schema" ? await readSourceSchema(napPool)
         : request.query.action === "inspect" ? await inspectExportSources(napPool)
           : await readExportPage(napPool, request.query);
       response.json(data);

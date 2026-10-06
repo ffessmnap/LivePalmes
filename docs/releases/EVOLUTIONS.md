@@ -264,3 +264,5 @@ PR #105 integree pour preparer l'export prive et les fichiers compatibles. Backe
 ### Correction de la cible NAP directe — 6 octobre 2026
 
 Antoine precise une lecture directe NAP, sans export a relancer. Run de publication statique 37429288547 annule ; aucun Hosting TEST active sur cette source. Retrait du branchement statique de la PR #108 et preparation d'une API de lecture directe, paginee/indexee. Les pages habituelles restent sur la publication TEST precedente en attendant ce branchement. Licences differees ; PROD inchangee.
+
+- Lecture NAP directe : retrait #109 integre, aucune bascule Hosting par exports. Diagnostic des index et plans de recherche/fiche/TOP en preparation, quatre requetes de structure ou EXPLAIN sans ecriture. Activation des pages encore a faire.
