@@ -2002,6 +2002,8 @@
     const teamLeader = entry.teamLeader || {};
     const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
     const writeLockReason = nativeLeaderEdit ? engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false }) : engagementClubWriteLockReason();
+    // The form lock includes the summary buttons: restore their states afterwards.
+    if (nativeLeaderEdit) updateEngagementClubTeamFormMode();
     const teamLeaderComplete = engagementClubTeamComplete(entry);
     const editorVisible = !teamLeaderComplete || engagementClubTeamEditing;
     if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.hidden = !editorVisible;
@@ -2032,7 +2034,6 @@
         : "Retirer le chef d'équipe et supprimer ce dossier vide.";
       if (nativeLeaderEdit) elements.engagementsClubTeamRemoveButton.title = "Le retrait du chef d'équipe NAP est encore en cours de raccordement.";
     }
-    if (nativeLeaderEdit) updateEngagementClubTeamFormMode();
   }
 
   function engagementClubWriteLockReason(competition = selectedEngagementCompetition || {}) {
