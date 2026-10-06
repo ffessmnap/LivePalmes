@@ -1,8 +1,8 @@
 "use strict";
 const assert = require("node:assert/strict");
 const { TABLES, summarizePrivileges, inspectPortalContract } = require("../functions/nap-portal-contract");
-assert.equal(TABLES.length, 20);
-for (const table of ["engagements", "engagements_relais", "engagements_relayeurs", "sessions", "qualifs", "chefsdequipe", "officielsengager"]) assert.ok(TABLES.includes(table));
+assert.equal(TABLES.length, 24);
+for (const table of ["engagements", "engagements_relais", "engagements_relayeurs", "sessions", "qualifs", "chefsdequipe", "officielsengager", "winpalme_sessions", "winpalme_courses", "winpalme_serie", "winpalme_lignes"]) assert.ok(TABLES.includes(table));
 const grants = text => [{ "Grants for private-account": text }];
 assert.equal(summarizePrivileges(grants("GRANT ALL PRIVILEGES ON `nage-palmes`.* TO 'private'@'host' IDENTIFIED BY PASSWORD 'secret'" )).nageurs.update, true);
 assert.equal(summarizePrivileges(grants("GRANT SELECT, UPDATE ON `nage-palmes`.`nageurs` TO 'private'@'host'" )).clubs.update, false);

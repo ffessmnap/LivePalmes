@@ -1,6 +1,6 @@
 "use strict";
 // Private metadata diagnostic. No sporting rows, grant text or account names leave it.
-const TABLES = ["nageurs", "clubs", "competitions", "compet_parametres", "compet_courses", "nageursengager", "perfs", "documents", "engagements", "engagements_relais", "engagements_relayeurs", "sessions", "qualifs", "qualif_types", "chefsdequipe", "officiels", "officielsengager", "forfait", "open_nageurs", "open_courses"];
+const TABLES = ["nageurs", "clubs", "competitions", "compet_parametres", "compet_courses", "nageursengager", "perfs", "documents", "engagements", "engagements_relais", "engagements_relayeurs", "sessions", "qualifs", "qualif_types", "chefsdequipe", "officiels", "officielsengager", "forfait", "open_nageurs", "open_courses", "winpalme_sessions", "winpalme_courses", "winpalme_serie", "winpalme_lignes"];
 function summarizePrivileges(grantRows) {
   const permissions = Object.fromEntries(TABLES.map(table => [table, { select: false, insert: false, update: false, delete: false }]));
   for (const row of grantRows) {
