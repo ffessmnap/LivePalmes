@@ -15,7 +15,7 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   }};
   const result = await readNativeCompetition(pool, "legacy-nap-5140", event => { assert.equal(event.legacyCompetitionId,"5140"); authorized=true; });
   assert.equal(result.options,null); assert.equal(result.fees,null); assert.equal(result.courses[0].course,"legacy unknown course"); assert.equal(result.restrictions[0].swim,0);
-  assert.equal(result.nativeParameters.saisie,1); assert.equal(result.nativeParameters.cat_d,null); assert.equal(calls.length,11);
+  assert.equal(result.nativeParameters.saisie,1); assert.equal(result.nativeParameters.cat_d,null); assert.equal(result.detailedProgram,null); assert.equal(calls.length,12);
   assert.ok(!calls.some(c=>c.sql.includes("WHERE group_id IN") || c.sql.includes("WHERE session IN")),"empty sets do not query all children");
   calls=[];
   await assert.rejects(readNativeCompetition(pool,5140,()=>{throw new Error("scope denied");}), /scope denied/); assert.equal(calls.length,1);
