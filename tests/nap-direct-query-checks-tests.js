@@ -5,10 +5,11 @@ const { QUERIES, inspectDirectQueries, inspectTimeShape } = require("../function
   const calls = [];
   const result = await inspectDirectQueries({ execute: async query => { calls.push(query); return [[{ key: "test" }]]; } });
   assert.equal(result.mode, "explain-only");
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
   assert.ok(calls.every(query => query.timeout === 10000));
   assert.ok(Object.values(QUERIES).every(sql => sql.startsWith("EXPLAIN SELECT ") && /LIMIT (21|51|101)$/.test(sql)));
-  assert.deepEqual(Object.keys(result.plans), ["search", "swimmer", "top"]);
+  assert.deepEqual(Object.keys(result.plans), ["search", "swimmer", "top", "directTop"]);
+  assert.match(calls[4].sql, /^EXPLAIN SELECT .*FORCE INDEX/);
   const shapes = [];
   await assert.rejects(inspectTimeShape({}, "0 OR 1"), TypeError);
   const shape = await inspectTimeShape({ execute: async (query, parameters) => {
