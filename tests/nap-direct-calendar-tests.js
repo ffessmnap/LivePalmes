@@ -11,6 +11,10 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   const raw = { id: 2, libelle: "Compétition", date: "2004-02-29", lieu: "Verdun", bassin: 0, chrono: "E", ld: 0, type_label: "Piscine", level_label: "Championnat de Zones", has_results: 1 };
   const mapped = calendar.eventFromRow(raw);
   assert.equal(mapped.poolLength, ""); assert.equal(mapped.level, "regional"); assert.equal(mapped.timingType, "electronic");
+  assert.equal(calendar.eventFromRow({ ...raw, libelle: "recyclage juges idf" }).eventType, "training");
+  assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage de detection" }).eventType, "stage");
+  assert.equal(calendar.eventFromRow({ ...raw, libelle: "Reunion regionale" }).eventType, "meeting");
+  assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage", ld: 1 }).eventType, "openWater");
   let queries = [];
   const pool = { execute: async (query, values) => {
     queries.push({ query, values });
@@ -32,6 +36,10 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   const result = await readCompetitionResults(resultPool, 2);
   assert.equal(result.groups[0].performances[0].time, "1:42.00");
   assert.equal(result.groups[0].performances[0].personalBest, true);
+  const missingPersonPool = { execute: async query => [query.sql.includes("COUNT(*)") ? [{ count: 0 }] : query.sql.includes("WHERE p.compet=?") ? [{ ...performance, nom: null, prenom: null }] : []] };
+  const missingPerson = (await readCompetitionResults(missingPersonPool, 2)).groups[0].performances[0];
+  assert.equal(missingPerson.swimmer, "Nageur non renseigné");
+  assert.equal(missingPerson.swimmerId, "");
   assert.equal(queries.length, 3);
   assert.deepEqual(queries[1].values, [168]);
   const changed = { execute: async (query, values) => {
