@@ -5,6 +5,17 @@
   const swimmerSearchCache = new Map();
   const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-swimmer-card-2";
   const params = new URLSearchParams(global.location.search);
+  const usesNapDirectData = global.LivePalmesEnvironment.isTest === true;
+  const napReaderUrl = "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer";
+  async function readNap(parameters) {
+    const url = new URL(napReaderUrl);
+    Object.entries(parameters).forEach(([key, value]) => url.searchParams.set(key, String(value)));
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error("Consultation des performances indisponible. Réessayez dans un instant.");
+    const payload = await response.json();
+    if (payload.source !== "nap") throw new Error("Réponse des performances invalide.");
+    return payload;
+  }
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
@@ -71,6 +82,7 @@
   }
 
   async function loadSelectedPublicManifest() {
+    if (usesNapDirectData) return;
     if (!usesFirestorePublicData) return;
     try {
       const response = await fetch(`${publicPerformanceBase}/manifest.json`, { cache: "no-store" });
@@ -523,6 +535,18 @@
   }
 
   async function loadPerformanceBaseRowsForSwimmer(swimmer, related) {
+    if (usesNapDirectData) {
+      if (Array.isArray(swimmer.napInitialRows)) {
+        const rows = swimmer.napInitialRows;
+        delete swimmer.napInitialRows;
+        return rows;
+      }
+      const payload = await readNap({ id: swimmer.id });
+      if (!payload.swimmer) return [];
+      const { rows, ...profile } = payload.swimmer;
+      Object.assign(swimmer, profile);
+      return Array.isArray(rows) ? rows : [];
+    }
     const file = swimmer?.perfFile || related.find((item) => item?.perfFile)?.perfFile || "";
     const knownIds = new Set(swimmerKnownIds(swimmer));
     const identityKey = swimmer.identityKey || swimmerIdentityKey(swimmer);
@@ -599,6 +623,10 @@
   }
 
   async function searchPerformanceBaseSwimmers(query) {
+    if (usesNapDirectData) {
+      const payload = await readNap({ action: "search", q: query });
+      return Array.isArray(payload.swimmers) ? payload.swimmers.slice(0, 10) : [];
+    }
     const cleanQuery = normalize(query);
     if (swimmerSearchCache.has(cleanQuery)) return swimmerSearchCache.get(cleanQuery);
     const tokens = cleanQuery.split(/\s+/).filter((token) => token.length >= 2);
@@ -621,6 +649,12 @@
   }
 
   async function loadPerformanceBaseSwimmerById(swimmerId) {
+    if (usesNapDirectData) {
+      const payload = await readNap({ id: swimmerId });
+      if (!payload.swimmer) return null;
+      const { rows, ...profile } = payload.swimmer;
+      return { ...profile, napInitialRows: rows };
+    }
     const index = await loadPublicSwimmerIdShard(idShardFromValue(swimmerId));
     const swimmer = index[String(swimmerId || "").trim()] || null;
     if (swimmer) return swimmer;
