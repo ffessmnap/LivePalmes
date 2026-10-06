@@ -3,7 +3,7 @@
 async function inspectSourceInventory(pool) {
   const [tables] = await pool.execute({ sql: "SELECT TABLE_NAME, ENGINE, TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME LIMIT 201", timeout: 10000 });
   if (tables.length > 200) throw new RangeError("Inventaire trop volumineux.");
-  const relevant = tables.map(row => row.TABLE_NAME).filter(name => /record|mpf|document|course|compet|categor/i.test(name));
+  const relevant = tables.map(row => row.TABLE_NAME).filter(name => ["perfs", "nageurs", "clubs"].includes(name) || /record|mpf|document|course|compet|categor/i.test(name));
   let columns = [], indexes = [];
   if (relevant.length) {
     const placeholders = relevant.map(() => "?").join(",");
