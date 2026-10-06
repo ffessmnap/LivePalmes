@@ -80,6 +80,10 @@ const localNap = fingerprints(conditional.replace("read(pool)", "read(pool)+1"),
 assert.deepEqual(Object.keys(localNap.functions).filter(n=>localNap.functions[n]!==originalModules.functions[n]), ["nap"]);
 const extraUnused = {...modules, "functions/unused.js": {source:'throw new Error("never load");'}};
 assert.deepEqual(fingerprints(conditional, "deps", extraUnused).functions, originalModules.functions);
+const importA = {...modules, 'functions/nap-leaf.js': {source:'const client=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const importB = {...modules, 'functions/nap-leaf.js': {source:'const renamed=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const externalA = fingerprints(conditional, 'deps', importA), externalB = fingerprints(conditional, 'deps', importB);
+assert.ok(Object.keys(externalA.functions).every(name=>externalA.functions[name]!==externalB.functions[name]));
 const effectSource = modular.replace('const LIMIT=2;', 'const settings=require("./settings");\nconst LIMIT=2;');
 const effects = {"functions/settings.js": {source: 'configure(); module.exports={};'}};
 const effectBefore = fingerprints(effectSource, "deps", effects);

@@ -89,6 +89,18 @@ function moduleGraph(files = {}) {
            node.expression.left.object.name === "module" && node.expression.left.property.name === "exports")) &&
         declarative(node.expression.right));
     const external = new Set();
+    for (const statement of ast.body) {
+      if (statement.type === "FunctionDeclaration") continue;
+      const roots = statement.type === "VariableDeclaration"
+        ? statement.declarations.map(d => d.init).filter(init => init && !["FunctionExpression", "ArrowFunctionExpression"].includes(init.type))
+        : [statement];
+      for (const root of roots) walk(root, node => {
+        if (node.type === "CallExpression" && node.callee.name === "require" &&
+            node.arguments.length === 1 && typeof node.arguments[0].value === "string" &&
+            !node.arguments[0].value.startsWith("."))
+          external.add(name + ":initializer:" + hash(file.source.slice(statement.start, statement.end)));
+      });
+    }
     walk(ast, node => {
       if ((node.type === "FunctionDeclaration" || node.type === "VariableDeclarator") &&
           ["Set", "Map", "require"].includes(node.id?.name)) pure = false;
