@@ -30,7 +30,13 @@ function validateExisting(metadata) {
     const actual = metadata.tables.find(t => t.TABLE_NAME === spec.name);
     if (!actual) continue;
     if (actual.ENGINE !== "InnoDB" || actual.TABLE_COLLATION !== "utf8mb4_unicode_ci") throw new Error("Table complementaire incompatible.");
-    const columns = metadata.columns.filter(c => c.TABLE_NAME === spec.name);
+    const rawColumns = metadata.columns.filter(c => c.TABLE_NAME === spec.name);
+    const closure = rawColumns.filter(c => c.COLUMN_NAME === "entry_closed");
+    if (closure.length && (spec.name !== "livepalmes_competition_options" || closure.length !== 1 ||
+        normalizeType(closure[0].COLUMN_TYPE) !== "tinyint" || closure[0].IS_NULLABLE !== "YES" ||
+        closure[0].COLUMN_DEFAULT !== null || closure[0].EXTRA)) throw new Error("Champ de fermeture incompatible.");
+    // Accept only the separately approved additive closure marker, never arbitrary extras.
+    const columns = rawColumns.filter(c => c.COLUMN_NAME !== "entry_closed");
     if (columns.length !== spec.columns.length || columns.some((c, i) => {
       const expected = spec.columns[i];
       return c.COLUMN_NAME !== expected.name || normalizeType(c.COLUMN_TYPE) !== expected.type ||

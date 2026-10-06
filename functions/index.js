@@ -213,10 +213,12 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const indexOperation = request.method === "POST" && request.query.action === "approved-index";
     const swimmerCorrection = request.method === "POST" && request.query.action === "approved-swimmer-correction";
     const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
+      const data = closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
+        : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
         : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
         read: async () => {
           const snapshot = await db.collection("auditLogs").doc("nap-swimmer-912-fauvau-before").get();
