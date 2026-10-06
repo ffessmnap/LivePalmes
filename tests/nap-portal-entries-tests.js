@@ -37,5 +37,7 @@ const { readNativeClubEntry, inspectNativeClubEntry } = require("../functions/na
   const refused = await inspectNativeClubEntry({execute:async()=>{refusedCalls++;return [[{table:"native",type:"ALL",key:null,rows:100}]];}});
   assert.equal(refused.complete,false); assert.deepEqual(refused.errors,[{queryIndex:1,reason:"non-indexed"}]);
   assert.equal(refusedCalls,1,"non-indexed plan stops before any sporting read");
+  const noEntry = await inspectNativeClubEntry({execute:async query=>query.sql.startsWith("EXPLAIN") ? [[{table:null,type:null,key:null,rows:null,Extra:"no matching row in const table"}]] : [[]]});
+  assert.equal(noEntry.complete,true); assert.equal(noEntry.present,false);
   console.log("Dossiers NAP : perimetre avant identites, lectures groupees bornees, doublons et temps bruts preserves.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
