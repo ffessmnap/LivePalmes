@@ -185,8 +185,12 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const action = request.query.action || "swimmer";
-      if (!["swimmer", "search", "top", "top-years", "top-metadata"].includes(action)) throw new TypeError("Action invalide.");
-      response.json(action === "top" ? await require("./nap-direct-tops").readDirectTop(napPool, request.query)
+      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results"].includes(action)) throw new TypeError("Action invalide.");
+      response.json(action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
+        : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year)
+        : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id)
+        : action === "competition-results" ? await require("./nap-direct-competition-results").readCompetitionResults(napPool, request.query.id)
+        : action === "top" ? await require("./nap-direct-tops").readDirectTop(napPool, request.query)
         : action === "top-years" ? await require("./nap-direct-tops").readTopBirthYears(napPool, request.query)
         : action === "top-metadata" ? await require("./nap-direct-tops").readTopMetadata(napPool)
         : action === "search"
@@ -194,7 +198,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
     } catch (error) {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
-        ? "Historique trop volumineux pour cette consultation."
+        ? "Donnees trop volumineuses pour cette consultation."
         : "Consultation NAP indisponible." });
     }
   });
