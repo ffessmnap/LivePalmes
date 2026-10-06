@@ -53,6 +53,7 @@ function runUnitTests() {
     "nap-direct-swimmer-tests.js",
     "nap-direct-search-tests.js",
     "nap-direct-tops-tests.js",
+    "nap-source-inventory-tests.js",
     "nap-approved-index-tests.js",
     "nap-public-export-tests.js",
     "nap-public-pipeline-tests.js",

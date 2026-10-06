@@ -26,5 +26,18 @@ const { approvedIndexOperation } = require("../functions/nap-approved-index");
   assert.equal((await approvedIndexOperation(pool, { ...input, phase: "apply", schemaHash: prepared.schemaHash })).verified, true);
   assert.equal((await approvedIndexOperation(pool, { ...input, phase: "apply", schemaHash: prepared.schemaHash })).alreadyPresent, true);
   assert.equal(alterations, 1);
+  let competitionPresent = false;
+  const competitionPool = {
+    execute: async query => [query.sql.startsWith("SHOW CREATE") ? [{ Table: "perfs", "Create Table": "CREATE TABLE perfs (...)" }] : competitionPresent ? ["compet", "id"].map((Column_name, i) => ({ Key_name: "livepalmes_compet_id", Column_name, Seq_in_index: i + 1, Non_unique: 1, Sub_part: null })) : []],
+    query: async query => {
+      if (query.sql === "SHOW PROCESSLIST") return [[]];
+      assert.equal(query.sql, "ALTER TABLE `perfs` ADD INDEX `livepalmes_compet_id` (`compet`, `id`)");
+      competitionPresent = true; return [{}];
+    }
+  };
+  const competitionInput = { index: "competition", confirmation: "nap-add-competition-index", phase: "prepare" };
+  const competitionBackup = await approvedIndexOperation(competitionPool, competitionInput);
+  assert.equal(competitionPresent, false);
+  assert.equal((await approvedIndexOperation(competitionPool, { ...competitionInput, phase: "apply", schemaHash: competitionBackup.schemaHash })).verified, true);
   console.log("Index NAP : preparation sans ecriture, liste fixe, empreinte, refus de saisie et idempotence verifies.");
 })().catch(error => { console.error(error); process.exitCode = 1; });

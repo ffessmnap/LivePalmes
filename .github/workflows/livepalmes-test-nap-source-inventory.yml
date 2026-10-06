@@ -1,43 +1,38 @@
-name: Ajouter un index NAP explicitement autorise
+name: Reperer les sources NAP publiques sans lire leurs donnees
 on:
   workflow_dispatch:
     inputs:
       expected_commit:
         required: true
         type: string
-      index:
-        required: true
-        type: choice
-        options: [search, top, competition]
       confirmation:
-        description: nap-add-search-index, nap-add-top-index ou nap-add-competition-index, apres accord specifique
+        description: Saisir livepalmes-test-nap-structure-readonly
         required: true
         type: string
 permissions:
   contents: read
 concurrency:
-  group: nap-authorized-index
+  group: livepalmes-test-backend
   cancel-in-progress: false
 jobs:
-  add:
+  inspect:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     environment: firebase-test
     env:
       TARGET_FIREBASE_PROJECT: livepalmes-test
-      NAP_AUTHORIZED_INDEX: ${{ inputs.index }}
-      NAP_INDEX_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Verifier le commit et la confirmation
+      - name: Verifier la cible
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-          test "$NAP_INDEX_CONFIRMATION" = "nap-add-$NAP_AUTHORIZED_INDEX-index"
+          test "$CONFIRMATION" = livepalmes-test-nap-structure-readonly
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -46,11 +41,10 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
       - uses: google-github-actions/setup-gcloud@v3
-      - run: node tools/add-nap-direct-index.js
+      - run: node tools/inspect-nap-source-inventory.js
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: nap-index-schema-proof
-          path: outputs/nap-*.json
-          if-no-files-found: ignore
-          retention-days: 30
+          name: nap-source-inventory
+          path: outputs/nap-source-inventory.json
+          if-no-files-found: error
+          retention-days: 14
