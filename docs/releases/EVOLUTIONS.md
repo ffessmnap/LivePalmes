@@ -355,3 +355,9 @@ Antoine precise une lecture directe NAP, sans export a relancer. Run de publicat
 - Antoine confirme une competition unique partagee, reprise des parametres existants et engagements visibles des leur enregistrement dans les deux interfaces. Ajouts de structure et correspondances metier a presenter avant execution.
 - Diagnostic prive existant etendu a une liste fixe de 20 tables, uniquement information_schema et resume de droits ; aucune lecture de lignes sportives ou de contacts, aucune ecriture NAP. Budget constant : cinq requetes, 400 colonnes et 200 elements d'index maximum, depassement refuse. Aucun nouveau service, droit ou secret.
 - Etape effectifs #128 publiee sur TEST 588d43fb93dae04b8f2cd089c3610d41c4302546, run 37473212292 reussi. Controle navigateur de Mes nageurs et licences vides effectue ; ecritures de recette non effectuees. Portail engagements et DTN encore a raccorder.
+
+### Programme IntraNAP et arbitrages de coexistence — 6 octobre 2026
+
+- Antoine ne peut pas modifier IntraNAP ; LivePalmes doit progressivement le remplacer. Les engagements partages sont immediats dans NAP. Les regles supplementaires LivePalmes ne bloquent pas les saisies IntraNAP : controle manuel par Antoine. Anciennes options absentes non renseignees ou desactivees ; engagements existants visibles avec alerte, sans suppression ou correction automatique. Aucun accord de structure deduit.
+- Diagnostic prive etendu aux quatre tables winpalme_* deja presentes dans le catalogue. Liste fixe de 24 tables, cinq requetes de metadonnees, plafonds 400 colonnes et 200 elements d'index, refus de depassement. Aucune ligne sportive lue ni ecriture NAP. Objectif : eviter des tables de programme en doublon.
+- Diagnostic precedent #129 : CI 37475685373, backend TEST 37476130996 et lecture 37476515774 reussis ; 20 tables, 198 colonnes, 52 elements d'index. Inventaire local de revue remis, schema final d'extensions encore a presenter.
