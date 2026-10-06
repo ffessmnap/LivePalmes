@@ -16,6 +16,26 @@ async function main() {
   if (!response.ok) throw new Error("Diagnostic NAP indisponible.");
   const result = await response.json();
   if (result.source !== "nap" || result.mode !== "explain-only") throw new Error("Diagnostic NAP invalide.");
+  const timeShapes = new Map();
+  let after = -1;
+  for (let page = 0; ; page++) {
+    if (page >= 100) throw new Error("Plafond du diagnostic de format atteint.");
+    url.searchParams.set("action", "time-shape");
+    url.searchParams.set("after", String(after));
+    const shapeResponse = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60000) });
+    if (!shapeResponse.ok) throw new Error("Diagnostic des formats indisponible.");
+    const shape = await shapeResponse.json();
+    if (shape.source !== "nap" || shape.mode !== "time-shape-counts-only" || !Array.isArray(shape.counts) || !Number.isSafeInteger(shape.next) || shape.next < after || shape.next > after + 10000) throw new Error("Diagnostic des formats invalide.");
+    for (const count of shape.counts) {
+      const key = String(count.width);
+      const current = timeShapes.get(key) || { width: count.width, rowCount: 0, numericRows: 0 };
+      current.rowCount += Number(count.rowCount || 0); current.numericRows += Number(count.numericRows || 0);
+      timeShapes.set(key, current);
+    }
+    after = shape.next;
+    if (!shape.hasMore) break;
+  }
+  result.timeShapes = [...timeShapes.values()];
   fs.mkdirSync("outputs", { recursive: true });
   fs.writeFileSync("outputs/nap-direct-query-plans.json", JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify(result, null, 2));
