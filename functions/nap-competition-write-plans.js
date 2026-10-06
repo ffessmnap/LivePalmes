@@ -3,6 +3,11 @@
 const native=require("./nap-portal-competitions");
 const {SPECS,buildStatement}=require("./nap-portal-competition-change");
 const schema=require("./nap-approved-portal-schema");
+function indexedPlanRow(row,item,index) {
+  // INSERT destination metadata is not a read of the destination table.
+  if(index===0 && !item.before && row.table===item.table && row.selectType==="INSERT" && row.type==="ALL" && !row.key && (row.rows===null || row.rows===0)) return true;
+  return !row.table || Boolean(row.key && (["const","eq_ref","ref","range"].includes(row.type) || (row.type==="index" && row.key==="PRIMARY" && row.rows!==null && row.rows<=2)));
+}
 async function inspectCompetitionWritePlans(pool) {
   const connection=await pool.getConnection();
   try {
@@ -27,9 +32,9 @@ async function inspectCompetitionWritePlans(pool) {
         const statement=buildStatement(item,authority);
         const [rows]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
         if(!rows.length || rows.length>20) throw new RangeError("Plan de controle invalide.");
-        const plan=rows.map(row=>({table:row.table ?? null,type:row.type ?? null,key:row.key ?? null,rows:Number(row.rows || 0),extra:row.Extra || ""}));
+        const plan=rows.map(row=>({table:row.table ?? null,selectType:row.select_type ?? null,type:row.type ?? null,key:row.key ?? null,rows:row.rows==null ? null : Number(row.rows),extra:row.Extra || ""}));
         plans.push({target:item.table,operation:item.before ? "update" : "insert",plan});
-        if(plan.some(row=>row.table && !["const","eq_ref","ref","range"].includes(row.type) && !(row.type==="index" && row.key==="PRIMARY" && row.rows<=2) || row.table && !row.key)) errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:"non-indexed"});
+        if(plan.some((row,index)=>!indexedPlanRow(row,item,index))) errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:"non-indexed"});
       } catch(error) {
         errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:({ER_PARSE_ERROR:"syntax",ER_BAD_FIELD_ERROR:"column",ER_NOT_SUPPORTED_YET:"unsupported"})[error.code] || (error instanceof RangeError ? "volume" : "unavailable")});
       }
@@ -39,4 +44,4 @@ async function inspectCompetitionWritePlans(pool) {
     return {source:"nap",mode:"portal-competition-write-plans-readonly",plans:[],errors:[{target:"native-reader",reason:({ER_PARSE_ERROR:"syntax",ER_BAD_FIELD_ERROR:"column",ER_NO_SUCH_TABLE:"table"})[error.code] || "unavailable"}],writesExecuted:false,complete:false};
   } finally {connection.release();}
 }
-module.exports={inspectCompetitionWritePlans};
+module.exports={inspectCompetitionWritePlans,indexedPlanRow};
