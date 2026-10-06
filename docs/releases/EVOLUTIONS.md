@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Calendrier et portail NAP : contrats et budgets — 6 octobre 2026
+
+- Antoine autorise le calendrier, les fiches competitions, resultats, documents/protocoles et l'adaptation des lectures du portail sur TEST. Records/MPF restent explicitement sur la source officielle LivePalmes actuelle ; aucun recalcul et aucune migration vers les records NAP. Direct reste operationnel avec son dossier de competition, sans nouvelle ecriture NAP.
+- #118 : backend 37445207687 reussi ; index livepalmes_compet_id ajoute/verifie dans 37445595850 apres sauvegarde de structure et accord d'absence de saisie/import. Inventaire 37445736569 reussi, EXPLAIN type ref sur cet index, sans filesort.
+- Preparation de deux index fixes calendrier/documents, accord specifique demande, aucune execution a ce stade. Diagnostic prive des libelles et drapeaux publics borne ; budget des futures pages dans NAP_PUBLIC_MIGRATION.md. Implementation des pages encore a effectuer ; aucune nouvelle validation utilisateur deduite.
+
 ### Reperage prive des prochaines sources NAP — 6 octobre 2026
 
 - Preparation de la lecture directe des autres pages : inventaire structurel borne des tables, colonnes et index utiles aux competitions, documents et Records/MPF, avec EXPLAIN par competition. Aucune lecture de ligne sportive ou privee et aucune ecriture ; pas d'export de performances ni changement IAM. Tests cibles passes, lecture reelle encore a faire.

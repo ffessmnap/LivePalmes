@@ -11,13 +11,15 @@ async function main() {
   const url = new URL(uri);
   if (url.protocol !== "https:" || !url.hostname.endsWith(".run.app") || url.username || url.password || url.search) throw new Error("Endpoint prive invalide.");
   const token = execFileSync("gcloud", ["auth", "print-identity-token", `--audiences=${uri}`], options).trim();
-  url.searchParams.set("action", "source-inventory");
+  const action = process.env.NAP_SOURCE_ACTION || "source-inventory";
+  if (!["source-inventory", "calendar-contract"].includes(action)) throw new Error("Diagnostic invalide.");
+  url.searchParams.set("action", action);
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60000) });
   if (!response.ok) throw new Error("Diagnostic NAP indisponible.");
   const result = await response.json();
-  if (result.source !== "nap" || result.mode !== "structure-only") throw new Error("Diagnostic NAP invalide.");
+  if (result.source !== "nap" || result.mode !== (action === "source-inventory" ? "structure-only" : "calendar-contract")) throw new Error("Diagnostic NAP invalide.");
   fs.mkdirSync("outputs", { recursive: true });
-  fs.writeFileSync("outputs/nap-source-inventory.json", JSON.stringify(result, null, 2) + "\n");
-  console.log(JSON.stringify({ mode: result.mode, tableCount: result.tables.length, relevant: result.relevant, competitionPlan: result.competitionPlan }));
+  fs.writeFileSync(`outputs/nap-${action}.json`, JSON.stringify(result, null, 2) + "\n");
+  console.log(JSON.stringify({ mode: result.mode, tableCount: result.tables?.length, relevant: result.relevant, competitionPlan: result.competitionPlan, references: result.references, publicationFlags: result.publicationFlags }));
 }
 main().catch(() => { console.error("Diagnostic NAP arrete. Aucune modification de la base."); process.exitCode = 1; });

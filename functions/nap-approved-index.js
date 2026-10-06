@@ -3,7 +3,9 @@ const { createHash } = require("node:crypto");
 const SPECS = {
   search: { table: "nageurs", name: "livepalmes_prenom_nom", columns: ["prenom", "nom", "date", "id"] },
   top: { table: "perfs", name: "livepalmes_course_relais_tps", columns: ["course", "relais", "tps", "id"] },
-  competition: { table: "perfs", name: "livepalmes_compet_id", columns: ["compet", "id"] }
+  competition: { table: "perfs", name: "livepalmes_compet_id", columns: ["compet", "id"] },
+  calendar: { table: "competitions", name: "livepalmes_date_id", columns: ["date", "id"] },
+  documents: { table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] }
 };
 function validIndex(rows, spec) {
   const found = rows.filter(row => row.Key_name === spec.name).sort((a, b) => Number(a.Seq_in_index) - Number(b.Seq_in_index));

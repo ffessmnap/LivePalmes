@@ -1,7 +1,12 @@
-name: Reperer les sources NAP publiques sans lire leurs donnees
+name: Verifier la structure et les contrats NAP publics
 on:
   workflow_dispatch:
     inputs:
+      action:
+        required: true
+        default: source-inventory
+        type: choice
+        options: [source-inventory, calendar-contract]
       expected_commit:
         required: true
         type: string
@@ -22,6 +27,7 @@ jobs:
     environment: firebase-test
     env:
       TARGET_FIREBASE_PROJECT: livepalmes-test
+      NAP_SOURCE_ACTION: ${{ inputs.action }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,6 +51,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: nap-source-inventory
-          path: outputs/nap-source-inventory.json
+          path: outputs/nap-*.json
           if-no-files-found: error
           retention-days: 14
