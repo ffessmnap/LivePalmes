@@ -24,6 +24,7 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   assert.equal(seasonReads, 1); assert.equal(season.events[0].nationalManagementOnly, true);
   await assert.rejects(readNativeCompetitionSeason({}, "2027 OR 1=1"), TypeError);
   await assert.rejects(readNativeCompetitionSeason({execute: async () => [Array(501).fill({})]},2027),RangeError);
+  await assert.rejects(readNativeCompetitionSeason({execute: async () => [[{id:1,niveau:3},{id:1,niveau:1}]]},2027),/ambigus/);
   let authorized = false, calls = [];
   const pool = { execute: async ({sql}, values) => {
     calls.push({sql,values}); assert.ok(sql.startsWith("SELECT ")); assert.match(sql, /LIMIT \d+$/);
