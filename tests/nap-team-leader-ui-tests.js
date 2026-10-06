@@ -4,6 +4,9 @@ const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.
 const field=value=>({value,required:true,disabled:true,label:{hidden:false},closest(){return this.label;}});
 const elements={engagementsClubTeamForm:{querySelectorAll:()=>[],checkValidity:()=>true},engagementsClubTeamPersonFields:{dataset:{}},engagementsClubTeamFirstName:field("Chef"),engagementsClubTeamLastName:field("CORRIGE"),engagementsClubTeamBirthDate:field("1980-01-02"),engagementsClubTeamLicense:field("OLD-LICENCE"),engagementsClubTeamSex:field(""),engagementsClubTeamExternal:field(""),engagementsClubTeamSaveButton:field(""),engagementsClubTeamMessage:{dataset:{}}};
 const calls=[];
+elements.engagementsClubTeamExternal.closest=()=>null;
+const hiddenRadio={closest:()=>null,hidden:true};
+elements.engagementsClubTeamChoices={querySelectorAll:()=>[hiddenRadio]};
 const sandbox={elements,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
   engagementClubWriteLockReason:competition=>competition.nativeReadOnly?"Native blocked":competition.entryStatus==="open"?"":"Closed",
   setEngagementClubFormControlsLocked:()=>{},setEngagementClubTeamManualFieldsVisible:()=>{},setEngagementSaveState:()=>{},
@@ -12,6 +15,7 @@ vm.createContext(sandbox);
 function load(name,async=false){const start=source.indexOf(`  ${async?"async ":""}function ${name}(`);assert.ok(start>=0);const tail=source.slice(start+10);const next=tail.search(/\n  (?:async )?function /);vm.runInContext(source.slice(start,start+10+next),sandbox);}
 load("updateEngagementClubTeamFormMode");load("saveEngagementClubTeamLeader",true);
 sandbox.updateEngagementClubTeamFormMode();
+assert.equal(hiddenRadio.hidden,true);
 assert.equal(elements.engagementsClubTeamLicense.value,"");assert.equal(elements.engagementsClubTeamLicense.required,false);assert.equal(elements.engagementsClubTeamSex.required,false);
 assert.equal(elements.engagementsClubTeamFirstName.disabled,false);assert.equal(elements.engagementsClubTeamBirthDate.required,false);assert.equal(elements.engagementsClubTeamSaveButton.disabled,false);
 (async()=>{
