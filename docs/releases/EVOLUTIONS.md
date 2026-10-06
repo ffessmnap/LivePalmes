@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Index pour les effectifs NAP du portail — 6 octobre 2026
+
+- Antoine autorise explicitement livepalmes_club_id(club,id), sans saisie ni import en cours. Operation separee de la publication, sauvegarde de structure avant ajout, refus d'ecriture active et verification des colonnes apres ajout. Tests de la liste fixe et des garde-fous passes ; execution et branchement du portail encore a effectuer.
+- Calendrier #120 : backend 37448917945 et plans 37449338927 reussis. Lectures reelles de cinq routes reussies, dont 117 evenements pour la saison 2026 et 153 resultats de la competition 2652. Publication Hosting commune et recette complete encore a effectuer. Aucun retour utilisateur deduit de ces controles.
+
 ### Pages calendrier et competitions directement sur NAP — preparation du 6 octobre 2026
 
 - Serveur #119 deploye, run 37447251620 reussi. Index calendrier(date,id) ajoute et verifie dans 37447616602 apres sauvegarde. Index documents autorise par Antoine, run 37447758161 reussi, preuve a recuperer. Contrat 37447620531 confirme les documents publics Y ; valeurs N, vides et atypiques 1 non exposees.
