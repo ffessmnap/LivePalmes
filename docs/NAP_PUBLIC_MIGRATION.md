@@ -39,3 +39,7 @@ Le mode NAP travaille exclusivement dans un dossier neuf sous `outputs`. Aucun f
 ## Suivi du 6 octobre
 
 PR #105 integree : export prive et construction compatibles. Le run backend 37382627387 a ete arrete avant deploiement par le classement statique des exports indentes. Le correctif ajoute ce controle aux verifications de PR. La comparaison automatique conserve les doublons, signale les changements de metadonnees et les anciens liens a reprendre. Les fichiers TEST actuels sont captures avec leurs generations Storage ; aucune bascule ni ecriture NAP dans ce workflow.
+
+## Comparaison reelle du 6 octobre — run 37420371570
+
+Deux lectures identiques : 18241 nageurs, 672 clubs, 3977 competitions, 521835 performances NAP. Construction compatible et controle exhaustif reussis. Candidat : 477529 lignes et 9851 fiches ; publication TEST actuelle : 469220 lignes et 9552 fiches. La comparaison signale 3290 lignes sans correspondance exacte, 32286 lignes avec metadonnees differentes, six identites absentes, quatre liens absents, cinq liens conflictuels et 22 liens recuperables. Ces nombres ne prouvent pas une perte NAP : corrections, normalisation et doublons restent a diagnostiquer. Aucune bascule autorisee par ce rapport incomplet. Le diagnostic detaille regroupe par annee/source/competition et distingue les champs modifies ; aucun nom ni date de naissance dans le rapport.
