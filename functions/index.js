@@ -235,6 +235,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : request.query.action === "engagement-contract" ? await require("./nap-engagement-contract").inspectEngagementContract(napPool)
         : request.query.action === "portal-competition-contract" ? await require("./nap-portal-competitions").inspectNativeCompetitions(napPool)
         : request.query.action === "portal-entry-contract" ? await require("./nap-portal-entries").inspectNativeClubEntry(napPool)
+        : request.query.action === "portal-person-status-plans" ? await require("./nap-club-person-status").inspectStatusWritePlans(napPool)
         : request.query.action === "portal-competition-write-plans" ? await require("./nap-competition-write-plans").inspectCompetitionWritePlans(napPool)
         : request.query.action === "portal-course-document-contract" ? await require("./nap-course-document-contract").inspectCourseDocumentContract(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
@@ -12149,9 +12150,24 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
-exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Le changement de statut des personnes NAP n'est pas encore disponible. Aucune ancienne fiche LivePalmes modifiee.");
+  if(ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      return await require("./nap-club-person-status").changeNativePersonStatus(pool,{
+        clubId:String(context.clubId),actorUid:context.uid,personId:request.data?.personId,
+        active:request.data?.active,expectedFingerprint:request.data?.expectedFingerprint
+      },{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).create({action:"nap.person.status.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.statusChanged",context.uid,target,operation)
+      },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Reprenez la meme action ; la sauvegarde est conservee.");
+    }
+  }
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const active = request.data?.active === true;
   if (!personId) {
