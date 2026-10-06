@@ -2,6 +2,14 @@
 
 <!-- description: Branchement direct des pages existantes sur MySQL NAP, budgets, index autorises, preuves TEST et travaux restants. -->
 
+## Premiere correction reelle du portail — preparation du 6 octobre
+
+Accord explicite Antoine : nageur NAP 912, nom FAUVEAU vers FAUVAU. La base est la base habituelle, sans copie d'essai. Le diagnostic prive 37462808515 confirme UPDATE sur nageurs et les huit tables MyISAM, sans declencheur. Il ne remplace pas la verification d'une ecriture reelle.
+
+Circuit prive reserve au compte de publication TEST existant : operation fixe, aucun identifiant/nom libre, POST uniquement ; aucun droit public ajoute. Preparation : une lecture primaire de la ligne complete, une lecture d'audit, puis creation unique de la sauvegarde dans auditLogs protege. Cette sauvegarde ne peut pas etre remplacee par une preparation concurrente. Le workflow conserve aussi un artefact prive avant l'etape d'application.
+
+Application : deux lectures primaires maximum, une lecture d'audit, un UPDATE du seul champ nom compare atomiquement aux onze valeurs initiales (comparaison binaire et NULL compatible), une ecriture d'audit de verification. Une reprise apres correction verifie l'etat exact sans refaire l'UPDATE. Aucun scan, aucune croissance avec la taille de la base. Un echec d'audit apres UPDATE exige une reprise de verification ; aucune promesse de rollback MyISAM. Le portail general de correction n'est pas encore raccorde : ce circuit verifie la premiere operation specifiquement autorisee.
+
 ## Cible validee par Antoine
 
 LivePalmes consulte directement la base NAP, comme IntraNAP. NAP fait foi pour les performances, TOP et resultats ; une modification est visible a la prochaine consultation ou au rechargement. Exception explicite d'Antoine le 6 octobre : les Records/MPF officiels restent sur leur circuit LivePalmes actuel, qu'il confirme a jour, avec fichiers publics et secours statique. Ils ne sont ni remplaces par NAP ni recalcules a partir des TOP. Les pages, URL, filtres et presentation sont conserves. Le navigateur appelle le serveur LivePalmes, qui interroge MySQL avec le secret prive. Aucun export sportif ou comparaison avec l'ancienne base ne participe aux lectures NAP.
@@ -93,3 +101,7 @@ Lecture initiale, action diagnostic et rafraichissement : meme budget de cinq re
 Cible des premieres modifications de nageurs : controler le perimetre avec les fonctions d'acces actuelles, lire la fiche par cle primaire, comparer les valeurs attendues, sauvegarder l'etat initial dans le circuit d'audit protege existant, executer une mise a jour bornee par identifiant et anciennes valeurs, relire et tracer le resultat. Les tables MyISAM ne permettent pas de promettre une transaction atomique entre plusieurs tables ; aucune activation de creation d'engagement complexe avant contrat complet et strategie de reprise.
 
 Preuve calendrier precedente : #122, version commune ebcc955c, run 37457199663 reussi (Hosting e860fd25f81ffb30), lecteur NAP 37457195054 reussi. Recette commune : 67 evenements 2026-2027, 117 en 2025-2026, filtre formations, fiche 2652/document/protocole/resultats. Antoine confirme ensuite que le calendrier semble bien fonctionner. Portail et production encore a traiter.
+
+Premiere brique d'ecriture preparee : apercu prive de correction d'identite nageur, sans route active ni execution de modification. Deux lectures maximum : fiche par cle primaire (1 ligne) et candidats de doublons via nageurs_clef (3 identifiants). Ouverture d'apercu et rafraichissement : meme budget ; aucune lecture par ligne ni parcours de performances. Le plan SQL borne a une ligne compare les anciennes valeurs exactes et le club pour proteger contre une modification concurrente. Champs proposes limites a nom/prenom/date de naissance/sexe, longueur NAP de 64 caracteres respectee sans troncature. Licences, club, statut et resultats exclus. Integration des autorisations nationales, sauvegarde/audit et activation reelle encore a effectuer.
+
+Antoine confirme qu'il n'existe aucune copie NAP distincte pour les essais. Les essais d'ecriture restent hors ligne ; un premier essai sur une ligne reelle exige un cas concret prepare et autorise. Ne pas utiliser une correction fictive d'un vrai nageur pour une recette.

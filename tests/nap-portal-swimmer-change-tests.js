@@ -1,0 +1,34 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { fingerprint, planIdentityChange, previewIdentityChange } = require("../functions/nap-portal-swimmer-change");
+const before = { id: 42, nom: "Exemple", prenom: "Test", date: "2000-02-29", sexe: "F", club: "198" };
+const plan = planIdentityChange(before, { firstName: "T'es'; DROP TABLE nageurs; --" }, fingerprint(before));
+assert.equal(plan.writesExecuted, false);
+assert.ok(!plan.sql.includes("DROP"));
+assert.equal(plan.parameters[1], "T'es'; DROP TABLE nageurs; --");
+assert.equal(plan.after.club, before.club);
+assert.deepEqual(plan.changedColumns, ["prenom"]);
+assert.ok(plan.sql.endsWith("LIMIT 1"));
+assert.equal(plan.parameters.length, 10);
+assert.throws(() => planIdentityChange(before, { firstName: "Autre", club: "200" }), TypeError);
+assert.throws(() => planIdentityChange(before, { licenseNumber: "A-00-00000" }), TypeError);
+assert.throws(() => planIdentityChange(before, { birthDate: "2001-02-29" }), TypeError);
+assert.throws(() => planIdentityChange(before, { lastName: "x".repeat(65) }), TypeError);
+assert.throws(() => planIdentityChange(before, { sex: "X" }), TypeError);
+assert.throws(() => planIdentityChange(before, {}), TypeError);
+assert.throws(() => planIdentityChange({ ...before, club: "199" }, { firstName: "Autre" }, fingerprint(before)), /change/);
+(async () => {
+  const calls = [];
+  const pool = { execute: async (query, values) => {
+    calls.push({ query, values });
+    assert.ok(query.sql.startsWith("SELECT "));
+    return [query.sql.includes("FORCE INDEX") ? [{ id: 43 }] : [before]];
+  } };
+  const result = await previewIdentityChange(pool, { id: 42, proposed: { firstName: "Autre" } });
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0].values, [42]);
+  assert.deepEqual(result.possibleDuplicateIds, ["43"]);
+  assert.equal(result.writesExecuted, false);
+  await assert.rejects(previewIdentityChange(pool, { id: "42 OR 1=1", proposed: {} }), TypeError);
+  console.log("Apercu correction NAP : aucune ecriture, valeurs parametrees, doublons bornes et conflit concurrent verifies.");
+})().catch(error => { console.error(error); process.exitCode = 1; });
