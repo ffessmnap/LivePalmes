@@ -43,7 +43,7 @@
   function selectedEnvironmentName() {
     const explicit = String(global.LIVEPALMES_ENVIRONMENT || "").trim().toLowerCase();
     const hostname = String(global.location?.hostname || "").toLowerCase();
-    const testHostname = hostname === "livepalmes-test.web.app" || hostname === "livepalmes-test.firebaseapp.com";
+    const testHostname = /^livepalmes-test(?:--[a-z0-9-]+)?\.web\.app$/.test(hostname) || hostname === "livepalmes-test.firebaseapp.com";
     if (explicit) {
       if (!(explicit in environments)) throw new Error(`Environnement LivePalmes inconnu : ${explicit}`);
       if (testHostname && explicit !== "test") throw new Error("Un domaine TEST ne peut pas charger la configuration de production.");
