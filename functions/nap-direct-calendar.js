@@ -25,7 +25,11 @@ function publicUrl(value) {
 }
 function eventFromRow(row) {
   const name = text(row.libelle), kind = text(row.type_label);
-  const eventType = Number(row.ld) === 1 ? "openWater" : ({ Piscine: "pool", "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || "other");
+  // Preserve the existing calendar classification for legacy default pool codes.
+  const titleType = /formation|initiateur|juge|chronom|recyclage|[ée]valuateur|sauv.?nage/i.test(name) ? "training"
+    : /stage|d[ée]tection/i.test(name) ? "stage"
+    : /r[ée]union|assembl[ée]e|colloque|s[ée]minair|date limite/i.test(name) ? "meeting" : "";
+  const eventType = Number(row.ld) === 1 ? "openWater" : ({ "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || titleType || (kind === "Piscine" ? "pool" : "other"));
   const level = ({ "Départementale": "departemental", "Départemental": "departemental", "Régionale": "regional", "Régional": "regional", "Championnat de Zones": "regional", "Critériums Nationaux": "national", Nationale: "national", National: "national", International: "international", Internationale: "international" }[text(row.level_label)] || ({ MONDE: "international", EUROPE: "international", FRANCE: "national", ZONE: "regional", REGIONAUX: "regional" })[text(row.scope_label)] || "");
   const regionId = ["national", "international"].includes(level) ? "" : rules.committeeId(row.comite);
   const id = `legacy-nap-${row.id}`;

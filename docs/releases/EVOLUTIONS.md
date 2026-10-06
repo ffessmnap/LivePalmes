@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Finalisation du calendrier NAP sur TEST — 6 octobre 2026
+
+- Controle du site commun : ancienne version du calendrier encore publiee, connexion NAP presente uniquement dans l'apercu #120. Publication commune a terminer ; aucune validation utilisateur deduite.
+- Corrections de recette : formations/stages/reunions reconnues selon les regles du calendrier existant ; resultat sans nageur NAP affiche explicitement sans lien vide ni identite inventee. Tests cibles calendrier passes. Protocole 2652 accessible en PDF HTTP 200 ; plans SQL calendrier/documents/resultats/historiques indexes controles dans 37449338927.
+- Index d'effectifs livepalmes_club_id(club,id) ajoute et verifie dans 37450604958, sauvegarde de structure conservee. Portail encore a brancher. Records/MPF LivePalmes et Direct preserves.
+
 ### Index pour les effectifs NAP du portail — 6 octobre 2026
 
 - Antoine autorise explicitement livepalmes_club_id(club,id), sans saisie ni import en cours. Operation separee de la publication, sauvegarde de structure avant ajout, refus d'ecriture active et verification des colonnes apres ajout. Tests de la liste fixe et des garde-fous passes ; execution et branchement du portail encore a effectuer.
