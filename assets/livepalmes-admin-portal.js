@@ -3488,7 +3488,7 @@
     if (memoryEntry) return memoryEntry;
     try {
       const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
-      if (!stored || stored.version !== 2 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
+      if (!stored || stored.version !== 3 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
       const entry = {
         competitions: stored.competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
         source: stored.source === "nap" ? "nap" : "",
@@ -3510,7 +3510,7 @@
     engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
     try {
       global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
-        version: 2,
+        version: 3,
         source,
         cachedAt,
         competitions: entry.competitions

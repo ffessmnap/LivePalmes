@@ -62,6 +62,7 @@ function runUnitTests() {
     "nap-portal-entries-tests.js",
     "nap-portal-workspaces-tests.js",
     "nap-portal-callables-tests.js",
+    "nap-portal-cache-tests.js",
     "nap-portal-swimmer-change-tests.js",
     "nap-approved-swimmer-correction-tests.js",
     "nap-portal-swimmers-tests.js",
