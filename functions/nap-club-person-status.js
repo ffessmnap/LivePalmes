@@ -33,6 +33,7 @@ function buildStatusStatement(kind,before,previous,after) {
 async function changeNativePersonStatus(pool,input,audit,authorize) {
   if(typeof authorize!=="function" || typeof input?.clubId!=="string" || !/^\d{1,16}$/.test(input.clubId) || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || typeof input.active!=="boolean" || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "")) throw new TypeError("Statut et perimetre de personne requis.");
   const {kind,id}=reference(input.personId),spec=SOURCES[kind];
+  if(kind!=="officials") throw new TypeError("Les anciennes declarations de chef d'equipe sont conservees ; leur statut d'annuaire reste a raccorder.");
   await authorize({clubId:input.clubId});
   const operation=createHash("sha256").update(JSON.stringify([input.clubId,input.actorUid,input.personId,input.active,input.expectedFingerprint])).digest("hex");
   const connection=await pool.getConnection();let locked=false;
@@ -83,13 +84,13 @@ async function changeNativePersonStatus(pool,input,audit,authorize) {
     finally {connection.release();}
   }
 }
-// Four EXPLAIN statements on existing native references, never an INSERT/UPDATE.
+// Two EXPLAIN statements on one existing official, never an INSERT/UPDATE.
 async function inspectStatusWritePlans(connection) {
   const plans=[];
   try {
     const [clubs]=await connection.execute({sql:"SELECT n.club FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) JOIN nageurs n ON n.id=e.nageur WHERE e.compet=? ORDER BY e.nageur,e.id LIMIT 1",timeout:10000},[5140]);
     if(!clubs.length || !/^\d{1,16}$/.test(String(clubs[0].club))) throw Error("scope");
-    for(const [kind,spec] of Object.entries(SOURCES)) {
+    for(const [kind,spec] of [["officials",SOURCES.officials]]) {
       const [rows]=await connection.execute({sql:`SELECT ${spec.columns.map(key=>`\`${key}\``).join(",")} FROM \`${spec.table}\` FORCE INDEX (livepalmes_club_id) WHERE club=? ORDER BY id LIMIT 1`,timeout:10000},[String(clubs[0].club)]);
       if(rows.length!==1) throw Error("reference");
       const native=rows[0],timestamp="2026-10-07 00:00:00.000000";

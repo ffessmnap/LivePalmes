@@ -24,7 +24,7 @@ function person(row,kind,options=null) {
   const spec=SOURCES[kind];
   if(!spec || spec.columns.some(key=>!Object.hasOwn(row,key)) || !Number.isSafeInteger(Number(row.id)) || Number(row.id)<=0) throw new TypeError("Fiche NAP incomplete.");
   if(options && (options.source!==spec.table || Number(options.person_id)!==Number(row.id) || String(options.club_id)!==String(row.club) || ["active","role_team_leader","role_official"].some(key=>![0,1].includes(Number(options[key]))) || !Number.isSafeInteger(Number(options.version)) || Number(options.version)<1)) throw new TypeError("Options de personne incompatibles.");
-  return {id:`${spec.prefix}-${row.id}`,nativePersonId:String(row.id),nativePersonKind:kind,napSource:true,nativeDirectoryReadOnly:true,nativeStatusEditable:true,
+  return {id:`${spec.prefix}-${row.id}`,nativePersonId:String(row.id),nativePersonKind:kind,napSource:true,nativeDirectoryReadOnly:true,nativeStatusEditable:kind==="officials",
     napFingerprint:createHash("sha256").update(JSON.stringify([spec.columns.map(key=>[key,row[key]]),options?OPTION_COLUMNS.map(key=>[key,options[key]]):null])).digest("hex"),
     firstName:String(row.prenom || "").trim(),lastName:String(row.nom || "").trim(),birthDate:date(row.date),clubId:String(row.club),
     licenseNumber:"",sex:"",active:options?Number(options.active)===1:true,roles:options?{teamLeader:Number(options.role_team_leader)===1,official:Number(options.role_official)===1}:{teamLeader:true,official:kind==="officials"},

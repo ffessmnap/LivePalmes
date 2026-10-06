@@ -32,6 +32,7 @@ function fixture() {
 }
 (async()=>{
   const denied=fixture();await assert.rejects(denied.run(denied.input,()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
+  const historical=fixture();await assert.rejects(historical.run({...historical.input,personId:"nap-leader-7"}),/anciennes declarations/);assert.equal(historical.queries.length,0);
   const s=fixture();const result=await s.run();assert.equal(result.person.active,false);assert.equal(result.person.licenseNumber,"");assert.equal(s.writes,1);assert.equal(s.auditDone,true);assert.ok(s.queries.length<=12);assert.deepEqual(s.native,native);
   await s.run();assert.equal(s.writes,1,"same operation retry does not write twice");
   s.audit=null;s.input={...s.input,active:true,expectedFingerprint:result.person.napFingerprint};await s.run();assert.equal(s.options.version,2);assert.equal(s.options.active,1);assert.equal(s.writes,2);
@@ -45,7 +46,7 @@ function fixture() {
     if(sql.includes("nageursengager")) return [[{club:native.club}]];
     return [[sql.includes("chefsdequipe")?{...native,compet:5140,pourclub:"0"}:native]];
   }};
-  const proof=await inspectStatusWritePlans(readonly);assert.equal(proof.complete,true);assert.equal(proof.writesExecuted,false);assert.equal(plans,4);
+  const proof=await inspectStatusWritePlans(readonly);assert.equal(proof.complete,true);assert.equal(proof.writesExecuted,false);assert.equal(plans,2);
   assert.ok(!JSON.stringify(proof).includes(native.nom));scan=true;assert.equal((await inspectStatusWritePlans(readonly)).complete,false);
   console.log("Statut NAP : droits avant lecture, fiche perimee, sauvegarde avant ecriture, CAS natif, aucun engagement modifie et reprise apres interruption verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
