@@ -14,4 +14,13 @@ async function inspectDirectQueries(pool) {
   }
   return { source: "nap", mode: "explain-only", indexes, plans };
 }
-module.exports = { QUERIES, inspectDirectQueries };
+async function inspectTimeShape(pool, input) {
+  const after = Number(input ?? -1);
+  if (!Number.isSafeInteger(after) || after < -1 || after > 2147483647) throw new TypeError("Borne invalide.");
+  const [maximum] = await pool.execute({ sql: "SELECT MAX(id) AS lastId FROM perfs", timeout: 10000 });
+  const lastId = Number(maximum[0]?.lastId ?? -1);
+  const through = Math.min(after + 10000, lastId);
+  const [counts] = await pool.execute({ sql: "SELECT CHAR_LENGTH(tps) AS width, SUM(tps REGEXP '^[0-9]+$') AS numericRows, COUNT(*) AS rowCount FROM perfs WHERE id > ? AND id <= ? GROUP BY CHAR_LENGTH(tps)", timeout: 10000 }, [after, through]);
+  return { source: "nap", mode: "time-shape-counts-only", counts, next: through, hasMore: through < lastId };
+}
+module.exports = { QUERIES, inspectDirectQueries, inspectTimeShape };
