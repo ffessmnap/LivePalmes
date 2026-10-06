@@ -52,6 +52,7 @@ function runUnitTests() {
     "nap-public-export-tests.js",
     "nap-public-pipeline-tests.js",
     "nap-public-transition-tests.js",
+    "nap-public-publication-tests.js",
     "livepalmes-basic-tests.js",
     "livepalmes-admin-auth-tests.js",
     "livepalmes-environment-tests.js",
