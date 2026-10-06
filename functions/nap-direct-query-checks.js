@@ -21,6 +21,10 @@ async function inspectTimeShape(pool, input) {
   const lastId = Number(maximum[0]?.lastId ?? -1);
   const through = Math.min(after + 10000, lastId);
   const [counts] = await pool.execute({ sql: "SELECT CHAR_LENGTH(tps) AS width, SUM(tps REGEXP '^[0-9]+$') AS numericRows, COUNT(*) AS rowCount FROM perfs WHERE id > ? AND id <= ? GROUP BY CHAR_LENGTH(tps)", timeout: 10000 }, [after, through]);
-  return { source: "nap", mode: "time-shape-counts-only", counts, next: through, hasMore: through < lastId };
+  const [shortTimes] = await pool.execute({ sql: "SELECT course, tps FROM perfs WHERE id > ? AND id <= ? AND tps REGEXP '^[0-9]{1,5}$' LIMIT 11", timeout: 10000 }, [after, through]);
+  const rules = require("./nap-performance-normalization");
+  const validShortNumericRows = shortTimes.filter(row => rules.CURRENT_POOL_COURSES.includes(row.course) &&
+    rules.parseCompactTime(row.tps) >= rules.MIN_TIME_BY_COURSE[row.course]).length;
+  return { source: "nap", mode: "time-shape-counts-only", counts, validShortNumericRows, shortTimesTruncated: shortTimes.length > 10, next: through, hasMore: through < lastId };
 }
 module.exports = { QUERIES, inspectDirectQueries, inspectTimeShape };

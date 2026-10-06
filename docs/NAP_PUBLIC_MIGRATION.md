@@ -1,61 +1,51 @@
-# Source NAP pour les pages existantes
+# Lecture directe NAP dans LivePalmes
 
-<!-- description: Migration transparente des pages publiques vers NAP, export prive borne, fichiers compatibles et controles avant bascule TEST. -->
+<!-- description: Branchement direct des pages existantes sur MySQL NAP, budgets, index autorises, preuves TEST et travaux restants. -->
 
-## Objectif autorise le 6 octobre 2026
+## Cible validee par Antoine
 
-Antoine confirme la lecture NAP avec plusieurs nageurs et demande de conserver les pages, liens, presentation et fonctionnalites actuels. NAP devient progressivement la source unique ; aucune nouvelle interface de recherche par identifiant ne remplace les pages publiques. Aucun passage PROD autorise dans cette livraison.
+LivePalmes consulte directement la base NAP, comme IntraNAP. NAP seule fait foi ; une modification est visible a la prochaine consultation ou au rechargement. Les pages, URL, filtres et presentation sont conserves. Le navigateur appelle le serveur LivePalmes, qui interroge MySQL avec le secret prive. Aucun export sportif, fichier genere ou comparaison avec l'ancienne base ne participe a cette consultation.
 
-## Preparation de la source
+La publication statique proposee auparavant est abandonnee. Run 37429288547 annule avant Hosting ; branchement retire par #109. Les outils historiques d'export/diagnostic restent hors du parcours public et ne doivent pas etre utilises pour activer les pages. Le suivi historique se trouve dans `docs/releases/EVOLUTIONS.md`.
 
-Le lot TEST `nap` expose un export HTTP uniquement au compte `github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com`. L'API n'est pas publique. L'execution conserve le secret NAP existant ; le compte de publication n'obtient jamais le mot de passe MySQL.
+Les numeros de licence seront ajoutes a NAP plus tard selon le choix d'Antoine. Les associations locales restent privees. Les corrections de longueurs de bassin sont egalement suspendues ; aucune longueur inconnue n'est deduite.
 
-Les projections fixes couvrent les seuls champs sportifs publics de `nageurs`, `clubs`, `competitions` et `perfs`. Aucun email, telephone, adresse, licence ou mot de passe n'est exporte. Les cles de pagination entieres et leurs index primaires simples sont controles avant export. Aucun index ni schema NAP n'est modifie.
+## Connexion et protection
 
-L'export fixe les bornes superieures, lit chaque table dans l'ordre de sa cle primaire, puis effectue une seconde lecture des memes bornes. Les empreintes doivent etre identiques. Toute modification pendant les lectures refuse la construction ; aucune transaction MyISAM ou verrou global n'est simule.
+Serveur `nap.ffessm.fr:3372`, base NAP MySQL 5.7 / MyISAM. Le secret TEST existant reste exclusivement sur le serveur. TLS obligatoire, validation du certificat desactivee selon le choix explicite d'Antoine ; aucun repli en clair. Les projections publiques contiennent uniquement les champs sportifs deja utilises par les pages, sans licence, email, telephone ni mot de passe. Lecteur public en GET seulement, sans cache de reponse ; operations de maintenance reservees au compte serveur TEST existant.
 
-## Budget de lectures
+TEST seulement. PROD n'est pas autorisee dans ce travail. Les apercus de PR reconnaissent leurs domaines TEST, avec refus d'une configuration explicite de production.
 
-Ce traitement est reserve a la preparation en arriere-plan ; aucune reconstruction dans une recherche ou ouverture de fiche. Inspection : deux requetes de diagnostic puis deux requetes de validation de structure sur quatre tables et quatre MAX utilisant leur index primaire. Chaque page : une requete preparee, au plus 2001 lignes retournees, 2000 conservees, dix secondes maximum. Plafond : 500 pages par table et par passe. Deux connexions par instance et deux instances maximum, file bornee a huit requetes.
+## Fiches et recherche
 
-Pour environ 522000 performances, les deux passes representent environ 524 requetes de pages et 1,044 million de lignes, plus les referentiels. Il s'agit d'une preparation controlee, pas du cout d'une visite. Les CSV restent dans le dossier ephemere de travail ; les artefacts GitHub ne contiennent que les empreintes et compteurs.
+La fiche habituelle TEST utilise le lecteur direct. Deux requetes groupees par ouverture : profil avec club, puis historique avec competitions et clubs. Index nageur et jointures par cle primaire ; 2001 lignes brutes maximum, refus explicite au-dela de 2000 plutot que troncature. Le nageur le plus fourni actuellement a 1509 lignes brutes. Les filtres et la progression travaillent localement sur la fiche chargee ; nouvelle selection et rechargement relisent NAP. Les regles de temps, categories et passages intermediaires sont partagees avec le generateur existant sans changement sportif.
 
-La recherche et les fiches conserveront leurs fichiers publics : zero lecture MySQL ou Firestore par visite, un index de recherche par prefixe, un index d'identifiants et un fichier de fiche, avec les caches existants. Filtres et graphiques sont calcules localement. La mesure du poids des fichiers et la comparaison avec la publication actuelle restent obligatoires avant activation.
+Recherche par nom ou prenom : deux plages indexees, 21 candidats maximum par plage, une jointure clubs groupee, 21 profils maximum en reponse. Recherche par ID : cle primaire. Saisie temporisee de 250 ms, parametres SQL et jokers echappes, pas de cache de resultats. L'index exige est impose : absence d'index = refus, jamais repli en scan complet. Une recherche peut examiner davantage de lignes de sa plage pour les noms composes ; le temps SQL reste borne a dix secondes.
 
-## Construction compatible
+## Index autorises et maintenance
 
-`export-nap-public-source.js` utilise un jeton Google de courte duree uniquement pour l'endpoint TEST prive. `build-nap-public-files.js` verifie les empreintes des deux exports et reutilise les generateurs existants, puis le controle exhaustif des fiches et TOP.
+Antoine autorise exactement ces index non uniques, sans modification de ligne ni ajout de colonne :
 
-Le mode NAP travaille exclusivement dans un dossier neuf sous `outputs`. Aucun fichier genere du depot n'est modifie. Les anciennes surcharges de competitions ne sont pas appliquees a NAP. Les performances de piscine dont la longueur est inconnue sont conservees avec un bassin vide ; aucune valeur 25/50 n'est deduite. Les competitions marquees `ld=1` restent hors des pages piscine. Les autres regles de normalisation et calcul restent celles du generateur existant.
+```sql
+ALTER TABLE `nage-palmes`.`nageurs`
+  ADD INDEX `livepalmes_prenom_nom` (`prenom`, `nom`, `date`, `id`);
+ALTER TABLE `nage-palmes`.`perfs`
+  ADD INDEX `livepalmes_course_relais_tps` (`course`, `relais`, `tps`, `id`);
+```
 
-## Etapes restantes avant bascule
+Il confirme l'absence de saisie/import pour leur execution. Circuit manuel distinct de la publication : commit exact, choix d'un seul index, confirmation specifique, preparation et sauvegarde de structure avant ajout, empreinte contre changement concurrent, refus d'une ecriture active, relecture de l'index. L'operation POST passe par l'endpoint prive et sa connexion serveur existante. Aucun droit IAM ajoute, aucun mot de passe transmis a GitHub, aucun SQL libre. Relance apres succes idempotente ; verifier la structure apres tout echec ambigu. MyISAM peut bloquer brievement les ecritures pendant la creation.
 
-1. Verifier la structure et produire l'export reel par `livepalmes-test-nap-public-source.yml` ; ce workflow ne publie rien et n'ecrit pas dans NAP.
-2. Comparer les identites, anciens liens et historiques avec les fichiers actuellement publies sur TEST ; expliquer chaque ecart, traiter les pertes avant activation.
-3. Publier une version NAP immuable sur le seul bucket TEST, puis connecter les pages existantes a cette version. Ne pas masquer une panne NAP par un retour silencieux aux donnees Firestore.
-4. Controler recherche, fiches, filtres, progression, liens et mobile avec les memes parcours utilisateur. La validation de `nap-test.html` ne vaut pas validation de ces pages.
-5. Poursuivre les autres consommateurs, Records/MPF, portail et Direct selon leurs contrats existants et les referentiels NAP verifies.
+## TOP et verification des temps
 
-## Suivi du 6 octobre
+Le plan initial TOP parcourait 521835 lignes et n'est pas active. L'index par course est requis, puis les plans du tri doivent etre controles. Les TOP doivent conserver les categories calculees par age/saison, les filtres actuels et la meilleure performance de chaque nageur ; un simple filtre sur la categorie brute ne suffit pas.
 
-PR #105 integree : export prive et construction compatibles. Le run backend 37382627387 a ete arrete avant deploiement par le classement statique des exports indentes. Le correctif ajoute ce controle aux verifications de PR. La comparaison automatique conserve les doublons, signale les changements de metadonnees et les anciens liens a reprendre. Les fichiers TEST actuels sont captures avec leurs generations Storage ; aucune bascule ni ecriture NAP dans ce workflow.
+Diagnostic prive et ponctuel : index et EXPLAIN, puis plages primaires de 10000 identifiants, au plus 100 plages. Resultat de formats 37432527182 : 520866 temps sur six caracteres, deux temps numeriques sur cinq et un sur trois ; autres formats non numeriques. Le controle complementaire applique les regles existantes aux temps numeriques courts et ne retourne que leur nombre valide, sans publier leurs valeurs. Onze candidats courts maximum par plage ; toute troncature rend le controle incomplet et bloque la conclusion. Ce diagnostic n'est pas execute a l'ouverture d'une page et ne construit aucun fichier sportif.
 
-## Comparaison reelle du 6 octobre — run 37420371570
+## Etat des preuves et suite
 
-Deux lectures identiques : 18241 nageurs, 672 clubs, 3977 competitions, 521835 performances NAP. Construction compatible et controle exhaustif reussis. Candidat : 477529 lignes et 9851 fiches ; publication TEST actuelle : 469220 lignes et 9552 fiches. La comparaison signale 3290 lignes sans correspondance exacte, 32286 lignes avec metadonnees differentes, six identites absentes, quatre liens absents, cinq liens conflictuels et 22 liens recuperables. Ces nombres ne prouvent pas une perte NAP : corrections, normalisation et doublons restent a diagnostiquer. Aucune bascule autorisee par ce rapport incomplet. Le diagnostic detaille regroupe par annee/source/competition et distingue les champs modifies ; aucun nom ni date de naissance dans le rapport.
+- #111, lecteur direct : backend 37432035467 reussi ; cinq nageurs controles HTTP 200.
+- #112, fiche et recherche : Linux CI/preview 37433700174 reussis ; backend 37433997591 reussi, recherche par ID verifiee.
+- #113 : correction des domaines d'apercu, CI/preview 37434267955 reussis. Fiche 7322 controlee dans le navigateur, filtres et mobile sans debordement horizontal ; rechargement reussi.
+- Les essais d'index directs depuis GitHub ont echoue a l'acces au secret avant sauvegarde de structure ; aucune modification confirmee. #114 utilise desormais la connexion privee du serveur, tests de protection passes ; deploiement et verification reelle en cours.
 
-## Cible corrigee par Antoine le 6 octobre : lecture directe
-
-Antoine precise que LivePalmes doit interroger NAP directement lors des consultations pour voir les modifications sans export a relancer. La publication statique de la PR #108 est annulee : run 37429288547 cancelled avant toute publication Hosting. Les fichiers eventuellement crees dans le prefixe de travail immuable ne sont pas utilises par les pages. Le branchement statique est retire. La cible est une API serveur de lecture NAP pour les pages existantes, avec budgets bornes, pagination et index verifies. Aucun acces MySQL ni mot de passe depuis le navigateur. Les TOP demandent un controle des index et du tri avant implementation ; aucune lecture exhaustive interactive. Aucun index NAP n'est ajoute sans proposition precise et validation.
-
-NAP seule fait foi ; aucune comparaison avec les anciennes performances LivePalmes. Les licences seront ajoutees plus tard, selon le choix explicite d'Antoine : 7931 associations locales trouvees sans doublons, concordant avec les identifiants et identites de l'export NAP de mai 2026. Elles restent privees et ne sont pas publiees.
-
-## Preparation des lectures directes
-
-Le retrait #109 est integre. Le diagnostic prive utilise uniquement une lecture des index et trois EXPLAIN (recherche par prefixe du nom, fiche paginee avec competition, TOP par course/categorie/bassin). Quatre requetes au maximum, chacune bornee a dix secondes ; aucune execution des SELECT de performances, aucune ecriture ni export sportif. Les plans restent reserves au compte de publication TEST. La recherche publique devra rester indexable ; le tri des TOP ne sera active qu'apres verification des index et du format des temps.
-
-## Fiche directe et resultats des plans — 6 octobre
-
-Run 37431247753 : recherche nom indexee par nageurs_clef (nom, prenom, date), fiche par index nageur et competition par cle primaire. La requete TOP de diagnostic exige un scan de 521835 lignes ; elle n'est pas activee. Aucun index sur prenom seul ni course en tete actuellement. Le prochain controle donne seulement des compteurs de formats de temps, par plages primaires de 10000 identifiants et au plus 100 plages, pour determiner un tri indexable sans changement des temps.
-
-La fiche directe TEST lit au plus une identite et 2001 performances brutes avec competitions et clubs joints par leurs cles. Deux requetes par consultation, dix secondes chacune ; aucun cache de performances, aucune ecriture. Au-dela de 2000 performances, refus explicite plutot qu'historique tronque. Maximum observe dans le controle fourni par Antoine : 1509 pour le nageur 7322. Les regles de formatage, categories et temps intermediaires sont extraites sans changement du generateur historique et partagees par le lecteur. Seuls les champs publics sportifs sont exposes, pas les licences ni coordonnees. Le raccordement de la page et la recherche directe restent a finaliser.
+Restent : creation/verifications des index, recette de recherche par nom/prenom, publication TEST commune de la fiche, TOP directs, puis autres consommateurs et Records/MPF avec leurs contrats NAP verifies. Les badges Records/MPF de la fiche utilisent encore la source officielle existante. Aucun bilan ne doit presenter tout LivePalmes comme deja migre.
