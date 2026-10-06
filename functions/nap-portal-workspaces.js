@@ -56,7 +56,8 @@ function competitionItem(pack, definitions = new Map()) {
     eventCount: events.length, individualEventCount: events.filter(item => item.type === "individual").length,
     relayEventCount: events.filter(item => item.type === "relay").length,
     clubDocuments: [], documents: {}, generatedFiles: [], nativeOptionsConfigured: pack.options !== null,
-    nativeWarnings: [pack.event.deadlineWarning, events.some(event => !event.nativeRecognized) ? "Courses anciennes conservees." : ""].filter(Boolean),
+    nativeWarnings: [pack.event.deadlineWarning, events.some(event => !event.nativeRecognized) ? "Courses anciennes conservees." : "",
+      json(pack.detailedProgram?.program_sessions, []).some(session=>session.items?.some(item=>!courses.has(item.eventCode))) ? "Le programme detaille contient une course qui n'est plus proposee dans NAP. Il reste conserve et doit etre verifie." : ""].filter(Boolean),
     updatedAt: pack.readAt };
 }
 function nativeTime(raw) {

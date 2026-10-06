@@ -16518,7 +16518,8 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
     const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     const authorize = event => assertCanModifyEngagementEvent(context,event);
     try {
-      const result = await nativeChange.applyCompetitionChange(pool, {
+      const applyNativeChange = Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
+      const result = await applyNativeChange(pool, {
         competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch:request.data?.patch,
         eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions
       }, {

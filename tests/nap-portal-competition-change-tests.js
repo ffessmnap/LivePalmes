@@ -35,6 +35,10 @@ const rawProgram=[{id:"session-1",date:"2026-10-11",startTime:"09:30",items:[{ev
 const programPlan=planCompetitionChange(pack,{...input({programSessions:rawProgram}),eventDefinitions:new Map([["50AP",{code:"50AP"}]]),normalizeProgram:raw=>structuredClone(raw)},now);
 assert.deepEqual(programPlan.operations.map(operation=>operation.table),["livepalmes_competition_programs"]);
 assert.deepEqual(programPlan.operations[0].after.program_sessions,rawProgram);
+const retiredPack={...pack,courses:[],detailedProgram:programPlan.operations[0].after};
+const repairedProgram=planCompetitionChange(retiredPack,{...input({programSessions:[]}),expectedFingerprint:fingerprint(retiredPack),eventDefinitions:new Map([["50AP",{code:"50AP"}]]),normalizeProgram:raw=>raw},now);
+assert.deepEqual(repairedProgram.operations[0].after.program_sessions,[]);
+assert.throws(()=>planCompetitionChange(retiredPack,{...input({programSessions:[]}),expectedFingerprint:fingerprint(retiredPack),eventDefinitions:new Map(),normalizeProgram:raw=>raw},now),/ancienne/);
 assert.equal(pack.nativeSnapshot.parameters.actif,1);assert.equal(pack.courses.length,1);
 assert.throws(()=>planCompetitionChange(pack,{...input({programSessions:rawProgram}),normalizeProgram:raw=>raw},now),/ancienne/);
 for(const patch of [{level:"regional"},{name:""},{location:"x".repeat(65)},{date:"2026-02-30"},{entryDeadlineLocal:"2026-10-25 02:30:00"},{entryStatus:"wrong"},{poolLaneCount:20},{fees:{enabled:true,swimmerFee:1.001,individualEventFee:0,relayFee:0}}]) assert.throws(()=>planCompetitionChange(pack,input(patch),now),TypeError);
@@ -95,14 +99,14 @@ function fixture(settings={}) {
     let explains=0,released=0;
     native.readNativeCompetition=async()=>pack;
     const plans=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async({sql},values)=>{
-      assert.ok(sql.startsWith("EXPLAIN UPDATE") || sql.startsWith("EXPLAIN INSERT"));
+      assert.ok(sql.startsWith("EXPLAIN UPDATE") || sql.startsWith("EXPLAIN INSERT") || sql.startsWith("EXPLAIN DELETE"));
       assert.equal((sql.match(/\?/g)||[]).length,values.length);
       explains++;return [[{table:"scope_c",type:"const",key:"PRIMARY",rows:1,Extra:""}]];
     }})});
-    assert.equal(explains,6);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
+    assert.equal(explains,8);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
     assert.ok(!JSON.stringify(plans).includes("Antibes"));
     const rejected=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async()=>[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})});
-    assert.equal(rejected.complete,false);assert.equal(rejected.errors.length,6);assert.equal(rejected.plans.length,6);assert.ok(rejected.errors.every(error=>error.reason==="non-indexed"));
+    assert.equal(rejected.complete,false);assert.equal(rejected.errors.length,8);assert.equal(rejected.plans.length,8);assert.ok(rejected.errors.every(error=>error.reason==="non-indexed"));
     native.readNativeCompetition=async()=>{throw Object.assign(new Error("Do not expose private SQL values"),{code:"ER_BAD_FIELD_ERROR"});};
     const readerFailure=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++})});
     assert.equal(readerFailure.errors[0].reason,"column");assert.equal(readerFailure.complete,false);assert.ok(!JSON.stringify(readerFailure).includes("private SQL"));

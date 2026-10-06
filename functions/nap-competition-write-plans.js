@@ -3,6 +3,7 @@
 const native=require("./nap-portal-competitions");
 const {SPECS,buildStatement}=require("./nap-portal-competition-change");
 const schema=require("./nap-approved-portal-schema");
+const {buildRemovalStatement}=require("./nap-course-removal");
 function indexedPlanRow(row,item,index) {
   // INSERT destination metadata is not a read of the destination table.
   if(index===0 && !item.before && row.table===item.table && row.selectType==="INSERT" && row.type==="ALL" && !row.key && (row.rows===null || row.rows===0)) return true;
@@ -26,14 +27,19 @@ async function inspectCompetitionWritePlans(pool) {
       examples.push({table,key:SPECS[table].key,before:null,after:row});
       examples.push({table,key:SPECS[table].key,before:row,after:{...row,[field]:"EXPLAIN only",version:"2"}});
     }
+    if(pack.courses.length) {
+      const row=pack.courses[0];
+      const before={id:row.id,compet:5140,pos:row.pos,id_course:row.id_course,opencourse:row.opencourse,cost:row.cost,limitnageur:row.limitnageur};
+      for(const national of [false,true]) examples.push({table:"compet_courses",before,removal:true,national});
+    }
     const plans=[],errors=[];
     for(const item of examples) {
       try {
-        const statement=buildStatement(item,authority);
+        const statement=item.removal ? buildRemovalStatement(item.before,authority,item.national) : buildStatement(item,authority);
         const [rows]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
         if(!rows.length || rows.length>20) throw new RangeError("Plan de controle invalide.");
         const plan=rows.map(row=>({table:row.table ?? null,selectType:row.select_type ?? null,type:row.type ?? null,key:row.key ?? null,rows:row.rows==null ? null : Number(row.rows),extra:row.Extra || ""}));
-        plans.push({target:item.table,operation:item.before ? "update" : "insert",plan});
+        plans.push({target:item.table,operation:item.removal ? "delete" : item.before ? "update" : "insert",plan});
         if(plan.some((row,index)=>!indexedPlanRow(row,item,index))) errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:"non-indexed"});
       } catch(error) {
         errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:({ER_PARSE_ERROR:"syntax",ER_BAD_FIELD_ERROR:"column",ER_NOT_SUPPORTED_YET:"unsupported"})[error.code] || (error instanceof RangeError ? "volume" : "unavailable")});
