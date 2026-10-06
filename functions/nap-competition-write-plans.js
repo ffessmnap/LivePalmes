@@ -21,16 +21,22 @@ async function inspectCompetitionWritePlans(pool) {
       examples.push({table,key:SPECS[table].key,before:null,after:row});
       examples.push({table,key:SPECS[table].key,before:row,after:{...row,[field]:"EXPLAIN only",version:"2"}});
     }
-    const plans=[];
+    const plans=[],errors=[];
     for(const item of examples) {
-      const statement=buildStatement(item,authority);
-      const [rows]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
-      if(!rows.length || rows.length>20) throw new RangeError("Plan de controle invalide.");
-      const plan=rows.map(row=>({table:row.table ?? null,type:row.type ?? null,key:row.key ?? null,rows:Number(row.rows || 0),extra:row.Extra || ""}));
-      if(plan.some(row=>row.table && !["const","eq_ref","ref","range"].includes(row.type) && !(row.type==="index" && row.key==="PRIMARY" && row.rows<=2) || row.table && !row.key)) throw new TypeError("Plan non indexe.");
-      plans.push({target:item.table,operation:item.before ? "update" : "insert",plan});
+      try {
+        const statement=buildStatement(item,authority);
+        const [rows]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
+        if(!rows.length || rows.length>20) throw new RangeError("Plan de controle invalide.");
+        const plan=rows.map(row=>({table:row.table ?? null,type:row.type ?? null,key:row.key ?? null,rows:Number(row.rows || 0),extra:row.Extra || ""}));
+        plans.push({target:item.table,operation:item.before ? "update" : "insert",plan});
+        if(plan.some(row=>row.table && !["const","eq_ref","ref","range"].includes(row.type) && !(row.type==="index" && row.key==="PRIMARY" && row.rows<=2) || row.table && !row.key)) errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:"non-indexed"});
+      } catch(error) {
+        errors.push({target:item.table,operation:item.before ? "update" : "insert",reason:({ER_PARSE_ERROR:"syntax",ER_BAD_FIELD_ERROR:"column",ER_NOT_SUPPORTED_YET:"unsupported"})[error.code] || (error instanceof RangeError ? "volume" : "unavailable")});
+      }
     }
-    return {source:"nap",mode:"portal-competition-write-plans-readonly",plans,writesExecuted:false,complete:true};
+    return {source:"nap",mode:"portal-competition-write-plans-readonly",plans,errors,writesExecuted:false,complete:errors.length===0};
+  } catch(error) {
+    return {source:"nap",mode:"portal-competition-write-plans-readonly",plans:[],errors:[{target:"native-reader",reason:({ER_PARSE_ERROR:"syntax",ER_BAD_FIELD_ERROR:"column",ER_NO_SUCH_TABLE:"table"})[error.code] || "unavailable"}],writesExecuted:false,complete:false};
   } finally {connection.release();}
 }
 module.exports={inspectCompetitionWritePlans};

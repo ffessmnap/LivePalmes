@@ -2,10 +2,10 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const fields={name:{value:"Ancien nom"},date:{value:"2026-10-11"},endDate:{value:"2026-10-11"},location:{value:"Antibes"},deadline:{value:"2026-10-07T21:59:17"},poolLaneCount:{value:"8"},poolLength:{value:"50"},timingType:{value:"manual"},entryStatus:{value:"open"},officialsRequired:{value:"true"},maxEvents:{value:"0"}};
-let fee={enabled:false,swimmerFee:0,individualEventFee:0,relayFee:0,helloAssoUrl:""},approved=true;
+let fee={enabled:false,swimmerFee:0,individualEventFee:0,relayFee:0,helloAssoUrl:""},approved=true,program=[];
 const calls=[];
 const sandbox={nativeCompetitionEditBaseline:null,selectedEngagementCompetition:{id:"legacy-nap-5140",napFingerprint:"abc",napSource:true},elements:{engagementsSaveButton:{disabled:false},engagementsDetailStatus:{dataset:{}}},
-  editCompetitionFields:()=>fields,selectedEngagementFeesFromForm:()=>({...fee}),global:{confirm:()=>approved},
+  editCompetitionFields:()=>fields,selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
   callFunction:async(name,input)=>{calls.push({name,input});return {competition:{id:input.competitionId,napSource:true}};},invalidateEngagementCalendarCaches:()=>{},loadEngagementCompetitions:async()=>{},upsertEngagementCalendarItemFromServer:()=>{},renderEngagementCompetitionDetail:()=>{},clearEngagementDetailTabDirty:()=>{},setEngagementEditMode:()=>{}};
 vm.createContext(sandbox);
 const start=source.indexOf("  function nativeCompetitionFormValues("),end=source.indexOf("\n  function ",source.indexOf("  async function saveNativeCompetitionDetail(",start)+10);
@@ -24,6 +24,8 @@ vm.runInContext(source.slice(start,end),sandbox);
   approved=true;await sandbox.saveNativeCompetitionDetail();assert.deepEqual(JSON.parse(JSON.stringify(calls[1].input.patch)),{entryStatus:"closed"});
   sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();fee={...fee,enabled:true,swimmerFee:1.25};
   assert.deepEqual(Object.keys(sandbox.nativeCompetitionPatchFromForm()),["fees"]);
+  sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();program=[{id:"session-1",date:"2026-10-11",startTime:"09:00",items:[]}];
+  assert.deepEqual(Object.keys(sandbox.nativeCompetitionPatchFromForm()),["programSessions"]);
   assert.equal(sandbox.elements.engagementsSaveButton.disabled,false);
   assert.ok(!source.slice(start,end).includes("updateCompetitionWithQualifications"));
   console.log("Formulaire NAP : champs touches seuls, delai exact, fermeture confirmee et aucun ancien controle destructif verifies.");
