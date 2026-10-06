@@ -11,7 +11,9 @@ function validateProgram(raw, selectedEvents, normalize) {
       const event=selectedEvents.find(candidate=>candidate.code===item.eventCode);
       if(Array.isArray(event?.nativeCourses)) {
         const nativeSex={female:"F",male:"M",mixed:"0"}[item.genderMode];
-        if(!event.nativeCourses.some(course=>String(course.sexe).trim()===nativeSex)) throw new TypeError("Ce passage ne correspond pas aux courses femmes, hommes ou mixtes proposees dans NAP.");
+        const available=new Set(event.nativeCourses.map(course=>String(course.sexe).trim()));
+        const matches=item.genderMode==="mixed" && event.type!=="relay" ? available.has("F") && available.has("M") : available.has(nativeSex);
+        if(!matches) throw new TypeError("Ce passage ne correspond pas aux courses femmes, hommes ou mixtes proposees dans NAP.");
       }
     }
   }

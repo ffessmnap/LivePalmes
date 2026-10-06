@@ -17,6 +17,8 @@ assert.deepEqual(validateProgram([],events,normalize),[]);
 const womenOnly=[{...events[0],nativeCourses:[{sexe:"F"}]}];
 assert.equal(validateProgram(session([item()]),womenOnly,normalize)[0].items.length,1);
 assert.throws(()=>validateProgram(session([item("50BI","direct","male")]),womenOnly,normalize),/correspond pas/);
+assert.throws(()=>validateProgram(session([item("50BI","direct","mixed")]),womenOnly,normalize),/correspond pas/);
+assert.equal(validateProgram(session([item("50BI","direct","mixed")]),[{...events[0],nativeCourses:[{sexe:"F"},{sexe:"M"}]}],normalize)[0].items.length,1);
 assert.equal(validateProgram(session([item("50BI","direct","male")]),[{...events[0],nativeCourses:[{sexe:"F"},{sexe:"M"}]}],normalize)[0].items.length,1);
 assert.equal(validateProgram(session([item("4X100BI","direct","mixed")]),[{...events[1],nativeCourses:[{sexe:"0"}]}],normalize)[0].items.length,1);
 assert.throws(()=>validateProgram(session([item("4X100BI","direct","mixed")]),[{...events[1],nativeCourses:[{sexe:"F"},{sexe:"M"}]}],normalize),/correspond pas/);
