@@ -2,6 +2,47 @@
   let summary = global.LIVEPALMES_INTRANAP_SUMMARY || { filters: { courses: [], categories: [], seasons: [], regions: [] }, counts: {} };
   const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-intranap-4";
   const params = new URLSearchParams(global.location.search);
+  const usesNapDirectData = global.LivePalmesEnvironment.isTest === true;
+  let napRequest = 0;
+  let napLimit = 25;
+  let napFiltersKey = "";
+  async function readNap(action, filters = {}) {
+    const url = new URL("https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
+    url.searchParams.set("action", action);
+    for (const key of ["course", "sex", "category", "season", "region", "pool", "birthYear"]) if (filters[key]) url.searchParams.set(key, filters[key]);
+    url.searchParams.set("limit", String(napLimit));
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error("Consultation des performances indisponible.");
+    const data = await response.json();
+    if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
+    return data;
+  }
+  async function renderNap(filters) {
+    const request = ++napRequest;
+    const key = JSON.stringify([filters.course, filters.sex, filters.category, filters.season, filters.region, filters.pool, filters.birthYear]);
+    if (key !== napFiltersKey) { napLimit = 25; napFiltersKey = key; }
+    elements.status.textContent = "Chargement...";
+    elements.loadMore.hidden = true;
+    renderRows([], filters, "loading");
+    try {
+      const [data, facet] = await Promise.all([readNap("top", filters), birthYearFilterOpen ? readNap("top-years", filters) : Promise.resolve(null)]);
+      if (request !== napRequest) return;
+      if (facet) {
+        const selected = filters.birthYear;
+        addOptions(elements.birthYear, facet.years, "Toutes les années");
+        elements.birthYear.value = facet.years.includes(selected) ? selected : "";
+        elements.birthYear.disabled = false;
+      }
+      renderRows(data.rows, filters);
+      elements.status.textContent = `${data.rows.length}${data.total > data.rows.length ? " / " + data.total : ""} lignes - TOP ${napLimit} - ${filters.pool ? "Bassin " + filters.pool + " m" : "Tous bassins"}`;
+      elements.loadMore.hidden = !data.hasMore;
+      elements.loadMoreButton.textContent = "Afficher la suite";
+    } catch {
+      if (request !== napRequest) return;
+      elements.status.textContent = "Consultation des performances indisponible. Réessayez dans un instant.";
+      renderRows([], filters, "error");
+    }
+  }
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
@@ -67,6 +108,11 @@
   }
 
   async function loadSelectedPublicManifest() {
+    if (usesNapDirectData) {
+      const metadata = await readNap("top-metadata");
+      applyPublicManifest(metadata);
+      return;
+    }
     if (!usesFirestorePublicData) return;
     try {
       const response = await fetch(`${publicPerformanceBase}/manifest.json`, { cache: "no-store" });
@@ -431,6 +477,7 @@
   }
 
   function resetTopLimit() {
+    napLimit = 25;
     showAllTopRows = false;
   }
 
@@ -662,6 +709,7 @@
   function render() {
     const filters = currentFilters();
     updateTitle(filters);
+    if (usesNapDirectData) ++napRequest;
 
     if (!filters.sex && !filters.course) {
       addOptions(elements.birthYear, [], "Toutes les ann\u00e9es");
@@ -686,6 +734,8 @@
       renderRows([], filters);
       return;
     }
+
+    if (usesNapDirectData) { renderNap(filters); return; }
 
     const buckets = topBucketsForFilters(filters);
     const failedBucket = buckets.find((bucket) => bucketErrors.has(bucketKey(bucket)));
@@ -810,7 +860,8 @@
     });
 
     elements.loadMoreButton?.addEventListener("click", () => {
-      showAllTopRows = true;
+      if (usesNapDirectData) napLimit += 25;
+      else showAllTopRows = true;
       render();
     });
 
@@ -845,7 +896,10 @@
   }
 
   function start() {
-    loadSelectedPublicManifest().then(init);
+    loadSelectedPublicManifest().then(init).catch(() => {
+      elements.status.textContent = "Consultation des performances indisponible. Rechargez la page.";
+      renderRows([], {}, "error");
+    });
   }
 
   if (document.readyState === "loading") {
