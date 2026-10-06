@@ -2,6 +2,7 @@
 // Static analysis only. Never require or execute application code.
 const crypto = require("node:crypto");
 const { execFileSync } = require("node:child_process");
+const { isBuiltin } = require("node:module");
 const path = require("node:path");
 const acorn = require(path.join(__dirname, "../tests/firestore-rules/node_modules/acorn"));
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -97,7 +98,7 @@ function moduleGraph(files = {}) {
       for (const root of roots) walk(root, node => {
         if (node.type === "CallExpression" && node.callee.name === "require" &&
             node.arguments.length === 1 && typeof node.arguments[0].value === "string" &&
-            !node.arguments[0].value.startsWith("."))
+            !node.arguments[0].value.startsWith(".") && !isBuiltin(node.arguments[0].value))
           external.add(name + ":initializer:" + hash(file.source.slice(statement.start, statement.end)));
       });
     }
@@ -107,7 +108,7 @@ function moduleGraph(files = {}) {
       if (node.type === "Identifier" && ["eval", "global", "globalThis"].includes(node.name)) pure = false;
       if (node.type === "CallExpression" && node.callee.name === "require" &&
           node.arguments.length === 1 && typeof node.arguments[0].value === "string" &&
-          !node.arguments[0].value.startsWith(".")) external.add(node.arguments[0].value);
+          !node.arguments[0].value.startsWith(".") && !isBuiltin(node.arguments[0].value)) external.add(node.arguments[0].value);
     });
     let children;
     try { children = imports(ast, name); } catch (error) {
@@ -154,10 +155,20 @@ function fingerprints(source, common, files = {}) {
   const declarations = new Map();
   const allowedExportNodes = new Set();
   const factories = new Set();
+  const secretFactories = new Set();
+  const secretDeclarations = new Set();
   for (const { node } of entries) {
     if (node.type !== "VariableDeclaration" || node.kind !== "const") continue;
     for (const declaration of node.declarations) {
       const init = declaration.init;
+      if (declaration.id.type === "ObjectPattern" && init?.type === "CallExpression" && init.callee.name === "require" &&
+          init.arguments.length === 1 && init.arguments[0].value === "firebase-functions/params") {
+        for (const prop of declaration.id.properties) {
+          if (prop.type === "Property" && !prop.computed && prop.key.name === "defineSecret" && prop.value.type === "Identifier")
+            secretFactories.add(prop.value.name);
+        }
+        secretDeclarations.add(declaration);
+      }
       if (declaration.id.type !== "ObjectPattern" || init?.type !== "CallExpression" ||
         init.callee.name !== "require" || init.arguments.length !== 1 ||
         !/^firebase-functions\/v2\/(https|firestore|scheduler)$/.test(init.arguments[0].value || "")) continue;
@@ -167,6 +178,12 @@ function fingerprints(source, common, files = {}) {
     }
   }
   let conservative = false;
+  for (const { node } of entries) {
+    if (node.type === "FunctionDeclaration" && secretFactories.has(node.id?.name)) conservative = true;
+    if (node.type === "VariableDeclaration") for (const declaration of node.declarations) {
+      if (!secretDeclarations.has(declaration) && [...identifiers(declaration.id)].some(name => secretFactories.has(name))) conservative = true;
+    }
+  }
   for (const { node, group } of entries) {
     const a = node.type === "ExpressionStatement" && node.expression;
     const left = a && a.type === "AssignmentExpression" && a.operator === "=" && a.left;
@@ -181,7 +198,14 @@ function fingerprints(source, common, files = {}) {
       if (rhs.type !== "CallExpression" || !factories.has(rhs.callee.name)) conservative = true;
       for (const arg of rhs.arguments || []) {
         if (["ArrowFunctionExpression", "FunctionExpression", "Identifier", "Literal"].includes(arg.type)) continue;
-        walk(arg, child => { if (["CallExpression", "NewExpression", "AssignmentExpression", "UpdateExpression"].includes(child.type)) conservative = true; });
+        walk(arg, child => {
+          // Firebase's statically named secret descriptor belongs to this endpoint.
+          // Arbitrary option factories and dynamic secret names remain shared.
+          const descriptor = child.type === "CallExpression" && child.callee.type === "Identifier" &&
+            secretFactories.has(child.callee.name) && child.arguments.length === 1 &&
+            child.arguments[0].type === "Literal" && typeof child.arguments[0].value === "string";
+          if (["CallExpression", "NewExpression", "AssignmentExpression", "UpdateExpression"].includes(child.type) && !descriptor) conservative = true;
+        });
       }
     } else if (node.type === "FunctionDeclaration" && node.id) {
       if (declarations.has(node.id.name)) throw new Error("Declaration dupliquee");

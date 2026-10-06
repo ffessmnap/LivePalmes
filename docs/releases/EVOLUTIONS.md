@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Sélection TEST : secrets statiques et modules standard Node.js — 6 octobre 2026
+
+- Le run commun 37467174168 a réussi en 23 min 47 s mais sélectionné 138 fonctions malgré 141 révisions prouvées. La déclaration inline defineSecret et les nouveaux imports node:crypto imposaient encore une empreinte globale.
+- Les descripteurs defineSecret importés de Firebase avec un nom littéral sont rattachés à leur endpoint ; noms dynamiques, symboles masqués et fabriques arbitraires restent conservateurs. Les imports des modules standard Node.js restent dans les dépendances locales ; les initialisations npm tierces restent partagées.
+- Régression réelle ebcc955 → c187102 : cinq exports concernés, dont trois ordinaires (searchEngagementNationalSwimmers, updateEngagementNationalSwimmerIdentity, mergeEngagementNationalClubSwimmer). exportNapPublicPage et resolveEngagementSwimmerChangeRequest restent hors du lot ordinaire ; aucune extension implicite de publication. Aucun code métier, donnée, règle, secret ou configuration Firebase modifié.
+- Tests synthétiques locaux réussis ; vérification globale GitHub à terminer avant intégration. Aucune nouvelle publication Firebase lancée dans cette session ; aucune validation utilisateur ou PROD déduite.
+
+
 ### Portail NAP : preparation de la lecture/ecriture — 6 octobre 2026
 
 - Antoine confirme la cible de modification directe de NAP et autorise de commencer. Diagnostic prive des droits effectifs, champs obligatoires, index, moteurs et declencheurs sur huit tables fixes ; aucune donnee sportive lue ou modifiee, aucun droit ajoute. Budget de cinq requetes et plafonds documentes. Tests hors ligne passes ; diagnostic reel a effectuer apres deploiement TEST.
