@@ -10,7 +10,7 @@ function metadata(present) {
   }:{tables:[],columns:[],indexes:[]};
 }
 assert.equal(validate(metadata(false)),false); assert.equal(validate(metadata(true)),true);
-for(const mutate of [m=>m.tables[0].ENGINE="MyISAM",m=>m.columns[0].COLUMN_TYPE="text",m=>m.columns.push(m.columns[0]),m=>m.indexes[0].SUB_PART=1,m=>m.indexes.pop()]) {
+for(const mutate of [m=>m.tables[0].ENGINE="MyISAM",m=>m.columns[0].COLUMN_TYPE="text",m=>m.columns.push(m.columns[0]),m=>m.indexes[0].SUB_PART=1,m=>m.indexes[0].SEQ_IN_INDEX=9,m=>m.indexes.pop()]) {
   const m=metadata(true); mutate(m); assert.throws(()=>validate(m),/incompatible/i);
 }
 function fixture() {

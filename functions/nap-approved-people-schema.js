@@ -22,7 +22,7 @@ function validate(metadata) {
   const expected={PRIMARY:["source","person_id"],club_person:["club_id","source","person_id"]};
   if(metadata.indexes.length!==5 || Object.entries(expected).some(([name,names])=>{
     const actual=metadata.indexes.filter(k=>k.INDEX_NAME===name).sort((a,b)=>a.SEQ_IN_INDEX-b.SEQ_IN_INDEX);
-    return actual.length!==names.length || actual.some((k,i)=>k.COLUMN_NAME!==names[i] || Number(k.NON_UNIQUE)!==(name==="PRIMARY"?0:1) || k.SUB_PART!==null);
+    return actual.length!==names.length || actual.some((k,i)=>k.COLUMN_NAME!==names[i] || Number(k.SEQ_IN_INDEX)!==i+1 || Number(k.NON_UNIQUE)!==(name==="PRIMARY"?0:1) || k.SUB_PART!==null);
   })) throw new TypeError("Index incompatibles.");
   return true;
 }
