@@ -184,7 +184,11 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      response.json(await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
+      const action = request.query.action || "swimmer";
+      if (action !== "swimmer" && action !== "search") throw new TypeError("Action invalide.");
+      response.json(action === "search"
+        ? await require("./nap-direct-search").searchDirectSwimmers(napPool, request.query.q)
+        : await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
     } catch (error) {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
         ? "Historique trop volumineux pour cette consultation."
