@@ -44,9 +44,24 @@ function fixture(options = {}) {
   const source = fs.readFileSync("functions/index.js", "utf8");
   const update = source.slice(source.indexOf("exports.updateEngagementNationalSwimmerIdentity ="), source.indexOf("exports.setEngagementNationalClubSwimmerStatus ="));
   assert.ok(update.indexOf('if (!context.national)') < update.indexOf("nap.correctPortalIdentity"));
-  assert.ok(update.includes('.limit(201)'));
-  assert.ok(update.includes("db.runTransaction"));
-  assert.ok(update.includes("transaction.getAll"));
+  assert.ok(!update.includes('collection("engagementClubEntries")'));
+  assert.ok(!update.includes("db.runTransaction"));
+  assert.ok(update.includes("oldLivepalmesLinksIgnored: true"));
+  let nativeCalls=0,auditWrites=0;
+  class NativeError extends Error {constructor(code,message){super(message);this.code=code;}}
+  const nativeSandbox={exports:{},onCall:(_,callback)=>callback,ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS:{},ENVIRONMENT:{projectId:"livepalmes-test"},defineSecret:value=>value,TypeError,RangeError,HttpsError:NativeError,process:{env:{}},cleanText:value=>String(value || ""),
+    engagementAccessContext:async()=>({national:true,uid:"trusted-national"}),
+    db:{collection:name=>{assert.equal(name,"auditLogs","old sports database must never be read or written");return {doc:()=>({get:async()=>({exists:false}),create:async()=>auditWrites++})};}},
+    writeAuditLogOnce:async(_,uid)=>{assert.equal(uid,"trusted-national");auditWrites++;},
+    require:name=>{assert.equal(name,"./nap-portal-swimmers");return {portalPool:()=>"native-pool",correctPortalIdentity:async(pool,input,audit,linked)=>{
+      nativeCalls++;assert.equal(pool,"native-pool");assert.equal(input.actorUid,"trusted-national");
+      assert.deepEqual(Array.from(await linked.prepare({clubId:"106"},{})),[]);
+      const result=await linked.apply([{id:"obsolete-entry",beforeSwimmers:[{id:"old"}]}]);assert.equal(result.oldLivepalmesLinksIgnored,true);assert.equal(result.entryUpdateCount,0);
+      await audit.prepare("operation",{});await audit.complete("operation",{});return {ok:true,source:"nap"};
+    }};}};
+  vm.runInNewContext(update,nativeSandbox);
+  await assert.rejects(nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{source:"engagement",proposed:{}}}),error=>error.code==="failed-precondition");assert.equal(nativeCalls,0);
+  await nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{napSource:true,swimmerId:"42",actorUid:"spoof",proposed:{lastName:"CORRIGE"},reason:"Correction"}});assert.equal(nativeCalls,1);assert.equal(auditWrites,2);
   assert.ok(update.includes('ENVIRONMENT.projectId === "livepalmes-test"'));
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("global.LivePalmesEnvironment.isTest ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers"));

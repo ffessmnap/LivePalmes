@@ -14155,7 +14155,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENGAGEMENT_SWIMMER_CORREC
 exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Correction reservee au niveau national.");
-  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.source !== "engagement" && request.data?.napSource !== true) throw new HttpsError("failed-precondition", "Rechargez la recherche NAP avant de corriger cette fiche.");
+  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource !== true) throw new HttpsError("failed-precondition", "Rechargez la recherche NAP avant de corriger cette fiche.");
   if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource === true) {
     const nap = require("./nap-portal-swimmers");
     try {
@@ -14172,34 +14172,8 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
         prepare: (operation, target) => db.collection("auditLogs").doc(`nap-identity-${operation}-before`).create({ action: "nap.swimmer.identityCorrection.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
         complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid, target, operation)
       }, {
-        prepare: async (before, after) => {
-          const snapshot = await db.collection("engagementClubEntries").where("clubId", "==", before.clubId).limit(201).get();
-          if (snapshot.size > 200) throw new RangeError("Trop d'engagements pour cette correction.");
-          const ids = new Set([before.id]);
-          return snapshot.docs.flatMap(doc => {
-            const entry = doc.data() || {};
-            // Only native NAP identifiers are updated here. Obsolete LivePalmes
-            // identities are not prerequisites for correcting the authoritative NAP row.
-            const swimmers = engagementEntrySwimmerCorrectionResult(entry.swimmers || [], ids, after);
-            const relays = engagementEntryRelayCorrectionResult(entry.relays || [], ids, after);
-            return swimmers.changed || relays.changed ? [{ id: doc.id, beforeSwimmers: entry.swimmers || [], beforeRelays: entry.relays || [], afterSwimmers: swimmers.items, afterRelays: relays.relays }] : [];
-          });
-        },
-        apply: async entries => {
-          if (!entries.length) return { entryUpdateCount: 0, relayUpdateCount: 0 };
-          await db.runTransaction(async transaction => {
-            const refs = entries.map(item => db.collection("engagementClubEntries").doc(item.id));
-            const snapshots = await transaction.getAll(...refs);
-            snapshots.forEach((snapshot, index) => {
-              if (!snapshot.exists) throw new Error("Engagement supprime pendant la correction.");
-              const current = snapshot.data(), item = entries[index];
-              const same = (a, b) => require("node:util").isDeepStrictEqual(a || [], b || []);
-              if (!(same(current.swimmers, item.beforeSwimmers) || same(current.swimmers, item.afterSwimmers)) || !(same(current.relays, item.beforeRelays) || same(current.relays, item.afterRelays))) throw new Error("Engagement modifie pendant la correction : verification a reprendre.");
-              transaction.set(refs[index], { swimmers: item.afterSwimmers, relays: item.afterRelays, updatedAt: new Date().toISOString(), updatedBy: context.uid }, { merge: true });
-            });
-          });
-          return { entryUpdateCount: entries.length, relayUpdateCount: entries.filter(item => !require("node:util").isDeepStrictEqual(item.beforeRelays, item.afterRelays)).length };
-        }
+        prepare: async () => [],
+        apply: async () => ({ entryUpdateCount: 0, relayUpdateCount: 0, oldLivepalmesLinksIgnored: true })
       });
     } catch (error) {
       throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Correction a verifier. Rechargez la recherche ou reprenez la meme correction ; sa sauvegarde est conservee.");
