@@ -12616,13 +12616,28 @@ async function searchEngagementNationalSwimmerDocs(db, query = "", limit = 40) {
     .slice(0, limit);
 }
 
-exports.searchEngagementNationalSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
   }
   const query = cleanText(request.data?.query).slice(0, 120);
   const limit = Math.min(80, Math.max(10, Math.trunc(Number(request.data?.limit) || 40)));
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const nap = require("./nap-portal-swimmers");
+      const result = await nap.searchPortalSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), query);
+      const snapshots = result.swimmers.length ? await db.getAll(...result.swimmers.map(item => db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(item)))) : [];
+      return { ok: true, query, source: "nap", hasMore: result.hasMore, swimmers: result.swimmers.map((item, index) => ({
+        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
+        ...(snapshots[index]?.exists ? engagementSwimmerLicenseItem(snapshots[index]) : {}),
+        id: item.id, swimmerIndexId: item.id, swimmerId: item.id, source: "reference", napSource: true,
+        firstName: item.firstName, lastName: item.lastName, birthDate: item.birthDate, sex: item.sex, name: item.name, clubId: item.clubId, club: item.club, clubName: item.clubName, identityKey: item.identityKey, napFingerprint: item.napFingerprint
+      })) };
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Recherche NAP indisponible. Precisez le nom, le prenom ou l'identifiant.");
+    }
+  }
   const swimmers = await searchEngagementNationalSwimmerDocs(db, query, limit);
   return {
     ok: true,
@@ -13160,7 +13175,7 @@ function engagementEntrySwimmerCorrectionResult(items = [], oldIds = new Set(), 
       birthDate: next.birthDate,
       sex: next.sex,
       category: currentEngagementCategoryFromBirthDate(next.birthDate),
-      licenseNumber: next.licenseNumber
+      licenseNumber: next.licenseNumber ?? item.licenseNumber
     });
   });
   return { changed, items: corrected };
@@ -13985,9 +14000,60 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENGAGEMENT_SWIMMER_CORREC
   return { ok: true, request: engagementSwimmerChangeRequestItem(updated), result };
 });
 
-exports.updateEngagementNationalSwimmerIdentity = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Correction reservee au niveau national.");
+  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.source !== "engagement" && request.data?.napSource !== true) throw new HttpsError("failed-precondition", "Rechargez la recherche NAP avant de corriger cette fiche.");
+  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource === true) {
+    const nap = require("./nap-portal-swimmers");
+    try {
+      const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, [request.data.swimmerId]);
+      if (cleanText(request.data.proposed?.licenseNumber).toUpperCase() !== cleanText(licenseMatch.license?.licenseNumber).toUpperCase()) throw new TypeError("La licence doit etre modifiee dans son circuit dedie.");
+      const { licenseNumber, ...proposed } = request.data.proposed || {};
+      return await nap.correctPortalIdentity(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, proposed,
+        actorUid: context.uid, reason: cleanText(request.data.reason)
+      }, {
+        read: async operation => {
+          const snapshot = await db.collection("auditLogs").doc(`nap-identity-${operation}-before`).get();
+          return snapshot.exists ? snapshot.data().target : null;
+        },
+        prepare: (operation, target) => db.collection("auditLogs").doc(`nap-identity-${operation}-before`).create({ action: "nap.swimmer.identityCorrection.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
+        complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid, target, operation)
+      }, {
+        prepare: async (before, after) => {
+          const snapshot = await db.collection("engagementClubEntries").where("clubId", "==", before.clubId).limit(201).get();
+          if (snapshot.size > 200) throw new RangeError("Trop d'engagements pour cette correction.");
+          const ids = new Set([before.id]);
+          return snapshot.docs.flatMap(doc => {
+            const entry = doc.data() || {};
+            const linkedPeople = [...(entry.swimmers || []), ...(entry.relays || []).flatMap(relay => relay.members || [])];
+            if (linkedPeople.some(item => (item.identityKey || engagementSwimmerIdentityKey(item.firstName, item.lastName, item.birthDate)) === before.identityKey && !ids.has(cleanText(item.swimmerIndexId || item.id || item.swimmerId)))) throw new TypeError("Un engagement ancien doit etre raccorde a la fiche NAP avant correction.");
+            const swimmers = engagementEntrySwimmerCorrectionResult(entry.swimmers || [], ids, after);
+            const relays = engagementEntryRelayCorrectionResult(entry.relays || [], ids, after);
+            return swimmers.changed || relays.changed ? [{ id: doc.id, beforeSwimmers: entry.swimmers || [], beforeRelays: entry.relays || [], afterSwimmers: swimmers.items, afterRelays: relays.relays }] : [];
+          });
+        },
+        apply: async entries => {
+          if (!entries.length) return { entryUpdateCount: 0, relayUpdateCount: 0 };
+          await db.runTransaction(async transaction => {
+            const refs = entries.map(item => db.collection("engagementClubEntries").doc(item.id));
+            const snapshots = await transaction.getAll(...refs);
+            snapshots.forEach((snapshot, index) => {
+              if (!snapshot.exists) throw new Error("Engagement supprime pendant la correction.");
+              const current = snapshot.data(), item = entries[index];
+              const same = (a, b) => require("node:util").isDeepStrictEqual(a || [], b || []);
+              if (!(same(current.swimmers, item.beforeSwimmers) || same(current.swimmers, item.afterSwimmers)) || !(same(current.relays, item.beforeRelays) || same(current.relays, item.afterRelays))) throw new Error("Engagement modifie pendant la correction : verification a reprendre.");
+              transaction.set(refs[index], { swimmers: item.afterSwimmers, relays: item.afterRelays, updatedAt: new Date().toISOString(), updatedBy: context.uid }, { merge: true });
+            });
+          });
+          return { entryUpdateCount: entries.length, relayUpdateCount: entries.filter(item => !require("node:util").isDeepStrictEqual(item.beforeRelays, item.afterRelays)).length };
+        }
+      });
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Correction a verifier. Rechargez la recherche ou reprenez la meme correction ; sa sauvegarde est conservee.");
+    }
+  }
   const target = await getEngagementSwimmerCorrectionTarget(
     db,
     request.data?.source,
@@ -14671,6 +14737,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTIO
   const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
   const targetSwimmerId = cleanText(request.data?.targetSwimmerId).slice(0, 80);
   const targetSource = cleanText(request.data?.targetSource || "performances").slice(0, 40);
+  if (ENVIRONMENT.projectId === "livepalmes-test" && (sourceSource === "reference" || targetSource === "reference")) throw new HttpsError("failed-precondition", "La fusion NAP n'est pas encore raccordee. Aucune ancienne fiche n'a ete modifiee.");
   const targetIdentityKey = cleanText(request.data?.targetIdentityKey).slice(0, 180);
   if (!sourceSwimmerId || !targetSwimmerId || (sourceSource === targetSource && sourceSwimmerId === targetSwimmerId)) {
     throw new HttpsError("invalid-argument", "Nageurs source et cible requis.");
