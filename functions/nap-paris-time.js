@@ -20,7 +20,7 @@ function entryState(parameters, now = Date.now()) {
   const deadline = parisDeadline(parameters.date_limit);
   const expired = deadline.iso ? now >= Date.parse(deadline.iso) : false;
   return { entryDeadlineAt: deadline.iso, nativeEntryDeadline: parameters.date_limit ?? null,
-    entryStatus: expired ? "closed" : Number(parameters.actif) === 1 ? "open" : "upcoming",
+    entryStatus: expired ? "closed" : Number(parameters.actif) === 1 ? "open" : Number(parameters.entry_closed) === 1 ? "closed" : "upcoming",
     deadlineWarning: deadline.warning };
 }
 module.exports = { civilAt, parisDeadline, entryState };

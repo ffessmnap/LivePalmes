@@ -11,6 +11,12 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   const raw = { id: 2, libelle: "Compétition", date: "2004-02-29", lieu: "Verdun", bassin: 0, chrono: "E", ld: 0, type_label: "Piscine", level_label: "Championnat de Zones", has_results: 1 };
   const mapped = calendar.eventFromRow(raw);
   assert.equal(mapped.poolLength, ""); assert.equal(mapped.level, "regional"); assert.equal(mapped.timingType, "electronic");
+  assert.equal(mapped.city, "Verdun");
+  const supplemented = calendar.eventFromRow({...raw,portal_city:"Ville corrigée",portal_address:"Adresse",portal_organizer:"Organisateur",portal_water_body_type:"lake",portal_canceled:1,organizer_email:"private@example.test"});
+  assert.equal(supplemented.city,"Ville corrigée"); assert.equal(supplemented.address,"Adresse");
+  assert.equal(supplemented.organizer,"Organisateur"); assert.equal(supplemented.canceled,true);
+  assert.equal(supplemented.waterBodyType,"lake"); assert.equal(supplemented.organizerEmail,undefined);
+  assert.ok(calendar.EVENT_JOINS.includes("co.competition_id=c.id"));
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "recyclage juges idf" }).eventType, "training");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage de detection" }).eventType, "stage");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Reunion regionale" }).eventType, "meeting");
