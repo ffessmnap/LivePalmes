@@ -37,7 +37,7 @@ function fixture(initial = []) {
   await assert.rejects(approvedPortalSchema(state.pool,{...input,confirmation:"anything"}),TypeError);
   const before=await approvedPortalSchema(state.pool,input);
   assert.equal(state.counts().creations,0);
-  assert.equal(before.tables.length,7);
+  assert.equal(before.tables.length,8);
   assert.equal(before.planHash,planHash);
   const apply={...input,phase:"apply",planHash,schemaHash:before.schemaHash};
   await assert.rejects(approvedPortalSchema(state.pool,{...apply,planHash:"wrong"}),TypeError);
@@ -45,7 +45,7 @@ function fixture(initial = []) {
   await assert.rejects(approvedPortalSchema(state.pool,{...apply,schemaHash:"wrong"}),/modifiee/);
   assert.equal(state.counts().creations,0);
   const result=await approvedPortalSchema(state.pool,apply);
-  assert.equal(result.verified,true); assert.equal(result.dataRowsWritten,false); assert.equal(result.created.length,7);
+  assert.equal(result.verified,true); assert.equal(result.dataRowsWritten,false); assert.equal(result.created.length,8);
   const presentBefore=await approvedPortalSchema(state.pool,input);
   assert.deepEqual((await approvedPortalSchema(state.pool,{...apply,schemaHash:presentBefore.schemaHash})).created,[]);
   state.drift=true; await assert.rejects(approvedPortalSchema(state.pool,input),/incompatibles/);
@@ -55,11 +55,16 @@ function fixture(initial = []) {
   partial.failAfter=null;
   const resumed=await approvedPortalSchema(partial.pool,input);
   const completed=await approvedPortalSchema(partial.pool,{...apply,schemaHash:resumed.schemaHash});
-  assert.equal(completed.created.length,4); assert.equal(partial.counts().creations,7);
+  assert.equal(completed.created.length,5); assert.equal(partial.counts().creations,8);
+  const existingSeven=fixture(tables.slice(0,7).map(t=>t.name));
+  const sevenBackup=await approvedPortalSchema(existingSeven.pool,input);
+  const extension=await approvedPortalSchema(existingSeven.pool,{...apply,schemaHash:sevenBackup.schemaHash});
+  assert.deepEqual(extension.created,["livepalmes_competition_programs"]);
+  assert.equal(existingSeven.counts().creations,1);
   assert.ok(tables.every(t=>t.columns.some(c=>c.name==="version") && t.columns.every(c=>!/(?:licen|password|pin)/i.test(c.name))));
   const workflow=fs.readFileSync(".github/workflows/nap-authorized-portal-schema.yml","utf8");
   assert.ok(workflow.indexOf("name: nap-portal-schema-before") < workflow.indexOf("NAP_PORTAL_SCHEMA_PHASE: apply"));
   assert.ok(workflow.includes('test "$EXPECTED_COMMIT" = "$GITHUB_SHA"'));
   for (const name of ["livepalmes-test-common.yml","livepalmes-test-backend.yml"]) assert.ok(!fs.readFileSync(`.github/workflows/${name}`,"utf8").includes("create-nap-portal-complements"));
-  console.log("Complements NAP : preparation sans ecriture, sept tables fixes, schema divergent refuse, verrou, idempotence et reprise partielle verifies.");
+  console.log("Complements NAP : preparation sans ecriture, huit tables fixes, schema divergent refuse, verrou, idempotence et reprise partielle verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

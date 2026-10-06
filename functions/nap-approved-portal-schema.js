@@ -13,7 +13,8 @@ const tables = [
   { name: "livepalmes_qualification_groups", columns: [column("id", "int", false, "auto_increment"), competitionKey, column("position", "int", false), column("label", "varchar(80)"), column("categories", "json"), column("mode", "varchar(8)"), column("start_date", "date"), column("end_date", "date"), column("electronic_only", "tinyint"), column("pools", "json"), column("competition_mode", "varchar(16)"), column("bonus_requires_selected", "tinyint"), ...tracking], keys: [key("PRIMARY", ["id"], true), key("competition_position", ["competition_id", "position"], true)] },
   { name: "livepalmes_qualification_standards", columns: [competitionKey, column("category", "varchar(10)", false), column("sex", "char(1)", false), column("event_code", "varchar(32)", false), column("minimum_centiseconds", "int"), ...tracking], keys: [key("PRIMARY", ["competition_id", "category", "sex", "event_code"], true)] },
   { name: "livepalmes_qualification_competitions", columns: [column("group_id", "int", false), column("qualifying_competition_id", "int", false), ...tracking], keys: [key("PRIMARY", ["group_id", "qualifying_competition_id"], true), key("qualifying_group", ["qualifying_competition_id", "group_id"])] },
-  { name: "livepalmes_club_entry_options", columns: [competitionKey, column("club_id", "int", false), column("team_leader_waiver", "tinyint"), column("team_leader_contact", "json"), column("submission_metadata", "json"), ...tracking], keys: [key("PRIMARY", ["competition_id", "club_id"], true), key("club_competition", ["club_id", "competition_id"])] }
+  { name: "livepalmes_club_entry_options", columns: [competitionKey, column("club_id", "int", false), column("team_leader_waiver", "tinyint"), column("team_leader_contact", "json"), column("submission_metadata", "json"), ...tracking], keys: [key("PRIMARY", ["competition_id", "club_id"], true), key("club_competition", ["club_id", "competition_id"])] },
+  { name: "livepalmes_competition_programs", columns: [competitionKey, column("program_sessions", "json"), ...tracking], keys: [key("PRIMARY", ["competition_id"], true)] }
 ];
 function createSql(table) {
   const columns = table.columns.map(c => `\`${c.name}\` ${c.type} ${c.nullable ? "NULL" : "NOT NULL"}${c.defaultValue !== null ? ` DEFAULT ${c.defaultValue}` : ""}${c.extra ? ` ${c.extra}` : ""}`);
@@ -47,11 +48,11 @@ async function inspect(connection) {
   const names = tables.map(t => t.name), placeholders = names.map(() => "?").join(",");
   const execute = async sql => (await connection.execute({sql, timeout:10000}, names))[0];
   const metadata = {
-    tables: await execute(`SELECT TABLE_NAME,ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN (${placeholders}) ORDER BY TABLE_NAME LIMIT 8`),
+    tables: await execute(`SELECT TABLE_NAME,ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN (${placeholders}) ORDER BY TABLE_NAME LIMIT 9`),
     columns: await execute(`SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN (${placeholders}) ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 151`),
     indexes: await execute(`SELECT TABLE_NAME,INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,NON_UNIQUE,SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN (${placeholders}) ORDER BY TABLE_NAME,INDEX_NAME,SEQ_IN_INDEX LIMIT 31`)
   };
-  if (metadata.tables.length > 7 || metadata.columns.length > 150 || metadata.indexes.length > 30) throw new Error("Structure complementaire trop volumineuse.");
+  if (metadata.tables.length > 8 || metadata.columns.length > 150 || metadata.indexes.length > 30) throw new Error("Structure complementaire trop volumineuse.");
   validateExisting(metadata);
   return metadata;
 }

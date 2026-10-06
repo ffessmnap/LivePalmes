@@ -9,8 +9,8 @@ const QUERIES = [
   ["courses", "SELECT c.id,c.compet,c.id_course,c.pos,c.opencourse,c.cost,c.limitnageur,d.course,d.sexe,d.relais FROM (SELECT id,compet,id_course,pos,opencourse,cost,limitnageur FROM compet_courses ORDER BY id DESC LIMIT 60) c LEFT JOIN course_dispo d ON d.id=c.id_course ORDER BY c.id DESC LIMIT 60"],
   ["sessions", "SELECT id,compet,session,state,`begin` FROM winpalme_sessions ORDER BY id DESC LIMIT 40"],
   ["program", "SELECT c.id,c.session,c.course,c.sexe,c.pos,c.final,s.compet FROM (SELECT id,session,course,sexe,pos,final FROM winpalme_courses ORDER BY id DESC LIMIT 80) c LEFT JOIN winpalme_sessions s ON s.id=c.session ORDER BY c.id DESC LIMIT 80"],
-  ["qualifications", "SELECT q.id,q.categorie,q.course,q.tps,q.type,t.short,t.begin,t.end FROM (SELECT id,categorie,course,tps,type FROM qualifs ORDER BY id DESC LIMIT 60) q LEFT JOIN qualif_types t ON t.id=q.type ORDER BY q.id DESC LIMIT 60"],
-  ["forfeits", "SELECT id,engagement,compet,forfait FROM forfait ORDER BY id DESC LIMIT 40"]
+  ["qualifications", "SELECT q.id,q.categorie,q.course,q.tps,q.type,t.short,t.begin,t.end FROM (SELECT id,categorie,course,tps,type FROM qualifs ORDER BY id DESC LIMIT 60) q LEFT JOIN qualif_types t FORCE INDEX (PRIMARY) ON t.id=q.type ORDER BY q.id DESC LIMIT 60"],
+  ["forfeits", "SELECT id,engagement,compet,forfait FROM forfait FORCE INDEX (PRIMARY) ORDER BY id DESC LIMIT 40"]
 ];
 async function inspectEngagementContract(pool) {
   const samples = {}, plans = {}, errors = [];
