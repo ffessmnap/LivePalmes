@@ -13,6 +13,7 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
   onCall: (_, callback) => callback, HttpsError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
+  cleanEngagementProgramSessions:()=>[],
   cleanText: value => String(value || ""), cleanIsoDate: value => /^\d{4}-\d\d-\d\d$/.test(String(value)) ? value : "",
   engagementSeasonEndYearFromIsoDate: value => Number(value.slice(0, 4)) + (value.slice(5, 7) >= "09" ? 1 : 0),
   engagementSeasonBoundsFromEndYear: endYear => ({ endYear, startYear: endYear - 1, startDate: `${endYear - 1}-09-01`, endDate: `${endYear}-08-31` }),

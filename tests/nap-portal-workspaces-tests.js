@@ -1,6 +1,10 @@
 "use strict";
 const assert = require("node:assert/strict");
 const view = require("../functions/nap-portal-workspaces");
+assert.equal(view.nativeCourseCode("4X100BI Mixte"),"4X100BI");
+assert.equal(view.nativeCourseCode("4X100SB Mixte"),"4X100SB");
+assert.notEqual(view.nativeCourseCode("4X100BI Mixte"),view.nativeCourseCode("4X100SB Mixte"));
+assert.equal(view.nativeCourseCode("4X100SF HSE"),"4X100SFHSE");
 const pack = { source: "nap", readAt: "2026-10-06T10:00:00Z", event: { id: "legacy-nap-5140", city: "Antibes", date: "2026-10-11", competitionType: "pool" },
   nativeParameters: { saisie: 0, relais: 0, officiel: 1, mailtxt: "", mailjuges: "" },
   courses: [{ id: 1, id_course: 10, course: "50BI", sexe: "F", relais: 0 }, { id: 2, id_course: 11, course: "50BI", sexe: "M", relais: 0 }, { id: 3, id_course: 90, course: "25AP", sexe: "F", relais: 0 }],

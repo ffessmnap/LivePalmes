@@ -12,7 +12,8 @@ const SPECS = Object.freeze({
   competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"] },
   compet_parametres: { key: "id", columns: ["id","compet","actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"] },
   livepalmes_competition_options: { key: "competition_id", columns: [...schema.tables[0].columns.map(c => c.name), "entry_closed"] },
-  livepalmes_competition_fees: { key: "competition_id", columns: schema.tables[2].columns.map(c => c.name) }
+  livepalmes_competition_fees: { key: "competition_id", columns: schema.tables[2].columns.map(c => c.name) },
+  livepalmes_competition_programs: { key: "competition_id", columns: schema.tables[7].columns.map(c=>c.name) }
 });
 const JSON_COLUMNS = new Set(["invited_region_ids","program_sessions"]);
 const string = (value, max, required = false) => {
@@ -86,6 +87,12 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
       if (!["open","upcoming","closed"].includes(value)) throw new TypeError("Statut des engagements invalide.");
       after.compet_parametres.actif=value === "open" ? 1 : 0;
       supplemental("livepalmes_competition_options",pack.options).entry_closed=value === "closed" ? 1 : 0;
+    } else if(field === "programSessions") {
+      const events=require("./nap-portal-workspaces").competitionItem(pack,input.eventDefinitions).events;
+      const known=new Set(events.filter(event=>event.nativeRecognized).map(event=>event.code));
+      const previous=typeof pack.detailedProgram?.program_sessions==="string" ? JSON.parse(pack.detailedProgram.program_sessions) : pack.detailedProgram?.program_sessions || [];
+      if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
+      supplemental("livepalmes_competition_programs",pack.detailedProgram).program_sessions=require("./nap-program-validation").validateProgram(value,events,input.normalizeProgram);
     } else if (field === "fees") {
       if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(k=>!["enabled","swimmerFee","individualEventFee","relayFee","helloAssoUrl"].includes(k))) throw new TypeError("Tarifs invalides.");
       const fees=supplemental("livepalmes_competition_fees",pack.fees); fees.enabled=bool(value.enabled);
