@@ -6,7 +6,7 @@
 
 - Antoine autorise la correction du circuit après analyse des republications de 138 fonctions. Preuves vérifiées par révision, réutilisation des artefacts des lots ciblés sur main, étiquette de commit ajoutée à ces lots et raisons de sélection affichées. Une différence Hosting ou une fonction NAP extérieure au lot ordinaire ne force plus les 138 fonctions.
 - Analyse statique des exports conditionnels TEST et imports locaux directs/indirects ; initialisations avec effets possibles, imports dynamiques et dépendances npm restent conservateurs. Aucun code métier, donnée, règle, index ou secret modifié. Le contrôle global de dérive PROD reste strict.
-- Tests ciblés locaux : 33 scénarios du circuit et scénarios d'empreintes synthétiques réussis. Vérification globale GitHub et publication TEST du circuit à terminer ; aucun retour utilisateur ni validation PROD déduit.
+- PR #123 : 34 scénarios du circuit, vérification globale et régressions réelles DTN/PDF/NAP/interface réussis dans 37459400667 sur bff293349ed6ef6a0ecc5170f9a13a897e9247f2. Les empreintes TOP NAP sélectionnent 2 traitements ; interface seule : 0. Circuit prêt à intégrer ; sélection réelle Firebase à vérifier au prochain lancement sur main. Accès navigateur GitHub refusé lors de cette session, donc aucun nouveau workflow de publication lancé ; aucune validation utilisateur ou PROD déduite.
 
 ### Finalisation du calendrier NAP sur TEST — 6 octobre 2026
 
