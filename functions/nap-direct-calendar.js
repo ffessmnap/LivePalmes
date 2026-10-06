@@ -35,15 +35,17 @@ function eventFromRow(row) {
   const id = `legacy-nap-${row.id}`;
   const pdfUrl = publicUrl(row.filepdf);
   return { id, legacyCompetitionId: String(row.id), name, date: date(row.date), endDate: date(row.enddate) || date(row.date),
-    city: text(row.lieu), location: text(row.lieu), description: text(row.description), eventType, level,
+    city: row.portal_city == null ? text(row.lieu) : text(row.portal_city), location: text(row.lieu), address:text(row.portal_address),
+    organizer:text(row.portal_organizer), waterBodyType:text(row.portal_water_body_type), canceled:Number(row.portal_canceled)===1,
+    description: text(row.description), eventType, level,
     regionId, regionLabel: rules.committeeLabel(regionId), poolLength: Number(row.bassin) > 0 ? String(row.bassin) : "",
     poolLaneCount: Number(row.nb_lignes) > 0 ? Number(row.nb_lignes) : 0,
     timingType: ({ E: "electronic", M: "manual" })[text(row.chrono)] || "",
     resultsPublishedAt: Number(row.has_results) ? date(row.date) : "",
     results: { pdfUrl, url: Number(row.has_results) ? `competition.html?id=${id}#competitionResultsTitle` : "", dataPath: Number(row.has_results) ? `results/${id}.json` : "" }, documents: [], program: [] };
 }
-const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
-const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.typecnc LEFT JOIN compet_type s ON s.id=c.type";
+const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
+const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.typecnc LEFT JOIN compet_type s ON s.id=c.type LEFT JOIN livepalmes_competition_options co ON co.competition_id=c.id";
 async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
 async function readCalendarManifest(pool) {
   const first = await execute(pool, "SELECT date FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date >= '1900-01-01' ORDER BY date,id LIMIT 1");

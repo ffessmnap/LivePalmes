@@ -27,7 +27,7 @@ async function bounded(connection, sql, values, maximum) {
 async function readNativeCompetitionSeason(connection, input) {
   const year = Number(input);
   if (!Number.isInteger(year) || year < 1901 || year > 2101) throw new TypeError("Saison invalide.");
-  const select = calendar.SELECT_EVENT.replace(" FROM competitions c", ",cp.niveau,cp.actif,cp.date_limit FROM competitions c");
+  const select = calendar.SELECT_EVENT.replace(" FROM competitions c", ",cp.niveau,cp.actif,cp.date_limit,co.entry_closed FROM competitions c");
   const rows = await bounded(connection, `${select} FORCE INDEX (livepalmes_date_id)${calendar.EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT 501`, [`${year - 1}-09-01`, `${year}-09-01`], calendar.MAX_EVENTS);
   if (new Set(rows.map(row => String(row.id))).size !== rows.length) throw new RangeError("Parametres de competition ambigus.");
   return { source: "nap", readAt: new Date().toISOString(), events: rows.map(portalEventFromRow).filter(event => event.date && event.name) };
@@ -54,7 +54,11 @@ async function readNativeCompetition(connection, input, authorize) {
   const qualifyingCompetitions = groups.length ? await bounded(connection, `SELECT * FROM livepalmes_qualification_competitions WHERE group_id IN (${groups.map(() => "?").join(",")}) ORDER BY group_id,qualifying_competition_id LIMIT 2401`, groups.map(group => group.id), LIMITS.qualifyingCompetitions) : [];
   const sessions = await bounded(connection, "SELECT id,label,description,session,state,`begin` FROM winpalme_sessions FORCE INDEX (livepalmes_compet_session_id) WHERE compet=? ORDER BY session,id LIMIT 13", [id], LIMITS.sessions);
   const program = sessions.length ? await bounded(connection, `SELECT id,session,course,sexe,pos,final FROM winpalme_courses FORCE INDEX (livepalmes_session_pos_id) WHERE session IN (${sessions.map(() => "?").join(",")}) ORDER BY session,pos,id LIMIT 1921`, sessions.map(session => session.id), LIMITS.program) : [];
-  return { source: "nap", readAt: new Date().toISOString(), event, nativeParameters, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
+  const nativeSnapshot = {
+    competition: Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),
+    parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"].map(key=>[key,row[key] ?? null])) }
+  };
+  return { source: "nap", readAt: new Date().toISOString(), event: {...event,...entryState({...row,entry_closed:options[0]?.entry_closed})}, nativeParameters, nativeSnapshot, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
     courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, groups, standards, qualifyingCompetitions, sessions, program };
 }
 // Private compatibility proof, deliberately excludes names, contacts and descriptions.
