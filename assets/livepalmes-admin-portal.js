@@ -10857,7 +10857,7 @@
       engagementClubSwimmersClubId = "";
       engagementClubSwimmersCachedAt = 0;
     }
-    if (!engagementClubSwimmersLoaded && !force) {
+    if (!engagementClubSwimmersLoaded && !force && !global.LivePalmesEnvironment?.isTest) {
       const cached = readEngagementClubSwimmersCache();
       if (cached) {
         engagementClubSwimmers = cached.swimmers;
@@ -12750,7 +12750,7 @@
     } catch (error) {
       setFormPending(elements.engagementsSwimmerCorrectionForm, false);
       if (elements.engagementsSwimmerCorrectionMessage) {
-        elements.engagementsSwimmerCorrectionMessage.textContent = `Correction impossible : ${error?.message || error}`;
+        elements.engagementsSwimmerCorrectionMessage.textContent = `Correction impossible : ${String(error?.message || error).replace(/^(Correction impossible :\s*)+/i, "")}`;
         elements.engagementsSwimmerCorrectionMessage.dataset.tone = "error";
         elements.engagementsSwimmerCorrectionMessage.classList.remove("is-loading");
       }

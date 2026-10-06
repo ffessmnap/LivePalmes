@@ -2,7 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
-const { person, searchPortalSwimmers, correctPortalIdentity } = require("../functions/nap-portal-swimmers");
+const { person, searchPortalSwimmers, listPortalClubSwimmers, correctPortalIdentity } = require("../functions/nap-portal-swimmers");
 const { fingerprint } = require("../functions/nap-portal-swimmer-change");
 const original = { id: 42, nom: "EXEMPLE", prenom: "Test", date: "2000-01-01", sexe: "F", club: "106", actif: 0, wc: null, edf: 0, creation: "2001-01-01 00:00:00", number: "private" };
 function fixture(options = {}) {
@@ -71,5 +71,21 @@ function fixture(options = {}) {
     }
     assert.equal(napCalls, 0);
   }
+  let clubQueries = 0;
+  const clubConnection = { execute: async (query, values) => {
+    clubQueries++;
+    assert.ok(query.sql.includes("FORCE INDEX (livepalmes_club_id)"));
+    assert.ok(query.sql.includes("WHERE n.club=? ORDER BY n.id LIMIT 801"));
+    assert.deepEqual(values, ["106"]);
+    return [[original]];
+  } };
+  const clubPeople = await listPortalClubSwimmers(clubConnection, "106");
+  assert.equal(clubQueries, 1);
+  assert.equal(clubPeople[0].id, "42");
+  assert.equal(clubPeople[0].napSource, true);
+  await assert.rejects(listPortalClubSwimmers(clubConnection, "invalid"), TypeError);
+  assert.equal(clubQueries, 1);
+  await assert.rejects(listPortalClubSwimmers({ execute: async () => [Array(801).fill(original)] }, "106"), RangeError);
+  assert.ok(!update.includes("Un engagement ancien doit"));
   console.log("Portail NAP : lecture bornee, correction unique, sauvegarde, doublons, concurrence, reprise et droits verifies.");
 })().catch(error => { console.error(error); process.exitCode = 1; });
