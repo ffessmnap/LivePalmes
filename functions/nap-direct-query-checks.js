@@ -15,6 +15,17 @@ async function inspectDirectQueries(pool) {
   const top = require("./nap-direct-tops").queryFor({ course: "100SF", sex: "M", category: "S", pool: "50" });
   const [topPlan] = await pool.execute({ sql: `EXPLAIN ${top.sql}`, timeout: 10000 }, top.values);
   plans.directTop = topPlan;
+  const calendar = require("./nap-direct-calendar");
+  const calendarQueries = {
+    calendarSeason: { sql: `${calendar.SELECT_EVENT} FORCE INDEX (livepalmes_date_id)${calendar.EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT 501`, values: ["2025-09-01", "2026-09-01"] },
+    competitionDocuments: { sql: "SELECT d.id,d.name,d.location,t.label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t ON t.id=d.type WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT 101", values: [2652] },
+    competitionResults: { sql: "SELECT STRAIGHT_JOIN p.id,p.nageur,p.tps,n.nom,c.date FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur WHERE p.compet=? ORDER BY p.id LIMIT 5001", values: [2652] },
+    competitionHistories: { sql: "SELECT STRAIGHT_JOIN p.id,p.nageur,p.tps,n.nom,c.date FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE p.nageur IN (?,?) LIMIT 100001", values: [7322, 4196] }
+  };
+  for (const [name, query] of Object.entries(calendarQueries)) {
+    const [rows] = await pool.execute({ sql: `EXPLAIN ${query.sql}`, timeout: 10000 }, query.values);
+    plans[name] = rows;
+  }
   return { source: "nap", mode: "explain-only", indexes, plans };
 }
 async function inspectTimeShape(pool, input) {

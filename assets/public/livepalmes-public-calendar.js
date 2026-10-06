@@ -21,6 +21,22 @@
     return rank[status(left)] - rank[status(right)] || String(left.date).localeCompare(String(right.date)) || String(left.name).localeCompare(String(right.name), "fr");
   }
   async function json(path) {
+    if (global.LivePalmesEnvironment.isTest) {
+      const url = new URL("https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
+      const season = path.match(/^seasons\/([0-9]{4})\.json$/);
+      const event = path.match(/^events\/(legacy-nap-[1-9][0-9]*)\.json$/);
+      const results = path.match(/^results\/(legacy-nap-[1-9][0-9]*)\.json$/);
+      if (path === "manifest.json") url.searchParams.set("action", "calendar-manifest");
+      else if (season) { url.searchParams.set("action", "calendar-season"); url.searchParams.set("year", season[1]); }
+      else if (event || results) { url.searchParams.set("action", event ? "competition" : "competition-results"); url.searchParams.set("id", (event || results)[1]); }
+      else throw new Error("Événement introuvable.");
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error("Consultation momentanément indisponible.");
+      const data = await response.json();
+      if (data.source !== "nap") throw new Error("Consultation momentanément indisponible.");
+      if (event && !data.event) throw new Error("Événement introuvable.");
+      return event ? data.event : data;
+    }
     const response = await fetch(`${BASE}/${path}`, { cache: "no-cache" });
     if (!response.ok) throw new Error(response.status === 404 ? "Calendrier non encore publié." : "Chargement du calendrier impossible.");
     return response.json();
