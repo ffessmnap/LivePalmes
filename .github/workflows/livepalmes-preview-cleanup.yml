@@ -29,18 +29,22 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
-          token_format: access_token
-          create_credentials_file: false
+          create_credentials_file: true
+
+      - name: Installer le client Google pour les identifiants existants
+        run: npm install --prefix "$RUNNER_TEMP/hosting-cleanup" --no-audit --no-fund google-auth-library@10
 
       - name: Supprimer uniquement les canaux des PR fermees
         uses: actions/github-script@v8
-        env:
-          FIREBASE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         with:
           script: |
             const prefix = "sites/livepalmes-test/channels/";
             const root = "https://firebasehosting.googleapis.com/v1beta1/";
-            const headers = {Authorization: "Bearer " + process.env.FIREBASE_ACCESS_TOKEN};
+            const {GoogleAuth} = require(process.env.RUNNER_TEMP + "/hosting-cleanup/node_modules/google-auth-library");
+            const auth = new GoogleAuth({scopes: ["https://www.googleapis.com/auth/firebase.hosting"]});
+            const token = await auth.getAccessToken();
+            if (!token) throw new Error("Identifiants Hosting indisponibles");
+            const headers = {Authorization: "Bearer " + token};
             const channels = [];
             let pageToken;
             do {
