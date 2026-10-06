@@ -1,9 +1,29 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { readNativeCompetition, inspectNativeCompetitions } = require("../functions/nap-portal-competitions");
+const { portalEventFromRow, readNativeCompetitionSeason, readNativeCompetition, inspectNativeCompetitions } = require("../functions/nap-portal-competitions");
 const { KINDS } = require("../tools/add-nap-portal-indexes");
 const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-index");
 (async () => {
+  for (const niveau of [3, 4, 5]) {
+    const event = portalEventFromRow({ id: 1, niveau, level_label: "Championnat de Zones" });
+    assert.equal(event.level, "national"); assert.equal(event.nationalManagementOnly, true);
+    assert.equal(event.nativeLevelCode, niveau); assert.equal(event.regionId, "");
+  }
+  assert.equal(portalEventFromRow({ id: 1, niveau: 6 }).level, "regional");
+  for (const niveau of [null, undefined, "", 99, "3x"]) {
+    const event = portalEventFromRow({ id: 1, niveau, level_label: "Régionale" });
+    assert.equal(event.nationalManagementOnly, true); assert.equal(event.nativeLevelRecognized, false);
+    assert.equal(event.level, "national");
+  }
+  let seasonReads = 0;
+  const season = await readNativeCompetitionSeason({ execute: async ({sql}, values) => {
+    seasonReads++; assert.match(sql, /FORCE INDEX \(livepalmes_date_id\)/);
+    assert.match(sql, /LIMIT 501$/); assert.deepEqual(values, ["2026-09-01", "2027-09-01"]);
+    return [[{ id: 1, libelle: "France", date: "2027-03-01", niveau: 3, level_label: "Championnat de Zones" }]];
+  } }, 2027);
+  assert.equal(seasonReads, 1); assert.equal(season.events[0].nationalManagementOnly, true);
+  await assert.rejects(readNativeCompetitionSeason({}, "2027 OR 1=1"), TypeError);
+  await assert.rejects(readNativeCompetitionSeason({execute: async () => [Array(501).fill({})]},2027),RangeError);
   let authorized = false, calls = [];
   const pool = { execute: async ({sql}, values) => {
     calls.push({sql,values}); assert.ok(sql.startsWith("SELECT ")); assert.match(sql, /LIMIT \d+$/);
