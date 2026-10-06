@@ -1,0 +1,71 @@
+name: Nettoyer les apercus des PR terminees
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/livepalmes-preview-cleanup.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: livepalmes-preview-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: vars.FIREBASE_TEST_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Aucun checkout ni execution du code d'une PR, meme avec pull_request_target.
+      - name: Authentifier le nettoyage Hosting TEST
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
+          token_format: access_token
+          create_credentials_file: false
+
+      - name: Supprimer uniquement les canaux des PR fermees
+        uses: actions/github-script@v8
+        env:
+          FIREBASE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        with:
+          script: |
+            const prefix = "sites/livepalmes-test/channels/";
+            const root = "https://firebasehosting.googleapis.com/v1beta1/";
+            const headers = {Authorization: "Bearer " + process.env.FIREBASE_ACCESS_TOKEN};
+            const channels = [];
+            let pageToken;
+            do {
+              const url = new URL(root + prefix.slice(0, -1));
+              url.searchParams.set("pageSize", "100");
+              if (pageToken) url.searchParams.set("pageToken", pageToken);
+              const response = await fetch(url, {headers});
+              if (!response.ok) throw new Error("Inventaire Hosting : HTTP " + response.status);
+              const page = await response.json();
+              channels.push(...(page.channels || []));
+              pageToken = page.nextPageToken;
+            } while (pageToken);
+            let deleted = 0;
+            for (const channel of channels) {
+              if (!channel.name.startsWith(prefix)) continue;
+              const match = /^pr-([1-9][0-9]*)$/.exec(channel.name.slice(prefix.length));
+              if (!match) continue;
+              const {data: pr} = await github.rest.pulls.get({...context.repo, pull_number: Number(match[1])});
+              if (pr.state !== "closed") {
+                core.info("Apercu conserve : pr-" + match[1] + " (PR ouverte)");
+                continue;
+              }
+              const response = await fetch(root + channel.name, {method: "DELETE", headers});
+              if (!response.ok && response.status !== 404) throw new Error("Suppression pr-" + match[1] + " : HTTP " + response.status);
+              core.info("Apercu supprime : pr-" + match[1] + " (PR terminee)");
+              deleted++;
+            }
+            await core.summary.addRaw("Apercus de PR terminees supprimes : " + deleted).write();

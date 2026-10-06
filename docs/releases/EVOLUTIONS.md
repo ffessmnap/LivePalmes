@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Nettoyage des aperçus de PR — 6 octobre 2026
+
+- Antoine autorise le nettoyage des aperçus des PR terminées après constat de 17 échecs liés au quota de canaux Hosting. Nouveau workflow au merge/à la fermeture, avec rattrapage automatique à son intégration et lancement manuel disponible.
+- Seuls les canaux exacts `pr-N` du site `livepalmes-test`, associés à une PR actuellement fermée, sont supprimés. PR ouvertes, canal live et autres sites conservés. Aucun checkout de PR ni code non fiable exécuté ; échec fermé si l'état GitHub est indisponible.
+- Expiration explicite des nouveaux aperçus : trois jours, renouvelée à chaque publication. Aucun changement du TEST commun, du backend, des données ou de la PROD.
+- Contrôles automatisés et nettoyage réel à confirmer dans les journaux GitHub ; aucune validation utilisateur déduite.
+
 ### Compétitions et engagements NAP partagés : fondations autorisées — 6 octobre 2026
 
 - Antoine autorise temporairement chefs d'équipe et officiels sans licence ; aucune licence de l'ancienne base LivePalmes reprise. Premier lot d'écriture club préparé : correction explicite du nom/prénom/date d'une déclaration de chef existante unique, club et pourclub conservés, aucune création/retrait ni modification d'engagement. Bouton existant « Modifier » et formulaire réutilisés ; seules ces trois données sont éditables, licence vide et sexe absent non exigés. Autres saisies encore verrouillées, raccordement complet non annoncé.
