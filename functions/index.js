@@ -217,6 +217,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
       const data = indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
+        : request.query.action === "portal-contract" ? await require("./nap-portal-contract").inspectPortalContract(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
         : request.query.action === "source-inventory" ? await require("./nap-source-inventory").inspectSourceInventory(napPool)
         : request.query.action === "schema" ? await readSourceSchema(napPool)
