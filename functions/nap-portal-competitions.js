@@ -9,7 +9,7 @@ const PARAMETERS = "cp.id AS parameter_id,cp.actif,cp.dateactif,cp.date_limit,cp
 // reference labels disagree for code 3 and omit 4/5/6. Never infer rights from them.
 function portalEventFromRow(row) {
   const code = row.niveau == null ? "" : String(row.niveau);
-  const level = ({ 0: "departemental", 1: "regional", 2: "national", 3: "national", 4: "national", 5: "national", 6: "regional", 7: "national", 8: "international" })[code];
+  const level = calendar.nativeLevel(code);
   const event = calendar.eventFromRow({ ...row, level_label: ({ departemental: "Départementale", regional: "Régionale", national: "Nationale", international: "International" })[level] || "Nationale", scope_label: "" });
   return { ...event, ...entryState(row), competitionType: event.eventType, nativeLevelCode: row.niveau ?? null,
     nativeLevelRecognized: Boolean(level), nationalManagementOnly: !level || ["national", "international"].includes(level),

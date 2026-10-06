@@ -4279,7 +4279,7 @@
       if (fields.entryStatus) fields.entryStatus.disabled = false;
       const qualificationMount = document.querySelector("#adminQualificationEditor");
       if (qualificationMount) qualificationMount.disabled = true;
-      nativeCompetitionEditBaseline = nativeCompetitionFormValues();
+      if(!nativeCompetitionEditBaseline) nativeCompetitionEditBaseline = nativeCompetitionFormValues();
     } else nativeCompetitionEditBaseline = null;
   }
 
@@ -4287,6 +4287,7 @@
     if (!isEngagementAdminMode() || !selectedEngagementCompetition?.id || !canEditEngagementCompetition()) return;
     engagementDetailEditing = Boolean(editing);
     if (editing) {
+      nativeCompetitionEditBaseline = null;
       fillEngagementEditForm();
     }
     if (elements.engagementsEditForm) elements.engagementsEditForm.hidden = !editing;
@@ -4297,10 +4298,11 @@
     if (elements.engagementsEditButton) elements.engagementsEditButton.hidden = editing;
     if (elements.engagementsSaveButton) elements.engagementsSaveButton.hidden = !editing;
     if (elements.engagementsEditCancelTop) elements.engagementsEditCancelTop.hidden = !editing;
-    if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.hidden = editing;
+    if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.hidden = editing || selectedEngagementCompetition.napSource === true;
     updateEngagementDetailEditState();
     renderEngagementEvents(selectedEngagementCompetition || {});
     renderEngagementFees(selectedEngagementCompetition || {});
+    if(editing && selectedEngagementCompetition.napSource === true) nativeCompetitionEditBaseline = nativeCompetitionFormValues();
   }
 
   function formatShortDate(value) {
@@ -10181,7 +10183,7 @@
       elements.engagementsEventsSaveButton.hidden = true;
       elements.engagementsEventsSaveButton.disabled = true;
     }
-    renderEngagementProgramSessions(competition.programSessions || [], canEdit);
+    renderEngagementProgramSessions(competition.programSessions || [], adminMode && engagementDetailEditing && canEditEngagementCompetition(competition));
     if (clubProgramView) setEngagementEventsSectionOpen(elements.engagementsProgramSection, true);
     updateEngagementEventsSectionSummaries(
       events,
@@ -10343,7 +10345,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(competition.nativeCompetitionEditable ? "Paramètres généraux et frais enregistrés dans NAP. Le programme et la saisie des engagements sont encore en cours de raccordement." : "Consultation du dossier NAP. L'enregistrement depuis LivePalmes est en cours de raccordement.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(competition.nativeCompetitionEditable ? "Paramètres généraux, frais et programme détaillé enregistrés dans NAP. La liste des courses et la saisie des engagements sont encore en cours de raccordement." : "Consultation du dossier NAP. L'enregistrement depuis LivePalmes est en cours de raccordement.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -15075,6 +15077,7 @@
     const deadline = fields.deadline?.value || "";
     values.entryDeadlineLocal = deadline ? `${deadline.replace("T", " ")}${deadline.length === 16 ? ":00" : ""}` : "";
     values.fees = selectedEngagementFeesFromForm();
+    values.programSessions = selectedEngagementProgramSessionsFromForm();
     return values;
   }
 
@@ -15521,6 +15524,7 @@
   async function updateEngagementCompetitionEvents(event) {
     event?.preventDefault?.();
     if (!isEngagementAdminMode() || !selectedEngagementCompetition?.id || !canEditEngagementCompetition()) return;
+    if(selectedEngagementCompetition.napSource === true) return saveNativeCompetitionDetail({continueEditing:true});
     const button = elements.engagementsEventsSaveButton;
     const categoryError = selectedEngagementEventsCategoryError();
     if (categoryError) {

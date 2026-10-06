@@ -7,7 +7,7 @@ const now=Date.parse("2026-10-06T12:00:00Z");
 function fixturePack() {
   const competition={id:5140,libelle:"Competition &amp; historique",lieu:"Antibes",date:"2026-10-11",enddate:null,comite:7,description:"Texte ancien",bassin:50,chrono:"M",ld:0};
   const parameters={id:5000,compet:5140,actif:1,dateactif:"2026-09-30 19:03:01",date_limit:"2026-10-07 21:59:17",officiel:1,nb_lignes:8,mailtxt:null,mailjuges:"",tps_d:null,tps_f:null,niveau:3,saisie:0,relais:0};
-  return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP"}],options:null,fees:null};
+  return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP"}],options:null,fees:null,courseOptions:[],committees:[],groups:[],standards:[],detailedProgram:null};
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
@@ -31,6 +31,12 @@ assert.equal(rename.operations.length,1); assert.equal(rename.operations[0].afte
 assert.equal(rename.operations[0].after.comite,7); assert.equal(rename.operations[0].after.chrono,"M");
 const fees=planCompetitionChange(pack,input({fees:{enabled:true,swimmerFee:1.25,individualEventFee:2.50,relayFee:3,helloAssoUrl:"https://www.helloasso.com/test"}}),now);
 assert.equal(fees.operations[0].after.swimmer_fee,"1.25");
+const rawProgram=[{id:"session-1",date:"2026-10-11",startTime:"09:30",items:[{eventCode:"50AP",genderMode:"female",phase:"direct"}]}];
+const programPlan=planCompetitionChange(pack,{...input({programSessions:rawProgram}),eventDefinitions:new Map([["50AP",{code:"50AP"}]]),normalizeProgram:raw=>structuredClone(raw)},now);
+assert.deepEqual(programPlan.operations.map(operation=>operation.table),["livepalmes_competition_programs"]);
+assert.deepEqual(programPlan.operations[0].after.program_sessions,rawProgram);
+assert.equal(pack.nativeSnapshot.parameters.actif,1);assert.equal(pack.courses.length,1);
+assert.throws(()=>planCompetitionChange(pack,{...input({programSessions:rawProgram}),normalizeProgram:raw=>raw},now),/ancienne/);
 for(const patch of [{level:"regional"},{name:""},{location:"x".repeat(65)},{date:"2026-02-30"},{entryDeadlineLocal:"2026-10-25 02:30:00"},{entryStatus:"wrong"},{poolLaneCount:20},{fees:{enabled:true,swimmerFee:1.001,individualEventFee:0,relayFee:0}}]) assert.throws(()=>planCompetitionChange(pack,input(patch),now),TypeError);
 assert.throws(()=>planCompetitionChange(pack,{...input({name:"New"}),expectedFingerprint:"0".repeat(64)},now), /a change/);
 assert.throws(()=>planCompetitionChange(pack,input({date:"2026-10-12",endDate:"2026-10-11"}),now),/date de fin/);
@@ -88,7 +94,11 @@ function fixture(settings={}) {
     }})});
     assert.equal(explains,6);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
     assert.ok(!JSON.stringify(plans).includes("Antibes"));
-    await assert.rejects(inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async()=>[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})}),/non indexe/);
+    const rejected=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async()=>[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})});
+    assert.equal(rejected.complete,false);assert.equal(rejected.errors.length,6);assert.equal(rejected.plans.length,6);assert.ok(rejected.errors.every(error=>error.reason==="non-indexed"));
+    native.readNativeCompetition=async()=>{throw Object.assign(new Error("Do not expose private SQL values"),{code:"ER_BAD_FIELD_ERROR"});};
+    const readerFailure=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++})});
+    assert.equal(readerFailure.errors[0].reason,"column");assert.equal(readerFailure.complete,false);assert.ok(!JSON.stringify(readerFailure).includes("private SQL"));
   } finally {native.readNativeCompetition=original;}
   console.log("Competition NAP : patch explicite, sauvegarde avant ecriture, CAS indexe, fermeture sans pertes et reprise MyISAM verifies sans reseau.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

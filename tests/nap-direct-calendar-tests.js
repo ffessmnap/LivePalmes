@@ -17,6 +17,10 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(supplemented.organizer,"Organisateur"); assert.equal(supplemented.canceled,true);
   assert.equal(supplemented.waterBodyType,"lake"); assert.equal(supplemented.organizerEmail,undefined);
   assert.ok(calendar.EVENT_JOINS.includes("co.competition_id=c.id"));
+  const shared=calendar.eventFromRow({...raw,native_level_code:3,date_limit:"2099-10-07 21:59:17",actif:0,entry_closed:1,portal_whatsapp:"https://chat.whatsapp.com/example"});
+  assert.equal(shared.level,"national");assert.equal(shared.entryStatus,"closed");assert.ok(shared.entryDeadlineAt.endsWith("19:59:17.000Z"));
+  assert.equal(shared.engagementCompetitionId,"legacy-nap-2");assert.equal(shared.teamLeadersWhatsAppUrl,"https://chat.whatsapp.com/example");
+  assert.equal(calendar.eventFromRow({...raw,native_level_code:1,portal_whatsapp:"https://chat.whatsapp.com/private"}).teamLeadersWhatsAppUrl,"");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "recyclage juges idf" }).eventType, "training");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage de detection" }).eventType, "stage");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Reunion regionale" }).eventType, "meeting");
@@ -32,6 +36,9 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.ok(queries[1].query.sql.includes("d.public='Y'"));
   assert.ok(queries[1].query.sql.includes("FORCE INDEX (livepalmes_compet_public_id)"));
   assert.deepEqual(queries.map(item => item.values), [[2], [2], [2]]);
+  const detailed=await calendar.readCompetition({execute:async(query)=>[query.sql.includes("FROM competitions c") ? [{...raw,portal_program_sessions:JSON.stringify([{id:"session-1",date:"2026-10-11",startTime:"09:30",items:[{eventCode:"50BI",genderMode:"female",phase:"heats"}]}])}] : []]},2);
+  assert.equal(detailed.event.program[0].startTime,"09:30");assert.equal(detailed.event.program[0].items[0].detail,"Femmes · Séries");
+  assert.ok(!calendar.SELECT_EVENT.includes("program_sessions"),"No detailed JSON loaded for every season row");
   await assert.rejects(calendar.readCalendarSeason({ execute: async () => [Array(501).fill(raw)] }, 2026), RangeError);
   queries = [];
   const performance = { id: 973, nageur: 168, nom: "Exemple", prenom: "Nageur", birth_date: "1980-01-01", sexe: "M", competition_id: 2, libelle: "Compétition", date: "2004-02-29", bassin: 50, chrono: "E", ld: 0, course: "100SF", cat: "HSE", tps: "14200", passage: 0, relais: 0 };
