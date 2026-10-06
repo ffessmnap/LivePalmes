@@ -470,6 +470,7 @@
     engagementsClubPeoplePanel: document.querySelector("#adminEngagementsClubPeoplePanel"),
     engagementsClubPeopleActions: document.querySelector("#adminEngagementsClubPeopleActions"),
     engagementsClubPeopleAddButton: document.querySelector("#adminEngagementsClubPeopleAddButton"),
+    engagementsClubPeopleLoadMore: document.querySelector("#adminEngagementsClubPeopleLoadMore"),
     engagementsClubPeopleStatus: document.querySelector("#adminEngagementsClubPeopleStatus"),
     engagementsClubPersonForm: document.querySelector("#adminEngagementsClubPersonForm"),
     engagementsClubPersonId: document.querySelector("#adminEngagementsClubPersonId"),
@@ -1016,6 +1017,9 @@
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
   let engagementClubPeopleLoading = false;
+  let engagementClubPeopleCursor = null;
+  let engagementClubPeopleHasMore = false;
+  let engagementClubPeopleRequestVersion = 0;
   let engagementClubSwimmers = [];
   let engagementClubSwimmersLoaded = false;
   let engagementClubSwimmersLoading = false;
@@ -1558,6 +1562,10 @@
     setEngagementClubEntriesDirty(false);
     engagementClubPeople = [];
     engagementClubPeopleLoaded = false;
+    engagementClubPeopleLoading = false;
+    engagementClubPeopleCursor = null;
+    engagementClubPeopleHasMore = false;
+    engagementClubPeopleRequestVersion += 1;
     engagementClubSwimmers = [];
     engagementClubSwimmersLoaded = false;
     engagementClubSwimmersLoading = false;
@@ -14664,6 +14672,7 @@
   }
 
   function openEngagementClubPersonForm(person = null) {
+    if(global.LivePalmesEnvironment?.isTest) return;
     resetEngagementClubPersonForm();
     if (!engagementClubSwimmersLoaded) void loadEngagementClubSwimmers({ silent: true });
     if (person) {
@@ -14716,6 +14725,12 @@
 
   function renderEngagementClubPeople() {
     if (!elements.engagementsClubPeopleList) return;
+    const nativeReadOnly = global.LivePalmesEnvironment?.isTest === true;
+    if(elements.engagementsClubPeopleAddButton) elements.engagementsClubPeopleAddButton.disabled = nativeReadOnly;
+    if(elements.engagementsClubPeopleLoadMore) {
+      elements.engagementsClubPeopleLoadMore.hidden = !engagementClubPeopleHasMore;
+      elements.engagementsClubPeopleLoadMore.disabled = engagementClubPeopleLoading;
+    }
     if (!engagementClubPeople.length) {
       elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'équipe enregistré pour ce club.</p>';
       return;
@@ -14752,8 +14767,8 @@
             <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
             <span role="cell">
               <span class="admin-engagements-request-actions">
-                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}">Modifier</button>
-                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}">${active ? "Désactiver" : "Réactiver"}</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly ? 'disabled title="Modification momentanément indisponible"' : ""}>Modifier</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
               </span>
             </span>
           </div>
@@ -14764,9 +14779,10 @@
     `;
   }
 
-  async function loadEngagementClubPeople({ force = false, silent = false } = {}) {
+  async function loadEngagementClubPeople({ force = false, silent = false, append = false } = {}) {
     if (!canUse("engagements.club.manage") || engagementClubPeopleLoading) return;
-    if (engagementClubPeopleLoaded && !force) {
+    if(append && !engagementClubPeopleHasMore) return;
+    if (engagementClubPeopleLoaded && !force && !append) {
       if (activeEngagementsTab === "clubPeople") renderEngagementClubPeople();
       renderEngagementClubPersonSwimmerOptions();
       renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
@@ -14774,13 +14790,20 @@
       return;
     }
     engagementClubPeopleLoading = true;
+    const requestVersion = engagementClubPeopleRequestVersion;
+    if(elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.isTest) elements.engagementsClubPeopleAddButton.disabled = true;
+    if(elements.engagementsClubPeopleLoadMore) elements.engagementsClubPeopleLoadMore.disabled = true;
     if (elements.engagementsClubPeopleStatus && !silent) {
       elements.engagementsClubPeopleStatus.textContent = "Chargement de Mes officiels...";
       elements.engagementsClubPeopleStatus.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("listEngagementClubPeople", { includeInactive: true });
-      engagementClubPeople = Array.isArray(result.people) ? result.people : [];
+      const result = await callFunction("listEngagementClubPeople", { includeInactive: true, ...(append ? {cursor:engagementClubPeopleCursor} : {}) });
+      if(requestVersion!==engagementClubPeopleRequestVersion) return;
+      const people = Array.isArray(result.people) ? result.people : [];
+      engagementClubPeople = append ? [...new Map([...engagementClubPeople,...people].map(person=>[person.id,person])).values()] : people;
+      engagementClubPeopleCursor = result.nextCursor || null;
+      engagementClubPeopleHasMore = result.source === "nap" && result.hasMore === true;
       engagementClubPeopleLoaded = true;
       if (activeEngagementsTab === "clubPeople") renderEngagementClubPeople();
       renderEngagementClubPersonSwimmerOptions();
@@ -14791,13 +14814,17 @@
         elements.engagementsClubPeopleStatus.dataset.tone = "neutral";
       }
     } catch (error) {
+      if(requestVersion!==engagementClubPeopleRequestVersion) return;
       if (elements.engagementsClubPeopleStatus && !silent) {
         elements.engagementsClubPeopleStatus.textContent = `Lecture impossible : ${error?.message || error}`;
         elements.engagementsClubPeopleStatus.dataset.tone = "error";
       }
     } finally {
-      engagementClubPeopleLoading = false;
-      if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
+      if(requestVersion===engagementClubPeopleRequestVersion) {
+        engagementClubPeopleLoading = false;
+        if(elements.engagementsClubPeopleLoadMore) elements.engagementsClubPeopleLoadMore.disabled = false;
+        if (activeEngagementsDetailTab === "officials") renderEngagementClubOfficials();
+      }
     }
   }
 
@@ -17068,6 +17095,7 @@
       event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
     });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
+    elements.engagementsClubPeopleLoadMore?.addEventListener("click", () => loadEngagementClubPeople({append:true}));
     elements.engagementsClubPersonSwimmerSearch?.addEventListener("input", () => {
       applyEngagementClubPersonSwimmer("");
       renderEngagementClubPersonSwimmerOptions();
@@ -18056,7 +18084,7 @@
         }
         if (activeEngagementsTab === "clubPeople") {
           closeEngagementCompetitionDetail();
-          loadEngagementClubPeople();
+          loadEngagementClubPeople({force:global.LivePalmesEnvironment?.isTest === true});
           loadEngagementClubSwimmers({ silent: true });
         }
         if (activeEngagementsTab === "clubSwimmers") {
