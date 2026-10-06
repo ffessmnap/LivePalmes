@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Nettoyage des aperçus de PR — 6 octobre 2026
+
+- Antoine autorise le nettoyage des aperçus des PR terminées après constat de 17 échecs liés au quota de canaux Hosting. Nouveau workflow au merge/à la fermeture, avec rattrapage automatique à son intégration et lancement manuel disponible.
+- Seuls les canaux exacts `pr-N` du site `livepalmes-test`, associés à une PR actuellement fermée, sont supprimés. PR ouvertes, canal live et autres sites conservés. Aucun checkout de PR ni code non fiable exécuté ; échec fermé si l'état GitHub est indisponible.
+- Expiration explicite des nouveaux aperçus : trois jours, renouvelée à chaque publication. Aucun changement du TEST commun, du backend, des données ou de la PROD.
+- Contrôles automatisés et nettoyage réel à confirmer dans les journaux GitHub ; aucune validation utilisateur déduite.
+
 ### Compétitions et engagements NAP partagés : fondations autorisées — 6 octobre 2026
 
 - #144 intégrée en 3fd123e9 : contrôle Linux exact 37532480680 réussi, backend privé 37532511134 réussi. Diagnostic 37532557099 complet, neuf plans sans erreur ni écriture ; chefsdequipe utilise PRIMARY sur une ligne et deux parents const. Publication commune 37533022654 réussie, Hosting 6e659e0dd13cf558. Recette navigateur a détecté une erreur de formulaire : checkbox externe et radio masquée ne sont pas contenues dans un label ; garde ciblée préparée et test couvrant les vrais contrôles sans label ajouté. Aucune correction réelle enregistrée ni validation utilisateur déduite.
