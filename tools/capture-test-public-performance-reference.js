@@ -70,10 +70,13 @@ async function capture(directory) {
     return available.get(name);
   });
   let offset = 0;
+  let completed = 0;
   await Promise.all(Array.from({ length: 8 }, async () => {
     while (offset < files.length) {
       const object = files[offset++];
       await download(object, output);
+      completed++;
+      if (completed % 1000 === 0 || completed === files.length) console.log(`Fiches TEST capturees : ${completed}/${files.length}.`);
     }
   }));
   const after = (await list("manifest.json")).find(o => o.name === manifestObject.name);
