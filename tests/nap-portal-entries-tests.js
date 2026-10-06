@@ -32,6 +32,7 @@ const { readNativeClubEntry, inspectNativeClubEntry } = require("../functions/na
     return pool.execute(query,values);
   }});
   assert.equal(proof.writesExecuted,false); assert.equal(proof.complete,true); assert.equal(proof.counts.inscriptions,2);
+  assert.deepEqual(proof.directory,{rows:0,hasMore:false,queriesExecuted:2});
   assert.ok(!JSON.stringify(proof).includes("FAUVEAU")); assert.ok(!JSON.stringify(proof).includes("Antoine"));
   let refusedCalls=0;
   const refused = await inspectNativeClubEntry({execute:async()=>{refusedCalls++;return [[{table:"native",type:"ALL",key:null,rows:100}]];}});

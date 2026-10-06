@@ -27,6 +27,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup")})}; } },
   require: name => {
     if (name === "./nap-portal-swimmers") return { portalPool: () => pool };
+    if(name === "./nap-club-people") return {readClubPeople:async(connection,input,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);await authorize(input);calls.push("native-people");return {source:"nap",people:[],hasMore:false};}};
     if (name === "./nap-portal-competitions") return {
       readNativeCompetitionSeason: async (connection, year) => { assert.equal(connection, pool); assert.equal(year, 2027); calls.push("season"); return { events: [event, { ...event, id: "legacy-nap-5200", competitionType: "training" }] }; },
       readNativeCompetition: async (_, id, authorize) => { assert.equal(id, event.id); await authorize(event); calls.push("detail"); return { event }; }
@@ -42,12 +43,14 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
 vm.createContext(sandbox);
 const helperStart = source.indexOf("async function nativePortalCalendarItems(");
 vm.runInContext(source.slice(helperStart, source.indexOf("exports.listEngagementCompetitions", helperStart)), sandbox);
-for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents", "getEngagementCompetition", "getEngagementCalendarEvent", "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "createEngagementCompetition", "createEngagementCalendarEvent", "updateEngagementCompetition", "saveEngagementClubTeamLeader"]) {
+for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents", "getEngagementCompetition", "getEngagementCalendarEvent", "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "createEngagementCompetition", "createEngagementCalendarEvent", "updateEngagementCompetition", "saveEngagementClubTeamLeader", "listEngagementClubPeople", "saveEngagementClubPerson", "setEngagementClubPersonStatus"]) {
   const start = source.indexOf(`exports.${name} =`);
   const end = source.indexOf("\nexports.", start + 1);
   vm.runInContext(source.slice(start, end), sandbox);
 }
 (async () => {
+  const nativePeople=await sandbox.exports.listEngagementClubPeople({data:{clubId:"999",forceRoster:true}});assert.equal(nativePeople.clubId,context.clubId);assert.equal(nativePeople.source,"nap");assert.deepEqual(calls,["native-people"]);calls.length=0;
+  for(const name of ["saveEngagementClubPerson","setEngagementClubPersonStatus"]) await assert.rejects(sandbox.exports[name]({data:{personId:"old-id"}}),error=>error.code==="failed-precondition");
   const list = await sandbox.exports.listEngagementCompetitions({ data: { manageOnly: true, fromDate: "2026-09-01", toDate: "2027-08-31" } });
   assert.equal(list.source, "nap"); assert.equal(list.competitions.length, 1); assert.equal(list.competitions[0].id, event.id);
   const calendar = await sandbox.exports.listEngagementCalendarEvents({ data: { fromDate: "2026-09-01", toDate: "2027-08-31" } });
