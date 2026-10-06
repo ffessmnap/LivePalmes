@@ -12,12 +12,12 @@ async function main() {
   if (url.protocol !== "https:" || !url.hostname.endsWith(".run.app") || url.username || url.password || url.search) throw new Error("Endpoint prive invalide.");
   const token = execFileSync("gcloud", ["auth", "print-identity-token", `--audiences=${uri}`], options).trim();
   const action = process.env.NAP_SOURCE_ACTION || "source-inventory";
-  if (!["source-inventory", "calendar-contract", "portal-contract", "engagement-contract"].includes(action)) throw new Error("Diagnostic invalide.");
+  if (!["source-inventory", "calendar-contract", "portal-contract", "engagement-contract", "portal-competition-contract"].includes(action)) throw new Error("Diagnostic invalide.");
   url.searchParams.set("action", action);
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60000) });
   if (!response.ok) throw new Error("Diagnostic NAP indisponible.");
   const result = await response.json();
-  if (result.source !== "nap" || result.mode !== ({ "source-inventory": "structure-only", "calendar-contract": "calendar-contract", "portal-contract": "portal-contract-readonly", "engagement-contract": "engagement-contract-readonly" })[action]) throw new Error("Diagnostic NAP invalide.");
+  if (result.source !== "nap" || result.mode !== ({ "source-inventory": "structure-only", "calendar-contract": "calendar-contract", "portal-contract": "portal-contract-readonly", "engagement-contract": "engagement-contract-readonly", "portal-competition-contract": "portal-competition-contract-readonly" })[action]) throw new Error("Diagnostic NAP invalide.");
   fs.mkdirSync("outputs", { recursive: true });
   fs.writeFileSync(`outputs/nap-${action}.json`, JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify({ mode: result.mode, tableCount: result.tables?.length, relevant: result.relevant, competitionPlan: result.competitionPlan, references: result.references, publicationFlags: result.publicationFlags, permissions: result.permissions, missingTables: result.missingTables, atomicAcrossTables: result.atomicAcrossTables, writesExecuted: result.writesExecuted, complete: result.complete, errors: result.errors }));
