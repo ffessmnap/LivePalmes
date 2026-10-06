@@ -43,8 +43,8 @@ async function readCompetitionResults(pool, input) {
     const course = text(row.course), timeValue = normalized?.timeValue || rules.parseCompactTime(row.tps);
     const details = rules.CURRENT_POOL_COURSES.includes(course) ? rules.coursePayload(course) : null;
     const sex = person.sex || (/^F/.test(text(row.cat)) ? "F" : /^H/.test(text(row.cat)) ? "M" : "X");
-    const groupKey = `${course}|${sex}`;
-    if (!groups.has(groupKey)) groups.set(groupKey, { eventLabel: details?.label || course, sexLabel: ({ F: "Femmes", M: "Hommes" })[sex] || "Mixte", performances: [] });
+    const groupKey = `${course}|${sex}|${relay ? "relay" : "individual"}`;
+    if (!groups.has(groupKey)) groups.set(groupKey, { eventLabel: `${details?.label || course}${relay ? " · Relais" : ""}`, sexLabel: ({ F: "Femmes", M: "Hommes" })[sex] || "Mixte", performances: [] });
     const key = `${person.id}|${course}`, seasonKey = `${key}|${rules.competitionSeasonYear(row.date)}`;
     groups.get(groupKey).performances.push({ id: String(row.id), swimmer: relay ? text(row.nom_club || row.abre_club) : person.name, swimmerId: relay ? "" : person.id, isRelay: relay,
       club: text(row.abre_club || row.nom_club), category: normalized?.category || text(row.cat), categoryLabel: normalized?.categoryLabel || text(row.cat),

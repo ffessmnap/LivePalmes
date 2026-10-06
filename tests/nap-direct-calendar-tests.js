@@ -39,6 +39,15 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
     return [query.sql.includes("WHERE p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];
   } };
   assert.equal((await readCompetitionResults(changed, 2)).groups[0].performances[0].personalBest, false);
+  const relayPool = { execute: async (query, values) => {
+    const [rows] = await resultPool.execute(query, values);
+    return [query.sql.includes("WHERE p.compet=?") ? [...rows, { ...performance, id: 975, relais: 1, nom_club: "Équipe" }] : rows];
+  } };
+  const withRelay = await readCompetitionResults(relayPool, 2);
+  assert.equal(withRelay.groups.length, 2);
+  assert.equal(withRelay.groups[1].performances[0].isRelay, true);
+  assert.equal(withRelay.groups[1].performances[0].swimmerId, "");
+  assert.equal(withRelay.groups[1].performances[0].personalBest, false);
   await assert.rejects(readCompetitionResults({ execute: async () => [Array(5001).fill(performance)] }, 2), RangeError);
   const vm = require("node:vm"), fs = require("node:fs"), path = require("node:path");
   const requests = [];
