@@ -9836,7 +9836,29 @@ function assertEngagementClubWriteOpen(competition = {}) {
   }
 }
 
-exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) => {
+async function nativePortalCalendarItems(ranges) {
+  const native = require("./nap-portal-competitions");
+  const view = require("./nap-portal-workspaces");
+  const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  const years = [...new Set(ranges.map(range => range.season.endYear))];
+  const events = [];
+  for (const year of years) events.push(...(await native.readNativeCompetitionSeason(pool, year)).events);
+  return [...new Map(events.map(event => [event.id, view.listItem(event)])).values()];
+}
+
+async function nativePortalCompetition(input, authorize) {
+  const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  const native = require("./nap-portal-competitions");
+  const view = require("./nap-portal-workspaces");
+  const pack = await native.readNativeCompetition(pool, input, authorize);
+  if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
+  const competition = view.competitionItem(pack, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+  competition.clubDocuments = await view.readDocuments(pool, input);
+  competition.documentCount = competition.clubDocuments.length;
+  return competition;
+}
+
+exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const manageOnly = request.data?.manageOnly === true;
   const managementContext = manageOnly ? await engagementAccessContext(request) : null;
@@ -9865,6 +9887,18 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
     ? cleanText(request.data.entryStatus)
     : "";
   const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const items = await nativePortalCalendarItems(ranges);
+    const competitions = items.filter(item => ["pool", "openWater"].includes(item.competitionType))
+      .filter(item => ranges.some(range => item.date >= range.startDate && item.date <= range.endDate))
+      .filter(item => !manageOnly || managementContext.national || (!item.nationalManagementOnly && engagementRegionsMatch(item.regionId, managementContext.regionId)))
+      .filter(item => !regionId || engagementRegionsMatch(item.regionId, regionId))
+      .filter(item => !level || item.level === level).filter(item => !entryStatus || item.entryStatus === entryStatus);
+    if (competitions.length > limit) throw new HttpsError("resource-exhausted", "Trop de competitions : reduisez la periode demandee.");
+    return { ok: true, source: "nap", competitions, fromDate: ranges[0].startDate, toDate: ranges[ranges.length - 1].endDate,
+      readStats: portalReadStats("listEngagementCompetitions", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
+      sqlBudget: { queriesMax: seasonEndYears.length, rowsMax: seasonEndYears.length * 500 } };
+  }
   const calendarRefs = seasonEndYears.map((endYear) => engagementCompetitionCalendarRef(db, endYear));
   const clubEntryIndexRef = clubContext ? engagementClubCompetitionIndexRef(db, clubContext.clubId) : null;
   const prefetchedSnapshots = await db.getAll(...calendarRefs, ...[clubEntryIndexRef].filter(Boolean));
@@ -9922,7 +9956,7 @@ exports.listEngagementCompetitions = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
-exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national && (!context.region || !context.regionId)) {
@@ -9941,6 +9975,15 @@ exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) 
     };
   });
   const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const items = await nativePortalCalendarItems(ranges);
+    return { ok: true, source: "nap", events: items.filter(item => !["pool", "openWater"].includes(item.competitionType))
+      .filter(item => ranges.some(range => item.date >= range.startDate && item.date <= range.endDate))
+      .filter(item => context.national || (!item.nationalManagementOnly && engagementRegionsMatch(item.regionId, context.regionId)))
+      .map(item => ({ ...item, sourceType: "calendarEvent", eventType: item.competitionType })),
+      readStats: portalReadStats("listEngagementCalendarEvents", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
+      sqlBudget: { queriesMax: seasonEndYears.length, rowsMax: seasonEndYears.length * 500 } };
+  }
   const refs = seasonEndYears.map((endYear) => engagementCalendarEventCalendarRef(db, endYear));
   const snapshots = await db.getAll(...refs);
   const byEndYear = new Map(snapshots.map((snapshot, index) => [seasonEndYears[index], snapshot]));
@@ -9968,10 +10011,15 @@ exports.listEngagementCalendarEvents = onCall(CALLABLE_OPTIONS, async (request) 
   };
 });
 
-exports.getEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const event = await nativePortalCompetition(calendarEventId, item => assertCanManageEngagementCompetition(context, item));
+    return { ok: true, source: "nap", event: { ...event, sourceType: "calendarEvent", eventType: event.competitionType,
+      regionalPastReadOnly: !context.national && engagementEventIsPast(event) } };
+  }
   const snapshot = await db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId).get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
   const eventData = snapshot.data() || {};
@@ -9991,6 +10039,7 @@ exports.getEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) =>
 
 exports.createEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Creation dans NAP en cours de raccordement. Aucune competition ne sera creee dans l'ancienne base LivePalmes.");
   const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
   const now = new Date().toISOString();
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc();
@@ -10148,11 +10197,15 @@ exports.setEngagementOpenWaterCourseStatus = onCall(CALLABLE_OPTIONS, async (req
   return { ok: true, courses };
 });
 
-exports.getEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const competition = await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
+    return { ok: true, source: "nap", competition: { ...competition, regionalPastReadOnly: !context.national && engagementEventIsPast(competition) } };
   }
   const doc = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!doc.exists) {
@@ -10504,12 +10557,22 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_O
   };
 });
 
-exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const competition = await nativePortalCompetition(competitionId, () => {});
+    const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
+      if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
+    });
+    return { ok: true, source: "nap", competition, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
+      readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
+      sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
   }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
@@ -10537,6 +10600,9 @@ exports.getEngagementClubEntry = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.preloadEngagementClubWorkspaces = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  // Native workspaces are read when actually opened. Prefetch must neither
+  // consult the abandoned sports collections nor hide an IntraNAP edit.
+  if (ENVIRONMENT.projectId === "livepalmes-test") return { ok: true, source: "nap", workspaces: [] };
   const competitionIds = Array.from(new Set(
     (Array.isArray(request.data?.competitionIds) ? request.data.competitionIds : [])
       .map((competitionId) => cleanText(competitionId).slice(0, 128))
@@ -16393,6 +16459,7 @@ exports.saveEngagementClubRelays = onCall(CALLABLE_OPTIONS, async (request) => {
 
 exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Creation dans NAP en cours de raccordement. Aucune competition ne sera creee dans l'ancienne base LivePalmes.");
   if (!ENGAGEMENT_COMPETITION_TYPES.has(cleanText(request.data?.competitionType))) {
     throw new HttpsError("invalid-argument", "Choisissez le type de competition : piscine ou eau libre.");
   }
