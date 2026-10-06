@@ -2,6 +2,14 @@
 
 <!-- description: Branchement direct des pages existantes sur MySQL NAP, budgets, index autorises, preuves TEST et travaux restants. -->
 
+## Premiere correction reelle du portail — preparation du 6 octobre
+
+Accord explicite Antoine : nageur NAP 912, nom FAUVEAU vers FAUVAU. La base est la base habituelle, sans copie d'essai. Le diagnostic prive 37462808515 confirme UPDATE sur nageurs et les huit tables MyISAM, sans declencheur. Il ne remplace pas la verification d'une ecriture reelle.
+
+Circuit prive reserve au compte de publication TEST existant : operation fixe, aucun identifiant/nom libre, POST uniquement ; aucun droit public ajoute. Preparation : une lecture primaire de la ligne complete, une lecture d'audit, puis creation unique de la sauvegarde dans auditLogs protege. Cette sauvegarde ne peut pas etre remplacee par une preparation concurrente. Le workflow conserve aussi un artefact prive avant l'etape d'application.
+
+Application : deux lectures primaires maximum, une lecture d'audit, un UPDATE du seul champ nom compare atomiquement aux onze valeurs initiales (comparaison binaire et NULL compatible), une ecriture d'audit de verification. Une reprise apres correction verifie l'etat exact sans refaire l'UPDATE. Aucun scan, aucune croissance avec la taille de la base. Un echec d'audit apres UPDATE exige une reprise de verification ; aucune promesse de rollback MyISAM. Le portail general de correction n'est pas encore raccorde : ce circuit verifie la premiere operation specifiquement autorisee.
+
 ## Cible validee par Antoine
 
 LivePalmes consulte directement la base NAP, comme IntraNAP. NAP fait foi pour les performances, TOP et resultats ; une modification est visible a la prochaine consultation ou au rechargement. Exception explicite d'Antoine le 6 octobre : les Records/MPF officiels restent sur leur circuit LivePalmes actuel, qu'il confirme a jour, avec fichiers publics et secours statique. Ils ne sont ni remplaces par NAP ni recalcules a partir des TOP. Les pages, URL, filtres et presentation sont conserves. Le navigateur appelle le serveur LivePalmes, qui interroge MySQL avec le secret prive. Aucun export sportif ou comparaison avec l'ancienne base ne participe aux lectures NAP.
