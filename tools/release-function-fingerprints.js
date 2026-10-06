@@ -67,7 +67,7 @@ function moduleGraph(files = {}) {
     if (node.type === "CallExpression" && node.callee.name === "require") return (
       node.arguments.length === 1 && node.arguments[0].type === "Literal" && typeof node.arguments[0].value === "string");
     if (node.type === "NewExpression" && ["Set", "Map"].includes(node.callee.name))
-      return node.arguments.every(declarative);
+      return node.arguments.every(arg => arg.type === "ArrayExpression" && declarative(arg));
     return false;
   };
   const inspect = (name, active = new Set()) => {
@@ -90,6 +90,8 @@ function moduleGraph(files = {}) {
         declarative(node.expression.right));
     const external = new Set();
     walk(ast, node => {
+      if ((node.type === "FunctionDeclaration" || node.type === "VariableDeclarator") &&
+          ["Set", "Map", "require"].includes(node.id?.name)) pure = false;
       if (node.type === "Identifier" && ["eval", "global", "globalThis"].includes(node.name)) pure = false;
       if (node.type === "CallExpression" && node.callee.name === "require" &&
           node.arguments.length === 1 && typeof node.arguments[0].value === "string" &&
