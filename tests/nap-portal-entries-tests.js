@@ -31,10 +31,11 @@ const { readNativeClubEntry, inspectNativeClubEntry } = require("../functions/na
     if(query.sql.startsWith("SELECT n.club FROM")) return [[{club:"007"}]];
     return pool.execute(query,values);
   }});
-  assert.equal(proof.writesExecuted,false); assert.equal(proof.counts.inscriptions,2);
+  assert.equal(proof.writesExecuted,false); assert.equal(proof.complete,true); assert.equal(proof.counts.inscriptions,2);
   assert.ok(!JSON.stringify(proof).includes("FAUVEAU")); assert.ok(!JSON.stringify(proof).includes("Antoine"));
   let refusedCalls=0;
-  await assert.rejects(inspectNativeClubEntry({execute:async()=>{refusedCalls++;return [[{table:"native",type:"ALL",key:null,rows:100}]];}}),/non-indexed/);
+  const refused = await inspectNativeClubEntry({execute:async()=>{refusedCalls++;return [[{table:"native",type:"ALL",key:null,rows:100}]];}});
+  assert.equal(refused.complete,false); assert.deepEqual(refused.errors,[{queryIndex:1,reason:"non-indexed"}]);
   assert.equal(refusedCalls,1,"non-indexed plan stops before any sporting read");
   console.log("Dossiers NAP : perimetre avant identites, lectures groupees bornees, doublons et temps bruts preserves.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
