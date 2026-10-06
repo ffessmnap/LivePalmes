@@ -12151,10 +12151,25 @@ exports.saveEngagementClubOfficials = onCall(CALLABLE_OPTIONS, async (request) =
   };
 });
 
-exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const nap = require("./nap-portal-swimmers");
+      const people = await nap.listPortalClubSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), context.clubId);
+      const roster = await engagementClubRosterRef(db, context.clubId).get();
+      const metadata = Object.values(roster.data()?.swimmers || {}).filter(item => item.napSource === true);
+      return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map((item, index) => ({
+        licenseNumber: "",
+        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
+        clubActivityStatus: metadata.find(meta => String(meta.swimmerIndexId || meta.id) === item.id)?.clubActivityStatus || "active"
+      })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 2, variableDocumentsMax: 0, cacheHit: false }) };
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Effectif NAP indisponible. " + (error instanceof RangeError ? error.message : "Reessayez le chargement."));
+    }
+  }
   const rosterSnapshot = await engagementClubRosterRef(db, context.clubId).get();
   const rosterReady = rosterSnapshot?.exists && cleanText(rosterSnapshot.data()?.generatedAt);
   if (!rosterReady) {
@@ -12179,7 +12194,7 @@ exports.listEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
-exports.setEngagementClubSwimmerActivityStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
@@ -12190,6 +12205,18 @@ exports.setEngagementClubSwimmerActivityStatus = onCall(CALLABLE_OPTIONS, async 
   }
   const rosterRef = engagementClubRosterRef(db, context.clubId);
   const snapshot = await rosterRef.get();
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const nap = require("./nap-portal-swimmers");
+    const id = require("./nap-direct-swimmer").swimmerId(swimmerIndexId);
+    const [rows] = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).execute({ sql: "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? AND club=? LIMIT 1", timeout: 10000 }, [id, context.clubId]);
+    if (rows.length !== 1) throw new HttpsError("not-found", "Nageur absent de cet effectif NAP.");
+    const swimmer = nap.person(rows[0]);
+    const now = new Date().toISOString();
+    const updated = { ...swimmer, clubActivityStatus: status, clubActivityStatusSource: "club", clubActivityStatusUpdatedAt: now, clubActivityStatusUpdatedBy: context.uid };
+    await rosterRef.set({ clubId: context.clubId, updatedAt: now, swimmers: { [engagementClubRosterSwimmerKey(swimmer)]: updated } }, { merge: true });
+    await writeAuditLog("engagementClubSwimmer.activityStatusUpdated", context.uid, { clubId: context.clubId, swimmerIndexId: swimmer.id, source: "nap", status });
+    return { ok: true, swimmer: updated };
+  }
   if (!snapshot.exists) throw new HttpsError("not-found", "Effectif du club introuvable.");
   const data = snapshot.data() || {};
   const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
@@ -12627,10 +12654,9 @@ exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENV
     try {
       const nap = require("./nap-portal-swimmers");
       const result = await nap.searchPortalSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), query);
-      const snapshots = result.swimmers.length ? await db.getAll(...result.swimmers.map(item => db.collection("engagementSwimmerLicenses").doc(engagementSwimmerLicenseId(item)))) : [];
       return { ok: true, query, source: "nap", hasMore: result.hasMore, swimmers: result.swimmers.map((item, index) => ({
         ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
-        ...(snapshots[index]?.exists ? engagementSwimmerLicenseItem(snapshots[index]) : {}),
+        licenseNumber: "",
         id: item.id, swimmerIndexId: item.id, swimmerId: item.id, source: "reference", napSource: true,
         firstName: item.firstName, lastName: item.lastName, birthDate: item.birthDate, sex: item.sex, name: item.name, clubId: item.clubId, club: item.club, clubName: item.clubName, identityKey: item.identityKey, napFingerprint: item.napFingerprint
       })) };
@@ -14007,8 +14033,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
   if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource === true) {
     const nap = require("./nap-portal-swimmers");
     try {
-      const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, [request.data.swimmerId]);
-      if (cleanText(request.data.proposed?.licenseNumber).toUpperCase() !== cleanText(licenseMatch.license?.licenseNumber).toUpperCase()) throw new TypeError("La licence doit etre modifiee dans son circuit dedie.");
+      if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Les licences seront ajoutees dans NAP ulterieurement.");
       const { licenseNumber, ...proposed } = request.data.proposed || {};
       return await nap.correctPortalIdentity(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
         id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, proposed,
@@ -14027,8 +14052,8 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
           const ids = new Set([before.id]);
           return snapshot.docs.flatMap(doc => {
             const entry = doc.data() || {};
-            const linkedPeople = [...(entry.swimmers || []), ...(entry.relays || []).flatMap(relay => relay.members || [])];
-            if (linkedPeople.some(item => (item.identityKey || engagementSwimmerIdentityKey(item.firstName, item.lastName, item.birthDate)) === before.identityKey && !ids.has(cleanText(item.swimmerIndexId || item.id || item.swimmerId)))) throw new TypeError("Un engagement ancien doit etre raccorde a la fiche NAP avant correction.");
+            // Only native NAP identifiers are updated here. Obsolete LivePalmes
+            // identities are not prerequisites for correcting the authoritative NAP row.
             const swimmers = engagementEntrySwimmerCorrectionResult(entry.swimmers || [], ids, after);
             const relays = engagementEntryRelayCorrectionResult(entry.relays || [], ids, after);
             return swimmers.changed || relays.changed ? [{ id: doc.id, beforeSwimmers: entry.swimmers || [], beforeRelays: entry.relays || [], afterSwimmers: swimmers.items, afterRelays: relays.relays }] : [];

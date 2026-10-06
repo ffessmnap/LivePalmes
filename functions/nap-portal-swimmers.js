@@ -21,6 +21,12 @@ async function searchPortalSwimmers(connection, query) {
   const [rows] = await connection.execute({ sql: `SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.club,cl.abre_club,cl.nom_club FROM nageurs n LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.id IN (${ids.map(() => "?").join(",")}) ORDER BY n.nom,n.prenom,n.date,n.id LIMIT 20`, timeout: 10000 }, ids);
   return { ...result, swimmers: rows.map(person) };
 }
+async function listPortalClubSwimmers(connection, clubId) {
+  if (!/^\d{1,16}$/.test(String(clubId))) throw new TypeError("Club NAP invalide.");
+  const [rows] = await connection.execute({ sql: "SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.club,cl.abre_club,cl.nom_club FROM nageurs n FORCE INDEX (livepalmes_club_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.club=? ORDER BY n.id LIMIT 801", timeout: 10000 }, [String(clubId)]);
+  if (rows.length > 800) throw new RangeError("Effectif superieur a 800 nageurs : pagination requise.");
+  return rows.map(person);
+}
 async function correctPortalIdentity(connection, input, audit, linked) {
   const id = swimmerId(input?.id);
   if (!/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "") || !input.actorUid || !input.reason?.trim() || input.reason.length > 500) throw new TypeError("Fiche et motif requis.");
@@ -59,4 +65,4 @@ async function correctPortalIdentity(connection, input, audit, linked) {
   await audit.complete(operation, { id, operation, actorUid: input.actorUid, changedColumns: saved.changedColumns, beforeHash: saved.beforeHash, afterHash: saved.afterHash, verified: true, ...dependentResult });
   return result;
 }
-module.exports = { portalPool, person, searchPortalSwimmers, correctPortalIdentity };
+module.exports = { portalPool, person, searchPortalSwimmers, listPortalClubSwimmers, correctPortalIdentity };
