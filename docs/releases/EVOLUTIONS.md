@@ -5,7 +5,7 @@
 ### Reperage prive des prochaines sources NAP — 6 octobre 2026
 
 - Preparation de la lecture directe des autres pages : inventaire structurel borne des tables, colonnes et index utiles aux competitions, documents et Records/MPF, avec EXPLAIN par competition. Aucune lecture de ligne sportive ou privee et aucune ecriture ; pas d'export de performances ni changement IAM. Tests cibles passes, lecture reelle encore a faire.
-- TOP #117 : CI 37440825533 et backend 37441186296 reussis. 28 lectures reelles, 14 courses/deux sexes, maximum 1,365 seconde, tri et unicite controles. Apercu verifie sur filtres et chargement de la suite ; mobile sans debordement. Publication commune 37441341576 (84395f52) en cours, recette du site commun restante. Aucun nouveau retour utilisateur deduit.
+- TOP #117 : CI 37440825533 et backend 37441186296 reussis. 28 lectures reelles, 14 courses/deux sexes, maximum 1,365 seconde, tri et unicite controles. Apercu verifie sur filtres et chargement de la suite ; mobile sans debordement. Publication commune 37441341576 (84395f52) reussie ; recette technique sur site commun, 25 puis 50 nageurs du TOP 100SF Hommes bassin 50 m, pas d’erreur. L’index par competition reste en attente d’accord specifique, aucune execution. Aucun nouveau retour utilisateur deduit.
 
 ### TOP directement lus dans NAP — 6 octobre 2026
 
