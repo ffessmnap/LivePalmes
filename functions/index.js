@@ -212,10 +212,12 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     response.set("Cache-Control", "no-store");
     const indexOperation = request.method === "POST" && request.query.action === "approved-index";
     const swimmerCorrection = request.method === "POST" && request.query.action === "approved-swimmer-correction";
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection || request.method === "GET" && ["approved-index", "approved-swimmer-correction"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
+      const data = portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
+        : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
         read: async () => {
           const snapshot = await db.collection("auditLogs").doc("nap-swimmer-912-fauvau-before").get();
           return snapshot.exists ? snapshot.data().target : null;
@@ -226,6 +228,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
         : request.query.action === "portal-contract" ? await require("./nap-portal-contract").inspectPortalContract(napPool)
+        : request.query.action === "engagement-contract" ? await require("./nap-engagement-contract").inspectEngagementContract(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
         : request.query.action === "source-inventory" ? await require("./nap-source-inventory").inspectSourceInventory(napPool)
         : request.query.action === "schema" ? await readSourceSchema(napPool)

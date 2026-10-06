@@ -6,7 +6,7 @@ on:
         required: true
         default: source-inventory
         type: choice
-        options: [source-inventory, calendar-contract, portal-contract]
+        options: [source-inventory, calendar-contract, portal-contract, engagement-contract]
       expected_commit:
         required: true
         type: string

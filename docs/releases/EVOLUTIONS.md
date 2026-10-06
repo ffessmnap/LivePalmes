@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Compétitions et engagements NAP partagés : fondations autorisées — 6 octobre 2026
+
+- Feu vert d’Antoine après arbitrages simples : tarifs LivePalmes avec centimes et forfait nageur conservés (tarifs IntraNAP inutilisés) ; compétitions NAP existantes modifiables sans recréation ; dès le lendemain de la date de fin à Paris, région limitée aux documents, national autorisé à modifier après coup ; engagements IntraNAP incompatibles conservés et affichés avec alerte, sans suppression automatique. IntraNAP ne sera pas modifié.
+- Préparation de sept tables complémentaires InnoDB dans NAP : informations/options, options de courses, tarifs, groupes/minima/compétitions qualificatives et compléments de dossier club. Liste et SQL fixes ; aucun champ natif ni temps brut réécrit. Circuit privé séparé de toute publication : sauvegarde de structure et du plan avant création, contrôle d’empreinte, refus de schéma divergent, verrou, vérification et reprise des tables absentes. Aucun nouvel endpoint public, secret ou droit ajouté.
+- Budget de structure : trois requêtes de métadonnées pour sept noms fixes, plafonds 150 colonnes/30 éléments d’index ; sept CREATE au maximum, aucune ligne métier insérée. Diagnostic de compatibilité : neuf échantillons bornés (540 lignes au maximum), neuf EXPLAIN préalables ; index natifs requis, aucun nom/contact/licence ni scan de table entière non indexé. Les échantillons ne prouvent pas à eux seuls la signification métier des codes.
+- Tests ciblés hors ligne réussis : préparation sans écriture, plan fixe, concurrence, divergence de schéma, idempotence et reprise partielle. Vérification globale, publication du diagnostic et création réelle encore à effectuer. Le raccordement des parcours compétition/engagements est en cours ; aucune validation utilisateur de réalisation ou publication PROD déduite.
+- Inventaire précédent #130 : vérification 37478449034, backend privé 37478838047 et lecture 37479387595 réussis sur cf3267e0. 24 tables, 232 colonnes, 56 éléments d’index ; 18 MyISAM et 6 InnoDB (dont WinPalme/eau libre). Programme natif WinPalme présent ; aucune structure ou donnée NAP modifiée par cet inventaire.
+
 ### Sélection TEST : secrets statiques et modules standard Node.js — 6 octobre 2026
 
 - Le run commun 37467174168 a réussi en 23 min 47 s mais sélectionné 138 fonctions malgré 141 révisions prouvées. La déclaration inline defineSecret et les nouveaux imports node:crypto imposaient encore une empreinte globale.
