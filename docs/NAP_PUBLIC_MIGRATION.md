@@ -4,7 +4,7 @@
 
 ## Cible validee par Antoine
 
-LivePalmes consulte directement la base NAP, comme IntraNAP. NAP seule fait foi ; une modification est visible a la prochaine consultation ou au rechargement. Les pages, URL, filtres et presentation sont conserves. Le navigateur appelle le serveur LivePalmes, qui interroge MySQL avec le secret prive. Aucun export sportif, fichier genere ou comparaison avec l'ancienne base ne participe a cette consultation.
+LivePalmes consulte directement la base NAP, comme IntraNAP. NAP fait foi pour les performances, TOP et resultats ; une modification est visible a la prochaine consultation ou au rechargement. Exception explicite d'Antoine le 6 octobre : les Records/MPF officiels restent sur leur circuit LivePalmes actuel, qu'il confirme a jour, avec fichiers publics et secours statique. Ils ne sont ni remplaces par NAP ni recalcules a partir des TOP. Les pages, URL, filtres et presentation sont conserves. Le navigateur appelle le serveur LivePalmes, qui interroge MySQL avec le secret prive. Aucun export sportif ou comparaison avec l'ancienne base ne participe aux lectures NAP.
 
 La publication statique proposee auparavant est abandonnee. Run 37429288547 annule avant Hosting ; branchement retire par #109. Les outils historiques d'export/diagnostic restent hors du parcours public et ne doivent pas etre utilises pour activer les pages. Le suivi historique se trouve dans `docs/releases/EVOLUTIONS.md`.
 
@@ -67,3 +67,13 @@ Le catalogue prive `source-inventory` inspecte uniquement information_schema : a
 Recette technique TOP #117 : CI 37440825533 et backend 37441186296 reussis ; 28 lectures reelles (14 courses, deux sexes) toutes HTTP 200, tri/identites/categories/minima verifies, maximum 1,365 seconde. Apercu : 25 puis 50 nageurs, filtres categorie/bassin/saison/region et naissance 1999 verifies ; mobile 390 px sans debordement. Publication commune 37441341576 au commit 84395f52 reussie ; TOP 100SF Hommes bassin 50 m charge puis suite de 25 a 50 nageurs verifiee sur le site commun. Preuve visuelle locale top-nap-test.jpg. Aucune validation utilisateur inventee.
 
 Preparation d'un index distinct pour les pages resultats d'une competition : `livepalmes_compet_id (compet, id)` sur perfs. Les index actuels commencent par nageur ou course, aucun par compet ; le nouvel index permettra une page de 501 performances via `WHERE compet = ? AND id > ? ORDER BY id LIMIT 501`. Ajout prepare dans le circuit fixe existant, aucune execution avant accord specifique d'Antoine et confirmation d'absence de saisie/import. La table MyISAM peut bloquer ses ecritures pendant la creation. Aucun autre index ni colonne envisage.
+
+Mise a jour #118 : serveur NAP 37445207687 et index competition 37445595850 reussis, sauvegarde de structure avant ajout et colonnes verifies. Inventaire 37445736569 reussi ; EXPLAIN par competition utilise livepalmes_compet_id, type ref, sans filesort.
+
+## Calendrier, fiches et portail — perimetre autorise le 6 octobre
+
+Avant implementation : calendrier par saison, une plage d'index date/id, plafond 501 evenements avec refus au-dela de 500 ; fiche par cle primaire (1 ligne), documents publics de la competition (101 maximum, refus au-dela de 100), programme via compet_courses.compet (301 maximum, refus au-dela de 300), resultats via livepalmes_compet_id (501 par page, curseur id). Jointures de referentiels par cles primaires, aucun appel par ligne. Chaque ouverture/rechargement relit NAP, aucun export. Les longueurs inconnues restent inconnues. Les marqueurs PB/SB ne doivent pas etre inventes a partir du seul lot de competition.
+
+Deux index fixes prepares, en attente d'accord specifique : competitions.livepalmes_date_id(date,id) et documents.livepalmes_compet_public_id(competition,public,id). Le circuit sauvegarde la structure, refuse une ecriture active et verifie l'index. L'inspection privee du contrat ne lit que les libelles des quatre referentiels (51 chacun, refus >50) et compte les drapeaux de publication des documents (plafond 10001, refus >10000), sans contenu, chemin prive, compte ou valeur sportive.
+
+Le portail doit lire NAP pour les references et temps d'engagement sans changer les droits ni les regles de qualification. LivePalmes Direct continue a gerer le dossier, les series et resultats de la competition ; aucune synchronisation d'ecriture vers NAP n'est autorisee implicitement par ce branchement.

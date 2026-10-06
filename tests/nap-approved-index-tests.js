@@ -39,5 +39,23 @@ const { approvedIndexOperation } = require("../functions/nap-approved-index");
   const competitionBackup = await approvedIndexOperation(competitionPool, competitionInput);
   assert.equal(competitionPresent, false);
   assert.equal((await approvedIndexOperation(competitionPool, { ...competitionInput, phase: "apply", schemaHash: competitionBackup.schemaHash })).verified, true);
+  for (const spec of [
+    { kind: "calendar", table: "competitions", name: "livepalmes_date_id", columns: ["date", "id"] },
+    { kind: "documents", table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] }
+  ]) {
+    let added = false;
+    const indexPool = {
+      execute: async query => [query.sql.startsWith("SHOW CREATE") ? [{ Table: spec.table, "Create Table": `CREATE TABLE ${spec.table} (...)` }] : added ? spec.columns.map((Column_name, i) => ({ Key_name: spec.name, Column_name, Seq_in_index: i + 1, Non_unique: 1, Sub_part: null })) : []],
+      query: async query => {
+        if (query.sql === "SHOW PROCESSLIST") return [[]];
+        assert.equal(query.sql, `ALTER TABLE \`${spec.table}\` ADD INDEX \`${spec.name}\` (${spec.columns.map(column => `\`${column}\``).join(", ")})`);
+        added = true; return [{}];
+      }
+    };
+    const initial = { index: spec.kind, confirmation: `nap-add-${spec.kind}-index`, phase: "prepare" };
+    const backup = await approvedIndexOperation(indexPool, initial);
+    assert.equal(added, false);
+    assert.equal((await approvedIndexOperation(indexPool, { ...initial, phase: "apply", schemaHash: backup.schemaHash })).verified, true);
+  }
   console.log("Index NAP : preparation sans ecriture, liste fixe, empreinte, refus de saisie et idempotence verifies.");
 })().catch(error => { console.error(error); process.exitCode = 1; });
