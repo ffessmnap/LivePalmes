@@ -8,9 +8,9 @@ on:
       index:
         required: true
         type: choice
-        options: [search, top, competition]
+        options: [search, top, competition, calendar, documents]
       confirmation:
-        description: nap-add-search-index, nap-add-top-index ou nap-add-competition-index, apres accord specifique
+        description: nap-add-INDEX-index, apres accord specifique pour cet index
         required: true
         type: string
 permissions:
