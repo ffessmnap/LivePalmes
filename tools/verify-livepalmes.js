@@ -49,6 +49,7 @@ function runUnitTests() {
   printStep("Tests automatiques");
   [
     "nap-mysql-tests.js",
+    "nap-direct-query-checks-tests.js",
     "nap-public-export-tests.js",
     "nap-public-pipeline-tests.js",
     "nap-public-transition-tests.js",
