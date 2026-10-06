@@ -80,10 +80,20 @@ const localNap = fingerprints(conditional.replace("read(pool)", "read(pool)+1"),
 assert.deepEqual(Object.keys(localNap.functions).filter(n=>localNap.functions[n]!==originalModules.functions[n]), ["nap"]);
 const extraUnused = {...modules, "functions/unused.js": {source:'throw new Error("never load");'}};
 assert.deepEqual(fingerprints(conditional, "deps", extraUnused).functions, originalModules.functions);
-const importA = {...modules, 'functions/nap-leaf.js': {source:'const client=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
-const importB = {...modules, 'functions/nap-leaf.js': {source:'const renamed=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const importA = {...modules, 'functions/nap-leaf.js': {source:'const client=require("third-party-client"); function leaf(){return 1;} module.exports={leaf};'}};
+const importB = {...modules, 'functions/nap-leaf.js': {source:'const renamed=require("third-party-client"); function leaf(){return 1;} module.exports={leaf};'}};
 const externalA = fingerprints(conditional, 'deps', importA), externalB = fingerprints(conditional, 'deps', importB);
 assert.ok(Object.keys(externalA.functions).every(name=>externalA.functions[name]!==externalB.functions[name]));
+const builtinA = {...modules, 'functions/nap-leaf.js': {source:'const {createHash}=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const builtinB = {...modules, 'functions/nap-leaf.js': {source:builtinA['functions/nap-leaf.js'].source.replace('return 1', 'return 2')}};
+const builtinBefore = fingerprints(conditional, 'deps', builtinA), builtinAfter = fingerprints(conditional, 'deps', builtinB);
+assert.deepEqual(Object.keys(builtinBefore.functions).filter(name=>builtinBefore.functions[name]!==builtinAfter.functions[name]), ['nap']);
+const secretSource = 'const {onCall}=require("firebase-functions/v2/https"); const {defineSecret: secret}=require("firebase-functions/params"); exports.one=onCall({secrets:[secret("PASSWORD")]},()=>1); exports.two=onCall({},()=>2);';
+assert.equal(fingerprints(secretSource, 'deps').mode, 'dependency-closure');
+assert.deepEqual(changed(secretSource, secretSource.replace('"PASSWORD"', '"OTHER_PASSWORD"')), ['one']);
+assert.equal(fingerprints(secretSource.replace('secret("PASSWORD")','secret(name)'), 'deps').mode, 'whole-backend');
+assert.equal(fingerprints(secretSource.replace('secret("PASSWORD")','optionsFactory()'), 'deps').mode, 'whole-backend');
+assert.equal(fingerprints(secretSource+' if (ENVIRONMENT.projectId === "livepalmes-test") { const secret=()=>configure(); exports.masked=onCall({secrets:[secret("X")]},()=>1); }', 'deps').mode, 'whole-backend');
 const effectSource = modular.replace('const LIMIT=2;', 'const settings=require("./settings");\nconst LIMIT=2;');
 const effects = {"functions/settings.js": {source: 'configure(); module.exports={};'}};
 const effectBefore = fingerprints(effectSource, "deps", effects);
@@ -101,6 +111,8 @@ console.log("Empreintes NAP : condition TEST, module indirect, modification loca
 // Regression on real releases: no runtime code or Firebase call is executed.
 const root=path.resolve(__dirname,'..');
 for (const [label, before, after, expected] of [
+  ['NAP portail','ebcc955c202c0f7856347dabb6dd70378da68c3a','c18710237408b1689224d0270cddc36196452bb9',
+    ['exportNapPublicPage','searchEngagementNationalSwimmers','resolveEngagementSwimmerChangeRequest','updateEngagementNationalSwimmerIdentity','mergeEngagementNationalClubSwimmer']],
   ['NAP TOP','d7eb84c82a32358f7e3369938a10ab6a16086a97','84395f520781d913edb60e3a69b81085fb58c5b1',
     ['readNapPublicSwimmer','exportNapPublicPage']],
   ['DTN','7ed44a0033d63959a5423a0a904e77b454dd03f6','84d36c31ffad84bbefc515aff08935062f9c52a1',
