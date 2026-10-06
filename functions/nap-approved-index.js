@@ -6,7 +6,18 @@ const SPECS = {
   competition: { table: "perfs", name: "livepalmes_compet_id", columns: ["compet", "id"] },
   calendar: { table: "competitions", name: "livepalmes_date_id", columns: ["date", "id"] },
   documents: { table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] },
-  roster: { table: "nageurs", name: "livepalmes_club_id", columns: ["club", "id"] }
+  roster: { table: "nageurs", name: "livepalmes_club_id", columns: ["club", "id"] },
+  entrySwimmers: { table: "nageursengager", name: "livepalmes_compet_nageur_id", columns: ["compet", "nageur", "id"] },
+  entryRelays: { table: "engagements_relais", name: "livepalmes_compet_club_id", columns: ["compet", "club", "id"] },
+  relayMembers: { table: "engagements_relayeurs", name: "livepalmes_relais_pos_id", columns: ["relais", "pos", "id"] },
+  teamLeaders: { table: "chefsdequipe", name: "livepalmes_compet_id", columns: ["compet", "id"] },
+  entryOfficials: { table: "officielsengager", name: "livepalmes_compet_club_id", columns: ["compet", "club", "id"] },
+  entryForfeits: { table: "forfait", name: "livepalmes_compet_engagement_id", columns: ["compet", "engagement", "id"] },
+  programSessions: { table: "winpalme_sessions", name: "livepalmes_compet_session_id", columns: ["compet", "session", "id"] },
+  programCourses: { table: "winpalme_courses", name: "livepalmes_session_pos_id", columns: ["session", "pos", "id"] },
+  courseRestrictions: { table: "courses_swim", name: "livepalmes_compet_course_cat_id", columns: ["compet", "course", "categorie", "id"] },
+  participationRules: { table: "compet_participations", name: "livepalmes_compet_id", columns: ["compet", "id"] },
+  invitedCommittees: { table: "compet_comites", name: "livepalmes_compet_comite_id", columns: ["compet", "comite", "id"] }
 };
 function validIndex(rows, spec) {
   const found = rows.filter(row => row.Key_name === spec.name).sort((a, b) => Number(a.Seq_in_index) - Number(b.Seq_in_index));
@@ -33,4 +44,4 @@ async function approvedIndexOperation(pool, input) {
   if (!validIndex(after, spec)) throw new Error("Verification incomplete.");
   return { ...base, verified: true };
 }
-module.exports = { approvedIndexOperation, validIndex };
+module.exports = { SPECS, approvedIndexOperation, validIndex };

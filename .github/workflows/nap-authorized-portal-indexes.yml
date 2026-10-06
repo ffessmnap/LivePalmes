@@ -1,0 +1,65 @@
+name: Ajouter les index NAP du portail autorises
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      confirmation:
+        description: nap-add-portal-engagement-indexes, apres accord et hors saisie
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: nap-authorized-index
+  cancel-in-progress: false
+jobs:
+  add:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      NAP_PORTAL_INDEX_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verifier le commit et la confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$NAP_PORTAL_INDEX_CONFIRMATION" = "nap-add-portal-engagement-indexes"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Sauvegarder toutes les structures sans modification
+        run: node tools/add-nap-portal-indexes.js
+        env:
+          NAP_PORTAL_INDEX_PHASE: prepare
+      - name: Conserver la sauvegarde avant ajout
+        uses: actions/upload-artifact@v4
+        with:
+          name: nap-portal-indexes-before
+          path: outputs/nap-portal-indexes-before.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Ajouter et verifier les index hors saisie
+        run: node tools/add-nap-portal-indexes.js
+        env:
+          NAP_PORTAL_INDEX_PHASE: apply
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nap-portal-indexes-result
+          path: outputs/nap-portal-indexes-*.json
+          if-no-files-found: ignore
+          retention-days: 90

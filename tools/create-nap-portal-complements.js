@@ -26,6 +26,6 @@ async function main() {
   if (result.source !== "nap" || result.mode !== "approved-portal-schema" || result.planHash !== planHash || result.tables?.join(",") !== tables.map(t=>t.name).join(",") || result.dataRowsWritten !== false || phase === "apply" && result.verified !== true) throw new Error("Resultat incorrect.");
   fs.mkdirSync("outputs",{recursive:true});
   fs.writeFileSync(`outputs/nap-portal-schema-${phase === "prepare" ? "before" : "result"}.json`,JSON.stringify(result,null,2)+"\n");
-  console.log(phase === "prepare" ? "Plan additif et structure avant operation sauvegardes. Aucune ecriture." : `Sept tables complementaires verifiees ; ${result.created.length} creees. Aucune ligne sportive ecrite.`);
+  console.log(phase === "prepare" ? "Plan additif et structure avant operation sauvegardes. Aucune ecriture." : `${tables.length} tables complementaires verifiees ; ${result.created.length} creees. Aucune ligne sportive ecrite.`);
 }
 main().catch(()=>{console.error("Operation de structure NAP arretee. Consulter la preuve avant reprise ; aucun secret affiche.");process.exitCode=1;});
