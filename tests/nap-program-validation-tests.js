@@ -14,4 +14,10 @@ assert.equal(validateProgram(session([item("4X100BI","direct","mixed")]),events,
 for(const invalid of [session([item("UNKNOWN")]),session([item(),item()]),session([item("50BI","heats")]),session([item("50BI","final"),item("50BI","heats")]),session([item("50BI","wrong")]),Array(13).fill(session([])[0]),[{...session([])[0],startTime:"99:99"}],[{...session([])[0],date:"2026-02-30"}]]) assert.throws(()=>validateProgram(invalid,events,normalize));
 assert.throws(()=>validateProgram(session([item()]),events,()=>[]),/incomplet/);
 assert.deepEqual(validateProgram([],events,normalize),[]);
+const womenOnly=[{...events[0],nativeCourses:[{sexe:"F"}]}];
+assert.equal(validateProgram(session([item()]),womenOnly,normalize)[0].items.length,1);
+assert.throws(()=>validateProgram(session([item("50BI","direct","male")]),womenOnly,normalize),/correspond pas/);
+assert.equal(validateProgram(session([item("50BI","direct","male")]),[{...events[0],nativeCourses:[{sexe:"F"},{sexe:"M"}]}],normalize)[0].items.length,1);
+assert.equal(validateProgram(session([item("4X100BI","direct","mixed")]),[{...events[1],nativeCourses:[{sexe:"0"}]}],normalize)[0].items.length,1);
+assert.throws(()=>validateProgram(session([item("4X100BI","direct","mixed")]),[{...events[1],nativeCourses:[{sexe:"F"},{sexe:"M"}]}],normalize),/correspond pas/);
 console.log("Programme NAP : bornes avant normalisation, regles existantes series/finales et aucun passage perdu verifies.");

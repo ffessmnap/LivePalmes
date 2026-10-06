@@ -8,6 +8,11 @@ function validateProgram(raw, selectedEvents, normalize) {
     if(session.startTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(session.startTime)) throw new TypeError("Horaire de session invalide.");
     for(const item of session.items) {
       if(!item || typeof item.eventCode!=="string" || item.eventCode.length>32 || !["female","male","mixed"].includes(item.genderMode) || !["direct","heats","final","slowHeats","fastHeat"].includes(item.phase)) throw new TypeError("Passage de programme invalide.");
+      const event=selectedEvents.find(candidate=>candidate.code===item.eventCode);
+      if(Array.isArray(event?.nativeCourses)) {
+        const nativeSex={female:"F",male:"M",mixed:"0"}[item.genderMode];
+        if(!event.nativeCourses.some(course=>String(course.sexe).trim()===nativeSex)) throw new TypeError("Ce passage ne correspond pas aux courses femmes, hommes ou mixtes proposees dans NAP.");
+      }
     }
   }
   const result=normalize(raw,selectedEvents,{strict:true});
