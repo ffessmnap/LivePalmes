@@ -7,6 +7,9 @@ const calendar = require("./nap-direct-calendar");
 const time = require("./nap-performance-normalization");
 const text = value => String(value ?? "").trim();
 const code = value => text(value).toUpperCase().replace(/\s+/g, "");
+// These are two distinct existing relay definitions. Only remove the legacy
+// display suffix, never change BI into SB or discard the native course row.
+const nativeCourseCode = value => code(value).replace(/^(4X100BI|4X100SB)MIXTE$/, "$1");
 function json(value, fallback) {
   if (value == null) return fallback;
   if (typeof value === "object") return value;
@@ -25,7 +28,7 @@ function competitionItem(pack, definitions = new Map()) {
   const options = pack.options || {}, parameters = pack.nativeParameters;
   const courses = new Map();
   for (const row of pack.courses) {
-    const eventCode = code(row.course) || `NAP-${row.id_course}`;
+    const eventCode = nativeCourseCode(row.course) || `NAP-${row.id_course}`;
     if (!courses.has(eventCode)) {
       const definition = definitions.get(eventCode);
       const extra = pack.courseOptions.find(item => code(item.event_code) === eventCode);
@@ -78,7 +81,7 @@ function entryItem(pack, context, categoryForBirthDate) {
       nativeMemberId: String(member.id), nativePosition: member.pos, swimmerIndexId: String(member.nageur), swimmerId: String(member.nageur),
       firstName: text(member.prenom), lastName: text(member.nom), name: [text(member.prenom), text(member.nom)].join(" "),
       birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), licenseNumber: "" }));
-    return { relayId: String(row.id), nativeCategory: row.categorie, category: `NAP-${row.categorie}`, eventCode: code(row.course_code) || `NAP-${row.course}`,
+    return { relayId: String(row.id), nativeCategory: row.categorie, category: `NAP-${row.categorie}`, eventCode: nativeCourseCode(row.course_code) || `NAP-${row.course}`,
       nativeCourseId: row.course, genderMode: ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
       manualEntryTime: "", ...nativeTime(row.tps), members, memberIds: members.map(member => member.swimmerIndexId) };
   });
@@ -98,4 +101,4 @@ async function readDocuments(connection, competitionId) {
   return rows.map(row => ({ id: `nap-${row.id}`, title: text(row.name) || text(row.type_label), url: calendar.publicUrl(row.location),
     description: text(row.comment), category: /protocole|r[ée]sultat/i.test(`${row.name} ${row.type_label}`) ? "results" : "information", nativeDocument: true })).filter(row => row.url);
 }
-module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, readDocuments };
+module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, readDocuments, nativeCourseCode };

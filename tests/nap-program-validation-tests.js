@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const {validateProgram}=require("../functions/nap-program-validation");
+const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
+const context={cleanText:value=>String(value??"").trim(),cleanIsoDate:value=>value||"",HttpsError:Error,
+  ENGAGEMENT_EVENT_DEFINITION_BY_CODE:new Map(),ENGAGEMENT_PROGRAM_GENDER_MODES:new Set(["female","male","mixed"]),ENGAGEMENT_PROGRAM_PHASES:new Set(["direct","heats","final","slowHeats","fastHeat"])};
+vm.createContext(context);vm.runInContext(source.slice(source.indexOf("function cleanEngagementProgramSessions("),source.indexOf("function engagementCompetitionCalendarItem(")),context);
+const events=[{code:"50BI",type:"individual"},{code:"4X100BI",type:"relay",relayMixedRule:"required"}];
+const session=items=>[{id:"session-1",date:"2026-10-11",startTime:"09:30",items}];
+const item=(eventCode="50BI",phase="direct",genderMode="female")=>({eventCode,phase,genderMode});
+const normalize=context.cleanEngagementProgramSessions;
+assert.equal(validateProgram(session([item()]),events,normalize)[0].items.length,1);
+assert.equal(validateProgram(session([item("4X100BI","direct","mixed")]),events,normalize)[0].items[0].genderMode,"mixed");
+for(const invalid of [session([item("UNKNOWN")]),session([item(),item()]),session([item("50BI","heats")]),session([item("50BI","final"),item("50BI","heats")]),session([item("50BI","wrong")]),Array(13).fill(session([])[0]),[{...session([])[0],startTime:"99:99"}],[{...session([])[0],date:"2026-02-30"}]]) assert.throws(()=>validateProgram(invalid,events,normalize));
+assert.throws(()=>validateProgram(session([item()]),events,()=>[]),/incomplet/);
+assert.deepEqual(validateProgram([],events,normalize),[]);
+console.log("Programme NAP : bornes avant normalisation, regles existantes series/finales et aucun passage perdu verifies.");

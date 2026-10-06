@@ -4,6 +4,7 @@ const MAX_EVENTS = 500;
 const MAX_DOCUMENTS = 100;
 const MAX_PROGRAM = 300;
 const MAX_RESULTS = 5000;
+const nativeLevel = value => ({0:"departemental",1:"regional",2:"national",3:"national",4:"national",5:"national",6:"regional",7:"national",8:"international"})[value == null ? "" : String(value)] || "";
 function positiveId(input) {
   const value = String(input ?? "").replace(/^legacy-nap-/, "");
   if (!/^[1-9][0-9]{0,9}$/.test(value) || Number(value) > 2147483647) throw new TypeError("Competition invalide.");
@@ -30,11 +31,14 @@ function eventFromRow(row) {
     : /stage|d[ée]tection/i.test(name) ? "stage"
     : /r[ée]union|assembl[ée]e|colloque|s[ée]minair|date limite/i.test(name) ? "meeting" : "";
   const eventType = Number(row.ld) === 1 ? "openWater" : ({ "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || titleType || (kind === "Piscine" ? "pool" : "other"));
-  const level = ({ "Départementale": "departemental", "Départemental": "departemental", "Régionale": "regional", "Régional": "regional", "Championnat de Zones": "regional", "Critériums Nationaux": "national", Nationale: "national", National: "national", International: "international", Internationale: "international" }[text(row.level_label)] || ({ MONDE: "international", EUROPE: "international", FRANCE: "national", ZONE: "regional", REGIONAUX: "regional" })[text(row.scope_label)] || "");
+  const level = nativeLevel(row.native_level_code) || ({ "Départementale": "departemental", "Départemental": "departemental", "Régionale": "regional", "Régional": "regional", "Championnat de Zones": "regional", "Critériums Nationaux": "national", Nationale: "national", National: "national", International: "international", Internationale: "international" }[text(row.level_label)] || ({ MONDE: "international", EUROPE: "international", FRANCE: "national", ZONE: "regional", REGIONAUX: "regional" })[text(row.scope_label)] || "");
   const regionId = ["national", "international"].includes(level) ? "" : rules.committeeId(row.comite);
   const id = `legacy-nap-${row.id}`;
   const pdfUrl = publicUrl(row.filepdf);
+  const entry = ["pool","openWater"].includes(eventType) ? require("./nap-paris-time").entryState(row) : {};
   return { id, legacyCompetitionId: String(row.id), name, date: date(row.date), endDate: date(row.enddate) || date(row.date),
+    ...entry, engagementCompetitionId:["pool","openWater"].includes(eventType) ? id : "",
+    teamLeadersWhatsAppUrl:["national","international"].includes(level) ? text(row.portal_whatsapp) : "",
     city: row.portal_city == null ? text(row.lieu) : text(row.portal_city), location: text(row.lieu), address:text(row.portal_address),
     organizer:text(row.portal_organizer), waterBodyType:text(row.portal_water_body_type), canceled:Number(row.portal_canceled)===1,
     description: text(row.description), eventType, level,
@@ -44,7 +48,7 @@ function eventFromRow(row) {
     resultsPublishedAt: Number(row.has_results) ? date(row.date) : "",
     results: { pdfUrl, url: Number(row.has_results) ? `competition.html?id=${id}#competitionResultsTitle` : "", dataPath: Number(row.has_results) ? `results/${id}.json` : "" }, documents: [], program: [] };
 }
-const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
+const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
 const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.typecnc LEFT JOIN compet_type s ON s.id=c.type LEFT JOIN livepalmes_competition_options co ON co.competition_id=c.id";
 async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
 async function readCalendarManifest(pool) {
@@ -65,7 +69,10 @@ async function readCalendarSeason(pool, input) {
 }
 async function readCompetition(pool, input) {
   const id = positiveId(input);
-  const rows = await execute(pool, `${SELECT_EVENT}${EVENT_JOINS} WHERE c.id=? LIMIT 2`, [id]);
+  // Detailed program is loaded only on the single competition page, never for
+  // every row of a season. The supplemental join is on its primary key.
+  const detailSelect=SELECT_EVENT.replace(" FROM competitions c",",pg.program_sessions AS portal_program_sessions FROM competitions c");
+  const rows = await execute(pool, `${detailSelect}${EVENT_JOINS} LEFT JOIN livepalmes_competition_programs pg ON pg.competition_id=c.id WHERE c.id=? LIMIT 2`, [id]);
   if (rows.length > 1) throw new RangeError("Parametres de competition ambigus.");
   if (!rows.length) return { source: "nap", event: null };
   const event = eventFromRow(rows[0]);
@@ -79,6 +86,12 @@ async function readCompetition(pool, input) {
   const program = await execute(pool, `SELECT cc.pos,cd.course,cd.sexe,cd.relais FROM compet_courses cc LEFT JOIN course_dispo cd ON cd.id=cc.id_course WHERE cc.compet=? ORDER BY cc.pos,cc.id LIMIT ${MAX_PROGRAM + 1}`, [id]);
   if (program.length > MAX_PROGRAM) throw new RangeError("Programme trop volumineux.");
   if (program.length) event.program = [{ title: "Programme", date: event.date, items: program.map(row => ({ label: text(row.course) || "Épreuve", detail: [({ F: "Femmes", M: "Hommes", X: "Mixte" })[text(row.sexe)], Number(row.relais) ? "Relais" : ""].filter(Boolean).join(" · ") })) }];
+  if(rows[0].portal_program_sessions != null) {
+    const raw=rows[0].portal_program_sessions;
+    const sessions=typeof raw==="string" ? JSON.parse(raw) : raw;
+    if(!Array.isArray(sessions) || sessions.length>12 || Buffer.byteLength(JSON.stringify(sessions))>100000 || sessions.some(session=>!Array.isArray(session.items) || session.items.length>160)) throw new RangeError("Programme detaille NAP invalide.");
+    event.program=require("./public-calendar").publicCalendarDetail({programSessions:sessions}).program;
+  }
   return { source: "nap", readAt: new Date().toISOString(), event };
 }
-module.exports = { MAX_EVENTS, MAX_DOCUMENTS, MAX_PROGRAM, MAX_RESULTS, SELECT_EVENT, EVENT_JOINS, positiveId, date, text, publicUrl, eventFromRow, execute, readCalendarManifest, readCalendarSeason, readCompetition };
+module.exports = { MAX_EVENTS, MAX_DOCUMENTS, MAX_PROGRAM, MAX_RESULTS, SELECT_EVENT, EVENT_JOINS, positiveId, date, text, publicUrl, eventFromRow, execute, readCalendarManifest, readCalendarSeason, readCompetition, nativeLevel };
