@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Publication TEST : sélection par fonction et dépendances NAP — 6 octobre 2026
+
+- Antoine autorise la correction du circuit après analyse des republications de 138 fonctions. Preuves vérifiées par révision, réutilisation des artefacts des lots ciblés sur main, étiquette de commit ajoutée à ces lots et raisons de sélection affichées. Une différence Hosting ou une fonction NAP extérieure au lot ordinaire ne force plus les 138 fonctions.
+- Analyse statique des exports conditionnels TEST et imports locaux directs/indirects ; initialisations avec effets possibles, imports dynamiques et dépendances npm restent conservateurs. Aucun code métier, donnée, règle, index ou secret modifié. Le contrôle global de dérive PROD reste strict.
+- Tests ciblés locaux : 33 scénarios du circuit et scénarios d'empreintes synthétiques réussis. Vérification globale GitHub et publication TEST du circuit à terminer ; aucun retour utilisateur ni validation PROD déduit.
+
 ### Finalisation du calendrier NAP sur TEST — 6 octobre 2026
 
 - Controle du site commun : ancienne version du calendrier encore publiee, connexion NAP presente uniquement dans l'apercu #120. Publication commune a terminer ; aucune validation utilisateur deduite.
