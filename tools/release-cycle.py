@@ -105,26 +105,85 @@ def latest_run(workflow, skip=0):
     return current['id']
 
 
+def matching_functions(proof, current):
+    """Trust revisions individually; a Hosting or another Function change is unrelated."""
+    recorded = {f['name']: f for f in proof.get('state', {}).get('functions', [])}
+    return {f['name'] for f in current['functions']
+            if f.get('revision') and f.get('updateTime') and f.get('commit')
+            and f.get('state') == 'ACTIVE' and recorded.get(f['name']) == f}
+
+
+def targeted_test_evidence(directory, current):
+    trusted = set()
+    repo = os.environ['GITHUB_REPOSITORY']
+    runs = gh(f'repos/{repo}/actions/workflows/livepalmes-test-backend.yml/runs?branch=main&per_page=20')['workflow_runs']
+    for info in runs:
+        if info['status'] != 'completed' or info['conclusion'] != 'success' or info.get('run_attempt', 1) != 1:
+            continue
+        if not any(f.get('commit') == info['head_sha'] and f['name'] not in trusted for f in current['functions']):
+            continue
+        destination = Path(directory) / ('backend-' + str(info['id']))
+        try:
+            source = artifact(info['id'], 'test-backend-proof', destination, '.github/workflows/livepalmes-test-backend.yml')
+            proof = read(destination / 'test-backend-proof.json')
+            require(proof.get('schema') == 1 and proof.get('candidate') == source['head_sha'], 'Preuve backend invalide')
+            require(all(f.get('commit') == proof['candidate'] for f in proof['state']['functions']), 'Commit backend non atteste')
+            trusted.update(matching_functions(proof, current))
+        except (ValueError, KeyError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+            print(f"Preuve backend {info['id']} non reutilisable : {error}")
+    return trusted
+
+
 def test_selection(directory, candidate):
     root = Path(directory)
     sha = os.environ['CANDIDATE_SHA']
     before = snapshot('livepalmes-test')
-    trusted = False
+    trusted = set()
     try:
         previous = latest_run('livepalmes-test-common.yml', os.environ['GITHUB_RUN_ID'])
         artifact(previous, 'test-proof', root / 'previous-test', '.github/workflows/livepalmes-test-common.yml')
-        trusted = read(root / 'previous-test/test-proof.json')['state'] == before
-    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError):
-        pass  # No valid matching proof: use the full safe selection.
+        trusted.update(matching_functions(read(root / 'previous-test/test-proof.json'), before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve commune non reutilisable : {error}')
+    try:
+        trusted.update(targeted_test_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuves ciblees non disponibles : {error}')
     safe = safe_functions(candidate)
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
-    selected = [n for n in safe if not trusted or needs_function(names.get(n), n, sha)]
+    selected, reasons = [], {}
+    for name in safe:
+        function = names.get(name)
+        if not function or function['name'] not in trusted:
+            reasons[name] = 'revision sans preuve concordante'
+        elif needs_function(function, name, sha):
+            reasons[name] = 'code ou dependances differents'
+        else:
+            reasons[name] = 'revision prouvee, code et dependances equivalents'
+        if reasons[name] != 'revision prouvee, code et dependances equivalents':
+            selected.append(name)
+        print(f'{name} : {reasons[name]}')
     write(root / 'test-before.json', before)
     write(root / 'test-selection.json', selected)
+    write(root / 'test-selection-reasons.json', reasons)
     output(backend=str(bool(selected)).lower())
-    print(f'Functions TEST a publier : {len(selected)} / {len(safe)} ; preuve anterieure concordante : {trusted}.')
+    print(f'Functions TEST a publier : {len(selected)} / {len(safe)} ; revisions prouvees : {len(trusted)}.')
     print('Selection : ' + (', '.join(selected) or 'aucune'))
 
+
+def backend_proof(directory, selector):
+    require(os.environ['TARGET_FIREBASE_PROJECT'] == 'livepalmes-test', 'Cible TEST requise')
+    sha = os.environ['CANDIDATE_SHA']
+    require(SHA.fullmatch(sha), 'Commit backend absent')
+    selected = Path(selector).read_text().strip().split(',')
+    require(selected and len(selected) == len(set(selected)), 'Selection backend invalide')
+    state = snapshot('livepalmes-test')
+    names = {f['name'].split('/')[-1]: f for f in state['functions']}
+    require(all(name in names and names[name]['state'] == 'ACTIVE' and names[name]['commit'] == sha
+                and names[name].get('revision') and names[name].get('updateTime') for name in selected),
+            'Revision backend non confirmee')
+    write(Path(directory) / 'test-backend-proof.json', {'schema': 1, 'candidate': sha,
+          'state': {'functions': sorted([names[name] for name in selected], key=lambda f: f['name'])}})
 
 def check_test(directory, candidate):
     root = Path(directory)
@@ -459,6 +518,8 @@ def main():
         freeze_plan(*args, evidence=True)
     elif mode == 'test-selection':
         test_selection(*args)
+    elif mode == 'backend-proof':
+        backend_proof(*args)
     elif mode == 'check-test':
         check_test(*args)
     elif mode == 'selection':

@@ -33,20 +33,62 @@ class ReleaseTests(unittest.TestCase):
                 m.fetch_plan('12','0',d)
             self.assertEqual(out.call_args.kwargs['verified'],'true')
 
-    def test_test_selection_reuses_unchanged_functions_and_checks_drift(self):
-        with tempfile.TemporaryDirectory() as d:
-            root=Path(d)
-            state={'functions':[{'name':'functions/one','state':'ACTIVE','commit':'b'*40},{'name':'functions/two','state':'ACTIVE','commit':'c'*40}]}
-            m.write(root/'previous-test/test-proof.json',{'state':state})
-            with patch.dict(os.environ,{'CANDIDATE_SHA':'a'*40,'GITHUB_RUN_ID':'13'}),patch.object(m,'snapshot',return_value=state),patch.object(m,'latest_run',return_value=12),patch.object(m,'artifact'),patch.object(m,'safe_functions',return_value=['one','two']),patch.object(m,'needs_function',side_effect=[True,False]),patch.object(m,'output'):
-                m.test_selection(d,'.')
-            self.assertEqual(m.read(root/'test-selection.json'),['one'])
-            m.write(root/'previous-test/test-proof.json',{'state':{'functions':[]}})
-            with patch.dict(os.environ,{'CANDIDATE_SHA':'a'*40,'GITHUB_RUN_ID':'13'}),patch.object(m,'snapshot',return_value=state),patch.object(m,'latest_run',return_value=12),patch.object(m,'artifact'),patch.object(m,'safe_functions',return_value=['one','two']),patch.object(m,'needs_function') as comparisons,patch.object(m,'output'):
-                m.test_selection(d,'.')
-            self.assertEqual(m.read(root/'test-selection.json'),['one','two'])
-            comparisons.assert_not_called()
+    def function(self, name, commit='b'*40):
+        return {'name': 'projects/livepalmes-test/locations/europe-west1/functions/' + name,
+                'state': 'ACTIVE', 'commit': commit, 'revision': 'revision-' + name, 'updateTime': 'now'}
 
+    def test_test_selection_reuses_per_function_despite_other_drift(self):
+        one, two, nap = [self.function(n) for n in ['one', 'two', 'nap']]
+        original = {'hosting': {'version': 'old'}, 'functions': [one, two, nap]}
+        state = {'hosting': {'version': 'new'}, 'functions': [one, two, {**nap, 'revision': 'changed'}]}
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            m.write(root/'previous-test/test-proof.json', {'state': original})
+            with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13'}), patch.object(m, 'snapshot', return_value=state), patch.object(m, 'latest_run', return_value=12), patch.object(m, 'artifact'), patch.object(m, 'targeted_test_evidence', return_value=set()), patch.object(m, 'safe_functions', return_value=['one', 'two']), patch.object(m, 'needs_function', side_effect=[True, False]), patch.object(m, 'output'):
+                m.test_selection(d, '.')
+            self.assertEqual(m.read(root/'test-selection.json'), ['one'])
+            state['functions'][1] = {**two, 'revision': 'unproven'}
+            with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13'}), patch.object(m, 'snapshot', return_value=state), patch.object(m, 'latest_run', return_value=12), patch.object(m, 'artifact'), patch.object(m, 'targeted_test_evidence', return_value=set()), patch.object(m, 'safe_functions', return_value=['one', 'two']), patch.object(m, 'needs_function', return_value=False) as comparisons, patch.object(m, 'output'):
+                m.test_selection(d, '.')
+            self.assertEqual(m.read(root/'test-selection.json'), ['two'])
+            comparisons.assert_called_once_with(one, 'one', 'a'*40)
+
+    def test_targeted_proof_restores_only_exact_live_revision(self):
+        one, two = self.function('one'), self.function('two')
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            m.write(root/'backend-12/test-backend-proof.json', {'schema': 1, 'candidate': 'b'*40, 'state': {'functions': [one, two]}})
+            runs = {'workflow_runs': [{'id': 12, 'head_sha': 'b'*40, 'status': 'completed', 'conclusion': 'success', 'run_attempt': 1}]}
+            current = {'functions': [one, {**two, 'revision': 'changed'}]}
+            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value=runs), patch.object(m, 'artifact', return_value={'head_sha': 'b'*40}):
+                self.assertEqual(m.targeted_test_evidence(root, current), {one['name']})
+                m.write(root/'backend-12/test-backend-proof.json', {'schema': 1, 'candidate': 'c'*40, 'state': {'functions': [one]}})
+                self.assertEqual(m.targeted_test_evidence(root, current), set())
+
+    def test_unknown_proof_republishes_only_unknown_functions(self):
+        one, two = self.function('one'), self.function('two')
+        with tempfile.TemporaryDirectory() as d:
+            with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13'}), patch.object(m, 'snapshot', return_value={'functions': [one, two]}), patch.object(m, 'latest_run', side_effect=ValueError('absent')), patch.object(m, 'targeted_test_evidence', return_value={one['name']}), patch.object(m, 'safe_functions', return_value=['one', 'two']), patch.object(m, 'needs_function', return_value=False), patch.object(m, 'output'):
+                m.test_selection(d, '.')
+            self.assertEqual(m.read(Path(d)/'test-selection.json'), ['two'])
+
+    def test_targeted_proof_requires_active_labelled_revision(self):
+        one = self.function('one', 'a'*40)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); (root/'selector').write_text('one')
+            with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT': 'livepalmes-test', 'CANDIDATE_SHA': 'a'*40}), patch.object(m, 'snapshot', return_value={'functions': [one]}):
+                m.backend_proof(root/'proof', root/'selector')
+                self.assertEqual(m.read(root/'proof/test-backend-proof.json')['state']['functions'], [one])
+            for bad in [{**one, 'state': 'FAILED'}, {**one, 'commit': 'b'*40}, {**one, 'revision': None}]:
+                with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT': 'livepalmes-test', 'CANDIDATE_SHA': 'a'*40}), patch.object(m, 'snapshot', return_value={'functions': [bad]}), self.assertRaises(ValueError):
+                    m.backend_proof(root/'proof', root/'selector')
+
+    def test_partial_or_failed_targeted_runs_cannot_prove_revisions(self):
+        one = self.function('one')
+        for status, conclusion, attempt in [('in_progress', None, 1), ('completed', 'failure', 1), ('completed', 'success', 2)]:
+            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': [{'id': 12, 'head_sha': 'b'*40, 'status': status, 'conclusion': conclusion, 'run_attempt': attempt}]}), patch.object(m, 'artifact') as artifact:
+                self.assertEqual(m.targeted_test_evidence('.', {'functions': [one]}), set())
+                artifact.assert_not_called()
     def test_workflow_keeps_only_writer_behind_approval(self):
         workflows=Path(__file__).parents[1]/'.github/workflows'
         preflight=(workflows/'livepalmes-production-preflight.yml').read_text()
@@ -57,6 +99,14 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn('environment: production',release)
         self.assertLess(release.index('Relire TEST avant toute ecriture PROD'),release.index('Sauvegarder le code PROD'))
         self.assertLess(release.index('Verifier que PROD correspond encore au bilan'),release.index('Publier les Functions'))
+
+    def test_targeted_workflow_records_labels_before_deploy_and_proof_after(self):
+        workflow=(Path(__file__).parents[1]/'.github/workflows/livepalmes-test-backend.yml').read_text(encoding='utf-8')
+        self.assertLess(workflow.index('Attester le commit'), workflow.index('Dry-run des index'))
+        self.assertLess(workflow.index('Déployer uniquement les Functions'), workflow.index('Conserver les revisions'))
+        self.assertIn('livepalmes-commit', workflow)
+        self.assertIn('test-backend-proof', workflow)
+        self.assertIn("inputs.lot != 'bootstrap' && github.ref == 'refs/heads/main'", workflow)
 
     def test_production_evidence_preserves_unselected_commit(self):
         with tempfile.TemporaryDirectory() as d:
