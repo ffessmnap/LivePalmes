@@ -39,13 +39,14 @@ function competitionItem(pack, definitions = new Map()) {
   const events = [...courses.values()];
   const fees = pack.fees ? { enabled: Number(pack.fees.enabled) === 1, swimmerFee: Number(pack.fees.swimmer_fee || 0),
     individualEventFee: Number(pack.fees.individual_event_fee || 0), relayFee: Number(pack.fees.relay_fee || 0), helloAssoUrl: text(pack.fees.helloasso_url) } : { enabled: false };
-  return { ...listItem(pack.event), napFingerprint: fingerprint(pack), nativeParameters: parameters,
+  return { ...listItem(pack.event), napFingerprint: fingerprint(pack), nativeParameters: parameters, nativeCompetitionEditable: Boolean(pack.nativeSnapshot?.parameters?.id),
     nativeRules: { courses: pack.courses, restrictions: pack.restrictions, participations: pack.participations, committees: pack.committees },
     address: text(options.address), city: options.city == null ? pack.event.city : text(options.city), organizer: text(options.organizer_label),
     organizerEmail: text(options.organizer_email), teamLeadersWhatsAppUrl: text(options.whatsapp_url), waterBodyType: text(options.water_body_type),
-    canceled: Number(options.canceled) === 1, invitedRegionIds: json(options.invited_region_ids, []),
+    canceled: Number(options.canceled) === 1, invitedRegionIds: json(options.invited_region_ids, pack.committees.map(row => String(row.comite))),
     officialsRequired: Number(parameters.officiel) === 1, computerEmail: text(parameters.mailtxt), officialsManagerEmail: text(parameters.mailjuges),
     qualificationStartDate: calendar.date(parameters.tps_d), qualificationEndDate: calendar.date(parameters.tps_f),
+    qualificationTimesMode: calendar.date(parameters.tps_d) && calendar.date(parameters.tps_f) ? "period" : "",
     missingEntryTimeMode: text(options.missing_time_mode), maxEventsPerSwimmer: options.max_events_per_swimmer ?? 0,
     qualifications: { enabled: Number(options.qualifications_enabled) === 1, groups: pack.groups, standards: pack.standards },
     fees, programSessions: json(pack.detailedProgram?.program_sessions, []), events,

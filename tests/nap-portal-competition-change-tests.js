@@ -1,0 +1,94 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {SPECS,planCompetitionChange,applyCompetitionChange,operationHash,buildStatement}=require("../functions/nap-portal-competition-change");
+const native=require("../functions/nap-portal-competitions");
+const {fingerprint}=require("../functions/nap-portal-workspaces");
+const now=Date.parse("2026-10-06T12:00:00Z");
+function fixturePack() {
+  const competition={id:5140,libelle:"Competition &amp; historique",lieu:"Antibes",date:"2026-10-11",enddate:null,comite:7,description:"Texte ancien",bassin:50,chrono:"M",ld:0};
+  const parameters={id:5000,compet:5140,actif:1,dateactif:"2026-09-30 19:03:01",date_limit:"2026-10-07 21:59:17",officiel:1,nb_lignes:8,mailtxt:null,mailjuges:"",tps_d:null,tps_f:null,niveau:3,saisie:0,relais:0};
+  return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP"}],options:null,fees:null};
+}
+const pack=fixturePack();
+const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+const close=planCompetitionChange(pack,input({entryStatus:"closed"}),now);
+assert.deepEqual(close.operations.map(o=>o.table),["compet_parametres","livepalmes_competition_options"]);
+assert.equal(close.operations[0].after.actif,0);
+assert.equal(close.operations[0].after.date_limit,"2026-10-07 21:59:17");
+assert.equal(close.operations[0].after.dateactif,pack.nativeSnapshot.parameters.dateactif);
+assert.equal(close.operations[1].after.entry_closed,1);
+assert.equal(close.operations[1].after.updated_at,"2026-10-06 12:00:00.000000");
+const rename=planCompetitionChange(pack,input({name:"Nom corrige"}),now);
+const renameSql=buildStatement(rename.operations[0],{competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters});
+assert.ok(renameSql.sql.includes("EXISTS (SELECT 1 FROM `compet_parametres` scope_p"));
+assert.ok(!renameSql.sql.includes("FROM `competitions`"),"No same-target subquery");
+assert.equal((renameSql.sql.match(/\?/g)||[]).length,renameSql.values.length);
+const closeInsert=buildStatement(close.operations[1],{competitions:pack.nativeSnapshot.competition,compet_parametres:close.operations[0].after});
+assert.ok(closeInsert.sql.includes("FROM DUAL WHERE EXISTS"));
+assert.ok(closeInsert.sql.includes("scope_c.`id`=?") && closeInsert.sql.includes("scope_p.`id`=?"));
+assert.equal((closeInsert.sql.match(/\?/g)||[]).length,closeInsert.values.length);
+assert.equal(rename.operations.length,1); assert.equal(rename.operations[0].after.enddate,null);
+assert.equal(rename.operations[0].after.comite,7); assert.equal(rename.operations[0].after.chrono,"M");
+const fees=planCompetitionChange(pack,input({fees:{enabled:true,swimmerFee:1.25,individualEventFee:2.50,relayFee:3,helloAssoUrl:"https://www.helloasso.com/test"}}),now);
+assert.equal(fees.operations[0].after.swimmer_fee,"1.25");
+for(const patch of [{level:"regional"},{name:""},{location:"x".repeat(65)},{date:"2026-02-30"},{entryDeadlineLocal:"2026-10-25 02:30:00"},{entryStatus:"wrong"},{poolLaneCount:20},{fees:{enabled:true,swimmerFee:1.001,individualEventFee:0,relayFee:0}}]) assert.throws(()=>planCompetitionChange(pack,input(patch),now),TypeError);
+assert.throws(()=>planCompetitionChange(pack,{...input({name:"New"}),expectedFingerprint:"0".repeat(64)},now), /a change/);
+assert.throws(()=>planCompetitionChange(pack,input({date:"2026-10-12",endDate:"2026-10-11"}),now),/date de fin/);
+assert.throws(()=>planCompetitionChange(pack,input({entryStatus:"open",entryDeadlineLocal:"2026-10-05 21:59:00"}),now),/future/);
+assert.equal(operationHash(input({name:"A",fees:{enabled:false,swimmerFee:0}})),operationHash(input({fees:{swimmerFee:0,enabled:false},name:"A"})));
+function fixture(settings={}) {
+  const tables=new Map([["competitions",structuredClone(pack.nativeSnapshot.competition)],["compet_parametres",structuredClone(pack.nativeSnapshot.parameters)]]);
+  const state={writes:[],prepared:0,completed:0,released:0,saved:null,tables,failInsert:settings.failInsert};
+  state.pool={getConnection:async()=>({release:()=>state.released++,execute:async({sql},values=[])=>{
+    if(sql.startsWith("SELECT")) { const table=sql.match(/FROM `([^`]+)`/)[1]; return [tables.has(table)?[structuredClone(tables.get(table))]:[]]; }
+    const table=sql.match(/(?:UPDATE|INSERT INTO) `([^`]+)`/)[1];
+    if(sql.startsWith("UPDATE")) {
+      const columns=[...sql.split(" WHERE ")[0].matchAll(/`([^`]+)`=\?/g)].map(m=>m[1]);
+      assert.ok(sql.includes(`WHERE \`${SPECS[table].key}\`=? AND`),"Indexed primary-key write required"); assert.ok(sql.endsWith("LIMIT 1"));
+      if(settings.race) return [{affectedRows:0}];
+      const row=tables.get(table); columns.forEach((key,i)=>row[key]=values[i]); state.writes.push(table); return [{affectedRows:1}];
+    }
+    assert.ok(table.startsWith("livepalmes_"),"Never insert native sporting rows in this change");
+    if(settings.insertRace) return [{affectedRows:0}];
+    if(state.failInsert) throw new Error("Interrupted after native row");
+    tables.set(table,Object.fromEntries(SPECS[table].columns.map((key,i)=>[key,values[i]]))); state.writes.push(table); return [{affectedRows:1}];
+  }})};
+  state.audit={read:async()=>state.saved,prepare:async(_,value)=>{if(settings.auditFailure) throw new Error("Backup unavailable");state.saved=JSON.parse(JSON.stringify(value));state.prepared++;},complete:async()=>state.completed++};
+  state.read=async(_,id,authorize)=>{assert.equal(id,input({}).competitionId);await authorize(pack.event);return {...pack,nativeSnapshot:{competition:structuredClone(tables.get("competitions")),parameters:structuredClone(tables.get("compet_parametres"))},options:tables.get("livepalmes_competition_options") || null};};
+  return state;
+}
+(async()=>{
+  const original=native.readNativeCompetition;
+  try {
+    let state=fixture(); native.readNativeCompetition=state.read;
+    await assert.rejects(applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{throw new Error("Scope denied");}),/Scope/);assert.equal(state.prepared,0);assert.equal(state.writes.length,0);
+    await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.deepEqual(state.writes,["compet_parametres","livepalmes_competition_options"]);assert.equal(state.completed,1);
+    // Firestore may reorder fields: a saved plan must remain verifiable on retry.
+    state.saved=Object.fromEntries(Object.entries(state.saved).reverse());
+    const retry=await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.equal(retry.resumed,true);assert.equal(state.writes.length,2);
+    for(const settings of [{auditFailure:true},{race:true}]) {
+      state=fixture(settings);native.readNativeCompetition=state.read;
+      await assert.rejects(applyCompetitionChange(state.pool,input({name:"New name"}),state.audit,()=>{}));assert.equal(state.writes.length,0);
+    }
+    state=fixture({insertRace:true});native.readNativeCompetition=state.read;
+    await assert.rejects(applyCompetitionChange(state.pool,input({address:"Address"}),state.audit,()=>{}),/concurrente/);
+    assert.equal(state.writes.length,0);assert.equal(state.completed,0);
+    state=fixture({failInsert:true});native.readNativeCompetition=state.read;
+    await assert.rejects(applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{}),/Interrupted/);assert.equal(state.tables.get("compet_parametres").actif,0);assert.equal(state.prepared,1);assert.equal(state.completed,0);
+    state.failInsert=false; await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.equal(state.completed,1);assert.equal(state.writes.length,2);
+    assert.equal(state.tables.get("competitions").libelle,pack.nativeSnapshot.competition.libelle);
+    assert.equal(state.tables.get("compet_parametres").saisie,0);
+    const {inspectCompetitionWritePlans}=require("../functions/nap-competition-write-plans");
+    let explains=0,released=0;
+    native.readNativeCompetition=async()=>pack;
+    const plans=await inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async({sql},values)=>{
+      assert.ok(sql.startsWith("EXPLAIN UPDATE") || sql.startsWith("EXPLAIN INSERT"));
+      assert.equal((sql.match(/\?/g)||[]).length,values.length);
+      explains++;return [[{table:"scope_c",type:"const",key:"PRIMARY",rows:1,Extra:""}]];
+    }})});
+    assert.equal(explains,6);assert.equal(released,1);assert.equal(plans.writesExecuted,false);
+    assert.ok(!JSON.stringify(plans).includes("Antibes"));
+    await assert.rejects(inspectCompetitionWritePlans({getConnection:async()=>({release:()=>released++,execute:async()=>[[{table:"scope_c",type:"ALL",key:null,rows:6000}]]})}),/non indexe/);
+  } finally {native.readNativeCompetition=original;}
+  console.log("Competition NAP : patch explicite, sauvegarde avant ecriture, CAS indexe, fermeture sans pertes et reprise MyISAM verifies sans reseau.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
