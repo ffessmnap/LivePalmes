@@ -1,0 +1,59 @@
+name: Ajouter un index NAP explicitement autorise
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      index:
+        required: true
+        type: choice
+        options: [search, top]
+      confirmation:
+        description: nap-add-search-index ou nap-add-top-index, apres accord specifique
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  add:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      NAP_AUTHORIZED_INDEX: ${{ inputs.index }}
+      NAP_INDEX_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verifier le commit et la confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$NAP_INDEX_CONFIRMATION" = "nap-add-$NAP_AUTHORIZED_INDEX-index"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm ci --prefix functions --ignore-scripts
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: node tools/add-nap-direct-index.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nap-index-schema-proof
+          path: outputs/nap-*.json
+          if-no-files-found: ignore
+          retention-days: 30
