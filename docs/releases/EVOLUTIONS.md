@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Pages calendrier et competitions directement sur NAP — preparation du 6 octobre 2026
+
+- Serveur #119 deploye, run 37447251620 reussi. Index calendrier(date,id) ajoute et verifie dans 37447616602 apres sauvegarde. Index documents autorise par Antoine, run 37447758161 reussi, preuve a recuperer. Contrat 37447620531 confirme les documents publics Y ; valeurs N, vides et atypiques 1 non exposees.
+- Lecteurs TEST calendrier/saison/fiche et resultats groupes prepares, presentation et URL conservees. Protocoles/documents issus des chemins NAP, programmes issus des courses NAP. PB/SB relus depuis l'historique groupe borne ; budget et limite explicite documentes. Tests cibles passes ; recette reelle des nouveaux lecteurs et publication commune encore a effectuer. Portail encore a adapter. Records/MPF officiels LivePalmes preserves, aucun changement du Direct.
+
 ### Calendrier et portail NAP : contrats et budgets — 6 octobre 2026
 
 - Antoine autorise le calendrier, les fiches competitions, resultats, documents/protocoles et l'adaptation des lectures du portail sur TEST. Records/MPF restent explicitement sur la source officielle LivePalmes actuelle ; aucun recalcul et aucune migration vers les records NAP. Direct reste operationnel avec son dossier de competition, sans nouvelle ecriture NAP.

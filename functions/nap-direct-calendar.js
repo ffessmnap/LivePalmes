@@ -1,0 +1,78 @@
+"use strict";
+const rules = require("./nap-performance-normalization");
+const MAX_EVENTS = 500;
+const MAX_DOCUMENTS = 100;
+const MAX_PROGRAM = 300;
+const MAX_RESULTS = 5000;
+function positiveId(input) {
+  const value = String(input ?? "").replace(/^legacy-nap-/, "");
+  if (!/^[1-9][0-9]{0,9}$/.test(value) || Number(value) > 2147483647) throw new TypeError("Competition invalide.");
+  return Number(value);
+}
+function date(value) { return /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(String(value || "")) ? String(value) : ""; }
+function text(value) {
+  const entities = { amp: "&", apos: "'", quot: '"', eacute: "é", egrave: "è", ecirc: "ê", agrave: "à", ccedil: "ç", nbsp: " " };
+  return String(value ?? "").replace(/&([a-z]+);/gi, (match, name) => entities[name.toLowerCase()] || match).trim();
+}
+function publicUrl(value) {
+  const input = text(value);
+  if (!input || /^\/\//.test(input) || /[\u0000-\u001f]/.test(input)) return "";
+  try {
+    const url = new URL(input, "https://nap.ffessm.fr/");
+    if (url.protocol === "http:" && url.hostname === "nap.ffessm.fr") url.protocol = "https:";
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : "";
+  } catch (_) { return ""; }
+}
+function eventFromRow(row) {
+  const name = text(row.libelle), kind = text(row.type_label);
+  const eventType = Number(row.ld) === 1 ? "openWater" : ({ Piscine: "pool", "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || "other");
+  const level = ({ "Départementale": "departemental", "Départemental": "departemental", "Régionale": "regional", "Régional": "regional", "Championnat de Zones": "regional", "Critériums Nationaux": "national", Nationale: "national", National: "national", International: "international", Internationale: "international" }[text(row.level_label)] || ({ MONDE: "international", EUROPE: "international", FRANCE: "national", ZONE: "regional", REGIONAUX: "regional" })[text(row.scope_label)] || "");
+  const regionId = ["national", "international"].includes(level) ? "" : rules.committeeId(row.comite);
+  const id = `legacy-nap-${row.id}`;
+  const pdfUrl = publicUrl(row.filepdf);
+  return { id, legacyCompetitionId: String(row.id), name, date: date(row.date), endDate: date(row.enddate) || date(row.date),
+    city: text(row.lieu), location: text(row.lieu), description: text(row.description), eventType, level,
+    regionId, regionLabel: rules.committeeLabel(regionId), poolLength: Number(row.bassin) > 0 ? String(row.bassin) : "",
+    poolLaneCount: Number(row.nb_lignes) > 0 ? Number(row.nb_lignes) : 0,
+    timingType: ({ E: "electronic", M: "manual" })[text(row.chrono)] || "",
+    resultsPublishedAt: Number(row.has_results) ? date(row.date) : "",
+    results: { pdfUrl, url: Number(row.has_results) ? `competition.html?id=${id}#competitionResultsTitle` : "", dataPath: Number(row.has_results) ? `results/${id}.json` : "" }, documents: [], program: [] };
+}
+const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
+const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.typecnc LEFT JOIN compet_type s ON s.id=c.type";
+async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
+async function readCalendarManifest(pool) {
+  const first = await execute(pool, "SELECT date FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date >= '1900-01-01' ORDER BY date,id LIMIT 1");
+  const last = await execute(pool, "SELECT date FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date < '2101-01-01' ORDER BY date DESC,id DESC LIMIT 1");
+  const earliest = first[0]?.date, latest = last[0]?.date;
+  if (!earliest || !latest) return { source: "nap", seasons: [] };
+  const start = rules.competitionSeasonYear(earliest), end = rules.competitionSeasonYear(latest);
+  if (!start || !end || end < start || end - start > 201) throw new RangeError("Saisons invalides.");
+  return { source: "nap", seasons: Array.from({ length: end - start + 1 }, (_, index) => ({ endYear: end - index })) };
+}
+async function readCalendarSeason(pool, input) {
+  const year = Number(input);
+  if (!Number.isInteger(year) || year < 1901 || year > 2101) throw new TypeError("Saison invalide.");
+  const rows = await execute(pool, `${SELECT_EVENT} FORCE INDEX (livepalmes_date_id)${EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT ${MAX_EVENTS + 1}`, [`${year - 1}-09-01`, `${year}-09-01`]);
+  if (rows.length > MAX_EVENTS) throw new RangeError("Saison trop volumineuse.");
+  return { source: "nap", readAt: new Date().toISOString(), events: rows.map(eventFromRow).filter(event => event.date && event.name) };
+}
+async function readCompetition(pool, input) {
+  const id = positiveId(input);
+  const rows = await execute(pool, `${SELECT_EVENT}${EVENT_JOINS} WHERE c.id=? LIMIT 2`, [id]);
+  if (rows.length > 1) throw new RangeError("Parametres de competition ambigus.");
+  if (!rows.length) return { source: "nap", event: null };
+  const event = eventFromRow(rows[0]);
+  const documents = await execute(pool, `SELECT d.id,d.name,d.location,d.comment,t.label AS type_label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t ON t.id=d.type WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT ${MAX_DOCUMENTS + 1}`, [id]);
+  if (documents.length > MAX_DOCUMENTS) throw new RangeError("Documents trop volumineux.");
+  const category = value => /protocole|r[ée]sultat/i.test(value) ? "results" : /affiche/i.test(value) ? "poster" : /r[èe]glement/i.test(value) ? "rules" : /circulaire|invitation/i.test(value) ? "circular" : "information";
+  event.documents = documents.map(row => ({ id: `nap-${row.id}`, title: text(row.name) || text(row.type_label) || "Document officiel", description: text(row.comment), category: category(text(`${row.name} ${row.type_label} ${row.comment}`)), url: publicUrl(row.location) })).filter(document => document.url);
+  const poster = publicUrl(rows[0].affiche);
+  if (poster && !event.documents.some(document => document.url === poster)) event.documents.push({ title: "Affiche", category: "poster", url: poster });
+  if (!event.results.pdfUrl) event.results.pdfUrl = event.documents.find(document => document.category === "results" && /\.pdf(?:$|[?#])/i.test(document.url))?.url || "";
+  const program = await execute(pool, `SELECT cc.pos,cd.course,cd.sexe,cd.relais FROM compet_courses cc LEFT JOIN course_dispo cd ON cd.id=cc.id_course WHERE cc.compet=? ORDER BY cc.pos,cc.id LIMIT ${MAX_PROGRAM + 1}`, [id]);
+  if (program.length > MAX_PROGRAM) throw new RangeError("Programme trop volumineux.");
+  if (program.length) event.program = [{ title: "Programme", date: event.date, items: program.map(row => ({ label: text(row.course) || "Épreuve", detail: [({ F: "Femmes", M: "Hommes", X: "Mixte" })[text(row.sexe)], Number(row.relais) ? "Relais" : ""].filter(Boolean).join(" · ") })) }];
+  return { source: "nap", readAt: new Date().toISOString(), event };
+}
+module.exports = { MAX_EVENTS, MAX_DOCUMENTS, MAX_PROGRAM, MAX_RESULTS, SELECT_EVENT, EVENT_JOINS, positiveId, date, text, publicUrl, eventFromRow, execute, readCalendarManifest, readCalendarSeason, readCompetition };
