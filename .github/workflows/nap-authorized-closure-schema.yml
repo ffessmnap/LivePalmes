@@ -1,0 +1,65 @@
+name: Ajouter le champ de fermeture NAP autorise
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      confirmation:
+        description: nap-add-shared-entry-closure, apres accord specifique
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: nap-authorized-closure-schema
+  cancel-in-progress: false
+jobs:
+  create:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      NAP_CLOSURE_SCHEMA_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verifier le commit et la confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$NAP_CLOSURE_SCHEMA_CONFIRMATION" = "nap-add-shared-entry-closure"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Sauvegarder le plan et la structure avant creation
+        env:
+          NAP_CLOSURE_SCHEMA_PHASE: prepare
+        run: node tools/add-nap-entry-closure.js
+      - name: Conserver la sauvegarde avant toute creation
+        uses: actions/upload-artifact@v4
+        with:
+          name: nap-closure-schema-before
+          path: outputs/nap-closure-schema-before.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Ajouter uniquement le champ absent puis verifier
+        env:
+          NAP_CLOSURE_SCHEMA_PHASE: apply
+        run: node tools/add-nap-entry-closure.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nap-closure-schema-result
+          path: outputs/nap-closure-schema-*.json
+          if-no-files-found: ignore
+          retention-days: 90
