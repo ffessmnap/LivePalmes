@@ -34,6 +34,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
       readDocuments: async () => { calls.push("documents"); return []; }, entryItem: pack => ({ source: "nap", clubId: pack.clubId }) };
     if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return input; } };
     if (name === "./nap-portal-competition-change") return {applyCompetitionChange:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("write");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
+    if (name === "./nap-course-removal") return {removeNativeCourse:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("course-removal");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     throw new Error(`Unexpected module ${name}`);
   } };
 vm.createContext(sandbox);
@@ -68,5 +69,8 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   calls.length=0;management={uid:"national-admin",national:true};
   const changed=await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{name:"New"},actorUid:"spoof"}});
   assert.equal(changed.source,"nap");assert.deepEqual(calls,["authorize","audit-backup","write","audit-complete","authorize","detail","documents"]);
+  calls.length=0;
+  const removed=await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{removeNativeCourseId:90,confirmCourseRemoval:true},actorUid:"spoof",national:false}});
+  assert.equal(removed.source,"nap");assert.deepEqual(calls,["authorize","audit-backup","course-removal","audit-complete","authorize","detail","documents"]);
   console.log("NAP portal callables: scope, authenticated club, native reads and no old sports fallback verified");
 })().catch(error => { console.error(error); process.exitCode = 1; });

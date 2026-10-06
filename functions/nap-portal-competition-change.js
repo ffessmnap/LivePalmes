@@ -91,7 +91,7 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
       const events=require("./nap-portal-workspaces").competitionItem(pack,input.eventDefinitions).events;
       const known=new Set(events.filter(event=>event.nativeRecognized).map(event=>event.code));
       const previous=typeof pack.detailedProgram?.program_sessions==="string" ? JSON.parse(pack.detailedProgram.program_sessions) : pack.detailedProgram?.program_sessions || [];
-      if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
+      if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode) && !input.eventDefinitions?.has(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
       supplemental("livepalmes_competition_programs",pack.detailedProgram).program_sessions=require("./nap-program-validation").validateProgram(value,events,input.normalizeProgram);
     } else if (field === "fees") {
       if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(k=>!["enabled","swimmerFee","individualEventFee","relayFee","helloAssoUrl"].includes(k))) throw new TypeError("Tarifs invalides.");

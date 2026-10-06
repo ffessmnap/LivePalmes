@@ -10168,6 +10168,7 @@
     const events = Array.isArray(competition.events) ? competition.events : [];
     const selectedCodes = new Map(events.map((event) => [event.code, event]).filter(([code]) => Boolean(code)));
     const adminMode = isEngagementAdminMode();
+    renderNativeCourseRemoval(competition, adminMode && engagementDetailEditing && canEditEngagementCompetition(competition));
     const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition) && competition.napSource !== true;
     const clubProgramView = !adminMode;
     const openWater = engagementCompetitionType(competition) === "openWater";
@@ -10204,6 +10205,38 @@
       : "Programme consultable uniquement avec un droit de gestion sur cette compétition.";
       elements.engagementsEventsMessage.dataset.tone = canEdit ? "ok" : "loading";
     }
+  }
+
+  function renderNativeCourseRemoval(competition, canEdit) {
+    if (!elements.engagementsEventsForm) return;
+    let mount = document.getElementById("adminNativeCourseRemoval");
+    if (!mount) {
+      mount = document.createElement("div");
+      mount.id = "adminNativeCourseRemoval";
+      elements.engagementsEventsForm.append(mount);
+    }
+    mount.hidden = competition.napSource !== true || !canEdit;
+    if (mount.hidden) { mount.textContent = ""; return; }
+    mount.innerHTML = `<p>Courses partagées avec IntraNAP. Si des engagements existent, seul le National peut retirer une course après confirmation. Les engagements sont conservés.</p><ul>${(competition.nativeRules?.courses || []).map(course => `<li>${escapeHtml(course.course || "Course ancienne")} ${escapeHtml(course.sexe === "F" ? "Femmes" : course.sexe === "M" ? "Hommes" : "Mixte")} <button type="button" class="ghost-button" data-native-course-remove="${escapeHtml(String(course.id))}">Retirer cette course</button></li>`).join("")}</ul>`;
+    mount.querySelectorAll("[data-native-course-remove]").forEach(button => button.addEventListener("click", async () => {
+      try {
+        if (Object.keys(nativeCompetitionPatchFromForm()).length) throw new Error("Enregistrez ou annulez vos autres modifications avant de retirer une course.");
+        if (!global.confirm("Retirer cette course de la liste partagée avec IntraNAP ?\n\nAttention : les engagements déjà saisis seront conservés et devront être vérifiés manuellement. Le programme détaillé sera conservé. Si des engagements existent, ce retrait est réservé au National.")) return;
+        mount.querySelectorAll("button").forEach(item => { item.disabled = true; });
+        const result = await callFunction("updateEngagementCompetition", { competitionId:competition.id, expectedFingerprint:competition.napFingerprint, patch:{removeNativeCourseId:button.dataset.nativeCourseRemove,confirmCourseRemoval:true} });
+        selectedEngagementCompetition = result.competition;
+        nativeCompetitionEditBaseline = null;
+        invalidateEngagementCalendarCaches();
+        await loadEngagementCompetitions({force:true});
+        upsertEngagementCalendarItemFromServer(selectedEngagementCompetition, "competition");
+        renderEngagementCompetitionDetail(selectedEngagementCompetition);
+        clearEngagementDetailTabDirty();
+        elements.engagementsDetailStatus.textContent = "Course retirée de NAP. Les engagements et le programme détaillé sont conservés : vérifiez-les si nécessaire.";
+      } catch(error) {
+        elements.engagementsDetailStatus.textContent = error.message;
+        mount.querySelectorAll("button").forEach(item => { item.disabled = false; });
+      }
+    }));
   }
 
   function renderEngagementCompetitions() {
