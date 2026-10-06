@@ -41,6 +41,11 @@ assert.throws(
 );
 
 const testPage = browserContext("livepalmes-test.web.app", "", source, "/portail.html");
+const preview = browserContext("livepalmes-test--pr-112-5bx9w11z.web.app").config;
+assert.equal(preview.isTest, true);
+assert.equal(preview.firebaseConfig.projectId, "livepalmes-test");
+assert.throws(() => browserContext("livepalmes-test--pr-112-5bx9w11z.web.app", "production"), /domaine TEST/);
+assert.equal(browserContext("livepalmes-test--pr-112-5bx9w11z.web.app.example.com").config.isTest, false);
 const test = testPage.config;
 test.assertSafe();
 assert.match(test.firebaseConfig.apiKey, /^AIza[0-9A-Za-z_-]{35}$/);
