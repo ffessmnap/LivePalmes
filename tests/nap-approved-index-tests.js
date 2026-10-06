@@ -41,7 +41,8 @@ const { approvedIndexOperation } = require("../functions/nap-approved-index");
   assert.equal((await approvedIndexOperation(competitionPool, { ...competitionInput, phase: "apply", schemaHash: competitionBackup.schemaHash })).verified, true);
   for (const spec of [
     { kind: "calendar", table: "competitions", name: "livepalmes_date_id", columns: ["date", "id"] },
-    { kind: "documents", table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] }
+    { kind: "documents", table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] },
+    { kind: "roster", table: "nageurs", name: "livepalmes_club_id", columns: ["club", "id"] }
   ]) {
     let added = false;
     const indexPool = {

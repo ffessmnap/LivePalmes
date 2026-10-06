@@ -8,7 +8,7 @@ on:
       index:
         required: true
         type: choice
-        options: [search, top, competition, calendar, documents]
+        options: [search, top, competition, calendar, documents, roster]
       confirmation:
         description: nap-add-INDEX-index, apres accord specifique pour cet index
         required: true
