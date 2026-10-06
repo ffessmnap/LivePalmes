@@ -185,8 +185,11 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const action = request.query.action || "swimmer";
-      if (action !== "swimmer" && action !== "search") throw new TypeError("Action invalide.");
-      response.json(action === "search"
+      if (!["swimmer", "search", "top", "top-years", "top-metadata"].includes(action)) throw new TypeError("Action invalide.");
+      response.json(action === "top" ? await require("./nap-direct-tops").readDirectTop(napPool, request.query)
+        : action === "top-years" ? await require("./nap-direct-tops").readTopBirthYears(napPool, request.query)
+        : action === "top-metadata" ? await require("./nap-direct-tops").readTopMetadata(napPool)
+        : action === "search"
         ? await require("./nap-direct-search").searchDirectSwimmers(napPool, request.query.q)
         : await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
     } catch (error) {

@@ -12,6 +12,9 @@ async function inspectDirectQueries(pool) {
     const [rows] = await pool.execute({ sql, timeout: 10000 });
     plans[name] = rows;
   }
+  const top = require("./nap-direct-tops").queryFor({ course: "100SF", sex: "M", category: "S", pool: "50" });
+  const [topPlan] = await pool.execute({ sql: `EXPLAIN ${top.sql}`, timeout: 10000 }, top.values);
+  plans.directTop = topPlan;
   return { source: "nap", mode: "explain-only", indexes, plans };
 }
 async function inspectTimeShape(pool, input) {

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### TOP directement lus dans NAP — 6 octobre 2026
+
+- Besoin autorise : conserver la page TOP et ses filtres, lire NAP directement ; abandon des exports et conservation des temps bruts a la demande d'Antoine (`14200` = 1:42.00). Aucune correction de performance executee.
+- Fiches/recherche : publication commune d7eb84c8 reussie, run 37436954305. Index NAP search 37435791498 et top 37435794805 verifies. Recette technique nom/prenom, cinq nageurs, filtres et mobile effectuee ; aucune nouvelle validation utilisateur deduite.
+- Preparation TOP : requetes par course indexees et plafonnees, tri numerique, categories du helper existant, meilleure performance par identite, filtres saison/region/bassin/naissance, chargement de la suite. Budget detaille dans NAP_PUBLIC_MIGRATION.md. Tests cibles ; plans reels et recette navigateur encore a effectuer. TEST seulement ; autres consommateurs et Records/MPF restent a brancher.
+
 ### Pages publiques alimentees par NAP — preparation du 6 octobre 2026
 
 - Besoin autorise : conserver les pages, liens, presentation et fonctionnalites ; changer uniquement la source de donnees, progressivement sur TEST.
