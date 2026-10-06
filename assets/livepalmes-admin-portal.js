@@ -1598,7 +1598,7 @@
   }
 
   function canEditEngagementCompetition(competition = selectedEngagementCompetition || {}) {
-    return canManageEngagementCompetitionScope(competition) && !isRegionalPastEngagementReadOnly(competition);
+    return competition.nativeReadOnly !== true && canManageEngagementCompetitionScope(competition) && !isRegionalPastEngagementReadOnly(competition);
   }
 
   function setPerformanceMenuOpen(open) {
@@ -2030,6 +2030,7 @@
   }
 
   function engagementClubWriteLockReason(competition = selectedEngagementCompetition || {}) {
+    if (competition.nativeReadOnly === true) return "Dossier NAP consultable ; l'enregistrement depuis LivePalmes est encore en cours de raccordement.";
     const status = competition.entryStatus || "upcoming";
     if (status === "closed") return "Les engagements sont fermes.";
     if (status !== "open") return "Les engagements ne sont pas ouverts.";
@@ -3454,6 +3455,9 @@
   function engagementCalendarCacheCompetition(competition = {}) {
     return {
       id: String(competition.id || ""),
+      napSource: competition.napSource === true,
+      nativeReadOnly: competition.nativeReadOnly === true,
+      legacyCompetitionId: String(competition.legacyCompetitionId || ""),
       sourceType: competition.sourceType === "calendarEvent" ? "calendarEvent" : "competition",
       eventType: String(competition.eventType || ""),
       name: String(competition.name || ""),
@@ -3484,9 +3488,10 @@
     if (memoryEntry) return memoryEntry;
     try {
       const stored = JSON.parse(global.sessionStorage?.getItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
-      if (!stored || stored.version !== 2 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
+      if (!stored || stored.version !== 3 || !Array.isArray(stored.competitions) || !Number(stored.cachedAt)) return null;
       const entry = {
         competitions: stored.competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
+        source: stored.source === "nap" ? "nap" : "",
         cachedAt: Number(stored.cachedAt)
       };
       engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
@@ -3496,15 +3501,17 @@
     }
   }
 
-  function writeEngagementCalendarCache(cacheKey, competitions = [], cachedAt = Date.now()) {
+  function writeEngagementCalendarCache(cacheKey, competitions = [], cachedAt = Date.now(), source = "") {
     const entry = {
       competitions: competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
+      source,
       cachedAt
     };
     engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
     try {
       global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify({
-        version: 2,
+        version: 3,
+        source,
         cachedAt,
         competitions: entry.competitions
       }));
@@ -6133,7 +6140,7 @@
   function preloadEngagementClubWorkspaces(competitions = []) {
     if (!canUse("engagements.club.manage")) return Promise.resolve([]);
     const candidates = competitions
-      .filter((competition) => competition?.id && competition.clubEntryExists === true)
+      .filter((competition) => competition?.id && competition.napSource !== true && competition.clubEntryExists === true)
       .sort((left, right) => {
         const priority = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : 2;
         return priority(left) - priority(right) || String(left.date || "").localeCompare(String(right.date || ""));
@@ -10320,7 +10327,9 @@
           : competition.city || competition.location || ""
       ].filter((item) => item && item !== "-").join(" · ");
     }
-    if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = "";
+    if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
+      ? `<p role="status">${escapeHtml(competition.nativeReadOnly ? "Consultation du dossier NAP. L'enregistrement depuis LivePalmes est en cours de raccordement." : "")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
       elements.engagementsDetailLevel.textContent = engagementLevelLabel(competition.level);
@@ -10345,6 +10354,7 @@
       ["Date", formatShortDate(competition.date)],
       ["Date de fin", formatShortDate(competition.endDate || competition.date)],
       ["Lieu", engagementVenueLabel(competition)],
+      ...(competition.napSource && competition.nativeRules?.courses?.length ? [["Courses proposées", competition.nativeRules.courses.map(course => `${course.course || "Course ancienne"}${course.sexe === "F" ? " femmes" : course.sexe === "M" ? " hommes" : ""}`).join(", ")]] : []),
       ...(competition.organizer ? [["Organisateur", competition.organizer]] : []),
       ...(competition.organizerEmail ? [["Email organisateur", engagementEmailLinkValue(competition.organizerEmail)]] : []),
       ...(!nationalCompetition ? [
@@ -10519,7 +10529,8 @@
     if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
     const clubMode = !isEngagementAdminMode() && canUse("engagements.club.manage");
     const cachedWorkspace = clubMode ? readEngagementClubWorkspaceCache(cleanId) : null;
-    const cachedWorkspaceFresh = Boolean(cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
+    const nativeWorkspace = /^legacy-nap-/.test(cleanId) || cachedWorkspace?.competition?.napSource === true;
+    const cachedWorkspaceFresh = Boolean(!nativeWorkspace && cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
     clearEngagementDetailTabDirty();
     if (selectedEngagementCompetitionId !== cleanId) qualificationExceptionScope = "";
     selectedEngagementCompetitionId = cleanId;
@@ -10585,7 +10596,7 @@
             const preloadRequest = pendingEngagementClubWorkspaceRequest(cleanId);
             if (preloadRequest) await preloadRequest;
             const prefetchedWorkspace = readEngagementClubWorkspaceCache(cleanId);
-            if (prefetchedWorkspace?.cachedAt && Date.now() - prefetchedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS) {
+            if (!nativeWorkspace && prefetchedWorkspace?.cachedAt && Date.now() - prefetchedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS) {
               return prefetchedWorkspace;
             }
             return callFunction("getEngagementClubEntry", { competitionId: cleanId });
@@ -14786,13 +14797,14 @@
     const shouldActivate = activate === null
       ? requestedMode === engagementNavigationMode()
       : activate === true || clubCalendarAlreadyOpen;
-    const cachedEntry = engagementCompetitionsLoadedCacheKey === cacheKey && engagementCompetitionsLoaded
+    const cachedEntry = readEngagementCalendarCache(cacheKey) || (engagementCompetitionsLoadedCacheKey === cacheKey && engagementCompetitionsLoaded
       ? { competitions: engagementCompetitions, cachedAt: engagementCompetitionsCachedAt }
-      : readEngagementCalendarCache(cacheKey);
+      : null);
     if (cachedEntry && shouldActivate && engagementCompetitionsLoadedCacheKey !== cacheKey) {
       activateEngagementCalendarCache(cacheKey, requestedRange, cachedEntry);
     }
-    const cacheFresh = Boolean(cachedEntry?.cachedAt && Date.now() - cachedEntry.cachedAt < ENGAGEMENT_CALENDAR_CACHE_TTL_MS);
+    const nativeCalendar = cachedEntry?.source === "nap" || cachedEntry?.competitions?.some(competition => competition.napSource === true);
+    const cacheFresh = Boolean(!nativeCalendar && cachedEntry?.cachedAt && Date.now() - cachedEntry.cachedAt < ENGAGEMENT_CALENDAR_CACHE_TTL_MS);
     if (!force && cacheFresh) {
       if (requestedMode === "club") scheduleEngagementClubWorkspacePreload(cachedEntry.competitions);
       return cachedEntry;
@@ -14860,9 +14872,9 @@
           ...(Array.isArray(calendarEventResult.events) ? calendarEventResult.events.map((item) => ({ ...item, sourceType: "calendarEvent" })) : [])
         ];
         if (requestedMode === "admin" && !canUse("engagements.national.manage")) {
-          competitions = competitions.filter((competition) => canEditEngagementCompetition(competition));
+          competitions = competitions.filter((competition) => canManageEngagementCompetitionScope(competition));
         }
-        const entry = writeEngagementCalendarCache(cacheKey, competitions);
+        const entry = writeEngagementCalendarCache(cacheKey, competitions, Date.now(), result.source === "nap" ? "nap" : "");
         if (requestedMode === "club") scheduleEngagementClubWorkspacePreload(entry.competitions);
         const currentFilters = engagementCalendarFiltersPayload();
         const stillActive = shouldActivate && requestedMode === engagementNavigationMode() &&
