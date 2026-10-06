@@ -48,6 +48,8 @@ assert.equal(test.firebaseConfig.appId, "1:206080168534:web:70dad29434b9878ecea1
 assert.equal(test.firebaseConfig.messagingSenderId, "206080168534");
 assert.equal(test.publicStorageUrl("calendar"), "https://storage.googleapis.com/livepalmes-test-public-data-206080168534/calendar");
 assert.equal(test.hostingOrigin, "https://livepalmes-test.web.app");
+assert.equal(test.performancePublicPath, "performance-public-nap/versions/20261006-v1");
+assert.equal(production.performancePublicPath, "performance-public-firestore");
 testPage.listeners.get("DOMContentLoaded")();
 assert.ok(testPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.textContent === "ENVIRONNEMENT TEST"));
 assert.ok(testPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.dataset.variant === "sensitive"));

@@ -5,7 +5,7 @@
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;
   const usesLocalFirestorePublicData = usesFirestorePublicData && params.get("data") === "local";
-  const publicStoragePerformanceBase = window.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore");
+  const publicStoragePerformanceBase = window.LivePalmesEnvironment.publicStorageUrl(window.LivePalmesEnvironment.performancePublicPath || "performance-public-firestore");
   let dataVersion = encodeURIComponent(usesFirestorePublicData ? "firestore-current" : publicVersion);
   const publicPerformanceBase = usesFirestorePublicData
     ? (usesLocalFirestorePublicData ? "public/data/performance-public-firestore" : publicStoragePerformanceBase)
