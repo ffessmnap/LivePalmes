@@ -12022,9 +12022,20 @@ exports.removeEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request
   };
 });
 
-exports.listEngagementClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const result = await require("./nap-club-people").readClubPeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {clubId:context.clubId,cursor:request.data?.cursor}, ({clubId}) => {
+        if(clubId!==context.clubId) throw new HttpsError("permission-denied", "Personnes hors du club autorise.");
+      });
+      return {ok:true,clubId:context.clubId,...result,readStats:portalReadStats("listEngagementClubPeople",startedAt,{baseDocuments:1,variableDocumentsMax:0,cacheHit:false})};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : error instanceof RangeError ? "resource-exhausted" : "unavailable", "Personnes NAP indisponibles. " + (error instanceof TypeError || error instanceof RangeError ? error.message : "Reessayez le chargement."));
+    }
+  }
   const includeInactive = request.data?.includeInactive === true;
   const forceRebuild = request.data?.forceRoster === true;
   const rosterSnapshot = forceRebuild ? null : await engagementClubPeopleRosterRef(db, context.clubId).get();
@@ -12071,6 +12082,7 @@ async function resolveEngagementClubPersonSwimmer(db, context = {}, rawPerson = 
 
 exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if(ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "La modification de l'annuaire NAP n'est pas encore disponible. Aucune ancienne fiche LivePalmes modifiee.");
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const rawPerson = request.data?.person || {};
   const linkedSwimmer = await resolveEngagementClubPersonSwimmer(db, context, rawPerson);
@@ -12137,6 +12149,7 @@ exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
 
 exports.setEngagementClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if(ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Le changement de statut des personnes NAP n'est pas encore disponible. Aucune ancienne fiche LivePalmes modifiee.");
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const active = request.data?.active === true;
   if (!personId) {

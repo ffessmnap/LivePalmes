@@ -1,0 +1,28 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {readClubPeople,cursors,person}=require("../functions/nap-club-people");
+const leader={id:7,compet:5140,nom:"Chef",prenom:"Nom",date:"0000-00-00",club:"00123",pourclub:"0"};
+const official={id:7,nom:"Chef",prenom:"Nom",date:"1980-01-02",club:"00123"};
+(async()=>{
+  let allowed=false,queries=[];
+  const pool={execute:async({sql},values)=>{assert.equal(allowed,true);assert.match(sql,/FORCE INDEX \(livepalmes_club_id\).*club=\? AND id>\? ORDER BY id LIMIT 101$/);assert.deepEqual(values,["00123",0]);queries.push(sql);return [[sql.includes("chefsdequipe")?leader:official]];}};
+  const result=await readClubPeople(pool,{clubId:"00123"},scope=>{assert.equal(scope.clubId,"00123");allowed=true;});
+  assert.equal(queries.length,2);assert.equal(result.people.length,2);assert.notEqual(result.people[0].id,result.people[1].id,"equal native IDs in two tables are distinct people references");
+  assert.equal(result.people[0].birthDate,"");assert.equal(result.people[0].licenseNumber,"");assert.equal(result.people[1].roles.official,true);assert.equal(result.hasMore,false);
+  assert.deepEqual(result.sqlBudget,{queriesMax:2,queriesExecuted:2,rowsMax:202});
+  await assert.rejects(readClubPeople(pool,{clubId:"00123"},()=>{throw Error("denied");}),/denied/);assert.equal(queries.length,2);
+  await assert.rejects(readClubPeople(pool,{clubId:"00123 OR 1=1"},()=>{}),TypeError);
+  for(const cursor of [{},[],{leaders:"0",officials:0},{leaders:0,officials:0,clubId:"999"},{leaders:-1,officials:0}]) assert.throws(()=>cursors(cursor),TypeError);
+  queries=[];
+  const paged={execute:async({sql},values)=>{queries.push(values);return [Array.from({length:101},(_,i)=>({...leader,id:i+1+values[1]}))];}};
+  const page=await readClubPeople(paged,{clubId:"00123",cursor:{leaders:0,officials:null}},()=>{});
+  assert.equal(page.people.length,100);assert.equal(page.hasMore,true);assert.deepEqual(page.nextCursor,{leaders:100,officials:null});assert.equal(queries.length,1);
+  const following=await readClubPeople(paged,{clubId:"00123",cursor:page.nextCursor},()=>{});assert.equal(following.people[0].nativePersonId,"101");
+  const empty=await readClubPeople({execute:()=>{throw Error("No read after exhaustion");}},{clubId:"00123",cursor:{leaders:null,officials:null}},()=>{});assert.equal(empty.sqlBudget.queriesExecuted,0);
+  await assert.rejects(readClubPeople({execute:async()=>[[{...leader,club:"999"}]]},{clubId:"00123"},()=>{}),TypeError);
+  await assert.rejects(readClubPeople({execute:async()=>[[leader,leader]]},{clubId:"00123"},()=>{}),TypeError);
+  await assert.rejects(readClubPeople({execute:async()=>[Array(102).fill(leader)]},{clubId:"00123"},()=>{}),RangeError);
+  await assert.rejects(readClubPeople({execute:async()=>{throw Error("Missing index");}},{clubId:"00123"},()=>{}),/Missing index/);
+  assert.throws(()=>person({id:7},"officials"),TypeError);
+  console.log("Native club people: authorized scope before reads, two indexed keyset pages, no merging/licences/fallback, unknown dates preserved");
+})().catch(error=>{console.error(error);process.exitCode=1;});
