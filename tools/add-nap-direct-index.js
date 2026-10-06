@@ -2,7 +2,6 @@
 // Dedicated, explicitly authorized schema operation; never part of publication.
 const fs = require("node:fs");
 const { execFileSync } = require("node:child_process");
-const { createNapPool } = require("../functions/nap-mysql");
 const SPECS = {
   search: { table: "nageurs", name: "livepalmes_prenom_nom", columns: ["prenom", "nom", "date", "id"] },
   top: { table: "perfs", name: "livepalmes_course_relais_tps", columns: ["course", "relais", "tps", "id"] }
@@ -14,28 +13,29 @@ async function main() {
   if (!spec || process.env.NAP_INDEX_CONFIRMATION !== `nap-add-${kind}-index` || process.env.TARGET_FIREBASE_PROJECT !== "livepalmes-test") throw new Error("Confirmation incorrecte.");
   const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
   if (credentials.project_id !== "livepalmes-test" || credentials.client_email !== "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com") throw new Error("Compte incorrect.");
-  operationStage = "secret-access";
-  const password = execFileSync("gcloud", ["secrets", "versions", "access", "1", "--secret=LIVEPALMES_NAP_PASSWORD", "--project=livepalmes-test"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-  const pool = createNapPool(password);
-  try {
-    operationStage = "schema-read";
-    const [definition] = await pool.execute({ sql: `SHOW CREATE TABLE \`${spec.table}\``, timeout: 10000 });
-    fs.mkdirSync("outputs", { recursive: true });
-    fs.writeFileSync(`outputs/nap-${kind}-schema-before.json`, JSON.stringify(definition, null, 2) + "\n");
-    const [before] = await pool.execute({ sql: `SHOW INDEX FROM \`${spec.table}\``, timeout: 10000 });
-    const existing = before.filter(row => row.Key_name === spec.name).sort((a, b) => a.Seq_in_index - b.Seq_in_index);
-    if (existing.length && (existing.some(row => Number(row.Non_unique) !== 1) || existing.map(row => row.Column_name).join(",") !== spec.columns.join(","))) throw new Error("Index existant incompatible.");
-    if (!existing.length) {
-      operationStage = "index-add";
-      await pool.query({ sql: `ALTER TABLE \`${spec.table}\` ADD INDEX \`${spec.name}\` (${spec.columns.map(column => `\`${column}\``).join(", ")})`, timeout: 120000 });
-    }
-    operationStage = "index-verify";
-    const [after] = await pool.execute({ sql: `SHOW INDEX FROM \`${spec.table}\``, timeout: 10000 });
-    const verified = after.filter(row => row.Key_name === spec.name).sort((a, b) => a.Seq_in_index - b.Seq_in_index);
-    if (verified.length !== spec.columns.length || verified.some(row => Number(row.Non_unique) !== 1) || verified.map(row => row.Column_name).join(",") !== spec.columns.join(",")) throw new Error("Verification incomplete.");
-    fs.writeFileSync(`outputs/nap-${kind}-index-result.json`, JSON.stringify({ table: spec.table, index: spec.name, columns: spec.columns, alreadyPresent: !!existing.length, verified: true }, null, 2) + "\n");
-    console.log(`Index ${spec.name} verifie. Aucune ligne de donnees modifiee.`);
-  } finally { await pool.end(); }
+  operationStage = "private-endpoint";
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+  const uri = execFileSync("gcloud", ["functions", "describe", "exportNapPublicPage", "--gen2", "--region=europe-west1", "--project=livepalmes-test", "--format=value(serviceConfig.uri)"], options).trim();
+  const url = new URL(uri);
+  if (url.protocol !== "https:" || !url.hostname.endsWith(".run.app") || url.username || url.password || url.search) throw new Error("Endpoint incorrect.");
+  const token = execFileSync("gcloud", ["auth", "print-identity-token", `--audiences=${uri}`], options).trim();
+  url.searchParams.set("action", "approved-index");
+  async function invoke(phase, schemaHash) {
+    operationStage = phase;
+    const response = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ index: kind, confirmation: process.env.NAP_INDEX_CONFIRMATION, phase, schemaHash }), signal: AbortSignal.timeout(170000) });
+    if (!response.ok) throw new Error("Operation privee indisponible.");
+    const result = await response.json();
+    if (result.source !== "nap" || result.mode !== "approved-index" || result.index !== spec.name || result.table !== spec.table || result.columns?.join(",") !== spec.columns.join(",")) throw new Error("Reponse incorrecte.");
+    return result;
+  }
+  const preparation = await invoke("prepare");
+  if (!Array.isArray(preparation.definition) || !/^[a-f0-9]{64}$/.test(preparation.schemaHash)) throw new Error("Structure incorrecte.");
+  fs.mkdirSync("outputs", { recursive: true });
+  fs.writeFileSync(`outputs/nap-${kind}-schema-before.json`, JSON.stringify(preparation, null, 2) + "\n");
+  const result = await invoke("apply", preparation.schemaHash);
+  if (result.verified !== true) throw new Error("Verification incomplete.");
+  fs.writeFileSync(`outputs/nap-${kind}-index-result.json`, JSON.stringify(result, null, 2) + "\n");
+  console.log(`Index ${spec.name} verifie. Aucune ligne de donnees modifiee.`);
 }
 main().catch(error => {
   const code = typeof error.code === "string" && /^[A-Z_]+$/.test(error.code) ? error.code : "UNAVAILABLE";
