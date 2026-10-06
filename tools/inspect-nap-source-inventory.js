@@ -20,6 +20,6 @@ async function main() {
   if (result.source !== "nap" || result.mode !== ({ "source-inventory": "structure-only", "calendar-contract": "calendar-contract", "portal-contract": "portal-contract-readonly", "engagement-contract": "engagement-contract-readonly" })[action]) throw new Error("Diagnostic NAP invalide.");
   fs.mkdirSync("outputs", { recursive: true });
   fs.writeFileSync(`outputs/nap-${action}.json`, JSON.stringify(result, null, 2) + "\n");
-  console.log(JSON.stringify({ mode: result.mode, tableCount: result.tables?.length, relevant: result.relevant, competitionPlan: result.competitionPlan, references: result.references, publicationFlags: result.publicationFlags, permissions: result.permissions, missingTables: result.missingTables, atomicAcrossTables: result.atomicAcrossTables, writesExecuted: result.writesExecuted }));
+  console.log(JSON.stringify({ mode: result.mode, tableCount: result.tables?.length, relevant: result.relevant, competitionPlan: result.competitionPlan, references: result.references, publicationFlags: result.publicationFlags, permissions: result.permissions, missingTables: result.missingTables, atomicAcrossTables: result.atomicAcrossTables, writesExecuted: result.writesExecuted, complete: result.complete, errors: result.errors }));
 }
 main().catch(() => { console.error("Diagnostic NAP arrete. Aucune modification de la base."); process.exitCode = 1; });
