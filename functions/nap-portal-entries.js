@@ -45,19 +45,26 @@ async function readNativeClubEntry(connection, input, authorize) {
 // Private proof on one existing dossier. Neither names nor contacts nor native
 // identifiers of people leave this diagnostic; it performs no data writes.
 async function inspectNativeClubEntry(connection) {
-  const plans = [];
+  const plans = []; let queryIndex = 0;
   const checked = { execute: async (query, values) => {
+    queryIndex++;
     const [plan] = await connection.execute({sql:`EXPLAIN ${query.sql}`,timeout:10000}, values);
     const safe = plan.map(({table,type,key,rows,Extra}) => ({table,type,key,rows,Extra}));
     plans.push(safe);
-    if (plan.some(row => !String(row.table).startsWith("<") && !["system","const"].includes(row.type) && !(row.rows != null && Number(row.rows) === 0) && (row.type === "ALL" || !row.key))) throw new Error("non-indexed-native-entry");
+    if (!plan.length || plan.some(row => !String(row.table).startsWith("<") && !["system","const"].includes(row.type) && !(row.rows != null && Number(row.rows) === 0) && (row.type === "ALL" || !row.key))) throw Object.assign(new Error("non-indexed-native-entry"),{code:"NAP_NON_INDEXED"});
     return connection.execute(query, values);
   } };
-  const [clubs] = await checked.execute({sql:"SELECT n.club FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) LEFT JOIN nageurs n ON n.id=e.nageur WHERE e.compet=? ORDER BY e.nageur,e.id LIMIT 1",timeout:10000},[5140]);
-  if (!clubs.length || !/^\d{1,16}$/.test(String(clubs[0].club ?? ""))) return {source:"nap",mode:"portal-entry-contract-readonly",present:false,plans,writesExecuted:false};
-  const result = await readNativeClubEntry(checked,{competitionId:5140,clubId:String(clubs[0].club)},()=>{});
-  return {source:"nap",mode:"portal-entry-contract-readonly",present:true,plans,
+  try {
+    const [clubs] = await checked.execute({sql:"SELECT n.club FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) LEFT JOIN nageurs n ON n.id=e.nageur WHERE e.compet=? ORDER BY e.nageur,e.id LIMIT 1",timeout:10000},[5140]);
+    if (!clubs.length || !/^\d{1,16}$/.test(String(clubs[0].club ?? ""))) return {source:"nap",mode:"portal-entry-contract-readonly",present:false,complete:true,plans,writesExecuted:false};
+    const result = await readNativeClubEntry(checked,{competitionId:5140,clubId:String(clubs[0].club)},()=>{});
+    return {source:"nap",mode:"portal-entry-contract-readonly",present:true,complete:true,plans,
     counts:Object.fromEntries(["swimmers","inscriptions","individual","relays","members","officials","leaders"].map(key=>[key,result[key].length])),
-    optionsPresent:result.options !== null,writesExecuted:false};
+      optionsPresent:result.options !== null,writesExecuted:false};
+  } catch (error) {
+    // Keep partial plans, never SQL/driver messages, identities or credentials.
+    return {source:"nap",mode:"portal-entry-contract-readonly",complete:false,plans,writesExecuted:false,
+      errors:[{queryIndex,reason:({NAP_NON_INDEXED:"non-indexed",ER_BAD_FIELD_ERROR:"column",ER_PARSE_ERROR:"syntax",ER_NO_SUCH_TABLE:"table"})[error.code] || (error instanceof RangeError ? "volume" : "unavailable")}]};
+  }
 }
 module.exports = { LIMITS, readNativeClubEntry, inspectNativeClubEntry };
