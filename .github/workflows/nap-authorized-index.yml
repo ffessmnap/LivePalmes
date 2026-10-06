@@ -16,7 +16,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: livepalmes-test-backend
+  group: nap-authorized-index
   cancel-in-progress: false
 jobs:
   add:
