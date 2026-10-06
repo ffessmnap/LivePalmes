@@ -11,7 +11,7 @@ let past=false;
 const context = { uid: "club-admin", clubId: "00123", clubName: "Club" };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
-  onCall: (_, callback) => callback, HttpsError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
+  onCall: (_, callback) => callback, HttpsError, TypeError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
   cleanEngagementProgramSessions:()=>[],
   cleanText: value => String(value || ""), cleanIsoDate: value => /^\d{4}-\d\d-\d\d$/.test(String(value)) ? value : "",
@@ -35,6 +35,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
     if (name === "./nap-portal-workspaces") return { listItem: item => ({ ...item, napSource: true }), competitionItem: pack => ({ ...pack.event, napSource: true }),
       readDocuments: async () => { calls.push("documents"); return []; }, entryItem: pack => ({ source: "nap", clubId: pack.clubId }) };
     if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return {...input,leaders:[{id:51}]}; } };
+    if(name === "./nap-club-person-status") return {changeNativePersonStatus:async(connection,input,audit,authorize)=>{if(input.personId==="old-id") throw new TypeError("Native reference required");assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});calls.push("person-status");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-team-leader-change") return {editNativeTeamLeader:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(event);await audit.prepare("operation",{});calls.push("leader-edit");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-portal-competition-change") return {applyCompetitionChange:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("write");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-course-removal") return {removeNativeCourse:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("course-removal");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
@@ -51,6 +52,7 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
 (async () => {
   const nativePeople=await sandbox.exports.listEngagementClubPeople({data:{clubId:"999",forceRoster:true}});assert.equal(nativePeople.clubId,context.clubId);assert.equal(nativePeople.source,"nap");assert.deepEqual(calls,["native-people"]);calls.length=0;
   for(const name of ["saveEngagementClubPerson","setEngagementClubPersonStatus"]) await assert.rejects(sandbox.exports[name]({data:{personId:"old-id"}}),error=>error.code==="failed-precondition");
+  calls.length=0;await sandbox.exports.setEngagementClubPersonStatus({data:{personId:"nap-official-7",clubId:"999",actorUid:"spoof",active:false}});assert.deepEqual(calls,["audit-backup","person-status","audit-complete"]);
   const list = await sandbox.exports.listEngagementCompetitions({ data: { manageOnly: true, fromDate: "2026-09-01", toDate: "2027-08-31" } });
   assert.equal(list.source, "nap"); assert.equal(list.competitions.length, 1); assert.equal(list.competitions[0].id, event.id);
   const calendar = await sandbox.exports.listEngagementCalendarEvents({ data: { fromDate: "2026-09-01", toDate: "2027-08-31" } });

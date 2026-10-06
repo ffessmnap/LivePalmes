@@ -14768,7 +14768,7 @@
             <span role="cell">
               <span class="admin-engagements-request-actions">
                 <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly ? 'disabled title="Modification momentanément indisponible"' : ""}>Modifier</button>
-                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${person.statusSaving || nativeReadOnly && !person.nativeStatusEditable ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
               </span>
             </span>
           </div>
@@ -14900,18 +14900,32 @@
 
   async function setEngagementClubPersonStatus(personId, active) {
     const person = engagementClubPeople.find((item) => item.id === personId);
-    if (!person) return;
+    if (!person || person.statusSaving) return;
     const label = [person.firstName, person.lastName].filter(Boolean).join(" ") || person.licenseNumber;
-    if (!global.confirm(`${active ? "Réactiver" : "Désactiver"} ${label} ?`)) return;
+    if (!global.confirm(`${active ? "Réactiver" : "Désactiver"} ${label} ? Les engagements déjà saisis seront conservés.`)) return;
+    const requestVersion=engagementClubPeopleRequestVersion;
+    person.statusSaving=true;renderEngagementClubPeople();
     try {
-      await callFunction("setEngagementClubPersonStatus", { personId, active });
+      const result=await callFunction("setEngagementClubPersonStatus", { personId, active, ...(person.napSource?{expectedFingerprint:person.napFingerprint}:{}) });
+      if(requestVersion!==engagementClubPeopleRequestVersion) return;
+      if(result.source==="nap" && result.person?.id===personId) {
+        engagementClubPeople=engagementClubPeople.map(item=>item.id===personId?result.person:item);
+        renderEngagementClubPeople();
+        renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
+        if(activeEngagementsDetailTab==="officials") renderEngagementClubOfficials();
+        return;
+      }
       engagementClubPeopleLoaded = false;
       await loadEngagementClubPeople({ force: true });
     } catch (error) {
+      if(requestVersion!==engagementClubPeopleRequestVersion) return;
       if (elements.engagementsClubPeopleStatus) {
         elements.engagementsClubPeopleStatus.textContent = `Changement impossible : ${error?.message || error}`;
         elements.engagementsClubPeopleStatus.dataset.tone = "error";
       }
+    } finally {
+      delete person.statusSaving;
+      if(requestVersion===engagementClubPeopleRequestVersion) renderEngagementClubPeople();
     }
   }
 

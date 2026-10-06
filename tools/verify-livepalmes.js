@@ -65,6 +65,8 @@ function runUnitTests() {
     "nap-team-leader-change-tests.js",
     "nap-team-leader-ui-tests.js",
     "nap-club-people-tests.js",
+    "nap-club-person-status-tests.js",
+    "nap-club-person-status-ui-tests.js",
     "nap-club-people-ui-tests.js",
     "nap-portal-competition-edit-ui-tests.js",
     "nap-program-validation-tests.js",
