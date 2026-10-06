@@ -46,7 +46,7 @@ async function readCompetitionResults(pool, input) {
     const groupKey = `${course}|${sex}|${relay ? "relay" : "individual"}`;
     if (!groups.has(groupKey)) groups.set(groupKey, { eventLabel: `${details?.label || course}${relay ? " · Relais" : ""}`, sexLabel: ({ F: "Femmes", M: "Hommes" })[sex] || "Mixte", performances: [] });
     const key = `${person.id}|${course}`, seasonKey = `${key}|${rules.competitionSeasonYear(row.date)}`;
-    groups.get(groupKey).performances.push({ id: String(row.id), swimmer: relay ? text(row.nom_club || row.abre_club) : person.name, swimmerId: relay ? "" : person.id, isRelay: relay,
+    groups.get(groupKey).performances.push({ id: String(row.id), swimmer: relay ? text(row.nom_club || row.abre_club) || "Équipe non renseignée" : person.name || "Nageur non renseigné", swimmerId: relay || !person.name ? "" : person.id, isRelay: relay,
       club: text(row.abre_club || row.nom_club), category: normalized?.category || text(row.cat), categoryLabel: normalized?.categoryLabel || text(row.cat),
       time: timeValue ? rules.formatTime(timeValue) : text(row.tps), timeValue: timeValue || Infinity,
       personalBest: markersAvailable && !relay && Boolean(timeValue) && personal.get(key) === timeValue,
