@@ -200,13 +200,15 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
   exports.exportNapPublicPage = onRequest({
     region: REGION,
     invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com",
-    secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 60
+    secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 180
   }, async (request, response) => {
     response.set("Cache-Control", "no-store");
-    if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
+    const indexOperation = request.method === "POST" && request.query.action === "approved-index";
+    if (request.method !== "GET" && !indexOperation || request.method === "GET" && request.query.action === "approved-index") { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
+      const data = indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
+        : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
         : request.query.action === "schema" ? await readSourceSchema(napPool)
         : request.query.action === "inspect" ? await inspectExportSources(napPool)
