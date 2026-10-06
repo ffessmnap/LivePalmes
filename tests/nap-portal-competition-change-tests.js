@@ -7,7 +7,7 @@ const now=Date.parse("2026-10-06T12:00:00Z");
 function fixturePack() {
   const competition={id:5140,libelle:"Competition &amp; historique",lieu:"Antibes",date:"2026-10-11",enddate:null,comite:7,description:"Texte ancien",bassin:50,chrono:"M",ld:0};
   const parameters={id:5000,compet:5140,actif:1,dateactif:"2026-09-30 19:03:01",date_limit:"2026-10-07 21:59:17",officiel:1,nb_lignes:8,mailtxt:null,mailjuges:"",tps_d:null,tps_f:null,niveau:3,saisie:0,relais:0};
-  return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP"}],options:null,fees:null,courseOptions:[],committees:[],groups:[],standards:[],detailedProgram:null};
+  return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP",sexe:"F"}],options:null,fees:null,courseOptions:[],committees:[],groups:[],standards:[],detailedProgram:null};
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});

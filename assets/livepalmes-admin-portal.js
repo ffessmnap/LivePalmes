@@ -9372,9 +9372,16 @@
   function engagementProgramGenderModesForEvent(eventOption) {
     const eventCode = typeof eventOption === "string" ? eventOption : eventOption?.code;
     const definition = engagementEventDefinition(eventCode);
-    return definition?.relayMixedRule === "required"
+    const modes = definition?.relayMixedRule === "required"
       ? [["mixed", "Relais mixte"]]
       : ENGAGEMENT_PROGRAM_GENDER_MODES.map(([mode]) => [mode, engagementProgramGenderModeDisplayLabel(mode, eventCode, eventOption)]);
+    if (!selectedEngagementCompetition?.napSource) return modes;
+    const nativeEvent = selectedEngagementCompetition.events?.find(event => event.code === eventCode);
+    if (!Array.isArray(nativeEvent?.nativeCourses)) return [];
+    const available = new Set(nativeEvent.nativeCourses.map(course => String(course.sexe).trim()));
+    return modes.filter(([mode]) => mode === "mixed"
+      ? nativeEvent.type === "relay" ? available.has("0") : available.has("F") && available.has("M")
+      : available.has(mode === "female" ? "F" : "M"));
   }
 
   function engagementProgramGenderModeShortLabel(mode, eventCode = "", eventOption = null) {
