@@ -2030,6 +2030,7 @@
       elements.engagementsClubTeamRemoveButton.title = hasParticipants
         ? "Le dossier contient des nageurs, des officiels ou des relais : remplacez le chef d'équipe."
         : "Retirer le chef d'équipe et supprimer ce dossier vide.";
+      if (nativeLeaderEdit) elements.engagementsClubTeamRemoveButton.title = "Le retrait du chef d'équipe NAP est encore en cours de raccordement.";
     }
     if (nativeLeaderEdit) updateEngagementClubTeamFormMode();
   }
@@ -8339,15 +8340,15 @@
       if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = false;
       setEngagementClubTeamManualFieldsVisible(true);
       for (const field of [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamBirthDate]) {
-        if (field) { field.disabled = locked; field.required = field !== elements.engagementsClubTeamBirthDate; field.closest("label").hidden = false; }
+        if (field) { field.disabled = locked; field.required = field !== elements.engagementsClubTeamBirthDate; const label=field.closest("label"); if(label) label.hidden=false; }
       }
       for (const field of [elements.engagementsClubTeamLicense, elements.engagementsClubTeamSex, elements.engagementsClubTeamExternal]) {
-        if (field) { field.required = false; field.disabled = true; field.closest("label").hidden = true; }
+        if (field) { field.required = false; field.disabled = true; const label=field.closest("label"); if(label) label.hidden=true; }
       }
       if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = "";
-      for (const control of [elements.engagementsClubTeamPersonSearch, elements.engagementsClubTeamPersonSelect]) if (control) control.closest("label").hidden = true;
+      for (const control of [elements.engagementsClubTeamPersonSearch, elements.engagementsClubTeamPersonSelect]) if (control) { const label=control.closest("label"); if(label) label.hidden=true; }
       for (const control of [elements.engagementsClubTeamPersonResults, elements.engagementsClubTeamPersonCreate, elements.engagementsClubTeamRenunciationLabel, elements.engagementsClubTeamExternalClubIdLabel, elements.engagementsClubTeamExternalClubNameLabel]) if (control) control.hidden = true;
-      if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.querySelectorAll('input[type="radio"]').forEach(control=>{control.closest("label").hidden=true;});
+      if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.querySelectorAll('input[type="radio"]').forEach(control=>{const label=control.closest("label"); if(label) label.hidden=true; else control.hidden=true;});
       if (elements.engagementsClubTeamExternalOpen) elements.engagementsClubTeamExternalOpen.hidden = true;
       if (elements.engagementsClubTeamRenunciationButton) elements.engagementsClubTeamRenunciationButton.hidden = true;
       if (elements.engagementsClubTeamSaveButton) {
