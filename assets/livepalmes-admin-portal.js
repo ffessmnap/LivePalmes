@@ -12288,10 +12288,10 @@
       return `
         <tr class="admin-engagements-national-swimmer-row" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" data-engagement-national-swimmer-key="${escapeHtml(sourceKey)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
           <td class="admin-engagements-national-choice">
-            ${merged ? "" : `<input type="radio" name="adminEngagementsNationalSwimmerKeep" value="${escapeHtml(sourceKey)}" title="Conserver cette fiche" data-engagement-national-swimmer-keep>`}
+            ${merged || swimmer.napSource ? "" : `<input type="radio" name="adminEngagementsNationalSwimmerKeep" value="${escapeHtml(sourceKey)}" title="Conserver cette fiche" data-engagement-national-swimmer-keep>`}
           </td>
           <td class="admin-engagements-national-choice">
-            ${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
+            ${merged || swimmer.napSource ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
           </td>
           <td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
           <td><strong>${escapeHtml(swimmer.lastName || name)}</strong></td>
@@ -12310,7 +12310,7 @@
                 <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
                 <div>
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="edit" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Modifier la fiche</button>
-                  ${!engagementNationalSwimmerMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
+                  ${!engagementNationalSwimmerMergeMode || swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
                   ${sourceType !== "engagement" ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
                   ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
                 </div>
@@ -12617,6 +12617,11 @@
 
   function resetEngagementSwimmerCorrectionDialog() {
     elements.engagementsSwimmerCorrectionForm?.reset();
+    if (elements.engagementsSwimmerCorrectionForm) {
+      delete elements.engagementsSwimmerCorrectionForm.dataset.napSource;
+      delete elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint;
+    }
+    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = false;
     setFormPending(elements.engagementsSwimmerCorrectionForm, false);
     if (elements.engagementsSwimmerCorrectionReason) elements.engagementsSwimmerCorrectionReason.required = false;
     if (elements.engagementsSwimmerCorrectionMessage) {
@@ -12638,12 +12643,19 @@
       card: options.card || null
     } : null;
     const name = engagementSwimmerDisplayName(swimmer, "Nageur");
+    if (direct && swimmer.napSource && elements.engagementsSwimmerCorrectionForm) {
+      elements.engagementsSwimmerCorrectionForm.dataset.napSource = "true";
+      elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
+      if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = true;
+    }
     if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = review ? "review" : direct ? "direct" : "request";
     if (elements.engagementsSwimmerCorrectionSource) elements.engagementsSwimmerCorrectionSource.value = swimmer.source || "performances";
     if (elements.engagementsSwimmerCorrectionId) elements.engagementsSwimmerCorrectionId.value = swimmer.id || swimmer.swimmerIndexId || "";
     if (elements.engagementsSwimmerCorrectionIdentityKey) elements.engagementsSwimmerCorrectionIdentityKey.value = swimmer.identityKey || "";
     if (elements.engagementsSwimmerCorrectionLastName) elements.engagementsSwimmerCorrectionLastName.value = swimmer.lastName || "";
     if (elements.engagementsSwimmerCorrectionFirstName) elements.engagementsSwimmerCorrectionFirstName.value = swimmer.firstName || "";
+    if (elements.engagementsSwimmerCorrectionLastName) elements.engagementsSwimmerCorrectionLastName.maxLength = swimmer.napSource ? 64 : 80;
+    if (elements.engagementsSwimmerCorrectionFirstName) elements.engagementsSwimmerCorrectionFirstName.maxLength = swimmer.napSource ? 64 : 80;
     if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.licenseNumber || "";
@@ -12668,9 +12680,11 @@
     const mode = elements.engagementsSwimmerCorrectionMode?.value || "request";
     const direct = mode === "direct";
     const review = mode === "review";
-    if (direct && !global.confirm("Enregistrer cette correction nationale ? Les performances et engagements liés seront mis à jour.")) return;
+    if (direct && !global.confirm("Enregistrer cette correction nationale ?")) return;
     if (review && !global.confirm("Valider cette demande avec les valeurs affichées ?")) return;
     const payload = {
+      napSource: elements.engagementsSwimmerCorrectionForm?.dataset.napSource === "true",
+      expectedFingerprint: elements.engagementsSwimmerCorrectionForm?.dataset.expectedFingerprint || "",
       source: elements.engagementsSwimmerCorrectionSource?.value || "performances",
       swimmerId: elements.engagementsSwimmerCorrectionId?.value || "",
       identityKey: elements.engagementsSwimmerCorrectionIdentityKey?.value || "",
@@ -13136,7 +13150,7 @@
     try {
       const [result, publicSwimmers] = await Promise.all([
         callFunction("searchEngagementNationalSwimmers", { query, limit: 60 }),
-        searchEngagementAdminPublicSwimmers(query, 80)
+        global.LivePalmesEnvironment.isTest ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers(query, 80)
       ]);
       engagementNationalSwimmers = mergeEngagementNationalSwimmerResults([
         ...publicSwimmers,
@@ -13146,6 +13160,7 @@
       renderEngagementNationalSwimmers();
       if (elements.engagementsNationalSwimmersStatus && !silent) {
         updateEngagementNationalSwimmersStatus(filteredEngagementNationalSwimmers().length);
+        if (result.hasMore) elements.engagementsNationalSwimmersStatus.textContent += " Précisez la recherche pour afficher les autres nageurs.";
       }
     } catch (error) {
       if (elements.engagementsNationalSwimmersStatus && !silent) {

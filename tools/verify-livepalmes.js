@@ -57,6 +57,7 @@ function runUnitTests() {
     "nap-portal-contract-tests.js",
     "nap-portal-swimmer-change-tests.js",
     "nap-approved-swimmer-correction-tests.js",
+    "nap-portal-swimmers-tests.js",
     "nap-calendar-contract-tests.js",
     "nap-direct-calendar-tests.js",
     "nap-approved-index-tests.js",
