@@ -11,6 +11,7 @@
     url.searchParams.set("action", action);
     for (const key of ["course", "sex", "category", "season", "region", "pool", "birthYear"]) if (filters[key]) url.searchParams.set(key, filters[key]);
     url.searchParams.set("limit", String(napLimit));
+    if (action === "top" && birthYearFilterOpen) url.searchParams.set("years", "1");
     const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error("Consultation des performances indisponible.");
     const data = await response.json();
@@ -25,17 +26,20 @@
     elements.loadMore.hidden = true;
     renderRows([], filters, "loading");
     try {
-      const [data, facet] = await Promise.all([readNap("top", filters), birthYearFilterOpen ? readNap("top-years", filters) : Promise.resolve(null)]);
+      const data = await readNap("top", filters);
+      const facet = Array.isArray(data.years) ? { years: data.years } : null;
       if (request !== napRequest) return;
       if (facet) {
         const selected = filters.birthYear;
         addOptions(elements.birthYear, facet.years, "Toutes les années");
         elements.birthYear.value = facet.years.includes(selected) ? selected : "";
         elements.birthYear.disabled = false;
+        if (selected && !facet.years.includes(selected)) { render(); return; }
       }
       renderRows(data.rows, filters);
       elements.status.textContent = `${data.rows.length}${data.total > data.rows.length ? " / " + data.total : ""} lignes - TOP ${napLimit} - ${filters.pool ? "Bassin " + filters.pool + " m" : "Tous bassins"}`;
-      elements.loadMore.hidden = !data.hasMore;
+      elements.loadMore.hidden = !data.hasMore || napLimit >= 2000;
+      if (data.hasMore && napLimit >= 2000) elements.status.textContent += " - Affinez les filtres pour consulter la suite.";
       elements.loadMoreButton.textContent = "Afficher la suite";
     } catch {
       if (request !== napRequest) return;

@@ -33,7 +33,7 @@ function filters(input) {
   const result = {};
   for (const field of ["course", "sex", "category", "season", "region", "pool", "birthYear"]) result[field] = String(input?.[field] || "");
   if (!rules.CURRENT_POOL_COURSES.includes(result.course) || !["M", "F"].includes(result.sex) || result.category && !rules.CATEGORY_ORDER.includes(result.category)) throw new TypeError("Filtres invalides.");
-  if (result.pool && !["25", "50"].includes(result.pool) || result.season && !/^20\d{2}$|^19\d{2}$/.test(result.season) || result.birthYear && !/^(19|20)\d{2}$|^2100$/.test(result.birthYear) || result.region && !/^\d{1,3}(,\d{1,3}){0,20}$/.test(result.region)) throw new TypeError("Filtres invalides.");
+  if (result.pool && !["25", "50"].includes(result.pool) || result.season && !/^[1-9]\d{0,3}$/.test(result.season) || result.birthYear && !/^\d{4}$/.test(result.birthYear) || result.region && !/^\d{1,3}(,\d{1,3}){0,20}$/.test(result.region)) throw new TypeError("Filtres invalides.");
   result.limit = Number(input?.limit || 25);
   if (!Number.isSafeInteger(result.limit) || result.limit < 1 || result.limit > MAX_LIMIT) throw new TypeError("Limite invalide.");
   return result;
@@ -48,7 +48,7 @@ function queryFor(input, facet = false) {
   if (f.pool) { where.push("c.bassin = ?"); values.push(Number(f.pool)); }
   if (f.birthYear && !facet) { where.push("YEAR(n.date) = ?"); values.push(Number(f.birthYear)); }
   if (f.region) { const regions = f.region.split(",").map(Number); where.push(`COALESCE(cp.comite_club, cn.comite_club) IN (${regions.map(() => "?").join(",")})`); values.push(...regions); }
-  const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 202" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
+  const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 10001" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
   return { sql: `SELECT ${facet ? "YEAR(n.date) AS birthYear" : PROJECTION} ${FROM} WHERE ${where.join(" AND ")} ${suffix}`, values };
 }
 async function courseBudget(pool, course) {
@@ -80,14 +80,15 @@ async function readDirectTop(pool, input) {
     const lastTime = rules.parseCompactTime(raw[raw.length - 1].tps);
     if (!boundary || lastTime <= boundary.timeValue) throw new RangeError("Classement trop volumineux pour cette consultation.");
   }
-  return { source: "nap", readAt: new Date().toISOString(), rows: ranked.slice(0, f.limit).map((row, i) => ({ ...row, topRank: i + 1 })), hasMore: ranked.length > f.limit || raw.length > MAX_CANDIDATES, complete: raw.length <= MAX_CANDIDATES, total: raw.length <= MAX_CANDIDATES ? ranked.length : null };
+  const facet = input?.years === "1" ? await readTopBirthYears(pool, f, true) : null;
+  return { source: "nap", ...(facet ? { years: facet.years } : {}), readAt: new Date().toISOString(), rows: ranked.slice(0, f.limit).map((row, i) => ({ ...row, topRank: i + 1 })), hasMore: ranked.length > f.limit || raw.length > MAX_CANDIDATES, complete: raw.length <= MAX_CANDIDATES, total: raw.length <= MAX_CANDIDATES ? ranked.length : null };
 }
-async function readTopBirthYears(pool, input) {
-  const f = filters(input); await courseBudget(pool, f.course);
+async function readTopBirthYears(pool, input, budgetChecked = false) {
+  const f = filters(input); if (!budgetChecked) await courseBudget(pool, f.course);
   const query = queryFor(f, true);
   const [rows] = await pool.execute({ sql: query.sql, timeout: 10000 }, query.values);
-  if (rows.length > 201) throw new RangeError("Annees trop nombreuses.");
-  return { source: "nap", years: rows.map(row => String(row.birthYear)).filter(year => /^(19|20)\d{2}$|^2100$/.test(year)) };
+  if (rows.length > 10000) throw new RangeError("Annees trop nombreuses.");
+  return { source: "nap", years: rows.filter(row => row.birthYear != null).map(row => String(row.birthYear).padStart(4, "0")).filter(year => /^\d{4}$/.test(year)) };
 }
 async function readTopMetadata(pool) {
   const [dates] = await pool.execute({ sql: "SELECT date FROM competitions ORDER BY id LIMIT 5001", timeout: 10000 });
