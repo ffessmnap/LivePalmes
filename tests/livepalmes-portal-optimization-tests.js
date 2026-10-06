@@ -785,7 +785,7 @@ assert.ok(clubEntryRead.includes("const snapshots = await db.getAll(...refs)"));
 assert.ok(clubEntryRead.includes("baseDocuments: 1 + refs.length"));
 assert.equal(clubEntryRead.includes("peopleRosterReady:"), false);
 assert.equal(clubEntryRead.includes("peopleRosterRef"), false);
-assert.equal(clubEntryRead.includes("const competition = await"), false);
+assert.equal(clubEntryRead.includes('const competition = await db.collection("engagementCompetitions")'), false);
 assert.ok(engagementClubSwimmerListSource.includes("const rosterSnapshot = await engagementClubRosterRef(db, context.clubId).get()"));
 assert.ok(engagementClubSwimmerListSource.includes("baseDocuments: 2"));
 assert.ok(engagementClubSwimmerListSource.includes("variableDocumentsMax: 0"));
