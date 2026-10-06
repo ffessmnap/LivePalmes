@@ -176,6 +176,21 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 if (ENVIRONMENT.projectId === "livepalmes-test") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
+  exports.readNapPublicSwimmer = onRequest({
+    region: REGION, invoker: "public", secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 30,
+    cors: [/^https:\/\/livepalmes-test(?:--[a-z0-9-]+)?\.web\.app$/, "https://livepalmes-test.firebaseapp.com"]
+  }, async (request, response) => {
+    response.set("Cache-Control", "no-store");
+    if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
+    try {
+      if (!napPool) napPool = createNapPool(napPassword.value());
+      response.json(await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
+    } catch (error) {
+      response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
+        ? "Historique trop volumineux pour cette consultation."
+        : "Consultation NAP indisponible." });
+    }
+  });
   // Export reserve au compte de publication TEST, jamais accessible au public.
   const { inspectExportSources, readExportPage, readSourceSchema } = require("./nap-public-export");
   exports.exportNapPublicPage = onRequest({
@@ -188,6 +203,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
+        : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
         : request.query.action === "schema" ? await readSourceSchema(napPool)
         : request.query.action === "inspect" ? await inspectExportSources(napPool)
           : await readExportPage(napPool, request.query);

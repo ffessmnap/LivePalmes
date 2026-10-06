@@ -50,6 +50,7 @@ function runUnitTests() {
   [
     "nap-mysql-tests.js",
     "nap-direct-query-checks-tests.js",
+    "nap-direct-swimmer-tests.js",
     "nap-public-export-tests.js",
     "nap-public-pipeline-tests.js",
     "nap-public-transition-tests.js",
