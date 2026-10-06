@@ -57,9 +57,52 @@ for (const dynamic of ['\nglobalThis["eval"]("x");', '\nrequire(name);', '\nrequ
   assert.equal(fingerprints(modular+dynamic, 'deps').mode, 'whole-backend');
 }
 assert.throws(()=>fingerprints(modular+'\nfunction leaf(){}','deps'), /duplique/);
+// Conditional TEST registrations and static module closures are independent of the core.
+const conditional = modular + `
+if (ENVIRONMENT.projectId === "livepalmes-test") {
+  const {read}=require("./nap-reader");
+  const password=defineSecret("NAP_PASSWORD");
+  let pool;
+  exports.nap=onCall({secrets:[password]},()=>read(pool));
+}
+`;
+const modules = {
+  "functions/nap-reader.js": {source: 'const {leaf}=require("./nap-leaf"); function read(pool){return leaf(pool);} module.exports={read};'},
+  "functions/nap-leaf.js": {source: 'function leaf(pool){return 1;} module.exports={leaf};'}
+};
+const originalModules = fingerprints(conditional, "deps", modules);
+assert.equal(originalModules.mode, "dependency-closure");
+assert.ok(originalModules.functions.nap);
+const moduleChange = {...modules, "functions/nap-leaf.js": {source: modules["functions/nap-leaf.js"].source.replace("return 1", "return 2")}};
+const moduleAfter = fingerprints(conditional, "deps", moduleChange);
+assert.deepEqual(Object.keys(moduleAfter.functions).filter(n=>moduleAfter.functions[n]!==originalModules.functions[n]), ["nap"]);
+const localNap = fingerprints(conditional.replace("read(pool)", "read(pool)+1"), "deps", modules);
+assert.deepEqual(Object.keys(localNap.functions).filter(n=>localNap.functions[n]!==originalModules.functions[n]), ["nap"]);
+const extraUnused = {...modules, "functions/unused.js": {source:'throw new Error("never load");'}};
+assert.deepEqual(fingerprints(conditional, "deps", extraUnused).functions, originalModules.functions);
+const importA = {...modules, 'functions/nap-leaf.js': {source:'const client=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const importB = {...modules, 'functions/nap-leaf.js': {source:'const renamed=require("node:crypto"); function leaf(){return 1;} module.exports={leaf};'}};
+const externalA = fingerprints(conditional, 'deps', importA), externalB = fingerprints(conditional, 'deps', importB);
+assert.ok(Object.keys(externalA.functions).every(name=>externalA.functions[name]!==externalB.functions[name]));
+const effectSource = modular.replace('const LIMIT=2;', 'const settings=require("./settings");\nconst LIMIT=2;');
+const effects = {"functions/settings.js": {source: 'configure(); module.exports={};'}};
+const effectBefore = fingerprints(effectSource, "deps", effects);
+const effectAfter = fingerprints(effectSource, "deps", {"functions/settings.js": {source: 'configure(2); module.exports={};'}});
+assert.deepEqual(Object.keys(effectBefore.functions).filter(n=>effectBefore.functions[n]!==effectAfter.functions[n]).sort(), ["one","three","two"]);
+for (const initialization of ['function Set(){configure();} const values=new Set([]);', 'const values=new Set(externalIterable);']) {
+  const before = fingerprints(effectSource, 'deps', {'functions/settings.js': {source: initialization+' module.exports={};'}});
+  const after = fingerprints(effectSource, 'deps', {'functions/settings.js': {source: initialization+' module.exports={}; // changed'}});
+  assert.deepEqual(Object.keys(before.functions).filter(n=>before.functions[n]!==after.functions[n]).sort(), ['one','three','two']);
+}
+assert.throws(()=>fingerprints(conditional, "deps", {"functions/nap-reader.js":modules["functions/nap-reader.js"]}), /non resolu/);
+const unrelatedCondition = conditional.replace('ENVIRONMENT.projectId === "livepalmes-test"', 'isTest()');
+assert.equal(fingerprints(unrelatedCondition, "deps", modules).mode, "whole-backend");
+console.log("Empreintes NAP : condition TEST, module indirect, modification locale, effet global et import absent couverts.");
 // Regression on real releases: no runtime code or Firebase call is executed.
 const root=path.resolve(__dirname,'..');
 for (const [label, before, after, expected] of [
+  ['NAP TOP','d7eb84c82a32358f7e3369938a10ab6a16086a97','84395f520781d913edb60e3a69b81085fb58c5b1',
+    ['readNapPublicSwimmer','exportNapPublicPage']],
   ['DTN','7ed44a0033d63959a5423a0a904e77b454dd03f6','84d36c31ffad84bbefc515aff08935062f9c52a1',
     ['buildDtnQualificationView','getDtnQualificationOverview']],
   ['PDF','5edd066bff228df734a1bfc0db28537210c82422','1554db370fd303a9973bd422e8305355d1987027',
