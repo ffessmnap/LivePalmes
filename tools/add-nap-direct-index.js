@@ -4,7 +4,8 @@ const fs = require("node:fs");
 const { execFileSync } = require("node:child_process");
 const SPECS = {
   search: { table: "nageurs", name: "livepalmes_prenom_nom", columns: ["prenom", "nom", "date", "id"] },
-  top: { table: "perfs", name: "livepalmes_course_relais_tps", columns: ["course", "relais", "tps", "id"] }
+  top: { table: "perfs", name: "livepalmes_course_relais_tps", columns: ["course", "relais", "tps", "id"] },
+  competition: { table: "perfs", name: "livepalmes_compet_id", columns: ["compet", "id"] }
 };
 let operationStage = "confirmation";
 async function main() {
