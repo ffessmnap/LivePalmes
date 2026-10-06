@@ -1547,7 +1547,7 @@ assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), f
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260930-dtn-reading-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261006-nap-national-swimmers-1"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
 assert.ok(portalHtml.includes("Sans répéter la ville."));
@@ -1772,7 +1772,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20260930-dtn-reading-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261006-nap-national-swimmers-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
