@@ -13,17 +13,24 @@ const QUERIES = [
   ["forfeits", "SELECT id,engagement,compet,forfait FROM forfait ORDER BY id DESC LIMIT 40"]
 ];
 async function inspectEngagementContract(pool) {
-  const samples = {}, plans = {};
+  const samples = {}, plans = {}, errors = [];
   for (const [name,sql] of QUERIES) {
-    const [plan] = await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000});
-    // Tables producing a sample must use their primary key. Joined tables must
-    // use indexed lookup; never fall back to scanning a whole legacy table.
-    if (plan.some(row => !String(row.table).startsWith("<") && (row.type === "ALL" || !row.key))) throw new Error("Diagnostic non indexe.");
-    const [rows] = await pool.execute({sql,timeout:10000});
-    if (rows.length > 100) throw new Error("Diagnostic trop volumineux.");
-    plans[name] = plan.map(({table,type,key,rows,Extra})=>({table,type,key,rows,Extra}));
-    samples[name] = rows;
+    try {
+      const [plan] = await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000});
+      plans[name] = plan.map(({table,type,key,rows,Extra})=>({table,type,key,rows,Extra}));
+      // A proven empty/constant relation is not a table scan. Materialized
+      // derived samples are themselves limited to at most 100 primary rows.
+      if (plan.some(row => !String(row.table).startsWith("<") && !["system","const"].includes(row.type) && !(row.rows != null && Number(row.rows) === 0) && (row.type === "ALL" || !row.key))) {
+        errors.push({query:name,reason:"non-indexed"}); continue;
+      }
+      const [rows] = await pool.execute({sql,timeout:10000});
+      if (rows.length > 100) { errors.push({query:name,reason:"volume"}); continue; }
+      samples[name] = rows;
+    } catch (error) {
+      // Never publish SQL/driver messages, raw queries or credentials.
+      errors.push({query:name,reason:({ER_BAD_FIELD_ERROR:"column",ER_PARSE_ERROR:"syntax",ER_NO_SUCH_TABLE:"table"})[error.code] || "unavailable"});
+    }
   }
-  return {source:"nap",mode:"engagement-contract-readonly",inspectedAt:new Date().toISOString(),samples,plans,writesExecuted:false,businessMappingsConfirmed:false};
+  return {source:"nap",mode:"engagement-contract-readonly",inspectedAt:new Date().toISOString(),samples,plans,errors,complete:errors.length===0,writesExecuted:false,businessMappingsConfirmed:false};
 }
 module.exports = {QUERIES,inspectEngagementContract};
