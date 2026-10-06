@@ -349,3 +349,9 @@ Antoine precise une lecture directe NAP, sans export a relancer. Run de publicat
 - Preparation : lecture indexee NAP des effectifs, statuts operationnels natifs preserves, anciennes identites exclues. Correction NAP debloquee lorsque seuls des engagements historiques portent des identifiants LivePalmes. Aucun rapprochement implicite ni migration.
 - Antoine demande les licences vides : ancienne collection non lue par la recherche nationale et les effectifs NAP. Ajout des licences dans NAP reporte.
 - Etape precedente #126 publiee sur TEST commun c18710237408b1689224d0270cddc36196452bb9, run 37467174168 reussi, Hosting fe500868a69d5250. Recherche et formulaire controles ; retour utilisateur signale le blocage des engagements anciens, corrige dans cette preparation. Portail complet non termine, recette et publication de cette nouvelle etape a effectuer.
+
+### Inventaire des engagements IntraNAP — 6 octobre 2026
+
+- Antoine confirme une competition unique partagee, reprise des parametres existants et engagements visibles des leur enregistrement dans les deux interfaces. Ajouts de structure et correspondances metier a presenter avant execution.
+- Diagnostic prive existant etendu a une liste fixe de 20 tables, uniquement information_schema et resume de droits ; aucune lecture de lignes sportives ou de contacts, aucune ecriture NAP. Budget constant : cinq requetes, 400 colonnes et 200 elements d'index maximum, depassement refuse. Aucun nouveau service, droit ou secret.
+- Etape effectifs #128 publiee sur TEST 588d43fb93dae04b8f2cd089c3610d41c4302546, run 37473212292 reussi. Controle navigateur de Mes nageurs et licences vides effectue ; ecritures de recette non effectuees. Portail engagements et DTN encore a raccorder.
