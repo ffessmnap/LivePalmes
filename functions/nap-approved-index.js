@@ -11,6 +11,8 @@ const SPECS = {
   entryRelays: { table: "engagements_relais", name: "livepalmes_compet_club_id", columns: ["compet", "club", "id"] },
   relayMembers: { table: "engagements_relayeurs", name: "livepalmes_relais_pos_id", columns: ["relais", "pos", "id"] },
   teamLeaders: { table: "chefsdequipe", name: "livepalmes_compet_id", columns: ["compet", "id"] },
+  clubTeamLeaders: { table: "chefsdequipe", name: "livepalmes_club_id", columns: ["club", "id"] },
+  clubOfficials: { table: "officiels", name: "livepalmes_club_id", columns: ["club", "id"] },
   entryOfficials: { table: "officielsengager", name: "livepalmes_compet_club_id", columns: ["compet", "club", "id"] },
   entryForfeits: { table: "forfait", name: "livepalmes_compet_engagement_id", columns: ["compet", "engagement", "id"] },
   programSessions: { table: "winpalme_sessions", name: "livepalmes_compet_session_id", columns: ["compet", "session", "id"] },

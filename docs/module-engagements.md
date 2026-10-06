@@ -347,6 +347,8 @@ Le club doit choisir une des options suivantes :
 
 Pour un chef d'equipe, le numero de licence est obligatoire.
 
+Transition NAP autorisee par Antoine le 6 octobre 2026 : sur TEST, la declaration d'un chef d'equipe peut etre enregistree sans numero de licence. Le champ reste vide ; les anciennes licences LivePalmes ne sont pas reprises. Leur ajout dans NAP sera traite separement.
+
 Si le chef d'equipe n'est pas du club, son club doit etre renseigne.
 
 Si le club ne declare pas de chef d'equipe, il doit cocher explicitement une case indiquant qu'il renonce au droit de reclamation.
@@ -368,6 +370,8 @@ Ces valeurs doivent rester modifiables dans le parametrage de la competition.
 Pour la V1, aucun nombre minimum d'officiels n'est impose.
 
 Les officiels doivent avoir un numero de licence.
+
+Pendant la transition NAP sur TEST, Antoine autorise egalement l'enregistrement des officiels sans numero de licence (6 octobre 2026), selon la meme regle de champ vide et sans reprise de l'ancienne base LivePalmes.
 
 Il faut prevoir une base reutilisable d'officiels par club.
 

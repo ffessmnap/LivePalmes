@@ -1,7 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
 const { portalEventFromRow, readNativeCompetitionSeason, readNativeCompetition, inspectNativeCompetitions } = require("../functions/nap-portal-competitions");
-const { KINDS } = require("../tools/add-nap-portal-indexes");
+const { KINDS, PEOPLE_KINDS, selection } = require("../tools/add-nap-portal-indexes");
 const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-index");
 (async () => {
   for (const niveau of [3, 4, 5]) {
@@ -47,15 +47,30 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   let readCount=0;
   await assert.rejects(readNativeCompetition({execute:async({sql})=>{readCount++;return sql.includes("FROM competitions c")?[[{id:5140}]]:[Array(301).fill({})];}},5140,()=>{}),RangeError);
   assert.equal(readCount,2,"oversized course list stops all later reads");
-  for (const kind of KINDS) {
-    const spec = SPECS[kind]; let added=false;
+  assert.deepEqual(selection("engagements", "nap-add-portal-engagement-indexes"), KINDS);
+  assert.deepEqual(selection("club-people", "nap-add-club-people-indexes"), PEOPLE_KINDS);
+  assert.throws(() => selection("club-people", "nap-add-portal-engagement-indexes"));
+  assert.throws(() => selection("engagements", "nap-add-club-people-indexes"));
+  assert.throws(() => selection("unknown", "nap-add-club-people-indexes"));
+  assert.equal(new Set(PEOPLE_KINDS.map(kind => SPECS[kind].table)).size, PEOPLE_KINDS.length, "one snapshot per table avoids stale hashes within the group");
+  for (const kind of [...KINDS, ...PEOPLE_KINDS]) {
+    const spec = SPECS[kind]; let added=false, writing=false;
     const indexPool = {
       execute:async({sql}) => [sql.startsWith("SHOW CREATE")?[{Table:spec.table,"Create Table":"structure"}]:added?spec.columns.map((Column_name,i)=>({Key_name:spec.name,Column_name,Seq_in_index:i+1,Non_unique:1,Sub_part:null})):[]],
-      query:async({sql}) => {if(sql==="SHOW PROCESSLIST")return [[]]; assert.equal(sql,`ALTER TABLE \`${spec.table}\` ADD INDEX \`${spec.name}\` (${spec.columns.map(c=>`\`${c}\``).join(", ")})`); added=true;return [{}];}
+      query:async({sql}) => {if(sql==="SHOW PROCESSLIST")return [[{Info:writing?"INSERT INTO engagements VALUES (... )":null}]]; assert.equal(sql,`ALTER TABLE \`${spec.table}\` ADD INDEX \`${spec.name}\` (${spec.columns.map(c=>`\`${c}\``).join(", ")})`); added=true;return [{}];}
     };
     const input={index:kind,confirmation:`nap-add-${kind}-index`,phase:"prepare"};
     const prepared=await approvedIndexOperation(indexPool,input);assert.equal(added,false);
+    if (PEOPLE_KINDS.includes(kind)) {
+      await assert.rejects(approvedIndexOperation(indexPool,{...input,phase:"apply",schemaHash:"stale"}), /Structure modifiee/);
+      writing=true;
+      await assert.rejects(approvedIndexOperation(indexPool,{...input,phase:"apply",schemaHash:prepared.schemaHash}), /Ecriture en cours/);
+      assert.equal(added,false); writing=false;
+    }
     assert.equal((await approvedIndexOperation(indexPool,{...input,phase:"apply",schemaHash:prepared.schemaHash})).verified,true);
   }
+  const workflow=require("node:fs").readFileSync(".github/workflows/nap-authorized-portal-indexes.yml","utf8");
+  assert.ok(workflow.indexOf("name: Conserver la sauvegarde avant ajout") < workflow.indexOf("name: Ajouter et verifier les index hors saisie"));
+  assert.ok(workflow.includes("club-people:nap-add-club-people-indexes"));
   console.log("Competition NAP : perimetre avant lectures dependantes, limites, formats natifs preserves, complements absents non inventes, index fixes verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

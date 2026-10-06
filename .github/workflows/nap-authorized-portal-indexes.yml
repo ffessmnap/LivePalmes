@@ -2,6 +2,12 @@ name: Ajouter les index NAP du portail autorises
 on:
   workflow_dispatch:
     inputs:
+      index_group:
+        description: Groupe explicitement autorise par Antoine, hors saisie
+        required: true
+        default: engagements
+        type: choice
+        options: [engagements, club-people]
       expected_commit:
         required: true
         type: string
@@ -23,6 +29,7 @@ jobs:
     env:
       TARGET_FIREBASE_PROJECT: livepalmes-test
       NAP_PORTAL_INDEX_CONFIRMATION: ${{ inputs.confirmation }}
+      NAP_PORTAL_INDEX_GROUP: ${{ inputs.index_group }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,7 +39,10 @@ jobs:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: |
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-          test "$NAP_PORTAL_INDEX_CONFIRMATION" = "nap-add-portal-engagement-indexes"
+          case "$NAP_PORTAL_INDEX_GROUP:$NAP_PORTAL_INDEX_CONFIRMATION" in
+            engagements:nap-add-portal-engagement-indexes|club-people:nap-add-club-people-indexes) ;;
+            *) exit 1 ;;
+          esac
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
