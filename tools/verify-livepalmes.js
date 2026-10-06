@@ -54,6 +54,7 @@ function runUnitTests() {
     "nap-direct-search-tests.js",
     "nap-direct-tops-tests.js",
     "nap-source-inventory-tests.js",
+    "nap-portal-contract-tests.js",
     "nap-calendar-contract-tests.js",
     "nap-direct-calendar-tests.js",
     "nap-approved-index-tests.js",
