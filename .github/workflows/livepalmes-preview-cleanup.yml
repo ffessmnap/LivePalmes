@@ -38,7 +38,7 @@ jobs:
           FIREBASE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         with:
           script: |
-            const prefix = "projects/livepalmes-test/sites/livepalmes-test/channels/";
+            const prefix = "sites/livepalmes-test/channels/";
             const root = "https://firebasehosting.googleapis.com/v1beta1/";
             const headers = {Authorization: "Bearer " + process.env.FIREBASE_ACCESS_TOKEN};
             const channels = [];
