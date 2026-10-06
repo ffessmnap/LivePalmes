@@ -53,3 +53,9 @@ NAP seule fait foi ; aucune comparaison avec les anciennes performances LivePalm
 ## Preparation des lectures directes
 
 Le retrait #109 est integre. Le diagnostic prive utilise uniquement une lecture des index et trois EXPLAIN (recherche par prefixe du nom, fiche paginee avec competition, TOP par course/categorie/bassin). Quatre requetes au maximum, chacune bornee a dix secondes ; aucune execution des SELECT de performances, aucune ecriture ni export sportif. Les plans restent reserves au compte de publication TEST. La recherche publique devra rester indexable ; le tri des TOP ne sera active qu'apres verification des index et du format des temps.
+
+## Fiche directe et resultats des plans — 6 octobre
+
+Run 37431247753 : recherche nom indexee par nageurs_clef (nom, prenom, date), fiche par index nageur et competition par cle primaire. La requete TOP de diagnostic exige un scan de 521835 lignes ; elle n'est pas activee. Aucun index sur prenom seul ni course en tete actuellement. Le prochain controle donne seulement des compteurs de formats de temps, par plages primaires de 10000 identifiants et au plus 100 plages, pour determiner un tri indexable sans changement des temps.
+
+La fiche directe TEST lit au plus une identite et 2001 performances brutes avec competitions et clubs joints par leurs cles. Deux requetes par consultation, dix secondes chacune ; aucun cache de performances, aucune ecriture. Au-dela de 2000 performances, refus explicite plutot qu'historique tronque. Maximum observe dans le controle fourni par Antoine : 1509 pour le nageur 7322. Les regles de formatage, categories et temps intermediaires sont extraites sans changement du generateur historique et partagees par le lecteur. Seuls les champs publics sportifs sont exposes, pas les licences ni coordonnees. Le raccordement de la page et la recherche directe restent a finaliser.
