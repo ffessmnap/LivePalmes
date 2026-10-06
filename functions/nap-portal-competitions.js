@@ -2,19 +2,42 @@
 // Authoritative native competition and its additive options. No Firestore fallback.
 // Keep unrecognised native values visible; never silently replace them with defaults.
 const calendar = require("./nap-direct-calendar");
+const { entryState } = require("./nap-paris-time");
 const LIMITS = Object.freeze({ courses: 300, restrictions: 3000, participations: 200, committees: 50, groups: 12, standards: 3000, qualifyingCompetitions: 2400, sessions: 12, program: 1920 });
 const PARAMETERS = "cp.id AS parameter_id,cp.actif,cp.dateactif,cp.date_limit,cp.cat_d,cp.cat_f,cp.tps_d,cp.tps_f,cp.qualif,cp.saisie,cp.relais,cp.officiel,cp.niveau,cp.mailtxt,cp.mailjuges,cp.mailcontrole,cp.`open` AS native_open,cp.nb_nageurs,cp.no_premiere_ligne";
+// IntraNAP's form codes are authoritative for portal permissions. The historical
+// reference labels disagree for code 3 and omit 4/5/6. Never infer rights from them.
+function portalEventFromRow(row) {
+  const code = row.niveau == null ? "" : String(row.niveau);
+  const level = ({ 0: "departemental", 1: "regional", 2: "national", 3: "national", 4: "national", 5: "national", 6: "regional", 7: "national", 8: "international" })[code];
+  const event = calendar.eventFromRow({ ...row, level_label: ({ departemental: "Départementale", regional: "Régionale", national: "Nationale", international: "International" })[level] || "Nationale", scope_label: "" });
+  return { ...event, ...entryState(row), competitionType: event.eventType, nativeLevelCode: row.niveau ?? null,
+    nativeLevelRecognized: Boolean(level), nationalManagementOnly: !level || ["national", "international"].includes(level),
+    // Unknown legacy codes fail closed for regional management.
+    level: level || "national", regionId: level && ["regional", "departemental"].includes(level) ? event.regionId : "",
+    regionLabel: level && ["regional", "departemental"].includes(level) ? event.regionLabel : "" };
+}
 async function bounded(connection, sql, values, maximum) {
   const rows = await calendar.execute(connection, sql, values);
   if (rows.length > maximum) throw new RangeError("Fiche NAP trop volumineuse : pagination requise.");
   return rows;
+}
+// Same season budget as the public calendar: one indexed SELECT, at most 500
+// competitions. Listing uses the same native scope as the detail reader.
+async function readNativeCompetitionSeason(connection, input) {
+  const year = Number(input);
+  if (!Number.isInteger(year) || year < 1901 || year > 2101) throw new TypeError("Saison invalide.");
+  const select = calendar.SELECT_EVENT.replace(" FROM competitions c", ",cp.niveau,cp.actif,cp.date_limit FROM competitions c");
+  const rows = await bounded(connection, `${select} FORCE INDEX (livepalmes_date_id)${calendar.EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT 501`, [`${year - 1}-09-01`, `${year}-09-01`], calendar.MAX_EVENTS);
+  if (new Set(rows.map(row => String(row.id))).size !== rows.length) throw new RangeError("Parametres de competition ambigus.");
+  return { source: "nap", readAt: new Date().toISOString(), events: rows.map(portalEventFromRow).filter(event => event.date && event.name) };
 }
 async function readNativeCompetition(connection, input, authorize) {
   if (typeof authorize !== "function") throw new TypeError("Controle du perimetre requis.");
   const id = calendar.positiveId(input);
   const rows = await bounded(connection, `${calendar.SELECT_EVENT.replace(" FROM competitions c", `,${PARAMETERS},c.organisateur,c.delegue,c.comments FROM competitions c`)}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`, [id], 1);
   if (!rows.length) return null;
-  const row = rows[0], event = calendar.eventFromRow(row);
+  const row = rows[0], event = portalEventFromRow(row);
   // Scope check precedes every contact, rule, or supplemental data query.
   await authorize({ ...event, competitionType: event.eventType });
   const nativeParameters = Object.fromEntries(["parameter_id", "actif", "dateactif", "date_limit", "cat_d", "cat_f", "tps_d", "tps_f", "qualif", "saisie", "relais", "officiel", "niveau", "mailtxt", "mailjuges", "mailcontrole", "native_open", "nb_lignes", "nb_nageurs", "no_premiere_ligne"].map(key => [key, row[key] ?? null]));
@@ -47,4 +70,4 @@ async function inspectNativeCompetitions(connection) {
   }
   return { source: "nap", mode: "portal-competition-contract-readonly", competitions, writesExecuted: false };
 }
-module.exports = { LIMITS, bounded, readNativeCompetition, inspectNativeCompetitions };
+module.exports = { LIMITS, bounded, portalEventFromRow, readNativeCompetitionSeason, readNativeCompetition, inspectNativeCompetitions };

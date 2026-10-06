@@ -1,0 +1,41 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { readNativeClubEntry, inspectNativeClubEntry } = require("../functions/nap-portal-entries");
+(async () => {
+  let allowed = false, calls = [];
+  const pool = { execute: async ({sql}, values) => {
+    assert.equal(allowed,true,"authorization precedes identities and entries");
+    calls.push({sql,values}); assert.ok(sql.startsWith("SELECT ")); assert.match(sql,/LIMIT \d+$/);
+    if(sql.includes("FROM nageurs n FORCE")) return [[{id:912,nom:"FAUVEAU",prenom:"Antoine",date:"2000-01-01",sexe:"M",club:"007"}]];
+    if(sql.includes("FROM nageursengager")) return [[{id:10,nageur:912,compet:5140},{id:11,nageur:912,compet:5140}]];
+    if(sql.includes("FROM engagements FORCE")) return [[{id:30,engagement:10,course:"100SF",tps:"14200"},{id:31,engagement:11,course:"100SF",tps:"014200"}]];
+    if(sql.includes("FROM engagements_relais")) return [[{id:40,course_code:"unknown relay",categorie:0}]];
+    if(sql.includes("FROM engagements_relayeurs")) return [[{id:50,relais:40,pos:4,nageur:912}]];
+    return [[]];
+  } };
+  const result = await readNativeClubEntry(pool,{competitionId:"legacy-nap-5140",clubId:"007"},() => {allowed=true;});
+  assert.equal(calls.length,8); assert.equal(result.inscriptions.length,2,"duplicate inscriptions preserved");
+  assert.deepEqual(result.individual.map(row => row.tps),["14200","014200"]);
+  assert.equal(result.relays[0].course_code,"unknown relay"); assert.equal(result.members[0].pos,4);
+  assert.equal(result.options,null); assert.equal(result.clubId,"007");
+  assert.ok(!JSON.stringify(result).includes("licence"));
+  calls=[]; await assert.rejects(readNativeClubEntry(pool,{competitionId:5140,clubId:"007"},()=>{throw new Error("denied");}),/denied/); assert.equal(calls.length,0);
+  await assert.rejects(readNativeClubEntry(pool,{competitionId:5140,clubId:"7 OR 1=1"},()=>{}),TypeError);
+  await assert.rejects(readNativeClubEntry(pool,{competitionId:5140,clubId:"007"}),TypeError);
+  let emptyCalls=0;
+  const empty=await readNativeClubEntry({execute:async()=>{emptyCalls++;return [[]];}},{competitionId:5140,clubId:"007"},()=>{});
+  assert.equal(emptyCalls,5); assert.deepEqual(empty.individual,[]); assert.deepEqual(empty.members,[]);
+  await assert.rejects(readNativeClubEntry({execute:async()=>[Array(801).fill({})]},{competitionId:5140,clubId:"007"},()=>{}),RangeError);
+  const proof = await inspectNativeClubEntry({execute:async(query,values)=>{
+    if(query.sql.startsWith("EXPLAIN")) return [[{table:"native",type:"ref",key:"existing",rows:1}]];
+    if(query.sql.startsWith("SELECT n.club FROM")) return [[{club:"007"}]];
+    return pool.execute(query,values);
+  }});
+  assert.equal(proof.writesExecuted,false); assert.equal(proof.complete,true); assert.equal(proof.counts.inscriptions,2);
+  assert.ok(!JSON.stringify(proof).includes("FAUVEAU")); assert.ok(!JSON.stringify(proof).includes("Antoine"));
+  let refusedCalls=0;
+  const refused = await inspectNativeClubEntry({execute:async()=>{refusedCalls++;return [[{table:"native",type:"ALL",key:null,rows:100}]];}});
+  assert.equal(refused.complete,false); assert.deepEqual(refused.errors,[{queryIndex:1,reason:"non-indexed"}]);
+  assert.equal(refusedCalls,1,"non-indexed plan stops before any sporting read");
+  console.log("Dossiers NAP : perimetre avant identites, lectures groupees bornees, doublons et temps bruts preserves.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
