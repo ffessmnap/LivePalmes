@@ -11,6 +11,19 @@ function fixturePack() {
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+const timePack=fixturePack();timePack.nativeParameters.saisie=1;timePack.nativeSnapshot.parameters.saisie=1;
+const timeInput={...input({missingEntryTimeMode:"manual"}),expectedFingerprint:fingerprint(timePack)};
+const modePlan=planCompetitionChange(timePack,timeInput,now);
+assert.deepEqual(modePlan.operations.map(o=>o.table),["livepalmes_competition_options"]);
+assert.equal(modePlan.operations[0].after.missing_time_mode,"manual");
+assert.equal(modePlan.operations[0].after.entry_closed,null,"setting a time choice must not close the competition");
+assert.equal(timePack.nativeSnapshot.parameters.saisie,1);
+assert.throws(()=>planCompetitionChange(pack,input({missingEntryTimeMode:"manual"}),now),/saisie/);
+for (const patch of [{qualif:1},{saisie:-1}]) {
+  const blocked={...timePack,nativeParameters:{...timePack.nativeParameters,...patch}};
+  assert.throws(()=>planCompetitionChange(blocked,{...timeInput,expectedFingerprint:fingerprint(blocked)},now),/qualifications/);
+}
+assert.throws(()=>planCompetitionChange(timePack,{...timeInput,patch:{missingEntryTimeMode:"invented"}},now),/invalide/);
 const close=planCompetitionChange(pack,input({entryStatus:"closed"}),now);
 assert.deepEqual(close.operations.map(o=>o.table),["compet_parametres","livepalmes_competition_options"]);
 assert.equal(close.operations[0].after.actif,0);

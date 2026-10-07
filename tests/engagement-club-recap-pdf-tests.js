@@ -107,8 +107,13 @@ async function main() {
   assert.equal(context.engagementPdfFeeTotal(legacy, competition), 93);
   assert.equal(context.engagementPdfSwimmersWithoutIndividualRows({}, competition).length, 0);
 
+  const nativeEntry={...entry,source:"nap",swimmers:[swimmer("native-1","Example","Native","M",[{eventCode:"50SF",entryTime:"30.00"},{eventCode:"OLDCOURSE",entryTime:"599999"}])]};
+  const nativeMatrix=context.engagementPdfIndividualMatrix(nativeEntry,competition,"M","Nageur");
+  assert.ok(nativeMatrix.columns.some(column=>column.eventCode==="OLDCOURSE"),"saved native courses absent from the program remain visible");
+  assert.equal(context.engagementPdfEntryStats(nativeEntry).relayCount,1);
+
   // The layout version invalidates old cached PDFs even when entries are unchanged.
-  const oldHash = vm.runInContext(`(${extract("engagementClubRecapPdfSourceHash").replace("    registeredSwimmersLayoutVersion: 1,\n", "")})`, context);
+  const oldHash = vm.runInContext(`(${extract("engagementClubRecapPdfSourceHash").replace(/    registeredSwimmersLayoutVersion: 1,\r?\n/, "")})`, context);
   assert.notEqual(context.engagementClubRecapPdfSourceHash(competition, entry), oldHash(competition, entry));
   textCalls.length = 0;
   const many = { swimmers: Array.from({ length: 70 }, (_, i) => swimmer(`p${i}`, "Camille", `Exemple ${i}`, "F")), relays: [] };
