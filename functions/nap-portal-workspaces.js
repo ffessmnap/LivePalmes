@@ -70,7 +70,7 @@ function entryItem(pack, context, categoryForBirthDate) {
   const swimmers = pack.inscriptions.map(inscription => {
     const person = identities.get(String(inscription.nageur));
     if (!person) throw new TypeError("Inscription NAP sans fiche nageur.");
-    return { ...person, licenseNumber: "", category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
+    return { ...person, swimmerIndexId: String(person.id), licenseNumber: "", category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
       individualEntries: pack.individual.filter(row => String(row.engagement) === String(inscription.id)).map(row => ({
         nativeEntryId: String(row.id), eventCode: code(row.course), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
   });

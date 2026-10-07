@@ -22,6 +22,12 @@ assert.deepEqual(Array.from(genderSandbox.engagementProgramGenderModesForEvent("
 genderSandbox.selectedEngagementCompetition.napSource=false;
 assert.equal(genderSandbox.engagementProgramGenderModesForEvent("50BI").length,3);
 (async()=>{
+  sandbox.selectedEngagementCompetition.nativeParameters={saisie:1,qualif:0};
+  fields.missingEntryTimeMode={value:""};
+  sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();
+  assert.deepEqual(JSON.parse(JSON.stringify(sandbox.nativeCompetitionPatchFromForm())),{},"An unconfigured native choice must not silently become manual");
+  fields.missingEntryTimeMode.value="manual";
+  assert.deepEqual(JSON.parse(JSON.stringify(sandbox.nativeCompetitionPatchFromForm())),{missingEntryTimeMode:"manual"},"The explicit manual choice must persist even when it was the old UI default");
   sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();
   assert.equal(sandbox.nativeCompetitionEditBaseline.entryDeadlineLocal,"2026-10-07 21:59:17");
   assert.deepEqual(JSON.parse(JSON.stringify(sandbox.nativeCompetitionPatchFromForm())),{});
