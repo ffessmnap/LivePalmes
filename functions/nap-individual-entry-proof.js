@@ -18,7 +18,7 @@ async function inspectStatements(connection,pack,readCompetition=readNativeCompe
     const [raw]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
     plans.push({kind:statement.kind,plan:raw.map(({select_type,table,type,key,rows,Extra})=>({select_type,table,type,key,rows,Extra}))});
   }
-  const indexed=plans.every(item=>item.plan.length && item.plan.every(row=>item.kind==="insert" && row.select_type==="INSERT" && row.table==="engagements" || String(row.table).startsWith("<") || ["const","system"].includes(row.type) || row.rows!=null && Number(row.rows)===0 || /^(?:Impossible WHERE|no matching row)/i.test(String(row.Extra||"")) || row.type!=="ALL" && Boolean(row.key)));
+  const indexed=plans.every(item=>item.plan.length && item.plan.every(row=>item.kind==="insert" && row.select_type==="INSERT" && row.table==="engagements" || String(row.table).startsWith("<") || ["const","system"].includes(row.type) || row.rows!=null && Number(row.rows)===0 || row.table==null && row.type==null && /^(?:Impossible WHERE(?: noticed after reading const tables)?|no matching row in const table|No tables used)$/i.test(String(row.Extra||"")) || row.type!=="ALL" && Boolean(row.key)));
   return {available:true,indexed,plans,explainCount:3,writesExecuted:false};
 }
 module.exports={inspectStatements};
