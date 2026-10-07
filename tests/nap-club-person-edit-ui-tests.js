@@ -31,6 +31,9 @@ for(const [startName,endName] of [["  function openEngagementClubPersonForm(","\
   reply={source:"nap",person:{...item,id:"nap-official-99",roles:{teamLeader:true,official:false},licenseNumber:""}};await sandbox.saveEngagementClubPerson();
   assert.deepEqual(calls.at(-1).input,{creationId,person:{firstName:"Nouveau",lastName:"Chef",birthDate:"1980-01-03",roles:{teamLeader:true,official:false}}});assert.equal(sandbox.engagementClubPeople[0].id,"nap-official-99");
   assert.equal(elements.engagementsClubPersonForm.hidden,true);
+  sandbox.openEngagementClubPersonForm(null);elements.engagementsClubPersonId.value="";
+  let reject;reply=()=>new Promise((resolve,fail)=>{reject=fail;});const oldCreation=sandbox.saveEngagementClubPerson();await Promise.resolve();sandbox.engagementClubPeopleRequestVersion++;
+  elements.engagementsClubPersonMessage.textContent="Nouveau club";reject(Error("Ancien club"));await oldCreation;assert.equal(elements.engagementsClubPersonMessage.textContent,"Nouveau club");
   let restored=false,shown=false,closed=false;
   const home={insertBefore:(form,next)=>{assert.equal(form,elements.engagementsClubPersonForm);assert.equal(next,"next");restored=true;}};
   elements.engagementsClubPersonForm.parentNode=home;elements.engagementsClubPersonForm.nextSibling="next";
