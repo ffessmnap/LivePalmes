@@ -1,6 +1,11 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+const draftContext={};vm.createContext(draftContext);
+vm.runInContext(source.slice(source.indexOf("  function engagementClubPersistedRelayDraft("),source.indexOf("  function renderEngagementClubRelays(")),draftContext);
+assert.equal(draftContext.engagementClubPersistedRelayDraft({category:"S",entryTime:"03:20.00",entryTimeValue:20000},true).manualEntryTime,"03:20.00");
+assert.equal(draftContext.engagementClubPersistedRelayDraft({category:"NAP-26",entryTime:"00:03.15",nativeTime:"000315",entryTimeValue:315},true).manualEntryTime,"");
+assert.equal(draftContext.engagementClubPersistedRelayDraft({category:"S",manualEntryTime:"03:15.00",entryTime:"03:20.00"}).manualEntryTime,"03:15.00");
 const start=source.indexOf("  async function saveEngagementClubRelays("),end=source.indexOf("  async function downloadEngagementClubSummaryPdf",start);
 let fail=true,calls=[];
 const relay={relayId:"new-client-id",eventCode:"4X100BI",category:"S",genderMode:"mixed",manualEntryTime:"3:15.00",memberIds:[]};
