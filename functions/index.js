@@ -10578,7 +10578,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1 }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeSwimmerSelectionEditable: pack.leaders.length === 1 && Number(competition.nativeParameters?.qualif||0)===0 && !competition.qualifications?.enabled }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
   }
@@ -16253,8 +16253,46 @@ exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (re
   };
 });
 
-exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (request) => {
+async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
+  try {
+    if(!Array.isArray(rawChanges) || !rawChanges.length || rawChanges.length>50) throw new TypeError("Selection de 1 a 50 nageurs requise.");
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const result=await require("./nap-swimmer-entry-change").saveNativeSwimmerSelection(pool,{
+      competitionId:request.data?.competitionId,clubId:String(context.clubId),actorUid:context.uid,
+      expectedFingerprint:request.data?.expectedFingerprint,mutationId:request.data?.mutationId,
+      changes:rawChanges.map(row=>({swimmerId:row?.swimmerIndexId || row?.swimmer?.swimmerIndexId,selected:row?.selected}))
+    },{
+      authorize:({clubId})=>{
+        if(String(clubId)!==String(context.clubId)) throw new HttpsError("permission-denied","Dossier hors du club autorise.");
+        // Open/deadline are checked by the executor, permitting confirmation of
+        // an already completed operation after closure without another write.
+      },
+      validate:({competition,pack,plan})=>{
+        if(Number(competition.nativeParameters.qualif||0)!==0 || Number(competition.options?.qualifications_enabled||0)!==0) throw new TypeError("Le controle des qualifications reste a raccorder pour modifier ce dossier.");
+        const samePerson=(person,row)=>cleanText(person.firstName).toLocaleLowerCase("fr-FR")===cleanText(row.prenom).toLocaleLowerCase("fr-FR") && cleanText(person.lastName).toLocaleLowerCase("fr-FR")===cleanText(row.nom).toLocaleLowerCase("fr-FR") && (!cleanIsoDate(row.date) || cleanIsoDate(person.birthDate)===cleanIsoDate(row.date));
+        for(const person of plan.additions) {
+          if(!person.firstName || !person.lastName || !cleanIsoDate(person.birthDate) || !["F","M"].includes(person.sex)) throw new TypeError("Completez l'identite NAP du nageur avant l'engagement.");
+          if(pack.leaders.some(row=>samePerson(person,row))) throw new TypeError("Une meme personne ne peut pas etre nageur et chef d'equipe sur cette competition.");
+          if(pack.officials.some(row=>samePerson(person,row))) throw new TypeError("Une meme personne ne peut pas etre nageur et officiel sur cette competition.");
+        }
+      },
+      audit:{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-selection-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-selection-${operation}-before`).create({action:"nap.swimmerSelection.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.swimmerSelectionsSaved",context.uid,target,operation)
+      }
+    });
+    const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:require("./nap-portal-workspaces").entryItem(result.nativeEntry,context,birthDate=>ageCategoryFromDates(competition.date,birthDate)),sqlBudget:{queriesMax:42,writesMax:4}};
+  } catch(error) {
+    if(error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
+  }
+}
+
+exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") return saveNativeClubSwimmerSelections(context,request,[{swimmerIndexId:request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId,selected:request.data?.selected}]);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const swimmerIndexId = cleanText(request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId).slice(0, 80);
   const selected = request.data?.selected === true;
@@ -16367,9 +16405,10 @@ exports.saveEngagementClubSwimmerSelection = onCall(CALLABLE_OPTIONS, async (req
   };
 });
 
-exports.saveEngagementClubSwimmerSelections = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") return saveNativeClubSwimmerSelections(context,request,request.data?.changes);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const rawChanges = Array.isArray(request.data?.changes) ? request.data.changes.slice(0, 50) : [];
   if (!competitionId || !rawChanges.length) {

@@ -1046,7 +1046,7 @@ assert.ok(portal.includes("Programme en préparation."));
 assert.ok(portal.includes("function confirmOpenedCompetitionSensitiveChanges"));
 assert.ok(portal.includes("const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false"));
 assert.ok(functions.includes("const ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE = false"));
-assert.ok(portal.includes("preserveLocalSwimmerSelections: true"));
+assert.ok(portal.includes("preserveLocalSwimmerSelections: !nativeSelection"));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamPersonResults"'));
 assert.ok(portalHtml.includes('id="adminEngagementsClubTeamPersonCreate"'));
 assert.ok(portalHtml.includes('class="admin-engagements-club-team-summary"'));
