@@ -46,7 +46,7 @@ function fixture() {
     if(sql.includes("nageursengager")) return [[{club:native.club}]];
     return [[sql.includes("chefsdequipe")?{...native,compet:5140,pourclub:"0"}:native]];
   }};
-  const proof=await inspectStatusWritePlans(readonly);assert.equal(proof.complete,true);assert.equal(proof.writesExecuted,false);assert.equal(plans,3);
+  const proof=await inspectStatusWritePlans(readonly);assert.equal(proof.complete,true);assert.equal(proof.writesExecuted,false);assert.equal(plans,4);
   assert.ok(!JSON.stringify(proof).includes(native.nom));scan=true;assert.equal((await inspectStatusWritePlans(readonly)).complete,false);
   console.log("Statut NAP : droits avant lecture, fiche perimee, sauvegarde avant ecriture, CAS natif, aucun engagement modifie et reprise apres interruption verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -12087,6 +12087,16 @@ exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
   const context = await engagementClubAccessContext(request);
   if(ENVIRONMENT.projectId === "livepalmes-test") {
     try {
+      if (!cleanText(request.data?.personId)) {
+        return await require("./nap-club-person-create").createNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+          clubId:String(context.clubId), actorUid:context.uid, creationId:request.data?.creationId, person:request.data?.person
+        }, {
+          read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+          prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).create({action:"nap.person.create.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+          checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).update({target}),
+          complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.created",context.uid,target,operation)
+        },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
+      }
       return await require("./nap-club-person-edit").editNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
         clubId:String(context.clubId),actorUid:context.uid,personId:request.data?.personId,
         expectedFingerprint:request.data?.expectedFingerprint,patch:request.data?.patch
