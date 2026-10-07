@@ -1015,6 +1015,7 @@
   const engagementNationalAuditClubs = new Map();
   const engagementNationalAuditCompetitions = new Map();
   const engagementNationalAuditPeople = new Map();
+  let engagementClubPersonSaving = false;
   let engagementClubPersonFormHome = null;
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
@@ -1568,6 +1569,8 @@
     engagementClubPeopleCursor = null;
     engagementClubPeopleHasMore = false;
     engagementClubPeopleRequestVersion += 1;
+    engagementClubPersonSaving=false;
+    if(elements.engagementsClubPersonForm) {elements.engagementsClubPersonForm.inert=false;const button=elements.engagementsClubPersonForm.querySelector('button[type="submit"]');if(button) button.disabled=false;}
     closeEngagementClubPersonDialog();
     elements.engagementsClubPersonForm?.reset();
     if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden=true;
@@ -14677,7 +14680,7 @@
   }
 
   function openNativeCompetitionPersonCreation() {
-    if(global.LivePalmesEnvironment?.isTest!==true || !canUse("engagements.club.manage")) return;
+    if(global.LivePalmesEnvironment?.isTest!==true || engagementClubPersonSaving || !canUse("engagements.club.manage")) return;
     const form=elements.engagementsClubPersonForm,dialog=elements.engagementsClubPersonDialog;
     if(!form || !dialog || engagementClubPersonFormHome) return;
     openEngagementClubPersonForm();
@@ -14702,7 +14705,7 @@
 
   function openEngagementClubPersonForm(person = null) {
     const native = global.LivePalmesEnvironment?.isTest === true;
-    if(native && person && !person.nativeIdentityEditable) return;
+    if(native && (engagementClubPersonSaving || person && !person.nativeIdentityEditable)) return;
     resetEngagementClubPersonForm();
     if (!native && !engagementClubSwimmersLoaded) void loadEngagementClubSwimmers({ silent: true });
     if (person) {
@@ -14772,7 +14775,7 @@
   function renderEngagementClubPeople() {
     if (!elements.engagementsClubPeopleList) return;
     const nativeReadOnly = global.LivePalmesEnvironment?.isTest === true;
-    if(elements.engagementsClubPeopleAddButton) elements.engagementsClubPeopleAddButton.disabled = nativeReadOnly && (!engagementClubPeopleLoaded || engagementClubPeopleLoading);
+    if(elements.engagementsClubPeopleAddButton) elements.engagementsClubPeopleAddButton.disabled = nativeReadOnly && (!engagementClubPeopleLoaded || engagementClubPeopleLoading || engagementClubPersonSaving);
     if(elements.engagementsClubPeopleLoadMore) {
       elements.engagementsClubPeopleLoadMore.hidden = !engagementClubPeopleHasMore;
       elements.engagementsClubPeopleLoadMore.disabled = engagementClubPeopleLoading;
@@ -14813,7 +14816,7 @@
             <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
             <span role="cell">
               <span class="admin-engagements-request-actions">
-                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly && !person.nativeIdentityEditable ? 'disabled title="Cette déclaration se corrige dans sa compétition"' : ""}>Modifier</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly && !person.nativeIdentityEditable ? 'disabled title="Cette déclaration se corrige dans sa compétition"' : nativeReadOnly && engagementClubPersonSaving ? 'disabled' : ""}>Modifier</button>
                 <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${person.statusSaving || nativeReadOnly && !person.nativeStatusEditable ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
               </span>
             </span>
@@ -14879,6 +14882,7 @@
     event?.preventDefault?.();
     if (!canUse("engagements.club.manage")) return;
     const native=global.LivePalmesEnvironment?.isTest === true;
+    if(native && engagementClubPersonSaving) return;
     const requestVersion=engagementClubPeopleRequestVersion;
     if (!native && !elements.engagementsClubPersonRoleTeamLeader?.checked && !elements.engagementsClubPersonRoleOfficial?.checked) {
       if (elements.engagementsClubPersonMessage) {
@@ -14892,6 +14896,7 @@
       return;
     }
     const button = elements.engagementsClubPersonForm?.querySelector('button[type="submit"]');
+    if(native) {engagementClubPersonSaving=true;if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.inert=true;renderEngagementClubPeople();}
     if (button) button.disabled = true;
     if (elements.engagementsClubPersonMessage) {
       elements.engagementsClubPersonMessage.textContent = "Enregistrement...";
@@ -14971,7 +14976,10 @@
         elements.engagementsClubPersonMessage.dataset.tone = "error";
       }
     } finally {
-      if (button) button.disabled = false;
+      if(!native || requestVersion===engagementClubPeopleRequestVersion) {
+        if (button) button.disabled = false;
+        if(native) {engagementClubPersonSaving=false;if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.inert=false;renderEngagementClubPeople();}
+      }
     }
   }
 
@@ -17218,8 +17226,9 @@
     elements.engagementsClubPersonLastName?.addEventListener("input", (event) => {
       event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
     });
-    elements.engagementsClubPersonDialog?.addEventListener("cancel", event=>{event.preventDefault();closeEngagementClubPersonDialog();resetEngagementClubPersonForm();});
+    elements.engagementsClubPersonDialog?.addEventListener("cancel", event=>{event.preventDefault();if(engagementClubPersonSaving) return;closeEngagementClubPersonDialog();resetEngagementClubPersonForm();});
     elements.engagementsClubPersonCancel?.addEventListener("click", () => {
+      if(engagementClubPersonSaving) return;
       closeEngagementClubPersonDialog();
       resetEngagementClubPersonForm();
       if (elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden = true;
