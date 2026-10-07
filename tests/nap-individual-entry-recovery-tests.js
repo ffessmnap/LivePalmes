@@ -1,0 +1,15 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {remaining}=require("../functions/nap-individual-entry-recovery");
+const old={id:20,engagement:11,course:"100SF",tps:"14200"},remove={id:21,engagement:11,course:"50SF",tps:"3000"};
+const addition={engagement:11,course:"200SF",tps:"30000"};
+const plan={competitionId:5140,clubId:"106",plans:[{swimmerId:1,inscriptionId:11,before:[old,remove],updates:[{before:old,tps:"14100"}],removals:[remove],additions:[addition]}]};
+assert.equal(remaining(plan,[old,remove]).complete,false);
+let result=remaining(plan,[old]);assert.equal(result.plans[0].removals.length,0);assert.equal(result.plans[0].updates.length,1);
+result=remaining(plan,[{...old,tps:"14100"}]);assert.equal(result.plans[0].updates.length,0);
+const finished=[{...old,tps:"14100"},{id:22,...addition}];
+assert.equal(remaining(plan,finished).complete,true);
+assert.equal(remaining(plan,[...finished,{id:100,engagement:12,course:"50SF",tps:"3500"}]).complete,true);
+for(const rows of [[],[{...old,tps:"14000"}],[...finished,{id:23,...addition}],[...finished,{id:23,engagement:11,course:"400SF",tps:"60000"}]]) assert.throws(()=>remaining(plan,rows));
+assert.throws(()=>remaining(plan,[...finished,{...old}]));
+console.log("NAP individual entry recovery tests passed");
