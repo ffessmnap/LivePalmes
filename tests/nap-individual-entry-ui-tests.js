@@ -1,6 +1,13 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
+const timeLabels={selectedEngagementCompetition:{napSource:true,nativeParameters:{saisie:0}},formatEngagementEntryTimeInput:value=>value};
+vm.createContext(timeLabels);vm.runInContext(source.slice(source.indexOf("  function engagementEntryTimeDisplayLabel("),source.indexOf("  function engagementClubSwimmerEventTimesCacheKey(")),timeLabels);
+const noTime={nativeTime:"599999",entryTime:"599999",entryTimeMode:"native"};
+assert.equal(timeLabels.engagementEntryTimeDisplayLabel(noTime),"Sans temps connu");assert.equal(noTime.nativeTime,"599999");
+assert.equal(timeLabels.engagementEntryTimeDisplayLabel({entryTimeMode:"default595999",entryTime:"59:59.99"}),"Sans temps connu");
+timeLabels.selectedEngagementCompetition={};
+assert.equal(timeLabels.engagementEntryTimeDisplayLabel({entryTimeMode:"default595999",entryTime:"59:59.99"}),"59:59.99","legacy presentation is preserved");
 const locks={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeIndividualEntriesEditable:true,entryStatus:"open",entryDeadlineAt:"2099-01-01T00:00:00Z"},global:{LivePalmesEnvironment:{isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
 vm.createContext(locks);vm.runInContext(source.slice(source.indexOf("  function engagementClubWriteLockReason("),source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS")),locks);
 assert.equal(locks.engagementClubIndividualEntriesLockReason(),"");assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("entries"),false);
