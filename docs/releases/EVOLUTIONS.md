@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Publication TEST : consultation des Functions — 7 octobre 2026
+
+- Publications DTN 37654083160 et 37655600874 interrompues par « Failed to list functions for livepalmes-test » : premiere apres huit lots controles, seconde pendant la simulation. Hosting non publie. Selection automatique large de 139 traitements conservee, aucune selection reduite manuellement, aucun envoi de mail ni operation sportive invoquee.
+- Reprise bornee du meme lot TEST uniquement pour ce message exact, avant televersement ou mutation annoncee par la CLI : trois essais maximum, attentes de 20 et 40 secondes. Autres erreurs et PROD s'arretent sans reprise ; la verification de chaque lot et les exclusions restent intactes. Tests hors connexion de ces protections prepares ; nouvelle publication et recette DTN encore requises.
+
 ### DTN : preparation d'une source directe NAP — 7 octobre 2026
 
 - #174 integree en d55f5716 ; CI 37650427519 et outils prives 37650852697 reussis. Verification du selecteur avant publication commune : contrat natif aligne sur le client existant (sources et curseur terminal vide), pagination de 50 avec detection de la suivante, correspondance unique Limoges affichee en conservant le choix deja enregistre. Les liens dependants de categories ne sont pas fusionnes en une competition. Tests de pagination, conservation du choix et absence de mutation du parametrage passes hors connexion ; nouveau controle prive puis publication commune encore requis.
