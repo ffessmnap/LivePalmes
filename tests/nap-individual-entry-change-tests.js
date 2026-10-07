@@ -8,6 +8,7 @@ function fixture(options={}) {
   let individual=[{id:20,engagement:11,course:"100SF",tps:"14200"},{id:21,engagement:11,course:"50SF",tps:"3000"}];
   const pack={source:"nap",competitionId:"5140",clubId:"106",swimmers:[{id:"1",clubId:"106"}],inscriptions:[{id:11,nageur:1,compet:5140}],individual,leaders:[{id:30,compet:5140,nom:"TEST",prenom:"Exemple",date:"1990-01-01",club:"106",pourclub:""}],relays:[],members:[],officials:[],options:null};
   const competition={event:{entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},nativeSnapshot:{competition:Object.fromEntries(SPECS.competitions.columns.map(key=>[key,key==="id"?5140:null])),parameters:Object.fromEntries(SPECS.compet_parametres.columns.map(key=>[key,key==="id"||key==="compet"?5140:key==="actif"?1:null]))},options:null};
+  if(options.otherSwimmer) {pack.swimmers.push({id:"2",clubId:"106"});pack.inscriptions.push({id:12,nageur:2,compet:5140});individual.push({id:23,engagement:12,course:"400SF",tps:"060000"});}
   const calls=[];
   const connection={release:()=>calls.push("release"),destroy:()=>calls.push("destroy"),execute:async(query,values)=>{
     assert.equal(allowed,true,"authorization precedes SQL");calls.push(query.sql);
@@ -48,6 +49,9 @@ function fixture(options={}) {
   assert.ok(await conflict.services.audit.read(),"the before-image survives a partial MyISAM write");
   let f=fixture();let result=await save(f.pool,f.input,f.services);assert.equal(result.writesExecuted,3);assert.equal(f.stats().complete,1);assert.equal(f.stats().history,1);assert.equal(f.stats().individual.length,2);assert.equal(result.nativeEntry.individual.find(row=>row.id===20).tps,"14100");assert.equal(f.calls.at(-1),"release");
   result=await save(f.pool,f.input,f.services);assert.equal(result.writesExecuted,0);assert.equal(f.stats().writeCount,3);assert.equal(f.stats().history,1);
+  const other=fixture({otherSwimmer:true}),whole=await save(other.pool,other.input,other.services);
+  assert.equal(whole.nativeEntry.individual.find(row=>row.engagement===12).tps,"060000","final response retains unaffected swimmers");
+  assert.equal(fingerprint(whole.nativeEntry),fingerprint(await other.services.readers.entry()),"returned fingerprint matches the normal native reader");
   for(const step of [1,2,3]) {
     f=fixture();f.setFail(step);await assert.rejects(()=>save(f.pool,f.input,f.services),/Interrupted/);f.setFail(0);
     await save(f.pool,f.input,f.services);assert.equal(f.stats().writeCount,3);assert.equal(f.stats().history,1);assert.equal(f.stats().individual.filter(row=>row.course==="200SF").length,1);

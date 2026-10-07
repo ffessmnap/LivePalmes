@@ -1,5 +1,5 @@
 "use strict";
-// Not registered yet. Native writes use existing tables; Firestore is only
+// Native writes use existing tables; Firestore is only
 // the operation journal. Authorization and sporting resolution stay server-side.
 const {createHash}=require("node:crypto");
 const {positiveId}=require("./nap-direct-calendar");
@@ -37,7 +37,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
       // Completion can be confirmed after closure; no remaining write may run.
       if(remaining(target.plan,pack.individual).complete) {
         await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
-        return {ok:true,source:"nap",operation,recovered:true,writesExecuted:0,nativeEntry:pack};
+        return {ok:true,source:"nap",operation,recovered:true,writesExecuted:0,competition,nativeEntry:pack};
       }
       if(target.competitionHash!==unchangedCompetition(competition)) throw new TypeError("Les regles de la competition ont change. Verification requise.");
     } else {
@@ -50,12 +50,13 @@ async function saveNativeIndividualEntries(pool,input,services) {
       const ids=new Set(input.changes.map(row=>positiveId(row?.swimmerId))),people=pack.swimmers.filter(row=>ids.has(Number(row.id)));
       if(ids.size!==input.changes.length || people.length!==ids.size) throw new TypeError("Nageurs hors du dossier autorise ou dupliques.");
       const histories=people.length ? await readers.history(connection,people) : new Map();
-      const changes=await services.resolve({competition,pack,changes:input.changes,histories});
+      const changes=await services.resolve({connection,competition,pack,changes:input.changes,histories});
       if(!Array.isArray(changes) || changes.length!==ids.size || new Set(changes.map(row=>Number(row.swimmerId))).size!==ids.size || changes.some(row=>!ids.has(Number(row.swimmerId)))) throw new TypeError("Resolution des courses incomplete.");
       const plan=planIndividualEntries(pack,changes);
+      if(pack.individual.length+plan.plans.reduce((sum,row)=>sum+row.additions.length-row.removals.length,0)>5000) throw new RangeError("Dossier NAP trop volumineux : pagination requise.");
       target={kind:"native-individual-entry-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,payloadHash,expectedFingerprint:input.expectedFingerprint,dossierHash:unchangedDossier(pack),competitionHash:unchangedCompetition(competition),plan,planHash:hash(plan)};
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse pour ce lot. Selectionnez moins de nageurs.");
-      if(remaining(plan,pack.individual).complete) return {ok:true,source:"nap",operation,writesExecuted:0,nativeEntry:pack};
+      if(remaining(plan,pack.individual).complete) return {ok:true,source:"nap",operation,writesExecuted:0,competition,nativeEntry:pack};
     }
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='engagements' LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier avant enregistrement.");
     const pending=remaining(target.plan,pack.individual),authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options,nativeLeader:pack.leaders[0]};
@@ -71,12 +72,14 @@ async function saveNativeIndividualEntries(pool,input,services) {
       if(Number(result.affectedRows)!==statement.expectedRows) throw new TypeError("Le dossier a change pendant l'enregistrement. Reprenez la meme modification ; la sauvegarde est conservee.");
       writes++;
     }
-    const links=target.plan.plans.map(row=>row.inscriptionId);
+    // Reuse the one final read for the entire bounded dossier. Its SQL order
+    // must match the normal reader so the returned fingerprint is reusable.
+    const links=pack.inscriptions.map(row=>row.id);
     const current=links.length ? await query(`SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN (${links.map(()=>"?").join(",")}) ORDER BY engagement,course,id LIMIT 5001`,links) : [];
     if(!remaining(target.plan,current).complete) throw new Error("Enregistrement interrompu. Reprenez la meme modification ; la sauvegarde est conservee.");
+    if(current.length>5000) throw new RangeError("Dossier NAP trop volumineux : pagination requise.");
     await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
-    const changedLinks=new Set(links);
-    return {ok:true,source:"nap",operation,writesExecuted:writes,nativeEntry:{...pack,readAt:new Date().toISOString(),individual:[...pack.individual.filter(row=>!changedLinks.has(Number(row.engagement))),...current]}};
+    return {ok:true,source:"nap",operation,writesExecuted:writes,competition,nativeEntry:{...pack,readAt:new Date().toISOString(),individual:current}};
   } finally {
     try {if(locked && Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1) safe=false;}catch {safe=false;}
     if(safe) connection.release();else connection.destroy();
