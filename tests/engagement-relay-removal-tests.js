@@ -22,7 +22,7 @@ async function main() {
   let reads = 0, writes = 0, closed = false;
   const entryRef = { get: async () => { reads++; return { exists: true, data: () => structuredClone(data) }; } };
   const competitionRef = { get: async () => { reads++; return { exists: true, ref: competitionRef, data: () => ({}) }; } };
-  Object.assign(context, { exports: {}, CALLABLE_OPTIONS: {}, onCall: (options, fn) => fn,
+  Object.assign(context, { exports: {}, ENVIRONMENT: {projectId:"livepalmes"}, CALLABLE_OPTIONS: {}, onCall: (options, fn) => fn,
     engagementClubAccessContext: async () => ({ clubId: "club", uid: "user" }), cleanText: value => String(value || ""),
     engagementClubEntryId: () => "entry", engagementTeamLeaderComplete: () => true,
     assertEngagementClubWriteOpen: () => { if (closed) throw new Error("closed"); }, HttpsError: class extends Error { constructor(code, message) { super(message); } },
@@ -41,9 +41,9 @@ async function main() {
   assert.equal(writes, 1);
   const portal = fs.readFileSync(require("node:path").join(__dirname, "../assets/livepalmes-admin-portal.js"), "utf8");
   let payload;
-  const ui = { selectedEngagementCompetitionId: "meet", selectedEngagementClubEntry: {}, engagementClubRelaysDraft: [],
+  const ui = { global:{LivePalmesEnvironment:{isTest:false}}, selectedEngagementCompetition:{}, selectedEngagementCompetitionId: "meet", selectedEngagementClubEntry: {}, engagementClubRelaysDraft: [],
     elements: { engagementsClubRelaysMessage: { dataset: {} } }, canUse: () => true,
-    showEngagementClubWriteLock: () => false, engagementClubTeamComplete: () => true,
+    engagementClubRelaysLockReason: () => "", engagementClubTeamComplete: () => true,
     selectedEngagementClubRelayRowsFromDom: () => [{ relayId: "keep", memberIds: ["gone"] }],
     engagementClubRelayValidationIssues: () => { throw new Error("La suppression ne doit pas valider la composition."); },
     setEngagementSaveState: () => {}, renderEngagementClubEntry: () => {},
