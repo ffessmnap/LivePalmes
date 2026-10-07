@@ -3,7 +3,7 @@
   const LABELS = { france: "Championnats de France", edf: "Équipes de France", listing: "Mise en liste", settings: "Paramètres DTN" };
   const HASHES = { "#espace-dtn-france": "france", "#espace-dtn-edf": "edf", "#espace-dtn-listes": "listing", "#espace-dtn-parametres": "settings" };
   const state = { ready: false, id: "", device: "france", profile: "", sex: "F", club: "", course: "", page: 0, near: false, percent: 2, selectedCourse: null, performance: "", search: "", preferences: {}, editorDevice: "france", editorProfile: "C", dirty: false, views: new Map(), sources: new Map(), token: 0 };
-  let el, model, booting, service, uid = "";
+  let el, model, booting, service, uid = "", recalculating = false;
   const clone = (v) => JSON.parse(JSON.stringify(v));
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const button = (action, label, extra = "", className = "ghost-button") => `<button type="button" class="${className}" data-action="${action}" ${extra}>${esc(label)}</button>`;
@@ -24,7 +24,8 @@
     if (uid && uid !== user.uid) { state.views.clear(); state.sources.clear(); throw new Error("Le compte a changé. Rechargez le portail."); }
     uid = user.uid;
     if (!service) { service = firebase.app().functions(config?.firebaseFunctionsRegion || "europe-west1"); service = config?.configureFunctionsService?.(service) || service; }
-    return (await service.httpsCallable(name)(data)).data;
+    const options = global.LivePalmesEnvironment?.isTest && name === "getDtnSeasonOverview" && data.rebuild === true ? { timeout: 540000 } : undefined;
+    return (await service.httpsCallable(name, options)(data)).data;
   }
   function message(value, error = false) { el.status.textContent = value; el.status.dataset.tone = error ? "error" : ""; }
   function resetEditor() { state.editor = clone(season()); state.dirty = false; }
@@ -280,12 +281,19 @@
     await refreshCatalog(); state.views.clear(); message("Saison activée."); render();
   }
   async function rebuild() {
+    if (recalculating) return;
     if (state.dirty) throw new Error("Enregistrez les paramètres avant le calcul.");
-    if (!global.confirm("Recalculer les trois dispositifs avec les paramètres enregistrés ? Les performances de cette saison seront analysées en arrière-plan.")) return;
-    const target = state.device === "settings" ? "france" : state.device;
-    const result = await call("getDtnSeasonOverview", { id: state.id, device: target, rebuild: true });
-    state.views.clear(); message(result.pending ? "Calcul lancé en arrière-plan. Utilisez Actualiser l’affichage pour vérifier sa fin." : result.error || "Recalcul demandé.");
-    if (state.device !== "settings") results(result);
+    if (!global.confirm("Recalculer les trois dispositifs avec les paramètres enregistrés ? Les performances de cette saison seront réanalysées.")) return;
+    const id = state.id, target = state.device === "settings" ? "france" : state.device;
+    recalculating = true;
+    message("Calcul en cours… Cela peut prendre quelques instants.");
+    try {
+      const result = await call("getDtnSeasonOverview", { id, device: target, rebuild: true });
+      state.views.clear();
+      if (result.hit) state.views.set(`${id}|${target}`, result);
+      message(result.hit ? "Calcul terminé." : result.pending ? "Calcul en cours. Utilisez Actualiser l’affichage pour vérifier sa fin." : result.error || "Recalcul demandé.");
+      if (state.id === id && state.device !== "settings") await render();
+    } finally { recalculating = false; }
   }
   async function spreadsheet() { await loadScript("performances/public/vendor/xlsx.full.min.js?v=20260722-dtn-export-1", () => global.XLSX); return global.XLSX; }
   async function template() {

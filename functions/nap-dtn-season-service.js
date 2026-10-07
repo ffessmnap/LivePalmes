@@ -1,5 +1,5 @@
 "use strict";
-// Unregistered until the private source/structure/settings checks pass.
+// Direct native service, activated only on TEST after private checks.
 // Budgets: catalog 2 SELECTs/3 settings max; overview 2 settings +1 views
 // +1 job +2 metadata reads; explicit recalculation <=402 performance SQL,
 // 3 views saved atomically. No automatic rebuild on an ordinary opening.
@@ -7,6 +7,10 @@ const {randomUUID}=require("node:crypto");
 const engine=require("./dtn-season-engine"),repo=require("./nap-dtn-season-repository");
 const {sourceStamp}=require("./nap-dtn-source-stamp"),{calculateSeason}=require("./nap-dtn-calculation");
 function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculate=calculateSeason,stamp=sourceStamp,audit=async()=>{}}) {
+  function checkConfig(value,incomplete=false) {
+    try {return engine.validateSeason(value,{incomplete});}
+    catch(error) {fail(error.message,"invalid-argument");}
+  }
   async function context(request,id=null,manage=false,executor=null) {
     await authorize(request);
     if(manage && !canManage(request)) fail("Droit de gestion DTN requis.","permission-denied");
@@ -45,13 +49,13 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
         if(!current || ![catalog.current,catalog.draft].includes(id)) fail("La saison precedente est en consultation seule.","permission-denied");
         if(request.data.revision!==current.revision) fail("La configuration a change. Rechargez avant d'enregistrer.","aborted");
         if(action==="save") {
-          season=engine.validateSeason({...request.data.season,id,year:current.year,revision:current.revision+1},{incomplete:id===catalog.draft});
+          season=checkConfig({...request.data.season,id,year:current.year,revision:current.revision+1},id===catalog.draft);
           if(Buffer.byteLength(JSON.stringify(season))>=repo.MAX_CONFIG_BYTES) fail("Configuration DTN trop volumineuse.","invalid-argument");
           const result=await repo.query(connection,"UPDATE livepalmes_dtn_saisons SET revision=?,configuration=?,updated_at=UTC_TIMESTAMP() WHERE id=? AND revision=? LIMIT 1",[season.revision,JSON.stringify(season),id,current.revision]);
           if(result.affectedRows!==1) fail("Configuration modifiee pendant l'enregistrement.","aborted");
         }else {
           if(id!==catalog.draft || request.data.confirmed!==true) fail("Confirmez l'activation de la saison brouillon.","failed-precondition");
-          season=engine.validateSeason(current);
+          season=checkConfig(current);
           const active=seasons.find(s=>s.id===catalog.current),views=await repo.readViews(connection,[id,catalog.current],{lock:true});
           for(const s of [season,active]) for(const device of engine.DEVICES) {
             if(views.find(v=>v.id===s.id && v.device===device)?.value.fingerprint!==repo.fingerprint(s,sourceVersion)) fail("Recalculez et verifiez les trois dispositifs du brouillon et de la saison active avant la bascule.","failed-precondition");
@@ -85,7 +89,7 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
   }
   async function rebuild(request,{pool,catalog,season,device}) {
     // Access remains dtn.view, exactly as the existing explicit rebuild action.
-    engine.validateSeason(season);
+    checkConfig(season);
     const connection=await pool.getConnection();let locked=false,transaction=false,operation=null;
     try {
       const [lock]=await repo.query(connection,"SELECT GET_LOCK(?,0) AS acquired",[`livepalmes_dtn_calc_${season.id}`]);

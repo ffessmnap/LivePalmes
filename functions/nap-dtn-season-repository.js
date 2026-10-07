@@ -27,7 +27,7 @@ async function readSeasons(executor,ids,{lock=false}={}) {
 }
 async function readViews(executor,ids,{lock=false}={}) {
   if(!Array.isArray(ids) || !ids.length || ids.length>2 || ids.some(id=>!validId(id))) throw new TypeError("Vues DTN invalides.");
-  const rows=await query(executor,`SELECT saison,dispositif,revision,empreinte,contenu FROM livepalmes_dtn_resultats WHERE saison IN (${ids.map(()=>"?").join(",")}) ORDER BY saison,dispositif LIMIT 6${lock?" FOR UPDATE":""}`,ids);
+  const rows=await query(executor,`SELECT saison,dispositif,revision,empreinte,contenu FROM livepalmes_dtn_resultats WHERE saison IN (${ids.map(()=>"?").join(",")}) LIMIT 6${lock?" FOR UPDATE":""}`,ids);
   return rows.map(r=>{
     if(!engine.DEVICES.includes(r.dispositif) || !ids.includes(r.saison) || typeof r.contenu!=="string" || Buffer.byteLength(r.contenu)>=900000) throw new TypeError("Vue DTN NAP incompatible.");
     const value=JSON.parse(r.contenu);
