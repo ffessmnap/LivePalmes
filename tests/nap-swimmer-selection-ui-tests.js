@@ -1,0 +1,28 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
+const start=source.indexOf("  function engagementClubWriteLockReason("),end=source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS",start);
+const context={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeSwimmerSelectionEditable:true,entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},global:{LivePalmesEnvironment:{isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
+vm.createContext(context);vm.runInContext(source.slice(start,end),context);
+assert.equal(context.engagementClubSwimmerSelectionLockReason(),"");assert.equal(context.clubEngagementTabHiddenWhenWriteLocked("swimmers"),false);
+assert.equal(context.engagementClubWriteLocked(),true,"other native writes remain locked");
+for(const tab of ["entries","relays","officials"]) assert.equal(context.clubEngagementTabHiddenWhenWriteLocked(tab),true);
+context.selectedEngagementCompetition.entryStatus="closed";assert.match(context.engagementClubSwimmerSelectionLockReason(),/fermes/);
+context.selectedEngagementCompetition.entryStatus="open";context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/raccordement/);
+context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.isTest=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/raccordement/);
+assert.match(source,/expectedFingerprint:engagementClubLastPersistedEntry\?\.napFingerprint,mutationId:global.crypto.randomUUID\(\)/);
+assert.match(source,/engagementClubNativeSelectionRetry=payload/);assert.match(source,/callFunction\("saveEngagementClubSwimmerSelections",payload\)/);
+// Execute the real autosave and retry branches: a failed response must retain
+// exactly the same UUID, fingerprint and explicit choices, not a new operation.
+const payloads=[];let attempts=0,uuids=0;
+const queueContext={selectedEngagementCompetition:{napSource:true},selectedEngagementCompetitionId:"legacy-nap-5140",engagementClubSelectionTimer:null,engagementClubSelectionCompetitionId:"legacy-nap-5140",engagementClubSelectionChanges:new Map([["1",{swimmerIndexId:"1",selected:true,swimmer:{licenseNumber:"ignored"}}]]),engagementClubNativeSelectionRetry:null,engagementClubLastPersistedEntry:{competitionId:"legacy-nap-5140",napFingerprint:"a".repeat(64)},elements:{engagementsClubSwimmersMessage:{},engagementsClubEntriesForm:{}},global:{crypto:{randomUUID:()=>{uuids++;return "11111111-1111-4111-8111-111111111111";}}},callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubSwimmerSelections");payloads.push(JSON.parse(JSON.stringify(payload)));attempts++;if(attempts===1) throw new Error("Response interrupted");return {entry:{source:"nap"}};},queueEngagementClubEntryMutation:options=>options.execute(),canUse:()=>true,engagementClubSwimmerSelectionLockReason:()=>""};
+vm.createContext(queueContext);
+vm.runInContext(source.slice(source.indexOf("  function flushEngagementClubSwimmerSelections("),source.indexOf("  function resetEngagementClubEntriesAutosave(")),queueContext);
+vm.runInContext(source.slice(source.indexOf("  async function saveEngagementClubSwimmers("),source.indexOf("  async function saveEngagementClubRelays(")),queueContext);
+(async()=>{
+  await assert.rejects(()=>queueContext.flushEngagementClubSwimmerSelections(),/interrupted/);
+  assert.ok(queueContext.engagementClubNativeSelectionRetry);
+  await queueContext.saveEngagementClubSwimmers(null);
+  assert.equal(uuids,1);assert.deepEqual(payloads[0],payloads[1]);assert.equal(Object.hasOwn(payloads[0].changes[0],"swimmer"),false);assert.equal(queueContext.engagementClubNativeSelectionRetry,null);
+  console.log("Native selection UI: scoped locks, closure and actual stable retry payload verified without network");
+})().catch(error=>{console.error(error);process.exitCode=1;});
