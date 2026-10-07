@@ -1,0 +1,27 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {officialIds,planOfficials}=require("../functions/nap-official-entry-plan");
+const {changedOptions}=require("../functions/nap-club-person-status");
+const native={id:7,nom:"OFFICIEL",prenom:"Exemple",date:"1980-01-03",club:"106"};
+const pack={competitionId:"5140",clubId:"106",officials:[],leaders:[{id:1,compet:5140,nom:"CHEF",prenom:"Autre",date:"1970-01-02",club:"106",pourclub:""}],inscriptions:[],members:[],swimmers:[]};
+const run=(p=pack,ids=["nap-official-7"],people=[{native,options:null}])=>planOfficials(p,ids,people);
+assert.deepEqual(officialIds(["nap-official-7","nap-official-7"]),[7]);
+assert.throws(()=>officialIds(["old-person"]));assert.throws(()=>officialIds(Array(81).fill("nap-official-7")));
+assert.equal(run().additions.length,1);assert.deepEqual(pack.officials,[]);
+assert.throws(()=>run({...pack,leaders:[]}));
+assert.throws(()=>run(pack,undefined,[{native:{...native,club:"999"},options:null}]));
+const options=changedOptions("officials",native,null,true,"2026-10-07 00:00:00.000000","actor");
+assert.throws(()=>run(pack,undefined,[{native,options:{...options,active:0}}]));
+assert.throws(()=>run(pack,undefined,[{native,options:{...options,role_official:0,role_team_leader:1}}]));
+const swimmer={id:"15",lastName:native.nom,firstName:native.prenom,birthDate:native.date};
+// A swimmer belonging to the club but not entered may be an official.
+assert.equal(run({...pack,swimmers:[swimmer]}).additions.length,1);
+assert.throws(()=>run({...pack,swimmers:[swimmer],inscriptions:[{nageur:15}]}));
+assert.throws(()=>run({...pack,swimmers:[swimmer],members:[{nageur:15}]}));
+assert.throws(()=>run({...pack,leaders:[{...pack.leaders[0],nom:native.nom,prenom:native.prenom,date:native.date}]}));
+const duplicate=[{id:20,compet:5140,officiel:7,club:"106"},{id:21,compet:5140,officiel:7,club:"106"}];
+const retained=run({...pack,officials:duplicate,leaders:[]},["nap-official-7"],[]);
+assert.equal(retained.before.length,2);assert.deepEqual(retained.additions,[]);assert.deepEqual(retained.removals,[]);
+assert.equal(run({...pack,officials:duplicate},[],[]).removals.length,2);
+assert.throws(()=>run({...pack,officials:[{...duplicate[0],club:"999"}]}));
+console.log("Plan officiels NAP sans ecriture : roles, club, participants reels, doublons existants conserves et demandes bornees verifies.");

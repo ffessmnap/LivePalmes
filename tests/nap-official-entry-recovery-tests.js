@@ -1,0 +1,26 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {remainingOfficials}=require("../functions/nap-official-entry-recovery");
+const retained={id:1,compet:5140,officiel:7,club:"106"};
+const removed={id:2,compet:5140,officiel:8,club:"106"};
+const added={id:9,nom:"EXEMPLE",prenom:"Personne",date:"1980-01-03",club:"106"};
+const plan={competitionId:5140,clubId:"106",before:[retained,removed],removals:[removed],additions:[added]};
+const newLink={id:3,compet:5140,officiel:9,club:"106"};
+assert.deepEqual(remainingOfficials(plan,[retained,removed]),{removals:[removed],additions:[added],complete:false});
+assert.deepEqual(remainingOfficials(plan,[retained]),{removals:[],additions:[added],complete:false});
+assert.deepEqual(remainingOfficials(plan,[retained,newLink]),{removals:[],additions:[],complete:true});
+assert.equal(remainingOfficials(plan,[retained,removed,newLink]).removals.length,1);
+assert.throws(()=>remainingOfficials(plan,[newLink]));
+assert.throws(()=>remainingOfficials(plan,[{...retained,officiel:10}]));
+assert.throws(()=>remainingOfficials(plan,[retained,newLink,{...newLink,id:4}]));
+assert.throws(()=>remainingOfficials(plan,[retained,{...newLink,officiel:10}]));
+assert.throws(()=>remainingOfficials(plan,[retained,{...newLink,club:"999"}]));
+assert.throws(()=>remainingOfficials({...plan,removals:[newLink]},[retained]));
+assert.throws(()=>remainingOfficials(plan,Array(201).fill(retained)));
+// Existing duplicate links stay distinct; a retry cannot silently merge them.
+const twin={...retained,id:4};
+const duplicates={...plan,before:[retained,twin],removals:[],additions:[]};
+assert.equal(remainingOfficials(duplicates,[retained,twin]).complete,true);
+assert.throws(()=>remainingOfficials(duplicates,[retained]));
+assert.deepEqual(plan.before,[retained,removed]);
+console.log("Reprise officiels sans ecriture : interruption avant/apres chaque lot, liens modifies ou inconnus refuses, doublons historiques conserves.");
