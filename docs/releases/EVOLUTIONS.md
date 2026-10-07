@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### DTN : preparation d'une source directe NAP — 7 octobre 2026
+
+- Antoine demande de commencer la DTN pendant l'attente de GitHub et veut que tous les calculs utilisent NAP. Competitions/engagements restent a terminer ; aucune validation de leur abandon complet de Firebase deduite.
+- Inventaire : le service saisonnier lit actuellement performances, saisons, vues, etats et travaux Firestore. Les anciennes vues utilisent aussi des fichiers sportifs exportes. Cible : conserver le moteur sportif existant, lire competitions/perfs/nageurs/clubs directement dans NAP et conserver les parametres/minima DTN dans des complements NAP. Aucun minima, age, liste ou priorite sportive change.
+- Budget prepare avant implementation : lot de 500 performances natives, 501 lignes au plus pour detecter une page suivante, une requete groupee et son EXPLAIN par lot ; 100000 lignes brutes maximum pour un calcul explicite des trois dispositifs ensemble, 200 lots maximum, 402 SQL maximum, dont deux requetes initiales pour les identifiants des competitions de la saison (1200 competitions maximum, 1201 detecte un depassement). Une requete groupee ne depend pas du nombre de nageurs/onglets. Aucun scan complet de perfs, lecture par nageur, export sportif ou repli Firestore. Plans reels a confirmer avant activation.
+- Fondation preparee sans endpoint ni job actif : autorisation avant connexion, validation des curseurs et limite cumulable, jointures natives indexees, interpretation des temps partagee avec les lecteurs NAP et moteur DTN existant. Configuration et conservation des vues dans NAP encore a preparer avec demande specifique pour les nouvelles tables ; aucune structure ni donnee reelle modifiee.
+
 ### Nettoyage des aperçus de PR — 6 octobre 2026
 
 - Antoine autorise le nettoyage des aperçus des PR terminées après constat de 17 échecs liés au quota de canaux Hosting. Nouveau workflow au merge/à la fermeture, avec rattrapage automatique à son intégration et lancement manuel disponible.
