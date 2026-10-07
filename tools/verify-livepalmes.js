@@ -164,6 +164,7 @@ function runUnitTests() {
     "nap-dtn-calculation-tests.js",
     "nap-approved-dtn-schema-tests.js",
     "nap-dtn-source-proof-tests.js",
+    "nap-dtn-settings-migration-tests.js",
     "dtn-season-service-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
