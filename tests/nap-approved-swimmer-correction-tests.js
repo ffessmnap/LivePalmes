@@ -50,6 +50,6 @@ function fixture(options = {}) {
   assert.ok(workflow.indexOf("name: nap-swimmer-912-before") < workflow.indexOf("NAP_CORRECTION_PHASE: apply"));
   assert.ok(workflow.includes('test "$EXPECTED_COMMIT" = "$GITHUB_SHA"'));
   const index = fs.readFileSync("functions/index.js", "utf8");
-  assert.ok(index.includes('["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema"].includes(request.query.action)'));
+  assert.ok(index.includes('["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)'));
   console.log("Authorized NAP surname correction protections passed.");
 })().catch(error => { console.error(error); process.exitCode = 1; });

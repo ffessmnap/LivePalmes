@@ -216,10 +216,12 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
     const dtnSchema = request.method === "POST" && request.query.action === "approved-dtn-schema";
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    const dtnSettings = request.method === "POST" && request.query.action === "approved-dtn-settings";
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
+      const data = dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
+        : dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
         : peopleSchema ? await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
         : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
