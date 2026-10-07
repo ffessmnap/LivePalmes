@@ -215,10 +215,12 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
     const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    const dtnSchema = request.method === "POST" && request.query.action === "approved-dtn-schema";
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = peopleSchema ? await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
+      const data = dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
+        : peopleSchema ? await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
         : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
         : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
@@ -237,6 +239,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : request.query.action === "portal-entry-contract" ? await require("./nap-portal-entries").inspectNativeClubEntry(napPool)
         : request.query.action === "portal-person-status-plans" ? await require("./nap-club-person-status").inspectStatusWritePlans(napPool)
         : request.query.action === "portal-team-leader-contract" ? await require("./nap-team-leader-contract").inspectNativeLeaderContract(napPool)
+        : request.query.action === "dtn-source-contract" ? await require("./nap-dtn-source-proof").inspectDtnSource(napPool)
         : request.query.action === "portal-competition-write-plans" ? await require("./nap-competition-write-plans").inspectCompetitionWritePlans(napPool)
         : request.query.action === "portal-course-document-contract" ? await require("./nap-course-document-contract").inspectCourseDocumentContract(napPool)
         : request.query.action === "calendar-contract" ? await require("./nap-calendar-contract").inspectCalendarContract(napPool)
