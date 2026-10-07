@@ -35,6 +35,7 @@ function competitionItem(pack, definitions = new Map()) {
       courses.set(eventCode, { ...(definition || {}), code: eventCode, label: definition?.label || text(row.course) || `Course NAP ${row.id_course}`,
         type: Number(row.relais) ? "relay" : "individual", categoryRestrictions: json(extra?.category_restrictions, []),
         relayMixedMode: extra?.relay_mixed_mode ?? "", allowMultipleRelays: extra?.multiple_relays_allowed == null ? null : Boolean(Number(extra.multiple_relays_allowed)),
+        multipleRelaysAllowed: Boolean(Number(extra?.multiple_relays_allowed || 0)),
         nativeRecognized: Boolean(definition), nativeCourses: [] });
     }
     courses.get(eventCode).nativeCourses.push(row);

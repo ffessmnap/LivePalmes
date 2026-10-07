@@ -11290,6 +11290,10 @@
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
     const native=global.LivePalmesEnvironment?.isTest===true && selectedEngagementCompetition?.napSource===true;
+    if(native && !engagementClubNativeRelayRetry && (engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry)) {
+      if(messageElement) {messageElement.textContent="Un enregistrement NAP reste à vérifier avant de modifier les relais.";messageElement.dataset.tone="error";}
+      return false;
+    }
     const reason=engagementClubRelaysLockReason();
     if(reason && !engagementClubNativeRelayRetry) {if(messageElement){messageElement.textContent=reason;messageElement.dataset.tone="error";}return false;}
     if (!engagementClubTeamComplete()) {
