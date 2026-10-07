@@ -15899,7 +15899,24 @@ exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (requ
   };
 });
 
-exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async (request) => {
+async function previewNativeClubEntryTimes(context,competitionId,swimmerIds,enrolledOnly) {
+  try {
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    return await require("./nap-entry-time-preview").previewNativeTimes(pool,{competitionId,clubId:String(context.clubId),swimmerIds,enrolledOnly},{
+      authorize:({clubId})=>{if(String(clubId)!==String(context.clubId)) throw new HttpsError("permission-denied","Dossier hors du club autorise.");},
+      preview:(person,rows,pack)=>{
+        const competition=require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+        return competition.events.filter(event=>event.type==="individual" && event.nativeRecognized && event.nativeCourses.some(course=>String(course.sexe)===String(person.sex)))
+          .map(event=>automaticEngagementIndividualEntry({eventCode:event.code},rows,competition));
+      }
+    });
+  } catch(error) {
+    if(error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError ? "resource-exhausted" : error instanceof TypeError ? "failed-precondition" : "unavailable",error instanceof RangeError || error instanceof TypeError ? error.message : "Historique NAP momentanement indisponible. Aucun engagement modifie.");
+  }
+}
+
+exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
@@ -15911,6 +15928,11 @@ exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async 
       : "performances";
   if (!competitionId || !swimmerIndexId) {
     throw new HttpsError("invalid-argument", "Competition et nageur requis.");
+  }
+
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    const result=await previewNativeClubEntryTimes(context,competitionId,[swimmerIndexId],false);
+    return {...result,swimmerIndexId,individualEntries:result.swimmers[0].individualEntries};
   }
 
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
@@ -15981,7 +16003,7 @@ exports.previewEngagementClubSwimmerEventTimes = onCall(CALLABLE_OPTIONS, async 
   };
 });
 
-exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -15991,6 +16013,7 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall(CALLABLE_OPTIONS, a
   if (!competitionId || !swimmerIds.length) {
     throw new HttpsError("invalid-argument", "Competition et nageurs requis.");
   }
+  if(ENVIRONMENT.projectId==="livepalmes-test") return previewNativeClubEntryTimes(context,competitionId,swimmerIds,true);
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const [competition, entry] = await db.getAll(competitionRef, entryRef);
