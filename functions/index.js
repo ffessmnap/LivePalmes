@@ -15844,13 +15844,16 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
   if (!competitionId || !swimmerIndexId) {
     throw new HttpsError("invalid-argument", "Competition et nageur requis.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    return nativeClubEntryTimeHistory(context, competitionId, swimmerIndexId, request.data?.eventCodes);
   }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
@@ -15899,6 +15902,34 @@ exports.getEngagementClubEntryTimeHistory = onCall(CALLABLE_OPTIONS, async (requ
   };
 });
 
+async function nativeClubEntryTimeHistory(context, competitionId, swimmerIndexId, rawCodes) {
+  const requestedCodes = new Set((Array.isArray(rawCodes) ? rawCodes : []).slice(0, 30)
+    .map(value => cleanText(value).toUpperCase().replace(/\s+/g, "")).filter(Boolean));
+  try {
+    const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const result = await require("./nap-entry-time-preview").previewNativeTimes(pool,
+      { competitionId, clubId: String(context.clubId), swimmerIds: [swimmerIndexId], enrolledOnly: true }, {
+        authorize: ({ clubId }) => { if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise."); },
+        preview: (person, rows, nativeCompetition, dossier) => {
+          const competition = require("./nap-portal-workspaces").competitionItem(nativeCompetition, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+          if (competition.missingEntryTimeMode !== "manual") {
+            throw new HttpsError("failed-precondition", "La modification des temps n'est pas autorisee pour cette competition.");
+          }
+          const links = new Set(dossier.inscriptions.filter(row => String(row.nageur) === String(person.id)).map(row => String(row.id)));
+          const savedCodes = [...new Set(dossier.individual.filter(row => links.has(String(row.engagement)))
+            .map(row => cleanText(row.course).toUpperCase().replace(/\s+/g, ""))
+            .filter(code => code && (!requestedCodes.size || requestedCodes.has(code))))];
+          return savedCodes.map(eventCode => ({ eventCode, times: engagementKnownTimeHistory(rows, eventCode, competition, 10) }));
+        }
+      });
+    return { ok: true, source: "nap", swimmerIndexId, events: result.swimmers[0].individualEntries, sqlBudget: result.sqlBudget };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError ? "resource-exhausted" : error instanceof TypeError ? "failed-precondition" : "unavailable",
+      error instanceof RangeError || error instanceof TypeError ? error.message : "Historique NAP momentanement indisponible. Aucun engagement modifie.");
+  }
+}
+
 async function previewNativeClubEntryTimes(context,competitionId,swimmerIds,enrolledOnly) {
   try {
     const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
@@ -15907,7 +15938,10 @@ async function previewNativeClubEntryTimes(context,competitionId,swimmerIds,enro
       preview:(person,rows,pack)=>{
         const competition=require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
         return competition.events.filter(event=>event.type==="individual" && event.nativeRecognized && event.nativeCourses.some(course=>String(course.sexe)===String(person.sex)))
-          .map(event=>automaticEngagementIndividualEntry({eventCode:event.code},rows,competition));
+          .map(event=>require("./nap-entry-time-rules").resolveTime({eventCode:event.code},competition,{
+            automatic:entry=>automaticEngagementIndividualEntry(entry,rows,competition),
+            parse:parseEngagementEntryTime
+          },true));
       }
     });
   } catch(error) {
