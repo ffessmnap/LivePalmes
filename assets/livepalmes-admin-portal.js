@@ -14672,9 +14672,10 @@
   }
 
   function openEngagementClubPersonForm(person = null) {
-    if(global.LivePalmesEnvironment?.isTest) return;
+    const native = global.LivePalmesEnvironment?.isTest === true;
+    if(native && !person?.nativeIdentityEditable) return;
     resetEngagementClubPersonForm();
-    if (!engagementClubSwimmersLoaded) void loadEngagementClubSwimmers({ silent: true });
+    if (!native && !engagementClubSwimmersLoaded) void loadEngagementClubSwimmers({ silent: true });
     if (person) {
       if (elements.engagementsClubPersonId) elements.engagementsClubPersonId.value = person.id || "";
       if (elements.engagementsClubPersonFirstName) elements.engagementsClubPersonFirstName.value = person.firstName || "";
@@ -14688,6 +14689,19 @@
       if (elements.engagementsClubPersonRoleOfficial) elements.engagementsClubPersonRoleOfficial.checked = person.roles?.official === true;
     }
     renderEngagementClubPersonSwimmerOptions();
+    if(native) {
+      if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.dataset.napFingerprint=person.napFingerprint;
+      if(elements.engagementsClubPersonSwimmerSearch) elements.engagementsClubPersonSwimmerSearch.disabled=true;
+      if(elements.engagementsClubPersonSwimmerResults) elements.engagementsClubPersonSwimmerResults.hidden=true;
+      if(elements.engagementsClubPersonBirthDate) elements.engagementsClubPersonBirthDate.required=Boolean(person.birthDate);
+      for(const field of [elements.engagementsClubPersonSex,elements.engagementsClubPersonLicense]) {
+        if(!field) continue;field.value="";field.required=false;
+        if(field.matches("select")) field.disabled=true;else field.readOnly=true;
+      }
+      for(const field of [elements.engagementsClubPersonRoleTeamLeader,elements.engagementsClubPersonRoleOfficial]) if(field) field.disabled=true;
+      for(const field of [elements.engagementsClubPersonFirstName,elements.engagementsClubPersonLastName]) if(field) field.maxLength=100;
+      if(elements.engagementsClubPersonMessage) elements.engagementsClubPersonMessage.textContent="Corrigez le nom, le prénom ou la date de naissance. Les rôles et engagements sont conservés.";
+    }
     if (person?.swimmerIndexId) {
       const swimmerValue = engagementClubSwimmerReferenceValue({
         swimmerIndexId: person.swimmerIndexId,
@@ -14767,7 +14781,7 @@
             <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
             <span role="cell">
               <span class="admin-engagements-request-actions">
-                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly ? 'disabled title="Modification momentanément indisponible"' : ""}>Modifier</button>
+                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly && !person.nativeIdentityEditable ? 'disabled title="Cette déclaration se corrige dans sa compétition"' : ""}>Modifier</button>
                 <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${person.statusSaving || nativeReadOnly && !person.nativeStatusEditable ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
               </span>
             </span>
@@ -14831,7 +14845,9 @@
   async function saveEngagementClubPerson(event) {
     event?.preventDefault?.();
     if (!canUse("engagements.club.manage")) return;
-    if (!elements.engagementsClubPersonRoleTeamLeader?.checked && !elements.engagementsClubPersonRoleOfficial?.checked) {
+    const native=global.LivePalmesEnvironment?.isTest === true;
+    const requestVersion=engagementClubPeopleRequestVersion;
+    if (!native && !elements.engagementsClubPersonRoleTeamLeader?.checked && !elements.engagementsClubPersonRoleOfficial?.checked) {
       if (elements.engagementsClubPersonMessage) {
       elements.engagementsClubPersonMessage.textContent = "Sélectionnez au moins un rôle.";
         elements.engagementsClubPersonMessage.dataset.tone = "error";
@@ -14850,6 +14866,24 @@
     }
     try {
       let personId = elements.engagementsClubPersonId?.value || "";
+      if(native) {
+        const current=engagementClubPeople.find(item=>item.id===personId);
+        if(!current?.nativeIdentityEditable) throw new Error("Cette fiche ne peut pas être corrigée ici.");
+        const result=await callFunction("saveEngagementClubPerson",{personId,expectedFingerprint:elements.engagementsClubPersonForm?.dataset.napFingerprint,patch:{
+          firstName:String(elements.engagementsClubPersonFirstName?.value || "").trim(),
+          lastName:String(elements.engagementsClubPersonLastName?.value || "").trim(),
+          birthDate:String(elements.engagementsClubPersonBirthDate?.value || "").trim()
+        }});
+        if(requestVersion!==engagementClubPeopleRequestVersion) return;
+        if(result.source!=="nap" || result.person?.id!==personId) throw new Error("Réponse NAP à vérifier avant de poursuivre.");
+        engagementClubPeople=engagementClubPeople.map(item=>item.id===personId?result.person:item);
+        resetEngagementClubPersonForm();
+        if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden=true;
+        renderEngagementClubPeople();
+        renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
+        if(activeEngagementsDetailTab==="officials") renderEngagementClubOfficials();
+        return;
+      }
       let person = selectedEngagementClubPersonFromForm();
       if (!personId && person.swimmerIndexId) {
         const swimmer = engagementClubSwimmerFromReferenceValue(engagementClubSwimmerReferenceValue({

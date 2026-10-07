@@ -84,7 +84,7 @@ async function changeNativePersonStatus(pool,input,audit,authorize) {
     finally {connection.release();}
   }
 }
-// Two EXPLAIN statements on one existing official, never an INSERT/UPDATE.
+// Three EXPLAIN statements on one existing official, never an INSERT/UPDATE.
 async function inspectStatusWritePlans(connection) {
   const plans=[];
   try {
@@ -101,6 +101,10 @@ async function inspectStatusWritePlans(connection) {
         plans.push(raw.map(({select_type,table,type,key,rows,Extra})=>({select_type,table,type,key,rows,Extra})));
         if(!raw.length || raw.some(row=>!(row.select_type==="INSERT" && row.table===table) && !["system","const"].includes(row.type) && !(row.table==null && /Impossible WHERE|no matching row/.test(row.Extra || "")) && (row.type==="ALL" || !row.key))) throw Error("plan");
       }
+      const identityStatement=require("./nap-club-person-edit").statement(native,{...native,nom:String(native.nom)==="plan-test"?"plan-check":"plan-test"});
+      const [raw]=await connection.execute({sql:`EXPLAIN ${identityStatement.sql}`,timeout:10000},identityStatement.values);
+      plans.push(raw.map(({select_type,table,type,key,rows,Extra})=>({select_type,table,type,key,rows,Extra})));
+      if(!raw.length || raw.some(row=>!["system","const"].includes(row.type) && !(row.table==null && /Impossible WHERE|no matching row/.test(row.Extra || "")) && (row.type==="ALL" || !row.key))) throw Error("plan");
     }
     return {source:"nap",mode:"portal-person-status-plans-readonly",complete:true,plans,writesExecuted:false};
   } catch {
