@@ -11,7 +11,7 @@ const sandbox={global:{LivePalmesEnvironment:{isTest:true},crypto:{randomUUID:()
   engagementClubPersonFormHome:null,closeEngagementClubPersonDialog:()=>{},canUse:()=>true,resetEngagementClubPersonForm:()=>{},loadEngagementClubSwimmers:()=>{throw Error("No unnecessary swimmer reads");},renderEngagementClubPersonSwimmerOptions:()=>{},renderEngagementClubPeople:()=>{},renderEngagementClubTeamPersonOptions:()=>{},renderEngagementClubOfficials:()=>{},loadEngagementClubPeople:()=>{throw Error("No directory reload after native reply");},
   callFunction:async(name,input)=>{calls.push({name,input:JSON.parse(JSON.stringify(input))});return typeof reply==="function"?reply():reply;}};
 vm.createContext(sandbox);
-vm.runInContext(source.slice(source.indexOf("  let engagementClubPersonFormHome = null;"),source.indexOf("  function resetEngagementClubPersonForm()")),sandbox);
+vm.runInContext("let engagementClubPersonFormHome=null;"+source.slice(source.indexOf("  function closeEngagementClubPersonDialog()"),source.indexOf("  function resetEngagementClubPersonForm()")),sandbox);
 for(const [startName,endName] of [["  function openEngagementClubPersonForm(","\n  function selectedEngagementClubPersonFromForm("],["  async function saveEngagementClubPerson(","\n  async function setEngagementClubPersonStatus("]]) {
   const start=source.indexOf(startName);vm.runInContext(source.slice(start,source.indexOf(endName,start)),sandbox);
 }
