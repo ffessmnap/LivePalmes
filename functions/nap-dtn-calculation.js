@@ -3,6 +3,7 @@
 // repository; no browser-provided grid is authorized by this calculation.
 const engine=require("./dtn-season-engine");
 const source=require("./nap-dtn-source");
+const {dtnNativeRow}=require("./nap-dtn-source-associations");
 const MAX_VIEW_BYTES=900000,MAX_DURATION_MS=450000;
 async function calculateSeason(pool,seasonInput,services) {
   if(typeof services?.authorize!=="function") throw new TypeError("Autorisation de calcul DTN requise.");
@@ -18,7 +19,10 @@ async function calculateSeason(pool,seasonInput,services) {
     if(page.source!=="nap" || !Array.isArray(page.rows) || page.rows.length>source.PAGE_SIZE || !Number.isSafeInteger(page.scannedRows) || !Number.isSafeInteger(page.excludedRows) || page.excludedRows<0 || page.rows.length+page.excludedRows!==page.scannedRows-scannedRows || page.scannedRows<scannedRows || page.scannedRows-scannedRows>source.PAGE_SIZE || page.hasMore && (!page.cursor || page.scannedRows===scannedRows) || page.scannedRows>source.MAX_ROWS) throw new TypeError("Lot DTN NAP incomplet ou incompatible.");
     scannedRows=page.scannedRows;
     excludedRows+=page.excludedRows;
-    for(const row of page.rows) for(const device of engine.DEVICES) engine.consume(accumulators[device],season,row);
+    for(const raw of page.rows) {
+      const row=dtnNativeRow(raw);
+      for(const device of engine.DEVICES) engine.consume(accumulators[device],season,row);
+    }
     if(!page.hasMore) break;
     cursor=page.cursor;
   }
