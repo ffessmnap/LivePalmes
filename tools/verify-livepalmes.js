@@ -107,6 +107,8 @@ function runUnitTests() {
     "nap-official-entry-statements-tests.js",
     "nap-official-entry-recovery-tests.js",
     "nap-official-entry-change-tests.js",
+    "nap-official-entry-callable-tests.js",
+    "nap-official-entry-ui-tests.js",
     "nap-official-entry-proof-tests.js",
     "nap-entry-person-access-ui-tests.js",
     "nap-calendar-contract-tests.js",

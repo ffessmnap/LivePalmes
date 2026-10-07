@@ -1095,6 +1095,7 @@
   let engagementClubSelectionTimer = null;
   let engagementClubNativeSelectionRetry = null;
   let engagementClubNativeIndividualRetry = null;
+  let engagementClubNativeOfficialRetry = null;
   let engagementClubSelectionCompetitionId = "";
   let engagementClubEntriesAutosaveTimer = null;
   let engagementClubEntriesAutosaveCompetitionId = "";
@@ -2092,6 +2093,11 @@
     return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeIndividualEntriesEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
+  function engagementClubOfficialsLockReason() {
+    const competition=selectedEngagementCompetition || {};
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeOfficialsEditable===true ? {...competition,nativeReadOnly:false} : competition);
+  }
+
   function engagementClubInformationOnly(competition = selectedEngagementCompetition || {}) {
     return !isEngagementAdminMode() && (competition.entryStatus || "upcoming") === "upcoming";
   }
@@ -2129,6 +2135,7 @@
   }
 
   function clubEngagementTabHiddenWhenWriteLocked(tab = "") {
+    if(tab==="officials" && !engagementClubOfficialsLockReason()) return false;
     if(tab==="swimmers" && !engagementClubSwimmerSelectionLockReason()) return false;
     if(tab==="entries" && !engagementClubIndividualEntriesLockReason()) return false;
     return ["officials", "swimmers", "entries", "relays"].includes(tab);
@@ -5049,6 +5056,11 @@
     const candidates = engagementClubPeople
       .filter((person) => person.active)
       .map((person) => ({ ...person, candidateType: "person", selectionId: person.id }));
+    if(selectedEngagementClubEntry?.source==="nap") {
+      for(const official of selectedEngagementClubEntry.officials || []) {
+        if(!candidates.some(person=>person.id===official.personId)) candidates.push({...official,id:official.personId,selectionId:official.personId,candidateType:"person",roles:{official:true},nativeExistingOnly:true});
+      }
+    }
     engagementClubSwimmers
       .filter((swimmer) => swimmer.active !== false && !engagementClubPersonForSwimmer(swimmer))
       .forEach((swimmer) => candidates.push({
@@ -5184,7 +5196,7 @@
     const mount = elements.engagementsClubOfficialsList;
     const selectedMount = elements.engagementsClubSelectedOfficialsList;
     if (!mount) return;
-    const writeLockReason = engagementClubWriteLockReason();
+    const writeLockReason = engagementClubOfficialsLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     const candidateListsReady = engagementClubPeopleLoaded && engagementClubSwimmersLoaded;
     const candidateListsLoading = (!engagementClubPeopleLoaded && engagementClubPeopleLoading) ||
@@ -5267,7 +5279,11 @@
       : matchingOfficials.length
         ? renderOfficialTable(matchingOfficials, "Résultats de recherche")
         : '<p class="admin-engagements-empty">Aucun membre ne correspond à cette recherche.</p>';
-    setEngagementClubFormControlsLocked(elements.engagementsClubOfficialsForm, false);
+    setEngagementClubFormControlsLocked(elements.engagementsClubOfficialsForm, Boolean(engagementClubNativeOfficialRetry));
+    if(engagementClubNativeOfficialRetry && elements.engagementsClubOfficialsSaveButton) {
+      elements.engagementsClubOfficialsSaveButton.hidden=false;
+      elements.engagementsClubOfficialsSaveButton.disabled=false;
+    }
     updateEngagementClubOfficialsSummary();
   }
 
@@ -5305,6 +5321,11 @@
   }
 
   async function handleEngagementClubOfficialSelection(event) {
+    if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) {
+      renderEngagementClubOfficials();
+      if(elements.engagementsClubOfficialsMessage) elements.engagementsClubOfficialsMessage.textContent="Un enregistrement NAP reste à vérifier. Cliquez sur Enregistrer pour le reprendre.";
+      return;
+    }
     const checkbox = event.target.closest("[data-engagement-club-official-selection]");
     if (!checkbox) return;
     const selectionId = checkbox.dataset.engagementClubOfficialSelection || "";
@@ -6395,7 +6416,7 @@
       preserveLocalSwimmerSelections: !nativeSelection,
       execute: async () => {
         if(!nativeSelection) return callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes });
-        if(engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier. Cliquez sur Enregistrer pour le reprendre avant une autre selection.");
+        if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier. Cliquez sur Enregistrer pour le reprendre avant une autre selection.");
         if(engagementClubLastPersistedEntry?.competitionId!==competitionId) throw new Error("Reouvrez le dossier NAP avant l'enregistrement.");
         const payload={competitionId,changes:changes.map(({swimmerIndexId,selected})=>({swimmerIndexId,selected})),expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
         engagementClubNativeSelectionRetry=payload;
@@ -6458,7 +6479,7 @@
       loadingMessage: swimmers.length > 1 ? "Enregistrement des courses..." : "Enregistrement de la course...",
       execute: async () => {
         if(!nativeEntries) return callFunction("saveEngagementClubIndividualEntries",{competitionId,swimmers});
-        if(engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier avant une autre modification.");
+        if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier avant une autre modification.");
         if(engagementClubLastPersistedEntry?.competitionId!==competitionId) throw new Error("Reouvrez le dossier NAP avant l'enregistrement.");
         const payload={competitionId,swimmers,expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
         engagementClubNativeIndividualRetry=payload;
@@ -10507,7 +10528,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? "Les nageurs et leurs courses peuvent être enregistrés. Les officiels et relais restent consultables." : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables." : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -10983,6 +11004,23 @@
   async function saveEngagementClubOfficials(event) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
+    if(selectedEngagementCompetition?.napSource===true) {
+      if(!engagementClubNativeOfficialRetry && (engagementClubOfficialsLockReason() || !engagementClubTeamComplete())) return false;
+      if(engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) return false;
+      if(!engagementClubNativeOfficialRetry) {
+        await engagementClubEntryMutationQueue;
+        if(!engagementClubNativeOfficialRetry) engagementClubNativeOfficialRetry={competitionId:selectedEngagementCompetitionId,officialPersonIds:[...new Set((selectedEngagementClubEntry?.officials || []).map(row=>row.personId))],expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
+      }
+      const payload=engagementClubNativeOfficialRetry;
+      if(payload.competitionId!==selectedEngagementCompetitionId) return false;
+      const saved=await queueEngagementClubEntryMutation({competitionId:payload.competitionId,messageElement:elements.engagementsClubOfficialsMessage,loadingMessage:"Enregistrement des officiels...",execute:async()=>{
+        const result=await callFunction("saveEngagementClubOfficials",payload);
+        engagementClubNativeOfficialRetry=null;
+        return result;
+      }});
+      renderEngagementClubOfficials();
+      return saved;
+    }
     if (showEngagementClubWriteLock(elements.engagementsClubOfficialsMessage)) return false;
     if (!engagementClubTeamComplete()) {
       if (elements.engagementsClubOfficialsMessage) {

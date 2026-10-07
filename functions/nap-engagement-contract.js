@@ -2,6 +2,7 @@
 // Private, bounded compatibility samples. No names, contacts or licences.
 // Samples describe existing values; they do not approve a business mapping.
 const QUERIES = [
+  ["relayCategories", "SELECT id,abbr,age_d,age_f,sexe,record_categorie FROM categories FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 101"],
   ["parameters", "SELECT id,compet,actif,`open`,dateactif,date_limit,cat_d,cat_f,tps_d,tps_f,qualif,who,officiel,saisie,relais,niveau,nb_nageurs,nb_lignes FROM compet_parametres ORDER BY id DESC LIMIT 40"],
   ["individualLinks", "SELECT e.id,e.engagement,e.course,e.tps,n.id AS inscription_id,n.compet,c.id AS competition_id FROM (SELECT id,engagement,course,tps FROM engagements ORDER BY id DESC LIMIT 100) e LEFT JOIN nageursengager n ON n.id=e.engagement LEFT JOIN competitions c ON c.id=n.compet ORDER BY e.id DESC LIMIT 100"],
   ["relayCourses", "SELECT r.id,r.compet,r.categorie,r.course,r.tps,d.course AS course_code,d.sexe,d.relais FROM (SELECT id,compet,categorie,course,tps FROM engagements_relais ORDER BY id DESC LIMIT 60) r LEFT JOIN course_dispo d ON d.id=r.course ORDER BY r.id DESC LIMIT 60"],
