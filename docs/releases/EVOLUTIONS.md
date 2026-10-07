@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Relais : engagements directs NAP sur TEST — 7 octobre 2026
+
+- Ajout, correction et retrait explicites d'un seul relais, composition vide ou quatre nageurs sélectionnés du club ; règles LivePalmes existantes conservées. Les catégories détaillées, notamment mixtes, restent dans le complément NAP déjà autorisé ; IntraNAP utilise les lignes natives communes. Aucun changement de schéma, mail ou PROD. Les autres relais et temps anciens restent inchangés.
+- Budget avant/après : ouverture inchangée, action plafonnée à 60 requêtes SQL indexées/groupées et cinq écritures ; aucune requête par nageur. Journal technique avant effet MyISAM, identifiant auto-incrémenté confirmé durablement avant les relayeurs, reprise des effets partiels sans doublon. TEST n'accède à aucune collection sportive Firebase dans cet appel ; authentification/droits et journal technique restent Firebase.
+- Tests hors réseau des règles, périmètres, concurrence, fermeture, interruptions et appel/écran NAP réussis. EXPLAIN réel en lecture seule : ajouts/corrections/retraits et complément indexés. Vérification globale Windows arrêtée sur l'assertion CRLF préexistante du workflow ; contrôle Linux du commit exact requis. Publication et recette restent à réaliser, aucune validation utilisateur revendiquée.
+- Recette autorisée : compétition 5162 du 7 novembre 2026, club CNHC 106. Antoine choisit Antoine FAUVEAU comme chef d'équipe ; sa déclaration existante est sélectionnée dans IntraNAP et la présence d'une déclaration native est vérifiée en lecture seule. Aucun relais d'essai créé à ce stade.
+
 ### Publication TEST : consultation des Functions — 7 octobre 2026
 
 - Publications DTN 37654083160 et 37655600874 interrompues par « Failed to list functions for livepalmes-test » : premiere apres huit lots controles, seconde pendant la simulation. Hosting non publie. Selection automatique large de 139 traitements conservee, aucune selection reduite manuellement, aucun envoi de mail ni operation sportive invoquee.

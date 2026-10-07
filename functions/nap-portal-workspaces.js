@@ -35,6 +35,7 @@ function competitionItem(pack, definitions = new Map()) {
       courses.set(eventCode, { ...(definition || {}), code: eventCode, label: definition?.label || text(row.course) || `Course NAP ${row.id_course}`,
         type: Number(row.relais) ? "relay" : "individual", categoryRestrictions: json(extra?.category_restrictions, []),
         relayMixedMode: extra?.relay_mixed_mode ?? "", allowMultipleRelays: extra?.multiple_relays_allowed == null ? null : Boolean(Number(extra.multiple_relays_allowed)),
+        multipleRelaysAllowed: Boolean(Number(extra?.multiple_relays_allowed || 0)),
         nativeRecognized: Boolean(definition), nativeCourses: [] });
     }
     courses.get(eventCode).nativeCourses.push(row);
@@ -78,12 +79,13 @@ function entryItem(pack, context, categoryForBirthDate) {
     firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), sex: "", licenseNumber: "",
     clubId: text(row.club), representedClubId: text(row.pourclub), externalClub: String(row.club) !== pack.clubId }));
   const relays = pack.relays.map(row => {
+    const relayDetail = require("./nap-relay-details").detail(row, pack.options?.submission_metadata);
     const members = pack.members.filter(member => String(member.relais) === String(row.id)).map(member => ({
       nativeMemberId: String(member.id), nativePosition: member.pos, swimmerIndexId: String(member.nageur), swimmerId: String(member.nageur),
       firstName: text(member.prenom), lastName: text(member.nom), name: [text(member.prenom), text(member.nom)].join(" "),
       birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), licenseNumber: "" }));
-    return { relayId: String(row.id), nativeCategory: row.categorie, category: `NAP-${row.categorie}`, eventCode: nativeCourseCode(row.course_code) || `NAP-${row.course}`,
-      nativeCourseId: row.course, genderMode: ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
+    return { relayId: String(row.id), nativeCategory: row.categorie, category: relayDetail?.category || `NAP-${row.categorie}`, eventCode: nativeCourseCode(row.course_code) || `NAP-${row.course}`,
+      nativeCourseId: row.course, genderMode: relayDetail?.genderMode || ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
       manualEntryTime: "", ...nativeTime(row.tps), members, memberIds: members.map(member => member.swimmerIndexId) };
   });
   return { id: `${pack.competitionId}_${pack.clubId}`, competitionId: `legacy-nap-${pack.competitionId}`, source: "nap", napSource: true,

@@ -1,0 +1,19 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+const start=source.indexOf("  async function saveEngagementClubRelays("),end=source.indexOf("  async function downloadEngagementClubSummaryPdf",start);
+let fail=true,calls=[];
+const relay={relayId:"new-client-id",eventCode:"4X100BI",category:"S",genderMode:"mixed",manualEntryTime:"3:15.00",memberIds:[]};
+const context={selectedEngagementCompetitionId:"legacy-nap-5162",selectedEngagementCompetition:{napSource:true},engagementClubNativeRelayRetry:null,engagementClubNativeOfficialRetry:null,engagementClubNativeSelectionRetry:null,engagementClubNativeIndividualRetry:null,engagementClubLastPersistedEntry:{napFingerprint:"a".repeat(64),relays:[]},selectedEngagementClubEntry:{},engagementClubRelaysDraft:[],elements:{engagementsClubRelaysMessage:{dataset:{}}},global:{LivePalmesEnvironment:{isTest:true},crypto:{randomUUID:()=>"11111111-1111-4111-8111-111111111111"}},canUse:()=>true,engagementClubRelaysLockReason:()=>"",engagementClubTeamComplete:()=>true,engagementClubRelayValidationIssues:()=>[],setEngagementSaveState:()=>{},renderEngagementClubEntry:()=>{},callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubRelays");calls.push(JSON.parse(JSON.stringify(payload)));if(fail)throw new Error("Interrupted");return {entry:{source:"nap"}};}};
+vm.createContext(context);vm.runInContext(source.slice(start,end),context);
+(async()=>{
+  assert.equal(await context.saveEngagementClubRelays(null,{dataset:{}},[relay],"",relay),false);
+  fail=false;assert.equal(await context.saveEngagementClubRelays(null,{dataset:{}},[{...relay,category:"J"}],"",{...relay,category:"J"}),true);
+  assert.deepEqual(calls[0],calls[1],"Interrupted action keeps exact payload, fingerprint and UUID");assert.equal(context.engagementClubNativeRelayRetry,null);
+  assert.equal(calls[0].relayChange.action,"create");assert.equal(calls[0].relayChange.relayId,undefined);assert.equal(calls[0].relays,undefined);
+  context.engagementClubLastPersistedEntry.relays=[{relayId:"99"}];
+  await context.saveEngagementClubRelays(null,{dataset:{}},[{...relay,relayId:"99"}],"",{...relay,relayId:"99"});assert.equal(calls[2].relayChange.action,"compose");assert.equal(calls[2].relayChange.relayId,"99");
+  await context.saveEngagementClubRelays(null,{dataset:{}},[],"99");assert.equal(calls[3].removeRelayId,"99");assert.equal(calls[3].relayChange,undefined);
+  assert.equal(context.selectedEngagementClubEntry.source,"nap");
+  console.log("Relay UI: only explicit target sent, no unrelated historic relay rewrite, generated id not guessed, retry payload retained; no network.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
