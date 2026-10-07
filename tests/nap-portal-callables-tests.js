@@ -8,6 +8,7 @@ const pool = {};
 const event = { id: "legacy-nap-5140", date: "2026-10-11", competitionType: "pool", level: "regional", regionId: "PACA", nationalManagementOnly: false };
 let management = { national: true, uid: "admin" };
 let past=false;
+const nativeParameters={qualif:0,cat_d:null,cat_f:null};
 const context = { uid: "club-admin", clubId: "00123", clubName: "Club" };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
@@ -32,7 +33,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
       readNativeCompetitionSeason: async (connection, year) => { assert.equal(connection, pool); assert.equal(year, 2027); calls.push("season"); return { events: [event, { ...event, id: "legacy-nap-5200", competitionType: "training" }] }; },
       readNativeCompetition: async (_, id, authorize) => { assert.equal(id, event.id); await authorize(event); calls.push("detail"); return { event }; }
     };
-    if (name === "./nap-portal-workspaces") return { listItem: item => ({ ...item, napSource: true }), competitionItem: pack => ({ ...pack.event, napSource: true }),
+    if (name === "./nap-portal-workspaces") return { listItem: item => ({ ...item, napSource: true }), competitionItem: pack => ({ ...pack.event, eventType:"pool",nativeParameters,nativeRules:{participations:[]},napSource: true }),
       readDocuments: async () => { calls.push("documents"); return []; }, entryItem: pack => ({ source: "nap", clubId: pack.clubId }) };
     if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return {...input,leaders:[{id:51}]}; } };
     if(name === "./nap-club-person-status") return {changeNativePersonStatus:async(connection,input,audit,authorize)=>{if(input.personId==="old-id") throw new TypeError("Native reference required");assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});calls.push("person-status");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
@@ -74,7 +75,12 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   calls.length=0;
   const leader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,clubId:"999",actorUid:"spoof",leaderId:51,patch:{firstName:"Chef",lastName:"Native",birthDate:"1980-01-02"}}});
   assert.equal(leader.competition.nativeTeamLeaderEditable,true);
+  assert.equal(leader.competition.nativeSwimmerSelectionEditable,true,"selection remains available after a native leader correction");
   assert.deepEqual(calls,["open-check","audit-backup","leader-edit","audit-complete","detail","documents","entry"]);
+  nativeParameters.qualif=1;
+  const restrictedLeader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,leaderId:51,patch:{firstName:"Chef"}}});
+  assert.equal(restrictedLeader.competition.nativeSwimmerSelectionEditable,false,"leader correction must not unlock unmapped qualifications");
+  nativeParameters.qualif=0;
   const preload = await sandbox.exports.preloadEngagementClubWorkspaces({ data: { competitionIds: [event.id] } });
   assert.equal(preload.workspaces.length, 0);
   for (const name of ["createEngagementCompetition", "createEngagementCalendarEvent"]) await assert.rejects(sandbox.exports[name]({ data: {} }), error => error.code === "failed-precondition");
