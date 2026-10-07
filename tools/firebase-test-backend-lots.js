@@ -131,6 +131,9 @@ const METADATA = Object.freeze({
 });
 
 const ALL_SAFE_LOTS = Object.freeze(["access", "engagement-core", "performance", "publications"]);
+// Exact TEST-only exception: NAP resolution has neither SMTP bindings nor sends.
+// Its production classification remains email and excluded from ordinary PROD.
+const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["resolveEngagementSwimmerChangeRequest"]);
 
 // Toute Function susceptible d'écrire dans le bucket public, ou de créer/rejouer
 // un job qui y écrit, doit être déclarée ici. Les seules exceptions hors du lot
@@ -146,4 +149,4 @@ const PUBLICATION_EFFECT_FUNCTIONS = Object.freeze([
   "resumePerformancePublicationJobs"
 ]);
 
-module.exports = { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS };
+module.exports = { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS };

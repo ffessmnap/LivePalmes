@@ -12083,9 +12083,23 @@ async function resolveEngagementClubPersonSwimmer(db, context = {}, rawPerson = 
   return swimmer;
 }
 
-exports.saveEngagementClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "La modification de l'annuaire NAP n'est pas encore disponible. Aucune ancienne fiche LivePalmes modifiee.");
+  if(ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      return await require("./nap-club-person-edit").editNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        clubId:String(context.clubId),actorUid:context.uid,personId:request.data?.personId,
+        expectedFingerprint:request.data?.expectedFingerprint,patch:request.data?.patch
+      },{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).create({action:"nap.person.identity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.saved",context.uid,target,operation)
+      },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Correction NAP a verifier. Reprenez la meme action ; la sauvegarde est conservee.");
+    }
+  }
   const personId = cleanText(request.data?.personId).slice(0, 80);
   const rawPerson = request.data?.person || {};
   const linkedSwimmer = await resolveEngagementClubPersonSwimmer(db, context, rawPerson);
@@ -14086,7 +14100,9 @@ exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.resolveEngagementSwimmerChangeRequest = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS.secrets, defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.projectId === "livepalmes-test"
+  ? { ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }
+  : ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
@@ -14146,11 +14162,8 @@ exports.resolveEngagementSwimmerChangeRequest = onCall({ ...ENGAGEMENT_SWIMMER_C
         nativeResolution: { key: resolution.key, actorUid: context.uid, decision },
         ...(decision === "approved" ? { resolvedProposed: resolution.resolvedProposed, proposalAdjusted: resolution.proposalAdjusted } : {}), result: cleanFirestoreValue(result || {}) };
       await ref.set(cleanFirestoreValue(completed), { merge: false });
-      // Preserve the existing notification policy; never notify during diagnostic tests.
-      const resolutionNotification = await sendEngagementSwimmerChangeResolutionNotification({ decision,
-        requestedByEmail: data.requestedByEmail, requestedByFirstName: data.requestedByFirstName, requestedByLastName: data.requestedByLastName,
-        swimmer: data.current, current: data.current, resolvedProposed: resolution.resolvedProposed || data.proposed,
-        clubName: data.clubName, resolutionNote });
+      // TEST has no automatic emails. The production notification below stays unchanged.
+      const resolutionNotification = { status: "skipped", reason: "test-emails-disabled" };
       await ref.set({ resolutionNotification }, { merge: true });
       await writeAuditLogOnce(`nap.swimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid,
         { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, notificationStatus: resolutionNotification.status }, resolution.key);
