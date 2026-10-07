@@ -1015,6 +1015,7 @@
   const engagementNationalAuditClubs = new Map();
   const engagementNationalAuditCompetitions = new Map();
   const engagementNationalAuditPeople = new Map();
+  let engagementClubPersonFormHome = null;
   let engagementClubPeople = [];
   let engagementClubPeopleLoaded = false;
   let engagementClubPeopleLoading = false;
@@ -1567,6 +1568,9 @@
     engagementClubPeopleCursor = null;
     engagementClubPeopleHasMore = false;
     engagementClubPeopleRequestVersion += 1;
+    closeEngagementClubPersonDialog();
+    elements.engagementsClubPersonForm?.reset();
+    if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden=true;
     engagementClubSwimmers = [];
     engagementClubSwimmersLoaded = false;
     engagementClubSwimmersLoading = false;
@@ -14663,7 +14667,6 @@
     return roles.join(" - ") || "-";
   }
 
-  let engagementClubPersonFormHome = null;
   function closeEngagementClubPersonDialog() {
     const form=elements.engagementsClubPersonForm;
     if(!engagementClubPersonFormHome || !form) return;
