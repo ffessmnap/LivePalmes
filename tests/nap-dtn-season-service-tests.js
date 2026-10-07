@@ -12,7 +12,7 @@ function fixture() {
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_saisons")) return [[...s.seasons.values()].filter(v=>values.includes(v.id)).map(v=>({id:v.id,revision:v.revision,configuration:JSON.stringify(v)}))];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_resultats")) return [[...s.views.values()].filter(v=>values.includes(v.id)).map(v=>({saison:v.id,dispositif:v.device,revision:v.value.revision,empreinte:v.value.fingerprint,contenu:JSON.stringify(v.value)}))];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_calculs")) return [[...s.jobs.values()].filter(v=>values.includes(v.saison)).map(v=>({statut:v.statut,erreur:v.erreur,age_seconds:10}))];
-    if(sql.startsWith("SELECT") && sql.includes("FROM competitions")) return [[{id:1,libelle:"Native",date:"2026-01-01"}]];
+    if(sql.startsWith("SELECT") && sql.includes("FROM competitions")) return [s.sourceRows || [{id:1,libelle:"Native",date:"2026-01-01"}]];
     if(sql.startsWith("INSERT INTO livepalmes_dtn_saisons")) {if(s.seasons.has(values[0])) throw new Error("duplicate");s.seasons.set(values[0],JSON.parse(values[2]));return [{affectedRows:1}];}
     if(sql.startsWith("UPDATE livepalmes_dtn_saisons")) {s.seasons.set(values[2],JSON.parse(values[1]));return [{affectedRows:1}];}
     if(sql.startsWith("UPDATE livepalmes_dtn_catalogue")) {s.catalog={revision:values[0],current:values[1],previous:values[2],draft:values[3]};return [{affectedRows:1}];}
@@ -36,7 +36,11 @@ function fixture() {
   const empty=await f.service.overview(f.request({}));assert.equal(empty.hit,false);assert.equal(f.s.calculations,0);assert.ok(f.s.queries.every(q=>q.startsWith("SELECT")));
   const result=await f.service.overview(f.request({rebuild:true}));assert.equal(result.hit,true);assert.equal(result.source,"nap");assert.equal(f.s.views.size,3);assert.equal(f.s.calculations,1);
   assert.equal((await f.service.overview(f.request({}))).hit,true);assert.equal(f.s.calculations,1);
-  const source=(await f.service.sources(f.request({})));assert.deepEqual(source.rows,[{id:"1",name:"Native",date:"2026-01-01"}]);
+  const source=(await f.service.sources(f.request({})));assert.deepEqual(source.sources,[{id:"1",name:"Native",date:"2026-01-01"}]);assert.equal(source.cursor,"");
+  f.s.sourceRows=Array.from({length:51},(_,i)=>({id:i+1,libelle:`Competition ${i+1}`,date:"2026-01-01"}));
+  const page=await f.service.sources(f.request({}));assert.equal(page.sources.length,50);assert.deepEqual(JSON.parse(page.cursor),{date:"2026-01-01",id:50});
+  f.s.sourceRows=[{id:4980,libelle:"Native final",date:"2026-05-22"}];
+  const last=await f.service.sources(f.request({cursor:page.cursor}));assert.equal(last.sources.length,1);assert.equal(last.cursor,"");assert.deepEqual(last.sources[0].aliases,["e40fe3129ffd5d76286774193a2855ed"]);
   await assert.rejects(()=>f.service.sources(f.request({cursor:'{"date":"2026-01-01","id":"1 OR 1=1"}'})),/Pagination/);
   f.s.manager=false;await assert.rejects(()=>f.service.sources(f.request({})),/Droit/);await assert.rejects(()=>f.service.update(f.request({action:"create"})),/Droit/);
   for(const flag of ["sourceChange","configChange","failDevice"]) {
