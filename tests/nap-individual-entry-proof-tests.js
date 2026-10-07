@@ -19,7 +19,7 @@ const {inspectStatements}=require("../functions/nap-individual-entry-proof");
   assert.equal(actual.available,true);assert.equal(actual.indexed,true);assert.equal(actual.writesExecuted,false);assert.equal(inspected.length,3);assert.equal(JSON.stringify(actual).includes("14200"),false);
   const refused=await inspectStatements({execute:async()=>[[{table:"engagements",type:"ALL",key:null,rows:100}]]},sample,async()=>competition);
   assert.equal(refused.indexed,false);assert.equal(refused.writesExecuted,false);
-  const insertTarget=await inspectStatements({execute:async(query)=>[query.sql.startsWith("EXPLAIN INSERT") ? [{select_type:"INSERT",table:"engagements",type:"ALL",key:null,rows:null},{table:"scope_i",type:"eq_ref",key:"PRIMARY",rows:1}] : [{table:"engagements",type:"range",key:"PRIMARY",rows:1}]]},sample,async()=>competition);
+  const insertTarget=await inspectStatements({execute:async(query)=>[query.sql.startsWith("EXPLAIN INSERT") ? [{select_type:"INSERT",table:"engagements",type:"ALL",key:null,rows:null},{table:"scope_i",type:"eq_ref",key:"PRIMARY",rows:1},{select_type:"DERIVED",table:null,type:null,key:null,rows:null,Extra:"No tables used"}] : [{table:"engagements",type:"range",key:"PRIMARY",rows:1}]]},sample,async()=>competition);
   assert.equal(insertTarget.indexed,true);
   const closed=await inspectStatements(connection,sample,async()=>({...competition,event:{entryStatus:"closed"}}));assert.equal(closed.available,false);assert.equal(inspected.length,3);
   console.log("NAP individual entry proof stays EXPLAIN-only");
