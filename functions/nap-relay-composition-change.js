@@ -80,9 +80,9 @@ async function saveNativeRelayComposition(pool,input,services) {
       // Validate and explain the creation before preparing its durable intent.
       if(plan.action==="create") await prove(sql.insertRelay(plan,target.course,authority,competition.event.entryDeadlineAt));
       else await prove(sql.updateRelay(plan,target.course,authority,competition.event.entryDeadlineAt));
-      if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('engagements_relais','engagements_relayeurs','livepalmes_club_entry_options') LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier avant les relais.");
       await services.audit.prepare(operation,target);
     }
+    if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('engagements_relais','engagements_relayeurs','livepalmes_club_entry_options') LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier avant les relais.");
     if(target.phase==="prepared") {
       target={...target,phase:"writing"};await services.audit.checkpoint(operation,target);
       const result=await execute(sql.insertRelay(target.plan,target.course,authority,competition.event.entryDeadlineAt));
