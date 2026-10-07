@@ -1,0 +1,32 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {selectedStatement,insertion,deletion}=require("../functions/nap-official-entry-statements");
+const {SPECS}=require("../functions/nap-portal-competition-change");
+const authority=Object.fromEntries(["competitions","compet_parametres"].map(table=>[table,Object.fromEntries(SPECS[table].columns.map(key=>[key,key==="id"?5140:null]))]));
+authority.options=null;
+const native={id:7,nom:"D'EXEMPLE",prenom:"Exemple",date:"1980-01-03",club:"106"};
+const before={id:20,compet:5140,officiel:8,club:"106"};
+const plan={competitionId:5140,clubId:"106",additions:[native],removals:[before]};
+const end="2026-10-07T19:59:00.000Z";
+function bound(statement) {
+  assert.equal((statement.sql.match(/\?/g)||[]).length,statement.values.length);
+  assert.ok(!statement.sql.includes(native.nom));
+  assert.ok(!statement.sql.includes(native.date));
+  return statement;
+}
+const selected=bound(selectedStatement([7,8],"106"));
+assert.deepEqual(selected.values,[7,8,"106"]);assert.match(selected.sql,/FORCE INDEX \(PRIMARY\)/);assert.match(selected.sql,/LIMIT 80$/);
+const add=bound(insertion(plan,[{native,options:null}],authority,end));
+assert.match(add.sql,/LEFT JOIN officielsengager existing/);assert.match(add.sql,/existing.id IS NULL/);assert.match(add.sql,/n.id=\?/);
+assert.match(add.sql,/scope_c/);assert.match(add.sql,/scope_p/);assert.match(add.sql,/UTC_TIMESTAMP\(\) < \?/);assert.match(add.sql,/ORDER BY n.id LIMIT 80$/);
+assert.ok(add.values.includes(native.nom));assert.ok(add.values.includes("2026-10-07 19:59:00.000"));
+const remove=bound(deletion(plan,[before],authority,end));
+assert.deepEqual(remove.values.slice(0,4),[20,5140,8,"106"]);assert.match(remove.sql,/id=\? AND compet=\? AND officiel=\?/);assert.match(remove.sql,/LIMIT 200$/);
+assert.throws(()=>selectedStatement(Array(81).fill(7),"106"));
+assert.throws(()=>insertion(plan,[{native:{...native,id:9},options:null}],authority,end));
+assert.throws(()=>deletion(plan,[{...before,club:"999"}],authority,end));
+assert.throws(()=>deletion(plan,[before],authority,"invalid"));
+const currentOptions={...authority,options:{competition_id:5140,canceled:0,entry_closed:0}};
+assert.match(bound(insertion(plan,[{native,options:null}],currentOptions,end)).sql,/COALESCE\(scope_o.entry_closed,0\)=0/);
+assert.throws(()=>insertion(plan,[{native,options:null}],{...authority,options:undefined},end));
+console.log("Requetes officiels preparees sans execution : parametres, PK groupes, source et fermeture protegees, retrait limite aux lignes sauvegardees.");
