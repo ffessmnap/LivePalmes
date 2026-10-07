@@ -4,6 +4,7 @@ const {selectedStatement,insertion,deletion}=require("../functions/nap-official-
 const {SPECS}=require("../functions/nap-portal-competition-change");
 const authority=Object.fromEntries(["competitions","compet_parametres"].map(table=>[table,Object.fromEntries(SPECS[table].columns.map(key=>[key,key==="id"?5140:null]))]));
 authority.options=null;
+authority.nativeLeader={id:30,compet:5140,nom:"CHEF",prenom:"Exemple",date:"1980-01-01",club:"106",pourclub:""};
 const native={id:7,nom:"D'EXEMPLE",prenom:"Exemple",date:"1980-01-03",club:"106"};
 const before={id:20,compet:5140,officiel:8,club:"106"};
 const plan={competitionId:5140,clubId:"106",additions:[native],removals:[before]};
@@ -20,7 +21,9 @@ const add=bound(insertion(plan,[{native,options:null}],authority,end));
 assert.match(add.sql,/LEFT JOIN officielsengager existing/);assert.match(add.sql,/existing.id IS NULL/);assert.match(add.sql,/n.id=\?/);
 assert.match(add.sql,/scope_c/);assert.match(add.sql,/scope_p/);assert.match(add.sql,/UTC_TIMESTAMP\(\) < \?/);assert.match(add.sql,/ORDER BY n.id LIMIT 80$/);
 assert.ok(add.values.includes(native.nom));assert.ok(add.values.includes("2026-10-07 19:59:00.000"));
+assert.match(add.sql,/FROM chefsdequipe scope_l/);assert.equal(add.expectedRows,1);
 const remove=bound(deletion(plan,[before],authority,end));
+assert.equal(remove.expectedRows,1);assert.throws(()=>insertion(plan,[{native,options:null}],{...authority,nativeLeader:null},end),/Chef/);
 assert.deepEqual(remove.values.slice(0,4),[20,5140,8,"106"]);assert.match(remove.sql,/id=\? AND compet=\? AND officiel=\?/);assert.match(remove.sql,/LIMIT 200$/);
 assert.throws(()=>selectedStatement(Array(81).fill(7),"106"));
 assert.throws(()=>insertion(plan,[{native:{...native,id:9},options:null}],authority,end));

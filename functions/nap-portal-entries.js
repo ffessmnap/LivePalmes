@@ -65,10 +65,11 @@ async function inspectNativeClubEntry(connection) {
     const histories=selectedPeople.length ? await require("./nap-entry-performance-history").readEntryHistory(checked,selectedPeople) : new Map();
     const individualStatements=await require("./nap-individual-entry-proof").inspectStatements(connection,result);
     const selectionStatements=await require("./nap-swimmer-entry-proof").inspectSelection(connection,result);
+    const officialStatements=await require("./nap-official-entry-proof").inspectOfficialStatements(connection,result,directory);
     return {source:"nap",mode:"portal-entry-contract-readonly",present:true,complete:true,plans,
     counts:Object.fromEntries(["swimmers","inscriptions","individual","relays","members","officials","leaders"].map(key=>[key,result[key].length])),
       optionsPresent:result.options !== null,directory:{rows:directory.people.length,hasMore:directory.hasMore,queriesExecuted:directory.sqlBudget.queriesExecuted},
-      entryHistory:{sampledSwimmers:selectedPeople.length,selectionTruncated:selectedIds.size>100,normalizedRows:[...histories.values()].reduce((sum,rows)=>sum+rows.length,0),queriesMax:selectedPeople.length?1:0,rawRowsMax:20000},individualStatements,selectionStatements,writesExecuted:false};
+      entryHistory:{sampledSwimmers:selectedPeople.length,selectionTruncated:selectedIds.size>100,normalizedRows:[...histories.values()].reduce((sum,rows)=>sum+rows.length,0),rawRowsMax:20000,queriesMax:selectedPeople.length?1:0},individualStatements,selectionStatements,officialStatements,writesExecuted:false};
   } catch (error) {
     // Keep partial plans, never SQL/driver messages, identities or credentials.
     return {source:"nap",mode:"portal-entry-contract-readonly",complete:false,plans,writesExecuted:false,
