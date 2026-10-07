@@ -678,6 +678,7 @@
     engagementsClubTeamSummary: document.querySelector("#adminEngagementsClubTeamSummary"),
     engagementsClubTeamChoices: document.querySelector("#adminEngagementsClubTeamChoices"),
     engagementsClubTeamModifyButton: document.querySelector("#adminEngagementsClubTeamModifyButton"),
+    engagementsClubTeamNativePersonCreate: document.querySelector("#adminEngagementsClubTeamNativePersonCreate"),
     engagementsClubTeamRenunciationButton: document.querySelector("#adminEngagementsClubTeamRenunciationButton"),
     engagementsClubTeamRenunciationDialog: document.querySelector("#adminEngagementsClubTeamRenunciationDialog"),
     engagementsClubTeamRenunciationDialogForm: document.querySelector("#adminEngagementsClubTeamRenunciationDialogForm"),
@@ -2014,7 +2015,16 @@
       (Array.isArray(entry.relays) && entry.relays.length > 0);
   }
 
+  function updateNativeCompetitionPersonCreationButton() {
+    const button=elements.engagementsClubTeamNativePersonCreate;
+    if(!button) return;
+    const native=global.LivePalmesEnvironment?.isTest===true && selectedEngagementCompetition?.nativeReadOnly===true;
+    button.hidden=!native;
+    button.disabled=!native || engagementClubPersonSaving || !canUse("engagements.club.manage") || Boolean(engagementClubWriteLockReason({...selectedEngagementCompetition,nativeReadOnly:false}));
+  }
+
   function updateEngagementClubTeamLeaderActions(entry = selectedEngagementClubEntry || {}) {
+    updateNativeCompetitionPersonCreationButton();
     const teamLeader = entry.teamLeader || {};
     const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
     const writeLockReason = nativeLeaderEdit ? engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false }) : engagementClubWriteLockReason();
@@ -8365,7 +8375,6 @@
       if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = "";
       for (const control of [elements.engagementsClubTeamPersonSearch, elements.engagementsClubTeamPersonSelect]) if (control) { const label=control.closest("label"); if(label) label.hidden=true; }
       for (const control of [elements.engagementsClubTeamPersonResults, elements.engagementsClubTeamPersonCreate, elements.engagementsClubTeamRenunciationLabel, elements.engagementsClubTeamExternalClubIdLabel, elements.engagementsClubTeamExternalClubNameLabel]) if (control) control.hidden = true;
-      if(elements.engagementsClubTeamPersonCreate) {elements.engagementsClubTeamPersonCreate.hidden=false;elements.engagementsClubTeamPersonCreate.disabled=locked;}
       if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.querySelectorAll('input[type="radio"]').forEach(control=>{const label=control.closest("label"); if(label) label.hidden=true; else control.hidden=true;});
       if (elements.engagementsClubTeamExternalOpen) elements.engagementsClubTeamExternalOpen.hidden = true;
       if (elements.engagementsClubTeamRenunciationButton) elements.engagementsClubTeamRenunciationButton.hidden = true;
@@ -14773,6 +14782,7 @@
   }
 
   function renderEngagementClubPeople() {
+    updateNativeCompetitionPersonCreationButton();
     if (!elements.engagementsClubPeopleList) return;
     const nativeReadOnly = global.LivePalmesEnvironment?.isTest === true;
     if(elements.engagementsClubPeopleAddButton) elements.engagementsClubPeopleAddButton.disabled = nativeReadOnly && (!engagementClubPeopleLoaded || engagementClubPeopleLoading || engagementClubPersonSaving);
@@ -17490,6 +17500,7 @@
       elements.engagementsClubTeamPersonSelect.value = personId;
       elements.engagementsClubTeamPersonSelect.dispatchEvent(new Event("change", { bubbles: true }));
     });
+    elements.engagementsClubTeamNativePersonCreate?.addEventListener("click",openNativeCompetitionPersonCreation);
     elements.engagementsClubTeamPersonCreate?.addEventListener("click", () => {
       if(global.LivePalmesEnvironment?.isTest===true) {openNativeCompetitionPersonCreation();return;}
       const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');

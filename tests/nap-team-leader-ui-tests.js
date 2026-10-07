@@ -16,7 +16,7 @@ const sandbox={elements,selectedEngagementCompetitionId:"legacy-nap-5140",select
   callFunction:async(name,input)=>{calls.push({name,input});return {competition:sandbox.selectedEngagementCompetition,entry:{teamLeader:{nativeLeaderId:"51"}}};},renderEngagementClubEntry:()=>{}};
 vm.createContext(sandbox);
 function load(name,async=false){const start=source.indexOf(`  ${async?"async ":""}function ${name}(`);assert.ok(start>=0);const tail=source.slice(start+10);const next=tail.search(/\n  (?:async )?function /);vm.runInContext(source.slice(start,start+10+next),sandbox);}
-load("updateEngagementClubTeamFormMode");load("updateEngagementClubTeamLeaderActions");load("saveEngagementClubTeamLeader",true);
+load("updateNativeCompetitionPersonCreationButton");load("updateEngagementClubTeamFormMode");load("updateEngagementClubTeamLeaderActions");load("saveEngagementClubTeamLeader",true);
 sandbox.updateEngagementClubTeamLeaderActions();
 assert.equal(elements.engagementsClubTeamModifyButton.disabled,false,"summary modify stays enabled after locking the other form controls");
 assert.equal(elements.engagementsClubTeamRemoveButton.disabled,true);
