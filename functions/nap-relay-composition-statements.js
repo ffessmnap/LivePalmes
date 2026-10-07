@@ -18,8 +18,8 @@ function insertRelay(plan,course,authority,end) {
   if(plan?.action!=="create" || Object.hasOwn(plan.after||{},"id") || Number(plan.after?.compet)!==Number(plan.competitionId) || String(plan.after?.club)!==String(plan.clubId) || !/^\d{6}$/.test(plan.after?.tps) || Number(plan.after.tps.slice(-4,-2))>=60 || !Number.isSafeInteger(plan.after.categorie) || plan.after.categorie<0) throw new TypeError("Creation native resolue requise.");
   if(positiveId(course?.id_course)!==positiveId(plan.after.course) || Number(course.relais)!==1 || typeof course.course!=="string" || !["F","M","X","0",0].includes(course.sexe)) throw new TypeError("Course relais native a verifier.");
   const guard=openAuthority(plan,authority);
-  const values=[plan.competitionId,plan.after.categorie,String(plan.clubId),plan.after.tps,course.id_course,course.course,course.sexe,course.relais,...guard.values,deadline(end)];
-  return {kind:"insert-relay",expectedRows:1,sql:`INSERT INTO engagements_relais (compet,categorie,club,tps,course) SELECT ?,?,?,?,scope_d.id FROM course_dispo scope_d FORCE INDEX (PRIMARY) WHERE scope_d.id=? AND BINARY scope_d.course <=> BINARY ? AND BINARY scope_d.sexe <=> BINARY ? AND scope_d.relais=? AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values};
+  const values=[plan.competitionId,plan.after.categorie,String(plan.clubId),plan.after.tps,course.id_course,course.course,course.sexe,course.relais,plan.competitionId,course.id_course,...guard.values,deadline(end)];
+  return {kind:"insert-relay",expectedRows:1,sql:`INSERT INTO engagements_relais (compet,categorie,club,tps,course) SELECT ?,?,?,?,scope_d.id FROM course_dispo scope_d FORCE INDEX (PRIMARY) WHERE scope_d.id=? AND BINARY scope_d.course <=> BINARY ? AND BINARY scope_d.sexe <=> BINARY ? AND scope_d.relais=? AND EXISTS (SELECT 1 FROM compet_courses scope_cc WHERE scope_cc.compet=? AND scope_cc.id_course=?) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values};
 }
 function insertMembers(plan,relayId,additions,people,authority,end) {
   relayId=positiveId(relayId);
@@ -45,8 +45,8 @@ function updateRelay(plan,course,authority,end) {
   if(plan?.action!=="compose" || positiveId(plan.relayId)!==positiveId(plan.before?.id) || Number(plan.before.compet)!==Number(plan.competitionId) || String(plan.before.club)!==String(plan.clubId) || Number(plan.after?.id)!==Number(plan.relayId) || Number(plan.after.compet)!==Number(plan.competitionId) || String(plan.after.club)!==String(plan.clubId) || !Number.isSafeInteger(plan.after.categorie) || plan.after.categorie<0 || !/^\d{6}$/.test(plan.after.tps) || Number(plan.after.tps.slice(-4,-2))>=60 || positiveId(course?.id_course)!==positiveId(plan.after.course) || Number(course.relais)!==1) throw new TypeError("Modification du relais cible seul requise.");
   const guard=openAuthority(plan,authority),values=[plan.after.categorie,plan.after.course,plan.after.tps];
   const before=relayWitness(plan.before,"",values);
-  values.push(course.id_course,course.course,course.sexe,course.relais,...guard.values,deadline(end));
-  return {kind:"update-relay",expectedRows:1,sql:`UPDATE engagements_relais SET categorie=?,course=?,tps=? WHERE ${before} AND EXISTS (SELECT 1 FROM course_dispo scope_d FORCE INDEX (PRIMARY) WHERE scope_d.id=? AND BINARY scope_d.course <=> BINARY ? AND BINARY scope_d.sexe <=> BINARY ? AND scope_d.relais=?) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values};
+  values.push(course.id_course,course.course,course.sexe,course.relais,plan.competitionId,course.id_course,...guard.values,deadline(end));
+  return {kind:"update-relay",expectedRows:1,sql:`UPDATE engagements_relais SET categorie=?,course=?,tps=? WHERE ${before} AND EXISTS (SELECT 1 FROM course_dispo scope_d FORCE INDEX (PRIMARY) WHERE scope_d.id=? AND BINARY scope_d.course <=> BINARY ? AND BINARY scope_d.sexe <=> BINARY ? AND scope_d.relais=?) AND EXISTS (SELECT 1 FROM compet_courses scope_cc WHERE scope_cc.compet=? AND scope_cc.id_course=?) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values};
 }
 function removeMembers(plan,relayId,removals,authority,end) {
   relayId=positiveId(relayId);
