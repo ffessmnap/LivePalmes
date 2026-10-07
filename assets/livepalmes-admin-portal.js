@@ -16,6 +16,8 @@
   const PERFORMANCE_PUBLIC_SEARCH_BASE = global.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore");
   const publicPerformanceSwimmerSearchShards = new Map();
   const ENGAGEMENT_EVENT_DEFINITIONS = [
+    ["25SF", "individual", "25 m Surface", "25 SF", "SF", 25],
+    ["25AP", "individual", "25 m Apnee", "25 AP", "AP", 25],
     ["50SF", "individual", "50 m Surface", "50 SF", "SF", 50],
     ["100SF", "individual", "100 m Surface", "100 SF", "SF", 100],
     ["200SF", "individual", "200 m Surface", "200 SF", "SF", 200],
@@ -4079,6 +4081,10 @@
     return !competition.qualifications?.enabled && competition.missingEntryTimeMode === "manual";
   }
 
+  function engagementKnownIndividualTimesSelectable(competition = selectedEngagementCompetition || {}) {
+    return engagementManualIndividualTimesAllowed(competition) || (competition.napSource === true && Number(competition.nativeParameters?.saisie) === 0);
+  }
+
   function clearUncheckedQualificationException(box, row) {
     if (box.checked || box.dataset.qualificationApproved !== "true") return false;
     const swimmerId = row.dataset.engagementClubEntrySwimmerId;
@@ -4335,7 +4341,11 @@
     if (competition.napSource === true) {
       const fields = editCompetitionFields();
       for (const key of ["level", "regionId", "invitedRegionIds", "qualificationMode", "qualificationStart", "qualificationEnd"]) if (fields[key]) fields[key].disabled = true;
-      if (fields.missingEntryTimeMode) fields.missingEntryTimeMode.disabled = Number(competition.nativeParameters?.saisie) !== 1 || Boolean(Number(competition.nativeParameters?.qualif || 0)) || competition.qualifications?.enabled === true;
+      if (fields.missingEntryTimeMode) {
+        fields.missingEntryTimeMode.disabled = false;
+        const labels = {manual: "Saisie possible", forbidden: "Aucune saisie — meilleur temps connu obligatoire", default595999: "Aucune saisie — temps connu au choix, sinon sans temps"};
+        for (const option of fields.missingEntryTimeMode.options) if (labels[option.value]) option.textContent = labels[option.value];
+      }
       if (fields.deadline) { fields.deadline.step = "1"; fields.deadline.value = (competition.nativeEntryDeadline || "").replace(" ", "T"); }
       const closed = fields.entryStatus?.querySelector("option[value='closed']");
       if (closed) closed.disabled = false;
@@ -7368,7 +7378,7 @@
   async function loadEngagementClubEntryTimeHistory(swimmer = {}) {
     const eventCodes = engagementClubTimesDialogEventCodes(swimmer);
     const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
-    if (!cacheKey || !eventCodes.length || !engagementManualIndividualTimesAllowed()) return;
+    if (!cacheKey || !eventCodes.length || !engagementKnownIndividualTimesSelectable()) return;
     if (engagementClubEntryTimeHistoryCache.has(cacheKey)) {
       populateEngagementClubEntryTimeHistory(swimmer);
       return;
@@ -7439,6 +7449,7 @@
     const cacheKey = engagementClubSwimmerEventTimesCacheKey(swimmer);
     const previewByCode = new Map((engagementClubSwimmerEventTimesCache.get(cacheKey) || []).map((entry) => [entry.eventCode, entry]));
     const manualAllowed = engagementManualIndividualTimesAllowed();
+    const knownSelectable = engagementKnownIndividualTimesSelectable();
     mount.innerHTML = eventCodes.map((eventCode) => {
       const event = engagementEventDefinition(eventCode) || { code: eventCode, shortLabel: eventCode, label: eventCode };
       const entry = entryByCode.get(eventCode) || {};
@@ -7459,7 +7470,7 @@
             <small>${escapeHtml(event.label || eventCode)}</small>
           </div>
           <div class="admin-engagements-club-time-dialog-value">
-            ${manualAllowed ? `
+            ${knownSelectable ? `
               <select class="admin-engagements-club-time-history-select" data-engagement-club-time-history-select="${escapeHtml(eventCode)}" data-original-time="${escapeHtml(displayLabel)}" data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-has-alternatives="false" aria-label="Temps d'engagement ${escapeHtml(event.shortLabel || eventCode)}" disabled>
                 <option value="${escapeHtml(displayLabel)}" data-entry-time-mode="${escapeHtml(displayedEntry.entryTimeMode || "pending")}" data-history-date="${escapeHtml(displayedEntry.date ? formatShortDate(displayedEntry.date) : "")}" data-history-location="${escapeHtml(displayedEntry.location || "")}">${escapeHtml(displayLabel)}</option>
               </select>
@@ -7469,7 +7480,7 @@
             ${manualAllowed ? `
               <button class="ghost-button compact" type="button" data-engagement-club-time-toggle data-automatic-time="${escapeHtml(automaticValue)}">${manualEditing ? "Rétablir auto" : "Saisie libre"}</button>
               <input type="text" maxlength="8" inputmode="numeric" placeholder="00:00.00" aria-label="Temps manuel ${escapeHtml(event.shortLabel || eventCode)}" data-engagement-club-time-dialog-input value="${escapeHtml(manualValue)}" ${manualEditing ? "" : "hidden disabled"}>
-            ` : ""}
+            ` : knownSelectable ? '<input type="text" data-engagement-club-time-dialog-input hidden disabled>' : ""}
           </div>
           <small class="admin-engagements-club-time-dialog-help" data-engagement-club-time-dialog-help>${escapeHtml(help)}</small>
         </div>
@@ -7551,7 +7562,7 @@
         input.focus?.();
         return;
       }
-      overrides.set(eventCode, { manual, value });
+      overrides.set(eventCode, { manual, value, known: historyChanged && !engagementManualIndividualTimesAllowed() });
     }
     const matrixRow = Array.from(elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
       .find((candidate) => candidate.dataset.engagementClubEntrySwimmerId === swimmer.swimmerIndexId);
@@ -7560,7 +7571,7 @@
         .find((input) => input.dataset.engagementClubSwimmerEventTime === eventCode);
       if (!timeInput) return;
       timeInput.value = override.value;
-      timeInput.disabled = !override.manual;
+      timeInput.disabled = !override.manual || override.known;
     });
     const previewByCode = new Map((engagementClubSwimmerEventTimesCache.get(engagementClubSwimmerEventTimesCacheKey(swimmer)) || [])
       .map((entry) => [entry.eventCode, entry]));
@@ -7571,6 +7582,9 @@
         individualEntries: (candidate.individualEntries || []).map((entry) => {
           const override = overrides.get(entry.eventCode);
           if (!override) return entry;
+          if (override.known) {
+            return { ...entry, entryTimeMode: "known", entryTime: override.value, manualEntryTime: "" };
+          }
           if (override.manual) {
             return { ...entry, entryTimeMode: "manual", entryTime: override.value, manualEntryTime: override.value };
           }
@@ -15453,7 +15467,7 @@
     const values = {};
     for (const key of ["name", "date", "endDate", "location", "city", "address", "organizer", "organizerEmail", "teamLeadersWhatsAppUrl", "publicDescription", "waterBodyType", "computerEmail", "officialsManagerEmail", "poolLength", "timingType", "entryStatus"]) values[key] = fields[key]?.value || "";
     values.canceled = fields.canceled?.checked === true;
-    if (Number(selectedEngagementCompetition?.nativeParameters?.saisie) === 1 && !Number(selectedEngagementCompetition?.nativeParameters?.qualif || 0) && !selectedEngagementCompetition?.qualifications?.enabled) values.missingEntryTimeMode = fields.missingEntryTimeMode?.value || "";
+    values.missingEntryTimeMode = fields.missingEntryTimeMode?.value || "";
     values.officialsRequired = fields.officialsRequired?.value === "true";
     values.poolLaneCount = Number(fields.poolLaneCount?.value || 0);
     values.maxEventsPerSwimmer = Number(fields.maxEvents?.value || 0);

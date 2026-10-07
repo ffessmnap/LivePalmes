@@ -10,6 +10,14 @@ assert.throws(()=>historyStatement([...people,people[0]]));assert.throws(()=>his
   let calls=0;
   const rows=await readEntryHistory({execute:async()=>{calls++;return [[row]];}},people);
   assert.equal(calls,1);assert.equal(rows.get("1")[0].time,"1:42.00");assert.deepEqual(rows.get("2"),[]);assert.equal(row.tps,"14200");
+  for (const course of ["25SF","25AP"]) {
+    const short={...row,course,tps:"1200"};
+    assert.equal(require("../functions/nap-direct-swimmer").performanceRow(short,people[0]),null,"25 m remain excluded from public swimmer profiles");
+    assert.equal(require("../functions/nap-performance-normalization").CURRENT_POOL_COURSES.includes(course),false,"25 m remain excluded from public TOP");
+    const entryRows=await readEntryHistory({execute:async()=>[[short]]},people);
+    assert.equal(entryRows.get("1")[0].course,course);
+    assert.equal(entryRows.get("1")[0].timeValue,1200);
+  }
   await assert.rejects(()=>readEntryHistory({execute:async()=>[[{...row,nageur:3}]]},people));
   await assert.rejects(()=>readEntryHistory({execute:async()=>[[row,row]]},people));
   await assert.rejects(()=>readEntryHistory({execute:async()=>[Array.from({length:2001},(_,i)=>({...row,id:i+1}))]},people),RangeError);
