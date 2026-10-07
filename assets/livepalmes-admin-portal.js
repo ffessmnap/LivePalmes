@@ -2106,6 +2106,22 @@
     return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeRelaysEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
+  function engagementClubTeamLeaderLockReason() {
+    const competition = selectedEngagementCompetition || {};
+    return engagementClubWriteLockReason(competition.nativeReadOnly === true && competition.nativeTeamLeaderEditable === true ? {...competition, nativeReadOnly: false} : competition);
+  }
+
+  function engagementClubStepLockReason(step) {
+    switch (step) {
+      case "swimmers": return engagementClubSwimmerSelectionLockReason();
+      case "entries": return engagementClubIndividualEntriesLockReason();
+      case "officials": return engagementClubOfficialsLockReason();
+      case "relays": return engagementClubRelaysLockReason();
+      case "summary": return selectedEngagementCompetition?.napSource === true ? "" : engagementClubWriteLockReason();
+      default: return engagementClubWriteLockReason();
+    }
+  }
+
   function engagementClubInformationOnly(competition = selectedEngagementCompetition || {}) {
     return !isEngagementAdminMode() && (competition.entryStatus || "upcoming") === "upcoming";
   }
@@ -8579,12 +8595,13 @@
         : "À renseigner avant de commencer les engagements.";
       elements.engagementsClubTeamSummary.dataset.complete = engagementClubTeamComplete() ? "true" : "false";
     }
-    if (writeLockReason && elements.engagementsClubTeamMessage) {
-      elements.engagementsClubTeamMessage.textContent = writeLockReason;
-      elements.engagementsClubTeamMessage.dataset.tone = "error";
+    if (elements.engagementsClubTeamMessage) {
+      const teamLockReason = engagementClubTeamLeaderLockReason();
+      elements.engagementsClubTeamMessage.textContent = teamLockReason || (engagementClubTeamComplete() ? "Étape chef d'équipe validée." : "");
+      elements.engagementsClubTeamMessage.dataset.tone = teamLockReason ? "error" : "ok";
     }
     document.querySelectorAll("[data-club-step]").forEach((step) => {
-      const stepLockReason = step.dataset.clubStep === "relays" ? engagementClubRelaysLockReason() : writeLockReason;
+      const stepLockReason = engagementClubStepLockReason(step.dataset.clubStep);
       const locked = Boolean(stepLockReason || !engagementClubTeamComplete());
       step.dataset.locked = locked ? "true" : "false";
       if (step.dataset.clubStep === "officials") return;
@@ -8597,7 +8614,7 @@
         swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
           entries: "Choisissez les courses individuelles des nageurs engagés.",
         relays: "Ajoutez les relais du club pour cette compétition.",
-        summary: "Structure prête. Le récapitulatif se remplira avec les prochaines étapes."
+        summary: "Vérifiez le récapitulatif du dossier et téléchargez le PDF."
         };
         firstParagraph.textContent = locked
         ? stepLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
