@@ -7,6 +7,12 @@ function statements(plan,authority,end) {
   if(!plan || !Array.isArray(plan.plans) || plan.plans.length>100) throw new TypeError("Plan individuel borne requis.");
   if(!/^\d{1,16}$/.test(String(plan.clubId)) || Number(authority?.competitions?.id)!==Number(plan.competitionId) || Number(authority?.compet_parametres?.compet)!==Number(plan.competitionId) || Number(authority?.compet_parametres?.actif)!==1) throw new TypeError("Competition ouverte et autorisee requise.");
   const guard=entryAuthority(authority,positiveId(plan.competitionId));
+  if(authority.nativeLeader) {
+    const leader=authority.nativeLeader,columns=["id","compet","nom","prenom","date","club","pourclub"];
+    if(columns.some(key=>!Object.hasOwn(leader,key)) || Number(leader.compet)!==Number(plan.competitionId) || ![String(leader.club),String(leader.pourclub)].includes(String(plan.clubId))) throw new TypeError("Chef d'equipe hors dossier.");
+    guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>`BINARY scope_l.\`${key}\` <=> BINARY ?`).join(" AND ")})`;
+    guard.values.push(positiveId(leader.id),...columns.map(key=>leader[key]));
+  }
   const result=[],updates=[],removals=[],additions=[],seen=new Set();
   for(const item of plan.plans) {
     const inscriptionId=positiveId(item.inscriptionId),swimmerId=positiveId(item.swimmerId);
