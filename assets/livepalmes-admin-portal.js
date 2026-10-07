@@ -5851,6 +5851,7 @@
   }
 
   function engagementEntryTimeDisplayLabel(entry = {}) {
+    if (String(entry.nativeTime || "") === "599999" || (selectedEngagementCompetition?.napSource === true && Number(selectedEngagementCompetition.nativeParameters?.saisie) === 0 && entry.entryTimeMode === "default595999")) return "Sans temps connu";
     if (entry.entryTime) return formatEngagementEntryTimeInput(entry.entryTime) || entry.entryTime;
     return entry.entryTimeMode === "default595999" ? "59:59.99" : "Calcul...";
   }
