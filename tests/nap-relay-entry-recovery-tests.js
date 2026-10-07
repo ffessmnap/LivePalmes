@@ -1,0 +1,53 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {planRelayChanges}=require("../functions/nap-relay-entry-plan");
+const {remainingRelays}=require("../functions/nap-relay-entry-recovery");
+const {statements}=require("../functions/nap-relay-entry-statements");
+const {SPECS}=require("../functions/nap-portal-competition-change");
+const relay={id:12,compet:5140,categorie:0,club:"48",course:261,tps:"000315"};
+const members=[{id:21,relais:12,pos:0,nageur:912},{id:22,relais:12,pos:5,nageur:913}];
+const pack={competitionId:5140,clubId:"48",relays:[relay],members};
+const remove=planRelayChanges(pack,[{relayId:12,action:"remove"}]);
+const time=planRelayChanges(pack,[{relayId:12,action:"time",time:"031500"}]);
+const authority=Object.fromEntries(["competitions","compet_parametres"].map(table=>[table,Object.fromEntries(SPECS[table].columns.map(key=>[key,key==="id"?5140:null]))]));
+authority.compet_parametres.compet=5140;
+authority.compet_parametres.actif=1;
+authority.options=null;
+authority.nativeLeader={id:30,compet:5140,nom:"CHEF",prenom:"Exemple",date:"1980-01-01",club:"48",pourclub:""};
+const end="2026-10-07T19:59:00.000Z";
+function checked(plan) {
+  const result=statements(plan,authority,end);
+  for(const item of result) {
+    assert.equal((item.sql.match(/\?/g)||[]).length,item.values.length);
+    assert.match(item.sql,/UTC_TIMESTAMP\(\) < \? LIMIT/);
+    assert.match(item.sql,/scope_c/);
+    assert.match(item.sql,/scope_p/);
+    assert.ok(item.values.includes("2026-10-07 19:59:00.000"));
+  }
+  return result;
+}
+const deletion=checked(remove);
+assert.deepEqual(deletion.map(item=>[item.kind,item.expectedRows]),[["members",2],["relays",1]]);
+assert.match(deletion[0].sql,/scope_r FORCE INDEX \(PRIMARY\)/);
+assert.match(deletion[1].sql,/NOT EXISTS.*livepalmes_relais_pos_id/);
+const update=checked(time)[0];
+assert.match(update.sql,/SET tps=CASE id WHEN \? THEN \? ELSE tps END/);
+assert.deepEqual(update.values.slice(0,2),[12,"031500"]);
+assert.ok(update.values.includes("000315"),"Historic raw time is part of the concurrency witness");
+const partial=remainingRelays(remove,[relay],[members[1]]);
+assert.equal(partial.complete,false);
+assert.deepEqual(checked(partial.plan).map(item=>[item.kind,item.expectedRows]),[["members",1],["relays",1]]);
+assert.deepEqual(checked(remainingRelays(remove,[relay],[]).plan).map(item=>item.kind),["relays"]);
+assert.equal(remainingRelays(remove,[],[]).complete,true);
+assert.equal(remainingRelays(time,[relay],members).complete,false);
+assert.equal(remainingRelays(time,[{...relay,tps:"031500"}],members).complete,true);
+assert.throws(()=>remainingRelays(time,[{...relay,tps:"034000"}],members),/change/);
+assert.throws(()=>remainingRelays(remove,[relay],[{...members[0],nageur:914}]),/composition/);
+assert.throws(()=>remainingRelays(remove,[relay],[...members,{id:23,relais:12,pos:6,nageur:914}]),/composition/);
+assert.throws(()=>remainingRelays(remove,[],members),/sans relais/);
+assert.throws(()=>remainingRelays(remove,[{...relay,club:"49"}],members),/change/);
+assert.throws(()=>checked({...remove,plans:[...remove.plans,...remove.plans]}),/unique/);
+assert.throws(()=>checked({...remove,plans:[{...remove.plans[0],relayId:13}]}),/coherent/);
+assert.throws(()=>statements(remove,{...authority,compet_parametres:{...authority.compet_parametres,actif:0}},end),/ouvert/);
+assert.throws(()=>statements(remove,authority,"invalid"));
+console.log("Relay recovery and grouped SQL: partial removal, exact raw-time witnesses, concurrent composition conflicts and closure guards; no database access.");
