@@ -2,12 +2,12 @@
 const assert=require("node:assert/strict"),engine=require("../functions/dtn-season-engine"),repo=require("../functions/nap-dtn-season-repository"),seed=require("../functions/config/dtn-season-2025-2026.json");
 const {createNativeDtnSeasonService}=require("../functions/nap-dtn-season-service");
 function fixture() {
-  const s={catalog:{revision:0,current:seed.id,previous:"",draft:""},seasons:new Map([[seed.id,structuredClone(seed)]]),views:new Map(),jobs:new Map(),queries:[],poolCalls:0,calculations:0,commits:0,rollbacks:0,manager:true,denied:false,version:"native-version",busy:false,failDevice:null,sourceChange:false,configChange:false};
+  const s={catalog:{revision:0,current:seed.id,previous:"",draft:""},seasons:new Map([[seed.id,structuredClone(seed)]]),views:new Map(),jobs:new Map(),queries:[],poolCalls:0,calculations:0,commits:0,rollbacks:0,manager:true,denied:false,version:"native-version",busy:false,failDevice:null,sourceChange:false,configChange:false,metadataPools:[],lockKeys:[]};
   let snapshot;
   const executor={execute:async({sql},values=[])=>{
     s.queries.push(sql);
-    if(sql.includes("GET_LOCK")) return [[{acquired:s.busy?0:1}]];
-    if(sql.includes("RELEASE_LOCK")) return [[{}]];
+    if(sql.includes("GET_LOCK")) {s.lockKeys.push(values[0]);return [[{acquired:s.busy?0:1}]];}
+    if(sql.includes("RELEASE_LOCK")) {assert.equal(values[0],s.lockKeys.at(-1));return [[{}]];}
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_catalogue")) return [[{revision:s.catalog.revision,saison_active:s.catalog.current,saison_precedente:s.catalog.previous,saison_brouillon:s.catalog.draft}]];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_saisons")) return [[...s.seasons.values()].filter(v=>values.includes(v.id)).map(v=>({id:v.id,revision:v.revision,configuration:JSON.stringify(v)}))];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_resultats")) return [[...s.views.values()].filter(v=>values.includes(v.id)).map(v=>({saison:v.id,dispositif:v.device,revision:v.value.revision,empreinte:v.value.fingerprint,contenu:JSON.stringify(v.value)}))];
@@ -22,7 +22,7 @@ function fixture() {
     throw new Error(`Unexpected SQL ${sql}`);
   },beginTransaction:async()=>{snapshot=structuredClone({catalog:s.catalog,seasons:s.seasons,views:s.views,jobs:s.jobs});},commit:async()=>s.commits++,rollback:async()=>{s.rollbacks++;Object.assign(s,snapshot);},release:()=>{}};
   const pool={execute:executor.execute,getConnection:async()=>executor};
-  const service=createNativeDtnSeasonService({getPool:()=>{s.poolCalls++;return pool;},authorize:async()=>{if(s.denied) throw new Error("Denied");},canManage:()=>s.manager,fail:(message,code)=>{throw Object.assign(new Error(message),{code});},stamp:async()=>({fingerprint:s.version}),calculate:async(_pool,season)=>{
+  const service=createNativeDtnSeasonService({getPool:()=>{s.poolCalls++;return pool;},authorize:async()=>{if(s.denied) throw new Error("Denied");},canManage:()=>s.manager,fail:(message,code)=>{throw Object.assign(new Error(message),{code});},stamp:async(metadataPool)=>{s.metadataPools.push(metadataPool===pool?"shared":"held");return {fingerprint:s.version};},calculate:async(_pool,season)=>{
     s.calculations++;if(s.sourceChange) s.version="changed";if(s.configChange) s.seasons.get(season.id).revision++;
     const normalized=engine.validateSeason(season);
     return {generatedAt:"2026-10-07T15:00:00.000Z",excludedRows:0,views:Object.fromEntries(engine.DEVICES.map(d=>[d,{source:"nap",revision:normalized.revision,profiles:engine.finish(engine.createAccumulator(normalized,d),normalized,d)}]))};
@@ -35,6 +35,8 @@ function fixture() {
   assert.equal((await f.service.list(f.request({}))).source,"nap");
   const empty=await f.service.overview(f.request({}));assert.equal(empty.hit,false);assert.equal(f.s.calculations,0);assert.ok(f.s.queries.every(q=>q.startsWith("SELECT")));
   const result=await f.service.overview(f.request({rebuild:true}));assert.equal(result.hit,true);assert.equal(result.source,"nap");assert.equal(f.s.views.size,3);assert.equal(f.s.calculations,1);
+  assert.equal(f.s.lockKeys[0],"livepalmes_dtn_calc","All seasons share one calculation lock to leave the source-reading pool connection available");assert.deepEqual(f.s.metadataPools.slice(-3),["held","held","held"],"Metadata checks during a calculation reuse its held connection");
+  const concurrent=fixture();concurrent.s.busy=true;assert.equal((await concurrent.service.overview(concurrent.request({rebuild:true}))).pending,true);assert.equal(concurrent.s.calculations,0);assert.equal(concurrent.s.jobs.size,0);
   assert.equal((await f.service.overview(f.request({}))).hit,true);assert.equal(f.s.calculations,1);
   const source=(await f.service.sources(f.request({})));assert.deepEqual(source.sources,[{id:"1",name:"Native",date:"2026-01-01"}]);assert.equal(source.cursor,"");
   f.s.sourceRows=Array.from({length:51},(_,i)=>({id:i+1,libelle:`Competition ${i+1}`,date:"2026-01-01"}));
