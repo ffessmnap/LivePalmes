@@ -27,4 +27,17 @@ function planSelection(pack, changes) {
   }
   return {competitionId,clubId,additions,removals};
 }
-module.exports={planSelection};
+// Do not route the separate open-water tables, or bypass an unmapped native
+// participation/category/qualification restriction, through pool inscriptions.
+function selectionLockReason(competition) {
+  const parameters=competition?.nativeParameters;
+  const type=competition?.event?.eventType || competition?.eventType;
+  if(type!=="pool") return "Le circuit des engagements eau libre NAP reste a raccorder avant cette selection.";
+  if(!parameters) return "Parametres natifs a verifier avant la selection.";
+  if(Number(parameters.qualif||0)!==0 || Number(competition.options?.qualifications_enabled||0)!==0 || competition.qualifications?.enabled===true) return "Le controle des qualifications reste a raccorder pour modifier ce dossier.";
+  const participations=competition.participations || competition.nativeRules?.participations;
+  if(!Array.isArray(participations) || participations.length) return "Le controle de participation aux competitions requises reste a raccorder avant cette selection.";
+  if([parameters.cat_d,parameters.cat_f].some(value=>value!=null && value!=="")) return "Les limites de categories natives restent a verifier avant cette selection.";
+  return "";
+}
+module.exports={planSelection,selectionLockReason};

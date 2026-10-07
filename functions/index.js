@@ -10578,7 +10578,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeSwimmerSelectionEditable: pack.leaders.length === 1 && Number(competition.nativeParameters?.qualif||0)===0 && !competition.qualifications?.enabled }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
   }
@@ -16268,7 +16268,8 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
         // an already completed operation after closure without another write.
       },
       validate:({competition,pack,plan})=>{
-        if(Number(competition.nativeParameters.qualif||0)!==0 || Number(competition.options?.qualifications_enabled||0)!==0) throw new TypeError("Le controle des qualifications reste a raccorder pour modifier ce dossier.");
+        const reason=require("./nap-swimmer-entry-plan").selectionLockReason(competition);
+        if(reason) throw new TypeError(reason);
         const samePerson=(person,row)=>cleanText(person.firstName).toLocaleLowerCase("fr-FR")===cleanText(row.prenom).toLocaleLowerCase("fr-FR") && cleanText(person.lastName).toLocaleLowerCase("fr-FR")===cleanText(row.nom).toLocaleLowerCase("fr-FR") && (!cleanIsoDate(row.date) || cleanIsoDate(person.birthDate)===cleanIsoDate(row.date));
         for(const person of plan.additions) {
           if(!person.firstName || !person.lastName || !cleanIsoDate(person.birthDate) || !["F","M"].includes(person.sex)) throw new TypeError("Completez l'identite NAP du nageur avant l'engagement.");
