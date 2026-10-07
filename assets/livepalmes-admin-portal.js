@@ -14965,6 +14965,7 @@
       await loadEngagementClubPeople({ force: true });
       renderEngagementClubTeamPersonOptions(elements.engagementsClubTeamPersonSelect?.value || "");
     } catch (error) {
+      if(native && requestVersion!==engagementClubPeopleRequestVersion) return;
       if (elements.engagementsClubPersonMessage) {
         elements.engagementsClubPersonMessage.textContent = `Enregistrement impossible : ${error?.message || error}`;
         elements.engagementsClubPersonMessage.dataset.tone = "error";
