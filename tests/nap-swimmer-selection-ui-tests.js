@@ -12,4 +12,17 @@ context.selectedEngagementCompetition.entryStatus="open";context.selectedEngagem
 context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.isTest=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/raccordement/);
 assert.match(source,/expectedFingerprint:engagementClubLastPersistedEntry\?\.napFingerprint,mutationId:global.crypto.randomUUID\(\)/);
 assert.match(source,/engagementClubNativeSelectionRetry=payload/);assert.match(source,/callFunction\("saveEngagementClubSwimmerSelections",payload\)/);
-console.log("Native selection UI: only native selection unlocked, common closure respected, stable retry payload and other writers protected");
+// Execute the real autosave and retry branches: a failed response must retain
+// exactly the same UUID, fingerprint and explicit choices, not a new operation.
+const payloads=[];let attempts=0,uuids=0;
+const queueContext={selectedEngagementCompetition:{napSource:true},selectedEngagementCompetitionId:"legacy-nap-5140",engagementClubSelectionTimer:null,engagementClubSelectionCompetitionId:"legacy-nap-5140",engagementClubSelectionChanges:new Map([["1",{swimmerIndexId:"1",selected:true,swimmer:{licenseNumber:"ignored"}}]]),engagementClubNativeSelectionRetry:null,engagementClubLastPersistedEntry:{competitionId:"legacy-nap-5140",napFingerprint:"a".repeat(64)},elements:{engagementsClubSwimmersMessage:{}},global:{crypto:{randomUUID:()=>{uuids++;return "11111111-1111-4111-8111-111111111111";}}},callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubSwimmerSelections");payloads.push(JSON.parse(JSON.stringify(payload)));attempts++;if(attempts===1) throw new Error("Response interrupted");return {entry:{source:"nap"}};},queueEngagementClubEntryMutation:options=>options.execute(),canUse:()=>true,engagementClubSwimmerSelectionLockReason:()=>""};
+vm.createContext(queueContext);
+vm.runInContext(source.slice(source.indexOf("  function flushEngagementClubSwimmerSelections("),source.indexOf("  function resetEngagementClubEntriesAutosave(")),queueContext);
+vm.runInContext(source.slice(source.indexOf("  async function saveEngagementClubSwimmers("),source.indexOf("  async function saveEngagementClubRelays(")),queueContext);
+(async()=>{
+  await assert.rejects(()=>queueContext.flushEngagementClubSwimmerSelections(),/interrupted/);
+  assert.ok(queueContext.engagementClubNativeSelectionRetry);
+  await queueContext.saveEngagementClubSwimmers(null);
+  assert.equal(uuids,1);assert.deepEqual(payloads[0],payloads[1]);assert.equal(Object.hasOwn(payloads[0].changes[0],"swimmer"),false);assert.equal(queueContext.engagementClubNativeSelectionRetry,null);
+  console.log("Native selection UI: scoped locks, closure and actual stable retry payload verified without network");
+})().catch(error=>{console.error(error);process.exitCode=1;});
