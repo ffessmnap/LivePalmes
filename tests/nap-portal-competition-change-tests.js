@@ -24,6 +24,7 @@ for (const patch of [{qualif:1},{saisie:-1}]) {
   assert.equal(planCompetitionChange(blocked,{...timeInput,expectedFingerprint:fingerprint(blocked)},now).operations[0].after.saisie,-1);
 }
 assert.throws(()=>planCompetitionChange(timePack,{...timeInput,patch:{missingEntryTimeMode:"invented"}},now),/invalide/);
+assert.throws(()=>planCompetitionChange(timePack,{...timeInput,patch:{missingEntryTimeMode:"constructor"}},now),/invalide/);
 const close=planCompetitionChange(pack,input({entryStatus:"closed"}),now);
 assert.deepEqual(close.operations.map(o=>o.table),["compet_parametres","livepalmes_competition_options"]);
 assert.equal(close.operations[0].after.actif,0);
