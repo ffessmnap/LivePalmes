@@ -68,7 +68,9 @@ async function inspectNativeCompetitions(connection) {
     const data = await readNativeCompetition(connection, id, () => {});
     if (!data) { competitions.push({ id, present: false }); continue; }
     competitions.push({ id, present: true, level: data.event.level, competitionType: data.event.eventType,
-      parameters: Object.fromEntries(["actif", "dateactif", "date_limit", "saisie", "relais", "officiel", "native_open", "nb_lignes", "nb_nageurs", "no_premiere_ligne"].map(key => [key, data.nativeParameters[key]])),
+      parameters: Object.fromEntries(["actif", "dateactif", "date_limit", "saisie", "relais", "officiel", "native_open", "nb_lignes", "nb_nageurs", "no_premiere_ligne", "qualif", "cat_d", "cat_f"].map(key => [key, data.nativeParameters[key]])),
+      restrictions: { complete: data.restrictions.length <= 200, count: data.restrictions.length,
+        rows: data.restrictions.slice(0, 200).map(({course,categorie,swim})=>({course,categorie,swim})) },
       counts: Object.fromEntries(["courses", "restrictions", "participations", "committees", "courseOptions", "groups", "standards", "qualifyingCompetitions", "sessions", "program"].map(key => [key, data[key].length])),
       optionsPresent: data.options !== null, feesPresent: data.fees !== null, detailedProgramPresent: data.detailedProgram !== null });
   }

@@ -44,6 +44,9 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   await assert.rejects(readNativeCompetition(pool,5140),TypeError);
   await assert.rejects(readNativeCompetition({execute:async()=>[[{id:5140},{id:5140}]]},5140,()=>{}),RangeError);
   const proof = await inspectNativeCompetitions(pool); assert.equal(proof.writesExecuted,false); assert.ok(!JSON.stringify(proof).includes("private@example")); assert.equal(proof.competitions.length,3);
+  assert.equal(proof.competitions[0].restrictions.complete,true);
+  assert.equal(proof.competitions[0].restrictions.rows[0].swim,0);
+  assert.deepEqual(Object.keys(proof.competitions[0].restrictions.rows[0]),["course","categorie","swim"]);
   let readCount=0;
   await assert.rejects(readNativeCompetition({execute:async({sql})=>{readCount++;return sql.includes("FROM competitions c")?[[{id:5140}]]:[Array(301).fill({})];}},5140,()=>{}),RangeError);
   assert.equal(readCount,2,"oversized course list stops all later reads");
