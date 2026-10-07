@@ -60,9 +60,14 @@ async function inspectNativeClubEntry(connection) {
     if (!clubs.length || !/^\d{1,16}$/.test(String(clubs[0].club ?? ""))) return {source:"nap",mode:"portal-entry-contract-readonly",present:false,complete:true,plans,writesExecuted:false};
     const result = await readNativeClubEntry(checked,{competitionId:5140,clubId:String(clubs[0].club)},()=>{});
     const directory = await require("./nap-club-people").readClubPeople(checked,{clubId:String(clubs[0].club)},()=>{});
+    const selectedIds=new Set(result.inscriptions.map(row=>String(row.nageur)));
+    const selectedPeople=result.swimmers.filter(row=>selectedIds.has(String(row.id))).slice(0,100);
+    const histories=selectedPeople.length ? await require("./nap-entry-performance-history").readEntryHistory(checked,selectedPeople) : new Map();
+    const individualStatements=await require("./nap-individual-entry-proof").inspectStatements(connection,result);
     return {source:"nap",mode:"portal-entry-contract-readonly",present:true,complete:true,plans,
     counts:Object.fromEntries(["swimmers","inscriptions","individual","relays","members","officials","leaders"].map(key=>[key,result[key].length])),
-      optionsPresent:result.options !== null,directory:{rows:directory.people.length,hasMore:directory.hasMore,queriesExecuted:directory.sqlBudget.queriesExecuted},writesExecuted:false};
+      optionsPresent:result.options !== null,directory:{rows:directory.people.length,hasMore:directory.hasMore,queriesExecuted:directory.sqlBudget.queriesExecuted},
+      entryHistory:{sampledSwimmers:selectedPeople.length,selectionTruncated:selectedIds.size>100,normalizedRows:[...histories.values()].reduce((sum,rows)=>sum+rows.length,0),queriesMax:selectedPeople.length?1:0,rawRowsMax:20000},individualStatements,writesExecuted:false};
   } catch (error) {
     // Keep partial plans, never SQL/driver messages, identities or credentials.
     return {source:"nap",mode:"portal-entry-contract-readonly",complete:false,plans,writesExecuted:false,
