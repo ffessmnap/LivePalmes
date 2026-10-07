@@ -13061,7 +13061,8 @@ function engagementSwimmerIdentitySnapshot(swimmer = {}, source = swimmer.source
     licenseNumber: cleanText(swimmer.licenseNumber).toUpperCase().slice(0, 60),
     clubId: cleanText(swimmer.clubId).slice(0, 40),
     clubName: cleanText(swimmer.clubName).slice(0, 140),
-    performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0))
+    performanceCount: Math.max(0, Math.trunc(Number(swimmer.performanceCount) || 0)),
+    ...(swimmer.napSource === true ? { napSource: true, napFingerprint: cleanText(swimmer.napFingerprint).slice(0, 64) } : {})
   });
 }
 
@@ -13619,6 +13620,7 @@ function engagementSwimmerChangeRequestItem(doc) {
     id: doc.id,
     requestType: "swimmer-change",
     status: cleanText(data.status).slice(0, 40),
+    napSource: data.napSource === true,
     requestedSource: cleanText(data.requestedSource).slice(0, 40),
     requestedSwimmerId: cleanText(data.requestedSwimmerId).slice(0, 80),
     targetSource: cleanText(data.targetSource).slice(0, 40),
@@ -13694,8 +13696,32 @@ async function sendEngagementSwimmerChangeResolutionNotification(payload = {}) {
   }
 }
 
-exports.requestEngagementClubSwimmerChange = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const nap = require("./nap-portal-swimmers");
+      const proposal = await require("./nap-swimmer-change-requests").prepareRequest(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), request.data, context);
+      const requestId = stableHash(["nap", proposal.targetSwimmerId, context.clubId].join("|")).slice(0, 40);
+      const ref = db.collection(ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).doc(requestId);
+      const now = new Date().toISOString();
+      const payload = { ...proposal, id: requestId, requestType: "swimmer-change", status: "pending",
+        clubId: context.clubId, clubName: context.clubName, regionId: context.regionId,
+        requestedAt: now, requestedBy: context.uid, requestedByEmail: context.email || "",
+        requestedByFirstName: context.firstName || "", requestedByLastName: context.lastName || "",
+        updatedAt: now, updatedBy: context.uid };
+      await db.runTransaction(async transaction => {
+        const existing = await transaction.get(ref);
+        if (existing.exists && existing.data()?.status === "pending") throw new HttpsError("already-exists", "Une demande de correction est deja en attente pour ce nageur.");
+        transaction.set(ref, cleanFirestoreValue(payload), { merge: false });
+      }, { maxAttempts: 3 });
+      await writeAuditLogOnce("nap.swimmer.changeRequested", context.uid, { requestId, swimmerId: proposal.targetSwimmerId, clubId: context.clubId }, `${requestId}-${now}`);
+      return { ok: true, request: engagementSwimmerChangeRequestItem({ id: requestId, data: () => payload }) };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Demande NAP indisponible. Rechargez les demandes avant de recommencer.");
+    }
+  }
   const requestedSource = cleanText(request.data?.source).slice(0, 40);
   const requestedSwimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
   const target = await getEngagementSwimmerCorrectionTarget(
@@ -14060,7 +14086,7 @@ exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.resolveEngagementSwimmerChangeRequest = onCall(ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
+exports.resolveEngagementSwimmerChangeRequest = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS.secrets, defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
@@ -14073,6 +14099,83 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENGAGEMENT_SWIMMER_CORREC
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Demande de correction introuvable.");
   const data = snapshot.data() || {};
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
+    try {
+      const helper = require("./nap-swimmer-change-requests");
+      resolution = helper.prepareResolution(data, { ...request.data, decision, resolutionNote }, context.uid);
+      if (data.status !== "pending") {
+        if (data.status === decision && data.nativeResolution?.key === resolution.key) return { ok: true, request: engagementSwimmerChangeRequestItem(snapshot), result: data.result || {} };
+        throw new HttpsError("failed-precondition", "Demande deja traitee.");
+      }
+      const nap = require("./nap-portal-swimmers");
+      nativeConnection = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
+      const lockName = `lp-swimmer-request-${stableHash(requestId).slice(0, 40)}`;
+      const [lockRows] = await nativeConnection.execute({ sql: "SELECT GET_LOCK(?,0) AS acquired", timeout: 10000 }, [lockName]);
+      if (Number(lockRows[0]?.acquired) !== 1) throw new TypeError("Une decision est en cours. Rechargez les demandes avant de recommencer.");
+      nativeLock = lockName;
+      claimWasExisting = await db.runTransaction(async transaction => {
+        const current = await transaction.get(ref), latest = current.data() || {};
+        if (!current.exists || latest.status !== "pending" || latest.requestedAt !== data.requestedAt || latest.expectedFingerprint !== data.expectedFingerprint) throw new HttpsError("failed-precondition", "La demande a change. Rechargez-la.");
+        if (latest.nativeResolution && latest.nativeResolution.key !== resolution.key) throw new HttpsError("failed-precondition", "Une decision est deja en cours. Reprenez la meme decision depuis le meme compte.");
+        transaction.set(ref, { nativeResolution: { key: resolution.key, actorUid: context.uid, decision }, updatedAt: new Date().toISOString() }, { merge: true });
+        return !!latest.nativeResolution;
+      }, { maxAttempts: 3 });
+      claimed = true;
+      let result = null;
+      if (decision === "approved") {
+        const correctionConnection = { execute: async (query, values) => {
+          const mutation = query.sql.startsWith("UPDATE nageurs SET ");
+          if (mutation) writeAttempted = true;
+          const response = await nativeConnection.execute(query, values);
+          if (mutation && response[0]?.affectedRows === 0) writeAttempted = false;
+          return response;
+        } };
+        result = await nap.correctPortalIdentity(correctionConnection, {
+          id: resolution.id, expectedFingerprint: resolution.expectedFingerprint, proposed: resolution.proposed,
+          actorUid: context.uid, reason: resolution.reason
+        }, {
+          read: async operation => { const before = await db.collection("auditLogs").doc(`nap-identity-${operation}-before`).get(); return before.exists ? before.data().target : null; },
+          prepare: (operation, target) => db.collection("auditLogs").doc(`nap-identity-${operation}-before`).create({ action: "nap.swimmer.identityCorrection.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
+          complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid, target, operation)
+        }, { prepare: async () => [], apply: async () => ({ entryUpdateCount: 0, relayUpdateCount: 0, oldLivepalmesLinksIgnored: true }) });
+      }
+      const now = new Date().toISOString();
+      const completed = { ...data, status: decision, resolutionNote, resolvedAt: now, resolvedBy: context.uid,
+        resolvedByEmail: context.email || "", updatedAt: now, updatedBy: context.uid,
+        nativeResolution: { key: resolution.key, actorUid: context.uid, decision },
+        ...(decision === "approved" ? { resolvedProposed: resolution.resolvedProposed, proposalAdjusted: resolution.proposalAdjusted } : {}), result: cleanFirestoreValue(result || {}) };
+      await ref.set(cleanFirestoreValue(completed), { merge: false });
+      // Preserve the existing notification policy; never notify during diagnostic tests.
+      const resolutionNotification = await sendEngagementSwimmerChangeResolutionNotification({ decision,
+        requestedByEmail: data.requestedByEmail, requestedByFirstName: data.requestedByFirstName, requestedByLastName: data.requestedByLastName,
+        swimmer: data.current, current: data.current, resolvedProposed: resolution.resolvedProposed || data.proposed,
+        clubName: data.clubName, resolutionNote });
+      await ref.set({ resolutionNotification }, { merge: true });
+      await writeAuditLogOnce(`nap.swimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid,
+        { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, notificationStatus: resolutionNotification.status }, resolution.key);
+      return { ok: true, request: engagementSwimmerChangeRequestItem({ id: requestId, data: () => ({ ...completed, resolutionNotification }) }), result };
+    } catch (error) {
+      // Before any SQL mutation, release a new claim so a stale/invalid request can be refused or reviewed.
+      // An uncertain write or an existing retry remains bound to its exact decision.
+      if (claimed && !claimWasExisting && !writeAttempted) {
+        try {
+          await db.runTransaction(async transaction => {
+            const current = await transaction.get(ref), latest = current.data() || {};
+            if (latest.status === "pending" && latest.nativeResolution?.key === resolution.key) transaction.set(ref, { nativeResolution: null }, { merge: true });
+          }, { maxAttempts: 3 });
+        } catch { /* Preserve the claim if its durable release is unavailable. */ }
+      }
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Decision a verifier. Rechargez les demandes ou reprenez exactement la meme decision ; sa sauvegarde est conservee.");
+    } finally {
+      if (nativeConnection) {
+        try { if (nativeLock) await nativeConnection.execute({ sql: "SELECT RELEASE_LOCK(?) AS released", timeout: 10000 }, [nativeLock]); }
+        catch { nativeConnection.destroy(); nativeConnection = null; }
+        finally { if (nativeConnection) nativeConnection.release(); }
+      }
+    }
+  }
   if (cleanText(data.status) !== "pending") throw new HttpsError("failed-precondition", "Demande deja traitee.");
   const target = await getEngagementSwimmerCorrectionTarget(
     db,
