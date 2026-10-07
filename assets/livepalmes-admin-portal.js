@@ -12681,7 +12681,8 @@
           ? " La fiche a été corrigée, mais sa publication publique devra être relancée."
           : "";
         const notificationStatus = result?.request?.resolutionNotification?.status || "";
-        const mailWarning = notificationStatus && notificationStatus !== "sent"
+        const testMailDisabled = global.LivePalmesEnvironment?.isTest === true && result?.request?.resolutionNotification?.reason === "test-emails-disabled";
+        const mailWarning = notificationStatus && notificationStatus !== "sent" && !testMailDisabled
           ? " La demande a bien été traitée, mais l’e-mail au demandeur n’a pas été envoyé."
           : "";
         elements.engagementsSwimmerChangeRequestsStatus.textContent = `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}${mailWarning}`;

@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID } = require("./firebase-test-backend-lots");
+const { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, TEST_NON_MAIL_FUNCTIONS } = require("./firebase-test-backend-lots");
 
 const root = path.join(__dirname, "..");
 const source = path.join(root, "functions");
@@ -21,9 +21,9 @@ if ((process.env.TARGET_FIREBASE_PROJECT || "") !== PROJECT_ID) {
 }
 
 const selectedLots = lot === "all-safe" ? ALL_SAFE_LOTS : [lot];
-const selected = selectedLots.flatMap((name) => LOTS[name]);
+const selected = selectedLots.flatMap((name) => LOTS[name]).concat(lot === "all-safe" ? TEST_NON_MAIL_FUNCTIONS : []);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
-const selectedSecrets = [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets))];
+const selectedSecrets = [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets).concat(lot === "all-safe" ? ["LIVEPALMES_NAP_PASSWORD"] : []))];
 
 fs.rmSync(path.dirname(destination), { recursive: true, force: true });
 fs.cpSync(source, destination, {

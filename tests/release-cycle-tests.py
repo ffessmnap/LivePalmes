@@ -10,6 +10,14 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_native_resolution_is_safe_only_in_test(self):
+        root=Path(__file__).parents[1]
+        self.assertIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root,'livepalmes-test'))
+        self.assertNotIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root,'livepalmes'))
+        self.assertNotIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root))
+        for name in ['sendEngagementPreparedEmails','closeDueEngagementCompetitions','resolveEngagementAccessRequest']:
+            self.assertNotIn(name,m.safe_functions(root,'livepalmes-test'))
+        with self.assertRaises(ValueError):m.safe_functions(root,'unknown')
     def test_reuse_only_successful_verification_of_exact_candidate(self):
         candidate='a'*40
         evidence={'candidate':candidate,'verification':{'schema':1,'candidate':candidate,'suite':'verify-livepalmes','result':'success'}}
