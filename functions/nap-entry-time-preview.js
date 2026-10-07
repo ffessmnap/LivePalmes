@@ -23,7 +23,7 @@ async function previewNativeTimes(connection,input,services) {
   });
   if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:22,historyQueries:0}};
   const histories=await readers.history(connection,people);
-  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:services.preview(person,histories.get(String(person.id))||[],competition)}));
+  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:services.preview(person,histories.get(String(person.id))||[],competition,pack)}));
   return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:23,historyQueries:1,historyRowsMax:20000}};
 }
 module.exports={previewNativeTimes};
