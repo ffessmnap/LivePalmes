@@ -91,6 +91,8 @@ function runUnitTests() {
     "nap-entry-performance-history-tests.js",
     "nap-individual-entry-proof-tests.js",
     "nap-individual-entry-change-tests.js",
+    "nap-entry-time-preview-tests.js",
+    "nap-entry-time-preview-callable-tests.js",
     "nap-official-entry-statements-tests.js",
     "nap-official-entry-recovery-tests.js",
     "nap-entry-person-access-ui-tests.js",
