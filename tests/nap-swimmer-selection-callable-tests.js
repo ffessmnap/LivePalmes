@@ -5,9 +5,10 @@ const start=source.indexOf("async function saveNativeClubSwimmerSelections("),en
 class HttpsError extends Error {constructor(code,message){super(message);this.code=code;}}
 let calls=0,read=0,prepare=0,complete=0;
 const pack={leaders:[{prenom:"Leader",nom:"Example",date:"1980-01-01"}],officials:[]};
-const competition={nativeParameters:{qualif:0},options:null};
+const competition={event:{eventType:"pool"},nativeParameters:{qualif:0,cat_d:null,cat_f:null},participations:[],options:null};
 const person={id:"1",firstName:"Person",lastName:"Example",birthDate:"1990-01-01",sex:"M",clubId:"106"};
 const context={exports:{},ENVIRONMENT:{projectId:"livepalmes-test"},CALLABLE_OPTIONS:{},defineSecret:value=>value,onCall:(options,fn)=>Object.assign(fn,{options}),HttpsError,TypeError,RangeError,Date,process:{env:{LIVEPALMES_NAP_PASSWORD:"placeholder"}},cleanText:value=>String(value??"").trim(),cleanIsoDate:value=>/^\d{4}-\d{2}-\d{2}$/.test(value||"")?value:"",ageCategoryFromDates:()=>"S",ENGAGEMENT_EVENT_DEFINITION_BY_CODE:new Map(),engagementClubAccessContext:async()=>({clubId:"106",uid:"actor"}),writeAuditLogOnce:async()=>{complete++;},db:{collection:name=>{assert.equal(name,"auditLogs","TEST writes no legacy sports collections");return {doc:()=>({get:async()=>{read++;return {exists:false};},create:async()=>{prepare++;}})};}},require:name=>{
+  if(name==="./nap-swimmer-entry-plan") return require("../functions/nap-swimmer-entry-plan");
   if(name==="./nap-portal-swimmers") return {portalPool:()=>({native:true})};
   if(name==="./nap-portal-workspaces") return {competitionItem:()=>({date:"2026-10-11"}),entryItem:()=>({source:"nap"})};
   if(name==="./nap-swimmer-entry-change") return {saveNativeSwimmerSelection:async(pool,input,services)=>{
@@ -25,6 +26,9 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   const result=await context.exports.saveEngagementClubSwimmerSelections(request);assert.equal(result.source,"nap");assert.equal(result.entry.source,"nap");assert.equal(calls,1);assert.equal(read,1);assert.equal(prepare,1);assert.equal(complete,1);assert.deepEqual(Array.from(context.exports.saveEngagementClubSwimmerSelections.options.secrets),["LIVEPALMES_NAP_PASSWORD"]);
   await context.exports.saveEngagementClubSwimmerSelection({data:{...request.data,swimmerIndexId:"1",selected:true}});assert.equal(calls,2);
   competition.nativeParameters.qualif=1;await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/qualifications/);assert.equal(calls,2);competition.nativeParameters.qualif=0;
+  competition.participations=[{participation:123}];await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/participation/);assert.equal(calls,2);competition.participations=[];
+  competition.event.eventType="openWater";await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/eau libre/);assert.equal(calls,2);competition.event.eventType="pool";
+  competition.nativeParameters.cat_d=1;await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/categories/);assert.equal(calls,2);competition.nativeParameters.cat_d=null;
   pack.leaders=[{prenom:"Person",nom:"Example",date:"1990-01-01"}];await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/chef/);assert.equal(calls,2);
   context.engagementClubAccessContext=async()=>{throw new HttpsError("permission-denied","Denied");};await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/Denied/);assert.equal(calls,2);
   console.log("Swimmer selection callables: authenticated club, native-only sports path, journal, licences ignored and qualifications/role checks enforced");
