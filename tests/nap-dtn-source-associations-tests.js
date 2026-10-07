@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),{dtnNativeRow}=require("../functions/nap-dtn-source-associations");
+const assert=require("node:assert/strict"),{dtnNativeRow,sourceAliases}=require("../functions/nap-dtn-source-associations");
 const engine=require("../functions/dtn-season-engine");
 const native={competitionId:"4980",category:"S",date:"2026-05-01",birthDate:"2000-01-01",pool:"50",chrono:"E",timeValue:3000};
 const linked=dtnNativeRow(native);assert.equal(linked.competitionId,"4980");assert.equal(linked.qualificationCompetitionId,"e40fe3129ffd5d76286774193a2855ed");
@@ -10,4 +10,8 @@ assert.equal(dtnNativeRow({competitionId:"4981",category:"S"}).qualificationComp
 assert.equal(dtnNativeRow({competitionId:"5132",category:"M"}).qualificationCompetitionId,"d18c4f3dc04b5cc5402f340fe2af1ca5");
 assert.equal(dtnNativeRow({competitionId:"5132",category:"S"}).qualificationCompetitionId,undefined);
 assert.deepEqual(dtnNativeRow({competitionId:"1"}),{competitionId:"1"});
+assert.deepEqual(sourceAliases("4980"),["e40fe3129ffd5d76286774193a2855ed"]);
+assert.deepEqual(sourceAliases("4981"),[],"Category-dependent mappings cannot be folded into a whole competition checkbox");
+assert.deepEqual(sourceAliases("5132"),[]);
+assert.deepEqual(sourceAliases("1"),[]);
 console.log("DTN native associations: existing exact IDs, unchanged engine eligibility, masters/minimes restrictions and unknown-source preservation verified.");
