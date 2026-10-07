@@ -1,6 +1,12 @@
 "use strict";
 const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
 const source = fs.readFileSync(require.resolve("../functions/index"), "utf8");
+const historyHelpers={cleanText:value=>String(value||""),engagementQualificationRowAllowed:()=>true,cleanFirestoreValue:value=>value,formatTimeValue:value=>String(value),cleanIsoDate:value=>value};
+vm.createContext(historyHelpers);
+vm.runInContext(source.slice(source.indexOf("function engagementKnownTimeHistory("),source.indexOf("function engagementEntryTimeCacheId(")),historyHelpers);
+const fullHistory=Array.from({length:2001},(_,i)=>({id:i+1,course:"100SF",date:"2026-01-01",timeValue:i+1}));
+assert.equal(historyHelpers.engagementKnownTimeHistory(fullHistory,"100SF",{}).length,10,"legacy default remains bounded to 10");
+assert.equal(historyHelpers.engagementKnownTimeHistory(fullHistory,"100SF",{},20000).length,2000,"native selection cannot exceed the existing swimmer history bound");
 const start = source.indexOf("exports.getEngagementClubEntryTimeHistory ="), end = source.indexOf("async function previewNativeClubEntryTimes(", start);
 assert.ok(start > 0 && end > start);
 let mode = "manual", allowed = true, calls = 0;
