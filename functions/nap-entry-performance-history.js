@@ -23,7 +23,7 @@ async function readEntryHistory(connection,people) {
   }
   return new Map(people.map(person=>{
     const raw=grouped.get(String(person.id));
-    const rows=raw.map(row=>performanceRow(row,person)).filter(Boolean);
+    const rows=raw.map(row=>performanceRow(row,person,true)).filter(Boolean);
     rules.annotateIntermediateOrigins(rows);
     return [String(person.id),rows];
   }));

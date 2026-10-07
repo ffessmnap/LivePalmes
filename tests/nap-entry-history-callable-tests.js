@@ -13,7 +13,7 @@ const context = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   cleanText: value => String(value ?? "").trim(), cleanEngagementMissingEntryTimeMode: value => value || "manual",
   ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   engagementClubAccessContext: async () => { if (!allowed) throw new HttpsError("permission-denied", "Denied"); return { clubId: "106" }; },
-  engagementKnownTimeHistory: (rows, course, competition, limit) => { assert.equal(limit, 10); return rows.filter(row => row.course === course).slice(0, limit); },
+  engagementKnownTimeHistory: (rows, course, competition, limit) => { assert.equal(limit, 2000); return rows.filter(row => row.course === course).slice(0, limit); },
   db: { collection: () => { throw new Error("Legacy Firestore path"); } },
   require: name => {
     if (name === "./nap-portal-swimmers") return { portalPool: () => ({}) };
@@ -33,6 +33,7 @@ vm.createContext(context); vm.runInContext(source.slice(start, end), context);
   assert.equal(result.events[0].eventCode, "100SF"); assert.equal(result.events[0].times[0].time, "14200");
   assert.equal(result.sqlBudget.queriesMax, 23);
   assert.equal(context.exports.getEngagementClubEntryTimeHistory.options.secrets[0], "LIVEPALMES_NAP_PASSWORD");
+  mode = "default595999"; assert.equal((await context.exports.getEngagementClubEntryTimeHistory(request)).events.length,1);
   mode = "forbidden"; await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /pas autorisee/);
   allowed = false; const before = calls;
   await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /Denied/); assert.equal(calls, before);

@@ -19,7 +19,7 @@ assert.equal(competition.events[1].nativeRecognized, false);
 assert.equal(competition.events[0].allowMultipleRelays, null);
 assert.equal(competition.nativeOptionsConfigured, false);
 assert.deepEqual(competition.fees, { enabled: false });
-assert.equal(competition.missingEntryTimeMode, "");
+assert.equal(competition.missingEntryTimeMode, "default595999");
 assert.equal(competition.nativeReadOnly, true);
 assert.equal(competition.napFingerprint, view.fingerprint({ ...pack, readAt: "other-time" }));
 assert.notEqual(competition.napFingerprint, view.fingerprint({ ...pack, nativeParameters: { ...pack.nativeParameters, saisie: 1 } }));

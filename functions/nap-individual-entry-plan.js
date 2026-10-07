@@ -47,7 +47,7 @@ function planIndividualEntries(pack,changes) {
       // Compact native format is parsed from the right. Leading zeroes in
       // existing NAP values are retained when the requested value is equal.
       const time=row?.tps;
-      if(typeof time!=="string" || !/^\d{1,6}$/.test(time) || Number(time.slice(-2))>99 || Number(time.slice(-4,-2)||0)>59 || desired.has(code)) throw new TypeError("Temps ou course resolue invalide.");
+      if(typeof time!=="string" || !/^\d{1,6}$/.test(time) || time!=="599999" && Number(time.slice(-4,-2)||0)>59 || desired.has(code)) throw new TypeError("Temps ou course resolue invalide.");
       desired.set(code,time);
     }
     const removals=[],updates=[],additions=[];

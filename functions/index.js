@@ -455,6 +455,7 @@ const ENGAGEMENT_RELAY_EVENTS = [
   ["OW4X1000SB", "4 x 1000 m Surface/Bi-palmes mixte", "4 x 1000 SB", "SB", 1000, 4, "required"]
 ];
 const ENGAGEMENT_EVENT_DEFINITIONS = [
+  ...["SF", "AP"].map(discipline => ({code: `25${discipline}`, type: "individual", label: `25 m ${discipline === "SF" ? "Surface" : "Apnee"}`, shortLabel: `25 ${discipline}`, discipline, distance: 25})),
   ...POOL_COURSES.map((code) => {
     const meta = COURSE_META[code] || [code, code, courseStyleFromCode(code), courseLengthFromCode(code)];
     return {
@@ -5732,7 +5733,7 @@ function engagementKnownTimeHistory(rows = [], eventCode = "", competition = {},
       cleanText(right.date).localeCompare(cleanText(left.date)) ||
       Number(left.timeValue || 0) - Number(right.timeValue || 0)
     )
-    .slice(0, Math.max(1, Math.min(10, Number(limit || 10))))
+    .slice(0, Math.max(1, Math.min(2000, Number(limit || 10))))
     .map((row) => cleanFirestoreValue({
       entryTime: formatTimeValue(Number(row.timeValue || 0)) || cleanText(row.time),
       entryTimeValue: Number(row.timeValue || 0) || 0,
@@ -15965,14 +15966,14 @@ async function nativeClubEntryTimeHistory(context, competitionId, swimmerIndexId
         authorize: ({ clubId }) => { if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise."); },
         preview: (person, rows, nativeCompetition, dossier) => {
           const competition = require("./nap-portal-workspaces").competitionItem(nativeCompetition, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-          if (competition.missingEntryTimeMode !== "manual") {
+          if (!["manual", "default595999"].includes(competition.missingEntryTimeMode)) {
             throw new HttpsError("failed-precondition", "La modification des temps n'est pas autorisee pour cette competition.");
           }
           const links = new Set(dossier.inscriptions.filter(row => String(row.nageur) === String(person.id)).map(row => String(row.id)));
           const savedCodes = [...new Set(dossier.individual.filter(row => links.has(String(row.engagement)))
             .map(row => cleanText(row.course).toUpperCase().replace(/\s+/g, ""))
             .filter(code => code && (!requestedCodes.size || requestedCodes.has(code))))];
-          return savedCodes.map(eventCode => ({ eventCode, times: engagementKnownTimeHistory(rows, eventCode, competition, 10) }));
+          return savedCodes.map(eventCode => ({ eventCode, times: engagementKnownTimeHistory(rows, eventCode, competition, 2000) }));
         }
       });
     return { ok: true, source: "nap", swimmerIndexId, events: result.swimmers[0].individualEntries, sqlBudget: result.sqlBudget };
