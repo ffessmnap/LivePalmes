@@ -1,0 +1,20 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs");
+const {MAX_BYTES,parseStaticRecords,loadStaticRecords}=require("../functions/nap-entry-static-records");
+const source=fs.readFileSync("performances/public/data/records-data.js","utf8");
+const expected=parseStaticRecords(source);
+assert.ok(expected.records.length>0 && expected.franceRecords.length>0);
+assert.throws(()=>parseStaticRecords(source+"globalThis.executed=true;"));
+assert.throws(()=>parseStaticRecords("window.LIVEPALMES_RECORDS = (()=>({records:[]}))();"));
+assert.throws(()=>parseStaticRecords(" ".repeat(MAX_BYTES+1)),RangeError);
+(async()=>{
+  let calls=0;
+  const fetcher=async(url,options)=>{calls++;assert.equal(url,"https://livepalmes-test.web.app/performances/public/data/records-data.js");assert.equal(options.redirect,"error");return new Response(source);};
+  const data=await loadStaticRecords("livepalmes-test",fetcher);
+  assert.deepEqual(data,expected);assert.equal(calls,1);
+  await assert.rejects(()=>loadStaticRecords("unknown",fetcher));assert.equal(calls,1);
+  await assert.rejects(()=>loadStaticRecords("livepalmes-test",async()=>new Response("bad",{status:503})),/indisponibles/);
+  await assert.rejects(()=>loadStaticRecords("livepalmes-test",async()=>new Response("bad",{headers:{"content-length":String(MAX_BYTES+1)}})),RangeError);
+  await assert.rejects(()=>loadStaticRecords("livepalmes-test",async()=>new Response("x".repeat(MAX_BYTES+1))),RangeError);
+  console.log("Native entry RF/MPF: existing static data, fixed source, one bounded request, no evaluation/fallback verified");
+})().catch(error=>{console.error(error);process.exitCode=1;});
