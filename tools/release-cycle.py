@@ -69,8 +69,9 @@ def output(**values):
             file.write(f'{key}={value}\n')
 
 
-def safe_functions(root):
-    return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,LOTS}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js')]))
+def safe_functions(root, project='livepalmes'):
+    require(project in PROJECTS, 'Projet interdit')
+    return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,LOTS,TEST_NON_MAIL_FUNCTIONS=[]}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x]).concat(process.argv[2]==="livepalmes-test"?TEST_NON_MAIL_FUNCTIONS:[])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js'), project]))
 
 
 @lru_cache(maxsize=64)
@@ -149,7 +150,7 @@ def test_selection(directory, candidate):
         trusted.update(targeted_test_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuves ciblees non disponibles : {error}')
-    safe = safe_functions(candidate)
+    safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}
     for name in safe:
@@ -194,7 +195,7 @@ def check_test(directory, candidate):
     require(set(after) == set(before) | full_selected, 'Inventaire TEST inattendu')
     require(all(after.get(n) == f for n, f in before.items() if n not in full_selected), 'Function TEST non selectionnee modifiee')
     names = {n.split('/')[-1]: f for n, f in after.items()}
-    require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA']) for n in safe_functions(candidate)), 'Backend TEST incomplet')
+    require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA']) for n in safe_functions(candidate, 'livepalmes-test')), 'Backend TEST incomplet')
 
 
 TEST_TOP_FILES = {
@@ -441,7 +442,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     require(read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == project, 'Compte incorrect')
     selected = read(selection_path)
     extra = approved_extra_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
-    require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate)) | set(extra)), 'Selection interdite')
+    require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate, project)) | set(extra)), 'Selection interdite')
     selected = [name for name in selected if name not in extra]
     cli = str(Path(candidate).resolve() / 'tests/firestore-rules/node_modules/.bin/firebase')
     sha = os.environ['CANDIDATE_SHA']

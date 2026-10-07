@@ -38,8 +38,8 @@ function fixture(options = {}) {
       recordsMap.set(id, structuredClone(config?.merge ? { ...recordsMap.get(id), ...value } : value));
     }
   });
-  const sandbox = { exports: {}, onCall: (_, callback) => callback, ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS: { secrets: [] },
-    ENVIRONMENT: { projectId: "livepalmes-test" }, defineSecret: value => value, process: { env: {} }, TypeError, RangeError, HttpsError: CallableError,
+  const sandbox = { exports: {}, onCall: (settings, callback) => Object.assign(callback, { settings }), ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS: { secrets: [] },
+    ENVIRONMENT: { projectId: options.project || "livepalmes-test" }, defineSecret: value => value, process: { env: {} }, TypeError, RangeError, HttpsError: CallableError,
     cleanText: value => String(value || ""), cleanFirestoreValue: value => value, stableHash,
     ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION: "requests",
     engagementClubAccessContext: async () => { if (options.clubDenied) throw new CallableError("permission-denied", "denied"); return context; },
@@ -63,6 +63,9 @@ function fixture(options = {}) {
     resolve: data => sandbox.exports.resolveEngagementSwimmerChangeRequest({ data }) };
 }
 (async () => {
+  const settingsTest=fixture(),settingsProd=fixture({project:"livepalmes"});
+  assert.deepEqual([...settingsTest.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings.secrets],["LIVEPALMES_NAP_PASSWORD"]);
+  assert.equal(settingsProd.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings,settingsProd.sandbox.ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS,"production retains its email bindings");
   let reads = 0;
   const connection = { execute: async (query, params) => { reads++; assert.equal(query.sql, "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? LIMIT 1"); assert.deepEqual(params, [42]); return [[before]]; } };
   const prepared = await prepareRequest(connection, input, context);
@@ -80,16 +83,16 @@ function fixture(options = {}) {
   assert.equal(f.count().sqlWrites, 0); assert.equal(f.count().notifications, 0); assert.equal(created.request.napSource, true); assert.ok(!created.request.nativeBefore);
   await assert.rejects(f.submit(), error => error.code === "already-exists");
   const decision = { requestId: created.request.id, decision: "approved", actorUid: "spoof" };
-  const result = await f.resolve(decision); assert.equal(result.result.source, "nap"); assert.equal(f.row.nom, "CORRIGE"); assert.equal(f.count().sqlWrites, 1); assert.equal(f.count().notifications, 1); assert.equal(f.count().locked, false);
-  await f.resolve(decision); assert.equal(f.count().sqlWrites, 1); assert.equal(f.count().notifications, 1, "completed retry must not send duplicate notification");
+  const result = await f.resolve(decision); assert.equal(result.result.source, "nap"); assert.equal(f.row.nom, "CORRIGE"); assert.equal(f.count().sqlWrites, 1); assert.equal(f.count().notifications, 0); assert.equal(f.count().locked, false);
+  await f.resolve(decision); assert.equal(f.count().sqlWrites, 1); assert.equal(f.count().notifications, 0, "completed retry must not send duplicate notification");
   const rejected = fixture(); const r = await rejected.submit(); await rejected.resolve({ requestId: r.request.id, decision: "rejected" }); assert.equal(rejected.count().sqlWrites, 0);
   const concurrent = fixture(); const c = await concurrent.submit();
   const outcomes = await Promise.allSettled([concurrent.resolve({ requestId: c.request.id, decision: "approved" }), concurrent.resolve({ requestId: c.request.id, decision: "approved" })]);
-  assert.equal(outcomes.filter(item => item.status === "fulfilled").length, 1); assert.equal(concurrent.count().sqlWrites, 1); assert.equal(concurrent.count().notifications, 1);
+  assert.equal(outcomes.filter(item => item.status === "fulfilled").length, 1); assert.equal(concurrent.count().sqlWrites, 1); assert.equal(concurrent.count().notifications, 0);
   const retry = fixture({ failComplete: true }); const pending = await retry.submit(); const retryInput = { requestId: pending.request.id, decision: "approved" };
   await assert.rejects(retry.resolve(retryInput), error => error.code === "unavailable"); assert.equal(retry.count().sqlWrites, 1); assert.equal(retry.count().notifications, 0); assert.equal(retry.count().locked, false);
   await assert.rejects(retry.resolve({ ...retryInput, proposed: { lastName: "DIFFERENT" } }), error => error.code === "failed-precondition");
-  await retry.resolve(retryInput); assert.equal(retry.count().sqlWrites, 1); assert.equal(retry.count().notifications, 1);
+  await retry.resolve(retryInput); assert.equal(retry.count().sqlWrites, 1); assert.equal(retry.count().notifications, 0);
   const stale = fixture(); const s = await stale.submit(); stale.row.prenom = "MODIFIE"; await assert.rejects(stale.resolve({ requestId: s.request.id, decision: "approved" }), error => error.code === "failed-precondition"); assert.equal(stale.count().sqlWrites, 0);
   assert.equal(stale.records.get(s.request.id).nativeResolution, null, "a failed first decision before SQL must not prevent rejecting the request");
   await stale.resolve({ requestId: s.request.id, decision: "rejected" }); assert.equal(stale.count().sqlWrites, 0);

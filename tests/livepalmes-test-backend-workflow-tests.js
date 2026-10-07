@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
-const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
+const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
 
 const rootDir = path.join(__dirname, "..");
 const workflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml"), "utf8");
@@ -92,7 +92,7 @@ assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SM
 const stagedRoot = path.join(rootDir, ".firebase-test-functions");
 const manifestPath = path.join(stagedRoot, "access-manifest.json");
 try {
-  for (const selectedLot of ["access", "nap"]) {
+  for (const selectedLot of ["access", "nap", "all-safe"]) {
   childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), selectedLot], {
     cwd: rootDir,
     env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test" },
@@ -115,9 +115,11 @@ try {
     stdio: "pipe"
   });
   const manifest = fs.readFileSync(manifestPath, "utf8");
-  assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...LOTS[selectedLot]].sort());
+  const expectedNames=selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(name=>LOTS[name]).concat(TEST_NON_MAIL_FUNCTIONS):LOTS[selectedLot];
+  assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...expectedNames].sort());
   const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
-  assert.deepEqual(declaredSecrets, [...METADATA[selectedLot].secrets].sort());
+  assert.deepEqual(declaredSecrets, selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
+  if(selectedLot==="all-safe") assert.deepEqual(JSON.parse(manifest).endpoints.resolveEngagementSwimmerChangeRequest.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
   for (const secret of METADATA.email.secrets) {
     assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste access expose encore ${secret}.`);
   }

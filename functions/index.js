@@ -14100,7 +14100,9 @@ exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.resolveEngagementSwimmerChangeRequest = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [...ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS.secrets, defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.projectId === "livepalmes-test"
+  ? { ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }
+  : ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
@@ -14160,11 +14162,8 @@ exports.resolveEngagementSwimmerChangeRequest = onCall({ ...ENGAGEMENT_SWIMMER_C
         nativeResolution: { key: resolution.key, actorUid: context.uid, decision },
         ...(decision === "approved" ? { resolvedProposed: resolution.resolvedProposed, proposalAdjusted: resolution.proposalAdjusted } : {}), result: cleanFirestoreValue(result || {}) };
       await ref.set(cleanFirestoreValue(completed), { merge: false });
-      // Preserve the existing notification policy; never notify during diagnostic tests.
-      const resolutionNotification = await sendEngagementSwimmerChangeResolutionNotification({ decision,
-        requestedByEmail: data.requestedByEmail, requestedByFirstName: data.requestedByFirstName, requestedByLastName: data.requestedByLastName,
-        swimmer: data.current, current: data.current, resolvedProposed: resolution.resolvedProposed || data.proposed,
-        clubName: data.clubName, resolutionNote });
+      // TEST has no automatic emails. The production notification below stays unchanged.
+      const resolutionNotification = { status: "skipped", reason: "test-emails-disabled" };
       await ref.set({ resolutionNotification }, { merge: true });
       await writeAuditLogOnce(`nap.swimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid,
         { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, notificationStatus: resolutionNotification.status }, resolution.key);

@@ -10,6 +10,8 @@ Le codebase temporaire créé par le workflow réutilise `functions/index.js` ma
 
 `all-safe` enchaîne l'infrastructure Firestore et les lots `access`, `engagement-core`, `performance` et `publications`. Il exclut entièrement `email` et `schedulers` : il ne prépare donc pas d'email et ne peut en envoyer aucun.
 
+Exception nommée du circuit commun TEST : `resolveEngagementSwimmerChangeRequest` valide ou refuse une correction NAP sans notification automatique. Sa préparation `all-safe` et sa sélection TEST incluent cette seule action supplémentaire, avec le seul secret NAP ; aucun secret SMTP ni envoi. Sa classification de production reste `email`, exclue du circuit PROD ordinaire. Les tests vérifient les options effectives, le manifeste TEST, l'absence d'envoi et les sélections séparées TEST/PROD.
+
 ## Ordre obligatoire recommandé
 
 1. `bootstrap` ;
