@@ -78,6 +78,7 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
   }
   for (const [field,value] of Object.entries(patch)) {
     if (field === "missingEntryTimeMode") {
+      if (!["manual", "forbidden", "default595999"].includes(value)) throw new TypeError("Mode natif de saisie invalide.");
       const nativeMode = {manual: 1, forbidden: -1, default595999: 0}[value];
       if (nativeMode === undefined) throw new TypeError("Mode natif de saisie invalide.");
       after.compet_parametres.saisie = nativeMode;
