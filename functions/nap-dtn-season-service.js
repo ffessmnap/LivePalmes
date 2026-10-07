@@ -6,7 +6,11 @@
 const {randomUUID}=require("node:crypto");
 const engine=require("./dtn-season-engine"),repo=require("./nap-dtn-season-repository");
 const {sourceStamp}=require("./nap-dtn-source-stamp"),{calculateSeason}=require("./nap-dtn-calculation");
+const {sourceAliases}=require("./nap-dtn-source-associations");
 function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculate=calculateSeason,stamp=sourceStamp,audit=async()=>{}}) {
+  // Reuse the held connection for metadata. With a two-connection pool,
+  // reserving another connection here could block a concurrent update.
+  const heldPool=connection=>({getConnection:async()=>({execute:connection.execute.bind(connection),release:()=>{}})});
   function checkConfig(value,incomplete=false) {
     try {return engine.validateSeason(value,{incomplete});}
     catch(error) {fail(error.message,"invalid-argument");}
@@ -31,7 +35,7 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
     if(!["create","save","activate"].includes(action)) fail("Action inconnue.","invalid-argument");
     const pool=getPool(),connection=await pool.getConnection();let transaction=false;
     try {
-      const sourceVersion=action==="activate"?(await stamp(pool,{settled:true})).fingerprint:null;
+      const sourceVersion=action==="activate"?(await stamp(heldPool(connection),{settled:true})).fingerprint:null;
       await connection.beginTransaction();transaction=true;
       const catalog=await repo.readCatalog(connection,{lock:true});
       if(request.data.catalogRevision!==catalog.revision) fail("Les saisons ont change. Rechargez avant de continuer.","aborted");
@@ -60,7 +64,7 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
           for(const s of [season,active]) for(const device of engine.DEVICES) {
             if(views.find(v=>v.id===s.id && v.device===device)?.value.fingerprint!==repo.fingerprint(s,sourceVersion)) fail("Recalculez et verifiez les trois dispositifs du brouillon et de la saison active avant la bascule.","failed-precondition");
           }
-          if((await stamp(pool)).fingerprint!==sourceVersion) fail("NAP a change pendant la bascule. Recalculez avant d'activer.","aborted");
+          if((await stamp(heldPool(connection))).fingerprint!==sourceVersion) fail("NAP a change pendant la bascule. Recalculez avant d'activer.","aborted");
           nextCatalog={...nextCatalog,previous:catalog.current,current:id,draft:""};
         }
       }
@@ -92,14 +96,14 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
     checkConfig(season);
     const connection=await pool.getConnection();let locked=false,transaction=false,operation=null;
     try {
-      const [lock]=await repo.query(connection,"SELECT GET_LOCK(?,0) AS acquired",[`livepalmes_dtn_calc_${season.id}`]);
+      const [lock]=await repo.query(connection,"SELECT GET_LOCK(?,0) AS acquired",["livepalmes_dtn_calc"]);
       if(Number(lock?.acquired)!==1) return {source:"nap",hit:false,pending:true,revision:season.revision,profiles:[]};
       locked=true;
-      const sourceVersion=(await stamp(pool,{settled:true})).fingerprint;
+      const sourceVersion=(await stamp(heldPool(connection),{settled:true})).fingerprint;
       operation=randomUUID();
       await repo.query(connection,"INSERT INTO livepalmes_dtn_calculs (saison,operation_id,revision,statut,configuration,erreur,started_at,completed_at) VALUES (?,?,?,'running',?,'',UTC_TIMESTAMP(),NULL) ON DUPLICATE KEY UPDATE operation_id=VALUES(operation_id),revision=VALUES(revision),statut='running',configuration=VALUES(configuration),erreur='',started_at=UTC_TIMESTAMP(),completed_at=NULL",[season.id,operation,season.revision,JSON.stringify(season)]);
       const result=await calculate(pool,season,{authorize:async()=>{await authorize(request);}});
-      if((await stamp(pool)).fingerprint!==sourceVersion) fail("NAP a change pendant le calcul. Relancez le recalcul.","aborted");
+      if((await stamp(heldPool(connection))).fingerprint!==sourceVersion) fail("NAP a change pendant le calcul. Relancez le recalcul.","aborted");
       await connection.beginTransaction();transaction=true;
       const latestCatalog=await repo.readCatalog(connection,{lock:true});
       if(![latestCatalog.current,latestCatalog.draft].includes(season.id) || latestCatalog.revision!==catalog.revision) fail("Les saisons ont change pendant le calcul. Relancez le recalcul.","aborted");
@@ -113,7 +117,7 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
         await repo.query(connection,"INSERT INTO livepalmes_dtn_resultats (saison,dispositif,revision,empreinte,contenu,generated_at) VALUES (?,?,?,?,?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE revision=VALUES(revision),empreinte=VALUES(empreinte),contenu=VALUES(contenu),generated_at=UTC_TIMESTAMP()",[season.id,d,season.revision,value.fingerprint,payload]);
         values[d]=value;
       }
-      if((await stamp(pool)).fingerprint!==sourceVersion) fail("NAP a change avant publication. Relancez le recalcul.","aborted");
+      if((await stamp(heldPool(connection))).fingerprint!==sourceVersion) fail("NAP a change avant publication. Relancez le recalcul.","aborted");
       const completed=await repo.query(connection,"UPDATE livepalmes_dtn_calculs SET statut='completed',completed_at=UTC_TIMESTAMP() WHERE saison=? AND operation_id=? AND statut='running' LIMIT 1",[season.id,operation]);
       if(completed.affectedRows!==1) throw new Error("Calcul DTN concurrent.");
       await connection.commit();transaction=false;
@@ -124,7 +128,7 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
       throw error;
     }finally {
       try {if(transaction) await connection.rollback();}
-      finally {try {if(locked) await repo.query(connection,"SELECT RELEASE_LOCK(?)",[`livepalmes_dtn_calc_${season.id}`]);}finally {connection.release();}}
+      finally {try {if(locked) await repo.query(connection,"SELECT RELEASE_LOCK(?)",["livepalmes_dtn_calc"]);}finally {connection.release();}}
     }
   }
   async function sources(request) {
@@ -136,7 +140,10 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
     }
     const rows=await repo.query(pool,"SELECT id,libelle,date FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date>=? AND date<=? AND (date>? OR (date=? AND id>?)) AND (ld IS NULL OR ld<>1) ORDER BY date,id LIMIT 51",[`${year-1}-09-01`,`${year}-08-31`,cursor.date,cursor.date,cursor.id]);
     const page=rows.slice(0,50),last=page.at(-1);
-    return {source:"nap",rows:page.map(r=>({id:String(r.id),name:r.libelle,date:r.date})),cursor:rows.length>50?JSON.stringify({date:last.date,id:Number(last.id)}):null};
+    return {source:"nap",sources:page.map(r=>{
+      const aliases=sourceAliases(r.id);
+      return {id:String(r.id),name:r.libelle,date:r.date,...(aliases.length?{aliases}:{})};
+    }),cursor:rows.length>50?JSON.stringify({date:last.date,id:Number(last.id)}):""};
   }
   return {list,update,overview,sources};
 }
