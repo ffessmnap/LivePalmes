@@ -1096,6 +1096,7 @@
   let engagementClubNativeSelectionRetry = null;
   let engagementClubNativeIndividualRetry = null;
   let engagementClubNativeOfficialRetry = null;
+  let engagementClubNativeRelayRetry = null;
   let engagementClubSelectionCompetitionId = "";
   let engagementClubEntriesAutosaveTimer = null;
   let engagementClubEntriesAutosaveCompetitionId = "";
@@ -2098,6 +2099,11 @@
     return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeOfficialsEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
+  function engagementClubRelaysLockReason() {
+    const competition=selectedEngagementCompetition || {};
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeRelaysEditable===true ? {...competition,nativeReadOnly:false} : competition);
+  }
+
   function engagementClubInformationOnly(competition = selectedEngagementCompetition || {}) {
     return !isEngagementAdminMode() && (competition.entryStatus || "upcoming") === "upcoming";
   }
@@ -2135,6 +2141,7 @@
   }
 
   function clubEngagementTabHiddenWhenWriteLocked(tab = "") {
+    if(tab==="relays" && !engagementClubRelaysLockReason()) return false;
     if(tab==="officials" && !engagementClubOfficialsLockReason()) return false;
     if(tab==="swimmers" && !engagementClubSwimmerSelectionLockReason()) return false;
     if(tab==="entries" && !engagementClubIndividualEntriesLockReason()) return false;
@@ -5321,7 +5328,7 @@
   }
 
   async function handleEngagementClubOfficialSelection(event) {
-    if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) {
+    if(engagementClubNativeRelayRetry || engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) {
       renderEngagementClubOfficials();
       if(elements.engagementsClubOfficialsMessage) elements.engagementsClubOfficialsMessage.textContent="Un enregistrement NAP reste à vérifier. Cliquez sur Enregistrer pour le reprendre.";
       return;
@@ -6416,7 +6423,7 @@
       preserveLocalSwimmerSelections: !nativeSelection,
       execute: async () => {
         if(!nativeSelection) return callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes });
-        if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier. Cliquez sur Enregistrer pour le reprendre avant une autre selection.");
+        if(engagementClubNativeRelayRetry || engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier. Cliquez sur Enregistrer pour le reprendre avant une autre selection.");
         if(engagementClubLastPersistedEntry?.competitionId!==competitionId) throw new Error("Reouvrez le dossier NAP avant l'enregistrement.");
         const payload={competitionId,changes:changes.map(({swimmerIndexId,selected})=>({swimmerIndexId,selected})),expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
         engagementClubNativeSelectionRetry=payload;
@@ -6479,7 +6486,7 @@
       loadingMessage: swimmers.length > 1 ? "Enregistrement des courses..." : "Enregistrement de la course...",
       execute: async () => {
         if(!nativeEntries) return callFunction("saveEngagementClubIndividualEntries",{competitionId,swimmers});
-        if(engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier avant une autre modification.");
+        if(engagementClubNativeRelayRetry || engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier avant une autre modification.");
         if(engagementClubLastPersistedEntry?.competitionId!==competitionId) throw new Error("Reouvrez le dossier NAP avant l'enregistrement.");
         const payload={competitionId,swimmers,expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
         engagementClubNativeIndividualRetry=payload;
@@ -8052,7 +8059,7 @@
     const nextRows = relayIndex >= 0
       ? engagementClubRelaysDraft.map((candidate, index) => index === relayIndex ? relay : candidate)
       : [...engagementClubRelaysDraft, relay];
-    const validationIssues = engagementClubRelayValidationIssues(nextRows);
+    const validationIssues = engagementClubRelayValidationIssues(selectedEngagementCompetition?.napSource===true ? [relay] : nextRows);
     if (validationIssues.length) {
       if (elements.engagementsClubRelayDialogMessage) {
         elements.engagementsClubRelayDialogMessage.textContent = validationIssues[0];
@@ -8076,7 +8083,7 @@
       elements.engagementsClubRelayDialogMessage.textContent = "Enregistrement du relais...";
       elements.engagementsClubRelayDialogMessage.dataset.tone = "loading";
     }
-    const saved = await saveEngagementClubRelays(null, elements.engagementsClubRelayDialogMessage, nextRows);
+    const saved = await saveEngagementClubRelays(null, elements.engagementsClubRelayDialogMessage, nextRows, "", relay);
     engagementClubRelayDialogSaving = false;
     if (!saved) {
       engagementClubRelaysDraft = previousRows;
@@ -8323,7 +8330,7 @@
     const mount = elements.engagementsClubRelaysList;
     if (!mount) return;
     engagementClubRelaysRenderedCompetitionId = selectedEngagementCompetitionId;
-    const writeLockReason = engagementClubWriteLockReason();
+    const writeLockReason = engagementClubRelaysLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     const relayEvents = engagementClubRelayEvents();
     const openWater = engagementCompetitionType(selectedEngagementCompetition) === "openWater";
@@ -10528,7 +10535,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables." : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -11279,10 +11286,12 @@
     }
   }
 
-  async function saveEngagementClubRelays(event, messageElement = elements.engagementsClubRelaysMessage, relayRowsOverride = null, removeRelayId = "") {
+  async function saveEngagementClubRelays(event, messageElement = elements.engagementsClubRelaysMessage, relayRowsOverride = null, removeRelayId = "", nativeRelay = null) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
-    if (showEngagementClubWriteLock(messageElement)) return false;
+    const native=global.LivePalmesEnvironment?.isTest===true && selectedEngagementCompetition?.napSource===true;
+    const reason=engagementClubRelaysLockReason();
+    if(reason && !engagementClubNativeRelayRetry) {if(messageElement){messageElement.textContent=reason;messageElement.dataset.tone="error";}return false;}
     if (!engagementClubTeamComplete()) {
       if (messageElement) {
       messageElement.textContent = "Validez le chef d'équipe ou la renonciation avant les relais.";
@@ -11293,7 +11302,7 @@
     engagementClubRelaysDraft = Array.isArray(relayRowsOverride)
       ? relayRowsOverride
       : selectedEngagementClubRelayRowsFromDom();
-    const validationIssues = removeRelayId ? [] : engagementClubRelayValidationIssues(engagementClubRelaysDraft);
+    const validationIssues = removeRelayId || native && engagementClubNativeRelayRetry ? [] : engagementClubRelayValidationIssues(native ? [nativeRelay || {}] : engagementClubRelaysDraft);
     if (validationIssues.length) {
       if (messageElement) {
         messageElement.textContent = validationIssues[0];
@@ -11311,7 +11320,7 @@
     }
     setEngagementSaveState("saving");
     try {
-      const result = await callFunction("saveEngagementClubRelays", {
+      const legacyPayload = {
         competitionId: selectedEngagementCompetitionId,
         ...(removeRelayId ? { removeRelayId } : {}),
         relays: engagementClubRelaysDraft.map((relay) => ({
@@ -11324,7 +11333,20 @@
             ? relay.memberIds
             : (Array.isArray(relay.members) ? relay.members.map((member) => member.swimmerIndexId).filter(Boolean) : [])
         }))
-      });
+      };
+      let payload=legacyPayload;
+      if(native) {
+        if(!engagementClubNativeRelayRetry) {
+          if(!removeRelayId && !nativeRelay) throw new Error("Choisissez le relais à enregistrer.");
+          const persisted=(engagementClubLastPersistedEntry?.relays || []).some(row=>row.relayId===nativeRelay?.relayId);
+          const relayChange=removeRelayId ? null : {action:persisted?"compose":"create",...(persisted?{relayId:nativeRelay.relayId}:{}),relay:{eventCode:nativeRelay.eventCode,category:nativeRelay.category,genderMode:nativeRelay.genderMode,manualEntryTime:nativeRelay.manualEntryTime,memberIds:nativeRelay.memberIds || []}};
+          engagementClubNativeRelayRetry={competitionId:selectedEngagementCompetitionId,expectedFingerprint:engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID(),...(removeRelayId?{removeRelayId}:{relayChange})};
+        }
+        payload=engagementClubNativeRelayRetry;
+        if(payload.competitionId!==selectedEngagementCompetitionId) throw new Error("Reouvrez la competition de l'enregistrement en attente.");
+      }
+      const result=await callFunction("saveEngagementClubRelays",payload);
+      if(native) engagementClubNativeRelayRetry=null;
       selectedEngagementClubEntry = result.entry || selectedEngagementClubEntry || {};
       renderEngagementClubEntry(selectedEngagementClubEntry);
       if (elements.engagementsClubRelaysMessage) {
