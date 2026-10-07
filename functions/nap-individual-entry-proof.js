@@ -3,6 +3,9 @@
 // even if a plan is indexed. No identity or sporting value leaves this proof.
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {statements}=require("./nap-individual-entry-statements");
+function indexed(statement, rows) {
+  return Array.isArray(rows) && rows.length > 0 && rows.every(row => statement.kind === "insert" && row.select_type === "INSERT" && row.table === "engagements" || String(row.table).startsWith("<") || ["const", "system"].includes(row.type) || row.rows != null && Number(row.rows) === 0 || row.table == null && row.type == null && /^(?:Impossible WHERE(?: noticed after reading const tables)?|no matching row in const table|No tables used)$/i.test(String(row.Extra || "")) || row.type !== "ALL" && Boolean(row.key));
+}
 async function inspectStatements(connection,pack,readCompetition=readNativeCompetition) {
   const link=pack.inscriptions.find(link=>pack.inscriptions.filter(row=>Number(row.nageur)===Number(link.nageur)).length===1 && pack.individual.some(row=>Number(row.engagement)===Number(link.id) && /^[A-Z0-9]{1,32}$/.test(row.course) && /^\d{1,6}$/.test(row.tps) && Number(row.tps.slice(-4,-2)||0)<=59));
   if(!link) return {available:false,reason:"no-unambiguous-course",writesExecuted:false};
@@ -18,7 +21,6 @@ async function inspectStatements(connection,pack,readCompetition=readNativeCompe
     const [raw]=await connection.execute({sql:`EXPLAIN ${statement.sql}`,timeout:10000},statement.values);
     plans.push({kind:statement.kind,plan:raw.map(({select_type,table,type,key,rows,Extra})=>({select_type,table,type,key,rows,Extra}))});
   }
-  const indexed=plans.every(item=>item.plan.length && item.plan.every(row=>item.kind==="insert" && row.select_type==="INSERT" && row.table==="engagements" || String(row.table).startsWith("<") || ["const","system"].includes(row.type) || row.rows!=null && Number(row.rows)===0 || row.table==null && row.type==null && /^(?:Impossible WHERE(?: noticed after reading const tables)?|no matching row in const table|No tables used)$/i.test(String(row.Extra||"")) || row.type!=="ALL" && Boolean(row.key)));
-  return {available:true,indexed,plans,explainCount:3,writesExecuted:false};
+  return {available:true,indexed:plans.every(item=>indexed(item,item.plan)),plans,explainCount:3,writesExecuted:false};
 }
-module.exports={inspectStatements};
+module.exports={inspectStatements,indexed};

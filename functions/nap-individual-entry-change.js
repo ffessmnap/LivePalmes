@@ -10,6 +10,7 @@ const {readEntryHistory}=require("./nap-entry-performance-history");
 const {planIndividualEntries}=require("./nap-individual-entry-plan");
 const {remaining}=require("./nap-individual-entry-recovery");
 const {statements}=require("./nap-individual-entry-statements");
+const {indexed}=require("./nap-individual-entry-proof");
 const hash=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 function unchangedDossier(pack) {const {individual,readAt,...untouched}=pack;return hash(untouched);}
 function unchangedCompetition(pack) {const {event,readAt,...native}=pack;return hash(native);}
@@ -44,6 +45,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
     }
     if(competition.event.entryStatus!=="open" || !Number.isFinite(Date.parse(competition.event.entryDeadlineAt)) || Date.now()>=Date.parse(competition.event.entryDeadlineAt)) throw new TypeError("Les engagements sont fermes.");
     if(pack.leaders.length!==1 || !String(pack.leaders[0].nom||"").trim() || !String(pack.leaders[0].prenom||"").trim()) throw new TypeError("Chef d'equipe natif a verifier. Renonciation encore a raccorder.");
+    const needsJournal=!target;
     if(!target) {
       const ids=new Set(input.changes.map(row=>positiveId(row?.swimmerId))),people=pack.swimmers.filter(row=>ids.has(Number(row.id)));
       if(ids.size!==input.changes.length || people.length!==ids.size) throw new TypeError("Nageurs hors du dossier autorise ou dupliques.");
@@ -54,13 +56,21 @@ async function saveNativeIndividualEntries(pool,input,services) {
       target={kind:"native-individual-entry-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,payloadHash,expectedFingerprint:input.expectedFingerprint,dossierHash:unchangedDossier(pack),competitionHash:unchangedCompetition(competition),plan,planHash:hash(plan)};
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse pour ce lot. Selectionnez moins de nageurs.");
       if(remaining(plan,pack.individual).complete) return {ok:true,source:"nap",operation,writesExecuted:0,nativeEntry:pack};
-      await services.audit.prepare(operation,target);
     }
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='engagements' LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier avant enregistrement.");
     const pending=remaining(target.plan,pack.individual),authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options,nativeLeader:pack.leaders[0]};
     const batch=statements(pending,authority,competition.event.entryDeadlineAt);
+    if((await query("SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet=? LIMIT 1",[input.competitionId])).length) throw new TypeError("Les forfaits natifs doivent etre raccordes avant la modification des courses de cette competition.");
+    for(const statement of batch) {
+      if(!indexed(statement,await query(`EXPLAIN ${statement.sql}`,statement.values))) throw new TypeError("Plan de recherche NAP a verifier avant cet enregistrement.");
+    }
+    if(needsJournal) await services.audit.prepare(operation,target);
     let writes=0;
-    for(const statement of batch) {await query(statement.sql,statement.values);writes++;}
+    for(const statement of batch) {
+      const result=await query(statement.sql,statement.values);
+      if(Number(result.affectedRows)!==statement.expectedRows) throw new TypeError("Le dossier a change pendant l'enregistrement. Reprenez la meme modification ; la sauvegarde est conservee.");
+      writes++;
+    }
     const links=target.plan.plans.map(row=>row.inscriptionId);
     const current=links.length ? await query(`SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN (${links.map(()=>"?").join(",")}) ORDER BY engagement,course,id LIMIT 5001`,links) : [];
     if(!remaining(target.plan,current).complete) throw new Error("Enregistrement interrompu. Reprenez la meme modification ; la sauvegarde est conservee.");

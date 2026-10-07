@@ -13,6 +13,10 @@ function statements(plan,authority,end) {
     guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>`BINARY scope_l.\`${key}\` <=> BINARY ?`).join(" AND ")})`;
     guard.values.push(positiveId(leader.id),...columns.map(key=>leader[key]));
   }
+  // The historic forfait linkage is ambiguous. Fail closed if one appears,
+  // including between the preliminary check and a native write.
+  guard.sql += " AND NOT EXISTS (SELECT 1 FROM forfait scope_f FORCE INDEX (livepalmes_compet_engagement_id) WHERE scope_f.compet=?)";
+  guard.values.push(positiveId(plan.competitionId));
   const result=[],updates=[],removals=[],additions=[],seen=new Set();
   for(const item of plan.plans) {
     const inscriptionId=positiveId(item.inscriptionId),swimmerId=positiveId(item.swimmerId);
@@ -46,12 +50,12 @@ function statements(plan,authority,end) {
   };
   if(removals.length) {
     const values=[],where=removals.map(row=>current(row,values)); values.push(...guard.values,deadline(end));
-    result.push({kind:"delete",sql:`DELETE FROM engagements WHERE (${where.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
+    result.push({kind:"delete",expectedRows:removals.length,sql:`DELETE FROM engagements WHERE (${where.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
   }
   if(updates.length) {
     const values=[],cases=updates.map(row=>{values.push(positiveId(row.before.id),row.tps);return "WHEN ? THEN ?";});
     const where=updates.map(row=>current(row,values));values.push(...guard.values,deadline(end));
-    result.push({kind:"update",sql:`UPDATE engagements SET tps=CASE id ${cases.join(" ")} ELSE tps END WHERE (${where.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
+    result.push({kind:"update",expectedRows:updates.length,sql:`UPDATE engagements SET tps=CASE id ${cases.join(" ")} ELSE tps END WHERE (${where.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
   }
   if(additions.length) {
     const values=[],rows=additions.map(row=>{
@@ -60,7 +64,7 @@ function statements(plan,authority,end) {
     values.push(plan.competitionId,String(plan.clubId),...guard.values,deadline(end));
     // Anti-join on the INSERT target avoids a forbidden target subquery and
     // prevents retrying an already present native course.
-    result.push({kind:"insert",sql:`INSERT INTO engagements (engagement,course,tps) SELECT requested.engagement,requested.course,requested.tps FROM (${rows.join(" UNION ALL ")}) requested JOIN nageursengager scope_i FORCE INDEX (PRIMARY) ON scope_i.id=requested.engagement AND scope_i.nageur=requested.nageur JOIN nageurs scope_n FORCE INDEX (PRIMARY) ON scope_n.id=scope_i.nageur LEFT JOIN engagements existing FORCE INDEX (engagements_clef) ON existing.engagement=requested.engagement AND BINARY existing.course=BINARY requested.course WHERE existing.id IS NULL AND scope_i.compet=? AND BINARY scope_n.club=BINARY ? AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
+    result.push({kind:"insert",expectedRows:additions.length,sql:`INSERT INTO engagements (engagement,course,tps) SELECT requested.engagement,requested.course,requested.tps FROM (${rows.join(" UNION ALL ")}) requested JOIN nageursengager scope_i FORCE INDEX (PRIMARY) ON scope_i.id=requested.engagement AND scope_i.nageur=requested.nageur JOIN nageurs scope_n FORCE INDEX (PRIMARY) ON scope_n.id=scope_i.nageur LEFT JOIN engagements existing FORCE INDEX (engagements_clef) ON existing.engagement=requested.engagement AND BINARY existing.course=BINARY requested.course WHERE existing.id IS NULL AND scope_i.compet=? AND BINARY scope_n.club=BINARY ? AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 5000`,values});
   }
   return result;
 }
