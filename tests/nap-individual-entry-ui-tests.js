@@ -12,6 +12,7 @@ const locks={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,n
 vm.createContext(locks);vm.runInContext(source.slice(source.indexOf("  function engagementClubWriteLockReason("),source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS")),locks);
 assert.equal(locks.engagementClubIndividualEntriesLockReason(),"");assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("entries"),false);
 assert.equal(locks.engagementClubStepLockReason("entries"),"");
+assert.equal(locks.engagementClubStepLockReason("summary"),"","the native recap is consultable without a sporting write capability");
 assert.match(locks.engagementClubStepLockReason("relays"),/raccordement/);
 locks.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;
 locks.selectedEngagementCompetition.nativeTeamLeaderEditable=true;

@@ -2117,6 +2117,7 @@
       case "entries": return engagementClubIndividualEntriesLockReason();
       case "officials": return engagementClubOfficialsLockReason();
       case "relays": return engagementClubRelaysLockReason();
+      case "summary": return selectedEngagementCompetition?.napSource === true ? "" : engagementClubWriteLockReason();
       default: return engagementClubWriteLockReason();
     }
   }
@@ -8613,7 +8614,7 @@
         swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
           entries: "Choisissez les courses individuelles des nageurs engagés.",
         relays: "Ajoutez les relais du club pour cette compétition.",
-        summary: "Structure prête. Le récapitulatif se remplira avec les prochaines étapes."
+        summary: "Vérifiez le récapitulatif du dossier et téléchargez le PDF."
         };
         firstParagraph.textContent = locked
         ? stepLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
