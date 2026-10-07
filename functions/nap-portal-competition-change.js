@@ -40,6 +40,7 @@ const nativeFields = {
   qualificationStartDate: ["compet_parametres","tps_d",v => v === "" ? null : day(v)], qualificationEndDate: ["compet_parametres","tps_f",v => v === "" ? null : day(v)]
 };
 const extraFields = {
+  missingEntryTimeMode:["missing_time_mode",v=>{if(!["manual","forbidden","default595999"].includes(v)) throw new TypeError("Choix sans temps connu invalide.");return v;}],
   address:["address",v=>string(v,300)], city:["city",v=>string(v,120)], organizer:["organizer_label",v=>string(v,160)],
   organizerEmail:["organizer_email",optionalEmail], canceled:["canceled",bool],
   waterBodyType:["water_body_type",v=>{if (!["","sea","lake","river","other"].includes(v)) throw new TypeError("Plan d'eau invalide.");return v;}],
@@ -78,6 +79,7 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
   for (const [field,value] of Object.entries(patch)) {
     if (nativeFields[field]) { const [table,column,validate]=nativeFields[field]; after[table][column]=validate(value); }
     else if (extraFields[field]) {
+      if (field === "missingEntryTimeMode" && (Number(pack.nativeParameters?.saisie) !== 1 || Number(pack.nativeParameters?.qualif || 0) !== 0 || Number(pack.options?.qualifications_enabled || 0) !== 0)) throw new TypeError("Regles natives de saisie ou qualifications a raccorder avant ce choix.");
       if (field === "teamLeadersWhatsAppUrl" && (!input.national || !["national","international"].includes(pack.event.level))) throw new TypeError("Lien WhatsApp reserve aux competitions nationales.");
       const [column,validate]=extraFields[field]; supplemental("livepalmes_competition_options",pack.options)[column]=validate(value);
     } else if (field === "entryDeadlineLocal") {

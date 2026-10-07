@@ -7227,7 +7227,8 @@ function engagementPdfIndividualMatrix(entry = {}, competition = {}, sex = "", t
   const selectedCodes = new Set(rows.flatMap((swimmer) => (swimmer.individualEntries || []).map((item) => normalizeCourseCode(item.eventCode))));
   const columns = engagementPdfIndividualProgramColumns(competition, sex);
   const fallbackColumns = Array.from(selectedCodes).map((eventCode) => ({ eventCode, label: engagementPdfEventLabel(eventCode), sessionLabel: "" }));
-  return { title, rows, columns: columns.length ? columns : fallbackColumns };
+  const nativeColumns = entry.source === "nap" ? [...columns, ...fallbackColumns.filter(column => !columns.some(item => item.eventCode === column.eventCode))] : columns;
+  return { title, rows, columns: nativeColumns.length ? nativeColumns : fallbackColumns };
 }
 
 function engagementPdfSwimmersWithoutIndividualRows(entry = {}, competition = {}) {
@@ -10659,12 +10660,35 @@ exports.preloadEngagementClubWorkspaces = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.generateEngagementClubRecapPdf = onCall(CALLABLE_OPTIONS, async (request) => {
+// TEST recap is generated directly from the trusted native dossier. No sports
+// Firestore read, saved PDF cache or Storage write: <=14+1 documents+8 bounded SQL reads.
+async function generateNativeClubRecapPdf(context, competitionId) {
+  try {
+    const competition = await nativePortalCompetition(competitionId, () => {});
+    const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
+      if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
+    });
+    const entry = require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate));
+    if (!engagementClubEntryHasParticipants(entry)) throw new HttpsError("failed-precondition", "Aucun participant enregistre pour ce club.");
+    const pdf = await buildEngagementClubRecapPdf(competition, entry);
+    if (!Buffer.isBuffer(pdf.buffer) || pdf.buffer.length > 10000000) throw new RangeError("Recapitulatif trop volumineux.");
+    return { ok: true, source: "nap", fileName: pdf.fileName, contentType: "application/pdf", generatedAt: pdf.generatedAt,
+      fromStorage: false, pdfBase64: pdf.buffer.toString("base64"), sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError ? "resource-exhausted" : error instanceof TypeError ? "failed-precondition" : "unavailable",
+      error instanceof RangeError || error instanceof TypeError ? error.message : "Recapitulatif momentanement indisponible. Aucun engagement modifie.");
+  }
+}
+
+exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
+  if (ENVIRONMENT.projectId === "livepalmes-test") return generateNativeClubRecapPdf(context, competitionId);
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");

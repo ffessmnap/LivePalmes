@@ -4301,7 +4301,7 @@
     if (elements.engagementsEditQualificationMode) elements.engagementsEditQualificationMode.value = competition.qualificationTimesMode || "all";
     if (elements.engagementsEditQualificationStart) elements.engagementsEditQualificationStart.value = competition.qualificationStartDate || "";
     if (elements.engagementsEditQualificationEnd) elements.engagementsEditQualificationEnd.value = competition.qualificationEndDate || "";
-    if (elements.engagementsEditMissingEntryTimeMode) elements.engagementsEditMissingEntryTimeMode.value = competition.missingEntryTimeMode || "manual";
+    if (elements.engagementsEditMissingEntryTimeMode) elements.engagementsEditMissingEntryTimeMode.value = competition.missingEntryTimeMode || (competition.napSource === true ? "" : "manual");
     const maxEventsPerSwimmer = Math.max(0, Math.trunc(Number(competition.maxEventsPerSwimmer) || 0));
     if (elements.engagementsEditMaxEvents) elements.engagementsEditMaxEvents.value = String(Math.min(5, maxEventsPerSwimmer));
     if (elements.engagementsEditEntryStatus) elements.engagementsEditEntryStatus.value = competition.entryStatus || "upcoming";
@@ -4313,7 +4313,8 @@
     renderQualificationEditor();
     if (competition.napSource === true) {
       const fields = editCompetitionFields();
-      for (const key of ["level", "regionId", "invitedRegionIds", "qualificationMode", "qualificationStart", "qualificationEnd", "missingEntryTimeMode"]) if (fields[key]) fields[key].disabled = true;
+      for (const key of ["level", "regionId", "invitedRegionIds", "qualificationMode", "qualificationStart", "qualificationEnd"]) if (fields[key]) fields[key].disabled = true;
+      if (fields.missingEntryTimeMode) fields.missingEntryTimeMode.disabled = Number(competition.nativeParameters?.saisie) !== 1 || Boolean(Number(competition.nativeParameters?.qualif || 0)) || competition.qualifications?.enabled === true;
       if (fields.deadline) { fields.deadline.step = "1"; fields.deadline.value = (competition.nativeEntryDeadline || "").replace(" ", "T"); }
       const closed = fields.entryStatus?.querySelector("option[value='closed']");
       if (closed) closed.disabled = false;
@@ -15350,6 +15351,7 @@
     const values = {};
     for (const key of ["name", "date", "endDate", "location", "city", "address", "organizer", "organizerEmail", "teamLeadersWhatsAppUrl", "publicDescription", "waterBodyType", "computerEmail", "officialsManagerEmail", "poolLength", "timingType", "entryStatus"]) values[key] = fields[key]?.value || "";
     values.canceled = fields.canceled?.checked === true;
+    if (Number(selectedEngagementCompetition?.nativeParameters?.saisie) === 1 && !Number(selectedEngagementCompetition?.nativeParameters?.qualif || 0) && !selectedEngagementCompetition?.qualifications?.enabled) values.missingEntryTimeMode = fields.missingEntryTimeMode?.value || "";
     values.officialsRequired = fields.officialsRequired?.value === "true";
     values.poolLaneCount = Number(fields.poolLaneCount?.value || 0);
     values.maxEventsPerSwimmer = Number(fields.maxEvents?.value || 0);
