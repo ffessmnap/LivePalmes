@@ -160,6 +160,8 @@ function runUnitTests() {
     "livepalmes-portal-optimization-tests.js",
     "dtn-near-minima-tests.js",
     "dtn-season-engine-tests.js",
+    "nap-dtn-source-tests.js",
+    "nap-dtn-calculation-tests.js",
     "dtn-season-service-tests.js"
   ].forEach((fileName) => {
     run(process.execPath, [path.join(rootDir, "tests", fileName)]);
