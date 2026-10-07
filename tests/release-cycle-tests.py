@@ -1,5 +1,6 @@
 """Offline safety scenarios for the reusable release circuit."""
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,29 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_test_deploy_retries_only_prepublication_list_failure(self):
+        class Cli:
+            def __init__(self, code, output): self.code, self.stdout = code, io.StringIO(output)
+            def __enter__(self): return self
+            def __exit__(self, *args): self.stdout.close()
+            def wait(self): return self.code
+        command = ['firebase', 'deploy', '--project', 'livepalmes-test', '--only', 'functions:one']
+        message = '\x1b[31mError:\x1b[39m Failed to list functions for livepalmes-test\n'
+        with patch.object(m.subprocess, 'Popen', side_effect=[Cli(1,message),Cli(0,'Done\n')]) as run, patch.object(m.time,'sleep') as pause:
+            m.deploy_command(command,'livepalmes-test')
+            self.assertEqual(run.call_count,2); pause.assert_called_once_with(20)
+            self.assertEqual(run.call_args_list[0].args,run.call_args_list[1].args)
+        with patch.object(m.subprocess,'Popen',side_effect=[Cli(1,message) for _ in range(3)]) as run, patch.object(m.time,'sleep') as pause, self.assertRaises(m.subprocess.CalledProcessError):
+            m.deploy_command(command,'livepalmes-test')
+        self.assertEqual(run.call_count,3); self.assertEqual([c.args[0] for c in pause.call_args_list],[20,40])
+        for error in ['Error: Permission denied\n','i functions: functions source uploaded successfully\n'+message,'i functions: updating Node.js function one\n'+message]:
+            with patch.object(m.subprocess,'Popen',return_value=Cli(1,error)) as run, patch.object(m.time,'sleep') as pause, self.assertRaises(m.subprocess.CalledProcessError):
+                m.deploy_command(command,'livepalmes-test')
+            self.assertEqual(run.call_count,1); pause.assert_not_called()
+        with patch.object(m.subprocess,'run',side_effect=m.subprocess.CalledProcessError(1,command)) as run, patch.object(m.subprocess,'Popen') as streamed, self.assertRaises(m.subprocess.CalledProcessError):
+            m.deploy_command(command,'livepalmes')
+        self.assertEqual(run.call_count,1); streamed.assert_not_called()
+
     def test_native_resolution_is_safe_only_in_test(self):
         root=Path(__file__).parents[1]
         self.assertIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root,'livepalmes-test'))

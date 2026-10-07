@@ -437,6 +437,28 @@ def stage(candidate, project, destination, sha):
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
 
 
+def deploy_command(command, project):
+    if project != 'livepalmes-test':
+        subprocess.run(command, check=True)
+        return
+    for attempt in range(3):
+        list_failure, upload_started = False, False
+        with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True) as process:
+            for line in process.stdout:
+                print(line, end='', flush=True)
+                plain = re.sub(r'\x1b\[[0-9;]*m', '', line).strip()
+                list_failure |= plain == 'Error: Failed to list functions for livepalmes-test'
+                upload_started |= bool(re.search(r'functions: (?:functions source uploaded|(?:creating|updating|deleting) )', plain))
+            result = process.wait()
+        if result == 0:
+            return
+        if not list_failure or upload_started or attempt == 2:
+            raise subprocess.CalledProcessError(result, command)
+        delay = 20 * (attempt + 1)
+        print(f'Consultation des Functions TEST interrompue avant publication ; nouvel essai du meme lot dans {delay} secondes.', flush=True)
+        time.sleep(delay)
+
+
 def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     require(project in PROJECTS, 'Projet interdit')
     require(read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == project, 'Compte incorrect')
@@ -455,7 +477,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
         command = [cli, 'deploy', '--project', project, '--config', str(Path(stage_path).resolve() / 'firebase.json'), '--only', ','.join('functions:' + n for n in batch), '--non-interactive', '--force']
         if dry_run:
             command.append('--dry-run')
-        subprocess.run(command, check=True)
+        deploy_command(command, project)
         if not dry_run:
             functions = {f['name'].split('/')[-1]: f for f in snapshot(project)['functions']}
             require(all(n in functions and functions[n]['state'] == 'ACTIVE' and functions[n]['commit'] == sha for n in batch), 'Lot incomplet : publication interrompue avant Hosting')
