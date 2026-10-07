@@ -12765,7 +12765,7 @@
       card: options.card || null
     } : null;
     const name = engagementSwimmerDisplayName(swimmer, "Nageur");
-    if (direct && swimmer.napSource && elements.engagementsSwimmerCorrectionForm) {
+    if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm) {
       elements.engagementsSwimmerCorrectionForm.dataset.napSource = "true";
       elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
       if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = true;
@@ -12780,12 +12780,12 @@
     if (elements.engagementsSwimmerCorrectionFirstName) elements.engagementsSwimmerCorrectionFirstName.maxLength = swimmer.napSource ? 64 : 80;
     if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
-    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.licenseNumber || "";
+    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.napSource ? "" : swimmer.licenseNumber || "";
     if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
     if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
-    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : "Motif de la demande (facultatif)";
+    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
     if (elements.engagementsSwimmerCorrectionReason) {
-      elements.engagementsSwimmerCorrectionReason.required = direct;
+      elements.engagementsSwimmerCorrectionReason.required = direct || (!review && swimmer.napSource === true);
       elements.engagementsSwimmerCorrectionReason.value = review ? String(options.resolutionNote || "") : "";
     }
     if (elements.engagementsSwimmerCorrectionSubmit) {
