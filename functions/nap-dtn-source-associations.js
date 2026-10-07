@@ -7,4 +7,7 @@ function dtnNativeRow(row) {
   if(ids.length>2) throw new TypeError("Correspondances DTN natives multiples a verifier.");
   return {...row,...(ids[0]?{qualificationCompetitionId:ids[0]}:{}),...(ids[1]?{importId:ids[1]}:{})};
 }
-module.exports={dtnNativeRow};
+function sourceAliases(competitionId) {
+  return Object.entries(associations).filter(([,rules])=>rules.length===1 && !rules[0].categoryKind && String(rules[0].calendarCompetitionId)===String(competitionId)).map(([id])=>id);
+}
+module.exports={dtnNativeRow,sourceAliases};

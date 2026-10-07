@@ -329,13 +329,19 @@
     dialog.querySelector("[data-mode]").onchange = draw; dialog.querySelector("[data-filter]").onchange = draw;
     dialog.querySelector('[data-action="apply"]').onclick = () => { if (preview.errors.length) return; state.editor[state.editorDevice] = preview.next; state.dirty = true; dialog.close(); settings(); message("Import appliqué au brouillon. Enregistrez pour le conserver."); }; draw();
   }
+  function sourceRowsForSelection(rows, selected) {
+    return rows.map((row) => {
+      const alias = (row.aliases || []).find((id) => selected.has(id));
+      return alias ? { ...row, id: alias } : row;
+    });
+  }
   async function sources() {
     const id = state.id, p = activeProfile(), selected = new Map(p.competitions.map((c) => [c.id, c]));
     let data = state.sources.get(id) || { sources: [], cursor: null };
-    const dialog = modal(`<h3>Compétitions de ${esc(id)}</h3><p>Sources historiques ou résultats importés. Une compétition future sans résultats ne figure pas encore ici.</p><label>Rechercher<input data-search></label><div data-list></div><div class="admin-dtn-controls">${button("more", "Charger les compétitions")}${button("apply", "Appliquer la sélection")}${button("cancel", "Annuler", "data-close")}</div><p role="status"></p>`);
+    const dialog = modal(`<h3>Compétitions de ${esc(id)}</h3><p>Choisissez les compétitions autorisées pour ce référentiel.</p><label>Rechercher<input data-search></label><div data-list></div><div class="admin-dtn-controls">${button("more", "Charger les compétitions")}${button("apply", "Appliquer la sélection")}${button("cancel", "Annuler", "data-close")}</div><p role="status"></p>`);
     const draw = () => {
       const q = dialog.querySelector("[data-search]").value.toLocaleLowerCase("fr");
-      const all = new Map([...selected, ...data.sources.map((c) => [c.id, c])]);
+      const all = new Map([...selected, ...sourceRowsForSelection(data.sources, selected).map((c) => [c.id, c])]);
       dialog.querySelector("[data-list]").innerHTML = [...all.values()].filter((c) => `${c.name} ${c.date || ""}`.toLocaleLowerCase("fr").includes(q)).map((c) => `<label class="admin-dtn-source"><input type="checkbox" data-source="${esc(c.id)}" ${checked(selected.has(c.id))}> ${esc(c.name)} · ${esc(c.date || "")}</label>`).join("") || "<p>Aucune compétition chargée ne correspond.</p>";
       dialog.querySelector('[data-action="more"]').disabled = data.cursor === "";
       dialog.querySelector('[role="status"]').textContent = `${selected.size} sélectionnée(s).`;

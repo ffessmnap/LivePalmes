@@ -6,6 +6,7 @@
 const {randomUUID}=require("node:crypto");
 const engine=require("./dtn-season-engine"),repo=require("./nap-dtn-season-repository");
 const {sourceStamp}=require("./nap-dtn-source-stamp"),{calculateSeason}=require("./nap-dtn-calculation");
+const {sourceAliases}=require("./nap-dtn-source-associations");
 function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculate=calculateSeason,stamp=sourceStamp,audit=async()=>{}}) {
   function checkConfig(value,incomplete=false) {
     try {return engine.validateSeason(value,{incomplete});}
@@ -136,7 +137,10 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
     }
     const rows=await repo.query(pool,"SELECT id,libelle,date FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date>=? AND date<=? AND (date>? OR (date=? AND id>?)) AND (ld IS NULL OR ld<>1) ORDER BY date,id LIMIT 51",[`${year-1}-09-01`,`${year}-08-31`,cursor.date,cursor.date,cursor.id]);
     const page=rows.slice(0,50),last=page.at(-1);
-    return {source:"nap",rows:page.map(r=>({id:String(r.id),name:r.libelle,date:r.date})),cursor:rows.length>50?JSON.stringify({date:last.date,id:Number(last.id)}):null};
+    return {source:"nap",sources:page.map(r=>{
+      const aliases=sourceAliases(r.id);
+      return {id:String(r.id),name:r.libelle,date:r.date,...(aliases.length?{aliases}:{})};
+    }),cursor:rows.length>50?JSON.stringify({date:last.date,id:Number(last.id)}):""};
   }
   return {list,update,overview,sources};
 }

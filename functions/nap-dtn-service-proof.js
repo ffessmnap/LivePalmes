@@ -22,6 +22,6 @@ async function inspectDtnService(pool) {
   try {await sourceStamp(readonly,{settled:true});changeTrackingAvailable=true;}catch { /* expose availability only, never server details */ }
   const complete=changeTrackingAvailable && plans.every(p=>!p.some(r=>/filesort/i.test(r.extra)));
   if(statements>15) throw new RangeError("Diagnostic DTN trop volumineux.");
-  return {source:"nap",mode:"dtn-service-contract-readonly",catalog:listed.catalog,seasons:listed.seasons.map(s=>({id:s.id,revision:s.revision})),sourcePageRows:sources.rows.length,existingNativeViews:views.length,changeTrackingAvailable,plans,complete,writesExecuted:false,sqlBudget:{queriesExecuted:statements,queriesMax:15}};
+  return {source:"nap",mode:"dtn-service-contract-readonly",catalog:listed.catalog,seasons:listed.seasons.map(s=>({id:s.id,revision:s.revision})),sourcePageRows:sources.sources.length,existingNativeViews:views.length,changeTrackingAvailable,plans,complete,writesExecuted:false,sqlBudget:{queriesExecuted:statements,queriesMax:15}};
 }
 module.exports={inspectDtnService};
