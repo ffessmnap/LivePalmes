@@ -18517,8 +18517,12 @@ async function performanceTopRowsFromIndex(filters = {}) {
 }
 
 function dtnSeasonService() {
-  return createDtnSeasonService({
+  const native = ENVIRONMENT.projectId === "livepalmes-test";
+  const factory = native ? require("./nap-dtn-season-service").createNativeDtnSeasonService : createDtnSeasonService;
+  return factory({
     db, fieldPath: FieldPath,
+    getPool: () => require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+    audit: (action, request, target) => writeAuditLogOnce(action, request.auth.uid, target, `nap-dtn-${target.seasonId}-${target.revision}-${action}`),
     fail: (message, code = "failed-precondition") => { throw new HttpsError(code, message); },
     authorize: async (request) => {
       if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -18530,10 +18534,22 @@ function dtnSeasonService() {
   });
 }
 
-exports.getDtnSeasons = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().list(request));
-exports.updateDtnSeason = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().update(request));
-exports.getDtnSeasonOverview = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().overview(request));
-exports.listDtnSeasonSources = onCall(CALLABLE_OPTIONS, (request) => dtnSeasonService().sources(request));
+const DTN_SEASON_OPTIONS = ENVIRONMENT.projectId === "livepalmes-test" ? {
+  ...CALLABLE_OPTIONS, secrets: ["LIVEPALMES_NAP_PASSWORD"], timeoutSeconds: 540, memory: "1GiB", maxInstances: 2, concurrency: 4
+} : CALLABLE_OPTIONS;
+async function invokeDtnSeason(method, request) {
+  if (ENVIRONMENT.projectId !== "livepalmes-test") return dtnSeasonService()[method](request);
+  try { return await dtnSeasonService()[method](request); }
+  catch (error) {
+    if (error instanceof HttpsError) throw error;
+    if (error instanceof TypeError || error instanceof RangeError) throw new HttpsError("failed-precondition", error.message);
+    throw new HttpsError("unavailable", "La DTN est temporairement indisponible. Reessayez dans quelques instants.");
+  }
+}
+exports.getDtnSeasons = onCall(DTN_SEASON_OPTIONS, (request) => invokeDtnSeason("list", request));
+exports.updateDtnSeason = onCall(DTN_SEASON_OPTIONS, (request) => invokeDtnSeason("update", request));
+exports.getDtnSeasonOverview = onCall(DTN_SEASON_OPTIONS, (request) => invokeDtnSeason("overview", request));
+exports.listDtnSeasonSources = onCall(DTN_SEASON_OPTIONS, (request) => invokeDtnSeason("sources", request));
 
 function dtnQualificationRow(row = {}) {
   return cleanFirestoreValue({
@@ -18834,6 +18850,7 @@ async function enqueueDtnQualificationJob(job = {}) {
 }
 
 exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTIONS, async (event) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return;
   const snapshot = event.data;
   if (!snapshot?.exists) return;
   const job = snapshot.data() || {};
@@ -18891,6 +18908,7 @@ exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTI
 
 exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "dtn.view");
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear]) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
@@ -18916,6 +18934,7 @@ exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) 
 exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   const sex = normalizeCategoryCode(request.data?.sex);
   const allowedStandardIds = new Set(["TSP", "TRP", "TJP", "TEP", "TU16C2", "TU16C1"]);
@@ -19035,6 +19054,7 @@ function normalizeDtnListingRules(inputRules = []) {
 
 exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "dtn.view");
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
@@ -19057,6 +19077,7 @@ exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.getDtnListingOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || seasonYear < 2000 || seasonYear > 2100 || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
