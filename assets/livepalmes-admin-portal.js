@@ -770,6 +770,7 @@
     engagementsClubRelayDialogApply: document.querySelector("#adminEngagementsClubRelayDialogApply"),
     engagementsClubSummaryStatus: document.querySelector("#adminEngagementsClubSummaryStatus"),
     engagementsClubSummaryList: document.querySelector("#adminEngagementsClubSummaryList"),
+    engagementsClubNativeSummary: document.querySelector("#adminEngagementsClubNativeSummary"),
     engagementsClubSummaryPdfButton: document.querySelector("#adminEngagementsClubSummaryPdfButton"),
     engagementsClubNewSwimmerFirstName: document.querySelector("#adminEngagementsClubNewSwimmerFirstName"),
     engagementsClubNewSwimmerLastName: document.querySelector("#adminEngagementsClubNewSwimmerLastName"),
@@ -8213,8 +8214,9 @@
     const competition = selectedEngagementCompetition || {};
     const fees = competition.fees || {};
     const noFees = fees.enabled === false;
-    const swimmers = currentEngagementClubSwimmersForSummary(entry);
-    const relays = selectedEngagementClubRelayRows().filter((relay) => !engagementClubRelayNeedsCompletion(relay));
+    const nativeEntry = competition.napSource === true && entry.source === "nap";
+    const swimmers = nativeEntry ? (entry.swimmers || []) : currentEngagementClubSwimmersForSummary(entry);
+    const relays = nativeEntry ? (entry.relays || []) : selectedEngagementClubRelayRows().filter((relay) => !engagementClubRelayNeedsCompletion(relay));
     const officialsCount = currentEngagementClubOfficialCount(entry);
     const individualCount = swimmers.reduce((sum, swimmer) => sum + (Array.isArray(swimmer.individualEntries) ? swimmer.individualEntries.length : 0), 0);
     const total = swimmers.length * engagementFeeAmount(fees.swimmerFee) +
@@ -8247,6 +8249,7 @@
         </div>
       `).join("");
     }
+    renderEngagementClubNativeSummary(nativeEntry ? entry : null);
     if (elements.engagementsClubSummaryPdfButton) {
       const canGenerateRecap = Boolean(selectedEngagementCompetitionId && engagementClubTeamComplete(entry) && engagementClubEntryHasParticipants(entry));
       elements.engagementsClubSummaryPdfButton.disabled = !canGenerateRecap;
@@ -8254,6 +8257,26 @@
         ? "Télécharger le récapitulatif PDF"
         : "Ajoutez au moins un nageur, un officiel ou un relais pour générer le récapitulatif.";
     }
+  }
+
+  // Show the saved native dossier without applying new-entry completion rules.
+  // Existing categories, compact times and relay compositions are never rewritten.
+  function renderEngagementClubNativeSummary(entry) {
+    const mount = elements.engagementsClubNativeSummary;
+    if (!mount) return;
+    mount.hidden = !entry;
+    if (!entry) { mount.innerHTML = ""; return; }
+    const personName = person => [person.lastName, person.firstName].filter(Boolean).join(" ");
+    const savedTime = row => row.entryTime || row.nativeTime || "Temps non renseigné";
+    const swimmers = Array.isArray(entry.swimmers) ? entry.swimmers : [];
+    const relays = Array.isArray(entry.relays) ? entry.relays : [];
+    mount.innerHTML = '<h4>Courses enregistrées</h4><ul>' + swimmers.map(person =>
+      '<li><strong>' + escapeHtml(personName(person)) + '</strong> : ' +
+      (person.individualEntries?.length ? person.individualEntries.map(row => escapeHtml(row.eventCode) + ' — ' + escapeHtml(savedTime(row))).join(' ; ') : 'Aucune course enregistrée') + '</li>'
+    ).join('') + '</ul><h4>Relais enregistrés</h4>' + (relays.length ? '<ul>' + relays.map(row =>
+      '<li><strong>' + escapeHtml(row.eventCode) + '</strong> — ' + escapeHtml(savedTime(row)) + ' : ' +
+      (row.members?.length ? row.members.map(person => escapeHtml(personName(person))).join(', ') : 'Composition non renseignée') + '</li>'
+    ).join('') + '</ul>' : '<p>Aucun relais enregistré.</p>');
   }
 
   function renderEngagementClubRelays() {

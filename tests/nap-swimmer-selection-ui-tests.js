@@ -26,3 +26,26 @@ vm.runInContext(source.slice(source.indexOf("  async function saveEngagementClub
   assert.equal(uuids,1);assert.deepEqual(payloads[0],payloads[1]);assert.equal(Object.hasOwn(payloads[0].changes[0],"swimmer"),false);assert.equal(queueContext.engagementClubNativeSelectionRetry,null);
   console.log("Native selection UI: scoped locks, closure and actual stable retry payload verified without network");
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+// Native recap must not discard a saved relay merely because old native
+// categories/manual-time fields do not satisfy the LivePalmes editor.
+const nativeEntry={source:"nap",swimmers:[{firstName:"Example",lastName:"<Person>",individualEntries:[{eventCode:"50BI",entryTime:"30.00"},{eventCode:"200BI",entryTime:"2:30.00"},{eventCode:"400BI",entryTime:"5:00.00"},{eventCode:"OLDCOURSE",nativeTime:"599999"}]}],relays:[{eventCode:"4X100BI",category:"NAP-27",manualEntryTime:"",entryTime:"4:10.00",members:[{firstName:"A",lastName:"One"},{firstName:"B",lastName:"Two"}]}]};
+const beforeNative=JSON.stringify(nativeEntry);
+const summaryContext={elements:{engagementsClubSummaryList:{},engagementsClubNativeSummary:{}},selectedEngagementCompetition:{napSource:true,fees:{enabled:false},officialsRequired:false},selectedEngagementClubEntry:nativeEntry,
+  escapeHtml:value=>String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"),engagementRowValueHtml:value=>String(value),currentEngagementClubSwimmersForSummary:entry=>entry.swimmers,
+  selectedEngagementClubRelayRows:()=>nativeEntry.relays,engagementClubRelayNeedsCompletion:()=>true,currentEngagementClubOfficialCount:()=>0,engagementFeeAmount:()=>0,engagementExternalHttpUrl:()=>"",engagementTeamLeadersWhatsAppValue:()=>"",engagementClubSummaryTeamLeaderLabel:()=>"Leader"};
+vm.createContext(summaryContext);
+vm.runInContext(source.slice(source.indexOf("  function renderEngagementClubSummary("),source.indexOf("  function renderEngagementClubRelays(")),summaryContext);
+summaryContext.renderEngagementClubSummary(nativeEntry);
+assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>1 relais</);
+assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>4 courses</);
+assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/50BI — 30.00.*200BI — 2:30.00.*400BI — 5:00.00/);
+assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/OLDCOURSE — 599999/);
+assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/&lt;Person&gt;/);
+assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/One A, Two B/);
+assert.equal(JSON.stringify(nativeEntry),beforeNative,"recap never changes stored native values or incomplete composition");
+summaryContext.selectedEngagementCompetition.napSource=false;
+summaryContext.renderEngagementClubSummary({...nativeEntry,source:"legacy"});
+assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>0 relais</,"legacy completion rule remains unchanged");
+assert.equal(summaryContext.elements.engagementsClubNativeSummary.hidden,true);
+assert.equal(summaryContext.elements.engagementsClubNativeSummary.innerHTML,"");
