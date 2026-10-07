@@ -11,8 +11,17 @@ assert.equal(timeLabels.engagementEntryTimeDisplayLabel({entryTimeMode:"default5
 const locks={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeIndividualEntriesEditable:true,entryStatus:"open",entryDeadlineAt:"2099-01-01T00:00:00Z"},global:{LivePalmesEnvironment:{isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
 vm.createContext(locks);vm.runInContext(source.slice(source.indexOf("  function engagementClubWriteLockReason("),source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS")),locks);
 assert.equal(locks.engagementClubIndividualEntriesLockReason(),"");assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("entries"),false);
+assert.equal(locks.engagementClubStepLockReason("entries"),"");
+assert.match(locks.engagementClubStepLockReason("relays"),/raccordement/);
+locks.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;
+locks.selectedEngagementCompetition.nativeTeamLeaderEditable=true;
+assert.equal(locks.engagementClubStepLockReason("swimmers"),"");
+assert.equal(locks.engagementClubTeamLeaderLockReason(),"");
+locks.selectedEngagementCompetition.nativeTeamLeaderEditable=false;
+assert.match(locks.engagementClubTeamLeaderLockReason(),/raccordement/);
 assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("relays"),true);assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("officials"),true);
 locks.selectedEngagementCompetition.entryStatus="closed";assert.match(locks.engagementClubIndividualEntriesLockReason(),/fermes/);
+assert.match(locks.engagementClubStepLockReason("entries"),/fermes/);
 locks.selectedEngagementCompetition.entryStatus="open";locks.global.LivePalmesEnvironment.isTest=false;assert.match(locks.engagementClubIndividualEntriesLockReason(),/raccordement/);
 const courseUi={selectedEngagementCompetition:{napSource:true},engagementClubIndividualEvents:()=>[{code:"50AP",nativeRecognized:true,nativeCourses:[{sexe:"M"}]}],engagementSwimmerCategory:()=>"M",ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS:[["M"]],ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES:{"50AP":new Set(["P","B","M"])}};
 vm.createContext(courseUi);vm.runInContext(source.slice(source.indexOf("  function engagementClubProgramItemAllowsSwimmer("),source.indexOf("  function engagementClubProgramSessionsForSex(")),courseUi);
