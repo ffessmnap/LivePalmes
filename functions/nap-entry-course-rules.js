@@ -9,7 +9,7 @@ async function readCategories(connection) {
 function courseLockReason(pack) {
   const reason=selectionLockReason(pack);
   if(reason) return reason;
-  if(Number(pack.nativeParameters?.saisie)!==1) return "Le mode natif sans saisie de temps reste a raccorder avant la modification des courses.";
+  try { require("./nap-entry-time-policy").policy(pack.nativeParameters?.saisie); } catch { return "Mode natif de saisie des temps a verifier."; }
   const restrictions=pack.restrictions || pack.nativeRules?.restrictions;
   if(!Array.isArray(restrictions) || restrictions.length) return "Les restrictions natives par course restent a verifier avant la modification des courses.";
   return "";

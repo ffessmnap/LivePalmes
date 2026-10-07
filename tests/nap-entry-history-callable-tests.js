@@ -1,6 +1,12 @@
 "use strict";
 const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
 const source = fs.readFileSync(require.resolve("../functions/index"), "utf8");
+const historyHelpers={cleanText:value=>String(value||""),engagementQualificationRowAllowed:()=>true,cleanFirestoreValue:value=>value,formatTimeValue:value=>String(value),cleanIsoDate:value=>value};
+vm.createContext(historyHelpers);
+vm.runInContext(source.slice(source.indexOf("function engagementKnownTimeHistory("),source.indexOf("function engagementEntryTimeCacheId(")),historyHelpers);
+const fullHistory=Array.from({length:2001},(_,i)=>({id:i+1,course:"100SF",date:"2026-01-01",timeValue:i+1}));
+assert.equal(historyHelpers.engagementKnownTimeHistory(fullHistory,"100SF",{}).length,10,"legacy default remains bounded to 10");
+assert.equal(historyHelpers.engagementKnownTimeHistory(fullHistory,"100SF",{},20000).length,2000,"native selection cannot exceed the existing swimmer history bound");
 const start = source.indexOf("exports.getEngagementClubEntryTimeHistory ="), end = source.indexOf("async function previewNativeClubEntryTimes(", start);
 assert.ok(start > 0 && end > start);
 let mode = "manual", allowed = true, calls = 0;
@@ -13,7 +19,7 @@ const context = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   cleanText: value => String(value ?? "").trim(), cleanEngagementMissingEntryTimeMode: value => value || "manual",
   ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   engagementClubAccessContext: async () => { if (!allowed) throw new HttpsError("permission-denied", "Denied"); return { clubId: "106" }; },
-  engagementKnownTimeHistory: (rows, course, competition, limit) => { assert.equal(limit, 10); return rows.filter(row => row.course === course).slice(0, limit); },
+  engagementKnownTimeHistory: (rows, course, competition, limit) => { assert.equal(limit, 2000); return rows.filter(row => row.course === course).slice(0, limit); },
   db: { collection: () => { throw new Error("Legacy Firestore path"); } },
   require: name => {
     if (name === "./nap-portal-swimmers") return { portalPool: () => ({}) };
@@ -33,6 +39,7 @@ vm.createContext(context); vm.runInContext(source.slice(start, end), context);
   assert.equal(result.events[0].eventCode, "100SF"); assert.equal(result.events[0].times[0].time, "14200");
   assert.equal(result.sqlBudget.queriesMax, 23);
   assert.equal(context.exports.getEngagementClubEntryTimeHistory.options.secrets[0], "LIVEPALMES_NAP_PASSWORD");
+  mode = "default595999"; assert.equal((await context.exports.getEngagementClubEntryTimeHistory(request)).events.length,1);
   mode = "forbidden"; await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /pas autorisee/);
   allowed = false; const before = calls;
   await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /Denied/); assert.equal(calls, before);

@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Engagements : trois modes natifs et courses de 25 m — 8 octobre 2026
+
+- Règles confirmées par Antoine : saisie native 0 = choix d'un temps NAP dans la période, sinon 599999 ; -1 = meilleur temps imposé, engagement impossible sans temps connu ; 1 = saisie/modification libre. Sans bornes de période, historique de tout temps. Le formulaire d'administration écrit le même champ natif `compet_parametres.saisie`, sans réglage concurrent dans l'ancien complément.
+- Ajout 25SF/25AP au catalogue des compétitions et engagements et à leur historique privé ; exclusions des TOP et fiches publiques conservées. Aucun temps historique, schéma, droit, email ou PROD modifié.
+- Budget : ouverture/rafraîchissement inchangés ; choix de temps réutilise la requête groupée indexée existante, maximum 2 000 performances par nageur et 20 000 pour le groupe. Historique au choix retourne toutes les lignes pertinentes déjà lues, sans requête supplémentaire par course. Enregistrement et modification des paramètres conservent leurs plans bornés et sauvegardes existants ; données sportives exclusivement NAP, Auth/droits/journal technique Firebase.
+- Tests hors réseau : trois modes, refus du temps libre en mode 0, période, sentinelle exacte, choix client conservé, écritures du champ natif et exclusion publique des 25 m. Vérification globale Windows : syntaxe et tests métier passent, assertion CRLF préexistante du workflow bloque la suite ; contrôle Linux exact requis. Publication TEST et recette à réaliser ; aucune validation utilisateur de cette nouvelle version revendiquée.
+- Relais : PR 178 intégrée sur e25f463a92310a1e4f706d65b372075246a6df19 ; CI 37690712215 et TEST commun 37691115708 réussis. Contrôle mobile du 8 octobre : relais masculin 03:20.00 et quatre nageurs présents, correction du message de consultation seule sur l'étape relais visible. Le relais féminin temporaire reste présent malgré la première confirmation d'Antoine ; nouvelle confirmation de retrait demandée, résultat non revendiqué.
+
 ### Relais : engagements directs NAP sur TEST — 7 octobre 2026
 
 - Ajout, correction et retrait explicites d'un seul relais, composition vide ou quatre nageurs sélectionnés du club ; règles LivePalmes existantes conservées. Les catégories détaillées, notamment mixtes, restent dans le complément NAP déjà autorisé ; IntraNAP utilise les lignes natives communes. Aucun changement de schéma, mail ou PROD. Les autres relais et temps anciens restent inchangés.

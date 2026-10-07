@@ -6,14 +6,15 @@ function swimmerId(input) {
   if (!Number.isSafeInteger(id) || id <= 0 || id > 2147483647) throw new TypeError("Identifiant nageur invalide.");
   return id;
 }
-function performanceRow(row, person) {
+function performanceRow(row, person, entryHistory = false) {
   const course = String(row.course || "");
   const timeValue = rules.parseCompactTime(row.tps);
-  if (!rules.CURRENT_POOL_COURSES.includes(course) || Number(row.relais || 0) !== 0 || Number(row.ld || 0) === 1 ||
-      !row.competition_id || !timeValue || timeValue < rules.MIN_TIME_BY_COURSE[course]) return null;
+  const entryOnlyCourse = entryHistory === true && ["25SF", "25AP"].includes(course);
+  if ((!rules.CURRENT_POOL_COURSES.includes(course) && !entryOnlyCourse) || Number(row.relais || 0) !== 0 || Number(row.ld || 0) === 1 ||
+      !row.competition_id || !timeValue || timeValue < (entryOnlyCourse ? 0 : rules.MIN_TIME_BY_COURSE[course])) return null;
   const category = rules.normalizePerformanceCategory(row.cat, person, { date: row.date });
   if (!category) return null;
-  const details = rules.coursePayload(course);
+  const details = entryOnlyCourse ? {label: `25 m ${course === "25SF" ? "Surface" : "Apnee"}`, shortLabel: `25 ${course.slice(2)}`, style: course.slice(2), length: 25} : rules.coursePayload(course);
   const regionId = rules.committeeId(row.comite_club);
   return {
     id: String(row.id), source: "nap", swimmerId: person.id, originalSwimmerId: person.id,

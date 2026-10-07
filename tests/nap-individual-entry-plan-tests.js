@@ -14,6 +14,8 @@ result=plan(pack,[{swimmerId:1,entries:[{course:"100SF",tps:"014100"},{course:"5
 assert.deepEqual(result.plans[0].updates.map(row=>row.before.id),[21,22]);
 assert.deepEqual(result.plans[0].removals,[]);
 assert.deepEqual(plan(pack,[]).plans,[]);
+assert.equal(plan(pack,[{swimmerId:1,entries:[{course:"200SF",tps:"599999"}]}]).plans[0].additions[0].tps,"599999");
+assert.throws(()=>plan(pack,[{swimmerId:1,entries:[{course:"200SF",tps:"589999"}]}]),/invalide/);
 for(const entries of [[{course:"100SF",tps:"016000"}],[{course:"100SF",tps:"1:42.00"}],[{course:"100SF",tps:"14200"},{course:"100SF",tps:"14200"}]]) assert.throws(()=>plan(pack,[{swimmerId:1,entries}]));
 assert.throws(()=>plan(pack,[{swimmerId:3,entries:[]}]));
 assert.throws(()=>plan(pack,[{swimmerId:1,entries:[]},{swimmerId:1,entries:[]}]));
