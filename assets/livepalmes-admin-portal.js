@@ -2024,12 +2024,12 @@
   }
 
   function updateEngagementClubTeamLeaderActions(entry = selectedEngagementClubEntry || {}) {
-    updateNativeCompetitionPersonCreationButton();
     const teamLeader = entry.teamLeader || {};
     const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
     const writeLockReason = nativeLeaderEdit ? engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false }) : engagementClubWriteLockReason();
     // The form lock includes the summary buttons: restore their states afterwards.
     if (nativeLeaderEdit) updateEngagementClubTeamFormMode();
+    updateNativeCompetitionPersonCreationButton();
     const teamLeaderComplete = engagementClubTeamComplete(entry);
     const editorVisible = !teamLeaderComplete || engagementClubTeamEditing;
     if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.hidden = !editorVisible;
