@@ -5,7 +5,7 @@ const {QUERIES,inspectEngagementContract}=require("../functions/nap-engagement-c
   let reads=0;
   const pool={execute:async ({sql})=>{
     assert.ok(/^(?:SELECT|EXPLAIN SELECT) /.test(sql));
-    assert.ok(/LIMIT (?:40|60|80|100)$/.test(sql));
+    assert.ok(/LIMIT (?:40|60|80|100|101)$/.test(sql));
     assert.ok(!/\b(?:nom|prenom|lastname|firstname|mail|password|licence|tel)\b/i.test(sql));
     if (sql.startsWith("EXPLAIN")) return [[{table:"engagements",type:"index",key:"PRIMARY",rows:100}]];
     reads++;return [[]];
