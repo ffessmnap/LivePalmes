@@ -8326,6 +8326,13 @@
     ).join('') + '</ul>' : '<p>Aucun relais enregistré.</p>');
   }
 
+  function engagementClubPersistedRelayDraft(relay, native = false) {
+    // Only a relay explicitly mapped by LivePalmes can reuse its displayed
+    // native time in the edit form. Unmapped historical times stay untouched.
+    const mappedNative = native && relay.category && !relay.category.startsWith("NAP-") && Number(relay.entryTimeValue) > 0;
+    return { ...relay, manualEntryTime: relay.manualEntryTime || (mappedNative ? relay.entryTime : "") || "", persisted: true, draftPending: false, draftNotice: "" };
+  }
+
   function renderEngagementClubRelays() {
     const mount = elements.engagementsClubRelaysList;
     if (!mount) return;
@@ -8524,7 +8531,7 @@
     engagementClubRelaysRenderedCompetitionId = "";
     const writeLockReason = engagementClubWriteLockReason();
     engagementClubRelaysDraft = Array.isArray(selectedEngagementClubEntry.relays)
-      ? selectedEngagementClubEntry.relays.map((relay) => ({ ...relay, persisted: true, draftPending: false, draftNotice: "" }))
+      ? selectedEngagementClubEntry.relays.map((relay) => engagementClubPersistedRelayDraft(relay, selectedEngagementClubEntry.napSource === true))
       : [];
     const teamLeader = selectedEngagementClubEntry.teamLeader || {};
     if (elements.engagementsClubTeamForm) {
@@ -8562,7 +8569,8 @@
       elements.engagementsClubTeamMessage.dataset.tone = "error";
     }
     document.querySelectorAll("[data-club-step]").forEach((step) => {
-      const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
+      const stepLockReason = step.dataset.clubStep === "relays" ? engagementClubRelaysLockReason() : writeLockReason;
+      const locked = Boolean(stepLockReason || !engagementClubTeamComplete());
       step.dataset.locked = locked ? "true" : "false";
       if (step.dataset.clubStep === "officials") return;
       const firstParagraph = step.querySelector("p");
@@ -8577,7 +8585,7 @@
         summary: "Structure prête. Le récapitulatif se remplira avec les prochaines étapes."
         };
         firstParagraph.textContent = locked
-        ? writeLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
+        ? stepLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
           : unlockedTexts[step.dataset.clubStep] || "";
       }
     });
