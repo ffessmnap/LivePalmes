@@ -39,9 +39,10 @@ async function resolveChanges(input,services) {
       }
       if(raw.entryTimeMode==="native") throw new TypeError("Temps natif modifie ailleurs. Rechargez le dossier.");
       const resolved=resolveTime({...raw,eventCode:code},competition,{
-        automatic:entry=>services.automatic(entry,histories.get(String(id)) || [],competition),parse:services.parse
+        automatic:entry=>services.automatic(entry,histories.get(String(id)) || [],competition),parse:services.parse,
+        known:entry=>require("./nap-entry-time-policy").known(entry,histories.get(String(id)) || [],competition,services.parse)
       });
-      entries.push({course:code,tps:compact(resolved.entryTimeValue)});
+      entries.push({course:code,tps:resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue)});
       if(resolved.entryTimeMode==="manual") manualEntries.push(resolved);
     }
     const untouched=before.filter(row=>!managedCourses.includes(row.course));

@@ -7,7 +7,8 @@ const competition={date:"2026-10-11",events:[{code:"50BI",type:"individual",nati
 const person={sex:"M",birthDate:"2013-03-03"};
 const services={age:()=>14,category:()=>"C",forbidden:()=>false};
 assert.equal(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:1}}),"");
-assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:0}}),/sans saisie/);
+for (const saisie of [0,-1]) assert.equal(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie}}),"");
+assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:9}}),/verifier/);
 assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:1},restrictions:[{}]}),/restrictions/);
 assert.deepEqual(allowedCourses(person,native,competition,categories,services),["50BI","50AP"]);
 const restricted={...native,restrictions:[{course:"50BI",categorie:1,swim:0}]};

@@ -22,6 +22,13 @@ Object.assign(state,{engagementClubTimesDialogSwimmer:()=>swimmer,elements:{enga
 vm.runInContext(source.slice(source.indexOf("  function applyEngagementClubTimesDialog("),source.indexOf("  function engagementClubRelayEvents(")),state);
 state.applyEngagementClubTimesDialog();assert.equal(persisted.individualEntries[0].nativeTime,"14200");assert.equal(persisted.individualEntries[0].entryTimeMode,"native","validating an untouched time dialog must not reset native times");
 dialogRow.dataset.nativeAutoRequested="true";state.applyEngagementClubTimesDialog();assert.equal(persisted.individualEntries[0].entryTimeMode,"known","an explicit reset uses the existing automatic preview");
+state.engagementManualIndividualTimesAllowed=()=>false;
+state.formatEngagementEntryTimeInput=value=>value;
+dialogRow.querySelector=selector=>selector.includes("dialog-input") ? {disabled:true} : {value:"01:43.00",dataset:{originalTime:"01:42.00"}};
+state.applyEngagementClubTimesDialog();
+assert.equal(persisted.individualEntries[0].entryTimeMode,"known","native mode 0 selects a known time without enabling manual input");
+assert.equal(persisted.individualEntries[0].manualEntryTime,"");
+assert.equal(persisted.individualEntries[0].entryTime,"01:43.00");
 let calls=0,uuids=0;const payloads=[];
 const queue={selectedEngagementCompetition:{napSource:true},selectedEngagementCompetitionId:"legacy-nap-5140",engagementClubEntriesAutosaveTimer:null,engagementClubEntriesAutosaveCompetitionId:"legacy-nap-5140",engagementClubEntriesAutosaveSwimmers:new Map([["1",swimmer]]),engagementClubNativeRelayRetry:null,engagementClubNativeOfficialRetry:null,engagementClubNativeSelectionRetry:null,engagementClubNativeIndividualRetry:null,engagementClubLastPersistedEntry:{competitionId:"legacy-nap-5140",napFingerprint:"a".repeat(64)},elements:{engagementsClubEntriesForm:{},engagementsClubEntriesMessage:{}},global:{crypto:{randomUUID:()=>{uuids++;return "11111111-1111-4111-8111-111111111111";}}},canUse:()=>true,queueEngagementClubEntryMutation:options=>options.execute(),callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubIndividualEntries");payloads.push(JSON.parse(JSON.stringify(payload)));if(++calls===1) throw Error("interrupted");return {entry:{source:"nap"}};}};
 vm.createContext(queue);vm.runInContext(source.slice(source.indexOf("  function flushEngagementClubIndividualEntriesAutosave("),source.indexOf("  function persistEngagementClubIndividualEntries(")),queue);

@@ -14,6 +14,10 @@ function resolveTime(entry, competition, services, preview = false) {
     return { eventCode: entry.eventCode, status: "selected", entryTimeMode: "notRequired" };
   }
   if (mode === "none") throw new TypeError("Reglage piscine a verifier.");
+  if(competition.napSource===true && Number(competition.nativeParameters?.saisie)===0 && entry.entryTimeMode==="known" && entry.entryTime) {
+    if(typeof services.known!=="function") throw new TypeError("Historique natif requis pour ce choix de temps.");
+    return services.known(entry);
+  }
   const manualRaw = entry.entryTimeMode === "manual"
     ? String(entry.manualEntryTime || entry.entryTime || "").trim()
     : String(entry.manualEntryTime || "").trim();
@@ -38,7 +42,7 @@ function resolveTime(entry, competition, services, preview = false) {
     return { eventCode: entry.eventCode, entryTimeMode: "forbidden", entryTime: "", entryTimeValue: 0,
       entryTimeWarning: "Aucun temps connu : engagement interdit." };
   }
-  return result;
+  return competition.napSource===true && result.entryTimeMode==="default595999" ? {...result,nativeTime:"599999"} : result;
 }
 
 module.exports = { resolveTime };
