@@ -10579,7 +10579,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: 23, rowsMax: 19519 } };
   }
@@ -11900,7 +11900,7 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
       }, event => assertEngagementClubWriteOpen(event));
       const competition = await nativePortalCompetition(competitionId, () => {});
       const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, () => {});
-      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)) };
+      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: require("./nap-portal-workspaces").entryItem(pack, context, birthDate => ageCategoryFromDates(competition.date, birthDate)) };
     } catch (error) {
       if (error instanceof HttpsError) throw error;
       throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Modification NAP a verifier. Reprenez la meme correction ; la sauvegarde est conservee.");
@@ -16132,8 +16132,49 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIO
   };
 });
 
-exports.saveEngagementClubIndividualEntries = onCall(CALLABLE_OPTIONS, async (request) => {
+async function saveNativeClubIndividualEntries(context,request) {
+  try {
+    const swimmers=request.data?.swimmers;
+    if(!Array.isArray(swimmers) || !swimmers.length || swimmers.length>100) throw new TypeError("Modification de 1 a 100 nageurs requise.");
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const result=await require("./nap-individual-entry-change").saveNativeIndividualEntries(pool,{
+      competitionId:request.data?.competitionId,clubId:String(context.clubId),actorUid:context.uid,
+      expectedFingerprint:request.data?.expectedFingerprint,mutationId:request.data?.mutationId,
+      changes:swimmers.map(row=>({swimmerId:row?.swimmerIndexId,entries:row?.individualEntries}))
+    },{
+      authorize:({clubId})=>{if(String(clubId)!==String(context.clubId)) throw new HttpsError("permission-denied","Dossier hors du club autorise.");},
+      resolve:async input=>{
+        const rules=require("./nap-entry-course-rules"),reason=rules.courseLockReason(input.competition);
+        if(reason) throw new TypeError(reason);
+        const categories=await rules.readCategories(input.connection);
+        return require("./nap-individual-entry-resolution").resolveChanges({...input,categories},{
+          view:pack=>require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE),
+          age:(date,birthDate)=>(importSeasonYear(date)||competitionYear(date))-birthYear(birthDate),
+          category:ageCategoryFromDates,
+          forbidden:(code,category)=>ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]?.has(category)===true,
+          automatic:automaticEngagementIndividualEntry,parse:parseEngagementEntryTime,
+          validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,await require("./nap-entry-static-records").loadStaticRecords(ENVIRONMENT.projectId))
+        });
+      },
+      audit:{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-individual-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-individual-${operation}-before`).create({action:"nap.individualEntry.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.individualEntriesSaved",context.uid,target,operation)
+      }
+    });
+    const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,
+      entry:require("./nap-portal-workspaces").entryItem(result.nativeEntry,context,birthDate=>ageCategoryFromDates(competition.date,birthDate)),
+      sqlBudget:{queriesMax:35,writesMax:3}};
+  } catch(error) {
+    if(error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
+  }
+}
+
+exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if(ENVIRONMENT.projectId==="livepalmes-test") return saveNativeClubIndividualEntries(context,request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
