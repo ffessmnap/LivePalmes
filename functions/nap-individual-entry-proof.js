@@ -9,7 +9,7 @@ async function inspectStatements(connection,pack,readCompetition=readNativeCompe
   const row=pack.individual.find(row=>Number(row.engagement)===Number(link.id) && /^[A-Z0-9]{1,32}$/.test(row.course) && /^\d{1,6}$/.test(row.tps) && Number(row.tps.slice(-4,-2)||0)<=59);
   const competition=await readCompetition(connection,pack.competitionId,()=>{});
   if(!competition || competition.event.entryStatus!=="open" || !competition.event.entryDeadlineAt) return {available:false,reason:"competition-not-open",writesExecuted:false};
-  const authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options};
+  const authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options,...(pack.leaders?.length===1?{nativeLeader:pack.leaders[0]}:{})};
   const base={swimmerId:link.nageur,inscriptionId:link.id,before:[row],removals:[],updates:[],additions:[]};
   const samples=[{...base,removals:[row]},{...base,updates:[{before:row,tps:row.tps}]},{...base,before:[],additions:[{engagement:row.engagement,course:row.course,tps:row.tps}]}];
   const plans=[];
