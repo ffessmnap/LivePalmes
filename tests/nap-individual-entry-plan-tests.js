@@ -1,0 +1,27 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {planIndividualEntries}=require("../functions/nap-individual-entry-plan");
+const plan=(pack,changes)=>planIndividualEntries(pack,changes.map(change=>({managedCourses:["50SF","100SF","200SF"],...change})));
+const pack={competitionId:"5140",clubId:"106",swimmers:[{id:"1",clubId:"106"},{id:"2",clubId:"106"}],inscriptions:[{id:11,nageur:1,compet:5140},{id:12,nageur:2,compet:5140}],individual:[{id:21,engagement:11,course:"100SF",tps:"14200"},{id:22,engagement:11,course:"100SF",tps:"14200"},{id:23,engagement:11,course:"50SF",tps:"003000"},{id:24,engagement:12,course:"50SF",tps:"003100"}]};
+const original=JSON.stringify(pack);
+let result=plan(pack,[{swimmerId:1,entries:[{course:"100SF",tps:"014200"},{course:"200SF",tps:"030000"}]}]);
+assert.deepEqual(result.plans[0].updates,[]);
+assert.deepEqual(result.plans[0].removals.map(row=>row.id),[23]);
+assert.deepEqual(result.plans[0].additions,[{engagement:11,course:"200SF",tps:"030000"}]);
+assert.equal(JSON.stringify(pack),original);
+assert.equal(result.plans.length,1); // untouched swimmer is never replaced
+result=plan(pack,[{swimmerId:1,entries:[{course:"100SF",tps:"014100"},{course:"50SF",tps:"3000"}]}]);
+assert.deepEqual(result.plans[0].updates.map(row=>row.before.id),[21,22]);
+assert.deepEqual(result.plans[0].removals,[]);
+assert.deepEqual(plan(pack,[]).plans,[]);
+for(const entries of [[{course:"100SF",tps:"016000"}],[{course:"100SF",tps:"1:42.00"}],[{course:"100SF",tps:"14200"},{course:"100SF",tps:"14200"}]]) assert.throws(()=>plan(pack,[{swimmerId:1,entries}]));
+assert.throws(()=>plan(pack,[{swimmerId:3,entries:[]}]));
+assert.throws(()=>plan(pack,[{swimmerId:1,entries:[]},{swimmerId:1,entries:[]}]));
+assert.throws(()=>plan({...pack,inscriptions:[...pack.inscriptions,{id:13,nageur:1,compet:5140}]},[{swimmerId:1,entries:[]}]));
+assert.throws(()=>plan({...pack,individual:[...pack.individual,{id:25,engagement:99,course:"100SF",tps:"14200"}]},[]));
+assert.throws(()=>plan({...pack,swimmers:[{id:1,clubId:"999"}]},[]));
+assert.throws(()=>plan(pack,Array(101).fill({swimmerId:1,entries:[]})));
+const historical={...pack,individual:[...pack.individual,{id:25,engagement:11,course:"ANCIEN-CODE",tps:"INVALIDE"}]};
+assert.deepEqual(plan(historical,[{swimmerId:1,entries:[]}]).plans[0].removals.map(row=>row.id),[21,22,23]);
+assert.throws(()=>plan(pack,[{swimmerId:1,managedCourses:["50SF"],entries:[{course:"100SF",tps:"14200"}]}]));
+console.log("NAP individual entry plan tests passed");

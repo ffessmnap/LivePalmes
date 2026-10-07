@@ -51,4 +51,4 @@ function deletion(plan,rows,authority,end) {
   values.push(...guard.values,deadline(end));
   return {sql:`DELETE FROM officielsengager WHERE (${predicates.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? LIMIT 200`,values};
 }
-module.exports={selectedStatement,insertion,deletion};
+module.exports={selectedStatement,insertion,deletion,entryAuthority,deadline};
