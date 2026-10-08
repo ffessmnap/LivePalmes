@@ -2054,7 +2054,7 @@
       elements.engagementsClubTeamSaveButton.textContent = teamLeader.mode === "person" && teamLeaderComplete
         ? "Remplacer le chef d'équipe"
         : "Valider le chef d'équipe";
-      if (nativeLeaderEdit) elements.engagementsClubTeamSaveButton.textContent = "Enregistrer les modifications";
+      if (nativeLeaderEdit) elements.engagementsClubTeamSaveButton.textContent = teamLeaderComplete ? "Enregistrer les modifications" : "Valider le chef d'équipe";
     }
     if (elements.engagementsClubTeamRemoveButton) {
       const canRemoveTeamLeader = teamLeader.mode === "person" && teamLeaderComplete;
@@ -8499,7 +8499,7 @@
       if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = false;
       setEngagementClubTeamManualFieldsVisible(true);
       for (const field of [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamBirthDate]) {
-        if (field) { field.disabled = locked; field.required = field !== elements.engagementsClubTeamBirthDate; const label=field.closest("label"); if(label) label.hidden=false; }
+        if (field) { field.disabled = locked; field.required = field !== elements.engagementsClubTeamBirthDate || !selectedEngagementClubEntry?.teamLeader?.nativeLeaderId; const label=field.closest("label"); if(label) label.hidden=false; }
       }
       for (const field of [elements.engagementsClubTeamLicense, elements.engagementsClubTeamSex, elements.engagementsClubTeamExternal]) {
         if (field) { field.required = false; field.disabled = true; const label=field.closest("label"); if(label) label.hidden=true; }
@@ -10911,7 +10911,7 @@
         });
         selectedEngagementCompetition = result.competition;
         renderEngagementClubEntry(result.entry);
-        if (elements.engagementsClubTeamMessage) { elements.engagementsClubTeamMessage.textContent = "Chef d'équipe modifié dans NAP. Les engagements existants sont conservés."; elements.engagementsClubTeamMessage.dataset.tone = "ok"; }
+        if (elements.engagementsClubTeamMessage) { elements.engagementsClubTeamMessage.textContent = "Chef d'équipe enregistré dans NAP. Vous pouvez continuer les engagements."; elements.engagementsClubTeamMessage.dataset.tone = "ok"; }
         setEngagementSaveState("saved");
         return true;
       }
