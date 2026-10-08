@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const view = require("../functions/nap-portal-workspaces");
 assert.equal(view.nativeCourseCode("4X100BI Mixte"),"4X100BI");
 assert.equal(view.nativeCourseCode("4X100SB Mixte"),"4X100SB");
+assert.equal(view.nativeCourseCode("4X50SF Mixte"),"4X50SF");
 assert.notEqual(view.nativeCourseCode("4X100BI Mixte"),view.nativeCourseCode("4X100SB Mixte"));
 assert.equal(view.nativeCourseCode("4X100SF HSE"),"4X100SFHSE");
 const pack = { source: "nap", readAt: "2026-10-06T10:00:00Z", event: { id: "legacy-nap-5140", city: "Antibes", date: "2026-10-11", competitionType: "pool" },

@@ -5,6 +5,7 @@ const {entryWithCourseRules}=require("../functions/nap-portal-workspaces");
 const fs=require("node:fs"),vm=require("node:vm");
 assert.equal(definition("500").code,"OW500SF");
 assert.equal(definition("3000BI").code,"OW3000BI");
+assert.equal(definition("2KMSUPPORT").code,"OW2000SUP");
 for(const code of ["150","0","100001","OLD","500SP","4X1000SB"]) assert.equal(definition(code),null);
 assert.equal(displayCode("500","pool"),"500");
 assert.equal(displayCode("1000","openWater"),"OW1000SF");

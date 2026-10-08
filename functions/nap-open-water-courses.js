@@ -3,6 +3,8 @@
 // A bare native distance means Surface, confirmed by the administrator.
 function definition(value) {
   const native=String(value??"").trim().toUpperCase().replace(/\s+/g,"");
+  const support=native.match(/^(\d{1,3})KMSUPPORT$/);
+  if(support) return definition(`${Number(support[1])*1000}SUP`);
   const match=native.match(/^(\d{1,6})(SF|BI|SUP)?$/);
   if(!match) return null;
   const distance=Number(match[1]),discipline=match[2]||"SF";

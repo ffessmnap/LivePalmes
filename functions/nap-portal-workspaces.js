@@ -7,9 +7,9 @@ const calendar = require("./nap-direct-calendar");
 const time = require("./nap-performance-normalization");
 const text = value => String(value ?? "").trim();
 const code = value => text(value).toUpperCase().replace(/\s+/g, "");
-// These are two distinct existing relay definitions. Only remove the legacy
+// These are distinct existing relay definitions. Only remove the legacy
 // display suffix, never change BI into SB or discard the native course row.
-const nativeCourseCode = value => code(value).replace(/^(4X100BI|4X100SB)MIXTE$/, "$1");
+const nativeCourseCode = value => code(value).replace(/^(4X50SF|4X100SF|4X200SF|4X100BI|4X100SB)MIXTE$/, "$1");
 function json(value, fallback) {
   if (value == null) return fallback;
   if (typeof value === "object") return value;
