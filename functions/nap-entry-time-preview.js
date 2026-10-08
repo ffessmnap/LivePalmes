@@ -15,7 +15,7 @@ async function previewNativeTimes(connection,input,services) {
   if(!competition) throw new TypeError("Competition NAP introuvable.");
   const pack=await readers.entry(connection,{competitionId,clubId},services.authorize);
   if(pack.leaders.length!==1 || !String(pack.leaders[0].nom||"").trim() || !String(pack.leaders[0].prenom||"").trim()) throw new TypeError("Chef d'equipe NAP a verifier avant les courses.");
-  if(Number(competition.nativeParameters.qualif||0)!==0 || Number(competition.options?.qualifications_enabled||0)!==0) throw new TypeError("Le controle des qualifications NAP reste a raccorder avant cet apercu.");
+  if(require("./nap-entry-qualification-policy").qualificationPending(competition)) throw new TypeError("Le controle des qualifications NAP reste a raccorder avant cet apercu.");
   const people=ids.map(id=>{
     const matches=pack.swimmers.filter(row=>Number(row.id)===id && String(row.clubId)===clubId);
     if(matches.length!==1 || input.enrolledOnly && !pack.inscriptions.some(row=>Number(row.nageur)===id)) throw new TypeError("Nageur non engage ou hors du club autorise.");
