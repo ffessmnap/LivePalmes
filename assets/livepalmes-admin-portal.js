@@ -9367,6 +9367,7 @@
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const adminMode = isEngagementAdminMode();
+    if (elements.engagementsGenerateClubRecapsButton) elements.engagementsGenerateClubRecapsButton.hidden = !adminMode || competition.napSource !== true;
     const openWater = engagementCompetitionType(competition) === "openWater";
     const documentsHead = elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
     if (documentsHead) documentsHead.hidden = !adminMode;
@@ -11516,7 +11517,7 @@
     }
     startEngagementLongOperation(
       "Génération des PDF clubs en cours...",
-      "Les récapitulatifs de tous les clubs engagés sont générés ou réutilisés s'ils sont déjà à jour."
+      selectedEngagementCompetition?.napSource === true ? "Les dossiers NAP sont réunis dans un ZIP à télécharger." : "Les récapitulatifs de tous les clubs engagés sont générés ou réutilisés s'ils sont déjà à jour."
     );
     try {
       const result = await callFunction("generateEngagementCompetitionClubRecapPdfs", {
