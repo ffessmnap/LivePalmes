@@ -26,4 +26,14 @@ assert.throws(()=>statements(plan,authority,"2026-10-07"));
 assert.throws(()=>statements(plan,{...authority,compet_parametres:{...authority.compet_parametres,actif:0}},end));
 const bad=structuredClone(plan); bad.plans[0].updates[0].before={...bad.plans[0].updates[0].before,id:99};
 assert.throws(()=>statements(bad,authority,end));
+const noTime=structuredClone(plan);
+noTime.plans[0].additions[0].tps="599999";
+noTime.plans[0].updates[0].tps="599999";
+const noTimeSql=statements(noTime,authority,end);
+assert.ok(noTimeSql.find(row=>row.kind==="insert").values.includes("599999"));
+assert.ok(noTimeSql.find(row=>row.kind==="update").values.includes("599999"));
+for(const invalid of ["599998","999999","6000",599999]) {
+  const invalidPlan=structuredClone(noTime);invalidPlan.plans[0].additions[0].tps=invalid;
+  assert.throws(()=>statements(invalidPlan,authority,end),/Temps compact invalide/);
+}
 console.log("NAP individual entry statements tests passed");
