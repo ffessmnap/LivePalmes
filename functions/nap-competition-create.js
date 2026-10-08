@@ -11,7 +11,7 @@ function planCreation(input) {
   const event=input.event;
   if(!event || !["pool","openWater"].includes(event.competitionType) || !["departemental","regional","national","international"].includes(event.level)) throw new TypeError("Type ou niveau invalide.");
   const text=(value,max,required=false)=>{if(typeof value!=="string" || value.length>max || /[\u0000-\u001f]/.test(value) || required&&!value.trim()) throw new TypeError("Champ de creation invalide."); return value.trim();};
-  const day=value=>{if(typeof value!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value+"T12:00:00Z")) || new Date(value+"T12:00:00Z").toISOString().slice(0,10)!==value) throw new TypeError("Date invalide.");return value;};
+  const day=value=>{if(typeof value!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value<"1900-09-01" || value>"2100-12-31" || !Number.isFinite(Date.parse(value+"T12:00:00Z")) || new Date(value+"T12:00:00Z").toISOString().slice(0,10)!==value) throw new TypeError("Date invalide ou hors des saisons gerees par le calendrier.");return value;};
   const name=text(event.name,160,true),city=text(event.city,64,true),date=day(event.date),enddate=day(event.endDate||date);
   if(enddate<date) throw new TypeError("Dates inversees.");
   // Reject unsupported characters instead of MySQL silently replacing them in latin1.

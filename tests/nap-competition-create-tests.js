@@ -41,6 +41,7 @@ function fixture() {
 }
 (async()=>{
   const p=planCreation(input);assert.equal(p.parameters.saisie,1);assert.equal(p.parameters.actif,0);assert.equal(p.parameters.date_limit,null);assert.equal(p.parameters.qualif,0);
+  for(const date of ["1900-01-01","9999-01-01"]) assert.throws(()=>planCreation({...input,event:{...input.event,date,endDate:date}}),/saisons/);
   assert.equal(planCreation({...input,event:{...input.event,competitionType:"openWater"}}).competition.ld,1);
   for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"},{...input.event,name:"Stage competition"}])assert.throws(()=>planCreation({...input,event}),TypeError);
   let s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
