@@ -8,26 +8,29 @@ const parameters=Object.fromEntries(SPECS.compet_parametres.columns.map(name=>[n
 const pack={event:{id:'legacy-nap-5162',competitionType:'pool'},nativeParameters:{parameter_id:4000,qualif:29},nativeSnapshot:{competition,parameters},options:null,groups:[],standards:[],qualifyingCompetitions:[]};
 const input={competitionId:5162,actorUid:'national',national:true,expectedFingerprint:fingerprint(pack),events:[{code:'50BI',type:'individual',categories:['S']}],rules:{enabled:true,groups:[{categories:['S'],mode:'each',startDate:'2025-01-01',endDate:'2026-12-31',pools:['50'],competitionMode:'all'}],standards:{'S|F|50BI':null,'S|M|50BI':2500}}};
 function fixture({busy=false,lock=1,affected=1}={}){
- let stored=null,writes=0,released=0,scopeChecks=0;
+ let stored=null,writes=0,released=0,scopeChecks=0;const records=new Map();
  const connection={execute:async(statement,values)=>{
   const sql=statement.sql;
   if(sql.startsWith('SELECT GET_LOCK'))return [[{acquired:lock}]];
   if(sql.startsWith('SELECT RELEASE_LOCK'))return [[{released:1}]];
-  if(sql.startsWith('SELECT id,competition_id'))return [stored?[stored]:[]];
-  if(sql.startsWith('SELECT id FROM')){assert.match(sql,/FORCE INDEX \(competition_state\).*LIMIT 2$/);return [busy?[{id:'other'}]:[]];}
+  if(sql.startsWith('SELECT id,competition_id'))return [records.has(values[0])?[records.get(values[0])]:[]];
+  if(sql.startsWith('SELECT id FROM')){assert.match(sql,/FORCE INDEX \(competition_state\).*LIMIT 2$/);return [busy?[{id:'other'}]:[...records.values()].filter(row=>['preview','ready','apply'].includes(row.state)).map(row=>({id:row.id}))];}
   if(sql.startsWith('INSERT')){
    writes++;assert.match(sql,/INSERT INTO livepalmes_qualification_jobs/);assert.match(sql,/NOT EXISTS.*livepalmes_competition_options/);assert.match(sql,/qualif <=> \?/);assert.doesNotMatch(sql,/UPDATE|DELETE|REPLACE/);
-   if(affected===1)stored={id:values[0],competition_id:values[1],actor_uid:values[2],payload:values[3],state:'preview',cursor:'',version:'1'};
+   if(affected===1){stored={id:values[0],competition_id:values[1],actor_uid:values[2],payload:values[3],state:'preview',cursor:'',version:'1'};records.set(stored.id,stored);}
    return [{affectedRows:affected}];
   }
   throw new Error('Unexpected SQL');
  },release:()=>released++,destroy:()=>released++};
  const services={authorize:()=>scopeChecks++,readCompetition:async(c,id,authorize)=>{assert.equal(id,5162);await authorize(pack.event);return pack;}};
- return {pool:{getConnection:async()=>connection},services,counts:()=>({writes,released,scopeChecks})};
+ return {pool:{getConnection:async()=>connection},services,counts:()=>({writes,released,scopeChecks}),cancel:()=>{stored.state='cancelled';}};
 }
 async function main(){
  const ok=fixture(),result=await beginControl(ok.pool,input,ok.services);assert.equal(result.state,'preview');assert.equal(result.resumed,false);assert.equal(ok.counts().writes,1);
  const again=await beginControl(ok.pool,input,ok.services);assert.equal(again.qualificationJobId,result.qualificationJobId);assert.equal(again.resumed,true);assert.equal(ok.counts().writes,1,'Same request resumes the saved native preview without duplicating it');
+ ok.cancel();const retry=await beginControl(ok.pool,input,ok.services);assert.notEqual(retry.qualificationJobId,result.qualificationJobId);assert.equal(retry.state,'preview');assert.equal(ok.counts().writes,2,'Cancelled draft starts a new saved preview');
+ const resumedRetry=await beginControl(ok.pool,input,ok.services);assert.equal(resumedRetry.qualificationJobId,retry.qualificationJobId);assert.equal(ok.counts().writes,2,'Lost response after retry resumes the active preview');
+ ok.cancel();const third=await beginControl(ok.pool,input,ok.services);assert.notEqual(third.qualificationJobId,retry.qualificationJobId);assert.equal(ok.counts().writes,3);
  for(const options of [{busy:true},{lock:0},{affected:0}]){const failed=fixture(options);await assert.rejects(beginControl(failed.pool,input,failed.services),TypeError);assert.equal(failed.counts().released,1);assert.equal(failed.counts().writes,options.affected===0?1:0);}
  const stale=fixture();await assert.rejects(beginControl(stale.pool,{...input,expectedFingerprint:'stale'},stale.services),TypeError);assert.equal(stale.counts().writes,0);
  const unchanged=fixture();assert.equal((await beginControl(unchanged.pool,{...input,rules:{enabled:false}},unchanged.services)).unchanged,true);assert.equal(unchanged.counts().writes,0);
