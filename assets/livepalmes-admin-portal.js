@@ -842,6 +842,8 @@
     engagementsEditPublicDescription: document.querySelector("#adminEngagementsEditPublicDescription"),
     engagementsEditCanceled: document.querySelector("#adminEngagementsEditCanceled"),
     engagementsEditLevel: document.querySelector("#adminEngagementsEditLevel"),
+    engagementsEditNationalKind: document.querySelector("#adminEngagementsEditNationalKind"),
+    engagementsEditNationalKindLabel: document.querySelector("#adminEngagementsEditNationalKindLabel"),
     engagementsEditRegionId: document.querySelector("#adminEngagementsEditRegionId"),
     engagementsEditRegionNote: document.querySelector("#adminEngagementsEditRegionNote"),
     engagementsEditInvitedRegionIds: document.querySelector("#adminEngagementsEditInvitedRegionIds"),
@@ -4355,9 +4357,15 @@
     updateEngagementQualificationFields("edit");
     updateEngagementMaxEventsFields("edit");
     renderQualificationEditor();
+    const nationalKindVisible=competition.napSource === true && competition.level === "national" && ["pool","openWater"].includes(competition.competitionType);
+    if(elements.engagementsEditNationalKindLabel) elements.engagementsEditNationalKindLabel.hidden=!nationalKindVisible;
+    if(elements.engagementsEditNationalKind) {
+      elements.engagementsEditNationalKind.value=String(competition.nativeLevelCode ?? "");
+      elements.engagementsEditNationalKind.disabled=!nationalKindVisible || !(currentAccessProfile?.capabilities || []).includes("engagements.national.manage") || ![2,3,4,5,7].includes(Number(competition.nativeLevelCode));
+    }
     if (competition.napSource === true) {
       const fields = editCompetitionFields();
-      for (const key of ["level", "regionId", "invitedRegionIds", "qualificationMode", "qualificationStart", "qualificationEnd"]) if (fields[key]) fields[key].disabled = true;
+      for (const key of ["level", "regionId", "invitedRegionIds"]) if (fields[key]) fields[key].disabled = true;
       if (fields.missingEntryTimeMode) {
         fields.missingEntryTimeMode.disabled = false;
         const labels = {manual: "Saisie possible", forbidden: "Aucune saisie — meilleur temps connu obligatoire", default595999: "Aucune saisie — temps connu au choix, sinon sans temps"};
@@ -15503,6 +15511,9 @@
     for (const key of ["name", "date", "endDate", "location", "city", "address", "organizer", "organizerEmail", "teamLeadersWhatsAppUrl", "publicDescription", "waterBodyType", "computerEmail", "officialsManagerEmail", "poolLength", "timingType", "entryStatus"]) values[key] = fields[key]?.value || "";
     values.canceled = fields.canceled?.checked === true;
     values.missingEntryTimeMode = fields.missingEntryTimeMode?.value || "";
+    if(elements.engagementsEditNationalKindLabel?.hidden === false && !elements.engagementsEditNationalKind?.disabled) values.nativeNationalLevelCode=Number(elements.engagementsEditNationalKind.value);
+    values.qualificationStartDate=fields.qualificationMode?.value === "period" ? fields.qualificationStart?.value || "" : "";
+    values.qualificationEndDate=fields.qualificationMode?.value === "period" ? fields.qualificationEnd?.value || "" : "";
     values.officialsRequired = fields.officialsRequired?.value === "true";
     values.poolLaneCount = Number(fields.poolLaneCount?.value || 0);
     values.maxEventsPerSwimmer = Number(fields.maxEvents?.value || 0);

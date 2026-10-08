@@ -11,6 +11,32 @@ function fixturePack() {
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+const nationalKind=planCompetitionChange(pack,input({nativeNationalLevelCode:4}),now);
+assert.deepEqual(nationalKind.operations.map(o=>o.table),["compet_parametres"]);
+assert.equal(nationalKind.operations[0].after.niveau,4);
+for(const key of SPECS.compet_parametres.columns.filter(k=>k!=="niveau")) assert.deepEqual(nationalKind.operations[0].after[key],pack.nativeSnapshot.parameters[key]);
+assert.throws(()=>planCompetitionChange(pack,{...input({nativeNationalLevelCode:4}),national:false},now),/administration nationale/);
+for(const value of [0,1,6,8,99,"4"]) assert.throws(()=>planCompetitionChange(pack,input({nativeNationalLevelCode:value}),now),/invalide/);
+for(const change of [{event:{...pack.event,level:"regional"}},{event:{...pack.event,competitionType:"training"}},{nativeSnapshot:{...pack.nativeSnapshot,parameters:{...pack.nativeSnapshot.parameters,niveau:99}}}]) {
+ const legacy={...pack,...change};assert.throws(()=>planCompetitionChange(legacy,{...input({nativeNationalLevelCode:4}),expectedFingerprint:fingerprint(legacy)},now),/administration nationale/);
+}
+const period=planCompetitionChange(pack,input({qualificationStartDate:"2025-09-01",qualificationEndDate:"2026-08-31"}),now);
+assert.equal(period.operations[0].after.tps_d,"2025-09-01");assert.equal(period.operations[0].after.tps_f,"2026-08-31");assert.equal(period.operations[0].after.saisie,0);assert.equal(period.operations[0].after.actif,1);
+assert.throws(()=>planCompetitionChange(pack,input({qualificationStartDate:"2026-09-01",qualificationEndDate:"2025-08-31"}),now),/Periode/);
+// Client patches must preserve untouched native settings and express an explicit switch to all times.
+const portalSource=require("node:fs").readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+const clientStart=portalSource.indexOf("  function nativeCompetitionFormValues()");
+const clientSource=portalSource.slice(clientStart,portalSource.indexOf("  async function saveNativeCompetitionDetail",clientStart));
+const clientFields={qualificationMode:{value:"period"},qualificationStart:{value:"2025-09-01"},qualificationEnd:{value:"2026-08-31"}};
+const client={elements:{engagementsEditNationalKindLabel:{hidden:false},engagementsEditNationalKind:{value:"3",disabled:false}},editCompetitionFields:()=>clientFields,selectedEngagementFeesFromForm:()=>({enabled:false}),selectedEngagementProgramSessionsFromForm:()=>[],nativeCompetitionEditBaseline:null};
+require("node:vm").createContext(client);require("node:vm").runInContext(clientSource,client);
+client.nativeCompetitionEditBaseline=client.nativeCompetitionFormValues();
+client.elements.engagementsEditNationalKind.value="4";
+assert.deepEqual(JSON.parse(JSON.stringify(client.nativeCompetitionPatchFromForm())),{nativeNationalLevelCode:4});
+client.elements.engagementsEditNationalKind.value="3";clientFields.qualificationMode.value="all";
+assert.deepEqual(JSON.parse(JSON.stringify(client.nativeCompetitionPatchFromForm())),{qualificationStartDate:"",qualificationEndDate:""});
+client.elements.engagementsEditNationalKindLabel.hidden=true;
+assert.equal(Object.hasOwn(client.nativeCompetitionFormValues(),"nativeNationalLevelCode"),false);
 const timePack=fixturePack();timePack.nativeParameters.saisie=1;timePack.nativeSnapshot.parameters.saisie=1;
 const timeInput={...input({missingEntryTimeMode:"forbidden"}),expectedFingerprint:fingerprint(timePack)};
 const modePlan=planCompetitionChange(timePack,timeInput,now);
