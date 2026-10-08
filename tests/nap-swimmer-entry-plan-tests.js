@@ -19,7 +19,8 @@ assert.throws(()=>planSelection({...pack,inscriptions:[...pack.inscriptions,{id:
 assert.throws(()=>planSelection({...pack,relays:[]},[{swimmerId:1,selected:false}]),/hors/);
 const competition={event:{eventType:"pool"},nativeParameters:{qualif:0,cat_d:null,cat_f:null},participations:[],options:null};
 assert.equal(selectionLockReason(competition),"");
-assert.match(selectionLockReason({...competition,event:{eventType:"openWater"}}),/eau libre/);
+assert.equal(selectionLockReason({...competition,event:{eventType:"openWater"}}),"");
+assert.match(selectionLockReason({...competition,event:{eventType:"training"}}),/Type/);
 assert.match(selectionLockReason({...competition,participations:[{participation:2}]}),/participation/);
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,cat_f:9}}),/categories/);
 assert.match(selectionLockReason({...competition,options:{qualifications_enabled:1}}),/qualifications/);

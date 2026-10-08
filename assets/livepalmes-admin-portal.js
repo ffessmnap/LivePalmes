@@ -6043,6 +6043,8 @@
   function engagementClubProgramItemAllowsSwimmer(item = {}, swimmer = {}) {
     if (item.genderMode === "female" && swimmer.sex === "M") return false;
     if (item.genderMode === "male" && swimmer.sex === "F") return false;
+    const nativePerson=selectedEngagementClubEntry?.swimmers?.find(person=>String(person.swimmerIndexId)===String(swimmer.swimmerIndexId || swimmer.id));
+    if(selectedEngagementCompetition?.napSource===true && Array.isArray(nativePerson?.nativeAllowedEventCodes) && !nativePerson.nativeAllowedEventCodes.includes(item.eventCode)) return false;
     const event = engagementClubIndividualEvents().find((candidate) => candidate.code === item.eventCode) || {};
     const restrictions = Array.isArray(event.categoryRestrictions) ? event.categoryRestrictions : [];
     const category = engagementSwimmerCategory(swimmer, selectedEngagementCompetition?.date || "");

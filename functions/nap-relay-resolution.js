@@ -24,6 +24,7 @@ function storedCategory(row,categories,metadata) {
 }
 async function resolveRelay(input,services) {
   const {connection,competition:pack,pack:dossier,change}=input;
+  if(pack.event?.eventType!=="pool") throw new TypeError("Correspondance des relais eau libre NAP a verifier.");
   const reason=selectionLockReason(pack);if(reason) throw new TypeError(reason);
   if(typeof services?.view!=="function" || typeof services?.validate!=="function") throw new TypeError("Regles LivePalmes des relais requises.");
   const competition=services.view(pack),raw=change.relay;
