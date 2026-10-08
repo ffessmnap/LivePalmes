@@ -10093,7 +10093,7 @@ exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
   const context = await engagementAccessContext(request);
   if (ENVIRONMENT.projectId === "livepalmes-test") {
     const raw=request.data || {};
-    if (!["training","stage","meeting"].includes(raw.eventType)) throw new HttpsError("failed-precondition","Choisissez Formation, Stage ou Reunion. Le type Autre reste a preciser.");
+    if (!["training","stage","meeting"].includes(raw.eventType)) throw new HttpsError("failed-precondition","Choisissez Formation, Stage ou Reunion. Le type Autre n'est pas propose.");
     const result=await createNativePortalCalendarRecord(raw,context,raw.eventType);
     return {...result,event:result.competition};
   }
