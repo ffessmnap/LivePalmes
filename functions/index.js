@@ -12080,9 +12080,29 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
   };
 });
 
-exports.removeEngagementClubTeamLeader = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Le retrait du chef d'equipe NAP est encore en cours de raccordement. Aucun ancien dossier LivePalmes ne sera supprime.");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try {
+      const competitionId = cleanText(request.data?.competitionId).slice(0,128);
+      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const result = await require("./nap-team-leader-remove").removeNativeTeamLeader(pool, {
+        competitionId, clubId: String(context.clubId), actorUid: context.uid,
+        leaderId: request.data?.leaderId, expectedFingerprint: request.data?.expectedFingerprint
+      }, {
+        read: async operation => { const snapshot = await db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
+        prepare: (operation,target) => db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).create({action:"nap.teamLeader.remove.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        checkpoint: (operation,target) => db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).update({target,updatedAt:new Date().toISOString()}),
+        complete: (operation,target) => writeAuditLogOnce("engagementClubEntry.teamLeaderRemoved",context.uid,target,operation)
+      }, event => assertEngagementClubWriteOpen(event));
+      const competition = await nativePortalCompetition(competitionId, () => {});
+      const pack = await require("./nap-portal-entries").readNativeClubEntry(pool,{competitionId,clubId:context.clubId},()=>{});
+      return {...result,competition:{...competition,nativeTeamLeaderEditable:pack.leaders.length<=1,nativeTeamLeaderRequired:pack.leaders.length===0,nativeRelaysEditable:false,nativeOfficialsEditable:false,nativeIndividualEntriesEditable:false,nativeSwimmerSelectionEditable:false},entry:await nativeClubEntryView(pack,context,competition),sqlBudget:{queriesMax:54,writesMax:1}};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Retrait NAP a verifier. La sauvegarde est conservee.");
+    }
+  }
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
