@@ -2072,7 +2072,8 @@
   }
 
   function engagementClubWriteLockReason(competition = selectedEngagementCompetition || {}) {
-    if (competition.nativeReadOnly === true) return "Dossier NAP consultable ; l'enregistrement depuis LivePalmes est encore en cours de raccordement.";
+    if(competition.qualificationJobId)return "Contrôle des qualifications en cours. Attendez sa validation par l’administration nationale.";
+    if (competition.nativeReadOnly === true) return competition.nativeSelectionLockReason || "Ce dossier est consultable. Vérifiez les conditions d’engagement avec l’administration de la compétition.";
     const status = competition.entryStatus || "upcoming";
     if (status === "closed") return "Les engagements sont fermes.";
     if (status !== "open") return "Les engagements ne sont pas ouverts.";
@@ -4109,7 +4110,7 @@
   }
 
   function engagementKnownIndividualTimesSelectable(competition = selectedEngagementCompetition || {}) {
-    return engagementManualIndividualTimesAllowed(competition) || (competition.napSource === true && Number(competition.nativeParameters?.saisie) === 0);
+    return !competition.qualifications?.enabled && (engagementManualIndividualTimesAllowed(competition) || (competition.napSource === true && Number(competition.nativeParameters?.saisie) === 0));
   }
 
   function clearUncheckedQualificationException(box, row) {
@@ -4161,7 +4162,7 @@
     const field = elements.engagementsEditMissingEntryTimeMode;
     if (!field) return;
     const enabled = document.querySelector("#adminQualificationEditor [data-q-enabled]")?.checked === true;
-    if (enabled) field.value = "default595999";
+    if (enabled && selectedEngagementCompetition?.napSource !== true) field.value = "default595999";
     field.disabled = enabled || !canEditEngagementCompetition();
     const hint = document.querySelector("#adminQualificationManualTimeHint");
     if (hint) hint.hidden = !enabled;
@@ -4378,7 +4379,7 @@
       if(fields.regionId) fields.regionId.disabled=!national || !["regional","departemental"].includes(fields.level?.value);
       if(fields.invitedRegionIds) fields.invitedRegionIds.disabled=competition.nativeInvitationsEditable===false || !["regional","departemental"].includes(fields.level?.value);
       if (fields.missingEntryTimeMode) {
-        fields.missingEntryTimeMode.disabled = false;
+        fields.missingEntryTimeMode.disabled = competition.qualifications?.enabled === true;
         const labels = {manual: "Saisie possible", forbidden: "Aucune saisie — meilleur temps connu obligatoire", default595999: "Aucune saisie — temps connu au choix, sinon sans temps"};
         for (const option of fields.missingEntryTimeMode.options) if (labels[option.value]) option.textContent = labels[option.value];
       }
@@ -4387,7 +4388,7 @@
       if (closed) closed.disabled = false;
       if (fields.entryStatus) fields.entryStatus.disabled = false;
       const qualificationMount = document.querySelector("#adminQualificationEditor");
-      if (qualificationMount) qualificationMount.disabled = true;
+      if (qualificationMount) qualificationMount.disabled = !national || ![0,29].includes(Number(competition.nativeParameters?.qualif || 0)) || Boolean(competition.qualificationJobId);
       if(!nativeCompetitionEditBaseline) nativeCompetitionEditBaseline = nativeCompetitionFormValues();
     } else nativeCompetitionEditBaseline = null;
   }
@@ -10346,7 +10347,7 @@
       return `
         <div class="admin-engagements-event-row" data-engagement-event-item data-selected="${selected ? "true" : "false"}">
           <label class="admin-engagements-event-main">
-            <input type="checkbox" data-engagement-event-code="${escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit ? "" : "disabled"}>
+            <input type="checkbox" data-engagement-event-code="${escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && competition.napSource !== true ? "" : "disabled"}>
             <span>
               <strong data-engagement-event-label title="${escapeHtml(event.label)}${escapeHtml(mixedRuleLabel)}">${escapeHtml(event.shortLabel)}</strong>
             </span>
@@ -10386,7 +10387,7 @@
     const selectedCodes = new Map(events.map((event) => [event.code, event]).filter(([code]) => Boolean(code)));
     const adminMode = isEngagementAdminMode();
     renderNativeCourseRemoval(competition, adminMode && engagementDetailEditing && canEditEngagementCompetition(competition));
-    const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition) && competition.napSource !== true;
+    const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition) && !competition.qualificationJobId && (competition.napSource !== true || !competition.qualifications?.enabled || canUse("engagements.national.manage"));
     const clubProgramView = !adminMode;
     const openWater = engagementCompetitionType(competition) === "openWater";
     if (elements.engagementsOpenWaterLibrary) elements.engagementsOpenWaterLibrary.hidden = !openWater || !adminMode;
@@ -10602,7 +10603,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Les paramètres et le programme de cette compétition sont disponibles.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -15536,6 +15537,8 @@
     values.entryDeadlineLocal = deadline ? `${deadline.replace("T", " ")}${deadline.length === 16 ? ":00" : ""}` : "";
     values.fees = selectedEngagementFeesFromForm();
     values.programSessions = selectedEngagementProgramSessionsFromForm();
+    if(typeof selectedEngagementEventsFromForm==='function' && elements.engagementsEventsForm)values.courseOptions=selectedEngagementEventsFromForm().map(event=>({code:event.code,categoryRestrictions:event.categoryRestrictions||[],...(event.type==='relay'?{relayMixedMode:event.relayMixedMode||'',multipleRelaysAllowed:event.multipleRelaysAllowed===true}:{})}));
+    if(typeof qualificationEditor!=='undefined' && qualificationEditor && typeof canUse==='function' && canUse('engagements.national.manage') && !document.querySelector('#adminQualificationEditor')?.disabled)values.qualifications=qualificationEditor.read();
     return values;
   }
 

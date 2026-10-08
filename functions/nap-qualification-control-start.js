@@ -21,7 +21,7 @@ async function beginControl(pool,input,services){
     const pack=await (services.readCompetition||native.readNativeCompetition)(connection,competitionId,services.authorize);
     if(!pack)throw new TypeError('Competition NAP introuvable.');
     if(require('./nap-portal-workspaces').fingerprint(pack)!==input.expectedFingerprint)throw new TypeError('La competition a change. Rechargez sa fiche.');
-    const nativeOperations=input.patch&&Object.keys(input.patch).length?require('./nap-portal-competition-change').planCompetitionChange(pack,{...input,eventDefinitions:services.eventDefinitions,normalizeProgram:services.normalizeProgram}).operations:[];
+    const nativeOperations=input.patch&&Object.keys(input.patch).length?require('./nap-portal-competition-change').planCompetitionChange(pack,{...input,eventDefinitions:services.eventDefinitions,normalizeProgram:services.normalizeProgram,normalizeEvents:services.normalizeEvents}).operations:[];
     const targetPack=require('./nap-qualification-target-pack').targetPack(pack,nativeOperations);
     const target=plan(targetPack,{...input,events:services.eventsFor?services.eventsFor(targetPack):input.events,expectedFingerprint:require('./nap-portal-workspaces').fingerprint(targetPack)}),jobId=digest([competitionId,input.actorUid,input.expectedFingerprint,target.rules,input.patch||{}]);
     target.before={options:pack.options,groups:pack.groups,standards:pack.standards,qualifyingCompetitions:pack.qualifyingCompetitions};

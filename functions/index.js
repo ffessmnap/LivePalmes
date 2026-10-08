@@ -5708,10 +5708,10 @@ function nativeQualificationServices(context) {
     competitionFor,eventsFor:pack=>qualificationEvents(competitionFor(pack)),categoryFor:ageCategoryFromDates,
     automatic:automaticEngagementIndividualEntry,assertOpen:assertEngagementClubWriteOpen,
     effects:require("./nap-qualification-effects").effects,
-    eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,
+    eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents,
     applyNativePatch:input=>require("./nap-portal-competition-change").applyCompetitionChange(
       require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
-      {...input,national:true,eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions},
+      {...input,national:true,eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents},
       {
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:input.actorUid,target,createdAt:new Date().toISOString()}),
@@ -9934,6 +9934,7 @@ async function nativePortalCompetition(input, authorize, includeUploaders=false)
   if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
   const competition = view.competitionItem(pack, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
   competition.qualificationJobId=await require("./nap-qualification-jobs").activeControl(pool,input);
+  competition.nativeSelectionLockReason=require('./nap-swimmer-entry-plan').selectionLockReason(competition);
   competition.clubDocuments = await view.readDocuments(pool, input, {includeUploader:includeUploaders});
   if(includeUploaders)competition.clubDocuments=await nativeDocumentAuthors(competition.clubDocuments);
   competition.documentCount = competition.clubDocuments.length;
@@ -17127,13 +17128,13 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
     try {
       const patch={...(request.data?.patch||{})},incoming=request.data?.qualifications??patch.qualifications;
       delete patch.qualifications;
-      if(incoming!==undefined||['date','qualificationStartDate','qualificationEndDate'].some(key=>Object.hasOwn(patch,key))){
+      if(incoming!==undefined||['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key))){
         const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,competitionId,authorize);
         if(!pack)throw new HttpsError("not-found","Competition NAP introuvable.");
         const services=nativeQualificationServices(context),events=services.eventsFor(pack),previous=services.competitionFor(pack).qualifications;
         const rules=incoming===undefined?previous:qualificationEngine.validateRules(incoming,events,true);
         const changed=!require('node:util').isDeepStrictEqual(previous,rules);
-        const affects=changed||rules.enabled&&['date','qualificationStartDate','qualificationEndDate'].some(key=>Object.hasOwn(patch,key));
+        const affects=changed||rules.enabled&&['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key));
         if(affects){
           if(!context.national)throw new HttpsError("permission-denied","Cette modification affecte les qualifications : intervention nationale requise.");
           return await require("./nap-qualification-control-start").beginControl(pool,{competitionId,actorUid:context.uid,national:true,expectedFingerprint:request.data?.expectedFingerprint,patch,rules,events},services);
@@ -17143,7 +17144,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
       const applyNativeChange = Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
       const result = await require("./nap-qualification-edit-lock").ordinaryEdit(pool,competitionId,()=>applyNativeChange(pool, {
         competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch,
-        eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions
+        eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents
       }, {
         read:async operation => { const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
