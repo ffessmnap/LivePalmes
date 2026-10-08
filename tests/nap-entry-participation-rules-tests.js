@@ -1,0 +1,22 @@
+"use strict";
+const assert=require("node:assert/strict");
+const rules=require("../functions/nap-entry-participation-rules");
+const pack={participations:[{participation:10,modeengagement:"presence"},{participation:11,modeengagement:"presence"},{participation:20,modeengagement:"tps"},{participation:21,modeengagement:"presencetps"}]};
+const people=[{id:1},{id:2}];
+const evidence=new Map([["1",new Set(["11"])],["2",new Set(["20"])]]);
+assert.equal(rules.eligible(pack,1,evidence),true,"one recorded result in the presence list is sufficient");
+assert.equal(rules.eligible(pack,2,evidence),false,"time-only list does not satisfy the separate presence requirement");
+assert.deepEqual(rules.filterTimes([{competitionId:"10"},{competitionId:"20"},{competitionId:"21"}],pack),[{competitionId:"20"},{competitionId:"21"}]);
+assert.equal(rules.eligible({participations:[]},1,null),true);
+assert.throws(()=>rules.eligible(pack,1,new Map()),/Resultats/);
+assert.throws(()=>rules.requirements({participations:[{participation:0,modeengagement:"presence"}]}));
+assert.throws(()=>rules.requirements({participations:[{participation:10,modeengagement:"unknown"}]}));
+(async()=>{
+ let reads=0;await rules.readEvidence({execute:async(query,ids)=>{reads++;assert.match(query.sql,/FORCE INDEX \(nageur\).*GROUP BY nageur.*LIMIT 801/);assert.deepEqual(ids,[1,2,"10","11","21"]);return [[{nageur:1,compet:11}]];}},people,pack);
+ assert.equal(reads,1);
+ await rules.readEvidence({execute:()=>{throw Error("no query required");}},people,{participations:[]});
+ await assert.rejects(()=>rules.readEvidence({execute:async()=>[Array(801).fill({nageur:1,compet:11})]},people,pack),RangeError);
+ await assert.rejects(()=>rules.readEvidence({execute:async()=>[[{nageur:99,compet:11}]]},people,pack),/hors/);
+ await assert.rejects(()=>rules.readEvidence({execute:async()=>[[{nageur:1,compet:20}]]},people,pack),/hors/);
+ console.log("Native participation: recorded result, at least one, separate presence/time lists, bounded group and unknown modes refused");
+})().catch(error=>{console.error(error);process.exitCode=1;});

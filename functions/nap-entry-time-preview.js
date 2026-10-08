@@ -21,9 +21,11 @@ async function previewNativeTimes(connection,input,services) {
     if(matches.length!==1 || input.enrolledOnly && !pack.inscriptions.some(row=>Number(row.nageur)===id)) throw new TypeError("Nageur non engage ou hors du club autorise.");
     return matches[0];
   });
-  if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:22,historyQueries:0}};
+  const participation=require("./nap-entry-participation-rules"),presence=participation.requirements(competition).presence.size>0;
+  const evidence=await participation.readEvidence(connection,people,competition);
+  if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:presence?23:22,historyQueries:0}};
   const histories=await readers.history(connection,people);
-  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:services.preview(person,histories.get(String(person.id))||[],competition,pack)}));
-  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:23,historyQueries:1,historyRowsMax:20000}};
+  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack) : []}));
+  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:presence?24:23,historyQueries:1,historyRowsMax:20000}};
 }
 module.exports={previewNativeTimes};

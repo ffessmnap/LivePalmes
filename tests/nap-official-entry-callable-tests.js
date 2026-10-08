@@ -18,7 +18,7 @@ const context={nativeClubEntryView:async()=>({source:"nap"}),exports:{},ENVIRONM
 vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 (async()=>{
   const result=await context.exports.saveEngagementClubOfficials({data:{competitionId:"legacy-nap-5140",clubId:"999",officialPersonIds:["nap-official-1"]}});
-  assert.equal(result.source,"nap");assert.equal(result.entry.source,"nap");assert.equal(result.sqlBudget.queriesMax,32);assert.equal(calls,1);
+  assert.equal(result.source,"nap");assert.equal(result.entry.source,"nap");assert.equal(result.sqlBudget.queriesMax,33);assert.equal(calls,1);
   assert.deepEqual(Array.from(context.exports.saveEngagementClubOfficials.options.secrets),["LIVEPALMES_NAP_PASSWORD"]);
   allowed=false;await assert.rejects(()=>context.exports.saveEngagementClubOfficials({data:{}}),/Denied/);assert.equal(calls,1);
   console.log("Official callable: authentication before native access, trusted club, audit only and bounded SQL verified without network");
