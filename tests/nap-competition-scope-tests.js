@@ -4,11 +4,12 @@ const native=require("../functions/nap-portal-competitions");
 const change=require("../functions/nap-portal-competition-change");
 const schema=require("../functions/nap-approved-portal-schema");
 const view=require("../functions/nap-portal-workspaces");
-function fixture(fail=false,race=false) {
+function fixture(fail=false,race=false,open=false) {
  const competition={id:5220,libelle:"Test",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",bassin:null,chrono:null,ld:0};
  const parameters={id:4547,compet:5220,actif:0,dateactif:null,date_limit:null,officiel:0,nb_lignes:0,mailtxt:"",mailjuges:"",tps_d:null,tps_f:null,niveau:1,saisie:1,relais:0};
  const options=Object.fromEntries(schema.tables[0].columns.map(c=>[c.name,c.name==="competition_id"?5220:c.name==="version"?"1":c.name.endsWith("_at")?"2026-10-08 12:00:00.000000":c.name.endsWith("_by")?"admin":null]));options.entry_closed=null;
  const pack={event:{id:"legacy-nap-5220",date:"2026-11-07",level:"regional",competitionType:"pool"},nativeSnapshot:{competition,parameters},nativeParameters:{parameter_id:4547,...parameters},committees:[{id:11,comite:1},{id:12,comite:2}],options};
+ if(open) pack.committees.push({id:19,comite:19});
  const input={competitionId:"legacy-nap-5220",actorUid:"admin",national:false,expectedFingerprint:view.fingerprint(pack),patch:{invitedRegionIds:["Nouvelle Aquitaine","Sud"]}};
  const state={rows:structuredClone(pack.committees),saved:null,calls:[],writes:0,completed:0,released:false,fail};
  const tables={competitions:structuredClone(competition),compet_parametres:structuredClone(parameters),livepalmes_competition_options:structuredClone(options)};
@@ -33,6 +34,10 @@ function fixture(fail=false,race=false) {
  await change.applyCompetitionChange(state.pool,input,state.audit,()=>{});
  assert.deepEqual(state.rows,[{id:12,comite:2},{id:100,comite:16}],"Keep the id of an unchanged region");assert.equal(state.completed,1);assert.equal(state.calls.at(-1),"UNLOCK TABLES");assert.equal(state.released,true);
  const writes=state.writes;await change.applyCompetitionChange(state.pool,input,state.audit,()=>{});assert.equal(state.writes,writes,"Retry must not duplicate native rows");
+ ({state,input}=fixture(false,false,true));native.readNativeCompetition=state.reader;
+ await change.applyCompetitionChange(state.pool,input,state.audit,()=>{});
+ assert.deepEqual(state.rows,[{id:12,comite:2},{id:100,comite:16},{id:19,comite:19}],"Preserve unused Open row and its id through real statement execution");
+ const openWrites=state.writes;await change.applyCompetitionChange(state.pool,input,state.audit,()=>{});assert.equal(state.writes,openWrites);
  ({state,input}=fixture(true));native.readNativeCompetition=state.reader;
  await assert.rejects(change.applyCompetitionChange(state.pool,input,state.audit,()=>{}),/Interrupted/);assert.equal(state.completed,0);assert.deepEqual(state.saved.operations.at(-1).before,[{id:11,comite:1},{id:12,comite:2}]);assert.equal(state.calls.at(-1),"UNLOCK TABLES");
  state.fail=false;await assert.rejects(change.applyCompetitionChange(state.pool,input,state.audit,()=>{}),/liste des regions a change/);assert.equal(state.completed,0,"A partial MyISAM change requires verification, not a blind retry");
