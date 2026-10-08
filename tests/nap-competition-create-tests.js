@@ -12,7 +12,7 @@ function fixture() {
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.startsWith("SHOW CREATE")){const table=sql.match(/`([^`]+)`/)[1];return [[{"Create Table":contract[table]+(s.drift?" altered":"")}]];}
     if(sql.includes("information_schema.TABLES"))return [schema.tables.map(t=>({TABLE_NAME:t.name,ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}))];
-    if(sql.includes("information_schema.COLUMNS"))return [[...schema.tables.flatMap(t=>t.columns.map(c=>({TABLE_NAME:t.name,COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?"YES":"NO",COLUMN_DEFAULT:c.defaultValue,EXTRA:c.extra}))),...(s.noClosure?[]:[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"entry_closed",COLUMN_TYPE:"tinyint",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}])]];
+    if(sql.includes("information_schema.COLUMNS"))return [[...schema.tables.flatMap(t=>t.columns.map(c=>({TABLE_NAME:t.name,COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?"YES":"NO",COLUMN_DEFAULT:c.defaultValue,EXTRA:c.extra}))),...(s.eventType?[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"event_type",COLUMN_TYPE:"varchar(16)",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}]:[]),...(s.noClosure?[]:[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"entry_closed",COLUMN_TYPE:"tinyint",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}])]];
     if(sql.includes("information_schema.STATISTICS"))return [schema.tables.flatMap(t=>t.keys.flatMap(k=>k.columns.map((c,i)=>({TABLE_NAME:t.name,INDEX_NAME:k.name,COLUMN_NAME:c,SEQ_IN_INDEX:i+1,NON_UNIQUE:k.unique?0:1,SUB_PART:null}))))];
     if(sql.includes("TRIGGERS"))return [s.trigger?[{}]:[]];
     if(sql.includes("FROM compet_types"))return [[{id:0,label:"Piscine"},{id:1,label:s.wrongType?"Changed":"Eau libre"}]];
@@ -43,8 +43,11 @@ function fixture() {
   const p=planCreation(input);assert.equal(p.parameters.saisie,1);assert.equal(p.parameters.actif,0);assert.equal(p.parameters.date_limit,null);assert.equal(p.parameters.qualif,0);
   for(const date of ["1900-01-01","9999-01-01"]) assert.throws(()=>planCreation({...input,event:{...input.event,date,endDate:date}}),/saisons/);
   assert.equal(planCreation({...input,event:{...input.event,competitionType:"openWater"}}).competition.ld,1);
-  for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"},{...input.event,name:"Stage competition"}])assert.throws(()=>planCreation({...input,event}),TypeError);
-  let s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
+  for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"}])assert.throws(()=>planCreation({...input,event}),TypeError);
+  const ambiguous={...input,event:{...input.event,name:"Stage competition"}};
+  let s=fixture();await assert.rejects(s.run(ambiguous),/type explicite/);assert.equal(s.writes,0);
+  s=fixture();s.eventType=true;await s.run(ambiguous);assert.equal(s.options.event_type,"pool");assert.equal(s.writes,3);
+  s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
   s=fixture();await assert.rejects(s.run(input,()=>{throw Error("denied");}));assert.equal(s.queries,0);
   for(const flag of ["lostReply","lostParameterReply","failCheckpoint"]){s=fixture();s[flag]=true;await assert.rejects(s.run());const writes=s.writes;s[flag]=false;await assert.rejects(s.run(),/identifiant non confirme/);assert.equal(s.writes,writes,"uncertain native id cannot be retried");}

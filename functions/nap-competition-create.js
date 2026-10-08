@@ -19,7 +19,6 @@ function planCreation(input) {
   const comite=Number(input.committeeId);
   if(!Number.isInteger(comite)||comite<1||comite>2147483647) throw new TypeError("Region NAP requise.");
   const competition={libelle:name,lieu:city,date,enddate,comite,comments:"",filepdf:null,filetxt:null,bassin:null,chrono:null,ld:event.competitionType==="openWater"?1:0,wid:"",equipe:null,reference:0,arrived:null,integration:null,type:6,organisateur:0,delegue:"",typecnc:event.competitionType==="openWater"?1:0,derogation:0,affiche:"",live:0,qualiffrance:0,description:"",integrationstatus:0};
-  if(require("./nap-direct-calendar").eventFromRow({...competition,type_label:event.competitionType==="pool"?"Piscine":"Eau libre"}).eventType!==event.competitionType) throw new TypeError("Ce titre est actuellement interprete comme une formation, un stage ou une reunion par le calendrier NAP. Choisissez un titre de competition sans ces mots pour le moment.");
   const parameters={cat_d:null,cat_f:null,tps_d:null,tps_f:null,date_limit:null,actif:0,dateactif:null,mailtxt:"",mailjuges:"",user:null,sendtxt:0,sendpdfclubs:0,sendpdfjuges:0,sendforfait:0,qualif:0,who:null,officiel:0,saisie:1,relais:0,wc:null,send48:0,niveau:({departemental:0,regional:1,national:2,international:8})[event.level],open:0,type_chrono_elec:0,nb_nageurs:0,no_premiere_ligne:1,nb_lignes:0,mailcontrole:"",sendpdfcontrole:0,logocompet:"",live_header:"",live_hashtag:""};
   return {competition,parameters};
 }
@@ -52,6 +51,8 @@ async function createCompetition(pool,input,audit,authorize) {
       if(rows.length!==1 || rows[0]["Create Table"].replace(/AUTO_INCREMENT=\d+/,"AUTO_INCREMENT=0")!==contract[table]) throw new TypeError("Structure NAP modifiee : creation a verifier.");
     }
     const metadata=await schema.inspect(connection);
+    const hasEventType=metadata.columns.some(c=>c.TABLE_NAME==="livepalmes_competition_options" && c.COLUMN_NAME==="event_type");
+    if(!hasEventType && require("./nap-direct-calendar").eventFromRow({...proposed.competition,type_label:input.event.competitionType==="pool"?"Piscine":"Eau libre"}).eventType!==input.event.competitionType) throw new TypeError("Ce titre necessite le champ de type explicite dans NAP. Aucune competition creee.");
     if(!metadata.columns.some(c=>c.TABLE_NAME==="livepalmes_competition_options" && c.COLUMN_NAME==="entry_closed")) throw new TypeError("Champ de fermeture NAP absent : creation a verifier.");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('competitions','compet_parametres','livepalmes_competition_options') LIMIT 4")).length) throw new TypeError("Declencheur NAP a verifier.");
     const kinds=await query("SELECT id,label FROM compet_types FORCE INDEX(PRIMARY) WHERE id IN (0,1) ORDER BY id LIMIT 3");
@@ -84,6 +85,7 @@ async function createCompetition(pool,input,audit,authorize) {
     verify(await readRow("compet_parametres",saved.parameterId),{id:saved.parameterId,...parameters});
     const options=Object.fromEntries(schema.tables[0].columns.map(c=>[c.name,c.name==="competition_id"?saved.nativeId:c.name==="version"?"1":c.name.endsWith("_at")?saved.timestamp:c.name.endsWith("_by")?input.actorUid:null]));
     options.entry_closed=null;
+    if(hasEventType) options.event_type=input.event.competitionType;
     if(saved.phase==="parameters") {
       const guard=competitionGuard(saved.nativeId,proposed.competition);
       guard.sql+=` AND EXISTS(SELECT 1 FROM compet_parametres FORCE INDEX(PRIMARY) WHERE id=? AND ${Object.keys(parameters).map(k=>nativeEqual(`\`${k}\``)).join(" AND ")})`;guard.values.push(saved.parameterId,...Object.values(parameters));
@@ -93,6 +95,6 @@ async function createCompetition(pool,input,audit,authorize) {
     verify(await readRow("livepalmes_competition_options",saved.nativeId),options);
     saved={...saved,phase:"complete"};await audit.checkpoint(operation,saved);await audit.complete(operation,{competitionId:saved.nativeId,verified:true});
     return {ok:true,source:"nap",competitionId:`legacy-nap-${saved.nativeId}`};
-  } finally {if(locked) await query("SELECT RELEASE_LOCK(?)",["lp-competition-create"]);connection.release();}
+  } finally {try {if(locked) await query("SELECT RELEASE_LOCK(?)",["lp-competition-create"]);} finally {connection.release();}}
 }
 module.exports={planCreation,insert,competitionGuard,createCompetition};

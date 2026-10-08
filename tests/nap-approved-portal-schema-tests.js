@@ -1,7 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { tables, plan, planHash, approvedPortalSchema } = require("../functions/nap-approved-portal-schema");
+const { tables, plan, planHash, approvedPortalSchema, validateExisting } = require("../functions/nap-approved-portal-schema");
 function fixture(initial = []) {
   const present = new Set(initial); let creations = 0, released = 0, unlocked = 0;
   const metadata = () => ({
@@ -32,6 +32,10 @@ function fixture(initial = []) {
   return fixtureState;
 }
 (async()=>{
+  const additive={tables:[{TABLE_NAME:tables[0].name,ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}],columns:tables[0].columns.map(c=>({TABLE_NAME:tables[0].name,COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?"YES":"NO",COLUMN_DEFAULT:c.defaultValue,EXTRA:c.extra})),indexes:[{TABLE_NAME:tables[0].name,INDEX_NAME:"PRIMARY",SEQ_IN_INDEX:1,COLUMN_NAME:"competition_id",NON_UNIQUE:0,SUB_PART:null}]};
+  const marker={TABLE_NAME:tables[0].name,COLUMN_NAME:"event_type",COLUMN_TYPE:"varchar(16)",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""};
+  validateExisting({...additive,columns:[...additive.columns,marker]});
+  for(const change of [{COLUMN_TYPE:"varchar(32)"},{IS_NULLABLE:"NO"},{COLUMN_DEFAULT:"pool"},{EXTRA:"generated"}]) assert.throws(()=>validateExisting({...additive,columns:[...additive.columns,{...marker,...change}]}),/type incompatible/);
   const input={phase:"prepare",confirmation:"nap-create-livepalmes-portal-complements"};
   const state=fixture();
   await assert.rejects(approvedPortalSchema(state.pool,{...input,confirmation:"anything"}),TypeError);
