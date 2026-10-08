@@ -22,7 +22,7 @@ function validate(row,input){
 }
 async function readJob(connection,input){
   const expected=scope(input);
-  const [rows]=await connection.execute({sql:'SELECT id,competition_id,actor_uid,state,payload,cursor,version,created_at,updated_at FROM livepalmes_qualification_jobs WHERE id=? LIMIT 1',timeout:10000},[expected.id]);
+  const [rows]=await connection.execute({sql:'SELECT id,competition_id,actor_uid,state,payload,`cursor`,version,created_at,updated_at FROM livepalmes_qualification_jobs WHERE id=? LIMIT 1',timeout:10000},[expected.id]);
   return rows.length?validate(rows[0],input):null;
 }
 function transitionStatement(row,input){
@@ -34,7 +34,7 @@ function transitionStatement(row,input){
   if(input.state==='cancelled'&&before.payload.applyStarted)throw new TypeError('Application commencee : reprenez le controle.');
   if(before.state==='ready'&&input.state==='apply'&&(input.confirmed!==true||next?.applyStarted!==true||next.confirmedBy!==input.actorUid||input.cursor!==''))throw new TypeError('Confirmation nationale requise avant application.');
   if(before.payload.applyStarted&&next?.applyStarted!==true)throw new TypeError('Historique de confirmation perdu.');
-  return {sql:'UPDATE livepalmes_qualification_jobs SET state=?,payload=?,cursor=?,version=version+1,updated_at=? WHERE id=? AND competition_id=? AND state=? AND version=? AND BINARY cursor=BINARY ? LIMIT 1',values:[input.state,payload(next),input.cursor,input.now,before.id,Number(before.competition_id),before.state,String(before.version),before.cursor]};
+  return {sql:'UPDATE livepalmes_qualification_jobs SET state=?,payload=?,`cursor`=?,version=version+1,updated_at=? WHERE id=? AND competition_id=? AND state=? AND version=? AND BINARY `cursor`=BINARY ? LIMIT 1',values:[input.state,payload(next),input.cursor,input.now,before.id,Number(before.competition_id),before.state,String(before.version),before.cursor]};
 }
 async function activeControl(connection,id){
   id=positiveId(id);

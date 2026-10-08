@@ -48,7 +48,7 @@ async function savePage(connection,input,page){
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
   try{
     await connection.beginTransaction();started=true;
-    const rows=await query('SELECT id,competition_id,actor_uid,state,payload,cursor,version,created_at,updated_at FROM livepalmes_qualification_jobs WHERE id=? LIMIT 1 FOR UPDATE',[input.jobId]);
+    const rows=await query('SELECT id,competition_id,actor_uid,state,payload,`cursor`,version,created_at,updated_at FROM livepalmes_qualification_jobs WHERE id=? LIMIT 1 FOR UPDATE',[input.jobId]);
     if(rows.length!==1)throw new TypeError('Controle NAP introuvable.');
     const current=jobs.validate(rows[0],input);
     const saved=await query("SELECT id,competition_id,state,payload FROM livepalmes_qualification_jobs WHERE id=? LIMIT 1",[target.id]);
@@ -58,7 +58,7 @@ async function savePage(connection,input,page){
       await connection.commit();started=false;return {state:current.state,count:current.payload.count,cursor:current.cursor,resumed:true};
     }
     if(String(current.version)!==String(target.previous.version)||current.cursor!==target.previous.cursor||current.state!=='preview'||!isDeepStrictEqual(current.payload,target.previous.payload))throw new TypeError('Le controle a change. Rechargez son avancement.');
-    const inserted=await query("INSERT INTO livepalmes_qualification_jobs (id,competition_id,actor_uid,state,payload,cursor,version,created_at,updated_at) VALUES (?,?,?,'page',?,'',1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",[target.id,Number(current.competition_id),input.actorUid,jobs.payload(target.value)]);
+    const inserted=await query("INSERT INTO livepalmes_qualification_jobs (id,competition_id,actor_uid,state,payload,`cursor`,version,created_at,updated_at) VALUES (?,?,?,'page',?,'',1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",[target.id,Number(current.competition_id),input.actorUid,jobs.payload(target.value)]);
     if(Number(inserted.affectedRows)!==1)throw new Error('Sauvegarde de page incomplete.');
     const next=jobs.transitionStatement(current,{...input,state:target.nextState,cursor:page.cursor,payload:target.nextPayload});
     if(Number((await query(next.sql,next.values)).affectedRows)!==1)throw new TypeError('Avancement concurrent du controle.');
