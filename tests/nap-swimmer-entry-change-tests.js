@@ -27,13 +27,14 @@ function fixture() {
   const pool={getConnection:async()=>{assert.equal(authorized,true);return connection;}};
   const input={competitionId:5140,clubId:"106",actorUid:"test-actor",expectedFingerprint:fingerprint(pack),mutationId:"11111111-1111-4111-8111-111111111111",changes:[{swimmerId:1,selected:false},{swimmerId:2,selected:true}]};
   const services={authorize:async()=>{authorized=true;},validate:async()=>{},readers:{competition:async()=>({...structuredClone(competition),event:{...competition.event,entryStatus:closed?"closed":"open"}}),entry:async()=>structuredClone(pack)},audit:{read:async()=>target?structuredClone(target):null,prepare:async(op,value)=>{if(prepareFails) throw new Error("Journal unavailable");target=structuredClone(value);},complete:async()=>{}}};
-  return {pool,input,services,queries,initial,pack,setFail:value=>{fail=value;},setForfeits:()=>{forfeits=true;},close:()=>{closed=true;},failPrepare:()=>{prepareFails=true;},badPlan:()=>{badPlan=true;},changeGuard:()=>{guardChanged=true;},writes:()=>writes};
+  return {pool,input,services,queries,initial,pack,setBirthLimits:(start,end)=>{competition.nativeParameters.cat_d=start;competition.nativeParameters.cat_f=end;},setFail:value=>{fail=value;},setForfeits:()=>{forfeits=true;},close:()=>{closed=true;},failPrepare:()=>{prepareFails=true;},badPlan:()=>{badPlan=true;},changeGuard:()=>{guardChanged=true;},writes:()=>writes};
 }
 (async()=>{
   let f=fixture(),result=await save(f.pool,f.input,f.services);assert.equal(result.writesExecuted,4);assert.equal(f.pack.individual[0].id,22);assert.equal(f.pack.members[0].id,42);assert.deepEqual(f.pack.relays,f.initial.relays);assert.equal(f.queries.at(-1),"release");
   f.close();await save(f.pool,f.input,f.services);assert.equal(f.writes(),4,"completed retry after closure does not write");
   for(const step of [1,2,3,4]) {f=fixture();f.setFail(step);await assert.rejects(()=>save(f.pool,f.input,f.services),/Interrupted/);f.setFail(0);await save(f.pool,f.input,f.services);assert.equal(f.writes(),4);}
   f=fixture();f.failPrepare();await assert.rejects(()=>save(f.pool,f.input,f.services),/Journal/);assert.equal(f.writes(),0);
+  f=fixture();f.setBirthLimits("2090-01-01",null);await assert.rejects(()=>save(f.pool,f.input,f.services),/hors des limites/);assert.equal(f.writes(),0);assert.equal(f.queries.some(sql=>/^(?:INSERT|DELETE)/.test(sql)),false);
   f=fixture();f.setForfeits();await assert.rejects(()=>save(f.pool,f.input,f.services),/forfaits/);assert.equal(f.writes(),0);
   f=fixture();f.close();await assert.rejects(()=>save(f.pool,f.input,f.services),/fermes/);assert.equal(f.writes(),0);
   f=fixture();f.services.authorize=async()=>{throw new Error("Denied");};await assert.rejects(()=>save(f.pool,f.input,f.services),/Denied/);assert.deepEqual(f.queries,[]);

@@ -75,12 +75,14 @@ async function entryWithCourseRules(connection,pack,context,competition,services
   if(rules.courseLockReason(competition)) return entry;
   const participation=require("./nap-entry-participation-rules"),presence=participation.requirements(competition).presence.size>0;
   const restricted=Boolean(competition.nativeRules?.restrictions?.length);
-  if(!restricted && !presence) return entry;
+  const birthBounds=require("./nap-entry-birth-policy").bounds(competition);
+  if(!restricted && !presence && !birthBounds.start && !birthBounds.end) return entry;
   const categories=restricted ? await rules.readCategories(connection) : null;
   const evidence=await participation.readEvidence(connection,entry.swimmers,competition);
   const native={...competition,restrictions:competition.nativeRules.restrictions};
   for(const person of entry.swimmers) {
     try {
+      require("./nap-entry-birth-policy").assertEligible(competition,person);
       if(!participation.eligible(competition,person.id,evidence)) throw new TypeError("Un resultat NAP dans au moins une competition requise est necessaire.");
       if(restricted) person.nativeAllowedEventCodes=rules.allowedCourses(person,native,competition,categories,services);
     }
