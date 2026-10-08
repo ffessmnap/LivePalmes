@@ -10,8 +10,6 @@ const views = [
   { name: "login", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false },
   { name: "login-loading", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false, loginPending: true },
   { name: "access-request-loading", hash: "accueil", selector: "#adminPortalLoginPanel", authenticated: false, accessRequestPending: true, scrollTarget: "#adminPublicAccessRequestMessage" },
-  { name: "session-warning", hash: "accueil", selector: "#adminPortalSessionWarning", authenticated: true, sessionDialog: "warning" },
-  { name: "session-lock", hash: "accueil", selector: "#adminPortalSessionLock", authenticated: true, sessionDialog: "lock" },
   { name: "overview", hash: "accueil", selector: "#adminOverviewView", authenticated: true },
   { name: "overview-expanded", hash: "accueil", selector: "#adminOverviewView", authenticated: true, overviewSpace: "national" },
   { name: "club-home", hash: "espace-club", selector: "#adminClubHomeView", authenticated: true, menu: "club", clubOnly: true },
