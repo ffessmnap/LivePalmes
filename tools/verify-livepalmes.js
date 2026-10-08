@@ -73,6 +73,7 @@ function runUnitTests() {
     "nap-qualification-preview-page-tests.js",
     "nap-qualification-preview-store-tests.js",
     "nap-qualification-preview-process-tests.js",
+    "nap-qualification-control-review-tests.js",
     "nap-qualification-sources-tests.js",
     "nap-qualification-sources-callable-tests.js",
     "nap-qualification-pending-callable-tests.js",

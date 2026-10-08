@@ -37,7 +37,7 @@ async function previewPage(connection,input,services){
     if(new Set(original.map(row=>row.eventCode)).size!==original.length||original.some(row=>!input.events.some(event=>event.code===row.eventCode&&event.type==='individual')))throw new TypeError('Anciennes courses NAP a verifier avant controle.');
     const evaluation=engine.evaluate({rules,category:services.categoryFor(input.date,p.birthDate),sex:p.sex,events:input.events,rows,approvals:approved.map(row=>({eventCode:row.event_code,status:row.status}))});
     const result=engine.reconcile(original,evaluation);
-    const before={swimmerId:p.id,clubId:p.clubId,birthDate:p.birthDate,sex:p.sex,inscriptionId:links[index],entries:original};
+    const before={swimmerId:p.id,name:p.name,clubId:p.clubId,birthDate:p.birthDate,sex:p.sex,inscriptionId:links[index],entries:original};
     return {before,sourceHash:createHash('sha256').update(JSON.stringify(before)).digest('hex'),entries:result.entries,removed:result.removed,evaluation};
   });
   const last=selected.at(-1);
