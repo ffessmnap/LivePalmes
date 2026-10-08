@@ -69,6 +69,6 @@ function statements(plan,authority,end) {
   return result;
 }
 function same(a,b) {return ["id","engagement","course","tps"].every(key=>a[key]===b[key]);}
-function compact(value) {if(typeof value!=="string" || !/^\d{1,6}$/.test(value) || Number(value.slice(-4,-2)||0)>59) throw new TypeError("Temps compact invalide.");}
+function compact(value) {if(typeof value!=="string" || !/^\d{1,6}$/.test(value) || value!=="599999" && Number(value.slice(-4,-2)||0)>59) throw new TypeError("Temps compact invalide.");}
 function code(value) {if(typeof value!=="string" || !/^[A-Z0-9]{1,32}$/.test(value)) throw new TypeError("Course invalide.");}
 module.exports={statements};
