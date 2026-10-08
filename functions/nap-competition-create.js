@@ -50,7 +50,8 @@ async function createCompetition(pool,input,audit,authorize) {
       const rows=await query(`SHOW CREATE TABLE \`${table}\``);
       if(rows.length!==1 || rows[0]["Create Table"].replace(/AUTO_INCREMENT=\d+/,"AUTO_INCREMENT=0")!==contract[table]) throw new TypeError("Structure NAP modifiee : creation a verifier.");
     }
-    await schema.inspect(connection);
+    const metadata=await schema.inspect(connection);
+    if(!metadata.columns.some(c=>c.TABLE_NAME==="livepalmes_competition_options" && c.COLUMN_NAME==="entry_closed")) throw new TypeError("Champ de fermeture NAP absent : creation a verifier.");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('competitions','compet_parametres','livepalmes_competition_options') LIMIT 4")).length) throw new TypeError("Declencheur NAP a verifier.");
     const kinds=await query("SELECT id,label FROM compet_types FORCE INDEX(PRIMARY) WHERE id IN (0,1) ORDER BY id LIMIT 3");
     if(!isDeepStrictEqual(kinds,[{id:0,label:"Piscine"},{id:1,label:"Eau libre"}])) throw new TypeError("Types NAP modifies.");
