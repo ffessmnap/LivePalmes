@@ -36,4 +36,10 @@ function transitionStatement(row,input){
   if(before.payload.applyStarted&&next?.applyStarted!==true)throw new TypeError('Historique de confirmation perdu.');
   return {sql:'UPDATE livepalmes_qualification_jobs SET state=?,payload=?,cursor=?,version=version+1,updated_at=? WHERE id=? AND competition_id=? AND state=? AND version=? AND BINARY cursor=BINARY ? LIMIT 1',values:[input.state,payload(next),input.cursor,input.now,before.id,Number(before.competition_id),before.state,String(before.version),before.cursor]};
 }
-module.exports={scope,payload,validate,readJob,transitionStatement};
+async function activeControl(connection,id){
+  id=positiveId(id);
+  const [rows]=await connection.execute({sql:"SELECT id FROM livepalmes_qualification_jobs FORCE INDEX (competition_state) WHERE competition_id=? AND state IN ('preview','ready','apply') ORDER BY state,id LIMIT 2",timeout:10000},[id]);
+  if(rows.length>1||rows.some(row=>!/^[a-f0-9]{64}$/.test(row.id)))throw new TypeError('Controles actifs NAP ambigus.');
+  return rows[0]?.id||'';
+}
+module.exports={scope,payload,validate,readJob,transitionStatement,activeControl};

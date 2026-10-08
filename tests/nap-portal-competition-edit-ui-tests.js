@@ -44,6 +44,17 @@ assert.equal(genderSandbox.engagementProgramGenderModesForEvent("50BI").length,3
   sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();program=[{id:"session-1",date:"2026-10-11",startTime:"09:00",items:[]}];
   assert.deepEqual(Object.keys(sandbox.nativeCompetitionPatchFromForm()),["programSessions"]);
   assert.equal(sandbox.elements.engagementsSaveButton.disabled,false);
+  let reviewed=0;
+  sandbox.renderQualificationJobActions=()=>{};
+  sandbox.finishQualificationJob=async jobId=>{assert.equal(jobId,'a'.repeat(64));assert.equal(sandbox.selectedEngagementCompetition.qualificationJobId,jobId);reviewed++;return {competition:{id:'legacy-nap-5140',napSource:true,napFingerprint:'after-review'}};};
+  sandbox.callFunction=async()=>({qualificationJobId:'a'.repeat(64)});
+  assert.equal(await sandbox.saveNativeCompetitionDetail(),true);
+  assert.equal(reviewed,1);assert.equal(sandbox.selectedEngagementCompetition.napFingerprint,'after-review');
+  sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();fields.date.value='2026-10-12';
+  sandbox.finishQualificationJob=async()=>{throw new Error('Modification des qualifications annulée.');};
+  assert.equal(await sandbox.saveNativeCompetitionDetail(),false);
+  assert.equal(sandbox.selectedEngagementCompetition.napFingerprint,'after-review','Cancellation must not claim a new competition was saved');
+  assert.equal(sandbox.elements.engagementsSaveButton.disabled,false);
   assert.ok(!source.slice(start,end).includes("updateCompetitionWithQualifications"));
   console.log("Formulaire NAP : champs touches seuls, delai exact, fermeture confirmee et aucun ancien controle destructif verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

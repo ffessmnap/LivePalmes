@@ -13,6 +13,11 @@ async function main(){
  let queries=0;const connection={execute:async(statement,values)=>{queries++;assert.match(statement.sql,/WHERE id=\? LIMIT 1$/);assert.deepEqual(values,[input.jobId]);return [[{...row,payload:JSON.stringify(row.payload)}]];}};
  assert.deepEqual((await jobs.readJob(connection,input)).payload,row.payload);assert.equal(queries,1);
  await assert.rejects(jobs.readJob(connection,{...input,competitionId:1}));assert.equal(queries,2);
+ const activeConnection={execute:async(statement,values)=>{assert.match(statement.sql,/FORCE INDEX \(competition_state\)/);assert.match(statement.sql,/LIMIT 2$/);assert.deepEqual(values,[5162]);return [[{id:input.jobId}]];}};
+ assert.equal(await jobs.activeControl(activeConnection,5162),input.jobId);
+ assert.equal(await jobs.activeControl({execute:async()=>[[]]},5162),'');
+ await assert.rejects(jobs.activeControl({execute:async()=>[[{id:input.jobId},{id:'b'.repeat(64)}]]},5162),/ambigus/);
+ await assert.rejects(jobs.activeControl({execute:async()=>[[{id:'invalid'}]]},5162),/ambigus/);
  console.log('NAP qualification jobs: indexed single-row read, preserved preview confirmation, guarded cursor/version, no cancellation after apply, bounded payload and sporting-proof restart; offline.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
