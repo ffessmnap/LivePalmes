@@ -15,7 +15,7 @@ function fixture() {
     if(sql.includes("information_schema.COLUMNS"))return [[...schema.tables.flatMap(t=>t.columns.map(c=>({TABLE_NAME:t.name,COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?"YES":"NO",COLUMN_DEFAULT:c.defaultValue,EXTRA:c.extra}))),...(s.eventType?[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"event_type",COLUMN_TYPE:"varchar(16)",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}]:[]),...(s.noClosure?[]:[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"entry_closed",COLUMN_TYPE:"tinyint",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}])]];
     if(sql.includes("information_schema.STATISTICS"))return [schema.tables.flatMap(t=>t.keys.flatMap(k=>k.columns.map((c,i)=>({TABLE_NAME:t.name,INDEX_NAME:k.name,COLUMN_NAME:c,SEQ_IN_INDEX:i+1,NON_UNIQUE:k.unique?0:1,SUB_PART:null}))))];
     if(sql.includes("TRIGGERS"))return [s.trigger?[{}]:[]];
-    if(sql.includes("FROM compet_types"))return [[{id:0,label:"Piscine"},{id:1,label:s.wrongType?"Changed":"Eau libre"}]];
+    if(sql.includes("FROM compet_types"))return [[{id:0,label:"Piscine"},{id:1,label:s.wrongType?"Changed":"Eau libre"},{id:2,label:"Formation"},{id:3,label:"Stage"},{id:4,label:"Réunion"}]];
     if(sql.includes("FROM compet_type"))return [[{id:6,label:"AUTRE"}]];
     if(sql.startsWith("INSERT")) {
       const table=sql.match(/INTO `([^`]+)`/)[1],keys=sql.match(/\(([^)]+)\)/)[1].split(",").map(k=>k.replace(/`/g,""));
@@ -47,6 +47,11 @@ function fixture() {
   const ambiguous={...input,event:{...input.event,name:"Stage competition"}};
   let s=fixture();await assert.rejects(s.run(ambiguous),/type explicite/);assert.equal(s.writes,0);
   s=fixture();s.eventType=true;await s.run(ambiguous);assert.equal(s.options.event_type,"pool");assert.equal(s.writes,3);
+  for(const [competitionType,kind] of [["training",2],["stage",3],["meeting",4]]) {
+    const data={...input,event:{...input.event,competitionType}};
+    s=fixture();await assert.rejects(s.run(data),/type explicite requis/);assert.equal(s.writes,0);
+    s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.typecnc,kind);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=18);
+  }
   s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
   s=fixture();await assert.rejects(s.run(input,()=>{throw Error("denied");}));assert.equal(s.queries,0);

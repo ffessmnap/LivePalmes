@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Création des formations, stages et réunions dans NAP — 8 octobre 2026
+
+- Étape 1/7 : le formulaire existant passe par la même création native protégée pour Formation, Stage et Réunion. Correspondance vérifiée en lecture dans le formulaire IntraNAP : `ld` 2, 3 et 4 ; mêmes codes `compet_types`. Champ explicite obligatoire pour ces créations, aucune ancienne collection sportive utilisée sur TEST, UUID et journal réutilisés. « Autre » reste bloqué en attente de l'arbitrage demandé à Antoine.
+- Budget inchangé : au plus 18 requêtes de création et le lecteur de fiche borné existant, trois lignes natives/complémentaires ; la vérification des cinq types de référence reste un unique appel par clés. Aucune nouvelle structure ou migration ; rien n'est créé dans les engagements et aucun mail n'est envoyé. Le cache conserve l'identifiant NAP et le parcours de gestion natif dès la réponse, sans doublon de calendrier.
+- Tests hors réseau des trois types, refus sans complément, budget, droits et absence de repli vers l'ancienne base. Vérification globale et publication en cours ; aucune nouvelle formation réelle n'est créée pour un essai sans accord spécifique.
+- Preuve du bloc précédent : PR 194 intégrée sur `b14d56ec589b3079aadd689c47e6f0bb1c784703`, CI `37795380308` et TEST commun `37795824315` réussis, Hosting `9762c1b45671fde1`. Champ autorisé ajouté après sauvegarde exacte et contrôle des écritures actives ; structure après opération vérifiée, aucun ancien événement renseigné. Preuves locales `outputs/nap-event-type-schema-before.json` et `outputs/nap-event-type-schema-result.json`.
+- Recette réelle autorisée : création depuis le portail de « Test raccordement création LivePalmes » à Paris le 7 novembre 2026, région Île-de-France, identifiant NAP **5220** et paramètres **4547**. Même fiche visible dans IntraNAP ; contrôles SQL par clés confirment `actif=0`, limite NULL, `saisie=1`, marqueur `pool`, tous indicateurs d'envoi à zéro. Ancien complément 5140 reste NULL. Captures locales et preuve `outputs/creation-competition-nap-proof.json`. Validation technique effectuée ; aucun retour utilisateur de recette de cette version revendiqué.
+
 ### Type explicite des événements NAP — 8 octobre 2026
 
 - Étape 1/7 : Antoine autorise après sauvegarde le seul champ nullable `event_type varchar(16)` dans `livepalmes_competition_options`, sans saisie ni import en cours. Code compatible publié avant cet ajout séparé ; aucune migration automatique au déploiement. Les anciennes lignes restent NULL et conservent leur classification historique.
