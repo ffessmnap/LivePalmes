@@ -43,6 +43,8 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.deepEqual(queries.map(item => item.values), [[2], [2], [2]]);
   const detailed=await calendar.readCompetition({execute:async(query)=>[query.sql.includes("FROM competitions c") ? [{...raw,portal_program_sessions:JSON.stringify([{id:"session-1",date:"2026-10-11",startTime:"09:30",items:[{eventCode:"50BI",genderMode:"female",phase:"heats"}]}])}] : []]},2);
   assert.equal(detailed.event.program[0].startTime,"09:30");assert.equal(detailed.event.program[0].items[0].detail,"Femmes · Séries");
+  assert.match(calendar.EVENT_JOINS,/compet_types t ON t.id=c\.type LEFT/);
+  assert.match(calendar.EVENT_JOINS,/compet_type s ON s.id=c\.typecnc LEFT/);
   assert.ok(!calendar.SELECT_EVENT.includes("program_sessions"),"No detailed JSON loaded for every season row");
   await assert.rejects(calendar.readCalendarSeason({ execute: async () => [Array(501).fill(raw)] }, 2026), RangeError);
   queries = [];
