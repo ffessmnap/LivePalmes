@@ -22,8 +22,8 @@ function fromPack(pack,events=[]) {
   const selections=new Map(groups.map(group=>[group.id,[]]));
   for(const link of links) {
     const target=positiveId(link.qualifying_competition_id),selection=selections.get(link.group_id);
-    if(!selection||selection.includes(`legacy-nap-${target}`)) throw new TypeError("Competition qualificative NAP ambigue.");
-    selection.push(`legacy-nap-${target}`);
+    if(!selection||selection.includes(String(target))) throw new TypeError("Competition qualificative NAP ambigue.");
+    selection.push(String(target));
   }
   const values={};
   for(const row of standards) {
