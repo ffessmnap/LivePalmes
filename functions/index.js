@@ -17132,7 +17132,8 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,competitionId,authorize);
         if(!pack)throw new HttpsError("not-found","Competition NAP introuvable.");
         const services=nativeQualificationServices(context),events=services.eventsFor(pack),previous=services.competitionFor(pack).qualifications;
-        const rules=incoming===undefined?previous:qualificationEngine.validateRules(incoming,events,true);
+        let rules=previous;
+        if(incoming!==undefined){try{rules=qualificationEngine.validateRules(incoming,events,false);}catch(error){throw new HttpsError('invalid-argument',error.message);}}
         const changed=!require('node:util').isDeepStrictEqual(previous,rules);
         const affects=changed||rules.enabled&&['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key));
         if(affects){
