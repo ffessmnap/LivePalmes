@@ -67,6 +67,8 @@ function runUnitTests() {
     "nap-qualification-rules-tests.js",
     "nap-qualification-plan-tests.js",
     "nap-qualification-evaluation-tests.js",
+    "nap-qualification-grants-tests.js",
+    "nap-qualification-jobs-tests.js",
     "nap-qualification-sources-tests.js",
     "nap-qualification-sources-callable-tests.js",
     "nap-qualification-pending-callable-tests.js",
