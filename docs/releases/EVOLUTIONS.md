@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Étape 2 — lecture des grilles NAP, préparation — 8 octobre 2026
+
+- Première brique : traduire les compléments NAP déjà chargés (groupes, minima et compétitions qualificatives) vers le moteur sportif LivePalmes existant, sans changer ses catégories ni ses règles. Le module est testé mais pas encore branché dans les écrans ni les écritures ; les grilles actives restent protégées.
+- Budget : zéro appel ou lecture supplémentaire ; conversion locale des listes déjà bornées à 12 groupes, 3 000 minima et 2 400 liens. Refus des doublons, références hors compétition et groupes invalides. Tests hors réseau des minima, périodes, bassins, chronométrage et liste de compétitions qualificatives ; aucune donnée réelle modifiée.
+- Suite : adapter l'enregistrement journalisé des grilles dans les tables complémentaires existantes, puis contrôler les engagements depuis les performances NAP et raccorder les exceptions nationales. Aucun ajout de table exécuté ou présumé autorisé pour les exceptions.
+
 ### Ancienne indication Open ignorée — 8 octobre 2026
 
 - Antoine précise que le code natif 19 Open indiquait l'admission de non-licenciés, option inutilisée : LivePalmes ne doit pas en tenir compte. Il ne représente aucune région et ne donne aucune ouverture supplémentaire. Il reste conservé dans les lignes natives lors d'une modification des invitations ; les autres codes inconnus restent protégés.
