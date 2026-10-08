@@ -78,7 +78,14 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
     return after[table];
   }
   for (const [field,value] of Object.entries(patch)) {
-    if (field === "missingEntryTimeMode") {
+    if (field === "nativeNationalLevelCode") {
+      const codes=[2,3,4,5,7];
+      if (!input.national || pack.event.level !== "national" || !["pool","openWater"].includes(pack.event.competitionType) ||
+          !codes.includes(pack.nativeSnapshot.parameters.niveau)) throw new TypeError("Type de championnat reserve a l'administration nationale d'une competition nationale reconnue.");
+      if (!Number.isInteger(value) || !codes.includes(value)) throw new TypeError("Type de championnat invalide.");
+      after.compet_parametres.niveau=value;
+    }
+    else if (field === "missingEntryTimeMode") {
       if (!["manual", "forbidden", "default595999"].includes(value)) throw new TypeError("Mode natif de saisie invalide.");
       const nativeMode = {manual: 1, forbidden: -1, default595999: 0}[value];
       if (nativeMode === undefined) throw new TypeError("Mode natif de saisie invalide.");
