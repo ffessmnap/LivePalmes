@@ -50,6 +50,11 @@ async function resolveRelay(input,services) {
     }
   }
   const ids=relay.memberIds.map(positiveId);
+  if(competition.qualifications?.enabled&&ids.length){
+    if(typeof services.qualifiedAnchors!=='function')throw new TypeError('Controle des qualifications des relayeurs requis.');
+    const anchors=await services.qualifiedAnchors(connection,{pack,competition,ids});
+    if(!Array.isArray(anchors)||!anchors.some(anchor=>ids.includes(positiveId(anchor.swimmerId))&&BigInt(anchor.clubId)===BigInt(dossier.clubId)))throw new TypeError('Le relais doit comprendre au moins un nageur engage sur une course qualifiee.');
+  }
   for(const id of ids) require("./nap-entry-birth-policy").assertEligible(pack,dossier.swimmers.find(person=>Number(person.id)===id));
   const participation=require("./nap-entry-participation-rules");
   const evidence=await participation.readEvidence(connection,ids.map(id=>({id})),pack);

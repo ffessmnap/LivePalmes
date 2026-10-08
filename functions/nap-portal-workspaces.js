@@ -54,7 +54,7 @@ function competitionItem(pack, definitions = new Map()) {
     qualificationStartDate: calendar.date(parameters.tps_d), qualificationEndDate: calendar.date(parameters.tps_f),
     qualificationTimesMode: calendar.date(parameters.tps_d) || calendar.date(parameters.tps_f) ? "period" : "all",
     missingEntryTimeMode: parameters.saisie == null ? "" : require("./nap-entry-time-policy").policy(parameters.saisie), maxEventsPerSwimmer: options.max_events_per_swimmer ?? 0,
-    qualifications: { enabled: Number(options.qualifications_enabled) === 1, groups: pack.groups, standards: pack.standards },
+    qualifications: require("./nap-qualification-rules").fromPack(pack,events),
     fees, programSessions: json(pack.detailedProgram?.program_sessions, []), events,
     eventCount: events.length, individualEventCount: events.filter(item => item.type === "individual").length,
     relayEventCount: events.filter(item => item.type === "relay").length,
@@ -120,7 +120,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
       firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), licenseNumber: "", sex: "" })),
     // Multiple leaders are kept explicitly, without selecting one arbitrarily.
     teamLeader: leaders.length === 1 ? leaders[0] : {}, nativeLeaders: leaders, teamLeaderComplete: leaders.length === 1,
-    nativeOptions: pack.options, qualificationAlert: null, documents: {}, updatedAt: pack.readAt,
+    nativeOptions: pack.options, qualificationAlert: json(pack.options?.submission_metadata,{}).qualificationAlert||null, documents: {}, updatedAt: pack.readAt,
     nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
 }
 async function readDocuments(connection, competitionId, options={}) {

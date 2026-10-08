@@ -34,8 +34,10 @@ async function saveNativeIndividualEntries(pool,input,services) {
     if(target) {
       if(target.kind!=="native-individual-entry-change" || target.operation!==operation || target.actorUid!==input.actorUid || target.competitionId!==input.competitionId || target.clubId!==input.clubId || target.payloadHash!==payloadHash || target.expectedFingerprint!==input.expectedFingerprint || target.planHash!==hash(target.plan)) throw new TypeError("Sauvegarde incompatible. Conservez la modification initiale.");
       if(target.dossierHash!==unchangedDossier(pack)) throw new TypeError("Les participants du dossier ont change. Verification requise.");
+      if(target.effects&&target.effectsHash!==hash(target.effects))throw new TypeError('Journal des exceptions incompatible.');
       // Completion can be confirmed after closure; no remaining write may run.
       if(remaining(target.plan,pack.individual).complete) {
+        if(services.afterSaved)await services.afterSaved(connection,target);
         await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
         return {ok:true,source:"nap",operation,recovered:true,writesExecuted:0,competition,nativeEntry:pack};
       }
@@ -55,6 +57,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
       const plan=planIndividualEntries(pack,changes);
       if(pack.individual.length+plan.plans.reduce((sum,row)=>sum+row.additions.length-row.removals.length,0)>5000) throw new RangeError("Dossier NAP trop volumineux : pagination requise.");
       target={kind:"native-individual-entry-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,payloadHash,expectedFingerprint:input.expectedFingerprint,dossierHash:unchangedDossier(pack),competitionHash:unchangedCompetition(competition),plan,planHash:hash(plan)};
+      if(services.prepareEffects){target.effects=await services.prepareEffects(connection,{plan,competition,dossier:pack});target.effectsHash=hash(target.effects);}
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse pour ce lot. Selectionnez moins de nageurs.");
       if(remaining(plan,pack.individual).complete) return {ok:true,source:"nap",operation,writesExecuted:0,competition,nativeEntry:pack};
     }
@@ -78,6 +81,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
     const current=links.length ? await query(`SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN (${links.map(()=>"?").join(",")}) ORDER BY engagement,course,id LIMIT 5001`,links) : [];
     if(!remaining(target.plan,current).complete) throw new Error("Enregistrement interrompu. Reprenez la meme modification ; la sauvegarde est conservee.");
     if(current.length>5000) throw new RangeError("Dossier NAP trop volumineux : pagination requise.");
+    if(services.afterSaved)await services.afterSaved(connection,target);
     await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
     return {ok:true,source:"nap",operation,writesExecuted:writes,competition,nativeEntry:{...pack,readAt:new Date().toISOString(),individual:current}};
   } finally {

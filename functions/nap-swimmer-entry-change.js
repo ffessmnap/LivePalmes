@@ -54,8 +54,10 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     const {readAt,event,...competitionRows}=competition;
     let target=saved;
     if(target) {
+      if(target.effects&&target.effectsHash!==hash(target.effects))throw new TypeError('Journal des exceptions incompatible.');
       if(target.kind!=="native-swimmer-selection" || target.operation!==operation || target.actorUid!==input.actorUid || target.competitionId!==input.competitionId || target.clubId!==input.clubId || target.expectedFingerprint!==input.expectedFingerprint || target.payloadHash!==payloadHash || target.planHash!==hash(target.plan) || target.untouchedHash!==untouched(pack,target.plan)) throw new TypeError("Sauvegarde incompatible ou dossier modifie ailleurs.");
       if(remaining(target.plan,pack).complete) {
+        if(services.afterSaved)await services.afterSaved(connection,target);
         await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
         return {ok:true,source:"nap",operation,writesExecuted:0,nativeEntry:pack,competition};
       }
@@ -79,6 +81,7 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     }
     if(!target) {
       target={kind:"native-swimmer-selection",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,expectedFingerprint:input.expectedFingerprint,payloadHash,plan,planHash:hash(plan),untouchedHash:untouched(pack,plan),competitionHash:hash(competitionRows)};
+      if(services.prepareEffects){target.effects=await services.prepareEffects(connection,{plan,competition,dossier:pack});target.effectsHash=hash(target.effects);}
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse : selectionnez moins de nageurs.");
       await services.audit.prepare(operation,target);
     }
@@ -91,6 +94,7 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     }
     const verified=await readers.entry(connection,input,services.authorize);
     if(untouched(verified,target.plan)!==target.untouchedHash || !remaining(target.plan,verified).complete) throw new TypeError("Verification NAP incomplete. Reprenez la meme modification.");
+    if(services.afterSaved)await services.afterSaved(connection,target);
     await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});
     return {ok:true,source:"nap",operation,writesExecuted:batch.length,nativeEntry:verified,competition};
   } finally {

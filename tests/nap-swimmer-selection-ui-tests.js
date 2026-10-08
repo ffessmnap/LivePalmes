@@ -8,8 +8,8 @@ assert.equal(context.engagementClubSwimmerSelectionLockReason(),"");assert.equal
 assert.equal(context.engagementClubWriteLocked(),true,"other native writes remain locked");
 for(const tab of ["entries","relays","officials"]) assert.equal(context.clubEngagementTabHiddenWhenWriteLocked(tab),true);
 context.selectedEngagementCompetition.entryStatus="closed";assert.match(context.engagementClubSwimmerSelectionLockReason(),/fermes/);
-context.selectedEngagementCompetition.entryStatus="open";context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/raccordement/);
-context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.isTest=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/raccordement/);
+context.selectedEngagementCompetition.entryStatus="open";context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/consultable/);
+context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.isTest=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/consultable/);
 assert.match(source,/expectedFingerprint:engagementClubLastPersistedEntry\?\.napFingerprint,mutationId:global.crypto.randomUUID\(\)/);
 assert.match(source,/engagementClubNativeSelectionRetry=payload/);assert.match(source,/callFunction\("saveEngagementClubSwimmerSelections",payload\)/);
 // Execute the real autosave and retry branches: a failed response must retain
