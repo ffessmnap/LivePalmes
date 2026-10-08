@@ -3,7 +3,8 @@
 // sporting source or unbounded lookup: the actual processor authorizes and
 // reads the same bounded NAP competition again under its write lock.
 async function process(pool,input,services){
-  require('./nap-qualification-jobs').scope(input);
+  const scope=require('./nap-qualification-jobs').scope(input);
+  input={...input,competitionId:scope.competitionId};
   let action=input.action;
   if(!action){
     const connection=await pool.getConnection();
