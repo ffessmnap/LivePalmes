@@ -349,6 +349,8 @@ Pour un chef d'equipe, le numero de licence est obligatoire.
 
 Transition NAP autorisee par Antoine le 6 octobre 2026 : sur TEST, la declaration d'un chef d'equipe peut etre enregistree sans numero de licence. Le champ reste vide ; les anciennes licences LivePalmes ne sont pas reprises. Leur ajout dans NAP sera traite separement.
 
+Raccordement du premier dossier NAP : lorsqu'aucun chef n'est encore declare, les champs nom, prenom et date de naissance permettent de creer la declaration native du club. Une declaration existante reste corrigeable. Une absence de declaration ne signifie jamais une renonciation ; les options exterieures et de renonciation restent a raccorder separement.
+
 Si le chef d'equipe n'est pas du club, son club doit etre renseigne.
 
 Si le club ne declare pas de chef d'equipe, il doit cocher explicitement une case indiquant qu'il renonce au droit de reclamation.
