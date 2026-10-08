@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { clubRecapZip } = require("./club-recap-zip");
 const qualificationEngine = require("./engagement-qualification");
 const { createDtnSeasonService } = require("./dtn-season-service");
 const { createQualificationService } = require("./engagement-qualification-service");
@@ -10742,11 +10743,26 @@ exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIR
   };
 });
 
-exports.listEngagementCompetitionClubRecaps = onCall(CALLABLE_OPTIONS, async (request) => {
+async function nativeAdminCompetitionEntries(context,competitionId) {
+  try {
+    const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const result=await require("./nap-admin-entries").readAdminEntries(pool,{competitionId,competition},event=>assertCanManageEngagementCompetition(context,event),{category:ageCategoryFromDates});
+    return {...result,competition,sqlBudget:{...result.sqlBudget,queriesMax:24,dossierRowsMax:result.sqlBudget.rowsMax}};
+  } catch(error) {
+    if(error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Lecture des engagements NAP indisponible.");
+  }
+}
+exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    const result=await nativeAdminCompetitionEntries(context,competitionId);
+    return {ok:true,source:"nap",competitionId,summaryGenerated:false,summaryReady:true,entries:result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...engagementCompetitionEntrySummaryItem(entry),totalFee:engagementPdfFeeTotal(entry,result.competition)})),sqlBudget:result.sqlBudget};
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
@@ -10787,6 +10803,7 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
     relayCount: 0,
     officialCount: 0,
     manualTimeCount: 0,
+    unknownTimeOriginCount: 0,
     defaultTimeCount: 0,
     incompleteClubCount: 0
   };
@@ -10816,6 +10833,7 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
         if (!eventCode) return;
         const entryTimeMode = cleanText(individualEntry.entryTimeMode);
         if (entryTimeMode === "manual") counts.manualTimeCount += 1;
+        if (entryTimeMode === "native") counts.unknownTimeOriginCount += 1;
         if (entryTimeMode === "default595999") counts.defaultTimeCount += 1;
         if (returnedIndividualRowCount + returnedRelayRowCount >= maximumReturnedRows) {
           truncated = true;
@@ -10909,11 +10927,15 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
   return { counts, events, clubs: clubRows, truncated };
 }
 
-exports.getEngagementCompetitionStatistics = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) throw new HttpsError("invalid-argument", "Competition requise.");
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    const result=await nativeAdminCompetitionEntries(context,competitionId);
+    return {ok:true,source:"nap",competitionId,generatedAt:result.generatedAt,...engagementCompetitionStatisticsItem(result.entries,result.competition),sqlBudget:result.sqlBudget};
+  }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const cacheRef = engagementCompetitionStatisticsCacheRef(db, competitionId);
   const [competitionSnapshot, cacheSnapshot] = await db.getAll(competitionRef, cacheRef);
@@ -10965,12 +10987,19 @@ exports.getEngagementCompetitionStatistics = onCall(CALLABLE_OPTIONS, async (req
   };
 });
 
-exports.generateEngagementClubRecapPdfForAdmin = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const clubId = cleanText(request.data?.clubId).slice(0, 40);
   if (!competitionId || !clubId) {
     throw new HttpsError("invalid-argument", "Competition et club requis.");
+  }
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    const result=await nativeAdminCompetitionEntries(context,competitionId),entry=result.entries.find(item=>item.clubId===clubId);
+    if(!entry || !engagementClubEntryHasParticipants(entry)) throw new HttpsError("not-found","Aucun participant NAP pour ce club.");
+    const pdf=await buildEngagementClubRecapPdf(result.competition,entry);
+    if(!Buffer.isBuffer(pdf.buffer) || pdf.buffer.length>10000000) throw new HttpsError("resource-exhausted","PDF trop volumineux.");
+    return {ok:true,source:"nap",fileName:pdf.fileName,contentType:"application/pdf",generatedAt:pdf.generatedAt,fromStorage:false,pdfBase64:pdf.buffer.toString("base64"),sqlBudget:result.sqlBudget};
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
@@ -11012,11 +11041,30 @@ exports.generateEngagementClubRecapPdfForAdmin = onCall(CALLABLE_OPTIONS, async 
   };
 });
 
-exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const result = await nativeAdminCompetitionEntries(context, competitionId);
+    const files = [], entries = [];
+    let bytes = 0, skippedCount = 0;
+    for (const entry of result.entries) {
+      if (!entry.teamLeaderComplete || !engagementClubEntryHasParticipants(entry)) { skippedCount++; continue; }
+      const { buffer } = await buildEngagementClubRecapPdf(result.competition, entry);
+      if (!Buffer.isBuffer(buffer)) throw new HttpsError("internal", "PDF indisponible.");
+      bytes += buffer.length;
+      if (bytes > 7000000) throw new HttpsError("resource-exhausted", "ZIP trop volumineux : télécharger les PDF individuellement.");
+      files.push({ name: `club-${entry.clubId}.pdf`, buffer });
+      entries.push(engagementCompetitionEntrySummaryItem(entry));
+    }
+    const buffer = clubRecapZip(files);
+    return { ok: true, source: "nap", competitionId, entryCount: result.entries.length,
+      generatedCount: files.length, reusedCount: 0, skippedCount, errorCount: 0, errors: [], entries,
+      fileName: `recapitulatifs-${competitionId}.zip`, contentType: "application/zip",
+      zipBase64: buffer.toString("base64"), sqlBudget: result.sqlBudget };
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
@@ -11087,11 +11135,20 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall(CALLABLE_OPTIONS, as
   };
 });
 
-exports.generateEngagementCompetitionTxtExport = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    const result=await nativeAdminCompetitionEntries(context,competitionId);
+    if(result.competition.competitionType!=="pool") throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
+    const entries=result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
+    const txt=buildEngagementCompetitionTxt(result.competition,entries,result.clubsById),buffer=txt.buffer;
+    if (!Buffer.isBuffer(buffer)) throw new HttpsError("internal", "Export TXT indisponible.");
+    if(buffer.length>10000000) throw new HttpsError("resource-exhausted","Export trop volumineux.");
+    return {ok:true,source:"nap",competitionId,entryCount:entries.length,fileName:txt.fileName,contentType:"text/plain; charset=utf-8",generatedAt:result.generatedAt,fromStorage:false,txtBase64:buffer.toString("base64"),sqlBudget:result.sqlBudget};
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
