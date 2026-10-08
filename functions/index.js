@@ -5691,10 +5691,65 @@ const qualificationService = createQualificationService({ db, HttpsError, catego
   access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
   assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
 
-exports.listEngagementQualificationSources = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listSources(request));
-exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => qualificationService.process(request));
-exports.grantEngagementQualificationException = onCall(CALLABLE_OPTIONS, (request) => qualificationService.grantException(request));
-exports.acknowledgeEngagementQualificationAlert = onCall(CALLABLE_OPTIONS, (request) => qualificationService.acknowledgeAlert(request));
+exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, async (request) => {
+  if (ENVIRONMENT.projectId !== "livepalmes-test") return qualificationService.listSources(request);
+  const context=await engagementAccessContext(request);
+  if(!context.national) throw new HttpsError("permission-denied","Droit national des engagements requis.");
+  try {
+    return await require("./nap-qualification-sources").listSources(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data);
+  } catch(error) {
+    throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",error instanceof TypeError ? error.message : "Liste des competitions NAP momentanement indisponible.");
+  }
+});
+function nativeQualificationServices(context) {
+  const competitionFor=(pack,rules)=>({...require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE),...(rules?{qualifications:rules}:{})});
+  return {
+    authorize:event=>assertCanModifyEngagementEvent(context,event),
+    competitionFor,eventsFor:pack=>qualificationEvents(competitionFor(pack)),categoryFor:ageCategoryFromDates,
+    automatic:automaticEngagementIndividualEntry,assertOpen:assertEngagementClubWriteOpen,
+    effects:require("./nap-qualification-effects").effects,
+    eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents,
+    applyNativePatch:input=>require("./nap-portal-competition-change").applyCompetitionChange(
+      require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+      {...input,national:true,eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents},
+      {
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:input.actorUid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.competition.changed",input.actorUid,target,operation)
+      },event=>assertCanModifyEngagementEvent(context,event))
+  };
+}
+const nativeQualificationOptions=ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}:{};
+const nativeQualificationNow=()=>new Date().toISOString().replace('T',' ').replace('Z','000');
+function nativeQualificationError(error){
+  if(error instanceof HttpsError)return error;
+  return new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Traitement NAP interrompu. Reprenez le meme controle ; sa sauvegarde est conservee.");
+}
+exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, async request=>{
+  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.process(request);
+  const context=await engagementAccessContext(request);
+  if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
+  try{return await require("./nap-qualification-callables").process(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{competitionId:request.data?.competitionId,jobId:request.data?.jobId,action:request.data?.action,cursor:request.data?.cursor,national:true,actorUid:context.uid,now:nativeQualificationNow()},nativeQualificationServices(context));}
+  catch(error){throw nativeQualificationError(error);}
+});
+exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
+  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.grantException(request);
+  const context=await engagementAccessContext(request);
+  if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
+  const club=await engagementClubAccessContext(request);
+  try{return await require("./nap-qualification-grant-change").grantException(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{competitionId:request.data?.competitionId,clubId:String(club.clubId),swimmerId:request.data?.swimmerIndexId,eventCode:request.data?.eventCode,national:true,confirmed:true,actorUid:context.uid,now:nativeQualificationNow()},nativeQualificationServices(context));}
+  catch(error){throw nativeQualificationError(error);}
+});
+exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
+  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.acknowledgeAlert(request);
+  const context=await engagementClubAccessContext(request);
+  let connection;
+  try{
+    connection=await require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
+    return await require("./nap-qualification-effects").acknowledge(connection,{competitionId:request.data?.competitionId,clubId:String(context.clubId),alertAt:request.data?.alertAt,actorUid:context.uid,now:nativeQualificationNow(),authorize:scope=>{if(scope.clubId!==String(context.clubId))throw new HttpsError("permission-denied","Dossier hors du club autorise.");}});
+  }catch(error){if(connection){connection.destroy();connection=null;}throw nativeQualificationError(error);}
+  finally{connection?.release();}
+});
 // Retired endpoints remain deny-only so previously deployed clients cannot use
 // the removed request workflow. Historical documents are not migrated or erased.
 const retiredQualificationRequest = () => { throw new HttpsError("failed-precondition", "Les demandes de dérogation sont supprimées. Une exception peut être accordée directement par le National."); };
@@ -5702,9 +5757,9 @@ exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, reti
 exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
-  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => qualificationService.syncTargets(event));
+  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.projectId === "livepalmes-test" ? null : qualificationService.syncTargets(event));
 exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
-  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => qualificationService.revalidateCache(event));
+  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.projectId === "livepalmes-test" ? null : qualificationService.revalidateCache(event));
 
 function engagementQualificationRowAllowed(row = {}, competition = {}) {
   if (row.active === false || row.status === "hidden") return false;
@@ -9878,6 +9933,8 @@ async function nativePortalCompetition(input, authorize, includeUploaders=false)
   const pack = await native.readNativeCompetition(pool, input, authorize);
   if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
   const competition = view.competitionItem(pack, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+  competition.qualificationJobId=await require("./nap-qualification-jobs").activeControl(pool,input);
+  competition.nativeSelectionLockReason=require('./nap-swimmer-entry-plan').selectionLockReason(competition);
   competition.clubDocuments = await view.readDocuments(pool, input, {includeUploader:includeUploaders});
   if(includeUploaders)competition.clubDocuments=await nativeDocumentAuthors(competition.clubDocuments);
   competition.documentCount = competition.clubDocuments.length;
@@ -16146,13 +16203,14 @@ async function previewNativeClubEntryTimes(context,competitionId,swimmerIds,enro
     const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     return await require("./nap-entry-time-preview").previewNativeTimes(pool,{competitionId,clubId:String(context.clubId),swimmerIds,enrolledOnly},{
       authorize:({clubId})=>{if(String(clubId)!==String(context.clubId)) throw new HttpsError("permission-denied","Dossier hors du club autorise.");},
-      preview:(person,rows,pack)=>{
+      prepareQualifications:(connection,input)=>require("./nap-qualification-people").readEvaluations(connection,{...input,events:qualificationEvents(require("./nap-portal-workspaces").competitionItem(input.pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:ageCategoryFromDates}),
+      preview:(person,rows,pack,dossier,evaluation)=>{
         const competition=require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
         return competition.events.filter(event=>event.type==="individual" && event.nativeRecognized && event.nativeCourses.some(course=>String(course.sexe)===String(person.sex)))
           .map(event=>require("./nap-entry-time-rules").resolveTime({eventCode:event.code},competition,{
             automatic:entry=>automaticEngagementIndividualEntry(entry,rows,competition),
             parse:parseEngagementEntryTime
-          },true));
+          },true)).map(entry=>evaluation?{...entry,qualification:{...evaluation.courses[entry.eventCode],mode:evaluation.mode}}:entry);
       }
     });
   } catch(error) {
@@ -16340,9 +16398,12 @@ async function saveNativeClubIndividualEntries(context,request) {
           category:ageCategoryFromDates,
           forbidden:(code,category)=>ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]?.has(category)===true,
           automatic:automaticEngagementIndividualEntry,parse:parseEngagementEntryTime,
+          prepareQualifications:(connection,input)=>require("./nap-qualification-people").readEvaluations(connection,{...input,events:qualificationEvents(require("./nap-portal-workspaces").competitionItem(input.pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:ageCategoryFromDates}),
           validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,await require("./nap-entry-static-records").loadStaticRecords(ENVIRONMENT.projectId))
         });
       },
+      prepareEffects:require("./nap-qualification-entry-effects").prepare,
+      afterSaved:require("./nap-qualification-entry-effects").apply,
       audit:{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-individual-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-individual-${operation}-before`).create({action:"nap.individualEntry.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
@@ -16352,7 +16413,7 @@ async function saveNativeClubIndividualEntries(context,request) {
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
     return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,
       entry:await nativeClubEntryView(result.nativeEntry,context,competition),
-      sqlBudget:{queriesMax:38,writesMax:3}};
+      sqlBudget:{queriesMax:40,writesMax:4}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
@@ -16514,6 +16575,8 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
       expectedFingerprint:request.data?.expectedFingerprint,mutationId:request.data?.mutationId,
       changes:rawChanges.map(row=>({swimmerId:row?.swimmerIndexId || row?.swimmer?.swimmerIndexId,selected:row?.selected}))
     },{
+      prepareEffects:require("./nap-qualification-entry-effects").prepare,
+      afterSaved:require("./nap-qualification-entry-effects").apply,
       authorize:({clubId})=>{
         if(String(clubId)!==String(context.clubId)) throw new HttpsError("permission-denied","Dossier hors du club autorise.");
         // Open/deadline are checked by the executor, permitting confirmation of
@@ -16538,7 +16601,7 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
       }
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:45,writesMax:4}};
+    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:47,writesMax:5}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
@@ -16894,6 +16957,7 @@ async function saveNativeClubRelays(context,request) {
       result=await require("./nap-relay-entry-change").saveNativeRelayChanges(pool,{...input,changes:[{relayId:request.data.removeRelayId,action:"remove"}]},{authorize,audit,resolve:async({changes})=>changes});
     } else {
       result=await require("./nap-relay-composition-change").saveNativeRelayComposition(pool,{...input,change:request.data?.relayChange},{authorize,audit,resolve:input=>require("./nap-relay-resolution").resolveRelay(input,{
+        qualifiedAnchors:(connection,{pack,competition,ids})=>require("./nap-qualification-relay-preview").readAnchors(connection,{competitionId:pack.event.id,rules:competition.qualifications,date:competition.date,events:qualificationEvents(competition)},ids,{categoryFor:ageCategoryFromDates}),
         view:pack=>{
           const view=require("./nap-portal-workspaces").competitionItem(pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
           const events=cleanEngagementCompetitionEvents(view.events.map(event=>({...event,multipleRelaysAllowed:event.allowMultipleRelays===true})),{strict:false,competitionType:view.competitionType});
@@ -17062,15 +17126,31 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
     const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     const authorize = event => assertCanModifyEngagementEvent(context,event);
     try {
+      const patch={...(request.data?.patch||{})},incoming=request.data?.qualifications??patch.qualifications;
+      delete patch.qualifications;
+      if(incoming!==undefined||['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key))){
+        const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,competitionId,authorize);
+        if(!pack)throw new HttpsError("not-found","Competition NAP introuvable.");
+        const services=nativeQualificationServices(context),events=services.eventsFor(pack),previous=services.competitionFor(pack).qualifications;
+        let rules=previous;
+        if(incoming!==undefined){try{rules=qualificationEngine.validateRules(incoming,events,false);}catch(error){throw new HttpsError('invalid-argument',error.message);}}
+        const changed=!require('node:util').isDeepStrictEqual(previous,rules);
+        const affects=changed||rules.enabled&&['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key));
+        if(affects){
+          if(!context.national)throw new HttpsError("permission-denied","Cette modification affecte les qualifications : intervention nationale requise.");
+          return await require("./nap-qualification-control-start").beginControl(pool,{competitionId,actorUid:context.uid,national:true,expectedFingerprint:request.data?.expectedFingerprint,patch,rules,events},services);
+        }
+        if(!Object.keys(patch).length)return {ok:true,unchanged:true,competition:await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event))};
+      }
       const applyNativeChange = Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
-      const result = await applyNativeChange(pool, {
-        competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch:request.data?.patch,
-        eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions
+      const result = await require("./nap-qualification-edit-lock").ordinaryEdit(pool,competitionId,()=>applyNativeChange(pool, {
+        competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch,
+        eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents
       }, {
         read:async operation => { const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         complete:(operation,target) => writeAuditLogOnce("nap.competition.changed",context.uid,target,operation)
-      },authorize);
+      },authorize),{authorize});
       const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
       return {...result,competition:{...competition,regionalPastReadOnly:!context.national && engagementEventIsPast(competition)}};
     } catch(error) {

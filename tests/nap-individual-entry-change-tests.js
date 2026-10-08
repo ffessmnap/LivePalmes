@@ -60,6 +60,11 @@ function fixture(options={}) {
   }
   f=fixture();f.failPrepare();await assert.rejects(()=>save(f.pool,f.input,f.services),/Journal/);assert.equal(f.stats().writeCount,0);
   f=fixture();f.failComplete();await assert.rejects(()=>save(f.pool,f.input,f.services),/Audit/);f.competition.event.entryStatus="closed";await save(f.pool,f.input,f.services);assert.equal(f.stats().writeCount,3);
+  f=fixture();let effectAttempts=0,preparedEffects=0;
+  f.services.prepareEffects=async()=>{preparedEffects++;return {grants:[{version:'1'}]};};
+  f.services.afterSaved=async(c,target)=>{assert.deepEqual(target.effects,{grants:[{version:'1'}]});if(++effectAttempts===1)throw Error('Exception update interrupted');};
+  await assert.rejects(save(f.pool,f.input,f.services),/Exception update/);assert.equal(f.stats().writeCount,3);assert.equal(f.stats().complete,0);
+  f.competition.event.entryStatus='closed';await save(f.pool,f.input,f.services);assert.equal(f.stats().writeCount,3);assert.equal(preparedEffects,1);assert.equal(effectAttempts,2);
   f=fixture();f.setFail(1);await assert.rejects(()=>save(f.pool,f.input,f.services));f.addUnexpected();f.setFail(0);await assert.rejects(()=>save(f.pool,f.input,f.services),/ailleurs/);assert.equal(f.stats().writeCount,1);
   f=fixture();f.competition.event.entryStatus="closed";await assert.rejects(()=>save(f.pool,f.input,f.services),/fermes/);assert.equal(f.stats().writeCount,0);
   f=fixture();f.services.authorize=async()=>{throw new Error("Denied");};await assert.rejects(()=>save(f.pool,f.input,f.services),/Denied/);assert.deepEqual(f.calls,[]);

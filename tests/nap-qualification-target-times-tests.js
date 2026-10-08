@@ -1,0 +1,11 @@
+"use strict";
+const assert=require('node:assert/strict'),{targetTimes}=require('../functions/nap-qualification-target-times');
+const entries=[{nativeId:44,eventCode:'100SF',nativeTime:'14200'}];
+const known=value=>()=>({entryTimeMode:'known',entryTimeValue:value});
+assert.deepEqual(targetTimes(entries,[],{},known(10200)),[{nativeId:44,tps:'14200'}],'Equal sporting times retain the raw NAP representation');
+assert.deepEqual(targetTimes(entries,[],{},known(10000)),[{nativeId:44,tps:'014000'}]);
+assert.deepEqual(targetTimes(entries,[],{},()=>({entryTimeMode:'default595999'})),[{nativeId:44,tps:'599999'}]);
+assert.equal(entries[0].nativeTime,'14200','The before snapshot is never rewritten');
+assert.throws(()=>targetTimes(entries,[],{},()=>({entryTimeMode:'manual',entryTimeValue:10000})));
+assert.throws(()=>targetTimes(entries,[],{},null));
+console.log('NAP qualification automatic targets: existing resolver, raw equal-time preservation, right-aligned compact times, unknown-time sentinel and no manual override; offline.');

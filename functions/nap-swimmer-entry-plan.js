@@ -34,7 +34,11 @@ function selectionLockReason(competition) {
   const type=competition?.event?.eventType || competition?.eventType;
   if(!["pool","openWater"].includes(type)) return "Type de competition NAP a verifier avant cette selection.";
   if(!parameters) return "Parametres natifs a verifier avant la selection.";
-  if(require("./nap-entry-qualification-policy").qualificationPending(competition)) return "Le controle des qualifications reste a raccorder pour modifier ce dossier.";
+  if(require("./nap-entry-qualification-policy").qualificationPending(competition,{engineReady:true})) return "Le controle des qualifications natives doit etre verifie avant de modifier ce dossier.";
+  if(Number(competition.options?.qualifications_enabled)===1){
+    try{require('./nap-qualification-rules').fromPack(competition);}catch{return 'Les qualifications NAP sont incompletes : verification nationale requise.';}
+  }
+  if(competition.qualifications?.enabled===true){try{require('./engagement-qualification').validateRules(competition.qualifications);}catch{return 'Les qualifications NAP sont incompletes : verification nationale requise.';}}
   try {require("./nap-entry-participation-rules").requirements(competition);} catch {return "Les conditions natives de participation restent a verifier avant cette selection.";}
   try {require("./nap-entry-birth-policy").bounds(competition);} catch {return "Les limites de categories natives restent a verifier avant cette selection.";}
   return "";

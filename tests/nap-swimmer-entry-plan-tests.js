@@ -32,6 +32,7 @@ assert.equal(birthPolicy.eligible(competition,{birthDate:null}),true,"unrestrict
 assert.equal(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29}}),"");
 for(const qualif of [28,30,1,"invalid"]) assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif}}),/qualifications/);
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29},qualifications:{enabled:true}}),/qualifications/);
+assert.equal(selectionLockReason({...competition,qualifications:{enabled:true,groups:[{categories:['S'],mode:'each',startDate:'2025-01-01',endDate:'2026-12-31',pools:['25','50'],electronicOnly:false,competitionMode:'all'}],standards:{}}}),'', 'Valid LivePalmes grids use the native evaluation engine');
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29},options:{qualifications_enabled:1}}),/qualifications/);
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29,cat_f:9}}),/categories/);
 assert.equal(selectionLockReason({...competition,event:{eventType:"openWater"}}),"");

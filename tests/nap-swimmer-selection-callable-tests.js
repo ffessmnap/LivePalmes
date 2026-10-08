@@ -11,6 +11,7 @@ const context={nativeClubEntryView:async()=>({source:"nap"}),exports:{},ENVIRONM
   if(name==="./nap-swimmer-entry-plan") return require("../functions/nap-swimmer-entry-plan");
   if(name==="./nap-entry-participation-rules") return require("../functions/nap-entry-participation-rules");
   if(name==="./nap-portal-swimmers") return {portalPool:()=>({native:true})};
+  if(name==="./nap-qualification-entry-effects") return require("../functions/nap-qualification-entry-effects");
   if(name==="./nap-portal-workspaces") return {competitionItem:()=>({date:"2026-10-11"}),entryItem:()=>({source:"nap"})};
   if(name==="./nap-swimmer-entry-change") return {saveNativeSwimmerSelection:async(pool,input,services)=>{
     assert.equal(pool.native,true);assert.equal(input.clubId,"106");assert.equal(input.actorUid,"actor");assert.equal(input.changes[0].swimmerId,"1");assert.equal(Object.hasOwn(input.changes[0],"licenseNumber"),false);

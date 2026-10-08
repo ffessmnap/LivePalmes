@@ -13,6 +13,9 @@ async function resolveChanges(input,services) {
   const competition=services.view(pack),result=[],manualSwimmers=[],seen=new Set();
   const participation=require("./nap-entry-participation-rules");
   const requestedPeople=dossier.swimmers.filter(person=>changes.some(change=>Number(change.swimmerId)===Number(person.id)));
+  const qualified=competition.qualifications?.enabled===true;
+  const evaluations=qualified&&typeof services.prepareQualifications==='function'?await services.prepareQualifications(input.connection,{pack,people:requestedPeople,histories}):null;
+  if(qualified&&!(evaluations instanceof Map))throw new TypeError('Controle des qualifications NAP requis avant enregistrement.');
   const evidence=await participation.readEvidence(input.connection,requestedPeople,pack);
   for(const change of changes) {
     const id=positiveId(change.swimmerId);
@@ -24,6 +27,10 @@ async function resolveChanges(input,services) {
     const person=people[0],before=dossier.individual.filter(row=>Number(row.engagement)===Number(links[0].id));
     const eligible=participation.eligible(pack,id,evidence),history=participation.filterTimes(histories.get(String(id)) || [],pack);
     const managedCourses=allowedCourses(person,pack,competition,categories,services);
+    if(qualified){
+      const evaluation=evaluations.get(String(id));
+      if(evaluation?.enabled!==true||require('./engagement-qualification').reconcile(change.entries.filter(entry=>managedCourses.includes(normalize(entry.eventCode))),evaluation).removed.length)throw new TypeError('Une course demandee ne respecte pas les qualifications. Rechargez les temps proposes.');
+    }
     const openWater=competition.competitionType==="openWater";
     const storageCode=code=>{
       if(!openWater) return code;
@@ -45,23 +52,25 @@ async function resolveChanges(input,services) {
         if(unchanged) continue; // Unmanaged historical rows remain in the plan.
         throw new TypeError(`Course ${code} non autorisee pour ce nageur.`);
       }
-      if(unchanged) {
+      if(unchanged&&!qualified) {
         if(!/^\d{1,6}$/.test(saved[0].tps) || Number(saved[0].tps.slice(-4,-2)||0)>59) managedCourses.splice(managedCourses.indexOf(code),1);
         else entries.push({course:stored,tps:saved[0].tps});
         continue;
       }
-      if(raw.entryTimeMode==="native") throw new TypeError("Temps natif modifie ailleurs. Rechargez le dossier.");
+      if(raw.entryTimeMode==="native"&&!unchanged) throw new TypeError("Temps natif modifie ailleurs. Rechargez le dossier.");
       if(!eligible) throw new TypeError("Un resultat NAP dans au moins une competition requise est necessaire pour ajouter ou modifier une course.");
       if(openWater) {
         if(raw.manualEntryTime || raw.entryTime) throw new TypeError("Aucun temps a saisir pour une course eau libre.");
         entries.push({course:stored,tps:"000000"});
         continue;
       }
-      const resolved=resolveTime({...raw,eventCode:code},competition,{
+      const resolved=resolveTime({...raw,eventCode:code,...(qualified&&unchanged?{entryTimeMode:'auto',entryTime:'',manualEntryTime:''}:{})},competition,{
         automatic:entry=>services.automatic(entry,history,competition),parse:services.parse,
         known:entry=>require("./nap-entry-time-policy").known(entry,history,competition,services.parse)
       });
-      entries.push({course:code,tps:resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue)});
+      const tps=resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue);
+      const previousValue=unchanged?require('./nap-performance-normalization').parseCompactTime(saved[0].tps):null;
+      entries.push({course:code,tps:unchanged&&previousValue===resolved.entryTimeValue?saved[0].tps:tps});
       if(resolved.entryTimeMode==="manual") manualEntries.push(resolved);
     }
     const managedNativeCourses=managedCourses.map(storageCode);

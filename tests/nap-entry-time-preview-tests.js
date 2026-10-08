@@ -15,6 +15,11 @@ const {previewNativeTimes:preview}=require("../functions/nap-entry-time-preview"
   competition.nativeParameters.qualif=29;
   const unrestricted=await preview({},input,services);assert.equal(unrestricted.swimmers[0].individualEntries[0].entryTime,"1:42.00");
   competition.qualifications={enabled:true};await assert.rejects(()=>preview({},input,services),/qualifications/);delete competition.qualifications;
+  competition.qualifications={enabled:true};let grouped=0;
+  const qualifiedServices={...services,readers:{...services.readers,history:async()=>new Map([['1',[]],['2',[]]])},prepareQualifications:async(c,scope)=>{grouped++;assert.equal(scope.people.length,2);return new Map([['1',{enabled:true,mode:'each'}],['2',{enabled:true,mode:'one'}]]);},preview:(person,rows,pack,dossier,evaluation)=>[{eventCode:'50BI',qualification:evaluation}]};
+  const qualified=await preview({},input,qualifiedServices);assert.equal(grouped,1);assert.equal(qualified.swimmers[1].individualEntries[0].qualification.mode,'one');assert.equal(qualified.sqlBudget.queriesMax,24);
+  competition.nativeParameters.qualif=28;await assert.rejects(preview({},input,qualifiedServices),/qualifications/);assert.equal(grouped,1,'A mapped LivePalmes grid must never bypass an unknown native qualifier');competition.nativeParameters.qualif=29;
+  await assert.rejects(preview({},input,{...qualifiedServices,prepareQualifications:async()=>new Map()}),/incompletes/);delete competition.qualifications;
   competition.options={qualifications_enabled:1};await assert.rejects(()=>preview({},input,services),/qualifications/);competition.options=null;
   competition.nativeParameters.qualif=0;
   pack.swimmers[0].birthDate="2000-01-01";pack.swimmers[1].birthDate="1999-12-31";
