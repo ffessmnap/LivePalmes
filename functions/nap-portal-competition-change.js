@@ -92,11 +92,11 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
     if(field === "level" || field === "regionId") continue;
     if(field === "invitedRegionIds") {
       if(!["departemental","regional"].includes(effectiveLevel)) throw new TypeError("Regions invitees reservees aux competitions regionales ou departementales.");
-      if(pack.committees.some(row=>!Object.hasOwn(scope.REGIONS,String(row.comite)))) throw new TypeError("Une admission ancienne doit etre verifiee avant de modifier les regions invitees.");
+      if(pack.committees.some(row=>Number(row.comite)!==19 && !Object.hasOwn(scope.REGIONS,String(row.comite)))) throw new TypeError("Une admission ancienne doit etre verifiee avant de modifier les regions invitees.");
       if(new Set(pack.committees.map(row=>row.comite)).size!==pack.committees.length) throw new TypeError("Regions natives en doublon : verification requise.");
       const ids=scope.invitations(value,Number(after.competitions.comite));
       supplemental("livepalmes_competition_options",pack.options).invited_region_ids=null;
-      after.nativeInvitations=ids;
+      after.nativeInvitations=[...ids,...(pack.committees.some(row=>Number(row.comite)===19)?[19]:[])].sort((a,b)=>a-b);
     }
     else if (field === "nativeNationalLevelCode") {
       const codes=[2,3,4,5,7];
@@ -217,7 +217,7 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
     let resumed=false;
     for(const item of saved.operations) {
       if(item.table==="compet_comites") {
-        if(item.key!=="compet" || !Array.isArray(item.before) || item.before.length>50 || item.before.some(row=>!Number.isInteger(row.id)||!Number.isInteger(row.comite)) || !Array.isArray(item.after) || !isDeepStrictEqual(require("./nap-competition-scope").invitations(item.after,0),item.after)) throw new TypeError("Sauvegarde des regions incompatible.");
+        if(item.key!=="compet" || !Array.isArray(item.before) || item.before.length>50 || item.before.some(row=>!Number.isInteger(row.id)||!Number.isInteger(row.comite)) || !Array.isArray(item.after) || !isDeepStrictEqual([...require("./nap-competition-scope").invitations(item.after.filter(id=>id!==19),0),...(item.before.some(row=>row.comite===19)?[19]:[])].sort((a,b)=>a-b),item.after)) throw new TypeError("Sauvegarde des regions incompatible.");
         const rows=()=>query("SELECT id,comite FROM compet_comites FORCE INDEX(livepalmes_compet_comite_id) WHERE compet=? ORDER BY comite,id LIMIT 51",[saved.competitionId]);
         const current=await rows();
         if(isDeepStrictEqual(current.map(row=>row.comite),item.after)) {resumed=true;continue;}

@@ -48,8 +48,8 @@ function competitionItem(pack, definitions = new Map()) {
     nativeRules: { courses: pack.courses, restrictions: pack.restrictions, participations: pack.participations, committees: pack.committees },
     address: text(options.address), city: options.city == null ? pack.event.city : text(options.city), organizer: text(options.organizer_label),
     organizerEmail: text(options.organizer_email), teamLeadersWhatsAppUrl: text(options.whatsapp_url), waterBodyType: text(options.water_body_type),
-    canceled: Number(options.canceled) === 1, invitedRegionIds: pack.committees.length ? pack.committees.map(row => require("./nap-competition-scope").REGIONS[row.comite] || String(row.comite)) : json(options.invited_region_ids, []),
-    nativeInvitationsEditable: pack.committees.every(row=>Object.hasOwn(require("./nap-competition-scope").REGIONS,String(row.comite))) && !json(options.invited_region_ids, []).includes("OPEN"),
+    canceled: Number(options.canceled) === 1, invitedRegionIds: pack.committees.length ? pack.committees.filter(row=>Number(row.comite)!==19).map(row => require("./nap-competition-scope").REGIONS[row.comite] || String(row.comite)) : json(options.invited_region_ids, []).filter(value=>value!=="OPEN"),
+    nativeInvitationsEditable: pack.committees.every(row=>Number(row.comite)===19 || Object.hasOwn(require("./nap-competition-scope").REGIONS,String(row.comite))),
     officialsRequired: Number(parameters.officiel) === 1, computerEmail: text(parameters.mailtxt), officialsManagerEmail: text(parameters.mailjuges),
     qualificationStartDate: calendar.date(parameters.tps_d), qualificationEndDate: calendar.date(parameters.tps_f),
     qualificationTimesMode: calendar.date(parameters.tps_d) || calendar.date(parameters.tps_f) ? "period" : "all",
@@ -60,7 +60,7 @@ function competitionItem(pack, definitions = new Map()) {
     relayEventCount: events.filter(item => item.type === "relay").length,
     clubDocuments: [], documents: {}, generatedFiles: [], nativeOptionsConfigured: pack.options !== null,
     nativeWarnings: [pack.event.deadlineWarning, events.some(event => !event.nativeRecognized) ? "Courses anciennes conservees." : "",
-      pack.committees.some(row=>!Object.hasOwn(require("./nap-competition-scope").REGIONS,String(row.comite))) ? "Une admission regionale ancienne reste conservee ; sa correspondance doit etre verifiee avant modification." : "",
+      pack.committees.some(row=>Number(row.comite)!==19 && !Object.hasOwn(require("./nap-competition-scope").REGIONS,String(row.comite))) ? "Une admission regionale ancienne reste conservee ; sa correspondance doit etre verifiee avant modification." : "",
       json(pack.detailedProgram?.program_sessions, []).some(session=>session.items?.some(item=>!courses.has(item.eventCode))) ? "Le programme detaille contient une course qui n'est plus proposee dans NAP. Il reste conserve et doit etre verifie." : ""].filter(Boolean),
     updatedAt: pack.readAt };
 }
