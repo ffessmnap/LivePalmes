@@ -8,7 +8,8 @@ const calendar=require("./nap-direct-calendar");
 const helpers=require("./engagement-competition-documents");
 const {nativeEqual}=require("./nap-native-compare");
 const FIELDS=["id","name","type","location","date","user","competition","sent","comment","public","element"];
-const OPTIONS=["document_id","category","file_name","storage_path","content_type","size","version","created_at","updated_at","created_by","updated_by"];
+const OPTION_SCHEMA=[["document_id","int"],["category","varchar(16)"],["file_name","varchar(180)"],["storage_path","varchar(160)"],["content_type","varchar(100)"],["size","int unsigned"],["version","bigint unsigned"],["created_at","datetime(6)"],["updated_at","datetime(6)"],["created_by","varchar(128)"],["updated_by","varchar(128)"]];
+const OPTIONS=OPTION_SCHEMA.map(([key])=>key);
 const CATEGORY=new Set(["poster","circular","rules","information","access","results","other"]);
 const digest=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
 const stamp=()=>new Date().toISOString().replace("T"," ").replace("Z","000");
@@ -52,6 +53,12 @@ async function mutate(pool,input,services){
   if(Number((await q("SELECT GET_LOCK(?,0) AS acquired",[lock]))[0]?.acquired)!==1)throw new TypeError("Documents en cours de modification. Réessayez.");locked=lock;
   const authority=await services.authorize(connection,id,action);
   if(!authority?.parameter_id)throw new TypeError("Paramètres de compétition NAP requis.");
+  const tables=await q("SELECT TABLE_NAME,ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('documents','livepalmes_document_options') LIMIT 3");
+  if(tables.length!==2||tables.find(t=>t.TABLE_NAME==='documents')?.ENGINE!=='MyISAM'||!tables.some(t=>t.TABLE_NAME==='livepalmes_document_options'&&t.ENGINE==='InnoDB'&&t.TABLE_COLLATION==='utf8mb4_unicode_ci'))throw new TypeError("Structure des documents à vérifier.");
+  const columns=await q("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='livepalmes_document_options' ORDER BY ORDINAL_POSITION LIMIT 12");
+  if(columns.length!==OPTION_SCHEMA.length||columns.some((c,i)=>c.COLUMN_NAME!==OPTION_SCHEMA[i][0]||String(c.COLUMN_TYPE).replace(/\b(bigint|int)\(\d+\)/g,'$1')!==OPTION_SCHEMA[i][1]||c.IS_NULLABLE!=='NO'||c.COLUMN_DEFAULT!==null||c.EXTRA))throw new TypeError("Complément de documents incompatible.");
+  const indexes=await q("SELECT INDEX_NAME,COLUMN_NAME,SEQ_IN_INDEX,NON_UNIQUE,SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='livepalmes_document_options' ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 2");
+  if(indexes.length!==1||indexes[0].INDEX_NAME!=='PRIMARY'||indexes[0].COLUMN_NAME!=='document_id'||Number(indexes[0].SEQ_IN_INDEX)!==1||Number(indexes[0].NON_UNIQUE)!==0||indexes[0].SUB_PART!==null)throw new TypeError("Index des documents incompatible.");
   const current=await rows(connection,id),existing=current.find(row=>Number(row.id)===requested);
   if(requested&&!existing)throw new TypeError("Document introuvable dans cette compétition.");
   if(existing&&input.expectedFingerprint!==item(existing).napFingerprint)throw new TypeError("Le document a changé. Rechargez avant d'enregistrer.");
@@ -106,4 +113,4 @@ async function mutate(pool,input,services){
   return {ok:true,source:"nap",competitionId:input.competitionId,calendarEventId:input.calendarEventId||"",documentId:`nap-${documentId}`,storageDeleted,documents:verified.map(item).filter(x=>x.url)};
  }finally{try{if(locked)await q("SELECT RELEASE_LOCK(?)",[locked]);}finally{connection.release();}}
 }
-module.exports={FIELDS,OPTIONS,item,rows,readDocuments,writePlan,mutate};
+module.exports={FIELDS,OPTIONS,OPTION_SCHEMA,item,rows,readDocuments,writePlan,mutate};

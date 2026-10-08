@@ -12,6 +12,9 @@ function fixture(initial=[]){
   queryCount++;const sql=query.sql;
   if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
   if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
+  if(sql.includes("information_schema.TABLES"))return [[{TABLE_NAME:"documents",ENGINE:"MyISAM"},{TABLE_NAME:"livepalmes_document_options",ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}]];
+  if(sql.includes("information_schema.COLUMNS"))return [docs.OPTION_SCHEMA.map(([COLUMN_NAME,COLUMN_TYPE])=>({COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE:"NO",COLUMN_DEFAULT:null,EXTRA:""}))];
+  if(sql.includes("information_schema.STATISTICS"))return [[{INDEX_NAME:"PRIMARY",COLUMN_NAME:"document_id",SEQ_IN_INDEX:1,NON_UNIQUE:0,SUB_PART:null}]];
   if(sql.includes("FROM documents d"))return [structuredClone(current)];
   if(sql.includes("information_schema.TRIGGERS"))return [[]];
   if(/^(INSERT|UPDATE|DELETE) /.test(sql)){assert.ok(saved,"journal precedes every write");writes++;history.push("write");if(failedWrite)return [{affectedRows:0}];}
@@ -42,6 +45,7 @@ const upload={action:"upload",competitionId:"5162",actorUid:"administrator",file
  assert.deepEqual(deleted.documents,[]);assert.equal(deleted.storageDeleted,true);assert.equal(deletion.writes,2);assert.ok(deletion.history.includes("cleanup"));
  const concurrent=fixture(f.rows);await assert.rejects(docs.mutate(concurrent.pool,{...upload,documentId:"nap-42",expectedFingerprint:"obsolete"},concurrent.services),/changé/);assert.equal(concurrent.writes,0);
  const refused=fixture();refused.services.authorize=async()=>{throw Error("Forbidden");};await assert.rejects(docs.mutate(refused.pool,upload,refused.services),/Forbidden/);assert.equal(refused.writes,0);assert.equal(refused.uploaded,false);
+ const drift=fixture();const execute=drift.connection.execute;drift.connection.execute=async(query,values)=>query.sql.includes("information_schema.COLUMNS")?[[]]:execute(query,values);await assert.rejects(docs.mutate(drift.pool,upload,drift.services),/incompatible/);assert.equal(drift.writes,0);assert.equal(drift.uploaded,false);assert.equal(drift.saved,null);
  const failed=fixture();failed.failWrite();await assert.rejects(docs.mutate(failed.pool,upload,failed.services),/vérifier/);assert.equal(failed.writes,1);assert.ok(failed.saved);assert.ok(!failed.history.includes("complete"));
  const fileFail=fixture();fileFail.failFile();await assert.rejects(docs.mutate(fileFail.pool,upload,fileFail.services),/Storage/);assert.equal(fileFail.writes,0);assert.ok(fileFail.saved);
  const tooMany=fixture(Array.from({length:20},(_,i)=>({...legacy,id:i+1})));await assert.rejects(docs.mutate(tooMany.pool,upload,tooMany.services),/20 documents/);assert.equal(tooMany.writes,0);
